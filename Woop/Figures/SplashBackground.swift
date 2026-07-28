@@ -95,9 +95,6 @@ struct NebulaBloom: View {
                             .offset(y: h * 0.17)
                     }
                 }
-                ForEach(0..<5) { index in
-                    ring(spec: Self.ringSpecs[index], w: w)
-                }
             }
             .frame(width: w, height: h)
             .position(x: w / 2, y: h * 0.55)
@@ -290,14 +287,14 @@ struct GalaxyBackground: View {
 
                 // Les voiles d'aurore : d'immenses nappes gris-bleu à peine
                 // au-dessus du noir, qui dérivent et tournent très lentement.
-                aurora(width: 760, height: 300, tint: 0.020,
+                aurora(width: 760, height: 300, tint: 0.011,
                        rotation: -24 + t * 0.55, x: 70 + sin(t * 0.12) * 30, y: -140)
-                aurora(width: 680, height: 260, tint: 0.014,
+                aurora(width: 680, height: 260, tint: 0.008,
                        rotation: 18 - t * 0.4, x: -90, y: 230 + sin(t * 0.09 + 1) * 26)
 
                 // La voie lactée, en un souffle.
                 Ellipse()
-                    .fill(Color.lunar.opacity(0.020))
+                    .fill(Color.lunar.opacity(0.011))
                     .frame(width: 900, height: 260)
                     .rotationEffect(.degrees(-28))
                     .offset(x: 60, y: -120)
@@ -332,11 +329,30 @@ struct GalaxyBackground: View {
 
             ZStack {
                 CrossStar(t: t, size: 7, phase: 0.0, baseAlpha: 0.07)
+                    .rotationEffect(.degrees(17))
                     .position(x: w * 0.18, y: h * 0.14)
                 CrossStar(t: t, size: 5, phase: 2.3, baseAlpha: 0.06)
+                    .rotationEffect(.degrees(-11))
                     .position(x: w * 0.83, y: h * 0.32)
                 CrossStar(t: t, size: 6, phase: 4.1, baseAlpha: 0.055)
+                    .rotationEffect(.degrees(8))
                     .position(x: w * 0.30, y: h * 0.82)
+
+                // Le semis d'étoiles : minuscules, partout, chacune sa phase.
+                Canvas { context, canvasSize in
+                    let noise = InkNoise(seed: 201)
+                    for i in 0..<60 {
+                        let u = CGFloat(i)
+                        let x = canvasSize.width * CGFloat(abs(noise(u * 1.7)))
+                        let y = canvasSize.height * CGFloat(abs(noise(u * 2.9)))
+                        let r = 0.5 + 0.6 * abs(noise(u * 4.1))
+                        let tw = 0.5 + 0.5 * sin(t * (0.3 + 0.6 * Double(abs(noise(u * 5.3)))) + Double(i) * 1.7)
+                        context.fill(
+                            Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
+                            with: .color(Color.lunar.opacity((0.035 + 0.055 * tw))))
+                    }
+                }
+                .allowsHitTesting(false)
 
                 // Le mini trident, en trois points — à qui sait regarder.
                 ForEach(0..<3) { index in
