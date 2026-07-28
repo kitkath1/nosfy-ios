@@ -346,8 +346,6 @@ struct WoopGrain: View {
 /// instance, et l'image figée est rigoureusement la même composition.
 struct WoopBackground: View {
     var animated: Bool = false
-    /// Décalage de scroll du contenu, pour la parallaxe du ciel (home).
-    var scroll: CGFloat = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -357,7 +355,7 @@ struct WoopBackground: View {
     private var paused: Bool { !animated || reduceMotion }
 
     var body: some View {
-        WoopDemonSky(paused: paused, scroll: scroll)
+        WoopDemonSky(paused: paused)
             // Le grain passe en dernier : il trame le ciel, dont les nappes les
             // plus sombres bandent au moins autant que l'ancienne brume.
             .overlay { WoopGrain() }

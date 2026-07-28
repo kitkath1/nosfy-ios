@@ -22,7 +22,10 @@ struct CalendarView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WoopBackground()
+                // EXACTEMENT le même ciel que la home : horloge globale, état
+                // partagé (scroll, révélation, gyro) — changer d'onglet ne
+                // change rien. Un onglet caché n'est pas rendu : coût nul.
+                WoopBackground(animated: true)
                 ScrollView {
                     VStack(spacing: 18) {
                         monthCard

@@ -12,7 +12,6 @@ struct HomeView: View {
     @State private var confirmFinish = false
     @State private var showAllWorkouts = false
     @State private var showWeekDetail = false
-    @State private var scrollY: CGFloat = 0
 
     private var calendar: Calendar { .current }
     private var finished: [Workout] { workouts.filter { !$0.isActive } }
@@ -29,7 +28,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WoopBackground(animated: true, scroll: scrollY)
+                WoopBackground(animated: true)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
                         greeting
@@ -41,11 +40,13 @@ struct HomeView: View {
                     .padding(.bottom, 130)
                 }
                 // Parallaxe : le ciel glisse sous le contenu, chaque couche à
-                // sa profondeur — via le même vecteur que le gyroscope.
+                // sa profondeur — même vecteur que le gyroscope. Écrit dans
+                // l'état PARTAGÉ : les autres onglets gardent ce décalage, le
+                // ciel ne saute jamais à la bascule.
                 .onScrollGeometryChange(for: CGFloat.self) { geo in
                     geo.contentOffset.y
                 } action: { _, offset in
-                    scrollY = offset
+                    SkyState.shared.scroll = offset
                 }
             }
             .navigationBarHidden(true)
@@ -103,36 +104,41 @@ struct HomeView: View {
 
     /// Cette carte sert à consulter la progression. Elle ne démarre pas de séance :
     /// mélanger consultation et action rendrait le geste ambigu.
+    ///
+    /// Sa matière (crête découpée, corniche de nébuleuse, verre noir) vit dans
+    /// ObjectiveCard.swift — ici il n'y a que le contenu.
     private var weeklyCard: some View {
         Button { showWeekDetail = true } label: {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 4) {
+            ObjectiveCrestCard(achieved: doneThisWeek >= Goal.weeklyTarget) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Corps mesurés sur la référence (carte ~353 pt de large) :
+                    // titre ~15 pt, grand chiffre ~46 pt, sous-titre ~14 pt.
+                    HStack {
                         Text("Objectif hebdomadaire")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.inkPrimary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color.inkSecondary)
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text("\(doneThisWeek)")
-                                .font(.system(size: 40, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color.inkPrimary)
-                                .contentTransition(.numericText())
-                            Text("/ \(Goal.weeklyTarget) entraînements")
-                                .font(.system(.subheadline, design: .rounded, weight: .medium))
-                                .foregroundStyle(Color.inkMuted)
-                        }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.inkMuted)
-                }
 
-                TrophyRow(completed: doneThisWeek, total: Goal.weeklyTarget)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(doneThisWeek)")
+                            .font(.system(size: 46, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.inkPrimary)
+                            .contentTransition(.numericText())
+                        Text("/ \(Goal.weeklyTarget) entraînements")
+                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .foregroundStyle(Color.inkSecondary)
+                    }
+                    .padding(.top, 10)
+
+                    TrophyRow(completed: doneThisWeek, total: Goal.weeklyTarget,
+                              slotSize: 44, justified: true, luminous: true)
+                        .padding(.top, 22)
+                }
             }
-            .padding(22)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .mistyMetalSurface(cornerRadius: 24, neon: doneThisWeek >= Goal.weeklyTarget)
-            .overlay(SweepBorder(cornerRadius: 24))
         }
         .buttonStyle(.plain)
     }
@@ -305,20 +311,31 @@ struct PulsingDot: View {
 struct TrophyRow: View {
     let completed: Int
     let total: Int
+    /// Diamètre des ronds. 44 par défaut (WeekDetail), 52 sur la carte crête.
+    var slotSize: CGFloat = 44
+    /// Répartis sur toute la largeur (carte crête) plutôt que tassés à gauche.
+    var justified: Bool = false
+    /// Style « verre noir » de la carte crête : intérieur plus sombre, halo
+    /// chaud autour du rond gagné. Faux ailleurs — WeekDetail garde le rendu
+    /// d'origine sur métal.
+    var luminous: Bool = false
 
     @State private var revealed = 0
     @State private var teased: Int?
 
     var body: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: justified ? 0 : 11) {
             ForEach(0..<total, id: \.self) { index in
                 TrophySlot(
                     filled: index < revealed,
-                    teasing: teased == index
+                    teasing: teased == index,
+                    size: slotSize,
+                    luminous: luminous
                 )
                 .onTapGesture { tease(index) }
+                if justified && index < total - 1 { Spacer(minLength: 6) }
             }
-            Spacer(minLength: 0)
+            if !justified { Spacer(minLength: 0) }
         }
         .onAppear { animateIn() }
         .onChange(of: completed) { _, _ in animateIn() }
@@ -347,6 +364,8 @@ struct TrophyRow: View {
 struct TrophySlot: View {
     let filled: Bool
     var teasing: Bool = false
+    var size: CGFloat = 44
+    var luminous: Bool = false
 
     private var showsTrophy: Bool { filled || teasing }
 
@@ -354,38 +373,73 @@ struct TrophySlot: View {
         ZStack {
             Circle()
                 .fill(cupFill)
-                .frame(width: 44, height: 44)
+                .frame(width: size, height: size)
 
             Circle()
                 .strokeBorder(ring, lineWidth: 1)
-                .frame(width: 44, height: 44)
+                .frame(width: size, height: size)
+
+            // Halo chaud du rond gagné, style verre noir uniquement : une
+            // couronne diffuse HORS du trait — la récompense éclaire son
+            // pourtour. Sur métal (WeekDetail) le rendu d'origine reste.
+            if showsTrophy && luminous {
+                Circle()
+                    .stroke(Color(red: 1.0, green: 0.94, blue: 0.80).opacity(0.55),
+                            lineWidth: 2)
+                    .frame(width: size, height: size)
+                    .blur(radius: 5)
+            }
 
             if showsTrophy {
+                // Style crème-argent sur la carte crête (la référence est
+                // quasi monochrome) ; l'or d'origine partout ailleurs.
                 Image(systemName: "trophy.fill")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: size * 0.39, weight: .semibold))
                     .foregroundStyle(
-                        LinearGradient(colors: [Color(red: 1.0, green: 0.93, blue: 0.72),
-                                                Color.woopGold],
-                                       startPoint: .top, endPoint: .bottom)
+                        luminous
+                        ? LinearGradient(colors: [.white,
+                                                  Color(red: 0.96, green: 0.92, blue: 0.80)],
+                                         startPoint: .top, endPoint: .bottom)
+                        : LinearGradient(colors: [Color(red: 1.0, green: 0.93, blue: 0.72),
+                                                  Color.woopGold],
+                                         startPoint: .top, endPoint: .bottom)
                     )
-                    .shadow(color: Color.woopGold.opacity(0.55), radius: 7)
+                    .shadow(color: luminous
+                            ? Color(red: 1.0, green: 0.95, blue: 0.80).opacity(0.50)
+                            : Color.woopGold.opacity(0.55), radius: 7)
                     .transition(.scale(scale: 0.25).combined(with: .opacity))
             } else {
                 Circle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(width: 7, height: 7)
+                    .fill(Color.white.opacity(luminous ? 0.07 : 0.10))
+                    .frame(width: size * (luminous ? 0.115 : 0.16),
+                           height: size * (luminous ? 0.115 : 0.16))
             }
         }
-        .frame(width: 44, height: 44)
+        .frame(width: size, height: size)
         .opacity(teasing && !filled ? 0.75 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.55), value: showsTrophy)
     }
 
     private var cupFill: AnyShapeStyle {
         if showsTrophy {
+            if luminous {
+                // Verre noir : l'intérieur reste sombre et quasi neutre, la
+                // récompense vit dans l'anneau et le trophée.
+                return AnyShapeStyle(RadialGradient(
+                    colors: [Color(red: 1.0, green: 0.96, blue: 0.86).opacity(0.07),
+                             Color.white.opacity(0.01)],
+                    center: .top, startRadius: 2, endRadius: size - 2))
+            }
             return AnyShapeStyle(RadialGradient(
                 colors: [Color.woopGold.opacity(0.32), Color.woopGold.opacity(0.05)],
-                center: .top, startRadius: 2, endRadius: 42))
+                center: .top, startRadius: 2, endRadius: size - 2))
+        }
+        if luminous {
+            // Sur le verre noir, l'intérieur d'un rond vide EST le verre : un
+            // disque plus sombre lirait « bouton éteint », pas « emplacement ».
+            return AnyShapeStyle(LinearGradient(
+                colors: [Color.black.opacity(0.16), Color.white.opacity(0.012)],
+                startPoint: .top, endPoint: .bottom))
         }
         return AnyShapeStyle(LinearGradient(
             colors: [Color.black.opacity(0.55), Color.white.opacity(0.035)],
@@ -394,10 +448,26 @@ struct TrophySlot: View {
 
     private var ring: AnyShapeStyle {
         if showsTrophy {
+            if luminous {
+                return AnyShapeStyle(LinearGradient(
+                    stops: [.init(color: Color(red: 1, green: 0.97, blue: 0.88).opacity(0.90), location: 0),
+                            .init(color: Color(red: 1, green: 0.94, blue: 0.78).opacity(0.38), location: 0.4),
+                            .init(color: Color(red: 1, green: 0.94, blue: 0.78).opacity(0.08), location: 1)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+            }
             return AnyShapeStyle(LinearGradient(
                 stops: [.init(color: Color(red: 1, green: 0.92, blue: 0.70), location: 0),
                         .init(color: Color.woopGold.opacity(0.45), location: 0.35),
                         .init(color: Color.woopGold.opacity(0.06), location: 1)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        if luminous {
+            // Ronds vides sur verre noir : à peine là — un cercle fantôme et
+            // son point, comme la référence.
+            return AnyShapeStyle(LinearGradient(
+                stops: [.init(color: .white.opacity(0.18), location: 0),
+                        .init(color: .white.opacity(0.035), location: 0.45),
+                        .init(color: .white.opacity(0.0), location: 1)],
                 startPoint: .topLeading, endPoint: .bottomTrailing))
         }
         return AnyShapeStyle(LinearGradient(

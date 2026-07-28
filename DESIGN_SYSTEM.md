@@ -5,7 +5,9 @@ App perso muscu/cardio. Direction : **premium minimal, monochrome blanc sur noir
 ## Fondations
 
 - **Palette** ([Theme.swift](Woop/Theme.swift)) : fond `woopBase` quasi noir à dominante froide ; surfaces « métal » en 3 tons (`woopMetalHigh/Mid/Low`) ; violet en 3 niveaux (`woopViolet`, `VioletCore`, `VioletDeep`) — un assaisonnement, jamais une teinte ; encres blanches à 3 opacités (`inkPrimary/Secondary/Muted`).
-- **Matière** : toute carte = dégradé métal + reflet spéculaire + biseau 1 pt éclairé haut-gauche (`metalSurface`). La source de lumière implicite de l'app est en **haut à gauche** et ne bouge jamais — elle justifie tous les biseaux.
+- **Matière** : toute carte = dégradé métal + reflet spéculaire + biseau 1 pt (`metalSurface`).
+- **Token de lumière — azimut ~225°** : la seule source de la scène est le cœur de la nébuleuse en **bas à gauche**. Les biseaux des cartes s'allument côté bas-gauche et s'éteignent vers le haut-droite : les cartes sont des objets DANS le ciel, jamais posés dessus. Toute nouvelle surface suit ce token.
+- **Chromie une seule famille** : le fond est N&B strict (±3,5 % max), ses ombres portent un sous-ton légèrement **violacé** (la famille de la marque — le CTA émerge du fond au lieu de vibrer contre lui). Le glow du CTA est contenu (il ne doit jamais teinter le ciel).
 - **Typo** : SF Rounded partout, titres bold, chiffres en très grand.
 - **Grain** (`WoopGrain`) : tramage statique ±, indispensable sur OLED contre le banding des dégradés sombres.
 
@@ -61,6 +63,28 @@ Un seul vecteur `tilt` (gyroscope CoreMotion lissé 0,8 s + recentrage lent ~15 
 - Addition de calques sans absorption : le sombre doit pouvoir **gagner** sur le clair (profondeur), jamais l'inverse.
 - Calibrer sur **captures comparées à la référence**, jamais à l'œil du code.
 
+### Contrat ciel ↔ interface
+
+- **Noir souverain** : ≥60 % de l'écran sous ~5 % de luminance ; le blanc cramé est un événement localisé bas-gauche, jamais une marée pleine largeur. Roll-off sous la tab bar hors hotspot.
+- **Un seul ciel** : l'horloge est globale (temps absolu mod 900 s) — chaque onglet rend les mêmes pixels, animés seulement quand l'onglet est visible, **tamisés à −45 %** hors home. Le ciel ne se fige jamais sous les yeux.
+- **Tab bar en verre fumé permanent** (`toolbarColorScheme(.dark)`) : la lumière qui traverse du verre sombre est une signature ; l'adaptatif devenait laiteux sur la brume.
+- **Test du poster** (contrôle qualité) : 6-8 captures à des instants aléatoires de la boucle — chaque image isolée doit tenir au mur comme une astrophoto crédible. Toute frame qui échoue désigne le paramètre à retendre.
+
 ### Budget
 
 ~1-1,5 ms GPU/frame (A16+) : demi-résolution pour tout le diffus, pleine résolution réservée au sub-pixel, LUT plutôt qu'ALU, `half` pour la couleur / `float` pour coordonnées-temps-kaliset, pause hors `scenePhase.active`.
+
+## La carte Objectif (crête)
+
+La carte « Objectif hebdomadaire » de la home : un verre noir liquide dont le bord haut est **découpé en mesa**, avec une **corniche de nébuleuse blanche** accrochée à la découpe et un **fil de lumière** qui cerne toute la silhouette. Fichiers : [ObjectiveCard.swift](Woop/Views/ObjectiveCard.swift) (forme + verre + liseré), passe `objectiveCrest` dans [DemonSky.metal](Woop/DemonSky.metal) (la matière), contenu dans [HomeView.swift](Woop/Views/HomeView.swift).
+
+- **Un seul profil** : `CrestProfile` (rise 46 pt, épaules en fractions de largeur `xa→xb` / `xc→xd`, asymétriques) est la source unique — la `Shape` Swift l'échantillonne à 1,5 pt, le shader le reçoit en uniforms et recalcule les MÊMES smoothsteps. C'est ce qui soude la matière à la bordure ; toute retouche du profil se fait là et nulle part ailleurs.
+- **Repère-crête** : le shader travaille en (x le long du bord, y = profondeur SOUS le bord) — la matière épouse la mesa au lieu de la traverser. Bande `exp(-dy·k)` plus épaisse sur le plateau que sur les épaules (×0.35) : les flancs restent du verre sombre cerclé d'un fil.
+- **Même grammaire que le ciel** : émission (rim embrasé à la bordure + nuages 3 octaves + wisps ridgés) → absorption Beer-Lambert (silhouettes qui mordent, y compris la crête) → compression filmique + toe OLED + dither 24 fps. Même horloge globale (temps absolu mod 900 s, dérives entières) : la carte est une fenêtre sur le même cosmos.
+- **Le contraste est la règle** : seuil de nuages haut (les trouées NOIRES entre les masses font respirer la corniche), chute rapide (au niveau du titre il ne reste que du verre noir). La version laiteuse qui remplissait la mesa a été retendue — une purée grise tue le premium.
+- **Liseré** : trois passes concentriques (halo 8 pt flouté 16, lueur 2,5 pt floutée 3, fil net 1,4 pt), traits centrés jamais rognés — la lumière déborde dans le ciel. Dégradé vertical (blanc pur à la crête → 0.36 en bas), masque qui n'éteint jamais le bas. Calques statiques, mis en cache par Core Animation.
+- **Verre** : assise quasi noire (seul calque immuable → porte l'ombre), nébuleuse en `plusLighter`, grain, voile spéculaire. Ordre non négociable (cf. MistyMetalSurface).
+- **Exception assumée au token 225°** : la bordure de la carte est sa propre source (la crête éclaire la matière qui la touche). C'est l'événement lumineux de la home avec le cœur de la nébuleuse — les deux seuls.
+- **Deux passes, comme le ciel** : le diffus (`objectiveCrest`) en demi-résolution — le shader est écrit en unités relatives à `fall`, les uniforms arrivent divisés par deux ; la poudre d'étoiles (`objectiveCrestStars`) en pleine résolution, géométrie évaluée avant tout fetch, éteinte par les mêmes masses (proxy 2 octaves + silhouettes). Le dither 24 fps s'applique aussi dans la sortie anticipée (sinon couture de bruit en forme de crête au milieu du verre).
+- **Objectif atteint** : le liseré se réchauffe vers l'or-récompense (`achieved`) — la seule célébration, pas de néon.
+- **Hiérarchie** : cette carte est la SEULE à porter un ciel. `TimelineView` bridé 30 fps, endormi hors écran (`onScrollVisibilityChange`) et sous Reduce Motion. Les ronds trophées de la carte sont en style `luminous` (intérieur plus sombre + halo chaud) ; WeekDetail garde le rendu métal d'origine.

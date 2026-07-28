@@ -60,8 +60,10 @@ enum WoopGradient {
         endPoint: .bottom
     )
 
-    /// Biseau : arête blanche vive en haut à gauche, qui s'éteint, puis une
-    /// lueur de rebond très faible en bas à droite. C'est ce qui fait « usiné ».
+    /// Biseau : arête blanche vive en BAS À GAUCHE — côté cœur de la
+    /// nébuleuse (azimut ~225°, le token de lumière de la scène). Les cartes
+    /// sont des objets DANS le ciel : leurs arêtes s'allument face à la seule
+    /// source de l'écran, et s'éteignent vers le haut-droite.
     static let bevel = LinearGradient(
         stops: [
             .init(color: .white.opacity(0.42), location: 0.0),
@@ -69,8 +71,8 @@ enum WoopGradient {
             .init(color: .white.opacity(0.0), location: 0.52),
             .init(color: .white.opacity(0.055), location: 1.0)
         ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        startPoint: .bottomLeading,
+        endPoint: .topTrailing
     )
 
     /// Biseau accentué, pour la carte active uniquement. L'arête reste blanche ;
@@ -82,8 +84,8 @@ enum WoopGradient {
             .init(color: .white.opacity(0.03), location: 0.50),
             .init(color: .woopVioletCore.opacity(0.10), location: 1.0)
         ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        startPoint: .bottomLeading,
+        endPoint: .topTrailing
     )
 
     /// Trait des dessins d'exercice : blanc en haut, violet, puis une pointe de
@@ -245,7 +247,10 @@ struct WoopPrimaryButtonStyle: ButtonStyle {
                     )
                 }
                 .compositingGroup()
-                .shadow(color: Color.woopVioletCore.opacity(0.55), radius: 18, y: 6)
+                // Halo contenu : l'ancien rayon 18 débordait sur le ciel et
+                // teintait la brume grise en mauve (R−B mesuré à −79) — le
+                // ciel reste N&B, le violet redevient l'unique événement coloré.
+                .shadow(color: Color.woopVioletCore.opacity(0.32), radius: 11, y: 5)
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
