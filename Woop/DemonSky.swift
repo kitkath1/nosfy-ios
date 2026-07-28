@@ -1,0 +1,146 @@
+import SwiftUI
+import CoreMotion
+
+// MARK: - Parallaxe gyroscopique
+
+/// Inclinaison lissée du téléphone, pour la parallaxe des couches du ciel.
+///
+/// Deux filtres en cascade :
+///   - un passe-bas (~0,8 s) : le geste devient une dérive de caméra, jamais
+///     un tremblement ;
+///   - un recentrage très lent (~15 s) : c'est l'ÉCART à la tenue habituelle
+///     qui compte, pas l'angle absolu — le téléphone tenu incliné dans un
+///     canapé revient doucement au neutre au lieu de rester décalé.
+///
+/// Le simulateur n'a pas de gyroscope : l'inclinaison reste à zéro et le ciel
+/// est simplement immobile — dégradation sans risque.
+@Observable
+final class SkyMotion {
+    static let shared = SkyMotion()
+
+    private let manager = CMMotionManager()
+    private var baseline = CGVector.zero
+    private(set) var tilt = CGVector.zero      // ±1 par axe, lissé
+
+    func start(reduceMotion: Bool) {
+        guard !reduceMotion, manager.isDeviceMotionAvailable,
+              !manager.isDeviceMotionActive else { return }
+        manager.deviceMotionUpdateInterval = 1.0 / 30.0
+        manager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, let a = motion?.attitude else { return }
+            let raw = CGVector(dx: a.roll, dy: a.pitch)
+            // Recentrage lent, puis écart borné à ±0.28 rad (≈16° suffisent
+            // pour la pleine amplitude — le plongeon répond au geste doux),
+            // puis lissage.
+            baseline.dx += (raw.dx - baseline.dx) * 0.003
+            baseline.dy += (raw.dy - baseline.dy) * 0.003
+            let x = max(-1, min(1, (raw.dx - baseline.dx) / 0.22))
+            let y = max(-1, min(1, (raw.dy - baseline.dy) / 0.22))
+            tilt.dx += (x - tilt.dx) * 0.24
+            tilt.dy += (y - tilt.dy) * 0.24
+        }
+    }
+
+    func stop() {
+        manager.stopDeviceMotionUpdates()
+        tilt = .zero
+    }
+}
+
+// MARK: - Ciel nébuleuse (vue)
+
+/// Le fond galactique, en deux passes (voir DemonSky.metal) :
+///   1. la nébuleuse, rendue en DEMI-résolution puis agrandie ×2 — vérifié :
+///      le shader s'évalue bien sur le raster réduit (4× moins de fragments),
+///      et l'upscale bilinéaire est invisible sur un contenu vaporeux ;
+///   2. les étoiles, en pleine résolution (sub-pixel, l'upscale les tuerait),
+///      composées en `plusLighter` : de la lumière ajoutée au ciel.
+///
+/// 30 images par seconde, pas plus : sans `minimumInterval`, TimelineView
+/// suit ProMotion à 120 Hz — 4× le coût GPU et la dalle LTPO bloquée en haute
+/// fréquence. La matière évolue sur des minutes, seul le scintillement a
+/// besoin de fluidité, et 30 fps y suffisent.
+struct WoopDemonSky: View {
+    var paused: Bool = false
+    /// Décalage de scroll du contenu (points) : le ciel glisse à ~5-8 % de la
+    /// vitesse du scroll, proportionnellement à la profondeur de chaque couche
+    /// — la home a une profondeur physique.
+    var scroll: CGFloat = 0
+
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealStart: Date = .now
+
+    private var motion: SkyMotion { .shared }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = max(geo.size.width, 1)
+            let h = max(geo.size.height, 1)
+
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { timeline in
+                // Le temps part en float32 vers le GPU : modulo 900 s, sinon
+                // la mantisse ne suit plus et les sinus avancent par paliers.
+                // Toutes les animations du shader sont périodiques sur 900 s
+                // exactement — le raccord de boucle est invisible.
+                let t = Float(timeline.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+
+                // Révélation : 2 s de montée d'exposition à l'apparition (et
+                // au retour d'arrière-plan). Lissée ici, consommée telle
+                // quelle par les deux shaders. Écrans figés : toujours à 1.
+                let raw = paused ? 1.0 : min(max(
+                    timeline.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
+                let reveal = Float(raw * raw * (3 - 2 * raw))
+
+                // Le scroll s'injecte dans le même vecteur que le gyroscope :
+                // chaque couche le démultiplie par sa profondeur, exactement
+                // comme l'inclinaison.
+                let tilt = CGVector(dx: motion.tilt.dx,
+                                    dy: motion.tilt.dy + scroll * 0.0009)
+
+                ZStack(alignment: .topLeading) {
+                    Rectangle()
+                        .fill(.black)
+                        .frame(width: w / 2, height: h / 2)
+                        .colorEffect(Self.dithered(ShaderLibrary.nebulaField(
+                            .float2(w / 2, h / 2), .float(t), .float(reveal),
+                            .float2(tilt.dx, tilt.dy),
+                            .image(NebulaNoise.image))))
+                        .scaleEffect(2, anchor: .topLeading)
+
+                    Rectangle()
+                        .fill(.black)
+                        .frame(width: w, height: h)
+                        .colorEffect(ShaderLibrary.nebulaStars(
+                            .float2(w, h), .float(t), .float(reveal),
+                            .float2(tilt.dx, tilt.dy),
+                            .image(NebulaNoise.image)))
+                        .blendMode(.plusLighter)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            revealStart = .now
+            if !paused { motion.start(reduceMotion: reduceMotion) }
+        }
+        .onDisappear { motion.stop() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                revealStart = .now
+                if !paused { motion.start(reduceMotion: reduceMotion) }
+            } else {
+                motion.stop()
+            }
+        }
+    }
+
+    /// Dithering natif du shader : casse le banding 8 bits des longues rampes
+    /// sombres du halo, quasi gratuit.
+    private static func dithered(_ shader: Shader) -> Shader {
+        var s = shader
+        s.dithersColor = true
+        return s
+    }
+}
