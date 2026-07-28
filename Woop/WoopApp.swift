@@ -95,6 +95,11 @@ struct RootView: View {
 
     private var mainBody: some View {
         ZStack {
+            // « Un seul ciel » : horloge globale (temps absolu modulo 900 s)
+            // + état partagé SkyState (scroll, révélation, gyro) — chaque
+            // onglet rend EXACTEMENT les mêmes pixels, et changer d'onglet ne
+            // change rien au ciel. Un onglet caché n'est pas rendu : le coût
+            // GPU reste celui d'une seule instance.
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     HomeView(selection: $selection, showActiveSheet: $showActiveSheet)
@@ -110,6 +115,10 @@ struct RootView: View {
                     CalendarView()
                 }
             }
+            // Verre fumé permanent : le verre adaptatif devenait laiteux sur
+            // la brume cramée (libellés illisibles) ; en sombre forcé, la
+            // lumière qui le traverse devient une signature.
+            .toolbarColorScheme(.dark, for: .tabBar)
             .modifier(ActiveAccessory(workout: active) { showActiveSheet = true })
             .sheet(isPresented: $showActiveSheet) {
                 if let active {

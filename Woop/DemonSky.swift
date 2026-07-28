@@ -47,6 +47,23 @@ final class SkyMotion {
     }
 }
 
+// MARK: - État partagé du ciel
+
+/// L'état que TOUTES les instances du ciel partagent — c'est lui qui garantit
+/// qu'un changement d'onglet ne change rien : même scroll, même horloge de
+/// révélation, même gyroscope (SkyMotion). Le temps, lui, est déjà global
+/// (temps absolu modulo 900 s).
+@Observable
+final class SkyState {
+    static let shared = SkyState()
+    /// Décalage de scroll de la home. Les autres onglets le LISENT tel quel :
+    /// le vecteur de parallaxe ne saute jamais à la bascule.
+    var scroll: CGFloat = 0
+    /// Début de la révélation : au lancement et au retour d'arrière-plan
+    /// UNIQUEMENT — jamais au changement d'onglet.
+    var revealStart: Date = .now
+}
+
 // MARK: - Ciel nébuleuse (vue)
 
 /// Le fond galactique, en deux passes (voir DemonSky.metal) :
@@ -62,16 +79,12 @@ final class SkyMotion {
 /// besoin de fluidité, et 30 fps y suffisent.
 struct WoopDemonSky: View {
     var paused: Bool = false
-    /// Décalage de scroll du contenu (points) : le ciel glisse à ~5-8 % de la
-    /// vitesse du scroll, proportionnellement à la profondeur de chaque couche
-    /// — la home a une profondeur physique.
-    var scroll: CGFloat = 0
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealStart: Date = .now
 
     private var motion: SkyMotion { .shared }
+    private var sky: SkyState { .shared }
 
     var body: some View {
         GeometryReader { geo in
@@ -86,18 +99,17 @@ struct WoopDemonSky: View {
                 let t = Float(timeline.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
 
-                // Révélation : 2 s de montée d'exposition à l'apparition (et
-                // au retour d'arrière-plan). Lissée ici, consommée telle
-                // quelle par les deux shaders. Écrans figés : toujours à 1.
+                // Révélation : 2 s de montée d'exposition au lancement et au
+                // retour d'arrière-plan — l'horloge est PARTAGÉE : changer
+                // d'onglet ne la rejoue jamais. Écrans figés : toujours à 1.
                 let raw = paused ? 1.0 : min(max(
-                    timeline.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
+                    timeline.date.timeIntervalSince(sky.revealStart) / 2.0, 0), 1)
                 let reveal = Float(raw * raw * (3 - 2 * raw))
 
-                // Le scroll s'injecte dans le même vecteur que le gyroscope :
-                // chaque couche le démultiplie par sa profondeur, exactement
-                // comme l'inclinaison.
+                // Le scroll (partagé) s'injecte dans le même vecteur que le
+                // gyroscope : chaque couche le démultiplie par sa profondeur.
                 let tilt = CGVector(dx: motion.tilt.dx,
-                                    dy: motion.tilt.dy + scroll * 0.0009)
+                                    dy: motion.tilt.dy + sky.scroll * 0.0009)
 
                 ZStack(alignment: .topLeading) {
                     Rectangle()
@@ -122,13 +134,13 @@ struct WoopDemonSky: View {
         }
         .allowsHitTesting(false)
         .onAppear {
-            revealStart = .now
+            // Pas de reset de révélation ici : l'apparition d'un onglet ne
+            // doit RIEN changer au ciel.
             if !paused { motion.start(reduceMotion: reduceMotion) }
         }
-        .onDisappear { motion.stop() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                revealStart = .now
+                SkyState.shared.revealStart = .now
                 if !paused { motion.start(reduceMotion: reduceMotion) }
             } else {
                 motion.stop()
