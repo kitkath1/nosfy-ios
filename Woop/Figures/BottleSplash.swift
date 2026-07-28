@@ -160,7 +160,7 @@ private struct GlassEdgeModel {
         let peak = smooth.max() ?? 1
         return (0..<n).map { i in
             let yNorm = points[i].y * BottleStage.aspect
-            let top = smoothstep((0.42 - yNorm) / 0.26) * 0.35
+            let top = smoothstep((0.42 - yNorm) / 0.26) * 0.10
             return min(1, smooth[i] / peak * 1.15 + top)
         }
     }
@@ -228,6 +228,38 @@ private struct GlassEdgeModel {
     }()
 }
 
+/// La passe sombre : l'épine externe strokée en noir sur le tiers haut de la
+/// bouteille — quand le fond est un voile lumineux, une arête de verre réelle
+/// est PLUS SOMBRE que lui. Blend normal, jamais additif.
+private struct GlassDarkEdge: View {
+    var alpha: CGFloat
+
+    var body: some View {
+        Canvas { context, size in
+            guard alpha > 0.01 else { return }
+            let m = GlassEdgeModel.outer
+            func map(_ p: CGPoint) -> CGPoint {
+                CGPoint(x: p.x * size.width, y: p.y * BottleStage.aspect * size.height)
+            }
+            for i in 0..<(m.spine.count - 1) {
+                let yNorm = m.spine[i].y * BottleStage.aspect
+                let dark = 0.60 * smoothstep((0.50 - yNorm) / 0.22)
+                guard dark > 0.02 else { continue }
+                var segment = Path()
+                segment.move(to: map(m.spine[i]))
+                segment.addLine(to: map(m.spine[i + 1]))
+                context.stroke(
+                    segment,
+                    with: .color(.black.opacity(Double(dark * alpha))),
+                    style: StrokeStyle(lineWidth: yNorm < 0.14 ? 1.6 : 1.4,
+                                       lineCap: .round)
+                )
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 /// Les arêtes de verre. Deux Canvas : les BLOOMS, masqués par l'intérieur de
 /// la bouteille (bord dur dehors, fondu 6-10 px dedans — rien ne sort jamais),
 /// et les CHEVEUX (0,45-0,9 px), posés sur la silhouette. L'arête interne n'a
@@ -252,7 +284,7 @@ private struct GlassEdges: View {
         let shimmer = 1 - 0.10 * f * (1 - CGFloat(sin(t * 0.7 + Double(i) * 0.05)))
         let sideBias = 1.12 - 0.24 * m.spine[i].x
         let e = clamp01(m.envelope[i] + 0.10 * Self.drift(CGFloat(i) / 28 + CGFloat(t) * 0.04))
-        let flank: CGFloat = (yNorm > 0.35 && yNorm < 0.75 && f < 0.15) ? 0.10 : 1
+        let flank: CGFloat = (yNorm > 0.35 && yNorm < 0.75 && f < 0.15) ? 0.20 : 1
         var value = (0.14 + 0.95 * f + ember) * shimmer * sideBias * weight * (0.50 + e * 0.85) * flank
         if e > 0.88 { value = min(1, value * 1.4) }   // pic à blanc pur
         return value
@@ -369,6 +401,163 @@ private struct ImpBodyShape: Shape {
     }
 }
 
+// MARK: - La couronne
+
+/// La géométrie de la couronne : pour chaque point de l'outline du diablotin,
+/// sa normale extérieure — et trois populations tirées une fois pour toutes :
+/// les grains de givre, la dentelle, les moustaches.
+private enum CoronaModel {
+    static let points: [CGPoint] = Imp.outline
+    static let normals: [CGPoint] = {
+        let n = points.count
+        let centroid = CGPoint(x: 0.5, y: 0.55)
+        return (0..<n).map { i in
+            let a = points[max(0, i - 1)], b = points[min(n - 1, i + 1)]
+            var dx = b.x - a.x, dy = b.y - a.y
+            let length = max(hypot(dx, dy), 0.0001)
+            dx /= length; dy /= length
+            var nx = -dy, ny = dx
+            if nx * (centroid.x - points[i].x) + ny * (centroid.y - points[i].y) > 0 {
+                nx = -nx; ny = -ny
+            }
+            return CGPoint(x: nx, y: ny)
+        }
+    }()
+
+    struct Spark {
+        let index: Int
+        let distance: CGFloat
+        let slide: CGFloat
+        let size: CGFloat
+        let freq: Double
+        let phase: Double
+    }
+
+    /// Les grains : denses contre la surface, raréfiés au loin (décroissance
+    /// quadratique de la distance).
+    static let sparks: [Spark] = {
+        let noise = InkNoise(seed: 113)
+        return (0..<150).map { i in
+            let u = CGFloat(i)
+            return Spark(
+                index: Int(abs(noise(u * 1.7)) * CGFloat(points.count - 1)),
+                distance: pow(abs(noise(u * 2.9)), 2) * 0.085,
+                slide: noise(u * 4.1) * 0.015,
+                size: 0.5 + 1.1 * abs(noise(u * 5.3)),
+                freq: 0.5 + 2.3 * Double(abs(noise(u * 6.7))),
+                phase: Double(abs(noise(u * 8.1))) * 6.28
+            )
+        }
+    }()
+
+    /// La dentelle : des micro-filaments courbes posés SUR la silhouette.
+    static let laces: [(index: Int, length: Int, bow: CGFloat, alpha: Double,
+                        freq: Double, phase: Double)] = {
+        let noise = InkNoise(seed: 127)
+        return (0..<22).map { i in
+            let u = CGFloat(i)
+            return (index: Int(abs(noise(u * 1.9)) * CGFloat(points.count - 12)),
+                    length: 4 + Int(abs(noise(u * 3.1)) * 7),
+                    bow: noise(u * 4.7) * 0.020,
+                    alpha: 0.22 + 0.38 * Double(abs(noise(u * 6.1))),
+                    freq: 0.3 + 0.9 * Double(abs(noise(u * 7.3))),
+                    phase: Double(abs(noise(u * 9.1))) * 6.28)
+        }
+    }()
+
+    /// Les moustaches : rares, longues, presque invisibles — l'aura respire.
+    static let whiskers: [(index: Int, length: CGFloat, freq: Double, phase: Double)] = {
+        let noise = InkNoise(seed: 131)
+        return (0..<7).map { i in
+            let u = CGFloat(i)
+            return (index: Int(abs(noise(u * 2.3)) * CGFloat(points.count - 1)),
+                    length: 0.05 + 0.09 * abs(noise(u * 3.7)),
+                    freq: 0.25 + 0.5 * Double(abs(noise(u * 5.1))),
+                    phase: Double(abs(noise(u * 6.9))) * 6.28)
+        }
+    }()
+}
+
+/// Le givre de lumière : la couronne de particules accrochée à sa silhouette —
+/// grains scintillants, dentelle de filaments, moustaches. Tout est déphasé,
+/// rien n'est symétrique. Elle hérite de ses mouvements (squash, respiration).
+private struct ImpCorona: View {
+    var t: Double
+    var alpha: CGFloat
+    /// Le clin d'œil et l'impact la font flamber.
+    var pulse: CGFloat
+
+    var body: some View {
+        Canvas { context, size in
+            guard alpha > 0.01 else { return }
+            let side = min(size.width, size.height)
+            func at(_ index: Int, out distance: CGFloat, slide: CGFloat) -> CGPoint {
+                let i = min(max(index, 1), CoronaModel.points.count - 2)
+                let p = CoronaModel.points[i]
+                let n = CoronaModel.normals[i]
+                return CGPoint(
+                    x: (p.x + n.x * distance - n.y * slide) * size.width,
+                    y: (p.y + n.y * distance + n.x * slide) * size.height
+                )
+            }
+
+            // Les grains.
+            for spark in CoronaModel.sparks {
+                let position = at(spark.index, out: spark.distance, slide: spark.slide)
+                let near = 1 - spark.distance / 0.09
+                let twinkle = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(t * spark.freq + spark.phase), 3)
+                let a = twinkle * Double(near) * (0.85 + 0.6 * Double(pulse)) * Double(alpha)
+                let r = spark.size
+                // Chaque grain porte son auréole — c'est la matière lumineuse.
+                context.fill(
+                    Path(ellipseIn: CGRect(x: position.x - r * 3.2, y: position.y - r * 3.2,
+                                           width: r * 6.4, height: r * 6.4)),
+                    with: .color(Color.lunar.opacity(a * 0.13))
+                )
+                context.fill(
+                    Path(ellipseIn: CGRect(x: position.x - r, y: position.y - r,
+                                           width: r * 2, height: r * 2)),
+                    with: .color(.white.opacity(a))
+                )
+            }
+
+            // La dentelle.
+            for lace in CoronaModel.laces {
+                var path = Path()
+                path.move(to: at(lace.index, out: 0.004, slide: 0))
+                let mid = at(lace.index + lace.length / 2, out: 0.004 + lace.bow, slide: 0)
+                let end = at(lace.index + lace.length, out: 0.004, slide: 0)
+                path.addQuadCurve(to: end, control: mid)
+                let flicker = 0.7 + 0.3 * sin(t * lace.freq + lace.phase)
+                context.stroke(
+                    path,
+                    with: .color(.white.opacity(lace.alpha * flicker
+                                                * (0.8 + 0.6 * Double(pulse)) * Double(alpha))),
+                    style: StrokeStyle(lineWidth: 0.4 * side / 87, lineCap: .round)
+                )
+            }
+
+            // Les moustaches.
+            for whisker in CoronaModel.whiskers {
+                let sway = CGFloat(sin(t * whisker.freq + whisker.phase)) * 0.012
+                var path = Path()
+                path.move(to: at(whisker.index, out: 0.006, slide: 0))
+                let mid = at(whisker.index, out: whisker.length * 0.5, slide: sway * 0.5)
+                let end = at(whisker.index, out: whisker.length, slide: sway)
+                path.addQuadCurve(to: end, control: mid)
+                let breathe = 0.5 + 0.5 * sin(t * whisker.freq * 0.7 + whisker.phase + 2)
+                context.stroke(
+                    path,
+                    with: .color(.white.opacity(0.13 * breathe * Double(alpha))),
+                    style: StrokeStyle(lineWidth: 0.35 * side / 87, lineCap: .round)
+                )
+            }
+        }
+        .allowsHitTesting(false)
+        .blendMode(.plusLighter)
+    }
+}
+
 /// Une veine d'encre : une volute à peine plus claire que le corps, qui
 /// dérive lentement à l'intérieur de lui. L'encre tourne encore.
 private struct InkVeinShape: Shape {
@@ -391,6 +580,342 @@ private struct InkVeinShape: Shape {
                       control1: p(0.70 + sway * 0.4, 0.50),
                       control2: p(0.78 - sway * 0.6, 0.58))
         return path
+    }
+}
+
+// MARK: - La dissolution
+
+/// La sortie du diablotin : son corps se défait en 240 particules qui
+/// CONDENSENT en une sphère de lumière — l'orbe, avec sa dentelle et son
+/// cœur — puis l'orbe s'égrène : les grains montent en spirale dans le haut
+/// du verre, décélèrent, s'affinent, s'éteignent. Les deux derniers grains
+/// brillants sont ses yeux, qui montent côte à côte.
+private struct ImpDissolve: View {
+    var t: Double
+    var dissolve: CGFloat
+    var disperse: CGFloat
+    var glow: CGFloat
+
+    /// Rôles par index : 0-1 yeux, 2-561 coquille sphérique, 562-651 cœur,
+    /// 652-731 gerbes polaires, 732-799 fil vers le col.
+    struct Grain {
+        let startImp: CGPoint
+        let phi: CGFloat
+        let theta0: Double
+        let omega: Double
+        let orbit: CGFloat
+        let stagIn: CGFloat
+        let stagOut: CGFloat
+        let riseTop: CGFloat
+        let unscrew: Double
+        let swayFreq: Double
+        let phase: Double
+        let size: CGFloat
+        let bright: Double
+        let hero: Bool
+        let straggler: Bool
+    }
+
+    private static let impSide: CGFloat = 0.46
+    private static let impSideH: CGFloat = 0.46 * BottleStage.aspect
+    private static let orbCenterY: CGFloat = 0.74
+    private static let orbR: CGFloat = 0.125
+
+    static let grains: [Grain] = {
+        let noise = InkNoise(seed: 151)
+        return (0..<800).map { i in
+            let u = CGFloat(i)
+            let index = Int(abs(noise(u * 1.3)) * CGFloat(Imp.outline.count - 1))
+            let inward = sqrt(abs(noise(u * 2.1)))
+            let outlinePoint = Imp.outline[index]
+            var start = CGPoint(x: 0.5 + (outlinePoint.x - 0.5) * inward,
+                                y: 0.55 + (outlinePoint.y - 0.55) * inward)
+
+            // Sphère VRAIE : cos(phi) uniforme — le limbe se densifie tout
+            // seul à la projection, comme sur une vraie boule.
+            let phi = acos(max(-1, min(1, 2 * abs(noise(u * 3.9)) - 1)))
+            var orbit = Self.orbR * (0.94 + 0.10 * abs(noise(u * 4.3)))
+            var size: CGFloat
+            let classPick = abs(noise(u * 5.9))
+            if classPick < 0.55 { size = 0.4 + 0.3 * abs(noise(u * 6.1)) }
+            else if classPick < 0.88 { size = 0.7 + 0.5 * abs(noise(u * 6.3)) }
+            else { size = 0.9 + 0.4 * abs(noise(u * 6.5)) }
+            var bright = 0.26 + 0.36 * Double(abs(noise(u * 9.7)))
+            let hero = abs(noise(u * 16.1)) > 0.96
+            if hero { bright = 0.9 + 0.1 * Double(abs(noise(u * 16.3))) }
+
+            var stagIn = abs(noise(u * 6.7))
+            var riseTop = 0.10 + 0.32 * abs(noise(u * 7.9))
+            let straggler = abs(noise(u * 17.3)) < 0.20
+
+            if i >= 562 && i < 652 {
+                // Cœur : petit rayon, jamais cramé.
+                orbit = Self.orbR * 0.5 * pow(abs(noise(u * 4.5)), 0.6)
+                size *= 0.7
+                bright *= 0.7
+            } else if i >= 652 && i < 732 {
+                // Gerbes polaires : cônes serrés haut et bas, plus vifs.
+                orbit = Self.orbR * (1.0 + 0.35 * abs(noise(u * 4.7)))
+                bright *= 1.35
+            } else if i >= 732 {
+                // Fil : il rejoindra la tresse, plus fin.
+                size *= 0.75
+                riseTop = 0.14 + 0.10 * abs(noise(u * 8.1))
+                stagIn = 0.3 + 0.5 * abs(noise(u * 8.3))
+            }
+            if i < 2 {
+                start = CGPoint(x: i == 0 ? 0.365 : 0.635, y: 0.485)
+                bright = 1.6
+                size = 2.2
+                stagIn = 0.92
+                riseTop = 0.19
+            }
+            return Grain(
+                startImp: start,
+                phi: phi,
+                theta0: Double(noise(u * 8.7)) * .pi,
+                omega: (0.10 + 0.25 * Double(abs(noise(u * 10.1))))
+                    * (noise(u * 11.3) > 0 ? 1 : -1),
+                orbit: orbit,
+                stagIn: stagIn,
+                stagOut: abs(noise(u * 12.7)),
+                riseTop: riseTop,
+                unscrew: 1.2 + 1.4 * Double(abs(noise(u * 13.7))),
+                swayFreq: 0.5 + 0.8 * Double(abs(noise(u * 14.1))),
+                phase: Double(abs(noise(u * 15.7))) * 6.28,
+                size: size,
+                bright: bright,
+                hero: hero,
+                straggler: straggler
+            )
+        }
+    }()
+
+    /// La dentelle électrique : 7 filaments × 4 variantes en MARCHE ALÉATOIRE
+    /// (les micro-angles SONT l'électricité), chacun avec 2 branches filles
+    /// qui jaillissent vers l'extérieur. Redessinée 8 fois par seconde.
+    struct LaceVariant {
+        let main: [CGPoint]
+        let branches: [[CGPoint]]
+    }
+
+    static let lace: [[LaceVariant]] = {
+        let noise = InkNoise(seed: 173)
+        var filaments: [[LaceVariant]] = []
+        for f in 0..<7 {
+            var variants: [LaceVariant] = []
+            for v in 0..<4 {
+                let u = CGFloat(f * 17 + v * 5)
+                let direction: Double = noise(u * 2.1) > 0 ? 1 : -1
+                let steps = 10 + Int(abs(noise(u * 3.3)) * 6)
+                var angle = Double(noise(u * 1.3)) * .pi * 2
+                var points: [CGPoint] = []
+                var angles: [Double] = []
+                for k in 0...steps {
+                    let kk = CGFloat(k) / CGFloat(steps)
+                    let radius = 1 + 0.04 * noise(u * 7.7 + CGFloat(k) * 2.3)
+                        + 0.12 * sin(.pi * kk) * abs(noise(u * 5.1))
+                    points.append(CGPoint(x: CGFloat(cos(angle)) * radius,
+                                          y: CGFloat(sin(angle)) * radius))
+                    angles.append(angle)
+                    angle += direction * (0.11 + 0.05 * Double(abs(noise(u * 9.3 + CGFloat(k)))))
+                        + 0.065 * Double(noise(u * 11.1 + CGFloat(k) * 3.1))
+                }
+                // Les branches filles : elles décollent du parent et MONTENT
+                // en rayon (vers 1.10-1.22) — les gerbes de l'orbe.
+                var branches: [[CGPoint]] = []
+                for b in 0..<2 {
+                    let bu = u + CGFloat(b) * 31 + 7
+                    let k0 = Int(CGFloat(steps) * (0.30 + 0.40 * abs(noise(bu * 1.9))))
+                    var bAngle = angles[min(k0, angles.count - 1)]
+                    let bDir: Double = noise(bu * 2.7) > 0 ? 1 : -1
+                    let bSteps = 4 + Int(abs(noise(bu * 3.9)) * 3)
+                    var bRadius = 1 + 0.04 * noise(u * 7.7 + CGFloat(k0) * 2.3)
+                    var bPoints: [CGPoint] = [points[min(k0, points.count - 1)]]
+                    for kb in 0..<bSteps {
+                        bAngle += bDir * (0.08 + 0.04 * Double(abs(noise(bu * 5.3 + CGFloat(kb)))))
+                        bRadius += (0.10 + 0.12 * abs(noise(bu * 6.1))) / CGFloat(bSteps)
+                        bPoints.append(CGPoint(x: CGFloat(cos(bAngle)) * bRadius,
+                                               y: CGFloat(sin(bAngle)) * bRadius))
+                    }
+                    branches.append(bPoints)
+                }
+                variants.append(LaceVariant(main: points, branches: branches))
+            }
+            filaments.append(variants)
+        }
+        return filaments
+    }()
+
+    var body: some View {
+        Canvas { context, size in
+            guard dissolve > 0.001 else { return }
+            let w = size.width, h = size.height
+            let impTopY = 0.945 - Self.impSideH
+            let orbFade = 1 - smoothstep(disperse / 0.55)
+            let orbAlpha = Double(dissolve * orbFade)
+            // La seconde inspiration, juste avant l'envol.
+            let inhale = span(t, 5.95, 0.12, 6.18, 0.22)
+            let radiusScale = 1 - 0.10 * inhale
+            let brightScale = 1 + 0.35 * Double(inhale)
+            let center = CGPoint(x: w * 0.5, y: h * Self.orbCenterY)
+
+            // Le cœur voilé : trois disques, jamais cramés.
+            if orbAlpha > 0.01 {
+                context.drawLayer { layer in
+                    layer.addFilter(.blur(radius: 10))
+                    layer.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.065 * radiusScale,
+                                                      y: center.y - w * 0.062 * radiusScale,
+                                                      width: w * 0.13 * radiusScale,
+                                                      height: w * 0.124 * radiusScale)),
+                               with: .color(Color.lunar.opacity(0.07 * orbAlpha)))
+                }
+                context.drawLayer { layer in
+                    layer.addFilter(.blur(radius: 5))
+                    layer.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.035 * radiusScale,
+                                                      y: center.y - w * 0.033 * radiusScale,
+                                                      width: w * 0.07 * radiusScale,
+                                                      height: w * 0.066 * radiusScale)),
+                               with: .color(Color.lunar.opacity(0.12 * orbAlpha)))
+                }
+                context.drawLayer { layer in
+                    layer.addFilter(.blur(radius: 2))
+                    layer.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.014, y: center.y - w * 0.013,
+                                                      width: w * 0.028, height: w * 0.026)),
+                               with: .color(.white.opacity(0.30 * orbAlpha)))
+                }
+
+                // La dentelle : 4-5 filaments allumés sur 7, variante qui
+                // change 8×/s — l'éclair, pas le compas.
+                let variantIndex = Int(t * 8) % 4
+                let laceNoise = InkNoise(seed: 179)
+                for f in 0..<7 {
+                    let flick = pow(max(0, sin(t * (0.9 + Double(abs(laceNoise(CGFloat(f) * 3.1))))
+                                              + Double(f) * 1.9)), 2.5)
+                    guard flick > 0.05 else { continue }
+                    let variant = Self.lace[f][variantIndex]
+                    func mapped(_ units: [CGPoint]) -> Path {
+                        var path = Path()
+                        for (k, unit) in units.enumerated() {
+                            let point = CGPoint(
+                                x: center.x + unit.x * Self.orbR * radiusScale * w,
+                                y: center.y + unit.y * Self.orbR * radiusScale * w * 0.92)
+                            if k == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                        }
+                        return path
+                    }
+                    let main = mapped(variant.main)
+                    // La gaine floue, puis le cœur vif — jamais un trait sec.
+                    context.drawLayer { layer in
+                        layer.addFilter(.blur(radius: 2.5))
+                        layer.stroke(main, with: .color(.white.opacity(0.18 * orbAlpha * flick)),
+                                     style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                    }
+                    context.stroke(main, with: .color(.white.opacity(0.95 * orbAlpha * flick)),
+                                   style: StrokeStyle(lineWidth: 0.8, lineCap: .round))
+                    for branch in variant.branches {
+                        let bp = mapped(branch)
+                        context.stroke(bp, with: .color(.white.opacity(0.8 * orbAlpha * flick)),
+                                       style: StrokeStyle(lineWidth: 0.5, lineCap: .round))
+                        // La pointe de la branche : un éclat.
+                        if flick > 0.5, let tipUnit = branch.last {
+                            let tp = CGPoint(x: center.x + tipUnit.x * Self.orbR * radiusScale * w,
+                                             y: center.y + tipUnit.y * Self.orbR * radiusScale * w * 0.92)
+                            context.fill(Path(ellipseIn: CGRect(x: tp.x - 1.1, y: tp.y - 1.1,
+                                                                width: 2.2, height: 2.2)),
+                                         with: .color(.white.opacity(orbAlpha * flick)))
+                        }
+                    }
+                }
+            }
+
+            // Les grains.
+            for (i, grain) in Self.grains.enumerated() {
+                let condenseK = smoothstep((dissolve - grain.stagIn * 0.30) / 0.70)
+                guard condenseK > 0.001 else { continue }
+                // easeOutQuint : l'attaque brève, l'arrivée douce.
+                let condense = 1 - pow(1 - condenseK, 5)
+
+                let startX = (0.5 + (grain.startImp.x - 0.5) * Self.impSide) * w
+                let startY = (impTopY + grain.startImp.y * Self.impSideH) * h
+
+                // La sphère : projection 3D, rotation propre.
+                let theta = grain.theta0 + t * grain.omega
+                let sinPhi = sin(grain.phi)
+                let x3 = CGFloat(sinPhi) * CGFloat(cos(theta))
+                let z3 = CGFloat(sinPhi) * CGFloat(sin(theta))
+                let y3 = CGFloat(cos(grain.phi))
+                var targetX = center.x + x3 * grain.orbit * radiusScale * w
+                var targetY = center.y + y3 * grain.orbit * radiusScale * w * 0.92
+                let backFace = z3 < 0
+
+                // Gerbes polaires : plaquées vers les pôles.
+                if i >= 652 && i < 732 {
+                    let pole: CGFloat = i % 2 == 0 ? -1 : 1
+                    targetX = center.x + x3 * grain.orbit * 0.22 * w
+                    targetY = center.y + pole * grain.orbit * (1.05 + 0.85 * abs(y3)) * w * 0.92
+                }
+
+                // Trajet en virgule : un détour perpendiculaire, pas une droite.
+                let commaSign: CGFloat = grain.phase > 3.14 ? 1 : -1
+                let comma = CGFloat(sin(.pi * Double(condense))) * 0.05 * w * commaSign
+                var x = startX + (targetX - startX) * condense + comma
+                var y = startY + (targetY - startY) * condense + comma * 0.4
+
+                // L'envol : fenêtre courte, stagger long — l'inégalité est la vie.
+                let release = clamp01((disperse - grain.stagOut * 0.65) / 0.35)
+                var alphaMul: Double = 1
+                if release > 0.001 {
+                    let rise = 1 - pow(2, -8 * Double(release))
+                    let top = grain.straggler
+                        ? Self.orbCenterY - (Self.orbCenterY - grain.riseTop) * 0.45
+                        : grain.riseTop
+                    y -= (targetY - top * h) * CGFloat(rise)
+                    // Dévissage : la spirale s'ouvre en montant.
+                    let beta = grain.unscrew * rise
+                    let spin = CGFloat(cos(theta + beta)) * grain.orbit * w
+                    x = center.x + (spin + (x - center.x) * 0.2) * (1 + CGFloat(rise) * 2.2)
+                        + CGFloat(sin(t * grain.swayFreq + grain.phase)) * 0.015 * w * (1 + CGFloat(rise) * 2)
+                    if grain.straggler {
+                        alphaMul = Double(1 - smoothstep((CGFloat(release) - 0.45) / 0.15))
+                    }
+                }
+
+                let twinkle = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(t * grain.swayFreq * 2.4 + grain.phase), 2)
+                var alpha = Double(condense) * twinkle * grain.bright * brightScale * alphaMul
+                    * Double(pow(1 - release, 0.6))
+                if backFace && release < 0.3 { alpha *= 0.28 }
+                // Les derniers éclats : les héros flashent en mourant.
+                if grain.hero, release > 0.82, release < 0.92 {
+                    alpha += Double(pow(sin((release - 0.82) / 0.10 * .pi), 2)) * 0.8
+                }
+                guard alpha > 0.01 else { continue }
+
+                let radius = max(0.25, grain.size * (1 - 0.75 * CGFloat(release)))
+                // L'auréole du grain, puis le grain net — deux passes, partout.
+                if alpha > 0.04 {
+                    context.fill(
+                        Path(ellipseIn: CGRect(x: x - radius * 3.2, y: y - radius * 3.2,
+                                               width: radius * 6.4, height: radius * 6.4)),
+                        with: .color(Color.lunar.opacity(min(1, alpha) * 0.11))
+                    )
+                }
+                context.fill(
+                    Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
+                                           width: radius * 2, height: radius * 2)),
+                    with: .color(.white.opacity(min(1, alpha)))
+                )
+                if grain.hero, release < 0.5 {
+                    context.fill(
+                        Path(ellipseIn: CGRect(x: x - radius * 2.25, y: y - radius * 2.25,
+                                               width: radius * 4.5, height: radius * 4.5)),
+                        with: .color(.white.opacity(min(1, alpha) * 0.07))
+                    )
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .blendMode(.plusLighter)
     }
 }
 
@@ -684,22 +1209,31 @@ private struct SplashBeat {
     var sweepPos: CGFloat = 0
     var sweepAlpha: CGFloat = 0
     var wink: CGFloat = 0
+    /// La tresse : présence et hauteur de la colonne de magie.
+    var wisp: CGFloat = 0
+    var wispRise: CGFloat = 0
     /// La transmutation : 0 = trait d'encre à main levée, 1 = arête de verre
     /// physique. L'encre devient verre au moment de l'impact.
     var become: CGFloat = 0
     /// Présence de la nébuleuse derrière la bouteille.
     var nebula: CGFloat = 0
-    /// Sortie Cheshire : la scène s'éteint, les yeux restent, puis clignent.
+    /// La sortie : le corps condense en orbe de particules, qui s'égrène
+    /// ensuite en lumière fine vers le haut du verre.
+    var dissolve: CGFloat = 0
+    var disperse: CGFloat = 0
     var fade: CGFloat = 0
     var blink: CGFloat = 0
     var eyesAlpha: CGFloat = 1
     /// Impulsion radiale donnée à la poussière au moment de l'impact.
     var impulse: CGFloat = 0
+    /// Le flash d'événement : toute la scène répond à la transformation
+    /// (voile, arêtes, miroir) — deux souffles, condensation puis envol.
+    var flash: CGFloat = 0
 
     /// L'image finale, pour qui a désactivé les animations.
     static let resolved = SplashBeat(zoom: 1, camX: 0.5, camY: 0.5, ink: 1,
                                      impY: 0.945, appear: 1, squash: 1,
-                                     glow: 0.72, settle: 1, become: 1, nebula: 1)
+                                     glow: 0.72, settle: 1, wisp: 1, wispRise: 1, become: 1, nebula: 1)
 
     static let penBody = inkResample(Bottle.bodyLine, count: 160)
     static let penCap = inkResample(Bottle.capLine, count: 60)
@@ -735,12 +1269,16 @@ private struct SplashBeat {
         // pointe du crayon, une poussée vers le visage pour le clin d'œil —
         // et une micro-dérive de main sur tout le plan : filmé, pas rendu.
         let push = span(t, 3.70, 0.22, 4.10, 0.35)
+        // La poussée finale : lente, continue — la caméra s'approche pendant
+        // qu'il se transforme, et accompagne l'envol jusqu'au fondu.
+        let endPush = ramp(t, 4.30, 2.80)
         let follow = ramp(t, 0.5, 1.0)
         let driftX = 0.0012 * (sin(t * 1.43) + 0.6 * sin(t * 2.17 + 1.3))
         let driftY = 0.0012 * (sin(t * 1.19 + 0.7) + 0.6 * sin(t * 1.87))
-        beat.zoom = 1 + 23 * CGFloat(exp(-2.9 * t)) + 0.16 * push
+        beat.zoom = 1 + 23 * CGFloat(exp(-2.9 * t)) + 0.16 * push + 0.55 * endPush
         beat.camX = beat.pen.x + (0.5 - beat.pen.x) * follow + CGFloat(driftX)
-        beat.camY = beat.pen.y + (0.5 - beat.pen.y) * follow + 0.16 * push + CGFloat(driftY)
+        beat.camY = beat.pen.y + (0.5 - beat.pen.y) * follow + 0.16 * push
+            + 0.21 * endPush + CGFloat(driftY)
 
         // L'entrée : il apparaît, respire un temps — puis plonge. C'est le
         // temps d'arrêt qui rend le plongeon délicieux.
@@ -793,6 +1331,11 @@ private struct SplashBeat {
 
         beat.wink = span(t, 3.75, 0.12, 4.00, 0.22)
 
+        // La tresse naît de l'impact et grandit vers le col ; le clin d'œil
+        // la fait pulser.
+        beat.wisp = ramp(t, 2.62, 0.9)
+        beat.wispRise = ramp(t, 2.62, 1.8)
+
         // La transmutation : à l'impact, le dessin prend vie — l'encre à main
         // levée se change en verre physique.
         beat.become = ramp(t, 2.52, 0.45)
@@ -801,11 +1344,15 @@ private struct SplashBeat {
         beat.nebula = clamp01((beat.ink - 0.5) / 0.4)
             * (0.30 + 0.70 * ramp(t, 2.52, 0.30))
 
-        // La sortie Cheshire : la scène s'éteint, les yeux tiennent le plan,
-        // clignent une fois, puis s'éteignent à leur tour.
-        beat.fade = ramp(t, 4.60, 0.40)
-        beat.blink = ramp(t, 5.05, 0.14)
-        beat.eyesAlpha = 1 - ramp(t, 5.24, 0.24)
+        // La sortie : à 4,4 s son corps se dissout — les particules
+        // condensent en orbe ; à 4,75 l'orbe s'égrène vers le haut du verre
+        // en lumière très fine, pendant que la scène fond.
+        beat.flash = 0.5 * span(t, 4.45, 0.25, 5.05, 0.55)
+            + span(t, 6.02, 0.10, 6.45, 0.50)
+        beat.dissolve = ramp(t, 4.45, 0.70)
+        beat.disperse = ramp(t, 6.10, 1.50)
+        beat.eyesAlpha = 1 - ramp(t, 4.72, 0.30)
+        beat.fade = ramp(t, 7.30, 0.70)
         return beat
     }
 }
@@ -837,7 +1384,7 @@ private struct CausticBurst: View {
                 let length = 20 + 50 * abs(noise(CGFloat(i) * 5.1))
                 let tip = CGPoint(x: origin.x - CGFloat(cos(angle)) * length,
                                   y: origin.y - CGFloat(sin(angle)) * length * 0.35)
-                let control = CGPoint(x: (origin.x + tip.x) / 2 + 15 * noise(CGFloat(i) * 7.3),
+                let control = CGPoint(x: (origin.x + tip.x) / 2 + 38 * noise(CGFloat(i) * 7.3),
                                       y: (origin.y + tip.y) / 2)
                 var path = Path()
                 path.move(to: origin)
@@ -907,13 +1454,20 @@ private struct BottleStage: View {
             ZStack {
                 NebulaBloom(t: t, alpha: beat.nebula * scene, pulse: beat.impulse)
 
-                // La réfraction feinte : les anneaux redessinés dans le verre,
-                // décalés et plus lumineux — le fond « casse » en le traversant.
-                NebulaBloom(t: t, alpha: beat.nebula * scene * 1.25,
-                            pulse: beat.impulse, ringsOnly: true)
-                    .offset(x: 2.6, y: 1.6)
-                    .mask(BottleInteriorShape())
-                    .opacity(Double(reveal))
+                // LE VOILE : la grande lumière derrière la bouteille. Il naît
+                // avec le verre et s'intensifie quand l'orbe se forme —
+                // pendant que le brasier du sol, lui, s'assombrit (croisé).
+                Rectangle()
+                    .fill(Color.white)
+                    .visualEffect { content, proxy in
+                        content.colorEffect(ShaderLibrary.lightVeil(
+                            .float2(proxy.size), .float(Float(t)),
+                            .float(Float(beat.become * (1 + 0.25 * beat.dissolve + 0.55 * beat.flash)))))
+                    }
+                    .frame(width: w * 2.6, height: h * 1.8)
+                    .position(x: w / 2, y: h * 0.42)
+                    .blendMode(.plusLighter)
+                    .opacity(Double(scene))
 
                 // L'environnement mord dans le verre : la fumée cosmique,
                 // décalée et comprimée, revue à travers la paroi.
@@ -965,12 +1519,12 @@ private struct BottleStage: View {
                         .offset(y: -h * 0.045)
                         .blur(radius: 13)
                     Ellipse()
-                        .fill(Color.white.opacity(0.85))
+                        .fill(Color.white.opacity(0.38))
                         .frame(width: w * 0.64, height: w * 0.30)
                         .blur(radius: 9)
                     Ellipse()
                         .fill(Color.white.opacity(1.0))
-                        .frame(width: w * 0.32, height: w * 0.13)
+                        .frame(width: w * 0.22, height: w * 0.09)
                         .blur(radius: 2.5)
                     Ellipse()
                         .fill(
@@ -988,7 +1542,8 @@ private struct BottleStage: View {
                     CausticBurst(t: t, glow: beat.glow, side: side)
                 }
                 .position(x: w * 0.49, y: h * 0.932)
-                .opacity(Double(beat.glow * scene) * (0.95 + 0.4 * Double(beat.impulse)))
+                .opacity(Double(beat.glow * scene) * (0.95 + 0.4 * Double(beat.impulse))
+                         * Double(1 - 0.5 * beat.dissolve))
                 .blendMode(.plusLighter)
 
                 // Le liseré de contact : là où il touche le sol, la lumière
@@ -1000,6 +1555,42 @@ private struct BottleStage: View {
                     .blur(radius: 0.6)
                     .opacity(Double(beat.glow * scene))
                     .blendMode(.plusLighter)
+
+                // LA COLONNE : la lumière monte derrière lui — cœur serré,
+                // corps, jupe — fondue vers le haut. Son corps noir la
+                // DÉCOUPE : c'est la découpe qui le silhouette.
+                ZStack {
+                    Capsule()
+                        .fill(Color.white.opacity(0.70))
+                        .frame(width: side * 0.07, height: h * 0.30)
+                        .blur(radius: 3)
+                    Ellipse()
+                        .fill(Color.lunar.opacity(0.28))
+                        .frame(width: w * 0.22, height: h * 0.30)
+                        .blur(radius: 8)
+                    Ellipse()
+                        .fill(Color.lunar.opacity(0.10))
+                        .frame(width: w * 0.36, height: h * 0.32)
+                        .blur(radius: 14)
+                }
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.0),
+                            .init(color: .white.opacity(0.12), location: 0.25),
+                            .init(color: .white.opacity(0.28), location: 0.50),
+                            .init(color: .white.opacity(0.55), location: 0.75),
+                            .init(color: .white, location: 1.0)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+                .scaleEffect(x: 1 + 0.05 * CGFloat(sin(t * 0.27)), anchor: .bottom)
+                .position(x: w * 0.5 + 2.2 * CGFloat(sin(t * 0.19)),
+                          y: h * 0.945 - h * 0.155)
+                .opacity(Double(beat.glow * scene) * Double(1 - 0.4 * beat.dissolve)
+                         * (0.88 + 0.12 * sin(t * 0.41)))
+                .blendMode(.plusLighter)
 
                 // Ombre double sous lui : une serrée sombre, une large douce.
                 Ellipse()
@@ -1037,6 +1628,22 @@ private struct BottleStage: View {
 
                 droplets(w: w, h: h, scene: scene)
 
+                // La magie : la tresse qui s'élève de lui, la poussière en
+                // suspension dans le verre, les étincelles au sol.
+                WispBraid(t: t, alpha: beat.wisp * scene,
+                          rise: beat.wispRise,
+                          pulse: clamp01(beat.impulse + span(t, 3.70, 0.15, 4.05, 0.30)))
+                    .mask(BottleInteriorShape())
+                InteriorDust(t: t, alpha: beat.wisp * scene * beat.glow)
+                    .mask(BottleInteriorShape())
+                FloorSparkle(t: t, alpha: beat.glow * scene)
+
+                if beat.dissolve > 0.001 {
+                    ImpDissolve(t: t, dissolve: beat.dissolve,
+                                disperse: beat.disperse, glow: beat.glow)
+                        .mask(BottleInteriorShape())
+                }
+
                 bottleInkLayer(w: w, h: h, scene: scene, bob: bob, screen: screen)
 
                 penLayer(w: w, h: h, scene: scene, screen: screen)
@@ -1054,56 +1661,142 @@ private struct BottleStage: View {
     /// L'assise : une flaque de lumière qui s'éclaire avec le verre, et le
     /// reflet du trait sous la bouteille — le sol de galerie.
     private func floor(w: CGFloat, h: CGFloat, scene: CGFloat) -> some View {
-        ZStack {
-            // La flaque, réduite de moitié : c'est le REFLET qui doit gagner.
+        // Le pli du miroir : la ligne d'horizon de la laque.
+        let fold: CGFloat = 0.9525
+        let flipScale: CGFloat = 0.92
+
+        // Ce que le sol reflète : le brasier, l'OCCLUSION noire de la
+        // silhouette (sans elle, pas de miroir physique), la lueur du
+        // diablotin, le trait et les arêtes, la bande sombre du pied.
+        let impSide = w * 0.46
+        let mirrorSource = ZStack {
             Ellipse()
-                .fill(Color.lunar.opacity(Double((0.015 + 0.07 * beat.glow) * scene)))
+                .fill(Color.white.opacity(0.20 * Double(beat.glow)))
+                .frame(width: w * 0.5, height: w * 0.2)
+                .position(x: w * 0.49, y: h * 0.93)
+                .blur(radius: 8)
+            BottleInteriorShape()
+                .fill(Color.black.opacity(0.50))
+            Ellipse()
+                .fill(Color.white.opacity(0.24 * Double(beat.glow)))
+                .frame(width: w * 0.24, height: w * 0.10)
+                .position(x: w * 0.5, y: h * 0.90)
+                .blur(radius: 5)
+
+            // Le diablotin lui-même : sa lueur, puis sa silhouette qui MORD
+            // en noir dans le reflet lumineux — le signal du miroir physique.
+            ImpBodyShape()
+                .fill(Color.white)
+                .blur(radius: 10)
+                .frame(width: impSide, height: impSide)
+                .position(x: w / 2, y: h * 0.945 - impSide / 2)
+                .opacity(0.30 * Double(beat.glow) * Double(clamp01(1 - beat.dissolve * 1.15)))
+            ImpBodyShape()
+                .fill(Color.black.opacity(0.60))
+                .frame(width: impSide, height: impSide)
+                .position(x: w / 2, y: h * 0.945 - impSide / 2)
+                .opacity(Double(clamp01(1 - beat.dissolve * 1.15)))
+
+            // Et l'orbe pendant la transformation.
+            if beat.dissolve > 0.001 {
+                ImpDissolve(t: t, dissolve: beat.dissolve,
+                            disperse: beat.disperse, glow: beat.glow)
+                    .opacity(0.35)
+            }
+            BottleInk(progress: beat.ink, screen: 1,
+                      bodyAlpha: 1 - 0.82 * beat.become)
+            GlassEdges(t: t, glow: beat.glow, alpha: beat.become * 0.85)
+            Rectangle()
+                .fill(Color.black.opacity(0.45))
+                .frame(width: w, height: h * 0.009)
+                .position(x: w / 2, y: h * 0.9425)
+                .blur(radius: 0.8)
+        }
+
+        // Masque EN ESPACE SOURCE (avant le flip) : le reflet couvre le tiers
+        // bas de la bouteille, le plus dense près du pli.
+        let sourceMask = LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0.58),
+                .init(color: .white.opacity(0.22), location: 0.72),
+                .init(color: .white.opacity(0.45), location: 0.845),
+                .init(color: .white.opacity(0.75), location: fold),
+                .init(color: .white.opacity(0.82), location: 1.0)
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+        let sharpMask = LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0.86),
+                .init(color: .white, location: 0.875),
+                .init(color: .white, location: 1.0)
+            ],
+            startPoint: .top, endPoint: .bottom
+        )
+        let flipOffset = (1 + flipScale) * (fold - 0.5) * h
+
+        return ZStack {
+            // Le reflet du VOILE dans la laque : le sol reflète d'abord la
+            // lumière — le signal n°1 du miroir physique.
+            Rectangle()
+                .fill(Color.white)
+                .visualEffect { content, proxy in
+                    content.colorEffect(ShaderLibrary.lightVeil(
+                        .float2(proxy.size), .float(Float(t)),
+                        .float(Float(beat.become * (0.55 + 0.4 * beat.flash)))))
+                }
+                .frame(width: w * 2.6, height: h * 1.8)
+                .scaleEffect(x: 1, y: -1)
+                .position(x: w / 2, y: h * (2 * fold - 0.42))
+                .blendMode(.plusLighter)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: fold - 0.004),
+                            .init(color: .white, location: fold + 0.01),
+                            .init(color: .clear, location: min(1, fold + 0.38))
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+
+            // Le corps du reflet : flou doux.
+            mirrorSource
+                .mask(sourceMask)
+                .blur(radius: 1.8)
+                .scaleEffect(x: 0.985, y: -flipScale)
+                .offset(y: flipOffset)
+
+            // Le net-au-contact : les arêtes seules, presque nettes, sur les
+            // premiers points sous le pli — c'est LE signal de la laque.
+            GlassEdges(t: t, glow: beat.glow, alpha: beat.become * 0.85)
+                .mask(sharpMask)
+                .blur(radius: 0.25)
+                .opacity(0.55)
+                .scaleEffect(x: 0.985, y: -flipScale)
+                .offset(y: flipOffset)
+
+            // La ligne de contact, et les flaques résiduelles divisées par 2.
+            Ellipse()
+                .stroke(Color.white.opacity(Double((0.30 + 0.45 * beat.glow) * scene)),
+                        lineWidth: 0.7)
+                .frame(width: w * 0.58, height: h * 0.014)
+                .position(x: w / 2, y: h * 0.955)
+                .blur(radius: 0.4)
+                .blendMode(.plusLighter)
+            Ellipse()
+                .fill(Color.lunar.opacity(Double((0.012 + 0.04 * beat.glow) * scene)))
                 .frame(width: w * 1.05, height: h * 0.05)
                 .position(x: w / 2, y: h * 0.968)
                 .blur(radius: 12)
             Ellipse()
-                .fill(Color.lunar.opacity(Double((0.05 + 0.22 * beat.glow
+                .fill(Color.lunar.opacity(Double((0.03 + 0.10 * beat.glow
                                                   + 0.35 * beat.impulse) * scene)))
                 .frame(width: w * 0.5, height: h * 0.028)
                 .position(x: w / 2, y: h * 0.962)
                 .blur(radius: 9)
-
-            // La ligne de contact : pleine largeur, quasi blanche — c'est le
-            // trait qui brûle sous une bouteille posée sur un sol éclairé.
-            Ellipse()
-                .stroke(Color.white.opacity(Double((0.35 + 0.55 * beat.glow) * scene)),
-                        lineWidth: 0.7)
-                .frame(width: w * 0.68, height: h * 0.014)
-                .position(x: w / 2, y: h * 0.955)
-                .blur(radius: 0.4)
-                .blendMode(.plusLighter)
-
-            // Le miroir : reflet net au contact, fondu TOTAL à un quart de sa
-            // hauteur — un fondu lent dirait flaque d'eau, pas laque noire.
-            // Et il ondule, à peine : la surface est réelle.
-            ZStack {
-                BottleInk(progress: beat.ink, screen: 1,
-                          bodyAlpha: 1 - 0.95 * beat.become)
-                GlassEdges(t: t, glow: beat.glow, alpha: beat.become * 0.7)
-            }
-            .scaleEffect(x: 1, y: -1)
-            .offset(y: h * 0.906)
-            .mask(
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.948),
-                        .init(color: .white.opacity(0.30), location: 0.958),
-                        .init(color: .white.opacity(0.08), location: 0.988),
-                        .init(color: .clear, location: 1.0)
-                    ],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
-            .blur(radius: 1.6)
-            .distortionEffect(ShaderLibrary.floorRipple(.float(Float(t))),
-                              maxSampleOffset: CGSize(width: 3, height: 2))
-            .opacity(Double(scene))
         }
+        .opacity(Double(scene))
     }
 
     // MARK: Verre
@@ -1135,7 +1828,7 @@ private struct BottleStage: View {
                 .mask(InkStrokeShape(stroke: Bottle.innerSheet, progress: 0.155,
                                      trimFrom: 0.045))
                 .blur(radius: 1.2)
-                .opacity(Double(0.06 + 0.13 * beat.glow))
+                .opacity(Double(0.08 + 0.15 * beat.glow))
             Rectangle()
                 .fill(Color.lunar)
                 .mask(InkStrokeShape(stroke: Bottle.innerSheet, progress: 0.955,
@@ -1326,6 +2019,30 @@ private struct BottleStage: View {
         let gaze = gazeDirection
 
         return ZStack {
+            // Le halo-silhouette : SA forme exacte, dilatée en trois couches
+            // de plus en plus douces — la lumière épouse ses cornes et ses
+            // flancs au lieu d'être une forme posée derrière lui.
+            if !ghost {
+                ZStack {
+                    ImpBodyShape()
+                        .fill(Color.white)
+                        .blur(radius: 4)
+                        .opacity(0.45)
+                    ImpBodyShape()
+                        .fill(Color.white)
+                        .blur(radius: 12)
+                        .opacity(0.22)
+                    ImpBodyShape()
+                        .fill(Color.lunar)
+                        .blur(radius: 28)
+                        .opacity(0.08)
+                }
+                .blendMode(.plusLighter)
+                .opacity(Double(beat.glow * scene)
+                         * Double(clamp01(1 - beat.dissolve * 1.15))
+                         * (0.88 + 0.12 * sin(t * 0.47)))
+            }
+
             ZStack {
                 TailShape(drag: beat.tailDrag, t: t, whip: beat.whip)
                     .fill(InkWhite.body)
@@ -1430,7 +2147,14 @@ private struct BottleStage: View {
                     )
                     .opacity(Double(beat.glow))
             }
-            .opacity(Double(scene))
+            .opacity(Double(scene) * Double(clamp01(1 - beat.dissolve * 1.15)))
+
+            if !ghost {
+                ImpCorona(t: t,
+                          alpha: smoothstep((beat.settle - 0.25) / 0.3) * beat.glow,
+                          pulse: clamp01(beat.wink + beat.impulse))
+                    .opacity(Double(scene) * Double(clamp01(1 - beat.dissolve * 1.15)))
+            }
 
             if !ghost {
                 ImpFace(eyes: eyes, wink: beat.wink,
@@ -1507,8 +2231,14 @@ private struct BottleStage: View {
             BottleInk(progress: beat.ink, screen: screen,
                       bodyAlpha: 1 - 0.82 * beat.become)
 
-            // Les arêtes : blooms masqués dedans, cheveux jumeaux dessus.
-            GlassEdges(t: t, glow: beat.glow, alpha: beat.become)
+            // La polarité : contre le voile lumineux, l'arête haute se
+            // découpe en NOIR — c'est la signature de la photo de référence.
+            GlassDarkEdge(alpha: beat.become)
+
+            // Les arêtes : blooms masqués dedans, cheveux jumeaux dessus —
+            // et elles flarent au moment de la transformation.
+            GlassEdges(t: t, glow: beat.glow,
+                       alpha: beat.become * (1 + 0.30 * beat.flash))
 
             // Palier 4 — les spéculaires durs. Nets, presque blancs, rares.
             hardSpeculars(w: w, h: h, screen: screen)
@@ -1721,6 +2451,7 @@ struct SplashView: View {
     @State private var finished = false
     @State private var landed = false
     @State private var winked = false
+    @State private var dissolved = false
     @State private var start: Date?
 
     private static let bottleWidth: CGFloat = 190
@@ -1743,6 +2474,7 @@ struct SplashView: View {
         .onTapGesture { finish() }
         .sensoryFeedback(.impact(weight: .heavy, intensity: 0.75), trigger: landed)
         .sensoryFeedback(.impact(weight: .light, intensity: 0.5), trigger: winked)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.35), trigger: dissolved)
         .onAppear { start = Date() }
         .task { await run() }
     }
@@ -1760,6 +2492,19 @@ struct SplashView: View {
             Rectangle()
                 .fill(Color.white)
                 .colorEffect(ShaderLibrary.glassSmoke(.float(Float(t))))
+                .blendMode(.plusLighter)
+                .opacity(1 - Double(beat.fade))
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+            // Les grandes volutes : la fumée cosmique qui monte le long des
+            // flancs — c'est elle qui donne au verre un monde à refléter.
+            Rectangle()
+                .fill(Color.white)
+                .visualEffect { content, proxy in
+                    content.colorEffect(ShaderLibrary.cosmosWisps(
+                        .float(Float(t)), .float2(proxy.size)))
+                }
                 .blendMode(.plusLighter)
                 .opacity(1 - Double(beat.fade))
                 .ignoresSafeArea()
@@ -1811,7 +2556,9 @@ struct SplashView: View {
         landed = true
         try? await Task.sleep(for: .seconds(1.23))
         winked = true
-        try? await Task.sleep(for: .seconds(1.85))
+        try? await Task.sleep(for: .seconds(0.72))
+        dissolved = true
+        try? await Task.sleep(for: .seconds(3.75))
         finish()
     }
 
