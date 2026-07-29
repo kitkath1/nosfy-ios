@@ -310,6 +310,9 @@ final class LoggedExercise {
     var order: Int = 0
     /// Temps de récupération prévu entre les séries, en secondes. 0 = non renseigné.
     var restSeconds: Int = 0
+    /// Temps réellement passé sur l'exercice quand il a été lancé au chrono,
+    /// en secondes. 0 = exercice simplement planifié, sans effort chronométré.
+    var durationSeconds: Int = 0
     var workout: Workout?
 
     @Relationship(deleteRule: .cascade, inverse: \StrengthSet.loggedExercise)
@@ -348,13 +351,27 @@ final class LoggedExercise {
 
     var totalSeconds: Int { orderedPhases.reduce(0) { $0 + $1.seconds } }
 
+    /// « 4 min 12 s », « 48 s ». Vide si l'exercice n'a pas été chronométré.
+    var durationLabel: String {
+        guard durationSeconds > 0 else { return "" }
+        let minutes = durationSeconds / 60, seconds = durationSeconds % 60
+        if minutes == 0 { return "\(seconds) s" }
+        return seconds == 0 ? "\(minutes) min" : "\(minutes) min \(seconds) s"
+    }
+
     /// Ligne de résumé affichée dans les listes.
     var summary: String {
         if exercise?.tracking == .setsRepsWeight || orderedPhases.isEmpty {
             let count = orderedSets.count
-            guard count > 0 else { return "Aucune série" }
+            guard count > 0 else {
+                return durationSeconds > 0 ? durationLabel : "Aucune série"
+            }
             let reps = orderedSets.map { "\($0.reps)" }.joined(separator: "/")
-            return "\(count) séries · \(reps) reps · \(maxWeight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+            var line = "\(count) séries · \(reps) reps · \(maxWeight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+            // La durée ne s'affiche que si l'exercice a vraiment été lancé au
+            // chrono : sur un exercice planifié, elle n'existe pas.
+            if durationSeconds > 0 { line += " · \(durationLabel)" }
+            return line
         }
         let minutes = totalSeconds / 60
         let cycleCount = cycles.count

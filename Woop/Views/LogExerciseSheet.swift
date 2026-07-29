@@ -21,6 +21,9 @@ struct LoggedDraft {
     /// Une entrée par cycle ; chaque cycle contient ses phases.
     var cycles: [[DraftPhase]] = []
     var incline: Double = 0
+    /// Temps réellement passé sur l'exercice, quand la saisie suit une séance
+    /// lancée au chrono. 0 = exercice simplement planifié.
+    var durationSeconds: Int = 0
 }
 
 // MARK: - Feuille de saisie
@@ -29,12 +32,14 @@ struct LogExerciseSheet: View {
     let exercise: Exercise
     /// Ce qui a été fait la dernière fois sur cet exercice, s'il y a un historique.
     var lastTime: String?
+    /// Temps passé sur l'exercice quand la feuille suit la page de chrono.
+    var duration: Int?
     let onSave: (LoggedDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var sets: [DraftSet] = [DraftSet()]
-    @State private var restSeconds = 60
+    @State private var sets: [DraftSet]
+    @State private var restSeconds: Int
     @State private var phases: [DraftPhase] = [
         DraftPhase(kind: .repos, seconds: 30, speed: 6),
         DraftPhase(kind: .acceleration, seconds: 30, speed: 16)
@@ -44,12 +49,34 @@ struct LogExerciseSheet: View {
     @State private var steadySpeed: Double = 7
     @State private var incline: Double = 0
 
+    /// `prefill` reprend les séries de la dernière fois. Il passe par un init
+    /// plutôt que par un `onAppear` : la feuille doit s'ouvrir DÉJÀ remplie, pas
+    /// afficher un instant les valeurs par défaut avant de se corriger.
+    init(exercise: Exercise,
+         lastTime: String? = nil,
+         prefill: [DraftSet]? = nil,
+         prefillRest: Int? = nil,
+         duration: Int? = nil,
+         onSave: @escaping (LoggedDraft) -> Void) {
+        self.exercise = exercise
+        self.lastTime = lastTime
+        self.duration = duration
+        self.onSave = onSave
+        _sets = State(initialValue: prefill ?? [DraftSet()])
+        _restSeconds = State(initialValue: prefillRest ?? 60)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 WoopBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        // L'effort qui vient d'être fait passe devant l'historique :
+                        // c'est le fait saillant du moment.
+                        if let duration, duration > 0 {
+                            EffortBanner(seconds: duration)
+                        }
                         if let lastTime {
                             LastTimeBanner(text: lastTime)
                         }
@@ -72,7 +99,9 @@ struct LogExerciseSheet: View {
                         .foregroundStyle(Color.inkSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Ajouter") { save() }
+                    // Après un effort chronométré, on n'« ajoute » pas un plan :
+                    // on enregistre ce qui vient d'être fait.
+                    Button(duration == nil ? "Ajouter" : "Enregistrer") { save() }
                         .fontWeight(.semibold)
                 }
             }
@@ -83,6 +112,7 @@ struct LogExerciseSheet: View {
 
     private func save() {
         var draft = LoggedDraft()
+        draft.durationSeconds = duration ?? 0
         switch exercise.tracking {
         case .setsRepsWeight:
             draft.sets = sets
@@ -247,6 +277,42 @@ struct LogExerciseSheet: View {
         .foregroundStyle(Color.inkSecondary)
         .padding(.horizontal, 16).padding(.vertical, 12)
         .metalSurface(cornerRadius: 16)
+    }
+}
+
+// MARK: - Effort qui vient d'être fait
+
+/// Ce que le chrono a mesuré. Une seule ligne, mais elle porte l'or de la
+/// récompense : c'est la seule information de cette feuille qui n'a pas été
+/// saisie à la main.
+struct EffortBanner: View {
+    let seconds: Int
+
+    private var label: String {
+        let minutes = seconds / 60, rest = seconds % 60
+        if minutes == 0 { return "\(rest) s" }
+        return rest == 0 ? "\(minutes) min" : "\(minutes) min \(rest) s"
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "stopwatch")
+                .font(.caption)
+                .foregroundStyle(Color.woopGold.opacity(0.85))
+            Text("Effort mesuré : \(label)")
+                .font(.system(.footnote, design: .rounded, weight: .medium))
+                .foregroundStyle(Color.inkSecondary)
+            Spacer()
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(Color.woopGold.opacity(0.07))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(Color.woopGold.opacity(0.16), lineWidth: 1)
+        )
     }
 }
 

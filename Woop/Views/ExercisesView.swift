@@ -157,25 +157,48 @@ struct ExerciseDetailView: View {
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
 
     @State private var showLogger = false
+    @State private var showLive = false
+    /// Durée rapportée par la page de chrono. Sa présence au moment où le plein
+    /// écran se referme est ce qui distingue « Terminer » d'« Annuler ».
+    @State private var pendingDuration: Int?
     @State private var confirmation: String?
     @State private var paused = false
 
     private var active: Workout? { workouts.first { $0.isActive } }
 
-    /// Ce qui a été fait la dernière fois sur cet exercice.
-    private var lastTime: String? {
+    /// La musculation se lance au chrono ; le cardio garde sa feuille de
+    /// planification, où une durée seule ne dit rien d'utile.
+    private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
+
+    /// La dernière fois que cet exercice a été fait, séance en cours exclue.
+    private var lastLogged: LoggedExercise? {
         for workout in workouts where !workout.isActive {
             if let logged = workout.orderedExercises.first(where: { $0.exerciseID == exercise.id }) {
-                if !logged.orderedSets.isEmpty {
-                    let count = logged.orderedSets.count
-                    let reps = logged.orderedSets.first?.reps ?? 0
-                    let weight = logged.maxWeight
-                    return "\(count) × \(reps) à \(weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
-                }
-                return logged.summary
+                return logged
             }
         }
         return nil
+    }
+
+    /// Ce qui a été fait la dernière fois sur cet exercice.
+    private var lastTime: String? {
+        guard let logged = lastLogged else { return nil }
+        guard !logged.orderedSets.isEmpty else { return logged.summary }
+        let count = logged.orderedSets.count
+        let reps = logged.orderedSets.first?.reps ?? 0
+        let weight = logged.maxWeight
+        return "\(count) × \(reps) à \(weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+    }
+
+    /// Les séries de la dernière fois, pour ouvrir la saisie déjà remplie.
+    private var lastSets: [DraftSet]? {
+        guard let sets = lastLogged?.orderedSets, !sets.isEmpty else { return nil }
+        return sets.map { DraftSet(reps: $0.reps, weight: $0.weight) }
+    }
+
+    private var lastRest: Int? {
+        guard let rest = lastLogged?.restSeconds, rest > 0 else { return nil }
+        return rest
     }
 
     var body: some View {
@@ -217,8 +240,11 @@ struct ExerciseDetailView: View {
                             .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-                    Button("Ajouter à l'entraînement") { showLogger = true }
-                        .buttonStyle(WoopPrimaryButtonStyle())
+                    Button(isStrength ? "Lancer l'entraînement"
+                                      : "Ajouter à l'entraînement") {
+                        if isStrength { showLive = true } else { showLogger = true }
+                    }
+                    .buttonStyle(WoopPrimaryButtonStyle())
 
                     if active == nil {
                         Text("Aucune séance en cours — elle sera créée automatiquement.")
@@ -233,8 +259,27 @@ struct ExerciseDetailView: View {
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        // Plein écran plutôt que navigation : la page d'effort recouvre la barre
+        // d'onglets et la carte de séance en cours. On est dedans, ou on n'y est pas.
+        .fullScreenCover(isPresented: $showLive) {
+            // La feuille de saisie ne peut pas s'ouvrir tant que le plein écran
+            // est là : elle attend qu'il soit refermé.
+            if pendingDuration != nil { showLogger = true }
+        } content: {
+            LiveExerciseView(exercise: exercise) { seconds in
+                pendingDuration = seconds
+                showLive = false
+            } onCancel: {
+                pendingDuration = nil
+                showLive = false
+            }
+        }
         .sheet(isPresented: $showLogger) {
-            LogExerciseSheet(exercise: exercise, lastTime: lastTime) { draft in
+            pendingDuration = nil
+        } content: {
+            LogExerciseSheet(exercise: exercise, lastTime: lastTime,
+                             prefill: lastSets, prefillRest: lastRest,
+                             duration: pendingDuration) { draft in
                 add(draft)
             }
         }
@@ -278,6 +323,7 @@ struct ExerciseDetailView: View {
         let logged = LoggedExercise(exerciseID: exercise.id,
                                     order: workout.exerciseCount,
                                     restSeconds: draft.restSeconds)
+        logged.durationSeconds = draft.durationSeconds
         logged.workout = workout
         context.insert(logged)
 
