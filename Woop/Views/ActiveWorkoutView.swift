@@ -403,9 +403,18 @@ struct ActiveExerciseCard: View {
         WoopCard(cornerRadius: 18, padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 12) {
-                    ExerciseFigure(design: ExerciseFigures.design(for: logged.exerciseID),
-                                   animated: false, lineWidth: 1.3)
-                        .frame(width: 42, height: 42)
+                    // Pastille : la photo recadrée au centre, là où tombe le
+                    // muscle en lumière. Un exercice retiré du catalogue n'a
+                    // plus d'image — la ligne garde son nom et se passe d'elle.
+                    if let exo = logged.exercise {
+                        ExercisePhoto(exercise: exo)
+                            .frame(width: 46, height: 46)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(WoopGradient.diamondRim, lineWidth: 0.75)
+                            }
+                    }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(logged.name)
@@ -599,9 +608,18 @@ struct LoggedExerciseCard: View {
         WoopCard(cornerRadius: 18, padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    ExerciseFigure(design: ExerciseFigures.design(for: logged.exerciseID),
-                                   animated: false, lineWidth: 1.3)
-                        .frame(width: 42, height: 42)
+                    // Pastille : la photo recadrée au centre, là où tombe le
+                    // muscle en lumière. Un exercice retiré du catalogue n'a
+                    // plus d'image — la ligne garde son nom et se passe d'elle.
+                    if let exo = logged.exercise {
+                        ExercisePhoto(exercise: exo)
+                            .frame(width: 46, height: 46)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(WoopGradient.diamondRim, lineWidth: 0.75)
+                            }
+                    }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(logged.name)

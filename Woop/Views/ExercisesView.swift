@@ -113,38 +113,45 @@ struct CategoryFilter: View {
 struct ExerciseCard: View {
     let exercise: Exercise
 
+    private static let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ExerciseFigure(design: ExerciseFigures.design(for: exercise.id),
-                           animated: false, lineWidth: 1.6)
-                .frame(height: 92)
+        VStack(alignment: .leading, spacing: 0) {
+            // Bord à bord, sans marge : le noir de la photo EST le noir de la
+            // carte, une marge ne séparerait rien de rien — elle ne ferait que
+            // rapetisser le corps.
+            ExercisePhoto(exercise: exercise)
+                .frame(height: 152)
                 .frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise.name)
-                    .font(.system(.footnote, design: .rounded, weight: .semibold))
+                    .font(.inter(12.5, .semibold))
                     .foregroundStyle(Color.inkPrimary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2, reservesSpace: true)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(exercise.muscle)
-                    .font(.system(size: 10, design: .rounded))
+                    .font(.inter(10))
                     .foregroundStyle(Color.inkMuted)
                     .lineLimit(1)
 
                 Text(exercise.equipment.rawValue.uppercased())
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .font(.inter(8, .bold))
                     .tracking(0.8)
                     .foregroundStyle(Color.white.opacity(0.32))
                     .padding(.horizontal, 6).padding(.vertical, 3)
                     .background(Capsule().fill(Color.white.opacity(0.05)))
                     .padding(.top, 2)
             }
+            .padding(.horizontal, 14)
+            .padding(.top, 11)
+            .padding(.bottom, 14)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .metalSurface(cornerRadius: 22)
+        .clipShape(Self.shape)
+        .diamondSurface(cornerRadius: 22)
     }
 }
 
@@ -158,7 +165,6 @@ struct ExerciseDetailView: View {
 
     @State private var showLogger = false
     @State private var confirmation: String?
-    @State private var paused = false
 
     private var active: Workout? { workouts.first { $0.isActive } }
 
@@ -184,7 +190,10 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         ZStack {
-            WoopBackground()
+            // Pas de ciel ici : la fiche est une page NOIRE. La photo occupe le
+            // haut de l'écran et son fond doit se perdre dans la page — une
+            // nébuleuse derrière lui redessinerait aussitôt son rectangle.
+            Color.black.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     hero
@@ -221,8 +230,7 @@ struct ExerciseDetailView: View {
                             .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
-                    Button("Lancer l'entraînement") { showLogger = true }
-                        .buttonStyle(WoopPrimaryButtonStyle())
+                    DiamondPrimaryButton(title: "Lancer l'entraînement") { showLogger = true }
 
                     if active == nil {
                         Text("Aucune séance en cours — elle sera créée automatiquement.")
@@ -244,29 +252,14 @@ struct ExerciseDetailView: View {
         }
     }
 
+    /// La photo ENTIÈRE, jamais rognée : sur la fiche, c'est le mouvement
+    /// complet — l'appui, l'angle, la machine — qui porte l'information.
     private var hero: some View {
-        ZStack(alignment: .topTrailing) {
-            ExerciseFigure(design: ExerciseFigures.design(for: exercise.id),
-                           animated: !paused, lineWidth: 2.4)
-                .id(paused)
-                .padding(26)
-                .frame(height: 296)
-                .frame(maxWidth: .infinity)
-
-            Button {
-                withAnimation(.easeOut(duration: 0.2)) { paused.toggle() }
-            } label: {
-                Image(systemName: paused ? "play.fill" : "pause.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color.inkSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(Color.white.opacity(0.06)))
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(16)
-        }
-        .metalSurface(cornerRadius: 24, neon: true)
+        ExercisePhoto(exercise: exercise, fills: false)
+            .frame(height: 340)
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .diamondSurface(cornerRadius: 24, neon: true)
     }
 
     /// Ajoute l'exercice à la séance en cours, en la créant si besoin.

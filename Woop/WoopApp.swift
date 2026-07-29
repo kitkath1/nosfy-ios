@@ -1,11 +1,17 @@
 import SwiftUI
 import SwiftData
+import CoreText
 
 @main
 struct WoopApp: App {
     let container: ModelContainer
 
     init() {
+        // Les Inter (Woop/Fonts) s'enregistrent ici : l'Info.plist est généré
+        // par Xcode, il n'y a pas de clé UIAppFonts où les déclarer.
+        for url in Bundle.main.urls(forResourcesWithExtension: "otf", subdirectory: nil) ?? [] {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
         do {
             container = try ModelContainer(
                 for: Workout.self, LoggedExercise.self, StrengthSet.self, CardioPhase.self
@@ -342,7 +348,7 @@ enum DemoData {
                  cardio: [("hiit-tapis", [(.repos, 60, 6), (.acceleration, 30, 13), (.recuperation, 90, 6), (.acceleration, 30, 13), (.recuperation, 90, 6), (.sprint, 30, 14)])]),
             Plan(days: 21,
                  strength: [("kickback", [(15, 10), (15, 10), (12, 12.5)]),
-                            ("sdt-roumain", [(12, 25), (12, 27.5)])],
+                            ("pull-through", [(12, 25), (12, 27.5)])],
                  cardio: []),
             Plan(days: 19,
                  strength: [("woop-haute", [(12, 17.5), (12, 17.5), (10, 20)]),
@@ -363,7 +369,7 @@ enum DemoData {
                  strength: [],
                  cardio: [("hiit-tapis", [(.repos, 60, 6), (.acceleration, 30, 14), (.recuperation, 90, 6), (.acceleration, 30, 14), (.recuperation, 90, 6), (.sprint, 30, 15), (.repos, 120, 5)])]),
             Plan(days: 7,
-                 strength: [("sdt-roumain", [(12, 30), (12, 30), (10, 32.5)]),
+                 strength: [("abduction", [(15, 10), (15, 10), (12, 12.5)]),
                             ("squat-poulie", [(15, 25), (15, 25)])],
                  cardio: []),
             Plan(days: 5,
@@ -379,7 +385,7 @@ enum DemoData {
                  cardio: []),
             Plan(days: 1,
                  strength: [("woop-haute", [(12, 25), (12, 25), (10, 27.5)]),
-                            ("gainage-militaire-1j", [(8, 10), (8, 10)])],
+                            ("gainage-militaire", [(8, 10), (8, 10)])],
                  cardio: [])
         ]
 

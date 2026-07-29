@@ -127,11 +127,18 @@ struct DiamondInputField: View {
 
 // MARK: - Bouton
 
-/// « CONNEXION » — un bijou d'obsidienne. Tout l'écrin (fumée noire qui
-/// dérive, liseré hairline à accents inégaux qui respire, halos débordants,
-/// poussières-particules) vit dans DiamondButton.metal ; ici, seulement le
-/// texte en dégradé de blanc et la flèche.
-struct DiamondConnexionButton: View {
+/// LE bouton primaire du système — un bijou d'obsidienne. Tout l'écrin (fumée
+/// noire qui dérive, liseré hairline à accents inégaux qui respire, halos
+/// débordants, poussières-particules) vit dans DiamondButton.metal ; ici,
+/// seulement le texte en dégradé de blanc et la flèche.
+///
+/// Né « CONNEXION » sur le banc `-buttonLab`, il porte désormais tous les
+/// appels à l'action majeurs de l'app — d'où le titre en paramètre.
+struct DiamondPrimaryButton: View {
+    /// Le libellé, GRAVÉ : capitales espacées. Une phrase longue rétrécit un
+    /// peu plutôt que de passer sous la flèche (`minimumScaleFactor`) — le
+    /// registre tient jusqu'à environ trente signes.
+    var title: String = "CONNEXION"
     /// Le banc force l'état tap (1 = pressé en continu) ; nil = interaction
     /// réelle, l'écrin suit le doigt.
     var benchPress: Float? = nil
@@ -192,15 +199,21 @@ struct DiamondConnexionButton: View {
     // MARK: Texte
 
     private var content: some View {
-        Text("CONNEXION")
+        Text(title.uppercased())
             .font(.system(size: 13.5, weight: .medium))
             .tracking(4.6)
             .padding(.leading, 4.6)
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
             .foregroundStyle(LinearGradient(stops: [
                 .init(color: .white, location: 0.0),
                 .init(color: .white.opacity(0.86), location: 0.45),
                 .init(color: .white.opacity(0.54), location: 1.0)
             ], startPoint: .top, endPoint: .bottom))
+            // La gouttière de la flèche est RÉSERVÉE, des DEUX côtés : sans
+            // elle un libellé long vient se glisser sous la flèche ; réservée
+            // d'un seul côté, le texte cesse d'être centré.
+            .padding(.horizontal, 38)
             .frame(maxWidth: .infinity)
             .overlay(alignment: .trailing) {
                 Image(systemName: "arrow.right")
@@ -210,6 +223,9 @@ struct DiamondConnexionButton: View {
             }
     }
 }
+
+/// Le réglage d'origine du composant : le CTA de l'auth.
+typealias DiamondConnexionButton = DiamondPrimaryButton
 
 // MARK: - Bouton retour (rond, verre liquide)
 

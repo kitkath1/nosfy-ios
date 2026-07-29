@@ -49,6 +49,11 @@ struct Exercise: Identifiable, Hashable {
     /// L'erreur la plus fréquente sur ce mouvement.
     let mistake: String
 
+    /// La photo de l'exercice — fond noir pur, corps en silhouette, muscle
+    /// travaillé en lumière. Nommée d'après l'identifiant : un exercice sans
+    /// image n'existe pas dans le catalogue, donc rien à replier.
+    var image: String { "exo-\(id)" }
+
     static func == (lhs: Exercise, rhs: Exercise) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
@@ -87,12 +92,6 @@ enum ExerciseCatalog {
             cue: "Planche haute, une main tire la poulie. Le bassin reste parfaitement immobile.",
             mistake: "Laisser la hanche pivoter au moment du tirage."),
         Exercise(
-            id: "gainage-militaire-1j", name: "Gainage militaire sur une jambe",
-            category: .abdos, equipment: .poulie, tracking: .setsRepsWeight,
-            muscle: "Transverse et stabilisateurs",
-            cue: "Même mouvement, une jambe décollée. L'anti-rotation devient maximale.",
-            mistake: "Écarter les appuis pour compenser au lieu de gainer."),
-        Exercise(
             id: "crunch-machine", name: "Crunch à la machine assistée",
             category: .abdos, equipment: .machine, tracking: .setsRepsWeight,
             muscle: "Grand droit",
@@ -118,12 +117,6 @@ enum ExerciseCatalog {
             muscle: "Moyen fessier",
             cue: "Jambe tendue vers l'extérieur, buste strictement immobile.",
             mistake: "Se pencher du côté opposé pour lever la jambe plus haut."),
-        Exercise(
-            id: "sdt-roumain", name: "Soulevé de terre roumain à la poulie",
-            category: .fessiers, equipment: .poulie, tracking: .setsRepsWeight,
-            muscle: "Ischio-jambiers et fessiers",
-            cue: "Jambes semi-tendues, descente lente, dos plat du début à la fin.",
-            mistake: "Arrondir le haut du dos en fin de descente."),
         Exercise(
             id: "squat-poulie", name: "Squat à la poulie",
             category: .fessiers, equipment: .poulie, tracking: .setsRepsWeight,
@@ -299,7 +292,9 @@ final class Workout {
         }
         if !categories.isEmpty { parts.append(categoriesLabel) }
         parts.append("\(Int(duration / 60)) min")
-        return parts.joined(separator: " · ")
+        // Insécable après le « · » : la césure tombe sur un mot, jamais après
+        // le point médian (« Abdos · / 0 min » lisait sale sur deux lignes).
+        return parts.joined(separator: " ·\u{00A0}")
     }
 }
 

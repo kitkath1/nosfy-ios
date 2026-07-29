@@ -364,16 +364,16 @@ struct WoopBackground: View {
     }
 }
 
-// MARK: - Surface métal brumeuse
+// MARK: - Surface diamant brumeuse
 
-/// `metalSurface`, mais avec l'atmosphère glissée ENTRE le métal et le reflet
-/// spéculaire. L'ordre n'est pas un détail : au-dessus du spéculaire la brume a
-/// l'air de flotter devant la carte, en dessous elle est dans la matière. Mêmes
-/// pixels, lecture complètement différente.
+/// `diamondSurface`, mais avec l'atmosphère POSÉE DANS le noir, sous le liseré.
+/// L'ordre n'est pas un détail : au-dessus du liseré la brume aurait l'air de
+/// flotter devant la carte, dessous elle est la matière même de la carte.
+/// Mêmes pixels, lecture complètement différente.
 ///
 /// Réservé à la carte hebdomadaire. Une app dont toutes les surfaces respirent
 /// n'a plus de hiérarchie, et l'effet cesse d'être un privilège.
-struct MistyMetalSurface: ViewModifier {
+struct MistyDiamondSurface: ViewModifier {
     var cornerRadius: CGFloat = 24
     var neon: Bool = false
 
@@ -390,30 +390,25 @@ struct MistyMetalSurface: ViewModifier {
         return content
             .background {
                 ZStack {
-                    // L'ombre portée est accrochée au SEUL calque qui ne change
-                    // jamais. Sur le groupe entier, Core Animation recalculerait
-                    // un flou de rayon 22 à chaque image de l'atmosphère : c'est
-                    // de loin le poste le plus cher de tout l'effet, et il est
-                    // évitable pour rien.
-                    shape.fill(WoopGradient.metal)
-                        .compositingGroup()
-                        .shadow(color: .black.opacity(0.75), radius: 22, y: 14)
-                        .shadow(color: neon ? Color.woopVioletCore.opacity(0.14) : .clear,
-                                radius: 24, y: 6)
+                    // Noir pur comme toute la famille : la brume est la SEULE
+                    // matière de cette carte. Sur l'ancien dégradé métal elle
+                    // se lisait comme un voile sur une plaque ; sur le noir,
+                    // elle est la carte.
+                    shape.fill(Color.woopCard)
 
                     WoopAtmosphere(tuning: .card, paused: paused)
                         .clipShape(shape)
 
                     WoopGrain(density: 0.05, lightAlpha: 0.028, darkAlpha: 0.036)
                         .clipShape(shape)
-
-                    shape.fill(WoopGradient.specular)
                 }
             }
             .overlay {
-                shape.strokeBorder(neon ? WoopGradient.bevelNeon : WoopGradient.bevel,
+                shape.strokeBorder(neon ? WoopGradient.diamondRimNeon
+                                        : WoopGradient.diamondRim,
                                    lineWidth: 1)
             }
+            .diamondGlints(cornerRadius: cornerRadius, strength: neon ? 0.75 : 0.5)
             // Une carte sortie de l'écran qui continue d'animer est du courant
             // dépensé pour personne. Hors ScrollView le rappel ne se déclenche
             // pas et la valeur reste à `true` : dégradation sans risque.
@@ -424,7 +419,7 @@ struct MistyMetalSurface: ViewModifier {
 }
 
 extension View {
-    func mistyMetalSurface(cornerRadius: CGFloat = 24, neon: Bool = false) -> some View {
-        modifier(MistyMetalSurface(cornerRadius: cornerRadius, neon: neon))
+    func mistyDiamondSurface(cornerRadius: CGFloat = 24, neon: Bool = false) -> some View {
+        modifier(MistyDiamondSurface(cornerRadius: cornerRadius, neon: neon))
     }
 }
