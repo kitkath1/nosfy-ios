@@ -74,16 +74,21 @@ static float rimLight(float2 p, float2 halfB, float t) {
     return clamp((0.06 + 4.0 * accents) * bias * breath, 0.0, 1.0);
 }
 
+// `press` : l'état tap (0 repos → 1 pressé, rampe lissée côté SwiftUI) —
+// tout l'écrin monte d'un cran : fumée plus vivante, accents plus vifs,
+// facettes plus nombreuses. `burst` : l'onde du toucher (1 au contact → 0
+// en ~0,3 s), un anneau de lumière qui s'évase et s'éteint.
 [[ stitchable ]] half4 diamondButton(float2 position, half4 color,
                                      float2 size, float t,
-                                     float pad, float radius) {
+                                     float pad, float radius,
+                                     float press, float burst) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
     float r = min(radius, halfB.y);
     float d = sdRound(p, halfB, r);
 
-    float rim = rimLight(p, halfB, t);
+    float rim = clamp(rimLight(p, halfB, t) * (1.0 + 0.35 * press), 0.0, 1.0);
 
     // ---- Le liseré : hairline ~1 pt, jamais un cadre.
     float line = exp(-d * d / (0.42 * 0.42)) * (0.08 + 0.92 * rim);
@@ -92,8 +97,15 @@ static float rimLight(float2 p, float2 halfB, float t) {
     // de lueur interne pour que le bord ne soit pas un trait posé sur du vide.
     float outside = max(d, 0.0);
     // Fondu court : la buée reste collée au liseré, la fumée ne
-    // s'échappe presque pas du bouton.
-    float halo = exp(-outside / 15.0) * smoothstep(-0.8, 0.8, d) * 0.50 * rim;
+    // s'échappe presque pas du bouton. Au tap, elle s'épanouit un peu.
+    float halo = exp(-outside / (15.0 + 5.0 * press))
+                 * smoothstep(-0.8, 0.8, d) * (0.50 + 0.14 * press) * rim;
+    // L'onde du toucher : un anneau qui s'évase du liseré et s'éteint.
+    if (burst > 0.001) {
+        float ring = 8.0 + (1.0 - burst) * 30.0;
+        float rw = 5.0 + (1.0 - burst) * 9.0;
+        halo += exp(-(d - ring) * (d - ring) / (rw * rw)) * burst * 0.22;
+    }
     float sheen = exp(-max(-d, 0.0) / 5.0) * smoothstep(0.8, -0.8, d) * 0.05 * rim;
 
     // ---- La fumée : volutes fractales, domaine déformé, dérive lente.
@@ -113,8 +125,11 @@ static float rimLight(float2 p, float2 halfB, float t) {
         float uvY = clamp((p.y + halfB.y) / (2.0 * halfB.y), 0.0, 1.0);
         float base = mix(0.038, 0.012, uvY);
         // La fumée attrape la lumière du bord : plus dense près des accents.
+        // Au tap, le démon s'anime : les volutes montent d'un cran.
         float nearRim = exp(-fabs(d) / 16.0);
-        smoke = base + s * (0.075 + 0.42 * nearRim * rim) + 0.026 * nearRim * rim;
+        smoke = base + 0.012 * press
+                + s * (0.075 + 0.42 * nearRim * rim) * (1.0 + 0.7 * press)
+                + 0.026 * nearRim * rim;
         smoke *= inside;
     }
 
@@ -144,7 +159,7 @@ static float rimLight(float2 p, float2 halfB, float t) {
                 float2 dp = p - pos;
                 float g = exp(-dot(dp, dp) / (0.8 * 0.8));
                 spark += g * sin(3.14159 * life) * born * tw
-                         * (0.5 + 0.5 * local) * 1.4;
+                         * (0.5 + 0.5 * local) * (1.4 + 0.7 * press);
             }
         }
     }
@@ -165,7 +180,8 @@ static float rimLight(float2 p, float2 halfB, float t) {
             for (int ox = -1; ox <= 1; ox++) {
                 float2 idn = idg + float2(ox, oy);
                 float4 hg = bhash42(idn * 2.71 + float2(13.7 + 3.1 * float(k), 5.3));
-                if (hg.x >= 0.22) continue;
+                // Au tap, davantage de facettes s'éveillent, plus souvent.
+                if (hg.x >= 0.22 + 0.16 * press) continue;
                 float2 cg = (idn + 0.5 + (hg.yz - 0.5) * 0.6) * cell;
                 float dg = sdRound(cg, halfB, r);
                 // Accroché à la lumière : max sur le liseré, fond en s'enfonçant.
@@ -173,11 +189,11 @@ static float rimLight(float2 p, float2 halfB, float t) {
                 float local = rimLight(cg, halfB, t);
                 // Flash rare et bref : l'étoile dort presque tout le temps.
                 float twk = max(0.0, sin(t * (0.35 + 0.55 * hg.w) + hg.z * 6.283));
-                twk = pow(twk, 16.0);
+                twk = pow(twk, 16.0 - 9.0 * press);
                 float amp = twk * on * (0.25 + 0.75 * local);
                 if (amp < 0.004) continue;
                 float2 dpg = p - cg;
-                float rayLen = 2.5 + 10.0 * twk;   // la croix fleurit au pic
+                float rayLen = (2.5 + 10.0 * twk) * (1.0 + 0.4 * press);
                 float core = exp(-dot(dpg, dpg) / (0.75 * 0.75));
                 float rayH = exp(-dpg.y * dpg.y / (0.42 * 0.42)
                                  - dpg.x * dpg.x / (rayLen * rayLen));

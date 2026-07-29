@@ -89,6 +89,15 @@ La carte « Objectif hebdomadaire » de la home : un rectangle arrondi (30 pt) d
 - **Contenu** : titre 15 pt, `ShimmeringNumber` 34 pt (glint argenté ~7 s, fenêtré 22 %), sous-titre 13 pt, trophées 44 pt justifiés en style `luminous`. Carte purement consultative (ni chevron, ni navigation).
 - **Budget** : une seule passe demi-résolution (3 fetches), `TimelineView` 30 fps, endormie hors écran et sous Reduce Motion. Boucle 900 s (dérives entières, k entiers). NebulaStrip n'est plus chauffée au lancement (gardée en réserve).
 
+## Les composants « diamant » (la famille)
+
+La bibliothèque de composants de l'app — même matière, même grammaire
+(monochrome blanc, hairline, obsidienne), quatre états sur le banc
+`-buttonLab` : **input vide / input actif / bouton repos / bouton tap**.
+La hiérarchie se lit d'un coup d'œil : tap > repos > input actif > input
+vide. Méthode de fabrication : boucle workflow capture simulateur → juge
+(grille /10 chiffrée, 3 frames espacées d'1 s pour l'animation) → orfèvre.
+
 ## Le bouton primaire « diamant »
 
 **LE composant bouton primaire du système** (CTA « CONNEXION » de l'auth, et
@@ -127,6 +136,20 @@ orfèvre), 3 rounds.
   des confettis.
 - **Texte** : capitales 13,5 pt medium, tracking 4,6, dégradé blanc → gris
   PRONONCÉ (100 % → 54 %) ; flèche `arrow.right` light 15 pt à 22 pt du bord.
+- **État TAP (l'éveil du bijou)** — paramètres `press`/`burst` du shader,
+  pilotés par `DiamondPressStyle` (republie `isPressed`, tasse le bouton à
+  0,988 — l'objet a un poids) :
+  - rampe lissée horodatée côté SwiftUI : 0,30 s à l'allumage, 0,55 s au
+    relâcher ;
+  - **onde du toucher** : un anneau de lumière qui s'évase du liseré
+    (rayon 8 → 38 pt) et s'éteint en ~0,3 s — le contact se VOIT naître ;
+  - le fond s'accentue : volutes de fumée +70 %, socle +1,2 %, toujours
+    noire dominante ;
+  - le scintillement se démultiplie : accents +35 %, plus de facettes
+    éveillées (seuil +0,16), flashs plus fréquents (pow 16 → 7), rayons
+    +40 %, particules +50 %, buée épanouie (fondu 15 → 20 pt) ;
+  - dans le banc, la copie `benchPress: 1` fige l'état tap sous le bouton
+    au repos — les deux se comparent d'un coup d'œil.
 - **Pièges appris** : l'alpha du bord doit inclure la hairline (sinon la
   rampe d'opacité la mange à d ≈ 0) ; le shader JIT-compile ~5 s au premier
   rendu (capture noire avant) ; vérifier l'ANIMATION sur 3 captures espacées

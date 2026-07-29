@@ -15,6 +15,9 @@ struct ConnexionButtonLab: View {
                 DiamondInputField(placeholder: "Adresse email", text: $emptyText)
                 DiamondInputField(placeholder: "Adresse email", text: $filledText)
                 DiamondConnexionButton {}
+                // La copie en état « tap » permanent : pour régler l'éveil
+                // de l'écrin au pixel, sans devoir garder le doigt posé.
+                DiamondConnexionButton(benchPress: 1) {}
             }
             .padding(.horizontal, 26)
         }
@@ -120,10 +123,20 @@ struct DiamondInputField: View {
 /// poussières-particules) vit dans DiamondButton.metal ; ici, seulement le
 /// texte en dégradé de blanc et la flèche.
 struct DiamondConnexionButton: View {
+    /// Le banc force l'état tap (1 = pressé en continu) ; nil = interaction
+    /// réelle, l'écrin suit le doigt.
+    var benchPress: Float? = nil
     var action: () -> Void = {}
 
     /// Marge de débordement : halos et particules vivent hors du bouton.
     private static let pad: CGFloat = 34
+
+    /// La transition du tap s'anime à la main (un paramètre de shader ne
+    /// s'interpole pas seul) : on horodate le contact et le TimelineView
+    /// fait la rampe — 0,30 s à l'allumage, 0,55 s au relâcher — plus
+    /// l'onde du toucher qui s'évase en ~0,3 s.
+    @State private var pressEdge: Date = .distantPast
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: action) {
@@ -132,7 +145,11 @@ struct DiamondConnexionButton: View {
                 .frame(maxWidth: .infinity)
                 .background { ecrin }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DiamondPressStyle { p in
+            guard p != isPressed else { return }
+            pressEdge = .now
+            isPressed = p
+        })
     }
 
     /// L'hôte du shader, agrandi de `pad` de chaque côté — le rendu hors du
@@ -144,12 +161,19 @@ struct DiamondConnexionButton: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
+                let since = tl.date.timeIntervalSince(pressEdge)
+                let raw = min(max(since / (isPressed ? 0.30 : 0.55), 0), 1)
+                let eased = Float(raw * raw * (3 - 2 * raw))
+                let press = benchPress ?? (isPressed ? eased : 1 - eased)
+                let burst = (benchPress == nil && isPressed)
+                    ? Float(exp(-since / 0.30)) : 0
                 Rectangle()
                     .fill(.white)
                     .frame(width: w, height: h)
                     .colorEffect(ShaderLibrary.diamondButton(
                         .float2(w, h), .float(t),
-                        .float(Float(Self.pad)), .float(19)))
+                        .float(Float(Self.pad)), .float(19),
+                        .float(press), .float(burst)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
@@ -175,6 +199,19 @@ struct DiamondConnexionButton: View {
                     .foregroundStyle(Color.white.opacity(0.82))
                     .padding(.trailing, 22)
             }
+    }
+}
+
+/// Republie `isPressed` vers l'écrin et tasse imperceptiblement le bouton
+/// sous le doigt — l'objet a un poids, jamais un simple changement d'opacité.
+private struct DiamondPressStyle: ButtonStyle {
+    var onPress: (Bool) -> Void
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.988 : 1)
+            .animation(.spring(duration: 0.32), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, v in onPress(v) }
     }
 }
 
