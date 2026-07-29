@@ -49,6 +49,8 @@ struct RootView: View {
     /// de l'écran verrouillé (comète-progression, diablotin) dans l'app —
     /// le simulateur ne sait pas montrer l'écran verrouillé.
     private static let cometTest = CommandLine.arguments.contains("-cometTest")
+    /// Banc d'essai du bouton CONNEXION : `-buttonLab`, page noire nue.
+    private static let buttonLab = CommandLine.arguments.contains("-buttonLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -83,6 +85,8 @@ struct RootView: View {
             splashBench
         } else if Self.cometTest {
             cometBench
+        } else if Self.buttonLab {
+            ConnexionButtonLab()
         } else {
             mainBody
         }
