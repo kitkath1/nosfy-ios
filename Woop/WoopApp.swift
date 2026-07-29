@@ -16,11 +16,13 @@ struct WoopApp: App {
         if CommandLine.arguments.contains("-demoData") {
             DemoData.seedIfEmpty(in: container)
         }
-        // La LUT du ciel et la bande de nébuleuse de la carte Objectif se
-        // génèrent en tâche de fond pendant le splash — au premier rendu de
-        // la home, elles sont déjà prêtes.
+        if CommandLine.arguments.contains("-activeWorkout") {
+            DemoData.seedActiveWorkout(in: container)
+        }
+        // La LUT du ciel se génère en tâche de fond pendant le splash — au
+        // premier rendu de la home, elle est déjà prête. (NebulaStrip n'est
+        // plus chauffée : la carte Objectif est redevenue pure lumière.)
         NebulaNoise.warmUp()
-        NebulaStrip.warmUp()
     }
 
     var body: some Scene {
@@ -43,8 +45,11 @@ struct RootView: View {
     /// Banc d'essai du splash : lancée avec `-splashTest`, l'app ne va jamais
     /// à l'accueil — la séquence se termine sur un bouton « Rejouer ».
     private static let splashTest = CommandLine.arguments.contains("-splashTest")
-
     @State private var showSplash = true
+    /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
+    /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
+    /// (captures d'écran automatisées uniquement).
+    @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
     @State private var selection: WoopTab = {
         if let raw = UserDefaults.standard.string(forKey: "openTab"),
            let tab = WoopTab(rawValue: raw) {
@@ -58,7 +63,13 @@ struct RootView: View {
            sort: \Workout.startedAt, order: .reverse)
     private var activeWorkouts: [Workout]
 
-    @State private var showActiveSheet = false
+    @Environment(\.modelContext) private var modelContext
+
+    /// `-openActiveSheet` ouvre la feuille de séance dès le lancement
+    /// (captures d'écran automatisées uniquement).
+    @State private var showActiveSheet = CommandLine.arguments.contains("-openActiveSheet")
+    /// Morphisme : la carte de séance est la source du zoom vers la feuille.
+    @Namespace private var overlayZoom
 
     private var active: Workout? { activeWorkouts.first }
 
@@ -104,7 +115,7 @@ struct RootView: View {
             // GPU reste celui d'une seule instance.
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
-                    HomeView(selection: $selection, showActiveSheet: $showActiveSheet)
+                    HomeView(selection: $selection)
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
                     value: WoopTab.exercises) {
@@ -121,10 +132,35 @@ struct RootView: View {
             // la brume cramée (libellés illisibles) ; en sombre forcé, la
             // lumière qui le traverse devient une signature.
             .toolbarColorScheme(.dark, for: .tabBar)
-            .modifier(ActiveAccessory(workout: active) { showActiveSheet = true })
+            .modifier(ActiveAccessory(workout: active, namespace: overlayZoom,
+                                      hidden: selection == .exercises) {
+                showActiveSheet = true
+            })
             .sheet(isPresented: $showActiveSheet) {
                 if let active {
-                    ActiveWorkoutSheet(workout: active)
+                    ActiveWorkoutSheet(workout: active) {
+                        // « Ajouter un exercice » : on referme la feuille et on
+                        // ouvre la bibliothèque — c'est là qu'on loggue.
+                        showActiveSheet = false
+                        selection = .exercises
+                    }
+                    .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
+                }
+            }
+
+            if showAuth {
+                // Le socle noir reste en place pendant tout le tuilage
+                // splash → auth : jamais un pixel de la home ne transparaît.
+                Color.black.ignoresSafeArea()
+                    .zIndex(8)
+                    .transition(.opacity)
+                if !showSplash {
+                    AuthView { phone in
+                        UserDefaults.standard.set(phone, forKey: "woop.phone")
+                        withAnimation(.easeOut(duration: 0.6)) { showAuth = false }
+                    }
+                    .transition(.opacity)
+                    .zIndex(9)
                 }
             }
 
@@ -137,6 +173,15 @@ struct RootView: View {
                 .transition(.opacity)
                 .zIndex(10)
             }
+        }
+        .task {
+            // `-syncNow` (dev) : pousse toutes les séances terminées dès le
+            // lancement — test de bout en bout, et re-remplissage du compte
+            // après une connexion sur un nouvel appareil.
+            guard CommandLine.arguments.contains("-syncNow") else { return }
+            let workouts = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
+            let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
+            Task.detached { await SupabaseSync.shared.push(snapshots) }
         }
         #if DEBUG
         .overlay(alignment: .topTrailing) {
@@ -159,20 +204,29 @@ struct RootView: View {
     }
 }
 
-/// Le conteneur de verre de la barre d'onglets s'affiche même quand son contenu
-/// est vide : on n'attache donc le modificateur que s'il y a une séance ouverte.
+/// L'overlay de séance n'existe que s'il y a une séance ouverte. On n'utilise
+/// plus `tabViewBottomAccessory` : sa hauteur est figée par le système, trop
+/// petite pour le halo égaliseur + la ligne entraînement/Arrêter. La carte
+/// flotte donc au-dessus de la barre d'onglets, en verre liquide natif.
+/// Cachée sur l'onglet Exercices : c'est là qu'on ajoute — la carte masquerait
+/// les boutons d'ajout en bas des fiches.
 private struct ActiveAccessory: ViewModifier {
     let workout: Workout?
+    let namespace: Namespace.ID
+    var hidden: Bool = false
     let onTap: () -> Void
 
     func body(content: Content) -> some View {
-        if let workout {
-            content.tabViewBottomAccessory {
-                ActiveWorkoutAccessory(workout: workout, onTap: onTap)
+        content.overlay(alignment: .bottom) {
+            if let workout, !hidden {
+                ActiveWorkoutOverlay(workout: workout, onOpen: onTap)
+                    .matchedTransitionSource(id: "activeOverlay", in: namespace)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 58)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-        } else {
-            content
         }
+        .animation(.easeOut(duration: 0.25), value: hidden)
     }
 }
 
@@ -180,6 +234,26 @@ private struct ActiveAccessory: ViewModifier {
 
 /// Peuplées uniquement avec l'argument de lancement `-demoData`.
 enum DemoData {
+    /// Ouvre une séance en cours (argument `-activeWorkout`) : sert à vérifier
+    /// visuellement l'overlay de séance sans passer par l'interface.
+    @MainActor
+    static func seedActiveWorkout(in container: ModelContainer) {
+        let context = container.mainContext
+        let open = (try? context.fetchCount(FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt == nil }))) ?? 0
+        guard open == 0 else { return }
+
+        let workout = Workout(startedAt: .now.addingTimeInterval(-8 * 60))
+        context.insert(workout)
+        let logged = LoggedExercise(exerciseID: "hip-thrust", order: 0)
+        logged.workout = workout
+        context.insert(logged)
+        let set = StrengthSet(reps: 12, weight: 45, order: 0)
+        set.loggedExercise = logged
+        context.insert(set)
+        try? context.save()
+    }
+
     @MainActor
     static func seedIfEmpty(in container: ModelContainer) {
         let context = container.mainContext

@@ -34,17 +34,12 @@ struct ObjectiveCardPressStyle: ButtonStyle {
 
 // MARK: - Carte Objectif — verre noir liquide
 
-/// Le ciel de verre : voir `objectiveCrest` + `objectiveCrestStars` dans
-/// DemonSky.metal. Deux passes, comme le ciel : le diffus (nappes de métal
-/// liquide + cordon de nébuleuse) en DEMI-résolution, la poudre d'étoiles en
-/// pleine, composées en `plusLighter` — de la lumière ajoutée au verre,
-/// jamais un calque qui le grise. Même horloge globale que le ciel
-/// (mod 900 s) : la carte est une fenêtre sur le même cosmos.
-private struct GlassNebula: View {
+/// La lumière sur le verre : voir `objectiveCrest` dans DemonSky.metal.
+/// Une seule passe, en DEMI-résolution (tout y est diffus), composée en
+/// `plusLighter` — de la lumière ajoutée au verre, jamais un calque qui le
+/// grise. Même horloge globale que le ciel (mod 900 s).
+private struct GlassLight: View {
     var paused: Bool
-
-    /// Unité verticale du cordon, en points (sa largeur, sa chute).
-    private static let fall: CGFloat = 62
 
     var body: some View {
         GeometryReader { geo in
@@ -55,29 +50,13 @@ private struct GlassNebula: View {
                 let t = Float(timeline.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
 
-                ZStack(alignment: .topLeading) {
-                    // Le shader travaille en unités relatives à `fall` : les
-                    // uniforms divisés par deux suffisent à la demi-résolution.
-                    Rectangle()
-                        .fill(.black)
-                        .frame(width: w / 2, height: h / 2)
-                        .colorEffect(Self.dithered(ShaderLibrary.objectiveCrest(
-                            .float2(w / 2, h / 2), .float(t),
-                            .float(Self.fall / 2),
-                            .image(NebulaNoise.image),
-                            .image(NebulaStrip.image))))
-                        .scaleEffect(2, anchor: .topLeading)
-
-                    Rectangle()
-                        .fill(.black)
-                        .frame(width: w, height: h)
-                        .colorEffect(ShaderLibrary.objectiveCrestStars(
-                            .float2(w, h), .float(t),
-                            .float(Self.fall),
-                            .image(NebulaNoise.image),
-                            .image(NebulaStrip.image)))
-                        .blendMode(.plusLighter)
-                }
+                Rectangle()
+                    .fill(.black)
+                    .frame(width: w / 2, height: h / 2)
+                    .colorEffect(Self.dithered(ShaderLibrary.objectiveCrest(
+                        .float2(w / 2, h / 2), .float(t),
+                        .image(NebulaNoise.image))))
+                    .scaleEffect(2, anchor: .topLeading)
             }
         }
         .allowsHitTesting(false)
@@ -92,10 +71,12 @@ private struct GlassNebula: View {
 
 // MARK: - Liseré de lumière
 
-/// Le fil qui cerne le verre. AU REPOS il est éteint : un trait à peine là,
-/// qui délimite sans briller. AU TOUCHER il s'allume — trois passes
-/// concentriques (halo, lueur, fil, une vraie PSF) — et VIBRE lentement :
-/// une pulsation de ~1,9 s, une lampe qui respire, pas un stroboscope.
+/// Le fil qui cerne le verre RÉPOND à la source haut-gauche : brillant et
+/// blanc au coin où la lumière frappe l'arête, gris neutre sur le haut,
+/// presque éteint en bas-droit — un dégradé de nuances de blanc, jamais
+/// uniforme. Une lueur douce n'existe qu'au voisinage du coin éclairé.
+/// AU TOUCHER, tout s'allume davantage et VIBRE lentement (~1,9 s) — une
+/// lampe qui respire, pas un stroboscope.
 private struct GlassBorder: View {
     var cornerRadius: CGFloat
     /// Objectif atteint : le fil se réchauffe vers l'or-récompense — la seule
@@ -108,29 +89,46 @@ private struct GlassBorder: View {
         achieved ? Color(red: 1.0, green: 0.93, blue: 0.75) : .white
     }
 
+    /// L'arête au repos : le dégradé suit la lumière — coin haut-gauche
+    /// brillant, bas-droit presque mort.
     private var restLine: LinearGradient {
         LinearGradient(
             stops: [.init(color: (achieved ? Color(red: 1.0, green: 0.95, blue: 0.82) : .white)
-                              .opacity(0.30), location: 0.0),
-                    .init(color: .white.opacity(0.13), location: 0.45),
-                    .init(color: .white.opacity(0.07), location: 1.0)],
-            startPoint: .top, endPoint: .bottom)
+                              .opacity(0.85), location: 0.0),
+                    .init(color: .white.opacity(0.30), location: 0.32),
+                    .init(color: .white.opacity(0.12), location: 0.68),
+                    .init(color: .white.opacity(0.05), location: 1.0)],
+            startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     private var litLine: LinearGradient {
         LinearGradient(
             stops: [.init(color: achieved ? Color(red: 1.0, green: 0.95, blue: 0.82) : .white,
                           location: 0.0),
-                    .init(color: .white.opacity(0.60), location: 0.42),
-                    .init(color: .white.opacity(0.36), location: 1.0)],
-            startPoint: .top, endPoint: .bottom)
+                    .init(color: .white.opacity(0.55), location: 0.40),
+                    .init(color: .white.opacity(0.26), location: 1.0)],
+            startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    /// La lueur du coin : n'existe qu'au voisinage de la source.
+    private var cornerMask: RadialGradient {
+        RadialGradient(
+            stops: [.init(color: .white, location: 0.0),
+                    .init(color: .white.opacity(0.35), location: 0.55),
+                    .init(color: .clear, location: 1.0)],
+            center: .topLeading, startRadius: 0, endRadius: 320)
     }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // Le fil éteint, toujours là : la carte reste délimitée.
+            // Le fil au repos, toujours là : l'arête répond à la lumière.
             shape.stroke(restLine, lineWidth: 1)
+
+            // La lueur du coin éclairé — douce, statique, jamais un néon.
+            shape.stroke(glow.opacity(0.35), lineWidth: 2.5)
+                .blur(radius: 3)
+                .mask(cornerMask)
 
             // La lumière du toucher. La pulsation ne tourne que doigt posé
             // (TimelineView en pause sinon) ; l'allumage est vif (0,22 s),
@@ -149,8 +147,8 @@ private struct GlassBorder: View {
             }
             .mask {
                 LinearGradient(stops: [.init(color: .white, location: 0.0),
-                                       .init(color: .white.opacity(0.72), location: 1.0)],
-                               startPoint: .top, endPoint: .bottom)
+                                       .init(color: .white.opacity(0.60), location: 1.0)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
                     .padding(-48)      // couvre le débord du flou
             }
             .opacity(lit ? 1 : 0)
@@ -158,6 +156,50 @@ private struct GlassBorder: View {
         }
         .blendMode(.screen)
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Le grand chiffre à reflet
+
+/// Le compteur de la carte : encre de base, et toutes les ~7 s un glint
+/// argenté le traverse en ~1,5 s — du métal poli qui accroche la lumière,
+/// pas un gadget qui clignote. Coupé par Reduce Motion.
+struct ShimmeringNumber: View {
+    let value: Int
+    var size: CGFloat = 36
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var text: Text {
+        Text("\(value)")
+            .font(.system(size: size, weight: .bold, design: .rounded))
+    }
+
+    var body: some View {
+        text
+            .foregroundStyle(Color.inkPrimary)
+            .contentTransition(.numericText())
+            .overlay {
+                if !reduceMotion {
+                    TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                        // Fenêtre de balayage : le glint ne vit que 22 % de
+                        // la période — le reste du temps, rien ne bouge.
+                        let u = timeline.date.timeIntervalSinceReferenceDate
+                            .truncatingRemainder(dividingBy: 7.0) / 7.0
+                        let p = u / 0.22
+                        if p < 1 {
+                            LinearGradient(
+                                stops: [.init(color: .clear, location: 0),
+                                        .init(color: .clear, location: max(p - 0.18, 0)),
+                                        .init(color: .white.opacity(0.55), location: p),
+                                        .init(color: .clear, location: min(p + 0.18, 1)),
+                                        .init(color: .clear, location: 1)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing)
+                            .mask(text)
+                        }
+                    }
+                }
+            }
     }
 }
 
@@ -202,12 +244,29 @@ struct ObjectiveGlassCard<Content: View>: View {
                         .glassEffect(.regular.tint(Color.black.opacity(0.55)).interactive(),
                                      in: shape)
 
-                    GlassNebula(paused: paused)
+                    GlassLight(paused: paused)
                         .clipShape(shape)
                         .blendMode(.plusLighter)
 
                     WoopGrain(density: 0.05, lightAlpha: 0.022, darkAlpha: 0.032)
                         .clipShape(shape)
+
+                    // Épaisseur du verre : un second fil INSCRIT, très faible,
+                    // et un souffle de lumière sous le bord haut — c'est ce
+                    // qui sépare une plaque noire d'un verre taillé.
+                    shape.inset(by: 1.5)
+                        .stroke(
+                            LinearGradient(
+                                stops: [.init(color: .white.opacity(0.07), location: 0.0),
+                                        .init(color: .white.opacity(0.015), location: 0.35),
+                                        .init(color: .clear, location: 1.0)],
+                                startPoint: .top, endPoint: .bottom),
+                            lineWidth: 1)
+                    shape.fill(
+                        LinearGradient(
+                            stops: [.init(color: .white.opacity(0.030), location: 0.0),
+                                    .init(color: .clear, location: 0.22)],
+                            startPoint: .top, endPoint: .bottom))
                 }
             }
             .overlay { GlassBorder(cornerRadius: cornerRadius, achieved: achieved,

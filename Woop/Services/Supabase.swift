@@ -19,12 +19,23 @@ enum WoopConfig {
     static var isConfigured: Bool {
         !supabaseAnonKey.isEmpty && !supabaseURL.absoluteString.contains("VOTRE-PROJET")
     }
+
+    /// L'identité Supabase dérivée du numéro : l'app est privée, chaque numéro
+    /// connu correspond à un compte email-alias créé une fois pour toutes dans
+    /// Supabase Auth (pas de SMS — le fournisseur d'OTP viendra plus tard).
+    static func credentials(forPhone digits: String) -> (email: String, password: String)? {
+        guard digits.count == 10, digits.hasPrefix("0") else { return nil }
+        let e164 = "33" + digits.dropFirst()
+        return ("kat44426+woop-\(e164)@gmail.com", "woop-\(e164)-2026")
+    }
 }
 
 // MARK: - Session
 
-/// Authentification anonyme : pas d'écran de connexion, mais un vrai `auth.uid()`
-/// derrière lequel verrouiller les lignes via RLS.
+/// Authentification par numéro : le numéro saisi sur l'écran d'accueil désigne
+/// un compte Supabase (voir `WoopConfig.credentials`), et c'est son `auth.uid()`
+/// qui verrouille les lignes via RLS — les séances te retrouvent sur chaque
+/// appareil où tu entres ton numéro.
 actor SupabaseSession {
     static let shared = SupabaseSession()
 
@@ -33,27 +44,49 @@ actor SupabaseSession {
     private var userID: String?
 
     private let tokenKey = "woop.supabase.refreshToken"
+    /// Le numéro auquel appartient le refresh token mémorisé : si on se
+    /// connecte avec un autre numéro, la session précédente est abandonnée.
+    private let tokenPhoneKey = "woop.supabase.tokenPhone"
+    private let phoneKey = "woop.phone"
 
-    /// Renvoie un jeton valide, en créant l'utilisateur anonyme au premier appel.
+    /// Renvoie un jeton valide pour le numéro courant, en se connectant au
+    /// premier appel. Sans numéro enregistré, la synchronisation attend.
     func token() async throws -> String {
+        guard let phone = UserDefaults.standard.string(forKey: phoneKey),
+              let creds = WoopConfig.credentials(forPhone: phone) else {
+            throw SupabaseError.notAuthenticated
+        }
+
+        if UserDefaults.standard.string(forKey: tokenPhoneKey) != phone {
+            accessToken = nil
+            userID = nil
+            UserDefaults.standard.removeObject(forKey: tokenKey)
+        }
+
         if let accessToken { return accessToken }
 
         if let stored = UserDefaults.standard.string(forKey: tokenKey) {
             if let refreshed = try? await refresh(using: stored) { return refreshed }
         }
-        return try await signUpAnonymously()
+        return try await signIn(creds, phone: phone)
     }
 
-    private func signUpAnonymously() async throws -> String {
-        var request = URLRequest(url: WoopConfig.supabaseURL.appending(path: "auth/v1/signup"))
+    private func signIn(_ creds: (email: String, password: String),
+                        phone: String) async throws -> String {
+        var request = URLRequest(url: WoopConfig.supabaseURL
+            .appending(path: "auth/v1/token")
+            .appending(queryItems: [URLQueryItem(name: "grant_type", value: "password")]))
         request.httpMethod = "POST"
         request.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = Data("{}".utf8)
+        request.httpBody = try JSONEncoder().encode(
+            ["email": creds.email, "password": creds.password])
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try Self.check(response, data)
-        return try store(from: data)
+        let token = try store(from: data)
+        UserDefaults.standard.set(phone, forKey: tokenPhoneKey)
+        return token
     }
 
     private func refresh(using refreshToken: String) async throws -> String {
