@@ -310,9 +310,6 @@ final class LoggedExercise {
     var order: Int = 0
     /// Temps de récupération prévu entre les séries, en secondes. 0 = non renseigné.
     var restSeconds: Int = 0
-    /// Temps réellement passé sur l'exercice quand il a été lancé au chrono,
-    /// en secondes. 0 = exercice simplement planifié, sans effort chronométré.
-    var durationSeconds: Int = 0
     var workout: Workout?
 
     @Relationship(deleteRule: .cascade, inverse: \StrengthSet.loggedExercise)
@@ -351,26 +348,20 @@ final class LoggedExercise {
 
     var totalSeconds: Int { orderedPhases.reduce(0) { $0 + $1.seconds } }
 
-    /// « 4 min 12 s », « 48 s ». Vide si l'exercice n'a pas été chronométré.
-    var durationLabel: String {
-        guard durationSeconds > 0 else { return "" }
-        let minutes = durationSeconds / 60, seconds = durationSeconds % 60
-        if minutes == 0 { return "\(seconds) s" }
-        return seconds == 0 ? "\(minutes) min" : "\(minutes) min \(seconds) s"
-    }
+    /// Temps cumulé sous tension : la somme des séries réellement chronométrées.
+    /// 0 quand l'exercice a été saisi sans passer par le compteur.
+    var timedSeconds: Int { orderedSets.reduce(0) { $0 + $1.durationSeconds } }
 
     /// Ligne de résumé affichée dans les listes.
     var summary: String {
         if exercise?.tracking == .setsRepsWeight || orderedPhases.isEmpty {
             let count = orderedSets.count
-            guard count > 0 else {
-                return durationSeconds > 0 ? durationLabel : "Aucune série"
-            }
+            guard count > 0 else { return "Aucune série" }
             let reps = orderedSets.map { "\($0.reps)" }.joined(separator: "/")
             var line = "\(count) séries · \(reps) reps · \(maxWeight.formatted(.number.precision(.fractionLength(0...1)))) kg"
-            // La durée ne s'affiche que si l'exercice a vraiment été lancé au
-            // chrono : sur un exercice planifié, elle n'existe pas.
-            if durationSeconds > 0 { line += " · \(durationLabel)" }
+            // Le temps sous tension n'apparaît que s'il a été mesuré : sur un
+            // exercice simplement planifié, il n'existe pas.
+            if timedSeconds > 0 { line += " · \(WoopDuration.label(timedSeconds))" }
             return line
         }
         let minutes = totalSeconds / 60
@@ -389,15 +380,21 @@ final class StrengthSet {
     var reps: Int = 10
     var weight: Double = 20
     var order: Int = 0
-    /// Cochée pendant la séance. Le réalisé peut différer du prévu.
+    /// Cochée pendant la séance. Le réalisé peut différer du prévu. Une série
+    /// lancée au compteur arrive déjà cochée : elle a été faite, pas prévue.
     var isDone: Bool = false
+    /// Temps réellement passé sous tension, en secondes. 0 = série cochée à la
+    /// main, sans mesure.
+    var durationSeconds: Int = 0
     var loggedExercise: LoggedExercise?
 
-    init(reps: Int, weight: Double, order: Int, isDone: Bool = false) {
+    init(reps: Int, weight: Double, order: Int,
+         isDone: Bool = false, durationSeconds: Int = 0) {
         self.reps = reps
         self.weight = weight
         self.order = order
         self.isDone = isDone
+        self.durationSeconds = durationSeconds
     }
 }
 
@@ -427,6 +424,19 @@ final class CardioPhase {
 
     var kind: PhaseKind { PhaseKind(rawValue: kindRaw) ?? .recuperation }
     var isEffort: Bool { kind.isEffort }
+}
+
+// MARK: - Durées
+
+/// Une durée en toutes lettres, partout pareil. Le nom est préfixé parce que
+/// `Duration` est un type de la bibliothèque standard.
+enum WoopDuration {
+    /// « 48 s », « 4 min 12 s », « 12 min ».
+    static func label(_ seconds: Int) -> String {
+        let minutes = seconds / 60, rest = seconds % 60
+        if minutes == 0 { return "\(rest) s" }
+        return rest == 0 ? "\(minutes) min" : "\(minutes) min \(rest) s"
+    }
 }
 
 // MARK: - Objectif

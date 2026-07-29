@@ -6,6 +6,10 @@ struct DraftSet: Identifiable {
     let id = UUID()
     var reps: Int = 12
     var weight: Double = 20
+    /// Renseignés quand la série a été lancée au compteur. `isDone` pilote à la
+    /// fois l'aspect de la card et le libellé du bouton principal.
+    var isDone: Bool = false
+    var durationSeconds: Int = 0
 }
 
 struct DraftPhase: Identifiable {
@@ -21,9 +25,6 @@ struct LoggedDraft {
     /// Une entrée par cycle ; chaque cycle contient ses phases.
     var cycles: [[DraftPhase]] = []
     var incline: Double = 0
-    /// Temps réellement passé sur l'exercice, quand la saisie suit une séance
-    /// lancée au chrono. 0 = exercice simplement planifié.
-    var durationSeconds: Int = 0
 }
 
 // MARK: - Feuille de saisie
@@ -32,14 +33,12 @@ struct LogExerciseSheet: View {
     let exercise: Exercise
     /// Ce qui a été fait la dernière fois sur cet exercice, s'il y a un historique.
     var lastTime: String?
-    /// Temps passé sur l'exercice quand la feuille suit la page de chrono.
-    var duration: Int?
     let onSave: (LoggedDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var sets: [DraftSet]
-    @State private var restSeconds: Int
+    @State private var sets: [DraftSet] = [DraftSet()]
+    @State private var restSeconds = 60
     @State private var phases: [DraftPhase] = [
         DraftPhase(kind: .repos, seconds: 30, speed: 6),
         DraftPhase(kind: .acceleration, seconds: 30, speed: 16)
@@ -49,21 +48,13 @@ struct LogExerciseSheet: View {
     @State private var steadySpeed: Double = 7
     @State private var incline: Double = 0
 
-    /// `prefill` reprend les séries de la dernière fois. Il passe par un init
-    /// plutôt que par un `onAppear` : la feuille doit s'ouvrir DÉJÀ remplie, pas
-    /// afficher un instant les valeurs par défaut avant de se corriger.
-    init(exercise: Exercise,
-         lastTime: String? = nil,
-         prefill: [DraftSet]? = nil,
-         prefillRest: Int? = nil,
-         duration: Int? = nil,
-         onSave: @escaping (LoggedDraft) -> Void) {
-        self.exercise = exercise
-        self.lastTime = lastTime
-        self.duration = duration
-        self.onSave = onSave
-        _sets = State(initialValue: prefill ?? [DraftSet()])
-        _restSeconds = State(initialValue: prefillRest ?? 60)
+    /// La série en cours d'exécution au compteur, s'il y en a une.
+    @State private var running: RunningSeries?
+
+    /// L'indice de la série lancée. Un `item:` plutôt qu'un booléen : c'est
+    /// l'indice qui porte l'information, et il ne peut pas se désynchroniser.
+    private struct RunningSeries: Identifiable {
+        let id: Int
     }
 
     var body: some View {
@@ -72,11 +63,6 @@ struct LogExerciseSheet: View {
                 WoopBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        // L'effort qui vient d'être fait passe devant l'historique :
-                        // c'est le fait saillant du moment.
-                        if let duration, duration > 0 {
-                            EffortBanner(seconds: duration)
-                        }
                         if let lastTime {
                             LastTimeBanner(text: lastTime)
                         }
@@ -88,9 +74,12 @@ struct LogExerciseSheet: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 24)
                 }
             }
+            // Le geste principal est ancré en bas d'écran, pas perdu dans un
+            // coin de barre de navigation : c'est LE bouton de cette feuille.
+            .safeAreaInset(edge: .bottom) { primaryAction }
             .navigationTitle(exercise.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -98,21 +87,112 @@ struct LogExerciseSheet: View {
                     Button("Annuler") { dismiss() }
                         .foregroundStyle(Color.inkSecondary)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    // Après un effort chronométré, on n'« ajoute » pas un plan :
-                    // on enregistre ce qui vient d'être fait.
-                    Button(duration == nil ? "Ajouter" : "Enregistrer") { save() }
-                        .fontWeight(.semibold)
-                }
             }
         }
         .presentationBackground(Color.woopSheet)
         .preferredColorScheme(.dark)
+        // L'appareil confirme la série en même temps que les paillettes partent.
+        .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
+        .fullScreenCover(item: $running) { series in
+            LiveExerciseView(exercise: exercise,
+                             seriesNumber: series.id + 1,
+                             target: target(for: series.id)) { seconds in
+                complete(series.id, seconds: seconds)
+            } onCancel: {
+                running = nil
+            }
+        }
+    }
+
+    // MARK: Le geste principal
+
+    /// Le bas de l'écran dit toujours l'étape suivante. Tant qu'une série
+    /// attend, un seul geste : la lancer. Une fois tout fait, les deux suites
+    /// possibles se présentent côte à côte — en refaire une, ou enregistrer.
+    /// Le lien sous la card ne suffisait pas : personne ne le voyait.
+    private var primaryAction: some View {
+        VStack(spacing: 10) {
+            if canAddSeries {
+                Button {
+                    withAnimation(.easeOut(duration: 0.25)) { addSeries() }
+                } label: {
+                    Label("Ajouter une série", systemImage: "plus")
+                }
+                .buttonStyle(WoopSecondaryButtonStyle())
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
+            Button(primaryTitle) {
+                if let index = pendingSeries {
+                    running = RunningSeries(id: index)
+                } else {
+                    save()
+                }
+            }
+            .buttonStyle(WoopPrimaryButtonStyle())
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
+        .background {
+            // Le contenu défile DERRIÈRE le bouton : sans ce fondu, une card
+            // viendrait se couper net sur son arête.
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0), location: 0),
+                    .init(color: .black.opacity(0.62), location: 0.42),
+                    .init(color: .black.opacity(0.88), location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
+    }
+
+    private var primaryTitle: String {
+        pendingSeries == nil ? "Enregistrer l'exercice" : "Lancer la série"
+    }
+
+    /// La première série pas encore faite. Nul pour le cardio, qui n'a pas de
+    /// séries à lancer : sa feuille ne fait qu'enregistrer.
+    private var pendingSeries: Int? {
+        guard exercise.tracking == .setsRepsWeight else { return nil }
+        return sets.firstIndex { !$0.isDone }
+    }
+
+    /// On ne propose d'en ajouter une qu'une fois les précédentes faites :
+    /// sinon le bas de l'écran offrirait deux gestes concurrents.
+    private var canAddSeries: Bool {
+        exercise.tracking == .setsRepsWeight && pendingSeries == nil
+    }
+
+    private func addSeries() {
+        sets.append(DraftSet(reps: sets.last?.reps ?? 12,
+                             weight: sets.last?.weight ?? 20))
+    }
+
+    private func target(for index: Int) -> String {
+        guard sets.indices.contains(index) else { return "" }
+        let set = sets[index]
+        return "\(set.reps) reps · \(set.weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+    }
+
+    private func complete(_ index: Int, seconds: Int) {
+        running = nil
+        // Le plein écran met un peu moins d'une demi-seconde à se refermer.
+        // Valider tout de suite ferait jouer les paillettes derrière lui, donc
+        // pour personne — on attend que la card soit à l'air libre.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+            guard sets.indices.contains(index) else { return }
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.62)) {
+                sets[index].isDone = true
+                sets[index].durationSeconds = seconds
+            }
+        }
     }
 
     private func save() {
         var draft = LoggedDraft()
-        draft.durationSeconds = duration ?? 0
         switch exercise.tracking {
         case .setsRepsWeight:
             draft.sets = sets
@@ -138,13 +218,20 @@ struct LogExerciseSheet: View {
 
             ForEach($sets) { $set in
                 let index = sets.firstIndex(where: { $0.id == set.id }) ?? 0
+                // Pas de biseau néon sur une série faite : dans cette app le
+                // violet dit « actif », c'est l'or qui dit « accompli ». La
+                // pastille suffit, et elle parle le même langage que les séries
+                // cochées de la séance en cours.
                 WoopCard(cornerRadius: 18, padding: 16) {
                     VStack(alignment: .leading, spacing: 14) {
-                        HStack {
+                        HStack(spacing: 8) {
                             Text("Série \(index + 1)")
                                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                                 .foregroundStyle(Color.inkPrimary)
-                            Spacer()
+                            if set.isDone {
+                                DoneBadge(seconds: set.durationSeconds)
+                            }
+                            Spacer(minLength: 0)
                             if sets.count > 1 {
                                 Button {
                                     withAnimation { sets.removeAll { $0.id == set.id } }
@@ -154,23 +241,18 @@ struct LogExerciseSheet: View {
                                 }
                             }
                         }
+                        // Les steppers restent actifs après coup : le réalisé
+                        // diffère souvent du prévu, et c'est le réalisé qui compte.
                         NumberStepper(label: "Répétitions", value: $set.reps,
                                       range: 1...60, step: 1, unit: "reps")
                         DecimalStepper(label: "Charge", value: $set.weight,
                                        range: 0...300, step: 2.5, unit: "kg")
                     }
                 }
+                // Les paillettes débordent volontairement de la card : une
+                // gerbe rognée par son propre cadre n'est plus une gerbe.
+                .overlay { SparkleBurst(trigger: set.isDone ? 1 : 0) }
             }
-
-            Button {
-                withAnimation {
-                    sets.append(DraftSet(reps: sets.last?.reps ?? 12,
-                                         weight: sets.last?.weight ?? 20))
-                }
-            } label: {
-                Label("Ajouter une série", systemImage: "plus")
-            }
-            .buttonStyle(WoopSecondaryButtonStyle())
 
             WoopCard(cornerRadius: 18, padding: 16) {
                 NumberStepper(label: "Récupération", value: $restSeconds,
@@ -280,39 +362,26 @@ struct LogExerciseSheet: View {
     }
 }
 
-// MARK: - Effort qui vient d'être fait
+// MARK: - Série accomplie
 
-/// Ce que le chrono a mesuré. Une seule ligne, mais elle porte l'or de la
-/// récompense : c'est la seule information de cette feuille qui n'a pas été
-/// saisie à la main.
-struct EffortBanner: View {
+/// La marque d'une série faite, et le temps que le compteur a mesuré. C'est la
+/// seule information de cette feuille qui n'ait pas été saisie à la main — d'où
+/// l'or, réservé dans toute l'app à ce qui a été gagné.
+struct DoneBadge: View {
     let seconds: Int
 
-    private var label: String {
-        let minutes = seconds / 60, rest = seconds % 60
-        if minutes == 0 { return "\(rest) s" }
-        return rest == 0 ? "\(minutes) min" : "\(minutes) min \(rest) s"
-    }
-
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "stopwatch")
-                .font(.caption)
-                .foregroundStyle(Color.woopGold.opacity(0.85))
-            Text("Effort mesuré : \(label)")
-                .font(.system(.footnote, design: .rounded, weight: .medium))
-                .foregroundStyle(Color.inkSecondary)
-            Spacer()
+        HStack(spacing: 4) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 9, weight: .bold))
+            Text(WoopDuration.label(seconds))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(Color.woopGold.opacity(0.07))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .strokeBorder(Color.woopGold.opacity(0.16), lineWidth: 1)
-        )
+        .foregroundStyle(Color.woopGold)
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(Capsule().fill(Color.woopGold.opacity(0.14)))
+        .overlay(Capsule().strokeBorder(Color.woopGold.opacity(0.32), lineWidth: 1))
+        .transition(.scale(scale: 0.7).combined(with: .opacity))
     }
 }
 
