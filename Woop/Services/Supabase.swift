@@ -21,12 +21,17 @@ enum WoopConfig {
     }
 
     /// L'identité Supabase dérivée du numéro : l'app est privée, chaque numéro
-    /// connu correspond à un compte email-alias créé une fois pour toutes dans
-    /// Supabase Auth (pas de SMS — le fournisseur d'OTP viendra plus tard).
+    /// connu correspond à un compte email-alias (la boîte Gmail de chacune)
+    /// créé une fois pour toutes dans Supabase Auth — pas de SMS, le
+    /// fournisseur d'OTP viendra plus tard. Un numéro inconnu ne synchronise pas.
+    private static let accounts: [String: String] = [
+        "0633285654": "kat44426+woop-33633285654@gmail.com",        // kathryn
+        "0620373383": "margauxvieljeux+woop-33620373383@gmail.com"  // margaux
+    ]
+
     static func credentials(forPhone digits: String) -> (email: String, password: String)? {
-        guard digits.count == 10, digits.hasPrefix("0") else { return nil }
-        let e164 = "33" + digits.dropFirst()
-        return ("kat44426+woop-\(e164)@gmail.com", "woop-\(e164)-2026")
+        guard let email = accounts[digits] else { return nil }
+        return (email, "woop-33\(digits.dropFirst())-2026")
     }
 }
 
