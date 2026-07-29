@@ -3,13 +3,11 @@ import SwiftData
 
 struct HomeView: View {
     @Binding var selection: WoopTab
-    @Binding var showActiveSheet: Bool
 
     @Environment(\.modelContext) private var context
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
 
     @State private var askStart = false
-    @State private var confirmFinish = false
     @State private var showAllWorkouts = false
 
     private var calendar: Calendar { .current }
@@ -51,14 +49,6 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .navigationDestination(isPresented: $showAllWorkouts) { WorkoutsListView() }
             .sheet(isPresented: $askStart) { startSheet }
-            .alert("Terminer cette séance ?", isPresented: $confirmFinish) {
-                Button("Continuer la séance", role: .cancel) {}
-                Button("Terminer") { finishActive() }
-            } message: {
-                if let activeWorkout {
-                    Text("\(activeWorkout.exerciseCount) exercice\(activeWorkout.exerciseCount > 1 ? "s" : "") · \(Int(activeWorkout.duration / 60)) minutes.")
-                }
-            }
         }
     }
 
@@ -115,16 +105,13 @@ struct HomeView: View {
                         .font(.system(size: 15, weight: .medium, design: .rounded))
                         .foregroundStyle(Color.inkPrimary)
 
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(doneThisWeek)")
-                            .font(.system(size: 46, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.inkPrimary)
-                            .contentTransition(.numericText())
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        ShimmeringNumber(value: doneThisWeek, size: 34)
                         Text("/ \(Goal.weeklyTarget) entraînements")
-                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .font(.system(size: 13, weight: .regular, design: .rounded))
                             .foregroundStyle(Color.inkSecondary)
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 9)
 
                     TrophyRow(completed: doneThisWeek, total: Goal.weeklyTarget,
                               slotSize: 44, justified: true, luminous: true)
@@ -139,33 +126,11 @@ struct HomeView: View {
 
     // MARK: - Action principale
 
+    /// Quand une séance est ouverte, c'est l'overlay flottant (au-dessus de la
+    /// barre d'onglets) qui porte reprendre/arrêter — pas de carte doublon ici.
     @ViewBuilder
     private var actionZone: some View {
-        if let active = activeWorkout {
-            WoopCard(cornerRadius: 24, padding: 18) {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 10) {
-                        PulsingDot()
-                        Text("Entraînement en cours")
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(Color.inkPrimary)
-                        Spacer()
-                    }
-
-                    Text("\(active.exerciseCount) exercice\(active.exerciseCount > 1 ? "s" : "") ajouté\(active.exerciseCount > 1 ? "s" : "") · commencé à \(active.startedAt.formatted(date: .omitted, time: .shortened))")
-                        .font(.system(.footnote, design: .rounded))
-                        .foregroundStyle(Color.inkSecondary)
-
-                    HStack(spacing: 10) {
-                        Button("Reprendre") { showActiveSheet = true }
-                            .buttonStyle(WoopPrimaryButtonStyle())
-                        Button("Terminer") { confirmFinish = true }
-                            .buttonStyle(WoopSecondaryButtonStyle())
-                            .frame(maxWidth: 130)
-                    }
-                }
-            }
-        } else {
+        if activeWorkout == nil {
             Button("Commencer un entraînement") { askStart = true }
                 .buttonStyle(WoopPrimaryButtonStyle())
         }
@@ -261,14 +226,6 @@ struct HomeView: View {
         context.insert(workout)
         try? context.save()
         selection = .exercises
-    }
-
-    private func finishActive() {
-        guard let active = activeWorkout else { return }
-        active.endedAt = .now
-        try? context.save()
-        let snapshot = active.snapshot()
-        Task.detached { await SupabaseSync.shared.push([snapshot]) }
     }
 }
 

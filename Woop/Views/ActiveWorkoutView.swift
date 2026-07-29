@@ -1,38 +1,92 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Accessoire de barre d'onglets
+// MARK: - Overlay de séance en cours
 
-/// Barre flottante au-dessus de la navigation, sur le modèle du « en cours de
-/// lecture » d'iOS. C'est le seul endroit où l'on utilise le liquid glass natif :
-/// elle survole le contenu, donc elle doit le laisser transparaître.
-struct ActiveWorkoutAccessory: View {
+/// Carte flottante au-dessus de la barre d'onglets, sur le modèle du « en cours
+/// de lecture » d'iOS. Verre liquide natif : elle survole le contenu, donc elle
+/// doit le laisser transparaître. Un halo « égaliseur » respire en tête, comme
+/// une piste audio ; l'entraînement et le bouton Arrêter vivent en dessous.
+struct ActiveWorkoutOverlay: View {
     let workout: Workout
-    let onTap: () -> Void
+    let onOpen: () -> Void
+
+    @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var confirmStop = false
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 11) {
+        let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
+
+        VStack(spacing: 13) {
+            // Poignée, comme sur les vrais overlays d'appel : elle dit
+            // « je m'ouvre » sans un mot.
+            Capsule()
+                .fill(Color.white.opacity(0.28))
+                .frame(width: 38, height: 5)
+
+            BreathingGlow(paused: reduceMotion)
+                .frame(height: 60)
+
+            HStack(spacing: 12) {
                 PulsingDot()
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Séance en cours")
-                        .font(.system(.footnote, design: .rounded, weight: .semibold))
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
                         .foregroundStyle(Color.inkPrimary)
                     Text(subtitle)
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(Color.inkMuted)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
+
+                Button { confirmStop = true } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Arrêter")
+                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.inkPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 13)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
 
                 Image(systemName: "chevron.up")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.woopViolet)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 6)
         }
-        .buttonStyle(.plain)
+        .padding(.init(top: 16, leading: 14, bottom: 20, trailing: 14))
+        .background {
+            // Verre liquide natif, rien d'autre : pas de fill, pas de liseré
+            // maison — le matériau porte seul le relief et la réfraction.
+            Color.clear
+                .glassEffect(.regular.tint(Color.black.opacity(0.30)).interactive(),
+                             in: shape)
+        }
+        .contentShape(shape)
+        .onTapGesture(perform: onOpen)
+        .alert(workout.exerciseCount == 0 ? "Annuler cette séance ?"
+                                          : "Terminer cette séance ?",
+               isPresented: $confirmStop) {
+            Button("Continuer la séance", role: .cancel) {}
+            if workout.exerciseCount == 0 {
+                Button("Annuler", role: .destructive) { cancelWorkout() }
+            } else {
+                Button("Terminer") { finish() }
+            }
+        } message: {
+            Text(workout.exerciseCount == 0
+                 ? "Aucun exercice enregistré — la séance sera supprimée."
+                 : "\(workout.exerciseCount) exercices · \(workout.setCount) séries · \(Int(workout.duration / 60)) minutes.")
+        }
     }
 
     private var subtitle: String {
@@ -40,23 +94,149 @@ struct ActiveWorkoutAccessory: View {
         let exos = count == 0 ? "aucun exercice" : "\(count) exercice\(count > 1 ? "s" : "")"
         return "\(exos) · \(Int(workout.duration / 60)) min"
     }
+
+    private func finish() {
+        workout.endedAt = .now
+        try? context.save()
+        let snapshot = workout.snapshot()
+        Task.detached { await SupabaseSync.shared.push([snapshot]) }
+    }
+
+    private func cancelWorkout() {
+        context.delete(workout)
+        try? context.save()
+    }
+}
+
+// MARK: - Respiration de lumière
+
+/// La signature de la séance en cours : pas un visualiseur, une énergie.
+/// Un orbe de lumière blanche glisse lentement le long d'un filament et laisse
+/// une traînée qui s'éteint, pendant que de fines poussières montent — le même
+/// langage que le splash (orbe électrique, poussière), en blanc.
+struct BreathingGlow: View {
+    var paused = false
+
+    private static let dustCount = 14
+
+    /// Pseudo-aléatoire déterministe par indice — stable d'une frame à l'autre.
+    private static func hash(_ i: Int, _ seed: Double) -> Double {
+        let v = sin(Double(i) * 127.1 + seed * 311.7) * 43758.5453
+        return v - v.rounded(.down)
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                let w = size.width, h = size.height
+
+                // La position de l'orbe : un glissement lent gauche-droite,
+                // avec une ondulation verticale décalée — la course ne se
+                // répète jamais à l'identique.
+                func orb(_ time: Double) -> CGPoint {
+                    CGPoint(x: w * (0.5 + 0.37 * sin(time * 0.55)),
+                            y: h * (0.5 + 0.17 * sin(time * 1.15 + 0.9)))
+                }
+
+                // Le filament : la ligne de vie que l'orbe parcourt, à peine
+                // là, éteinte aux deux bouts.
+                var line = Path()
+                line.move(to: CGPoint(x: 0, y: h * 0.5))
+                for step in 1...48 {
+                    let x = Double(step) / 48
+                    line.addLine(to: CGPoint(x: w * x,
+                                             y: h * (0.5 + 0.05 * sin(x * 4.2 + t * 0.3))))
+                }
+                ctx.stroke(line, with: .linearGradient(
+                    Gradient(stops: [.init(color: .clear, location: 0),
+                                     .init(color: .white.opacity(0.10), location: 0.3),
+                                     .init(color: .white.opacity(0.10), location: 0.7),
+                                     .init(color: .clear, location: 1)]),
+                    startPoint: .zero, endPoint: CGPoint(x: w, y: 0)), lineWidth: 1)
+
+                // La traînée : les positions récentes de l'orbe, qui
+                // s'éteignent et rétrécissent — la mémoire du mouvement.
+                for k in stride(from: 26, through: 1, by: -1) {
+                    let age = Double(k) / 26
+                    let p = orb(t - Double(k) * 0.055)
+                    let radius = CGFloat(3 + 16 * (1 - age))
+                    let alpha = 0.30 * pow(1 - age, 1.8)
+                    let rect = CGRect(x: p.x - radius, y: p.y - radius,
+                                      width: radius * 2, height: radius * 2)
+                    ctx.fill(Path(ellipseIn: rect), with: .radialGradient(
+                        Gradient(colors: [.white.opacity(alpha), .clear]),
+                        center: p, startRadius: 0, endRadius: radius))
+                }
+
+                // L'orbe : un cœur quasi blanc pur, deux halos concentriques,
+                // et une pulsation d'effort (~4 s) qui gonfle le tout.
+                let head = orb(t)
+                let pulse = 1.0 + 0.10 * sin(t * 1.5)
+                let halos: [(r: Double, alpha: Double)] = [
+                    (30 * pulse, 0.16), (16 * pulse, 0.38), (7 * pulse, 0.95)
+                ]
+                for halo in halos {
+                    let radius = CGFloat(halo.r)
+                    let rect = CGRect(x: head.x - radius, y: head.y - radius,
+                                      width: radius * 2, height: radius * 2)
+                    ctx.fill(Path(ellipseIn: rect), with: .radialGradient(
+                        Gradient(colors: [.white.opacity(halo.alpha), .clear]),
+                        center: head, startRadius: 0, endRadius: radius))
+                }
+
+                // Les poussières : elles montent lentement, scintillent à
+                // peine, et naissent/meurent en fondu aux bords.
+                for i in 0..<Self.dustCount {
+                    let speed = 0.028 + 0.05 * Self.hash(i, 1)
+                    let phase = Self.hash(i, 2)
+                    let yFrac = 1.0 - (t * speed + phase)
+                        .truncatingRemainder(dividingBy: 1)
+                    let x = w * Self.hash(i, 3)
+                        + 7 * sin(t * (0.5 + Self.hash(i, 4)) + Double(i))
+                    let fade = pow(sin(.pi * yFrac), 1.4)
+                    let twinkle = 0.55 + 0.45 * sin(t * (1.1 + Self.hash(i, 5)) + Double(i) * 2.4)
+                    let radius = 0.7 + 1.0 * Self.hash(i, 6)
+                    let rect = CGRect(x: x - radius, y: h * yFrac - radius,
+                                      width: radius * 2, height: radius * 2)
+                    ctx.fill(Path(ellipseIn: rect),
+                             with: .color(.white.opacity(0.55 * fade * twinkle)))
+                }
+            }
+            .blendMode(.plusLighter)
+        }
+        // Les bouts s'évanouissent dans le verre : pas d'arête, que de la lumière.
+        .mask(
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .white, location: 0.16),
+                    .init(color: .white, location: 0.84),
+                    .init(color: .clear, location: 1.0)
+                ],
+                startPoint: .leading, endPoint: .trailing
+            )
+        )
+    }
 }
 
 // MARK: - Feuille de la séance en cours
 
 struct ActiveWorkoutSheet: View {
     let workout: Workout
+    /// « Ajouter un exercice » : fourni par la racine, ferme la feuille et
+    /// ouvre la bibliothèque.
+    var onAddExercise: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var recap: Workout?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                WoopBackground()
-                ScrollView {
+            ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         header
 
@@ -81,6 +261,13 @@ struct ActiveWorkoutSheet: View {
                             }
                         }
 
+                        Button {
+                            onAddExercise?()
+                        } label: {
+                            Label("Ajouter un exercice", systemImage: "plus")
+                        }
+                        .buttonStyle(WoopSecondaryButtonStyle())
+
                         Button("Terminer l'entraînement") { confirmFinish = true }
                             .buttonStyle(WoopPrimaryButtonStyle())
                             .disabled(workout.orderedExercises.isEmpty)
@@ -98,9 +285,8 @@ struct ActiveWorkoutSheet: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
-                }
             }
-            .navigationTitle("Entraînement en cours")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -118,32 +304,64 @@ struct ActiveWorkoutSheet: View {
                 WorkoutRecapView(workout: finished) { dismiss() }
             }
         }
-        .presentationBackground(Color.woopSheet)
+        // Tout liquid glass, comme le mini overlay : la feuille est du verre
+        // fumé, la home transparaît derrière — aucun fond galactique propre.
+        .presentationBackground {
+            Color.clear
+                .glassEffect(.regular.tint(Color.black.opacity(0.32)), in: .rect)
+        }
         .preferredColorScheme(.dark)
     }
 
+    /// Le même contenu que le mini overlay : l'orbe d'énergie, la pastille,
+    /// « Séance en cours » et Arrêter — la continuité du morphisme se joue là.
+    /// Pas de fond propre : la feuille entière est déjà le même verre que la
+    /// carte, le header pose directement dessus.
     private var header: some View {
-        WoopCard(neon: true) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Démarré à \(workout.startedAt.formatted(date: .omitted, time: .shortened))")
-                        .font(.system(.footnote, design: .rounded))
-                        .foregroundStyle(Color.inkMuted)
-                    Text("\(Int(workout.duration / 60)) minutes")
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
+        VStack(spacing: 13) {
+            BreathingGlow(paused: reduceMotion)
+                .frame(height: 60)
+
+            HStack(spacing: 12) {
+                PulsingDot()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Séance en cours")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
                         .foregroundStyle(Color.inkPrimary)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Volume")
-                        .font(.system(.footnote, design: .rounded))
+                    Text(subtitle)
+                        .font(.caption)
                         .foregroundStyle(Color.inkMuted)
-                    Text("\(Int(workout.totalVolume)) kg")
-                        .font(.system(.title3, design: .rounded, weight: .semibold))
-                        .foregroundStyle(Color.woopViolet)
                 }
+
+                Spacer(minLength: 8)
+
+                Button { confirmFinish = true } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Arrêter")
+                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.inkPrimary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 13)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .disabled(workout.orderedExercises.isEmpty)
+                .opacity(workout.orderedExercises.isEmpty ? 0.4 : 1)
             }
+            .padding(.horizontal, 6)
         }
+        .padding(.init(top: 6, leading: 2, bottom: 10, trailing: 2))
+    }
+
+    private var subtitle: String {
+        let count = workout.exerciseCount
+        let exos = count == 0 ? "aucun exercice" : "\(count) exercice\(count > 1 ? "s" : "")"
+        return "\(exos) · \(Int(workout.duration / 60)) min"
     }
 
     private func finish() {
