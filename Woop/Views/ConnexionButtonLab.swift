@@ -12,12 +12,21 @@ struct ConnexionButtonLab: View {
         ZStack {
             Color.black.ignoresSafeArea()
             VStack(spacing: 18) {
+                // Le retour, à sa place naturelle : en tête, côté gauche.
+                HStack {
+                    DiamondBackButton {}
+                    Spacer()
+                }
                 DiamondInputField(placeholder: "Adresse email", text: $emptyText)
                 DiamondInputField(placeholder: "Adresse email", text: $filledText)
                 DiamondConnexionButton {}
                 // La copie en état « tap » permanent : pour régler l'éveil
                 // de l'écrin au pixel, sans devoir garder le doigt posé.
                 DiamondConnexionButton(benchPress: 1) {}
+                DiamondSecondaryButton(title: "CRÉER UN COMPTE") {}
+                // La copie du secondary en tap : la fumée d'éveil, figée
+                // pour le réglage au pixel.
+                DiamondSecondaryButton(title: "CRÉER UN COMPTE", benchPress: 1) {}
             }
             .padding(.horizontal, 26)
         }
@@ -199,6 +208,114 @@ struct DiamondConnexionButton: View {
                     .foregroundStyle(Color.white.opacity(0.82))
                     .padding(.trailing, 22)
             }
+    }
+}
+
+// MARK: - Bouton retour (rond, verre liquide)
+
+/// Le bouton icône rond du système (retour, fermetures) : un disque de
+/// Liquid Glass NATIF — le fond se réfracte dedans — serti d'un anneau
+/// hairline imparfait (`diamondRing`) qui murmure, chevron en dégradé blanc.
+struct DiamondBackButton: View {
+    var icon: String = "chevron.left"
+    var action: () -> Void = {}
+
+    private static let size: CGFloat = 46
+    /// Marge du shader : le souffle de l'anneau est minuscule.
+    private static let pad: CGFloat = 10
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(LinearGradient(
+                    colors: [.white.opacity(0.95), .white.opacity(0.55)],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(width: Self.size, height: Self.size)
+                .glassEffect(.regular.tint(.black.opacity(0.45)).interactive(),
+                             in: Circle())
+                .overlay { ring }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var ring: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            let t = Float(tl.date.timeIntervalSinceReferenceDate
+                .truncatingRemainder(dividingBy: 900))
+            let side = Self.size + Self.pad * 2
+            Rectangle()
+                .fill(.white)
+                .frame(width: side, height: side)
+                .colorEffect(ShaderLibrary.diamondRing(
+                    .float2(side, side), .float(t), .float(Float(Self.pad))))
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Bouton secondaire
+
+/// Le second rôle sous le primaire : noir profond (ni métal, ni fumée — une
+/// profondeur calme), liseré discret imparfait à peine animé
+/// (`diamondSecondary`), texte en retrait du CONNEXION.
+struct DiamondSecondaryButton: View {
+    let title: String
+    /// Le banc force l'état tap ; nil = interaction réelle.
+    var benchPress: Float? = nil
+    var action: () -> Void = {}
+
+    /// Marge large : la fumée d'éveil s'échappe AUTOUR du bouton au tap.
+    private static let pad: CGFloat = 30
+
+    /// Même rampe que le primaire : 0,30 s à l'allumage, 0,55 s au relâcher.
+    @State private var pressEdge: Date = .distantPast
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13.5, weight: .medium))
+                .tracking(4.6)
+                .padding(.leading, 4.6)
+                .foregroundStyle(LinearGradient(stops: [
+                    .init(color: .white.opacity(0.78), location: 0.0),
+                    .init(color: .white.opacity(0.62), location: 0.45),
+                    .init(color: .white.opacity(0.40), location: 1.0)
+                ], startPoint: .top, endPoint: .bottom))
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background { ecrin }
+        }
+        .buttonStyle(DiamondPressStyle { p in
+            guard p != isPressed else { return }
+            pressEdge = .now
+            isPressed = p
+        })
+    }
+
+    private var ecrin: some View {
+        GeometryReader { geo in
+            let w = geo.size.width + Self.pad * 2
+            let h = geo.size.height + Self.pad * 2
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let since = tl.date.timeIntervalSince(pressEdge)
+                let raw = min(max(since / (isPressed ? 0.30 : 0.55), 0), 1)
+                let eased = Float(raw * raw * (3 - 2 * raw))
+                let press = benchPress ?? (isPressed ? eased : 1 - eased)
+                Rectangle()
+                    .fill(.white)
+                    .frame(width: w, height: h)
+                    .colorEffect(ShaderLibrary.diamondSecondary(
+                        .float2(w, h), .float(t),
+                        .float(Float(Self.pad)), .float(19),
+                        .float(press)))
+            }
+            .offset(x: -Self.pad, y: -Self.pad)
+        }
+        .allowsHitTesting(false)
     }
 }
 

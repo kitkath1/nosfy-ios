@@ -111,7 +111,8 @@ static float rimLight(float2 p, float2 halfB, float t) {
     // ---- La fumée : volutes fractales, domaine déformé, dérive lente.
     float inside = smoothstep(0.6, -1.2, d);
     float smoke = 0.0;
-    if (inside > 0.0) {
+    float smokeOut = 0.0;
+    if (d < 30.0) {
         float2 sc = p * float2(0.030, 0.052);      // volutes larges, couchées
         float2 drift = float2(t * 0.030, -t * 0.016);
         // Domaine deux fois déformé : les volutes se tordent sur elles-mêmes
@@ -131,6 +132,11 @@ static float rimLight(float2 p, float2 halfB, float t) {
                 + s * (0.075 + 0.42 * nearRim * rim) * (1.0 + 0.7 * press)
                 + 0.026 * nearRim * rim;
         smoke *= inside;
+        // L'effet wahou : au tap, la fumée SORT du bouton — des volutes
+        // franches qui s'échappent du liseré et enveloppent l'obsidienne,
+        // fondues avant d'atteindre les voisins (~25 pt).
+        float escape = exp(-max(d, 0.0) / 12.0) * (1.0 - inside);
+        smokeOut = press * escape * s * (0.14 + 0.12 * rim);
     }
 
     // ---- Les particules : des poussières qui émanent du bord, s'éloignent
@@ -204,7 +210,7 @@ static float rimLight(float2 p, float2 halfB, float t) {
         }
     }
 
-    float lum = smoke + sheen + line + halo + spark + glitter;
+    float lum = smoke + smokeOut + sheen + line + halo + spark + glitter;
     // Dither léger : tue le banding des halos et de la fumée.
     lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
     lum = clamp(lum, 0.0, 1.0);
@@ -212,7 +218,8 @@ static float rimLight(float2 p, float2 halfB, float t) {
     // Dedans : opaque (l'obsidienne). Dehors : seule la lumière existe.
     // La ligne elle-même porte son alpha — sinon la rampe d'opacité du bord
     // mange la hairline exactement là où elle vit (d ≈ 0).
-    float a = mix(clamp((line + halo + spark + glitter) * 1.6, 0.0, 1.0), 1.0, inside);
+    float a = mix(clamp((line + halo + spark + glitter + smokeOut * 2.2) * 1.6,
+                        0.0, 1.0), 1.0, inside);
     return half4(half3(lum * a), half(a));      // prémultiplié
 }
 
@@ -302,5 +309,147 @@ static float inputRim(float2 p, float2 halfB, float t) {
     lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
     lum = clamp(lum, 0.0, 1.0);
     float a = mix(clamp((line + halo + glitter) * 1.6, 0.0, 1.0), 1.0, inside);
+    return half4(half3(lum * a), half(a));      // prémultiplié
+}
+
+// MARK: - Anneau « diamant » (bouton icône rond, retour)
+//
+// Le liseré seul, posé SUR le Liquid Glass natif : un cercle hairline
+// imparfait et discret — deux-trois accents qui rampent, des pointes qui
+// s'allument à peine. TOUT l'intérieur est transparent : le verre respire
+// dessous, le shader ne peint que la lumière.
+
+[[ stitchable ]] half4 diamondRing(float2 position, half4 color,
+                                   float2 size, float t, float pad) {
+    float2 center = size * 0.5;
+    float2 p = position - center;
+    float radius = min(center.x, center.y) - pad;
+    float d = length(p) - radius;
+
+    // Accents : sur un cercle, l'angle est une abscisse honnête (vitesse
+    // uniforme le long du trait) — deux nappes en sens contraires.
+    float ang = atan2(p.y, p.x);
+    float2 ring = float2(cos(ang), sin(ang));
+    float seg = bfbm(ring * 1.8 + float2(t * 0.14, -t * 0.10));
+    float fine = bnoise(ring * 4.5 + float2(-t * 0.26, t * 0.20));
+    float accents = seg * 0.72 + fine * 0.28;
+    accents = pow(clamp(accents, 0.0, 1.0), 4.0);
+    float topness = clamp(-p.y / max(radius, 1.0), 0.0, 1.0);
+    float bias = 0.40 + 0.45 * topness * topness;
+    float breath = 0.78 + 0.22 * sin(t * 1.1 + ang * 2.0);
+    float rim = clamp(3.6 * accents * bias * breath, 0.0, 1.0);
+
+    float line = exp(-d * d / (0.42 * 0.42)) * (0.13 + 0.80 * rim);
+    float halo = exp(-max(d, 0.0) / 5.0) * smoothstep(-0.8, 0.8, d) * 0.12 * rim;
+
+    // Pointes rares, minuscules — le bijou murmure.
+    float glitter = 0.0;
+    if (fabs(d) < 3.5) {
+        float2 idg = floor(p / 8.0);
+        float4 hg = bhash42(idg * 3.57 + float2(3.3, 9.1));
+        if (hg.x < 0.22) {
+            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * 8.0;
+            float dg = length(cg) - radius;
+            float on = exp(-fabs(dg) / 2.5);
+            float twk = max(0.0, sin(t * (0.5 + 0.6 * hg.w) + hg.z * 6.283));
+            twk = pow(twk, 14.0);
+            float2 dpg = p - cg;
+            glitter = exp(-dot(dpg, dpg) / (0.65 * 0.65)) * on * twk * 0.7;
+        }
+    }
+
+    float lum = line + halo + glitter;
+    lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (1.5 / 255.0);
+    lum = clamp(lum, 0.0, 1.0);
+    float a = clamp(lum * 1.6, 0.0, 1.0);
+    return half4(half3(lum * a), half(a));      // prémultiplié, verre dessous
+}
+
+// MARK: - Bouton secondaire « diamant »
+//
+// Sous le primaire : un NOIR PROFOND (pas le métal de l'input, pas la fumée
+// du bouton — une profondeur calme) serclé d'un liseré discret, imparfait
+// et FRANCHEMENT animé (il vit, il ne réclame rien). Au tap, la fumée naît
+// du bord et fleurit vers le centre — l'éveil du second rôle.
+
+/// Le rim du secondary : la retenue de l'input mais des dérives plus vives
+/// et une respiration plus profonde — l'animation se VOIT, la discrétion
+/// reste (c'est l'amplitude qui est basse, pas la vie).
+static float secondaryRim(float2 p, float2 halfB, float t) {
+    float seg = bfbm(p * float2(0.016, 0.06) + float2(t * 0.17, -t * 0.12));
+    float fine = bnoise(p * float2(0.036, 0.12) + float2(-t * 0.32, t * 0.25));
+    float accents = seg * 0.75 + fine * 0.25;
+    accents = pow(clamp(accents, 0.0, 1.0), 4.0);
+    float topness = clamp(-p.y / max(halfB.y, 1.0), 0.0, 1.0);
+    float bias = 0.35 + 0.45 * topness * topness;
+    float ang = atan2(p.y, p.x);
+    float breath = 0.76 + 0.24 * sin(t * 1.2 + ang * 2.0);
+    return clamp(3.7 * accents * bias * breath, 0.0, 1.0);
+}
+
+[[ stitchable ]] half4 diamondSecondary(float2 position, half4 color,
+                                        float2 size, float t,
+                                        float pad, float radius, float press) {
+    float2 center = size * 0.5;
+    float2 p = position - center;
+    float2 halfB = max(center - pad, float2(1.0));
+    float r = min(radius, halfB.y);
+    float d = sdRound(p, halfB, r);
+    float inside = smoothstep(0.6, -1.2, d);
+
+    // Le noir profond : à peine plus clair que la page, dégradé murmuré.
+    float uvY = clamp((p.y + halfB.y) / (2.0 * halfB.y), 0.0, 1.0);
+    float deep = mix(0.030, 0.011, uvY) * inside;
+
+    // Le liseré : discret mais vivant. Au tap, il se relève un peu.
+    float rim = secondaryRim(p, halfB, t) * (0.80 + 0.25 * press);
+
+    // ---- La fumée d'éveil : absente au repos. Au tap, elle NAÎT DU LISERÉ
+    // et S'ÉCHAPPE AUTOUR du bouton — des volutes qui l'enveloppent par
+    // l'extérieur (l'effet wahou) pendant qu'elle fleurit aussi dedans.
+    // Plus mobile que la fumée du primaire, noire dominante, magnifique.
+    float smoke = 0.0;
+    float smokeOut = 0.0;
+    if (press > 0.001 && d < 30.0) {
+        float2 sc = p * float2(0.030, 0.052);
+        float2 drift = float2(t * 0.048, -t * 0.026);
+        float q = bfbm(sc + drift);
+        float w2 = bfbm(sc * 1.7 - drift * 0.8 + 2.3 * q);
+        float s = bfbm(sc * 1.31 + float2(2.2 * q, -1.6 * w2) - drift * 0.6);
+        s = pow(clamp(s, 0.0, 1.0), 2.0);
+        float nearRim = exp(-fabs(d) / 14.0);
+        // Dedans : éclosion du bord vers le centre sur la rampe.
+        float bloom = mix(nearRim * 1.6, 1.0, press);
+        smoke = press * bloom * (0.010 + s * (0.10 + 0.28 * nearRim * rim))
+                * inside;
+        // Dehors : les volutes s'échappent FRANCHEMENT du liseré et
+        // enveloppent le bouton — portée ~25 pt, fondue, jamais jusqu'aux
+        // voisins. C'est l'effet wahou : il doit se voir au premier regard.
+        float escape = exp(-max(d, 0.0) / 15.0) * (1.0 - inside);
+        smokeOut = press * escape * s * (0.13 + 0.12 * rim);
+    }
+    float line = exp(-d * d / (0.42 * 0.42)) * (0.10 + 0.78 * rim);
+    float halo = exp(-max(d, 0.0) / 5.0) * smoothstep(-0.8, 0.8, d) * 0.10 * rim;
+
+    float glitter = 0.0;
+    if (fabs(d) < 3.5) {
+        float2 idg = floor(p / 10.0);
+        float4 hg = bhash42(idg * 2.93 + float2(11.3, 6.7));
+        if (hg.x < 0.18 + 0.10 * press) {
+            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * 10.0;
+            float dg = sdRound(cg, halfB, r);
+            float on = exp(-fabs(dg) / 2.5);
+            float twk = max(0.0, sin(t * (0.4 + 0.5 * hg.w) + hg.z * 6.283));
+            twk = pow(twk, 14.0 - 5.0 * press);
+            float2 dpg = p - cg;
+            glitter = exp(-dot(dpg, dpg) / (0.65 * 0.65)) * on * twk * 0.6;
+        }
+    }
+
+    float lum = deep + smoke + smokeOut + line + halo + glitter;
+    lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (1.5 / 255.0);
+    lum = clamp(lum, 0.0, 1.0);
+    float a = mix(clamp((line + halo + glitter + smokeOut * 2.2) * 1.6, 0.0, 1.0),
+                  1.0, inside);
     return half4(half3(lum * a), half(a));      // prémultiplié
 }

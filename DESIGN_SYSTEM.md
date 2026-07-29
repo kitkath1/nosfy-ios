@@ -92,11 +92,19 @@ La carte « Objectif hebdomadaire » de la home : un rectangle arrondi (30 pt) d
 ## Les composants « diamant » (la famille)
 
 La bibliothèque de composants de l'app — même matière, même grammaire
-(monochrome blanc, hairline, obsidienne), quatre états sur le banc
-`-buttonLab` : **input vide / input actif / bouton repos / bouton tap**.
-La hiérarchie se lit d'un coup d'œil : tap > repos > input actif > input
-vide. Méthode de fabrication : boucle workflow capture simulateur → juge
-(grille /10 chiffrée, 3 frames espacées d'1 s pour l'animation) → orfèvre.
+(monochrome blanc, hairline, obsidienne), sept états sur le banc
+`-buttonLab` : **bouton retour rond / input vide / input actif / bouton
+repos / bouton tap / secondary repos / secondary tap**. La hiérarchie se
+lit d'un coup d'œil : primaire tap > repos > secondary tap > input actif >
+secondary repos > input vide, le rond en murmure. Méthode de fabrication :
+boucle workflow capture simulateur → juge (grille /10 chiffrée, 3 frames
+espacées d'1 s pour l'animation) → orfèvre.
+
+**L'effet wahou du tap** (commun aux deux boutons texte) : au toucher, des
+volutes de fumée noire S'ÉCHAPPENT du liseré et enveloppent le bouton par
+l'extérieur (portée ~25 pt, fondue avant les voisins), en plus de l'éveil
+intérieur — tout éclot sur la rampe de 0,30 s, se résorbe en 0,55 s.
+Absent au repos : le contraste fait le wahou.
 
 ## Le bouton primaire « diamant »
 
@@ -186,3 +194,41 @@ Banc : `-buttonLab` (vide + actif empilés au-dessus du bouton).
 - **Icône** (enveloppe) : weight light 15 pt, dégradé blanc 92 % → 48 %.
 - **Forme** : 54 pt de haut, rayon 17 pt continu, mêmes marges que le
   bouton (26 pt), marge shader 14 pt (le souffle des accents est minuscule).
+
+## Le bouton retour rond (icône seule)
+
+Le bouton icône du système (retour, fermetures) — remplacera les boutons
+de navigation actuels. `DiamondBackButton` dans
+[ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift), anneau
+`diamondRing` dans [DiamondButton.metal](Woop/DiamondButton.metal).
+
+- **Forme** : disque de 46 pt, en tête de pile côté gauche.
+- **Fond** : Liquid Glass NATIF (`glassEffect(.regular.tint(noir 0.45)
+  .interactive(), in: Circle())`) — le fond se réfracte dans le verre,
+  même matériau que le socle de la carte Objectif. Jamais un disque plat.
+- **Anneau** : hairline ~1 pt imparfaite posée SUR le verre — 2-3 accents
+  inégaux qui rampent (dérives 0,14/0,26, respiration ±22 %), pointes de
+  scintillement rares — un murmure ; l'intérieur du shader est transparent,
+  le verre respire dessous.
+- **Icône** : chevron 16 pt medium, dégradé blanc 95 % → 55 %, centré.
+
+## Le bouton secondaire
+
+Le second rôle sous le primaire (« CRÉER UN COMPTE »).
+`DiamondSecondaryButton` + `diamondSecondary`/`secondaryRim`.
+
+- **Forme** : identique au primaire (58 pt / rayon 19 / marges 26),
+  marge shader 30 pt (la fumée du tap s'échappe autour).
+- **Fond** : NOIR PROFOND calme (3,0 % → 1,1 %) — ni le métal de l'input,
+  ni la fumée du primaire. Une profondeur, pas une matière qui vit.
+- **Liseré** : très discret mais FRANCHEMENT animé — rim dédié
+  (`secondaryRim`, dérives 0,17/0,32, respiration ±24 %) : l'amplitude est
+  basse, pas la vie. Pas de croix, pas de halos marqués.
+- **Texte** : mêmes lois que CONNEXION (13,5 pt medium, tracking 4,6) mais
+  EN RETRAIT : dégradé blanc 78 % → 40 %.
+- **État TAP** : la fumée d'éveil — absente au repos, au toucher des
+  volutes plus mobiles que celles du primaire naissent du liseré,
+  fleurissent vers le centre (éclosion `mix(nearRim·1.6, 1, press)`) ET
+  s'échappent autour (l'effet wahou) ; le liseré se relève (+25 %), les
+  pointes scintillent davantage. Même rampe que le primaire (0,30/0,55 s)
+  via `DiamondPressStyle`.
