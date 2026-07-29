@@ -16,6 +16,11 @@ import SwiftUI
 /// gratuite — aucune séance fantôme à nettoyer.
 struct LiveExerciseView: View {
     let exercise: Exercise
+    /// Le rang de la série en cours, à partir de 1.
+    let seriesNumber: Int
+    /// Ce qui est visé — « 12 reps · 20 kg ». Réglé avant de lancer, donc le
+    /// compteur n'a plus qu'à mesurer : rien ne reste à inventer après coup.
+    let target: String
     /// Appelé avec la durée écoulée, en secondes.
     let onFinish: (Int) -> Void
     let onCancel: () -> Void
@@ -67,24 +72,34 @@ struct LiveExerciseView: View {
         // qu'au passage de la minute — cent vingt vibrations sur dix minutes,
         // c'est une nuisance, pas une signature.
         .sensoryFeedback(.impact(weight: .light, intensity: 0.45), trigger: hapticStep)
-        .alert("Annuler cet exercice ?", isPresented: $confirmCancel) {
+        .alert("Annuler cette série ?", isPresented: $confirmCancel) {
             Button("Continuer l'effort", role: .cancel) {}
             Button("Annuler", role: .destructive) { onCancel() }
         } message: {
-            Text("Rien ne sera enregistré : les \(spokenElapsed) écoulées seront perdues.")
+            Text("La série ne sera pas validée : les \(spokenElapsed) écoulées seront perdues.")
         }
     }
 
     // MARK: Habillage
 
     private var header: some View {
-        ZStack {
-            Text(exercise.name.uppercased())
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .tracking(1.4)
-                .foregroundStyle(Color.white.opacity(0.30))
-                .lineLimit(1)
-                .padding(.horizontal, 70)
+        ZStack(alignment: .top) {
+            VStack(spacing: 5) {
+                Text("Série \(seriesNumber)".uppercased())
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(1.6)
+                    .foregroundStyle(Color.white.opacity(0.34))
+                if !target.isEmpty {
+                    Text(target)
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.62))
+                }
+                Text(exercise.name)
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.22))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 70)
 
             HStack {
                 Button("Annuler") { cancel() }
@@ -117,7 +132,7 @@ struct LiveExerciseView: View {
         // Le cadran est un Canvas, donc muet. Une seule étiquette parlante pour
         // toute la page, rafraîchie à chaque seconde.
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Terminer. \(exercise.name), \(spokenElapsed) écoulées.")
+        .accessibilityLabel("Terminer la série \(seriesNumber). \(spokenElapsed) écoulées.")
     }
 
     // MARK: Logique
