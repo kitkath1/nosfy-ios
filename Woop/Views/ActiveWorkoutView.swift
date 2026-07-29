@@ -6,7 +6,7 @@ import SwiftData
 /// Carte flottante au-dessus de la barre d'onglets, sur le modèle du « en cours
 /// de lecture » d'iOS. Verre liquide natif : elle survole le contenu, donc elle
 /// doit le laisser transparaître. Un halo « égaliseur » respire en tête, comme
-/// une piste audio ; l'entraînement et le bouton Arrêter vivent en dessous.
+/// une piste audio ; l'entraînement et le geste de fin vivent en dessous.
 struct ActiveWorkoutOverlay: View {
     let workout: Workout
     let onOpen: () -> Void
@@ -42,26 +42,15 @@ struct ActiveWorkoutOverlay: View {
 
                 Spacer(minLength: 8)
 
-                Button { confirmStop = true } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 12, weight: .bold))
-                        Text("Arrêter")
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.inkPrimary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 13)
-                    .background(Capsule().fill(Color.white.opacity(0.10)))
-                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-
                 Image(systemName: "chevron.up")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.woopViolet)
             }
             .padding(.horizontal, 6)
+
+            // Le geste de fin porte son nom en entier : il mérite sa ligne.
+            FinishWorkoutButton { confirmStop = true }
+                .padding(.horizontal, 6)
         }
         .padding(.init(top: 16, leading: 14, bottom: 20, trailing: 14))
         .background {
@@ -98,6 +87,9 @@ struct ActiveWorkoutOverlay: View {
     private func finish() {
         workout.endedAt = .now
         try? context.save()
+        WorkoutActivityController.end()
+        // Un entraînement de plus dans la semaine : la home doit le fêter.
+        WoopCelebration.shared.workoutFinished()
         let snapshot = workout.snapshot()
         Task.detached { await SupabaseSync.shared.push([snapshot]) }
     }
@@ -105,6 +97,37 @@ struct ActiveWorkoutOverlay: View {
     private func cancelWorkout() {
         context.delete(workout)
         try? context.save()
+        WorkoutActivityController.end()
+    }
+}
+
+// MARK: - Le geste de fin
+
+/// « Terminer l'entraînement » : le même bouton dans la carte flottante et dans
+/// la feuille — c'est lui qui se déplace pendant le morphisme, donc il ne peut
+/// pas exister en deux versions. Verre clair sur verre fumé, pleine largeur :
+/// c'est l'action de la séance, pas une commande parmi d'autres.
+struct FinishWorkoutButton: View {
+    var enabled: Bool = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Terminer l'entraînement")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+            }
+            .foregroundStyle(Color.inkPrimary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Capsule().fill(Color.white.opacity(0.10)))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.4)
     }
 }
 
@@ -257,6 +280,7 @@ struct ActiveWorkoutSheet: View {
                             ForEach(workout.orderedExercises) { logged in
                                 ActiveExerciseCard(logged: logged) {
                                     withAnimation { context.delete(logged) }
+                                    WorkoutActivityController.sync(workout)
                                 }
                             }
                         }
@@ -268,14 +292,10 @@ struct ActiveWorkoutSheet: View {
                         }
                         .buttonStyle(WoopSecondaryButtonStyle())
 
-                        Button("Terminer l'entraînement") { confirmFinish = true }
-                            .buttonStyle(WoopPrimaryButtonStyle())
-                            .disabled(workout.orderedExercises.isEmpty)
-                            .opacity(workout.orderedExercises.isEmpty ? 0.4 : 1)
-
                         Button("Annuler cette séance", role: .destructive) {
                             context.delete(workout)
                             try? context.save()
+                            WorkoutActivityController.end()
                             dismiss()
                         }
                         .font(.system(.footnote, design: .rounded))
@@ -314,7 +334,9 @@ struct ActiveWorkoutSheet: View {
     }
 
     /// Le même contenu que le mini overlay : l'orbe d'énergie, la pastille,
-    /// « Séance en cours » et Arrêter — la continuité du morphisme se joue là.
+    /// « Séance en cours » et le bouton de fin — la continuité du morphisme se
+    /// joue là, et c'est LE seul endroit d'où on termine : plus de gros bouton
+    /// en bas de la feuille, qui doublait le geste.
     /// Pas de fond propre : la feuille entière est déjà le même verre que la
     /// carte, le header pose directement dessus.
     private var header: some View {
@@ -335,23 +357,11 @@ struct ActiveWorkoutSheet: View {
                 }
 
                 Spacer(minLength: 8)
+            }
+            .padding(.horizontal, 6)
 
-                Button { confirmFinish = true } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 12, weight: .bold))
-                        Text("Arrêter")
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.inkPrimary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 13)
-                    .background(Capsule().fill(Color.white.opacity(0.10)))
-                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .disabled(workout.orderedExercises.isEmpty)
-                .opacity(workout.orderedExercises.isEmpty ? 0.4 : 1)
+            FinishWorkoutButton(enabled: !workout.orderedExercises.isEmpty) {
+                confirmFinish = true
             }
             .padding(.horizontal, 6)
         }
@@ -367,6 +377,9 @@ struct ActiveWorkoutSheet: View {
     private func finish() {
         workout.endedAt = .now
         try? context.save()
+        WorkoutActivityController.end()
+        // Un entraînement de plus dans la semaine : la home doit le fêter.
+        WoopCelebration.shared.workoutFinished()
         // La séance est déjà enregistrée localement ; l'envoi vers Supabase part
         // en tâche de fond et n'a pas le droit de bloquer l'interface.
         let snapshot = workout.snapshot()
@@ -427,6 +440,9 @@ struct ActiveExerciseCard: View {
                                                 order: logged.orderedSets.count)
                         entry.loggedExercise = logged
                         context.insert(entry)
+                        if let workout = logged.workout {
+                            WorkoutActivityController.sync(workout)
+                        }
                     } label: {
                         Label("Ajouter une série", systemImage: "plus")
                             .font(.system(.caption, design: .rounded, weight: .medium))
@@ -458,6 +474,10 @@ struct SetRow: View {
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     set.isDone.toggle()
+                }
+                // L'orbe de la Live Activity se déplace à chaque série cochée.
+                if let workout = set.loggedExercise?.workout {
+                    WorkoutActivityController.sync(workout)
                 }
             } label: {
                 ZStack {

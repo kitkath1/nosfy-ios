@@ -71,6 +71,19 @@ enum FigureEquipment {
 
 // MARK: - Échantillonnage
 
+/// Courbe quadratique qui PASSE par `m` à t = 0,5 — et redevient une droite
+/// quand `m` est le milieu de `a` et `b`. C'est l'interpolation à trois
+/// keyframes du moteur : la trajectoire peut enfin être courbe.
+private func quadThrough(_ a: CGFloat, _ m: CGFloat, _ b: CGFloat, _ t: CGFloat) -> CGFloat {
+    let c = 2 * m - (a + b) / 2
+    let u = 1 - t
+    return u * u * a + 2 * u * t * c + t * t * b
+}
+
+private func quadThrough(_ a: CGPoint, _ m: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+    CGPoint(x: quadThrough(a.x, m.x, b.x, t), y: quadThrough(a.y, m.y, b.y, t))
+}
+
 /// Échantillonne une courbe quadratique en une polyligne.
 private func sampleQuad(_ a: CGPoint, _ control: CGPoint, _ b: CGPoint,
                         steps: Int = 10) -> [CGPoint] {
@@ -226,6 +239,9 @@ struct EquipmentShape: Shape {
     var pose: FigurePose
     var target: FigurePose
     var progress: CGFloat
+    /// 0 = câble au repos (il pendouille), 1 = sous charge (raide). Un câble
+    /// qui pend pendant l'effort tue toute sensation de poids.
+    var tension: CGFloat = 0.35
 
     var animatableData: CGFloat {
         get { progress }
@@ -260,12 +276,13 @@ struct EquipmentShape: Shape {
             // Poulie
             let r = scale * 0.026
             path.addEllipse(in: CGRect(x: a.x - r, y: a.y - r, width: r * 2, height: r * 2))
-            // Câbles, avec une légère détente
+            // Câbles : tendus pendant l'effort, détendus aux points morts.
+            let sag = scale * (0.004 + 0.055 * (1 - tension))
             for end in targets {
                 path.move(to: a)
                 path.addQuadCurve(
                     to: end,
-                    control: CGPoint(x: (a.x + end.x) / 2, y: (a.y + end.y) / 2 + scale * 0.03)
+                    control: CGPoint(x: (a.x + end.x) / 2, y: (a.y + end.y) / 2 + sag)
                 )
             }
 
@@ -475,10 +492,22 @@ struct ExerciseFigure: View {
             let pose = livePose(time)
             let segs = bodySegments(pose)
 
+            // Tension du câble : proportionnelle à la vitesse du geste — raide
+            // pendant l'effort, détendu aux points morts.
+            let tension: CGFloat
+            if animated {
+                let dt = 0.05
+                let v = abs(progressValue(time, lagFraction: 0)
+                            - progressValue(time - dt, lagFraction: 0)) / dt
+                tension = min(1, v * CGFloat(design.duration) * 1.5 + 0.12)
+            } else {
+                tension = 0.35
+            }
+
             // Matériel : trait blanc à peine posé, le décor ne rivalise pas
             // avec la constellation.
             let equipmentPath = EquipmentShape(equipment: design.equipment, pose: pose,
-                                               target: pose, progress: 0)
+                                               target: pose, progress: 0, tension: tension)
                 .path(in: rect)
             context.stroke(
                 equipmentPath,
@@ -584,13 +613,16 @@ struct ExerciseFigure: View {
         }
     }
 
-    /// Progression d'une répétition, avec ce qui fait qu'un vrai mouvement ne
-    /// ressemble pas à un métronome : un court maintien à la contraction et au
-    /// relâchement, et un effort (aller) plus lent que le retour.
-    /// `lagFraction` décale la phase — c'est ce qui crée la traîne des
-    /// extrémités, en fraction de la durée d'une répétition.
+    /// Progression d'une répétition. Trois choses la distinguent d'un
+    /// métronome : un court maintien aux deux extrêmes, un effort (aller) plus
+    /// lent que le retour, et le fait qu'aucune répétition n'est identique —
+    /// le temps est légèrement gauchi et l'amplitude varie de quelques
+    /// pourcents d'une rep à l'autre. `lagFraction` décale la phase, c'est la
+    /// traîne des extrémités.
     private func progressValue(_ time: TimeInterval, lagFraction: Double) -> CGFloat {
-        let t = time - lagFraction * design.duration
+        // Dérive lente et non commensurable avec la rep : brise la périodicité.
+        let warped = time + (sin(time * 0.29) + sin(time * 0.171 + 1.7)) * 0.03 * design.duration
+        let t = warped - lagFraction * design.duration
         var cycle = (t / design.duration).truncatingRemainder(dividingBy: 2)
         if cycle < 0 { cycle += 2 }
         // L'aller occupe 54 % du cycle, le retour 46 %.
@@ -599,87 +631,167 @@ struct ExerciseFigure: View {
         // Maintien de ~9 % à chaque extrême : la contraction se tient.
         let hold = 0.09
         let u = min(max((raw - hold) / (1 - 2 * hold), 0), 1)
-        return CGFloat(0.5 - 0.5 * cos(.pi * u))
+        var p = CGFloat(0.5 - 0.5 * cos(.pi * u))
+        // Amplitude de rep légèrement variable : parfois un poil sous le plein
+        // débattement, parfois un soupçon au-delà.
+        p *= 0.985 + 0.025 * CGFloat(sin(time * 0.113 + 0.8))
+        return min(p, 1.02)
     }
 
-    /// Interpole un os en polaire autour de son articulation parente : l'angle
-    /// tourne par le plus court chemin, la longueur reste quasi constante.
-    /// C'est ce qui remplace l'étirement caoutchouc du lerp cartésien par un
-    /// vrai pivot articulaire.
-    private func boneMix(parentA: CGPoint, childA: CGPoint,
-                         parentB: CGPoint, childB: CGPoint,
-                         parentNow: CGPoint, _ t: CGFloat) -> CGPoint {
-        let va = CGVector(dx: childA.x - parentA.x, dy: childA.y - parentA.y)
-        let vb = CGVector(dx: childB.x - parentB.x, dy: childB.y - parentB.y)
-        let lenA = hypot(va.dx, va.dy), lenB = hypot(vb.dx, vb.dy)
-        let angA = atan2(va.dy, va.dx), angB = atan2(vb.dy, vb.dx)
-        var delta = angB - angA
-        while delta > .pi { delta -= 2 * .pi }
-        while delta < -.pi { delta += 2 * .pi }
-        let ang = angA + delta * t
-        let len = lenA + (lenB - lenA) * t
+    /// Interpole un os en polaire autour de son articulation parente, en
+    /// passant par la pose intermédiaire quand l'exercice en a une : l'angle
+    /// tourne par le plus court chemin, la longueur reste celle des poses.
+    /// C'est le pivot articulaire qui remplace l'étirement caoutchouc.
+    private func boneCurve(parentA: CGPoint, childA: CGPoint,
+                           parentM: CGPoint?, childM: CGPoint?,
+                           parentB: CGPoint, childB: CGPoint,
+                           parentNow: CGPoint, _ t: CGFloat) -> CGPoint {
+        func polar(_ p: CGPoint, _ c: CGPoint) -> (ang: CGFloat, len: CGFloat) {
+            (atan2(c.y - p.y, c.x - p.x), hypot(c.x - p.x, c.y - p.y))
+        }
+        func unwrap(_ ang: CGFloat, near ref: CGFloat) -> CGFloat {
+            var d = ang - ref
+            while d > .pi { d -= 2 * .pi }
+            while d < -.pi { d += 2 * .pi }
+            return ref + d
+        }
+        let a = polar(parentA, childA)
+        let b = polar(parentB, childB)
+        let angM: CGFloat, lenM: CGFloat, angB: CGFloat
+        if let pm = parentM, let cm = childM {
+            let m = polar(pm, cm)
+            angM = unwrap(m.ang, near: a.ang)
+            angB = unwrap(b.ang, near: angM)
+            lenM = m.len
+        } else {
+            angB = unwrap(b.ang, near: a.ang)
+            angM = (a.ang + angB) / 2
+            lenM = (a.len + b.len) / 2
+        }
+        let ang = quadThrough(a.ang, angM, angB, t)
+        let len = quadThrough(a.len, lenM, b.len, t)
         return CGPoint(x: parentNow.x + cos(ang) * len,
                        y: parentNow.y + sin(ang) * len)
     }
 
-    /// Pose vivante. Le buste initie le mouvement ; coudes, mains, genoux,
-    /// chevilles et queue de cheval suivent chacun avec leur retard — le
-    /// follow-through des vrais corps. Les membres pivotent en arc autour de
-    /// leurs articulations, et un balancement + une respiration imperceptibles
-    /// habitent la figure même entre deux répétitions.
+    /// Genou par cinématique inverse : hanche mobile, cheville ancrée au sol,
+    /// cuisse et tibia de longueur constante. `hint` choisit le sens de flexion.
+    private func ikKnee(hip: CGPoint, ankle: CGPoint,
+                        thigh: CGFloat, shin: CGFloat, hint: CGPoint) -> CGPoint {
+        let dx = ankle.x - hip.x, dy = ankle.y - hip.y
+        let dist = max(hypot(dx, dy), 0.0001)
+        let d = min(max(dist, abs(thigh - shin) + 0.001), thigh + shin - 0.001)
+        let ux = dx / dist, uy = dy / dist
+        let a = (thigh * thigh - shin * shin + d * d) / (2 * d)
+        let h = sqrt(max(thigh * thigh - a * a, 0))
+        let base = CGPoint(x: hip.x + ux * a, y: hip.y + uy * a)
+        let k1 = CGPoint(x: base.x - uy * h, y: base.y + ux * h)
+        let k2 = CGPoint(x: base.x + uy * h, y: base.y - ux * h)
+        return hypot(k1.x - hint.x, k1.y - hint.y) <= hypot(k2.x - hint.x, k2.y - hint.y)
+            ? k1 : k2
+    }
+
+    /// Pose vivante. Le buste initie, coudes puis mains puis chevilles suivent
+    /// avec leur retard ; le bassin contrebalance les bras ; les pieds des
+    /// exercices debout restent plantés au sol (genoux en IK) ; la queue de
+    /// cheval a l'inertie d'un pendule ; et un balancement + une respiration
+    /// imperceptibles habitent la figure même entre deux répétitions.
     private func livePose(_ time: TimeInterval) -> FigurePose {
         guard animated else { return design.start }
 
         let a = design.start, b = design.end
+        let m = design.mid
 
-        func mix(_ x: CGPoint, _ y: CGPoint, _ t: CGFloat) -> CGPoint {
-            CGPoint(x: x.x + (y.x - x.x) * t, y: x.y + (y.y - x.y) * t)
+        let tTorso = progressValue(time, lagFraction: 0)
+        let tHead = progressValue(time, lagFraction: 0.04)
+        let tTail = progressValue(time, lagFraction: 0.10)
+        let tElbow = progressValue(time, lagFraction: 0.025)
+        let tHand = progressValue(time, lagFraction: 0.05)
+        let tKnee = progressValue(time, lagFraction: 0.02)
+        let tAnkle = progressValue(time, lagFraction: 0.04)
+
+        func through(_ ka: CGPoint, _ km: CGPoint?, _ kb: CGPoint, _ t: CGFloat) -> CGPoint {
+            quadThrough(ka, km ?? CGPoint(x: (ka.x + kb.x) / 2, y: (ka.y + kb.y) / 2), kb, t)
         }
 
+        var p = FigurePose()
+        p.headRadius = a.headRadius + (b.headRadius - a.headRadius) * min(tTorso, 1)
+
         // Le tronc mène.
-        var p = FigurePose.lerp(a, b, progressValue(time, lagFraction: 0))
-
-        let headP = progressValue(time, lagFraction: 0.04)
-        let tailP = progressValue(time, lagFraction: 0.10)
-        let elbowP = progressValue(time, lagFraction: 0.025)
-        let handP = progressValue(time, lagFraction: 0.05)
-        let kneeP = progressValue(time, lagFraction: 0.02)
-        let ankleP = progressValue(time, lagFraction: 0.04)
-
-        p.head = mix(a.head, b.head, headP)
-        p.ponytail = mix(a.ponytail, b.ponytail, tailP)
+        p.neck = through(a.neck, m?.neck, b.neck, tTorso)
+        p.chest = through(a.chest, m?.chest, b.chest, tTorso)
+        p.waist = through(a.waist, m?.waist, b.waist, tTorso)
+        p.hip = through(a.hip, m?.hip, b.hip, tTorso)
+        p.shoulder = through(a.shoulder, m?.shoulder, b.shoulder, tTorso)
+        p.head = through(a.head, m?.head, b.head, tHead)
 
         // Bras : pivot épaule → coude, puis coude → main.
-        p.elbowNear = boneMix(parentA: a.shoulder, childA: a.elbowNear,
-                              parentB: b.shoulder, childB: b.elbowNear,
-                              parentNow: p.shoulder, elbowP)
-        p.handNear = boneMix(parentA: a.elbowNear, childA: a.handNear,
-                             parentB: b.elbowNear, childB: b.handNear,
-                             parentNow: p.elbowNear, handP)
-        p.elbowFar = boneMix(parentA: a.shoulder, childA: a.elbowFar,
-                             parentB: b.shoulder, childB: b.elbowFar,
-                             parentNow: p.shoulder, elbowP)
-        p.handFar = boneMix(parentA: a.elbowFar, childA: a.handFar,
-                            parentB: b.elbowFar, childB: b.handFar,
-                            parentNow: p.elbowFar, handP)
+        p.elbowNear = boneCurve(parentA: a.shoulder, childA: a.elbowNear,
+                                parentM: m?.shoulder, childM: m?.elbowNear,
+                                parentB: b.shoulder, childB: b.elbowNear,
+                                parentNow: p.shoulder, tElbow)
+        p.handNear = boneCurve(parentA: a.elbowNear, childA: a.handNear,
+                               parentM: m?.elbowNear, childM: m?.handNear,
+                               parentB: b.elbowNear, childB: b.handNear,
+                               parentNow: p.elbowNear, tHand)
+        p.elbowFar = boneCurve(parentA: a.shoulder, childA: a.elbowFar,
+                               parentM: m?.shoulder, childM: m?.elbowFar,
+                               parentB: b.shoulder, childB: b.elbowFar,
+                               parentNow: p.shoulder, tElbow)
+        p.handFar = boneCurve(parentA: a.elbowFar, childA: a.handFar,
+                              parentM: m?.elbowFar, childM: m?.handFar,
+                              parentB: b.elbowFar, childB: b.handFar,
+                              parentNow: p.elbowFar, tHand)
 
-        // Jambes : pivot hanche → genou, puis genou → cheville.
-        p.kneeNear = boneMix(parentA: a.hip, childA: a.kneeNear,
-                             parentB: b.hip, childB: b.kneeNear,
-                             parentNow: p.hip, kneeP)
-        p.ankleNear = boneMix(parentA: a.kneeNear, childA: a.ankleNear,
-                              parentB: b.kneeNear, childB: b.ankleNear,
-                              parentNow: p.kneeNear, ankleP)
-        p.kneeFar = boneMix(parentA: a.hip, childA: a.kneeFar,
-                            parentB: b.hip, childB: b.kneeFar,
-                            parentNow: p.hip, kneeP)
-        p.ankleFar = boneMix(parentA: a.kneeFar, childA: a.ankleFar,
-                             parentB: b.kneeFar, childB: b.ankleFar,
-                             parentNow: p.kneeFar, ankleP)
+        // Contrepoids : quand les mains partent d'un côté, le bassin recule de
+        // l'autre — la masse reste au-dessus des appuis.
+        let reach = (p.handNear.x + p.handFar.x) / 2 - p.chest.x
+        p.hip.x -= reach * 0.07
+        p.waist.x -= reach * 0.045
+
+        // Jambes. Si la cheville ne bouge presque pas entre les deux poses et
+        // vit près du sol, l'exercice se joue debout : on la cloue au sol et le
+        // genou absorbe en IK — fini les pieds qui glissent.
+        func leg(kneeA: CGPoint, kneeM: CGPoint?, kneeB: CGPoint,
+                 ankleA: CGPoint, ankleM: CGPoint?, ankleB: CGPoint) -> (knee: CGPoint, ankle: CGPoint) {
+            let hintKnee = boneCurve(parentA: a.hip, childA: kneeA,
+                                     parentM: m?.hip, childM: kneeM,
+                                     parentB: b.hip, childB: kneeB,
+                                     parentNow: p.hip, tKnee)
+            let planted = hypot(ankleB.x - ankleA.x, ankleB.y - ankleA.y) < 0.045
+                && ankleA.y > 0.72
+            if planted {
+                let thigh = hypot(kneeA.x - a.hip.x, kneeA.y - a.hip.y)
+                let shin = hypot(ankleA.x - kneeA.x, ankleA.y - kneeA.y)
+                let knee = ikKnee(hip: p.hip, ankle: ankleA,
+                                  thigh: thigh, shin: shin, hint: hintKnee)
+                return (knee, ankleA)
+            }
+            let ankle = boneCurve(parentA: kneeA, childA: ankleA,
+                                  parentM: kneeM, childM: ankleM,
+                                  parentB: kneeB, childB: ankleB,
+                                  parentNow: hintKnee, tAnkle)
+            return (hintKnee, ankle)
+        }
+        let near = leg(kneeA: a.kneeNear, kneeM: m?.kneeNear, kneeB: b.kneeNear,
+                       ankleA: a.ankleNear, ankleM: m?.ankleNear, ankleB: b.ankleNear)
+        p.kneeNear = near.knee; p.ankleNear = near.ankle
+        let far = leg(kneeA: a.kneeFar, kneeM: m?.kneeFar, kneeB: b.kneeFar,
+                      ankleA: a.ankleFar, ankleM: m?.ankleFar, ankleB: b.ankleFar)
+        p.kneeFar = far.knee; p.ankleFar = far.ankle
+
+        // Queue de cheval : suit avec retard, plus l'inertie du mouvement de
+        // la tête — elle balaie quand la tête accélère, comme un pendule.
+        p.ponytail = through(a.ponytail, m?.ponytail, b.ponytail, tTail)
+        let dt = 0.06
+        let headPrev = through(a.head, m?.head, b.head,
+                               progressValue(time - dt, lagFraction: 0.04))
+        p.ponytail.x -= (p.head.x - headPrev.x) / dt * 0.10
+        p.ponytail.y -= (p.head.y - headPrev.y) / dt * 0.06
 
         // Micro-vie : sway lent + respiration, amplitudes sous le demi-point.
-        let sway = CGFloat(sin(time * 0.8)) * 0.0038
-        let breathe = CGFloat(sin(time * 1.9)) * 0.0024
+        let sway = CGFloat(sin(time * 0.8)) * 0.0034
+        let breathe = CGFloat(sin(time * 1.9)) * 0.0022
         p.head.x += sway * 1.4; p.head.y += breathe * 0.8
         p.neck.x += sway * 1.2
         p.chest.x += sway; p.chest.y += breathe
@@ -691,9 +803,13 @@ struct ExerciseFigure: View {
 }
 
 /// Un exercice dessiné = deux poses + du matériel + une cadence.
+/// `mid`, optionnelle, est la pose de passage : la trajectoire la traverse à
+/// mi-répétition au lieu de filer en ligne droite — indispensable aux gestes
+/// rotationnels, dont le milieu n'est pas la moyenne des extrêmes.
 struct FigureDesign {
     var start: FigurePose
     var end: FigurePose
+    var mid: FigurePose? = nil
     var equipment: FigureEquipment = .none
     var duration: Double = 1.6
 }

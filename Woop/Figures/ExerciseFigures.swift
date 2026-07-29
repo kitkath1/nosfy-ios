@@ -14,6 +14,18 @@ enum ExerciseFigures {
         return p
     }
 
+    /// Exercice à trajectoire courbe : la pose de passage part du milieu des
+    /// deux extrêmes, et `midTweak` ne retouche que ce qui s'écarte de la
+    /// ligne droite (mains qui balaient, hanches qui reculent…).
+    private static func curvedDesign(start: FigurePose, end: FigurePose,
+                                     equipment: FigureEquipment, duration: Double,
+                                     midTweak: (inout FigurePose) -> Void) -> FigureDesign {
+        var mid = FigurePose.lerp(start, end, 0.5)
+        midTweak(&mid)
+        return FigureDesign(start: start, end: end, mid: mid,
+                            equipment: equipment, duration: duration)
+    }
+
     // MARK: - Table
 
     private static let designs: [String: FigureDesign] = [
@@ -87,7 +99,7 @@ enum ExerciseFigures {
             duration: 1.4
         ),
 
-        "rotation-milieu": FigureDesign(
+        "rotation-milieu": curvedDesign(
             start: pose {
                 $0.head = .init(x: 0.52, y: 0.16); $0.ponytail = .init(x: -0.09, y: 0.03)
                 $0.shoulder = .init(x: 0.53, y: 0.258); $0.chest = .init(x: 0.52, y: 0.315)
@@ -105,7 +117,14 @@ enum ExerciseFigures {
                 $0.kneeFar = .init(x: 0.42, y: 0.66); $0.ankleFar = .init(x: 0.38, y: 0.86)
             },
             equipment: .cable(anchor: .init(x: 0.92, y: 0.32), attach: .bothHands),
-            duration: 1.5
+            duration: 1.5,
+            midTweak: {
+                // À mi-rotation les bras passent DEVANT le corps : vus de
+                // profil ils raccourcissent (raccourci perspective) au lieu de
+                // tomber vers le sol.
+                $0.elbowNear = .init(x: 0.52, y: 0.30); $0.handNear = .init(x: 0.56, y: 0.32)
+                $0.elbowFar = .init(x: 0.50, y: 0.32); $0.handFar = .init(x: 0.55, y: 0.33)
+            }
         ),
 
         "gainage-militaire": FigureDesign(
@@ -158,7 +177,7 @@ enum ExerciseFigures {
             duration: 1.3
         ),
 
-        "pull-through": FigureDesign(
+        "pull-through": curvedDesign(
             start: pose {
                 $0.head = .init(x: 0.36, y: 0.26); $0.ponytail = .init(x: -0.06, y: -0.04)
                 $0.neck = .init(x: 0.40, y: 0.31); $0.chest = .init(x: 0.45, y: 0.36)
@@ -180,7 +199,14 @@ enum ExerciseFigures {
                 $0.kneeFar = .init(x: 0.46, y: 0.66); $0.ankleFar = .init(x: 0.46, y: 0.87)
             },
             equipment: .cable(anchor: .init(x: 0.92, y: 0.88), attach: .bothHands),
-            duration: 1.4
+            duration: 1.4,
+            midTweak: {
+                // La charnière de hanche : le bassin reste en arrière pendant
+                // la remontée, la tête ne se redresse qu'en fin de geste.
+                $0.hip = .init(x: 0.565, y: 0.472)
+                $0.waist = .init(x: 0.515, y: 0.418)
+                $0.head = .init(x: 0.395, y: 0.225)
+            }
         ),
 
         "abduction": FigureDesign(
@@ -218,7 +244,7 @@ enum ExerciseFigures {
             duration: 1.6
         ),
 
-        "squat-poulie": FigureDesign(
+        "squat-poulie": curvedDesign(
             start: pose {
                 $0.handNear = .init(x: 0.44, y: 0.34); $0.elbowNear = .init(x: 0.52, y: 0.36)
                 $0.handFar = .init(x: 0.42, y: 0.36); $0.elbowFar = .init(x: 0.50, y: 0.38)
@@ -234,7 +260,17 @@ enum ExerciseFigures {
                 $0.kneeFar = .init(x: 0.36, y: 0.67); $0.ankleFar = .init(x: 0.44, y: 0.87)
             },
             equipment: .cable(anchor: .init(x: 0.10, y: 0.84), attach: .bothHands),
-            duration: 1.7
+            duration: 1.7,
+            midTweak: {
+                // Un squat commence par les hanches EN ARRIÈRE, pas par une
+                // descente verticale ; le buste s'incline pour compenser.
+                $0.hip = .init(x: 0.55, y: 0.525)
+                $0.waist = .init(x: 0.515, y: 0.455)
+                $0.chest = .init(x: 0.475, y: 0.377)
+                $0.neck = .init(x: 0.472, y: 0.305)
+                $0.shoulder = .init(x: 0.472, y: 0.325)
+                $0.head = .init(x: 0.468, y: 0.235)
+            }
         ),
 
         "hip-thrust": FigureDesign(

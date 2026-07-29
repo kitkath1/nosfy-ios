@@ -69,87 +69,88 @@ private struct GlassLight: View {
     }
 }
 
-// MARK: - Liseré de lumière
+// MARK: - L'arête usinée
 
-/// Le fil qui cerne le verre RÉPOND à la source haut-gauche : brillant et
-/// blanc au coin où la lumière frappe l'arête, gris neutre sur le haut,
-/// presque éteint en bas-droit — un dégradé de nuances de blanc, jamais
-/// uniforme. Une lueur douce n'existe qu'au voisinage du coin éclairé.
-/// AU TOUCHER, tout s'allume davantage et VIBRE lentement (~1,9 s) — une
-/// lampe qui respire, pas un stroboscope.
+/// L'arête de la carte est une arête de MÉTAL usiné, pas un contour : un
+/// hairline de 0,8 pt porté par un dégradé ANGULAIRE à pics spéculaires —
+/// un arc blanc froid centré sur le coin haut-gauche (là où la lumière
+/// frappe), qui court sur le bord haut et s'éteint ; un écho à peine
+/// visible au coin opposé ; du quasi-noir entre les deux. Une lueur serrée
+/// n'existe que sous l'arc.
+///
+/// AU TOUCHER, l'arc s'étend et tout s'allume davantage, avec la pulsation
+/// lente (~1,9 s) — une lampe qui respire, pas un stroboscope.
 private struct GlassBorder: View {
     var cornerRadius: CGFloat
-    /// Objectif atteint : le fil se réchauffe vers l'or-récompense — la seule
+    /// Objectif atteint : l'arc se réchauffe vers l'or-récompense — la seule
     /// célébration, discrète, dans la famille chromatique documentée.
     var achieved: Bool = false
     /// Doigt posé sur la carte : la lumière s'allume.
     var lit: Bool = false
 
-    private var glow: Color {
-        achieved ? Color(red: 1.0, green: 0.93, blue: 0.75) : .white
+    /// Blanc froid acier ; or-récompense si l'objectif est atteint.
+    private var arc: Color {
+        achieved ? Color(red: 1.0, green: 0.95, blue: 0.82)
+                 : Color(red: 0.96, green: 0.985, blue: 1.0)
     }
 
-    /// L'arête au repos : le dégradé suit la lumière — coin haut-gauche
-    /// brillant, bas-droit presque mort.
-    private var restLine: LinearGradient {
-        LinearGradient(
-            stops: [.init(color: (achieved ? Color(red: 1.0, green: 0.95, blue: 0.82) : .white)
-                              .opacity(0.85), location: 0.0),
-                    .init(color: .white.opacity(0.30), location: 0.32),
-                    .init(color: .white.opacity(0.12), location: 0.68),
-                    .init(color: .white.opacity(0.05), location: 1.0)],
-            startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Le dégradé angulaire de l'arête. Angle 0 = 3 h, sens horaire :
+    /// coin haut-gauche ≈ 0.625 de tour, coin bas-droit ≈ 0.125.
+    private func edge(rest: Bool) -> AngularGradient {
+        let f = rest ? 1.0 : 2.3          // le toucher lève tout le plancher
+        return AngularGradient(
+            stops: [
+                .init(color: .white.opacity(0.09 * f), location: 0.0),
+                .init(color: .white.opacity(0.16 * f), location: 0.115),  // écho bas-droit
+                .init(color: .white.opacity(0.08 * f), location: 0.19),
+                .init(color: .white.opacity(0.045 * f), location: 0.40),
+                .init(color: .white.opacity(0.07 * f), location: 0.545),
+                .init(color: arc.opacity(rest ? 0.55 : 0.85), location: 0.595),
+                .init(color: arc, location: 0.625),                       // coin haut-gauche
+                .init(color: arc.opacity(rest ? 0.50 : 0.80), location: 0.71),
+                .init(color: .white.opacity(0.18 * f), location: 0.82),
+                .init(color: .white.opacity(0.07 * f), location: 0.93),
+                .init(color: .white.opacity(0.09 * f), location: 1.0),
+            ],
+            center: .center, angle: .degrees(0))
     }
 
-    private var litLine: LinearGradient {
-        LinearGradient(
-            stops: [.init(color: achieved ? Color(red: 1.0, green: 0.95, blue: 0.82) : .white,
-                          location: 0.0),
-                    .init(color: .white.opacity(0.55), location: 0.40),
-                    .init(color: .white.opacity(0.26), location: 1.0)],
-            startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
-    /// La lueur du coin : n'existe qu'au voisinage de la source.
-    private var cornerMask: RadialGradient {
-        RadialGradient(
-            stops: [.init(color: .white, location: 0.0),
-                    .init(color: .white.opacity(0.35), location: 0.55),
-                    .init(color: .clear, location: 1.0)],
-            center: .topLeading, startRadius: 0, endRadius: 320)
+    /// La lueur : n'existe que sous l'arc — transparente partout ailleurs.
+    private func arcGlow(_ opacity: Double) -> AngularGradient {
+        AngularGradient(
+            stops: [
+                .init(color: .clear, location: 0.0),
+                .init(color: .clear, location: 0.52),
+                .init(color: arc.opacity(opacity), location: 0.625),
+                .init(color: arc.opacity(opacity * 0.35), location: 0.74),
+                .init(color: .clear, location: 0.86),
+                .init(color: .clear, location: 1.0),
+            ],
+            center: .center, angle: .degrees(0))
     }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // Le fil au repos, toujours là : l'arête répond à la lumière.
-            shape.stroke(restLine, lineWidth: 1)
+            // Au repos : le hairline usiné et sa lueur d'arc, statiques.
+            shape.stroke(arcGlow(0.30), lineWidth: 2.2)
+                .blur(radius: 2.5)
+            shape.stroke(edge(rest: true), lineWidth: 0.8)
 
-            // La lueur du coin éclairé — douce, statique, jamais un néon.
-            shape.stroke(glow.opacity(0.35), lineWidth: 2.5)
-                .blur(radius: 3)
-                .mask(cornerMask)
-
-            // La lumière du toucher. La pulsation ne tourne que doigt posé
-            // (TimelineView en pause sinon) ; l'allumage est vif (0,22 s),
-            // l'extinction traîne (0,9 s) — une braise, pas un interrupteur.
+            // Au toucher : tout s'allume et respire. La pulsation ne tourne
+            // que doigt posé ; allumage vif (0,22 s), extinction traînante
+            // (0,9 s) — une braise, pas un interrupteur.
             TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !lit)) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 let pulse = 0.80 + 0.20 * sin(t * 2 * .pi / 1.9)
                 ZStack {
-                    shape.stroke(glow.opacity(achieved ? 0.26 : 0.20), lineWidth: 7)
-                        .blur(radius: 14)
-                    shape.stroke(glow.opacity(0.50), lineWidth: 2.2)
+                    shape.stroke(arcGlow(0.35), lineWidth: 6)
+                        .blur(radius: 10)
+                    shape.stroke(arcGlow(0.55), lineWidth: 2.4)
                         .blur(radius: 2.5)
-                    shape.stroke(litLine, lineWidth: 1.1)
+                    shape.stroke(edge(rest: false), lineWidth: 1.0)
                 }
                 .opacity(pulse)
-            }
-            .mask {
-                LinearGradient(stops: [.init(color: .white, location: 0.0),
-                                       .init(color: .white.opacity(0.60), location: 1.0)],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .padding(-48)      // couvre le débord du flou
             }
             .opacity(lit ? 1 : 0)
             .animation(.easeOut(duration: lit ? 0.22 : 0.9), value: lit)

@@ -298,6 +298,7 @@ struct ExerciseDetailView: View {
         }
 
         try? context.save()
+        WorkoutActivityController.ensure(workout)
         withAnimation(.easeOut(duration: 0.25)) {
             confirmation = "Ajouté à ta séance en cours"
         }
