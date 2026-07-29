@@ -2,16 +2,16 @@ import SwiftUI
 
 // MARK: - Écran d'authentification
 
-/// L'écran qui suit le splash : une nuit très noire — une voie lactée fine et
-/// granuleuse, des centaines de poussières d'étoiles — habitée par des
-/// diablotins à la silhouette du splash. Leurs corps d'encre apparaissent et
-/// se dissolvent ; leurs yeux de porcelaine ne s'allument que par moments,
-/// jamais tous ensemble. Au centre, le formulaire : Bienvenue, le numéro,
-/// le bouton velours noir.
+/// L'écran qui suit le splash : une nébuleuse fractale très noire rendue en
+/// Metal (AuthNebula.metal) — brume qui se fond dans le noir, veine
+/// granuleuse, milliers de poussières — habitée par des diablotins qu'on
+/// DEVINE : corps en occultation pure, liserés de lumière d'une finesse de
+/// cheveu, couronnes de micro-particules, fentes d'yeux féroces qui ne
+/// s'allument que par moments. Au centre, le formulaire.
 struct AuthView: View {
     var onConnect: (String) -> Void
 
-    /// L'horloge de la scène : posée à l'apparition, toute la nuit s'en déduit.
+    /// L'horloge des diablotins : posée à l'apparition.
     @State private var start: Date?
     @State private var formShown = false
     @State private var phone = ""
@@ -27,6 +27,9 @@ struct AuthView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+
+            AuthNebulaView()
+                .ignoresSafeArea()
 
             TimelineView(.animation) { context in
                 let t = start.map { context.date.timeIntervalSince($0) } ?? 0
@@ -141,19 +144,68 @@ struct AuthView: View {
     }
 }
 
-// MARK: - La nuit aux diablotins
+// MARK: - Le fond Metal
 
-/// Toute la scène dans un seul Canvas : la voie lactée granuleuse, des
-/// centaines de poussières fines, le liseré de particules — et les
-/// diablotins, à la silhouette exacte du splash. Tout est précalculé une
-/// fois ; chaque frame ne fait que moduler des alphas.
+/// L'hôte des deux passes d'AuthNebula.metal, sur le modèle exact de
+/// WoopDemonSky : la brume en demi-résolution agrandie ×2, les poussières en
+/// pleine résolution composées en plusLighter, 30 images par seconde.
+private struct AuthNebulaView: View {
+    @State private var revealStart: Date = .now
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = max(geo.size.width, 1)
+            let h = max(geo.size.height, 1)
+
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                // Temps absolu modulo 900 s — mêmes conventions que le ciel.
+                let t = Float(timeline.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let raw = min(max(timeline.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
+                let reveal = Float(raw * raw * (3 - 2 * raw))
+
+                ZStack(alignment: .topLeading) {
+                    Rectangle()
+                        .fill(.black)
+                        .frame(width: w / 2, height: h / 2)
+                        .colorEffect(Self.dithered(ShaderLibrary.authNebulaField(
+                            .float2(w / 2, h / 2), .float(t), .float(reveal),
+                            .image(NebulaNoise.image))))
+                        .scaleEffect(2, anchor: .topLeading)
+
+                    Rectangle()
+                        .fill(.black)
+                        .frame(width: w, height: h)
+                        .colorEffect(ShaderLibrary.authNebulaStars(
+                            .float2(w, h), .float(t), .float(reveal),
+                            .image(NebulaNoise.image)))
+                        .blendMode(.plusLighter)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .onAppear { revealStart = .now }
+    }
+
+    private static func dithered(_ shader: Shader) -> Shader {
+        var s = shader
+        s.dithersColor = true
+        return s
+    }
+}
+
+// MARK: - Les diablotins devinés
+
+/// La couche Canvas au-dessus de la nébuleuse : des présences, pas des
+/// personnages. Chaque diablotin est un TROU dans la brume (occultation
+/// noire à la silhouette du splash), révélé par des cheveux de lumière
+/// distribués par une enveloppe bruitée — 2-3 éclats, de vrais trous — et
+/// par une couronne de micro-particules. Les yeux sont des fentes.
 private struct ImpNight: View {
     var t: Double
 
-    // MARK: La silhouette
+    // MARK: La silhouette du splash
 
-    /// La goutte aux cornes cambrées du splash — les mêmes courbes, la droite
-    /// un souffle plus haute. C'est LE diablotin de l'app, en miniature.
     static let outline: [CGPoint] = inkPolyline(from: CGPoint(x: 0.500, y: 0.975), [
         .curve(0.318, 0.968, 0.208, 0.890),   // assise gauche pleine
         .curve(0.106, 0.780, 0.118, 0.582),   // flanc gauche tendu
@@ -170,21 +222,64 @@ private struct ImpNight: View {
         .curve(0.690, 0.968, 0.500, 0.975)    // assise droite
     ], steps: 10)
 
-    /// Le contour rééchantillonné pour l'arête de lumière, et le poids
-    /// lumineux de chaque point : vif sur la crête et les cornes (la lumière
-    /// vient d'en haut), mort le long des flancs et de l'assise.
-    static let rim: [CGPoint] = inkResample(outline, count: 110)
-    static let rimWeight: [CGFloat] = rim.map { p in
-        let crest = smoothstep((0.46 - p.y) / 0.30)
-        let seat = 1 - smoothstep((p.y - 0.80) / 0.12)
-        return crest * seat
+    /// Le contour rééchantillonné (les cheveux de lumière) et ses normales
+    /// extérieures (la couronne).
+    static let rim: [CGPoint] = inkResample(outline, count: 120)
+    static let normals: [CGPoint] = {
+        let n = rim.count
+        let centroid = CGPoint(x: 0.5, y: 0.55)
+        return (0..<n).map { i in
+            let a = rim[max(0, i - 1)], b = rim[min(n - 1, i + 1)]
+            var dx = b.x - a.x, dy = b.y - a.y
+            let length = max(hypot(dx, dy), 0.0001)
+            dx /= length; dy /= length
+            var nx = -dy, ny = dx
+            if nx * (centroid.x - rim[i].x) + ny * (centroid.y - rim[i].y) > 0 {
+                nx = -nx; ny = -ny
+            }
+            return CGPoint(x: nx, y: ny)
+        }
+    }()
+    /// Le biais de crête : la lumière accroche le haut (crête, cornes),
+    /// meurt sur l'assise. L'enveloppe bruitée fera le reste.
+    static let rimCrest: [CGFloat] = rim.map { p in
+        let crest = smoothstep((0.50 - p.y) / 0.34)
+        let seat = 1 - smoothstep((p.y - 0.82) / 0.10)
+        return (0.18 + 0.82 * crest) * seat
     }
 
-    // MARK: Le peuple de la nuit
+    /// L'enveloppe des accidents : le bruit qui décide OÙ la lumière accroche
+    /// le contour — des îlots qui dérivent lentement, jamais un trait continu.
+    static let envelope = InkNoise(seed: 77)
 
-    /// Un diablotin : sa place, sa taille (côté de sa boîte), son inclinaison,
-    /// sa vie (cadences propres) — et s'il est éphémère : ceux-là émergent du
-    /// noir puis s'y dissolvent tout entiers.
+    // MARK: La couronne
+
+    /// Les grains génériques d'une couronne : tirés une fois, décalés par
+    /// individu. Denses contre la silhouette, raréfiés au loin.
+    struct Grain {
+        let index: Int
+        let dist: CGFloat
+        let size: CGFloat
+        let freq: Double
+        let phase: Double
+    }
+
+    static let grains: [Grain] = {
+        let noise = InkNoise(seed: 113)
+        return (0..<48).map { i in
+            let u = CGFloat(i)
+            return Grain(
+                index: Int(abs(noise(u * 1.7)) * CGFloat(rim.count - 1)),
+                dist: 0.012 + pow(abs(noise(u * 2.9)), 2) * 0.20,
+                size: 0.30 + 0.60 * abs(noise(u * 5.3)),
+                freq: 0.5 + 2.1 * Double(abs(noise(u * 6.7))),
+                phase: Double(abs(noise(u * 8.1))) * 6.28
+            )
+        }
+    }()
+
+    // MARK: Le peuple
+
     private struct Imp {
         let x: CGFloat
         let y: CGFloat
@@ -192,13 +287,9 @@ private struct ImpNight: View {
         let tilt: Double
         let phase: Double
         let ephemeral: Bool
-        /// Fraction du temps visible où les yeux sont allumés.
         let litFraction: Double
     }
 
-    /// Les ancres (le gros en bas-gauche, le moyen en haut-gauche, le coupé
-    /// du bord droit) demeurent ; les petits vont et viennent. Le couloir
-    /// central appartient au formulaire.
     private static let imps: [Imp] = [
         Imp(x: 0.16, y: 0.885, side: 120, tilt: 4, phase: 0.2, ephemeral: false, litFraction: 0.62),
         Imp(x: 0.13, y: 0.095, side: 62, tilt: -5, phase: 2.7, ephemeral: false, litFraction: 0.55),
@@ -210,116 +301,19 @@ private struct ImpNight: View {
         Imp(x: 0.735, y: 0.895, side: 26, tilt: -4, phase: 2.1, ephemeral: true, litFraction: 0.42),
         Imp(x: 0.42, y: 0.78, side: 15, tilt: 8, phase: 4.3, ephemeral: true, litFraction: 0.30),
         Imp(x: 0.60, y: 0.04, side: 14, tilt: -7, phase: 5.9, ephemeral: true, litFraction: 0.32),
-        // Les noyés de la veine : à demi dans la vapeur, ils habitent le
-        // centre sans jamais gêner le formulaire.
         Imp(x: 0.55, y: 0.355, side: 16, tilt: 5, phase: 1.8, ephemeral: true, litFraction: 0.25),
         Imp(x: 0.33, y: 0.27, side: 13, tilt: -6, phase: 3.3, ephemeral: true, litFraction: 0.22)
     ]
 
-    /// Le générateur déterministe de la nuit : tout se déduit de l'index,
-    /// jamais du hasard — la scène est identique à chaque frame.
     private static func hash(_ i: Int, _ salt: Double) -> Double {
         let v = sin(Double(i) * 127.1 + salt * 311.7) * 43758.5453
         return v - v.rounded(.down)
     }
 
-    /// La veine de la voie lactée : un S très doux, haut-centre → bas-droite,
-    /// en unités d'écran.
-    private static func vein(_ u: CGFloat) -> CGPoint {
-        let a = CGPoint(x: 0.52, y: -0.06)
-        let b = CGPoint(x: 0.42, y: 0.40)
-        let c = CGPoint(x: 0.82, y: 1.06)
-        let control1 = CGPoint(x: 0.46, y: 0.16)
-        let control2 = CGPoint(x: 0.50, y: 0.80)
-        func quad(_ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ k: CGFloat) -> CGPoint {
-            let m = 1 - k
-            return CGPoint(x: m * m * p0.x + 2 * m * k * p1.x + k * k * p2.x,
-                           y: m * m * p0.y + 2 * m * k * p1.y + k * k * p2.y)
-        }
-        return u < 0.5 ? quad(a, control1, b, u * 2) : quad(b, control2, c, (u - 0.5) * 2)
-    }
-
-    // MARK: Les populations précalculées
-
-    private struct Star {
-        let x: CGFloat
-        let y: CGFloat
-        let r: CGFloat
-        let alpha: Double
-        /// 0 = fixe ; sinon, fréquence de scintillement.
-        let twinkle: Double
-    }
-
-    /// ~380 poussières : fines (0,3–1 px pour l'essentiel), très inégales,
-    /// denses le long de la veine — la voie lactée est une population, pas
-    /// un dégradé.
-    private static let stars: [Star] = (0..<520).map { i in
-        let onVein = hash(i, 1) < 0.60
-        var x: CGFloat, y: CGFloat
-        if onVein {
-            let u = CGFloat(hash(i, 2))
-            let p = vein(u)
-            // Étalement pseudo-gaussien : somme de deux tirages.
-            let spreadX = CGFloat(hash(i, 3) + hash(i, 13) - 1) * 0.17
-            let spreadY = CGFloat(hash(i, 4) + hash(i, 14) - 1) * 0.06
-            x = p.x + spreadX
-            y = p.y + spreadY
-        } else {
-            x = CGFloat(hash(i, 5))
-            y = CGFloat(hash(i, 6))
-        }
-        // Presque toutes minuscules ; une poignée à peine plus grandes.
-        let sizePick = hash(i, 7)
-        let r: CGFloat = sizePick > 0.97 ? 1.1 + CGFloat(hash(i, 8)) * 0.5
-            : 0.3 + CGFloat(pow(hash(i, 8), 2)) * 0.5
-        let alpha = 0.06 + 0.38 * pow(hash(i, 9), 2.6)
-        let twinkle = hash(i, 10) < 0.25 ? 0.3 + hash(i, 11) * 0.9 : 0
-        return Star(x: x, y: y, r: r, alpha: alpha, twinkle: twinkle)
-    }
-
-    private struct Cloud {
-        let x: CGFloat
-        let y: CGFloat
-        let r: CGFloat
-        let alpha: Double
-        let bucket: Int
-    }
-
-    /// La matière nuageuse : ~150 taches très faibles en grappes le long de
-    /// la veine, trois flous — c'est l'accumulation qui fait la voilure
-    /// laiteuse, avec ses paquets et ses trous, jamais un trait.
-    private static let clouds: [Cloud] = {
-        // Neuf grappes posées sur la veine, latéralement décalées.
-        let centers: [CGPoint] = (0..<9).map { c in
-            let u = CGFloat(c) / 8 * 0.92 + 0.04 + CGFloat(hash(c, 40) - 0.5) * 0.06
-            var p = vein(u)
-            p.x += CGFloat(hash(c, 41) - 0.5) * 0.10
-            return p
-        }
-        return (0..<150).map { i in
-            let c = Int(hash(i, 42) * 8.999)
-            let center = centers[c]
-            let bucket = Int(hash(i, 43) * 2.999)
-            let spread: CGFloat = [0.045, 0.075, 0.12][bucket]
-            let x = center.x + CGFloat(hash(i, 44) + hash(i, 45) - 1) * spread * 1.6
-            let y = center.y + CGFloat(hash(i, 46) + hash(i, 47) - 1) * spread
-            let r: CGFloat = [3.5, 6.5, 11.0][bucket] * (0.6 + CGFloat(hash(i, 48)))
-            // Le gain de la grappe : certaines denses, d'autres presque
-            // éteintes — c'est l'inégalité qui fait les paquets et les trous.
-            let clusterGain = 0.35 + 1.3 * hash(c, 50)
-            let alpha = [0.052, 0.038, 0.026][bucket] * (0.5 + hash(i, 49)) * clusterGain
-            return Cloud(x: x, y: y, r: r, alpha: alpha, bucket: bucket)
-        }
-    }()
-
     var body: some View {
         Canvas { context, size in
             let fade = Double(smoothstep(CGFloat(t / 1.2)))
             guard fade > 0.01 else { return }
-
-            drawMilkyWay(context, size, fade: fade)
-            drawStars(context, size, fade: fade)
-            drawDrift(context, size, fade: fade)
             for (i, imp) in Self.imps.enumerated() {
                 drawImp(context, size, imp: imp, index: i, fade: fade)
             }
@@ -327,104 +321,23 @@ private struct ImpNight: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: La voie lactée
+    // MARK: Les vies
 
-    /// Le lit le plus large d'abord (un seul trait très flou, à peine là),
-    /// puis les grappes nuageuses en trois passes de flou. Une respiration
-    /// imperceptible par grappe — la nuit n'est pas une photo figée.
-    private func drawMilkyWay(_ context: GraphicsContext, _ size: CGSize, fade: Double) {
-        var bed = Path()
-        for k in 0...24 {
-            let u = CGFloat(k) / 24
-            let p = Self.vein(u)
-            let point = CGPoint(x: p.x * size.width, y: p.y * size.height)
-            if k == 0 { bed.move(to: point) } else { bed.addLine(to: point) }
-        }
-        context.drawLayer { layer in
-            layer.addFilter(.blur(radius: size.width * 0.11))
-            layer.stroke(bed, with: .color(.white.opacity(0.030 * fade)),
-                         style: StrokeStyle(lineWidth: size.width * 0.30, lineCap: .round))
-        }
-
-        for bucket in 0..<3 {
-            context.drawLayer { layer in
-                layer.addFilter(.blur(radius: [5.0, 9.0, 15.0][bucket]))
-                for (i, cloud) in Self.clouds.enumerated() where cloud.bucket == bucket {
-                    // Le gaz vit : respiration d'opacité et dérive de 2-3 pt,
-                    // imperceptibles en instantané, vivantes à l'œil.
-                    let breath = 1 + 0.22 * sin(t * 0.05 + Double(i))
-                    let dx = CGFloat(sin(t * 0.03 + Double(i) * 1.7)) * 3
-                    let dy = CGFloat(cos(t * 0.021 + Double(i) * 0.9)) * 2
-                    let r = cloud.r
-                    layer.fill(
-                        Path(ellipseIn: CGRect(x: cloud.x * size.width - r + dx,
-                                               y: cloud.y * size.height - r + dy,
-                                               width: r * 2, height: r * 2)),
-                        with: .color(.white.opacity(cloud.alpha * breath * fade))
-                    )
-                }
-            }
-        }
-    }
-
-    // MARK: Les poussières
-
-    private func drawStars(_ context: GraphicsContext, _ size: CGSize, fade: Double) {
-        for star in Self.stars {
-            var a = star.alpha
-            if star.twinkle > 0 {
-                a *= 0.45 + 0.55 * pow(0.5 + 0.5 * sin(t * star.twinkle + Double(star.x) * 37), 2)
-            }
-            let r = star.r
-            let x = star.x * size.width, y = star.y * size.height
-            context.fill(
-                Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
-                with: .color(.white.opacity(a * fade))
-            )
-        }
-    }
-
-    /// Le liseré : un filet de grains fins en dérive ascendante le long de la
-    /// veine — nés du noir, morts dans le noir.
-    private func drawDrift(_ context: GraphicsContext, _ size: CGSize, fade: Double) {
-        for i in 0..<26 {
-            let u = CGFloat((Self.hash(i, 20) + t * (0.005 + 0.005 * Self.hash(i, 21)))
-                .truncatingRemainder(dividingBy: 1))
-            let p = Self.vein(1 - u)
-            let side = CGFloat(Self.hash(i, 22) - 0.5) * size.width * 0.09
-            let sway = CGFloat(sin(t * (0.3 + Self.hash(i, 23) * 0.4) + Double(i) * 2.2)) * 5
-            let x = p.x * size.width + side + sway
-            let y = p.y * size.height
-            let twinkle = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(t * (0.8 + Self.hash(i, 24)) + Double(i)), 2)
-            let life = sin(.pi * Double(u))
-            let a = 0.20 * twinkle * life
-            guard a > 0.02 else { continue }
-            let r = 0.4 + 0.5 * CGFloat(Self.hash(i, 25))
-            context.fill(
-                Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
-                with: .color(.white.opacity(a * fade))
-            )
-        }
-    }
-
-    // MARK: Les diablotins
-
-    /// La vie d'un corps : les ancres demeurent ; les éphémères émergent du
-    /// noir, vivent une dizaine de secondes, s'y dissolvent — décalés pour
-    /// que la nuit ne soit jamais vide ni pleine.
+    /// Les ancres demeurent ; les éphémères se fondent dans la brume puis en
+    /// ressortent, décalés — la nuit n'est jamais vide ni pleine.
     private func bodyPresence(_ imp: Imp, index: Int) -> Double {
         guard imp.ephemeral else { return 1 }
         let period = 17 + Self.hash(index, 60) * 9
         let visible = period * 0.62
         let c = (t + imp.phase * 4).truncatingRemainder(dividingBy: period)
         guard c < visible else { return 0 }
-        let rise = Double(smoothstep(CGFloat(c / 1.6)))
-        let fall = 1 - Double(smoothstep(CGFloat((c - (visible - 2.0)) / 2.0)))
+        let rise = Double(smoothstep(CGFloat(c / 1.8)))
+        let fall = 1 - Double(smoothstep(CGFloat((c - (visible - 2.2)) / 2.2)))
         return rise * fall
     }
 
-    /// La vie des yeux : allumés par plages, sur la cadence propre de chacun —
-    /// jamais tous ensemble, et jamais longtemps.
+    /// Les yeux, par plages courtes sur la cadence propre de chacun — jamais
+    /// tous ensemble, jamais longtemps.
     private func eyesLit(_ imp: Imp, index: Int) -> Double {
         let period = 9 + Self.hash(index, 61) * 6
         let lit = period * imp.litFraction
@@ -435,20 +348,21 @@ private struct ImpNight: View {
         return rise * fall
     }
 
+    // MARK: Le dessin
+
     private func drawImp(_ context: GraphicsContext, _ size: CGSize,
                          imp: Imp, index: Int, fade: Double) {
         let birth = Double(smoothstep(CGFloat((t - 0.3 - Self.hash(index, 30) * 1.1) / 0.8)))
         let presence = bodyPresence(imp, index: index) * birth * fade
         guard presence > 0.01 else { return }
+        let lit = eyesLit(imp, index: index)
 
-        // Le flottement : ±2 pt, très lent, chacun sa dérive.
         let cx = imp.x * size.width + CGFloat(sin(t * 0.11 + imp.phase * 2)) * 2.5
         let cy = imp.y * size.height + CGFloat(cos(t * 0.08 + imp.phase * 3)) * 2.0
         let side = imp.side
         let tilt = imp.tilt * .pi / 180
         let ca = CGFloat(cos(tilt)), sa = CGFloat(sin(tilt))
 
-        /// Unité → écran : centrage, inclinaison, échelle.
         func P(_ u: CGPoint) -> CGPoint {
             let dx = (u.x - 0.5) * side, dy = (u.y - 0.55) * side
             return CGPoint(x: cx + dx * ca - dy * sa, y: cy + dx * sa + dy * ca)
@@ -458,8 +372,8 @@ private struct ImpNight: View {
             .scaledBy(x: side, y: side)
             .translatedBy(x: -0.5, y: -0.55)
 
-        // Le corps : la goutte du splash, encre à peine plus claire que la
-        // nuit — un dégradé qui meurt vers l'assise.
+        // ---- L'occultation : le diablotin est un TROU dans la nébuleuse —
+        // plus sombre que la brume, il l'avale, elle le dessine en creux.
         var silhouette = Path()
         silhouette.move(to: Self.outline[0])
         for p in Self.outline.dropFirst() { silhouette.addLine(to: p) }
@@ -469,27 +383,28 @@ private struct ImpNight: View {
             body,
             with: .linearGradient(
                 Gradient(stops: [
-                    .init(color: .white.opacity(0.055 * presence), location: 0.0),
-                    .init(color: .white.opacity(0.030 * presence), location: 0.45),
-                    .init(color: .white.opacity(0.010 * presence), location: 1.0)
+                    .init(color: .black.opacity(0.60 * presence), location: 0.0),
+                    .init(color: .black.opacity(0.88 * presence), location: 1.0)
                 ]),
                 startPoint: P(CGPoint(x: 0.5, y: 0.05)),
                 endPoint: P(CGPoint(x: 0.5, y: 1.0))
             )
         )
 
-        // L'arête de lumière : vive sur la crête et les cornes, morte sur les
-        // flancs — la signature du diablotin du splash. Les segments sont
-        // regroupés par paliers d'intensité en TRAITS CONTINUS : jamais de
-        // couture pointillée le long du contour.
-        let lit = eyesLit(imp, index: index)
-        let rimGain = (0.11 + 0.10 * lit) * presence
+        // ---- Les cheveux de lumière : l'enveloppe bruitée décide des îlots
+        // (2-3 éclats, de vrais trous), la crête et les cornes sont
+        // privilégiées, tout dérive lentement. Deux passes : le bloom voilé,
+        // puis le cheveu vif — groupés par paliers en traits continus.
+        let rimGain = presence * (0.35 + 0.65 * lit)
+        let impSeed = CGFloat(index) * 37
         var buckets = [Int: Path]()
         let stride = side >= 50 ? 1 : 2
         var i = 0
         while i < Self.rim.count - stride {
-            let w = Self.rimWeight[i]
-            if w > 0.05 {
+            let e = 0.5 + 0.5 * Self.envelope(CGFloat(i) / 13 + impSeed + CGFloat(t) * 0.055)
+            let accident = Double(smoothstep((e - 0.56) / 0.24))
+            let w = Double(Self.rimCrest[i]) * (0.10 + 0.90 * accident)
+            if w > 0.06 {
                 let bucket = min(4, Int(w * 5))
                 var path = buckets[bucket] ?? Path()
                 path.move(to: P(Self.rim[i]))
@@ -500,84 +415,99 @@ private struct ImpNight: View {
         }
         for (bucket, path) in buckets {
             let w = (Double(bucket) + 0.5) / 5
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 1.6))
+                layer.stroke(path, with: .color(.white.opacity(w * 0.38 * rimGain)),
+                             style: StrokeStyle(lineWidth: 1.8, lineCap: .butt))
+            }
             context.stroke(
                 path,
-                with: .color(.white.opacity(w * rimGain)),
-                style: StrokeStyle(lineWidth: side >= 50 ? 1.1 : 0.8,
+                with: .color(.white.opacity(w * 0.95 * rimGain)),
+                style: StrokeStyle(lineWidth: side >= 50 ? 0.65 : 0.5,
                                    lineCap: .butt, lineJoin: .round)
             )
         }
 
+        // ---- La couronne : la poussière qui trahit la présence — dense
+        // contre la silhouette, raréfiée au loin, chaque grain sur sa cadence.
+        let coronaGain = presence * (0.40 + 0.60 * lit)
+        if coronaGain > 0.04 {
+            let shift = Int(Self.hash(index, 70) * Double(Self.rim.count))
+            for grain in Self.grains {
+                let gi = (grain.index + shift) % Self.rim.count
+                let base = Self.rim[gi]
+                let normal = Self.normals[gi]
+                let pos = P(CGPoint(x: base.x + normal.x * grain.dist,
+                                    y: base.y + normal.y * grain.dist))
+                let near = Double(1 - grain.dist / 0.24)
+                let twinkle = 0.20 + 0.80 * pow(0.5 + 0.5 * sin(t * grain.freq + grain.phase + Double(index)), 3)
+                let a = coronaGain * near * near * twinkle * 0.55
+                guard a > 0.02 else { continue }
+                let r = grain.size
+                context.fill(
+                    Path(ellipseIn: CGRect(x: pos.x - r, y: pos.y - r,
+                                           width: r * 2, height: r * 2)),
+                    with: .color(.white.opacity(a))
+                )
+            }
+        }
+
         drawEyes(context, imp: imp, index: index, lit: lit,
-                 presence: presence, transform: transform, side: side, at: P)
+                 presence: presence, transform: transform, side: side)
     }
 
-    /// Les yeux du splash en miniature : deux globes de porcelaine inclinés,
-    /// catchlight, regard qui glisse, clignements rares — et leur halo qui
-    /// éclaire la face quand ils s'allument.
+    /// Les fentes : petites, acérées, pointes externes relevées — féroces.
+    /// Le seul blanc pur de la scène.
     private func drawEyes(_ context: GraphicsContext, imp: Imp, index: Int,
                           lit: Double, presence: Double,
-                          transform: CGAffineTransform, side: CGFloat,
-                          at P: (CGPoint) -> CGPoint) {
+                          transform: CGAffineTransform, side: CGFloat) {
         guard lit > 0.01 else { return }
-        // La braise : une respiration lente, jamais un stroboscope.
-        let ember = 0.82 + 0.18 * sin(t * 1.3 + imp.phase * 4) * sin(t * 0.7 + imp.phase)
-        // Le clignement, sur la cadence propre de l'individu.
+        let ember = 0.84 + 0.16 * sin(t * 1.3 + imp.phase * 4) * sin(t * 0.7 + imp.phase)
         let blinkPeriod = 4.5 + Self.hash(index, 62) * 3.5
         let c = (t + imp.phase * 5).truncatingRemainder(dividingBy: blinkPeriod)
         let window = blinkPeriod - 0.20
         let blink = c > window ? max(0, sin((c - window) / 0.20 * .pi)) : 0
-        let openness = max(0.05, 1 - blink)
-        // Le regard : une dérive de l'ordre du pixel.
-        let gazeX = CGFloat(sin(t * 0.10 + imp.phase * 2.7)) * 0.020
-        let gazeY = CGFloat(cos(t * 0.07 + imp.phase * 1.9)) * 0.012
+        let openness = max(0.08, 1 - blink)
+        let gazeX = CGFloat(sin(t * 0.10 + imp.phase * 2.7)) * 0.014
+        let gazeY = CGFloat(cos(t * 0.07 + imp.phase * 1.9)) * 0.008
 
         let a = lit * ember * presence
-        let eyeW: CGFloat = 0.115
-        let eyeH: CGFloat = 0.170 * CGFloat(openness)
+        let eyeW: CGFloat = 0.105
+        let eyeH: CGFloat = 0.030 * CGFloat(openness)
 
-        // La face s'éclaire sous les yeux — leur propre lumière sur l'encre.
+        // Une lueur infime sur la face — juste ce qu'il faut pour que les
+        // fentes n'aient pas l'air collées sur du néant.
         context.drawLayer { layer in
-            layer.addFilter(.blur(radius: side * 0.16))
+            layer.addFilter(.blur(radius: side * 0.10))
             layer.fill(
-                Path(ellipseIn: CGRect(x: 0.18, y: 0.30, width: 0.64, height: 0.34))
+                Path(ellipseIn: CGRect(x: 0.26, y: 0.40, width: 0.48, height: 0.18))
                     .applying(transform),
-                with: .color(.white.opacity(0.13 * a))
+                with: .color(.white.opacity(0.07 * a))
             )
         }
 
         for s: CGFloat in [-1, 1] {
             let ex = 0.5 + s * 0.135 + gazeX
             let ey = 0.485 + gazeY
-            let rect = CGRect(x: ex - eyeW / 2, y: ey - eyeH / 2, width: eyeW, height: eyeH)
-            // L'inclinaison du splash : œil gauche -5°, droit +5° — le même
-            // regard que le diablotin de la bouteille.
-            let eyeTurn = CGAffineTransform(translationX: ex, y: ey)
-                .rotated(by: s * 0.087)
+            // L'amande-fente : deux arcs tendus, pointes vives.
+            var slit = Path()
+            slit.move(to: CGPoint(x: ex - eyeW / 2, y: ey))
+            slit.addQuadCurve(to: CGPoint(x: ex + eyeW / 2, y: ey),
+                              control: CGPoint(x: ex, y: ey - eyeH * 1.4))
+            slit.addQuadCurve(to: CGPoint(x: ex - eyeW / 2, y: ey),
+                              control: CGPoint(x: ex, y: ey + eyeH * 1.4))
+            slit.closeSubpath()
+            // Pointes EXTERNES relevées (~11°) : la férocité tient là.
+            let turn = CGAffineTransform(translationX: ex, y: ey)
+                .rotated(by: s * -0.19)
                 .translatedBy(x: -ex, y: -ey)
-            let globe = Path(ellipseIn: rect).applying(eyeTurn).applying(transform)
+            let shaped = slit.applying(turn).applying(transform)
 
-            // Le halo, puis la porcelaine — deux passes, comme toute lumière.
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: max(1.5, side * 0.07)))
-                layer.fill(globe, with: .color(.white.opacity(0.50 * a)))
+                layer.addFilter(.blur(radius: max(1.2, side * 0.045)))
+                layer.fill(shaped, with: .color(.white.opacity(0.55 * a)))
             }
-            // Le globe : de la porcelaine, jamais une pastille — le bas du
-            // globe s'éteint à peine, aucune pupille dessinée (le splash
-            // n'en a pas ; c'est ce qui le garde précieux).
-            let top = CGPoint(x: ex, y: ey - eyeH / 2).applying(transform)
-            let bottom = CGPoint(x: ex, y: ey + eyeH / 2).applying(transform)
-            context.fill(
-                globe,
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: .white.opacity(0.97 * a), location: 0.0),
-                        .init(color: .white.opacity(0.92 * a), location: 0.55),
-                        .init(color: Color(white: 0.82).opacity(0.85 * a), location: 1.0)
-                    ]),
-                    startPoint: top, endPoint: bottom
-                )
-            )
+            context.fill(shaped, with: .color(.white.opacity(min(1, 0.97 * a))))
         }
     }
 }

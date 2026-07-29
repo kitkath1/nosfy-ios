@@ -45,6 +45,10 @@ struct RootView: View {
     /// Banc d'essai du splash : lancée avec `-splashTest`, l'app ne va jamais
     /// à l'accueil — la séquence se termine sur un bouton « Rejouer ».
     private static let splashTest = CommandLine.arguments.contains("-splashTest")
+    /// Banc d'essai de la Live Activity : `-cometTest` affiche les composants
+    /// de l'écran verrouillé (comète-progression, diablotin) dans l'app —
+    /// le simulateur ne sait pas montrer l'écran verrouillé.
+    private static let cometTest = CommandLine.arguments.contains("-cometTest")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -77,8 +81,31 @@ struct RootView: View {
     var body: some View {
         if Self.splashTest {
             splashBench
+        } else if Self.cometTest {
+            cometBench
         } else {
             mainBody
+        }
+    }
+
+    /// Le banc d'essai de l'écran verrouillé : la comète démarrée il y a
+    /// 12 minutes (traversée en 90), et le diablotin sous trois regards.
+    private var cometBench: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 40) {
+                ProgressComet(startedAt: .now.addingTimeInterval(-12 * 60))
+                    .frame(height: 34)
+                ProgressComet(startedAt: .now.addingTimeInterval(-45 * 60))
+                    .frame(height: 34)
+                HStack(spacing: 30) {
+                    ImpGlyph(size: 26, gaze: .zero)
+                    ImpGlyph(size: 26, gaze: CGSize(width: -1, height: 0.3))
+                    ImpGlyph(size: 26, gaze: CGSize(width: 1, height: -0.5))
+                    ImpGlyph(size: 17, gaze: CGSize(width: 0.6, height: 0))
+                }
+            }
+            .padding(.horizontal, 24)
         }
     }
 
@@ -138,13 +165,17 @@ struct RootView: View {
                 sheetWorkout = active
             })
             .sheet(item: $sheetWorkout) { workout in
-                ActiveWorkoutSheet(workout: workout) {
-                    // « Ajouter un exercice » : on referme la feuille et on
-                    // ouvre la bibliothèque — c'est là qu'on loggue.
-                    sheetWorkout = nil
-                    selection = .exercises
+                // « Annuler cette séance » la supprime pendant que la feuille
+                // se referme : on ne lit pas un objet déjà sorti de la base.
+                if !workout.isDeleted {
+                    ActiveWorkoutSheet(workout: workout) {
+                        // « Ajouter un exercice » : on referme la feuille et on
+                        // ouvre la bibliothèque — c'est là qu'on loggue.
+                        sheetWorkout = nil
+                        selection = .exercises
+                    }
+                    .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
                 }
-                .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
             }
 
             if showAuth {
@@ -182,13 +213,6 @@ struct RootView: View {
         }
         .onChange(of: sheetWorkout == nil) { _, _ in celebrateFinishedWorkout() }
         .task {
-            // TEMP
-            if CommandLine.arguments.contains("-finishAfterLaunch"), let active {
-                try? await Task.sleep(for: .seconds(15))
-                active.endedAt = .now
-                try? modelContext.save()
-                WoopCelebration.shared.workoutFinished()
-            }
             // `-openActiveSheet` ouvre la feuille de séance dès le lancement
             // (captures d'écran automatisées uniquement).
             if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
