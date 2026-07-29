@@ -88,3 +88,46 @@ La carte « Objectif hebdomadaire » de la home : un rectangle arrondi (30 pt) d
 - **Socle** : Liquid Glass natif teinté fumé (`glassEffect(.regular.tint(noir 0.55).interactive())`) — le ciel se réfracte au scroll ; jamais de fill opaque dessous. Fil inscrit à 1,5 pt + souffle haut (épaisseur du verre). Grain WoopGrain par-dessus.
 - **Contenu** : titre 15 pt, `ShimmeringNumber` 34 pt (glint argenté ~7 s, fenêtré 22 %), sous-titre 13 pt, trophées 44 pt justifiés en style `luminous`. Carte purement consultative (ni chevron, ni navigation).
 - **Budget** : une seule passe demi-résolution (3 fetches), `TimelineView` 30 fps, endormie hors écran et sous Reduce Motion. Boucle 900 s (dérives entières, k entiers). NebulaStrip n'est plus chauffée au lancement (gardée en réserve).
+
+## Le bouton primaire « diamant »
+
+**LE composant bouton primaire du système** (CTA « CONNEXION » de l'auth, et
+tout appel à l'action majeur) : un bijou d'obsidienne — fumée noire vivante
+serclée d'une hairline qui scintille. Référence : capture d'un bouton premium
+(ligne inégale, halos discrets, fumée). Fichiers :
+[DiamondButton.metal](Woop/DiamondButton.metal) (l'écrin, une passe),
+`DiamondConnexionButton` dans
+[ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift) (texte +
+flèche). Banc d'essai : argument de lancement `-buttonLab` → page noire nue.
+Validé **10/10** par la boucle workflow (capture → juge sur grille chiffrée →
+orfèvre), 3 rounds.
+
+- **Architecture** : tout l'effet dans UNE passe `colorEffect` sur un
+  rectangle élargi de 34 pt de marge — halos, particules et éclats vivent
+  HORS du bouton, en alpha prémultiplié, jamais en aplat noir sur la page.
+- **Forme** : 58 pt de haut, rayon 19 pt continu (PAS une capsule),
+  marges latérales 26 pt.
+- **Liseré** : hairline ~1 pt à luminosité INÉGALE — accents fbm paramétrés
+  par la POSITION sur le bord (l'angle `atan2` fige les accents sur les
+  longs bords : leçon), vifs en haut et sur les flancs, murmure en bas ;
+  respiration ~6 s. La visibilité se règle à la LUMINOSITÉ, jamais à
+  l'épaisseur.
+- **Halos** : buée blanche aux accents seulement, amplitude ≤ 0.50 (au-delà
+  = néon = interdit), fondu court (~15 pt) — la lumière reste collée au
+  bouton.
+- **Fumée** : NOIRE dominante (socle 3,8 % → 1,2 %), volutes fbm à double
+  déformation de domaine, 3 plans de nuances superposés en parallaxe, plus
+  dense (+30-50 %) sous les accents du liseré — elle « touche » la lumière.
+  Jamais laiteuse : moyenne intérieure ≤ 8 %.
+- **Particules** : poussières ~1 px éjectées le long de la normale du bord,
+  3-8 visibles, pondérées par la lumière locale.
+- **Éclats-étoiles** (l'effet bague) : cœur vif + rayons hairline en croix
+  qui FLEURISSENT au pic du flash (~12 pt) puis se referment ; flashs rares
+  (~1 s toutes les 7-18 s par site), 2-4 visibles — des étincelles, jamais
+  des confettis.
+- **Texte** : capitales 13,5 pt medium, tracking 4,6, dégradé blanc → gris
+  PRONONCÉ (100 % → 54 %) ; flèche `arrow.right` light 15 pt à 22 pt du bord.
+- **Pièges appris** : l'alpha du bord doit inclure la hairline (sinon la
+  rampe d'opacité la mange à d ≈ 0) ; le shader JIT-compile ~5 s au premier
+  rendu (capture noire avant) ; vérifier l'ANIMATION sur 3 captures espacées
+  d'1 s, jamais sur une seule frame.
