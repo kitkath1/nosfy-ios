@@ -8,12 +8,12 @@ import Foundation
 enum WoopConfig {
     static let supabaseURL = URL(string:
         Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String
-            ?? "https://VOTRE-PROJET.supabase.co"
+            ?? "https://ytnnyjkramgiqyxdrkcu.supabase.co"
     )!
 
     static let supabaseAnonKey =
         Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String
-            ?? ""
+            ?? "sb_publishable__EHzc8KHeG_f3TdA6x2iag_F3fIW7v2"
 
     /// Tant que le projet n'est pas renseigné, l'app fonctionne en local seul.
     static var isConfigured: Bool {

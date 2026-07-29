@@ -16,9 +16,11 @@ struct WoopApp: App {
         if CommandLine.arguments.contains("-demoData") {
             DemoData.seedIfEmpty(in: container)
         }
-        // La LUT du ciel se génère en tâche de fond pendant le splash — au
-        // premier rendu de la home, elle est déjà prête.
+        // La LUT du ciel et la bande de nébuleuse de la carte Objectif se
+        // génèrent en tâche de fond pendant le splash — au premier rendu de
+        // la home, elles sont déjà prêtes.
         NebulaNoise.warmUp()
+        NebulaStrip.warmUp()
     }
 
     var body: some Scene {

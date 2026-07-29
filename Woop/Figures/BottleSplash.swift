@@ -282,9 +282,17 @@ private struct GlassEdges: View {
         let yNorm = m.spine[i].y * BottleStage.aspect
         let ember = smoothstep((yNorm - 0.80) / 0.14) * 0.55 * glow
         let shimmer = 1 - 0.10 * f * (1 - CGFloat(sin(t * 0.7 + Double(i) * 0.05)))
-        let sideBias = 1.12 - 0.24 * m.spine[i].x
+        // La clé penche franchement à gauche : un plateau a un côté dominant.
+        let sideBias = 1.18 - 0.40 * m.spine[i].x
         let e = clamp01(m.envelope[i] + 0.10 * Self.drift(CGFloat(i) / 28 + CGFloat(t) * 0.04))
-        let flank: CGFloat = (yNorm > 0.35 && yNorm < 0.75 && f < 0.15) ? 0.20 : 1
+        // Les flancs droits MEURENT : un contour réel n'existe que là où la
+        // lumière accroche. L'enveloppe décide des accidents — 2-3 éclats par
+        // flanc, et de vrais trous entre eux. L'œil perd la ligne, la retrouve.
+        let flankZone = smoothstep((yNorm - 0.33) / 0.06)
+            * (1 - smoothstep((yNorm - 0.74) / 0.08))
+        let flat = 1 - smoothstep((f - 0.06) / 0.12)
+        let accident = smoothstep((e - 0.62) / 0.22)
+        let flank = 1 - flankZone * flat * (1 - max(0.06, accident * 0.9))
         var value = (0.14 + 0.95 * f + ember) * shimmer * sideBias * weight * (0.50 + e * 0.85) * flank
         if e > 0.88 { value = min(1, value * 1.4) }   // pic à blanc pur
         return value
@@ -297,7 +305,7 @@ private struct GlassEdges: View {
             BottleInteriorShape()
                 .stroke(Color.white, lineWidth: 2.5)
                 .blur(radius: 5)
-                .opacity(Double((0.24 + 0.20 * glow) * alpha))
+                .opacity(Double((0.14 + 0.13 * glow) * alpha))
                 .mask(BottleInteriorShape())
 
             // Blooms bucketés (12 paliers, ~12 strokes au lieu de 440),
@@ -1462,11 +1470,27 @@ private struct BottleStage: View {
                     .visualEffect { content, proxy in
                         content.colorEffect(ShaderLibrary.lightVeil(
                             .float2(proxy.size), .float(Float(t)),
-                            .float(Float(beat.become * (1 + 0.25 * beat.dissolve + 0.55 * beat.flash)))))
+                            .float(Float(beat.become * (1 + 0.25 * beat.dissolve + 0.35 * beat.flash)))))
                     }
                     .frame(width: w * 2.6, height: h * 1.8)
                     .position(x: w / 2, y: h * 0.42)
                     .blendMode(.plusLighter)
+                    .opacity(Double(scene))
+
+                // LA POCHE D'OMBRE : le verre absorbe le contre-jour en
+                // incidence rasante — l'intérieur reste plus sombre que le
+                // voile, et tout ce que la bouteille contient (orbe, dentelle,
+                // tresse) gagne son contraste contre elle. Elle naît avec le
+                // verre et cède pendant le flash : la lumière inonde tout.
+                Rectangle()
+                    .fill(Color.white)
+                    .visualEffect { content, proxy in
+                        content.colorEffect(ShaderLibrary.glassPocket(
+                            .float2(proxy.size), .float(Float(t)),
+                            .float(Float(beat.become * (1 - 0.30 * beat.flash)))))
+                    }
+                    .mask(BottleInteriorShape())
+                    .blendMode(.multiply)
                     .opacity(Double(scene))
 
                 // L'environnement mord dans le verre : la fumée cosmique,
@@ -1853,21 +1877,29 @@ private struct BottleStage: View {
             // Le col-colonne : 3 stries verticales pleine hauteur du goulot,
             // espacement irrégulier, la plus vive décentrée — le verre étroit
             // concentre la lumière.
+            // Chaque strie a SA vie : inclinaison, hauteur, dérive latérale
+            // et respiration propres — jamais trois verticales au garde-à-vous.
             Capsule()
-                .fill(Color.white.opacity(0.12 + 0.10 * beat.glow))
-                .frame(width: 0.7, height: h * 0.070)
-                .position(x: w * 0.452, y: h * 0.197)
-                .opacity(0.8 + 0.2 * sin(t * 0.5 + 1.2))
+                .fill(Color.white.opacity(0.10 + 0.09 * beat.glow))
+                .frame(width: 0.7, height: h * 0.058)
+                .rotationEffect(.degrees(1.6))
+                .position(x: w * 0.452 + 0.9 * CGFloat(sin(t * 0.09 + 0.4)),
+                          y: h * 0.201)
+                .opacity(0.55 + 0.45 * sin(t * 0.5 + 1.2))
             Capsule()
                 .fill(Color.white.opacity(0.22 + 0.18 * beat.glow))
                 .frame(width: 1.0, height: h * 0.072)
-                .position(x: w * 0.487, y: h * 0.196)
-                .opacity(0.8 + 0.2 * sin(t * 0.7 + 3.4))
+                .rotationEffect(.degrees(-0.8))
+                .position(x: w * 0.487 + 0.6 * CGFloat(sin(t * 0.13 + 2.8)),
+                          y: h * 0.196)
+                .opacity(0.75 + 0.25 * sin(t * 0.7 + 3.4))
             Capsule()
-                .fill(Color.white.opacity(0.08 + 0.07 * beat.glow))
-                .frame(width: 0.6, height: h * 0.066)
-                .position(x: w * 0.538, y: h * 0.198)
-                .opacity(0.8 + 0.2 * sin(t * 0.4 + 5.1))
+                .fill(Color.white.opacity(0.06 + 0.06 * beat.glow))
+                .frame(width: 0.5, height: h * 0.044)
+                .rotationEffect(.degrees(2.1))
+                .position(x: w * 0.538 + 1.1 * CGFloat(sin(t * 0.07 + 5.0)),
+                          y: h * 0.191)
+                .opacity(0.45 + 0.55 * sin(t * 0.4 + 5.1))
 
             // Les longues verticales : deux bandes propres qui courent sur
             // TOUTE la hauteur du corps, fondues aux extrémités — le reflet
