@@ -26,12 +26,13 @@ private enum InkWhite {
         startPoint: .top, endPoint: .bottom
     )
 
-    /// Les yeux : blanc pur en haut, argent lunaire en bas — de la porcelaine.
+    /// Les yeux : BLANC PUR — de la porcelaine neutre, l'ombrage vient de la
+    /// valeur, jamais d'une teinte. Le moindre bleu ferait « lavande ».
     static let eye = LinearGradient(
         stops: [
             .init(color: .white, location: 0.0),
-            .init(color: Color.lunar.opacity(0.97), location: 0.45),
-            .init(color: Color(red: 0.76, green: 0.80, blue: 0.92), location: 1.0)
+            .init(color: Color(white: 0.97), location: 0.45),
+            .init(color: Color(white: 0.86), location: 1.0)
         ],
         startPoint: .top, endPoint: .bottom
     )
@@ -377,22 +378,25 @@ private struct BottleInteriorShape: Shape {
     }
 }
 
-/// Le diablotin, silhouette fine : flancs en S, épaules resserrées, cornes
-/// allongées en flammes — la droite un soupçon plus haute, l'asymétrie du
-/// dessin à la main.
+/// Le diablotin, silhouette précieuse : une goutte pleine aux courbes
+/// TENDUES — la ligne est dessinée par la tension, jamais par le bruit — et
+/// deux cornes-griffes : nées d'un point étroit du crâne, cambrées, effilées
+/// en aiguille. La droite un souffle plus haute — l'asymétrie de la main.
 private enum Imp {
-    static let outline = inkPolyline(from: CGPoint(x: 0.500, y: 0.972), [
-        .curve(0.300, 0.965, 0.195, 0.885),
-        .curve(0.085, 0.775, 0.110, 0.570),
-        .curve(0.125, 0.430, 0.205, 0.330),
-        .curve(0.140, 0.240, 0.180, 0.020),
-        .curve(0.250, 0.150, 0.310, 0.240),
-        .curve(0.500, 0.190, 0.690, 0.235),
-        .curve(0.760, 0.130, 0.835, 0.000),
-        .curve(0.865, 0.190, 0.805, 0.325),
-        .curve(0.885, 0.430, 0.900, 0.570),
-        .curve(0.925, 0.775, 0.815, 0.885),
-        .curve(0.710, 0.965, 0.500, 0.972)
+    static let outline = inkPolyline(from: CGPoint(x: 0.500, y: 0.975), [
+        .curve(0.318, 0.968, 0.208, 0.890),   // assise gauche pleine
+        .curve(0.106, 0.780, 0.118, 0.582),   // flanc gauche tendu
+        .curve(0.132, 0.442, 0.240, 0.322),   // joue gauche
+        .curve(0.196, 0.246, 0.226, 0.150),   // corne g. : petite griffe cambrée
+        .curve(0.243, 0.108, 0.260, 0.130),   // pointe fine
+        .curve(0.296, 0.205, 0.354, 0.262),   // bord interne, retour au crâne
+        .curve(0.500, 0.212, 0.646, 0.256),   // crâne entre les cornes
+        .curve(0.692, 0.162, 0.728, 0.094),   // corne d. : bord interne raide
+        .curve(0.744, 0.048, 0.764, 0.078),   // pointe aiguille, plus haute
+        .curve(0.798, 0.180, 0.774, 0.316),   // bord externe, cambrure inverse
+        .curve(0.862, 0.424, 0.878, 0.582),   // joue droite
+        .curve(0.892, 0.780, 0.796, 0.890),   // flanc droit
+        .curve(0.690, 0.968, 0.500, 0.975)    // assise droite
     ], steps: 16)
 }
 
@@ -509,12 +513,17 @@ private struct ImpCorona: View {
                 )
             }
 
-            // Les grains.
+            // Les grains. La lumière vit dans la FLAQUE : dense à sa base,
+            // raréfiée vers la crête — jamais une guirlande posée au contour.
             for spark in CoronaModel.sparks {
                 let position = at(spark.index, out: spark.distance, slide: spark.slide)
+                let py = CoronaModel.points[min(max(spark.index, 1),
+                                                CoronaModel.points.count - 2)].y
+                let baseWeight = 0.18 + 0.82 * Double(smoothstep((py - 0.38) / 0.42))
                 let near = 1 - spark.distance / 0.09
                 let twinkle = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(t * spark.freq + spark.phase), 3)
                 let a = twinkle * Double(near) * (0.85 + 0.6 * Double(pulse)) * Double(alpha)
+                    * baseWeight
                 let r = spark.size
                 // Chaque grain porte son auréole — c'est la matière lumineuse.
                 context.fill(
@@ -529,17 +538,20 @@ private struct ImpCorona: View {
                 )
             }
 
-            // La dentelle.
+            // La dentelle — pondérée elle aussi vers la base.
             for lace in CoronaModel.laces {
                 var path = Path()
                 path.move(to: at(lace.index, out: 0.004, slide: 0))
                 let mid = at(lace.index + lace.length / 2, out: 0.004 + lace.bow, slide: 0)
                 let end = at(lace.index + lace.length, out: 0.004, slide: 0)
                 path.addQuadCurve(to: end, control: mid)
+                let ly = CoronaModel.points[min(max(lace.index, 1),
+                                               CoronaModel.points.count - 2)].y
+                let laceWeight = 0.30 + 0.70 * Double(smoothstep((ly - 0.38) / 0.42))
                 let flicker = 0.7 + 0.3 * sin(t * lace.freq + lace.phase)
                 context.stroke(
                     path,
-                    with: .color(.white.opacity(lace.alpha * flicker
+                    with: .color(.white.opacity(lace.alpha * flicker * laceWeight
                                                 * (0.8 + 0.6 * Double(pulse)) * Double(alpha))),
                     style: StrokeStyle(lineWidth: 0.4 * side / 87, lineCap: .round)
                 )
@@ -622,10 +634,15 @@ private struct ImpDissolve: View {
         let bright: Double
         let hero: Bool
         let straggler: Bool
+        /// Tours COMPLETS d'enroulement pendant le morphisme (signés) — un
+        /// entier, pour que le grain arrive exactement sur sa place de sphère.
+        let turns: Double
+        /// Gonflement de la nappe à mi-vol : le ruban s'ouvre puis se referme.
+        let bulge: CGFloat
     }
 
-    private static let impSide: CGFloat = 0.46
-    private static let impSideH: CGFloat = 0.46 * BottleStage.aspect
+    private static let impSide: CGFloat = 0.30
+    private static let impSideH: CGFloat = 0.30 * BottleStage.aspect
     private static let orbCenterY: CGFloat = 0.74
     private static let orbR: CGFloat = 0.125
 
@@ -652,15 +669,25 @@ private struct ImpDissolve: View {
             let hero = abs(noise(u * 16.1)) > 0.96
             if hero { bright = 0.9 + 0.1 * Double(abs(noise(u * 16.3))) }
 
-            var stagIn = abs(noise(u * 6.7))
+            // Le PELAGE : la surface part en premier (inward ≈ 1 = sur le
+            // contour), le cœur suit — le corps s'écorce en vagues.
+            var stagIn = clamp01((1 - inward) * 0.75 + abs(noise(u * 6.7)) * 0.25)
             var riseTop = 0.10 + 0.32 * abs(noise(u * 7.9))
             let straggler = abs(noise(u * 17.3)) < 0.20
 
+            // La NAPPE : les grains d'un même quartier du contour tournent
+            // dans le même sens — des rubans qui s'enroulent, pas une pluie.
+            let nappe = (index * 4) / max(1, Imp.outline.count)
+            var turns = Double(nappe % 2 == 0 ? 1 : -1)
+            if abs(noise(u * 18.3)) > 0.82 { turns *= 2 }
+            var bulge = 0.35 + 0.65 * abs(noise(u * 19.1))
+
             if i >= 562 && i < 652 {
-                // Cœur : petit rayon, jamais cramé.
+                // Cœur : petit rayon, enroulement discret.
                 orbit = Self.orbR * 0.5 * pow(abs(noise(u * 4.5)), 0.6)
                 size *= 0.7
                 bright *= 0.7
+                bulge = 0.15
             } else if i >= 652 && i < 732 {
                 // Gerbes polaires : cônes serrés haut et bas, plus vifs.
                 orbit = Self.orbR * (1.0 + 0.35 * abs(noise(u * 4.7)))
@@ -670,13 +697,18 @@ private struct ImpDissolve: View {
                 size *= 0.75
                 riseTop = 0.14 + 0.10 * abs(noise(u * 8.1))
                 stagIn = 0.3 + 0.5 * abs(noise(u * 8.3))
+                bulge = 0.5
             }
             if i < 2 {
+                // Les yeux : ils partent en DERNIER, glissent sans tourbillon —
+                // deux braises qui traversent calmement le chaos.
                 start = CGPoint(x: i == 0 ? 0.365 : 0.635, y: 0.485)
                 bright = 1.6
                 size = 2.2
                 stagIn = 0.92
                 riseTop = 0.19
+                turns = 0
+                bulge = 0.10
             }
             return Grain(
                 startImp: start,
@@ -694,7 +726,9 @@ private struct ImpDissolve: View {
                 size: size,
                 bright: bright,
                 hero: hero,
-                straggler: straggler
+                straggler: straggler,
+                turns: turns,
+                bulge: bulge
             )
         }
     }()
@@ -786,11 +820,30 @@ private struct ImpDissolve: View {
                                                       height: w * 0.066 * radiusScale)),
                                with: .color(Color.lunar.opacity(0.12 * orbAlpha)))
                 }
-                context.drawLayer { layer in
-                    layer.addFilter(.blur(radius: 2))
-                    layer.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.014, y: center.y - w * 0.013,
-                                                      width: w * 0.028, height: w * 0.026)),
-                               with: .color(.white.opacity(0.30 * orbAlpha)))
+                // LE NOYAU : cramé. Un orbe sans cœur blanc n'est pas une
+                // source, c'est une décoration. Il s'allume quand la sphère
+                // se referme — et FLASHE à l'instant où elle se scelle :
+                // l'événement lumineux global (voile, poche, arêtes suivent
+                // via beat.flash, calé sur le même instant).
+                let nucleusK = Double(smoothstep((dissolve - 0.55) / 0.35))
+                let flare = Double(span(t, 5.30, 0.10, 5.65, 0.45))
+                if nucleusK > 0.01 {
+                    let burst = w * (0.030 + 0.055 * flare)
+                    context.drawLayer { layer in
+                        layer.addFilter(.blur(radius: 9))
+                        layer.fill(Path(ellipseIn: CGRect(x: center.x - burst, y: center.y - burst,
+                                                          width: burst * 2, height: burst * 2)),
+                                   with: .color(.white.opacity((0.30 + 0.50 * flare) * nucleusK * orbAlpha)))
+                    }
+                    context.drawLayer { layer in
+                        layer.addFilter(.blur(radius: 1.5))
+                        layer.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.016, y: center.y - w * 0.015,
+                                                          width: w * 0.032, height: w * 0.030)),
+                                   with: .color(.white.opacity(0.95 * nucleusK * orbAlpha)))
+                    }
+                    context.fill(Path(ellipseIn: CGRect(x: center.x - w * 0.007, y: center.y - w * 0.0065,
+                                                        width: w * 0.014, height: w * 0.013)),
+                                 with: .color(.white.opacity(nucleusK * orbAlpha)))
                 }
 
                 // La dentelle : 4-5 filaments allumés sur 7, variante qui
@@ -802,12 +855,17 @@ private struct ImpDissolve: View {
                                               + Double(f) * 1.9)), 2.5)
                     guard flick > 0.05 else { continue }
                     let variant = Self.lace[f][variantIndex]
+                    // La dentelle rampe SUR LA FACE de la sphère (rayon
+                    // 0,60-0,92), jamais pile au limbe : c'est la densité qui
+                    // dessine la frontière, pas un cercle tracé. Les branches
+                    // filles, elles, s'éjectent au-delà — les gerbes.
+                    let face = 0.60 + 0.32 * CGFloat(abs(laceNoise(CGFloat(f) * 7.7)))
                     func mapped(_ units: [CGPoint]) -> Path {
                         var path = Path()
                         for (k, unit) in units.enumerated() {
                             let point = CGPoint(
-                                x: center.x + unit.x * Self.orbR * radiusScale * w,
-                                y: center.y + unit.y * Self.orbR * radiusScale * w * 0.92)
+                                x: center.x + unit.x * Self.orbR * face * radiusScale * w,
+                                y: center.y + unit.y * Self.orbR * face * radiusScale * w * 0.92)
                             if k == 0 { path.move(to: point) } else { path.addLine(to: point) }
                         }
                         return path
@@ -827,8 +885,8 @@ private struct ImpDissolve: View {
                                        style: StrokeStyle(lineWidth: 0.5, lineCap: .round))
                         // La pointe de la branche : un éclat.
                         if flick > 0.5, let tipUnit = branch.last {
-                            let tp = CGPoint(x: center.x + tipUnit.x * Self.orbR * radiusScale * w,
-                                             y: center.y + tipUnit.y * Self.orbR * radiusScale * w * 0.92)
+                            let tp = CGPoint(x: center.x + tipUnit.x * Self.orbR * face * radiusScale * w,
+                                             y: center.y + tipUnit.y * Self.orbR * face * radiusScale * w * 0.92)
                             context.fill(Path(ellipseIn: CGRect(x: tp.x - 1.1, y: tp.y - 1.1,
                                                                 width: 2.2, height: 2.2)),
                                          with: .color(.white.opacity(orbAlpha * flick)))
@@ -839,10 +897,16 @@ private struct ImpDissolve: View {
 
             // Les grains.
             for (i, grain) in Self.grains.enumerated() {
-                let condenseK = smoothstep((dissolve - grain.stagIn * 0.30) / 0.70)
+                // Le pelage s'étale : des vagues d'écorçage, pas un départ
+                // groupé — la moitié de la beauté est dans l'inégalité.
+                let condenseK = smoothstep((dissolve - grain.stagIn * 0.45) / 0.55)
                 guard condenseK > 0.001 else { continue }
-                // easeOutQuint : l'attaque brève, l'arrivée douce.
-                let condense = 1 - pow(1 - condenseK, 5)
+                // easeInOutCubic : le grain accélère, PLANE à mi-vol (c'est
+                // là que le ruban et la traînée existent), puis se pose.
+                func ease(_ k: CGFloat) -> CGFloat {
+                    k < 0.5 ? 4 * k * k * k : 1 - pow(-2 * k + 2, 3) / 2
+                }
+                let condense = ease(condenseK)
 
                 let startX = (0.5 + (grain.startImp.x - 0.5) * Self.impSide) * w
                 let startY = (impTopY + grain.startImp.y * Self.impSideH) * h
@@ -864,11 +928,33 @@ private struct ImpDissolve: View {
                     targetY = center.y + pole * grain.orbit * (1.05 + 0.85 * abs(y3)) * w * 0.92
                 }
 
-                // Trajet en virgule : un détour perpendiculaire, pas une droite.
-                let commaSign: CGFloat = grain.phase > 3.14 ? 1 : -1
-                let comma = CGFloat(sin(.pi * Double(condense))) * 0.05 * w * commaSign
-                var x = startX + (targetX - startX) * condense + comma
-                var y = startY + (targetY - startY) * condense + comma * 0.4
+                // LE MORPHISME : jamais une droite. Chaque grain s'enroule
+                // autour d'un pivot qui migre du cœur du corps vers le cœur
+                // de l'orbe ; les grains d'une même nappe tournent ensemble —
+                // le corps se délite en rubans qui se tordent, gonflent à
+                // mi-vol, et se referment en sphère. `turns` est entier :
+                // chaque grain arrive exactement sur sa place.
+                let bodyCX = w * 0.5
+                let bodyCY = (impTopY + 0.55 * Self.impSideH) * h
+                let a0 = Double(atan2(startY - bodyCY, startX - bodyCX))
+                let r0 = Double(hypot(startX - bodyCX, startY - bodyCY))
+                let a1 = Double(atan2(targetY - center.y, targetX - center.x))
+                let r1 = Double(hypot(targetX - center.x, targetY - center.y))
+                var deltaA = a1 - a0
+                deltaA = atan2(sin(deltaA), cos(deltaA))
+                let sweep = deltaA + grain.turns * 2 * .pi
+                func vortex(_ k: CGFloat) -> CGPoint {
+                    let kk = Double(k)
+                    let angle = a0 + sweep * kk
+                    let inflate = 1 + Double(grain.bulge) * 0.55 * sin(.pi * kk)
+                    let radius = (r0 + (r1 - r0) * kk) * inflate
+                    return CGPoint(
+                        x: bodyCX + (center.x - bodyCX) * k + CGFloat(cos(angle) * radius),
+                        y: bodyCY + (center.y - bodyCY) * k + CGFloat(sin(angle) * radius))
+                }
+                let head = vortex(condense)
+                var x = head.x
+                var y = head.y
 
                 // L'envol : fenêtre courte, stagger long — l'inégalité est la vie.
                 let release = clamp01((disperse - grain.stagOut * 0.65) / 0.35)
@@ -900,6 +986,25 @@ private struct ImpDissolve: View {
                 guard alpha > 0.01 else { continue }
 
                 let radius = max(0.25, grain.size * (1 - 0.75 * CGFloat(release)))
+
+                // LA TRAÎNÉE : en plein vol, le grain est un cheveu de
+                // lumière — sa vitesse s'écrit dans le cadre. Longue à
+                // mi-course, résorbée à l'arrivée : jamais un point téléporté.
+                if release < 0.01, condense > 0.03, condense < 0.985 {
+                    let trailK = sin(.pi * Double(condense))
+                    if trailK > 0.05 {
+                        let back = vortex(ease(max(0, condenseK - 0.085)))
+                        var streak = Path()
+                        streak.move(to: back)
+                        streak.addLine(to: CGPoint(x: x, y: y))
+                        context.stroke(
+                            streak,
+                            with: .color(.white.opacity(min(1, alpha) * 0.38 * trailK)),
+                            style: StrokeStyle(lineWidth: max(0.3, radius * 0.6),
+                                               lineCap: .round))
+                    }
+                }
+
                 // L'auréole du grain, puis le grain net — deux passes, partout.
                 if alpha > 0.04 {
                     context.fill(
@@ -1120,8 +1225,8 @@ private struct ImpFace: View {
 
     private func eye(w: CGFloat, h: CGFloat, closed: CGFloat, squint: CGFloat,
                      sparkle: CGFloat) -> some View {
-        let ew = w * 0.125 * pop
-        let eh = h * 0.170 * max(eyes, 0) * pop * squint
+        let ew = w * 0.135 * pop
+        let eh = h * 0.182 * max(eyes, 0) * pop * squint
         // L'œil ouvert s'éteint AVANT que le croissant n'apparaisse : jamais
         // les deux à la fois, sinon l'œil fait planète à anneau.
         let openAlpha = Double(pow(clamp01(1 - closed * 1.6), 2))
@@ -1355,11 +1460,14 @@ private struct SplashBeat {
         // La sortie : à 4,4 s son corps se dissout — les particules
         // condensent en orbe ; à 4,75 l'orbe s'égrène vers le haut du verre
         // en lumière très fine, pendant que la scène fond.
-        beat.flash = 0.5 * span(t, 4.45, 0.25, 5.05, 0.55)
+        // Le premier flash est l'ÉVÉNEMENT : il détone à l'instant précis où
+        // la sphère se scelle (dissolve s'achève à 5,45) — bref, franc.
+        beat.flash = 0.85 * span(t, 5.30, 0.10, 5.62, 0.45)
             + span(t, 6.02, 0.10, 6.45, 0.50)
-        beat.dissolve = ramp(t, 4.45, 0.70)
+        // La métamorphose prend SON temps : ~1 s d'écorçage et de rubans.
+        beat.dissolve = ramp(t, 4.40, 1.05)
         beat.disperse = ramp(t, 6.10, 1.50)
-        beat.eyesAlpha = 1 - ramp(t, 4.72, 0.30)
+        beat.eyesAlpha = 1 - ramp(t, 4.90, 0.30)
         beat.fade = ramp(t, 7.30, 0.70)
         return beat
     }
@@ -1448,7 +1556,9 @@ private struct BottleStage: View {
             // Les lueurs et le flou sont des effets d'écran : divisés par le
             // zoom ici, ils gardent la même taille une fois la scène agrandie.
             let screen = 1 / max(beat.zoom, 1)
-            let side = w * 0.46
+            // Petit dans son grand verre : c'est le rapport d'échelle qui
+            // fait « précieux » — une petite créature dans une grande lumière.
+            let side = w * 0.30
             let squashY = pow(1 / max(beat.squash, 0.05), 0.55)
             let scene = 1 - beat.fade
 
@@ -2071,7 +2181,7 @@ private struct BottleStage: View {
                 }
                 .blendMode(.plusLighter)
                 .opacity(Double(beat.glow * scene)
-                         * Double(clamp01(1 - beat.dissolve * 1.15))
+                         * Double(1 - smoothstep((beat.dissolve - 0.05) / 0.45))
                          * (0.88 + 0.12 * sin(t * 0.47)))
             }
 
@@ -2090,36 +2200,58 @@ private struct BottleStage: View {
                 ImpBodyShape()
                     .fill(InkWhite.body)
 
-                // L'encre tourne encore : deux veines qui dérivent en lui.
+                // L'encre tourne encore : deux veines qui dérivent en lui —
+                // la matière VIT, elle doit se voir.
                 if !ghost {
                     InkVeinShape(phase: CGFloat(t) * 0.18, seed: 1.3)
-                        .stroke(Color.lunar.opacity(0.028),
+                        .stroke(Color.lunar.opacity(0.060),
                                 style: StrokeStyle(lineWidth: 7, lineCap: .round))
                         .blur(radius: 3)
                         .mask(ImpBodyShape())
                     InkVeinShape(phase: CGFloat(t) * 0.13 + 2, seed: 4.7)
-                        .stroke(Color.lunar.opacity(0.022),
+                        .stroke(Color.lunar.opacity(0.048),
                                 style: StrokeStyle(lineWidth: 5, lineCap: .round))
                         .blur(radius: 2.5)
                         .mask(ImpBodyShape())
                 }
 
-                // Le reflet sur le crâne : l'encre est encore humide.
+                // Le reflet sur le crâne : l'encre est encore humide — le
+                // glacis qui fait TOURNER le noir en sphère. Il doit se LIRE :
+                // c'est lui qui dit « obsidienne », pas « trou noir ».
                 ImpBodyShape()
                     .fill(
-                        RadialGradient(colors: [Color.lunar.opacity(0.05), .clear],
+                        RadialGradient(colors: [Color.lunar.opacity(0.16), .clear],
                                        center: UnitPoint(x: 0.42, y: 0.26),
-                                       startRadius: 0, endRadius: 80)
+                                       startRadius: 0, endRadius: side * 0.70)
                     )
+
+                // Le Fresnel des flancs : l'obsidienne accroche le voile en
+                // incidence rasante — deux lisières de sheen, l'une plus
+                // faible (la clé est à gauche, l'écho à droite).
+                if !ghost {
+                    ImpBodyShape()
+                        .fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: Color.lunar.opacity(0.055), location: 0.0),
+                                    .init(color: .clear, location: 0.22),
+                                    .init(color: .clear, location: 0.78),
+                                    .init(color: Color.lunar.opacity(0.035), location: 1.0)
+                                ],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .opacity(Double(beat.glow))
+                }
 
                 // Le rebond : la lumière du sol remonte sur son ventre — sa
                 // moitié basse baigne dans la lueur qu'il projette lui-même.
                 if !ghost {
                     ImpBodyShape()
                         .fill(
-                            RadialGradient(colors: [Color.lunar.opacity(0.14), .clear],
+                            RadialGradient(colors: [Color.lunar.opacity(0.24), .clear],
                                            center: UnitPoint(x: 0.5, y: 1.02),
-                                           startRadius: 0, endRadius: side * 0.60)
+                                           startRadius: 0, endRadius: side * 0.70)
                         )
                         .opacity(Double(beat.glow))
                 }
@@ -2129,13 +2261,26 @@ private struct BottleStage: View {
                 if !ghost {
                     Ellipse()
                         .fill(
-                            LinearGradient(colors: [Color.lunar.opacity(0.11), .clear],
+                            LinearGradient(colors: [Color.lunar.opacity(0.26), .clear],
                                            startPoint: .top, endPoint: .bottom)
                         )
                         .frame(width: side * 0.30, height: side * 0.13)
                         .rotationEffect(.degrees(-16))
                         .offset(x: -side * 0.11, y: -side * 0.16)
-                        .blur(radius: 2.5)
+                        .blur(radius: 2)
+                        .mask(ImpBodyShape())
+
+                    // L'écho du spéculaire : une petite fenêtre secondaire à
+                    // droite du crâne — deux accroches, jamais une seule.
+                    Ellipse()
+                        .fill(
+                            LinearGradient(colors: [Color.lunar.opacity(0.13), .clear],
+                                           startPoint: .top, endPoint: .bottom)
+                        )
+                        .frame(width: side * 0.14, height: side * 0.06)
+                        .rotationEffect(.degrees(12))
+                        .offset(x: side * 0.16, y: -side * 0.13)
+                        .blur(radius: 1.8)
                         .mask(ImpBodyShape())
                 }
 
@@ -2159,7 +2304,7 @@ private struct BottleStage: View {
                                 startPoint: .topLeading, endPoint: .bottomTrailing
                             )
                         )
-                        .opacity(Double(0.35 + 0.45 * beat.glow))
+                        .opacity(Double(0.45 + 0.45 * beat.glow))
                 }
 
                 // Le rim inversé : le rétro-éclairage embrase son bord bas.
@@ -2179,13 +2324,16 @@ private struct BottleStage: View {
                     )
                     .opacity(Double(beat.glow))
             }
-            .opacity(Double(scene) * Double(clamp01(1 - beat.dissolve * 1.15)))
+            // L'ÉCORÇAGE : le corps tient pendant que les premières nappes
+            // se déchirent de sa surface — le chevauchement fait le délitage,
+            // pas un fondu. Il ne disparaît qu'aux deux tiers du morphisme.
+            .opacity(Double(scene) * Double(1 - smoothstep((beat.dissolve - 0.18) / 0.55)))
 
             if !ghost {
                 ImpCorona(t: t,
                           alpha: smoothstep((beat.settle - 0.25) / 0.3) * beat.glow,
                           pulse: clamp01(beat.wink + beat.impulse))
-                    .opacity(Double(scene) * Double(clamp01(1 - beat.dissolve * 1.15)))
+                    .opacity(Double(scene) * Double(1 - smoothstep((beat.dissolve - 0.05) / 0.45)))
             }
 
             if !ghost {
