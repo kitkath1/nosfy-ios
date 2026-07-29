@@ -30,6 +30,9 @@ constant float PH  = TAU / 900.0;          // pulsation de base de la boucle
 constant float2 CORE = float2(-0.04, 1.10); // cœur, hors cadre bas-gauche
 
 constexpr sampler kLut(address::repeat, filter::linear, coord::normalized);
+// Bande du ruban d'objectif (NebulaStrip) : tuilable en X, jamais en Y.
+constexpr sampler kStrip(s_address::repeat, t_address::clamp_to_edge,
+                         filter::linear, coord::normalized);
 
 // MARK: Hachage
 
@@ -351,158 +354,93 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     return half4(half3(saturate(c)), 1.0h);
 }
 
-// MARK: Passe crête d'objectif (carte hebdomadaire, demi-résolution)
+// MARK: Passe verre d'objectif (carte hebdomadaire, demi-résolution)
 //
-// La corniche de nébuleuse de la carte « Objectif » : une couverture de
-// matière blanche accrochée à la silhouette découpée du bord haut, qui
-// s'évanouit dans le verre noir quelques dizaines de points plus bas.
-// Même grammaire que le ciel — émission HDR, absorption Beer-Lambert,
-// compression filmique, dither — mais dans le REPÈRE DE LA CRÊTE : x défile
-// le long du bord, y mesure la profondeur SOUS le bord. La matière épouse
-// donc la mesa au lieu de la traverser.
+// Le ciel de verre de la carte « Objectif » : des NAPPES de métal liquide
+// (deux volutes très larges, 1-4 % de luminance, dérive lente) sur toute la
+// carte, et un CORDON de nébuleuse diagonal discret — haut-gauche vers
+// centre-droit — échantillonné dans la bande cuite (NebulaStrip). Tout est
+// murmure : les cœurs de filaments plafonnent à ~55 % de blanc, le noir
+// domine. Le spectaculaire (mesa, ruban pleine largeur, nœud HDR) a été
+// essayé puis abandonné : trop présent pour la home.
 //
-// Même découpe que le ciel : cette passe (tout est diffus) se rend en
-// DEMI-résolution, la poudre d'étoiles dans objectiveCrestStars en pleine.
-// Toutes les longueurs sont donc relatives à `fall` — les uniforms arrivent
-// déjà divisés par deux, le shader n'a pas à le savoir.
+// Le cordon RESPIRE : la brume de la bande (canal G) dérive devant lui et le
+// voile puis le dévoile (~10-30 s par cycle), sans jamais l'éteindre.
 //
-// Le profil (épaules, hauteur) arrive en uniforms et reproduit exactement
-// ObjectiveCrestShape (ObjectiveCard.swift) : les deux fonctions sont
-// jumelles, c'est ce qui soude la matière à la bordure.
+// Demi-résolution (tout est diffus), poudre d'étoiles en pleine dans
+// objectiveCrestStars. `fall` (unité verticale du cordon, en pt) arrive déjà
+// divisé par deux — le shader n'a pas à le savoir.
 //
-// Même horloge que le ciel : temps absolu mod 900 s, dérives entières par
-// période — la carte est une fenêtre sur le MÊME cosmos, pas un gadget
-// indépendant qui vivrait à son propre rythme.
+// Même horloge que le ciel : temps absolu mod 900 s, dérives entières d'une
+// texture tuilable en X — la carte est une fenêtre sur le MÊME cosmos.
 
 [[ stitchable ]] half4 objectiveCrest(float2 position, half4 color,
-                                      float2 size, float t,
-                                      float4 shoulders, float2 geom,
-                                      texture2d<half> lut) {
+                                      float2 size, float t, float fall_,
+                                      texture2d<half> lut,
+                                      texture2d<half> strip) {
     float2 sz = max(size, float2(1.0));
+    float fall = max(fall_, 1.0);
     float u = position.x / sz.x;
-    float rise = geom.x, fall = max(geom.y, 1.0);
+    float2 uv = position / sz;
+    float tn = t / 900.0;
 
-    // Silhouette — jumelle de CrestProfile.edgeY (Swift).
-    float plateau = smoothstep(shoulders.x, shoulders.y, u)
-                  * (1.0 - smoothstep(shoulders.z, shoulders.w, u));
-    float dyPt = position.y - rise * (1.0 - plateau);   // pt sous la crête
+    // ---- Nappes de métal liquide (toute la carte) ---------------------------
+    // Deux volutes très larges qui dérivent lentement : les reflets qui
+    // bougent sur du verre noir. La seule vie de la moitié basse — au repos
+    // la carte lit « noir », le mouvement ne se voit que quand on regarde.
+    float s1 = (float)lut.sample(kLut, uv * float2(0.55, 0.85) + float2( 3.0, -2.0) * tn).r;
+    float s2 = (float)lut.sample(kLut, uv * float2(1.05, 1.60) + float2(0.43, 0.19) + float2(-2.0,  4.0) * tn).g;
+    float E = 0.006 + 0.040 * pow(max(s1 * 0.60 + s2 * 0.55 - 0.42, 0.0), 1.6);
 
-    // Sortie anticipée : plus bas il n'y a que du verre noir — la majorité
-    // des fragments de la carte s'arrête ici. Le tramage reste appliqué :
-    // un noir mathématique contre un noir tramé dessinerait une couture
-    // animée en forme de crête au milieu du verre.
-    if (dyPt > fall * 2.1) {
-        float frq = fract(floor(t * 24.0) * 0.618);
-        float dth = (hash21(position * 1.113 + frq * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
-        return half4(half3(saturate(float3(dth))), 1.0h);
+    // ---- Le cordon : la nébuleuse, sous ~70 % de hauteur il n'y a plus rien --
+    if (uv.y < 0.70) {
+        // Ondulation douce : les filaments cuits bougent SUR PLACE — un warp
+        // minuscule de leur coordonnée, jamais un défilement de la matière.
+        float2 pw = float2(u * 1.6, uv.y * 1.8);
+        float2 q = float2(
+            (float)lut.sample(kLut, pw + float2( 7.0,  4.0) * tn).r,
+            (float)lut.sample(kLut, pw + float2(0.41, 0.23) + float2(-5.0, -8.0) * tn).g);
+        float2 wob = (q - 0.5) * float2(0.014, 0.030);
+
+        // Trajectoire : diagonale descendante (~15°), drapée par un bruit
+        // lent — un cordon suspendu, pas une bande géométrique.
+        float drape = ((float)lut.sample(kLut, float2(u * 0.7, 0.31) + float2(2.0, 1.0) * tn).r - 0.5)
+                    * fall * 0.35;
+        float yc = sz.y * (0.16 + 0.40 * u) + drape;
+        float dR = (position.y - yc) / (fall * 0.30);
+        float core = exp(-dR * dR);
+        float skirt = exp(-dR * dR * 0.17);
+
+        // Enveloppe : le cordon vit entre ~20 % et ~90 % de la largeur,
+        // fondu aux deux bouts.
+        float uEnv = smoothstep(0.14, 0.38, u) * (1.0 - smoothstep(0.70, 0.94, u));
+
+        // Deux couches de filaments cuits en parallaxe (l'avant dérive 2×
+        // plus vite) + un soupçon de brume. Dérives = tours ENTIERS d'une
+        // texture tuilable : le raccord de boucle est invisible.
+        float vT = clamp((position.y - yc) / (fall * 1.15) + 0.5, 0.0, 1.0);
+        float filF = (float)strip.sample(kStrip, float2(u + 4.0 * tn, vT) + wob).r;
+        float filB = (float)strip.sample(kStrip, float2(u * 0.83 + 2.0 * tn + 0.37,
+                                                        clamp(vT * 0.88 + 0.06, 0.0, 1.0)) + wob * 0.6).b;
+        float fog  = (float)strip.sample(kStrip, float2(u * 0.91 + 3.0 * tn + 0.61, vT)).g;
+
+        // Respiration : la brume dérive DEVANT le cordon et le voile puis le
+        // dévoile — l'effet demandé, en sourdine (jamais éteint, jamais cramé).
+        float oc = (float)strip.sample(kStrip, float2(u * 1.07 + 12.0 * tn + 0.13,
+                                                      clamp(vT, 0.12, 0.88))).g;
+        float breath = mix(0.35, 1.0, exp(-2.4 * smoothstep(0.42, 0.80, oc)));
+        // Un peu plus lumineux à mi-parcours — jamais un nœud qui crame.
+        float lum = 0.80 + 0.45 * exp(-pow((u - 0.55) / 0.22, 2.0));
+
+        // Des NUANCES DE NOIR qui bougent : le cordon plafonne à ~13 % de
+        // blanc — on le devine, on ne le regarde jamais.
+        E += (filF * 0.13 * core + filB * 0.05 * skirt) * uEnv * breath * lum
+           + fog * skirt * 0.010 * uEnv;
     }
 
-    float dy = max(dyPt, 0.0) / fall;    // profondeur normalisée sous le bord
-    float tn = t / 900.0;
-    float ph = t * PH;
-
-    // ---- Repère-crête, warp partagé ----------------------------------------
-    // Feuilleté : la matière est une STRATE posée le long du bord, étirée par
-    // lui. Échelle contenue (1.8 répétition sur la largeur) et warp doux :
-    // les formes restent larges et soyeuses, jamais un semis de flocons.
-    float2 pc = float2(u * 1.8, dy * 1.0);
-    float2 q = float2(
-        (float)lut.sample(kLut, pc * 0.9 + float2( 7.0,  4.0) * tn).r,
-        (float)lut.sample(kLut, pc * 0.9 + float2(0.41, 0.23) + float2(-5.0, -8.0) * tn).g);
-    float2 w = (q - 0.5) * 0.60;
-
-    // ---- Le foyer : une lumière qui vit SOUS la crête -----------------------
-    // Le récit de la carte : une source cachée DANS la bande — le grand foyer
-    // à droite (u≈0.70, 25-45 pt sous le bord), un écho discret à gauche, une
-    // épine faible sur toute la largeur. Jamais À la bordure : le fil de
-    // lumière est un événement séparé, dessiné par SwiftUI par-dessus.
-    // La source ne respire presque pas ; c'est le rideau devant elle qui
-    // fait le spectacle.
-    float u0 = 0.70 + 0.020 * sin(ph * 3.0 + 1.1);
-    float2 g0 = float2((u - u0) / 0.26, (dy - 0.40) / 0.30);
-    float2 g1 = float2((u - 0.33) / 0.20, (dy - 0.52) / 0.34);
-    float dspine = (dy - 0.42) / 0.42;
-    float src = 5.2 * exp(-dot(g0, g0))
-              + 1.35 * exp(-dot(g1, g1))
-              + 0.36 * exp(-dspine * dspine);
-    src *= 1.0 + 0.06 * sin(ph * 13.0 + 0.7) + 0.04 * sin(ph * 29.0 + 2.4);
-
-    // ---- Le rideau : les occulteurs qui cachent puis dévoilent --------------
-    // Un pont de nuages DEVANT le foyer, qui dérive le long de la crête assez
-    // vite pour qu'on le VOIE : la lumière s'éteint quand une masse passe,
-    // se rallume dans une déchirure — cycles de ~10-30 s. Deux échelles à la
-    // même dérive LUT (36 répétitions/période, entière → boucle propre), donc
-    // des vitesses apparentes différentes : la parallaxe interne du rideau.
-    // C'est LUI l'absorption Beer-Lambert de la carte.
-    float oc1 = (float)lut.sample(kLut, pc * float2(1.15, 0.80) + w * 0.30 + float2(36.0, -2.0) * tn).g;
-    float oc2 = (float)lut.sample(kLut, pc * float2(2.40, 1.65) + w * 0.20 + float2(0.29, 0.61) + float2(36.0, 3.0) * tn).r;
-    float occ = smoothstep(0.38, 0.85, oc1 * 0.62 + oc2 * 0.48);
-    float Tocc = exp(-3.4 * occ);
-    float L = src * Tocc;                        // ce qui perce le rideau
-
-    // Silver lining : le bord d'un occulteur FACE au foyer s'embrase — la
-    // dérivée directionnelle de densité vers la source (2-tap, même geste que
-    // le rim du ciel). C'est le détail qui vend « la lumière est derrière ».
-    float2 toSrc = float2(u0 - u, 0.40 - dy);
-    toSrc *= rsqrt(max(dot(toSrc, toSrc), 1e-5));
-    const float leps = 0.030;
-    float ol1 = (float)lut.sample(kLut, (pc + toSrc * leps) * float2(1.15, 0.80) + w * 0.30 + float2(36.0, -2.0) * tn).g;
-    float ol2 = (float)lut.sample(kLut, (pc + toSrc * leps) * float2(2.40, 1.65) + w * 0.20 + float2(0.29, 0.61) + float2(36.0, 3.0) * tn).r;
-    float occB = smoothstep(0.38, 0.85, ol1 * 0.62 + ol2 * 0.48);
-    float lining = clamp((occ - occB) * 9.0, 0.0, 1.0);
-    lining *= lining;
-
-    // ---- Le voile : une soie à deux densités --------------------------------
-    // Les grandes formes dominent (o1), les octaves fines ne sont qu'un
-    // frémissement — le contraire fait un semis de flocons durs. Deux
-    // lectures du même champ : `soft`, la fumée translucide continue, et
-    // `dense`, les cœurs qui s'embrasent. Jamais de seuil binaire.
-    float o1 = (float)lut.sample(kLut, pc * 1.00 + w * 0.40 + float2( 6.0, -3.0) * tn).r * 0.58;
-    float o2 = (float)lut.sample(kLut, pc * 2.30 + w * 0.26 + float2(0.33, 0.71) + float2(-9.0,  5.0) * tn).g * 0.30;
-    float o3 = (float)lut.sample(kLut, pc * 4.80 + w * 0.15 + float2(0.57, 0.13) + float2( 14.0, -8.0) * tn).r * 0.12;
-    float dens = o1 + o2 + o3;
-    float soft = smoothstep(0.15, 0.95, dens);
-    float dense = smoothstep(0.45, 1.10, dens);
-
-    // ---- Bande : accrochée au bord, flancs presque propres ------------------
-    // Chute rapide (au niveau du titre : verre noir) et épaules quasi nues
-    // (×0.16) : la matière vit sur la mesa, les flancs n'ont que le fil.
-    float band = exp(-dy * mix(5.5, 3.4, plateau)) * mix(0.16, 1.0, plateau);
-
-    // ---- Wisps : LA structure de la soie ------------------------------------
-    // Le ridged multifractal (canal B), échantillonné 6× plus serré en
-    // profondeur qu'en largeur : des STRIES horizontales feuilletées qui
-    // épousent la crête — c'est lui qui fait la soie de la référence, la fbm
-    // n'est plus qu'une brume de fond. Animé par le warp seul : les stries
-    // ondulent sur place, ne ruissellent jamais.
-    float wisp = pow((float)lut.sample(kLut, float2(u * 2.6, dy * 1.4) + w * 0.30
-                                             + float2(4.0, 0.0) * tn).b, 2.0);
-
-    // Liseré de matière à la crête : discret — la fumée frôle le fil, elle
-    // ne le dessine pas.
-    float rim = exp(-abs(dyPt) / (fall * 0.13));
-
-    // ---- Émission ------------------------------------------------------------
-    // Tout est suspendu à L, mais la fumée reste LISIBLE éteinte (la
-    // référence garde un voile gris continu même loin du foyer) : les stries
-    // ridgées portent la structure, la fbm n'est qu'une brume, les cœurs un
-    // relief discret.
-    float E = L * (0.38 + 0.20 * band)                      // halo direct
-            + soft * band * (0.13 + 1.00 * L)               // brume continue
-            + dense * band * 0.30 * L                       // cœurs discrets
-            + wisp * band * (0.28 + 2.8 * L)                // LES filaments
-            + 2.4 * lining * saturate(src) * band           // silver lining
-            + rim * (0.08 + 0.40 * soft + 0.60 * L * soft)  // baiser à la crête
-                  * mix(0.30, 1.0, plateau);                // épaules nues
-
-    // Micro-texture des hautes lumières — un frémissement, pas un grain dur.
-    float o4 = (float)lut.sample(kLut, pc * 9.0 + w * 0.10 + float2(0.07, 0.43) + float2(12.0, -9.0) * tn).g;
-    E *= 1.0 + (o4 - 0.5) * 0.12 * smoothstep(0.10, 0.70, E);
-
     // ---- Compression filmique ------------------------------------------------
-    // Même chromie que le ciel (mêmes ordres de grandeur que sa passe
-    // nébuleuse) : froid violacé dans les gris, sépia discret dans le clair
-    // que la compression ramène au blanc pur.
+    // Même chromie que le ciel : froid violacé dans les gris, sépia discret
+    // dans le clair.
     float3 tint = mix(float3(0.985, 0.970, 1.040),
                       float3(1.025, 0.995, 0.955), smoothstep(0.15, 2.2, E));
     float3 c = 1.0 - exp(-1.50 * E * tint);
@@ -515,46 +453,37 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     return half4(half3(saturate(c)), 1.0h);
 }
 
-// MARK: Passe étoiles de la crête (pleine résolution)
+// MARK: Passe étoiles du verre (pleine résolution)
 //
-// La poudre de la corniche, séparée de la passe diffuse pour la même raison
-// que le ciel : les étoiles sont sub-pixel (l'upscale demi-rés les
-// détruirait), le diffus est payé au quart du prix. Composée en plusLighter.
-//
-// Grille hashée de 11 pt, au plus une étoile par cellule. La géométrie est
-// évaluée AVANT tout fetch : l'écrasante majorité des fragments sort sans
-// toucher la texture ; seuls les pixels réellement éclairés paient les
-// 4 fetches d'extinction.
+// La poudre du haut de la carte, séparée de la passe diffuse pour la même
+// raison que le ciel : les étoiles sont sub-pixel (l'upscale demi-rés les
+// détruirait). Composée en plusLighter. Géométrie évaluée AVANT tout fetch :
+// l'écrasante majorité des fragments sort sans toucher la texture.
 
 [[ stitchable ]] half4 objectiveCrestStars(float2 position, half4 color,
-                                           float2 size, float t,
-                                           float4 shoulders, float2 geom,
-                                           texture2d<half> lut) {
+                                           float2 size, float t, float fall_,
+                                           texture2d<half> lut,
+                                           texture2d<half> strip) {
     constexpr half4 kBlack = half4(0.0h, 0.0h, 0.0h, 1.0h);
     float2 sz = max(size, float2(1.0));
+    float fall = max(fall_, 1.0);
     float u = position.x / sz.x;
-    float rise = geom.x, fall = max(geom.y, 1.0);
 
-    // Silhouette — mêmes uniforms que la passe diffuse (échelle pleine).
-    float plateau = smoothstep(shoulders.x, shoulders.y, u)
-                  * (1.0 - smoothstep(shoulders.z, shoulders.w, u));
-    float dyPt = position.y - rise * (1.0 - plateau);
-    float dy = max(dyPt, 0.0) / fall;
-    if (dy > 1.9) { return kBlack; }        // plus d'étoiles si bas
+    // Les étoiles peuplent le haut du verre, autour du cordon.
+    if (position.y > sz.y * 0.72) { return kBlack; }
 
     float ph = t * PH;
 
-    // ---- Étoiles : la poudre nette dans le noir de la bande -----------------
+    // ---- Étoiles : la poudre nette dans le noir -----------------------------
     // Jitter 0.28 et sigma borné : la queue gaussienne retombe sous 0,5 %
-    // AVANT le bord de cellule — la cellule voisine ne dessinant pas cette
-    // étoile, une queue qui la traverserait serait tranchée net. Le cutoff
-    // radial (même 0.16 que starLayer) borne aussi le coût.
+    // AVANT le bord de cellule (la cellule voisine ne dessine pas cette
+    // étoile). Cutoff radial 0.16, comme starLayer.
     const float cell = 11.0;
     float2 id = floor(position / cell);
     float4 h = hash42(id + float2(31.7, 7.3));
     float s = 0.0;
-    if (h.x < 0.62) {
-        float b = pow(h.y, 7.0) * 1.2;
+    if (h.x < 0.45) {
+        float b = pow(h.y, 7.0) * 1.05;
         if (b > 0.004) {
             float2 stp = (id + 0.5 + 0.28 * (h.zw * 2.0 - 1.0)) * cell;
             float2 dp = position - stp;
@@ -589,33 +518,35 @@ static float3 meteor(float2 pos, float2 sz, float t) {
         float mr2 = dot(mdp, mdp);
         if (mr2 < mcell * mcell * 0.16) {
             float msig = 1.1 + 1.3 * mh.z;
-            mote = (0.05 + 0.16 * mh.y * mh.y) * exp(-mr2 / (2.0 * msig * msig));
+            mote = (0.03 + 0.10 * mh.y * mh.y) * exp(-mr2 / (2.0 * msig * msig));
         }
     }
 
     if (s < 0.002 && mote < 0.002) { return kBlack; }
 
-    float band = exp(-dy * mix(5.5, 3.4, plateau)) * mix(0.16, 1.0, plateau);
-
-    // Extinction des étoiles par le RIDEAU de la passe diffuse (mêmes
-    // champs, mêmes dérives) : quand une masse voile le foyer, elle avale
-    // ses étoiles au même moment — sinon elles flotteraient devant.
+    // Extinction : les filaments cuits et la brume-rideau (mêmes textures,
+    // mêmes dérives que la passe diffuse) avalent les étoiles derrière eux.
+    // Le drapé exact du cordon est approché sans son fetch.
     float ext = 1.0;
     if (s >= 0.002) {
         float tn = t / 900.0;
-        float2 pc = float2(u * 2.6, dy * 1.05);
-        float qq = (float)lut.sample(kLut, pc * 0.9 + float2(7.0, 4.0) * tn).r;
-        float2 w = float2(qq - 0.5, 0.5 - qq) * 0.85;
-        float oc1 = (float)lut.sample(kLut, pc * float2(1.15, 0.80) + w * 0.30 + float2(36.0, -2.0) * tn).g;
-        float oc2 = (float)lut.sample(kLut, pc * float2(2.40, 1.65) + w * 0.20 + float2(0.29, 0.61) + float2(36.0, 3.0) * tn).r;
-        ext = exp(-2.0 * smoothstep(0.38, 0.85, oc1 * 0.62 + oc2 * 0.48));
+        float yc0 = sz.y * (0.16 + 0.40 * u);
+        float dR0 = (position.y - yc0) / (fall * 0.36);
+        float vT0 = clamp((position.y - yc0) / (fall * 1.15) + 0.5, 0.0, 1.0);
+        float fil = (float)strip.sample(kStrip, float2(u + 4.0 * tn, vT0)).r;
+        float oc  = (float)strip.sample(kStrip, float2(u * 1.07 + 12.0 * tn + 0.13,
+                                                       clamp(vT0, 0.12, 0.88))).g;
+        float occ = smoothstep(0.42, 0.80, oc);
+        ext = exp(-(1.5 * occ + 2.2 * fil + 0.3) * exp(-dR0 * dR0));
     }
 
-    float E = 1.5 * s * ext * mix(0.30, 1.0, band) * smoothstep(1.9, 0.6, dy)
-            + mote * smoothstep(1.6, 0.25, dy);
+    // Fondu bas : la poudre s'éteint vers le milieu de la carte, les
+    // poussières un peu avant (elles vivent dans le noir du haut).
+    float fadeS = 1.0 - smoothstep(sz.y * 0.45, sz.y * 0.70, position.y);
+    float fadeM = 1.0 - smoothstep(sz.y * 0.35, sz.y * 0.62, position.y);
+    float E = 0.55 * s * ext * fadeS + mote * fadeM;
 
-    // Même compression que la passe diffuse : les étoiles s'écrasent au
-    // blanc sur la même courbe que la matière qu'elles habitent.
+    // Même compression que la passe diffuse.
     float c = 1.0 - exp(-1.50 * E);
     c = c * c / (c + 0.0085);
     return half4(half3(saturate(c)), 1.0h);

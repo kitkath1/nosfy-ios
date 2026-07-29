@@ -238,19 +238,31 @@ struct WoopPrimaryButtonStyle: ButtonStyle {
             .background {
                 let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
                 ZStack {
-                    shape.fill(WoopGradient.neonFill)
+                    // Noir velours : dense en bas, à peine soulevé en haut —
+                    // aucune couleur, la matière absorbe la lumière.
                     shape.fill(
                         LinearGradient(
-                            colors: [.white.opacity(0.22), .clear],
-                            startPoint: .top, endPoint: .center
+                            stops: [
+                                .init(color: Color(red: 0.165, green: 0.165, blue: 0.195), location: 0.0),
+                                .init(color: Color(red: 0.088, green: 0.088, blue: 0.108), location: 0.52),
+                                .init(color: Color(red: 0.038, green: 0.038, blue: 0.052), location: 1.0)
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    // Reflet d'étoffe : une lueur douce centrée au-dessus du
+                    // bouton, qui meurt vite — c'est elle qui fait « velours »
+                    // plutôt que « plastique ».
+                    shape.fill(
+                        RadialGradient(
+                            colors: [.white.opacity(0.14), .clear],
+                            center: UnitPoint(x: 0.5, y: -0.55),
+                            startRadius: 0, endRadius: 240
                         )
                     )
                 }
                 .compositingGroup()
-                // Halo contenu : l'ancien rayon 18 débordait sur le ciel et
-                // teintait la brume grise en mauve (R−B mesuré à −79) — le
-                // ciel reste N&B, le violet redevient l'unique événement coloré.
-                .shadow(color: Color.woopVioletCore.opacity(0.32), radius: 11, y: 5)
+                .shadow(color: .black.opacity(0.70), radius: 18, y: 10)
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)

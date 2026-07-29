@@ -11,7 +11,6 @@ struct HomeView: View {
     @State private var askStart = false
     @State private var confirmFinish = false
     @State private var showAllWorkouts = false
-    @State private var showWeekDetail = false
 
     private var calendar: Calendar { .current }
     private var finished: [Workout] { workouts.filter { !$0.isActive } }
@@ -51,9 +50,6 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .navigationDestination(isPresented: $showAllWorkouts) { WorkoutsListView() }
-            .navigationDestination(isPresented: $showWeekDetail) {
-                WeekDetailView(weekStart: weekStart, workouts: finished)
-            }
             .sheet(isPresented: $askStart) { startSheet }
             .alert("Terminer cette séance ?", isPresented: $confirmFinish) {
                 Button("Continuer la séance", role: .cancel) {}
@@ -102,26 +98,22 @@ struct HomeView: View {
 
     // MARK: - Progression hebdomadaire (consultation)
 
-    /// Cette carte sert à consulter la progression. Elle ne démarre pas de séance :
-    /// mélanger consultation et action rendrait le geste ambigu.
+    /// Cette carte est purement consultative : elle ne navigue nulle part et
+    /// ne démarre rien. Le Button est sans action — il n'existe que pour
+    /// republier l'état pressé (le liseré s'allume sous le doigt) sans jamais
+    /// gêner le scroll.
     ///
-    /// Sa matière (crête découpée, corniche de nébuleuse, verre noir) vit dans
+    /// Sa matière (verre noir liquide, cordon de nébuleuse, liseré) vit dans
     /// ObjectiveCard.swift — ici il n'y a que le contenu.
     private var weeklyCard: some View {
-        Button { showWeekDetail = true } label: {
-            ObjectiveCrestCard(achieved: doneThisWeek >= Goal.weeklyTarget) {
+        Button {} label: {
+            ObjectiveGlassCard(achieved: doneThisWeek >= Goal.weeklyTarget) {
                 VStack(alignment: .leading, spacing: 0) {
                     // Corps mesurés sur la référence (carte ~353 pt de large) :
                     // titre ~15 pt, grand chiffre ~46 pt, sous-titre ~14 pt.
-                    HStack {
-                        Text("Objectif hebdomadaire")
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color.inkPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.inkSecondary)
-                    }
+                    Text("Objectif hebdomadaire")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.inkPrimary)
 
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("\(doneThisWeek)")
@@ -140,7 +132,9 @@ struct HomeView: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        // Le style republie isPressed : le liseré de la carte s'allume sous
+        // le doigt (et petit retour haptique doux).
+        .buttonStyle(ObjectiveCardPressStyle())
     }
 
     // MARK: - Action principale
@@ -243,14 +237,16 @@ struct HomeView: View {
                     }
                 }
             } else {
-                VStack(spacing: 12) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12),
+                                    GridItem(.flexible())],
+                          spacing: 12) {
                     ForEach(finished.prefix(4)) { workout in
                         NavigationLink {
                             WorkoutDetailView(workout: workout)
                         } label: {
-                            WorkoutRow(workout: workout)
+                            RecentWorkoutCard(workout: workout)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(RecentCardGlowStyle())
                     }
                 }
             }
@@ -475,32 +471,6 @@ struct TrophySlot: View {
                     .init(color: .white.opacity(0.05), location: 0.4),
                     .init(color: .white.opacity(0.0), location: 1)],
             startPoint: .topLeading, endPoint: .bottomTrailing))
-    }
-}
-
-// MARK: - Ligne de séance
-
-struct WorkoutRow: View {
-    let workout: Workout
-
-    var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(workout.relativeDateLabel)
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.inkPrimary)
-                Text(workout.rowSummary)
-                    .font(.caption)
-                    .foregroundStyle(Color.inkMuted)
-                    .lineLimit(1)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.inkMuted)
-        }
-        .padding(16)
-        .metalSurface(cornerRadius: 15)
     }
 }
 

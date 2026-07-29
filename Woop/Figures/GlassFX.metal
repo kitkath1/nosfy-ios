@@ -21,7 +21,7 @@ static float gfxVnoise(float2 p) {
     float n = gfxVnoise(p) * 0.65 + gfxVnoise(p * 2.13 + 17.0) * 0.35;
     // Déformation de domaine : des volutes, pas des patates.
     float w = gfxVnoise(p * 1.7 + n * 1.8);
-    float v = 0.006 + 0.028 * pow(max(0.0, n * 0.6 + w * 0.55 - 0.35), 1.6);
+    float v = 0.008 + 0.040 * pow(max(0.0, n * 0.6 + w * 0.55 - 0.35), 1.6);
     return half4(half3(v), color.a);
 }
 
@@ -32,13 +32,16 @@ static float gfxVnoise(float2 p) {
 [[ stitchable ]] half4 lightVeil(float2 position, half4 color, float2 size,
                                  float t, float strength) {
     float2 uv = position / max(size, float2(1.0, 1.0));
-    // Le centre DÉRIVE — un halo vivant, jamais figé.
-    float2 c = float2(0.5 + 0.018 * sin(t * 0.21) + 0.010 * sin(t * 0.53 + 1.7),
+    // Le centre DÉRIVE — un halo vivant, jamais figé. La clé penche à
+    // gauche : un plateau studio a un côté dominant, jamais un axe parfait.
+    float2 c = float2(0.488 + 0.018 * sin(t * 0.21) + 0.010 * sin(t * 0.53 + 1.7),
                       0.38 + 0.014 * sin(t * 0.17 + 0.9));
     float2 d = (uv - c) * float2(1.0, 1.25);
     float r = length(d) / 0.73;
-    float v = 0.46 * exp(-r * r / (2.0 * 0.26 * 0.26))
-            + 0.13 * exp(-r * r / (2.0 * 0.62 * 0.62));
+    // CONCENTRÉ : le cœur brille, la jupe est courte — les coins du cadre
+    // restent noirs. La lumière est un événement, pas un papier gris.
+    float v = 0.46 * exp(-r * r / (2.0 * 0.24 * 0.24))
+            + 0.10 * exp(-r * r / (2.0 * 0.50 * 0.50));
     // Structure qui dérive + respiration lente du halo entier.
     float n = gfxVnoise(uv * 3.0 + t * 0.013) * 0.65
             + gfxVnoise(uv * 6.3 + 11.0 - t * 0.010) * 0.35;
@@ -46,7 +49,7 @@ static float gfxVnoise(float2 p) {
     v *= 0.92 + 0.08 * sin(t * 0.31);
     // Extinction PUREMENT RADIALE — jamais un cadre, jamais une couture.
     float2 e = (uv - c) * float2(1.35, 1.05);
-    v *= 1.0 - smoothstep(0.30, 0.56, length(e));
+    v *= 1.0 - smoothstep(0.22, 0.44, length(e));
     v += (gfxHash(position) - 0.5) * 0.02;
     v = clamp(v, 0.0, 0.60) * strength;
     return half4(half3(v), color.a);
@@ -76,6 +79,49 @@ static float gfxVnoise(float2 p) {
     return half4(half3(v), color.a);
 }
 
+
+/// LA POCHE D'OMBRE : le verre absorbe le contre-jour en incidence rasante —
+/// l'intérieur de la bouteille reste plus sombre que le voile derrière elle
+/// (réf. carafe : c'est cette poche qui fait claquer la dentelle de l'orbe).
+/// Rendu en MULTIPLY : la valeur est une transmission, 1 = lumière intacte.
+/// Jamais un aplat : demi-largeur locale, épaules absorbantes, base noyée
+/// de lumière, matière qui dérive, respiration propre.
+[[ stitchable ]] half4 glassPocket(float2 position, half4 color, float2 size,
+                                   float t, float strength) {
+    float2 uv = position / max(size, float2(1.0, 1.0));
+    // Demi-largeur locale du corps : col étroit, épaules qui s'évasent.
+    float hw = mix(0.085, 0.360, smoothstep(0.235, 0.475, uv.y));
+    // La frontière paroi→centre ondule (bruit BF) : jamais une verticale.
+    float edgeJitter = 0.030 * (gfxVnoise(float2(uv.y * 2.6, t * 0.05)) - 0.5);
+    float wallDist = hw - abs(uv.x - 0.5) + edgeJitter;
+    // L'incidence rasante : falloff LARGE — un dégradé de verre, pas une bande.
+    float graze = 1.0 - smoothstep(0.015, 0.24, wallDist);
+    // Le socle : même au centre, la double paroi retient de la lumière.
+    float d = 0.35 + 0.40 * graze;
+    // Les épaules absorbent plus — la courbure s'y traverse par la tranche.
+    d += 0.10 * smoothstep(0.50, 0.315, uv.y) * smoothstep(0.19, 0.30, uv.y);
+    // Le haut du col, vu par la tranche, absorbe plus que tout.
+    d += 0.12 * smoothstep(0.30, 0.21, uv.y);
+    // L'asymétrie du plateau : la clé est à gauche, la droite s'enfonce —
+    // et l'écart dérive lentement, jamais figé, jamais en phase.
+    d += (0.035 + 0.030 * gfxVnoise(float2(t * 0.045, uv.y * 1.7))) * (uv.x - 0.5) * 2.0;
+    // La base se noie dans la flaque de lumière : la poche s'y dissout.
+    d *= 1.0 - smoothstep(0.800, 0.935, uv.y);
+    // Et s'ouvre au col, au-dessus de l'épaule du verre.
+    d *= smoothstep(0.155, 0.205, uv.y);
+    // La matière dérive, la respiration reste discrète (le pompage est un
+    // défaut : ±3 %, période longue).
+    float n = gfxVnoise(uv * float2(5.0, 7.5) + float2(t * 0.017, -t * 0.011)) * 0.65
+            + gfxVnoise(uv * float2(9.7, 13.0) + 5.0 + float2(-t * 0.009, t * 0.013)) * 0.35;
+    d *= 0.90 + 0.16 * n;
+    d *= 0.97 + 0.03 * sin(t * 0.11 + 2.1);
+    d = clamp(d * strength, 0.0, 0.80);
+    // Le grain de matière se pose APRÈS la transmission : un plancher de
+    // bruit que rien n'écrase — c'est lui qui interdit l'aplat CGI.
+    float g = gfxVnoise(uv * float2(38.0, 55.0) + float2(t * 0.021, -t * 0.014)) - 0.5;
+    float T = clamp(1.0 - d + g * 0.045, 0.03, 1.0);
+    return half4(half3(T), color.a);
+}
 
 /// Le verrou tonal : écrase les gris moyens (l'« opaque »), préserve les
 /// noirs et les blancs. Le filet de sécurité anti-lavis.
