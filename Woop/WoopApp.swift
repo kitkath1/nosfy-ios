@@ -65,9 +65,10 @@ struct RootView: View {
 
     @Environment(\.modelContext) private var modelContext
 
-    /// `-openActiveSheet` ouvre la feuille de séance dès le lancement
-    /// (captures d'écran automatisées uniquement).
-    @State private var showActiveSheet = CommandLine.arguments.contains("-openActiveSheet")
+    /// La feuille tient SA séance, pas « la séance ouverte » : à l'instant où on
+    /// termine, il n'y a plus de séance ouverte — présentée sur un booléen, la
+    /// feuille se viderait en plein récapitulatif.
+    @State private var sheetWorkout: Workout?
     /// Morphisme : la carte de séance est la source du zoom vers la feuille.
     @Namespace private var overlayZoom
 
@@ -134,18 +135,16 @@ struct RootView: View {
             .toolbarColorScheme(.dark, for: .tabBar)
             .modifier(ActiveAccessory(workout: active, namespace: overlayZoom,
                                       hidden: selection == .exercises) {
-                showActiveSheet = true
+                sheetWorkout = active
             })
-            .sheet(isPresented: $showActiveSheet) {
-                if let active {
-                    ActiveWorkoutSheet(workout: active) {
-                        // « Ajouter un exercice » : on referme la feuille et on
-                        // ouvre la bibliothèque — c'est là qu'on loggue.
-                        showActiveSheet = false
-                        selection = .exercises
-                    }
-                    .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
+            .sheet(item: $sheetWorkout) { workout in
+                ActiveWorkoutSheet(workout: workout) {
+                    // « Ajouter un exercice » : on referme la feuille et on
+                    // ouvre la bibliothèque — c'est là qu'on loggue.
+                    sheetWorkout = nil
+                    selection = .exercises
                 }
+                .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
             }
 
             if showAuth {
@@ -174,7 +173,20 @@ struct RootView: View {
                 .zIndex(10)
             }
         }
+        // Live Activity : une séance restée ouverte retrouve son île au
+        // lancement ; démarrage/fin ailleurs suivent le cycle réel.
+        .onAppear { WorkoutActivityController.ensure(active) }
+        .onChange(of: activeWorkouts.isEmpty) { _, _ in
+            WorkoutActivityController.ensure(active)
+            celebrateFinishedWorkout()
+        }
+        .onChange(of: sheetWorkout == nil) { _, _ in celebrateFinishedWorkout() }
         .task {
+            // `-openActiveSheet` ouvre la feuille de séance dès le lancement
+            // (captures d'écran automatisées uniquement).
+            if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
+                sheetWorkout = active
+            }
             // `-syncNow` (dev) : pousse toutes les séances terminées dès le
             // lancement — test de bout en bout, et re-remplissage du compte
             // après une connexion sur un nouvel appareil.
@@ -201,6 +213,19 @@ struct RootView: View {
             }
         }
         #endif
+    }
+
+    /// Un entraînement vient d'être terminé : la récompense doit être VUE. On
+    /// attend que la feuille soit refermée, on ramène sur la home, et la carte
+    /// Objectif remplit alors son rond. Appelé à chaque étape possible de ce
+    /// retour — `deliver()` ne joue qu'une fois.
+    private func celebrateFinishedWorkout() {
+        guard WoopCelebration.shared.awaiting,
+              sheetWorkout == nil, active == nil else { return }
+        if selection != .home { selection = .home }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            WoopCelebration.shared.deliver()
+        }
     }
 }
 

@@ -114,7 +114,8 @@ struct HomeView: View {
                     .padding(.top, 9)
 
                     TrophyRow(completed: doneThisWeek, total: Goal.weeklyTarget,
-                              slotSize: 44, justified: true, luminous: true)
+                              slotSize: 44, justified: true, luminous: true,
+                              celebrates: true)
                         .padding(.top, 22)
                 }
             }
@@ -225,6 +226,7 @@ struct HomeView: View {
         let workout = Workout()
         context.insert(workout)
         try? context.save()
+        WorkoutActivityController.ensure(workout)
         selection = .exercises
     }
 }
@@ -255,6 +257,32 @@ struct PulsingDot: View {
     }
 }
 
+// MARK: - Récompense en attente
+
+/// Terminer un entraînement remplit un rond de l'objectif — sauf qu'à cet
+/// instant précis la home est encore derrière la feuille de séance : le trophée
+/// se remplirait sans témoin. On garde donc la conquête en attente, et la
+/// racine la déclenche quand la home est réellement à l'écran.
+@Observable
+final class WoopCelebration {
+    static let shared = WoopCelebration()
+
+    /// Une séance vient d'être terminée, son trophée n'a pas encore été montré.
+    private(set) var awaiting = false
+    /// Incrémenté au moment de jouer la conquête : la carte Objectif l'écoute.
+    private(set) var trophySignal = 0
+
+    /// Séance terminée, depuis la carte flottante ou depuis la feuille.
+    func workoutFinished() { awaiting = true }
+
+    /// La home est visible : le rond peut se remplir sous ses yeux.
+    func deliver() {
+        guard awaiting else { return }
+        awaiting = false
+        trophySignal += 1
+    }
+}
+
 // MARK: - Ronds de progression
 
 /// Les cinq ronds de l'objectif. Vides par défaut, remplis quand la séance
@@ -272,9 +300,23 @@ struct TrophyRow: View {
     /// chaud autour du rond gagné. Faux ailleurs — WeekDetail garde le rendu
     /// d'origine sur métal.
     var luminous: Bool = false
+    /// Joue la conquête du dernier trophée à la fin d'un entraînement. Réservé
+    /// à la carte de la home : ailleurs, les ronds ne font que constater.
+    var celebrates: Bool = false
 
     @State private var revealed = 0
     @State private var teased: Int?
+    @State private var won: Int?
+    @State private var winPulse = 0
+
+    private var celebration: WoopCelebration { .shared }
+
+    /// Les ronds à afficher tout de suite. Tant qu'une conquête attend son
+    /// public, le dernier reste vide : c'est la célébration qui le remplira.
+    private var target: Int {
+        let earned = min(completed, total)
+        return celebrates && celebration.awaiting ? max(0, earned - 1) : earned
+    }
 
     var body: some View {
         HStack(spacing: justified ? 0 : 11) {
@@ -282,6 +324,7 @@ struct TrophyRow: View {
                 TrophySlot(
                     filled: index < revealed,
                     teasing: teased == index,
+                    winning: won == index,
                     size: slotSize,
                     luminous: luminous
                 )
@@ -291,16 +334,43 @@ struct TrophyRow: View {
             if !justified { Spacer(minLength: 0) }
         }
         .onAppear { animateIn() }
-        .onChange(of: completed) { _, _ in animateIn() }
+        .onChange(of: completed) { _, _ in
+            // Derrière la feuille de séance, on se contente de rattraper l'état
+            // en silence — la conquête, elle, se joue au retour sur la home.
+            if celebrates && celebration.awaiting { revealed = target } else { animateIn() }
+        }
+        .onChange(of: celebration.trophySignal) { _, _ in
+            if celebrates { celebrate() }
+        }
+        .sensoryFeedback(.success, trigger: winPulse)
     }
 
     private func animateIn() {
         revealed = 0
-        for index in 0..<min(completed, total) {
+        for index in 0..<target {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35 + Double(index) * 0.14) {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.52)) {
                     revealed = index + 1
                 }
+            }
+        }
+    }
+
+    /// La récompense : le rond gagné se remplit d'un coup, une onde s'ouvre
+    /// autour de lui et l'appareil confirme. Une fois, franchement.
+    private func celebrate() {
+        let earned = min(completed, total)
+        guard earned > 0 else { return }
+        if revealed >= earned { revealed = earned - 1 }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.5)) {
+                revealed = earned
+            }
+            won = earned - 1
+            winPulse += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                withAnimation(.easeOut(duration: 0.4)) { won = nil }
             }
         }
     }
@@ -317,6 +387,9 @@ struct TrophyRow: View {
 struct TrophySlot: View {
     let filled: Bool
     var teasing: Bool = false
+    /// Le rond que l'entraînement qui vient d'être terminé a gagné : il brille
+    /// un instant de plus que les autres.
+    var winning: Bool = false
     var size: CGFloat = 44
     var luminous: Bool = false
 
@@ -337,11 +410,13 @@ struct TrophySlot: View {
             // pourtour. Sur métal (WeekDetail) le rendu d'origine reste.
             if showsTrophy && luminous {
                 Circle()
-                    .stroke(Color(red: 1.0, green: 0.94, blue: 0.80).opacity(0.55),
-                            lineWidth: 2)
+                    .stroke(Color(red: 1.0, green: 0.94, blue: 0.80).opacity(winning ? 0.95 : 0.55),
+                            lineWidth: winning ? 3 : 2)
                     .frame(width: size, height: size)
-                    .blur(radius: 5)
+                    .blur(radius: winning ? 8 : 5)
             }
+
+            if winning { WinRipple(size: size) }
 
             if showsTrophy {
                 // Style crème-argent sur la carte crête (la référence est
@@ -370,7 +445,9 @@ struct TrophySlot: View {
         }
         .frame(width: size, height: size)
         .opacity(teasing && !filled ? 0.75 : 1)
+        .scaleEffect(winning ? 1.10 : 1)
         .animation(.spring(response: 0.4, dampingFraction: 0.55), value: showsTrophy)
+        .animation(.spring(response: 0.5, dampingFraction: 0.45), value: winning)
     }
 
     private var cupFill: AnyShapeStyle {
@@ -428,6 +505,25 @@ struct TrophySlot: View {
                     .init(color: .white.opacity(0.05), location: 0.4),
                     .init(color: .white.opacity(0.0), location: 1)],
             startPoint: .topLeading, endPoint: .bottomTrailing))
+    }
+}
+
+/// L'onde de conquête : un anneau clair qui s'ouvre autour du trophée gagné et
+/// s'efface. Il naît et meurt avec son apparition — rien à piloter de dehors.
+private struct WinRipple: View {
+    let size: CGFloat
+    @State private var open = false
+
+    var body: some View {
+        Circle()
+            .stroke(Color(red: 1.0, green: 0.96, blue: 0.86).opacity(0.85), lineWidth: 1.5)
+            .frame(width: size, height: size)
+            .scaleEffect(open ? 2.1 : 0.92)
+            .opacity(open ? 0 : 0.9)
+            .blur(radius: open ? 3 : 0)
+            .onAppear {
+                withAnimation(.easeOut(duration: 1.1)) { open = true }
+            }
     }
 }
 

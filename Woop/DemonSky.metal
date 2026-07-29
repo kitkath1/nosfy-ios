@@ -354,21 +354,23 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     return half4(half3(saturate(c)), 1.0h);
 }
 
-// MARK: Passe lumière d'objectif (carte hebdomadaire, demi-résolution)
+// MARK: Passe métal d'objectif (carte hebdomadaire, demi-résolution)
 //
-// La carte « Objectif » : de la LUMIÈRE sur du verre fumé — plus aucune
-// matière figurative (le cordon de nébuleuse et ses étoiles ont été essayés
-// puis retirés : la carte est redevenue pure). Une source BLANCHE hors-champ
-// en haut-gauche, et tout en découle :
-//   - la nappe d'ambiance : le verre s'éclaire au coin et meurt vers le
-//     bas-droit, en nuances de blanc, sans jamais de frontière ;
-//   - le voile rasant : une large bande diagonale qui TRAVERSE lentement la
-//     carte (~36 s par passage) — la lumière qui glisse sur le verre ;
-//   - deux volutes de fond, qui ne vivent que dans la lumière.
-// Monochrome strict : des nuances de blanc, jamais une teinte.
+// La carte « Objectif » : du MÉTAL BROSSÉ sombre sous un lavis de lumière
+// blanche directionnel — plus un blob radial de « lampe torche » (l'erreur
+// de la version précédente). Quatre ingrédients, dans l'ordre :
+//   - le LAVIS : la lumière entre en diagonale depuis le coin haut-gauche,
+//     réponse de métal (épaule vive près du coin, longue traîne sombre),
+//     irrégularisée par un bruit large — jamais mathématiquement propre ;
+//   - le REFLET traversant : une bande anisotrope lente qui MULTIPLIE la
+//     lumière sur son passage (il révèle, il n'ajoute jamais de gris) ;
+//   - le BROSSAGE : micro-stries anisotropes STATIQUES (la surface ne bouge
+//     pas, c'est la lumière qui vit), visibles seulement dans la lumière ;
+//   - le GRAIN de film, renforcé dans le dégradé.
+// Chromie : blancs FROIDS acier uniquement. Le bas-droit reste noir absolu.
 //
-// Demi-résolution (tout est diffus). Même horloge que le ciel : temps absolu
-// mod 900 s, dérives entières, sinus en k entiers — boucle invisible.
+// Demi-résolution. Même horloge que le ciel : mod 900 s, dérives entières,
+// sinus en k entiers — boucle invisible.
 
 [[ stitchable ]] half4 objectiveCrest(float2 position, half4 color,
                                       float2 size, float t,
@@ -378,49 +380,48 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     float tn = t / 900.0;
     float ph = t * PH;
 
-    // ---- Nappe d'ambiance : la source hors-champ en haut-gauche -------------
-    // Distance à un point HORS carte, écrasée verticalement (la carte est
-    // large) : le coin s'éclaire, le bas-droit reste charbon. La source
-    // respire (±9 %, deux périodes incommensurables) et dérive à peine —
-    // une lumière réelle n'est jamais figée.
-    float2 srcP = float2(-0.15 + 0.030 * sin(ph * 45.0 + 1.2),
-                         -0.25 + 0.020 * sin(ph * 19.0 + 0.4));
-    float d = length((uv - srcP) * float2(1.0, 1.35));
-    float amb = exp(-d * d * 1.35);
-    amb *= 1.0 + 0.060 * sin(ph * 45.0 + 2.0) + 0.035 * sin(ph * 19.0 + 4.1);
+    // ---- Lavis directionnel -------------------------------------------------
+    // Projection le long de la direction de la lumière (diagonale depuis le
+    // coin haut-gauche) ; la source respire et dérive à peine.
+    float dproj = dot(uv, float2(0.60, 0.80));
+    dproj += 0.040 * sin(ph * 45.0 + 1.2) + 0.025 * sin(ph * 19.0 + 0.4);
+    // Réponse de métal : épaule vive, longue traîne.
+    float wash = pow(saturate(1.0 - dproj * 0.78), 2.6);
+    // Irrégularité : un bruit large et lent module le lavis de ±12 %.
+    float irr = (float)lut.sample(kLut, uv * float2(0.70, 0.90) + float2(3.0, -2.0) * tn).r;
+    wash *= 0.88 + 0.24 * irr;
 
-    // ---- Le voile rasant : la lumière qui TRAVERSE la carte ------------------
-    // Large, diagonal, lent (25 passages par boucle ≈ 36 s) — une lumière
-    // rasante qui glisse sur le verre, jamais un scanner.
+    // ---- Reflet traversant (multiplicatif) ----------------------------------
+    // ~36 s par passage (25 passages par boucle, entier) : le reflet
+    // INTENSIFIE le lavis et les stries — un reflet sur de l'inox.
     float dgn = dot(uv, float2(0.830, 0.558));
-    float trav = mix(-0.55, 1.75, fract(tn * 25.0));
-    float veil = exp(-pow((dgn - trav) / 0.34, 2.0));
+    float trav = mix(-0.45, 1.65, fract(tn * 25.0));
+    float sweep = exp(-pow((dgn - trav) / 0.30, 2.0));
+    wash *= 1.0 + 0.55 * sweep;
 
-    // ---- Volutes de fond : le verre n'est jamais parfaitement mort ----------
-    float s1 = (float)lut.sample(kLut, uv * float2(0.55, 0.85) + float2( 9.0, -6.0) * tn).r;
-    float s2 = (float)lut.sample(kLut, uv * float2(1.05, 1.60) + float2(0.43, 0.19) + float2(-6.0, 12.0) * tn).g;
-    float smoke = pow(max(s1 * 0.60 + s2 * 0.55 - 0.42, 0.0), 1.6);
+    // ---- Brossage : la matière ----------------------------------------------
+    // Stries ~14:1, STATIQUES, centrées (elles modulent, n'éclairent pas) :
+    // sans elles un dégradé sombre lit « plastique ».
+    float brush = (float)lut.sample(kLut, float2(uv.x * 1.3, uv.y * 18.0)).g;
+    float E = wash * (0.30 + 0.10 * (brush * 2.0 - 1.0));
 
-    // ---- Composition ---------------------------------------------------------
-    // L'ambiance porte tout : le voile et les volutes sont MULTIPLIÉS par
-    // elle — l'obscurité du bas-droit reste souveraine, la lumière ne se
-    // fabrique pas dans le noir.
-    float E = amb * 0.30
-            + veil * 0.055 * (0.25 + 0.75 * amb)
-            + smoke * 0.045 * (0.30 + 0.70 * amb);
+    // ---- Tombée d'arête ------------------------------------------------------
+    // Les ~15 pt près des bords s'assombrissent doucement : l'objet a une
+    // épaisseur, la lumière glisse hors de la face avant.
+    float edge = smoothstep(0.0, 0.045, uv.x) * smoothstep(1.0, 0.955, uv.x)
+               * smoothstep(0.0, 0.075, uv.y) * smoothstep(1.0, 0.925, uv.y);
+    E *= mix(0.72, 1.0, edge);
 
-    // ---- Compression filmique ------------------------------------------------
-    // Nuances de blanc : le même souffle chromatique que le ciel (froid
-    // violacé dans les gris, à peine chaud dans le clair), ±4 % max.
-    float3 tint = mix(float3(0.985, 0.970, 1.040),
-                      float3(1.020, 0.998, 0.965), smoothstep(0.05, 0.45, E));
+    // ---- Compression filmique, blancs froids acier ---------------------------
+    float3 tint = float3(0.975, 0.992, 1.035);
     float3 c = 1.0 - exp(-1.50 * E * tint);
     c = c * c / (c + 0.0085);
 
-    // Tramage anti-banding, même horloge 24 fps que le ciel — indispensable :
-    // la nappe est une longue rampe sombre, exactement ce qui bande en 8 bits.
+    // Grain de film : discret dans le noir (dither anti-banding), VISIBLE
+    // dans le dégradé — la signature des mocks premium. Même horloge 24 fps.
     float fr = fract(floor(t * 24.0) * 0.618);
-    c += (hash21(position * 1.113 + fr * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
+    float g = hash21(position * 1.113 + fr * float2(17.0, 29.0)) - 0.5;
+    c += g * (2.0 / 255.0 + (9.0 / 255.0) * smoothstep(0.02, 0.28, c.g));
 
     return half4(half3(saturate(c)), 1.0h);
 }
