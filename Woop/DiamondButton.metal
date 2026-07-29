@@ -199,3 +199,92 @@ static float rimLight(float2 p, float2 halfB, float t) {
     float a = mix(clamp((line + halo + spark + glitter) * 1.6, 0.0, 1.0), 1.0, inside);
     return half4(half3(lum * a), half(a));      // prémultiplié
 }
+
+// MARK: - Input « diamant » (champ de saisie)
+//
+// Le petit frère sobre du bouton : PAS de fumée, pas de particules — un
+// métal noir qui brille à peine (dégradé + reflet traversant lent + micro-
+// brossage statique), serclé d'une hairline discrète où QUELQUES accents
+// blancs scintillent très légèrement. La hiérarchie tient à cette sobriété :
+// le bouton est le bijou, l'input est l'écrin fermé.
+
+/// Les accents du liseré de l'input : mêmes lois que le bouton (bruit
+/// paramétré par la position du bord), seuil bien plus dur — n'en survivent
+/// que 2-4, inégaux, surtout en haut.
+static float inputRim(float2 p, float2 halfB, float t) {
+    float seg = bfbm(p * float2(0.016, 0.06) + float2(t * 0.10, -t * 0.07));
+    float fine = bnoise(p * float2(0.036, 0.12) + float2(-t * 0.20, t * 0.15));
+    float accents = seg * 0.75 + fine * 0.25;
+    accents = pow(clamp(accents, 0.0, 1.0), 4.0);  // ne survivent que les pics
+    float topness = clamp(-p.y / max(halfB.y, 1.0), 0.0, 1.0);
+    float bias = 0.35 + 0.45 * topness * topness;
+    float ang = atan2(p.y, p.x);
+    float breath = 0.80 + 0.20 * sin(t * 0.9 + ang * 2.0);
+    return clamp(4.6 * accents * bias * breath, 0.0, 1.0);
+}
+
+[[ stitchable ]] half4 diamondInput(float2 position, half4 color,
+                                    float2 size, float t,
+                                    float pad, float radius, float active) {
+    float2 center = size * 0.5;
+    float2 p = position - center;
+    float2 halfB = max(center - pad, float2(1.0));
+    float r = min(radius, halfB.y);
+    float d = sdRound(p, halfB, r);
+    float inside = smoothstep(0.6, -1.2, d);
+
+    // ---- Le métal noir qui brille à peine.
+    float metal = 0.0;
+    if (inside > 0.0) {
+        float uvY = clamp((p.y + halfB.y) / (2.0 * halfB.y), 0.0, 1.0);
+        float base = mix(0.052, 0.024, uvY);
+        // Reflet traversant (~33 s par passage) : il MULTIPLIE le socle —
+        // il révèle la matière, n'ajoute jamais de gris dans le noir.
+        float band = (p.x + p.y * 0.35) / max(halfB.x, 1.0);
+        float c = fract(t / 33.0) * 3.0 - 1.5;
+        float sheen = exp(-(band - c) * (band - c) / (0.35 * 0.35));
+        // Micro-brossage horizontal STATIQUE, visible seulement dans la lumière.
+        float bru = bnoise(float2(p.x * 0.9, p.y * 7.0)) - 0.5;
+        // Lumière d'éveil : à l'état actif, un voile doux descend du bord
+        // haut dans le fond noir — un tout petit peu de lumière, perceptible
+        // sans jamais éclabousser.
+        float wake = active * exp(-uvY * 3.8) * 0.075;
+        metal = base * (1.0 + 0.8 * sheen) + wake
+                + bru * 0.012 * (0.4 + 0.6 * sheen);
+        metal = max(metal, 0.0) * inside;
+    }
+
+    // Au repos (input vide), le liseré murmure : les accents tombent à
+    // ~55 % de leur pleine lumière — l'éveil (focus/texte) les rallume.
+    float rim = inputRim(p, halfB, t) * (0.55 + 0.45 * active);
+
+    // ---- Hairline discrète, accents localisés, souffle minuscule.
+    float line = exp(-d * d / (0.42 * 0.42)) * (0.12 + 0.88 * rim);
+    float outside = max(d, 0.0);
+    float halo = exp(-outside / 6.0) * smoothstep(-0.8, 0.8, d) * 0.14 * rim;
+
+    // ---- Scintillement très léger : des pointes sur les accents, SANS
+    // rayons en croix — la retenue est la différence avec le bouton.
+    float glitter = 0.0;
+    if (fabs(d) < 4.0) {
+        float2 idg = floor(p / 10.0);
+        float4 hg = bhash42(idg * 3.17 + float2(7.9, 2.3));
+        if (hg.x < 0.20) {
+            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * 10.0;
+            float dg = sdRound(cg, halfB, r);
+            float on = exp(-fabs(dg) / 3.0);
+            float local = inputRim(cg, halfB, t);
+            float twk = max(0.0, sin(t * (0.4 + 0.5 * hg.w) + hg.z * 6.283));
+            twk = pow(twk, 14.0);
+            float2 dpg = p - cg;
+            float gg = exp(-dot(dpg, dpg) / (0.7 * 0.7));
+            glitter = gg * on * twk * local * 0.8;
+        }
+    }
+
+    float lum = metal + line + halo + glitter;
+    lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
+    lum = clamp(lum, 0.0, 1.0);
+    float a = mix(clamp((line + halo + glitter) * 1.6, 0.0, 1.0), 1.0, inside);
+    return half4(half3(lum * a), half(a));      // prémultiplié
+}
