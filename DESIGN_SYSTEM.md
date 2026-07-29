@@ -131,3 +131,35 @@ orfèvre), 3 rounds.
   rampe d'opacité la mange à d ≈ 0) ; le shader JIT-compile ~5 s au premier
   rendu (capture noire avant) ; vérifier l'ANIMATION sur 3 captures espacées
   d'1 s, jamais sur une seule frame.
+
+## L'input « diamant » (champ de saisie)
+
+Le petit frère SOBRE du bouton primaire — avec lui, le trio de l'auth :
+**input vide / input actif / bouton**. La hiérarchie est le cœur du
+composant : le bouton est le bijou, l'input est l'écrin fermé qui s'éveille
+au toucher. Shader `diamondInput`/`inputRim` dans
+[DiamondButton.metal](Woop/DiamondButton.metal), vue `DiamondInputField`
+dans [ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift).
+Banc : `-buttonLab` (vide + actif empilés au-dessus du bouton).
+
+- **Fond** : métal noir qui brille à peine — dégradé vertical (5,2 % → 2,4 %),
+  reflet traversant lent (~33 s/passage, MULTIPLICATIF : il révèle, ne grise
+  jamais), micro-brossage horizontal statique visible seulement dans la
+  lumière. AUCUNE fumée, aucune particule, aucune croix : la sobriété EST
+  le composant.
+- **Liseré** : hairline ~1 pt discrète, 2-4 accents blancs localisés
+  (bruit positionnel, seuil dur `pow 4`, gain 4,6), respiration ±20 %.
+  Scintillement : pointes fines aux accents (flashs rares `pow 14`),
+  jamais de rayons en croix (réservés au bouton).
+- **Deux états** (paramètre `active` du shader, rampe lissée 0,45 s côté
+  SwiftUI — un paramètre de shader ne s'interpole pas tout seul, on
+  horodate le basculement et le TimelineView fait la rampe) :
+  - **Vide** : le liseré murmure (accents à 55 % de leur pleine lumière),
+    placeholder en dégradé blanc foncé (62 % → 34 %).
+  - **Actif** (focus ou texte) : accents à pleine lumière, texte en dégradé
+    blanc clair comme le bouton (100 % → 58 %), et **lumière d'éveil** —
+    un tout petit peu de lumière descend du bord haut dans le fond noir
+    (7,5 % au sommet, éteinte avant mi-hauteur ; `exp(-uvY·3.8)`).
+- **Icône** (enveloppe) : weight light 15 pt, dégradé blanc 92 % → 48 %.
+- **Forme** : 54 pt de haut, rayon 17 pt continu, mêmes marges que le
+  bouton (26 pt), marge shader 14 pt (le souffle des accents est minuscule).
