@@ -57,14 +57,12 @@ struct HomeView: View {
     private var greeting: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("Bonjour Kathryn")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
-                .foregroundStyle(
-                    LinearGradient(colors: [.white, .white.opacity(0.66)],
-                                   startPoint: .top, endPoint: .bottom)
-                )
+                .font(.inter(30, .semibold))
+                .tracking(-0.3)
+                .foregroundStyle(WoopGradient.silverText)
 
             Text(contextLine)
-                .font(.system(.subheadline, design: .rounded))
+                .font(.inter(15))
                 .foregroundStyle(Color.inkSecondary)
         }
         .padding(.top, 14)
@@ -101,14 +99,21 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Corps mesurés sur la référence (carte ~353 pt de large) :
                     // titre ~15 pt, grand chiffre ~46 pt, sous-titre ~14 pt.
+                    // Capitales espacées, comme la référence : un cartouche
+                    // gravé, pas une phrase.
+                    // Rôle tertiaire : blanc 58 % — le grand chiffre reste le
+                    // seul point chaud de la carte. Tracking proportionnel au
+                    // corps (0.18 em), aligné sur le CTA.
                     Text("Objectif hebdomadaire")
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color.inkPrimary)
+                        .font(.inter(12, .medium))
+                        .textCase(.uppercase)
+                        .tracking(2.2)
+                        .foregroundStyle(.white.opacity(0.58))
 
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         ShimmeringNumber(value: doneThisWeek, size: 34)
                         Text("/ \(Goal.weeklyTarget) entraînements")
-                            .font(.system(size: 13, weight: .regular, design: .rounded))
+                            .font(.inter(13))
                             .foregroundStyle(Color.inkSecondary)
                     }
                     .padding(.top, 9)
@@ -132,8 +137,7 @@ struct HomeView: View {
     @ViewBuilder
     private var actionZone: some View {
         if activeWorkout == nil {
-            Button("Commencer un entraînement") { askStart = true }
-                .buttonStyle(WoopPrimaryButtonStyle())
+            DiamondPrimaryButton(title: "Commencer un entraînement") { askStart = true }
         }
     }
 
@@ -148,12 +152,12 @@ struct HomeView: View {
 
             VStack(spacing: 12) {
                 Text("Commencer une nouvelle séance ?")
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.inkPrimary)
+                    .font(.inter(19, .semibold))
+                    .foregroundStyle(WoopGradient.silverText)
                     .multilineTextAlignment(.center)
 
                 Text("Elle est enregistrée immédiatement : tu peux fermer l'app sans rien perdre.")
-                    .font(.system(.footnote, design: .rounded))
+                    .font(.inter(13))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
             }
@@ -161,11 +165,10 @@ struct HomeView: View {
             .padding(.horizontal, 26)
 
             VStack(spacing: 10) {
-                Button("Commencer") {
+                DiamondPrimaryButton(title: "Commencer") {
                     askStart = false
                     startWorkout()
                 }
-                .buttonStyle(WoopPrimaryButtonStyle())
 
                 Button("Annuler") { askStart = false }
                     .buttonStyle(WoopSecondaryButtonStyle())
@@ -194,11 +197,11 @@ struct HomeView: View {
                 WoopCard {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Ta progression commence avec ta première séance.")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .font(.inter(14, .medium))
                             .foregroundStyle(Color.inkPrimary)
                             .fixedSize(horizontal: false, vertical: true)
                         Text("Elle apparaîtra ici une fois terminée.")
-                            .font(.footnote)
+                            .font(.inter(13))
                             .foregroundStyle(Color.inkMuted)
                     }
                 }
@@ -554,7 +557,7 @@ struct WeekDetailView: View {
                     WoopCard {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Semaine du \(weekStart.formatted(.dateTime.day().month(.wide)))")
-                                .font(.system(.footnote, design: .rounded))
+                                .font(.inter(13))
                                 .foregroundStyle(Color.inkMuted)
                             HStack(spacing: 26) {
                                 StatBlock(value: "\(ofWeek.count)", label: "séances")

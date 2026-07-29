@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-pull-through.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

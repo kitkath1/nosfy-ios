@@ -60,7 +60,9 @@ struct LogExerciseSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                WoopBackground()
+                // Noire comme la fiche d'où elle sort : la feuille est le
+                // prolongement de la page, pas une autre pièce.
+                Color.black.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         if let lastTime {
@@ -89,7 +91,7 @@ struct LogExerciseSheet: View {
                 }
             }
         }
-        .presentationBackground(Color.woopSheet)
+        .presentationBackground(Color.black)
         .preferredColorScheme(.dark)
         // L'appareil confirme la série en même temps que les paillettes partent.
         .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
@@ -358,7 +360,7 @@ struct LogExerciseSheet: View {
         .font(.system(.footnote, design: .rounded, weight: .medium))
         .foregroundStyle(Color.inkSecondary)
         .padding(.horizontal, 16).padding(.vertical, 12)
-        .metalSurface(cornerRadius: 16)
+        .diamondSurface(cornerRadius: 16)
     }
 }
 
@@ -599,7 +601,7 @@ struct StepperControl: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(WoopGradient.bevel, lineWidth: 1)
+                .strokeBorder(WoopGradient.diamondRim, lineWidth: 1)
         )
         .buttonStyle(.plain)
     }

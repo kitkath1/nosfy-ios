@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-crunch-machine.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

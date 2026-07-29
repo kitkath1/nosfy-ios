@@ -113,9 +113,18 @@ tout appel à l'action majeur) : un bijou d'obsidienne — fumée noire vivante
 serclée d'une hairline qui scintille. Référence : capture d'un bouton premium
 (ligne inégale, halos discrets, fumée). Fichiers :
 [DiamondButton.metal](Woop/DiamondButton.metal) (l'écrin, une passe),
-`DiamondConnexionButton` dans
+`DiamondPrimaryButton` dans
 [ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift) (texte +
-flèche). Banc d'essai : argument de lancement `-buttonLab` → page noire nue.
+flèche ; `DiamondConnexionButton` en est l'alias historique). Banc d'essai :
+argument de lancement `-buttonLab` → page noire nue.
+
+Il porte désormais **tous les appels à l'action majeurs** : « COMMENCER UN
+ENTRAÎNEMENT » de la home, la confirmation de nouvelle séance, « LANCER
+L'ENTRAÎNEMENT » de la fiche d'exercice. Le libellé est un paramètre ; la
+gouttière de la flèche (46 pt) est réservée dans la mise en page et un
+libellé long rétrécit un peu (`minimumScaleFactor` 0,72) plutôt que de
+passer dessous. Au-delà d'une trentaine de signes, le registre gravé
+décroche — c'est la limite du composant, pas un réglage.
 Validé **10/10** par la boucle workflow (capture → juge sur grille chiffrée →
 orfèvre), 3 rounds.
 
@@ -211,6 +220,68 @@ de navigation actuels. `DiamondBackButton` dans
   scintillement rares — un murmure ; l'intérieur du shader est transparent,
   le verre respire dessous.
 - **Icône** : chevron 16 pt medium, dégradé blanc 95 % → 55 %, centré.
+
+## La surface « diamant » (toutes les cartes)
+
+`DiamondSurface` / `.diamondSurface(cornerRadius:neon:)` dans
+[Theme.swift](Woop/Theme.swift) — la surface de base de l'app, celle que
+portent `WoopCard` et toutes les cartes. Elle remplace l'ancienne « surface
+métal » (dégradé `#191920` → `#07070A` + reflet spéculaire blanc 7,5 % en
+haut), qui lisait gris-vert sur le fond quasi noir.
+
+**Pourquoi le noir pur** : les photos d'exercice ont un fond NOIR ABSOLU.
+Sous elles, la moindre plaque grise redessinait le rectangle de l'image dans
+la carte. En noir pur, l'image n'a plus de bord — photo, carte et page ne
+font qu'une seule matière, et seuls le corps et le muscle en lumière
+flottent. C'est aussi ce qui autorise à mélanger les formats de photo (4:5,
+3:4, 3:2 selon la série) sans que personne puisse le voir.
+
+- **Fond** : `Color.woopCard` = noir pur. Un seul token, trois surfaces
+  (carte standard, carte hebdomadaire brumeuse, carré de séance récente).
+- **Liseré** : `WoopGradient.diamondRim` — exactement celui du bouton
+  primaire (blanc 65 % en haut → éteint à 40 % de la hauteur). Il ne suit
+  PAS l'azimut 225° du ciel comme l'ancien `bevel` : les composants diamant
+  sont éclairés par leur propre lumière de bijou, pas par celle de la scène.
+  Variante `diamondRimNeon` (blanc 88 %, murmure violet à mi-parcours) pour
+  la surface mise en avant.
+- **Éclats** : `.diamondGlints(strength: 0.5)` — les facettes du bouton, en
+  murmure. À 1.0 elles appartiennent au CTA ; une page entière de cartes qui
+  scintillent au même volume que le bouton d'action n'a plus de hiérarchie.
+  0,75 sur la surface `neon`.
+- **Ce qui a disparu** : l'ombre portée (rayon 22, y 14). Sur du noir posé
+  sur du noir elle ne dessine rien — c'était le poste le plus cher de la
+  carte, payé pour zéro pixel. Idem le reflet spéculaire.
+- **Budget** : les éclats s'endorment hors écran (`onScrollVisibilityChange`,
+  même contrat que la carte hebdomadaire) — une grille d'exercices en porte
+  une douzaine à la fois. La sonde vit sur un calque vide qui, lui, ne
+  disparaît jamais : sous le pli on retire le `TimelineView`, pas
+  l'observateur, sinon plus personne pour annoncer le retour.
+- **Réserve connue** : sur les écrans à ciel (home, liste d'exercices), une
+  carte noire ne « fond » pas dans la nébuleuse — elle y découpe un trou.
+  Assumé pour l'instant : le ciel sera traité séparément.
+
+## Les photos d'exercice
+
+Le catalogue est illustré par des **photographies**, plus par des figures
+vectorielles (`ExerciseFigures` / `FigureEngine` supprimés). Registre :
+clair-obscur, fond noir absolu, corps en silhouette, et le muscle travaillé
+en surbrillance blanche anatomique. Composant : `ExercisePhoto` dans
+[ExercisePhoto.swift](Woop/Views/ExercisePhoto.swift), assets `exo-<id>`.
+
+- **Vignette de grille** (`fills: true`) : la photo REMPLIT la carte, bord à
+  bord, recadrée au centre — c'est là que tombe le muscle en lumière sur
+  toute la série. Le corps entier dans 150 pt serait un fil illisible.
+- **Héros de la fiche** (`fills: false`) : la photo entière, jamais rognée —
+  le mouvement complet (l'appui, l'angle, la machine) est l'information.
+- **Pastille de séance** (46 pt) : même recadrage centré que la vignette.
+- Le rognage est DANS le composant : une image `.fill` non coupée déborde
+  silencieusement sur ses voisines, et sur du noir sur du noir on ne s'en
+  aperçoit qu'au moment où un corps traverse une autre carte.
+- **Un exercice sans photo n'existe pas** : le catalogue et les images sont
+  tenus ensemble (`exercise.image` dérive de l'identifiant). Les deux
+  exercices dont l'image a été retirée — soulevé de terre roumain, gainage
+  militaire sur une jambe — ont été supprimés du catalogue. Les séances déjà
+  enregistrées qui les citent gardent leur nom et se passent d'image.
 
 ## Le bouton secondaire
 

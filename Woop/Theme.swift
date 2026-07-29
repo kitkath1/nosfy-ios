@@ -1,5 +1,21 @@
 import SwiftUI
 
+// MARK: - Typographie
+
+/// Inter, la linéale de l'app : néo-grotesque neutre dessinée pour l'écran —
+/// le registre « minimal premium » qui remplace le SF Rounded d'origine.
+/// Quatre graisses statiques (Woop/Fonts), enregistrées au lancement.
+extension Font {
+    static func inter(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        switch weight {
+        case .bold, .heavy, .black: return .custom("Inter-Bold", size: size)
+        case .semibold: return .custom("Inter-SemiBold", size: size)
+        case .medium: return .custom("Inter-Medium", size: size)
+        default: return .custom("Inter-Regular", size: size)
+        }
+    }
+}
+
 // MARK: - Palette
 
 extension Color {
@@ -7,6 +23,12 @@ extension Color {
     static let woopBase = Color(red: 0.016, green: 0.016, blue: 0.024)
     /// Noir un cran au-dessus, pour les feuilles modales.
     static let woopSheet = Color(red: 0.027, green: 0.027, blue: 0.035)
+
+    /// Le noir des surfaces de la famille diamant : NOIR PUR. Les photos
+    /// d'exercice ont un fond noir absolu — toute valeur au-dessus de zéro
+    /// dessinerait le contour de l'image dans la carte. La carte n'est plus
+    /// une plaque, c'est un vide serti d'un liseré.
+    static let woopCard = Color.black
 
     /// Haut d'une surface métal (la lumière frappe ici).
     static let woopMetalHigh = Color(red: 0.098, green: 0.098, blue: 0.125)
@@ -88,14 +110,27 @@ enum WoopGradient {
         endPoint: .topTrailing
     )
 
-    /// Trait des dessins d'exercice : blanc en haut, violet, puis une pointe de
-    /// rouge en bas. Fin et continu — c'est une ligne, pas une masse.
-    static let figureStroke = LinearGradient(
+    /// LE liseré de la famille diamant — exactement celui du bouton primaire :
+    /// vif en haut, éteint avant le bas. Il ne suit pas l'azimut 225° du ciel
+    /// (le `bevel` ci-dessus) : les composants diamant sont éclairés par leur
+    /// PROPRE lumière, celle du bijou, pas par celle de la scène.
+    static let diamondRim = LinearGradient(
         stops: [
-            .init(color: .white.opacity(0.90), location: 0.0),
-            .init(color: .woopViolet.opacity(0.95), location: 0.34),
-            .init(color: .woopVioletCore.opacity(0.85), location: 0.62),
-            .init(color: Color(red: 0.87, green: 0.31, blue: 0.42).opacity(0.75), location: 1.0)
+            .init(color: .white.opacity(0.65), location: 0.0),
+            .init(color: .white.opacity(0.10), location: 0.40),
+            .init(color: .white.opacity(0.0), location: 1.0)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    /// Le même, relevé, pour la surface mise en avant. Le violet reste un
+    /// murmure au milieu du parcours : au-delà, le registre bijou se dissout.
+    static let diamondRimNeon = LinearGradient(
+        stops: [
+            .init(color: .white.opacity(0.88), location: 0.0),
+            .init(color: .woopViolet.opacity(0.24), location: 0.42),
+            .init(color: .white.opacity(0.03), location: 1.0)
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -111,6 +146,19 @@ enum WoopGradient {
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
+    )
+
+    /// Encre argent des titres : blanc qui s'éteint doucement vers le bas.
+    /// C'est un métal, pas un effet — le dégradé reste sous le seuil où l'œil
+    /// lirait « texte grisé ».
+    static let silverText = LinearGradient(
+        stops: [
+            .init(color: .white, location: 0.0),
+            .init(color: .white.opacity(0.80), location: 0.62),
+            .init(color: .white.opacity(0.68), location: 1.0)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
     )
 
     /// Néon violet → blanc, pour les boutons et les valeurs mises en avant.
@@ -131,38 +179,43 @@ enum WoopGradient {
     )
 }
 
-// MARK: - Surface métal
+// MARK: - Surface diamant
 
-/// La surface de base de l'app : dégradé sombre + reflet spéculaire + biseau.
-/// Trois couches, c'est ce qui distingue « une carte grise » d'une pièce métallique.
-struct MetalSurface: ViewModifier {
+/// LA surface de l'app, membre de la famille diamant : un noir pur serti d'un
+/// liseré, avec les éclats-bijou du bouton primaire semés sur le contour.
+///
+/// Elle remplace l'ancienne « surface métal » (dégradé gris-vert + reflet
+/// spéculaire). La raison est photographique : les images d'exercice ont un
+/// fond NOIR ABSOLU, et la moindre plaque grise sous elles redessinait le
+/// rectangle de la photo dans la carte. En noir pur, l'image n'a plus de
+/// bord — seuls le corps et le muscle en lumière flottent.
+///
+/// L'ombre portée a disparu avec le gris : sur du noir sur du noir, un flou
+/// de rayon 22 ne dessine rien. C'était le poste le plus cher de la carte.
+struct DiamondSurface: ViewModifier {
     var cornerRadius: CGFloat = 22
     var neon: Bool = false
 
     func body(content: Content) -> some View {
-        content
-            .background {
-                let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                ZStack {
-                    shape.fill(WoopGradient.metal)
-                    shape.fill(WoopGradient.specular)
-                }
-                .compositingGroup()
-                .shadow(color: .black.opacity(0.75), radius: 22, y: 14)
-                .shadow(color: neon ? Color.woopVioletCore.opacity(0.14) : .clear,
-                        radius: 24, y: 6)
-            }
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+
+        return content
+            .background { shape.fill(Color.woopCard) }
             .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(neon ? WoopGradient.bevelNeon : WoopGradient.bevel,
-                                  lineWidth: 1)
+                shape.strokeBorder(neon ? WoopGradient.diamondRimNeon
+                                        : WoopGradient.diamondRim,
+                                   lineWidth: 1)
             }
+            // Murmure : à pleine puissance (1.0) les éclats appartiennent au
+            // CTA. Une page entière de cartes qui scintillent au même volume
+            // que le bouton d'action n'a plus de hiérarchie.
+            .diamondGlints(cornerRadius: cornerRadius, strength: neon ? 0.75 : 0.5)
     }
 }
 
 extension View {
-    func metalSurface(cornerRadius: CGFloat = 22, neon: Bool = false) -> some View {
-        modifier(MetalSurface(cornerRadius: cornerRadius, neon: neon))
+    func diamondSurface(cornerRadius: CGFloat = 22, neon: Bool = false) -> some View {
+        modifier(DiamondSurface(cornerRadius: cornerRadius, neon: neon))
     }
 
     /// Lueur néon posée derrière un élément clair.
@@ -183,7 +236,7 @@ struct WoopCard<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .metalSurface(cornerRadius: cornerRadius, neon: neon)
+            .diamondSurface(cornerRadius: cornerRadius, neon: neon)
     }
 }
 
@@ -231,8 +284,12 @@ struct SweepBorder: View {
 struct WoopPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.body, design: .rounded, weight: .semibold))
-            .foregroundStyle(.white)
+            // Capitales espacées : le registre « gravé » de la référence — la
+            // taille descend d'un cran, l'interlettrage porte la présence.
+            .font(.inter(13.5, .semibold))
+            .textCase(.uppercase)
+            .tracking(2.4)
+            .foregroundStyle(.white.opacity(0.95))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background {
@@ -278,6 +335,9 @@ struct WoopPrimaryButtonStyle: ButtonStyle {
                         lineWidth: 1
                     )
             )
+            // Le registre bijou du CONNEXION : des facettes qui flashent sur
+            // le liseré — le CTA est une pièce taillée, pas un rectangle.
+            .diamondGlints(cornerRadius: 15)
             .opacity(configuration.isPressed ? 0.85 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
@@ -287,11 +347,11 @@ struct WoopPrimaryButtonStyle: ButtonStyle {
 struct WoopSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.subheadline, design: .rounded, weight: .medium))
+            .font(.inter(14.5, .medium))
             .foregroundStyle(Color.inkPrimary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .metalSurface(cornerRadius: 13)
+            .diamondSurface(cornerRadius: 13)
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
@@ -306,8 +366,8 @@ struct SectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(.system(.title3, design: .rounded, weight: .semibold))
-                .foregroundStyle(Color.inkPrimary)
+                .font(.inter(19, .semibold))
+                .foregroundStyle(WoopGradient.silverText)
             Spacer()
             if let action {
                 Button(action: action) {
@@ -316,8 +376,10 @@ struct SectionHeader: View {
                         Image(systemName: "chevron.right")
                             .font(.caption2.weight(.semibold))
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(Color.woopViolet)
+                    // Monochrome : l'action secondaire est une encre discrète,
+                    // pas un accent coloré — le violet est réservé au néon.
+                    .font(.inter(14))
+                    .foregroundStyle(Color.inkSecondary)
                 }
             }
         }
