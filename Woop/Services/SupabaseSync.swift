@@ -68,6 +68,11 @@ actor SupabaseSync {
     // MARK: Envoi
 
     func push(_ snapshots: [Snapshot]) async {
+        // Les données de démonstration ne quittent jamais l'appareil : un run
+        // Xcode avec `-demoData` ne doit pas polluer un vrai compte.
+        // `-syncNow` lève le garde-fou (tests de bout en bout uniquement).
+        if CommandLine.arguments.contains("-demoData"),
+           !CommandLine.arguments.contains("-syncNow") { return }
         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
         inFlight = true
         defer { inFlight = false }

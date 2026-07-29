@@ -209,7 +209,11 @@ private struct ImpNight: View {
         Imp(x: 0.90, y: 0.245, side: 22, tilt: -6, phase: 0.9, ephemeral: true, litFraction: 0.35),
         Imp(x: 0.735, y: 0.895, side: 26, tilt: -4, phase: 2.1, ephemeral: true, litFraction: 0.42),
         Imp(x: 0.42, y: 0.78, side: 15, tilt: 8, phase: 4.3, ephemeral: true, litFraction: 0.30),
-        Imp(x: 0.60, y: 0.04, side: 14, tilt: -7, phase: 5.9, ephemeral: true, litFraction: 0.32)
+        Imp(x: 0.60, y: 0.04, side: 14, tilt: -7, phase: 5.9, ephemeral: true, litFraction: 0.32),
+        // Les noyés de la veine : à demi dans la vapeur, ils habitent le
+        // centre sans jamais gêner le formulaire.
+        Imp(x: 0.55, y: 0.355, side: 16, tilt: 5, phase: 1.8, ephemeral: true, litFraction: 0.25),
+        Imp(x: 0.33, y: 0.27, side: 13, tilt: -6, phase: 3.3, ephemeral: true, litFraction: 0.22)
     ]
 
     /// Le générateur déterministe de la nuit : tout se déduit de l'index,
@@ -222,11 +226,11 @@ private struct ImpNight: View {
     /// La veine de la voie lactée : un S très doux, haut-centre → bas-droite,
     /// en unités d'écran.
     private static func vein(_ u: CGFloat) -> CGPoint {
-        let a = CGPoint(x: 0.58, y: -0.06)
-        let b = CGPoint(x: 0.40, y: 0.42)
-        let c = CGPoint(x: 0.66, y: 1.06)
-        let control1 = CGPoint(x: 0.50, y: 0.18)
-        let control2 = CGPoint(x: 0.44, y: 0.78)
+        let a = CGPoint(x: 0.52, y: -0.06)
+        let b = CGPoint(x: 0.42, y: 0.40)
+        let c = CGPoint(x: 0.82, y: 1.06)
+        let control1 = CGPoint(x: 0.46, y: 0.16)
+        let control2 = CGPoint(x: 0.50, y: 0.80)
         func quad(_ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ k: CGFloat) -> CGPoint {
             let m = 1 - k
             return CGPoint(x: m * m * p0.x + 2 * m * k * p1.x + k * k * p2.x,
@@ -249,7 +253,7 @@ private struct ImpNight: View {
     /// ~380 poussières : fines (0,3–1 px pour l'essentiel), très inégales,
     /// denses le long de la veine — la voie lactée est une population, pas
     /// un dégradé.
-    private static let stars: [Star] = (0..<380).map { i in
+    private static let stars: [Star] = (0..<520).map { i in
         let onVein = hash(i, 1) < 0.60
         var x: CGFloat, y: CGFloat
         if onVein {
@@ -268,7 +272,7 @@ private struct ImpNight: View {
         let sizePick = hash(i, 7)
         let r: CGFloat = sizePick > 0.97 ? 1.1 + CGFloat(hash(i, 8)) * 0.5
             : 0.3 + CGFloat(pow(hash(i, 8), 2)) * 0.5
-        let alpha = 0.04 + 0.30 * pow(hash(i, 9), 3)
+        let alpha = 0.06 + 0.38 * pow(hash(i, 9), 2.6)
         let twinkle = hash(i, 10) < 0.25 ? 0.3 + hash(i, 11) * 0.9 : 0
         return Star(x: x, y: y, r: r, alpha: alpha, twinkle: twinkle)
     }
@@ -300,7 +304,10 @@ private struct ImpNight: View {
             let x = center.x + CGFloat(hash(i, 44) + hash(i, 45) - 1) * spread * 1.6
             let y = center.y + CGFloat(hash(i, 46) + hash(i, 47) - 1) * spread
             let r: CGFloat = [3.5, 6.5, 11.0][bucket] * (0.6 + CGFloat(hash(i, 48)))
-            let alpha = [0.030, 0.022, 0.015][bucket] * (0.5 + hash(i, 49))
+            // Le gain de la grappe : certaines denses, d'autres presque
+            // éteintes — c'est l'inégalité qui fait les paquets et les trous.
+            let clusterGain = 0.35 + 1.3 * hash(c, 50)
+            let alpha = [0.052, 0.038, 0.026][bucket] * (0.5 + hash(i, 49)) * clusterGain
             return Cloud(x: x, y: y, r: r, alpha: alpha, bucket: bucket)
         }
     }()
@@ -335,7 +342,7 @@ private struct ImpNight: View {
         }
         context.drawLayer { layer in
             layer.addFilter(.blur(radius: size.width * 0.11))
-            layer.stroke(bed, with: .color(.white.opacity(0.020 * fade)),
+            layer.stroke(bed, with: .color(.white.opacity(0.030 * fade)),
                          style: StrokeStyle(lineWidth: size.width * 0.30, lineCap: .round))
         }
 
@@ -343,11 +350,15 @@ private struct ImpNight: View {
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: [5.0, 9.0, 15.0][bucket]))
                 for (i, cloud) in Self.clouds.enumerated() where cloud.bucket == bucket {
+                    // Le gaz vit : respiration d'opacité et dérive de 2-3 pt,
+                    // imperceptibles en instantané, vivantes à l'œil.
                     let breath = 1 + 0.22 * sin(t * 0.05 + Double(i))
+                    let dx = CGFloat(sin(t * 0.03 + Double(i) * 1.7)) * 3
+                    let dy = CGFloat(cos(t * 0.021 + Double(i) * 0.9)) * 2
                     let r = cloud.r
                     layer.fill(
-                        Path(ellipseIn: CGRect(x: cloud.x * size.width - r,
-                                               y: cloud.y * size.height - r,
+                        Path(ellipseIn: CGRect(x: cloud.x * size.width - r + dx,
+                                               y: cloud.y * size.height - r + dy,
                                                width: r * 2, height: r * 2)),
                         with: .color(.white.opacity(cloud.alpha * breath * fade))
                     )
@@ -468,24 +479,33 @@ private struct ImpNight: View {
         )
 
         // L'arête de lumière : vive sur la crête et les cornes, morte sur les
-        // flancs — la signature du diablotin du splash.
+        // flancs — la signature du diablotin du splash. Les segments sont
+        // regroupés par paliers d'intensité en TRAITS CONTINUS : jamais de
+        // couture pointillée le long du contour.
         let lit = eyesLit(imp, index: index)
         let rimGain = (0.11 + 0.10 * lit) * presence
+        var buckets = [Int: Path]()
         let stride = side >= 50 ? 1 : 2
         var i = 0
         while i < Self.rim.count - stride {
             let w = Self.rimWeight[i]
-            if w > 0.04 {
-                var segment = Path()
-                segment.move(to: P(Self.rim[i]))
-                segment.addLine(to: P(Self.rim[i + stride]))
-                context.stroke(
-                    segment,
-                    with: .color(.white.opacity(Double(w) * rimGain)),
-                    style: StrokeStyle(lineWidth: side >= 50 ? 0.9 : 0.7, lineCap: .round)
-                )
+            if w > 0.05 {
+                let bucket = min(4, Int(w * 5))
+                var path = buckets[bucket] ?? Path()
+                path.move(to: P(Self.rim[i]))
+                path.addLine(to: P(Self.rim[i + stride]))
+                buckets[bucket] = path
             }
             i += stride
+        }
+        for (bucket, path) in buckets {
+            let w = (Double(bucket) + 0.5) / 5
+            context.stroke(
+                path,
+                with: .color(.white.opacity(w * rimGain)),
+                style: StrokeStyle(lineWidth: side >= 50 ? 1.1 : 0.8,
+                                   lineCap: .butt, lineJoin: .round)
+            )
         }
 
         drawEyes(context, imp: imp, index: index, lit: lit,
@@ -513,16 +533,16 @@ private struct ImpNight: View {
         let gazeY = CGFloat(cos(t * 0.07 + imp.phase * 1.9)) * 0.012
 
         let a = lit * ember * presence
-        let eyeW: CGFloat = 0.125
-        let eyeH: CGFloat = 0.150 * CGFloat(openness)
+        let eyeW: CGFloat = 0.115
+        let eyeH: CGFloat = 0.170 * CGFloat(openness)
 
         // La face s'éclaire sous les yeux — leur propre lumière sur l'encre.
         context.drawLayer { layer in
             layer.addFilter(.blur(radius: side * 0.16))
             layer.fill(
-                Path(ellipseIn: CGRect(x: -0.32, y: 0.30, width: 0.64, height: 0.34))
+                Path(ellipseIn: CGRect(x: 0.18, y: 0.30, width: 0.64, height: 0.34))
                     .applying(transform),
-                with: .color(.white.opacity(0.14 * a))
+                with: .color(.white.opacity(0.13 * a))
             )
         }
 
@@ -530,9 +550,10 @@ private struct ImpNight: View {
             let ex = 0.5 + s * 0.135 + gazeX
             let ey = 0.485 + gazeY
             let rect = CGRect(x: ex - eyeW / 2, y: ey - eyeH / 2, width: eyeW, height: eyeH)
-            // L'inclinaison du splash : ±5°, pointes externes relevées.
+            // L'inclinaison du splash : œil gauche -5°, droit +5° — le même
+            // regard que le diablotin de la bouteille.
             let eyeTurn = CGAffineTransform(translationX: ex, y: ey)
-                .rotated(by: s * -0.087)
+                .rotated(by: s * 0.087)
                 .translatedBy(x: -ex, y: -ey)
             let globe = Path(ellipseIn: rect).applying(eyeTurn).applying(transform)
 
@@ -541,18 +562,22 @@ private struct ImpNight: View {
                 layer.addFilter(.blur(radius: max(1.5, side * 0.07)))
                 layer.fill(globe, with: .color(.white.opacity(0.50 * a)))
             }
-            context.fill(globe, with: .color(.white.opacity(0.95 * a)))
-
-            // Le catchlight des grands : la pupille qu'on ne dessine pas.
-            if side >= 40 {
-                let cl = eyeW * 0.16
-                let cx = ex - eyeW * 0.14 - gazeX * 0.8
-                let cy = ey - eyeH * 0.22 - gazeY * 0.6
-                let dot = Path(ellipseIn: CGRect(x: cx - cl / 2, y: cy - cl / 2,
-                                                 width: cl, height: cl * 0.85))
-                    .applying(transform)
-                context.fill(dot, with: .color(.black.opacity(0.55 * a)))
-            }
+            // Le globe : de la porcelaine, jamais une pastille — le bas du
+            // globe s'éteint à peine, aucune pupille dessinée (le splash
+            // n'en a pas ; c'est ce qui le garde précieux).
+            let top = CGPoint(x: ex, y: ey - eyeH / 2).applying(transform)
+            let bottom = CGPoint(x: ex, y: ey + eyeH / 2).applying(transform)
+            context.fill(
+                globe,
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: .white.opacity(0.97 * a), location: 0.0),
+                        .init(color: .white.opacity(0.92 * a), location: 0.55),
+                        .init(color: Color(white: 0.82).opacity(0.85 * a), location: 1.0)
+                    ]),
+                    startPoint: top, endPoint: bottom
+                )
+            )
         }
     }
 }

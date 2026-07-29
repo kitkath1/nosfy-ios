@@ -182,15 +182,22 @@ struct RootView: View {
         }
         .onChange(of: sheetWorkout == nil) { _, _ in celebrateFinishedWorkout() }
         .task {
+            // TEMP
+            if CommandLine.arguments.contains("-finishAfterLaunch"), let active {
+                try? await Task.sleep(for: .seconds(15))
+                active.endedAt = .now
+                try? modelContext.save()
+                WoopCelebration.shared.workoutFinished()
+            }
             // `-openActiveSheet` ouvre la feuille de séance dès le lancement
             // (captures d'écran automatisées uniquement).
             if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
                 sheetWorkout = active
             }
-            // `-syncNow` (dev) : pousse toutes les séances terminées dès le
-            // lancement — test de bout en bout, et re-remplissage du compte
-            // après une connexion sur un nouvel appareil.
-            guard CommandLine.arguments.contains("-syncNow") else { return }
+            // Rattrapage : toutes les séances terminées repartent à chaque
+            // lancement. Une séance finie hors ligne (salle en mode avion)
+            // monte donc au premier lancement avec du réseau — l'upsert
+            // merge-duplicates rend l'envoi répété inoffensif.
             let workouts = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
             Task.detached { await SupabaseSync.shared.push(snapshots) }
