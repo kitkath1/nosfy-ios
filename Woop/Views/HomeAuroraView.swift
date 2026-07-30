@@ -14,27 +14,65 @@ struct HomeAuroraLab: View {
 
     @State private var selection: WoopTab = .home
 
+    /// L'ordre des onglets, tenu ICI plutôt que dans `WoopTab` : ce fichier est
+    /// partagé, et une conformance ajoutée à l'énum se paie en conflits.
+    private static let order: [WoopTab] = [.home, .exercises, .progress, .calendar]
+
+    private static let tabItems: [(icon: String, label: String)] = [
+        ("house.fill", "Accueil"),
+        ("figure.strengthtraining.functional", "Exercices"),
+        ("chart.line.uptrend.xyaxis", "Progrès"),
+        ("calendar", "Calendrier"),
+    ]
+
+    /// Le pont entre l'onglet nommé et l'index attendu par la barre.
+    private var tabIndex: Binding<Int> {
+        Binding(get: { Self.order.firstIndex(of: selection) ?? 0 },
+                set: { selection = Self.order[$0] })
+    }
+
     var body: some View {
         if Self.deckOnly {
             SwapDeckLab().preferredColorScheme(.dark)
         } else {
-            // La barre d'onglets réelle : sans elle, on juge une composition
-            // qui n'existe pas — la pile doit tenir AU-DESSUS de la nav.
-            TabView {
-                Tab("Accueil", systemImage: "house.fill") {
+            // La barre native est MASQUÉE au profit de la barre bijou. Le verre
+            // liquide d'Apple est translucide par nature ; posé sur cette
+            // aurore, il en prend la couleur et la barre devient un reflet du
+            // sol. L'obsidienne, elle, reste NOIRE sur le feu — et c'est le
+            // contraste qui fait le bijou. Le TabView demeure pour ce qu'il
+            // fait bien : l'état et les piles de navigation.
+            //
+            // `toolbarVisibility` se pose sur le CONTENU de chaque onglet :
+            // appliqué au TabView, il ne masque rien.
+            TabView(selection: $selection) {
+                Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     HomeAuroraView(selection: $selection)
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
-                Tab("Exercices", systemImage: "figure.strengthtraining.functional") {
+                Tab("Exercices", systemImage: "figure.strengthtraining.functional",
+                    value: WoopTab.exercises) {
                     Color.black.ignoresSafeArea()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
-                Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis") {
+                Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis",
+                    value: WoopTab.progress) {
                     Color.black.ignoresSafeArea()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
-                Tab("Calendrier", systemImage: "calendar") {
+                Tab("Calendrier", systemImage: "calendar", value: WoopTab.calendar) {
                     Color.black.ignoresSafeArea()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
             }
-            .toolbarColorScheme(.dark, for: .tabBar)
+            // `safeAreaInset` plutôt qu'un overlay : la barre réserve sa place,
+            // donc la pile de cartes s'arrête au-dessus d'elle au lieu de couler
+            // dessous, et elle se pose d'elle-même au-dessus de l'indicateur.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                JewelTabBar(items: Self.tabItems, selection: tabIndex)
+                    .frame(height: 64)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 4)
+            }
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
             .tint(Color(red: 1.0, green: 0.80, blue: 0.48))

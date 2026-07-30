@@ -69,23 +69,36 @@ struct JewelTabBar: View {
 
     /// Marge de débordement : l'ombre portée vit DEHORS, en alpha.
     private static let pad: CGFloat = 40
-    /// Retrait de la pastille par rapport à l'arête de la barre. Généreux : au
-    /// repos la pastille est un sertissage serré, et c'est ce vide autour d'elle
-    /// qui lui donne la place d'exploser sous le doigt.
-    private static let inset: CGFloat = 14
+    /// Retrait de la pastille par rapport à l'arête de la barre. Serré : au
+    /// repos la pastille remplit franchement la barre — c'est la proportion de
+    /// la référence. Elle n'a plus besoin de place pour grossir depuis que le
+    /// shader la laisse SORTIR de la capsule.
+    private static let inset: CGFloat = 8
     /// Retrait latéral : la pastille de la référence est plus ramassée qu'un
     /// simple créneau — elle serre la glyphe au lieu de remplir sa case.
-    private static let insetX: CGFloat = 16
+    private static let insetX: CGFloat = 14
     /// Durée du voyage de la pastille.
     private static let travel: TimeInterval = 0.42
 
-    @State private var fromX: CGFloat = -1
-    @State private var toX: CGFloat = -1
+    // La position de la pastille se mémorise en INDICE DE CASE, jamais en
+    // points : la largeur de la barre change entre le premier passage de layout
+    // et le suivant (safe area, rotation, insets), et une position figée en
+    // points reste alors sur l'ancienne grille — la pastille se retrouve entre
+    // deux icônes. L'indice, lui, survit à tout changement de largeur.
+    @State private var fromU: CGFloat = -1
+    @State private var toU: CGFloat = -1
     @State private var moveStart: Date = .distantPast
     @State private var pressedAt: Date = .distantPast
     @State private var isDown = false
     @State private var dragAt: Date = .distantPast
     @State private var dragging = false
+    /// Le dernier battement du geste. Sert de GARDE-FOU : un DragGesture
+    /// ANNULÉ — volé par un ScrollView ou par la pagination du TabView —
+    /// n'appelle jamais `onEnded`. Sans ce chien de garde, la pastille reste
+    /// gonflée à fond pour toujours et le dernier onglet survolé reste
+    /// sélectionné. On ne peut pas corriger l'état pendant le rendu ; on lit
+    /// donc la péremption au lieu de l'écrire.
+    @State private var lastPulse: Date = .distantPast
 
     var body: some View {
         GeometryReader { geo in
@@ -154,6 +167,7 @@ struct JewelTabBar: View {
                             if selection != i { selection = i }
                             if !isDown { pressedAt = .now; isDown = true }
                             if !dragging { dragAt = .now; dragging = true }
+                            lastPulse = .now
                         }
                         .onEnded { _ in
                             pressedAt = .now; isDown = false
@@ -165,18 +179,19 @@ struct JewelTabBar: View {
             .onAppear {
                 // Premier rendu : la pastille est DÉJÀ en place, elle n'arrive
                 // pas en glissant depuis la gauche.
-                let x = slot * (CGFloat(selection) + 0.5)
-                fromX = x; toX = x
+                fromU = CGFloat(selection); toU = CGFloat(selection)
             }
             .onChange(of: selection) { _, _ in
-                let target = slot * (CGFloat(selection) + 0.5)
-                guard target != toX else { return }
-                fromX = motion(at: .now, slot: slot).x
-                toX = target
+                let target = CGFloat(selection)
+                guard target != toU else { return }
+                fromU = motion(at: .now, slot: slot).u
+                toU = target
                 moveStart = .now
             }
         }
-        .sensoryFeedback(.selection, trigger: selection)
+        // Un choc FRANC, pas le petit clic de sélection : la pastille est un
+        // objet lourd qui se pose, le doigt doit le sentir arriver.
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0), trigger: selection)
     }
 
     private func slotView(index i: Int, item: (icon: String, label: String),
@@ -211,53 +226,64 @@ struct JewelTabBar: View {
     /// animable par SwiftUI, mais la timeline nous donne l'instant à chaque
     /// image — autant s'en servir.
     private func motion(at date: Date, slot: CGFloat)
-        -> (x: CGFloat, zoom: CGFloat, zoomW: CGFloat) {
-        guard fromX >= 0, toX >= 0 else {
-            let x = slot * (CGFloat(selection) + 0.5)
-            return (x, 1, 1)
+        -> (x: CGFloat, u: CGFloat, zoom: CGFloat, zoomW: CGFloat) {
+        func point(_ u: CGFloat) -> CGFloat { slot * (u + 0.5) }
+        guard fromU >= 0, toU >= 0 else {
+            let u = CGFloat(selection)
+            return (point(u), u, 1, 1)
         }
-        if reduceMotion { return (toX, 1, 1) }
+        if reduceMotion { return (point(toU), toU, 1, 1) }
         let u = min(max(date.timeIntervalSince(moveStart) / Self.travel, 0), 1)
         let v = u - 1
         // easeOutBack : la pastille dépasse d'un cheveu puis se pose. C'est ce
         // dépassement, et lui seul, qui fait un objet lourd plutôt qu'un fondu.
         let c1 = 1.70158, c3 = c1 + 1
         let e = 1 + c3 * v * v * v + c1 * v * v
-        let x = fromX + (toX - fromX) * e
+        let cur = fromU + (toU - fromU) * e
 
-        // Le zoom monte à ×2,05 : la pastille passe de 36 à 74 pt sous le doigt
-        // et DÉBORDE franchement de la capsule, par le haut comme par le bas.
-        // Le shader ne la clippe plus à la barre — ce qui dépasse flotte, avec
-        // son cerne, au-dessus de la page. C'est ce débordement qui fait la
-        // violence : une pastille qui grossit sans jamais sortir de son étui
-        // reste polie.
+        // Le zoom monte à ×1,38 : la pastille passe de 48 à 66 pt sous le doigt
+        // et déborde d'un cheveu de la capsule. Le shader ne la clippe plus à
+        // la barre — ce léger débordement suffit à la faire DÉCOLLER, alors
+        // qu'une pastille bien plus grosse cessait d'être un onglet.
         //
         // La LARGEUR ne suit qu'aux deux tiers : à plein régime, une croissance
         // uniforme ferait une saucisse qui avale deux cases. En montant moins
         // vite en largeur qu'en hauteur, la pastille s'ARRONDIT — une bulle qui
         // se soulève plutôt qu'un rectangle qu'on tire.
-        let bump = 0.25 * sin(.pi * u)
-        let zoom = 1 + bump + 0.80 * dragLevel(at: date)
+        let bump = 0.10 * sin(.pi * u)
+        let zoom = 1 + bump + 0.28 * dragLevel(at: date)
         let zoomW = 1 + (zoom - 1) * 0.62
-        return (x, zoom, zoomW)
+        return (point(cur), cur, zoom, zoomW)
     }
 
     /// La tenue du doigt qui traîne : 0 lâché, 1 en glisse. Montée vive à la
     /// prise, retombée plus lente au dépôt.
     private func dragLevel(at date: Date) -> Double {
-        let dur = dragging ? 0.13 : 0.30
-        let raw = min(max(date.timeIntervalSince(dragAt) / dur, 0), 1)
+        let (down, ref) = held(at: date, flag: dragging, since: dragAt)
+        let dur = down ? 0.13 : 0.30
+        let raw = min(max(date.timeIntervalSince(ref) / dur, 0), 1)
         let eased = raw * raw * (3 - 2 * raw)
-        return dragging ? eased : 1 - eased
+        return down ? eased : 1 - eased
+    }
+
+    /// Le doigt est-il ENCORE là ? Un geste vivant bat à chaque image ; passé
+    /// `stale`, on considère qu'il a été annulé et on fait retomber la rampe
+    /// depuis l'instant du dernier battement.
+    private static let stale: TimeInterval = 0.18
+    private func held(at date: Date, flag: Bool, since: Date) -> (Bool, Date) {
+        guard flag else { return (false, since) }
+        let quiet = date.timeIntervalSince(lastPulse)
+        if quiet > Self.stale { return (false, lastPulse.addingTimeInterval(Self.stale)) }
+        return (true, since)
     }
 
     /// La rampe du doigt : 0 au repos, 1 posé. Montée vive, retombée plus lente.
     private func pressLevel(at date: Date) -> Double {
-        let d = date.timeIntervalSince(pressedAt)
-        let dur = isDown ? 0.10 : 0.26
-        let raw = min(max(d / dur, 0), 1)
+        let (down, ref) = held(at: date, flag: isDown, since: pressedAt)
+        let dur = down ? 0.10 : 0.26
+        let raw = min(max(date.timeIntervalSince(ref) / dur, 0), 1)
         let eased = raw * raw * (3 - 2 * raw)
-        return isDown ? eased : 1 - eased
+        return down ? eased : 1 - eased
     }
 
     private static func dithered(_ shader: Shader) -> Shader {
