@@ -366,6 +366,7 @@ struct SwapDeck: View {
 
     var body: some View {
         ZStack {
+            reflection
             ForEach(slots, id: \.workout.persistentModelID) { slot in
                 card(slot.workout, depth: slot.depth)
             }
@@ -394,6 +395,34 @@ struct SwapDeck: View {
         }
     }
 
+    /// Le reflet : la carte du dessus, retournée sous elle, floutée et
+    /// fondue en quelques points. Composée en `plusLighter` — la carte est
+    /// noire, seule sa LUMIÈRE se reflète (le liseré, le dégradé d'or, le
+    /// texte) : un sol poli sous la nuit, jamais une copie grise. Elle
+    /// suit le geste, donc le reflet danse avec elle.
+    @ViewBuilder
+    private var reflection: some View {
+        if let top = slots.first(where: { $0.depth == 0 })?.workout {
+            SwapWorkoutCard(workout: top, seed: 0, charge: charge, pull: pull)
+                .frame(width: Self.cardWidth, height: Self.cardHeight)
+                .scaleEffect(x: 1, y: -1)
+                .mask {
+                    LinearGradient(stops: [
+                        .init(color: .white.opacity(0.0), location: 0.0),
+                        .init(color: .white.opacity(0.10), location: 0.72),
+                        .init(color: .white.opacity(0.85), location: 1.0)
+                    ], startPoint: .top, endPoint: .bottom)
+                }
+                .blur(radius: 5)
+                .opacity(0.42)
+                .rotationEffect(.degrees(-Double(drag.width) / 30), anchor: .top)
+                .offset(x: drag.width,
+                        y: Self.cardHeight - Self.sinkStep + 3 + drag.height * 0.25)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+        }
+    }
+
     @ViewBuilder
     private func card(_ workout: Workout, depth: Int) -> some View {
         let isTop = depth == 0
@@ -415,9 +444,18 @@ struct SwapDeck: View {
             .scaleEffect(isTop ? 1 - min(abs(drag.width), 140) / 2600 : shrink)
             .offset(x: isTop ? drag.width : 0,
                     y: (isTop ? drag.height * 0.25 : 0) + sink - Self.sinkStep)
-            // Le pivot est BAS : la carte bascule dans la main, elle ne
-            // tourne pas autour de son nombril.
-            .rotationEffect(.degrees(isTop ? Double(drag.width) / 20 : 0),
+            // Le basculement 3D : la carte n'est plus une image qui glisse,
+            // c'est un objet qu'on incline — elle pivote autour de son axe
+            // vertical vers le côté où l'on tire, et s'incline vers l'avant
+            // ou l'arrière selon la hauteur du doigt. La perspective est
+            // courte : c'est ce qui donne l'épaisseur.
+            .rotation3DEffect(.degrees(isTop ? Double(drag.width) / 11 : 0),
+                              axis: (x: 0, y: 1, z: 0), perspective: 0.62)
+            .rotation3DEffect(.degrees(isTop ? -Double(drag.height) / 15 : 0),
+                              axis: (x: 1, y: 0, z: 0), perspective: 0.62)
+            // Et le pivot BAS reste, en retrait : la carte bascule dans la
+            // main, elle ne tourne pas autour de son nombril.
+            .rotationEffect(.degrees(isTop ? Double(drag.width) / 30 : 0),
                             anchor: .bottom)
             // La carte de fond reste invisible, et celle qui vient de partir
             // aussi : ni l'une ni l'autre ne doit se voir revenir.
