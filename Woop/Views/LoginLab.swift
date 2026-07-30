@@ -121,11 +121,13 @@ struct LoginLab: View {
 
     /// Le titre : Inter en grand, le dernier mot un cran plus présent —
     /// la hiérarchie de la référence (« designers » en gras), pas un slogan.
+    /// « séances » porte sa propre encre : le fondu diagonal du titre
+    /// éteignait justement le mot-clé (verdict mesuré : 1,32:1).
     private var title: some View {
-        Text("Reprends le fil\nde tes \(Text("séances").font(.inter(34, .semibold)))")
+        Text("Reprends le fil\nde tes \(Text("séances").font(.inter(34, .semibold)).foregroundStyle(Color(red: 0.97, green: 0.95, blue: 0.91)))")
             .font(.inter(34))
             .foregroundStyle(WoopGradient.titleFade)
-            .lineSpacing(5)
+            .lineSpacing(0)
     }
 
     private var edgeTags: some View {
@@ -134,7 +136,7 @@ struct LoginLab: View {
             edgeTag("WOOP")
         }
         .padding(.leading, 4)
-        .padding(.top, 130)
+        .padding(.top, 122)
     }
 
     private func edgeTag(_ s: String) -> some View {
