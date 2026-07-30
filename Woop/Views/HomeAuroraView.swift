@@ -342,21 +342,26 @@ struct SwapDeck: View {
     static let topCardCenterY = deckHeight / 2 - sinkStep
     /// La marge où respire la gerbe : les bijoux volent bien au-delà de la
     /// pile — un shader ne peint que dans son rectangle hôte.
-    private static let burstRoom: CGFloat = 230
+    private static let burstRoom: CGFloat = 290
     /// Le geste est décidé au-delà de ce déplacement.
     private static let threshold: CGFloat = 96
     /// Le banc fige la carte du dessus en plein geste (`-deckSwiped`) : la
     /// suivante doit se lire comme « prête », sans avoir à tenir le doigt.
     private static let benchSwipe = CommandLine.arguments.contains("-deckSwiped")
-    /// `-deckBurst` fige la gerbe à son ouverture, pour la régler au pixel.
+    /// `-deckBurst` rejoue la pluie en boucle (toutes les 3 s) : une pluie
+    /// se juge en la regardant TOMBER, pas sur une image figée.
     private static let benchBurst = CommandLine.arguments.contains("-deckBurst")
-    static let benchBurstAge: Float? = CommandLine
-        .arguments.contains("-deckBurst") ? 0.30 : nil
 
     /// La montée du geste : 0 au repos, 1 quand le doigt a décidé. C'est elle
     /// qui embrase l'écrin de la carte.
     private var charge: Float {
         Float(min(abs(drag.width) / Self.threshold, 1))
+    }
+
+    /// Où le doigt tire, en vecteur unitaire — le foyer de lumière s'y rend.
+    private var pull: CGSize {
+        let len = max(sqrt(drag.width * drag.width + drag.height * drag.height), 1)
+        return CGSize(width: drag.width / len, height: drag.height / len)
     }
 
     var body: some View {
@@ -378,9 +383,14 @@ struct SwapDeck: View {
         }
         .onAppear {
             guard Self.benchBurst, burst == nil else { return }
-            // Au banc, la carte est au repos : la gerbe part de SON contour.
-            burst = Burst(at: .now, origin: .zero,
-                          way: CGSize(width: 1, height: 0))
+            // Au banc, la carte est au repos : la pluie part de SON contour,
+            // et se rejoue en boucle pour qu'on puisse la regarder tomber.
+            let seed = { burst = Burst(at: .now, origin: .zero,
+                                       way: CGSize(width: 1, height: 0)) }
+            seed()
+            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                seed()
+            }
         }
     }
 
@@ -395,7 +405,8 @@ struct SwapDeck: View {
         let shrink = 1 - CGFloat(depth) * 0.05
 
         SwapWorkoutCard(workout: workout, seed: Float(depth),
-                        charge: isTop ? charge : 0)
+                        charge: isTop ? charge : 0,
+                        pull: pull)
             .frame(width: Self.cardWidth, height: Self.cardHeight)
             // SANS ceci, seuls les GLYPHES sont tactiles : la carte est un
             // vide, le doigt passait au travers et c'est la page qui
@@ -483,7 +494,9 @@ struct SwapDeck: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
             vanished = nil
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        // La pluie tombe longtemps : la couche vit jusqu'à la dernière
+        // étoile (2,4 s côté shader).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
             burst = nil
         }
     }
@@ -528,7 +541,7 @@ struct SwapBurstLayer: View {
                                 Float(SwapDeck.cardHeight / 2)),
                         .float(24),
                         .float2(Float(burst.way.width), Float(burst.way.height)),
-                        .float(SwapDeck.benchBurstAge ?? age)))
+                        .float(age)))
             }
         }
         .blendMode(.plusLighter)
@@ -626,6 +639,9 @@ struct SwapWorkoutCard: View {
     var seed: Float = 0
     /// La montée du geste (0 → 1) : l'écrin s'embrase avec elle.
     var charge: Float = 0
+    /// La direction où le doigt tire (unitaire) : le foyer de lumière s'y
+    /// masse à mesure que la charge monte.
+    var pull: CGSize = CGSize(width: 1, height: 0)
 
     /// Marge du shader : au repos le souffle doré de l'arête tient en
     /// quelques points, mais sous le geste le halo déborde loin — un shader
@@ -698,7 +714,8 @@ struct SwapWorkoutCard: View {
                     .colorEffect(ShaderLibrary.swapCard(
                         .float2(w, h), .float(t),
                         .float(Float(Self.pad)), .float(24), .float(seed),
-                        .float(charge)))
+                        .float(charge),
+                        .float2(Float(pull.width), Float(pull.height))))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
