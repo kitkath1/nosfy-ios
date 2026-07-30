@@ -82,7 +82,7 @@ enum NebulaConfig {
     /// couvrir toute la bande claire.
     static let flowHalfWidth: Float = 0.105
     /// Gain du micro-détail advecté (canal R de NebulaGlow) et des halos (G).
-    static let flowGain: Float = 0.27
+    static let flowGain: Float = 0.34
     static let flowHaloGain: Float = 0.038
     /// Amplitude de référence du déplacement (px écran). Le déplacement réel
     /// vaut ampPx × [0,16 … 1,28] × 1,70 selon la luminance et le
@@ -259,13 +259,13 @@ enum NebulaConfig {
     static let imps: [Imp] = [
         // Le gros du bas-gauche : l'ancre de la scène.
         Imp(eyes: [Eye(c: CGPoint(x: 0.2070, y: 0.8591), len: 26, tilt: 0.520, ratio: 2.23, inward: 1),
-                   // Œil droit RECALÉ À LA MAIN après revue visuelle : la mesure
-                   // PCA (ratio 4,10 / tilt 0,900) était polluée par la lueur du
-                   // limbe — elle donnait un œil deux fois moins haut que son
-                   // jumeau et penché à 52°, qui se lisait comme une entaille.
-                   // La perspective 3/4 justifie qu'il soit plus étroit que le
-                   // gauche, pas qu'il soit difforme. NE PAS RE-MESURER.
-                   Eye(c: CGPoint(x: 0.2637, y: 0.8542), len: 23, tilt: 0.700, ratio: 2.85, inward: -1)],
+                   // Valeurs MESURÉES sur la photo, à conserver telles quelles :
+                   // les retoucher à la main (essai ratio 2,85 / tilt 0,700) a
+                   // empiré le rendu. Si cet œil paraît encore cassé, la cause
+                   // est dans le TRACÉ (fierceEyePath : chapeau du coin externe,
+                   // points de contrôle) ou dans son ancrage, pas dans ces
+                   // nombres.
+                   Eye(c: CGPoint(x: 0.2637, y: 0.8542), len: 23, tilt: 0.900, ratio: 4.10, inward: -1)],
             body: 10,
             limb: Limb(c: CGPoint(x: 0.2075, y: 0.8481), r: 72.0,
                        prof: limbProfBL, ridge: limbRidgeBL),
@@ -335,8 +335,13 @@ enum NebulaConfig {
     /// rapport simple : la répétition n'est pas perceptible) seuillées dur :
     /// 30-45 % de la circonférence où le cheveu MEURT complètement, par
     /// paquets de 20-60°. C'est ce qui tue le « bandeau » et la « chaînette ».
-    static let hairGapPeriodsDeg: [Double] = [137, 89, 211]
-    static let hairGapThreshold: Double = 0.43
+    /// Quatre porteuses : la quatrième (53°) casse les longs arcs — sans elle
+    /// le cheveu court sur 170° d'un trait et redevient un BANDEAU. Réglage
+    /// vérifié hors app : 51-62 % de circonférence vivante, trous de 12 à 54°,
+    /// plus long arc continu 70-80°.
+    static let hairGapPeriodsDeg: [Double] = [137, 89, 211, 53]
+    static let hairGapWeights: [Double] = [0.36, 0.31, 0.23, 0.18]
+    static let hairGapThreshold: Double = 0.47
     static let hairGapRamp: Double = 0.16
     /// Dérive des trous (rad/s) : très lente, ils ne défilent pas.
     static let hairGapDrift: Double = 0.035
@@ -366,10 +371,13 @@ enum NebulaConfig {
     /// montent le long du corps et MANGENT les étoiles qu'elles traversent.
     /// C'est ce passage devant les étoiles qui les rend réelles — donc elles
     /// doivent monter assez haut pour en croiser.
-    static let smokeAlpha: Double = 0.55
+    static let smokeAlpha: Double = 0.62
     static let smokeCycle: ClosedRange<Double> = 17...26
     static let smokePlumes = 3
-    static let smokeRise: CGFloat = 2.15          // × rayon du limbe
+    static let smokeRise: CGFloat = 2.15
+    /// Dérive LATÉRALE des volutes en montant (× rayon) : elles quittent le
+    /// corps noir et vont passer DEVANT les étoiles — c'est là qu'on les voit.
+    static let smokeSpread: CGFloat = 0.85          // × rayon du limbe
 
     // MARK: 5. Filaments au-dessus des têtes
 
@@ -432,9 +440,9 @@ enum NebulaConfig {
         CGRect(x: 0.062, y: 0.508, width: 0.876, height: 0.084),
         CGRect(x: 0.062, y: 0.594, width: 0.876, height: 0.061)
     ]
-    static let controlFeather: CGFloat = 22
+    static let controlFeather: CGFloat = 30
     /// Plancher d'assourdissement sous une boîte (0 = éteint, 1 = intact).
-    static let controlFloor: Double = 0.45
+    static let controlFloor: Double = 0.58
     static let controlFloorSoft: Double = 0.62
 
     // MARK: Utilitaires
