@@ -63,6 +63,9 @@ struct RootView: View {
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
     /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
     private static let loginLab = CommandLine.arguments.contains("-loginLab")
+    /// Banc d'essai de la home aurora : `-homeLab` (+ `-demoData` pour les
+    /// cartes). L'ancienne home noire reste la vraie.
+    private static let homeLab = CommandLine.arguments.contains("-homeLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -105,6 +108,8 @@ struct RootView: View {
             CounterLab()
         } else if Self.loginLab {
             LoginLab()
+        } else if Self.homeLab {
+            HomeAuroraLab()
         } else {
             mainBody
         }
