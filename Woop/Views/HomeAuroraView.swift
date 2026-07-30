@@ -1,3 +1,5 @@
+import AVFoundation
+import CoreHaptics
 import SwiftUI
 import SwiftData
 
@@ -16,8 +18,27 @@ struct HomeAuroraLab: View {
         if Self.deckOnly {
             SwapDeckLab().preferredColorScheme(.dark)
         } else {
-            HomeAuroraView(selection: $selection)
-                .preferredColorScheme(.dark)
+            // La barre d'onglets réelle : sans elle, on juge une composition
+            // qui n'existe pas — la pile doit tenir AU-DESSUS de la nav.
+            TabView {
+                Tab("Accueil", systemImage: "house.fill") {
+                    HomeAuroraView(selection: $selection)
+                }
+                Tab("Exercices", systemImage: "figure.strengthtraining.functional") {
+                    Color.black.ignoresSafeArea()
+                }
+                Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis") {
+                    Color.black.ignoresSafeArea()
+                }
+                Tab("Calendrier", systemImage: "calendar") {
+                    Color.black.ignoresSafeArea()
+                }
+            }
+            .toolbarColorScheme(.dark, for: .tabBar)
+            // L'accent suit le mood : le violet de l'app jure dans un écran
+            // d'or. Ici la sélection est une lumière chaude.
+            .tint(Color(red: 1.0, green: 0.80, blue: 0.48))
+            .preferredColorScheme(.dark)
         }
     }
 }
@@ -287,10 +308,14 @@ struct SwapDeck: View {
         ? CGSize(width: 128, height: -18) : .zero
     /// Pendant la volée, plus rien ne répond : une carte à la fois.
     @State private var flying = false
-    @State private var swipes = 0
-
-    /// Au-delà, le doigt a décidé : la carte part.
-    private static let threshold: CGFloat = 96
+    /// La carte qui vient de partir : gardée invisible le temps que la pile
+    /// se réorganise, sinon on la voit retraverser l'écran vers le fond.
+    @State private var vanished: PersistentIdentifier?
+    /// La gerbe en cours, s'il y en a une.
+    @State private var burst: Burst?
+    /// Le dernier grain haptique joué : le moteur se sature si on le nourrit
+    /// à chaque image du geste.
+    @State private var lastTick: Date = .distantPast
 
     /// Les cartes visibles, de la plus profonde à celle du dessus (l'ordre
     /// de rendu). La plus profonde est transparente : c'est là que la carte
@@ -303,64 +328,110 @@ struct SwapDeck: View {
         }
     }
 
-    /// La carte : haute et étroite comme la référence, dimensionnée à la
-    /// main — un `aspectRatio` dans une pile se bat avec la hauteur du
-    /// conteneur et finit par déborder.
-    private static let ratio: CGFloat = 0.80     // largeur / hauteur
-    private static let sinkStep: CGFloat = 22
+    /// La carte, aux mesures de la référence (≈ 207 × 265 pt) : dimensionnée
+    /// à la main — un `aspectRatio` dans une pile se bat avec la hauteur du
+    /// conteneur et finit par déborder — et assez basse pour que la pile,
+    /// ses points ET la barre d'onglets tiennent ensemble à l'écran.
+    static let cardHeight: CGFloat = 265
+    static let cardWidth: CGFloat = 207
+    private static let sinkStep: CGFloat = 20
+    /// La hauteur du bloc : la carte, le recul des suivantes, et un peu d'air.
+    static let deckHeight = cardHeight + sinkStep * 2 + 10
+    /// Où se trouve le centre de la carte du dessus dans le bloc : la pile
+    /// est centrée, et la carte du dessus est remontée d'un cran de recul.
+    static let topCardCenterY = deckHeight / 2 - sinkStep
+    /// La marge où respire la gerbe : les bijoux volent bien au-delà de la
+    /// pile — un shader ne peint que dans son rectangle hôte.
+    private static let burstRoom: CGFloat = 230
+    /// Le geste est décidé au-delà de ce déplacement.
+    private static let threshold: CGFloat = 96
     /// Le banc fige la carte du dessus en plein geste (`-deckSwiped`) : la
     /// suivante doit se lire comme « prête », sans avoir à tenir le doigt.
     private static let benchSwipe = CommandLine.arguments.contains("-deckSwiped")
+    /// `-deckBurst` fige la gerbe à son ouverture, pour la régler au pixel.
+    private static let benchBurst = CommandLine.arguments.contains("-deckBurst")
+    static let benchBurstAge: Float? = CommandLine
+        .arguments.contains("-deckBurst") ? 0.30 : nil
+
+    /// La montée du geste : 0 au repos, 1 quand le doigt a décidé. C'est elle
+    /// qui embrase l'écrin de la carte.
+    private var charge: Float {
+        Float(min(abs(drag.width) / Self.threshold, 1))
+    }
 
     var body: some View {
-        GeometryReader { geo in
-            let w = min(geo.size.width * 0.72, 320)
-            ZStack {
-                ForEach(slots, id: \.workout.persistentModelID) { slot in
-                    card(slot.workout, depth: slot.depth,
-                         size: CGSize(width: w, height: w / Self.ratio))
-                }
+        ZStack {
+            ForEach(slots, id: \.workout.persistentModelID) { slot in
+                card(slot.workout, depth: slot.depth)
             }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
-        .frame(height: UIScreen.main.bounds.width * 0.72 / Self.ratio
-               + Self.sinkStep * 2 + 8)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: swipes)
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.deckHeight)
+        // La gerbe vit AU-DESSUS de la pile et lui survit : hébergée ici, elle
+        // continue de s'ouvrir alors que la carte a déjà quitté l'écran.
+        .overlay {
+            if let burst {
+                SwapBurstLayer(burst: burst, room: Self.burstRoom)
+                    .padding(-Self.burstRoom)
+                    .allowsHitTesting(false)
+            }
+        }
+        .onAppear {
+            guard Self.benchBurst, burst == nil else { return }
+            // Au banc, la carte est au repos : la gerbe part de SON contour.
+            burst = Burst(at: .now, origin: .zero,
+                          way: CGSize(width: 1, height: 0))
+        }
     }
 
     @ViewBuilder
-    private func card(_ workout: Workout, depth: Int, size: CGSize) -> some View {
+    private func card(_ workout: Workout, depth: Int) -> some View {
         let isTop = depth == 0
         let deepest = depth == min(workouts.count, 3) - 1 && workouts.count > 1
+        let gone = workout.persistentModelID == vanished
         // Le recul des cartes de dessous : elles descendent et rétrécissent
         // à peine — juste assez pour dire « il y en a d'autres ».
         let sink = CGFloat(depth) * Self.sinkStep
         let shrink = 1 - CGFloat(depth) * 0.05
 
-        SwapWorkoutCard(workout: workout, seed: Float(depth))
-            .frame(width: size.width, height: size.height)
+        SwapWorkoutCard(workout: workout, seed: Float(depth),
+                        charge: isTop ? charge : 0)
+            .frame(width: Self.cardWidth, height: Self.cardHeight)
+            // SANS ceci, seuls les GLYPHES sont tactiles : la carte est un
+            // vide, le doigt passait au travers et c'est la page qui
+            // scrollait. C'est toute la panne du geste.
+            .contentShape(Rectangle())
             .scaleEffect(isTop ? 1 - min(abs(drag.width), 140) / 2600 : shrink)
             .offset(x: isTop ? drag.width : 0,
-                    y: (isTop ? drag.height * 0.25 : 0) + sink)
+                    y: (isTop ? drag.height * 0.25 : 0) + sink - Self.sinkStep)
             // Le pivot est BAS : la carte bascule dans la main, elle ne
             // tourne pas autour de son nombril.
             .rotationEffect(.degrees(isTop ? Double(drag.width) / 20 : 0),
                             anchor: .bottom)
-            // La carte de fond reste invisible : c'est le siège de celle qui
-            // vient de partir, elle ne doit jamais se voir revenir.
-            .opacity(deepest ? 0 : 1)
+            // La carte de fond reste invisible, et celle qui vient de partir
+            // aussi : ni l'une ni l'autre ne doit se voir revenir.
+            .opacity(deepest || gone ? 0 : 1)
             .zIndex(Double(10 - depth))
-            .animation(.spring(response: 0.42, dampingFraction: 0.78), value: topCard)
+            .animation(.spring(response: 0.46, dampingFraction: 0.80), value: topCard)
             .allowsHitTesting(isTop && !flying)
             .onTapGesture { if isTop { onOpen(workout) } }
-            .gesture(isTop ? swipeGesture(width: size.width) : nil)
+            .gesture(isTop ? swipeGesture() : nil)
     }
 
-    private func swipeGesture(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 8)
+    private func swipeGesture() -> some Gesture {
+        DragGesture(minimumDistance: 6)
             .onChanged { value in
                 guard !flying else { return }
                 drag = value.translation
+                // Le grain sous le doigt : cadencé (plus serré à mesure que
+                // le seuil approche), jamais à chaque image — la trame du
+                // moteur haptique se saturerait et on ne sentirait plus rien.
+                let now = Date()
+                let period = 0.11 - 0.05 * Double(charge)
+                if now.timeIntervalSince(lastTick) > period {
+                    lastTick = now
+                    SwapFeedback.shared.drag(charge: charge)
+                }
             }
             .onEnded { value in
                 guard !flying else { return }
@@ -372,26 +443,95 @@ struct SwapDeck: View {
                     }
                     return
                 }
-                // La volée : la carte sort par le côté qu'a choisi le doigt,
-                // puis la pile tourne d'un cran SANS animation — la carte
-                // partie reprend sa place au fond, invisible.
-                flying = true
-                swipes += 1
-                let side: CGFloat = value.translation.width > 0 ? 1 : -1
-                withAnimation(.easeOut(duration: 0.26)) {
-                    drag = CGSize(width: side * (width + 260),
-                                  height: value.translation.height * 0.5)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
-                    var t = Transaction()
-                    t.disablesAnimations = true
-                    withTransaction(t) {
-                        topCard = (topCard + 1) % max(workouts.count, 1)
-                        drag = .zero
-                    }
-                    flying = false
-                }
+                fly(from: value.translation)
             }
+    }
+
+    /// La volée, et tout ce qui l'accompagne : la gerbe de bijoux s'ouvre à
+    /// l'instant de l'arrachement, le grave monte dans la main, le verre
+    /// sonne — puis la pile se referme sur la suivante.
+    private func fly(from translation: CGSize) {
+        guard let departing = slots.first(where: { $0.depth == 0 })?.workout
+        else { return }
+        flying = true
+        let side: CGFloat = translation.width > 0 ? 1 : -1
+
+        // La gerbe naît là où la carte se trouve À CET INSTANT : les bijoux
+        // sortent de SON contour, pas d'un point abstrait.
+        burst = Burst(at: .now,
+                      origin: CGSize(width: translation.width,
+                                     height: translation.height * 0.25),
+                      way: CGSize(width: side, height: 0))
+        SwapFeedback.shared.swipe()
+
+        withAnimation(.easeOut(duration: 0.46)) {
+            drag = CGSize(width: side * (Self.cardWidth + 420),
+                          height: translation.height * 0.5)
+        }
+        // La carte est hors champ : on la masque, on remet le geste à zéro
+        // sans animation, et la pile monte d'un cran EN ressort.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                vanished = departing.persistentModelID
+                drag = .zero
+            }
+            topCard = (topCard + 1) % max(workouts.count, 1)
+            flying = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
+            vanished = nil
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            burst = nil
+        }
+    }
+}
+
+// MARK: - La gerbe
+
+/// Une gerbe en cours : quand elle est née, d'où elle part (le décalage de
+/// la carte à l'arrachement), et vers où la carte s'en est allée.
+struct Burst: Equatable {
+    let at: Date
+    let origin: CGSize
+    let way: CGSize
+}
+
+/// L'hôte du shader `swapBurst` : un rectangle bien plus large que la pile
+/// (les bijoux volent loin), présent SEULEMENT pendant la gerbe — au repos,
+/// la vue n'existe pas et ne coûte rien.
+struct SwapBurstLayer: View {
+    let burst: Burst
+    let room: CGFloat
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let age = Float(tl.date.timeIntervalSince(burst.at))
+                // Le centre de la carte au moment de l'arrachement, dans le
+                // repère de CETTE couche (élargie de `room` de chaque côté).
+                let cx = geo.size.width / 2 + burst.origin.width
+                let cy = room + SwapDeck.topCardCenterY + burst.origin.height
+                // L'hôte se remplit de BLANC opaque : le shader multiplie sa
+                // sortie par `color.a` — sur un remplissage `.clear`, toute
+                // la gerbe s'annulait sans rien dire.
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.swapBurst(
+                        .float2(geo.size.width, geo.size.height), .float(t),
+                        .float2(Float(cx), Float(cy)),
+                        .float2(Float(SwapDeck.cardWidth / 2),
+                                Float(SwapDeck.cardHeight / 2)),
+                        .float(24),
+                        .float2(Float(burst.way.width), Float(burst.way.height)),
+                        .float(SwapDeck.benchBurstAge ?? age)))
+            }
+        }
+        .blendMode(.plusLighter)
     }
 }
 
@@ -484,9 +624,13 @@ struct SwapWorkoutCard: View {
     let workout: Workout
     /// La phase de la carte : quatre cartes, quatre reflets désynchronisés.
     var seed: Float = 0
+    /// La montée du geste (0 → 1) : l'écrin s'embrase avec elle.
+    var charge: Float = 0
 
-    /// Marge du shader : le souffle doré de l'arête vit à peine dehors.
-    private static let pad: CGFloat = 16
+    /// Marge du shader : au repos le souffle doré de l'arête tient en
+    /// quelques points, mais sous le geste le halo déborde loin — un shader
+    /// ne peint que dans son rectangle hôte.
+    private static let pad: CGFloat = 54
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -494,28 +638,28 @@ struct SwapWorkoutCard: View {
             // d'abord du vide (la référence : un mot en haut, deux mesures
             // en bas, et beaucoup de noir entre les deux).
             Text(title)
-                .font(.inter(21, .medium))
+                .font(.inter(19, .medium))
                 .foregroundStyle(Color.white.opacity(0.92))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             Text(workout.relativeDateLabel)
-                .font(.inter(11.5))
+                .font(.inter(11))
                 .foregroundStyle(Color.white.opacity(0.34))
-                .padding(.top, 6)
+                .padding(.top, 5)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(0.7)
 
-            Spacer(minLength: 24)
+            Spacer(minLength: 20)
 
             HStack(alignment: .top, spacing: 0) {
                 stat("DURÉE", value: "\(Int(workout.duration / 60)) min")
-                Spacer(minLength: 12)
+                Spacer(minLength: 10)
                 stat("EXERCICES", value: "\(workout.orderedExercises.count)")
-                    .frame(width: 96, alignment: .leading)
+                    .frame(width: 72, alignment: .leading)
             }
         }
-        .padding(26)
+        .padding(22)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background { ecrin }
     }
@@ -529,11 +673,11 @@ struct SwapWorkoutCard: View {
     private func stat(_ label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(label)
-                .font(.inter(9, .medium))
-                .tracking(1.6)
+                .font(.inter(8.5, .medium))
+                .tracking(1.3)
                 .foregroundStyle(Color.white.opacity(0.30))
             Text(value)
-                .font(.inter(13.5))
+                .font(.inter(12.5))
                 .foregroundStyle(Color.white.opacity(0.78))
         }
         // Un chiffre ne se plie jamais : « 52 min » est un bloc.
@@ -553,11 +697,105 @@ struct SwapWorkoutCard: View {
                     .frame(width: w, height: h)
                     .colorEffect(ShaderLibrary.swapCard(
                         .float2(w, h), .float(t),
-                        .float(Float(Self.pad)), .float(26), .float(seed)))
+                        .float(Float(Self.pad)), .float(24), .float(seed),
+                        .float(charge)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Le retour du swipe
+
+/// Ce que le corps entend et sent quand une carte s'arrache : un grave qui
+/// ENFLE dans la main (0,6 s — `sensoryFeedback` ne sait faire que des coups
+/// secs, il faut CoreHaptics pour une montée lente), précédé d'un choc net à
+/// l'instant du décollement ; et un verre galactique qui s'ouvre en écho.
+///
+/// Le son est joué en `.ambient` + `mixWithOthers` : jamais par-dessus la
+/// musique de la salle. **Le simulateur ne vibre pas** — la partie haptique
+/// ne se juge que sur l'iPhone.
+final class SwapFeedback {
+    static let shared = SwapFeedback()
+
+    private let player: AVAudioPlayer?
+    private var engine: CHHapticEngine?
+
+    private init() {
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        if let url = Bundle.main.url(forResource: "AuroraSwipe",
+                                     withExtension: "wav") {
+            player = try? AVAudioPlayer(contentsOf: url)
+            player?.prepareToPlay()
+        } else {
+            player = nil
+        }
+
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+        engine = try? CHHapticEngine()
+        engine?.isAutoShutdownEnabled = true
+        // Le moteur peut être arrêté par le système (appel, arrière-plan) :
+        // sans ces deux relances, la vibration disparaît en cours de session.
+        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
+        engine?.stoppedHandler = { _ in }
+        try? engine?.start()
+    }
+
+    func swipe() {
+        if let player {
+            player.volume = 0.34
+            player.currentTime = 0
+            player.play()
+        }
+        rumble()
+    }
+
+    /// Le grain du geste : tant que le doigt pousse, la carte « crisse »
+    /// sous la main — des impulsions minuscules dont la force et la cadence
+    /// montent avec la charge. Le corps sent le seuil approcher avant que
+    /// l'œil ne le voie.
+    func drag(charge: Float) {
+        guard let engine, charge > 0.03 else { return }
+        let tick = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity,
+                                   value: 0.12 + 0.55 * charge),
+            CHHapticEventParameter(parameterID: .hapticSharpness,
+                                   value: 0.25 + 0.35 * charge)
+        ], relativeTime: 0)
+        guard let pattern = try? CHHapticPattern(events: [tick], parameters: []),
+              let player = try? engine.makePlayer(with: pattern) else { return }
+        try? player.start(atTime: CHHapticTimeImmediate)
+    }
+
+    /// Le grave : un choc bref, puis 0,6 s de continu très peu « sharp »
+    /// (donc profond, pas grésillant) dont l'intensité monte en 0,14 s et
+    /// retombe lentement — la carte qui s'arrache, pas un clic.
+    private func rumble() {
+        guard let engine else { return }
+        let strike = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.85),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.42)
+        ], relativeTime: 0)
+        let swell = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.10)
+        ], relativeTime: 0.02, duration: 0.60)
+        let shape = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [
+                .init(relativeTime: 0.00, value: 0.20),
+                .init(relativeTime: 0.14, value: 1.00),
+                .init(relativeTime: 0.36, value: 0.78),
+                .init(relativeTime: 0.60, value: 0.00)
+            ], relativeTime: 0.02)
+
+        guard let pattern = try? CHHapticPattern(events: [strike, swell],
+                                                 parameterCurves: [shape]),
+              let player = try? engine.makePlayer(with: pattern) else { return }
+        try? engine.start()
+        try? player.start(atTime: CHHapticTimeImmediate)
     }
 }
 
