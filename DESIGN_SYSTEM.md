@@ -303,3 +303,52 @@ Le second rôle sous le primaire (« CRÉER UN COMPTE »).
   s'échappent autour (l'effet wahou) ; le liseré se relève (+25 %), les
   pointes scintillent davantage. Même rampe que le primaire (0,30/0,55 s)
   via `DiamondPressStyle`.
+
+## Le cadran éclipse (compteur)
+
+Le chrono d'effort en scène : un disque de velours noir posé sur la nuit,
+QUATRE lumières qui tournent derrière — le disque les occulte, elles le
+couronnent. `EclipseCounter` dans
+[CounterLab.swift](Woop/Views/CounterLab.swift), tout l'arrière dans
+[EclipseHalo.metal](Woop/EclipseHalo.metal) (`eclipseHalo`), banc `-counterLab`
+(+ `-counterPressed` : bouffée figée au pic).
+
+- **Forme** : disque 250 pt, hôte shader avec débord ×0,58 — et un
+  `hostFade` qui fond TOUTE la lumière extérieure dans le noir avant le bord
+  du rectangle : le tap ne doit jamais révéler que le théâtre vit dans un
+  carré (appris à la première démo).
+- **Les quatre voix** (jamais un rapport entier entre les périodes — le
+  mouvement ne boucle pas à l'œil) : la basse (blanc lunaire, large, 47 s),
+  l'alto (or orangé `1.0/0.70/0.33`, serré contre le bord, 29 s,
+  anti-horaire), le soprano (blanc pur, petit et vif, 19 s), le ténor
+  (abricot `1.0/0.78/0.50`, très large, 71 s). Chacune respire à son tempo
+  (5,2–21 s). Étirées LE LONG du cercle (repère radial/tangentiel) : une
+  lueur qui épouse le bord, jamais une « boule floue » (rejet immédiat).
+- **L'éclipse** : occultation nette au bord (`smoothstep` ±2 px) ; la
+  lumière ne déborde JAMAIS dedans. Couronne hairline au bord exact, faible
+  partout, vive face aux voix, accents fbm qui rampent.
+- **Le velours** : noir absolu au centre (le chrono vit là), un souffle de
+  matière près du bord (`pow(r/R,5)`, ≤5 %) teinté par la lumière derrière.
+- **Le chrono** : Inter Light 56 (graisse dédiée, hors du quatuor de
+  Theme.swift — la Regular pèse à cette taille), dégradé blanc → 46 %,
+  chiffres tabulaires. Caption petites capitales 10,5 tracking 3,8 à 30 %.
+- **L'aiguille-balayage** : un fil 1,2 pt qui fait le tour en une minute —
+  tête vive (92 %), queue qui se perd (7 %). Un trait, pas un anneau.
+- **Le TAP — une bouffée, pas un état** : au contact (pas au relâcher),
+  enveloppe attaque 0,10 s / extinction 0,7 s rejouée depuis l'horodatage :
+  onde du toucher qui s'évase du liseré (~0,3 s), voix qui enflent d'un
+  quart, volutes fractales qui GLISSENT vers l'extérieur (le champ est
+  advecté par l'âge de la bouffée, 85 pt/s) puis se dissolvent. La fumée est
+  ÉCLAIRÉE par les voix (loi serrée `cos⁷`) : elle fleurit face aux lumières
+  et se tait dans l'ombre — sinon quatre voix couvrent tout et c'est un
+  donut gris. Les étoiles-bijou intérieures ont été essayées puis retirées
+  (« cheap »).
+- **Le son** : tic minuscule chaque seconde (`DialTick`), un ton plus bas au
+  passage de la minute (`DialTock`), souffle feutré au tap (`DialTap`) —
+  synthétisés (modes résonants amortis + choc filtré, Woop/Sounds), joués en
+  `.ambient` + `mixWithOthers` : le cadran ne coupe jamais la musique de la
+  salle. Vibration du tap : `.impact(flexibility: .soft, intensity: 0.85)`.
+- **Le spotlight de la nuit** (`nightSpotlight`, plein écran sous le cadran) :
+  un pinceau oblique très fin qui descend du haut (~61°, balancement 29 s,
+  respiration 23 s), ~5 % au cœur, dither obligatoire — à cette intensité un
+  dégradé propre bande en escalier sur OLED.
