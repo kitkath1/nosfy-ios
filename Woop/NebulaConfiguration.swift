@@ -70,12 +70,42 @@ enum NebulaConfig {
     /// Seuil de luminance sous lequel la veine n'émet RIEN (le noir reste noir).
     static let veinLumaFloor: Float = 0.055
 
-    /// La VAGUE de distorsion UV qui remonte la veine — warp, jamais overlay.
-    static let warpAmplitude: Float = 4.6      // px écran
-    static let warpWavelength: Float = 220     // px
-    static let warpSpeed: Float = 30           // px/s
-    /// Gain de la copie ondulée de la couche lumineuse (plusLighter).
-    static let warpLayerOpacity: Double = 0.085
+    // MARK: 2 bis. LE FLUX — la matière claire qui COULE le long de la veine
+    //
+    // La passe décisive : la lueur de la photo est échantillonnée avec des UV
+    // DÉPLACÉS le long de la tangente du tracé, donc les filaments, les nœuds
+    // et toutes les nuances de gris se déplacent réellement, chacun à sa
+    // vitesse. Ce n'est pas un voile : c'est la matière qui coule.
+
+    /// Demi-largeur du champ de flux (unités aspect) : au-delà, déplacement
+    /// STRICTEMENT nul. Plus large que la veine émissive, car le flux doit
+    /// couvrir toute la bande claire.
+    static let flowHalfWidth: Float = 0.105
+    /// Gain du micro-détail advecté (canal R de NebulaGlow) et des halos (G).
+    static let flowGain: Float = 0.27
+    static let flowHaloGain: Float = 0.038
+    /// Amplitude de référence du déplacement (px écran). Le déplacement réel
+    /// vaut ampPx × [0,16 … 1,28] × 1,70 selon la luminance et le
+    /// péristaltisme : de 3 à ~28 px, très lent.
+    static let flowAmplitude: Float = 13.5
+    /// Durée d'un trajet complet (s) — 20-40 s, deux couches déphasées.
+    static let flowCycleA: Float = 29
+    static let flowCycleB: Float = 21
+    /// La dilatation PERPENDICULAIRE : la veine gonfle et dégonfle par vagues.
+    static let flowDilation: Float = 4.2       // px (2-6)
+    static let flowDilationCycle: Float = 11   // s (7-14)
+    /// La vague qui remonte le tracé (warp d'UV, jamais un overlay blanc).
+    static let flowWave: Float = 4.6           // px (3-6)
+    static let flowWaveLength: Float = 220     // px
+    static let flowWaveSpeed: Float = 30       // px/s
+    /// Les VAGUES de sheen : deux paquets gaussiens qui remontent le tracé, en
+    /// modulation du champ continu — jamais des bandes empilées.
+    static let flowSheenGain: Float = 0.55
+    static let flowSheenPeriodA: Float = 19
+    static let flowSheenPeriodB: Float = 27.5
+    static let flowSheenWidth: Float = 0.085   // en abscisse curviligne
+    /// Micro-turbulence du champ de direction (2 octaves).
+    static let flowTurbulence: Float = 0.30
 
     /// Les nœuds brillants mesurés sur la photo (position, rayon px image).
     static let knots: [Knot] = [
@@ -101,12 +131,32 @@ enum NebulaConfig {
     /// Respiration des nœuds ordinaires (s) et amplitude.
     static let knotBreathRange: ClosedRange<Double> = 12...25
     static let knotBaseAlpha: Double = 0.042
-    static let pulsarAlpha: Double = 0.062
+    /// Les PULSARS : +12-18 % de lumière, échelle 1,00 → 1,06, 3-5 s DÉPHASÉS.
+    /// Le cœur (un petit disque serré) bat en plus du halo : c'est lui qu'on
+    /// voit battre, le halo ne fait que respirer autour.
+    static let pulsarAlpha: Double = 0.078
     static let pulsarScale: CGFloat = 0.06
+    static let pulsarCoreAlpha: Double = 0.30
+    static let pulsarShape: Double = 2.1        // exposant de la montée
 
-    /// Les vagues blanches qui PARCOURENT la veine (sheen) : périodes (s).
-    static let sheenPeriods: [Double] = [17, 24.5]
-    static let sheenAlpha: Double = 0.028
+    // MARK: 3 bis. Les diamants QUI SE POSENT
+    //
+    // Des éclats qui apparaissent, DÉRIVENT, RALENTISSENT et se posent sur un
+    // point brillant de la veine — comme des étoiles qui viennent se déposer
+    // sur la matière : arrivée en easeOut, immobilisation, éclat un instant,
+    // extinction douce. Aucune explosion, aucune couleur.
+
+    static let landerCount = 13
+    static let landerLife: ClosedRange<Double> = 3.4...7.6
+    /// Part du cycle où l'éclat existe : le reste, il n'y a personne (on reste
+    /// donc sous 14 simultanés).
+    static let landerDuty: Double = 0.72
+    /// Part de la vie consacrée à l'approche (le reste : posé, puis extinction).
+    static let landerApproach: Double = 0.56
+    static let landerTravel: ClosedRange<CGFloat> = 46...118   // pt
+    static let landerCore: ClosedRange<CGFloat> = 0.75...2.0   // rayon pt
+    static let landerSpike: ClosedRange<CGFloat> = 3.5...9.0   // aigrette pt
+    static let landerAlpha: Double = 0.95
 
     // MARK: 3. Particules diamants
 
@@ -164,8 +214,24 @@ enum NebulaConfig {
         init(c: CGPoint, r: CGFloat, prof: String, ridge: String) {
             self.c = c
             self.r = r
-            self.prof = prof.split(separator: ",").compactMap { Double($0) }
-            self.ridge = ridge.split(separator: ",").compactMap { Double($0) }
+            // ⚠️ Les relevés sont LISSÉS angulairement (gaussienne circulaire,
+            // σ ≈ 2 cases = 10°) avant tout usage. Sans ça, le zigzag d'une
+            // case à l'autre traverse le seuil vingt fois de suite et le
+            // liseré se lit comme une CHAÎNETTE PERLÉE — le défaut relevé au
+            // round précédent. Un relevé lissé ne peut plus perler.
+            self.prof = Limb.smoothRing(prof.split(separator: ",").compactMap { Double($0) })
+            self.ridge = Limb.smoothRing(ridge.split(separator: ",").compactMap { Double($0) })
+        }
+
+        static func smoothRing(_ v: [Double]) -> [Double] {
+            guard v.count > 8 else { return v }
+            let k: [Double] = [0.06, 0.24, 0.40, 0.24, 0.06]
+            let n = v.count
+            return (0..<n).map { i in
+                var s = 0.0
+                for (j, w) in k.enumerated() { s += w * v[((i + j - 2) % n + n) % n] }
+                return s
+            }
         }
     }
 
@@ -193,7 +259,13 @@ enum NebulaConfig {
     static let imps: [Imp] = [
         // Le gros du bas-gauche : l'ancre de la scène.
         Imp(eyes: [Eye(c: CGPoint(x: 0.2070, y: 0.8591), len: 26, tilt: 0.520, ratio: 2.23, inward: 1),
-                   Eye(c: CGPoint(x: 0.2637, y: 0.8542), len: 23, tilt: 0.900, ratio: 4.10, inward: -1)],
+                   // Œil droit RECALÉ À LA MAIN après revue visuelle : la mesure
+                   // PCA (ratio 4,10 / tilt 0,900) était polluée par la lueur du
+                   // limbe — elle donnait un œil deux fois moins haut que son
+                   // jumeau et penché à 52°, qui se lisait comme une entaille.
+                   // La perspective 3/4 justifie qu'il soit plus étroit que le
+                   // gauche, pas qu'il soit difforme. NE PAS RE-MESURER.
+                   Eye(c: CGPoint(x: 0.2637, y: 0.8542), len: 23, tilt: 0.700, ratio: 2.85, inward: -1)],
             body: 10,
             limb: Limb(c: CGPoint(x: 0.2075, y: 0.8481), r: 72.0,
                        prof: limbProfBL, ridge: limbRidgeBL),
@@ -250,14 +322,33 @@ enum NebulaConfig {
     /// Le modèle EXACT est l'arête de lumière du bouton primaire
     /// (Theme.swift, WoopPrimaryButtonStyle) : un cheveu blanc dégradé
     /// 0,65 → 0,10 → 0. On le reproduit sur le limbe.
-    static let hairWidth: CGFloat = 1.15          // 1-1,5 pt, pas un anneau
+    static let hairWidth: CGFloat = 1.25          // 1-1,5 pt, pas un anneau
     static let hairAlphaMin: Double = 0.15
-    static let hairAlphaMax: Double = 0.62
-    /// Seuil sur le profil MESURÉ : sous lui, le segment n'existe pas. C'est
-    /// ce qui garantit 40-60 % de circonférence — jamais un cercle fantôme.
-    static let hairRimGate: Double = 0.42
-    /// Bruit angulaire du diamant : période 40-70°.
-    static let hairNoisePeriodDeg: ClosedRange<Double> = 40...70
+    static let hairAlphaMax: Double = 0.68
+    /// Seuil sur le profil MESURÉ : sous lui, le segment n'existe pas.
+    static let hairRimGate: Double = 0.24
+    static let hairRimRamp: Double = 0.26
+    /// La largeur RESPIRE le long de l'arc : × 0,55 à × 1,65, sans périodicité
+    /// perceptible (deux porteuses incommensurables).
+    static let hairWidthSwing: ClosedRange<CGFloat> = 0.55...1.65
+    /// ⚠️ LES TROUS. Trois porteuses de périodes incommensurables (aucun
+    /// rapport simple : la répétition n'est pas perceptible) seuillées dur :
+    /// 30-45 % de la circonférence où le cheveu MEURT complètement, par
+    /// paquets de 20-60°. C'est ce qui tue le « bandeau » et la « chaînette ».
+    static let hairGapPeriodsDeg: [Double] = [137, 89, 211]
+    static let hairGapThreshold: Double = 0.43
+    static let hairGapRamp: Double = 0.16
+    /// Dérive des trous (rad/s) : très lente, ils ne défilent pas.
+    static let hairGapDrift: Double = 0.035
+    /// ⚠️ LA COURONNE ASSOURDIE. Le relevé de la photo est maximal au sommet
+    /// du crâne : y laisser le cheveu à pleine force donne un DIADÈME. On y
+    /// coupe 78 % — le liseré vit alors sur les FLANCS et les joues, là où la
+    /// lumière frise vraiment.
+    static let hairCrownKill: Double = 0.78
+    static let hairCrownWidthDeg: Double = 30
+    /// Prime aux flancs (|cos θ|) et aux joues (moitié basse).
+    static let hairFlankBoost: Double = 0.85
+    static let hairCheekBoost: Double = 0.30
     /// La lumière douce qui PASSE sur la sphère (croissant mobile) : 10-18 s.
     static let sweepPeriod: ClosedRange<Double> = 10...18
     static let sweepWidth: Double = 0.55          // écart-type angulaire (rad)
@@ -271,16 +362,23 @@ enum NebulaConfig {
     static let limbSparkLife: ClosedRange<Double> = 5...10
     static let limbSparkDrift: ClosedRange<CGFloat> = 9...20
 
-    /// La fumée TRÈS NOIRE qui sort des épaules (volutes occultantes).
-    static let smokeAlpha: Double = 0.30
-    static let smokeCycle: ClosedRange<Double> = 22...30
+    /// La fumée TRÈS NOIRE qui sort des épaules (volutes occultantes) : elles
+    /// montent le long du corps et MANGENT les étoiles qu'elles traversent.
+    /// C'est ce passage devant les étoiles qui les rend réelles — donc elles
+    /// doivent monter assez haut pour en croiser.
+    static let smokeAlpha: Double = 0.55
+    static let smokeCycle: ClosedRange<Double> = 17...26
+    static let smokePlumes = 3
+    static let smokeRise: CGFloat = 2.15          // × rayon du limbe
 
     // MARK: 5. Filaments au-dessus des têtes
 
-    static let filamentWidth: ClosedRange<CGFloat> = 0.3...1.3
+    static let filamentWidth: ClosedRange<CGFloat> = 0.3...1.5
     static let filamentCycle: ClosedRange<Double> = 5...12
-    static let filamentAlpha: Double = 0.34
-    static let filamentBlur: CGFloat = 0.8
+    static let filamentAlpha: Double = 0.46
+    static let filamentBlur: CGFloat = 0.7
+    /// Amplitude de la montée : × filamentRise (pt à l'échelle de l'écran).
+    static let filamentRiseSwing: ClosedRange<CGFloat> = 0.62...1.35
 
     // MARK: 6. Les yeux
 
@@ -349,6 +447,37 @@ enum NebulaConfig {
         let a = veinPts[i], b = veinPts[i + 1]
         return CGPoint(x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f)
     }
+
+    /// La distance d'un point (unités image) à la polyligne de la veine, dans
+    /// l'espace corrigé de l'aspect — exactement la même mesure que le shader.
+    static func veinDistance(_ p: CGPoint) -> CGFloat {
+        let a = refSize.width / refSize.height
+        let q = CGPoint(x: p.x * a, y: p.y)
+        var best = CGFloat.greatestFiniteMagnitude
+        for i in 0..<(veinPts.count - 1) {
+            let s = CGPoint(x: veinPts[i].x * a, y: veinPts[i].y)
+            let e = CGPoint(x: veinPts[i + 1].x * a, y: veinPts[i + 1].y)
+            let ab = CGPoint(x: e.x - s.x, y: e.y - s.y)
+            let ap = CGPoint(x: q.x - s.x, y: q.y - s.y)
+            let dd = max(ab.x * ab.x + ab.y * ab.y, 1e-9)
+            let h = min(max((ap.x * ab.x + ap.y * ab.y) / dd, 0), 1)
+            best = min(best, hypot(ap.x - ab.x * h, ap.y - ab.y * h))
+        }
+        return best
+    }
+
+    /// Les POINTS D'ATTERRISSAGE des éclats : les grains les plus brillants
+    /// MESURÉS sur la photo qui se trouvent dans la bande de la veine. Un
+    /// diamant ne peut donc se poser que sur de la matière réellement claire —
+    /// jamais dans le vide, par construction.
+    static let landingSpots: [CGPoint] = {
+        var picks = glimmers
+            .filter { $0.z > 0.115 && veinDistance(CGPoint(x: CGFloat($0.x),
+                                                          y: CGFloat($0.y))) < 0.055 }
+            .map { CGPoint(x: CGFloat($0.x), y: CGFloat($0.y)) }
+        picks.append(contentsOf: knots.map(\.p))
+        return picks
+    }()
 
     /// Hachage déterministe : la scène est identique à chaque lancement.
     static func hash(_ i: Int, _ salt: Double) -> Double {
