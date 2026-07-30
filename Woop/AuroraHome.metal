@@ -126,24 +126,30 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float2 gdir = float2(cos(ga), sin(ga));
     // Un second foyer, opposé et plus faible : la lumière n'a jamais un
     // seul côté mort, elle respire tout autour.
-    float lobe = pow(max(dot(nrm, gdir), 0.0), 2.0)
-                 + 0.42 * pow(max(-dot(nrm, gdir), 0.0), 2.6);
-    float w = 0.26 + 0.74 * lobe;
+    float lobe = pow(max(dot(nrm, gdir), 0.0), 3.0)
+                 + 0.30 * pow(max(-dot(nrm, gdir), 0.0), 3.4);
+    float w = 0.13 + 0.87 * lobe;
 
+    // Dehors : à peine une buée serrée contre l'arête. Le halo derrière la
+    // carte reste un murmure — c'est la retenue qui fait le premium.
     float outside = max(d, 0.0);
-    float reach = 26.0 + 30.0 * charge;
+    float reach = 9.0 + 13.0 * charge;
     float glow = exp(-outside / reach) * smoothstep(-1.2, 1.2, d)
-                 * w * charge * 0.62;
-    // Le dégradé de couleur : blanc chaud contre l'arête, or franc à
-    // mi-course, ambre profond en se perdant — jamais un aplat doré.
+                 * w * charge * 0.20;
     float grad = clamp(outside / (reach * 1.6), 0.0, 1.0);
-    float3 glowCol = mix(mix(float3(1.00, 0.97, 0.91),
-                             float3(1.00, 0.80, 0.38), smoothstep(0.0, 0.5, grad)),
-                         float3(1.00, 0.58, 0.18), smoothstep(0.45, 1.0, grad));
+    float3 glowCol = mix(float3(1.00, 0.96, 0.89),
+                         float3(1.00, 0.74, 0.32), grad);
 
-    // Et la lumière ENTRE dans la carte : le noir mat s'éclaire en dégradé
-    // depuis l'arête, du côté du foyer — comme une lampe posée contre elle.
-    float innerGlow = exp(-max(-d, 0.0) / 34.0) * w * charge * 0.17;
+    // ---- ET C'EST DEDANS QUE LA LUMIÈRE VIT : une nappe qui entre par
+    // l'arête du côté du foyer et se dégrade vers le cœur de la carte —
+    // blanche contre le bord, dorée en s'enfonçant, éteinte bien avant le
+    // centre. Le noir mat reste le sujet ; la lumière le caresse.
+    float inward = max(-d, 0.0);
+    float pool = exp(-inward / 30.0) * 0.82 + exp(-inward / 72.0) * 0.18;
+    float innerGlow = pool * w * charge * 0.30 * inside;
+    float3 innerCol = mix(float3(1.00, 0.98, 0.94),
+                          float3(1.00, 0.82, 0.44),
+                          clamp(inward / 95.0, 0.0, 1.0));
 
     // LE FONDU D'HÔTE : toute la lumière meurt AVANT le bord du rectangle
     // du shader. Sans lui, le halo bute sur le bord et la carte se met à
@@ -186,7 +192,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // jamais un voile, la carte ne doit pas salir l'aurore derrière elle.
     float3 inCol = float3(matte) + light
                    + rimCol * (line * inside * 0.9)
-                   + float3(1.00, 0.90, 0.72) * innerGlow;
+                   + innerCol * innerGlow;
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);
     float aOut = clamp(aRim + aGlow * (1.0 - aRim), 0.0, 1.0);
