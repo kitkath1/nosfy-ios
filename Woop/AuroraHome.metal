@@ -73,7 +73,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
 [[ stitchable ]] half4 swapCard(float2 position, half4 color,
                                 float2 size, float t,
                                 float pad, float radius, float seed,
-                                float charge, float2 pull) {
+                                float charge, float2 pull, float lit) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -152,16 +152,29 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float3 glowCol = mix(float3(1.00, 0.96, 0.89),
                          float3(1.00, 0.74, 0.32), grad);
 
-    // ---- ET C'EST DEDANS QUE LA LUMIÈRE VIT : une nappe qui entre par
-    // l'arête du côté du foyer et se dégrade vers le cœur de la carte —
-    // blanche contre le bord, dorée en s'enfonçant, éteinte bien avant le
-    // centre. Le noir mat reste le sujet ; la lumière le caresse.
-    float inward = max(-d, 0.0);
-    float pool = exp(-inward / 30.0) * 0.82 + exp(-inward / 72.0) * 0.18;
-    float innerGlow = pool * w * charge * 0.30 * inside;
-    float3 innerCol = mix(float3(1.00, 0.98, 0.94),
-                          float3(1.00, 0.82, 0.44),
-                          clamp(inward / 95.0, 0.0, 1.0));
+    // ---- LE NÉON INTÉRIEUR : un tube posé à 8 pt du bord, parallèle au
+    // contour (coins arrondis compris — c'est l'iso-distance `d = -8`, pas
+    // une seconde forme). Éteint au repos ; il s'allume au geste et au tap.
+    //
+    // Trois couches, et l'ordre compte : un CŒUR BLANC très fin, une gaine
+    // ambre, puis une nappe orange qui se perd. C'est la blancheur du cœur
+    // qui fait « lumière » — une bande orange, même épaisse, lit comme un
+    // surligneur. (Même loi que le verre du splash.)
+    float dn = d + 8.0;
+    float an = fabs(dn);
+    // La zone chaude voyage avec le foyer : un tube également brillant sur
+    // tout son tour est mort.
+    float hot = 0.34 + 0.66 * w;
+    float nCore = exp(-an * an / (0.72 * 0.72));
+    float nSheath = exp(-an * an / (2.15 * 2.15));
+    // La nappe baigne surtout l'INTÉRIEUR : c'est elle qui remplace le
+    // dégradé in-card — une seule source de lumière, tout le reste n'est
+    // que sa retombée. Vers le bord, elle est bien plus courte.
+    float nBloom = exp(-an / (dn < 0.0 ? (13.0 + 7.0 * lit) : 5.5));
+    float3 neon = (float3(1.00, 0.99, 0.96) * (nCore * 0.95)
+                   + float3(1.00, 0.78, 0.36) * (nSheath * 0.48)
+                   + float3(1.00, 0.50, 0.14) * (nBloom * 0.125))
+                  * (hot * lit * inside);
 
     // LE FONDU D'HÔTE : toute la lumière meurt AVANT le bord du rectangle
     // du shader. Sans lui, le halo bute sur le bord et la carte se met à
@@ -197,7 +210,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // jamais un voile, la carte ne doit pas salir l'aurore derrière elle.
     float3 inCol = float3(matte) + light
                    + rimCol * (line * inside * 0.9)
-                   + innerCol * innerGlow;
+                   + neon;
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);
     float aOut = clamp(aRim + aGlow * (1.0 - aRim), 0.0, 1.0);

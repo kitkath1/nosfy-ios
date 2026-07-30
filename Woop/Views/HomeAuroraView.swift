@@ -316,6 +316,8 @@ struct SwapDeck: View {
     /// Le dernier grain haptique joué : le moteur se sature si on le nourrit
     /// à chaque image du geste.
     @State private var lastTick: Date = .distantPast
+    /// L'horodatage du toucher : la bouffée du néon intérieur.
+    @State private var tapAt: Date = .distantPast
 
     /// Les cartes visibles, de la plus profonde à celle du dessus (l'ordre
     /// de rendu). La plus profonde est transparente : c'est là que la carte
@@ -403,7 +405,8 @@ struct SwapDeck: View {
     @ViewBuilder
     private var reflection: some View {
         if let top = slots.first(where: { $0.depth == 0 })?.workout {
-            SwapWorkoutCard(workout: top, seed: 0, charge: charge, pull: pull)
+            SwapWorkoutCard(workout: top, seed: 0, charge: charge,
+                            tapAt: tapAt, pull: pull)
                 .frame(width: Self.cardWidth, height: Self.cardHeight)
                 .scaleEffect(x: 1, y: -1)
                 .mask {
@@ -435,6 +438,7 @@ struct SwapDeck: View {
 
         SwapWorkoutCard(workout: workout, seed: Float(depth),
                         charge: isTop ? charge : 0,
+                        tapAt: isTop ? tapAt : .distantPast,
                         pull: pull)
             .frame(width: Self.cardWidth, height: Self.cardHeight)
             // SANS ceci, seuls les GLYPHES sont tactiles : la carte est un
@@ -463,7 +467,17 @@ struct SwapDeck: View {
             .zIndex(Double(10 - depth))
             .animation(.spring(response: 0.46, dampingFraction: 0.80), value: topCard)
             .allowsHitTesting(isTop && !flying)
-            .onTapGesture { if isTop { onOpen(workout) } }
+            // Le toucher allume le tube AVANT d'ouvrir : sans ce court
+            // délai, la navigation emporte la carte et la bouffée ne se
+            // voit jamais.
+            .onTapGesture {
+                guard isTop else { return }
+                tapAt = .now
+                SwapFeedback.shared.tap()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                    onOpen(workout)
+                }
+            }
             .gesture(isTop ? swipeGesture() : nil)
     }
 
@@ -677,6 +691,9 @@ struct SwapWorkoutCard: View {
     var seed: Float = 0
     /// La montée du geste (0 → 1) : l'écrin s'embrase avec elle.
     var charge: Float = 0
+    /// L'horodatage du dernier toucher : le néon intérieur souffle une
+    /// bouffée (0,10 s d'attaque, ~0,45 s d'extinction) puis se rendort.
+    var tapAt: Date = .distantPast
     /// La direction où le doigt tire (unitaire) : le foyer de lumière s'y
     /// masse à mesure que la charge monte.
     var pull: CGSize = CGSize(width: 1, height: 0)
@@ -746,6 +763,12 @@ struct SwapWorkoutCard: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
+                // Le tube est ÉTEINT au repos : il ne vit que du geste et du
+                // toucher. Le tap y souffle une bouffée qui retombe seule.
+                let since = tl.date.timeIntervalSince(tapAt)
+                let pulse = since < 0 ? 0
+                    : Float(min(since / 0.10, 1) * exp(-max(since - 0.10, 0) / 0.45))
+                let neon = max(charge, min(pulse, 1))
                 Rectangle()
                     .fill(.white)
                     .frame(width: w, height: h)
@@ -753,7 +776,8 @@ struct SwapWorkoutCard: View {
                         .float2(w, h), .float(t),
                         .float(Float(Self.pad)), .float(24), .float(seed),
                         .float(charge),
-                        .float2(Float(pull.width), Float(pull.height))))
+                        .float2(Float(pull.width), Float(pull.height)),
+                        .float(neon)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
@@ -805,6 +829,18 @@ final class SwapFeedback {
             player.play()
         }
         rumble()
+    }
+
+    /// Le toucher : un coup net et court — le tube s'allume, rien de plus.
+    func tap() {
+        guard let engine else { return }
+        let click = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.55),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.55)
+        ], relativeTime: 0)
+        guard let pattern = try? CHHapticPattern(events: [click], parameters: []),
+              let player = try? engine.makePlayer(with: pattern) else { return }
+        try? player.start(atTime: CHHapticTimeImmediate)
     }
 
     /// Le grain du geste : tant que le doigt pousse, la carte « crisse »
