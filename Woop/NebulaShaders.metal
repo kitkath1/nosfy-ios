@@ -62,35 +62,56 @@ constant float2 kVein[13] = {
     float2(0.520, 0.96)
 };
 
-/// Renvoie (distance à la veine, abscisse curviligne 0-1, côté signé).
-/// L'espace est corrigé de l'aspect : une distance vaut la même chose en x
-/// et en y, comme sur la photo.
-static float3 veinField(float2 uv, float aspect) {
+/// La longueur curviligne totale du tracé, en unités « aspect » (× la hauteur
+/// pour l'avoir en pixels). Constante : la polyligne ne change pas.
+constant float kVeinLen = 0.89857;
+
+/// LE REPÈRE DE LA VEINE — un champ de distance signée à la polyligne, plus le
+/// repère local. C'est la pièce qui garantit un masque PARFAITEMENT CONTINU :
+/// aucun rectangle, aucun segment empilé, aucun bord droit ne peut en sortir,
+/// puisque tout est fonction d'une distance euclidienne à une courbe.
+///
+///   valeur de retour : la distance (unités aspect) ;
+///   sOut  : l'abscisse curviligne 0-1 (0 = en haut du tracé) ;
+///   tanOut: la tangente unitaire, orientée vers le HAUT du tracé ;
+///   sideOut : +1/−1 selon le côté, pour orienter la normale.
+///
+/// L'espace est corrigé de l'aspect : une distance vaut la même chose en x et
+/// en y, comme sur la photo. Et comme cet espace n'est que l'espace pixel
+/// divisé par la hauteur, une DIRECTION y est aussi une direction en pixels.
+static float veinLookup(float2 uv, float aspect,
+                        thread float &sOut, thread float2 &tanOut,
+                        thread float &sideOut) {
     float2 p = float2(uv.x * aspect, uv.y);
-    float best = 1e9, bestS = 0.0, bestSide = 0.0;
-    float total = 0.0;
-    for (int i = 0; i < 12; ++i) {
-        float2 a = float2(kVein[i].x * aspect, kVein[i].y);
-        float2 b = float2(kVein[i + 1].x * aspect, kVein[i + 1].y);
-        total += length(b - a);
-    }
-    float acc = 0.0;
+    float best = 1e9, bestAcc = 0.0, total = 0.0, bestSide = 1.0;
+    float2 bestT = float2(0.0, -1.0);
     for (int i = 0; i < 12; ++i) {
         float2 a = float2(kVein[i].x * aspect, kVein[i].y);
         float2 b = float2(kVein[i + 1].x * aspect, kVein[i + 1].y);
         float2 ab = b - a, ap = p - a;
-        float seg = length(ab);
-        float h = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-8), 0.0, 1.0);
+        float seg = max(length(ab), 1e-6);
+        float h = clamp(dot(ap, ab) / (seg * seg), 0.0, 1.0);
         float2 r = ap - ab * h;
         float d = length(r);
         if (d < best) {
             best = d;
-            bestS = (acc + h * seg) / max(total, 1e-6);
-            bestSide = (ab.x * r.y - ab.y * r.x) < 0.0 ? -1.0 : 1.0;
+            bestAcc = total + h * seg;
+            bestT = -ab / seg;                 // remonte le tracé
+            bestSide = (bestT.x * r.y - bestT.y * r.x) < 0.0 ? -1.0 : 1.0;
         }
-        acc += seg;
+        total += seg;
     }
-    return float3(best, bestS, bestSide);
+    sOut = bestAcc / max(total, 1e-6);
+    tanOut = bestT;
+    sideOut = bestSide;
+    return best;
+}
+
+/// Renvoie (distance à la veine, abscisse curviligne 0-1, côté signé).
+static float3 veinField(float2 uv, float aspect) {
+    float s, side; float2 T;
+    float d = veinLookup(uv, aspect, s, T, side);
+    return float3(d, s, side);
 }
 
 // MARK: Bruit fractal
@@ -114,6 +135,157 @@ static float2 ncurl(texture2d<half> lut, float2 p, float t) {
     float c = (float)lut.sample(nRep, p + float2(e, 0.0) + float2(-0.021, 0.013) * t).g;
     float d = (float)lut.sample(nRep, p - float2(e, 0.0) + float2(-0.021, 0.013) * t).g;
     return float2((a - b), -(c - d)) * 3.4;
+}
+
+// MARK: - 0. LE FLUX : la matière claire de la photo COULE le long de la veine
+//
+// C'est la passe décisive. Ce n'est PAS un voile qui glisse par-dessus : ce
+// sont les STRUCTURES CLAIRES DE L'IMAGE elles-mêmes — filaments, nœuds,
+// toutes les nuances de gris et de blanc — qui se déplacent, chacune à sa
+// vitesse, tangentiellement au tracé. On échantillonne la couche de lueur avec
+// des UV DÉPLACÉS : glow(uv − flow(uv)·f(t)). Des centaines de micro-détails
+// bougent donc simultanément, et ils épousent forcément la courbure puisque
+// c'est la courbe qui fournit la direction.
+//
+// Quatre exigences tenues ici :
+//
+//  a) RESPIRATION PÉRISTALTIQUE. L'amplitude ET la phase varient le long de
+//     l'abscisse curviligne s (bruit basse fréquence sur s) : un segment
+//     pousse pendant que le suivant retient. S'y ajoute une dilatation
+//     PERPENDICULAIRE minuscule, elle aussi déphasée le long de s — la veine
+//     gonfle et dégonfle par vagues, et sa luminosité suit la dilatation.
+//
+//  b) ANTI-BAVE — le flow-map cycling. Une advection d'UV continue finit par
+//     étirer la texture et claquer au raccord de boucle. On échantillonne donc
+//     DEUX fois, aux phases p et p+0,5, et on mélange par un poids
+//     triangulaire w = |2p − 1| : chaque copie n'est visible qu'au milieu de
+//     sa course, jamais à son raccord. Le flux devient perpétuel, sans bave ni
+//     couture. C'est ce qui sépare « la veine coule » de « l'image glisse ».
+//
+//  c) MICRO-DÉTAIL PRÉSERVÉ. La photo reste affichée NON déplacée et nette à
+//     100 % : cette passe est purement ADDITIVE. L'amplitude reste sous ~25 px
+//     et l'échantillonnage se fait sur la lueur PLEINE RÉSOLUTION en filtrage
+//     linéaire. Deux octaves de micro-turbulence décorrèlent les vitesses de
+//     deux détails voisins — « chaque détail à sa vitesse ».
+//
+//  d) LE NOIR RESTE NOIR. Le masque est un champ de distance signée à la
+//     polyligne : parfaitement continu, feather large, aucun bord droit
+//     possible. L'amplitude est multipliée par ce masque (donc nulle au bord,
+//     sans discontinuité) et par la luminance locale : les nœuds les plus
+//     brillants avancent le plus, le vide n'avance pas du tout.
+//
+// La texture `glow` est construite en amont (NebulaGlow) en espace LINÉAIRE :
+//   R = le micro-détail (masque non-net soustrait : les filaments seuls) ;
+//   G = la composante large — les halos blancs ;
+//   B = la lueur brute.
+
+[[ stitchable ]] half4 nebulaVeinFlow(float2 position, half4 color,
+                                      float2 size, float t, float reveal,
+                                      float4 g0,  // halfWidth, gain, ampPx, haloGain
+                                      float4 g1,  // cycleA, cycleB, dilPx, dilCycle
+                                      float4 g2,  // wavePx, waveLenPx, waveSpeed, sheenGain
+                                      float4 g3,  // sheenPeriodA, sheenPeriodB, sheenWidth, turb
+                                      texture2d<half> glow,
+                                      texture2d<half> field,
+                                      texture2d<half> lut) {
+    float2 sz = max(size, float2(1.0));
+    float2 uv = position / sz;
+    float aspect = sz.x / sz.y;
+
+    float s, side;
+    float2 T;
+    float d = veinLookup(uv, aspect, s, T, side);
+
+    // ---- Le masque : distance signée → rampe lisse. Continu par nature.
+    float hw = max(g0.x, 1e-4);
+    if (d >= hw) { return half4(0.0h); }
+    float mask = 1.0 - smoothstep(hw * 0.28, hw, d);
+    mask = mask * mask * (3.0 - 2.0 * mask);       // C1, aucun bord dur
+    if (mask <= 0.004) { return half4(0.0h); }
+
+    float2 pImg = float2(uv.x * aspect, uv.y);
+    float energy = fieldEnergy(field, uv);
+
+    // ---- La direction : la tangente aux FILAMENTS de la photo, recalée sur
+    // l'axe du tracé (jamais perpendiculaire, jamais verticale uniforme).
+    float2 Tf = fieldTangent(field, uv);
+    if (dot(Tf, T) < 0.0) { Tf = -Tf; }
+    float2 dir = normalize(mix(T, Tf, 0.70) + 1e-6);
+    // Micro-turbulence : deux octaves, statiques en uv (le cycling exige un
+    // champ constant dans le temps) — deux détails voisins ne vont pas à la
+    // même vitesse, ni exactement dans la même direction.
+    // ⚠️ Les échelles restent BASSES (2,1 et 4,3 tuiles) : au-delà, la
+    // turbulence varie d'un pixel à l'autre, deux pixels voisins vont chercher
+    // la lueur à deux endroits sans rapport, et le flux se lit comme un PEIGNE
+    // de striations. À 2,1 tuiles la longueur de corrélation vaut ~25 px : deux
+    // DÉTAILS voisins ont bien des vitesses différentes, deux PIXELS voisins
+    // non.
+    float2 turb = ncurl(lut, pImg * 2.10, 0.0) * (g3.w * 0.66)
+                + ncurl(lut, pImg * 4.30, 0.0) * (g3.w * 0.28);
+    dir = normalize(dir + turb);
+    float2 N = float2(-T.y, T.x) * side;           // la normale au tracé
+
+    // ---- Le péristaltisme : amplitude et phase pilotées par s.
+    float ampS = 0.34 + 1.18 * (float)lut.sample(nRep, float2(s * 2.45 + t * 0.0040, 0.19)).r;
+    float phS  = (float)lut.sample(nRep, float2(s * 1.75, 0.63)).g;
+    float dPh  = (float)lut.sample(nRep, float2(s * 1.28 + 0.21, 0.41)).b * NTAU;
+    float spd  = 0.42 + 1.16 * nfbm(lut, pImg * 2.35, float2(0.0), 2);
+    float enF  = clamp(0.22 + 1.55 * energy, 0.0, 1.60);
+
+    float travel = g0.z * clamp(ampS * spd * enF, 0.16, 1.28) * mask;
+
+    // ---- La dilatation perpendiculaire (2-6 px, 7-14 s, déphasée le long de
+    // s) et la vague qui remonte le tracé (3-6 px, λ ≈ 220 px, ~30 px/s).
+    float dil = sin(t * NTAU / max(g1.w, 1.0) + dPh);
+    float sPx = s * kVeinLen * sz.y;
+    float wave = sin((sPx - t * g2.z) / max(g2.y, 1.0) * NTAU + dPh * 0.5);
+    float2 osc = N * (g1.z * dil * mask + g2.x * wave * mask);
+    float2 uvB = uv - osc / sz;
+
+    // ---- Le flow-map cycling, deux couches (vitesses et amplitudes
+    // différentes) : le mouvement gagne de la profondeur et ne ressemble
+    // jamais à une image qui glisse en bloc.
+    float2 step1 = dir * (travel * 1.70) / sz;
+    float p1 = fract(t / max(g1.x, 1.0) + phS);
+    float w1 = abs(2.0 * p1 - 1.0);
+    half4 a1 = glow.sample(nClamp, uvB - step1 * p1);
+    half4 b1 = glow.sample(nClamp, uvB - step1 * fract(p1 + 0.5));
+
+    float2 step2 = dir * (travel * 0.92) / sz;
+    float p2 = fract(t / max(g1.y, 1.0) + phS * 0.63 + 0.37);
+    float w2 = abs(2.0 * p2 - 1.0);
+    half4 a2 = glow.sample(nClamp, uvB - step2 * p2);
+    half4 b2 = glow.sample(nClamp, uvB - step2 * fract(p2 + 0.5));
+
+    float detail = mix((float)a1.r, (float)b1.r, w1) * 0.60
+                 + mix((float)a2.r, (float)b2.r, w2) * 0.40;
+    float halo   = mix((float)a1.g, (float)b1.g, w1) * 0.60
+                 + mix((float)a2.g, (float)b2.g, w2) * 0.40;
+
+    // ---- Les VAGUES de sheen : deux paquets gaussiens qui REMONTENT le tracé.
+    // Elles modulent le champ continu — elles ne dessinent jamais de bande.
+    float h1 = 1.0 - fract(t / max(g3.x, 1.0));
+    float h2 = 1.0 - fract(t / max(g3.y, 1.0) + 0.41);
+    float e1 = (s - h1) / max(g3.z, 1e-3);
+    float e2 = (s - h2) / max(g3.z * 1.45, 1e-3);
+    float sheen = exp(-e1 * e1) + 0.68 * exp(-e2 * e2);
+
+    // ---- La luminosité suit la dilatation (+8-14 % quand ça gonfle).
+    float swell = 1.0 + 0.12 * dil;
+    // Hors matière, rien : le noir reste noir, absolument. Le plancher est
+    // volontairement TRÈS bas (5 %) — sinon le flux dépose de la lumière
+    // advectée dans le vide et la photo se voile.
+    float near = clamp(0.05 + 2.10 * energy, 0.0, 1.0);
+
+    float emis = (detail * g0.y + halo * g0.w * near)
+               * mask * near * swell * (1.0 + g2.w * sheen) * reveal;
+    // Tramage : la composante large est lisse, elle se quantifierait en
+    // courbes de niveau sur huit bits.
+    emis = clamp(emis + (nhash21(position * 1.11) - 0.5) * 0.0031, 0.0, 1.0);
+    if (emis < 0.0015) { return half4(0.0h); }
+
+    // Noir → gris froid → blanc. Aucune couleur.
+    return half4(half(emis), half(emis * 1.004), half(emis * 1.016), 1.0h);
 }
 
 // MARK: - 1. La veine vivante
@@ -171,7 +343,15 @@ static float2 ncurl(texture2d<half> lut, float2 p, float t) {
 
     // ---- La respiration : la phase est TIRÉE DU BRUIT, donc différente
     // partout — jamais un clignotement global.
-    float ph = nhash21(floor(pImg * 7.0)) * NTAU;
+    //
+    // ⚠️ ICI ÉTAIT LE DÉFAUT DES BANDES RECTANGULAIRES. La phase venait d'un
+    // hash sur floor(pImg × 7) : une CELLULE de 0,143 en y (375 px) et 0,31 en
+    // uv.x (407 px). La respiration était donc constante par pavé et sautait
+    // d'un pavé à l'autre — d'où la pile de bandes horizontales à bords droits
+    // dans une colonne, relevée sur l'image de différence. La phase est
+    // maintenant un ÉCHANTILLONNAGE BILINÉAIRE du bruit : continue partout,
+    // aucun bord droit possible, et les variations restent locales.
+    float ph = (float)lut.sample(nRep, pImg * 0.78 + float2(0.13, 0.71)).r * NTAU;
     float breath = 0.5 + 0.5 * sin(t * NTAU / p1.y + ph);
     float major = 0.5 + 0.5 * sin(t * NTAU / p1.x + ph * 0.37 + 1.7);
 
@@ -186,6 +366,10 @@ static float2 ncurl(texture2d<half> lut, float2 p, float t) {
 
     // Noir → gris froid → blanc : une pointe de bleu très légère dans les
     // valeurs basses, rien de plus. Aucune couleur.
+    // Tramage ±0,4/255 : un champ aussi lisse et aussi sombre se quantifie en
+    // courbes de niveau visibles (le « bois veiné »). Un demi-niveau de bruit
+    // blanc les efface sans rien coûter.
+    emis = max(0.0, emis + (nhash21(position * 1.37) - 0.5) * 0.0031);
     half3 c = half3(half(emis), half(emis * 1.002), half(emis * 1.012));
     return half4(c, 1.0h);
 }
@@ -292,30 +476,6 @@ static float segDist(float2 p, float2 a, float2 b) {
     if (v < 0.003) { return half4(0.0h); }
     // Blanc froid, strictement monochrome.
     return half4(half3(half(v), half(v), half(v * 1.02)), 1.0h);
-}
-
-// MARK: - 3. La vague de distorsion le long de la veine
-//
-// Un WARP DES UV, jamais un voile blanc : ce sont les nuages clairs EUX-MÊMES
-// qui ondulent. Amplitude 3-6 px, λ ≈ 220 px, ~30 px/s qui REMONTE le tracé,
-// et l'amplitude s'éteint dès qu'on s'éloigne de la veine.
-
-[[ stitchable ]] float2 nebulaVeinWave(float2 position, float2 size,
-                                       float t, float4 w0) {
-    // w0 = (amplitude px, longueur d'onde px, vitesse px/s, demi-largeur)
-    float2 sz = max(size, float2(1.0));
-    float2 uv = position / sz;
-    float aspect = sz.x / sz.y;
-    float3 vf = veinField(uv, aspect);
-
-    float near = 1.0 - smoothstep(w0.w * 0.25, w0.w * 2.2, vf.x);
-    if (near <= 0.001) { return position; }
-
-    float phase = (position.y + t * w0.z) / max(w0.y, 1.0) * NTAU;
-    float dx = sin(phase) * w0.x
-             + sin((position.y - t * w0.z * 0.42) / (w0.y * 2.7) * NTAU + 1.1) * w0.x * 0.55;
-    float dy = cos(phase * 0.7 + 0.6) * w0.x * 0.30;
-    return position + float2(dx, dy) * near;
 }
 
 // MARK: - 4. Brume et profondeur

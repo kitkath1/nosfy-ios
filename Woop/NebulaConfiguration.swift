@@ -275,7 +275,7 @@ enum NebulaConfig {
         Imp(eyes: [Eye(c: CGPoint(x: 0.1565, y: 0.3067), len: 19, tilt: 0.703, ratio: 2.22, inward: 1),
                    Eye(c: CGPoint(x: 0.1978, y: 0.3088), len: 16.5, tilt: 0.799, ratio: 2.92, inward: -1)],
             body: 11,
-            limb: Limb(c: CGPoint(x: 0.1620, y: 0.3045), r: 53.0,
+            limb: Limb(c: CGPoint(x: 0.1620, y: 0.3045), r: 50.0,
                        prof: limbProfTL, ridge: limbRidgeTL),
             phase: 2.1, blinkPeriod: 5.6, sleeper: false, gaze: 0.20,
             smoke: true, filaments: 3, filamentRise: 46),

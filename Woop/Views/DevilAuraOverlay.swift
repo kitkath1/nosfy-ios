@@ -84,16 +84,49 @@ struct DevilAuraOverlay: View {
                            y: c.y + CGFloat(sin(ang)) * rr)
         }
 
-        // Le bruit angulaire du diamant : deux porteuses de période 40-70°,
-        // dérive lente. C'est lui qui éteint ~1/3 de l'arc éligible : le
-        // cheveu ne vit jamais sur plus des deux tiers du contour visible.
-        let p1 = NebulaConfig.lerp(NebulaConfig.hairNoisePeriodDeg, NebulaConfig.hash(index, 78))
-        let p2 = NebulaConfig.lerp(NebulaConfig.hairNoisePeriodDeg, NebulaConfig.hash(index, 79))
-        let f1 = 360.0 / p1, f2 = 360.0 / p2
-        func spark(_ ang: Double) -> Double {
-            let a = 0.5 + 0.5 * sin(ang * f1 + t * 0.55 + Double(index) * 2.7)
-            let b = 0.5 + 0.5 * sin(-ang * f2 + t * 0.34 + Double(index) * 5.1)
-            return a * 0.62 + b * 0.38
+        // ---- LES TROUS. Trois porteuses de périodes incommensurables (137°,
+        // 89°, 211° : aucun rapport simple, donc aucune périodicité
+        // perceptible), seuillées dur. Là où `open` vaut 0, le cheveu n'existe
+        // PAS — pas « atténué » : mort. Les paquets morts font 20 à 60°.
+        // Dérive de 0,035 rad/s : ils respirent, ils ne défilent pas.
+        let per = NebulaConfig.hairGapPeriodsDeg
+        let wg = NebulaConfig.hairGapWeights
+        let wSum = wg.reduce(0, +)
+        let phG = (0..<per.count).map { NebulaConfig.hash(index * 4 + $0, 78) * 6.283 }
+        func open(_ ang: Double) -> Double {
+            let d = ang * 180 / .pi + t * NebulaConfig.hairGapDrift * 180 / .pi
+            var acc = 0.0
+            for k in 0..<per.count {
+                let dir: Double = k % 2 == 0 ? 1 : -1
+                acc += wg[k] * (0.5 + 0.5 * sin(dir * d * 2 * .pi / per[k] + phG[k]))
+            }
+            return smooth((acc / wSum - NebulaConfig.hairGapThreshold)
+                          / NebulaConfig.hairGapRamp)
+        }
+        let ph2 = phG[1], ph3 = phG[2]
+        /// La largeur RESPIRE le long de l'arc, sur d'autres porteuses encore.
+        func swell(_ ang: Double) -> CGFloat {
+            let d = ang * 180 / .pi
+            let u = 0.5 + 0.5 * sin(d * 2 * .pi / 73 + ph2 * 1.7)
+            let v = 0.5 + 0.5 * sin(-d * 2 * .pi / 41 + ph3 * 2.3 + t * 0.11)
+            return NebulaConfig.lerp(NebulaConfig.hairWidthSwing, u * 0.65 + v * 0.35)
+        }
+
+        // ---- OÙ le cheveu a le droit de vivre. Le relevé de la photo est
+        // maximal AU SOMMET DU CRÂNE : l'y laisser à pleine force donne un
+        // DIADÈME (le défaut relevé au round précédent). On y coupe donc 78 %,
+        // et l'on prime les FLANCS (|cos θ|) et les JOUES (moitié basse) — là
+        // où la lumière frise vraiment sur une sphère.
+        func place(_ ang: Double) -> Double {
+            let c = cos(ang), s = sin(ang)          // s > 0 = vers le bas
+            var dd = ang + .pi / 2                  // écart au sommet du crâne
+            while dd > .pi { dd -= 2 * .pi }
+            while dd < -.pi { dd += 2 * .pi }
+            let cw = NebulaConfig.hairCrownWidthDeg * .pi / 180
+            let crown = 1 - NebulaConfig.hairCrownKill * exp(-dd * dd / (cw * cw))
+            let flank = 1 - NebulaConfig.hairFlankBoost * (1 - pow(abs(c), 0.85))
+            let cheek = 1 + NebulaConfig.hairCheekBoost * max(0, s)
+            return crown * flank * cheek
         }
 
         // La LUMIÈRE DOUCE QUI PASSE : un croissant large qui traverse le
@@ -102,20 +135,11 @@ struct DevilAuraOverlay: View {
         let sweepC = ((t / sweepT + NebulaConfig.hash(index, 81))
             .truncatingRemainder(dividingBy: 1)) * 2 * .pi
 
-        // ---- 1. LE CHEVEU. Un trait CONTINU de 1,15 pt posé sur la crête
-        // mesurée. Le pas est de 1,25° : à ce rythme les tronçons se
-        // recouvrent largement et l'opacité varie en douceur de l'un à
-        // l'autre — jamais un chapelet de perles, jamais un pointillé.
-        // Les DEUX portes (crête de la photo, bruit angulaire) sont
-        // adoucies : le cheveu s'allume et meurt, il ne clignote pas.
-        let segs = n * 4
-        let dA = 2 * .pi / Double(segs)
         func hairAlpha(_ ang: Double) -> Double {
-            let p = rim(ang)
-            let ramp = smooth((p - NebulaConfig.hairRimGate) / 0.20)
+            let o = open(ang)
+            guard o > 0.001 else { return 0 }
+            let ramp = smooth((rim(ang) - NebulaConfig.hairRimGate) / NebulaConfig.hairRimRamp)
             guard ramp > 0.001 else { return 0 }
-            let gate = smooth((spark(ang) - 0.28) / 0.24)
-            guard gate > 0.001 else { return 0 }
             var dd = ang - sweepC
             if dd > .pi { dd -= 2 * .pi }
             if dd < -.pi { dd += 2 * .pi }
@@ -124,26 +148,75 @@ struct DevilAuraOverlay: View {
             let base = NebulaConfig.hairAlphaMin
                 + (NebulaConfig.hairAlphaMax - NebulaConfig.hairAlphaMin) * pow(ramp, 0.80)
             return min(NebulaConfig.hairAlphaMax,
-                       base * (0.26 + 0.74 * gate) * (0.40 + 0.85 * sweep)) * fade
+                       base * o * place(ang) * (0.45 + 0.80 * sweep)) * fade
         }
-        var prevPt = point(0)
-        var prevA = hairAlpha(0)
-        for s in 1...segs {
-            let ang = Double(s) * dA
-            let pt = point(ang)
-            let a = hairAlpha(ang)
-            let mid = (prevA + a) * 0.5
-            if mid > 0.015 {
-                var arc = Path()
-                arc.move(to: prevPt)
-                arc.addLine(to: pt)
-                edge.stroke(arc, with: .color(.white.opacity(mid)),
-                            style: StrokeStyle(lineWidth: NebulaConfig.hairWidth,
-                                               lineCap: .round))
+
+        // ---- 1. LE CHEVEU, en RUBANS FUSELÉS.
+        //
+        // ⚠️ Pourquoi pas un stroke : des centaines de tronçons de 0,8 pt
+        // empilés en plusLighter voient leurs bouts arrondis se recouvrir, les
+        // alphas s'ajoutent périodiquement, et le liseré se lit comme une
+        // CHAÎNETTE PERLÉE — c'est exactement le défaut relevé au round
+        // précédent. Ici, chaque tronçon VIVANT de l'arc est un ruban FERMÉ,
+        // rempli UNE seule fois : le recouvrement additif est structurellement
+        // impossible. Le ruban naît d'une largeur nulle et meurt d'une largeur
+        // nulle — le cheveu s'allume et s'éteint sans jamais couper net.
+        struct Sample { let p: CGPoint; let n: CGPoint; let a: Double; let ang: Double }
+        let step = 1.5 * .pi / 180
+        let count = Int((2 * Double.pi / step).rounded())
+        var run: [Sample] = []
+
+        func flush() {
+            defer { run.removeAll(keepingCapacity: true) }
+            guard run.count >= 3 else { return }
+            let m = Double(run.count - 1)
+            // Le demi-cheveu au rang i : fuseau nul aux deux bouts (sin^0,65 :
+            // ventre large, pointes fines), largeur qui respire le long de
+            // l'arc, et un peu d'épaisseur là où le rim est vif.
+            func half(_ i: Int) -> CGFloat {
+                let u = Double(i) / m
+                let taper = pow(sin(.pi * u), 0.65)
+                let e = run[i]
+                return NebulaConfig.hairWidth * swell(e.ang) * CGFloat(taper)
+                    * CGFloat(0.40 + 0.60 * e.a / NebulaConfig.hairAlphaMax) * 0.5
             }
-            prevPt = pt
-            prevA = a
+            var ribbon = Path()
+            for i in 0..<run.count {
+                let w = half(i), e = run[i]
+                let p = CGPoint(x: e.p.x + e.n.x * w, y: e.p.y + e.n.y * w)
+                if i == 0 { ribbon.move(to: p) } else { ribbon.addLine(to: p) }
+            }
+            for i in stride(from: run.count - 1, through: 0, by: -1) {
+                let w = half(i), e = run[i]
+                ribbon.addLine(to: CGPoint(x: e.p.x - e.n.x * w, y: e.p.y - e.n.y * w))
+            }
+            ribbon.closeSubpath()
+            // Un SEUL remplissage : aucun recouvrement additif possible, donc
+            // aucune perle. L'opacité du tronçon est sa moyenne pondérée par le
+            // fuseau — les bouts effilés font le reste du dégradé.
+            var num = 0.0, den = 0.0
+            for i in 0..<run.count {
+                let wgt = pow(sin(.pi * Double(i) / m), 0.65) + 0.08
+                num += run[i].a * wgt
+                den += wgt
+            }
+            edge.fill(ribbon, with: .color(.white.opacity(min(1, num / max(den, 1e-6) * 1.22))))
         }
+
+        for k in 0...count {
+            let ang = Double(k) * step
+            let a = hairAlpha(ang)
+            if a > 0.012 {
+                // La normale au contour (radiale) : le ruban a l'épaisseur d'un
+                // cheveu, perpendiculaire à l'arête, comme l'arête du bouton.
+                run.append(Sample(p: point(ang),
+                                  n: CGPoint(x: CGFloat(cos(ang)), y: CGFloat(sin(ang))),
+                                  a: a, ang: ang))
+            } else if !run.isEmpty {
+                flush()
+            }
+        }
+        flush()
 
         // ---- 2. Les GLINTS spéculaires : 2-3 étincelles de 3-5 px qui
         // PARCOURENT l'arc en 8-12 s, avec un streak posé LE LONG de l'arête.
@@ -157,6 +230,7 @@ struct DevilAuraOverlay: View {
             let u = (t / (lap * 0.83) + NebulaConfig.hash(gid, 86))
                 .truncatingRemainder(dividingBy: 1)
             let ga = pow(max(0, sin(.pi * u)), 1.4) * (0.10 + 0.90 * rim(ang))
+                * (0.40 + 0.60 * place(ang))
             guard ga > 0.05 else { continue }
             let gp = point(ang)
             let tx = CGFloat(-sin(ang)), ty = CGFloat(cos(ang))
@@ -181,10 +255,10 @@ struct DevilAuraOverlay: View {
         for k in 0..<12 {
             let fid = index * 20 + k
             let fAng = NebulaConfig.hash(fid, 90) * 6.283
-            guard rim(fAng) > 0.12 else { continue }
+            guard rim(fAng) > 0.12, place(fAng) > 0.30 else { continue }
             let freq = 1.0 + 3.2 * NebulaConfig.hash(fid, 91)
             let tw = pow(0.5 + 0.5 * sin(t * freq + NebulaConfig.hash(fid, 92) * 6.283), 4.0)
-            let fa = 0.55 * tw * (0.10 + 0.90 * rim(fAng)) * fade
+            let fa = 0.55 * tw * (0.10 + 0.90 * rim(fAng)) * place(fAng) * fade
             guard fa > 0.03 else { continue }
             let fp = point(fAng)
             let fr = 0.35 + 0.5 * CGFloat(NebulaConfig.hash(fid, 93))
@@ -237,7 +311,7 @@ struct DevilAuraOverlay: View {
             anchorC = CGPoint(x: (e0.x + e1.x) / 2, y: (e0.y + e1.y) / 2)
             headR = hypot(e1.x - e0.x, e1.y - e0.y) * 1.5
         }
-        let rise = imp.filamentRise * L.scale / 2.2
+        let rise = imp.filamentRise * L.scale
 
         for k in 0..<imp.filaments {
             let fid = index * 7 + k
@@ -248,13 +322,17 @@ struct DevilAuraOverlay: View {
             let alive = sin(.pi * min(1, u * 1.18))
             guard alive > 0.03 else { continue }
 
-            // Le pied : derrière/au-dessus de la tête, jamais deux au même endroit.
-            let spread = (NebulaConfig.hash(fid, 202) - 0.5) * 1.5
+            // Le pied : derrière/au-dessus de la tête, jamais deux au même
+            // endroit. L'écart reste sous ±0,55 rad : au-delà, la mèche naît sur
+            // le FLANC et se lit comme un grand arc qui balaie de côté au lieu
+            // d'une brume qui monte du crâne.
+            let spread = (NebulaConfig.hash(fid, 202) - 0.5) * 1.1
             let footAng = -.pi / 2 + spread
             let foot = CGPoint(x: anchorC.x + CGFloat(cos(footAng)) * headR * 0.94,
                                y: anchorC.y + CGFloat(sin(footAng)) * headR * 0.94)
-            let h = rise * (0.55 + 0.75 * CGFloat(NebulaConfig.hash(fid, 203)))
-            let bend = CGFloat(NebulaConfig.hash(fid, 204) - 0.5) * h * 0.85
+            let h = rise * NebulaConfig.lerp(NebulaConfig.filamentRiseSwing,
+                                             NebulaConfig.hash(fid, 203))
+            let bend = CGFloat(NebulaConfig.hash(fid, 204) - 0.5) * h * 0.50
             let wob = CGFloat(sin(t * (0.30 + 0.34 * NebulaConfig.hash(fid, 205))
                                   + Double(fid) * 1.9)) * h * 0.16
 
@@ -263,28 +341,35 @@ struct DevilAuraOverlay: View {
             let p2 = CGPoint(x: foot.x + bend * 1.05 - wob * 0.7, y: foot.y - h * 0.78)
             let p3 = CGPoint(x: foot.x + bend * 0.72 + wob * 0.4, y: foot.y - h)
 
-            // 16 tronçons : la mèche s'affine et s'éteint vers le bout, sans
-            // qu'aucun dégradé de trait ne soit nécessaire.
-            let steps = 16
-            var prev = p0
-            for s in 1...steps {
-                let v = CGFloat(s) / CGFloat(steps)
-                let pt = bezier(p0, p1, p2, p3, v)
-                let taper = Double(1 - v)
-                let w = NebulaConfig.lerp(NebulaConfig.filamentWidth, Double(1 - v) * 0.9)
-                let a = NebulaConfig.filamentAlpha * alive * pow(taper, 1.35)
-                    * (0.55 + 0.45 * NebulaConfig.hash(fid, 206)) * fade
-                if a > 0.012 {
+            // Quatre tronçons de Bézier, chacun rempli UNE fois, tous dans le
+            // MÊME calque flouté : la mèche s'affine et s'éteint vers le bout
+            // sans qu'aucun bout arrondi ne se recouvre en plusLighter — donc
+            // aucun chapelet, et un seul offscreen par mèche au lieu de seize.
+            let vigor = NebulaConfig.filamentAlpha * alive
+                * (0.62 + 0.38 * NebulaConfig.hash(fid, 206)) * fade
+            guard vigor > 0.012 else { continue }
+            g.drawLayer { layer in
+                layer.addFilter(.blur(radius: NebulaConfig.filamentBlur))
+                layer.blendMode = .normal
+                let chunks = 4, per = 5
+                for c in 0..<chunks {
+                    let v0 = CGFloat(c) / CGFloat(chunks)
+                    let v1 = CGFloat(c + 1) / CGFloat(chunks)
+                    let mid = Double((v0 + v1) / 2)
+                    let taper = pow(1 - mid, 1.25)
+                    let a = vigor * taper
+                    guard a > 0.010 else { continue }
                     var seg = Path()
-                    seg.move(to: prev)
-                    seg.addLine(to: pt)
-                    g.drawLayer { layer in
-                        layer.addFilter(.blur(radius: NebulaConfig.filamentBlur))
-                        layer.stroke(seg, with: .color(.white.opacity(a)),
-                                     style: StrokeStyle(lineWidth: w, lineCap: .round))
+                    for s in 0...per {
+                        let v = v0 + (v1 - v0) * CGFloat(s) / CGFloat(per)
+                        let pt = bezier(p0, p1, p2, p3, v)
+                        if s == 0 { seg.move(to: pt) } else { seg.addLine(to: pt) }
                     }
+                    let w = NebulaConfig.lerp(NebulaConfig.filamentWidth, (1 - mid) * 0.92)
+                    layer.stroke(seg, with: .color(.white.opacity(min(1, a))),
+                                 style: StrokeStyle(lineWidth: w, lineCap: .round,
+                                                    lineJoin: .round))
                 }
-                prev = pt
             }
         }
     }
@@ -299,23 +384,34 @@ struct DevilAuraOverlay: View {
         guard imp.smoke, let limb = imp.limb else { return }
         let c = L.map(limb.c)
         let r = limb.r * L.scale
-        for m in 0..<2 {
-            let id = index * 2 + m
+        for m in 0..<NebulaConfig.smokePlumes {
+            let id = index * 5 + m
             let cycle = NebulaConfig.lerp(NebulaConfig.smokeCycle, NebulaConfig.hash(id, 60))
             let u = ((t + NebulaConfig.hash(id, 61) * cycle) / cycle)
                 .truncatingRemainder(dividingBy: 1)
-            let growth = sin(.pi * u)
+            // Elle naît épaisse au ras de l'épaule, s'étire en montant, se
+            // dissipe en haut : présente, jamais un nuage franc.
+            let growth = sin(.pi * pow(u, 0.75))
             let alpha = NebulaConfig.smokeAlpha * growth * fade
-            guard alpha > 0.02 else { continue }
-            let s: CGFloat = m == 0 ? -1 : 1
-            let sway = CGFloat(sin(t * 0.08 + Double(index) + Double(m) * 2.4)) * r * 0.3
-            let mc = CGPoint(x: c.x + s * r * 0.86 + sway,
-                             y: c.y + r * 0.55 - r * CGFloat(u) * 1.25)
-            let mr = r * (0.34 + 0.42 * CGFloat(growth))
+            guard alpha > 0.015 else { continue }
+            // Deux volutes aux épaules, une qui monte derrière la tête.
+            let s: CGFloat = m == 0 ? -1 : (m == 1 ? 1 : 0.25)
+            let sway = CGFloat(sin(t * 0.11 + Double(index) * 1.7 + Double(m) * 2.4))
+                * r * 0.34
+            let rise = r * NebulaConfig.smokeRise * CGFloat(u)
+            // Elle part de l'épaule et S'ÉCARTE du corps en montant : c'est en
+            // quittant le noir de la sphère qu'elle se met à manger des étoiles.
+            let mc = CGPoint(x: c.x + s * r * (0.90 + NebulaConfig.smokeSpread * CGFloat(u))
+                                + sway * CGFloat(u + 0.3),
+                             y: c.y + r * 0.72 - rise)
+            let mr = r * (0.26 + 0.34 * CGFloat(u))
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: mr * 0.5))
-                layer.fill(Path(ellipseIn: CGRect(x: mc.x - mr, y: mc.y - mr * 0.7,
-                                                  width: mr * 2, height: mr * 1.4)),
+                layer.addFilter(.blur(radius: mr * 0.62))
+                // Une volute effilée, penchée : jamais un rond.
+                layer.translateBy(x: mc.x, y: mc.y)
+                layer.rotate(by: .radians(Double(sway / max(r, 1)) * 0.6))
+                layer.fill(Path(ellipseIn: CGRect(x: -mr * 0.78, y: -mr * 1.25,
+                                                  width: mr * 1.56, height: mr * 2.5)),
                            with: .color(.black.opacity(alpha)))
             }
         }
