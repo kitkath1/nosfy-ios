@@ -32,7 +32,65 @@ struct ObjectiveCardPressStyle: ButtonStyle {
     }
 }
 
-// MARK: - Carte Objectif — verre noir liquide
+// MARK: - La pierre — une passe, tout le bijou
+
+/// Toute la matière de la carte vit dans `objectiveJewel`
+/// (Woop/ObjectiveJewel.metal) : le métal noir et ses griffes révélées par
+/// une lumière rasante, la nébuleuse et ses poussières d'étoiles, le liseré
+/// hairline à lumière inégale et ses éclats de taille. Ici, seulement le
+/// cadrage (marge de débordement pour les halos) et la rampe du toucher —
+/// un paramètre de shader ne s'interpole pas tout seul : on horodate le
+/// basculement et le TimelineView fait la pente.
+private struct JewelSurface: View {
+    var cornerRadius: CGFloat
+    var lit: Bool
+    var warm: Bool
+    var paused: Bool
+
+    /// Marge de débordement : halos et éclats vivent DEHORS, en alpha.
+    private static let pad: CGFloat = 18
+
+    @State private var animStart: Date = .distantPast
+    @State private var wasLit = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width + Self.pad * 2
+            let h = geo.size.height + Self.pad * 2
+
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let raw = min(max(tl.date.timeIntervalSince(animStart) / 0.35, 0), 1)
+                let eased = Float(raw * raw * (3 - 2 * raw))
+                let l = wasLit ? eased : 1 - eased
+
+                Rectangle()
+                    .fill(.white)
+                    .frame(width: w, height: h)
+                    .colorEffect(Self.dithered(ShaderLibrary.objectiveJewel(
+                        .float2(w, h), .float(t),
+                        .float(Float(Self.pad)), .float(Float(cornerRadius)),
+                        .float(l), .float(warm ? 1 : 0))))
+            }
+            .offset(x: -Self.pad, y: -Self.pad)
+        }
+        .allowsHitTesting(false)
+        .onAppear { wasLit = lit }
+        .onChange(of: lit) { _, now in
+            animStart = .now
+            wasLit = now
+        }
+    }
+
+    private static func dithered(_ shader: Shader) -> Shader {
+        var s = shader
+        s.dithersColor = true
+        return s
+    }
+}
+
+// MARK: - Carte Objectif — verre noir liquide (ancienne matière)
 
 /// La lumière sur le verre : voir `objectiveCrest` dans DemonSky.metal.
 /// Une seule passe, en DEMI-résolution (tout y est diffus), composée en
@@ -173,12 +231,18 @@ struct ShimmeringNumber: View {
 
     private var text: Text {
         Text("\(value)")
-            .font(.system(size: size, weight: .bold, design: .rounded))
+            .font(.inter(size, .semibold))
     }
 
     var body: some View {
         text
-            .foregroundStyle(Color.inkPrimary)
+            // Dégradé resserré pour un corps géant : la course verticale d'un
+            // chiffre de 34 pt ferait finir silverText en gris moyen sur du
+            // métal gris — le chiffre garde sa densité jusqu'à la base.
+            .foregroundStyle(
+                LinearGradient(colors: [.white, .white.opacity(0.78)],
+                               startPoint: .top, endPoint: .bottom)
+            )
             .contentTransition(.numericText())
             .overlay {
                 if !reduceMotion {
@@ -233,48 +297,15 @@ struct ObjectiveGlassCard<Content: View>: View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.init(top: 20, leading: 22, bottom: 24, trailing: 22))
-            .background {
-                ZStack {
-                    // Liquid Glass NATIF, teinté vers le noir : du verre fumé,
-                    // pas une vitre claire. Le ciel derrière la carte se
-                    // réfracte dedans — au scroll, le fond glisse et se
-                    // reflète dans le verre ; `interactive()` ajoute la
-                    // réponse tactile native du matériau. Aucun fill opaque :
-                    // il tuerait la réfraction.
-                    Color.clear
-                        .glassEffect(.regular.tint(Color.black.opacity(0.55)).interactive(),
-                                     in: shape)
-
-                    GlassLight(paused: paused)
-                        .clipShape(shape)
-                        .blendMode(.plusLighter)
-
-                    WoopGrain(density: 0.05, lightAlpha: 0.022, darkAlpha: 0.032)
-                        .clipShape(shape)
-
-                    // Épaisseur du verre : un second fil INSCRIT, très faible,
-                    // et un souffle de lumière sous le bord haut — c'est ce
-                    // qui sépare une plaque noire d'un verre taillé.
-                    shape.inset(by: 1.5)
-                        .stroke(
-                            LinearGradient(
-                                stops: [.init(color: .white.opacity(0.07), location: 0.0),
-                                        .init(color: .white.opacity(0.015), location: 0.35),
-                                        .init(color: .clear, location: 1.0)],
-                                startPoint: .top, endPoint: .bottom),
-                            lineWidth: 1)
-                    shape.fill(
-                        LinearGradient(
-                            stops: [.init(color: .white.opacity(0.030), location: 0.0),
-                                    .init(color: .clear, location: 0.22)],
-                            startPoint: .top, endPoint: .bottom))
-                }
-            }
-            .overlay { GlassBorder(cornerRadius: cornerRadius, achieved: achieved,
-                                   lit: pressed) }
+            // Toute la matière en UNE passe : métal noir griffé, nébuleuse,
+            // liseré hairline à éclats. Le Liquid Glass natif a été essayé et
+            // abandonné ici — teinté vers le noir il grisait la pierre, et sa
+            // réfraction contredisait la lecture « bijou serti ».
+            .background { JewelSurface(cornerRadius: cornerRadius, lit: pressed,
+                                       warm: achieved, paused: paused) }
             .contentShape(shape)
             // Hors écran, le verre s'endort — même dégradation sans risque
-            // que MistyMetalSurface (hors ScrollView la valeur reste à true).
+            // que MistyDiamondSurface (hors ScrollView la valeur reste à true).
             .onScrollVisibilityChange(threshold: 0.02) { visible in
                 onScreen = visible
             }

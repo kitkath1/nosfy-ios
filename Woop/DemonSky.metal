@@ -147,8 +147,12 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     // échange, pour un vrai blanc cramé localisé.
     float reach = 1.0 + 0.20 * sin(ph * 10.0 + 0.9)
                       + 0.08 * sin(ph * 23.0 + 2.2);
-    float coreI = 9.0 * exp(-d * d * 9.0)
-                + 0.09 / (d * d + 0.010) * exp(-d * 3.4 / reach);
+    // Réglage nuit : pic resserré, halo affaibli et fenêtre plus courte —
+    // le blanc reste TAPI dans l'angle au lieu de laver le flanc gauche.
+    // Seules les intensités changent : dérives, marées et respirations
+    // gardent exactement leurs horloges.
+    float coreI = 5.0 * exp(-d * d * 14.0)
+                + 0.026 / (d * d + 0.010) * exp(-d * 6.8 / reach);
     // Vacillement : une source réelle n'est jamais parfaitement constante.
     // ±7 % par trois ondes incommensurables (≈7 s, 47 s, 180 s) — clairement
     // vivant en vision périphérique, jamais mécanique.
@@ -237,8 +241,8 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     // proches du souffle s'embrasent en bloc — la bande de transition de la
     // référence), et le rim directionnel (bords embrasés côté cœur).
     float cloudE = darkCore
-                 * (0.010 * cloud
-                    + (coreI * 0.27 + 1.8 * rim * saturate(coreI)) * pow(cloud, 1.4));
+                 * (0.008 * cloud
+                    + (coreI * 0.15 + 1.10 * rim * saturate(coreI)) * pow(cloud, 1.4));
     float filM = smoothstep(0.08, 0.30, dens);   // les filaments naissent en
                                                  // lisière de matière
 
@@ -266,7 +270,7 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     float m1 = (float)lut.sample(kLut, p * float2(5.4, 4.4) + w * 0.72 + float2( -4.0, 28.0) * tn).g;
     float m2 = (float)lut.sample(kLut, p * float2(11.0, 9.0) + w * 0.48 + float2(0.53, 0.21) + float2(  7.0, 40.0) * tn).r;
     float mist = smoothstep(0.40, 0.88, m1 * 0.52 + m2 * 0.36);
-    float mistE = mist * mistMask * 0.27 * gust;
+    float mistE = mist * mistMask * 0.11 * gust;
 
     // Les wisps ridgés portent les filaments (crêtes fines ramifiées) ; le
     // kaliset n'est plus qu'une respiration fractale du halo.
@@ -288,9 +292,9 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     // ça, l'additif rebouche les morsures noires et la profondeur disparaît.
     float biteAll = mix(0.30, 1.0, Tclouds);
     float E = coreI * Tclouds * (0.82 + 0.36 * fil)
-            + 3.4 * wisp * glowFall * filM
+            + 1.9 * wisp * glowFall * filM
             + cloudE
-            + (mistE + boil * band * gust2 * coreI * 0.40) * biteAll;
+            + (mistE + boil * band * gust2 * coreI * 0.20) * biteAll;
 
     // Micro-texture des hautes lumières : une octave fine active seulement
     // dans le clair — la différence entre un dégradé d'ordinateur et une
@@ -300,7 +304,7 @@ static float3 meteor(float2 pos, float2 sz, float t) {
 
     // La nuit tombe du haut : rampe verticale explicite — le noir monte
     // depuis le haut et descend plus bas dans l'écran.
-    E *= mix(0.18, 1.0, smoothstep(0.10, 0.95, uv.y));
+    E *= mix(0.14, 1.0, smoothstep(0.10, 0.95, uv.y));
 
     // Voile de la voûte : une lueur infime et informe (réutilise q, gratuit).
     // Elle n'existe QUE pour être dévorée : les masses noires qui la
@@ -308,7 +312,7 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     // Voile calibré à rebours pour L15/255 en sortie de chaîne : une pénombre
     // VISIBLE sur OLED. (Le 0.040 d'avant atterrissait à L11 — les fumées
     // dévoraient un noir déjà noir, sous le plancher de la dalle.)
-    E += 0.062 * (0.7 + 0.6 * q.x) * smoothstep(0.95, 0.20, uv.y);
+    E += 0.040 * (0.7 + 0.6 * q.x) * smoothstep(0.95, 0.20, uv.y);
     E *= Ttop;   // les masses noires avalent le voile et tout ce qui est derrière
     // Liseré fantôme sur les bords des fumées (maximal à mi-densité).
     E += 0.034 * pow(4.0 * topCloud * (1.0 - topCloud), 2.0)
@@ -321,9 +325,14 @@ static float3 meteor(float2 pos, float2 sz, float t) {
               + (float)lut.sample(kLut, pf * 2.00 + w * 0.40 + float2(0.47, 0.09) + float2(-18.0, 13.0) * tn).r * 0.45;
     float fumeRim = clamp((tc1 * 0.75 + tc2 * 0.45 - tcr) * 20.0, 0.0, 1.0);
     E += 0.035 * fumeRim * fumeRim * topMask * (1.0 - Ttop);
-    // Protection de la tab bar : roll-off dans les 10 % inférieurs, HORS
+    // Protection de la tab bar : roll-off dans les 12 % inférieurs, HORS
     // hotspot bas-gauche — les libellés reposent sur du fumé, pas du lait.
-    E *= 1.0 - 0.50 * smoothstep(0.90, 1.0, uv.y) * smoothstep(0.25, 0.50, uv.x);
+    // Fenêtre élargie et plus mordante depuis le réglage nuit : le bas de
+    // l'écran doit rester de la pénombre, le blanc n'y est qu'un souffle.
+    E *= 1.0 - 0.58 * smoothstep(0.88, 1.0, uv.y) * smoothstep(0.15, 0.45, uv.x);
+    // Coin bas-gauche : même sous le hotspot, la barre pose sur du fumé —
+    // une atténuation DOUCE (le souffle reste, le lait s'en va).
+    E *= 1.0 - 0.30 * smoothstep(0.88, 1.0, uv.y) * (1.0 - smoothstep(0.10, 0.40, uv.x));
 
     // ---- Teinte thermique -----------------------------------------------------
     // La structure vit dans la luminance ; la chromie n'est qu'un mix ±3.5 %.
@@ -338,7 +347,7 @@ static float3 meteor(float2 pos, float2 sz, float t) {
     // Révélation : à l'apparition de l'écran, l'exposition monte de −1.5 EV
     // à 0 en ~2 s — le ciel révèle ses détails comme des yeux qui
     // s'habituent à l'obscurité. `reveal` arrive déjà lissé (smoothstep).
-    float exposure = 1.12 * (0.35 + 0.65 * reveal);
+    float exposure = 0.88 * (0.35 + 0.65 * reveal);
     float3 L = E * tint;
     float3 c = 1.0 - exp(-exposure * L);
     // Toe QUADRATIQUE : même noir OLED final, mais raccord C1 — la version
@@ -600,8 +609,8 @@ static float3 starLayer(float2 pos, float t, float cellPt, float density,
     // blanc qu'on voit, et le rai qui balaie allume la poussière).
     float reach = 1.0 + 0.20 * sin(ph * 10.0 + 0.9)
                       + 0.08 * sin(ph * 23.0 + 2.2);
-    float coreI = 9.0 * exp(-d * d * 9.0)
-                + 0.09 / (d * d + 0.010) * exp(-d * 3.4 / reach);
+    float coreI = 5.0 * exp(-d * d * 14.0)
+                + 0.026 / (d * d + 0.010) * exp(-d * 6.8 / reach);
     float wash = saturate(1.0 - coreI * 0.40);
     // Luminance de fond estimée : chaque population de poussière a sa zone —
     // la fine dans le noir, la liaison jusqu'aux gris moyens, les motes du
@@ -659,6 +668,107 @@ static float3 starLayer(float2 pos, float t, float cellPt, float density,
         s += starLayer(position + tilt * 92.0, t,  30.0, 0.35,  4.5, 0.90, float2(77.3, 41.9),
                        g3, 3.0, float2(5.0, 2.0), 0.12, false, false, 1.0, 2.4, reveal)
            * beam * TcS;
+    }
+
+    // ---- Nébuleuse haut-droite ----------------------------------------------
+    // La référence n'est PAS un nuage de points : c'est un mur de gaz
+    // FILAMENTEUX qui descend du coin haut-droit — un réseau de veines
+    // ramifiées, creusé de voies sombres, à peine saupoudré de piqûres
+    // d'argent. La structure vient d'un ridged multifractal (1-|2n-1| :
+    // les zéros du bruit deviennent des CRÊTES fines et branchues) évalué
+    // dans le repère du filament, donc étiré le long de son cours.
+    // Tout est périodique sur 900 s comme le reste du ciel.
+    float2 cA = float2(0.95 * aspect, 0.030);
+    float2 cB = float2(0.60 * aspect, 0.345);
+    float2 cab = cB - cA;
+    float2 dirn = normalize(cab);
+    float2 nrm = float2(-dirn.y, dirn.x);
+    float u = dot(p - cA, dirn) / length(cab);      // 0 en tête, 1 en queue
+    // Le cours serpente : un filament rectiligne trahirait le procédé.
+    float meander = ((float)lut.sample(kLut, float2(u * 1.3, 0.31)
+                                             + float2(2.0, -1.0) * tn).g - 0.5) * 0.070;
+    float v = dot(p - cA, nrm) - meander * sin(u * 3.14159);
+    // Enveloppe : serrée en tête, évasée en queue, éteinte aux deux bouts.
+    float halfW = mix(0.020, 0.070, u);
+    float env = exp(-v * v / (halfW * halfW))
+              * smoothstep(0.0, 0.09, u) * (1.0 - smoothstep(0.52, 1.02, u))
+              * (1.0 + 0.10 * sin(ph * 14.0 + 3.3));   // respire à peine (~64 s)
+    if (env > 0.002) {
+        float occ = mix(1.0, T, 0.35);
+        // Repère du filament, anisotrope : les veines s'étirent le long du
+        // cours au lieu de former des taches rondes.
+        float2 fp = float2(u * 5.4, v * 26.0);
+        // Warp : la matière se tord sur place, elle ne défile jamais.
+        float2 wq = float2(
+            (float)lut.sample(kLut, fp * 0.5 + float2( 3.0, -2.0) * tn).r,
+            (float)lut.sample(kLut, fp * 0.5 + float2(0.37, 0.11)
+                                             + float2(-2.0, 3.0) * tn).g) - 0.5;
+        fp += wq * 0.60;
+        float g1 = 1.0 - fabs(2.0 * (float)lut.sample(kLut, fp
+                    + float2( 4.0, -3.0) * tn).r - 1.0);
+        float g2 = 1.0 - fabs(2.0 * (float)lut.sample(kLut, fp * 2.1
+                    + float2(0.29, 0.63) + float2(-5.0, 4.0) * tn).g - 1.0);
+        float g3 = 1.0 - fabs(2.0 * (float)lut.sample(kLut, fp * 4.3
+                    + float2(0.71, 0.17) + float2( 7.0, -6.0) * tn).r - 1.0);
+        float ridge = g1 * 0.52 + g2 * 0.31 + g3 * 0.17;
+        // Puissance élevée : seules les crêtes survivent. Les vallées
+        // deviennent les voies sombres — c'est ce qui garde la médiane
+        // NOIRE entre les veines (la photo est à 5/255, pas à 13).
+        float veins = pow(saturate(ridge * 1.10 - 0.10), 4.0);
+        s += float3(0.94, 0.97, 1.03) * veins * env * 0.80 * occ * reveal;
+
+        // La poudre : piqûres sub-pixel qui vivent DANS le gaz (une
+        // nébuleuse est poussiéreuse là où elle est dense, pas partout).
+        float2 fg = (position + tilt * 48.0) / 3.0;
+        float4 hf = hash42(floor(fg) + 133.7);
+        float2 dpf = (fract(fg) - (0.5 + 0.40 * (hf.zw * 2.0 - 1.0))) * 3.0;
+        float kf = 120.0 + floor(hf.y * 300.0);
+        float twf = 0.30 + 0.70 * (0.5 + 0.5 * sin(PH * kf * t + hf.w * TAU));
+        float inGas = env * (0.18 + 0.82 * smoothstep(0.015, 0.30, veins));
+        s += float3(0.95, 0.97, 1.04)
+           * exp(-dot(dpf, dpf) / 0.22) * step(hf.x, 0.80) * twf
+           * mix(0.06, 0.85, pow(fract(hf.y * 9.1), 3.2))
+           * inGas * occ * reveal;
+
+        // Les piqûres d'argent : rares, SURPILOTÉES — la sortie étant
+        // écrêtée à 1.0, une amplitude > 1 ne grossit rien, elle donne un
+        // cœur blanc pur de 1-2 px à flancs raides. C'est la signature de
+        // la photo (des pics à 255 sur ~2 px), inatteignable sous le seuil.
+        float2 sgrid = (position + tilt * 60.0) / 7.0;
+        float4 hs = hash42(floor(sgrid) + 71.3);
+        float2 dp2 = (fract(sgrid) - (0.5 + 0.42 * (hs.zw * 2.0 - 1.0))) * 7.0;
+        float kk = 160.0 + floor(hs.y * 240.0);
+        float tw = 0.35 + 0.65 * (0.5 + 0.5 * sin(PH * kk * t + hs.w * TAU));
+        float amp = mix(0.16, 2.4, pow(fract(hs.y * 7.7), 3.8));
+        s += float3(0.95, 0.97, 1.04)
+           * exp(-dot(dp2, dp2) / 0.30) * step(hs.x, 0.55) * tw * amp
+           * inGas * occ * reveal;
+
+        // Les ÉCLATS-DIAMANT du bouton primaire : très rares (la photo n'en
+        // montre qu'une poignée), cœur qui pique au blanc, croix courte qui
+        // fleurit au pic du flash puis se referme.
+        float2 gpos = position + tilt * 56.0;
+        float2 idd = floor(gpos / 20.0);
+        for (int oy = -1; oy <= 1; oy++)
+        for (int ox = -1; ox <= 1; ox++) {
+            float2 idn = idd + float2(ox, oy);
+            float4 hd = hash42(idn * 2.71 + 37.9);
+            if (hd.x > 0.45) { continue; }
+            float2 cd = (idn + 0.5 + (hd.yz - 0.5) * 0.7) * 20.0;
+            float twk = max(0.0, sin(PH * (200.0 + floor(hd.y * 260.0)) * t
+                                     + hd.z * TAU));
+            twk = pow(twk, 6.0);
+            if (twk < 0.01) { continue; }
+            float2 dd = gpos - cd;
+            float rayLen = 0.9 + 2.2 * twk;
+            float dcore = exp(-dot(dd, dd) / (0.30 * 0.30));
+            float rayH = exp(-dd.y * dd.y / (0.20 * 0.20)
+                             - dd.x * dd.x / (rayLen * rayLen));
+            float rayV = exp(-dd.x * dd.x / (0.20 * 0.20)
+                             - dd.y * dd.y / (rayLen * rayLen));
+            s += float3(0.97, 0.98, 1.03) * (dcore + (rayH + rayV) * 0.55)
+               * twk * 1.9 * inGas * occ * reveal;
+        }
     }
 
     // Étoile filante : rare, déterministe, au-dessus du wash (elle brûle dans
