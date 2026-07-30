@@ -40,9 +40,12 @@ static float4 ahash42(float2 p) {
 // nœuds, densité d'étoiles) se déduit de ces deux coordonnées.
 static float2 veinCoord(float2 p, float aspect, float ph) {
     float y = p.y;
-    float xc = (0.50 + (y - 0.5) * 0.26
-                + 0.055 * sin(y * 4.2 + 1.3)
-                + 0.014 * sin(ph * 2.0 + y * 2.6)) * aspect;
+    // Centreline AJUSTÉE sur la photo (quartique, moindres carrés sur les
+    // centroïdes de luminance par bande) : entre en haut vers x 0.49, bombe à
+    // droite vers y 0.35 (x 0.54), redescend à GAUCHE vers y 0.8 (x 0.42),
+    // remonte à peine au bord bas. Plus l'ondulation lente de la boucle.
+    float xf = 0.4691 + y * (0.2728 + y * (0.7272 + y * (-3.5078 + y * 2.5808)));
+    float xc = (xf + 0.014 * sin(ph * 2.0 + y * 2.6)) * aspect;
     return float2((p.x - xc) * 0.92, y);
 }
 
@@ -70,7 +73,9 @@ static float2 veinCoord(float2 p, float aspect, float ph) {
     float o2 = (float)lut.sample(aLut, p * 2.30 + w * 0.26 + float2(0.37, 0.71) + float2( -9.0,   6.0) * tn).g * 0.30;
     float o3 = (float)lut.sample(aLut, p * 4.70 + w * 0.15 + float2(0.61, 0.13) + float2( 15.0, -11.0) * tn).r * 0.15;
     float dens = o1 + o2 + o3;
-    float mist = smoothstep(0.30, 0.95, dens);
+    // Seuil haut : la majorité du champ reste un noir PUR (référence : fond
+    // médiane 0, max 13) — la brume n'existe qu'aux abords de la veine.
+    float mist = smoothstep(0.52, 1.05, dens);
 
     // ---- La veine : enveloppe à largeur VIVANTE (paquets et étranglements),
     // striations ridgées étirées le long de l'axe, nœuds brillants rares.
@@ -79,10 +84,17 @@ static float2 veinCoord(float2 p, float aspect, float ph) {
     float widthV = mix(0.050, 0.165, wmod * wmod);
     float env = exp(-vc.x * vc.x / (widthV * widthV));
 
-    // Le bras secondaire : plus étroit, plus faible, décalé — une nébuleuse
-    // n'a jamais une seule veine.
-    float xc2 = vc.x - 0.19;
-    float env2 = exp(-xc2 * xc2 / 0.0036) * 0.38;
+    // Le bras secondaire : la FOURCHE de la photo — un bras qui quitte la
+    // jonction (~y 0.46) vers le haut-GAUCHE et meurt vers y 0.13.
+    float xarm = (0.505 - (0.47 - uv.y) * 0.55) * aspect;
+    float dxa = (p.x - xarm) * 0.92;
+    float armW = smoothstep(0.48, 0.41, uv.y) * smoothstep(0.10, 0.20, uv.y);
+    float env2 = exp(-dxa * dxa / 0.0032) * 0.42 * armW;
+
+    // Le foyer : le nid granuleux et brillant au PIED de la veine (y ~0.84
+    // sur la centreline) — la zone la plus lumineuse de la photo.
+    float foyer = exp(-vc.x * vc.x / 0.004)
+                * exp(-(uv.y - 0.84) * (uv.y - 0.84) / 0.010);
 
     // Striations : du ridged (crêtes fines) dans un repère ALLONGÉ le long de
     // l'axe — la matière file avec la veine, elle ne la traverse jamais.
@@ -100,22 +112,24 @@ static float2 veinCoord(float2 p, float aspect, float ph) {
     float a1 = (float)lut.sample(aLut, p * 0.90 + w * 0.60 + float2(0.19, 0.57) + float2(  8.0,  -5.0) * tn).g;
     float a2 = (float)lut.sample(aLut, p * 2.00 + w * 0.35 + float2(0.47, 0.09) + float2(-10.0,   7.0) * tn).r;
     float hole = smoothstep(0.55, 0.90, a1 * 0.70 + a2 * 0.50);
-    float Tv = exp(-2.6 * hole);
+    float Tv = exp(-1.9 * hole);
 
     // ---- Émission : tout reste un murmure. La brume se densifie près de la
     // veine (c'est une seule matière), la veine porte les striations et les
     // nœuds, les morsures avalent le tout.
     // Gains calibrés À TRAVERS la compression filmique (le toe divise par
-    // ~2,5) : corps du filament visé à ~35-45/255, nœuds à ~60-90, brume
-    // hors veine ≤ 6/255. Les valeurs précédentes mouraient sous le seuil.
+    // ~2,5) sur l'étalon de la photo : corps du filament médiane ~29/255,
+    // p90 ~51, nœuds ~90-120, brume hors veine ≤ 6/255. Le foyer perce les
+    // morsures (il est DEVANT elles dans la photo).
     float veinE = (env + env2)
-                * (0.080 + 0.320 * ridge + 0.160 * ridge2 + 0.450 * knot * ridge);
-    float E = mist * 0.130 * (0.55 + 0.85 * (env + env2))
-            + veinE * Tv;
+                * (0.095 + 0.50 * ridge + 0.26 * ridge2 + 0.60 * knot * ridge)
+                + foyer * (0.06 + 0.30 * ridge2 + 0.60 * knot);
+    float E = mist * 0.026 * (0.15 + 1.90 * (env + env2))
+            + veinE * mix(Tv, 1.0, 0.35 * foyer);
 
     // Micro-texture des demi-tons : l'émulsion, pas le dégradé.
     float o4 = (float)lut.sample(aLut, p * 12.0 + w * 0.10 + float2(0.07, 0.43) + float2(13.0, -10.0) * tn).g;
-    E *= 1.0 + (o4 - 0.5) * 0.35 * smoothstep(0.03, 0.45, E);
+    E *= 1.0 + (o4 - 0.5) * 0.50 * smoothstep(0.03, 0.45, E);
 
     // ---- Compression filmique, exposition liée à la révélation.
     float exposure = 1.15 * (0.35 + 0.65 * reveal);
@@ -196,12 +210,20 @@ static float astarLayer(float2 pos, float t, float cellPt, float density,
     float2 wp = float2(qq - 0.5, 0.5 - qq) * 0.9;
     float dens = (float)lut.sample(aLut, p * 1.05 + wp * 0.42 + float2( 6.0, -3.0) * tn).r * 0.55
                + (float)lut.sample(aLut, p * 2.30 + wp * 0.26 + float2(0.37, 0.71) + float2(-9.0,  6.0) * tn).g * 0.30;
-    float T = exp(-1.6 * smoothstep(0.40, 0.95, dens));
+    float T = exp(-1.2 * smoothstep(0.40, 0.95, dens));
 
     // Le couloir de la veine : la poussière s'y densifie — la voie lactée est
-    // une POPULATION, pas un dégradé.
+    // une POPULATION, pas un dégradé. La fourche et le foyer du pied de veine
+    // reçoivent leur population aussi (le nid brillant de la photo).
     float2 vc = veinCoord(p, aspect, ph);
-    float envV = exp(-vc.x * vc.x / 0.012);
+    float xarm = (0.505 - (0.47 - uv.y) * 0.55) * aspect;
+    float dxa = (p.x - xarm) * 0.92;
+    float armW = smoothstep(0.48, 0.41, uv.y) * smoothstep(0.10, 0.20, uv.y);
+    float foyer = exp(-vc.x * vc.x / 0.004)
+                * exp(-(uv.y - 0.84) * (uv.y - 0.84) / 0.010);
+    float envV = exp(-vc.x * vc.x / 0.020)
+               + 0.55 * exp(-dxa * dxa / 0.006) * armW
+               + 2.0 * foyer;
 
     const float2x2 g0 = float2x2( 1.000,  0.000,  0.000,  1.000);
     const float2x2 g1 = float2x2( 0.946, -0.326,  0.326,  0.946);
@@ -210,17 +232,19 @@ static float astarLayer(float2 pos, float t, float cellPt, float density,
 
     float s = 0.0;
     // Poudre sub-pixel : des milliers de piqûres au ras du seuil, partout.
-    s += astarLayer(position, t,  2.9, 1.00, 15.0, 0.34, float2(13.1,  7.7), g0, 0.045, T, reveal);
+    // Gains calibrés sur la référence : dans le fond, AUCUNE poussière ne
+    // dépasse ~15/255 — seule la veine porte quelques grains francs.
+    s += astarLayer(position, t,  2.9, 1.00, 15.0, 0.30, float2(13.1,  7.7), g0, 0.045, T, reveal);
     // Voile intermédiaire.
-    s += astarLayer(position, t,  7.5, 0.90, 10.0, 0.50, float2(41.7,  3.3), g1, 0.045, T, reveal);
+    s += astarLayer(position, t,  7.5, 0.90, 10.0, 0.42, float2(41.7,  3.3), g1, 0.045, T, reveal);
     // Étoiles moyennes, rares.
-    s += astarLayer(position, t, 22.0, 0.70,  6.5, 0.85, float2(23.9, 11.3), g2, 0.045, T, reveal);
+    s += astarLayer(position, t, 22.0, 0.70,  6.5, 0.62, float2(23.9, 11.3), g2, 0.045, T, reveal);
     // La population de la veine : des centaines de grains fins qui dansent
     // dans le couloir — c'est elle qui dessine la voie lactée.
-    s += astarLayer(position, t,  4.6, 0.85,  9.0, 0.55, float2(91.3,  5.7), g2, 0.11, T, reveal)
+    s += astarLayer(position, t,  4.6, 0.95,  9.0, 0.66, float2(91.3,  5.7), g2, 0.11, T, reveal)
        * envV;
     // Une poignée de brillantes calmes.
-    s += astarLayer(position, t, 110.0, 0.30,  3.0, 0.70, float2( 5.3, 29.1), g3, 0.045,
+    s += astarLayer(position, t, 110.0, 0.30,  3.0, 0.42, float2( 5.3, 29.1), g3, 0.045,
                     mix(1.0, T, 0.4), reveal);
 
     // Grain photographique centré, maximal dans les demi-tons.
