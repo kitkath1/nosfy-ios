@@ -63,6 +63,9 @@ struct RootView: View {
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
     /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
     private static let loginLab = CommandLine.arguments.contains("-loginLab")
+    /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
+    /// toucher pour cacher le panneau de fouettage.
+    private static let navLab = CommandLine.arguments.contains("-navLab")
     /// Banc d'essai de la home aurora : `-homeLab` (+ `-demoData` pour les
     /// cartes). L'ancienne home noire reste la vraie.
     private static let homeLab = CommandLine.arguments.contains("-homeLab")
@@ -110,6 +113,8 @@ struct RootView: View {
             LoginLab()
         } else if Self.homeLab {
             HomeAuroraLab()
+        } else if Self.navLab {
+            NavLab()
         } else {
             mainBody
         }
