@@ -74,21 +74,6 @@ Un seul vecteur `tilt` (gyroscope CoreMotion lissé 0,8 s + recentrage lent ~15 
 
 ~1-1,5 ms GPU/frame (A16+) : demi-résolution pour tout le diffus, pleine résolution réservée au sub-pixel, LUT plutôt qu'ALU, `half` pour la couleur / `float` pour coordonnées-temps-kaliset, pause hors `scenePhase.active`.
 
-## La carte Objectif (métal brossé sous lavis)
-
-La carte « Objectif hebdomadaire » de la home : un rectangle arrondi (30 pt) de **métal brossé sombre sous un lavis de lumière blanche directionnel** venant du coin haut-gauche — référence : les mocks glassmorphism premium (carte sombre éclairée par une source hors-champ). Fichiers : [ObjectiveCard.swift](Woop/Views/ObjectiveCard.swift), passe `objectiveCrest` dans [DemonSky.metal](Woop/DemonSky.metal).
-
-**Trajet des itérations (leçons)** : mesa + nébuleuse spectaculaire → rejetée (« écrase la home ») ; cordon discret + étoiles → rejeté (« pas de matière ») ; blob radial de lumière → rejeté (« lampe torche, cheap »). Ce qui tient : une MATIÈRE (le brossage) sous une LUMIÈRE directionnelle. Un dégradé sombre sans texture lit « plastique ».
-
-- **Le lavis** : projection diagonale depuis le coin haut-gauche, réponse de métal (épaule vive `pow 2.6`, longue traîne), irrégularisé ±12 % par un bruit large — coin ~33 %, mi-carte ~6 %, bas-droit noir absolu. Il respire (±9 %, périodes incommensurables).
-- **Le reflet traversant** : bande anisotrope lente (~36 s/passage) qui MULTIPLIE le lavis (il révèle la matière, n'ajoute jamais de gris dans le noir).
-- **Le brossage** : micro-stries ~14:1 STATIQUES (la surface ne bouge pas, c'est la lumière qui vit), centrées, visibles seulement dans la lumière.
-- **Grain de film** : discret dans le noir (anti-banding), renforcé dans le dégradé (~9/255) — la signature des mocks premium. Tombée d'arête aux bords (l'objet a une épaisseur). Chromie : blancs FROIDS acier.
-- **L'arête usinée** : hairline 0,8 pt en dégradé ANGULAIRE à pics spéculaires — arc blanc froid au coin haut-gauche courant sur le bord haut, écho discret au coin opposé, quasi-noir entre ; lueur serrée sous l'arc seulement. Au TOUCHER (Button sans action + `ObjectiveCardPressStyle` qui republie `isPressed`) : tout s'allume et pulse (±20 %, 1,9 s), allumage 0,22 s / extinction 0,9 s, haptique douce. `achieved` réchauffe l'arc vers l'or.
-- **Socle** : Liquid Glass natif teinté fumé (`glassEffect(.regular.tint(noir 0.55).interactive())`) — le ciel se réfracte au scroll ; jamais de fill opaque dessous. Fil inscrit à 1,5 pt + souffle haut (épaisseur du verre). Grain WoopGrain par-dessus.
-- **Contenu** : titre 15 pt, `ShimmeringNumber` 34 pt (glint argenté ~7 s, fenêtré 22 %), sous-titre 13 pt, trophées 44 pt justifiés en style `luminous`. Carte purement consultative (ni chevron, ni navigation).
-- **Budget** : une seule passe demi-résolution (3 fetches), `TimelineView` 30 fps, endormie hors écran et sous Reduce Motion. Boucle 900 s (dérives entières, k entiers). NebulaStrip n'est plus chauffée au lancement (gardée en réserve).
-
 ## Les composants « diamant » (la famille)
 
 La bibliothèque de composants de l'app — même matière, même grammaire
@@ -99,6 +84,13 @@ lit d'un coup d'œil : primaire tap > repos > secondary tap > input actif >
 secondary repos > input vide, le rond en murmure. Méthode de fabrication :
 boucle workflow capture simulateur → juge (grille /10 chiffrée, 3 frames
 espacées d'1 s pour l'animation) → orfèvre.
+
+Les SURFACES de la famille ont leurs propres bancs : la surface de base
+(toutes les cartes), la carte Objectif « bijou » (`-cardLab`) et le cadran
+éclipse (`-counterLab`). Même grammaire, autre échelle : sur un bouton la
+lumière est un accent, sur une surface elle doit tenir une matière — c'est
+là que le brossage, la nébuleuse et l'abscisse curviligne du liseré
+apparaissent.
 
 **L'effet wahou du tap** (commun aux deux boutons texte) : au toucher, des
 volutes de fumée noire S'ÉCHAPPENT du liseré et enveloppent le bouton par
@@ -259,6 +251,78 @@ flottent. C'est aussi ce qui autorise à mélanger les formats de photo (4:5,
 - **Réserve connue** : sur les écrans à ciel (home, liste d'exercices), une
   carte noire ne « fond » pas dans la nébuleuse — elle y découpe un trou.
   Assumé pour l'instant : le ciel sera traité séparément.
+
+## La carte Objectif « bijou » (la pierre sertie)
+
+La carte « Objectif hebdomadaire » de la home — la seule surface de l'app qui
+porte un ciel INTÉRIEUR. Tout en une passe :
+[ObjectiveJewel.metal](Woop/ObjectiveJewel.metal) (`objectiveJewel`), vue
+`JewelSurface` dans [ObjectiveCard.swift](Woop/Views/ObjectiveCard.swift).
+Banc : `-cardLab` → page noire, la carte au repos et sa copie « doigt posé ».
+
+**Trajet des itérations (leçons)** : mesa + nébuleuse spectaculaire → rejetée
+(« écrase la home ») ; cordon discret + étoiles → rejeté (« pas de matière ») ;
+blob radial de lumière → rejeté (« lampe torche, cheap ») ; métal brossé sous
+lavis directionnel → rejeté (trop clair, il lisait gris brossé, pas pierre) ;
+et le **Liquid Glass natif teinté fumé** → abandonné ici : il grisait la pierre
+(amplitude intérieure mesurée 2,2:1 contre 19:1 sur la référence) et sa
+réfraction contredisait la lecture « bijou serti ». Ce qui tient : du VIDE noir
+que seule la lumière du sertissage détache de la page.
+
+- **Architecture** : une passe `colorEffect` sur un rectangle élargi de 18 pt —
+  halos et éclats vivent HORS de la carte, en alpha prémultiplié, jamais en
+  aplat noir sur le ciel.
+- **Forme** : rayon 30 pt continu, marges 20 pt.
+- **La pierre** : obsidienne 2,4 % → 0,35 %, sous un clair-obscur (`vfall`) —
+  la lumière tombe d'en haut, TOUT ce qui éclaire s'éteint vers le bas. Sans
+  lui, la nébuleuse rallume le tiers bas et le dégradé s'INVERSE dans la moitié
+  basse (mesuré : 7,4 → 11,3/255 au lieu de descendre).
+- **Les griffes** : brossage anisotrope à −22° qui **MULTIPLIE** la lumière au
+  lieu de s'y ajouter — une griffe n'existe que là où la lumière tombe. C'est ce
+  qui autorise des sillons jusqu'au noir sans grisailler les zones sombres, là
+  où un terme additif écrêterait. Gating `rightness` : muet à gauche, pleine
+  matière sur le flanc droit (la demande d'origine).
+- **La lumière rasante** : un voile large qui traverse en ~34 s, sur une course
+  PLUS COURTE que la carte — un effet qu'on ne voit qu'une seconde sur trente
+  n'existe pas.
+- **La nébuleuse et les poussières** : nappes fbm à domaine déformé ; étoiles
+  sur trois grilles premières entre elles (le semis reste dense sans faire
+  motif), magnitudes en **loi de puissance** (`pow(h.z, 2.8)`) — c'est la
+  hiérarchie « beaucoup de très faibles, deux ou trois vives » qui fait lire
+  « ciel » plutôt que « bruit de capteur ». Une distribution plate ne marche pas.
+- **Le sertissage** : hairline 0,53 pt (σ 0,32), lumière INÉGALE paramétrée par
+  l'**abscisse curviligne** du périmètre (`jArc`) et non par l'angle depuis le
+  centre — l'angle fige les accents sur les longs bords horizontaux (piège payé
+  sur le bouton primaire), l'abscisse les fait ramper à vitesse constante,
+  coins compris. Le bruit est échantillonné sur un CERCLE d'abscisse : aucune
+  couture au raccord. Plancher de fil à 10 % : sans lui la lumière n'est plus
+  inégale, elle est INTERROMPUE — et un fil coupé ne sertit rien.
+- **Les halos** : collés au trait (fondu ~2,2 pt), aux accents seulement. Au-delà
+  c'est le brouillard diffus qui est refusé.
+- **Les éclats de taille** : cœur vif + rayons hairline en croix, seuil 0,13,
+  flashs `pow 12` — 2 à 4 visibles sur TOUT le périmètre, jamais une guirlande.
+- **Le TAP** (`ObjectiveCardPressStyle` republie `isPressed` ; rampe 0,35 s
+  horodatée côté SwiftUI) : une braise DANS la pierre (+0,9 % sous le bord
+  haut) et le liseré qui ne monte que de 14 %. Une carte n'est pas un bouton :
+  allumer le cadre seul faisait un interrupteur, et elle ne doit pas exploser
+  sous le doigt.
+- **`achieved`** : SEULE la lumière du liseré se réchauffe vers l'or-récompense
+  (`1.0 / 0.945 / 0.80`) ; la pierre, elle, reste noire.
+- **Contenu** (inchangé) : titre 12 pt medium capitales tracking 2,2 à 58 %,
+  `ShimmeringNumber` 34 pt (glint argenté ~7 s, fenêtré 22 %), sous-titre 13 pt,
+  trophées 44 pt justifiés en style `luminous`. Carte purement consultative.
+- **Budget** : une passe pleine résolution à 30 fps, endormie hors écran
+  (`onScrollVisibilityChange`) et sous Reduce Motion, horloge globale 900 s.
+  Dither obligatoire : à 2 % de luminance, un dégradé propre bande en escalier.
+- **Nyquist (leçon chère)** : à 3x il vaut 1,5 cycle/pt. Au-dessus, la griffe ne
+  griffe plus, elle SABLE (poudre grise) ; très en dessous, elle devient une
+  traînée nuageuse — du flou de mouvement, pas du métal. La fenêtre est étroite,
+  et le réglage se fait à l'AMPLITUDE, jamais à la fréquence seule.
+- **Reste à faire** : le brossage déborde encore en traînées larges là où la
+  référence tient des hairlines de 1-2 px — cible mesurée : écart-type
+  passe-bande 2,7/255 sur le flanc droit, au-delà de 4/255 c'est raté. Trop
+  visible est une faute aussi grave qu'invisible. `GlassLight` et `GlassBorder`
+  sont devenus du code mort dans ObjectiveCard.swift.
 
 ## Les photos d'exercice
 
