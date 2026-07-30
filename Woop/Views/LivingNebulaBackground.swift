@@ -10,8 +10,9 @@ import UIKit
 //
 // L'ordre de la scène, du fond vers l'avant :
 //   0. la photo, immobile ;
-//   1. une copie ONDULÉE de sa couche lumineuse (warp d'UV le long de la
-//      veine) — ce sont les nuages EUX-MÊMES qui bougent ;
+//   1. LE FLUX : sa couche lumineuse ré-échantillonnée avec des UV DÉPLACÉS le
+//      long de la tangente du tracé — les filaments, les nœuds et toutes les
+//      nuances de gris COULENT réellement, chacun à sa vitesse ;
 //   2. la veine vivante (shader) : bruit fractal lent, curl, circulation,
 //      respiration désynchronisée, zones qui s'allument et s'effacent ;
 //   3. les particules diamants (shader) : advection le long du champ tangent
@@ -55,7 +56,7 @@ struct LivingNebulaBackground: View {
                 // un seul offscreen, un seul masque de lisibilité, un seul
                 // plusLighter au-dessus de la photo.
                 ZStack(alignment: .topLeading) {
-                    warpedGlow(L, gpuT, fade)
+                    veinFlow(L, gpuT, Float(fade))
                     livingVein(L, gpuT, Float(fade))
                     diamondDust(L, gpuT, Float(fade))
                     canvasLayer(L, fade)
@@ -101,29 +102,36 @@ struct LivingNebulaBackground: View {
         CGSize(width: tilt.dx * depth, height: tilt.dy * depth)
     }
 
-    // MARK: 1. La copie ondulée de la couche lumineuse
+    // MARK: 1. LE FLUX — la matière claire qui coule le long de la veine
 
-    /// La VAGUE de distorsion : un warp des UV le long de la veine, jamais un
-    /// overlay blanc. Amplitude 3-6 px, λ ≈ 220 px, ~30 px/s qui remonte le
-    /// tracé — c'est ce qui tue définitivement l'effet « photo figée ».
-    private func warpedGlow(_ L: Layout, _ gpuT: Float, _ fade: Double) -> some View {
-        let amp = NebulaConfig.warpAmplitude * Float(L.scale)
-        let ramp = min(1, max(0, (t - 0.3) / 2.0))
-        return Image(NebulaConfig.glowImageName)
-            .resizable()
-            .interpolation(.high)
+    /// La passe décisive, en PLEINE résolution : la lueur de la photo est
+    /// ré-échantillonnée avec des UV déplacés le long de la tangente du tracé,
+    /// en flow-map cycling (deux phases mélangées par un poids triangulaire :
+    /// aucune bave, aucune couture), avec péristaltisme le long de l'abscisse
+    /// curviligne, dilatation perpendiculaire et micro-turbulence. Résultat :
+    /// des centaines de micro-structures se déplacent simultanément en épousant
+    /// la courbure, tandis que la photo, dessous, reste nette au pixel.
+    private func veinFlow(_ L: Layout, _ gpuT: Float, _ fade: Float) -> some View {
+        let s = Float(L.scale)
+        return Rectangle()
+            .fill(.black)
             .frame(width: L.imgW, height: L.imgH)
-            .distortionEffect(
-                ShaderLibrary.nebulaVeinWave(
-                    .float2(L.imgW, L.imgH), .float(gpuT),
-                    .float4(amp, NebulaConfig.warpWavelength * Float(L.scale),
-                            NebulaConfig.warpSpeed * Float(L.scale),
-                            NebulaConfig.veinHalfWidth)),
-                maxSampleOffset: CGSize(width: CGFloat(amp) * 2.4,
-                                        height: CGFloat(amp) * 1.2))
+            .colorEffect(ShaderLibrary.nebulaVeinFlow(
+                .float2(L.imgW, L.imgH), .float(gpuT), .float(fade),
+                .float4(NebulaConfig.flowHalfWidth, NebulaConfig.flowGain,
+                        NebulaConfig.flowAmplitude * s, NebulaConfig.flowHaloGain),
+                .float4(NebulaConfig.flowCycleA, NebulaConfig.flowCycleB,
+                        NebulaConfig.flowDilation * s, NebulaConfig.flowDilationCycle),
+                .float4(NebulaConfig.flowWave * s, NebulaConfig.flowWaveLength * s,
+                        NebulaConfig.flowWaveSpeed * s, NebulaConfig.flowSheenGain),
+                .float4(NebulaConfig.flowSheenPeriodA, NebulaConfig.flowSheenPeriodB,
+                        NebulaConfig.flowSheenWidth, NebulaConfig.flowTurbulence),
+                .image(NebulaGlow.image),
+                .image(NebulaField.image),
+                .image(NebulaNoise.image)))
             .blendMode(.plusLighter)
-            .opacity(NebulaConfig.warpLayerOpacity * fade * ramp)
-            .offset(x: L.offX, y: L.offY)
+            .offset(x: L.offX + par(NebulaConfig.parallaxMid * 0.35).width,
+                    y: L.offY + par(NebulaConfig.parallaxMid * 0.35).height)
     }
 
     // MARK: 2. La veine vivante
@@ -192,10 +200,10 @@ struct LivingNebulaBackground: View {
     private func canvasLayer(_ L: Layout, _ fade: Double) -> some View {
         Canvas { ctx, _ in
             drawKnots(ctx, L, fade)
-            drawSheen(ctx, L, fade)
             drawGlimmers(ctx, L, fade)
             drawSpecks(ctx, L, fade)
             drawDrift(ctx, L, fade)
+            drawLanders(ctx, L, fade)
         }
         .frame(width: L.w, height: L.h)
     }
@@ -215,56 +223,100 @@ struct LivingNebulaBackground: View {
             let a = (NebulaConfig.knotBaseAlpha + 0.025 * NebulaConfig.hash(i, 42))
                 * breath * fade
             if a > 0.004 {
-                let r = k.r * L.scale * 2.4 * (0.90 + 0.14 * CGFloat(breath))
+                let r = k.r * L.scale * 1.9 * (0.90 + 0.14 * CGFloat(breath))
                 g.fill(disc(pos, r), with: softWhite(pos, r, a))
             }
             guard k.pulsar else { continue }
             let pulse = pow(0.5 + 0.5 * sin(t * 2 * .pi / k.period
-                                            + NebulaConfig.hash(i, 45) * 6.283), 3.0)
+                                            + NebulaConfig.hash(i, 45) * 6.283),
+                            NebulaConfig.pulsarShape)
             let pa = (NebulaConfig.pulsarAlpha + 0.045 * NebulaConfig.hash(i, 46))
                 * pulse * fade
             guard pa > 0.006 else { continue }
+            // Le halo, qui respire...
             let pr = k.r * L.scale * 2.0 * (1 + NebulaConfig.pulsarScale * CGFloat(pulse))
             g.fill(disc(pos, pr), with: softWhite(pos, pr, pa))
+            // ...et le CŒUR, serré, qui bat : c'est lui qu'on voit battre.
+            let cr = k.r * L.scale * 0.42 * (1 + NebulaConfig.pulsarScale * CGFloat(pulse))
+            g.fill(disc(pos, cr),
+                   with: softWhite(pos, cr, NebulaConfig.pulsarCoreAlpha * pulse * fade))
         }
     }
 
-    /// Les VAGUES blanches qui PARCOURENT la veine : des paquets de sheen
-    /// ÉTIRÉS le long du tracé (jamais des ronds), qui remontent le trajet.
-    private func drawSheen(_ context: GraphicsContext, _ L: Layout, _ fade: Double) {
-        for (k, period) in NebulaConfig.sheenPeriods.enumerated() {
-            let head = 1 - ((t / period + Double(k) * 0.45)
-                .truncatingRemainder(dividingBy: 1))
-            for j in -4...4 {
-                let uu = CGFloat(head) + CGFloat(j) * 0.024
-                guard uu > 0.02, uu < 0.98 else { continue }
-                let p = NebulaConfig.vein(uu)
-                let pos = L.map(p)
-                let g = exp(-Double(j * j) / 6.0)
-                let a = NebulaConfig.sheenAlpha * g * fade * (k == 0 ? 1 : 0.72)
-                guard a > 0.004 else { continue }
-                // La tangente locale : le paquet est ÉTIRÉ dans le sens de la
-                // veine — c'est ça qui le fait lire comme une onde, pas un rond.
-                let q = NebulaConfig.vein(min(0.999, uu + 0.02))
-                let ang = atan2(q.y - p.y, (q.x - p.x) * L.imgW / L.imgH)
-                let r = (30 + 10 * CGFloat(NebulaConfig.hash(j + 5 + k * 9, 110))) * L.scale
-                context.drawLayer { layer in
-                    layer.blendMode = .plusLighter
-                    layer.translateBy(x: pos.x, y: pos.y)
-                    layer.rotate(by: .radians(ang))
-                    let rect = CGRect(x: -r * 0.55, y: -r * 2.1,
-                                      width: r * 1.10, height: r * 4.2)
-                    layer.fill(
-                        Path(ellipseIn: rect),
-                        with: .radialGradient(
-                            Gradient(stops: [
-                                .init(color: .white.opacity(a), location: 0.0),
-                                .init(color: .white.opacity(a * 0.32), location: 0.55),
-                                .init(color: .clear, location: 1.0)
-                            ]),
-                            center: .zero, startRadius: 0, endRadius: r * 2.1))
-                }
+    /// LES DIAMANTS QUI SE POSENT. Un éclat apparaît dans le ciel, DÉRIVE vers
+    /// un point brillant MESURÉ de la veine, RALENTIT (easeOut), s'immobilise,
+    /// jette un éclat — une aigrette en croix extrêmement fine — puis s'éteint
+    /// en douceur. Aucune explosion, aucune couleur, jamais plus de treize à
+    /// la fois. Comme une étoile qui vient se déposer sur la matière.
+    private func drawLanders(_ context: GraphicsContext, _ L: Layout, _ fade: Double) {
+        let spots = NebulaConfig.landingSpots
+        guard !spots.isEmpty else { return }
+        var g = context
+        g.blendMode = .plusLighter
+
+        for i in 0..<NebulaConfig.landerCount {
+            let life = NebulaConfig.lerp(NebulaConfig.landerLife, NebulaConfig.hash(i, 300))
+            let cycle = life / NebulaConfig.landerDuty
+            let raw = t / cycle + NebulaConfig.hash(i, 301)
+            let turn = Int(raw.rounded(.down))
+            let u = (raw - Double(turn)) / NebulaConfig.landerDuty
+            guard u < 1 else { continue }
+
+            // La cible change à chaque tour : jamais deux fois le même chemin.
+            let spot = spots[(i * 17 + turn * 7 + turn / spots.count) % spots.count]
+            let target = L.map(spot)
+            let sd = NebulaConfig.hash(i * 7 + turn, 302)
+            // L'éclat vient du ciel : la direction penche vers le haut.
+            let ang = -Double.pi / 2 + (sd - 0.5) * 2.3
+            let dist = NebulaConfig.lerp(NebulaConfig.landerTravel,
+                                         NebulaConfig.hash(i * 7 + turn, 303)) * L.scale
+            let start = CGPoint(x: target.x + CGFloat(cos(ang)) * dist,
+                                y: target.y + CGFloat(sin(ang)) * dist)
+
+            // L'approche : easeOut cubique, il RALENTIT jusqu'à s'arrêter.
+            let v = min(1, u / NebulaConfig.landerApproach)
+            let ease = 1 - pow(1 - v, 3)
+            // Une courbure légère : il tombe, il ne file pas droit.
+            let bow = CGFloat(sin(.pi * ease)) * dist * 0.16 * (sd < 0.5 ? -1 : 1)
+            let pos = CGPoint(x: start.x + (target.x - start.x) * CGFloat(ease)
+                                + bow * CGFloat(sin(ang)),
+                              y: start.y + (target.y - start.y) * CGFloat(ease)
+                                - bow * CGFloat(cos(ang)))
+
+            // La lumière : arrivée douce, éclat à la pose, extinction lente.
+            let rise = smooth(u / 0.16)
+            let out = 1 - smooth((u - 0.70) / 0.30)
+            let land = pow(max(0, 1 - abs(v - 1) * 7), 2.0)      // l'éclat de la pose
+            let a = NebulaConfig.landerAlpha * rise * out * (0.34 + 0.66 * v) * fade
+            guard a > 0.02 else { continue }
+
+            let r = NebulaConfig.lerp(NebulaConfig.landerCore, NebulaConfig.hash(i, 304))
+                * L.scale * (1 + 0.5 * CGFloat(land))
+            let sp = NebulaConfig.lerp(NebulaConfig.landerSpike, NebulaConfig.hash(i, 305))
+                * L.scale * (0.55 + 0.75 * CGFloat(land))
+            let tilt = NebulaConfig.hash(i, 306) * 0.7
+
+            // L'aigrette : quatre branches d'un demi-point, aucune flare.
+            let branches: [(CGFloat, CGFloat)] = [(1, 0), (0, 1)]
+            for (bx, by) in branches {
+                let c = CGFloat(cos(tilt)), s = CGFloat(sin(tilt))
+                let dx = bx * c - by * s, dy = bx * s + by * c
+                var arm = Path()
+                arm.move(to: CGPoint(x: pos.x - dx * sp, y: pos.y - dy * sp))
+                arm.addLine(to: CGPoint(x: pos.x + dx * sp, y: pos.y + dy * sp))
+                g.stroke(arm, with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: .clear, location: 0.0),
+                        .init(color: .white.opacity(a * 0.55), location: 0.5),
+                        .init(color: .clear, location: 1.0)
+                    ]),
+                    startPoint: CGPoint(x: pos.x - dx * sp, y: pos.y - dy * sp),
+                    endPoint: CGPoint(x: pos.x + dx * sp, y: pos.y + dy * sp)),
+                    style: StrokeStyle(lineWidth: 0.5, lineCap: .round))
             }
+            // Le halo minuscule, puis le cœur.
+            g.fill(disc(pos, r * 2.6), with: softWhite(pos, r * 2.6, a * 0.22))
+            g.fill(disc(pos, r), with: .color(.white.opacity(min(1, a))))
         }
     }
 
@@ -398,11 +450,18 @@ struct LivingNebulaBackground: View {
         Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
     }
 
+    /// Un halo doux. Six paliers taillés sur une gaussienne : moins il y a de
+    /// pente entre deux paliers, moins le codage sur huit bits dessine ses
+    /// courbes de niveau — un dégradé à trois paliers, lui, se lit en ANNEAUX
+    /// concentriques dès que l'opacité est basse.
     private func softWhite(_ c: CGPoint, _ r: CGFloat, _ a: Double) -> GraphicsContext.Shading {
         .radialGradient(
             Gradient(stops: [
                 .init(color: .white.opacity(a), location: 0.0),
-                .init(color: .white.opacity(a * 0.32), location: 0.5),
+                .init(color: .white.opacity(a * 0.78), location: 0.20),
+                .init(color: .white.opacity(a * 0.46), location: 0.42),
+                .init(color: .white.opacity(a * 0.20), location: 0.63),
+                .init(color: .white.opacity(a * 0.06), location: 0.82),
                 .init(color: .clear, location: 1.0)
             ]),
             center: c, startRadius: 0, endRadius: r)
@@ -428,6 +487,95 @@ struct LivingNebulaBackground: View {
 // La texture est écrite en espace LINÉAIRE : la donnée arrive au GPU telle
 // qu'on l'a calculée, aucune conversion sRGB ne vient la recourber.
 
+// MARK: - LA LUEUR : la matière claire, en PLEINE résolution
+//
+// La texture que le flux ré-échantillonne. Trois raisons de la construire
+// plutôt que de passer l'asset directement :
+//
+//  1. PLEINE RÉSOLUTION et FILTRAGE LINÉAIRE — 852×1846, la résolution native
+//     de la photo : le flux déplace des micro-structures de trois pixels, une
+//     version réduite les effacerait.
+//  2. ESPACE LINÉAIRE explicite : la donnée arrive au GPU telle qu'on l'a
+//     calculée. Aucune conversion sRGB ne vient recourber le gain, donc le
+//     réglage `flowGain` veut dire quelque chose.
+//  3. LE MASQUE NON-NET. On soustrait la composante large : ne reste que le
+//     MICRO-DÉTAIL — les filaments, les grains, les nœuds. C'est capital : si
+//     l'on advectait la lueur brute, la composante large se lirait comme un
+//     VOILE qui glisse en bloc. Advecter le détail seul, c'est faire couler la
+//     matière. La composante large est rangée à part (canal G) et n'est
+//     rajoutée qu'à dose homéopathique, pour les halos blancs.
+//
+//   R = micro-détail  (unsharp : lueur − 0,62 × lueur floutée)
+//   G = halos         (la composante large seule)
+//   B = lueur brute   (réserve)
+//
+// Les yeux sont déjà effacés dans l'asset AuthNightGlow : aucun fantôme d'œil
+// ne peut donc dériver dans le flux.
+
+enum NebulaGlow {
+    static let image: Image = Image(decorative: make(), scale: 1)
+
+    /// À appeler tôt : la construction (852×1846, deux flous séparables) se
+    /// paie une fois, en tâche de fond — jamais au premier rendu de l'écran.
+    static func warmUp() {
+        Task.detached(priority: .userInitiated) { _ = Self.image }
+    }
+
+    /// Normalisations MESURÉES sur l'asset (dans la bande de la veine : détail
+    /// p95 = 5, p99 = 20, p99,9 = 49 ; halo p99 = 43). Le plancher `detailFloor`
+    /// coupe le bas de la distribution : ce sont les micro-ondulations que le
+    /// masque non-net fabrique dans les dégradés lisses, et advectées elles se
+    /// liraient comme un PEIGNE. Sous le plancher, rien ne coule.
+    private static let detailFloor: Float = 1.2
+    private static let detailScale: Float = 64
+    private static let detailGamma: Float = 1.20
+    private static let haloScale: Float = 82
+
+    private static func make() -> CGImage {
+        let w = Int(NebulaConfig.refSize.width)
+        let h = Int(NebulaConfig.refSize.height)
+
+        var src = [Float](repeating: 0, count: w * h)
+        if let cg = UIImage(named: NebulaConfig.glowImageName)?.cgImage {
+            var bytes = [UInt8](repeating: 0, count: w * h * 4)
+            bytes.withUnsafeMutableBytes { buf in
+                guard let ctx = CGContext(
+                    data: buf.baseAddress, width: w, height: h,
+                    bitsPerComponent: 8, bytesPerRow: w * 4,
+                    space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return }
+                ctx.interpolationQuality = .high
+                ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+            }
+            for i in 0..<(w * h) { src[i] = Float(bytes[i * 4]) }
+        }
+
+        let fine = NebulaField.boxBlur(src, w, h, radius: 1)
+        let broad = NebulaField.boxBlur(src, w, h, radius: 7)
+
+        var data = [UInt8](repeating: 0, count: w * h * 4)
+        for i in 0..<(w * h) {
+            let detail = max(0, fine[i] - 0.62 * broad[i] - detailFloor)
+            let r = powf(min(1, detail / detailScale), detailGamma)
+            let g = powf(min(1, max(0, broad[i] - 2.5) / haloScale), 1.05)
+            let b = powf(min(1, fine[i] / 110), 0.85)
+            let k = i * 4
+            data[k]     = UInt8(max(0, min(255, r * 255)))
+            data[k + 1] = UInt8(max(0, min(255, g * 255)))
+            data[k + 2] = UInt8(max(0, min(255, b * 255)))
+            data[k + 3] = 255
+        }
+
+        let space = CGColorSpace(name: CGColorSpace.linearSRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let img = data.withUnsafeMutableBytes { buf -> CGImage? in
+            CGContext(data: buf.baseAddress, width: w, height: h,
+                      bitsPerComponent: 8, bytesPerRow: w * 4, space: space,
+                      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)?.makeImage()
+        }
+        return img ?? NebulaField.blankField(w, h)
+    }
+}
+
 enum NebulaField {
     /// Demi-résolution : le champ est lisse, 426×923 suffisent largement.
     private static let divisor = 2
@@ -436,7 +584,9 @@ enum NebulaField {
 
     /// À appeler tôt (splash) : le calcul prend quelques millisecondes, autant
     /// qu'il ne tombe pas sur la première image de l'écran.
-    static func warmUp() { _ = image }
+    static func warmUp() {
+        Task.detached(priority: .userInitiated) { _ = Self.image }
+    }
 
     private static func make() -> CGImage {
         let ref = NebulaConfig.refSize
@@ -461,7 +611,7 @@ enum NebulaField {
         }
 
         // ---- 2. Un lissage court : le grain du capteur n'est pas de la matière.
-        let smooth = blur(lum, w, h, radius: 2)
+        let smooth = boxBlur(lum, w, h, radius: 2)
 
         // ---- 3. L'énergie : ce qui reste au-dessus du noir, normalisé et
         // légèrement redressé — c'est le poids de spawn de TOUT le reste.
@@ -485,9 +635,9 @@ enum NebulaField {
                 jyy[i] = gy * gy
             }
         }
-        let bxx = blur(jxx, w, h, radius: 6)
-        let bxy = blur(jxy, w, h, radius: 6)
-        let byy = blur(jyy, w, h, radius: 6)
+        let bxx = boxBlur(jxx, w, h, radius: 6)
+        let bxy = boxBlur(jxy, w, h, radius: 6)
+        let byy = boxBlur(jyy, w, h, radius: 6)
 
         // ---- 5. La tangente = le gradient TOURNÉ DE 90°.
         //
@@ -594,7 +744,8 @@ enum NebulaField {
     }
 
     /// Flou séparable par deux passes de boîte : suffisant, et instantané.
-    private static func blur(_ src: [Float], _ w: Int, _ h: Int, radius: Int) -> [Float] {
+    /// Partagé avec NebulaGlow — deux passes de boîte valent une gaussienne.
+    static func boxBlur(_ src: [Float], _ w: Int, _ h: Int, radius: Int) -> [Float] {
         var a = src, b = [Float](repeating: 0, count: w * h)
         for _ in 0..<2 {
             for y in 0..<h {
@@ -622,7 +773,7 @@ enum NebulaField {
         return a
     }
 
-    private static func blankField(_ w: Int, _ h: Int) -> CGImage {
+    static func blankField(_ w: Int, _ h: Int) -> CGImage {
         var data = [UInt8](repeating: 128, count: w * h * 4)
         for i in 0..<(w * h) { data[i * 4] = 0 }
         let space = CGColorSpace(name: CGColorSpace.linearSRGB) ?? CGColorSpaceCreateDeviceRGB()

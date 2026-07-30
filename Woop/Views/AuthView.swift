@@ -78,6 +78,10 @@ struct AuthView: View {
         }
         .onAppear {
             start = Date()
+            // Les deux textures de données (le champ tangent, la lueur pleine
+            // résolution) : construites en tâche de fond, une seule fois.
+            NebulaField.warmUp()
+            NebulaGlow.warmUp()
             // La parallaxe gyroscopique : la même dérive de caméra que le ciel
             // de la home — mais elle ne touche QUE les couches procédurales,
             // l'image, elle, reste immobile au pixel.
