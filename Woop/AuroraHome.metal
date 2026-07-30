@@ -423,81 +423,59 @@ static float auroraBlob(float2 q, float2 ctr, float2 sig) {
     return exp(-dot(dd, dd));
 }
 
-/// LA RAMPE : noir → braise → orange franc → ambre → crème → blanc pur.
-///
-/// C'est ELLE qui tue le marron, structurellement. Additionner des nappes
-/// colorées (un blanc, un doré, une braise) donne, partout où deux d'entre
-/// elles se superposent à mi-niveau, un ton moyen DÉSATURÉ — et un orange
-/// désaturé sombre, c'est exactement du marron. Ici on ne calcule qu'une
-/// intensité, et chaque niveau reçoit une teinte choisie dont la saturation
-/// est tenue haut : en s'assombrissant, la couleur va vers la BRAISE, jamais
-/// vers la boue.
-static float3 auroraRamp(float L) {
-    const float3 ember  = float3(1.00, 0.20, 0.02);
-    const float3 orange = float3(1.00, 0.45, 0.07);
-    // L'ambre reste SATURÉ et sa bande est courte : c'est le seul palier qui
-    // peut encore lire « terne » s'il s'étale (un ambre moyen sur du sombre
-    // redevient du marron). Passé lui, on file vite vers la crème.
-    const float3 amber  = float3(1.00, 0.64, 0.18);
-    const float3 cream  = float3(1.00, 0.90, 0.72);
-    const float3 white  = float3(1.00, 0.99, 0.98);
-    float3 c = ember;
-    c = mix(c, orange, smoothstep(0.10, 0.36, L));
-    c = mix(c, amber,  smoothstep(0.36, 0.56, L));
-    c = mix(c, cream,  smoothstep(0.55, 0.76, L));
-    c = mix(c, white,  smoothstep(0.74, 0.92, L));
-    // La teinte vient de la rampe, la luminance vient de L : toutes les
-    // couleurs de la rampe ont 1.0 en composante max, donc le produit garde
-    // exactement le niveau voulu.
-    return c * L;
-}
-
 [[ stitchable ]] half4 homeAurora(float2 position, half4 color,
                                   float2 size, float t) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
-    // Le champ SCALAIRE : on ne calcule plus que des INTENSITÉS. La couleur
-    // arrive après, par la rampe — voir `auroraRamp`.
+    // LA PALETTE DU LOGO, en nappes superposées. Kathryn a jugé les deux
+    // méthodes côte à côte et préfère celle-ci : la rampe donnait un orange
+    // plus « pur » mais plus froid, et son cœur blanc s'étalait en lavis.
+    // Ici les nappes se mélangent, l'orange se fond en brun chaud avant le
+    // noir — et c'est ce fondu-là qu'elle veut.
+    const float3 blanc   = float3(1.00, 0.98, 0.95);
+    const float3 dore    = float3(1.00, 0.58, 0.16);
+    const float3 ambre   = float3(1.00, 0.34, 0.05);
+    const float3 lunaire = float3(0.80, 0.79, 0.81);
+
     float b1 = 0.90 + 0.10 * sin(t * 6.2832 / 41.0);
     float b2 = 0.88 + 0.12 * sin(t * 6.2832 / 29.0 + 2.1);
 
-    // Le cœur, serré : c'est lui qui atteint le haut de la rampe, donc le
-    // BLANC. Tout le dégradé de la page en découle — et il doit être DANS
-    // l'écran : centré à y = 1.14 il tombait sous le bord, la rampe ne
-    // montait jamais au-dessus de l'orange et rien ne blanchissait.
-    float L = 2.30 * b1 * auroraBlob(q,
-        float2(aspect * (0.38 + 0.02 * sin(t / 43.0)), 0.92),
-        float2(0.28, 0.20));
-    // La nappe qui le couronne — c'est elle qui fait MONTER l'orange dans
-    // la page au lieu de le laisser couché au bord.
-    L += 0.95 * b2 * auroraBlob(q,
-        float2(aspect * (0.62 + 0.03 * sin(t / 31.0 + 1.0)), 0.86),
-        float2(0.44, 0.22));
-    // Les braises des deux flancs : hautes et franches, elles grimpent le
-    // long des bords comme dans l'icône.
-    L += 0.80 * b2 * auroraBlob(q, float2(aspect * 0.02, 0.84),
-                                float2(0.26, 0.22));
-    L += 0.68 * b1 * auroraBlob(q, float2(aspect * 1.00, 0.78),
-                                float2(0.22, 0.24));
+    // Le cœur, serré et vif — un blanc qui claque, pas un lavis étalé.
+    float3 mass = blanc * (0.78 * b1 * auroraBlob(q,
+        float2(aspect * (0.38 + 0.02 * sin(t / 43.0)), 1.14),
+        float2(0.20, 0.13)));
+    // La nappe orange qui la couronne.
+    mass += dore * (0.30 * b2 * auroraBlob(q,
+        float2(aspect * (0.62 + 0.03 * sin(t / 31.0 + 1.0)), 1.06),
+        float2(0.34, 0.13)));
+    // Les braises des deux flancs, basses et saturées.
+    mass += ambre * (0.42 * b2 * auroraBlob(q,
+        float2(aspect * 0.03, 0.99), float2(0.20, 0.13)));
+    mass += ambre * (0.34 * b1 * auroraBlob(q,
+        float2(aspect * 1.00, 0.94), float2(0.17, 0.14)));
+    // Le gris cendré, en retrait : moins de voile = un fond plus foncé.
+    mass += lunaire * (0.10 * b1 * auroraBlob(q,
+        float2(aspect * 0.50, 0.86), float2(0.46, 0.09)));
 
     // Trois voix qui descendent, chacune à son tempo — la vie du fond.
+    const float3 vcol[3] = { float3(1.00, 0.56, 0.14),
+                             float3(1.00, 0.97, 0.93),
+                             float3(1.00, 0.34, 0.05) };
     const float vper[3]  = { 14.0, 10.0, 19.0 };
     const float vpha[3]  = { 0.15, 0.52, 0.80 };
     const float vcx[3]   = { 0.58, 0.33, 0.86 };
-    const float vw[3]    = { 0.62, 0.70, 0.56 };
+    const float vw[3]    = { 0.30, 0.26, 0.28 };
     for (int i = 0; i < 3; i++) {
         float life = fract(t / vper[i] + vpha[i]);
         float env = sin(3.14159 * life);
-        // Elles naissent PLUS HAUT et descendent plus loin : c'est ce qui
-        // fait respirer l'orange sur toute la moitié basse.
-        float y = mix(0.46, 1.00, life);
+        float y = mix(0.68, 1.08, life);
         // La voix LOUVOIE en descendant, et son enveloppe palpite : le
         // mouvement doit se VOIR, pas seulement se deviner.
         float x = aspect * (vcx[i] + 0.11 * sin(life * 6.2832 + vpha[i] * 9.0));
         float2 sig = float2(0.17, 0.10)
                      * (1.0 + 0.20 * sin(life * 12.566 + vpha[i] * 7.0));
-        L += vw[i] * env * env * auroraBlob(q, float2(x, y), sig);
+        mass += vcol[i] * (vw[i] * env * env * auroraBlob(q, float2(x, y), sig));
     }
 
     // Les rideaux : ils glissent vers le bas et CREUSENT la lumière — du
@@ -506,23 +484,25 @@ static float3 auroraRamp(float L) {
     float w1 = scfbm(ac + float2(t * 0.016, 0.0));
     float w2 = scfbm(ac * 1.7 - float2(t * 0.010, t * 0.024) + 2.1 * w1);
     float cur = scfbm(ac * 1.27 + float2(1.9 * w1, -1.5 * w2));
-    cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.2);
-    // Le plancher remonte : les rideaux CREUSENT toujours, mais ils ne
-    // doivent plus éteindre l'orange entre deux filaments.
-    L *= 0.62 + 0.85 * cur;
+    cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.5);
+    mass *= 0.44 + 0.98 * cur;
 
-    // La nuit tient le HAUT de la page ; en dessous, l'orange a le droit de
-    // monter. La rampe partait de 0,52 : l'aurore restait couchée au bord.
-    L *= smoothstep(0.26, 0.70, q.y);
+    // La nuit avale tout dans la moitié haute : le fond est FONCÉ, l'aurore
+    // n'est qu'un sol sous la page.
+    mass *= smoothstep(0.52, 0.92, q.y);
 
-    // Tone mapping ouvert : le cœur crame franchement en blanc et l'orange
-    // occupe vraiment la moitié basse — c'est le « pop » de l'icône.
-    L = 1.0 - exp(-L * 1.95);
+    // Tone mapping resserré : les hautes lumières crament toujours, mais
+    // l'ambiance générale reste basse.
+    float3 c = 1.0 - exp(-mass * 1.55);
 
-    // Et la couleur, enfin : chaque niveau reçoit sa teinte, saturation
-    // tenue. Plus de gradation anti-caramel à faire après coup — la rampe
-    // rend le marron impossible par construction.
-    float3 c = auroraRamp(L);
+    // La gradation : sous les basses lumières la couleur retombe vers le
+    // gris, dans les hautes la saturation remonte. Elle borne le brun sans
+    // le supprimer — c'est ce dosage qu'elle a retenu.
+    float3 g3 = float3(dot(c, float3(0.299, 0.587, 0.114)));
+    float vmax = max(c.r, max(c.g, c.b));
+    float keep = mix(0.30, 1.0, smoothstep(0.06, 0.34, vmax));
+    float push = 0.45 * smoothstep(0.45, 0.85, vmax);
+    c = clamp(mix(g3, c, keep + push), 0.0, 1.0);
 
     c += (schash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0))
           - 0.5) * (2.0 / 255.0);
