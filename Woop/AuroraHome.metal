@@ -108,13 +108,12 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float3 rimCol = mix(float3(1.00, 0.98, 0.94),
                         float3(1.00, 0.78, 0.44), uvY * 0.85);
     rimCol = mix(rimCol, float3(1.00, 0.74, 0.30), charge * 0.70);
-    float lw = 0.42 + 0.30 * charge;
-    float line = exp(-d * d / (lw * lw))
-                 * (0.09 + 0.62 * rim) * (1.0 + 1.0 * charge);
-
-    // Le halo de repos : une buée collée au trait, à peine là.
-    float halo = exp(-max(d, 0.0) / 5.0)
-                 * smoothstep(-0.8, 0.8, d) * 0.10 * rim;
+    // Sous le geste, les accents organiques du liseré CÈDENT la place à un
+    // dégradé lisse : une hairline continue, vive face au foyer, qui
+    // s'éteint doucement en s'en éloignant. Le grain du repos est la
+    // signature de la famille ; en pleine lumière, il ferait grésiller
+    // l'arête. (Le `w` du foyer est calculé juste en dessous.)
+    float lw = 0.42 + 0.22 * charge;
 
     // ---- LE GLOW DU GESTE : un DÉGRADÉ, pas de la fumée. Toute sa forme
     // est lisse — aucune modulation par le bruit du liseré, c'est ce qui
@@ -134,6 +133,14 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float lobe = pow(max(dot(nrm, gdir), 0.0), 3.0)
                  + 0.30 * pow(max(-dot(nrm, gdir), 0.0), 3.4);
     float w = 0.13 + 0.87 * lobe;
+
+    // La hairline, et la buée qui la double : au repos ce sont les accents
+    // organiques ; sous le geste, le dégradé lisse du foyer prend la main.
+    float rimSmooth = mix(rim, w, clamp(charge * 0.88, 0.0, 1.0));
+    float line = exp(-d * d / (lw * lw))
+                 * (0.09 + 0.62 * rimSmooth) * (1.0 + 0.85 * charge);
+    float halo = exp(-max(d, 0.0) / (5.0 + 3.0 * charge))
+                 * smoothstep(-0.8, 0.8, d) * 0.10 * rimSmooth;
 
     // Dehors : à peine une buée serrée contre l'arête. Le halo derrière la
     // carte reste un murmure — c'est la retenue qui fait le premium.
@@ -163,31 +170,24 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float fade = 1.0 - smoothstep(pad * 0.42, pad * 0.96, d);
     glow *= fade;
 
-    // ---- Les pointes-bijou : minuscules et rares au repos, elles
-    // s'éveillent en nombre quand le geste monte.
+    // ---- Les pointes-bijou : le murmure du REPOS, et rien d'autre. Les
+    // démultiplier sous le geste faisait grésiller l'arête de petites
+    // étoiles — « cheap », même verdict que les étoiles-bijou du cadran.
+    // Elles s'effacent donc à mesure que la lumière monte : en pleine
+    // charge, il ne reste qu'un trait de lumière pur.
     float glitter = 0.0;
-    if (fabs(d) < 4.0 + 10.0 * charge) {
-        float cell = 13.0 - 4.0 * charge;
-        float2 idg = floor(p / cell);
+    if (fabs(d) < 4.0 && charge < 0.98) {
+        float2 idg = floor(p / 13.0);
         float4 hg = schash42(idg * 3.07 + float2(7.3 + seed * 5.0, 2.9));
-        if (hg.x < 0.16 + 0.34 * charge) {
-            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * cell;
+        if (hg.x < 0.16) {
+            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * 13.0;
             float dg = scRound(cg, halfB, r);
-            float on = exp(-fabs(dg) / (3.0 + 5.0 * charge));
+            float on = exp(-fabs(dg) / 3.0);
             float twk = max(0.0, sin(t * (0.4 + 0.5 * hg.w) + hg.z * 6.283));
-            twk = pow(twk, 16.0 - 11.0 * charge);
+            twk = pow(twk, 16.0);
             float2 dpg = p - cg;
-            float core = exp(-dot(dpg, dpg) / (0.7 * 0.7));
-            // Sous le geste, les facettes ouvrent leurs rayons en croix —
-            // la grammaire bijou de la maison.
-            float rayL = 1.0 + 9.0 * charge * twk;
-            float rH = exp(-dpg.y * dpg.y / (0.40 * 0.40)
-                           - dpg.x * dpg.x / (rayL * rayL));
-            float rV = exp(-dpg.x * dpg.x / (0.40 * 0.40)
-                           - dpg.y * dpg.y / (rayL * rayL));
-            glitter = (core + (rH + rV) * 0.5 * charge) * on * twk
-                      * (0.6 + 0.8 * charge)
-                      * (1.0 - smoothstep(pad * 0.45, pad * 0.94, d));
+            glitter = exp(-dot(dpg, dpg) / (0.7 * 0.7)) * on * twk * 0.6
+                      * (1.0 - clamp(charge * 1.25, 0.0, 1.0));
         }
     }
 
@@ -408,17 +408,20 @@ static float auroraBlob(float2 q, float2 ctr, float2 sig) {
     const float3 vcol[3] = { float3(1.00, 0.70, 0.28),
                              float3(1.00, 0.96, 0.90),
                              float3(0.98, 0.44, 0.10) };
-    const float vper[3]  = { 19.0, 14.0, 26.0 };
+    const float vper[3]  = { 14.0, 10.0, 19.0 };
     const float vpha[3]  = { 0.15, 0.52, 0.80 };
     const float vcx[3]   = { 0.58, 0.33, 0.86 };
-    const float vw[3]    = { 0.20, 0.17, 0.18 };
+    const float vw[3]    = { 0.30, 0.26, 0.28 };
     for (int i = 0; i < 3; i++) {
         float life = fract(t / vper[i] + vpha[i]);
         float env = sin(3.14159 * life);
-        float y = mix(0.72, 1.06, life);
-        float x = aspect * (vcx[i] + 0.06 * sin(life * 6.2832 + vpha[i] * 9.0));
-        mass += vcol[i] * (vw[i] * env * env
-                           * auroraBlob(q, float2(x, y), float2(0.17, 0.10)));
+        float y = mix(0.68, 1.08, life);
+        // La voix LOUVOIE en descendant, et son enveloppe palpite : le
+        // mouvement doit se VOIR, pas seulement se deviner.
+        float x = aspect * (vcx[i] + 0.11 * sin(life * 6.2832 + vpha[i] * 9.0));
+        float2 sig = float2(0.17, 0.10)
+                     * (1.0 + 0.20 * sin(life * 12.566 + vpha[i] * 7.0));
+        mass += vcol[i] * (vw[i] * env * env * auroraBlob(q, float2(x, y), sig));
     }
 
     // Les rideaux : ils glissent vers le bas et CREUSENT la lumière — du
