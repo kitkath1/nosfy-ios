@@ -67,9 +67,13 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     return clamp(4.4 * accents * bias * breath, 0.0, 1.0);
 }
 
+// `charge` : la montée du geste (0 au repos → 1 quand le doigt a décidé).
+// Tout l'écrin s'embrase : la hairline s'épaissit et vire à l'or, le halo
+// déborde loin, les facettes s'éveillent — les bords FONDENT en lumière.
 [[ stitchable ]] half4 swapCard(float2 position, half4 color,
                                 float2 size, float t,
-                                float pad, float radius, float seed) {
+                                float pad, float radius, float seed,
+                                float charge) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -98,37 +102,95 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
 
     // ---- La hairline : blanche en haut comme toute la famille diamant,
     // réchauffée d'or seulement en descendant — l'arête est la SEULE
-    // couleur de la carte, et elle murmure.
+    // couleur de la carte, et elle murmure. Sous le geste, elle prend feu :
+    // la teinte glisse vers l'or franc, le trait s'épaissit.
     float rim = scRim(p, halfB, t, seed);
     float3 rimCol = mix(float3(1.00, 0.98, 0.94),
                         float3(1.00, 0.78, 0.44), uvY * 0.85);
-    float line = exp(-d * d / (0.42 * 0.42)) * (0.09 + 0.62 * rim);
-    float halo = exp(-max(d, 0.0) / 5.0) * smoothstep(-0.8, 0.8, d) * 0.10 * rim;
+    rimCol = mix(rimCol, float3(1.00, 0.74, 0.30), charge * 0.70);
+    float lw = 0.42 + 0.30 * charge;
+    float line = exp(-d * d / (lw * lw))
+                 * (0.09 + 0.62 * rim) * (1.0 + 1.0 * charge);
 
-    // ---- Les pointes-bijou : minuscules, rares — la signature de famille,
-    // à peine audible.
+    // Le halo de repos : une buée collée au trait, à peine là.
+    float halo = exp(-max(d, 0.0) / 5.0)
+                 * smoothstep(-0.8, 0.8, d) * 0.10 * rim;
+
+    // ---- LE GLOW DU GESTE : un DÉGRADÉ, pas de la fumée. Toute sa forme
+    // est lisse — aucune modulation par le bruit du liseré, c'est ce qui
+    // donnait l'aspect enfumé. Un foyer chaud parcourt lentement le
+    // pourtour (un tour en ~8 s, décalé par carte), la lumière s'y masse et
+    // se dégrade vers l'or profond en s'éloignant.
+    float2 nrm = length(p) > 0.5 ? normalize(p) : float2(0.0, -1.0);
+    float ga = t * 0.78 + seed * 2.1;
+    float2 gdir = float2(cos(ga), sin(ga));
+    // Un second foyer, opposé et plus faible : la lumière n'a jamais un
+    // seul côté mort, elle respire tout autour.
+    float lobe = pow(max(dot(nrm, gdir), 0.0), 2.0)
+                 + 0.42 * pow(max(-dot(nrm, gdir), 0.0), 2.6);
+    float w = 0.26 + 0.74 * lobe;
+
+    float outside = max(d, 0.0);
+    float reach = 26.0 + 30.0 * charge;
+    float glow = exp(-outside / reach) * smoothstep(-1.2, 1.2, d)
+                 * w * charge * 0.62;
+    // Le dégradé de couleur : blanc chaud contre l'arête, or franc à
+    // mi-course, ambre profond en se perdant — jamais un aplat doré.
+    float grad = clamp(outside / (reach * 1.6), 0.0, 1.0);
+    float3 glowCol = mix(mix(float3(1.00, 0.97, 0.91),
+                             float3(1.00, 0.80, 0.38), smoothstep(0.0, 0.5, grad)),
+                         float3(1.00, 0.58, 0.18), smoothstep(0.45, 1.0, grad));
+
+    // Et la lumière ENTRE dans la carte : le noir mat s'éclaire en dégradé
+    // depuis l'arête, du côté du foyer — comme une lampe posée contre elle.
+    float innerGlow = exp(-max(-d, 0.0) / 34.0) * w * charge * 0.17;
+
+    // LE FONDU D'HÔTE : toute la lumière meurt AVANT le bord du rectangle
+    // du shader. Sans lui, le halo bute sur le bord et la carte se met à
+    // porter une plaque d'or rectangulaire — le débord doit se dissoudre
+    // dans le noir, jamais se faire couper.
+    float fade = 1.0 - smoothstep(pad * 0.42, pad * 0.96, d);
+    glow *= fade;
+
+    // ---- Les pointes-bijou : minuscules et rares au repos, elles
+    // s'éveillent en nombre quand le geste monte.
     float glitter = 0.0;
-    if (fabs(d) < 4.0) {
-        float2 idg = floor(p / 13.0);
+    if (fabs(d) < 4.0 + 10.0 * charge) {
+        float cell = 13.0 - 4.0 * charge;
+        float2 idg = floor(p / cell);
         float4 hg = schash42(idg * 3.07 + float2(7.3 + seed * 5.0, 2.9));
-        if (hg.x < 0.16) {
-            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * 13.0;
+        if (hg.x < 0.16 + 0.34 * charge) {
+            float2 cg = (idg + 0.5 + (hg.yz - 0.5) * 0.6) * cell;
             float dg = scRound(cg, halfB, r);
-            float on = exp(-fabs(dg) / 3.0);
+            float on = exp(-fabs(dg) / (3.0 + 5.0 * charge));
             float twk = max(0.0, sin(t * (0.4 + 0.5 * hg.w) + hg.z * 6.283));
-            twk = pow(twk, 16.0);
+            twk = pow(twk, 16.0 - 11.0 * charge);
             float2 dpg = p - cg;
-            glitter = exp(-dot(dpg, dpg) / (0.7 * 0.7)) * on * twk * 0.6;
+            float core = exp(-dot(dpg, dpg) / (0.7 * 0.7));
+            // Sous le geste, les facettes ouvrent leurs rayons en croix —
+            // la grammaire bijou de la maison.
+            float rayL = 1.0 + 9.0 * charge * twk;
+            float rH = exp(-dpg.y * dpg.y / (0.40 * 0.40)
+                           - dpg.x * dpg.x / (rayL * rayL));
+            float rV = exp(-dpg.x * dpg.x / (0.40 * 0.40)
+                           - dpg.y * dpg.y / (rayL * rayL));
+            glitter = (core + (rH + rV) * 0.5 * charge) * on * twk
+                      * (0.6 + 0.8 * charge)
+                      * (1.0 - smoothstep(pad * 0.45, pad * 0.94, d));
         }
     }
 
-    // ---- Composition. Dedans : le noir mat et sa lumière. Dehors : de la
-    // lumière émissive pure (couleur = couverture) — jamais un voile, la
-    // carte ne doit pas salir l'aurore derrière elle.
+    // ---- Composition. Dedans : le noir mat, sa lumière, et le dégradé qui
+    // entre par l'arête du côté du foyer (l'obsidienne reste noire au
+    // centre). Dehors : de la lumière émissive pure (couleur = couverture) —
+    // jamais un voile, la carte ne doit pas salir l'aurore derrière elle.
     float3 inCol = float3(matte) + light
-                   + rimCol * (line * inside * 0.9);
-    float aOut = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
-    float3 outCol = rimCol * aOut;
+                   + rimCol * (line * inside * 0.9)
+                   + float3(1.00, 0.90, 0.72) * innerGlow;
+    float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
+    float aGlow = clamp(glow, 0.0, 1.0);
+    float aOut = clamp(aRim + aGlow * (1.0 - aRim), 0.0, 1.0);
+    float3 outCol = rimCol * aRim + glowCol * (aGlow * (1.0 - aRim));
     float a = mix(aOut, 1.0, inside);
     float3 c = mix(outCol, inCol, inside);
     // Dither : toute la matière vit sous 4 % de blanc.
@@ -136,6 +198,114 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
           - 0.5) * (2.0 / 255.0) * a;
     c = clamp(min(c, float3(a)), 0.0, 1.0);
     return half4(half3(c), half(a));            // prémultiplié
+}
+
+// MARK: - La gerbe du swipe
+//
+// À l'instant où la carte s'arrache, des CENTAINES de bijoux jaillissent de
+// son contour : la poussière fine et les éclats à rayons en croix de la
+// famille diamant, blancs au cœur, dorés en s'éloignant. Ils partent
+// RADIALEMENT — c'est ce qui rend la gerbe calculable : un fragment connaît
+// son angle, donc le secteur d'où vient la particule qui pourrait le
+// toucher, et il n'en teste qu'une poignée. Le sens du swipe ne dévie pas
+// les trajectoires (ça casserait l'inversion) : il ACCÉLÈRE le côté vers
+// lequel la carte est partie, et la gerbe se couche naturellement.
+//
+// Hébergée par la PILE, pas par la carte : la carte, elle, a déjà disparu.
+
+/// Le rayon du contour de la carte dans une direction donnée (boîte
+/// arrondie approchée — dans un nuage de particules, les coins ne se
+/// racontent pas).
+static float sbBoxRadius(float2 dir, float2 halfB, float rad) {
+    float tx = halfB.x / max(fabs(dir.x), 1e-3);
+    float ty = halfB.y / max(fabs(dir.y), 1e-3);
+    return min(tx, ty) - rad * 0.30;
+}
+
+[[ stitchable ]] half4 swapBurst(float2 position, half4 color,
+                                 float2 size, float t,
+                                 float2 emit, float2 halfB, float radius,
+                                 float2 way, float age) {
+    if (age < 0.0 || age > 1.30) { return half4(0.0); }
+
+    float2 p = position - emit;
+    float r = length(p);
+    // Rejets grossiers : rien dans la carte, rien au-delà de la portée du
+    // moment. C'est ce qui rend la gerbe abordable en plein écran.
+    float inner = min(halfB.x, halfB.y) * 0.45;
+    float outer = max(halfB.x, halfB.y) + 620.0 * age + 40.0;
+    if (r < inner || r > outer) { return half4(0.0); }
+
+    const float SECTORS = 180.0;
+    float ang = atan2(p.y, p.x);
+    float sIdx = floor((ang + 3.14159265) / 6.2831853 * SECTORS);
+
+    float3 c = float3(0.0);
+    float a = 0.0;
+
+    // Cinq secteurs (le nôtre et ses voisins : un éclat déborde sur les
+    // côtés), trois particules par secteur — 540 bijoux dans la gerbe.
+    for (int k = -2; k <= 2; k++) {
+        float s = sIdx + float(k);
+        s = s - SECTORS * floor(s / SECTORS);
+        for (int j = 0; j < 3; j++) {
+            float4 h = schash42(float2(s * 1.37 + 3.1, 7.9 + 5.3 * float(j)));
+            // Naissances échelonnées : la gerbe s'ouvre, elle ne claque pas.
+            float u = age - h.x * 0.13;
+            if (u <= 0.0) { continue; }
+            float span = 0.52 + 0.60 * h.y;
+            float life = u / span;
+            if (life >= 1.0) { continue; }
+
+            float th = (s + 0.5 + (h.z - 0.5) * 0.85) / SECTORS * 6.2831853
+                       - 3.14159265;
+            float2 dir = float2(cos(th), sin(th));
+            // Le côté vers lequel la carte est partie reçoit l'élan.
+            float push = 1.0 + 0.85 * max(dot(dir, way), 0.0);
+            float speed = (120.0 + 300.0 * h.w) * push;
+            // Décélération douce : les bijoux s'ouvrent puis se posent.
+            float travel = speed * u * (1.0 - 0.42 * life);
+            float rr = sbBoxRadius(dir, halfB, radius) + travel;
+            float2 dp = p - dir * rr;
+            float q = dot(dp, dp);
+            if (q > 900.0) { continue; }
+
+            float env = sin(3.14159265 * life);
+            float twk = 0.62 + 0.38 * sin(t * (3.1 + 5.0 * h.z) + h.y * 6.283);
+            float amp = env * env * twk;
+            if (amp < 0.004) { continue; }
+
+            // Un quart d'éclats-ÉTOILES (cœur + rayons en croix), le reste
+            // en poussière fine : la hiérarchie de la famille diamant.
+            float jewel = step(0.74, h.x);
+            float core = exp(-q / (0.62 * 0.62 + jewel * 0.25));
+            float lum = core;
+            if (jewel > 0.5) {
+                float rayL = 2.0 + 7.5 * env;
+                lum += (exp(-dp.y * dp.y / (0.42 * 0.42)
+                            - dp.x * dp.x / (rayL * rayL))
+                        + exp(-dp.x * dp.x / (0.42 * 0.42)
+                              - dp.y * dp.y / (rayL * rayL))) * 0.50;
+            }
+            // Blanches au départ, dorées en mourant : elles refroidissent
+            // vers l'or de la page, jamais vers le gris.
+            float3 tint = mix(float3(1.00, 0.99, 0.95),
+                              float3(1.00, 0.76, 0.38),
+                              clamp(life * 1.2, 0.0, 1.0) * (0.35 + 0.65 * h.y));
+            float g = lum * amp;
+            c += tint * g;
+            a += g;
+        }
+    }
+
+    // Le fondu d'hôte, ici aussi : les derniers bijoux se dissolvent avant
+    // le bord du rectangle, sinon la gerbe se fait trancher au carré.
+    float2 toEdge = min(position, size - position);
+    float hostFade = smoothstep(0.0, 70.0, min(toEdge.x, toEdge.y));
+
+    a = clamp(a * 1.5, 0.0, 1.0) * hostFade;
+    c = clamp(c, 0.0, 1.0) * a;      // émissif, prémultiplié
+    return half4(half3(c), half(a)) * color.a;
 }
 
 // MARK: - L'aurore de la home
