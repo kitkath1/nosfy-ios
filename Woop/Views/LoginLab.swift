@@ -1,0 +1,258 @@
+import AVFoundation
+import SwiftUI
+
+// MARK: - Banc d'essai (`-loginLab`)
+
+/// Page de connexion expérimentale : la nuit très noire en haut, l'aurore
+/// chaude (blanc, doré, orange, gris) qui monte du bas pendant que ses
+/// rideaux et ses halos descendent vers elle, des poussières-bijou qui
+/// s'échappent de la lumière — et, posés dessus, le registre de la maison :
+/// titre Inter en bas à gauche, l'input et le bouton CONNEXION de la famille
+/// diamant. L'AuthView réelle n'est pas touchée : tout vit ici.
+struct LoginLab: View {
+    /// `-loginPressed` fige le CONNEXION en état tap : la fumée d'échappée
+    /// se capture sans devoir garder le doigt posé (le pattern des bancs).
+    private static let pressed = CommandLine.arguments.contains("-loginPressed")
+    /// `-loginTrail` sème une caresse figée : la traîne de lumière se
+    /// capture sans doigt.
+    private static let trailBench = CommandLine.arguments.contains("-loginTrail")
+
+    @State private var email = ""
+    /// La caresse : les derniers points du doigt, horodatés — le shader en
+    /// fait des lueurs qui s'évasent et meurent en une seconde.
+    @State private var traces: [TouchTrace] = []
+    @State private var lastSample = Date.distantPast
+    /// La vibration de la caresse : un tic haptique doux tous les ~90 ms
+    /// tant que le doigt glisse.
+    @State private var hapticTick = 0
+    @State private var lastHaptic = Date.distantPast
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            AuroraLoginBackground(traces: traces, bench: Self.trailBench)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+            // La couche de la caresse : sous le contenu (l'input et le
+            // bouton gardent leurs touches), au-dessus du fond.
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea()
+                .gesture(DragGesture(minimumDistance: 0,
+                                     coordinateSpace: .global)
+                    .onChanged { v in caress(at: v.location) })
+
+            content
+
+            // Le grain de la maison : les nappes chaudes bandent sur OLED.
+            WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+        // Les micro-repères verticaux de la référence : des murmures
+        // d'archive sur le bord gauche, à peine là.
+        .overlay(alignment: .topLeading) { edgeTags }
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
+                         trigger: hapticTick)
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
+        .preferredColorScheme(.dark)
+    }
+
+    /// Un échantillon tous les ~28 ms suffit : le shader interpole en
+    /// s'évasant, une traîne continue naît de points espacés.
+    private func caress(at p: CGPoint) {
+        let now = Date()
+        // Une nouvelle caresse (doigt reposé après une pause) : un souffle.
+        if now.timeIntervalSince(lastSample) > 0.5 {
+            SparkleChime.shared.breath()
+        }
+        if now.timeIntervalSince(lastSample) > 0.028 {
+            lastSample = now
+            traces.append(TouchTrace(point: p, born: now))
+            traces.removeAll { now.timeIntervalSince($0.born) > 1.4 }
+            if traces.count > 10 { traces.removeFirst(traces.count - 10) }
+        }
+        if now.timeIntervalSince(lastHaptic) > 0.09 {
+            lastHaptic = now
+            hapticTick += 1
+        }
+    }
+
+    // MARK: Le contenu
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+
+            // Les textes laissent passer le doigt : la caresse de lumière
+            // traverse tout le haut de la page, seuls l'input et le bouton
+            // gardent leurs touches.
+            Group {
+                Text("Bienvenue")
+                    .font(.inter(13))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .padding(.bottom, 10)
+
+                title
+                    .padding(.bottom, 14)
+
+                Text("Ton email suffit — tes séances\nte retrouvent partout.")
+                    .font(.inter(14))
+                    .foregroundStyle(.white.opacity(0.50))
+                    .lineSpacing(4)
+                    .padding(.bottom, 30)
+            }
+            .allowsHitTesting(false)
+
+            DiamondInputField(placeholder: "Adresse email", text: $email)
+                .padding(.bottom, 14)
+
+            // La fumée du tap en or léger : sur l'aurore, le blanc pur
+            // suffit presque — l'or la marie au fond.
+            DiamondConnexionButton(benchPress: Self.pressed ? 1 : nil,
+                                   smokeWarmth: 0.4) {}
+        }
+        .padding(.horizontal, 26)
+        .padding(.bottom, 22)
+    }
+
+    /// Le titre : Inter en grand, le dernier mot un cran plus présent —
+    /// la hiérarchie de la référence (« designers » en gras), pas un slogan.
+    private var title: some View {
+        Text("Reprends le fil\nde tes \(Text("séances").font(.inter(34, .semibold)))")
+            .font(.inter(34))
+            .foregroundStyle(WoopGradient.titleFade)
+            .lineSpacing(5)
+    }
+
+    private var edgeTags: some View {
+        VStack(spacing: 64) {
+            edgeTag("0730")
+            edgeTag("WOOP")
+        }
+        .padding(.leading, 4)
+        .padding(.top, 130)
+    }
+
+    private func edgeTag(_ s: String) -> some View {
+        Text(s)
+            .font(.inter(9, .medium))
+            .tracking(3.2)
+            .foregroundStyle(.white.opacity(0.16))
+            .fixedSize()
+            .rotationEffect(.degrees(-90))
+            .frame(width: 14, height: 54)
+    }
+}
+
+// MARK: - Le fond
+
+/// Un point de la caresse, horodaté : le shader calcule l'âge lui-même à
+/// chaque image — jamais d'accumulation.
+struct TouchTrace {
+    let point: CGPoint
+    let born: Date
+}
+
+/// L'hôte du shader `loginAurora` : plein écran, sous tout le reste. La vue
+/// connaît l'horloge du shader : quand l'enveloppe du flash de l'étoile
+/// passe son seuil (même formule que côté Metal), la paillette SONNE —
+/// image et murmure ne font qu'un.
+struct AuroraLoginBackground: View {
+    var traces: [TouchTrace] = []
+    /// Le banc : une caresse figée en travers de la page.
+    var bench: Bool = false
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let flashing = sin(t * 0.83 + 0.7) > 0.933
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.loginAurora(
+                        .float2(geo.size.width, geo.size.height), .float(t),
+                        .floatArray(trailArray(at: tl.date, size: geo.size))))
+                    .onChange(of: flashing) { _, on in
+                        if on { SparkleChime.shared.play() }
+                    }
+            }
+        }
+    }
+
+    /// Les triplets (x, y, âge) que consomme le shader. Jamais vide : un
+    /// point sentinelle hors champ garde le buffer valide.
+    private func trailArray(at now: Date, size: CGSize) -> [Float] {
+        if bench {
+            // La caresse figée : six lueurs en travers de la page, la plus
+            // jeune en tête — l'âge fige la traîne au milieu de sa vie.
+            return (0..<6).flatMap { i -> [Float] in
+                let f = CGFloat(i)
+                return [Float(size.width * (0.72 - 0.09 * f)),
+                        Float(size.height * (0.36 + 0.05 * f + 0.008 * f * f)),
+                        Float(0.06 + 0.13 * Double(i))]
+            }
+        }
+        var arr: [Float] = []
+        for tr in traces {
+            let age = Float(now.timeIntervalSince(tr.born))
+            if age < 1.4 {
+                arr += [Float(tr.point.x), Float(tr.point.y), age]
+            }
+        }
+        return arr.isEmpty ? [-4000, -4000, 9] : arr
+    }
+}
+
+// MARK: - La paillette
+
+/// Les murmures de la page : la paillette (verre très aigu, désaccordé de
+/// quelques cents) quand l'étoile de la croix fleurit, et le souffle d'air
+/// au début de chaque caresse. Synthétisés (Woop/Sounds), joués en
+/// `.ambient` + `mixWithOthers` : jamais par-dessus la musique — dessous,
+/// comme le tic du cadran.
+final class SparkleChime {
+    static let shared = SparkleChime()
+
+    private let sparkle: AVAudioPlayer?
+    private let breathPlayer: AVAudioPlayer?
+
+    private init() {
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        func load(_ name: String) -> AVAudioPlayer? {
+            guard let url = Bundle.main.url(forResource: name,
+                                            withExtension: "wav") else {
+                return nil
+            }
+            let player = try? AVAudioPlayer(contentsOf: url)
+            player?.prepareToPlay()
+            return player
+        }
+        sparkle = load("AuroraSparkle")
+        breathPlayer = load("AuroraBreath")
+    }
+
+    func play() {
+        guard let sparkle else { return }
+        sparkle.volume = 0.32
+        sparkle.currentTime = 0
+        sparkle.play()
+    }
+
+    /// Le souffle de la caresse : un « shhh » d'air, à peine là.
+    func breath() {
+        guard let breathPlayer else { return }
+        breathPlayer.volume = 0.26
+        breathPlayer.currentTime = 0
+        breathPlayer.play()
+    }
+}
+
+#Preview {
+    LoginLab()
+}

@@ -142,6 +142,9 @@ struct DiamondPrimaryButton: View {
     /// Le banc force l'état tap (1 = pressé en continu) ; nil = interaction
     /// réelle, l'écrin suit le doigt.
     var benchPress: Float? = nil
+    /// La teinte de la fumée d'échappée au tap : 0 = blanc pur (partout dans
+    /// l'app), monter vers 1 la dore — la page aurora lui donne un or léger.
+    var smokeWarmth: Float = 0
     var action: () -> Void = {}
 
     /// Marge de débordement : halos et particules vivent hors du bouton.
@@ -189,7 +192,8 @@ struct DiamondPrimaryButton: View {
                     .colorEffect(ShaderLibrary.diamondButton(
                         .float2(w, h), .float(t),
                         .float(Float(Self.pad)), .float(19),
-                        .float(press), .float(burst)))
+                        .float(press), .float(burst),
+                        .float(smokeWarmth)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }

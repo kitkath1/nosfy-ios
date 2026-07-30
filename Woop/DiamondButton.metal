@@ -77,11 +77,13 @@ static float rimLight(float2 p, float2 halfB, float t) {
 // `press` : l'état tap (0 repos → 1 pressé, rampe lissée côté SwiftUI) —
 // tout l'écrin monte d'un cran : fumée plus vivante, accents plus vifs,
 // facettes plus nombreuses. `burst` : l'onde du toucher (1 au contact → 0
-// en ~0,3 s), un anneau de lumière qui s'évase et s'éteint.
+// en ~0,3 s), un anneau de lumière qui s'évase et s'éteint. `warm` : teinte
+// de la fumée d'échappée (0 = blanc pur, la maison ; 1 = or) — la page
+// aurora la réchauffe, le reste de l'app n'y touche pas.
 [[ stitchable ]] half4 diamondButton(float2 position, half4 color,
                                      float2 size, float t,
                                      float pad, float radius,
-                                     float press, float burst) {
+                                     float press, float burst, float warm) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -210,7 +212,7 @@ static float rimLight(float2 p, float2 halfB, float t) {
         }
     }
 
-    float lum = smoke + smokeOut + sheen + line + halo + spark + glitter;
+    float lum = smoke + sheen + line + halo + spark + glitter;
     // Dither léger : tue le banding des halos et de la fumée.
     lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
     lum = clamp(lum, 0.0, 1.0);
@@ -218,9 +220,17 @@ static float rimLight(float2 p, float2 halfB, float t) {
     // Dedans : opaque (l'obsidienne). Dehors : seule la lumière existe.
     // La ligne elle-même porte son alpha — sinon la rampe d'opacité du bord
     // mange la hairline exactement là où elle vit (d ≈ 0).
-    float a = mix(clamp((line + halo + spark + glitter + smokeOut * 2.2) * 1.6,
-                        0.0, 1.0), 1.0, inside);
-    return half4(half3(lum * a), half(a));      // prémultiplié
+    float aSmoke = clamp(smokeOut * 3.5, 0.0, 1.0);
+    float aOut = clamp((line + halo + spark + glitter) * 1.6 + aSmoke, 0.0, 1.0);
+    float a = mix(aOut, 1.0, inside);
+    // La fumée d'échappée est de la LUMIÈRE : couleur ≈ couverture (blanc,
+    // réchauffé d'or par `warm`). L'ancienne pondération (couleur ≈ 0,3 ×
+    // alpha) était invisible sur le banc noir mais ASSOMBRISSAIT tout fond
+    // clair — la fumée lisait noire sur l'aurore.
+    float3 tint = mix(float3(1.0), float3(1.00, 0.84, 0.55), warm);
+    float3 c = float3(lum * a) + tint * (aSmoke * (1.0 - inside));
+    c = min(c, float3(a));
+    return half4(half3(c), half(a));            // prémultiplié
 }
 
 // MARK: - Input « diamant » (champ de saisie)
