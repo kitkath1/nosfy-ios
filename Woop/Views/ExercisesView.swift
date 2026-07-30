@@ -1,8 +1,13 @@
 import SwiftUI
-import SwiftData
 
 struct ExercisesView: View {
     @State private var filter: ExerciseCategory?
+
+    /// Ouvre une fiche dès le lancement : `-openExercise woop-haute`. Même
+    /// usage que `-openTab` et `-openActiveSheet` (captures d'écran
+    /// automatisées uniquement) — sans ça, la fiche n'est atteignable qu'au
+    /// doigt, et le simulateur ne se pilote pas en ligne de commande.
+    @State private var deepLinked: Exercise?
 
     private var shown: [ExerciseCategory] {
         filter.map { [$0] } ?? ExerciseCategory.allCases
@@ -57,6 +62,12 @@ struct ExercisesView: View {
                 }
             }
             .navigationTitle("Exercices")
+            .navigationDestination(item: $deepLinked) { ExerciseDetailView(exercise: $0) }
+            .task {
+                if let id = UserDefaults.standard.string(forKey: "openExercise") {
+                    deepLinked = ExerciseCatalog.exercise(id: id)
+                }
+            }
         }
     }
 }
@@ -152,194 +163,5 @@ struct ExerciseCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .clipShape(Self.shape)
         .diamondSurface(cornerRadius: 22)
-    }
-}
-
-// MARK: - Détail
-
-struct ExerciseDetailView: View {
-    let exercise: Exercise
-
-    @Environment(\.modelContext) private var context
-    @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
-
-    @State private var showLogger = false
-    @State private var confirmation: String?
-
-    private var active: Workout? { workouts.first { $0.isActive } }
-
-    /// La dernière fois que cet exercice a été fait, séance en cours exclue.
-    private var lastLogged: LoggedExercise? {
-        for workout in workouts where !workout.isActive {
-            if let logged = workout.orderedExercises.first(where: { $0.exerciseID == exercise.id }) {
-                return logged
-            }
-        }
-        return nil
-    }
-
-    /// Ce qui a été fait la dernière fois sur cet exercice.
-    private var lastTime: String? {
-        guard let logged = lastLogged else { return nil }
-        guard !logged.orderedSets.isEmpty else { return logged.summary }
-        let count = logged.orderedSets.count
-        let reps = logged.orderedSets.first?.reps ?? 0
-        let weight = logged.maxWeight
-        return "\(count) × \(reps) à \(weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
-    }
-
-    var body: some View {
-        ZStack {
-            // Pas de ciel ici : la fiche est une page NOIRE. La photo occupe le
-            // haut de l'écran et son fond doit se perdre dans la page — une
-            // nébuleuse derrière lui redessinerait aussitôt son rectangle.
-            Color.black.ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    hero
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(spacing: 8) {
-                            Tag(text: exercise.category.rawValue)
-                            Tag(text: exercise.equipment.rawValue)
-                        }
-
-                        Text(exercise.name)
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.inkPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text(exercise.muscle)
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
-                            .foregroundStyle(Color.woopViolet)
-                    }
-
-                    WoopCard(cornerRadius: 18, padding: 18) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            InfoBlock(label: "Exécution", text: exercise.cue)
-                            Divider().overlay(Color.white.opacity(0.06))
-                            InfoBlock(label: "Erreur à éviter", text: exercise.mistake,
-                                      accent: true)
-                        }
-                    }
-
-                    if let confirmation {
-                        Label(confirmation, systemImage: "checkmark.circle.fill")
-                            .font(.system(.footnote, design: .rounded, weight: .medium))
-                            .foregroundStyle(Color.woopGold)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
-                    DiamondPrimaryButton(title: "Lancer l'entraînement") { showLogger = true }
-
-                    if active == nil {
-                        Text("Aucune séance en cours — elle sera créée automatiquement.")
-                            .font(.caption)
-                            .foregroundStyle(Color.inkMuted)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 130)
-            }
-        }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showLogger) {
-            LogExerciseSheet(exercise: exercise, lastTime: lastTime) { draft in
-                add(draft)
-            }
-        }
-    }
-
-    /// La photo ENTIÈRE, jamais rognée : sur la fiche, c'est le mouvement
-    /// complet — l'appui, l'angle, la machine — qui porte l'information.
-    private var hero: some View {
-        ExercisePhoto(exercise: exercise, fills: false)
-            .frame(height: 340)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .diamondSurface(cornerRadius: 24, neon: true)
-    }
-
-    /// Ajoute l'exercice à la séance en cours, en la créant si besoin.
-    private func add(_ draft: LoggedDraft) {
-        let workout: Workout
-        if let active {
-            workout = active
-        } else {
-            workout = Workout()
-            context.insert(workout)
-        }
-
-        let logged = LoggedExercise(exerciseID: exercise.id,
-                                    order: workout.exerciseCount,
-                                    restSeconds: draft.restSeconds)
-        logged.workout = workout
-        context.insert(logged)
-
-        for (index, set) in draft.sets.enumerated() {
-            // Une série lancée au compteur arrive déjà cochée, avec son temps
-            // sous tension : elle a été faite, pas seulement prévue.
-            let entry = StrengthSet(reps: set.reps, weight: set.weight, order: index,
-                                    isDone: set.isDone,
-                                    durationSeconds: set.durationSeconds)
-            entry.loggedExercise = logged
-            context.insert(entry)
-        }
-
-        for (cycleIndex, cycle) in draft.cycles.enumerated() {
-            for (order, phase) in cycle.enumerated() {
-                let entry = CardioPhase(kind: phase.kind, seconds: phase.seconds,
-                                        speed: phase.speed, cycleIndex: cycleIndex,
-                                        order: order, incline: draft.incline)
-                entry.loggedExercise = logged
-                context.insert(entry)
-            }
-        }
-
-        try? context.save()
-        WorkoutActivityController.ensure(workout)
-        withAnimation(.easeOut(duration: 0.25)) {
-            confirmation = "Ajouté à ta séance en cours"
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-            withAnimation { confirmation = nil }
-        }
-    }
-}
-
-// MARK: - Petits composants
-
-struct Tag: View {
-    let text: String
-
-    var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 9, weight: .bold, design: .rounded))
-            .tracking(0.9)
-            .foregroundStyle(Color.white.opacity(0.42))
-            .padding(.horizontal, 9).padding(.vertical, 4)
-            .background(Capsule().fill(Color.white.opacity(0.05)))
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
-    }
-}
-
-struct InfoBlock: View {
-    let label: String
-    let text: String
-    var accent: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .tracking(0.9)
-                .foregroundStyle(accent ? Color.woopGold.opacity(0.85) : Color.inkMuted)
-            Text(text)
-                .font(.system(.subheadline, design: .rounded))
-                .foregroundStyle(Color.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }
