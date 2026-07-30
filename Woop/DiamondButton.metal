@@ -130,14 +130,18 @@ static float rimLight(float2 p, float2 halfB, float t) {
         // La fumée attrape la lumière du bord : plus dense près des accents.
         // Au tap, le démon s'anime : les volutes montent d'un cran.
         float nearRim = exp(-fabs(d) / 16.0);
-        smoke = base + 0.012 * press
-                + s * (0.075 + 0.42 * nearRim * rim) * (1.0 + 0.7 * press)
+        // Le press souffle sur les volutes SANS voiler l'obsidienne : le
+        // noir profond reste noir entre les nuages (verdict mesuré : la
+        // face pressée virait au marbré gris).
+        smoke = base + 0.006 * press
+                + s * (0.075 + 0.42 * nearRim * rim) * (1.0 + 0.35 * press)
                 + 0.026 * nearRim * rim;
         smoke *= inside;
         // L'effet wahou : au tap, la fumée SORT du bouton — des volutes
         // franches qui s'échappent du liseré et enveloppent l'obsidienne,
-        // fondues avant d'atteindre les voisins (~25 pt).
-        float escape = exp(-max(d, 0.0) / 12.0) * (1.0 - inside);
+        // MORTES avant les voisins (l'input doit rester sobre).
+        float escape = exp(-max(d, 0.0) / 12.0) * (1.0 - inside)
+                       * smoothstep(30.0, 12.0, d);
         smokeOut = press * escape * s * (0.14 + 0.12 * rim);
     }
 
@@ -217,18 +221,20 @@ static float rimLight(float2 p, float2 halfB, float t) {
     lum += (bhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5) * (2.0 / 255.0);
     lum = clamp(lum, 0.0, 1.0);
 
-    // Dedans : opaque (l'obsidienne). Dehors : seule la lumière existe.
-    // La ligne elle-même porte son alpha — sinon la rampe d'opacité du bord
-    // mange la hairline exactement là où elle vit (d ≈ 0).
+    // Dedans : opaque (l'obsidienne). Dehors : de la LUMIÈRE pure —
+    // couleur = couverture (ratio 1), blanc pour les halos/éclats, blanc
+    // réchauffé d'or (`warm`) pour la fumée d'échappée. L'ancienne
+    // pondération (couleur ≈ 0,3 × alpha) était invisible sur le banc noir
+    // mais ASSOMBRISSAIT tout fond clair : halos et fumée lisaient comme un
+    // voile sale sur l'aurore. La ligne garde son alpha — sinon la rampe du
+    // bord mange la hairline exactement là où elle vit (d ≈ 0).
     float aSmoke = clamp(smokeOut * 3.5, 0.0, 1.0);
-    float aOut = clamp((line + halo + spark + glitter) * 1.6 + aSmoke, 0.0, 1.0);
+    float aLight = clamp((line + halo + spark + glitter) * 1.6, 0.0, 1.0);
+    float aOut = clamp(aLight + aSmoke * (1.0 - aLight), 0.0, 1.0);
     float a = mix(aOut, 1.0, inside);
-    // La fumée d'échappée est de la LUMIÈRE : couleur ≈ couverture (blanc,
-    // réchauffé d'or par `warm`). L'ancienne pondération (couleur ≈ 0,3 ×
-    // alpha) était invisible sur le banc noir mais ASSOMBRISSAIT tout fond
-    // clair — la fumée lisait noire sur l'aurore.
     float3 tint = mix(float3(1.0), float3(1.00, 0.84, 0.55), warm);
-    float3 c = float3(lum * a) + tint * (aSmoke * (1.0 - inside));
+    float3 cOut = float3(aLight) + tint * (aSmoke * (1.0 - aLight));
+    float3 c = mix(cOut, float3(lum), inside);
     c = min(c, float3(a));
     return half4(half3(c), half(a));            // prémultiplié
 }
