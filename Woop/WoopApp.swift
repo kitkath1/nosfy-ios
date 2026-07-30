@@ -59,6 +59,9 @@ struct RootView: View {
     private static let buttonLab = CommandLine.arguments.contains("-buttonLab")
     /// Banc d'essai de la carte Objectif : `-cardLab`, page noire nue.
     private static let cardLab = CommandLine.arguments.contains("-cardLab")
+    /// Banc d'essai du DOUBLON obsidienne de la carte Objectif :
+    /// `-obsidianLab`, page noire nue.
+    private static let obsidianLab = CommandLine.arguments.contains("-obsidianLab")
     /// Banc d'essai du cadran éclipse : `-counterLab`, page noire nue.
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
     /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
@@ -107,6 +110,8 @@ struct RootView: View {
             ConnexionButtonLab()
         } else if Self.cardLab {
             ObjectiveCardLab()
+        } else if Self.obsidianLab {
+            ObsidianCardLab()
         } else if Self.counterLab {
             CounterLab()
         } else if Self.loginLab {

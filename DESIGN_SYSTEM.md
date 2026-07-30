@@ -324,6 +324,72 @@ que seule la lumière du sertissage détache de la page.
   visible est une faute aussi grave qu'invisible. `GlassLight` et `GlassBorder`
   sont devenus du code mort dans ObjectiveCard.swift.
 
+## La carte « obsidienne » (verre fumé noir, source hors champ)
+
+Le DOUBLON de travail de la carte Objectif : même contrat, autre matière.
+[ObsidianCard.metal](Woop/ObsidianCard.metal) (`obsidianSurface`), vue
+`ObsidianGlassCard` dans [ObsidianCard.swift](Woop/Views/ObsidianCard.swift).
+Banc : `-obsidianLab`. La carte bijou reste intacte : les deux sont
+interchangeables sur la home, on peut les comparer sans rien réécrire.
+
+Ici on ne cherche plus une pierre qui contient un ciel, mais une **plaque de
+verre fumé lisse éclairée par une lampe posée hors du cadre**, en haut à gauche.
+Toute la matière est de la lumière ; il n'y a aucune texture.
+
+**Calquée sur une référence photographique** (`back_hero.png`) mesurée au
+sous-pixel — échelle 2,4189 px/pt, carte de référence 362 × 470,7 pt. Écart
+final : **2,8 % en moyenne sur 40 points de contrôle**, aucun point au-delà de
+9 niveaux sur 255. Méthode et outillage : `~/Downloads/woop-obsidian`
+(`preview` rend le shader hors app en 1 s, `measure.py` sort la table
+« nous / réf / écart » et la note).
+
+- **Là où le brief texte contredit la référence, la référence gagne.** Trois
+  valeurs annoncées étaient fausses : socle `#17181C` (mesuré 11/255, deux fois
+  plus noir), ombre portée sous la carte (il n'y en a AUCUNE : la page reste
+  `#000000` jusqu'au ras du bord), spot froid bleuté `#303442` (il est gris
+  légèrement CHAUD, `#6D635B`). Rayon annoncé 36-42 pt, mesuré **27 pt**.
+- **Saturation PAR CANAL** : `1 - exp(-x * k)` avec `k` la couleur intrinsèque
+  de la source (chaude : `1 / 0,456 / 0,154`). Une lumière ambrée qui monte
+  sature le rouge d'abord, le bleu en dernier — ambre → or → crème → blanc.
+  Tonemapper la luminance PUIS colorier donne un cœur BLANC au milieu de la
+  carte : erreur la plus visible du parcours.
+- **La décroissance le long des arêtes est EXPONENTIELLE** (λ 32 pt), pas
+  gaussienne. Vérifiable : l'intensité vaut 2,87 / 1,058 / 0,354 / 0,108 /
+  0,018 à u = 65 / 95 / 130 / 175 / 225 pt — une seule exponentielle les tient
+  à 3 % près. Une gaussienne tombe huit fois trop vite dans la traîne tout en
+  étant juste au milieu, et **aucun terme ajouté ne rattrape** : il faudrait
+  qu'une fonction décroissante vaille plus loin que près. Il faut changer la
+  FORME, pas ajouter un lobe.
+- **Deux nappes, pas deux bandes** : exponentielle le long de l'arête ×
+  gaussienne en profondeur, une pour le bord haut, une pour le bord gauche,
+  plus un remplissage de coin. Une bande à profondeur courte et forte
+  amplitude dessine un « L » à bord net, très artificiel.
+- **Le voile de droite est un FAISCEAU OBLIQUE**, pas un halo de coin : sa
+  crête glisse de u=331 à u=236 entre v=16 et v=200 (pente −0,50 pt de u par pt
+  de v) à largeur constante (FWHM 63 pt). Un halo de coin + une traînée
+  verticale ne peuvent pas produire ça ensemble.
+- **Le liseré est un DOUBLE trait** : un contour extérieur et, 3,2 pt à
+  l'intérieur, une seconde ligne **deux fois plus brillante** — le biseau du
+  verre. Mesuré partout : haut 104/200, droite 55/98, bas 52/107, gauche
+  78/159. C'est ce second trait qui fait lire « taillé » ; sans lui la carte
+  n'est qu'un rectangle cerné.
+- **Le trait n'a pas la couleur de la nappe** : crème (`1 / 0,60 / 0,32`,
+  R−B ≈ +35) et non orange (+136). Le biseau renvoie la lumière presque telle
+  quelle, la masse de la pierre la colore.
+- **L'arête du coin haut-gauche est BLANCHE**, pas dorée : 254/255 sur 37 pt
+  d'arc. L'or n'apparaît qu'entre 90 et 180 pt le long du bord haut.
+- **Le halo extérieur dépend à peine de la distance au bord** (λ 4 pt) et
+  BEAUCOUP de la distance à la source (λ 45 pt) : c'est ce qui lui fait valoir
+  21/255 à 12 pt à gauche et ZÉRO à 12 pt au-dessus du milieu du bord haut. Un
+  halo isotrope ne sait pas produire cette asymétrie — et en fait une boule.
+- **La grille de points** (haut-droit) est antialiasée par couverture, pas par
+  seuil : à 3x, un point de moins d'un point de diamètre scintille sinon.
+- **Le TAP** : la source avance de 2,5 pt et gagne 6 %. Une lampe qu'on
+  approche, pas un interrupteur.
+- **Reste à faire** : le contenu (titre, chiffre, trophées) n'a pas été
+  retouché — il passe aujourd'hui DANS la zone chaude, et la grille de points
+  mord sur les deux derniers trophées.
+
 ## Les photos d'exercice
 
 Le catalogue est illustré par des **photographies**, plus par des figures
