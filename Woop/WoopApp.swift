@@ -57,6 +57,8 @@ struct RootView: View {
     private static let cometTest = CommandLine.arguments.contains("-cometTest")
     /// Banc d'essai du bouton CONNEXION : `-buttonLab`, page noire nue.
     private static let buttonLab = CommandLine.arguments.contains("-buttonLab")
+    /// Banc d'essai de la carte Objectif : `-cardLab`, page noire nue.
+    private static let cardLab = CommandLine.arguments.contains("-cardLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -93,6 +95,8 @@ struct RootView: View {
             cometBench
         } else if Self.buttonLab {
             ConnexionButtonLab()
+        } else if Self.cardLab {
+            ObjectiveCardLab()
         } else {
             mainBody
         }

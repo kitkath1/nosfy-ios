@@ -161,6 +161,36 @@ enum WoopGradient {
         endPoint: .bottom
     )
 
+    /// Le grand titre d'une fiche : blanc franc à l'attaque, extinction marquée
+    /// en fin de course — le mot se perd dans le noir de la page au lieu de
+    /// s'arrêter net. La diagonale, et non l'horizontale : un dégradé purement
+    /// horizontal rallume le début de CHAQUE ligne, et un titre sur deux lignes
+    /// se met alors à clignoter. On s'arrête à 0,25 — plus bas, les dernières
+    /// lettres cessent d'être lisibles, et un titre illisible n'est plus un titre.
+    static let titleFade = LinearGradient(
+        stops: [
+            .init(color: .white, location: 0.0),
+            .init(color: .white.opacity(0.90), location: 0.32),
+            .init(color: .white.opacity(0.60), location: 0.68),
+            .init(color: .white.opacity(0.25), location: 1.0)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    /// Encre des facettes d'un contrôle — les signes + et −. C'est le parcours
+    /// du liseré diamant appliqué à un glyphe : vif en haut, éteint en bas. Le
+    /// violet a quitté les steppers ; dans cette page l'accent est une lumière,
+    /// pas une couleur.
+    static let controlInk = LinearGradient(
+        stops: [
+            .init(color: .white.opacity(0.95), location: 0.0),
+            .init(color: .white.opacity(0.52), location: 1.0)
+        ],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
     /// Néon violet → blanc, pour les boutons et les valeurs mises en avant.
     static let neon = LinearGradient(
         stops: [

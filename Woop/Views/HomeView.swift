@@ -54,34 +54,14 @@ struct HomeView: View {
 
     // MARK: - En-tête
 
+    /// Le titre seul : la phrase de contexte a été retirée — le ciel et la
+    /// carte Objectif disent déjà où en est la semaine.
     private var greeting: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("Bonjour Kathryn")
-                .font(.inter(30, .semibold))
-                .tracking(-0.3)
-                .foregroundStyle(WoopGradient.silverText)
-
-            Text(contextLine)
-                .font(.inter(15))
-                .foregroundStyle(Color.inkSecondary)
-        }
-        .padding(.top, 14)
-    }
-
-    /// La phrase change avec la situation plutôt que d'afficher un compteur figé.
-    private var contextLine: String {
-        switch doneThisWeek {
-        case 0:
-            return "Nouvelle semaine. On repart à zéro."
-        case 1:
-            return "Première séance de la semaine effectuée."
-        case Goal.weeklyTarget - 1:
-            return "Plus qu'une séance pour atteindre ton objectif."
-        case Goal.weeklyTarget...:
-            return "Objectif hebdomadaire atteint."
-        default:
-            return "Tu as réalisé \(doneThisWeek) séances cette semaine."
-        }
+        Text("Bonjour Kathryn")
+            .font(.inter(30, .semibold))
+            .tracking(-0.3)
+            .foregroundStyle(WoopGradient.silverText)
+            .padding(.top, 14)
     }
 
     // MARK: - Progression hebdomadaire (consultation)

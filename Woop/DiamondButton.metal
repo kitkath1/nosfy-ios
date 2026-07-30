@@ -453,3 +453,56 @@ static float secondaryRim(float2 p, float2 halfB, float t) {
                   1.0, inside);
     return half4(half3(lum * a), half(a));      // prémultiplié
 }
+
+// MARK: - Éclats bijou en overlay (home)
+//
+// Les éclats-ÉTOILES du CONNEXION, extraits en overlay autonome : un cœur
+// vif + deux rayons fins en croix qui fleurissent au pic du flash puis se
+// referment, accrochés au périmètre d'un rectangle arrondi. AUCUN fond,
+// aucun liseré — seule la lumière existe (prémultiplié), la surface reste
+// celle du composant hôte. `strength` module rareté et amplitude : 1.0 =
+// registre du CONNEXION, ~0.5 = murmure pour les cartes.
+
+[[ stitchable ]] half4 diamondGlints(float2 position, half4 color,
+                                     float2 size, float t,
+                                     float pad, float radius,
+                                     float strength) {
+    float2 center = size * 0.5;
+    float2 p = position - center;
+    float2 halfB = max(center - pad, float2(1.0));
+    float r = min(radius, min(halfB.x, halfB.y));
+    float d = sdRound(p, halfB, r);
+    // Les étoiles ne vivent que sur le liseré et sa frange intérieure.
+    if (d < -16.0 || d > 6.0) { return half4(0.0); }
+
+    float glitter = 0.0;
+    for (int k = 0; k < 2; k++) {
+        float cell = (k == 0) ? 9.0 : 14.0;
+        float2 idg = floor(p / cell);
+        for (int oy = -1; oy <= 1; oy++)
+        for (int ox = -1; ox <= 1; ox++) {
+            float2 idn = idg + float2(ox, oy);
+            float4 hg = bhash42(idn * 2.71 + float2(13.7 + 3.1 * float(k), 5.3));
+            if (hg.x >= 0.20 * strength) continue;
+            float2 cg = (idn + 0.5 + (hg.yz - 0.5) * 0.6) * cell;
+            float dg = sdRound(cg, halfB, r);
+            float on = exp(-fabs(dg) / 6.0);
+            float local = rimLight(cg, halfB, t);
+            float twk = max(0.0, sin(t * (0.35 + 0.55 * hg.w) + hg.z * 6.283));
+            twk = pow(twk, 16.0);
+            float amp = twk * on * (0.25 + 0.75 * local) * strength;
+            if (amp < 0.004) continue;
+            float2 dpg = p - cg;
+            float rayLen = 2.5 + 10.0 * twk;
+            float core = exp(-dot(dpg, dpg) / (0.75 * 0.75));
+            float rayH = exp(-dpg.y * dpg.y / (0.42 * 0.42)
+                             - dpg.x * dpg.x / (rayLen * rayLen));
+            float rayV = exp(-dpg.x * dpg.x / (0.42 * 0.42)
+                             - dpg.y * dpg.y / (rayLen * rayLen));
+            glitter += (core + (rayH + rayV) * 0.55) * amp;
+        }
+    }
+    float lum = clamp(glitter, 0.0, 1.0);
+    float a = clamp(glitter * 1.6, 0.0, 1.0);
+    return half4(half3(lum * a), half(a));      // prémultiplié
+}

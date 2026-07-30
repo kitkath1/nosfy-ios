@@ -1,1 +1,4 @@
 .claude/settings.local.json
+
+# Sortie xcodebuild en ligne de commande (SYMROOT projet)
+build/
