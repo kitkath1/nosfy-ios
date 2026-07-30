@@ -73,7 +73,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
 [[ stitchable ]] half4 swapCard(float2 position, half4 color,
                                 float2 size, float t,
                                 float pad, float radius, float seed,
-                                float charge) {
+                                float charge, float2 pull) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -123,7 +123,12 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // se dégrade vers l'or profond en s'éloignant.
     float2 nrm = length(p) > 0.5 ? normalize(p) : float2(0.0, -1.0);
     float ga = t * 0.78 + seed * 2.1;
-    float2 gdir = float2(cos(ga), sin(ga));
+    float2 turning = float2(cos(ga), sin(ga));
+    // Le foyer OBÉIT AU DOIGT : au repos il tourne seul, mais dès que le
+    // geste monte il dérive vers l'arête qui mène — la lumière se masse du
+    // côté où l'on tire. C'est ce qui relie la carte à la main.
+    float2 gdir = normalize(mix(turning, pull, clamp(charge * 0.80, 0.0, 1.0))
+                            + 1e-4);
     // Un second foyer, opposé et plus faible : la lumière n'a jamais un
     // seul côté mort, elle respire tout autour.
     float lobe = pow(max(dot(nrm, gdir), 0.0), 3.0)
@@ -228,76 +233,116 @@ static float sbBoxRadius(float2 dir, float2 halfB, float rad) {
     return min(tx, ty) - rad * 0.30;
 }
 
+/// L'élan que la carte communique aux étoiles en partant (pt/s) — le MÊME
+/// pour toutes : c'est ce qui garde la pluie inversible (voir plus bas).
+constant float SB_CARRY = 205.0;
+/// La gravité qui les reprend (pt/s²) : c'est elle qui fait la PLUIE.
+constant float SB_GRAV = 250.0;
+
 [[ stitchable ]] half4 swapBurst(float2 position, half4 color,
                                  float2 size, float t,
                                  float2 emit, float2 halfB, float radius,
                                  float2 way, float age) {
-    if (age < 0.0 || age > 1.30) { return half4(0.0); }
+    if (age < 0.0 || age > 2.40) { return half4(0.0); }
 
     float2 p = position - emit;
-    float r = length(p);
-    // Rejets grossiers : rien dans la carte, rien au-delà de la portée du
-    // moment. C'est ce qui rend la gerbe abordable en plein écran.
-    float inner = min(halfB.x, halfB.y) * 0.45;
-    float outer = max(halfB.x, halfB.y) + 620.0 * age + 40.0;
-    if (r < inner || r > outer) { return half4(0.0); }
+    // Le mouvement commun (l'élan de la carte + la chute) est retiré avant
+    // de chercher le secteur : ce qui reste est RADIAL, donc inversible —
+    // un fragment sait de quelle poignée d'étoiles il peut être touché.
+    float2 common = way * (SB_CARRY * age * 0.85)
+                    + float2(0.0, 0.5 * SB_GRAV * age * age);
+    float2 pc = p - common;
+    float rc = length(pc);
 
-    const float SECTORS = 180.0;
-    float ang = atan2(p.y, p.x);
+    // Rejets grossiers : rien dans la carte, rien au-delà de la portée du
+    // moment. C'est ce qui rend la pluie abordable en plein écran.
+    float inner = min(halfB.x, halfB.y) * 0.40;
+    float outer = max(halfB.x, halfB.y) + 300.0 * age + 60.0;
+    if (rc < inner || rc > outer) { return half4(0.0); }
+
+    const float SECTORS = 120.0;
+    float ang = atan2(pc.y, pc.x);
     float sIdx = floor((ang + 3.14159265) / 6.2831853 * SECTORS);
 
     float3 c = float3(0.0);
     float a = 0.0;
 
-    // Cinq secteurs (le nôtre et ses voisins : un éclat déborde sur les
-    // côtés), trois particules par secteur — 540 bijoux dans la gerbe.
+    // Cinq secteurs (les traînées débordent latéralement), quatre étoiles
+    // par secteur : 480 corps, presque tous minuscules.
     for (int k = -2; k <= 2; k++) {
         float s = sIdx + float(k);
         s = s - SECTORS * floor(s / SECTORS);
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 5; j++) {
             float4 h = schash42(float2(s * 1.37 + 3.1, 7.9 + 5.3 * float(j)));
-            // Naissances échelonnées : la gerbe s'ouvre, elle ne claque pas.
-            float u = age - h.x * 0.13;
+            // Naissances échelonnées : la pluie s'ouvre, elle ne claque pas.
+            float u = age - h.x * 0.08;
             if (u <= 0.0) { continue; }
-            float span = 0.52 + 0.60 * h.y;
+            // Vies LONGUES : c'est la lenteur de la chute qui fait la pluie.
+            float span = 1.05 + 1.05 * h.y;
             float life = u / span;
             if (life >= 1.0) { continue; }
 
             float th = (s + 0.5 + (h.z - 0.5) * 0.85) / SECTORS * 6.2831853
                        - 3.14159265;
             float2 dir = float2(cos(th), sin(th));
-            // Le côté vers lequel la carte est partie reçoit l'élan.
-            float push = 1.0 + 0.85 * max(dot(dir, way), 0.0);
-            float speed = (120.0 + 300.0 * h.w) * push;
-            // Décélération douce : les bijoux s'ouvrent puis se posent.
-            float travel = speed * u * (1.0 - 0.42 * life);
-            float rr = sbBoxRadius(dir, halfB, radius) + travel;
-            float2 dp = p - dir * rr;
+            // L'arrachement : un souffle radial modeste (la carte ne fait
+            // pas exploser ses étoiles, elle les SÈME), l'élan commun, puis
+            // la gravité qui gagne — la trajectoire est un arc.
+            float push = 1.0 + 0.55 * max(dot(dir, way), 0.0);
+            float speed = (55.0 + 135.0 * h.w) * push;
+            float rr = sbBoxRadius(dir, halfB, radius)
+                       + speed * u * (1.0 - 0.45 * life);
+            float2 pos = dir * rr
+                         + way * (SB_CARRY * u * (1.0 - 0.30 * life))
+                         + float2(0.0, 0.5 * SB_GRAV * u * u);
+            float2 dp = p - pos;
             float q = dot(dp, dp);
-            if (q > 900.0) { continue; }
+            if (q > 1300.0) { continue; }
 
-            float env = sin(3.14159265 * life);
-            float twk = 0.62 + 0.38 * sin(t * (3.1 + 5.0 * h.z) + h.y * 6.283);
-            float amp = env * env * twk;
-            if (amp < 0.004) { continue; }
+            // L'enveloppe : apparition franche, longue extinction — une
+            // étoile ne clignote pas, elle s'éteint.
+            // Une étoile brille pendant sa chute et ne s'éteint qu'au bout :
+            // une extinction précoce ne laisse voir qu'une poussière grise.
+            float env = min(life / 0.08, 1.0) * (1.0 - smoothstep(0.70, 1.0, life));
+            float twk = 0.70 + 0.30 * sin(t * (2.4 + 4.2 * h.z) + h.y * 6.283);
+            // Loi de puissance : une nuée de petites, quelques franches —
+            // la hiérarchie d'un ciel, jamais des confettis équivalents.
+            float bright = 0.50 + 0.50 * pow(h.z, 2.0);
+            float amp = env * twk * bright;
+            if (amp < 0.003) { continue; }
 
-            // Un quart d'éclats-ÉTOILES (cœur + rayons en croix), le reste
-            // en poussière fine : la hiérarchie de la famille diamant.
-            float jewel = step(0.74, h.x);
-            float core = exp(-q / (0.62 * 0.62 + jewel * 0.25));
-            float lum = core;
+            // La queue de comète : alignée sur la VITESSE du moment (donc
+            // elle bascule quand la gravité prend le dessus), fine, et
+            // seulement derrière l'étoile.
+            float2 vel = dir * (speed * (1.0 - 0.9 * life))
+                         + way * (SB_CARRY * (1.0 - 0.6 * life))
+                         + float2(0.0, SB_GRAV * u);
+            float vlen = max(length(vel), 1.0);
+            float2 vu = vel / vlen;
+            float along = dot(dp, vu);
+            float across = dot(dp, float2(-vu.y, vu.x));
+            float tl = 5.0 + 17.0 * clamp(vlen / 420.0, 0.0, 1.0);
+            float trail = exp(-across * across / (0.52 * 0.52))
+                          * exp(-max(-along, 0.0) / tl) * step(along, 0.0);
+
+            // Grains FINS mais RÉELS : sous ~0,5 pt un corps passe entre les
+            // pixels de la dalle et disparaît. Une étoile sur huit ouvre des
+            // rayons en croix, courts — c'est leur longueur qui faisait
+            // « confetti », pas leur présence.
+            float jewel = step(0.88, h.x);
+            float core = exp(-q / (0.68 * 0.68));
+            float lum = core + trail * 0.50;
             if (jewel > 0.5) {
-                float rayL = 2.0 + 7.5 * env;
-                lum += (exp(-dp.y * dp.y / (0.42 * 0.42)
+                float rayL = 1.6 + 3.6 * env;
+                lum += (exp(-dp.y * dp.y / (0.30 * 0.30)
                             - dp.x * dp.x / (rayL * rayL))
-                        + exp(-dp.x * dp.x / (0.42 * 0.42)
-                              - dp.y * dp.y / (rayL * rayL))) * 0.50;
+                        + exp(-dp.x * dp.x / (0.30 * 0.30)
+                              - dp.y * dp.y / (rayL * rayL))) * 0.42;
             }
-            // Blanches au départ, dorées en mourant : elles refroidissent
-            // vers l'or de la page, jamais vers le gris.
+            // Blanches en naissant, dorées en tombant.
             float3 tint = mix(float3(1.00, 0.99, 0.95),
                               float3(1.00, 0.76, 0.38),
-                              clamp(life * 1.2, 0.0, 1.0) * (0.35 + 0.65 * h.y));
+                              clamp(life * 1.3, 0.0, 1.0) * (0.40 + 0.60 * h.y));
             float g = lum * amp;
             c += tint * g;
             a += g;
@@ -309,7 +354,7 @@ static float sbBoxRadius(float2 dir, float2 halfB, float rad) {
     float2 toEdge = min(position, size - position);
     float hostFade = smoothstep(0.0, 70.0, min(toEdge.x, toEdge.y));
 
-    a = clamp(a * 1.5, 0.0, 1.0) * hostFade;
+    a = clamp(a * 3.0, 0.0, 1.0) * hostFade;
     c = clamp(c, 0.0, 1.0) * a;      // émissif, prémultiplié
     return half4(half3(c), half(a)) * color.a;
 }
