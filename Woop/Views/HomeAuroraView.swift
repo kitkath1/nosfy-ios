@@ -356,6 +356,9 @@ struct SwapDeck: View {
     @State private var lastTick: Date = .distantPast
     /// L'horodatage du toucher : la bouffée du néon intérieur.
     @State private var tapAt: Date = .distantPast
+    /// Le tube a-t-il déjà pris pour CE geste : l'amorçage ne sonne qu'une
+    /// fois, pas à chaque image passée au-dessus du seuil.
+    @State private var ignited = false
 
     /// Les cartes visibles, de la plus profonde à celle du dessus (l'ordre
     /// de rendu). La plus profonde est transparente : c'est là que la carte
@@ -448,14 +451,18 @@ struct SwapDeck: View {
                 .frame(width: Self.cardWidth, height: Self.cardHeight)
                 .scaleEffect(x: 1, y: -1)
                 .mask {
+                    // Le masque garde la bande qui TOUCHE la carte et se perd
+                    // en descendant. Inversé, le reflet se détachait loin
+                    // dessous — invisible dans la home, où cette bande tombe
+                    // derrière la barre d'onglets.
                     LinearGradient(stops: [
-                        .init(color: .white.opacity(0.0), location: 0.0),
-                        .init(color: .white.opacity(0.10), location: 0.72),
-                        .init(color: .white.opacity(0.85), location: 1.0)
+                        .init(color: .white.opacity(0.95), location: 0.0),
+                        .init(color: .white.opacity(0.30), location: 0.22),
+                        .init(color: .white.opacity(0.0), location: 0.55)
                     ], startPoint: .top, endPoint: .bottom)
                 }
-                .blur(radius: 5)
-                .opacity(0.42)
+                .blur(radius: 3)
+                .opacity(0.70)
                 .rotationEffect(.degrees(-Double(drag.width) / 30), anchor: .top)
                 .offset(x: drag.width,
                         y: Self.cardHeight - Self.sinkStep + 3 + drag.height * 0.25)
@@ -511,7 +518,7 @@ struct SwapDeck: View {
             .onTapGesture {
                 guard isTop else { return }
                 tapAt = .now
-                SwapFeedback.shared.tap()
+                SwapFeedback.shared.ignite()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
                     onOpen(workout)
                 }
@@ -524,6 +531,12 @@ struct SwapDeck: View {
             .onChanged { value in
                 guard !flying else { return }
                 drag = value.translation
+                // L'amorçage : une seule fois par geste, à l'instant où le
+                // tube prend. Au-delà, c'est le grain qui parle.
+                if !ignited, charge > 0.12 {
+                    ignited = true
+                    SwapFeedback.shared.ignite()
+                }
                 // Le grain sous le doigt : cadencé (plus serré à mesure que
                 // le seuil approche), jamais à chaque image — la trame du
                 // moteur haptique se saturerait et on ne sentirait plus rien.
@@ -542,9 +555,11 @@ struct SwapDeck: View {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
                         drag = .zero
                     }
+                    ignited = false
                     return
                 }
                 fly(from: value.translation)
+                ignited = false
             }
     }
 
@@ -746,15 +761,18 @@ struct SwapWorkoutCard: View {
             // En tête, à gauche : le nom seul. Rien d'autre — la carte est
             // d'abord du vide (la référence : un mot en haut, deux mesures
             // en bas, et beaucoup de noir entre les deux).
+            // Le titre descend et respire : le tube est à 14 pt du bord et
+            // sa nappe porte loin — collé en haut, le texte baignait dedans.
             Text(title)
                 .font(.inter(19, .medium))
-                .foregroundStyle(Color.white.opacity(0.92))
+                .foregroundStyle(Color.white.opacity(0.95))
+                .padding(.top, 8)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             Text(workout.relativeDateLabel)
                 .font(.inter(11))
-                .foregroundStyle(Color.white.opacity(0.34))
+                .foregroundStyle(Color.white.opacity(0.46))
                 .padding(.top, 5)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -768,7 +786,8 @@ struct SwapWorkoutCard: View {
                     .frame(width: 72, alignment: .leading)
             }
         }
-        .padding(22)
+        // 30 pt : le texte se tient à l'écart du tube (14 pt) et de sa nappe.
+        .padding(30)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background { ecrin }
     }
@@ -781,13 +800,14 @@ struct SwapWorkoutCard: View {
     /// espacées, la valeur se pose dessous.
     private func stat(_ label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
+            // Relevées : à 30 % de blanc, la nappe d'or du tube les mangeait.
             Text(label)
                 .font(.inter(8.5, .medium))
                 .tracking(1.3)
-                .foregroundStyle(Color.white.opacity(0.30))
+                .foregroundStyle(Color.white.opacity(0.46))
             Text(value)
                 .font(.inter(12.5))
-                .foregroundStyle(Color.white.opacity(0.78))
+                .foregroundStyle(Color.white.opacity(0.88))
         }
         // Un chiffre ne se plie jamais : « 52 min » est un bloc.
         .lineLimit(1)
@@ -837,18 +857,21 @@ final class SwapFeedback {
     static let shared = SwapFeedback()
 
     private let player: AVAudioPlayer?
+    private let ignitePlayer: AVAudioPlayer?
     private var engine: CHHapticEngine?
 
     private init() {
         try? AVAudioSession.sharedInstance()
             .setCategory(.ambient, options: [.mixWithOthers])
-        if let url = Bundle.main.url(forResource: "AuroraSwipe",
-                                     withExtension: "wav") {
-            player = try? AVAudioPlayer(contentsOf: url)
-            player?.prepareToPlay()
-        } else {
-            player = nil
+        func load(_ name: String) -> AVAudioPlayer? {
+            guard let url = Bundle.main.url(forResource: name,
+                                            withExtension: "wav") else { return nil }
+            let p = try? AVAudioPlayer(contentsOf: url)
+            p?.prepareToPlay()
+            return p
         }
+        player = load("AuroraSwipe")
+        ignitePlayer = load("NeonIgnite")
 
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         engine = try? CHHapticEngine()
@@ -867,6 +890,34 @@ final class SwapFeedback {
             player.play()
         }
         rumble()
+    }
+
+    /// L'AMORÇAGE du tube : le petit bruit de lumière (clac d'amorce, souffle
+    /// d'air, bourdon de verre qui monte) et la montée qui l'accompagne dans
+    /// la main — 0,22 s, douce, très peu « sharp » : ça s'allume, ça ne
+    /// claque pas. Joué UNE fois par allumage.
+    func ignite() {
+        if let ignitePlayer {
+            ignitePlayer.volume = 0.30
+            ignitePlayer.currentTime = 0
+            ignitePlayer.play()
+        }
+        guard let engine else { return }
+        let swell = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.62),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.18)
+        ], relativeTime: 0, duration: 0.22)
+        let shape = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [
+                .init(relativeTime: 0.00, value: 0.10),
+                .init(relativeTime: 0.07, value: 1.00),
+                .init(relativeTime: 0.22, value: 0.00)
+            ], relativeTime: 0)
+        guard let pattern = try? CHHapticPattern(events: [swell],
+                                                 parameterCurves: [shape]),
+              let p = try? engine.makePlayer(with: pattern) else { return }
+        try? p.start(atTime: CHHapticTimeImmediate)
     }
 
     /// Le toucher : un coup net et court — le tube s'allume, rien de plus.
