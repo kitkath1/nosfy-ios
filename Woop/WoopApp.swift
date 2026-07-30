@@ -61,6 +61,8 @@ struct RootView: View {
     private static let cardLab = CommandLine.arguments.contains("-cardLab")
     /// Banc d'essai du cadran éclipse : `-counterLab`, page noire nue.
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
+    /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
+    private static let loginLab = CommandLine.arguments.contains("-loginLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -101,6 +103,8 @@ struct RootView: View {
             ObjectiveCardLab()
         } else if Self.counterLab {
             CounterLab()
+        } else if Self.loginLab {
+            LoginLab()
         } else {
             mainBody
         }
