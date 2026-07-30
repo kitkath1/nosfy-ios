@@ -152,36 +152,68 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float3 glowCol = mix(float3(1.00, 0.96, 0.89),
                          float3(1.00, 0.74, 0.32), grad);
 
-    // ---- LE NÉON INTÉRIEUR : un tube posé à 8 pt du bord, parallèle au
-    // contour (coins arrondis compris — c'est l'iso-distance `d = -8`, pas
-    // une seconde forme). Éteint au repos ; il s'allume au geste et au tap.
-    //
-    // Trois couches, et l'ordre compte : un CŒUR BLANC très fin, une gaine
-    // ambre, puis une nappe orange qui se perd. C'est la blancheur du cœur
-    // qui fait « lumière » — une bande orange, même épaisse, lit comme un
-    // surligneur. (Même loi que le verre du splash.)
-    float dn = d + 8.0;
-    float an = fabs(dn);
-    // La zone chaude voyage avec le foyer : un tube également brillant sur
-    // tout son tour est mort.
-    float hot = 0.34 + 0.66 * w;
-    float nCore = exp(-an * an / (0.72 * 0.72));
-    float nSheath = exp(-an * an / (2.15 * 2.15));
-    // La nappe baigne surtout l'INTÉRIEUR : c'est elle qui remplace le
-    // dégradé in-card — une seule source de lumière, tout le reste n'est
-    // que sa retombée. Vers le bord, elle est bien plus courte.
-    float nBloom = exp(-an / (dn < 0.0 ? (13.0 + 7.0 * lit) : 5.5));
-    float3 neon = (float3(1.00, 0.99, 0.96) * (nCore * 0.95)
-                   + float3(1.00, 0.78, 0.36) * (nSheath * 0.48)
-                   + float3(1.00, 0.50, 0.14) * (nBloom * 0.125))
-                  * (hot * lit * inside);
-
     // LE FONDU D'HÔTE : toute la lumière meurt AVANT le bord du rectangle
     // du shader. Sans lui, le halo bute sur le bord et la carte se met à
     // porter une plaque d'or rectangulaire — le débord doit se dissoudre
     // dans le noir, jamais se faire couper.
     float fade = 1.0 - smoothstep(pad * 0.42, pad * 0.96, d);
     glow *= fade;
+
+    // ---- LE TUBE DE NÉON : posé à 14 pt du bord, parallèle au contour
+    // (coins arrondis compris — c'est l'iso-distance `d = -14`, pas une
+    // seconde forme à faire coïncider). Éteint au repos ; il naît du geste
+    // et souffle une bouffée au toucher.
+    //
+    // Ce qui fait qu'un néon EST un néon, c'est le rapport cœur/halo : sur
+    // une vraie photo, le trait blanc fait quelques pixels et son halo dix
+    // fois plus, à 40-50 % de luminance. La retenue premium porte sur la
+    // SURFACE occupée — un seul tube, bien placé — jamais sur l'intensité.
+    // Un premier essai à 12 % de nappe ne lisait qu'une jolie ligne d'or.
+    float dn = d + 14.0;
+    float an = fabs(dn);
+    // La zone chaude voyage avec le foyer : un tube également brillant sur
+    // tout son tour est mort.
+    float hot = 0.34 + 0.66 * w;
+    // Le cœur pousse AU-DELÀ de 1 : il sature en blanc pur, comme un tube
+    // surexposé. C'est cette blancheur cramée qui dit « lumière ».
+    float nCore = exp(-an * an / (1.05 * 1.05));
+    float nSheath = exp(-an * an / (4.2 * 4.2));
+    // Deux nappes : la proche, qui donne l'épaisseur du halo, et une très
+    // large qui ILLUMINE tout l'intérieur de la carte au lieu de la laisser
+    // noire à vingt points du tube.
+    float nGlow = exp(-an / (dn < 0.0 ? (26.0 + 8.0 * lit) : 12.0));
+    float nWash = exp(-an / 75.0);
+    // Les couleurs RESPIRENT : la gaine glisse lentement de l'or pâle à
+    // l'ambre franc (période ~7 s, décalée par carte), et la nappe suit un
+    // autre tempo — le tube n'a jamais deux fois la même teinte.
+    // LA PALETTE DU LOGO : de l'orange FRANC, pas de l'or. La gaine respire
+    // entre l'orange brûlé et l'orange vif (jamais jusqu'au jaune pâle : ça
+    // ramollissait le tube), et le cœur reste blanc pur — c'est le contraste
+    // entre ce blanc et l'orange saturé qui fait « pop ».
+    float breath = 0.5 + 0.5 * sin(t * 0.90 + seed * 2.3);
+    float breath2 = 0.5 + 0.5 * sin(t * 0.61 + seed * 4.1 + 1.7);
+    float3 sheathCol = mix(float3(1.00, 0.48, 0.12),
+                           float3(1.00, 0.66, 0.24), breath);
+    float3 glowColN = mix(float3(1.00, 0.32, 0.05),
+                          float3(1.00, 0.48, 0.12), breath2);
+    float3 neonCol = float3(1.00, 0.99, 0.97) * (nCore * 1.85)
+                     + sheathCol * (nSheath * 1.00)
+                     + glowColN * (nGlow * 0.48)
+                     + float3(1.00, 0.40, 0.10) * (nWash * 0.13);
+    neonCol *= hot * lit;
+    // Un vrai néon ÉCLAIRE ce qui l'entoure : une part de sa nappe franchit
+    // le bord de la carte et va se poser sur l'aurore. Amputée au contour,
+    // la lumière redevenait un trait dessiné.
+    float3 neonIn = neonCol * inside;
+    float3 neonOut = neonCol * (1.0 - inside) * 0.35 * fade;
+
+    // ---- Et la LUMIÈRE BLANCHE DU BORD, qui reste : elle entre par
+    // l'arête et meurt vite (20 pt). Deux étages bien séparés — le bord est
+    // blanc et court, le tube est ambre et long — sinon les deux lueurs se
+    // mélangent en bouillie. (Je l'avais fondue dans le tube « une seule
+    // source » : juste en physique, faux pour l'œil, elle manquait.)
+    float inward = max(-d, 0.0);
+    float innerWhite = exp(-inward / 20.0) * w * lit * 0.34 * inside;
 
     // ---- Les pointes-bijou : le murmure du REPOS, et rien d'autre. Les
     // démultiplier sous le geste faisait grésiller l'arête de petites
@@ -210,11 +242,16 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // jamais un voile, la carte ne doit pas salir l'aurore derrière elle.
     float3 inCol = float3(matte) + light
                    + rimCol * (line * inside * 0.9)
-                   + neon;
+                   + float3(1.00, 0.99, 0.97) * innerWhite
+                   + neonIn;
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);
-    float aOut = clamp(aRim + aGlow * (1.0 - aRim), 0.0, 1.0);
-    float3 outCol = rimCol * aRim + glowCol * (aGlow * (1.0 - aRim));
+    // La part du néon qui a franchi le bord porte sa propre couverture :
+    // elle ÉCLAIRE l'aurore (émissif), elle ne la voile pas.
+    float aNeon = clamp(max(neonOut.r, max(neonOut.g, neonOut.b)), 0.0, 1.0);
+    float aOut = clamp(aRim + (aGlow + aNeon) * (1.0 - aRim), 0.0, 1.0);
+    float3 outCol = rimCol * aRim
+                    + (glowCol * aGlow + neonOut) * (1.0 - aRim);
     float a = mix(aOut, 1.0, inside);
     float3 c = mix(outCol, inCol, inside);
     // Dither : toute la matière vit sous 4 % de blanc.
@@ -386,55 +423,81 @@ static float auroraBlob(float2 q, float2 ctr, float2 sig) {
     return exp(-dot(dd, dd));
 }
 
+/// LA RAMPE : noir → braise → orange franc → ambre → crème → blanc pur.
+///
+/// C'est ELLE qui tue le marron, structurellement. Additionner des nappes
+/// colorées (un blanc, un doré, une braise) donne, partout où deux d'entre
+/// elles se superposent à mi-niveau, un ton moyen DÉSATURÉ — et un orange
+/// désaturé sombre, c'est exactement du marron. Ici on ne calcule qu'une
+/// intensité, et chaque niveau reçoit une teinte choisie dont la saturation
+/// est tenue haut : en s'assombrissant, la couleur va vers la BRAISE, jamais
+/// vers la boue.
+static float3 auroraRamp(float L) {
+    const float3 ember  = float3(1.00, 0.20, 0.02);
+    const float3 orange = float3(1.00, 0.45, 0.07);
+    // L'ambre reste SATURÉ et sa bande est courte : c'est le seul palier qui
+    // peut encore lire « terne » s'il s'étale (un ambre moyen sur du sombre
+    // redevient du marron). Passé lui, on file vite vers la crème.
+    const float3 amber  = float3(1.00, 0.64, 0.18);
+    const float3 cream  = float3(1.00, 0.90, 0.72);
+    const float3 white  = float3(1.00, 0.99, 0.98);
+    float3 c = ember;
+    c = mix(c, orange, smoothstep(0.10, 0.36, L));
+    c = mix(c, amber,  smoothstep(0.36, 0.56, L));
+    c = mix(c, cream,  smoothstep(0.55, 0.76, L));
+    c = mix(c, white,  smoothstep(0.74, 0.92, L));
+    // La teinte vient de la rampe, la luminance vient de L : toutes les
+    // couleurs de la rampe ont 1.0 en composante max, donc le produit garde
+    // exactement le niveau voulu.
+    return c * L;
+}
+
 [[ stitchable ]] half4 homeAurora(float2 position, half4 color,
                                   float2 size, float t) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
-    const float3 blanc   = float3(1.00, 0.98, 0.93);
-    const float3 dore    = float3(1.00, 0.72, 0.26);
-    const float3 ambre   = float3(1.00, 0.42, 0.08);
-    const float3 lunaire = float3(0.80, 0.79, 0.81);
-
+    // Le champ SCALAIRE : on ne calcule plus que des INTENSITÉS. La couleur
+    // arrive après, par la rampe — voir `auroraRamp`.
     float b1 = 0.90 + 0.10 * sin(t * 6.2832 / 41.0);
     float b2 = 0.88 + 0.12 * sin(t * 6.2832 / 29.0 + 2.1);
 
-    // Le cœur, très bas et à gauche : il ne fait qu'affleurer le bord.
-    float3 mass = blanc * (0.62 * b1 * auroraBlob(q,
-        float2(aspect * (0.38 + 0.02 * sin(t / 43.0)), 1.14),
-        float2(0.26, 0.16)));
-    // La nappe dorée qui la couronne.
-    mass += dore * (0.30 * b2 * auroraBlob(q,
-        float2(aspect * (0.62 + 0.03 * sin(t / 31.0 + 1.0)), 1.06),
-        float2(0.36, 0.14)));
-    // Les braises des deux flancs, basses.
-    mass += ambre * (0.34 * b2 * auroraBlob(q,
-        float2(aspect * 0.03, 0.99), float2(0.20, 0.13)));
-    mass += ambre * (0.26 * b1 * auroraBlob(q,
-        float2(aspect * 1.00, 0.94), float2(0.17, 0.14)));
-    // Le gris cendré qui sépare la nuit de la braise — c'est lui qui
-    // empêche le fondu de virer au marron.
-    mass += lunaire * (0.13 * b1 * auroraBlob(q,
-        float2(aspect * 0.50, 0.86), float2(0.46, 0.09)));
+    // Le cœur, serré : c'est lui qui atteint le haut de la rampe, donc le
+    // BLANC. Tout le dégradé de la page en découle — et il doit être DANS
+    // l'écran : centré à y = 1.14 il tombait sous le bord, la rampe ne
+    // montait jamais au-dessus de l'orange et rien ne blanchissait.
+    float L = 2.30 * b1 * auroraBlob(q,
+        float2(aspect * (0.38 + 0.02 * sin(t / 43.0)), 0.92),
+        float2(0.28, 0.20));
+    // La nappe qui le couronne — c'est elle qui fait MONTER l'orange dans
+    // la page au lieu de le laisser couché au bord.
+    L += 0.95 * b2 * auroraBlob(q,
+        float2(aspect * (0.62 + 0.03 * sin(t / 31.0 + 1.0)), 0.86),
+        float2(0.44, 0.22));
+    // Les braises des deux flancs : hautes et franches, elles grimpent le
+    // long des bords comme dans l'icône.
+    L += 0.80 * b2 * auroraBlob(q, float2(aspect * 0.02, 0.84),
+                                float2(0.26, 0.22));
+    L += 0.68 * b1 * auroraBlob(q, float2(aspect * 1.00, 0.78),
+                                float2(0.22, 0.24));
 
     // Trois voix qui descendent, chacune à son tempo — la vie du fond.
-    const float3 vcol[3] = { float3(1.00, 0.70, 0.28),
-                             float3(1.00, 0.96, 0.90),
-                             float3(0.98, 0.44, 0.10) };
     const float vper[3]  = { 14.0, 10.0, 19.0 };
     const float vpha[3]  = { 0.15, 0.52, 0.80 };
     const float vcx[3]   = { 0.58, 0.33, 0.86 };
-    const float vw[3]    = { 0.30, 0.26, 0.28 };
+    const float vw[3]    = { 0.62, 0.70, 0.56 };
     for (int i = 0; i < 3; i++) {
         float life = fract(t / vper[i] + vpha[i]);
         float env = sin(3.14159 * life);
-        float y = mix(0.68, 1.08, life);
+        // Elles naissent PLUS HAUT et descendent plus loin : c'est ce qui
+        // fait respirer l'orange sur toute la moitié basse.
+        float y = mix(0.46, 1.00, life);
         // La voix LOUVOIE en descendant, et son enveloppe palpite : le
         // mouvement doit se VOIR, pas seulement se deviner.
         float x = aspect * (vcx[i] + 0.11 * sin(life * 6.2832 + vpha[i] * 9.0));
         float2 sig = float2(0.17, 0.10)
                      * (1.0 + 0.20 * sin(life * 12.566 + vpha[i] * 7.0));
-        mass += vcol[i] * (vw[i] * env * env * auroraBlob(q, float2(x, y), sig));
+        L += vw[i] * env * env * auroraBlob(q, float2(x, y), sig);
     }
 
     // Les rideaux : ils glissent vers le bas et CREUSENT la lumière — du
@@ -443,22 +506,23 @@ static float auroraBlob(float2 q, float2 ctr, float2 sig) {
     float w1 = scfbm(ac + float2(t * 0.016, 0.0));
     float w2 = scfbm(ac * 1.7 - float2(t * 0.010, t * 0.024) + 2.1 * w1);
     float cur = scfbm(ac * 1.27 + float2(1.9 * w1, -1.5 * w2));
-    cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.5);
-    mass *= 0.44 + 0.98 * cur;
+    cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.2);
+    // Le plancher remonte : les rideaux CREUSENT toujours, mais ils ne
+    // doivent plus éteindre l'orange entre deux filaments.
+    L *= 0.62 + 0.85 * cur;
 
-    // La nuit avale tout dans la moitié haute : le contenu de la page vit
-    // sur du noir, l'aurore n'est qu'un sol.
-    mass *= smoothstep(0.44, 0.88, q.y);
+    // La nuit tient le HAUT de la page ; en dessous, l'orange a le droit de
+    // monter. La rampe partait de 0,52 : l'aurore restait couchée au bord.
+    L *= smoothstep(0.26, 0.70, q.y);
 
-    float3 c = 1.0 - exp(-mass * 1.70);
+    // Tone mapping ouvert : le cœur crame franchement en blanc et l'orange
+    // occupe vraiment la moitié basse — c'est le « pop » de l'icône.
+    L = 1.0 - exp(-L * 1.95);
 
-    // La gradation anti-caramel : sous les basses lumières la couleur
-    // retombe vers le gris, dans les hautes la saturation remonte.
-    float3 g3 = float3(dot(c, float3(0.299, 0.587, 0.114)));
-    float vmax = max(c.r, max(c.g, c.b));
-    float keep = mix(0.30, 1.0, smoothstep(0.06, 0.34, vmax));
-    float push = 0.45 * smoothstep(0.45, 0.85, vmax);
-    c = clamp(mix(g3, c, keep + push), 0.0, 1.0);
+    // Et la couleur, enfin : chaque niveau reçoit sa teinte, saturation
+    // tenue. Plus de gradation anti-caramel à faire après coup — la rampe
+    // rend le marron impossible par construction.
+    float3 c = auroraRamp(L);
 
     c += (schash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0))
           - 0.5) * (2.0 / 255.0);
