@@ -44,6 +44,13 @@ struct LoginLab: View {
                                      coordinateSpace: .global)
                     .onChanged { v in caress(at: v.location) })
 
+            // Le monolithe posé — l'objet sur lequel la cinématique du splash
+            // se termine. Il occupe tout l'écran en rendu (son halo et sa
+            // flaque en ont besoin) mais ne capte le doigt que dans son
+            // voisinage : la caresse continue de vivre sur toute la page.
+            LandedMonolithView()
+                .allowsHitTesting(true)
+
             content
 
             // Le grain de la maison : les nappes chaudes bandent sur OLED.

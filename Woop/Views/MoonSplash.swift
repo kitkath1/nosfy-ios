@@ -1,0 +1,513 @@
+import SwiftUI
+import simd
+
+// MARK: - Le splash : la lune en gros plan, puis le monolithe qui se pose
+//
+// Un plan-séquence de 9,2 s, en quatre temps :
+//
+//   0,00 → 0,90  L'ALLUMAGE. Noir. La caméra est déjà collée au tube — treize
+//                fois la taille de la scène — et le néon naît sous nos yeux
+//                pendant qu'elle pousse doucement.
+//   0,90 → 5,90  LE TRAVELLING. La comète part et la caméra la suit sur TOUT
+//                le contour du croissant, en abscisse curviligne : la vitesse
+//                à l'écran est celle qu'on écrit ici, pas celle qu'imposerait
+//                la paramétrisation des Bézier. Elle lève le pied aux quatre
+//                accidents de la courbe (les deux cornes, les deux crochets).
+//   5,90 → 7,50  LE BOOM. Le tube surtend, la caméra décolle en arrière —
+//                vite au départ, longuement amortie — et le monolithe entier
+//                se découvre : la laque, la tranche, le filet, la flaque.
+//   7,50 → 9,20  L'ENVOL. Il rapetisse en filant vers le haut-gauche pendant
+//                que l'aurore de la connexion monte du noir, et se pose avec
+//                un rebond court. À partir de là, le doigt le fait tourner.
+//
+// TOUT EST FONCTION PURE DU TEMPS — `MoonSplashBeat.at(t:)` —, jamais une
+// animation d'état : la scène se rejoue à l'identique image par image, ce qui
+// est la condition pour la régler par captures (le banc `-moonSplashLab`,
+// et `-moonSplashFreeze <t>` pour figer un instant précis).
+//
+// LA CAMÉRA VIT DANS LE SHADER, pas dans SwiftUI. Un `scaleEffect` sur la
+// scène rastériserait les hairlines et le dither — le fichier du monolithe le
+// documente. Ici, `camera` = (cible, zoom) en points de SCÈNE : le shader
+// divise son repère, et le tube, le filet, la flaque se re-rendent nets à
+// n'importe quel grossissement.
+
+// MARK: - La géométrie d'arrivée
+//
+/// Où le monolithe se pose, et à quelle taille. Une seule source de vérité :
+/// la cinématique s'en sert pour viser, l'écran d'accueil pour l'afficher —
+/// sans quoi le raccord entre les deux sauterait d'un cheveu, ce qui est
+/// exactement ce qui se voit.
+enum MoonLanding {
+    /// Le grossissement final : la face de 152 pt tombe à 106 pt — un logo
+    /// posé sur la page. À 0,62 (94 pt) l'objet se perdait dans la nuit du
+    /// haut, qui est vaste ; il lui faut assez de présence pour tenir le
+    /// coin gauche tout seul.
+    static let zoom: Float = 0.70
+    /// La demi-face nominale du monolithe (celle du banc `-logoLab`).
+    static let faceR: Float = 76
+
+    /// Le point d'arrivée du centre de l'objet : à gauche, dans la nuit qui
+    /// occupe toute la moitié haute de l'aurore, bien au-dessus du titre.
+    static func spot(in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width * 0.315, y: size.height * 0.335)
+    }
+
+    /// Le centre du repère du shader (il place sa scène à 46 % de la hauteur).
+    static func sceneCenter(in size: CGSize) -> CGPoint {
+        CGPoint(x: size.width * 0.5, y: size.height * 0.46)
+    }
+
+    /// La cible de caméra qui amène le centre de l'objet sur `q`. Le shader
+    /// pose `pC = (position − C)/zoom + cible` : l'objet, qui vit en pC = 0,
+    /// se retrouve donc à l'écran en `C − cible·zoom`.
+    static func cameraTarget(bringing q: CGPoint, at zoom: Float,
+                             in size: CGSize) -> SIMD2<Float> {
+        let c = sceneCenter(in: size)
+        return SIMD2(Float(c.x - q.x) / zoom, Float(c.y - q.y) / zoom)
+    }
+
+    /// La zone qui capte le doigt une fois l'objet posé — son voisinage
+    /// immédiat, pas tout l'écran : la caresse de l'aurore doit continuer
+    /// de vivre partout ailleurs.
+    static func hitRect(in size: CGSize) -> CGRect {
+        let q = spot(in: size)
+        let r = CGFloat(faceR * zoom) * 1.85
+        return CGRect(x: q.x - r, y: q.y - r, width: r * 2, height: r * 2)
+    }
+}
+
+// MARK: - La partition
+
+struct MoonSplashBeat {
+    var camera: SIMD3<Float> = SIMD3(0, 0, 1)
+    var cineCtl: SIMD4<Float> = SIMD4(0, 0, 0, -1)
+    var reveal: Float = 1
+    /// L'aurore de la connexion, sous le monolithe.
+    var aurora: Double = 0
+    var edgeFade: Float = 0
+
+    // Les temps de la partition.
+    static let ignite = 0.90
+    static let travel = 5.00
+    static let boom = 1.60
+    static let flight = 1.70
+    static var total: Double { ignite + travel + boom + flight }
+
+    private static var tTravel: Double { ignite }
+    private static var tBoom: Double { ignite + travel }
+    private static var tFlight: Double { ignite + travel + boom }
+
+    /// Le grossissement du gros plan. À ×12 le tube de 2,25 pt fait 27 pt à
+    /// l'écran et l'épaisseur du croissant en fait 151 : on est DANS le
+    /// verre, et il reste de la place pour voir la comète arriver.
+    static let closeZoom: Float = 12
+
+    /// LE TRAVELLING SE JOUE À 60 IMAGES/S, ET CE N'EST PAS UN LUXE. Le
+    /// contour mesure 3,977 uc, soit 429 points de scène ; le parcourir en
+    /// 5 s fait 86 pt/s de scène. Rapporté à la largeur du tube — 2,25 pt —,
+    /// l'image avance de 2,86 largeurs de tube par image à 30 Hz : le sujet
+    /// ne se recouvre plus d'une image à l'autre et le trait STROBOSCOPE au
+    /// lieu de filer. Le grossissement n'y change RIEN, puisqu'il multiplie
+    /// des deux côtés — c'est la cadence, et elle seule, qui décide. À 60 Hz
+    /// on tombe à 1,43 largeur : le tube se recouvre, le mouvement se lit.
+    static let travelFPS: Double = 60
+
+    /// L'avance de la comète sur la caméra, en abscisse : elle entre par le
+    /// haut du cadre au lieu d'y être posée — on la voit venir.
+    private static let cometLead: Float = 0.014
+
+    /// `shaderClock` : l'horloge que l'hôte donne au shader (temps absolu
+    /// modulo 900 s, ou la valeur figée). Elle sert à RENDRE LA COMÈTE au
+    /// bon moment — voir le raccord dans la phase du boom.
+    /// `landsOnAurora` : la cinématique découvre-t-elle l'aurore de la
+    /// connexion en se posant ? Vrai au banc, où l'objet arrive sur l'écran
+    /// orange. Faux dans l'app réelle, dont l'écran d'authentification n'est
+    /// pas celui-là : là, l'objet vole sur du noir et la page suit.
+    static func at(_ t: Double, size: CGSize,
+                   shaderClock: Float = 0,
+                   landsOnAurora: Bool = true) -> MoonSplashBeat {
+        var b = MoonSplashBeat()
+
+        // ---- L'abscisse de la caméra sur le contour, et son grossissement.
+        let sCam: Float
+        let zoom: Float
+        var target: SIMD2<Float>
+        var cine: Float = 1
+
+        if t < tBoom {
+            // Allumage puis travelling : un seul mouvement continu le long du
+            // contour. Pendant l'allumage la caméra pousse déjà (×15 → ×13) :
+            // une image qui naît immobile est une image morte.
+            let pIgnite = clamp01(t / ignite)
+            b.reveal = Float(smoothstep(pIgnite))
+            let pTravel = clamp01((t - tTravel) / travel)
+            sCam = arc(at: eased(Float(pTravel)))
+            // L'allumage POUSSE : on entre dans le tube, on ne s'en retire
+            // pas. (Il partait de ×15 pour finir à ×13 — un travelling
+            // arrière de 13 % sous un commentaire qui promettait l'inverse.)
+            zoom = t < tTravel
+                ? mix(closeZoom * 0.82, closeZoom, Float(smoothstep(pIgnite)))
+                : closeZoom + 0.45 * sin(Float(pTravel) * 6.2831 * 1.5)
+            target = sceneTarget(arc: sCam)
+            // La comète est le SUJET : elle marche devant l'objectif.
+            b.cineCtl.w = MoonPath.angle(at: sCam + cometLead)
+        } else if t < tFlight {
+            // ---- LE BOOM. Le recul est multiplicatif — un travelling arrière
+            // se lit en octaves, pas en points —, donc l'interpolation se
+            // fait sur le LOGARITHME du grossissement. L'amortissement est
+            // franc au départ et long à la fin : c'est ce profil-là qui rend
+            // le mouvement puissant sans le rendre brusque.
+            let p = clamp01((t - tBoom) / boom)
+            let e = 1 - pow(1 - Float(p), 3.0)
+            sCam = arc(at: 1)
+            zoom = exp(mix(log(closeZoom), 0, e))
+            target = sceneTarget(arc: sCam) * (1 - e)
+            cine = 1 - e
+            // La surtension : une décharge brève, pas un projecteur.
+            b.cineCtl.y = surge(t)
+            // LA COMÈTE NE SE TÉLÉPORTE PAS. Rendre la main d'un coup — en
+            // repassant la sentinelle −1 — la ferait sauter à l'autre bout du
+            // tube d'une image à l'autre, et à ×13 ce saut fait la moitié de
+            // l'écran. On la ramène donc en douceur, par le plus court chemin
+            // angulaire, vers la place que sa loi propre lui donne à cet
+            // instant : à la fin du boom les deux valeurs coïncident, et la
+            // sentinelle peut être rendue sans que rien ne bouge.
+            b.cineCtl.w = lerpAngle(MoonPath.angle(at: 1 + cometLead),
+                                    naturalHead(shaderClock), e)
+        } else {
+            // ---- L'ENVOL. Il rapetisse en filant vers son point de pose, et
+            // arrive avec un rebond court — un objet qui se pose, pas un
+            // calque qui s'aligne.
+            let p = clamp01((t - tFlight) / flight)
+            let e = spring(Float(p))
+            sCam = 1
+            zoom = exp(mix(0, log(MoonLanding.zoom), e))
+            let c = MoonLanding.sceneCenter(in: size)
+            let land = MoonLanding.spot(in: size)
+            let q = CGPoint(x: CGFloat(mix(Float(c.x), Float(land.x), e)),
+                            y: CGFloat(mix(Float(c.y), Float(land.y), e)))
+            target = MoonLanding.cameraTarget(bringing: q, at: zoom, in: size)
+            cine = 0
+            // La surtension du boom SURVIT au raccord : à la dernière image du
+            // boom elle vaut encore 0,054, ce qui pèse 12 % sur le gain du
+            // néon. La couper net ferait clignoter tout l'objet d'une image à
+            // l'autre — elle continue donc de mourir dans l'envol.
+            b.cineCtl.y = surge(t)
+            // L'aurore monte pendant qu'il vole, et le fond du shader s'ouvre
+            // en même temps : la lueur du monolithe devient additive sur elle.
+            // Sans écran d'accueil orange derrière, on garde le fond noir du
+            // shader : ouvrir sur du vide ne ferait qu'éteindre la flaque.
+            let a = clamp01((t - tFlight) / (flight * 0.75))
+            if landsOnAurora {
+                b.aurora = smoothstep(a)
+                b.cineCtl.z = Float(smoothstep(a))
+            }
+            b.edgeFade = Float(smoothstep(a))
+        }
+
+        b.camera = SIMD3(target.x, target.y, zoom)
+        b.cineCtl.x = cine
+        return b
+    }
+
+    /// L'état d'arrivée, figé — ce que voit `reduceMotion`, et ce que doit
+    /// afficher l'écran d'accueil pour que le raccord soit invisible.
+    static func landed(size: CGSize) -> MoonSplashBeat {
+        at(total, size: size)
+    }
+
+    // MARK: Le profil de vitesse
+
+    /// L'ease-in-out du plan. Sa DÉRIVÉE DOIT ÊTRE NULLE EN 0 : la caméra est
+    /// strictement immobile en panoramique pendant tout l'allumage, et un
+    /// démarrage à vitesse non nulle ferait sauter le défilement de zéro à
+    /// mille points par seconde en une image. Le mélange tiède qui traînait
+    /// ici (0,35·smoothstep + 0,65·p) partait justement à 0,65× — c'est le
+    /// coup de fouet qu'on entendait au raccord. Le smoothstep pur pointe à
+    /// 1,5× la vitesse moyenne, ce que les ralentissements de la courbe
+    /// absorbent sans peine.
+    private static func eased(_ p: Float) -> Float {
+        p * p * (3 - 2 * p)
+    }
+
+    /// Progression [0,1] → abscisse curviligne [0,1]. La caméra RALENTIT aux
+    /// quatre endroits que la courbe rend difficiles : les deux cornes, où la
+    /// tangente saute de 160°, et les deux crochets, où le rayon de courbure
+    /// tombe sous 0,013 uc. Sans ce plan de vitesse, une abscisse uniforme
+    /// ferait passer les virages aussi vite que les longues courbes molles —
+    /// et c'est précisément là que l'œil veut s'arrêter.
+    private static let warp: [Float] = {
+        let L = MoonPath.landmarks
+        let stops: [(c: Float, amp: Float, w: Float)] = [
+            (L.horn1, 2.7, 0.032), (L.horn2, 2.7, 0.032),
+            (L.kink1, 1.2, 0.024), (L.kink2, 1.2, 0.024),
+        ]
+        // Coût cumulé du parcours : ∫ (1 + Σ ralentissements) ds.
+        let n = 2048
+        var cost = [Float](repeating: 0, count: n + 1)
+        var acc: Float = 0
+        for i in 0...n {
+            let s = Float(i) / Float(n)
+            var w: Float = 1
+            for st in stops {
+                var d = abs(s - st.c)
+                d = min(d, 1 - d)          // le contour est fermé
+                let x = d / st.w
+                w += st.amp * exp(-x * x)
+            }
+            if i > 0 { acc += w / Float(n) }
+            cost[i] = acc
+        }
+        // Inversion : une table progression → abscisse, à pas constant.
+        let m = 1024
+        var table = [Float](repeating: 0, count: m + 1)
+        var j = 0
+        for i in 0...m {
+            let want = Float(i) / Float(m) * acc
+            while j < n, cost[j + 1] < want { j += 1 }
+            let span = max(cost[j + 1] - cost[j], 1e-9)
+            let f = min(max((want - cost[j]) / span, 0), 1)
+            table[i] = (Float(j) + f) / Float(n)
+        }
+        return table
+    }()
+
+    private static func arc(at p: Float) -> Float {
+        let x = min(max(p, 0), 1) * Float(warp.count - 1)
+        let i = Int(x)
+        if i >= warp.count - 1 { return warp[warp.count - 1] }
+        return mix(warp[i], warp[i + 1], x - Float(i))
+    }
+
+    /// L'abscisse du contour → le point de SCÈNE que la caméra doit viser.
+    /// Le lacet et le tangage sont ceux du mode cinéma (micro-balancements et
+    /// gyroscope amortis) : sans cette immobilité, la cible calculée ici et
+    /// l'objet dessiné là-bas divergeraient d'un point ou deux, et à ×13 un
+    /// point de scène fait treize points d'écran.
+    private static func sceneTarget(arc s: Float) -> SIMD2<Float> {
+        let p = MoonPath.sample(at: s).position
+        let f = MoonPath.facePoint(p, faceR: MoonLanding.faceR,
+                                   moonPlace: SIMD3(0.5, 0.485, 0.71))
+        return MoonPath.scenePoint(face: f, yaw: 0.2450, pitch: -0.0698,
+                                   faceR: MoonLanding.faceR)
+    }
+
+    // MARK: Petites fonctions
+
+    private static func clamp01(_ x: Double) -> Double { min(max(x, 0), 1) }
+    private static func smoothstep(_ x: Double) -> Double { x * x * (3 - 2 * x) }
+    private static func mix(_ a: Float, _ b: Float, _ t: Float) -> Float {
+        a + (b - a) * t
+    }
+
+    /// La place de la comète quand elle vit sa vie : soixante tours par boucle
+    /// de 900 s, soit quinze secondes le tour — la loi écrite dans le shader,
+    /// qu'il faut rejouer ici à l'identique pour pouvoir lui rendre la main
+    /// sans à-coup.
+    private static func naturalHead(_ clock: Float) -> Float {
+        let h = clock * 60 / 900
+        return h - h.rounded(.down)
+    }
+
+    /// Interpolation d'angles sur le cercle : par le plus court chemin, pas à
+    /// travers tout le tour. Sans ça, passer de 0,98 à 0,02 ferait reculer la
+    /// comète sur 96 % du croissant au lieu d'avancer de 4 %.
+    private static func lerpAngle(_ a: Float, _ b: Float, _ t: Float) -> Float {
+        var d = b - a
+        d -= (d + 0.5).rounded(.down)
+        let r = a + d * t
+        return r - r.rounded(.down)
+    }
+
+    /// La surtension du boom : une décharge, pas un projecteur. Montée en
+    /// 60 ms, mort en 550 ms. Fonction du temps ABSOLU de la partition, pour
+    /// qu'elle traverse le raccord boom → envol sans marche.
+    private static func surge(_ t: Double) -> Float {
+        let d = Float(max(t - tBoom, 0))
+        return exp(-d / 0.55) * (1 - exp(-d / 0.06))
+    }
+
+    /// Un ressort amorti résolu à la main : il dépasse de 8 % (exp(−ζπ/ω) avec
+    /// ζ = 6 et ω = 7,5) à 0,42 de sa course, puis revient. Résolu, jamais
+    /// intégré — la partition doit rester une fonction du temps.
+    ///
+    /// NORMALISÉ pour valoir 1 EXACTEMENT en p = 1 : la forme brute s'arrête à
+    /// 0,99728, et ce demi-point de reliquat suffisait à décaler la dernière
+    /// image du splash de l'objet que l'écran d'accueil dessine ensuite — au
+    /// raccord précis qu'on veut invisible.
+    private static let springTail: Float =
+        exp(-6.0) * (cos(7.5) + (6.0 / 7.5) * sin(7.5))
+
+    private static func spring(_ p: Float) -> Float {
+        if p >= 1 { return 1 }
+        let raw = 1 - exp(-6.0 * p) * (cos(7.5 * p) + (6.0 / 7.5) * sin(7.5 * p))
+        return raw / (1 - springTail)
+    }
+
+    /// L'instant où l'objet TOUCHE — la première fois que le ressort atteint
+    /// sa cible, avant de la dépasser : tan(ωx) = −ζ/ω donne x = 0,299 de la
+    /// course. C'est là que la vibration doit tomber, pas à la fin du plan.
+    static var touchdown: Double { tFlight + flight * 0.299 }
+}
+
+// MARK: - La vue
+
+struct MoonSplashView: View {
+    /// La cinématique découvre-t-elle l'aurore de la connexion en se posant ?
+    /// Au banc, oui : c'est l'écran d'arrivée. Dans l'app réelle, l'écran qui
+    /// suit le splash est l'authentification — un tout autre fond —, alors
+    /// l'objet se pose sur du noir et la page prend le relais.
+    /// (Déclaré AVANT `onFinish` : l'init mémberwise suit l'ordre des
+    /// propriétés, et la closure finale doit rester la dernière.)
+    var landsOnAurora: Bool = true
+    var onFinish: () -> Void = {}
+
+    /// `-moonSplashFreeze <t>` fige la partition à t secondes.
+    private static let freeze: Double? = UserDefaults.standard
+        .string(forKey: "moonSplashFreeze").flatMap(Double.init)
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var start = Date()
+    @State private var finished = false
+    @State private var ignited = 0
+    @State private var boomed = 0
+    @State private var landed = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                TimelineView(.animation(minimumInterval: 1.0 / MoonSplashBeat.travelFPS,
+                                        paused: reduceMotion)) { tl in
+                    let t = Self.freeze
+                        ?? (reduceMotion ? MoonSplashBeat.total
+                                         : tl.date.timeIntervalSince(start))
+                    // L'horloge du shader, calculée ICI pour que la partition
+                    // puisse rendre la comète exactement là où la loi du
+                    // shader la mettra ensuite.
+                    let clock = Self.freeze.map { Float(120 + $0) }
+                        ?? Float(tl.date.timeIntervalSinceReferenceDate
+                            .truncatingRemainder(dividingBy: 900))
+                    let b = MoonSplashBeat.at(t, size: size,
+                                              shaderClock: clock,
+                                              landsOnAurora: landsOnAurora)
+                    ZStack {
+                        // L'aurore de la connexion, qui monte sous l'objet.
+                        if b.aurora > 0.001 {
+                            AuroraLoginBackground()
+                                .ignoresSafeArea()
+                                .opacity(b.aurora)
+                                .allowsHitTesting(false)
+                        }
+                        // Quand la partition est figée, l'horloge du shader
+                        // DOIT l'être aussi : la respiration du néon, le
+                        // grain du dépoli et la dérive des accents vivent sur
+                        // `t`, et sans ça deux captures du même instant ne se
+                        // ressembleraient pas. La base 120 s est arbitraire ;
+                        // ce qui compte est qu'elle soit stable et que deux
+                        // instants différents montrent des phases différentes.
+                        MonolithScene(freeze: Self.freeze == nil ? nil : clock,
+                                      faceR: MoonLanding.faceR,
+                                      camera: b.camera,
+                                      cineCtl: b.cineCtl,
+                                      edgeFade: b.edgeFade,
+                                      revealOverride: b.reveal,
+                                      interactive: false,
+                                      fps: MoonSplashBeat.travelFPS)
+                            .ignoresSafeArea()
+                    }
+                }
+
+                // Le grain de la maison, MOITIÉ DOSE : le shader dithère déjà
+                // lui-même, la leçon du banc du monolithe vaut ici aussi.
+                WoopGrain(density: 0.018, lightAlpha: 0.014, darkAlpha: 0.013)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+        }
+        .ignoresSafeArea()
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
+        .preferredColorScheme(.dark)
+        // On peut toujours passer : un splash qu'on ne peut pas couper est
+        // une punition, pas une entrée.
+        .contentShape(Rectangle())
+        .onTapGesture { finish() }
+        // Les retours tombent sur l'image, pas à côté : mêmes horaires que la
+        // partition (le mécanisme du splash bouteille).
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.45), trigger: ignited)
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.85), trigger: boomed)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.40), trigger: landed)
+        .task {
+            guard Self.freeze == nil else { return }
+            start = Date()
+            if reduceMotion {
+                try? await Task.sleep(for: .seconds(1.2))
+                finish(); return
+            }
+            // Chaque attente est mesurée depuis le DÉBUT, jamais cumulée : une
+            // annulation avalée par `try?` ferait sinon tomber toutes les
+            // suivantes d'un coup, et les trois vibrations partiraient
+            // ensemble. Le garde `Task.isCancelled` arrête net.
+            func wait(until when: Double) async -> Bool {
+                let left = when - Date().timeIntervalSince(start)
+                if left > 0 { try? await Task.sleep(for: .seconds(left)) }
+                return !Task.isCancelled
+            }
+            guard await wait(until: MoonSplashBeat.ignite) else { return }
+            ignited += 1
+            guard await wait(until: MoonSplashBeat.ignite
+                                    + MoonSplashBeat.travel) else { return }
+            boomed += 1
+            // La vibration de la pose tombe sur l'IMPACT (8,0 s), pas à la fin
+            // du plan (9,2 s) : un retour qui arrive 1,2 s après le choc n'est
+            // plus un retour, c'est un contretemps.
+            guard await wait(until: MoonSplashBeat.touchdown) else { return }
+            landed += 1
+            guard await wait(until: MoonSplashBeat.total) else { return }
+            finish()
+        }
+    }
+
+    private func finish() {
+        guard !finished else { return }
+        finished = true
+        onFinish()
+    }
+}
+
+// MARK: - Le monolithe posé
+
+/// Ce que l'écran d'accueil affiche une fois la cinématique finie : le MÊME
+/// rendu que sa dernière image — même grossissement, même place —, mais rendu
+/// à la main et non plus par la partition. Le fond du shader est ouvert
+/// (`bgFade`), donc seul le corps du pavé occulte : la flaque, le halo et le
+/// filet passent en additif sur l'aurore.
+struct LandedMonolithView: View {
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            let aim = MoonLanding.cameraTarget(
+                bringing: MoonLanding.spot(in: size),
+                at: MoonLanding.zoom, in: size)
+            // `revealOverride: 1` est OBLIGATOIRE : sans lui, la scène relance
+            // sa rampe d'allumage de 2 s à sa naissance — donc le monolithe
+            // arriverait ÉTEINT au raccord précis que la cinématique passe
+            // 1,7 s à rendre invisible.
+            MonolithScene(faceR: MoonLanding.faceR,
+                          camera: SIMD3(aim.x, aim.y, MoonLanding.zoom),
+                          cineCtl: SIMD4(0, 0, 1, -1),
+                          edgeFade: 1,
+                          revealOverride: 1,
+                          hitArea: MoonLanding.hitRect(in: size))
+        }
+        .ignoresSafeArea()
+    }
+}
+
+#Preview { MoonSplashView() }
+#Preview("Figé — le travelling") {
+    MoonSplashView()
+}

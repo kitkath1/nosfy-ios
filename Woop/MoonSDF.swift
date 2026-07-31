@@ -8,8 +8,25 @@ import SwiftUI
 ///       le dégradé de chaleur intérieur (l'épaisseur max du croissant vaut
 ///       0.1163 uc < 0.125 : le canal ne sature jamais dedans) ;
 ///   G : la MÊME distance, demi-portée `wideRange` — le bloom extérieur ;
-///   B : 0, réservé.  A : constant à 255 — jamais de donnée dans l'alpha :
-///       SwiftUI peut prémultiplier la texture (piège NebulaNoise).
+///   B : le RÉSIDU de quantification de R, recentré sur 0,5 — cf. plus bas ;
+///   A : constant à 255 — jamais de donnée dans l'alpha : SwiftUI peut
+///       prémultiplier la texture (piège NebulaNoise).
+///
+/// POURQUOI UN RÉSIDU DANS B. Le canal R quantifie la distance par pas de
+/// 2·0,125/255 uc = 0,106 pt de scène. À l'échelle de la scène c'est
+/// invisible ; sous la caméra du splash, qui grossit seize fois, ce pas
+/// devient 1,7 pt d'écran et le tube se met à monter en TERRASSES — un
+/// escalier régulier, bien plus voyant qu'un bruit de même amplitude. B
+/// porte donc l'erreur d'arrondi de R : la paire reconstruit la distance à
+/// 0,0002 pt près, soit 255 fois mieux.
+///
+/// Le partage est choisi pour que R reste BIT À BIT ce qu'il était : la
+/// scène normale échantillonne R seul, en bilinéaire matériel, et ne change
+/// pas d'un LSB. Seule la branche macro du shader lit la paire — et elle la
+/// lit en filtrage NEAREST, texel par texel, parce qu'un résidu est une
+/// dent de scie : l'interpoler directement mélangerait deux marches
+/// voisines et fabriquerait exactement le défaut qu'on vient de tuer. La
+/// reconstruction se fait donc APRÈS décodage, sur les quatre texels.
 ///
 /// Distances en unités-croissant (côté long de la bbox = 1), d > 0 à
 /// l'EXTÉRIEUR, 0.5 encodé pile sur le contour. La texture couvre un carré
@@ -94,9 +111,15 @@ enum MoonSDF {
                     var d = sqrt(best) * padding          // uv → unités-croissant
                     if inside { d = -d }
                     let k = (j * n + i) * 4
-                    base[k]     = quant(0.5 + d / (2 * tightRange))
+                    // R inchangé ; B rattrape son arrondi. Le résidu se
+                    // mesure sur la valeur CLAMPÉE, sinon les texels saturés
+                    // (loin du croissant) porteraient un résidu qui n'existe
+                    // pas et le décodage les ferait dériver.
+                    let v = min(max(0.5 + d / (2 * tightRange), 0), 1)
+                    let hi = (v * 255).rounded()
+                    base[k]     = UInt8(hi)
                     base[k + 1] = quant(0.5 + d / (2 * wideRange))
-                    base[k + 2] = 0
+                    base[k + 2] = quant(v * 255 - hi + 0.5)
                     base[k + 3] = 255
                 }
             }
