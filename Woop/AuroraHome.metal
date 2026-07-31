@@ -430,21 +430,37 @@ constant float SB_GRAV = 250.0;
 // cœur n'est pas une décoration ajoutée à la fin, c'est ce que DEVIENT
 // l'orange quand il dépasse 169.
 
-// La palette : UNE seule teinte, deux voiles. (Ajustement aux moindres carrés
-// de la chromaticité par niveau de la maquette, erreur RMS 0,003.)
-constant float3 AU_BASE  = float3(1.00, 0.56, 0.31);  // le pic, à L≈112
+// La palette : UNE seule teinte, deux voiles. Recalée le 2026-07-31 sur le
+// verdict de Kathryn (« plus vif, moins brun, une touche de jaune en écho au
+// néon ») : le bleu de la base descend (la chroma monte, le brun meurt) et
+// la crème devient OR — la couleur du néon du logo.
+constant float3 AU_BASE  = float3(1.00, 0.54, 0.24);  // le pic — orange FRANC
 constant float3 AU_BRUME = float3(1.00, 0.95, 0.94);  // la brume des ombres
-constant float3 AU_CREME = float3(1.00, 0.93, 0.73);  // le cœur, au-delà de 169
+constant float3 AU_CREME = float3(1.00, 0.90, 0.60);  // le cœur, en or de néon
 
 // Le foyer, en fraction de la HAUTEUR d'écran (le repère de `q`).
-constant float AU_CY     = 0.875;   // la crête : DANS le cadre, sous la carte
-constant float AU_LAM_UP = 0.075;   // le niveau double tous les 0,052 en montant
-constant float AU_LAM_DN = 0.090;   // et retombe un peu plus lentement dessous
-constant float AU_AMP    = 0.65;    // la masse à la crête
+constant float AU_CY     = 0.863;   // la crête : DANS le cadre, sous la carte
+constant float AU_LAM_UP = 0.105;   // la lumière MONTE : visible dès la mi-écran
+constant float AU_LAM_DN = 0.099;   // la chute AUX MARGES (116 → 56 en 0,10 de haut)
+constant float AU_LDC    = 1.75;    // ... mais sous le CŒUR elle est 3× plus lente :
+                                    // la maquette tient L=175 jusqu'au bord bas au
+                                    // centre (201 → 175) pendant que les marges
+                                    // s'éteignent. Une seule constante ne sait pas
+                                    // faire les deux — λ_bas est modulé par le cœur.
+constant float AU_AMP    = 1.069;   // la masse à la crête
 
 static float auGauss(float x, float c, float w) {
     float d = (x - c) / w;
     return exp(-d * d);
+}
+
+// Le cœur n'est PAS une gaussienne : la crête de la maquette est un DÔME à
+// sommet plat — L 178-236 de x=0,15 à x=0,75, mesuré ligne à ligne — qu'une
+// cloche étroite ne peut pas porter sans brûler son centre. Exposant 3,13 :
+// entre la cloche (2) et le créneau (∞), ajusté aux dix points de la crête.
+static float auDome(float x, float c, float w, float p) {
+    float d = abs(x - c) / w;
+    return exp(-pow(d, p));
 }
 
 // MARK: La trame de points
@@ -460,7 +476,8 @@ static float auGauss(float x, float c, float w) {
 constant float AU_PAS_X = 6.4;    // pt — le pas mesuré sur la maquette
 constant float AU_PAS_Y = 7.7;
 constant float AU_RAYON = 0.72;   // pt — un disque de 1,45 pt à mi-hauteur
-constant float AU_GRAIN = 0.20;   // la profondeur de modulation, au maximum
+constant float AU_GRAIN = 0.28;   // la profondeur de modulation, au maximum
+                                  // (0,20 se noyait, 0,38 granulait — entre les deux)
 
 static float auroraDots(float2 position, float t) {
     float2 pas = float2(AU_PAS_X, AU_PAS_Y);
@@ -487,16 +504,20 @@ static float auroraDots(float2 position, float t) {
     float aspect = size.x / max(size.y, 1.0);
 
     // Deux respirations lentes, de périodes premières entre elles : le fond
-    // ne doit jamais donner à entendre sa boucle.
-    float b1 = 0.94 + 0.06 * sin(t * 6.2832 / 41.0);
-    float b2 = 0.92 + 0.08 * sin(t * 6.2832 / 29.0 + 2.1);
+    // ne doit jamais donner à entendre sa boucle. Plus amples qu'avant —
+    // c'est elles qui font VIVRE la lumière, pas seulement les rideaux.
+    float b1 = 0.93 + 0.07 * sin(t * 6.2832 / 33.0);
+    float b2 = 0.91 + 0.09 * sin(t * 6.2832 / 23.0 + 2.1);
 
     // La répartition le long de la barre : un socle — c'est LUI qui porte
-    // l'anthracite chaud jusqu'en haut —, un cœur, deux braises aux flancs.
-    float coeur  = auGauss(q.x, aspect * (0.44 + 0.020 * sin(t / 43.0)), 0.175);
-    float gauche = auGauss(q.x, aspect * (0.02 + 0.015 * sin(t / 31.0 + 1.0)), 0.170);
-    float droite = auGauss(q.x, aspect * (1.00 + 0.015 * sin(t / 37.0 + 2.6)), 0.155);
-    float h = 0.56 + 0.95 * b1 * coeur + 0.50 * b2 * gauche + 0.46 * b2 * droite;
+    // l'anthracite chaud jusqu'en haut —, un DÔME large à sommet plat, deux
+    // épaules qui prolongent ses flancs (x 0,14 et 0,85 : DANS le cadre, pas
+    // aux coins — les marges de la maquette restent à 105-116 quand le flanc
+    // x=0,15 tient 188).
+    float coeur  = auDome(q.x, aspect * (0.475 + 0.020 * sin(t / 27.0)), 0.190, 2.93);
+    float gauche = auGauss(q.x, aspect * (0.122 + 0.022 * sin(t / 31.0 + 1.0)), 0.090);
+    float droite = auGauss(q.x, aspect * (0.833 + 0.022 * sin(t / 37.0 + 2.6)), 0.132);
+    float h = 0.304 + 1.987 * b1 * coeur + 0.498 * b2 * gauche + 0.358 * b2 * droite;
 
     // La CRÊTE BOMBE là où le foyer pousse. Sans ce bombement, la lumière est
     // une barre horizontale — un dégradé, pas un halo. C'est la seule ligne
@@ -505,9 +526,9 @@ static float auroraDots(float2 position, float t) {
 
     // Vertical : une exponentielle de part et d'autre de la crête, la loi
     // d'un milieu absorbant. Une gaussienne ne sait pas faire ce profil-là —
-    // la maquette double tous les 0,042 de hauteur sur quatre octaves.
+    // et sous la crête, λ s'allonge avec le cœur (voir AU_LDC).
     float up = exp(-max(cy - q.y, 0.0) / AU_LAM_UP);
-    float dn = exp(-max(q.y - cy, 0.0) / AU_LAM_DN);
+    float dn = exp(-max(q.y - cy, 0.0) / (AU_LAM_DN * (1.0 + AU_LDC * coeur)));
     float E = AU_AMP * up * dn * h;
 
     // Les rideaux : ils STRUCTURENT sans éteindre. Leur moyenne vaut 1 par
@@ -521,10 +542,15 @@ static float auroraDots(float2 position, float t) {
     float w2 = scfbm(ac * 1.7 - float2(t * 0.010, t * 0.024) + 2.1 * w1);
     float cur = scfbm(ac * 1.27 + float2(1.9 * w1, -1.5 * w2));
     cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.5);
-    E *= 0.55 + 1.85 * cur;
+    // Les rideaux ne vivent qu'AU-DESSUS de la crête : dessous, la maquette
+    // est un dôme lisse et STABLE — sans ce masque, la bande sous la barre
+    // d'onglets respirait de L=140 à L=200 au gré de leur dérive.
+    float cmask = 1.0 - 0.78 * smoothstep(0.0, 0.05, q.y - cy);
+    E *= 1.0 + ((0.497 + 1.788 * cur) - 1.0) * cmask;
 
-    // La nuit avale le haut de l'écran.
-    E *= smoothstep(0.40, 0.70, q.y);
+    // La nuit avale le haut de l'écran — la porte s'ouvre dès la mi-écran :
+    // le halo doit PRENDRE l'écran, pas se tapir sous la carte.
+    E *= smoothstep(0.28, 0.55, q.y);
 
     // La trame, AVANT le compresseur : c'est là qu'elle s'éteint toute seule
     // aux deux bouts.
@@ -532,13 +558,13 @@ static float auroraDots(float2 position, float t) {
 
     // ---- LE TONE MAP À TEINTE CONSERVÉE. On comprime le NIVEAU, jamais les
     // canaux : c'est le remède exact au délavage.
-    float v = 1.0 - exp(-E * 1.55);
+    float v = 1.0 - exp(-E * 1.75);
 
     // ---- LA LOI DE COULEUR, en Λ. Une brume claire monte dans les ombres
     // (l'anthracite reste CHAUD, jamais une suie neutre), et la crème prend
     // le dessus dans le dernier quart. Recalée sur les huit paliers mesurés.
     float bas  = 0.56 * pow(max(1.0 - v / 0.664, 0.0), 2.3);
-    float haut = clamp(1.10 * pow(smoothstep(0.70, 0.985, v), 1.5), 0.0, 1.0);
+    float haut = clamp(1.10 * pow(smoothstep(0.60, 0.995, v), 1.782), 0.0, 1.0);
     float3 tint = mix(AU_BASE, AU_BRUME, bas);
     tint = mix(tint, AU_CREME, haut);
     float3 c = clamp(tint * v, 0.0, 1.0);
