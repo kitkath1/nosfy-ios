@@ -48,7 +48,15 @@ struct WoopApp: App {
 // MARK: - Racine
 
 enum WoopTab: String, Hashable {
-    case home, exercises, progress, calendar
+    /// Le calendrier a fusionné dans Progression : il y vit sous les courbes.
+    /// Profil prend sa place — à quatre onglets, deux de chaque côté, le bouton
+    /// de séance tombe exactement au centre de la barre.
+    ///
+    /// Le rang `calendar` a DISPARU du jeu : une install qui l'avait retenu
+    /// dans `openTab` ne le retrouve plus, et `WoopTab(rawValue:)` rend `nil`.
+    /// La migration ci-dessous le rattrape explicitement plutôt que de laisser
+    /// le repli silencieux ramener l'utilisatrice à l'accueil sans raison.
+    case home, exercises, progress, profile
 }
 
 struct RootView: View {
@@ -71,6 +79,8 @@ struct RootView: View {
     /// Banc d'essai du DOUBLON obsidienne de la carte Objectif :
     /// `-obsidianLab`, page noire nue.
     private static let obsidianLab = CommandLine.arguments.contains("-obsidianLab")
+    /// Banc d'essai du bouton primary néon : `-neonLab`, page noire nue.
+    private static let neonLab = CommandLine.arguments.contains("-neonLab")
     /// Banc d'essai du cadran éclipse : `-counterLab`, page noire nue.
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
     /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
@@ -91,11 +101,11 @@ struct RootView: View {
     /// (captures d'écran automatisées uniquement).
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
     @State private var selection: WoopTab = {
-        if let raw = UserDefaults.standard.string(forKey: "openTab"),
-           let tab = WoopTab(rawValue: raw) {
-            return tab
-        }
-        return .home
+        guard let raw = UserDefaults.standard.string(forKey: "openTab") else { return .home }
+        // Le calendrier a fusionné dans Progression : qui demandait le
+        // calendrier atterrit là où son contenu a déménagé, pas à l'accueil.
+        if raw == "calendar" { return .progress }
+        return WoopTab(rawValue: raw) ?? .home
     }()
 
     /// L'entraînement ouvert, s'il y en a un.
@@ -127,6 +137,8 @@ struct RootView: View {
             ObjectiveCardLab()
         } else if Self.obsidianLab {
             ObsidianCardLab()
+        } else if Self.neonLab {
+            NeonPrimaryLab()
         } else if Self.counterLab {
             CounterLab()
         } else if Self.loginLab {
@@ -240,6 +252,17 @@ struct RootView: View {
             // onglet rend EXACTEMENT les mêmes pixels, et changer d'onglet ne
             // change rien au ciel. Un onglet caché n'est pas rendu : le coût
             // GPU reste celui d'une seule instance.
+            // L'ACCUEIL N'EST MONTÉ QUE QUAND IL PEUT ÊTRE VU. SwiftUI ne
+            // supprime pas le rendu d'un frère occulté : pendant les treize
+            // secondes du splash, tout le ciel de la home tournait DERRIÈRE —
+            // nébuleuse plein écran, champ d'étoiles en `plusLighter` (une
+            // passe hors écran), grain, shaders des cartes — en concurrence
+            // directe avec le plan-séquence, et CoreMotion réveillait le fil
+            // principal trente fois par seconde par-dessus. Le socle noir
+            // ci-dessous prouvait déjà qu'aucun de ces pixels n'était visible.
+            // Les `onAppear`/`task` du cycle de vie sont accrochés au ZStack,
+            // pas au TabView : ils gardent leurs horaires.
+            if !showSplash && !showAuth {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     HomeView(selection: $selection)
@@ -251,8 +274,8 @@ struct RootView: View {
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
                     ProgressionView()
                 }
-                Tab("Calendrier", systemImage: "calendar", value: WoopTab.calendar) {
-                    CalendarView()
+                Tab("Profil", systemImage: "person", value: WoopTab.profile) {
+                    ProfileView()
                 }
             }
             // Verre fumé permanent : le verre adaptatif devenait laiteux sur
@@ -275,6 +298,7 @@ struct RootView: View {
                     }
                     .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
                 }
+            }
             }
 
             if showAuth {

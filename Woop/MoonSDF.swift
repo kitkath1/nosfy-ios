@@ -94,7 +94,41 @@ enum MoonSDF {
     /// sens de parcours et aux sommets pile sur une ligne de texels. Pas de
     /// rasterisation CGContext : aucun piège d'orientation Y (le buffer est
     /// rempli ligne 0 = haut, comme le SVG et comme SwiftUI).
+    /// LA TABLE EST CUITE AU BUILD, PAS AU LANCEMENT — et ce n'est pas une
+    /// micro-optimisation, c'est la différence entre un splash premium et un
+    /// écran gelé. La cuisson fait 512² × 288 segments = 75 millions
+    /// d'évaluations point-segment : 24 ms en Release, mais la configuration
+    /// Debug du projet compile en `-Onone`, où la MÊME boucle met 5,9
+    /// SECONDES (mesuré, facteur 246). Et comme `image` est un `static let`,
+    /// c'est le premier qui la touche — le fil principal, à la première image
+    /// du splash — qui paie l'addition.
+    ///
+    /// `MoonSDF.bin` contient donc les 512×512×4 octets déjà encodés, produits
+    /// par le même algorithme et vérifiés (le contour tombe sur R = 128, et
+    /// l'intérieur du croissant sous 128). Le chargement est un `read` et une
+    /// recopie : deux millisecondes, identiques en Debug et en Release. La
+    /// cuisson reste là, en repli, pour le jour où le glyphe changera —
+    /// `-regenLUT` force ce chemin.
     private static func makeLUT() -> CGImage {
+        if !CommandLine.arguments.contains("-regenLUT"),
+           let url = Bundle.main.url(forResource: "MoonSDF", withExtension: "bin"),
+           var bytes = try? Data(contentsOf: url),
+           bytes.count == side * side * 4,
+           let img = bytes.withUnsafeMutableBytes({ raw -> CGImage? in
+               let space = CGColorSpace(name: CGColorSpace.sRGB)
+                   ?? CGColorSpaceCreateDeviceRGB()
+               return CGContext(data: raw.baseAddress, width: side, height: side,
+                                bitsPerComponent: 8, bytesPerRow: side * 4,
+                                space: space,
+                                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)?
+                   .makeImage()
+           }) {
+            return img
+        }
+        return bakeLUT()
+    }
+
+    private static func bakeLUT() -> CGImage {
         let n = side
         let center = SIMD2<Float>(0.5, Float(MoonGlyph.unitHeight) * 0.5)
         let unit = MoonGlyph.flattened(subdivisions: 16)

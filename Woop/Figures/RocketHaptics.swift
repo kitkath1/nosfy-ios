@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreHaptics
 import UIKit
 
@@ -149,5 +150,57 @@ final class RocketHaptics {
     func stop() {
         try? player?.stop(atTime: CHHapticTimeImmediate)
         player = nil
+        MoonTheme.shared.stop()
+    }
+}
+
+// MARK: - Le thème lunaire
+//
+/// La musique du plan : un bourdon très grave qui enfle pendant tout le
+/// voyage, des cloches inharmoniques posées sur les quatre accidents de la
+/// courbe — aux instants EXACTS où la caméra les prend —, un souffle inversé
+/// qui aspire pendant la seconde et demie qui précède la détonation, l'impact,
+/// puis un pad qui s'ouvre pendant que l'objet se pose.
+///
+/// ELLE SUIT LA CAMÉRA, littéralement : la brillance du pad monte linéairement
+/// sur toute la durée du travelling, exactement comme le plan recule. Un seul
+/// geste, du son à l'image. La pièce est synthétisée hors ligne (le script vit
+/// dans le scratchpad de la session) et embarquée en AAC — 188 Ko.
+///
+/// Mixée en `.ambient` + `mixWithOthers`, comme la paillette de l'aurore :
+/// jamais par-dessus la musique de l'utilisatrice.
+@MainActor
+final class MoonTheme {
+    static let shared = MoonTheme()
+    private var player: AVAudioPlayer?
+
+    private init() {}
+
+    func prepare() {
+        guard player == nil,
+              let url = Bundle.main.url(forResource: "MoonSplashTheme",
+                                        withExtension: "m4a") else { return }
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        player = try? AVAudioPlayer(contentsOf: url)
+        player?.volume = 0.55
+        player?.prepareToPlay()
+    }
+
+    func play() {
+        guard let player else { return }
+        player.currentTime = 0
+        player.play()
+    }
+
+    /// Un fondu court plutôt qu'une coupure : passer le splash ne doit pas
+    /// claquer.
+    func stop() {
+        guard let player, player.isPlaying else { return }
+        player.setVolume(0, fadeDuration: 0.35)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak player] in
+            player?.stop()
+            player?.volume = 0.55
+        }
     }
 }
