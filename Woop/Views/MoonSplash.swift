@@ -97,10 +97,24 @@ struct MoonSplashBeat {
     private static var tBoom: Double { ignite + travel }
     private static var tFlight: Double { ignite + travel + boom }
 
-    /// Le grossissement du gros plan. À ×12 le tube de 2,25 pt fait 27 pt à
-    /// l'écran et l'épaisseur du croissant en fait 151 : on est DANS le
-    /// verre, et il reste de la place pour voir la comète arriver.
-    static let closeZoom: Float = 12
+    /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
+    /// dorée, le fil de plasma, le grain du dépoli.
+    static let closeZoom: Float = 11
+
+    /// LE TRAVELLING RECULE À ×6,5, ET C'EST UN CHOIX DE MISE EN SCÈNE, PAS
+    /// UNE ÉCONOMIE. À ×11 le cadre montre 36 points de scène de large sur un
+    /// croissant qui en fait 108 : on voit un trait lumineux magnifique, mais
+    /// on ne reconnaît PAS la lune, et la promesse du plan — « la comète
+    /// parcourt les lignes de la lune » — ne se lit plus. À ×6,5 le cadre en
+    /// montre 60 sur 108 : la courbe se lit, le tube fait encore 15 pt de
+    /// large, et le sujet redevient identifiable.
+    static let travelZoom: Float = 6.5
+
+    /// LE CADRAGE EST DÉCENTRÉ, en fractions d'écran. Le point suivi ne se
+    /// pose pas au milieu : il vit dans le tiers gauche, un peu au-dessus de
+    /// l'axe — la place qu'un objet occupe dans un plan de keynote, où le
+    /// centre géométrique est laissé au vide.
+    static let framing = CGPoint(x: 0.355, y: 0.435)
 
     /// LE TRAVELLING SE JOUE À 60 IMAGES/S, ET CE N'EST PAS UN LUXE. Le
     /// contour mesure 3,977 uc, soit 429 points de scène ; le parcourir en
@@ -112,9 +126,22 @@ struct MoonSplashBeat {
     /// on tombe à 1,43 largeur : le tube se recouvre, le mouvement se lit.
     static let travelFPS: Double = 60
 
-    /// L'avance de la comète sur la caméra, en abscisse : elle entre par le
-    /// haut du cadre au lieu d'y être posée — on la voit venir.
-    private static let cometLead: Float = 0.014
+    /// L'AVANCE DE LA COMÈTE — le cœur du plan, et ce qui manquait. Collée au
+    /// point suivi, elle reste IMMOBILE DANS LE CADRE : la caméra la suit, donc
+    /// seul le fond défile et on ne la voit jamais courir. Il faut que la
+    /// caméra LA LAISSE PARTIR puis la rattrape.
+    ///
+    /// C'est la CAMÉRA qui respire, jamais la comète : celle-ci avance de façon
+    /// strictement monotone (une comète ne recule pas). Le retard de la caméra
+    /// oscille de 0 à 0,048 d'abscisse — soit jusqu'à 130 points d'écran à
+    /// ×6,5 —, trois fois sur la durée du travelling. La comète prend donc
+    /// visiblement le large dans le cadre, file le long du tube, et le
+    /// mouvement se reprend.
+    ///
+    /// La dérivée du retard (0,048 × 3 × 2π × 0,5 ≈ 0,45) reste sous la vitesse
+    /// de base du plan (≈ 1 à 1,5) : la caméra ralentit, elle ne recule jamais.
+    private static let cometLead: Float = 0.048
+    private static let leadCycles: Float = 3
 
     /// `shaderClock` : l'horloge que l'hôte donne au shader (temps absolu
     /// modulo 900 s, ou la valeur figée). Elle sert à RENDRE LA COMÈTE au
@@ -133,6 +160,10 @@ struct MoonSplashBeat {
         let zoom: Float
         var target: SIMD2<Float>
         var cine: Float = 1
+        /// La part de décentrage appliquée. Elle se résorbe pendant le boom :
+        /// l'objet doit finir CENTRÉ avant de partir se poser, sinon le recul
+        /// se ferait en biais et le vol partirait de travers.
+        var frameW: Float = 1
 
         if t < tBoom {
             // Allumage puis travelling : un seul mouvement continu le long du
@@ -141,16 +172,23 @@ struct MoonSplashBeat {
             let pIgnite = clamp01(t / ignite)
             b.reveal = Float(smoothstep(pIgnite))
             let pTravel = clamp01((t - tTravel) / travel)
-            sCam = arc(at: eased(Float(pTravel)))
+            // La comète, elle, avance sans jamais se retourner.
+            let sComet = arc(at: eased(Float(pTravel)))
+            // La caméra la laisse filer, puis la rattrape.
+            let lag = cometLead * 0.5
+                * (1 - cos(Float(pTravel) * 6.2831 * leadCycles))
+            sCam = arc(at: max(eased(Float(pTravel)) - lag, 0))
             // L'allumage POUSSE : on entre dans le tube, on ne s'en retire
             // pas. (Il partait de ×15 pour finir à ×13 — un travelling
             // arrière de 13 % sous un commentaire qui promettait l'inverse.)
+            // Puis le plan RECULE vers ×6,5, où la lune redevient lisible.
             zoom = t < tTravel
                 ? mix(closeZoom * 0.82, closeZoom, Float(smoothstep(pIgnite)))
-                : closeZoom + 0.45 * sin(Float(pTravel) * 6.2831 * 1.5)
+                : mix(closeZoom, travelZoom,
+                      Float(smoothstep(clamp01(pTravel / 0.22))))
+                  + 0.25 * sin(Float(pTravel) * 6.2831 * 1.5)
             target = sceneTarget(arc: sCam)
-            // La comète est le SUJET : elle marche devant l'objectif.
-            b.cineCtl.w = MoonPath.angle(at: sCam + cometLead)
+            b.cineCtl.w = MoonPath.angle(at: sComet)
         } else if t < tFlight {
             // ---- LE BOOM. Le recul est multiplicatif — un travelling arrière
             // se lit en octaves, pas en points —, donc l'interpolation se
@@ -163,6 +201,7 @@ struct MoonSplashBeat {
             zoom = exp(mix(log(closeZoom), 0, e))
             target = sceneTarget(arc: sCam) * (1 - e)
             cine = 1 - e
+            frameW = 1 - e
             // La surtension : une décharge brève, pas un projecteur.
             b.cineCtl.y = surge(t)
             // LA COMÈTE NE SE TÉLÉPORTE PAS. Rendre la main d'un coup — en
@@ -188,6 +227,7 @@ struct MoonSplashBeat {
                             y: CGFloat(mix(Float(c.y), Float(land.y), e)))
             target = MoonLanding.cameraTarget(bringing: q, at: zoom, in: size)
             cine = 0
+            frameW = 0        // la cible du vol place déjà l'objet elle-même
             // La surtension du boom SURVIT au raccord : à la dernière image du
             // boom elle vaut encore 0,054, ce qui pèse 12 % sur le gain du
             // néon. La couper net ferait clignoter tout l'objet d'une image à
@@ -205,9 +245,54 @@ struct MoonSplashBeat {
             b.edgeFade = Float(smoothstep(a))
         }
 
+        // Le décentrage. Le shader pose l'objet là où `pC` s'annule, c'est-à-dire
+        // en (0,5 w ; 0,46 h) ; pour l'amener ailleurs à l'écran il suffit de
+        // décaler la CIBLE de l'écart voulu, ramené en points de scène — donc
+        // divisé par le grossissement.
+        if frameW > 0 {
+            let c = MoonLanding.sceneCenter(in: size)
+            let dx = Float(framing.x * size.width - c.x)
+            let dy = Float(framing.y * size.height - c.y)
+            target -= SIMD2(dx, dy) * (frameW / zoom)
+        }
+
         b.camera = SIMD3(target.x, target.y, zoom)
         b.cineCtl.x = cine
         return b
+    }
+
+    // MARK: Les instants où la caméra passe les accidents
+
+    /// L'instant de la partition où la caméra atteint l'abscisse `s`. Sert à
+    /// caler les retours haptiques sur les quatre virages de la courbe : la
+    /// main doit sentir ce que l'œil voit, à l'image près.
+    ///
+    /// On inverse la chaîne complète : `s` → la progression brute de la table
+    /// de vitesse, puis l'inverse analytique du smoothstep, puis le temps.
+    static func time(atArc s: Float) -> Double {
+        // Position de `s` dans la table (elle est croissante).
+        var lo = 0, hi = warp.count - 1
+        while hi - lo > 1 {
+            let mid = (lo + hi) / 2
+            if warp[mid] <= s { lo = mid } else { hi = mid }
+        }
+        let span = max(warp[hi] - warp[lo], 1e-9)
+        let x = (Float(lo) + (s - warp[lo]) / span) / Float(warp.count - 1)
+        // Inverse de smoothstep : p = 1/2 − sin(asin(1 − 2x)/3).
+        let clamped = min(max(x, 0), 1)
+        let p = 0.5 - sin(asin(1 - 2 * clamped) / 3)
+        return tTravel + Double(min(max(p, 0), 1)) * travel
+    }
+
+    /// Les quatre rendez-vous du travelling, dans l'ordre : les deux crochets
+    /// (touche brève) et les deux cornes (touche plus ferme — la tangente y
+    /// tourne de 160°, c'est le vrai virage).
+    static var beats: [(time: Double, hard: Bool)] {
+        let L = MoonPath.landmarks
+        return [(time(atArc: L.kink1), false),
+                (time(atArc: L.horn1), true),
+                (time(atArc: L.kink2), false),
+                (time(atArc: L.horn2), true)].sorted { $0.time < $1.time }
     }
 
     /// L'état d'arrivée, figé — ce que voit `reduceMotion`, et ce que doit
@@ -372,6 +457,11 @@ struct MoonSplashView: View {
     @State private var ignited = 0
     @State private var boomed = 0
     @State private var landed = 0
+    /// Les virages du travelling : une touche brève dans les crochets, une
+    /// plus ferme dans les cornes. C'est ce qui fait qu'on SENT la comète
+    /// prendre les courbes au lieu de seulement la regarder.
+    @State private var softBeat = 0
+    @State private var hardBeat = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -438,7 +528,11 @@ struct MoonSplashView: View {
         // Les retours tombent sur l'image, pas à côté : mêmes horaires que la
         // partition (le mécanisme du splash bouteille).
         .sensoryFeedback(.impact(weight: .light, intensity: 0.45), trigger: ignited)
-        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.85), trigger: boomed)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.30),
+                         trigger: softBeat)
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.55),
+                         trigger: hardBeat)
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.95), trigger: boomed)
         .sensoryFeedback(.impact(weight: .light, intensity: 0.40), trigger: landed)
         .task {
             guard Self.freeze == nil else { return }
@@ -458,6 +552,12 @@ struct MoonSplashView: View {
             }
             guard await wait(until: MoonSplashBeat.ignite) else { return }
             ignited += 1
+            // Les quatre virages de la courbe, à l'instant où la caméra les
+            // prend : la main suit le tracé en même temps que l'œil.
+            for beat in MoonSplashBeat.beats {
+                guard await wait(until: beat.time) else { return }
+                if beat.hard { hardBeat += 1 } else { softBeat += 1 }
+            }
             guard await wait(until: MoonSplashBeat.ignite
                                     + MoonSplashBeat.travel) else { return }
             boomed += 1
