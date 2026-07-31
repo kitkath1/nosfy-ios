@@ -483,18 +483,41 @@ static float lmStars(float2 pos, float t) {
     // périodicité de 900 s reste exacte.
     float2 mv = uv - float2(0.5, 0.5);
     float angC = atan2(mv.y, mv.x) * (1.0 / TAU) + 0.5;
-    float headC = fract(t * 27.0 / 900.0);
+    // 60 tours par boucle = 900/60 = 15,000 s le tour, k ENTIER. À 33 s elle
+    // était invisible : avec une tête de 2,1 % de tour, elle ne passait en un
+    // point donné que pendant 0,7 s toutes les 33 s — statistiquement, on ne
+    // la voyait jamais. Une animation qu'on n'attrape pas n'existe pas.
+    float headC = fract(t * 60.0 / 900.0);
     float dC = angC - headC;
     dC -= floor(dC + 0.5);
     // Une tête brève et une traîne DERRIÈRE seulement : sans l'asymétrie ce
     // n'est plus une comète, c'est une bille.
-    float cometHead = exp(-dC * dC / (0.021 * 0.021));
-    float cometTail = 0.40 * exp(-max(-dC, 0.0) / 0.055)
-                           * smoothstep(0.005, -0.005, dC);
-    // Elle roule DANS le verre, à peu près à la hauteur du fil : la porte est
-    // large (0,95) pour qu'elle occupe la section et non une ligne.
-    float cometRide = exp(-filD * filD / (0.95 * 0.95));
-    float cometE = 6.2 * (cometHead + cometTail) * cometRide * neonGain;
+    float cometHead = exp(-dC * dC / (0.030 * 0.030));
+    float cometTail = 0.55 * exp(-max(-dC, 0.0) / 0.085)
+                           * smoothstep(0.006, -0.006, dC);
+    // Elle roule DANS le verre : la porte est large pour qu'elle occupe toute
+    // la SECTION du tube et non une ligne — une décharge remplit son verre.
+    // LE PIÈGE : `dIn = max(-dPt, 0)` est CONSTANT (zéro) partout hors du
+    // croissant, donc `filD` y vaut −2,10 et la porte gaussienne y rendait
+    // 0,105 — pas zéro. Multipliée par une tête angulaire qui, elle, est un
+    // RAYON depuis le centre, ça peignait un éventail blanc sur toute la
+    // face. Une porte bâtie sur une profondeur clampée ne ferme rien à
+    // l'extérieur : il faut la refermer explicitement avec dPt.
+    float cometRide = exp(-filD * filD / (1.40 * 1.40))
+                    * smoothstep(1.2, -0.6, dPt);
+    float cometE = 6.5 * (cometHead + cometTail) * cometRide * neonGain;
+    // Elle déborde un peu — une décharge fait rougeoyer le dépoli autour
+    // d'elle — mais le débordement doit rester COLLÉ au tube. Piège payé :
+    // avec une exponentielle en exp(-dAbs/5.5), le halo suivait le secteur
+    // angulaire bien au-delà du verre et peignait un ÉVENTAIL blanc en
+    // travers de la face. L'angle seul ne localise pas un point, il localise
+    // un RAYON depuis le centre : tout terme piloté par lui doit être fermé
+    // par une porte serrée sur la distance au tracé. Gaussienne à 3,2 pt :
+    // morte à 7 pt, l'éventail ne peut plus exister.
+    float cometGlow = 1.15 * (cometHead + 0.5 * cometTail)
+                           * exp(-dAbs * dAbs / (3.2 * 3.2))
+                           * smoothstep(6.0, 1.0, dPt) * neonGain;
+    cometE += cometGlow;
     float3 cometC = float3(1.00, 0.96, 0.90);
 
     // ---- LE VERRE DÉPOLI : QUATRE CHAMPS SÉPARÉS. Un seul champ ne peut
