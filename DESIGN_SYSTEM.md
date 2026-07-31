@@ -336,18 +336,33 @@ Ici on ne cherche plus une pierre qui contient un ciel, mais une **plaque de
 verre fumé lisse éclairée par une lampe posée hors du cadre**, en haut à gauche.
 Toute la matière est de la lumière ; il n'y a aucune texture.
 
-**Calquée sur une référence photographique** (`back_hero.png`) mesurée au
-sous-pixel — échelle 2,4189 px/pt, carte de référence 362 × 470,7 pt. Écart
-final : **2,8 % en moyenne sur 40 points de contrôle**, aucun point au-delà de
-9 niveaux sur 255. Méthode et outillage : `~/Downloads/woop-obsidian`
-(`preview` rend le shader hors app en 1 s, `measure.py` sort la table
-« nous / réf / écart » et la note).
+**Calquée sur une référence photographique**, puis **retouchée à l'œil**. Deux
+régimes successifs, et l'ordre compte :
+
+1. *Le calque.* Référence finale `ref/blue-hd.png` (la variante à accent bleu),
+   échelle 2,2873 px/pt. Écart final **6,0 % pondéré sur 34 points de
+   contrôle**, soit 9,4/10 — luminance 4,9 %, teinte 8,2 %.
+2. *L'œil.* Kathryn a ensuite fait dévier du calque sur cinq points (voir plus
+   bas). Ces écarts sont VOULUS : ne pas les « corriger » en relançant un
+   ajustement sur la référence.
+
+Outillage : `~/Downloads/woop-obsidian`. `preview` rend le shader hors app en
+5 s (`./preview <shader> <png> <lit> [t]`), `measure-hd.py` sort la table
+« nous / réf / écart » et la note, `diag.py` sort les profils du bord et les
+R−B, `descc*.py` fait une descente par coordonnées qui note le VRAI rendu.
+
+**Le barème doit noter la TEINTE, pas seulement la luminance.** Un or deux fois
+moins saturé que la référence (R−B +70 contre +122) passait à 9,0/10 sur un
+barème de luminance seule — un défaut que l'œil voit immédiatement. La note est
+`0,65 × luminance + 0,35 × teinte`, et elle est tombée à 8,1 le jour où la
+teinte est entrée dedans.
 
 - **Là où le brief texte contredit la référence, la référence gagne.** Trois
   valeurs annoncées étaient fausses : socle `#17181C` (mesuré 11/255, deux fois
   plus noir), ombre portée sous la carte (il n'y en a AUCUNE : la page reste
   `#000000` jusqu'au ras du bord), spot froid bleuté `#303442` (il est gris
-  légèrement CHAUD, `#6D635B`). Rayon annoncé 36-42 pt, mesuré **27 pt**.
+  légèrement CHAUD, `#6D635B`). Rayon annoncé 36-42 pt, mesuré 27 — retenu
+  **20 pt**, voir les écarts voulus plus bas.
 - **Saturation PAR CANAL** : `1 - exp(-x * k)` avec `k` la couleur intrinsèque
   de la source (chaude : `1 / 0,456 / 0,154`). Une lumière ambrée qui monte
   sature le rouge d'abord, le bleu en dernier — ambre → or → crème → blanc.
@@ -368,24 +383,66 @@ final : **2,8 % en moyenne sur 40 points de contrôle**, aucun point au-delà de
   crête glisse de u=331 à u=236 entre v=16 et v=200 (pente −0,50 pt de u par pt
   de v) à largeur constante (FWHM 63 pt). Un halo de coin + une traînée
   verticale ne peuvent pas produire ça ensemble.
-- **Le liseré est un DOUBLE trait** : un contour extérieur et, 3,2 pt à
-  l'intérieur, une seconde ligne **deux fois plus brillante** — le biseau du
-  verre. Mesuré partout : haut 104/200, droite 55/98, bas 52/107, gauche
-  78/159. C'est ce second trait qui fait lire « taillé » ; sans lui la carte
-  n'est qu'un rectangle cerné.
-- **Le trait n'a pas la couleur de la nappe** : crème (`1 / 0,60 / 0,32`,
-  R−B ≈ +35) et non orange (+136). Le biseau renvoie la lumière presque telle
-  quelle, la masse de la pierre la colore.
-- **L'arête du coin haut-gauche est BLANCHE**, pas dorée : 254/255 sur 37 pt
-  d'arc. L'or n'apparaît qu'entre 90 et 180 pt le long du bord haut.
-- **Le halo extérieur dépend à peine de la distance au bord** (λ 4 pt) et
-  BEAUCOUP de la distance à la source (λ 45 pt) : c'est ce qui lui fait valoir
-  21/255 à 12 pt à gauche et ZÉRO à 12 pt au-dessus du milieu du bord haut. Un
-  halo isotrope ne sait pas produire cette asymétrie — et en fait une boule.
+- **UNE SEULE bordure, un dégradé collé à l'arête.** La référence a un double
+  trait (contour + seconde ligne 3,2 pt à l'intérieur, deux fois plus
+  brillante : le biseau du verre) et il a longtemps été reproduit. Kathryn l'a
+  fait retirer, référence en main — son propre écran de login n'a qu'une lueur
+  dégradée : « c'est juste UNE qui est dégradée ». Un profil gaussien unique
+  (centre d = −1,4 pt, σ 1,05) remplace les deux. **Test de non-régression** :
+  la luminance doit DÉCROÎTRE de façon monotone depuis l'arête vers l'intérieur
+  — une bosse plus loin, c'est une seconde ligne qui repousse (`diag.py`).
+- **Le trait n'existe QUE là où la lumière le touche.** En bas et à droite, le
+  contraste bord/surface doit être nul (mesuré +1 et −1 niveau) : la carte n'est
+  pas cernée, elle fond dans le noir. Tant qu'il restait +6 en bas, Kathryn
+  voyait « le liseré d'une card ».
+- **Piège : une fonction de la distance au FOYER est un ANNEAU.** La bande
+  chaude du trait (`bandC`), écrite en `dw = |q - src|`, rallumait le bord BAS —
+  qui repasse dans l'anneau à dw ≈ 290 pt. C'était ça, le contour fantôme. Elle
+  est désormais portée par la normale (haut et gauche seulement) et éteinte en
+  descendant le flanc.
+- **Le trait n'a pas la couleur de la nappe** : plus crème (mix 25 % vers
+  `1 / 0,75 / 0,50`). Le biseau renvoie la lumière presque telle quelle, la
+  masse de la pierre la colore.
+- **Le bloom crème du coin a besoin de SON profil en profondeur.** Au ras du
+  coin haut-gauche la référence est crème (`#FCF3CA`, R−B +50), pas or. Posé
+  dans le trait, ce voile ne faisait rien : les deux lignes sont mortes à
+  d = −2 pt, là où lui doit vivre. Il lui faut sa propre gaussienne.
+- **La bavure bleue vit SOUS le bord**, pas sur l'arête : ellipse écrasée 1:3,8
+  centrée à v = 7 pt. Centrée sur l'arête, elle inondait soit le trait
+  au-dessus, soit tout le flanc droit.
+- **L'accent bleu est gaté par la NORMALE** (`pow(max(-n.y,0), 3)`) : sans ça il
+  coule le long du flanc droit et devient un contour.
 - **La grille de points** (haut-droit) est antialiasée par couverture, pas par
   seuil : à 3x, un point de moins d'un point de diamètre scintille sinon.
-- **Le TAP** : la source avance de 2,5 pt et gagne 6 %. Une lampe qu'on
-  approche, pas un interrupteur.
+- **Le TAP** : la source avance de 2,5 pt et gagne 6 %, le faisceau s'OUVRE
+  (+26 % en long, +34 % en large). Deux impacts haptiques à 90 ms d'écart,
+  faible puis fort — un seul impact se lit comme un interrupteur, deux se
+  lisent comme un gonflement.
+- **Rien ne sort de la carte.** La référence a un petit halo dehors ; Kathryn
+  l'a fait retirer, parce que sur un fond qui n'est pas le noir absolu du banc
+  il se lit comme une ombre portée sale.
+
+### Les cinq écarts VOULUS par rapport à la référence
+
+Ils sont le fruit de plusieurs allers-retours sur simulateur et ne doivent pas
+être « recalés » :
+
+1. **Rayon 20 pt** (mesuré 27) — trop rond une fois la carte en place.
+2. **Nappe gauche réduite deux fois** (amplitude 1,84 → 1,25) et surtout
+   **raccourcie** (portée 69,5 → 52 pt) : c'est la PORTÉE qui faisait « toute la
+   bordure orange », pas l'amplitude. L'or se contient près du coin.
+3. **Faisceau plus fin et FONDU** : un cœur de 20 pt d'axe court noyé dans une
+   jupe de 46 pt. Un fil seul a des flancs nets et se lit « posé par-dessus » ;
+   la jupe le fait entrer dans la pierre.
+4. **Bleu à peine devinable** : R−B ramené de −25 à −14 sur le bord haut-droit.
+   Il reste une présence froide, pas une zone bleue.
+5. **L'or de gauche RESPIRE** : onde progressive descendante, ±3 % avant tone
+   map, deux périodes incommensurables. Deux règles apprises ici — on module
+   l'ÉPAISSEUR de la nappe, jamais son amplitude (l'amplitude fait clignoter,
+   on voit le procédé) ; et l'écart image à image doit rester **sous ~1 niveau
+   sur 255** en moyenne. À ±8 % Kathryn a dit « je vois l'animation », et une
+   animation qu'on voit est un effet, pas une matière.
+
 - **Reste à faire** : le contenu (titre, chiffre, trophées) n'a pas été
   retouché — il passe aujourd'hui DANS la zone chaude, et la grille de points
   mord sur les deux derniers trophées.
