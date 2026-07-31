@@ -3,22 +3,27 @@ import simd
 
 // MARK: - Le splash : la lune en gros plan, puis le monolithe qui se pose
 //
-// Un plan-séquence de 11,4 s, en quatre temps :
+// Un plan-séquence de 14,0 s, en cinq temps :
 //
-//   0,0 → 1,0   L'ALLUMAGE. Noir. La caméra est déjà collée au tube — onze
-//               fois la taille de la scène — et le néon naît sous nos yeux
-//               pendant qu'elle pousse.
-//   1,0 → 8,0   LE TRAVELLING. Le PAVÉ N'EXISTE PAS : il n'y a que le
-//               croissant de néon, seul dans le noir. La comète part et la
-//               caméra la suit sur tout le contour, en abscisse curviligne,
-//               en reculant sans arrêt de ×11 à ×5,5. Elle lève le pied aux
-//               quatre accidents de la courbe (deux cornes, deux crochets).
-//   8,0 → 9,7   LE BOOM. Le tube surtend, la caméra décolle en arrière — vite
-//               au départ, longuement amortie — et la PIERRE SE MATÉRIALISE
-//               autour de la lumière, dans le flash qui couvre son apparition.
-//   9,7 → 11,4  L'ENVOL. Il rapetisse en filant vers le haut-gauche pendant
-//               que l'aurore de la connexion monte du noir, et se pose avec
-//               un rebond court. À partir de là, le doigt le fait tourner.
+//   0,0 → 1,0    L'ALLUMAGE. Noir. La caméra est déjà collée au tube — dix
+//                fois la taille de la scène — et le néon naît sous nos yeux
+//                pendant qu'elle pousse.
+//   1,0 → 10,0   LE TRAVELLING. Le PAVÉ N'EXISTE PAS : il n'y a que le
+//                croissant de néon, seul dans le noir. La caméra parcourt tout
+//                le contour à vitesse RIGOUREUSEMENT constante, en reculant
+//                sans arrêt de ×10 à ×7,5, pendant que la comète la devance
+//                régulièrement. Le chemin est LISSÉ : le contour a deux coins
+//                à 160° (les cornes), et un chariot qui les suivrait au trait
+//                près verrait sa direction s'inverser d'une image à l'autre.
+//   10,0 → 11,7  LE BOOM. Le tube surtend, la caméra décolle en arrière — vite
+//                au départ, longuement amortie — et la PIERRE SE MATÉRIALISE
+//                autour de la lumière, dans le flash qui couvre son apparition.
+//   11,7 → 12,55 L'ÉCLAT. Le néon se gorge, l'objet se tend — puis DÉTONE. Le
+//                pavé ne rapetisse pas, il cesse d'exister. L'aurore de la
+//                connexion se découvre DANS l'éclair.
+//   12,55 → 14,0 LA RENAISSANCE. Les éclats sont rappelés vers le point de
+//                pose et la lune se rallume À SA PLACE : elle n'a pas voyagé,
+//                elle s'est refaite. À partir de là, le doigt la fait tourner.
 //
 // Le grondement haptique double la partition d'un bout à l'autre : voir
 // RocketHaptics.swift. Il part d'un bloc au moteur, jamais image par image —
@@ -92,6 +97,13 @@ struct MoonSplashBeat {
     var edgeFade: Float = 0
     /// 1 = le croissant seul dans le noir ; 0 = le monolithe entier.
     var solo: Float = 0
+    /// L'éclair de la détonation, 0..1.
+    var flash: Double = 0
+    /// Âge des éclats depuis la détonation. Négatif = pas d'éclats.
+    var burstAge: Double = -1
+    /// Le pavé est-il encore là ? Après la détonation, il n'existe plus —
+    /// il ne rapetisse pas, il n'est plus dessiné du tout.
+    var showObject: Bool = true
     /// Le plan se rend-il à demi-résolution ? Vrai tant qu'il n'y a que du
     /// néon flou à l'écran — voir `MoonSplashView`.
     var lowRes: Bool = false
@@ -107,12 +119,19 @@ struct MoonSplashBeat {
     static let ignite = 1.00
     static let travel = 9.00
     static let boom = 1.70
-    static let flight = 1.70
-    static var total: Double { ignite + travel + boom + flight }
+    /// L'ÉCLAT : la charge, puis la détonation qui efface le pavé.
+    static let burst = 0.85
+    /// LA RENAISSANCE : les éclats se rassemblent, le néon se rallume.
+    static let reform = 1.45
+    static var total: Double { ignite + travel + boom + burst + reform }
 
     private static var tTravel: Double { ignite }
     private static var tBoom: Double { ignite + travel }
     private static var tFlight: Double { ignite + travel + boom }
+    private static var tReform: Double { tFlight + burst }
+    /// L'instant EXACT de la détonation — le pic du flash, le départ des
+    /// éclats, et le moment où le pavé cesse d'exister.
+    static var detonation: Double { tFlight + 0.16 }
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
     /// dorée, le fil de plasma, le grain du dépoli.
@@ -255,36 +274,64 @@ struct MoonSplashBeat {
             // sentinelle peut être rendue sans que rien ne bouge.
             b.cineCtl.w = lerpAngle(MoonPath.angle(at: 1 + cometLead),
                                     naturalHead(shaderClock), e)
-        } else {
-            // ---- L'ENVOL. Il rapetisse en filant vers son point de pose, et
-            // arrive avec un rebond court — un objet qui se pose, pas un
-            // calque qui s'aligne.
-            let p = clamp01((t - tFlight) / flight)
-            let e = spring(Float(p))
+        } else if t < tReform {
+            // ---- L'ÉCLAT. Le pavé ne rapetisse plus en filant vers son coin :
+            // il DÉTONE. La caméra ne bouge pas d'un pouce — c'est l'explosion
+            // qui fait le raccord, pas un déplacement. Deux temps : la CHARGE
+            // (le néon se gorge, l'objet gonfle d'un cheveu, on sent que ça
+            // va lâcher), puis la DÉTONATION, où le pavé cesse simplement
+            // d'exister sous le flash.
+            let a = t - tFlight
+            let charge = Float(clamp01(a / 0.16))
             sCam = 1
-            zoom = exp(mix(0, log(MoonLanding.zoom), e))
-            let c = MoonLanding.sceneCenter(in: size)
-            let land = MoonLanding.spot(in: size)
-            let q = CGPoint(x: CGFloat(mix(Float(c.x), Float(land.x), e)),
-                            y: CGFloat(mix(Float(c.y), Float(land.y), e)))
-            target = MoonLanding.cameraTarget(bringing: q, at: zoom, in: size)
+            // 6 % de gonflement : assez pour qu'on le sente se tendre, pas
+            // assez pour qu'on le voie bouger.
+            zoom = 1 + 0.06 * charge * charge
+            target = .zero
             cine = 0
-            frameW = 0        // la cible du vol place déjà l'objet elle-même
-            // La surtension du boom SURVIT au raccord : à la dernière image du
-            // boom elle vaut encore 0,054, ce qui pèse 12 % sur le gain du
-            // néon. La couper net ferait clignoter tout l'objet d'une image à
-            // l'autre — elle continue donc de mourir dans l'envol.
-            b.cineCtl.y = surge(t)
-            // L'aurore monte pendant qu'il vole, et le fond du shader s'ouvre
-            // en même temps : la lueur du monolithe devient additive sur elle.
-            // Sans écran d'accueil orange derrière, on garde le fond noir du
-            // shader : ouvrir sur du vide ne ferait qu'éteindre la flaque.
-            let a = clamp01((t - tFlight) / (flight * 0.75))
+            frameW = 0
+            // La charge se lit dans le néon avant de se voir dans le flash.
+            b.cineCtl.y = surge(t) + 1.9 * charge * charge
+            b.showObject = a < 0.16
+            // Le flash : montée quasi instantanée, longue retombée.
+            let d = a - 0.16
+            b.flash = d < 0 ? Double(charge * charge) * 0.35
+                            : exp(-d / 0.34)
+            b.burstAge = d
+            // L'aurore se découvre DANS l'éclair — on ne la voit pas arriver.
+            let rise = clamp01((a - 0.16) / 0.50)
             if landsOnAurora {
-                b.aurora = smoothstep(a)
-                b.cineCtl.z = Float(smoothstep(a))
+                b.aurora = smoothstep(rise)
+                b.cineCtl.z = Float(smoothstep(rise))
             }
-            b.edgeFade = Float(smoothstep(a))
+            b.edgeFade = Float(smoothstep(rise))
+        } else {
+            // ---- LA RENAISSANCE. Les éclats se rassemblent, et la lune se
+            // rallume À SA PLACE. Elle n'a pas voyagé : elle s'est refaite.
+            let a = t - tReform
+            let p = clamp01(a / reform)
+            sCam = 1
+            // Elle arrive un rien trop grande et se pose : le ressort tient
+            // dans le grossissement, il n'y a rien à déplacer.
+            let settle = spring(Float(clamp01(a / 0.95)))
+            zoom = MoonLanding.zoom * (1 + 0.16 * (1 - settle))
+            target = MoonLanding.cameraTarget(
+                bringing: MoonLanding.spot(in: size), at: zoom, in: size)
+            cine = 0
+            frameW = 0
+            // LE NÉON SE RALLUME — c'est ça, « la lune réapparaît ». La rampe
+            // de naissance du shader (exposition 0,35 → 1 puis ignition) fait
+            // exactement ce travail, et elle existe depuis le premier jour.
+            b.reveal = Float(smoothstep(clamp01(a / 0.55)))
+            b.cineCtl.y = surge(t)
+            b.burstAge = t - detonation
+            b.flash = 0.30 * exp(-a / 0.30)      // la braise de l'explosion
+            if landsOnAurora {
+                b.aurora = 1
+                b.cineCtl.z = 1
+            }
+            b.edgeFade = 1
+            _ = p
         }
 
         // Le décentrage. Le shader pose l'objet là où `pC` s'annule, c'est-à-dire
@@ -562,7 +609,7 @@ struct MoonSplashBeat {
     /// L'instant où l'objet TOUCHE — la première fois que le ressort atteint
     /// sa cible, avant de la dépasser : tan(ωx) = −ζ/ω donne x = 0,299 de la
     /// course. C'est là que la vibration doit tomber, pas à la fin du plan.
-    static var touchdown: Double { tFlight + flight * 0.299 }
+    static var touchdown: Double { detonation }
 }
 
 // MARK: - La vue
@@ -662,7 +709,7 @@ struct MoonSplashView: View {
                         // entrait dans son verrou — avant même que `.task` ait
                         // eu la parole. Suspendre l'horloge n'empêche pas
                         // d'évaluer le contenu une première fois.
-                        if armed || Self.freeze != nil {
+                        if (armed || Self.freeze != nil) && b.showObject {
                         MonolithCanvas(size: buf, t: clock,
                                        reveal: b.reveal,
                                        faceR: MoonLanding.faceR,
@@ -677,6 +724,21 @@ struct MoonSplashView: View {
                             .frame(width: size.width, height: size.height,
                                    alignment: .topLeading)
                             .ignoresSafeArea()
+                        }
+
+                        // ---- LE RACCORD. L'éclair d'abord, les éclats
+                        // par-dessus : la lumière naît DERRIÈRE la matière
+                        // qu'elle projette.
+                        if b.flash > 0.002 {
+                            MoonFlash(intensity: b.flash,
+                                      origin: MoonLanding.sceneCenter(in: size))
+                                .ignoresSafeArea()
+                        }
+                        if b.burstAge >= 0 {
+                            MoonBurst(age: b.burstAge,
+                                      origin: MoonLanding.sceneCenter(in: size),
+                                      target: MoonLanding.spot(in: size))
+                                .ignoresSafeArea()
                         }
                     }
                 }
@@ -732,7 +794,9 @@ struct MoonSplashView: View {
             RocketHaptics.shared.launch(ignite: MoonSplashBeat.ignite,
                                         travel: MoonSplashBeat.travel,
                                         boom: MoonSplashBeat.boom,
-                                        flight: MoonSplashBeat.flight,
+                                        flight: MoonSplashBeat.burst
+                                                + MoonSplashBeat.reform,
+                                        detonation: MoonSplashBeat.detonation,
                                         beats: MoonSplashBeat.beats)
             // Une seule attente : la fin du plan. Tout le rythme haptique
             // est parti d'un bloc au moteur, il n'a plus besoin d'être
