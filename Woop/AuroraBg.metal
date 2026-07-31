@@ -115,8 +115,12 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
     return float2(E, Eg);
 }
 
-[[ stitchable ]] half4 bgAurora(float2 position, half4 color,
-                                float2 size, float t, float2 tilt) {
+// Le champ complet (foyers, rideaux, brume grise, poussières) : partagé
+// entre le banc nu et la page de connexion. `curOut` rend la texture des
+// rideaux au point courant — la caresse du login s'en habille pour avoir la
+// matière du fond, jamais du coton.
+static float3 bgField(float2 position, float2 size, float t, float2 tilt,
+                      thread float &curOut) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
@@ -141,6 +145,7 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
     float w2 = bgFbm(ac * 1.7 - float2(t * 0.020, t * 0.045) + 2.1 * w1);
     float cur = bgFbm(ac * 1.27 + float2(1.9 * w1, -1.5 * w2));
     cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.5);
+    curOut = cur;
     E *= 0.70 + 1.05 * cur;
     Eg *= 0.80 + 0.42 * cur;   // la brume est plus lisse que le feu
 
@@ -241,9 +246,68 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
         }
     }
 
-    // Dither : sur un dégradé sombre aussi long, sans lui le fond s'annelle.
+    return c;
+}
+
+// Dither commun : sur un dégradé sombre aussi long, sans lui le fond
+// s'annelle en escaliers sur OLED.
+static float3 bgDither(float3 c, float2 position, float t) {
     c += (bgHash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0))
           - 0.5) * (2.0 / 255.0);
-    c = clamp(c, 0.0, 1.0);
+    return clamp(c, 0.0, 1.0);
+}
+
+[[ stitchable ]] half4 bgAurora(float2 position, half4 color,
+                                float2 size, float t, float2 tilt) {
+    float cur = 0.0;
+    float3 c = bgField(position, size, t, tilt, cur);
+    c = bgDither(c, position, t);
+    return half4(half3(c), 1.0) * color.a;
+}
+
+// La page de connexion : le même fond, plus deux choses. L'ombre du bloc
+// texte — le cœur blanc monte juste derrière le titre et l'input, sans elle
+// rien n'est lisible — et la caresse du doigt, portée du login aurora : de
+// grosses lueurs douces qui suivent le doigt et meurent en s'évasant,
+// blanches au contact, dorées dès 0,45 s, texturées par les rideaux.
+// Triplets (x, y, âge en s) côté SwiftUI.
+[[ stitchable ]] half4 bgAuroraLogin(float2 position, half4 color,
+                                     float2 size, float t, float2 tilt,
+                                     device const float *trail, int trailN) {
+    float cur = 0.0;
+    float3 c = bgField(position, size, t, tilt, cur);
+
+    // L'ombre de lisibilité : une flaque de nuit douce sur le bloc
+    // titre/input/bouton (bas-gauche), qui remet du noir entre les lumières.
+    float2 q = position / max(size.y, 1.0);
+    float aspect = size.x / max(size.y, 1.0);
+    float2 dq = (q - float2(aspect * 0.32, 0.82)) / float2(0.42, 0.22);
+    float ombre = exp(-dot(dq, dq));
+    c *= 1.0 - 0.42 * ombre;
+
+    // La caresse : accumulée en niveau, teinte au prorata de l'âge, posée en
+    // fondu écran — elle éclaire sans jamais écrêter, même sur le cœur blanc.
+    float L = 0.0;
+    float dor = 0.0;
+    for (int i = 0; i + 2 < trailN; i += 3) {
+        float2 tp = float2(trail[i], trail[i + 1]);
+        float age = trail[i + 2];
+        float amp = exp(-age / 0.65) * (1.0 - smoothstep(1.0, 1.4, age));
+        if (amp < 0.01) continue;
+        float sig = 55.0 + 80.0 * age;
+        float2 dt2 = position - tp;
+        float g = exp(-dot(dt2, dt2) / (sig * sig));
+        float w = g * amp * 0.60 * (0.72 + 0.55 * cur);
+        L += w;
+        dor += w * clamp(age / 0.45, 0.0, 1.0);
+    }
+    if (L > 0.001) {
+        float3 tt = mix(float3(1.00, 0.96, 0.88), float3(1.00, 0.78, 0.42),
+                        clamp(dor / L, 0.0, 1.0));
+        float vt = 1.0 - exp(-L * 1.70);
+        c = 1.0 - (1.0 - c) * (1.0 - tt * vt);
+    }
+
+    c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }

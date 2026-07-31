@@ -159,14 +159,18 @@ struct TouchTrace {
     let born: Date
 }
 
-/// L'hôte du shader `loginAurora` : plein écran, sous tout le reste. La vue
-/// connaît l'horloge du shader : quand l'enveloppe du flash de l'étoile
-/// passe son seuil (même formule que côté Metal), la paillette SONNE —
-/// image et murmure ne font qu'un.
+/// L'hôte du fond : plein écran, sous tout le reste. Depuis le banc `-bgLab`
+/// validé, c'est `bgAuroraLogin` — le fond embrasé par le bas avec sa
+/// parallaxe 3D au mouvement de l'appareil — plus la caresse du doigt. La
+/// vue garde l'horloge de la paillette : quand l'enveloppe passe son seuil,
+/// elle SONNE — image et murmure ne font qu'un.
 struct AuroraLoginBackground: View {
     var traces: [TouchTrace] = []
     /// Le banc : une caresse figée en travers de la page.
     var bench: Bool = false
+    /// L'inclinaison de l'appareil (muette au simulateur : ici le doigt
+    /// appartient à la caresse, pas à la parallaxe).
+    @StateObject private var tilt = BgTilt()
 
     var body: some View {
         GeometryReader { geo in
@@ -176,8 +180,9 @@ struct AuroraLoginBackground: View {
                 let flashing = sin(t * 0.83 + 0.7) > 0.933
                 Rectangle()
                     .fill(.white)
-                    .colorEffect(ShaderLibrary.loginAurora(
+                    .colorEffect(ShaderLibrary.bgAuroraLogin(
                         .float2(geo.size.width, geo.size.height), .float(t),
+                        .float2(Float(tilt.value.x), Float(tilt.value.y)),
                         .floatArray(trailArray(at: tl.date, size: geo.size))))
                     .onChange(of: flashing) { _, on in
                         if on { SparkleChime.shared.play() }
