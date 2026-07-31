@@ -466,6 +466,37 @@ static float lmStars(float2 pos, float t) {
     // Plus BLANC que l'arête : c'est le cœur, pas la paroi.
     float3 filC = float3(1.00, 0.93, 0.82);
 
+    // ---- LA COMÈTE : une particule qui court DANS le tube. C'est la couche
+    // qui manquait pour que le néon soit VIVANT et pas seulement allumé —
+    // une décharge qui parcourt le gaz, pas une lampe qu'on module.
+    //
+    // Il faut une abscisse le long du croissant, et la SDF n'en donne pas.
+    // L'angle autour du centre de la texture en tient lieu : un croissant est
+    // un secteur d'anneau, l'angle y avance donc de façon monotone d'une
+    // pointe à l'autre. Là où le tracé passe deux fois au même angle (les
+    // deux parois), la particule les allume ensemble — et c'est juste : dans
+    // un tube, une décharge illumine toute la SECTION qu'elle traverse.
+    // Quand son angle tombe dans l'ouverture du croissant, elle disparaît et
+    // ressort par l'autre pointe : elle fait le tour du verre.
+    //
+    // 27 tours par boucle = 900/27 = 33,33 s le tour, k ENTIER : la
+    // périodicité de 900 s reste exacte.
+    float2 mv = uv - float2(0.5, 0.5);
+    float angC = atan2(mv.y, mv.x) * (1.0 / TAU) + 0.5;
+    float headC = fract(t * 27.0 / 900.0);
+    float dC = angC - headC;
+    dC -= floor(dC + 0.5);
+    // Une tête brève et une traîne DERRIÈRE seulement : sans l'asymétrie ce
+    // n'est plus une comète, c'est une bille.
+    float cometHead = exp(-dC * dC / (0.021 * 0.021));
+    float cometTail = 0.40 * exp(-max(-dC, 0.0) / 0.055)
+                           * smoothstep(0.005, -0.005, dC);
+    // Elle roule DANS le verre, à peu près à la hauteur du fil : la porte est
+    // large (0,95) pour qu'elle occupe la section et non une ligne.
+    float cometRide = exp(-filD * filD / (0.95 * 0.95));
+    float cometE = 6.2 * (cometHead + cometTail) * cometRide * neonGain;
+    float3 cometC = float3(1.00, 0.96, 0.90);
+
     // ---- LE VERRE DÉPOLI : QUATRE CHAMPS SÉPARÉS. Un seul champ ne peut
     // pas porter à la fois la COUVERTURE (où est le verre) et le MODELÉ
     // (comment il est éclairé) — c'est ce mélange qui donnait la nappe.
@@ -691,19 +722,25 @@ static float lmStars(float2 pos, float t) {
         // la tranche — c'est ce balayage qui prouve que la surface est
         // réfléchissante et non peinte. Sinus du lacet : le reflet revient,
         // il ne file pas à l'infini.
-        float mPos = 0.36 + 0.30 * sin(yaw * 2.1) + 0.045 * sin(PH * 13.0 * t + 0.9);
-        float md = (sD - mPos) / 0.150;
-        // Une pièce a PLUSIEURS sources : une seule bande relit encore comme
-        // un aplat rayé. La seconde est plus faible, plus fine, plus loin.
-        float md2 = (sD - mPos - 0.40) / 0.085;
-        float mirror = exp(-md * md) + 0.30 * exp(-md2 * md2);
+        // UN HALO, PAS UN TRAIT. La bande étroite (sigma 0,150 en sD, soit
+        // 1,8 pt sur un chant de 12) posait un trait blanc franc à 54/255 :
+        // sur du métal noir, un reflet net raconte une source ponctuelle et
+        // dure — un tube de studio pointé sur l'objet. Ce qu'on veut est
+        // l'inverse : une grande surface sombre qui renvoie une lueur diffuse.
+        // Sigma 0,42 couvre presque tout le chant, l'amplitude tombe de 0,19 à
+        // 0,072, et la seconde bande disparaît : deux bandes, c'était déjà
+        // deux traits. Le grain aussi disparaît — il découpait le halo.
+        // Le couplage au LACET est fort (0,44) : quand le doigt tourne le
+        // pavé, la lueur doit balayer le chant de façon VISIBLE, exactement
+        // comme les nappes glissent sur la face avant. Une tranche qui ne
+        // répond pas au geste redevient une bande peinte.
+        float mPos = 0.40 + 0.44 * sin(yaw * 2.6) + 0.035 * sin(PH * 13.0 * t + 0.9);
+        float md = (sD - mPos) / 0.42;
+        float mirror = exp(-md * md);
         // Le chant GAUCHE reçoit la softbox en RASANCE : c'est lui qui porte
-        // le reflet, le haut n'en attrape qu'un filet.
+        // la lueur, le haut n'en attrape qu'un souffle.
         float graz = pow(saturate(-nF.x), 1.3);
-        float spec = mirror * (0.040 + 0.150 * graz + 0.055 * saturate(-nF.y));
-        // Le grain reste : 1,6·faceR = 0,22 cycle/pt, 5,7× sous la limite.
-        float chant = lmNoise(float2(lmArc(pM, b, rc) * 1.6 * faceR, sD * 2.2)) - 0.5;
-        spec *= max(0.0, 1.0 + chant * 0.22);
+        float spec = mirror * (0.016 + 0.056 * graz + 0.022 * saturate(-nF.y));
         // BICHROME comme l'arête : le reflet est BLANC (le studio) ; la
         // chaleur n'apparaît que là où le néon peut réellement l'atteindre,
         // c'est-à-dire par le bas et près du croissant.
@@ -719,8 +756,14 @@ static float lmStars(float2 pos, float t) {
     // trait, la tranche et la face sont la même substance et l'épaisseur ne
     // se lit pas. C'est un reflet de SOFTBOX sur le chanfrein : `ignite` et
     // non `neonGain` — il ne respire pas avec le tube.
+    // SUPPRIMÉE. Ce trait clair sur le chanfrein était un TRAIT, et un trait
+    // de plus posé sur un objet qui en avait déjà deux (le filet extérieur,
+    // le biseau) : trois lignes parallèles, c'est un cadre — le défaut qu'on
+    // passe cette scène entière à combattre. L'épaisseur se lit maintenant
+    // par le CONTRASTE entre le chant sombre et la face, pas par un liseré
+    // qui les sépare. Le bloc est gardé, désarmé, comme trace de l'essai.
     float3 areteCol = float3(0.0);
-    if (fabs(dF) < 2.6 && bodyCov > 0.0) {
+    if (false && fabs(dF) < 2.6 && bodyCov > 0.0) {
         // LA PORTE : (dF − dSil) EST l'épaisseur de chant restante. Elle vaut
         // 12,4 pt à gauche, 1,4 en haut, et 0 sur les bords DROIT et BAS où
         // dSil ≡ dF — aucun trait parasite là où la référence n'en a pas, et
@@ -787,10 +830,16 @@ static float lmStars(float2 pos, float t) {
         // d'un trait. La lumière franche reste au haut-gauche (la softbox) et
         // au bas (la fuite du néon), là où il y a vraiment quelque chose à
         // réfléchir.
-        float backBreak = 0.62 + 0.38 * lmNoise(float2(s01 * 9.0, 3.1));
-        float seat = 0.055 + 0.50 * wrap
-                   + 0.12 * pow(saturate(-nF.x), 1.6) * backBreak
-                   + 0.52 * leak;
+        // L'ARÊTE ARRIÈRE N'EST PAS UN TRAIT ORANGE. Répété trois fois par la
+        // designer, et j'ai mis trois essais à l'entendre : derrière le cube,
+        // il n'y a AUCUNE lumière à réfléchir. Le terme de flanc gauche —
+        // même réduit, même brisé par un bruit — fabriquait quand même un
+        // trait continu tout le long du bord arrière. Il est SUPPRIMÉ. Ce qui
+        // reste sur cette arête est un pur DÉGRADÉ qui suit la lumière : vif
+        // là où la softbox frappe (le haut-gauche), éteint en descendant, et
+        // qui ne se rallume qu'en bas par la fuite du néon. Le bord arrière
+        // n'est plus dessiné : il est simplement ce que la lumière en fait.
+        float seat = 0.055 + 0.50 * wrap + 0.52 * leak;
         // → gauche 0,745 · coin HG 0,664 · haut 0,543 · BAS 0,341 ·
         //   bas-droite 0,126 · droite 0,055 (rapport vif/éteint 13:1)
         // 45 tours par boucle : 900/45 = 20,000 s PILE, k ENTIER, la
@@ -836,8 +885,11 @@ static float lmStars(float2 pos, float t) {
         // ÉCLAIRÉE — elle lit comme un contour DESSINÉ par-dessus l'objet.
         // La chaleur suit donc ce que le néon peut réellement atteindre :
         // le flanc gauche, la fuite du chanfrein bas, et le glare local.
-        float warmth = saturate(0.08 + 0.60 * pow(saturate(-nF.x), 1.3)
-                                     + 0.80 * leak + 2.2 * bloomE);
+        // Et la chaleur ne suit PLUS le flanc gauche : c'est ce terme qui
+        // teintait en orange une arête qui ne voit que du noir. Elle ne vient
+        // plus que d'où le néon peut réellement l'envoyer — la fuite du
+        // chanfrein bas, et le voisinage immédiat du croissant.
+        float warmth = saturate(0.06 + 0.85 * leak + 2.2 * bloomE);
         float3 cWarm = mix(float3(0.82, 0.90, 1.06),   // le studio
                            float3(1.00, 0.42, 0.10),   // le néon
                            warmth);
@@ -963,7 +1015,7 @@ static float lmStars(float2 pos, float t) {
     // ajouté par-dessus. L'arête s'ajoute au corps — elle est déjà fenêtrée
     // par hasFlank et se fera occulter par bodyCov comme le reste.
     float3 body = faceCol * faceMask + flankCol * flankMask + areteCol + bevelCol
-                + (tubeC * tubeE + filC * filE) * faceMask;
+                + (tubeC * tubeE + filC * filE + cometC * cometE) * faceMask;
     E = mix(E, body, bodyCov);
     // Le bloom et les raies restent additionnés APRÈS : un glare d'objectif
     // est DEVANT l'objet, aucun verre ne l'atténue.
