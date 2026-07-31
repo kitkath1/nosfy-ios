@@ -71,7 +71,7 @@ constant float3 BG_GRIS  = float3(0.91, 0.90, 0.89);  // la brume de la marge ga
 constant float BG_CY     = 0.975;   // la crête, au ras du bord bas
 constant float BG_LAM_UP = 0.080;   // montée de la lumière
 constant float BG_LAM_DN = 0.125;   // chute sous la crête
-constant float BG_K      = 1.72;    // le compresseur de niveau
+constant float BG_K      = 1.85;    // le compresseur de niveau
 
 // La masse analytique des foyers (sans rideaux) — partagée entre le champ et
 // la naissance des poussières, pour qu'elles naissent DANS la lumière.
@@ -96,7 +96,7 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
     float cy = BG_CY - 0.022 * coeur + 0.010 * sin(t * 6.2832 / 11.0);
 
     // Le halo orange MONTE plus haut que le cœur : son λ s'allonge.
-    float lamUp = BG_LAM_UP * (1.0 + 1.60 * droite);
+    float lamUp = BG_LAM_UP * (1.0 + 1.85 * droite);
     float up = exp(-max(cy - q.y, 0.0) / lamUp);
     float dn = exp(-max(q.y - cy, 0.0) / BG_LAM_DN);
 
@@ -149,8 +149,9 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     E *= 0.70 + 1.05 * cur;
     Eg *= 0.80 + 0.42 * cur;   // la brume est plus lisse que le feu
 
-    // La nuit avale la moitié haute.
-    float nuit = smoothstep(0.36, 0.64, q.y + lift);
+    // La nuit avale la moitié haute — mais la lumière monte un cran plus
+    // haut (« monte-le un peu », verdict login v2).
+    float nuit = smoothstep(0.30, 0.58, q.y + lift);
     E *= nuit;
     Eg *= nuit;
 
@@ -171,11 +172,16 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     // La touche de JAUNE : un ANNEAU doré serré entre l'orange franc et la
     // crème — l'écho du néon. Plus large, il mangerait la plage v 0,45-0,72
     // où vit l'orange VIF (le défaut mesuré de la v2).
-    float dore = 0.55 * smoothstep(0.62, 0.80, v) * (1.0 - haut);
+    float dore = 0.75 * smoothstep(0.55, 0.78, v) * (1.0 - haut);
     tint = mix(tint, BG_OR, dore);
     tint = mix(tint, BG_CREME, haut);
     tint = mix(tint, BG_BLANC, smoothstep(0.78, 0.97, v));
     float3 c = clamp(tint * v, 0.0, 1.0);
+    // Et la saturation REMONTE dans la lumière (recette anti-caramel du
+    // login, mesurée au pixel) : c'est elle qui fait l'orange VIF — sans
+    // elle, les tons moyens plafonnent en beige-brun.
+    float3 lum = float3(dot(c, float3(0.299, 0.587, 0.114)));
+    c = clamp(mix(lum, c, 1.0 + 0.38 * smoothstep(0.35, 0.75, v)), 0.0, 1.0);
 
     // La brume grise, en fondu écran : elle éclaire sans jamais écrêter.
     float vg = 1.0 - exp(-Eg * BG_K);
@@ -277,13 +283,11 @@ static float3 bgDither(float3 c, float2 position, float t) {
     float cur = 0.0;
     float3 c = bgField(position, size, t, tilt, cur);
 
-    // L'ombre de lisibilité : une flaque de nuit douce sur le bloc
-    // titre/input/bouton (bas-gauche), qui remet du noir entre les lumières.
-    float2 q = position / max(size.y, 1.0);
-    float aspect = size.x / max(size.y, 1.0);
-    float2 dq = (q - float2(aspect * 0.32, 0.82)) / float2(0.42, 0.22);
-    float ombre = exp(-dot(dq, dq));
-    c *= 1.0 - 0.42 * ombre;
+    // PAS d'ombre de lisibilité : deux tentatives (0,42 puis 0,20 de force)
+    // ont éteint la nappe orange de pleine largeur qui fait le fond —
+    // verdict de Kathryn les deux fois : « t'as pas mis le nouveau
+    // background ». Le titre est blanc, l'input et le bouton sont des pavés
+    // sombres : tout le monde se défend seul sur la lumière.
 
     // La caresse : accumulée en niveau, teinte au prorata de l'âge, posée en
     // fondu écran — elle éclaire sans jamais écrêter, même sur le cœur blanc.
