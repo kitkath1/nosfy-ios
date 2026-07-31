@@ -45,11 +45,40 @@ enum MoonSDF {
 
     static let image: Image = Image(decorative: makeLUT(), scale: 1)
 
-    /// À appeler au lancement quand `-logoLab` est présent : ~75 M
-    /// d'évaluations point-segment, ~0,1-0,2 s en parallèle — payées en
-    /// tâche de fond pendant que le banc affiche son premier frame.
+    /// La cuisson est-elle finie ? ATTENTION — c'est la garde la plus
+    /// importante de tout le splash. `image` est un `static let` : le premier
+    /// qui le touche paie la cuisson ENTIÈRE, et si c'est le fil principal, il
+    /// BLOQUE (swift_once) pendant que 75 millions d'évaluations
+    /// point-segment se font. La cinématique lisant son temps à l'horloge
+    /// murale, elle repart ensuite là où le temps est arrivé : le plan SAUTE
+    /// d'une demi-seconde ou plus. C'était le « ça bugue au début ».
+    ///
+    /// La cinématique attend donc ce drapeau avant de lancer son horloge.
+    @MainActor private(set) static var isReady = false
+
+    /// À appeler au lancement : la cuisson part en tâche de fond, et
+    /// `isReady` passe à vrai quand elle est finie — puis on PRÉ-COMPILE le
+    /// shader, car SwiftUI le compile paresseusement à son premier usage et
+    /// cette compilation-là tombe, elle aussi, sur la première image.
     static func warmUp() {
-        Task.detached(priority: .userInitiated) { _ = Self.image }
+        Task.detached(priority: .userInitiated) {
+            _ = Self.image
+            try? await Self.probe.compile(as: .colorEffect)
+            await MainActor.run { Self.isReady = true }
+        }
+    }
+
+    /// Un exemplaire du shader avec des arguments inertes, uniquement pour
+    /// forcer sa compilation hors du chemin d'affichage. Les valeurs n'ont
+    /// aucune importance : seule compte la SIGNATURE.
+    private static var probe: Shader {
+        ShaderLibrary.logoMonolith(
+            .float2(100, 100), .float(0), .float2(0, 0), .float(0),
+            .float(1), .float(76), .float(-1), .float(-1), .float(0),
+            .float3(padding, tightRange, wideRange),
+            .float3(0.5, 0.485, 0.71),
+            .float3(0, 0, 1), .float4(0, 0, 0, -1),
+            .float(0), .float(0), .image(image))
     }
 
     // MARK: Fabrication
