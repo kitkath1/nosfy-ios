@@ -81,6 +81,35 @@ struct MonolithScene: View {
     var benchBoost: Float? = nil
     var benchSweep: Float? = nil
 
+    /// La demi-face, en points. 76 est le cadrage historique du banc ; le
+    /// splash le réduit pour poser un petit monolithe sur l'écran de
+    /// connexion. Tout le reste de la scène est calibré en POINTS et suit
+    /// donc proportionnellement (le seuil de la sortie anticipée, la flaque,
+    /// la profondeur) — sauf les hairlines, qui doivent rester des hairlines.
+    var faceR: Float = 76
+    /// La caméra : (cible.x, cible.y, zoom) en points de scène. Neutre par
+    /// défaut — la scène ne bouge pas d'un LSB tant que le splash ne la
+    /// pilote pas.
+    var camera: SIMD3<Float> = SIMD3(0, 0, 1)
+    /// (cinéma, boom, ouverture du fond, tête de comète imposée).
+    var cineCtl: SIMD4<Float> = SIMD4(0, 0, 0, -1)
+    /// Fond les raies et le halo avant le bord du cadre — pour les petits
+    /// formats, où ils seraient tranchés net.
+    var edgeFade: Float = 0
+    /// Rampe d'allumage imposée (sinon : la rampe 2 s interne).
+    var revealOverride: Float? = nil
+    /// Le geste est-il actif ? Le splash le coupe pendant la cinématique.
+    var interactive: Bool = true
+    /// La zone qui capte le doigt. Nil = tout le cadre (le banc). Posé sur
+    /// l'écran de connexion, le shader occupe TOUT l'écran alors que l'objet
+    /// n'en occupe qu'un coin : sans cette restriction, il volerait la
+    /// caresse de l'aurore sur les neuf dixièmes de la page.
+    var hitArea: CGRect? = nil
+    /// Images par seconde. 30 suffit à un objet qu'on tourne au doigt ; le
+    /// travelling du splash, lui, EXIGE 60 — voir MoonSplash.swift, où le
+    /// calcul est fait.
+    var fps: Double = 30
+
     /// `-logoDebugSDF` : affiche la LUT du croissant au lieu de la scène —
     /// le seul moyen de voir ce que le GPU LIT vraiment.
     fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
@@ -133,7 +162,7 @@ struct MonolithScene: View {
         GeometryReader { geo in
             let w = max(geo.size.width, 1)
             let h = max(geo.size.height, 1)
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+            TimelineView(.animation(minimumInterval: 1.0 / fps,
                                     paused: reduceMotion && !dragging)) { tl in
                 // Le temps part en float32 vers le GPU : modulo 900 s — tout
                 // le shader est périodique sur 900 s exactement.
@@ -142,7 +171,7 @@ struct MonolithScene: View {
                 let raw = freeze == nil
                     ? min(max(tl.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
                     : 1.0
-                let reveal = Float(raw * raw * (3 - 2 * raw))
+                let reveal = revealOverride ?? Float(raw * raw * (3 - 2 * raw))
                 Rectangle()
                     .fill(.black)
                     .frame(width: w, height: h)
@@ -150,19 +179,21 @@ struct MonolithScene: View {
                         .float2(w, h), .float(t),
                         .float2(motion.tilt.dx, motion.tilt.dy),
                         .float(userYaw(at: tl.date)),
-                        .float(reveal), .float(76),
+                        .float(reveal), .float(faceR),
                         .float(benchBoost ?? -1), .float(benchSweep ?? -1),
                         .float(Self.debugSDF ? 1 : 0),
                         .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
                         .float3(0.5, 0.485, 0.71),
+                        .float3(camera.x, camera.y, camera.z),
+                        .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
+                        .float(edgeFade),
                         .image(MoonSDF.image))))
             }
         }
         // Le pavé tourne sous le doigt : glissement horizontal → lacet, et
         // l'élan du relâcher se prolonge en inertie.
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 0)
+        .contentShape(MonolithHitShape(rect: hitArea))
+        .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { v in
                     if !dragging {
                         dragging = true
@@ -179,7 +210,10 @@ struct MonolithScene: View {
                     releaseVel = fling * Self.radPerPoint * Self.damping
                     releaseAt = .now
                     dragging = false
-                }
+                },
+            // Pendant la cinématique, le pavé est un PLAN, pas un objet qu'on
+            // manipule : le doigt ne doit pas pouvoir contrarier la caméra.
+            including: interactive ? .all : .subviews
         )
         .onAppear { motion.start(reduceMotion: reduceMotion) }
         .onChange(of: scenePhase) { _, phase in
@@ -201,6 +235,16 @@ struct MonolithScene: View {
         var s = shader
         s.dithersColor = true
         return s
+    }
+}
+
+/// La zone sensible de la scène : tout le cadre, ou le seul voisinage de
+/// l'objet quand il n'occupe qu'un coin de l'écran.
+private struct MonolithHitShape: Shape {
+    var rect: CGRect?
+
+    func path(in bounds: CGRect) -> Path {
+        Path(rect ?? bounds)
     }
 }
 

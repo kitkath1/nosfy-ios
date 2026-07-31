@@ -29,11 +29,10 @@ struct WoopApp: App {
         // premier rendu de la home, elle est déjà prête. (NebulaStrip n'est
         // plus chauffée : la carte Objectif est redevenue pure lumière.)
         NebulaNoise.warmUp()
-        // La SDF du croissant ne sert qu'au banc du monolithe : chauffée
-        // uniquement quand il est demandé — zéro coût au lancement normal.
-        if CommandLine.arguments.contains("-logoLab") {
-            MoonSDF.warmUp()
-        }
+        // La SDF du croissant : le splash s'ouvre DESSUS, en gros plan — elle
+        // est donc chauffée à chaque lancement, et non plus seulement pour le
+        // banc du monolithe. C'est la toute première chose que l'app dessine.
+        MoonSDF.warmUp()
     }
 
     var body: some Scene {
@@ -53,9 +52,14 @@ enum WoopTab: String, Hashable {
 }
 
 struct RootView: View {
-    /// Banc d'essai du splash : lancée avec `-splashTest`, l'app ne va jamais
-    /// à l'accueil — la séquence se termine sur un bouton « Rejouer ».
+    /// Banc d'essai de l'ANCIEN splash (bouteille et diablotin), gardé en
+    /// archive : `-splashTest`. Il ne s'ouvre plus au lancement — la lune a
+    /// pris sa place — mais la séquence reste rejouable telle quelle.
     private static let splashTest = CommandLine.arguments.contains("-splashTest")
+    /// Banc du splash de la lune : `-moonSplashLab`, la cinématique en boucle
+    /// avec un bouton « Rejouer ». `-moonSplashFreeze <t>` fige un instant.
+    private static let moonSplashLab = CommandLine.arguments
+        .contains("-moonSplashLab")
     /// Banc d'essai de la Live Activity : `-cometTest` affiche les composants
     /// de l'écran verrouillé (comète-progression, diablotin) dans l'app —
     /// le simulateur ne sait pas montrer l'écran verrouillé.
@@ -113,6 +117,8 @@ struct RootView: View {
     var body: some View {
         if Self.splashTest {
             splashBench
+        } else if Self.moonSplashLab {
+            moonSplashBench
         } else if Self.cometTest {
             cometBench
         } else if Self.buttonLab {
@@ -156,6 +162,49 @@ struct RootView: View {
                 }
             }
             .padding(.horizontal, 24)
+        }
+    }
+
+    /// Le banc du splash de la lune : la cinématique, PUIS l'écran sur lequel
+    /// elle se pose — c'est le raccord entre les deux qui se juge, pas la
+    /// séquence seule. Le monolithe reste tournable au doigt une fois posé.
+    @ViewBuilder
+    private var moonSplashBench: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            // L'écran d'arrivée. Il n'est monté qu'à la fin : la cinématique
+            // porte déjà sa propre aurore, et deux fonds plein écran vivants
+            // en même temps ne serviraient qu'à manger le budget d'images.
+            // Le raccord tient parce que les deux aurores lisent la MÊME
+            // horloge (temps absolu modulo 900 s) : elles sont en phase, quoi
+            // qu'il arrive.
+            if !showSplash {
+                LoginLab()
+            }
+
+            if showSplash {
+                MoonSplashView {
+                    withAnimation(.easeOut(duration: 0.45)) { showSplash = false }
+                }
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if !showSplash {
+                Button {
+                    showSplash = true
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.inkPrimary)
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                .padding(.trailing, 16)
+                .padding(.top, 56)
+            }
         }
     }
 
@@ -247,7 +296,15 @@ struct RootView: View {
             if showSplash {
                 // Le splash tient sa propre horloge : lui seul sait quand sa
                 // séquence est finie, et il peut être passé d'un toucher.
-                SplashView {
+                // C'est désormais la LUNE : le plan-séquence de la bouteille
+                // et du diablotin reste en archive, rejouable par
+                // `-splashTest`, mais l'app ne s'ouvre plus dessus.
+                // `landsOnAurora: false` : l'écran qui suit ici est
+                // l'authentification, pas l'aurore orange du banc. Le
+                // monolithe fait donc son vol sur du noir, et la page prend
+                // le relais — découvrir un fond que personne n'affiche
+                // ensuite ne ferait qu'un raccord qui ment.
+                MoonSplashView(landsOnAurora: false) {
                     withAnimation(.easeOut(duration: 0.5)) { showSplash = false }
                 }
                 .transition(.opacity)

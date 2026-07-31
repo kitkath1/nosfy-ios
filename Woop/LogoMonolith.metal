@@ -228,6 +228,21 @@ static float lmStars(float2 pos, float t) {
 // -1 = piloté par l'horloge. `sdfRanges` = (padding, tight, wide) et
 // `moonPlace` = (cx, cy, k) : la géométrie du croissant, source de vérité
 // dans MoonSDF.swift — jamais recopiée ici.
+//
+// LA CAMÉRA DU SPLASH (inertes par défaut — la scène ne bouge pas d'un LSB) :
+// `camera` = (cible.x, cible.y, zoom) : le point de SCÈNE regardé et le
+// grossissement. Tout le shader s'exprime en points de scène depuis pC —
+// diviser ici re-rend TOUT net à n'importe quel zoom (tube, filet, flaque),
+// là où un scaleEffect SwiftUI rastériserait les hairlines et le dither.
+// `cineCtl` = (cine, boom, bgFade, cometHead) : cine amortit les
+// micro-balancements et éteint les raies (une caméra de cinéma est un
+// trépied, pas une main) ; boom est la surtension du final ; bgFade ouvre le
+// fond noir (alpha = couverture du corps : la lueur devient ADDITIVE sur ce
+// qu'il y a dessous — l'aurore de la connexion) ; cometHead ≥ 0 pilote la
+// tête de la comète (en angle 0..1), sentinelle -1 = sa loi propre.
+// `edgeFade` : dans un PETIT cadre (le monolithe posé sur l'écran de
+// connexion), les raies de 270 pt et le halo de 150 pt seraient tranchés
+// net par le bord — cette fenêtre les fond avant qu'ils l'atteignent.
 [[ stitchable ]] half4 logoMonolith(float2 position, half4 color,
                                     float2 size, float t,
                                     float2 tilt, float userYaw,
@@ -235,6 +250,8 @@ static float lmStars(float2 pos, float t) {
                                     float benchBoost, float benchSweep,
                                     float debugSDF,
                                     float3 sdfRanges, float3 moonPlace,
+                                    float3 camera, float4 cineCtl,
+                                    float edgeFade,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -278,11 +295,35 @@ static float lmStars(float2 pos, float t) {
         boostEnv = (e > 0.0)
             ? smoothstep(0.0, 3.0, e) * exp(-max(e - 3.0, 0.0) / 6.0) : 0.0;
     }
-    float neonGain = (1.0 + 0.18 * boostEnv) * breath * flick * ignite;
-    float bloomWiden = 1.0 + 0.10 * boostEnv;
+    // Le boom du splash est une SURTENSION GLOBALE : tout ce qui vit du néon
+    // (tube, fil, filet, flaque, halo) monte ensemble — c'est une décharge,
+    // pas un projecteur qu'on ajoute.
+    float cine = cineCtl.x, boom = cineCtl.y, bgFade = cineCtl.z;
+    float neonGain = (1.0 + 0.18 * boostEnv) * breath * flick * ignite
+                   * (1.0 + 2.2 * boom);
+    float bloomWiden = (1.0 + 0.10 * boostEnv) * (1.0 + 0.9 * boom);
 
+    // La fenêtre de bord (petit cadre) et la vie des raies : une raie
+    // d'objectif n'existe pas dans un travelling macro (cine), et elle ne
+    // doit jamais toucher le bord d'un cadre compact (edgeFade).
+    float edgeMin = min(min(position.x, size.x - position.x),
+                        min(position.y, size.y - position.y));
+    float edgeWnd = mix(1.0, smoothstep(0.0, 30.0, edgeMin), edgeFade);
+    float streakLive = (1.0 - cine) * edgeWnd;
+
+    float camZoom = max(camera.z, 1e-3);
+    // AU GROS PLAN, LA MATIÈRE DIFFUSE DEVIENT UN MUR. La dalle de verre
+    // dépoli et la jupe large du bloom sont calibrées pour un objet vu en
+    // entier, où elles n'occupent qu'une petite part du cadre ; sous la
+    // caméra du splash elles couvrent TOUT l'écran à mi-luminance, et le plan
+    // n'est plus un tube de néon dans la nuit mais un aplat beige traversé
+    // d'un trait — exactement le défaut que cette maison passe son temps à
+    // chasser. Une vraie macro montre PLUS de contraste en approchant, pas
+    // moins : on rentre donc les diffus quand on entre dans l'objet, et le
+    // tube reste seul à porter la lumière. Sans effet à l'échelle normale.
+    float macroDim = 1.0 - 0.60 * saturate((camZoom - 3.0) / 7.0);
     float2 C = float2(size.x * 0.5, size.y * 0.46);
-    float2 pC = position - C;
+    float2 pC = (position - C) / camZoom + camera.xy;
     float2 para = float2(-3.0 * sin(PH * 11.0 * t + 0.7) - 3.0 * tilt.x,
                          -2.0 * sin(PH * 17.0 * t + 1.3) - 2.0 * tilt.y);
     float2 dither2 = fract(floor(t * 24.0) * 0.618) * float2(17.0, 29.0);
@@ -298,21 +339,32 @@ static float lmStars(float2 pos, float t) {
     if (rC > faceR * 1.6 + 150.0) {
         float4 sq0 = lmStreak(pC, faceR);
         float3 E0 = lmStars(position + para, t) * STARFIELD * float3(0.92, 0.95, 1.02)
-                  + float3(1.00, 0.72, 0.34) * ((0.32 * sq0.x + 0.109 * sq0.y) * neonGain);
+                  + float3(1.00, 0.72, 0.34) * ((0.32 * sq0.x + 0.109 * sq0.y)
+                                                * neonGain * streakLive);
         float3 c0 = 1.0 - exp(-1.35 * E0 * exposure);
         c0 = c0 * c0 / (c0 + 0.0085);
-        c0 += (lmHash21(position * 1.113 + dither2) - 0.5) * (1.6 / 255.0);
-        return half4(half3(saturate(c0)), 1.0h);
+        // Sous bgFade, le lointain devient TRANSPARENT : ce qui reste de
+        // lumière s'additionne sur le fond d'accueil, et le dither suit
+        // l'alpha — du bruit sur du transparent poivrerait l'aurore.
+        float a0 = 1.0 - bgFade;
+        c0 += (lmHash21(position * 1.113 + dither2) - 0.5) * ((1.6 / 255.0) * a0);
+        return half4(half3(saturate(c0)), half(a0));
     }
 
     // ---- La projection. Lacet de repos POSITIF : la tranche s'ouvre à
     // GAUCHE, comme sur la référence. Le doigt ajoute `userYaw` ; le
     // micro-balancement et le gyroscope restent des dérives de caméra.
+    // `cine` pose la caméra sur trépied : les micro-balancements et le
+    // gyroscope s'amortissent — un travelling à ×16 transformerait 1 mrad de
+    // vie en 1,7 pt de tremblement d'écran, et le rail CPU qui suit la
+    // courbe compte sur des angles CONSTANTS pour rester verrouillé au tube.
+    float live = 1.0 - cine;
     float yaw = 0.2450 + userYaw
-              + 0.0175 * sin(PH * 11.0 * t + 0.7)
-              + 0.0087 * sin(PH * 29.0 * t + 2.9)
-              + 0.05 * tilt.x;
-    float pitch = -0.0698 + 0.0070 * sin(PH * 17.0 * t + 1.3) + 0.04 * tilt.y;
+              + (0.0175 * sin(PH * 11.0 * t + 0.7)
+               + 0.0087 * sin(PH * 29.0 * t + 2.9)
+               + 0.05 * tilt.x) * live;
+    float pitch = -0.0698 + (0.0070 * sin(PH * 17.0 * t + 1.3)
+                             + 0.04 * tilt.y) * live;
     float cyw = cos(yaw), syw = sin(yaw), cpt = cos(pitch), spt = sin(pitch);
     float2 Ex = float2(cyw, syw * spt);
     float2 Ey = float2(0.0, cpt);
@@ -394,6 +446,62 @@ static float lmStars(float2 pos, float t) {
     // 12,55 pt — 0,67 pt de marge seulement, et les deux canaux ne
     // quantifient pas au même pas (0,106 pt contre 0,635 pt), donc un pixel
     // qui basculait sautait de ~0,6 pt. Deux instructions, zéro mouchetures.
+    // ---- LE RAFFINEMENT MACRO. Sous la caméra du splash, le pas de
+    // quantification du canal serré (0,106 pt de scène) devient 1,7 pt
+    // d'écran à ×16 et le tube monte en TERRASSES. Le canal B porte le
+    // résidu d'arrondi de R (cf. MoonSDF) : on le relit ici, mais en
+    // NEAREST et texel par texel — un résidu est une dent de scie, le
+    // bilinéaire matériel mélangerait deux marches voisines et refabriquerait
+    // le défaut. On reconstruit donc les quatre coins à pleine précision,
+    // PUIS on interpole. Mesuré : l'erreur de distance tombe de 0,053 pt à
+    // 0,0002 pt, et ce qui reste (0,015 pt RMS, le bilinéaire lui-même) vaut
+    // 0,7 px à 3x sous le grossissement maximal.
+    //
+    // Même échantillonneur `sample()` que la voie rapide, jamais `read()` :
+    // la texture est déclarée sRGB pour que ses octets traversent l'upload
+    // intacts, et deux chemins de lecture différents risqueraient deux
+    // transferts différents — donc une marche au fondu.
+    float macroW = saturate((camZoom - 2.0) * 0.5);
+    if (macroW > 0.0) {
+        constexpr sampler kNear(address::clamp_to_edge, filter::nearest,
+                                coord::normalized);
+        float side = float(moonSDF.get_width());
+        float2 tc = uvc * side - 0.5;
+        float2 fl = floor(tc), fr = tc - fl;
+        float corner[4];
+        for (int i = 0; i < 4; i++) {
+            float2 o = float2(float(i & 1), float(i >> 1));
+            half4 sN = moonSDF.sample(kNear, (fl + o + 0.5) / side);
+            // On REMONTE aux octets avant de recomposer. La texture est lue en
+            // `half` : 128/255 y arrive à 2,4e-4 près, ce qui est six pour
+            // cent d'un pas de quantification — largement assez pour arrondir
+            // juste, mais VINGT fois plus gros que le résidu qu'on essaie de
+            // récupérer. Additionner les deux canaux tels quels rendrait donc
+            // huit fois mieux au lieu de deux cent cinquante-cinq ; l'arrondi
+            // rend les entiers exacts et la recomposition se fait ensuite en
+            // float, à pleine précision.
+            float hi = round(float(sN.r) * 255.0);
+            float lo = round(float(sN.b) * 255.0);
+            corner[i] = (hi + (lo * (1.0 / 255.0) - 0.5)) * (1.0 / 255.0);
+        }
+        float vR = mix(mix(corner[0], corner[1], fr.x),
+                       mix(corner[2], corner[3], fr.x), fr.y);
+        dT = mix(dT, (vR - 0.5) * 2.0 * tightR, macroW);
+
+        // LE CANAL LARGE, LUI, RESTE À HUIT BITS — et c'est lui qui pilote la
+        // distance au-delà de 13,2 pt de scène, donc TOUT le fond du gros
+        // plan. Son pas vaut 0,635 pt : à ×13 le bloom monterait en terrasses
+        // de 8 pt d'écran, des anneaux concentriques autour du tube. Il n'y a
+        // plus de canal libre pour lui offrir un résidu, mais il n'en a pas
+        // besoin : au-delà de treize points, la distance ne sert qu'à des
+        // dégradés lisses. Un demi-pas de bruit blanc suffit donc à casser
+        // les marches — c'est la même idée que le dither final, appliquée à
+        // la DONNÉE plutôt qu'à la couleur, et l'œil y gagne un grain
+        // invisible contre des anneaux qui, eux, se voient.
+        float stepW = 2.0 * wideR / 255.0;
+        dW += (lmHash21(position * 0.7919 + dither2) - 0.5) * stepW * macroW;
+    }
+
     float mixW = smoothstep(0.86, 0.98, fabs(dT) / tightR);
     float dPt = (mix(dT, dW, mixW) + dOutUc) * ucToPt;
     float dAbs = fabs(dPt);
@@ -487,7 +595,11 @@ static float lmStars(float2 pos, float t) {
     // était invisible : avec une tête de 2,1 % de tour, elle ne passait en un
     // point donné que pendant 0,7 s toutes les 33 s — statistiquement, on ne
     // la voyait jamais. Une animation qu'on n'attrape pas n'existe pas.
-    float headC = fract(t * 60.0 / 900.0);
+    // Pendant la cinématique, c'est la CAMÉRA qui mène : l'hôte calcule
+    // l'angle du point de contour qu'il regarde et le passe ici, pour que la
+    // comète soit exactement sous l'objectif. Sentinelle négative = la
+    // comète reprend sa loi propre (son rythme de croisière).
+    float headC = (cineCtl.w >= 0.0) ? cineCtl.w : fract(t * 60.0 / 900.0);
     float dC = angC - headC;
     dC -= floor(dC + 0.5);
     // Une tête brève et une traîne DERRIÈRE seulement : sans l'asymétrie ce
@@ -560,7 +672,7 @@ static float lmStars(float2 pos, float t) {
         // l'histogramme RÉEL des profondeurs : ventre L = 105,5, 100 % des
         // pixels dans la fenêtre 90-115 de la fiche.
         glassE = 0.82 * glassCov * edgeLit * keyRamp * groove * frost
-                      * glassMod * neonGain;
+                      * glassMod * neonGain * macroDim;
         // Beer-Lambert : contre le tube le trajet dans le verre est court et
         // la couleur reste CRÉMEUSE ; au fond du ventre le trajet est long,
         // le bleu est absorbé, on redescend vers l'ambre. (1,00/0,46/0,13)
@@ -582,9 +694,12 @@ static float lmStars(float2 pos, float t) {
     // halo extérieur ne bouge pas d'un LSB.
     float dp = dAbs;
     float dm16 = dp / 16.0;
+    // La jupe LARGE suit `macroDim` ; le cœur serré, non — c'est lui qui colle
+    // au tube et fait la lumière, il doit rester intact quel que soit le
+    // grossissement.
     float bloomE = (0.20 * exp(-dp / (7.0 * bloomWiden))
                   + 0.11 * pow(1.0 + dm16 * dm16, -1.8)
-                         * exp(-dp / (34.0 * bloomWiden)))
+                         * exp(-dp / (34.0 * bloomWiden)) * macroDim)
                  * tubeMod * neonGain;
     // `fringe` SUPPRIMÉ : il mélangeait vers (0,86/0,70/0,58), un chaud
     // DÉSATURÉ, précisément dans la plage 5-8/255 — c'était le seul
@@ -619,7 +734,7 @@ static float lmStars(float2 pos, float t) {
         // qui posait un voile chaud sur TOUTE la face et empêchait la laque
         // de retomber sous les 12/255 de la fiche loin du croissant.
         spillWash = (0.150 * exp(-dS / 11.0)
-                   + 0.030 * exp(-dS / 38.0)) * neonGain;
+                   + 0.030 * exp(-dS / 38.0)) * neonGain * macroDim;
 
         // LE REFLET NÉON SPÉCULAIRE — « il manque le reflet néon dans le
         // logo », « il manque l'effet néon spéculaire ». Une laque, c'est un
@@ -940,8 +1055,9 @@ static float lmStars(float2 pos, float t) {
     // deux — deux étoiles, aucune au bon endroit.
     // Et elles s'effacent : 0,32 → 0,21. Une raie d'objectif est un ARTEFACT,
     // elle ne doit jamais rivaliser avec le sujet qui la produit.
-    float3 streakCol = float3(1.00, 0.72, 0.34) * ((0.21 * sq.x + 0.070 * sq.y) * neonGain);
-    if (fabs(dSil) < 12.0) {
+    float3 streakCol = float3(1.00, 0.72, 0.34)
+                     * ((0.21 * sq.x + 0.070 * sq.y) * neonGain * streakLive);
+    if (fabs(dSil) < 12.0 && streakLive > 0.0) {
         float aN = sq.z / 68.0;
         float env1 = exp(-aN * aN) + 0.08 * exp(-fabs(sq.z) / 40.0);
         float core1 = exp(-sq.w * sq.w / (0.80 * 0.80));
@@ -957,7 +1073,8 @@ static float lmStars(float2 pos, float t) {
         float starPip = core1 * env1 * onEdge * leftGate * 3.40;
         float starBlm = exp(-dSil * dSil / (9.0 * 9.0))
                       * exp(-sq.w * sq.w / (9.0 * 9.0)) * leftGate * 0.55;
-        streakCol += float3(1.00, 0.72, 0.34) * ((starPip + starBlm) * neonGain);
+        streakCol += float3(1.00, 0.72, 0.34)
+                   * ((starPip + starBlm) * neonGain * streakLive);
     }
 
     // ---- LE SOL. Un sol éclairé par une source-ligne POSÉE DESSUS décroît
@@ -1046,11 +1163,24 @@ static float lmStars(float2 pos, float t) {
     E = mix(E, body, bodyCov);
     // Le bloom et les raies restent additionnés APRÈS : un glare d'objectif
     // est DEVANT l'objet, aucun verre ne l'atténue.
-    E += rimCol + bloomCol * bloomE + streakCol + haloCol * haloE * (1.0 - bodyCov);
+    // `streakCol` porte DÉJÀ la fenêtre de bord (elle est dans `streakLive`) :
+    // la remettre ici la ferait agir au carré, et la branche lointaine, qui
+    // ne l'applique qu'une fois, ne raccorderait plus.
+    E += rimCol + bloomCol * bloomE
+       + streakCol + haloCol * haloE * (1.0 - bodyCov) * edgeWnd;
     float3 c = 1.0 - exp(-1.35 * E * exposure);
     c = c * c / (c + 0.0085);
-    // Dither : à 1,4 % de luminance il n'y a que 4 niveaux entiers — sans
-    // lui la laque et le bloom bandent en escalier sur OLED.
-    c += (lmHash21(position * 1.113 + dither2) - 0.5) * (1.6 / 255.0);
-    return half4(half3(saturate(c)), 1.0h);
+    // ---- L'ALPHA DE L'ATTERRISSAGE. Le shader est né OPAQUE (il possède son
+    // fond noir) ; posé sur l'aurore de la connexion, il doit rendre la nuit
+    // au fond sans rien perdre de sa lueur. La sortie est déjà
+    // PRÉMULTIPLIÉE — « la scène sur du noir » —, donc il suffit de faire
+    // porter l'alpha par la seule COUVERTURE DU CORPS : le pavé occulte,
+    // tandis que la flaque, le halo et les raies passent en ADDITIF sur ce
+    // qu'il y a dessous. C'est exactement la loi de composition qu'on veut,
+    // et elle ne coûte pas une ligne de mélange.
+    float alpha = mix(1.0, bodyCov, bgFade);
+    // Le dither suit l'alpha : du bruit posé sur du transparent poivrerait le
+    // fond d'accueil au lieu de casser le banding de la laque.
+    c += (lmHash21(position * 1.113 + dither2) - 0.5) * ((1.6 / 255.0) * alpha);
+    return half4(half3(saturate(c)), half(alpha));
 }
