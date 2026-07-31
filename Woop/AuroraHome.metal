@@ -411,16 +411,74 @@ constant float SB_GRAV = 250.0;
 
 // MARK: - L'aurore de la home
 //
-// La petite sœur du fond de la connexion : les mêmes tons de la photo (noir
-// neutre, gris cendré, orange brûlé, doré, cœur crème) mais bien PLUS
-// discrète — elle ne monte qu'au bas de la page, sous le contenu, et vit
-// surtout par ses rideaux qui glissent vers le bas et ses halos qui
-// descendent. Pas de croix, pas d'étoiles-bijou : ici la page a déjà ses
-// cartes, le fond ne doit que respirer.
+// Un HALO, pas un dégradé : une barre de braise couchée juste sous la carte,
+// dont la lumière traverse la nuit et s'éteint en montant. Tout ce qui suit
+// est mesuré sur la maquette de Kathryn (`ref/ref-a.png`), jamais estimé.
+//
+// Le verdict qui a déclenché la refonte : « trop burn, pas vif ». Deux
+// chiffres le disent. (1) La maquette met 27 % de son fond au-dessus de
+// L=130 ; l'ancienne aurore en mettait 0,00 % — il n'y avait pas de lumière
+// dans l'image. (2) La maquette SE SATURE en s'éclairant, pic de saturation
+// 0,69 à L≈112 ; l'ancienne culminait à 0,64 dès L≈52 puis se délavait —
+// parce que `1 - exp(-x)` appliqué aux trois canaux sature le rouge en
+// premier et laisse les deux autres le rattraper. C'est ça, le « burn ».
+//
+// LE FAIT DUR : la teinte du pic (1,00 / 0,56 / 0,31) pèse 0,663 en Rec.601,
+// donc elle PLAFONNE à L = 169. Au-dessus, la désaturation n'est pas un choix,
+// elle est arithmétique. Les 17 % de la maquette au-dessus de L=170 sont
+// exactement la population que l'orange ne peut plus porter : la crème du
+// cœur n'est pas une décoration ajoutée à la fin, c'est ce que DEVIENT
+// l'orange quand il dépasse 169.
 
-static float auroraBlob(float2 q, float2 ctr, float2 sig) {
-    float2 dd = (q - ctr) / max(sig, float2(1e-3));
-    return exp(-dot(dd, dd));
+// La palette : UNE seule teinte, deux voiles. (Ajustement aux moindres carrés
+// de la chromaticité par niveau de la maquette, erreur RMS 0,003.)
+constant float3 AU_BASE  = float3(1.00, 0.56, 0.31);  // le pic, à L≈112
+constant float3 AU_BRUME = float3(1.00, 0.95, 0.94);  // la brume des ombres
+constant float3 AU_CREME = float3(1.00, 0.93, 0.73);  // le cœur, au-delà de 169
+
+// Le foyer, en fraction de la HAUTEUR d'écran (le repère de `q`).
+constant float AU_CY     = 0.875;   // la crête : DANS le cadre, sous la carte
+constant float AU_LAM_UP = 0.075;   // le niveau double tous les 0,052 en montant
+constant float AU_LAM_DN = 0.090;   // et retombe un peu plus lentement dessous
+constant float AU_AMP    = 0.65;    // la masse à la crête
+
+static float auGauss(float x, float c, float w) {
+    float d = (x - c) / w;
+    return exp(-d * d);
+}
+
+// MARK: La trame de points
+//
+// Des grains suspendus dans la lumière. Ils MULTIPLIENT le champ — jamais du
+// blanc ajouté : dans le noir il n'y a rien à moduler, et dans le cœur le
+// compresseur les écrase. Ils ne vivent donc que dans les tons moyens, sans
+// qu'on ait à leur peindre un masque. C'est la mesure qui a tranché : sur la
+// maquette leur amplitude vaut 11 % du niveau local tant qu'il reste sous
+// L≈65, puis plafonne à ~6 niveaux absolus au-delà de L=80 — exactement la
+// signature d'une modulation multiplicative passée dans un compresseur.
+
+constant float AU_PAS_X = 6.4;    // pt — le pas mesuré sur la maquette
+constant float AU_PAS_Y = 7.7;
+constant float AU_RAYON = 0.72;   // pt — un disque de 1,45 pt à mi-hauteur
+constant float AU_GRAIN = 0.20;   // la profondeur de modulation, au maximum
+
+static float auroraDots(float2 position, float t) {
+    float2 pas = float2(AU_PAS_X, AU_PAS_Y);
+    float2 id = floor(position / pas);
+    float2 ctr = (id + 0.5) * pas;
+    float d = length(position - ctr);
+    // PIÈGE x3 : un point de 1,45 pt fait 4,4 px sur la dalle. Un disque dur
+    // moirerait à la réduction — le bord est donc adouci sur un demi-point.
+    float disc = 1.0 - smoothstep(AU_RAYON * 0.55, AU_RAYON * 1.35, d);
+    if (disc <= 0.0) { return 0.0; }
+    // Chacun sa phase et sa période : ça s'allume et ça s'éteint, jamais
+    // ensemble. Le `pow` creuse les creux — à un instant donné, seule une
+    // poignée de points brille vraiment, les autres couvent.
+    float h = schash21(id * 1.37 + 3.1);
+    float per = 3.2 + 5.6 * h;
+    float on = 0.5 - 0.5 * cos(6.2831853 * fract(t / per + h * 7.13));
+    on = pow(on, 2.2);
+    return disc * (0.14 + 0.86 * on) * AU_GRAIN;
 }
 
 [[ stitchable ]] half4 homeAurora(float2 position, half4 color,
@@ -428,82 +486,64 @@ static float auroraBlob(float2 q, float2 ctr, float2 sig) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
-    // LA PALETTE DU LOGO, en nappes superposées. Kathryn a jugé les deux
-    // méthodes côte à côte et préfère celle-ci : la rampe donnait un orange
-    // plus « pur » mais plus froid, et son cœur blanc s'étalait en lavis.
-    // Ici les nappes se mélangent, l'orange se fond en brun chaud avant le
-    // noir — et c'est ce fondu-là qu'elle veut.
-    const float3 blanc   = float3(1.00, 0.98, 0.95);
-    const float3 dore    = float3(1.00, 0.58, 0.16);
-    const float3 ambre   = float3(1.00, 0.34, 0.05);
-    const float3 lunaire = float3(0.80, 0.79, 0.81);
+    // Deux respirations lentes, de périodes premières entre elles : le fond
+    // ne doit jamais donner à entendre sa boucle.
+    float b1 = 0.94 + 0.06 * sin(t * 6.2832 / 41.0);
+    float b2 = 0.92 + 0.08 * sin(t * 6.2832 / 29.0 + 2.1);
 
-    float b1 = 0.90 + 0.10 * sin(t * 6.2832 / 41.0);
-    float b2 = 0.88 + 0.12 * sin(t * 6.2832 / 29.0 + 2.1);
+    // La répartition le long de la barre : un socle — c'est LUI qui porte
+    // l'anthracite chaud jusqu'en haut —, un cœur, deux braises aux flancs.
+    float coeur  = auGauss(q.x, aspect * (0.44 + 0.020 * sin(t / 43.0)), 0.175);
+    float gauche = auGauss(q.x, aspect * (0.02 + 0.015 * sin(t / 31.0 + 1.0)), 0.170);
+    float droite = auGauss(q.x, aspect * (1.00 + 0.015 * sin(t / 37.0 + 2.6)), 0.155);
+    float h = 0.56 + 0.95 * b1 * coeur + 0.50 * b2 * gauche + 0.46 * b2 * droite;
 
-    // Le cœur, serré et vif — un blanc qui claque, pas un lavis étalé.
-    float3 mass = blanc * (0.78 * b1 * auroraBlob(q,
-        float2(aspect * (0.38 + 0.02 * sin(t / 43.0)), 1.14),
-        float2(0.20, 0.13)));
-    // La nappe orange qui la couronne.
-    mass += dore * (0.30 * b2 * auroraBlob(q,
-        float2(aspect * (0.62 + 0.03 * sin(t / 31.0 + 1.0)), 1.06),
-        float2(0.34, 0.13)));
-    // Les braises des deux flancs, basses et saturées.
-    mass += ambre * (0.42 * b2 * auroraBlob(q,
-        float2(aspect * 0.03, 0.99), float2(0.20, 0.13)));
-    mass += ambre * (0.34 * b1 * auroraBlob(q,
-        float2(aspect * 1.00, 0.94), float2(0.17, 0.14)));
-    // Le gris cendré, en retrait : moins de voile = un fond plus foncé.
-    mass += lunaire * (0.10 * b1 * auroraBlob(q,
-        float2(aspect * 0.50, 0.86), float2(0.46, 0.09)));
+    // La CRÊTE BOMBE là où le foyer pousse. Sans ce bombement, la lumière est
+    // une barre horizontale — un dégradé, pas un halo. C'est la seule ligne
+    // qui sépare visuellement les deux.
+    float cy = AU_CY - 0.030 * coeur - 0.013 * gauche - 0.011 * droite;
 
-    // Trois voix qui descendent, chacune à son tempo — la vie du fond.
-    const float3 vcol[3] = { float3(1.00, 0.56, 0.14),
-                             float3(1.00, 0.97, 0.93),
-                             float3(1.00, 0.34, 0.05) };
-    const float vper[3]  = { 14.0, 10.0, 19.0 };
-    const float vpha[3]  = { 0.15, 0.52, 0.80 };
-    const float vcx[3]   = { 0.58, 0.33, 0.86 };
-    const float vw[3]    = { 0.30, 0.26, 0.28 };
-    for (int i = 0; i < 3; i++) {
-        float life = fract(t / vper[i] + vpha[i]);
-        float env = sin(3.14159 * life);
-        float y = mix(0.68, 1.08, life);
-        // La voix LOUVOIE en descendant, et son enveloppe palpite : le
-        // mouvement doit se VOIR, pas seulement se deviner.
-        float x = aspect * (vcx[i] + 0.11 * sin(life * 6.2832 + vpha[i] * 9.0));
-        float2 sig = float2(0.17, 0.10)
-                     * (1.0 + 0.20 * sin(life * 12.566 + vpha[i] * 7.0));
-        mass += vcol[i] * (vw[i] * env * env * auroraBlob(q, float2(x, y), sig));
-    }
+    // Vertical : une exponentielle de part et d'autre de la crête, la loi
+    // d'un milieu absorbant. Une gaussienne ne sait pas faire ce profil-là —
+    // la maquette double tous les 0,042 de hauteur sur quatre octaves.
+    float up = exp(-max(cy - q.y, 0.0) / AU_LAM_UP);
+    float dn = exp(-max(q.y - cy, 0.0) / AU_LAM_DN);
+    float E = AU_AMP * up * dn * h;
 
-    // Les rideaux : ils glissent vers le bas et CREUSENT la lumière — du
-    // noir entre les filaments, jamais une nappe.
+    // Les rideaux : ils STRUCTURENT sans éteindre. Leur moyenne vaut 1 par
+    // construction — l'ancien `0.44 + 0.98*cur` retirait un cinquième de la
+    // masse et c'est une des trois causes du fond terne. Et ils ne sont pas
+    // décoratifs : c'est la franchise du champ qui autorise la loi de couleur
+    // ci-dessous (une rampe sur un champ mou refait le « lavis » rejeté au
+    // commit 41a2a1f ; sur un champ structuré, elle fait un halo).
     float2 ac = float2(q.x * 3.1, (q.y - t * 0.045) * 1.15);
     float w1 = scfbm(ac + float2(t * 0.016, 0.0));
     float w2 = scfbm(ac * 1.7 - float2(t * 0.010, t * 0.024) + 2.1 * w1);
     float cur = scfbm(ac * 1.27 + float2(1.9 * w1, -1.5 * w2));
     cur = pow(clamp(cur * 1.18, 0.0, 1.0), 2.5);
-    mass *= 0.44 + 0.98 * cur;
+    E *= 0.55 + 1.85 * cur;
 
-    // La nuit avale tout dans la moitié haute : le fond est FONCÉ, l'aurore
-    // n'est qu'un sol sous la page.
-    mass *= smoothstep(0.52, 0.92, q.y);
+    // La nuit avale le haut de l'écran.
+    E *= smoothstep(0.40, 0.70, q.y);
 
-    // Tone mapping resserré : les hautes lumières crament toujours, mais
-    // l'ambiance générale reste basse.
-    float3 c = 1.0 - exp(-mass * 1.55);
+    // La trame, AVANT le compresseur : c'est là qu'elle s'éteint toute seule
+    // aux deux bouts.
+    E *= 1.0 + auroraDots(position, t);
 
-    // La gradation : sous les basses lumières la couleur retombe vers le
-    // gris, dans les hautes la saturation remonte. Elle borne le brun sans
-    // le supprimer — c'est ce dosage qu'elle a retenu.
-    float3 g3 = float3(dot(c, float3(0.299, 0.587, 0.114)));
-    float vmax = max(c.r, max(c.g, c.b));
-    float keep = mix(0.30, 1.0, smoothstep(0.06, 0.34, vmax));
-    float push = 0.45 * smoothstep(0.45, 0.85, vmax);
-    c = clamp(mix(g3, c, keep + push), 0.0, 1.0);
+    // ---- LE TONE MAP À TEINTE CONSERVÉE. On comprime le NIVEAU, jamais les
+    // canaux : c'est le remède exact au délavage.
+    float v = 1.0 - exp(-E * 1.55);
 
+    // ---- LA LOI DE COULEUR, en Λ. Une brume claire monte dans les ombres
+    // (l'anthracite reste CHAUD, jamais une suie neutre), et la crème prend
+    // le dessus dans le dernier quart. Recalée sur les huit paliers mesurés.
+    float bas  = 0.56 * pow(max(1.0 - v / 0.664, 0.0), 2.3);
+    float haut = clamp(1.10 * pow(smoothstep(0.70, 0.985, v), 1.5), 0.0, 1.0);
+    float3 tint = mix(AU_BASE, AU_BRUME, bas);
+    tint = mix(tint, AU_CREME, haut);
+    float3 c = clamp(tint * v, 0.0, 1.0);
+
+    // Dither : sur un dégradé sombre aussi long, sans lui le fond s'annelle.
     c += (schash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0))
           - 0.5) * (2.0 / 255.0);
     c = clamp(c, 0.0, 1.0);
