@@ -85,11 +85,20 @@ struct MoonSplashBeat {
     /// L'aurore de la connexion, sous le monolithe.
     var aurora: Double = 0
     var edgeFade: Float = 0
+    /// 1 = le croissant seul dans le noir ; 0 = le monolithe entier.
+    var solo: Float = 0
 
-    // Les temps de la partition.
-    static let ignite = 0.90
-    static let travel = 5.00
-    static let boom = 1.60
+    // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
+    // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
+    // un glissement, pas une course. À cinq secondes le plan « allait quelque
+    // part » ; à sept, il RESPIRE, et l'œil a le temps de suivre la comète le
+    // long du tube au lieu de la voir passer. Bénéfice second : l'image avance
+    // de 6,2 pt entre deux vues, pour un tube qui en fait 15 de large — le
+    // recouvrement devient confortable, et le plan cesse d'être saccadé même
+    // si la cadence flanche.
+    static let ignite = 1.00
+    static let travel = 7.00
+    static let boom = 1.70
     static let flight = 1.70
     static var total: Double { ignite + travel + boom + flight }
 
@@ -108,7 +117,7 @@ struct MoonSplashBeat {
     /// parcourt les lignes de la lune » — ne se lit plus. À ×6,5 le cadre en
     /// montre 60 sur 108 : la courbe se lit, le tube fait encore 15 pt de
     /// large, et le sujet redevient identifiable.
-    static let travelZoom: Float = 6.5
+    static let travelZoom: Float = 5.5
 
     /// LE CADRAGE EST DÉCENTRÉ, en fractions d'écran. Le point suivi ne se
     /// pose pas au milieu : il vit dans le tiers gauche, un peu au-dessus de
@@ -141,7 +150,9 @@ struct MoonSplashBeat {
     /// La dérivée du retard (0,048 × 3 × 2π × 0,5 ≈ 0,45) reste sous la vitesse
     /// de base du plan (≈ 1 à 1,5) : la caméra ralentit, elle ne recule jamais.
     private static let cometLead: Float = 0.048
-    private static let leadCycles: Float = 3
+    /// Deux respirations sur sept secondes : trois et demie chacune. À trois
+    /// cycles le va-et-vient devenait un tic ; à deux, c'est une houle.
+    private static let leadCycles: Float = 2
 
     /// `shaderClock` : l'horloge que l'hôte donne au shader (temps absolu
     /// modulo 900 s, ou la valeur figée). Elle sert à RENDRE LA COMÈTE au
@@ -182,13 +193,18 @@ struct MoonSplashBeat {
             // pas. (Il partait de ×15 pour finir à ×13 — un travelling
             // arrière de 13 % sous un commentaire qui promettait l'inverse.)
             // Puis le plan RECULE vers ×6,5, où la lune redevient lisible.
+            // UN SEUL MOUVEMENT, du début à la fin. Le plan s'ouvre collé à la
+            // matière (×11) et recule SANS ARRÊT jusqu'à ×5,5, où le croissant
+            // tient presque entier dans le cadre. Pas de palier, pas de
+            // respiration sinusoïdale : un travelling arrière continu est ce
+            // qu'il y a de plus calme à regarder, et le boom n'a plus qu'à
+            // prolonger un geste déjà commencé.
             zoom = t < tTravel
                 ? mix(closeZoom * 0.82, closeZoom, Float(smoothstep(pIgnite)))
-                : mix(closeZoom, travelZoom,
-                      Float(smoothstep(clamp01(pTravel / 0.22))))
-                  + 0.25 * sin(Float(pTravel) * 6.2831 * 1.5)
+                : mix(closeZoom, travelZoom, Float(smoothstep(pTravel)))
             target = sceneTarget(arc: sCam)
             b.cineCtl.w = MoonPath.angle(at: sComet)
+            b.solo = 1        // le pavé n'existe pas encore
         } else if t < tFlight {
             // ---- LE BOOM. Le recul est multiplicatif — un travelling arrière
             // se lit en octaves, pas en points —, donc l'interpolation se
@@ -204,6 +220,12 @@ struct MoonSplashBeat {
             frameW = 1 - e
             // La surtension : une décharge brève, pas un projecteur.
             b.cineCtl.y = surge(t)
+            // LA RÉVÉLATION. La pierre se matérialise autour de la lumière
+            // pendant que le plan recule — et elle le fait DANS LA DÉCHARGE,
+            // dont le pic tombe à 0,14 s : le flash couvre l'apparition, si
+            // bien qu'on ne voit pas un objet « s'allumer », on découvre qu'il
+            // était là. C'est tout l'intérêt d'avoir caché le pavé jusqu'ici.
+            b.solo = 1 - Float(smoothstep(clamp01((t - tBoom) / 0.55)))
             // LA COMÈTE NE SE TÉLÉPORTE PAS. Rendre la main d'un coup — en
             // repassant la sentinelle −1 — la ferait sauter à l'autre bout du
             // tube d'une image à l'autre, et à ×13 ce saut fait la moitié de
@@ -505,7 +527,8 @@ struct MoonSplashView: View {
                                       edgeFade: b.edgeFade,
                                       revealOverride: b.reveal,
                                       interactive: false,
-                                      fps: MoonSplashBeat.travelFPS)
+                                      fps: MoonSplashBeat.travelFPS,
+                                      soloNeon: b.solo)
                             .ignoresSafeArea()
                     }
                 }

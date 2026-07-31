@@ -243,6 +243,14 @@ static float lmStars(float2 pos, float t) {
 // `edgeFade` : dans un PETIT cadre (le monolithe posé sur l'écran de
 // connexion), les raies de 270 pt et le halo de 150 pt seraient tranchés
 // net par le bord — cette fenêtre les fond avant qu'ils l'atteignent.
+// `soloNeon` : à 1, le PAVÉ N'EXISTE PAS. Il ne reste que le croissant —
+// tube, fil de plasma, comète, verre dépoli, bloom — seul dans le noir.
+// C'est l'état du travelling du splash : montrer la laque, la tranche et le
+// filet en gros plan revenait à cadrer un CARRÉ, quand le sujet est une
+// lune. Le monolithe devient alors ce que le boom RÉVÈLE, et non un décor
+// qu'on traînait depuis le début. Accessoirement, c'est la moitié du budget
+// d'une image : tout ce qui est ainsi retiré était calculé plein écran,
+// soixante fois par seconde, pour finir multiplié par zéro.
 [[ stitchable ]] half4 logoMonolith(float2 position, half4 color,
                                     float2 size, float t,
                                     float2 tilt, float userYaw,
@@ -251,7 +259,7 @@ static float lmStars(float2 pos, float t) {
                                     float debugSDF,
                                     float3 sdfRanges, float3 moonPlace,
                                     float3 camera, float4 cineCtl,
-                                    float edgeFade,
+                                    float edgeFade, float soloNeon,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -299,6 +307,8 @@ static float lmStars(float2 pos, float t) {
     // (tube, fil, filet, flaque, halo) monte ensemble — c'est une décharge,
     // pas un projecteur qu'on ajoute.
     float cine = cineCtl.x, boom = cineCtl.y, bgFade = cineCtl.z;
+    float solo = saturate(soloNeon);
+    float body01 = 1.0 - solo;              // ce qui reste du pavé
     float neonGain = (1.0 + 0.18 * boostEnv) * breath * flick * ignite
                    * (1.0 + 2.2 * boom);
     float bloomWiden = (1.0 + 0.10 * boostEnv) * (1.0 + 0.9 * boom);
@@ -309,7 +319,7 @@ static float lmStars(float2 pos, float t) {
     float edgeMin = min(min(position.x, size.x - position.x),
                         min(position.y, size.y - position.y));
     float edgeWnd = mix(1.0, smoothstep(0.0, 30.0, edgeMin), edgeFade);
-    float streakLive = (1.0 - cine) * edgeWnd;
+    float streakLive = (1.0 - cine) * edgeWnd * body01;
 
     float camZoom = max(camera.z, 1e-3);
     // AU GROS PLAN, LA MATIÈRE DIFFUSE DEVIENT UN MUR. La dalle de verre
@@ -725,8 +735,11 @@ static float lmStars(float2 pos, float t) {
     const float3 bloomCol = float3(1.00, 0.50, 0.16);
 
     // ---- Le spill dans le verni, et LE FANTÔME SPÉCULAIRE.
+    // Le voile dans le verni et le fantôme spéculaire appartiennent à la
+    // LAQUE : sans pavé, ils n'ont rien où se mirer. Les sauter épargne aussi
+    // quatre lectures de texture par pixel.
     float spillWash = 0.0, specNeon = 0.0;
-    if (faceMask > 0.0) {
+    if (faceMask > 0.0 && body01 > 0.001) {
         const float2 POLISH = float2(0.9272, -0.3746);      // l'axe de satiné
         float uvPerPt = 1.0 / (2.0 * faceR * padding * moonPlace.z);   // 1/161,9
         float2 aUV = POLISH * (7.0 * uvPerPt);
@@ -789,7 +802,7 @@ static float lmStars(float2 pos, float t) {
     // résiduel, un Fresnel COURT — et par-dessus, le verre dépoli du
     // croissant POSÉ (jamais additionné).
     float3 faceCol = float3(0.0);
-    if (faceMask > 0.0) {
+    if (faceMask > 0.0 && body01 > 0.001) {
         // UNE rampe, dans l'axe de la lumière. Deux mix séparables sur ux et
         // uy fabriquaient un gradient bilinéaire dont les isovaleurs sont des
         // hyperboles : l'œil n'y lit pas une source. Le facteur 2,756·faceR
@@ -835,18 +848,21 @@ static float lmStars(float2 pos, float t) {
         // gris (mesuré R/B = 1,14). Ici la MATIÈRE noire est chaude (c'est le
         // rebond de la flaque orange, R:B = 1,39) et la LUMIÈRE est à peine
         // tiède (la softbox). Aucun pixel de face ne peut plus être neutre.
-        faceCol = base                  * float3(1.00, 0.86, 0.72)
-                + (sheen + fres + lobe) * float3(1.00, 0.97, 0.95)
-                + spillWash             * float3(1.00, 0.54, 0.22)
-                + specNeon              * float3(1.00, 0.66, 0.34);
+        faceCol = (base                  * float3(1.00, 0.86, 0.72)
+                 + (sheen + fres + lobe) * float3(1.00, 0.97, 0.95)
+                 + spillWash             * float3(1.00, 0.54, 0.22)
+                 + specNeon              * float3(1.00, 0.66, 0.34)) * body01;
         // LE VERRE EST UNE DALLE TRANSLUCIDE POSÉE SUR LA LAQUE, il ne s'y
         // AJOUTE PAS : E = E_laque·(1−alpha) + C_verre·E_verre. La matière
         // multiplie la lumière — et l'additif est exactement ce qui donnait
         // le « papier calque posé par-dessus ». 38 % de laque restent
         // visibles À TRAVERS le dépoli : le lustre, le satiné et le Fresnel
         // TRAVERSENT le croissant au lieu de s'arrêter à son bord.
-        faceCol = faceCol * (1.0 - glassA) + glassC * glassE;
     }
+    // Le VERRE DÉPOLI survit à la disparition du pavé : c'est lui qui donne au
+    // croissant un corps au lieu d'un fil de fer. Le mélange se fait donc
+    // DEHORS du bloc de la laque, qui, lui, peut être sauté entièrement.
+    faceCol = faceCol * (1.0 - glassA) + glassC * glassE;
 
     // ---- LA TRANCHE : une ÉPAISSEUR ÉCLAIRÉE, plus jamais un fossé.
     // Mesuré sur la v4 : 10/255 devant, 4/255 derrière, sous une face à
@@ -1176,11 +1192,14 @@ static float lmStars(float2 pos, float t) {
     // Le facteur explicite le faisait une SECONDE fois — la flaque partait en
     // (1−bodyCov)², donc à la lisière du pavé elle ne valait que 25 % au lieu
     // de 50 %. C'était la troisième cause du décollement de l'objet.
-    float3 E = star * float3(0.92, 0.95, 1.02) + poolCol;
+    float3 E = star * float3(0.92, 0.95, 1.02) + poolCol * body01;
     // Le voile a disparu : il est DANS faceCol, mélangé à la laque et non
     // ajouté par-dessus. L'arête s'ajoute au corps — elle est déjà fenêtrée
     // par hasFlank et se fera occulter par bodyCov comme le reste.
-    float3 body = faceCol * faceMask + flankCol * flankMask + areteCol + bevelCol
+    // Sans pavé, il ne reste de la face que le VERRE : le croissant flotte
+    // dans le noir, et c'est le boom qui fera apparaître la pierre autour.
+    float3 body = faceCol * faceMask
+                + (flankCol * flankMask + areteCol + bevelCol) * body01
                 + (tubeC * tubeE + filC * filE + cometC * cometE) * faceMask;
     E = mix(E, body, bodyCov);
     // Le bloom et les raies restent additionnés APRÈS : un glare d'objectif
@@ -1188,8 +1207,8 @@ static float lmStars(float2 pos, float t) {
     // `streakCol` porte DÉJÀ la fenêtre de bord (elle est dans `streakLive`) :
     // la remettre ici la ferait agir au carré, et la branche lointaine, qui
     // ne l'applique qu'une fois, ne raccorderait plus.
-    E += rimCol + bloomCol * bloomE
-       + streakCol + haloContrib * (1.0 - bodyCov);
+    E += (rimCol + haloContrib * (1.0 - bodyCov)) * body01
+       + bloomCol * bloomE + streakCol;
     float3 c = 1.0 - exp(-1.35 * E * exposure);
     c = c * c / (c + 0.0085);
     // ---- L'ALPHA DE L'ATTERRISSAGE. Le shader est né OPAQUE (il possède son
