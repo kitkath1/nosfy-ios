@@ -401,17 +401,31 @@ static float lmStars(float2 pos, float t) {
     //     N = 6        0,048    0,266    0,705
     // Le coût (+3 sdRound, ~+45 ALU) ne tombe QUE dans la branche de
     // proximité : la sortie anticipée élimine déjà 80 % de l'écran.
-    float dSil = 1e9;
-    float2 pF = float2(0.0), pM = float2(0.0);
-    for (int k = 0; k < 6; k++) {
-        float s = float(k) * 0.2;                  // 0 = face avant, 1 = arrière
-        float sc = mix(1.0, PERSP, s);             // s = 0 → sc = 1 : la face
-                                                   // avant est BIT-IDENTIQUE
-        float2 q = pC / sc - Ez * (hD * (1.0 - 2.0 * s));
-        float2 pk = float2(dot(iR0, q), dot(iR1, q));
-        dSil = min(dSil, lmSdRound(pk, b, rc) * sc);
-        if (k == 0) pF = pk;
-        if (k == 2) pM = pk;                       // l'abscisse du filet
+    //
+    // LA FACE D'ABORD, SEULE. Sous la caméra du splash on est DEDANS l'objet,
+    // à des dizaines de points de son bord : les cinq tranches de profondeur,
+    // la tranche, le filet, la flaque, le halo et les raies sont tous hors
+    // champ — on les calculait pour les multiplier par zéro, sur chaque pixel
+    // d'un écran entier, soixante fois par seconde. C'est CETTE facture-là qui
+    // faisait saccader le travelling, pas le tube. Le test se fait sur la
+    // face, dont la distance est exacte ; à 60 pt de marge, les autres
+    // tranches (décalées d'au plus hD = 32 pt) sont encore largement dedans,
+    // donc `bodyCov` et `faceMask` valent 1 des deux côtés du raccourci et
+    // l'image ne change pas d'un LSB.
+    float2 q0 = pC - Ez * hD;
+    float2 pF = float2(dot(iR0, q0), dot(iR1, q0));
+    float dSil = lmSdRound(pF, b, rc);
+    float2 pM = pF;                                // sert au filet, hors champ ici
+    bool macroCore = (camZoom > 3.0) && (dSil < -60.0);
+    if (!macroCore) {
+        for (int k = 1; k < 6; k++) {
+            float s = float(k) * 0.2;              // 0 = face avant, 1 = arrière
+            float sc = mix(1.0, PERSP, s);
+            float2 q = pC / sc - Ez * (hD * (1.0 - 2.0 * s));
+            float2 pk = float2(dot(iR0, q), dot(iR1, q));
+            dSil = min(dSil, lmSdRound(pk, b, rc) * sc);
+            if (k == 2) pM = pk;                   // l'abscisse du filet
+        }
     }
     float dF = lmSdRound(pF, b, rc);
 
@@ -1046,7 +1060,8 @@ static float lmStars(float2 pos, float t) {
     // ---- LES DEUX RAIES ANAMORPHIQUES et L'ÉTOILE. La fiche : « deux raies
     // parallèles diagonales, la principale vive, la seconde discrète ; une
     // étoile fleurit au croisement de l'arête GAUCHE ».
-    float4 sq = lmStreak(pC, faceR);       // .x principale .y fantôme
+    float4 sq = macroCore ? float4(0.0) : lmStreak(pC, faceR);
+                                           // .x principale .y fantôme
                                            // .z abscisse   .w travers
     // L'ÉTOILE : UN SEUL croisement. Avec le nouveau décalage, l'abscisse
     // vaut −62,3 au croisement de l'arête GAUCHE (à (−77,8 ; −10,1), le
@@ -1082,6 +1097,12 @@ static float lmStars(float2 pos, float t) {
     // ancré sur yBase, jamais une gaussienne centrée 27 pt plus bas (une
     // gaussienne centrée sous le pied NE PEUT PAS toucher le pied).
     // yBase = faceR·1,045 = 79,4 pt : la base mesurée sur la capture.
+    // Tout le bloc du SOL et du HALO est hors champ au gros plan : la
+    // composition le multiplie par (1 − bodyCov), qui vaut zéro dès qu'on est
+    // dans le corps. On ne le calcule donc plus quand on est dedans.
+    float3 poolCol = float3(0.0);
+    float3 haloContrib = float3(0.0);
+    if (!macroCore) {
     float yBase = faceR * 1.045;
     float dy = pC.y - yBase;                          // > 0 = sous l'objet
     float px = pC.x - faceR * 0.06;
@@ -1108,7 +1129,7 @@ static float lmStars(float2 pos, float t) {
     // Teinte (1,00/0,46/0,14) → sortie (38, 18, 5) : saturation 0,87,
     // teinte 23°. Le caramel naît d'une luminance moyenne à saturation
     // BASSE : à B/R = 0,13 c'est de la lumière renversée, pas une nappe.
-    float3 poolCol = float3(1.00, 0.46, 0.14) * (pool * occl * 0.26 * neonGain);
+    poolCol = float3(1.00, 0.46, 0.14) * (pool * occl * 0.26 * neonGain);
 
     // ---- LE HALO D'AMBIANCE — « il manque les ombres ». Mesuré sur la v4 :
     // anneau 85-100 pt à 0,42/0,37/0,36, et la médiane ne bouge pas de
@@ -1132,10 +1153,11 @@ static float lmStars(float2 pos, float t) {
                + 0.52 * pow(max(uOut.y, 0.0), 1.8);
     float haloE = 0.062 * haloR * angH * neonGain
                 * mix(1.0, occl, saturate(uOut.y));
-    const float3 haloCol = float3(1.00, 0.42, 0.13);
     // Profil : 14,6/255 au ras du liseré | 6,7 à 20 pt | 2,6 à 40 | 0,44 à 80
     // | 0,03 à 150. Aire au-dessus de 8/255 : ~1,5 % du cadre — la métrique
     // « ≥ 95 % des pixels < 8/255 » tient avec 3,5 points de marge.
+    haloContrib = float3(1.00, 0.42, 0.13) * (haloE * edgeWnd);
+    }
 
     // ---- La nuit derrière — ÉTEINTE (cf. STARFIELD en tête de fichier).
     // Le compilateur replie tout ce bloc à zéro ; la fonction lmStars reste
@@ -1167,7 +1189,7 @@ static float lmStars(float2 pos, float t) {
     // la remettre ici la ferait agir au carré, et la branche lointaine, qui
     // ne l'applique qu'une fois, ne raccorderait plus.
     E += rimCol + bloomCol * bloomE
-       + streakCol + haloCol * haloE * (1.0 - bodyCov) * edgeWnd;
+       + streakCol + haloContrib * (1.0 - bodyCov);
     float3 c = 1.0 - exp(-1.35 * E * exposure);
     c = c * c / (c + 0.0085);
     // ---- L'ALPHA DE L'ATTERRISSAGE. Le shader est né OPAQUE (il possède son
