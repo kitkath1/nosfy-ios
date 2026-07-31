@@ -113,10 +113,6 @@ struct MonolithScene: View {
     /// noir. L'état du travelling du splash.
     var soloNeon: Float = 0
 
-    /// `-logoDebugSDF` : affiche la LUT du croissant au lieu de la scène —
-    /// le seul moyen de voir ce que le GPU LIT vraiment.
-    fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
-
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealStart: Date = .now
@@ -175,22 +171,15 @@ struct MonolithScene: View {
                     ? min(max(tl.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
                     : 1.0
                 let reveal = revealOverride ?? Float(raw * raw * (3 - 2 * raw))
-                Rectangle()
-                    .fill(.black)
-                    .frame(width: w, height: h)
-                    .colorEffect(Self.dithered(ShaderLibrary.logoMonolith(
-                        .float2(w, h), .float(t),
-                        .float2(motion.tilt.dx, motion.tilt.dy),
-                        .float(userYaw(at: tl.date)),
-                        .float(reveal), .float(faceR),
-                        .float(benchBoost ?? -1), .float(benchSweep ?? -1),
-                        .float(Self.debugSDF ? 1 : 0),
-                        .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
-                        .float3(0.5, 0.485, 0.71),
-                        .float3(camera.x, camera.y, camera.z),
-                        .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
-                        .float(edgeFade), .float(soloNeon),
-                        .image(MoonSDF.image))))
+                let tiltV = SIMD2<Float>(Float(motion.tilt.dx),
+                                         Float(motion.tilt.dy))
+                MonolithCanvas(size: CGSize(width: w, height: h), t: t,
+                               tilt: tiltV,
+                               userYaw: userYaw(at: tl.date), reveal: reveal,
+                               faceR: faceR, benchBoost: benchBoost,
+                               benchSweep: benchSweep,
+                               camera: camera, cineCtl: cineCtl,
+                               edgeFade: edgeFade, soloNeon: soloNeon)
             }
         }
         // Le pavé tourne sous le doigt : glissement horizontal → lacet, et
@@ -230,6 +219,50 @@ struct MonolithScene: View {
                 motion.stop()
             }
         }
+    }
+}
+
+// MARK: - La toile
+
+/// Le rendu nu du shader, SANS horloge. Tout lui arrive en paramètres.
+///
+/// C'est ce découpage qui rend la cinématique fluide : le splash a sa propre
+/// `TimelineView`, et si la scène en gardait une seconde à l'intérieur, les
+/// deux tiqueraient indépendamment — la caméra serait calculée à un instant,
+/// le shader dessiné à un autre, et le plan avancerait par à-coups sans que
+/// personne ne soit en retard. Une horloge, une image.
+struct MonolithCanvas: View {
+    var size: CGSize
+    var t: Float
+    var tilt: SIMD2<Float> = .zero
+    var userYaw: Float = 0
+    var reveal: Float = 1
+    var faceR: Float = 76
+    var benchBoost: Float? = nil
+    var benchSweep: Float? = nil
+    var camera: SIMD3<Float> = SIMD3(0, 0, 1)
+    var cineCtl: SIMD4<Float> = SIMD4(0, 0, 0, -1)
+    var edgeFade: Float = 0
+    var soloNeon: Float = 0
+
+    fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
+
+    var body: some View {
+        Rectangle()
+            .fill(.black)
+            .frame(width: size.width, height: size.height)
+            .colorEffect(Self.dithered(ShaderLibrary.logoMonolith(
+                .float2(size.width, size.height), .float(t),
+                .float2(tilt.x, tilt.y), .float(userYaw),
+                .float(reveal), .float(faceR),
+                .float(benchBoost ?? -1), .float(benchSweep ?? -1),
+                .float(Self.debugSDF ? 1 : 0),
+                .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
+                .float3(0.5, 0.485, 0.71),
+                .float3(camera.x, camera.y, camera.z),
+                .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
+                .float(edgeFade), .float(soloNeon),
+                .image(MoonSDF.image))))
     }
 
     /// Dithering natif du shader : casse le banding 8 bits des longues

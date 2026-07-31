@@ -3,22 +3,27 @@ import simd
 
 // MARK: - Le splash : la lune en gros plan, puis le monolithe qui se pose
 //
-// Un plan-séquence de 9,2 s, en quatre temps :
+// Un plan-séquence de 11,4 s, en quatre temps :
 //
-//   0,00 → 0,90  L'ALLUMAGE. Noir. La caméra est déjà collée au tube — treize
-//                fois la taille de la scène — et le néon naît sous nos yeux
-//                pendant qu'elle pousse doucement.
-//   0,90 → 5,90  LE TRAVELLING. La comète part et la caméra la suit sur TOUT
-//                le contour du croissant, en abscisse curviligne : la vitesse
-//                à l'écran est celle qu'on écrit ici, pas celle qu'imposerait
-//                la paramétrisation des Bézier. Elle lève le pied aux quatre
-//                accidents de la courbe (les deux cornes, les deux crochets).
-//   5,90 → 7,50  LE BOOM. Le tube surtend, la caméra décolle en arrière —
-//                vite au départ, longuement amortie — et le monolithe entier
-//                se découvre : la laque, la tranche, le filet, la flaque.
-//   7,50 → 9,20  L'ENVOL. Il rapetisse en filant vers le haut-gauche pendant
-//                que l'aurore de la connexion monte du noir, et se pose avec
-//                un rebond court. À partir de là, le doigt le fait tourner.
+//   0,0 → 1,0   L'ALLUMAGE. Noir. La caméra est déjà collée au tube — onze
+//               fois la taille de la scène — et le néon naît sous nos yeux
+//               pendant qu'elle pousse.
+//   1,0 → 8,0   LE TRAVELLING. Le PAVÉ N'EXISTE PAS : il n'y a que le
+//               croissant de néon, seul dans le noir. La comète part et la
+//               caméra la suit sur tout le contour, en abscisse curviligne,
+//               en reculant sans arrêt de ×11 à ×5,5. Elle lève le pied aux
+//               quatre accidents de la courbe (deux cornes, deux crochets).
+//   8,0 → 9,7   LE BOOM. Le tube surtend, la caméra décolle en arrière — vite
+//               au départ, longuement amortie — et la PIERRE SE MATÉRIALISE
+//               autour de la lumière, dans le flash qui couvre son apparition.
+//   9,7 → 11,4  L'ENVOL. Il rapetisse en filant vers le haut-gauche pendant
+//               que l'aurore de la connexion monte du noir, et se pose avec
+//               un rebond court. À partir de là, le doigt le fait tourner.
+//
+// Le grondement haptique double la partition d'un bout à l'autre : voir
+// RocketHaptics.swift. Il part d'un bloc au moteur, jamais image par image —
+// une vibration cadencée par la boucle d'affichage tremblerait précisément
+// quand le GPU peine, c'est-à-dire pendant le travelling.
 //
 // TOUT EST FONCTION PURE DU TEMPS — `MoonSplashBeat.at(t:)` —, jamais une
 // animation d'état : la scène se rejoue à l'identique image par image, ce qui
@@ -476,14 +481,6 @@ struct MoonSplashView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var start = Date()
     @State private var finished = false
-    @State private var ignited = 0
-    @State private var boomed = 0
-    @State private var landed = 0
-    /// Les virages du travelling : une touche brève dans les crochets, une
-    /// plus ferme dans les cornes. C'est ce qui fait qu'on SENT la comète
-    /// prendre les courbes au lieu de seulement la regarder.
-    @State private var softBeat = 0
-    @State private var hardBeat = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -520,15 +517,20 @@ struct MoonSplashView: View {
                         // ressembleraient pas. La base 120 s est arbitraire ;
                         // ce qui compte est qu'elle soit stable et que deux
                         // instants différents montrent des phases différentes.
-                        MonolithScene(freeze: Self.freeze == nil ? nil : clock,
-                                      faceR: MoonLanding.faceR,
-                                      camera: b.camera,
-                                      cineCtl: b.cineCtl,
-                                      edgeFade: b.edgeFade,
-                                      revealOverride: b.reveal,
-                                      interactive: false,
-                                      fps: MoonSplashBeat.travelFPS,
-                                      soloNeon: b.solo)
+                        // UNE SEULE HORLOGE POUR TOUT LE PLAN. La scène du banc
+                        // porte sa propre `TimelineView` ; l'imbriquer ici en
+                        // ferait deux, qui tiqueraient chacune de leur côté —
+                        // la caméra calculée à un instant, le shader dessiné à
+                        // un autre. Personne n'est en retard, et pourtant le
+                        // plan avance par à-coups. On dessine donc la toile
+                        // nue, cadencée par la seule horloge du splash.
+                        MonolithCanvas(size: size, t: clock,
+                                       reveal: b.reveal,
+                                       faceR: MoonLanding.faceR,
+                                       camera: b.camera,
+                                       cineCtl: b.cineCtl,
+                                       edgeFade: b.edgeFade,
+                                       soloNeon: b.solo)
                             .ignoresSafeArea()
                     }
                 }
@@ -550,13 +552,21 @@ struct MoonSplashView: View {
         .onTapGesture { finish() }
         // Les retours tombent sur l'image, pas à côté : mêmes horaires que la
         // partition (le mécanisme du splash bouteille).
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.45), trigger: ignited)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.30),
-                         trigger: softBeat)
-        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.55),
-                         trigger: hardBeat)
-        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.95), trigger: boomed)
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.40), trigger: landed)
+        // Les retours ne sont PAS pilotés image par image : le motif complet
+        // part d'un bloc au moteur haptique, qui tient sa propre horloge. Un
+        // grondement cadencé par la boucle d'affichage tremblerait à chaque
+        // fois que le GPU prend du retard — c'est-à-dire exactement pendant le
+        // travelling, là où il doit être le plus régulier.
+        .onAppear {
+            RocketHaptics.shared.prepare()
+            guard Self.freeze == nil, !reduceMotion else { return }
+            RocketHaptics.shared.launch(ignite: MoonSplashBeat.ignite,
+                                        travel: MoonSplashBeat.travel,
+                                        boom: MoonSplashBeat.boom,
+                                        flight: MoonSplashBeat.flight,
+                                        beats: MoonSplashBeat.beats)
+        }
+        .onDisappear { RocketHaptics.shared.stop() }
         .task {
             guard Self.freeze == nil else { return }
             start = Date()
@@ -564,37 +574,22 @@ struct MoonSplashView: View {
                 try? await Task.sleep(for: .seconds(1.2))
                 finish(); return
             }
-            // Chaque attente est mesurée depuis le DÉBUT, jamais cumulée : une
-            // annulation avalée par `try?` ferait sinon tomber toutes les
-            // suivantes d'un coup, et les trois vibrations partiraient
-            // ensemble. Le garde `Task.isCancelled` arrête net.
+            // Une seule attente : la fin du plan. Tout le rythme haptique
+            // est parti d'un bloc au moteur, il n'a plus besoin d'être
+            // réveillé ici. Le garde d'annulation reste : passer le splash
+            // d'un toucher doit arrêter la séquence, pas la laisser courir.
             func wait(until when: Double) async -> Bool {
                 let left = when - Date().timeIntervalSince(start)
                 if left > 0 { try? await Task.sleep(for: .seconds(left)) }
                 return !Task.isCancelled
             }
-            guard await wait(until: MoonSplashBeat.ignite) else { return }
-            ignited += 1
-            // Les quatre virages de la courbe, à l'instant où la caméra les
-            // prend : la main suit le tracé en même temps que l'œil.
-            for beat in MoonSplashBeat.beats {
-                guard await wait(until: beat.time) else { return }
-                if beat.hard { hardBeat += 1 } else { softBeat += 1 }
-            }
-            guard await wait(until: MoonSplashBeat.ignite
-                                    + MoonSplashBeat.travel) else { return }
-            boomed += 1
-            // La vibration de la pose tombe sur l'IMPACT (8,0 s), pas à la fin
-            // du plan (9,2 s) : un retour qui arrive 1,2 s après le choc n'est
-            // plus un retour, c'est un contretemps.
-            guard await wait(until: MoonSplashBeat.touchdown) else { return }
-            landed += 1
             guard await wait(until: MoonSplashBeat.total) else { return }
             finish()
         }
     }
 
     private func finish() {
+        RocketHaptics.shared.stop()
         guard !finished else { return }
         finished = true
         onFinish()
