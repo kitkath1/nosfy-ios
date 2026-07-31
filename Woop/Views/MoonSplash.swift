@@ -154,10 +154,12 @@ struct MoonSplashBeat {
     ///
     /// La dérivée du retard (0,048 × 3 × 2π × 0,5 ≈ 0,45) reste sous la vitesse
     /// de base du plan (≈ 1 à 1,5) : la caméra ralentit, elle ne recule jamais.
-    private static let cometLead: Float = 0.048
-    /// Deux respirations sur sept secondes : trois et demie chacune. À trois
-    /// cycles le va-et-vient devenait un tic ; à deux, c'est une houle.
-    private static let leadCycles: Float = 2
+    private static let cometLead: Float = 0.038
+    /// UNE seule respiration sur les sept secondes. À deux cycles, la caméra
+    /// changeait de régime quatre fois — encore du rubato, encore des
+    /// à-coups. Une seule houle, très longue : la comète prend le large dans
+    /// la première moitié du plan, le mouvement la reprend dans la seconde.
+    private static let leadCycles: Float = 1
 
     /// `shaderClock` : l'horloge que l'hôte donne au shader (temps absolu
     /// modulo 900 s, ou la valeur figée). Elle sert à RENDRE LA COMÈTE au
@@ -338,8 +340,34 @@ struct MoonSplashBeat {
     /// coup de fouet qu'on entendait au raccord. Le smoothstep pur pointe à
     /// 1,5× la vitesse moyenne, ce que les ralentissements de la courbe
     /// absorbent sans peine.
+    /// La rampe du chariot, en 18 % de la course.
+    private static let ramp: Float = 0.18
+
+    /// LE PROFIL D'UN VRAI TRAVELLING : on lance, ON TIENT, on arrête. La
+    /// vitesse monte en douceur sur les 18 premiers pour cent, reste
+    /// RIGOUREUSEMENT CONSTANTE sur les deux tiers du plan, puis redescend de
+    /// même. C'est ça, « d'une traite » — et c'est exactement ce qu'un
+    /// smoothstep ne sait pas faire : il n'a pas de palier, il accélère
+    /// jusqu'au milieu et freine ensuite, si bien que le plan a un ventre
+    /// qu'on voit passer. Les deux dérivées restent nulles aux extrémités
+    /// (la caméra est immobile pendant l'allumage, elle doit partir de zéro),
+    /// et la vitesse de croisière ne vaut que 1,22× la moyenne.
+    ///
+    /// Intégrale de la rampe en smoothstep : ∫₀¹ u²(3−2u) du = ½, d'où une
+    /// course totale de (1 − r) et la normalisation ci-dessous.
     private static func eased(_ p: Float) -> Float {
-        p * p * (3 - 2 * p)
+        let r = ramp
+        let total = 1 - r
+        let x = min(max(p, 0), 1)
+        if x <= r {
+            let u = x / r
+            return (r * (u * u * u - u * u * u * u * 0.5)) / total
+        }
+        if x >= 1 - r {
+            let w = (1 - x) / r
+            return (total - r * (w * w * w - w * w * w * w * 0.5)) / total
+        }
+        return (r * 0.5 + (x - r)) / total
     }
 
     /// Progression [0,1] → abscisse curviligne [0,1]. La caméra RALENTIT aux
@@ -350,9 +378,20 @@ struct MoonSplashBeat {
     /// et c'est précisément là que l'œil veut s'arrêter.
     private static let warp: [Float] = {
         let L = MoonPath.landmarks
+        // D'UNE TRAITE. Les ralentissements étaient à 2,7 et 1,2 : la caméra
+        // tombait à moins du tiers de sa vitesse aux cornes puis repartait —
+        // quatre coups de frein en sept secondes. C'est ce qui se lisait comme
+        // un bug « au début, au niveau de la queue » : la queue du croissant
+        // EST la corne à s = 0,2032, atteinte à 2,5 s, où le plan s'arrêtait
+        // presque. Un travelling premium est ÉGAL ; l'expression vient de la
+        // courbe qu'on suit, pas d'un rubato de caméra. 0,45 et 0,20 laissent
+        // une inflexion perceptible (la vitesse ne descend plus qu'à 0,69 aux
+        // cornes) sans jamais donner l'impression d'un arrêt. Les fenêtres
+        // s'élargissent aussi : un freinage court est un à-coup, un freinage
+        // long est une respiration.
         let stops: [(c: Float, amp: Float, w: Float)] = [
-            (L.horn1, 2.7, 0.032), (L.horn2, 2.7, 0.032),
-            (L.kink1, 1.2, 0.024), (L.kink2, 1.2, 0.024),
+            (L.horn1, 0.45, 0.075), (L.horn2, 0.45, 0.075),
+            (L.kink1, 0.20, 0.055), (L.kink2, 0.20, 0.055),
         ]
         // Coût cumulé du parcours : ∫ (1 + Σ ralentissements) ds.
         let n = 2048
@@ -481,6 +520,11 @@ struct MoonSplashView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var start = Date()
     @State private var finished = false
+    /// La cinématique ne commence QUE quand la LUT est cuite et le shader
+    /// compilé. Démarrer avant, c'est offrir sa première seconde à un fil
+    /// principal bloqué — et repartir ensuite là où l'horloge murale est
+    /// arrivée, donc en sautant le début du plan.
+    @State private var armed = false
 
     var body: some View {
         GeometryReader { geo in
@@ -489,10 +533,10 @@ struct MoonSplashView: View {
                 Color.black.ignoresSafeArea()
 
                 TimelineView(.animation(minimumInterval: 1.0 / MoonSplashBeat.travelFPS,
-                                        paused: reduceMotion)) { tl in
+                                        paused: reduceMotion || !armed)) { tl in
                     let t = Self.freeze
                         ?? (reduceMotion ? MoonSplashBeat.total
-                                         : tl.date.timeIntervalSince(start))
+                                         : (armed ? tl.date.timeIntervalSince(start) : 0))
                     // L'horloge du shader, calculée ICI pour que la partition
                     // puisse rendre la comète exactement là où la loi du
                     // shader la mettra ensuite.
@@ -557,23 +601,34 @@ struct MoonSplashView: View {
         // grondement cadencé par la boucle d'affichage tremblerait à chaque
         // fois que le GPU prend du retard — c'est-à-dire exactement pendant le
         // travelling, là où il doit être le plus régulier.
-        .onAppear {
+        .onDisappear { RocketHaptics.shared.stop() }
+        .task {
+            // LE MOTEUR HAPTIQUE D'ABORD : démarrer un CHHapticEngine coûte
+            // quelques dizaines de millisecondes, et on ne les paie pas sur
+            // la première image du plan.
             RocketHaptics.shared.prepare()
-            guard Self.freeze == nil, !reduceMotion else { return }
+            guard Self.freeze == nil else { return }
+            if reduceMotion {
+                try? await Task.sleep(for: .seconds(1.2))
+                finish(); return
+            }
+            // ON N'OUVRE PAS LE RIDEAU AVANT QUE LE DÉCOR SOIT PRÊT. Tant que
+            // la LUT cuit et que le shader se compile, l'écran reste noir et
+            // l'horloge n'a pas démarré — c'est du noir, exactement ce que la
+            // première seconde du plan montre de toute façon. Sans cette
+            // garde, la première image bloquait le fil principal puis le plan
+            // reprenait là où le temps était arrivé : il SAUTAIT son début.
+            while !MoonSDF.isReady {
+                try? await Task.sleep(for: .milliseconds(16))
+                if Task.isCancelled { return }
+            }
+            start = Date()
+            armed = true
             RocketHaptics.shared.launch(ignite: MoonSplashBeat.ignite,
                                         travel: MoonSplashBeat.travel,
                                         boom: MoonSplashBeat.boom,
                                         flight: MoonSplashBeat.flight,
                                         beats: MoonSplashBeat.beats)
-        }
-        .onDisappear { RocketHaptics.shared.stop() }
-        .task {
-            guard Self.freeze == nil else { return }
-            start = Date()
-            if reduceMotion {
-                try? await Task.sleep(for: .seconds(1.2))
-                finish(); return
-            }
             // Une seule attente : la fin du plan. Tout le rythme haptique
             // est parti d'un bloc au moteur, il n'a plus besoin d'être
             // réveillé ici. Le garde d'annulation reste : passer le splash
