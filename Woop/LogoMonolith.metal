@@ -426,7 +426,15 @@ static float lmStars(float2 pos, float t) {
     float2 pF = float2(dot(iR0, q0), dot(iR1, q0));
     float dSil = lmSdRound(pF, b, rc);
     float2 pM = pF;                                // sert au filet, hors champ ici
-    bool macroCore = (camZoom > 3.0) && (dSil < -60.0);
+    // Le pavé est HORS JEU dans deux cas : quand il n'existe pas (`solo`), et
+    // quand la caméra est si loin dans ses terres que son bord ne peut pas
+    // être à l'écran. Le premier cas est le plus fréquent du splash, et le
+    // test sur `dSil` ne le couvrait PAS : près du bord du croissant on n'est
+    // qu'à une vingtaine de points du bord de la face, donc la marge de 60
+    // échouait et toute la scène repartait — six tranches, flaque, halo,
+    // raies — pour être ensuite multipliée par zéro. C'était là que passait
+    // le budget qui manquait à la fluidité.
+    bool macroCore = (solo > 0.999) || ((camZoom > 3.0) && (dSil < -60.0));
     if (!macroCore) {
         for (int k = 1; k < 6; k++) {
             float s = float(k) * 0.2;              // 0 = face avant, 1 = arrière
