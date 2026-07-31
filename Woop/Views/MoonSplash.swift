@@ -92,6 +92,9 @@ struct MoonSplashBeat {
     var edgeFade: Float = 0
     /// 1 = le croissant seul dans le noir ; 0 = le monolithe entier.
     var solo: Float = 0
+    /// Le plan se rend-il à demi-résolution ? Vrai tant qu'il n'y a que du
+    /// néon flou à l'écran — voir `MoonSplashView`.
+    var lowRes: Bool = false
 
     // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
     // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
@@ -212,6 +215,7 @@ struct MoonSplashBeat {
             target = sceneTarget(arc: sCam)
             b.cineCtl.w = MoonPath.angle(at: sComet)
             b.solo = 1        // le pavé n'existe pas encore
+            b.lowRes = true   // il n'y a que du néon flou à dessiner
         } else if t < tFlight {
             // ---- LE BOOM. Le recul est multiplicatif — un travelling arrière
             // se lit en octaves, pas en points —, donc l'interpolation se
@@ -568,13 +572,42 @@ struct MoonSplashView: View {
                         // un autre. Personne n'est en retard, et pourtant le
                         // plan avance par à-coups. On dessine donc la toile
                         // nue, cadencée par la seule horloge du splash.
-                        MonolithCanvas(size: size, t: clock,
+                        // LE TRAVELLING SE REND À DEMI-RÉSOLUTION, et il n'y
+                        // perd rien : tant que le pavé n'existe pas, il n'y a
+                        // pas un seul détail fin à l'écran — le tube fait 37
+                        // pixels de large à ×5,5 sur une dalle 3x, et le fil
+                        // de plasma, qui est ce qu'il y a de plus mince dans
+                        // toute la scène, en fait encore 9. À demi-résolution
+                        // ils tombent à 18 et 4,7 : largement au-dessus du
+                        // seuil où quoi que ce soit se met à créneler. On
+                        // divise le nombre de pixels par QUATRE.
+                        //
+                        // Le grossissement doit suivre la taille du tampon,
+                        // sinon on verrait deux fois plus de scène : le shader
+                        // pose `pC = (position − C)/zoom`, et `position` est
+                        // désormais en coordonnées de tampon. Tout le reste du
+                        // cadrage est en FRACTIONS de la taille, donc invariant.
+                        //
+                        // On repasse en pleine résolution au boom, à l'instant
+                        // précis où la pierre apparaît — le flash de la
+                        // décharge couvre la bascule —, parce que le monolithe,
+                        // lui, porte des traits d'un pixel.
+                        let px: CGFloat = b.lowRes ? 0.5 : 1
+                        let buf = CGSize(width: size.width * px,
+                                         height: size.height * px)
+                        MonolithCanvas(size: buf, t: clock,
                                        reveal: b.reveal,
                                        faceR: MoonLanding.faceR,
-                                       camera: b.camera,
+                                       camera: SIMD3(b.camera.x, b.camera.y,
+                                                     b.camera.z * Float(px)),
                                        cineCtl: b.cineCtl,
                                        edgeFade: b.edgeFade,
                                        soloNeon: b.solo)
+                            .frame(width: buf.width, height: buf.height)
+                            .drawingGroup()
+                            .scaleEffect(1 / px, anchor: .topLeading)
+                            .frame(width: size.width, height: size.height,
+                                   alignment: .topLeading)
                             .ignoresSafeArea()
                     }
                 }
