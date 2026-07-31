@@ -79,6 +79,8 @@ struct RootView: View {
     /// Banc d'essai de la home aurora : `-homeLab` (+ `-demoData` pour les
     /// cartes). L'ancienne home noire reste la vraie.
     private static let homeLab = CommandLine.arguments.contains("-homeLab")
+    /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
+    private static let bgLab = CommandLine.arguments.contains("-bgLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -125,6 +127,8 @@ struct RootView: View {
             LoginLab()
         } else if Self.homeLab {
             HomeAuroraLab()
+        } else if Self.bgLab {
+            AuroraBgLab()
         } else if Self.logoLab {
             LogoLab()
         } else if Self.navLab {
