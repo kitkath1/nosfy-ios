@@ -492,9 +492,13 @@ static float lmStars(float2 pos, float t) {
     dC -= floor(dC + 0.5);
     // Une tête brève et une traîne DERRIÈRE seulement : sans l'asymétrie ce
     // n'est plus une comète, c'est une bille.
-    float cometHead = exp(-dC * dC / (0.030 * 0.030));
-    float cometTail = 0.55 * exp(-max(-dC, 0.0) / 0.085)
-                           * smoothstep(0.006, -0.006, dC);
+    // PLUS FINE : la tête tombe de 3,0 % à 1,7 % de tour. Ce qui la garde
+    // visible malgré l'amaigrissement, ce n'est pas sa taille mais sa
+    // VITESSE et sa traîne — un point net qui file se lit mieux qu'une tache
+    // molle. L'énergie monte donc en compensation de la surface perdue.
+    float cometHead = exp(-dC * dC / (0.017 * 0.017));
+    float cometTail = 0.50 * exp(-max(-dC, 0.0) / 0.070)
+                           * smoothstep(0.004, -0.004, dC);
     // Elle roule DANS le verre : la porte est large pour qu'elle occupe toute
     // la SECTION du tube et non une ligne — une décharge remplit son verre.
     // LE PIÈGE : `dIn = max(-dPt, 0)` est CONSTANT (zéro) partout hors du
@@ -503,9 +507,9 @@ static float lmStars(float2 pos, float t) {
     // RAYON depuis le centre, ça peignait un éventail blanc sur toute la
     // face. Une porte bâtie sur une profondeur clampée ne ferme rien à
     // l'extérieur : il faut la refermer explicitement avec dPt.
-    float cometRide = exp(-filD * filD / (1.40 * 1.40))
+    float cometRide = exp(-filD * filD / (0.95 * 0.95))
                     * smoothstep(1.2, -0.6, dPt);
-    float cometE = 6.5 * (cometHead + cometTail) * cometRide * neonGain;
+    float cometE = 8.0 * (cometHead + cometTail) * cometRide * neonGain;
     // Elle déborde un peu — une décharge fait rougeoyer le dépoli autour
     // d'elle — mais le débordement doit rester COLLÉ au tube. Piège payé :
     // avec une exponentielle en exp(-dAbs/5.5), le halo suivait le secteur
@@ -515,8 +519,8 @@ static float lmStars(float2 pos, float t) {
     // par une porte serrée sur la distance au tracé. Gaussienne à 3,2 pt :
     // morte à 7 pt, l'éventail ne peut plus exister.
     float cometGlow = 1.15 * (cometHead + 0.5 * cometTail)
-                           * exp(-dAbs * dAbs / (3.2 * 3.2))
-                           * smoothstep(6.0, 1.0, dPt) * neonGain;
+                           * exp(-dAbs * dAbs / (2.4 * 2.4))
+                           * smoothstep(5.0, 1.0, dPt) * neonGain;
     cometE += cometGlow;
     float3 cometC = float3(1.00, 0.96, 0.90);
 
