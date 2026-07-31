@@ -15,8 +15,12 @@ struct ObsidianCardLab: View {
         ZStack {
             pageBackground
             VStack(spacing: 40) {
-                card(pressed: false)
-                // La copie « doigt posé », figée.
+                // La première est VIVANTE : un vrai Button, pour sentir le
+                // gonflement du spot et sa réponse haptique sous le doigt.
+                Button {} label: { card(pressed: false) }
+                    .buttonStyle(ObsidianCardPressStyle())
+                // La seconde est la copie « doigt posé », figée : régler
+                // l'ouverture du spot sans devoir garder le doigt sur l'écran.
                 card(pressed: true)
             }
             .padding(.horizontal, 20)

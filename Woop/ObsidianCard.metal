@@ -101,7 +101,7 @@ constant float3 kRim  = float3(1.000, 0.600, 0.320);
 // liseré, 0,830 en bleu) rendait la moitié droite trop CHAUDE — R-B +5 là où
 // la référence donne +2 à +4. Un voile qui tire sur le brun, c'est exactement
 // ce que Kathryn rejette.
-constant float3 kVeil = float3(1.000, 0.929, 0.884);
+constant float3 kVeil = float3(0.958, 0.930, 1.000);
 
 // MARK: - La grille de points du haut-droit
 //
@@ -180,6 +180,52 @@ static float odotCover(float2 dv, float sig, float h) {
          * (c * (oerf((dv.y + h) * k) - oerf((dv.y - h) * k)));
 }
 
+/// L'IRISATION. C'est l'effet « huile » : la teinte TOURNE le long de l'arête au
+/// lieu d'être une seule couleur étirée sur une rampe d'intensité.
+///
+/// Mesuré sur la référence irisée de Kathryn (le « green shot ») : en suivant le
+/// bord haut depuis le coin, le liseré passe par #F3F8FC (blanc, 254), #79A0C6
+/// (bleu franc, B-R +77), #58957A (vert, 149), #A3AAA9 (gris neutre), #515257.
+/// Le fait décisif : DEUX TEINTES DIFFÉRENTES VIVENT À LA MÊME INTENSITÉ selon
+/// l'endroit de l'arc — bleu à 198, vert à 157. Aucun tone map ne peut produire
+/// ça, puisqu'un tone map ne connaît que l'intensité. Il faut une teinte
+/// paramétrée par la POSITION.
+///
+/// Transposée dans l'or de Woop (choix de Kathryn) : blanc chaud au coin, or
+/// franc juste après, champagne en filant vers la droite, vert-gris à
+/// l'extinction. Sur le flanc gauche, tout se décale vers le rosé-cuivre.
+///
+/// `s` : avancement le long de l'arête (0 au coin). `flank` : 0 sur le bord
+/// haut, 1 sur le flanc gauche.
+static float3 oIris(float s, float flank) {
+    // RECALÉE canal par canal sur la référence HD. En résolvant
+    // `1 - exp(-x*k)` sur trois points du bord haut (u = 65 / 95 / 130 pt), la
+    // couleur intrinsèque du chaud sort à (1 ; 0,50-0,56 ; 0,135-0,19) — et
+    // elle est QUASI CONSTANTE sur toute la zone chaude, flanc gauche compris
+    // (#F1C05E, #CE843D, #96592A y donnent le même k).
+    //
+    // Ma première rampe partait vers le champagne dès le tiers de l'arc : elle
+    // sortait un or deux fois moins saturé que la référence (R-B +70 contre
+    // +122). Le barème ne notait que la luminance et ne le voyait pas ; l'œil,
+    // lui, lit « beige délavé ». La rampe tient donc le MÊME or sur les deux
+    // premiers tiers, et ne bascule qu'à la fin — vers le froid, puisque c'est
+    // le coin bleu qui l'attend.
+    float3 c0 = float3(1.00, 0.62, 0.32);   // au ras du coin (de toute façon cramé)
+    float3 c1 = float3(1.00, 0.52, 0.1955);   // L'OR — mesuré, et il tient
+    float3 c2 = float3(1.00, 0.74, 0.56);   // il se désature en s'éteignant
+    float3 c3 = float3(0.85, 0.92, 1.00);   // et bascule au froid vers le bleu
+    float3 c = mix(c0, c1, smoothstep(0.05, 0.22, s));
+    c = mix(c, c2, smoothstep(0.704, 0.96, s));
+    c = mix(c, c3, smoothstep(0.9, 1.00, s));
+    // Le flanc gauche est PLUS doré que le bord haut, à intensité égale : la
+    // référence donne R-B +147 à (12 ; 25) contre +117 sur le bord haut à
+    // L=224. J'avais d'abord supprimé ce paramètre en croyant la teinte
+    // uniforme — c'était l'erreur de teinte la plus coûteuse (31 % sur le
+    // liseré gauche à v=120). On rabat donc le vert et le bleu sur le flanc :
+    // même luminance, plus de chroma.
+    return c * mix(float3(1.0), float3(1.0, 0.9, 0.60), flank);
+}
+
 // `lit` : le doigt posé (0 → 1, rampe côté SwiftUI). La source avance de trois
 // points et gagne 6 % — une lampe qu'on approche, pas un interrupteur.
 [[ stitchable ]] half4 obsidianSurface(float2 position, half4 color,
@@ -214,10 +260,45 @@ static float odotCover(float2 dv, float sig, float h) {
     // impossible, il faudrait qu'un terme décroissant vaille PLUS loin que
     // près. Il fallait changer la forme, pas ajouter un terme.
     float2 dq = q - src;
-    float warm = 110.0 * exp(-dq.x / 32.0) * exp(-(dq.y * dq.y) / (32.9 * 32.9))
-               + 24.5 * exp(-dq.y / 40.0) * exp(-(dq.x * dq.x) / (60.0 * 60.0))
-               + 0.4 * exp(-dot(dq, dq) / (105.0 * 105.0));
+    // ---- L'HUILE. La nappe de gauche ne descend pas d'un trait : son ÉPAISSEUR
+    // ondule lentement en descendant, comme une coulée qui s'épaissit puis
+    // s'amincit. On module la PROFONDEUR de la nappe, jamais son amplitude :
+    // moduler l'amplitude fait clignoter la lumière (on voit le procédé) ;
+    // moduler l'épaisseur fait bouger sa LIMITE, et c'est ça qui coule.
+    // Deux ondes de périodes incommensurables (140 et 226 pt) qui descendent à
+    // des vitesses différentes : le motif ne se répète jamais à l'œil. ±9 % —
+    // au-delà on voit une vague, en deçà rien ne bouge.
+    float flow = 0.60 * sin(dq.y * 0.0449 - t * 0.21)
+               + 0.40 * sin(dq.y * 0.0278 - t * 0.13 + 1.7);
+    float oil = 25.6 * (1.0 + 0.09 * flow);
+    // Intensité BAISSÉE au niveau de la référence irisée : plus de plateau
+    // cramé, sauf sur l'apex du coin. La nappe vit entre 90 et 200/255 et la
+    // bavure dans la surface passe de ~60 pt à ~22 pt. La portée le long de
+    // l'arête s'allonge en échange (λ 32 → 95 pt) : c'est ce qui garde le
+    // « beau dégradé » tout en tuant la zone brûlée.
+    // La PROFONDEUR se mesure depuis l'ARÊTE (q), pas depuis le foyer (dq) : le
+    // foyer est à 42 pt hors carte, et compter de là mettait déjà 42 pt de
+    // gaussienne au ras du bord — la nappe s'éteignait avant d'entrer dans la
+    // pierre. Le long de l'arête, en revanche, c'est bien la distance au FOYER
+    // qui compte (dq).
+    // Recalé par moindres carrés sur la référence BLEUE (2 226 points × 3
+    // canaux, résidu relatif 9,5 %) : le chaud y meurt deux fois plus vite que
+    // sur back_hero — 74/255 à 95 pt du coin contre 178. La portée du bord
+    // haut retombe de 95 à 32 pt, et la nappe gauche perd les trois quarts de
+    // son amplitude au profit du remplissage de coin, qui monte à 0,58.
+    float warm = 21.208 * exp(-dq.x / 31.9) * exp(-(q.y * q.y) / (31.9125 * 31.9125))
+               + 1.25 * exp(-dq.y / 52.0) * exp(-(q.x * q.x) / (oil * oil))
+               + 0.506 * exp(-dot(dq, dq) / (105.4 * 105.4));
     warm *= 1.0 + 0.06 * lit;
+    // La RESPIRATION de l'or (demande Kathryn, 31/07) : la partie VIVE de
+    // gauche ondule très finement. Une onde PROGRESSIVE qui descend le long
+    // du flanc — jamais une modulation globale, qui se lirait comme un
+    // clignotement. ±5 % AVANT tone map : le cœur saturé bouge à peine
+    // (compression), l'or moyen — le « vif » — respire. Deux périodes
+    // incommensurables, le motif ne se répète pas à l'œil.
+    float leftGate = exp(-max(q.x, 0.0) / 55.0);
+    warm *= 1.0 + leftGate * (0.030 * sin(q.y * 0.050 - t * 0.42)
+                            + 0.018 * sin(q.y * 0.019 - t * 0.26 + 2.1));
 
     // ---- Le VOILE FROID de la moitié droite : UN SEUL objet, un FAISCEAU
     // OBLIQUE. C'est la correction la plus importante de ce tour.
@@ -248,17 +329,56 @@ static float odotCover(float2 dv, float sig, float h) {
     // « halo spotlight » du côté (là où il frôle l'arête droite, en haut) et
     // la nappe douce qui traverse le centre-droit en biais. Aucun bord net
     // nulle part, puisque c'est une gaussienne unique.
-    float cold = 0.4011 * olobeRot(q, float2(W + 0.5, -37.8),
-                                   float2(0.4817, -0.8763), float2(213.2, 31.6));
-
+    // Raccourci de 213 à 168 pt (demande de Kathryn) : le faisceau descendait
+    // jusqu'au bas de la carte et lisait comme une nappe, pas comme un spot.
+    // Sous le doigt il GROSSIT — +26 % en long, +34 % en large, +30 %
+    // d'amplitude : le spot s'ouvre, il ne s'allume pas.
+    float coldGrow = 1.0 + 0.30 * lit;
+    // Faisceau REMESURÉ sur la référence bleue (moitié droite seule, le chaud
+    // y est éteint) : amplitude 0,263, centre (W-32 ; -6) pt, axe long 249 pt
+    // à -63,1°, axe court 38,5 pt. Il est plus FIN et plus long qu'avant, et
+    // sa teinte a viré au bleu (0,958 ; 0,930 ; 1,000) là où l'ancienne
+    // référence le donnait gris chaud.
+    // « Plus dégradé, on dirait posé » (Kathryn) : un fil seul a des flancs
+    // nets. Un cœur FIN (20 pt) dans une jupe LARGE et faible (46 pt) : le
+    // spot reste fin mais se fond dans la pierre au lieu d'être posé dessus.
+    float2 coldC = float2(W - 31.9, -6.0);
+    float2 coldAx = float2(0.4524, -0.8919);
+    float cold = 0.170 * coldGrow
+               * (0.62 * olobeRot(q, coldC, coldAx,
+                                  float2(240.0 * (1.0 + 0.26 * lit),
+                                         20.0 * (1.0 + 0.34 * lit)))
+                + 0.38 * olobeRot(q, coldC, coldAx,
+                                  float2(255.0 * (1.0 + 0.26 * lit),
+                                         46.0 * (1.0 + 0.34 * lit))));
+    // La bavure de l'accent bleu DANS la surface : sans elle, le coin
+    // haut-droit sortait à 68 pour 125 attendus — le faisceau seul n'explique
+    // pas ce que la référence a juste sous l'arête.
+    // ANISOTROPE : sur la référence, la bavure s'étale le long du bord haut
+    // (114/255 encore à 32 pt du coin) mais ne descend JAMAIS le flanc droit
+    // (48 à v=30). Une ellipse écrasée 1:2,5 — un rond inondait le flanc.
+    // La bavure vit SOUS le bord (centre v=14, écrasée 1:5,5) : centrée sur
+    // l'arête elle inondait soit le trait au-dessus, soit le flanc droit.
+    float blueWash = 0.24 * exp(-length(float2((q.x - W) * 1.456,
+                                               (q.y - 7.0) * 5.5)) / 34.0);
     float3 rgb = float3(0.0);
 
     if (inside > 0.0) {
         // Le socle : verre fumé, quasi plat à 11/255. Le brief annonçait
         // #17181C → #07080D (23 → 7) ; la référence dit 11, neutre à peine
         // bleuté. C'est elle qui gagne.
-        float3 base = float3(0.0447, 0.0449, 0.0465);
-        float3 light = warm * kWarm + cold * kVeil;
+        // Socle mesuré sur la référence bleue : 17,8/255 au ras du bord haut,
+        // 9,4 au-delà de 28 pt. Plus clair en haut que sur back_hero (11 plat).
+        float3 base = mix(float3(0.0369, 0.0371, 0.0384),
+                          float3(0.0698, 0.0702, 0.0726), exp(-q.y / 28.0));
+        // La nappe n'a plus UNE couleur : elle prend celle de l'irisation à
+        // l'endroit où on est. `s` avance le long de l'arête (0 au coin,
+        // 1 à 300 pt), `flank` dit si on est sur le bord haut ou le flanc
+        // gauche — l'angle depuis le foyer suffit à les séparer.
+        float sIris = clamp(length(dq) / 300.0, 0.0, 1.0);
+        float flank = clamp(atan2(max(dq.y, 0.0), max(dq.x, 1e-3)) / 1.5708, 0.0, 1.0);
+        float3 light = warm * oIris(sIris, flank) + cold * kVeil
+                     + blueWash * float3(0.10, 0.42, 1.00);
         float  occ = 0.0;
 
         // ---- La grille de points. Le pas (9,64 pt) est vingt fois plus grand
@@ -327,62 +447,104 @@ static float odotCover(float2 dv, float sig, float h) {
     // sans lui la carte n'est qu'un rectangle cerné.
     float2 n = osdNormal(p, b, r);
 
-    // L'arête DROITE s'éteint en descendant : mesurée pic par pic sur la
-    // référence, elle vaut 227 à v=30, 182 à v=70, 137 à v=120, 128 à v=140,
-    // et se stabilise vers 108 tout en bas. Le fond constant de 0,706 la
-    // laissait à 158-160 en bas — +22 à v=120, +30 à v=140 : un trait qui ne
-    // s'éteint jamais, donc un trait qui « sent le procédural ».
-    // Une fois la saturation retirée, ces quatre pics donnent 1,211 / 1,019 /
-    // 0,673 / 0,609 : un plancher de 0,50 plus une gaussienne d'amplitude
-    // 0,778 et de portée 100 pt. Gaussienne et non exponentielle — le pic
-    // tient un palier jusqu'à v≈50 avant de tomber, signature d'une source
-    // large et floue, la même que celle du bord haut.
-    float rimRight = 0.500 + 0.778 * exp(-(q.y / 100.0) * (q.y / 100.0));
-    // Les quatre fonds se mélangent par la normale — mais il faut DIVISER par
-    // la somme des poids. Sur un arc de coin, |n.x| + |n.y| vaut jusqu'à 1,41 :
-    // sans la division, le liseré s'éclaircissait de 40 % dans chaque coin,
-    // uniquement parce qu'on y additionnait deux côtés. C'est ce qui gonflait
-    // le flanc droit à v=30 (encore sur l'arc, le rayon du banc valant 38 pt).
+    // ---- LE LISERÉ, entièrement remesuré sur la référence bleue. Il y est
+    // BEAUCOUP plus éteint que sur back_hero : 126 à u=110, 72 à u=175, 63 à
+    // u=250 sur le bord haut, et le flanc droit tombe à 53 / 39 / 33 à
+    // v=30 / 70 / 120. Notre ancien trait sortait à 255 partout — il ne
+    // s'éteignait jamais, ce qui « sent le procédural ».
+    //
+    // Une fois la saturation retirée, huit pics du bord haut et du flanc
+    // gauche tiennent sur UNE exponentielle : amplitude 13,2, portée 55 pt
+    // depuis le foyer chaud. Plus de terme large : le plateau de back_hero
+    // n'existe plus sur cette référence.
     float wN = abs(n.x) + abs(n.y);
-    float rimBase = (0.36 * max(-n.y, 0.0) + 0.300 * max(n.y, 0.0)
-                  + rimRight * max(n.x, 0.0) + 0.687 * max(-n.x, 0.0))
+    float rimBase = (0.030 * max(-n.y, 0.0) + 0.0 * max(n.y, 0.0)
+                  + 0.0 * max(n.x, 0.0) + 0.075 * max(-n.x, 0.0))
                   / max(wN, 1e-4);
     float dw = length(q - src);
-    float dcr = length(q - float2(W - 32.0, -19.0));
-    // Le trait chaud en DEUX portées. Avec la seule exponentielle serrée
-    // (λ 48 pt), le bord haut plongeait à 198 au milieu là où la référence
-    // tient 247 : le liseré de la référence garde un PLATEAU jusqu'à ~175 pt
-    // avant de tomber. Un seul terme ne peut pas faire un plateau puis une
-    // chute ; il en faut deux — le serré pour le cœur cramé du coin, un large
-    // gaussien pour le plateau.
-    float rimW = (20.0 * exp(-dw / 48.0)
-                + 29.5 * exp(-(dw * dw) / (140.0 * 140.0))) * (1.0 + 0.08 * lit);
-    // Le bloom du coin haut-droit ne s'applique plus qu'à l'arête qui REGARDE
-    // vers le haut. Avant, il s'ajoutait aussi au flanc droit, et comme sa
-    // portée (18,9 pt) est bien plus courte que celle du flanc (100 pt), le
-    // total ne pouvait pas coller : il fallait un profil non monotone. Séparés,
-    // chacun suit sa loi et l'arc du coin les mélange tout seul par la normale.
-    float rimC = rimBase + 9.584 * exp(-dcr / 18.9) * max(-n.y, 0.0);
-    float3 rimI = 1.0 - exp(-(rimW * kRim + rimC * kCold));
+
+    // ---- L'ACCENT BLEU du coin haut-droit. « Très fin », dit Kathryn, et la
+    // mesure le confirme : il vaut 216 à 32 pt du coin sur le bord haut et
+    // s'éteint complètement en 110 pt (0,028 d'intensité). Portée 20 pt.
+    //
+    // Le point à ne pas rater : il est GATÉ PAR LA NORMALE. Sur le bord haut
+    // du coin il monte à 216 ; sur le flanc droit, à la même distance, la
+    // référence ne donne que 53. Sans le `max(-n.y, 0)`, l'accent coulait le
+    // long du flanc droit et le trait bleu devenait un contour.
+    // Teinte résolue canal par canal sur #84A7D8 : (0,39 ; 0,57 ; 1,00).
+    float dTR = length(q - float2(W, 0.0));
+    float blue = (0.18 * exp(-dTR / 15.93) + 0.05 * exp(-dTR / 55.0))
+               * pow(max(-n.y, 0.0), 3.0) * (1.0 + 0.10 * lit);
+    float3 kBlue = float3(0.39, 0.57, 1.00);
+    // Le TRAIT s'irise comme la nappe. Il portait une couleur fixe (kRim) : sur
+    // le flanc gauche il tombait à R-B +73 là où la référence tient +108, et
+    // près du coin il montait à +137 pour +117 attendus. Deux erreurs de signe
+    // opposé — signature d'une teinte qui ne varie pas alors qu'elle devrait.
+    float sRim = clamp(dw / 300.0, 0.0, 1.0);
+    float rimFlank = clamp(max(-n.x, 0.0) - max(-n.y, 0.0) * 0.5, 0.0, 1.0);
+    // Le trait ne meurt PAS à la même vitesse sur les deux bords : la
+    // référence tient 232/161/128 à v=70/120/140 sur le flanc gauche — bien
+    // trop lent pour la portée de 28,5 pt mesurée sur le bord haut. Et sa
+    // traîne chaude n'est pas une exponentielle (elle doublait le trait à
+    // u=60) : c'est une BANDE, +36 de doré à u=175 là où le trait principal
+    // est mort, centrée à 210 pt du foyer, plus large côté flanc.
+    float rimP = mix(28.5, 33.0, rimFlank);
+    // La bande n'a pas le même profil selon le bord : sur le bord haut elle
+    // culmine à 210 pt du foyer (le +36 de doré à u=175) ; sur le flanc
+    // gauche elle est plus basse et plus étroite (161 à v=120 mais déjà 128 à
+    // v=140 — un centre à 210 gonflait v=140 de +16).
+    float bandC = mix(210.0, 138.24, rimFlank);
+    float bandS = mix(6050.0, 2450.0, rimFlank);
+    // La bande est une fonction de dw, donc un ANNEAU autour du foyer : sans
+    // porte, elle rallumait le bord BAS (qui passe à dw~290 = dans l'anneau)
+    // — c'était ça, le « contour qu'on voit » de Kathryn. Portée par la
+    // normale (haut et gauche seulement) et éteinte en descendant le flanc.
+    float bandGate = clamp(max(-n.y, 0.0) + max(-n.x, 0.0), 0.0, 1.0)
+                   * (1.0 - 0.85 * smoothstep(95.0, 165.0, q.y));
+    float rimW = (1.60 * exp(-dw / rimP)
+                + mix(0.14, 0.060, rimFlank) * bandGate
+                       * exp(-(dw - bandC) * (dw - bandC) / bandS))
+               * (1.0 + 0.08 * lit);
+    // Le biseau ne colore pas la lumière comme la masse de la pierre : la
+    // ligne de la référence est plus CRÈME que la nappe juste dessous
+    // (+117 contre +143 à u=60). On rabat donc l'or du trait vers le crème.
+    float3 cRim = mix(oIris(sRim, rimFlank), float3(1.0, 0.75, 0.50), 0.25);
+    // Et le flanc droit n'est pas blanc chaud : la référence y est BLEUTÉE
+    // (#1F2130, R-B -17 à v=30) — c'est le voile froid que le biseau renvoie.
+    // Il s'éteint en descendant, comme le faisceau qui le cause : neutre dès
+    // v=70 (la référence y donne R-B 0).
+    float rimR = 0.008 * exp(-q.y / 35.0) * max(n.x, 0.0) / max(wN, 1e-4);
+    rimBase *= 1.0 - 0.7 * smoothstep(95.0, 175.0, q.y) * max(-n.x, 0.0);
+    float3 rimI = 1.0 - exp(-(rimW * cRim + rimBase * kCold
+                            + rimR * float3(0.50, 0.62, 1.00) + blue * kBlue));
 
     // Sigmas issus des FWHM mesurées : 0,7 pt dehors, 0,8 pt dedans.
-    float outer = exp(-(d + 0.7) * (d + 0.7) / (2.0 * 0.30 * 0.30));
-    float inner = exp(-(d + 3.2) * (d + 3.2) / (2.0 * 0.34 * 0.34));
-    rgb += rimI * (inner + 0.50 * outer);
+    // UNE seule bordure, un dégradé collé au bord (comme le bouton du
+    // login) : la ligne interne du biseau lisait encore comme un contour.
+    float edge = exp(-(d + 1.4) * (d + 1.4) / (2.0 * 1.05 * 1.05));
+    rgb += rimI * 1.15 * edge;
+    // Le BLOOM CRÈME du coin : au ras du coin haut-gauche, la référence est
+    // crème (#FCF3CA, R-B +50) sur les 4-5 premiers points DEDANS — pas or.
+    // Ce n'est pas la ligne intérieure (elle est à d=-3,2, σ 0,34 : morte à
+    // d=-2) : c'est un voile blanc qui LONGE l'arête. Posé dans le trait, il
+    // ne faisait rien — il lui fallait son propre profil en profondeur.
+    float spark = 0.91 * exp(-dot(q, q) / 392.0);
+    float cornerGlow = exp(-(d + 2.0) * (d + 2.0) / 3.92);
+    rgb += (1.0 - exp(-spark * kCold)) * cornerGlow;
 
-    // ---- Le halo DEHORS : 15/255 au ras du bord, éteint à 30 pt. Minuscule.
-    float outD = max(d, 0.0);
-    float glow = 2.7 * exp(-outD / 4.0) * exp(-dw / 45.0);
-    rgb += (1.0 - exp(-glow * 3.0 * kWarm)) * (1.0 - inside);
+    // ---- RIEN NE SORT DE LA CARTE. La référence a bien un petit halo dehors
+    // (15/255 au ras du bord, éteint à 30 pt) et il était reproduit ; Kathryn
+    // l'a fait retirer — sur la home, posé sur un fond qui n'est pas le noir
+    // absolu du banc, il se lisait comme une ombre portée sale. La lumière
+    // s'arrête donc net au bord, et l'alpha ne vaut plus que l'intérieur.
 
     // Dither : un demi-niveau. Sans lui, un dégradé à 4 % bande atrocement.
     rgb += (ohash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5)
            * (1.0 / 255.0);
     rgb = clamp(rgb, 0.0, 1.0);
 
-    // Dedans : opaque. Dehors : seule la lumière existe — pas d'ombre portée,
-    // la page reste #000000.
-    float lum = max(max(rgb.r, rgb.g), rgb.b);
-    float a = clamp(max(inside, lum * 1.8), 0.0, 1.0);
+    // Dedans : opaque. Dehors : RIEN — pas un pixel, pas une ombre.
+    rgb *= inside;
+    float a = inside;
     return half4(half3(min(rgb, float3(a))), half(a));      // prémultiplié
 }

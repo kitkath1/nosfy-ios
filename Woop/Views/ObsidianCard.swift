@@ -1,4 +1,32 @@
 import SwiftUI
+import UIKit
+
+// MARK: - Le toucher : le spot s'ouvre
+
+/// À poser sur le Button qui enveloppe `ObsidianGlassCard`. Le faisceau froid
+/// GROSSIT sous le doigt (+26 % en long, +34 % en large, +30 % d'amplitude), et
+/// la main doit sentir la même chose : pas un clic, un GONFLEMENT. D'où deux
+/// impacts très rapprochés, faible puis fort — un seul impact, même appuyé, se
+/// lit comme un interrupteur ; deux à 90 ms se lisent comme une ouverture.
+/// Au relâchement, un seul toucher léger : le spot se referme, il ne claque pas.
+struct ObsidianCardPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .environment(\.objectiveCardPressed, configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                let gen = UIImpactFeedbackGenerator(style: .soft)
+                gen.prepare()
+                if pressed {
+                    gen.impactOccurred(intensity: 0.35)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) {
+                        gen.impactOccurred(intensity: 0.75)
+                    }
+                } else {
+                    gen.impactOccurred(intensity: 0.30)
+                }
+            }
+    }
+}
 
 // MARK: - Carte « obsidienne » — le doublon de travail
 
@@ -14,9 +42,11 @@ private struct ObsidianSurface: View {
     var lit: Bool
     var paused: Bool
 
-    /// Marge de débordement : le bloom chaud et l'ombre portée vivent DEHORS,
-    /// en alpha. Large, parce que la source est franchement hors carte.
-    static let pad: CGFloat = 90
+    /// Marge de débordement. Elle valait 90 pt tant que le halo vivait dehors ;
+    /// depuis que la lumière s'arrête net au bord, il ne reste qu'à loger
+    /// l'antialiasing du liseré. 6 pt suffisent, et la texture rendue passe de
+    /// 542×355 à 374×187 points — moitié moins de pixels à chaque image.
+    static let pad: CGFloat = 6
 
     @State private var animStart: Date = .distantPast
     @State private var wasLit = false
@@ -69,12 +99,11 @@ struct ObsidianGlassCard<Content: View>: View {
     @State private var onScreen = true
 
     private var paused: Bool { !onScreen || reduceMotion }
-    /// 27 pt — MESURÉ sur la référence (ajustement de cercle sur la crête
-    /// spéculaire des trois coins non cramés : 25,2 / 25,5 / 24,8 pt, méthode
-    /// diagonale 27,4 pt). Le brief annonçait 36-42 pt : la référence dit non,
-    /// et c'est elle qui gagne. À 38 pt le coin mordait si loin que le bord
-    /// haut n'existait plus dans les 25 premiers points.
-    private let cornerRadius: CGFloat = 27
+    /// La référence mesurait 27 pt (cercle ajusté sur la crête spéculaire des
+    /// trois coins non cramés). Kathryn l'a trouvé trop rond une fois la carte
+    /// dans l'app : descendu à 20 pt à sa demande (31/07) — son œil gagne sur
+    /// la mesure.
+    private let cornerRadius: CGFloat = 20
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
