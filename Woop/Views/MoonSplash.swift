@@ -105,7 +105,7 @@ struct MoonSplashBeat {
     // recouvrement devient confortable, et le plan cesse d'être saccadé même
     // si la cadence flanche.
     static let ignite = 1.00
-    static let travel = 7.00
+    static let travel = 9.00
     static let boom = 1.70
     static let flight = 1.70
     static var total: Double { ignite + travel + boom + flight }
@@ -116,7 +116,7 @@ struct MoonSplashBeat {
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
     /// dorée, le fil de plasma, le grain du dépoli.
-    static let closeZoom: Float = 11
+    static let closeZoom: Float = 10
 
     /// LE TRAVELLING RECULE À ×6,5, ET C'EST UN CHOIX DE MISE EN SCÈNE, PAS
     /// UNE ÉCONOMIE. À ×11 le cadre montre 36 points de scène de large sur un
@@ -125,7 +125,13 @@ struct MoonSplashBeat {
     /// parcourt les lignes de la lune » — ne se lit plus. À ×6,5 le cadre en
     /// montre 60 sur 108 : la courbe se lit, le tube fait encore 15 pt de
     /// large, et le sujet redevient identifiable.
-    static let travelZoom: Float = 5.5
+    /// ON RESTE PRÈS. Le plan recule de ×10 à ×7,5 seulement : à ×5,5 on
+    /// prenait du recul, mais on perdait l'intimité de la matière — et
+    /// c'était payé en vitesse de défilement. À ×7,5 sur neuf secondes,
+    /// l'image n'avance plus que de 5,4 points entre deux vues pour un tube
+    /// qui en fait 17 de large : trois fois plus de recouvrement qu'il n'en
+    /// faut, et le sujet reste gros dans le cadre.
+    static let travelZoom: Float = 7.5
 
     /// LE CADRAGE EST DÉCENTRÉ, en fractions d'écran. Le point suivi ne se
     /// pose pas au milieu : il vit dans le tiers gauche, un peu au-dessus de
@@ -157,12 +163,7 @@ struct MoonSplashBeat {
     ///
     /// La dérivée du retard (0,048 × 3 × 2π × 0,5 ≈ 0,45) reste sous la vitesse
     /// de base du plan (≈ 1 à 1,5) : la caméra ralentit, elle ne recule jamais.
-    private static let cometLead: Float = 0.038
-    /// UNE seule respiration sur les sept secondes. À deux cycles, la caméra
-    /// changeait de régime quatre fois — encore du rubato, encore des
-    /// à-coups. Une seule houle, très longue : la comète prend le large dans
-    /// la première moitié du plan, le mouvement la reprend dans la seconde.
-    private static let leadCycles: Float = 1
+    private static let cometLead: Float = 0.05
 
     /// `shaderClock` : l'horloge que l'hôte donne au shader (temps absolu
     /// modulo 900 s, ou la valeur figée). Elle sert à RENDRE LA COMÈTE au
@@ -193,12 +194,15 @@ struct MoonSplashBeat {
             let pIgnite = clamp01(t / ignite)
             b.reveal = Float(smoothstep(pIgnite))
             let pTravel = clamp01((t - tTravel) / travel)
-            // La comète, elle, avance sans jamais se retourner.
-            let sComet = arc(at: eased(Float(pTravel)))
-            // La caméra la laisse filer, puis la rattrape.
-            let lag = cometLead * 0.5
-                * (1 - cos(Float(pTravel) * 6.2831 * leadCycles))
-            sCam = arc(at: max(eased(Float(pTravel)) - lag, 0))
+            // La caméra avance à vitesse RIGOUREUSEMENT constante.
+            sCam = arc(at: eased(Float(pTravel)))
+            // La comète va un peu plus vite — d'un facteur constant, jamais
+            // d'une oscillation : elle DÉRIVE régulièrement vers l'avant du
+            // cadre au lieu d'y osciller. Sur les sept secondes elle prend
+            // 0,05 d'abscisse, soit 137 points d'écran : on la voit
+            // franchement gagner du terrain, sans que rien ne change de
+            // régime.
+            let sComet = eased(Float(pTravel)) * (1 + cometLead)
             // L'allumage POUSSE : on entre dans le tube, on ne s'en retire
             // pas. (Il partait de ×15 pour finir à ×13 — un travelling
             // arrière de 13 % sous un commentaire qui promettait l'inverse.)
@@ -209,9 +213,14 @@ struct MoonSplashBeat {
             // respiration sinusoïdale : un travelling arrière continu est ce
             // qu'il y a de plus calme à regarder, et le boom n'a plus qu'à
             // prolonger un geste déjà commencé.
+            // Le recul est LINÉAIRE lui aussi — mais en OCTAVES, pas en
+            // points : un travelling arrière se perçoit multiplicativement,
+            // et interpoler le grossissement à plat donnerait un mouvement qui
+            // ralentit visiblement vers la fin.
             zoom = t < tTravel
-                ? mix(closeZoom * 0.82, closeZoom, Float(smoothstep(pIgnite)))
-                : mix(closeZoom, travelZoom, Float(smoothstep(pTravel)))
+                ? exp(mix(log(closeZoom * 0.82), log(closeZoom),
+                          Float(smoothstep(pIgnite))))
+                : exp(mix(log(closeZoom), log(travelZoom), Float(pTravel)))
             target = sceneTarget(arc: sCam)
             b.cineCtl.w = MoonPath.angle(at: sComet)
             b.solo = 1        // le pavé n'existe pas encore
@@ -344,7 +353,13 @@ struct MoonSplashBeat {
     /// coup de fouet qu'on entendait au raccord. Le smoothstep pur pointe à
     /// 1,5× la vitesse moyenne, ce que les ralentissements de la courbe
     /// absorbent sans peine.
-    /// La rampe du chariot, en 18 % de la course.
+    /// LE PLAN EST LINÉAIRE, point. Pas de rampe, pas de ralenti, pas de
+    /// rubato : la caméra part à sa vitesse de croisière et n'en change plus
+    /// jusqu'au boom. Toute inflexion que j'avais écrite — rampes d'entrée et
+    /// de sortie, freinages dans les virages, houle de la comète — se lisait
+    /// comme un défaut de MACHINE et non comme une intention. Un travelling
+    /// qui ne change jamais de régime ne peut pas donner l'impression de
+    /// hoqueter.
     private static let ramp: Float = 0.18
 
     /// LE PROFIL D'UN VRAI TRAVELLING : on lance, ON TIENT, on arrête. La
@@ -360,18 +375,7 @@ struct MoonSplashBeat {
     /// Intégrale de la rampe en smoothstep : ∫₀¹ u²(3−2u) du = ½, d'où une
     /// course totale de (1 − r) et la normalisation ci-dessous.
     private static func eased(_ p: Float) -> Float {
-        let r = ramp
-        let total = 1 - r
-        let x = min(max(p, 0), 1)
-        if x <= r {
-            let u = x / r
-            return (r * (u * u * u - u * u * u * u * 0.5)) / total
-        }
-        if x >= 1 - r {
-            let w = (1 - x) / r
-            return (total - r * (w * w * w - w * w * w * w * 0.5)) / total
-        }
-        return (r * 0.5 + (x - r)) / total
+        min(max(p, 0), 1)
     }
 
     /// Progression [0,1] → abscisse curviligne [0,1]. La caméra RALENTIT aux
@@ -393,10 +397,11 @@ struct MoonSplashBeat {
         // cornes) sans jamais donner l'impression d'un arrêt. Les fenêtres
         // s'élargissent aussi : un freinage court est un à-coup, un freinage
         // long est une respiration.
-        let stops: [(c: Float, amp: Float, w: Float)] = [
-            (L.horn1, 0.45, 0.075), (L.horn2, 0.45, 0.075),
-            (L.kink1, 0.20, 0.055), (L.kink2, 0.20, 0.055),
-        ]
+        // AUCUN RALENTISSEMENT. Ce qu'il fallait arrondir, ce n'était pas la
+        // VITESSE aux virages, c'était le CHEMIN — voir `smoothTargets`.
+        // Freiner devant un coin ne supprime pas le coin, ça le souligne.
+        let stops: [(c: Float, amp: Float, w: Float)] = []
+        _ = L
         // Coût cumulé du parcours : ∫ (1 + Σ ralentissements) ds.
         let n = 2048
         var cost = [Float](repeating: 0, count: n + 1)
@@ -439,12 +444,67 @@ struct MoonSplashBeat {
     /// gyroscope amortis) : sans cette immobilité, la cible calculée ici et
     /// l'objet dessiné là-bas divergeraient d'un point ou deux, et à ×13 un
     /// point de scène fait treize points d'écran.
-    private static func sceneTarget(arc s: Float) -> SIMD2<Float> {
+    private static func rawSceneTarget(arc s: Float) -> SIMD2<Float> {
         let p = MoonPath.sample(at: s).position
         let f = MoonPath.facePoint(p, faceR: MoonLanding.faceR,
                                    moonPlace: SIMD3(0.5, 0.485, 0.71))
         return MoonPath.scenePoint(face: f, yaw: 0.2450, pitch: -0.0698,
                                    faceR: MoonLanding.faceR)
+    }
+
+    /// LE CHEMIN DE LA CAMÉRA, LISSÉ — et c'est LA correction qui manquait.
+    ///
+    /// Le contour du croissant a deux COINS : aux cornes, la tangente tourne
+    /// de 160° en un point. Une caméra qui suit ce contour au trait près voit
+    /// donc sa direction de déplacement s'inverser d'une image à l'autre. À
+    /// vitesse constante c'est un COUP DE FOUET ; en freinant, c'est un ARRÊT.
+    /// Aucune cadence d'affichage ne rattrape un chemin qui a des coins — on
+    /// peut monter à mille images par seconde, le pli reste un pli.
+    ///
+    /// Un chariot de cinéma ne colle jamais au sujet au millimètre : il GLISSE
+    /// et coupe les angles, le sujet dérive un peu dans le cadre aux virages,
+    /// et c'est exactement ce qui rend le mouvement soyeux. On convolue donc
+    /// le chemin par une gaussienne d'écart-type 0,022 d'abscisse — 9 points
+    /// de scène, soit 52 points d'écran à ×5,5. Aux cornes, la caméra passe
+    /// au large et le tube vient lui rendre visite ; ailleurs (les raccords
+    /// sont quasi G1, moins de 5° de virage) elle reste sur le tracé au point
+    /// près.
+    ///
+    /// Le noyau est CIRCULAIRE : le contour est fermé, il n'y a pas de bord.
+    private static let smoothTargets: [SIMD2<Float>] = {
+        let n = 1024
+        let sigma: Float = 0.022
+        var raw = [SIMD2<Float>](repeating: .zero, count: n)
+        for i in 0..<n { raw[i] = rawSceneTarget(arc: Float(i) / Float(n)) }
+
+        let half = Int((sigma * 3 * Float(n)).rounded())
+        var w = [Float](repeating: 0, count: 2 * half + 1)
+        var wsum: Float = 0
+        for k in -half...half {
+            let x = Float(k) / Float(n) / sigma
+            let g = exp(-0.5 * x * x)
+            w[k + half] = g
+            wsum += g
+        }
+
+        var out = [SIMD2<Float>](repeating: .zero, count: n)
+        for i in 0..<n {
+            var acc = SIMD2<Float>.zero
+            for k in -half...half {
+                acc += raw[((i + k) % n + n) % n] * w[k + half]
+            }
+            out[i] = acc / wsum
+        }
+        return out
+    }()
+
+    private static func sceneTarget(arc s: Float) -> SIMD2<Float> {
+        let n = smoothTargets.count
+        let x = (s - s.rounded(.down)) * Float(n)
+        let i = Int(x) % n
+        let j = (i + 1) % n
+        let f = x - x.rounded(.down)
+        return smoothTargets[i] + (smoothTargets[j] - smoothTargets[i]) * f
     }
 
     // MARK: Petites fonctions
@@ -595,6 +655,14 @@ struct MoonSplashView: View {
                         let px: CGFloat = b.lowRes ? 0.5 : 1
                         let buf = CGSize(width: size.width * px,
                                          height: size.height * px)
+                        // LA TOILE N'EXISTE PAS TANT QUE LE DÉCOR N'EST PAS
+                        // PRÊT. Le garde `armed` ne suffisait pas : la toile
+                        // était CONSTRUITE au premier passage du corps, donc
+                        // elle touchait `MoonSDF.image` — et le fil principal
+                        // entrait dans son verrou — avant même que `.task` ait
+                        // eu la parole. Suspendre l'horloge n'empêche pas
+                        // d'évaluer le contenu une première fois.
+                        if armed || Self.freeze != nil {
                         MonolithCanvas(size: buf, t: clock,
                                        reveal: b.reveal,
                                        faceR: MoonLanding.faceR,
@@ -609,6 +677,7 @@ struct MoonSplashView: View {
                             .frame(width: size.width, height: size.height,
                                    alignment: .topLeading)
                             .ignoresSafeArea()
+                        }
                     }
                 }
 
@@ -640,6 +709,7 @@ struct MoonSplashView: View {
             // quelques dizaines de millisecondes, et on ne les paie pas sur
             // la première image du plan.
             RocketHaptics.shared.prepare()
+            MoonTheme.shared.prepare()
             guard Self.freeze == nil else { return }
             if reduceMotion {
                 try? await Task.sleep(for: .seconds(1.2))
@@ -657,6 +727,8 @@ struct MoonSplashView: View {
             }
             start = Date()
             armed = true
+            // L'image, le grondement et la musique partent SUR LA MÊME LIGNE.
+            MoonTheme.shared.play()
             RocketHaptics.shared.launch(ignite: MoonSplashBeat.ignite,
                                         travel: MoonSplashBeat.travel,
                                         boom: MoonSplashBeat.boom,
