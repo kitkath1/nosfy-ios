@@ -94,9 +94,15 @@ static float4 lmStreak(float2 pC, float faceR) {
     float alongS = dot(pC, SDIR);
     float across1 = dot(pC, SNRM) + faceR * 0.627;
     float across2 = across1 + faceR * 0.660;
-    float aN = alongS / 118.0, aM = alongS / 92.0;
-    float env1 = exp(-aN * aN) + 0.22 * exp(-fabs(alongS) / 78.0);
-    float env2 = exp(-aM * aM) + 0.16 * exp(-fabs(alongS) / 62.0);
+    // L'ENVELOPPE SE RACCOURCIT ET SE FOND. À sigma 118 avec une queue
+    // exponentielle à 22 %, les raies couraient sur 600 pt : deux barres
+    // parallèles nettes en travers de l'écran, donc deux traits de crayon.
+    // Une raie d'objectif NAÎT et MEURT dans le voisinage de sa source. À 68
+    // et 54, elles tiennent dans une largeur et demie de pavé, et la queue
+    // tombe à 8 % pour que l'extinction soit un fondu et non une coupure.
+    float aN = alongS / 68.0, aM = alongS / 54.0;
+    float env1 = exp(-aN * aN) + 0.08 * exp(-fabs(alongS) / 40.0);
+    float env2 = exp(-aM * aM) + 0.06 * exp(-fabs(alongS) / 32.0);
     float s1 = (exp(-across1 * across1 / (0.80 * 0.80))          // 1,33 pt à mi-hauteur
               + 0.22 * exp(-across1 * across1 / (4.80 * 4.80)))  // jupe, 8,0 pt
              * env1;
@@ -413,13 +419,52 @@ static float lmStars(float2 pos, float t) {
     // sort encore 253/253/253, il ne vire jamais au jaune délavé.
     float coreG = exp(-dPt * dPt / (0.82 * 0.82));
     float flankG = exp(-dAbs / 1.15);
-    float tubeE = (8.5 * coreG + 0.34 * flankG) * tubeMod * neonGain;
+    // 3,4 et non 8,5 : LE PIÈGE DU FILMIQUE. À énergie élevée, 1-exp(-1.35·E)
+    // écrête TOUS les canaux, donc toute couleur devient blanche quelle que
+    // soit sa teinte — à 8,5 même un orange pur sortait 250/246/234, soit
+    // 10 273 pixels quasi blancs et 0,06 de saturation. Tant que le tube
+    // portait seul le blanc, il fallait cette énergie ; maintenant que le FIL
+    // DE PLASMA s'en charge, le tube peut redescendre et rester DORÉ. Mesure
+    // à l'envers pour la cible (255, 165, 60) : E = (3,4 ; 0,92 ; 0,24).
+    float tubeE = (3.4 * coreG + 0.34 * flankG) * tubeMod * neonGain;
     // La couleur suit l'ÉNERGIE, pas la géométrie : les seuils se recalent
     // tout seuls sur le tube rétréci (le blanc démarre à |dPt| = 0,79 pt).
-    float3 tubeC = mix(float3(1.00, 0.40, 0.07), float3(1.00, 0.83, 0.46),
-                       smoothstep(0.9, 3.0, tubeE));
-    tubeC = mix(tubeC, float3(1.00, 0.97, 0.92), smoothstep(3.0, 5.6, tubeE));
+    // La rampe vers le blanc est SUPPRIMÉE. C'est elle qui délavait le tube :
+    // elle éclaircissait la couleur au moment précis où le filmique
+    // l'écrêtait déjà, et les deux effets se cumulaient. Le tube reste dans
+    // la famille orange→or sur toute sa course ; le blanc n'appartient plus
+    // qu'au fil de plasma, ce qui EST la structure de la référence — une
+    // paroi dorée, un cœur blanc.
+    float3 tubeC = mix(float3(1.00, 0.30, 0.045), float3(1.00, 0.45, 0.135),
+                       smoothstep(0.6, 2.4, tubeE));
     tubeC *= float3(1.0, 1.0 + 0.015 * tempo, 1.0 + 0.030 * tempo);
+
+    // ---- LE FIL DE PLASMA : le DOUBLET. C'est ce que montre la référence et
+    // qu'un tube simple ne peut pas produire — dans un vrai néon, le gaz qui
+    // brille est plus ÉTROIT que le verre qui le contient. On lit donc, de
+    // l'extérieur vers l'intérieur : l'arête du verre, un court retrait plus
+    // sombre, un fil très fin et plus blanc, puis le dépoli. Ce n'est pas
+    // « plus de lumière » : c'est une DISCONTINUITÉ DE PLUS, et c'est elle
+    // qui fait lire un objet à trois couches au lieu d'un trait qui s'élargit.
+    //
+    // Le fil vit à 2,10 pt DEDANS, donc il s'éteint tout seul là où le
+    // croissant est plus mince que ça — la pointe de la queue se pince
+    // exactement comme sur la photo, sans le moindre cas particulier.
+    // Sigma 0,34 pt = 0,57 pt à mi-hauteur = 1,7 px à 3x : le demi-pixel
+    // demandé. Une gaussienne, jamais un step : rien à anticréneler.
+    //
+    // Il porte SA PROPRE inégalité, à une autre échelle et une autre dérive
+    // que celle du tube : le gaz vit dans un verre immobile. Deux champs
+    // synchronisés auraient refait un seul trait, simplement plus épais.
+    float2 drFil = float2(3.7 * sin(PH * 3.0 * t + 1.7),
+                          2.9 * cos(PH * 2.0 * t + 0.3));
+    float accFil = lmFbm(uv * 7.0 + drFil);
+    // Plancher 0,58 : le plasma d'un néon hésite, il ne se coupe jamais.
+    float filMod = 0.58 + 0.80 * accFil * accFil;
+    float filD = dIn - 2.10;
+    float filE = 4.2 * exp(-filD * filD / (0.34 * 0.34)) * filMod * neonGain;
+    // Plus BLANC que l'arête : c'est le cœur, pas la paroi.
+    float3 filC = float3(1.00, 0.93, 0.82);
 
     // ---- LE VERRE DÉPOLI : QUATRE CHAMPS SÉPARÉS. Un seul champ ne peut
     // pas porter à la fois la COUVERTURE (où est le verre) et le MODELÉ
@@ -448,7 +493,10 @@ static float lmStars(float2 pos, float t) {
         // gaussienne NÉGATIVE de 1,63 pt à mi-hauteur centrée à 1,95 pt du
         // contour — 0,8 pt au-delà de la demi-largeur du tube, elle mord donc
         // pile à la jonction et nulle part ailleurs.
-        float groove = 1.0 - 0.58 * exp(-(dIn - 1.95) * (dIn - 1.95) / (0.98 * 0.98));
+        // Le creux se REPLACE : à 1,95 pt il s'étalait de 1,0 à 2,9 pt et
+        // avalait le fil de plasma qui vit à 2,10. Il doit être le RETRAIT
+        // ENTRE l'arête et le fil, donc plus près du bord et plus serré.
+        float groove = 1.0 - 0.42 * exp(-(dIn - 1.15) * (dIn - 1.15) / (0.55 * 0.55));
         // L'amplitude 0,82 sort d'une INVERSION EXACTE de la chaîne
         // (c1 = (c2+√(c2²+0,034c2))/2 puis E = −ln(1−c1)/1,35), balayée sur
         // l'histogramme RÉEL des profondeurs : ventre L = 105,5, 100 % des
@@ -629,30 +677,39 @@ static float lmStars(float2 pos, float t) {
         // pointe des coins, et pas de saut d'un pixel à l'autre.
         float thick = max(dF - dSil, 0.75);
         float sD = saturate(dF / thick);          // 0 = arête avant, 1 = bord extérieur
-        // Décroissance vers l'arrière à PLANCHER HAUT : à 0,35 le fond de
-        // tranche tombait à 22/255 juste sous le liseré — une marche de 9:1
-        // qui relit comme une rainure.
-        float band = 0.46 + 0.54 * pow(1.0 - sD, 0.60);
-        // Le chant GAUCHE voit le ventre du croissant et reçoit la softbox en
-        // RASANCE ; la v4 pondérait l'inverse (0,052 en haut, 0,020 à gauche).
+        // DU MÉTAL NOIR OÙ GLISSE UN REFLET, pas un aplat brun. Le brun
+        // uniforme lisait « carton peint » : un chant, c'est une surface
+        // presque noire sur laquelle COURT l'image d'une source. C'est le
+        // reflet qui fabrique la matière, jamais la teinte de fond — et le
+        // fond doit rester noir pour que le reflet ait quelque chose à
+        // trancher. On avait corrigé « la tranche est un fossé » en la
+        // peignant en brun ; la vraie réponse était de l'éclairer, pas de la
+        // teinter.
+        float base = 0.014 * (1.0 - 0.42 * sD);
+        // LE REFLET : une bande spéculaire étroite dont la hauteur sur le
+        // chant DÉPEND DU LACET. Quand le doigt tourne l'objet, elle balaie
+        // la tranche — c'est ce balayage qui prouve que la surface est
+        // réfléchissante et non peinte. Sinus du lacet : le reflet revient,
+        // il ne file pas à l'infini.
+        float mPos = 0.36 + 0.30 * sin(yaw * 2.1) + 0.045 * sin(PH * 13.0 * t + 0.9);
+        float md = (sD - mPos) / 0.150;
+        // Une pièce a PLUSIEURS sources : une seule bande relit encore comme
+        // un aplat rayé. La seconde est plus faible, plus fine, plus loin.
+        float md2 = (sD - mPos - 0.40) / 0.085;
+        float mirror = exp(-md * md) + 0.30 * exp(-md2 * md2);
+        // Le chant GAUCHE reçoit la softbox en RASANCE : c'est lui qui porte
+        // le reflet, le haut n'en attrape qu'un filet.
         float graz = pow(saturate(-nF.x), 1.3);
-        float fb = (0.030 + 0.175 * graz
-                          + 0.050 * saturate(-nF.y)
-                          + 0.060 * saturate(nF.y)) * band;
-        // LISSE. 7,4·faceR = 562 cellules sur 550,6 pt de périmètre =
-        // 1,02 cycle/pt à ±42,5 % : des poils visibles, donc « matériau
-        // rapporté », donc cadre. 1,6·faceR = 122 cellules = 0,22 cycle/pt
-        // (5,7× sous la limite maison) à ±7 % : une lente inégalité de laque.
+        float spec = mirror * (0.040 + 0.150 * graz + 0.055 * saturate(-nF.y));
+        // Le grain reste : 1,6·faceR = 0,22 cycle/pt, 5,7× sous la limite.
         float chant = lmNoise(float2(lmArc(pM, b, rc) * 1.6 * faceR, sD * 2.2)) - 0.5;
-        fb *= max(0.0, 1.0 + chant * 0.14);
-        // Brun chaud FRANC (R:B = 3,8), un peu plus rouge vers l'arrière —
-        // un dégradé de chanfrein. L'ancien mix partait d'un BLEU (0,94/0,97/
-        // 1,05) et n'y versait que 30 % de chaud : R:B = 1,18, le gris mesuré.
-        // Le pilotage par bloomE est retiré : à 60 pt du croissant il valait
-        // 4·10⁻⁴, la tranche virait au bleu-gris dès qu'on s'éloignait.
-        flankCol = fb * mix(float3(1.00, 0.55, 0.26), float3(1.00, 0.44, 0.17), sD);
-        // → gauche : arête (60, 34, 16), milieu (50, 25, 10), bord ext (29, 12, 4)
-        //   teinte 20-25°, saturation 0,74-0,86. AUCUN pixel sous la laque.
+        spec *= max(0.0, 1.0 + chant * 0.22);
+        // BICHROME comme l'arête : le reflet est BLANC (le studio) ; la
+        // chaleur n'apparaît que là où le néon peut réellement l'atteindre,
+        // c'est-à-dire par le bas et près du croissant.
+        float warmF = saturate(0.05 + 0.80 * pow(saturate(nF.y), 3.0) + 1.7 * bloomE);
+        float3 cRefl = mix(float3(0.88, 0.94, 1.06), float3(1.00, 0.56, 0.22), warmF);
+        flankCol = float3(base) * float3(0.95, 0.97, 1.06) + cRefl * spec;
     }
 
     // ---- L'ARÊTE : le trait clair qui SÉPARE le chant de la face. C'est
@@ -679,6 +736,24 @@ static float lmStars(float2 pos, float t) {
         //   une marche NETTE entre le chant à 60/255 et la face à 30/255.
     }
 
+    // ---- LE BISEAU. La V4 avait un bord LARGE et doux : il lisait comme un
+    // chanfrein, une matière qui tourne. La v5 l'a réduit à un filet net pour
+    // tuer la bande morte — et a jeté la douceur avec l'eau du bain. La
+    // référence a les DEUX : un filet FIN posé sur un dégradé de quelques
+    // points. La règle qui évite de refabriquer le cadre : ce terme AJOUTE
+    // toujours de la lumière, il n'en retire jamais. Une tombée d'arête
+    // (mix vers 0,78) creusait un fossé plus sombre que la face ; un biseau
+    // qui s'allume, lui, arrondit le bord au lieu de l'encadrer.
+    float3 bevelCol = float3(0.0);
+    if (faceMask > 0.0 && dF > -8.0) {
+        float bv = exp(-max(-dF, 0.0) / 2.7);
+        float bAmp = 0.058 * bv * (0.22 + 0.78 * saturate(dot(nF, KEY)));
+        // Bichrome lui aussi, pour la même raison que le filet.
+        float bWarm = saturate(0.10 + 2.4 * bloomE + 0.55 * saturate(nF.y));
+        bevelCol = mix(float3(0.86, 0.93, 1.06), float3(1.00, 0.52, 0.18), bWarm)
+                 * (bAmp * faceMask);
+    }
+
     // ---- LE FILET : 1 pt, orange, avec un point chaud qui VOYAGE le long
     // du périmètre. Sigma 0,55 pt → 1,3 pt à mi-hauteur : un trait, pas un
     // liseré. Le point chaud est un reflet : quand le doigt tourne l'objet,
@@ -702,8 +777,19 @@ static float lmStars(float2 pos, float t) {
         // C'est elle qui alimente la flaque, et c'est l'écart n°6 de la
         // fiche. Exposant 4 : le bas s'allume, le bas-DROITE reste éteint.
         float leak = pow(saturate(nF.y), 4.0) * (0.55 + 0.45 * saturate(-nF.x));
+        // L'ARÊTE ARRIÈRE N'EST PAS UNE SOURCE, C'EST UN MIROIR. Le terme de
+        // flanc gauche à 0,30 posait un trait orange continu tout le long du
+        // bord arrière : saturé, d'épaisseur constante, il lisait comme un
+        // contour DESSINÉ. Une arête vue de trois quarts ne fait que renvoyer
+        // ce qu'il y a autour d'elle — et autour, c'est du noir. Elle doit
+        // donc être PAUVRE et INÉGALE : 0,12 de socle, et une modulation
+        // lente le long de l'abscisse qui la fait respirer au lieu de courir
+        // d'un trait. La lumière franche reste au haut-gauche (la softbox) et
+        // au bas (la fuite du néon), là où il y a vraiment quelque chose à
+        // réfléchir.
+        float backBreak = 0.62 + 0.38 * lmNoise(float2(s01 * 9.0, 3.1));
         float seat = 0.055 + 0.50 * wrap
-                   + 0.30 * pow(saturate(-nF.x), 1.6)
+                   + 0.12 * pow(saturate(-nF.x), 1.6) * backBreak
                    + 0.52 * leak;
         // → gauche 0,745 · coin HG 0,664 · haut 0,543 · BAS 0,341 ·
         //   bas-droite 0,126 · droite 0,055 (rapport vif/éteint 13:1)
@@ -741,7 +827,20 @@ static float lmStars(float2 pos, float t) {
         // 0,50 en G donnait (207,148,51) : teinte 38°, ambre pâle. 0,42 sort
         // (203,124,36) : teinte 32°, saturation 0,82 — l'orange FRANC de la
         // référence, et toujours au-dessus du seuil de brun (R/G = 1,63).
-        float3 cWarm = float3(1.00, 0.42, 0.10);
+        // L'ARÊTE EST BICHROME — et c'est LA raison pour laquelle un orange
+        // uniforme lisait « faux ». Dans la référence, le tour de l'objet est
+        // partagé par DEUX sources de température différente : la softbox du
+        // studio, blanche et froide, qui frappe le haut et la droite ; le
+        // néon, chaud, qui rebondit sur le biseau à gauche et en bas. Une
+        // seule teinte modulée en intensité ne lit pas comme une géométrie
+        // ÉCLAIRÉE — elle lit comme un contour DESSINÉ par-dessus l'objet.
+        // La chaleur suit donc ce que le néon peut réellement atteindre :
+        // le flanc gauche, la fuite du chanfrein bas, et le glare local.
+        float warmth = saturate(0.08 + 0.60 * pow(saturate(-nF.x), 1.3)
+                                     + 0.80 * leak + 2.2 * bloomE);
+        float3 cWarm = mix(float3(0.82, 0.90, 1.06),   // le studio
+                           float3(1.00, 0.42, 0.10),   // le néon
+                           warmth);
         float3 cHot = float3(1.00, 0.94, 0.86);
         // Seuils recalés sur la nouvelle échelle (max 1,21 au repos, 3,4 au
         // noyau) : le filet au repos reste 100 % ORANGE et SEUL le noyau du
@@ -760,10 +859,12 @@ static float lmStars(float2 pos, float t) {
     // tiers supérieur du bord vertical) et +67,7 au croisement de l'arête
     // HAUTE : la porte sépare proprement les deux. La v4 fleurissait aux
     // deux — deux étoiles, aucune au bon endroit.
-    float3 streakCol = float3(1.00, 0.72, 0.34) * ((0.32 * sq.x + 0.109 * sq.y) * neonGain);
+    // Et elles s'effacent : 0,32 → 0,21. Une raie d'objectif est un ARTEFACT,
+    // elle ne doit jamais rivaliser avec le sujet qui la produit.
+    float3 streakCol = float3(1.00, 0.72, 0.34) * ((0.21 * sq.x + 0.070 * sq.y) * neonGain);
     if (fabs(dSil) < 12.0) {
-        float aN = sq.z / 118.0;
-        float env1 = exp(-aN * aN) + 0.22 * exp(-fabs(sq.z) / 78.0);
+        float aN = sq.z / 68.0;
+        float env1 = exp(-aN * aN) + 0.08 * exp(-fabs(sq.z) / 40.0);
         float core1 = exp(-sq.w * sq.w / (0.80 * 0.80));
         float leftGate = smoothstep(10.0, -35.0, sq.z)
                        * smoothstep(0.05, -0.35, nF.x);   // normale tournée à gauche
@@ -861,8 +962,8 @@ static float lmStars(float2 pos, float t) {
     // Le voile a disparu : il est DANS faceCol, mélangé à la laque et non
     // ajouté par-dessus. L'arête s'ajoute au corps — elle est déjà fenêtrée
     // par hasFlank et se fera occulter par bodyCov comme le reste.
-    float3 body = faceCol * faceMask + flankCol * flankMask + areteCol
-                + tubeC * tubeE * faceMask;
+    float3 body = faceCol * faceMask + flankCol * flankMask + areteCol + bevelCol
+                + (tubeC * tubeE + filC * filE) * faceMask;
     E = mix(E, body, bodyCov);
     // Le bloom et les raies restent additionnés APRÈS : un glare d'objectif
     // est DEVANT l'objet, aucun verre ne l'atténue.
