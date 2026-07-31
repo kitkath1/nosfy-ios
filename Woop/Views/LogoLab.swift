@@ -109,6 +109,9 @@ struct MonolithScene: View {
     /// travelling du splash, lui, EXIGE 60 — voir MoonSplash.swift, où le
     /// calcul est fait.
     var fps: Double = 30
+    /// À 1, le pavé disparaît : il ne reste que le croissant de néon dans le
+    /// noir. L'état du travelling du splash.
+    var soloNeon: Float = 0
 
     /// `-logoDebugSDF` : affiche la LUT du croissant au lieu de la scène —
     /// le seul moyen de voir ce que le GPU LIT vraiment.
@@ -186,7 +189,7 @@ struct MonolithScene: View {
                         .float3(0.5, 0.485, 0.71),
                         .float3(camera.x, camera.y, camera.z),
                         .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
-                        .float(edgeFade),
+                        .float(edgeFade), .float(soloNeon),
                         .image(MoonSDF.image))))
             }
         }
