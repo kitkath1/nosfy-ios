@@ -1,0 +1,208 @@
+import SwiftUI
+
+// MARK: - Banc d'essai (`-logoLab`)
+
+/// Page noire nue : le monolithe du logo seul — un pavé de laque noire vu de
+/// trois quarts, la lune du logo en tube de néon sur sa face, un filet
+/// orange qui court autour de l'arête, une raie anamorphique et une flaque
+/// de lumière au sol. Plein écran, et il TOURNE : le doigt le fait pivoter
+/// à droite et à gauche.
+///
+/// Sous-flags de capture (le pattern des bancs — figer l'état transitoire
+/// plutôt que taper au bon centième) :
+///   `-logoFreeze <t>` fige l'horloge du shader à t secondes (captures
+///   déterministes — les arguments `-clé valeur` tombent dans UserDefaults,
+///   même mécanique que `openTab`) ;
+///   `-logoYaw <rad>` fige la rotation manuelle (pour capturer l'objet
+///   tourné sans garder le doigt posé) ;
+///   `-logoBoost` fige la montée du néon à son pic (LE test du criard) ;
+///   `-logoSweep` fige le point chaud du filet à mi-course.
+struct LogoLab: View {
+    private static let freeze: Float? = UserDefaults.standard
+        .string(forKey: "logoFreeze").flatMap(Float.init)
+    private static let yaw: Float? = UserDefaults.standard
+        .string(forKey: "logoYaw").flatMap(Float.init)
+    private static let boost = CommandLine.arguments.contains("-logoBoost")
+    private static let sweep = CommandLine.arguments.contains("-logoSweep")
+
+    /// Prime sur `-logoFreeze` : les previews ne portent pas d'arguments.
+    var freezeOverride: Float? = nil
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            MonolithScene(freeze: freezeOverride ?? Self.freeze,
+                          yawOverride: Self.yaw,
+                          benchBoost: Self.boost ? 1.0 : nil,
+                          // 0,83 et non 0,5 : l'abscisse curviligne de lmArc
+                          // part du coin haut-gauche dans le sens horaire, et
+                          // l'ARÊTE VERTICALE GAUCHE — celle que la référence
+                          // veut vive, et où l'étoile fleurit — occupe
+                          // [0,750 ; 0,905]. À 0,5 le banc figeait le point
+                          // chaud au milieu du bord BAS : on capturait le seul
+                          // endroit qu'on ne cherchait pas à juger.
+                          benchSweep: Self.sweep ? 0.83 : nil)
+                .ignoresSafeArea()
+
+            // Le grain de la maison, MOITIÉ DOSE ici : le shader possède déjà
+            // son propre dither à 1,6/255, et toute la calibration de la scène
+            // vit sous 15/255 (halo 14,6 ; laque 10,6 ; fond médiane 0). Un
+            // grain à darkAlpha 0,028 = ±7/255 posé par-dessus noie le halo
+            // d'ambiance et fait sauter la métrique « ≥ 95 % des pixels du
+            // fond < 8/255 ». Leçon : quand le shader dithère lui-même, le
+            // grain d'hôte n'est plus une assurance, c'est du bruit.
+            WoopGrain(density: 0.018, lightAlpha: 0.014, darkAlpha: 0.013)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
+        .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - La scène
+
+/// L'hôte du shader `logoMonolith` : plein écran, 30 fps, horloge mod 900,
+/// PLEINE résolution — contrairement au ciel, tout le contenu signature est
+/// sub-pixel (filet de 1 pt, cœur du tube, poussière) et le coût est
+/// concentré sur une petite part de l'écran.
+///
+/// La rotation au doigt est une FONCTION PURE DU TEMPS : le glissement
+/// pendant le geste, puis une inertie amortie résolue analytiquement
+/// (v·(1−e^{−kt})/k), puis un retour doux au repos. Rien ne s'accumule par
+/// image — le TimelineView recalcule tout depuis les horodatages, comme la
+/// bouffée du cadran.
+struct MonolithScene: View {
+    var freeze: Float? = nil
+    /// Rotation manuelle figée (radians) — pour les captures.
+    var yawOverride: Float? = nil
+    var benchBoost: Float? = nil
+    var benchSweep: Float? = nil
+
+    /// `-logoDebugSDF` : affiche la LUT du croissant au lieu de la scène —
+    /// le seul moyen de voir ce que le GPU LIT vraiment.
+    fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
+
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealStart: Date = .now
+
+    /// L'état du geste — horodaté, jamais intégré par image.
+    @State private var dragging = false
+    @State private var yawAtGrab: Float = 0
+    @State private var yawLive: Float = 0
+    @State private var releaseAt: Date = .distantPast
+    @State private var releaseYaw: Float = 0
+    @State private var releaseVel: Float = 0
+
+    private var motion: SkyMotion { .shared }
+
+    /// Combien de radians par point glissé : ~0,43° par point, soit un
+    /// demi-tour de la fourchette utile sur 80 pt — le pavé suit le doigt
+    /// sans jamais partir en toupie.
+    private static let radPerPoint: Float = 0.0075
+    /// La borne. Elle NE CHANGE PAS — mais sa raison d'être a changé : la
+    /// silhouette est passée à six tranches (résidu radial mesuré contre une
+    /// référence à 161 tranches : 0,048 pt au repos, 0,266 pt à 34°, 0,705 pt
+    /// à cette butée, pour un seuil de visibilité de 0,333 pt = 1 px à 3x).
+    /// Trois tranches créneautaient dès 20° de lacet ; six tiennent jusqu'à
+    /// ~40°, et le reste est un transitoire tenu au doigt. On garde donc
+    /// toute la course du geste au lieu de la rogner.
+    private static let yawLimit: Float = 0.61
+    /// Amortissement de l'inertie (s⁻¹) et début du retour au repos.
+    private static let damping: Float = 2.2
+    private static let restDelay: Float = 1.8
+    private static let restFall: Float = 2.6
+
+    /// Le lacet manuel à une date donnée — fonction pure.
+    private func userYaw(at date: Date) -> Float {
+        if let forced = yawOverride { return forced }
+        if dragging { return yawLive }
+        let age = Float(date.timeIntervalSince(releaseAt))
+        guard age.isFinite, age >= 0, age < 3600 else { return 0 }
+        // Inertie : intégrale exacte d'une vitesse amortie exponentiellement.
+        var y = releaseYaw + releaseVel * (1 - exp(-Self.damping * age)) / Self.damping
+        // Puis l'objet revient doucement à son angle de repos.
+        y *= exp(-max(age - Self.restDelay, 0) / Self.restFall)
+        return max(-Self.yawLimit, min(Self.yawLimit, y))
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = max(geo.size.width, 1)
+            let h = max(geo.size.height, 1)
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                    paused: reduceMotion && !dragging)) { tl in
+                // Le temps part en float32 vers le GPU : modulo 900 s — tout
+                // le shader est périodique sur 900 s exactement.
+                let t = freeze ?? Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                let raw = freeze == nil
+                    ? min(max(tl.date.timeIntervalSince(revealStart) / 2.0, 0), 1)
+                    : 1.0
+                let reveal = Float(raw * raw * (3 - 2 * raw))
+                Rectangle()
+                    .fill(.black)
+                    .frame(width: w, height: h)
+                    .colorEffect(Self.dithered(ShaderLibrary.logoMonolith(
+                        .float2(w, h), .float(t),
+                        .float2(motion.tilt.dx, motion.tilt.dy),
+                        .float(userYaw(at: tl.date)),
+                        .float(reveal), .float(76),
+                        .float(benchBoost ?? -1), .float(benchSweep ?? -1),
+                        .float(Self.debugSDF ? 1 : 0),
+                        .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
+                        .float3(0.5, 0.485, 0.71),
+                        .image(MoonSDF.image))))
+            }
+        }
+        // Le pavé tourne sous le doigt : glissement horizontal → lacet, et
+        // l'élan du relâcher se prolonge en inertie.
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { v in
+                    if !dragging {
+                        dragging = true
+                        yawAtGrab = userYaw(at: .now)
+                    }
+                    yawLive = max(-Self.yawLimit, min(Self.yawLimit,
+                        yawAtGrab + Float(v.translation.width) * Self.radPerPoint))
+                }
+                .onEnded { v in
+                    releaseYaw = yawLive
+                    // L'élan : ce qu'il restait de course dans le geste.
+                    let fling = Float(v.predictedEndTranslation.width
+                                      - v.translation.width)
+                    releaseVel = fling * Self.radPerPoint * Self.damping
+                    releaseAt = .now
+                    dragging = false
+                }
+        )
+        .onAppear { motion.start(reduceMotion: reduceMotion) }
+        .onChange(of: scenePhase) { _, phase in
+            // Le gyroscope s'arrête sur `scenePhase` SEULEMENT — jamais
+            // `onDisappear` : `stop()` remet le tilt à zéro pour tous les
+            // consommateurs, dont le ciel de la home.
+            if phase == .active {
+                revealStart = .now
+                motion.start(reduceMotion: reduceMotion)
+            } else {
+                motion.stop()
+            }
+        }
+    }
+
+    /// Dithering natif du shader : casse le banding 8 bits des longues
+    /// rampes sombres de la laque et du bloom, quasi gratuit.
+    private static func dithered(_ shader: Shader) -> Shader {
+        var s = shader
+        s.dithersColor = true
+        return s
+    }
+}
+
+#Preview { LogoLab() }
+#Preview("Figé t=60") { LogoLab(freezeOverride: 60) }
