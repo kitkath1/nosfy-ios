@@ -29,6 +29,11 @@ struct WoopApp: App {
         // premier rendu de la home, elle est déjà prête. (NebulaStrip n'est
         // plus chauffée : la carte Objectif est redevenue pure lumière.)
         NebulaNoise.warmUp()
+        // La SDF du croissant ne sert qu'au banc du monolithe : chauffée
+        // uniquement quand il est demandé — zéro coût au lancement normal.
+        if CommandLine.arguments.contains("-logoLab") {
+            MoonSDF.warmUp()
+        }
     }
 
     var body: some Scene {
@@ -66,6 +71,8 @@ struct RootView: View {
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
     /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
     private static let loginLab = CommandLine.arguments.contains("-loginLab")
+    /// Banc d'essai du monolithe logo : `-logoLab`, page noire nue.
+    private static let logoLab = CommandLine.arguments.contains("-logoLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
     /// toucher pour cacher le panneau de fouettage.
     private static let navLab = CommandLine.arguments.contains("-navLab")
@@ -118,6 +125,8 @@ struct RootView: View {
             LoginLab()
         } else if Self.homeLab {
             HomeAuroraLab()
+        } else if Self.logoLab {
+            LogoLab()
         } else if Self.navLab {
             NavLab()
         } else {
