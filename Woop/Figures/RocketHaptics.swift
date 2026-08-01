@@ -48,7 +48,7 @@ final class RocketHaptics {
     /// des aléas de la boucle d'affichage — c'est la seule façon d'avoir une
     /// vibration RÉGULIÈRE pendant qu'un shader coûteux occupe le GPU.
     func launch(ignite: Double, travel: Double, boom: Double, flight: Double,
-                detonation: Double, beats: [(time: Double, hard: Bool)]) {
+                beats: [(time: Double, hard: Bool)]) {
         guard let engine else { return }
         let tBoom = ignite + travel
         let tFlight = tBoom + boom
@@ -99,32 +99,14 @@ final class RocketHaptics {
                 relativeTime: beat.time))
         }
 
-        // ---- LA DÉTONATION DE L'ÉCLAT : le pavé vole en éclats. C'est le
-        // second choc du plan, et il doit être aussi net que le premier —
-        // transient sec, doublé d'une tenue courte pour lui donner du corps.
+        // ---- Le contact, à la première arrivée du ressort.
         events.append(CHHapticEvent(
             eventType: .hapticTransient,
             parameters: [
-                .init(parameterID: .hapticIntensity, value: 1.0),
-                .init(parameterID: .hapticSharpness, value: 0.90),
+                .init(parameterID: .hapticIntensity, value: 0.45),
+                .init(parameterID: .hapticSharpness, value: 0.55),
             ],
-            relativeTime: detonation))
-        events.append(CHHapticEvent(
-            eventType: .hapticContinuous,
-            parameters: [
-                .init(parameterID: .hapticIntensity, value: 0.85),
-                .init(parameterID: .hapticSharpness, value: 0.20),
-            ],
-            relativeTime: detonation,
-            duration: 0.55))
-        // ---- La pose, quand la lune achève de se rallumer : une caresse.
-        events.append(CHHapticEvent(
-            eventType: .hapticTransient,
-            parameters: [
-                .init(parameterID: .hapticIntensity, value: 0.30),
-                .init(parameterID: .hapticSharpness, value: 0.35),
-            ],
-            relativeTime: detonation + 1.35))
+            relativeTime: tFlight + flight * 0.299))
 
         // ---- LA MONTÉE EN RÉGIME. C'est cette courbe, et rien d'autre, qui
         // fait « fusée » : le grondement part à peine perceptible, enfle
@@ -139,10 +121,7 @@ final class RocketHaptics {
                 .init(relativeTime: tBoom - 0.25, value: 2.20),
                 .init(relativeTime: tBoom, value: 4.00),
                 .init(relativeTime: tBoom + 0.55, value: 1.30),
-                // La charge de l'éclat : ça remonte AVANT de détoner.
-                .init(relativeTime: detonation - 0.16, value: 2.10),
-                .init(relativeTime: detonation, value: 3.60),
-                .init(relativeTime: detonation + 0.55, value: 0.90),
+                .init(relativeTime: tFlight, value: 0.55),
                 .init(relativeTime: tFlight + flight, value: 0.0),
             ],
             relativeTime: 0)
