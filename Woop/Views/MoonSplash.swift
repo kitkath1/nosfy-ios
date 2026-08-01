@@ -98,6 +98,12 @@ struct MoonSplashBeat {
     /// La vie de l'objet POSÉ : flottement lent et grésillement rare
     /// (cf. MonolithCanvas). Elle s'allume quand l'objet touche.
     var idleLife: Float = 0
+    /// Le plan de nuit : (étoiles, marée des voiles d'encre).
+    var night: SIMD2<Float> = .zero
+    /// L'ouverture du rideau final, 0..1. Négatif = pas de rideau.
+    var curtain: Double = -1
+    /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
+    var birdAge: Double = -1
 
     // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
     // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
@@ -110,12 +116,28 @@ struct MoonSplashBeat {
     static let ignite = 1.00
     static let travel = 9.00
     static let boom = 1.70
-    static let flight = 1.70
-    static var total: Double { ignite + travel + boom + flight }
+    /// LA NUIT : la pierre fond dans le noir, les étoiles naissent.
+    static let night = 0.90
+    /// LES VOILES : l'encre passe devant la lune, la volée traverse.
+    static let veils = 1.90
+    /// L'ÉCLIPSE : le dernier voile couvre tout. Noir absolu.
+    static let eclipse = 0.45
+    /// LE RIDEAU : le noir se retire vers le haut sur la page de connexion.
+    static let unveil = 1.35
+    static var total: Double {
+        ignite + travel + boom + night + veils + eclipse + unveil
+    }
 
     private static var tTravel: Double { ignite }
     private static var tBoom: Double { ignite + travel }
-    private static var tFlight: Double { ignite + travel + boom }
+    private static var tNight: Double { ignite + travel + boom }
+    private static var tVeils: Double { tNight + night }
+    private static var tDark: Double { tVeils + veils }
+    private static var tEclipse: Double { tDark + eclipse }
+    /// L'instant du battement sourd, au cœur du noir.
+    static var heartbeat: Double { tDark + eclipse * 0.5 }
+    /// L'instant où la lune se rallume sur la page.
+    static var relight: Double { tEclipse + unveil * 0.62 }
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
     /// dorée, le fil de plasma, le grain du dépoli.
@@ -228,7 +250,7 @@ struct MoonSplashBeat {
             b.cineCtl.w = MoonPath.angle(at: sComet)
             b.solo = 1        // le pavé n'existe pas encore
             b.lowRes = true   // il n'y a que du néon flou à dessiner
-        } else if t < tFlight {
+        } else if t < tNight {
             // ---- LE BOOM. Le recul est multiplicatif — un travelling arrière
             // se lit en octaves, pas en points —, donc l'interpolation se
             // fait sur le LOGARITHME du grossissement. L'amortissement est
@@ -258,40 +280,61 @@ struct MoonSplashBeat {
             // sentinelle peut être rendue sans que rien ne bouge.
             b.cineCtl.w = lerpAngle(MoonPath.angle(at: 1 + cometLead),
                                     naturalHead(shaderClock), e)
-        } else {
-            // ---- L'ENVOL. Il rapetisse en filant vers son point de pose, et
-            // arrive avec un rebond court — un objet qui se pose, pas un
-            // calque qui s'aligne.
-            let p = clamp01((t - tFlight) / flight)
-            let e = spring(Float(p))
+        } else if t < tEclipse {
+            // ---- LE PLAN DE NUIT. La pierre fond dans le noir sans bouger
+            // d'un millimètre : il ne reste que le croissant, suspendu dans
+            // une nuit où naissent quelques étoiles — UNE LUNE. La caméra
+            // pousse très lentement vers elle (le zoom de l'inquiétude), puis
+            // les voiles d'encre passent, l'éclipsent par morceaux, et une
+            // volée d'oiseaux traverse au loin.
+            let q = Float(clamp01((t - tNight) / (night + veils + eclipse)))
             sCam = 1
-            zoom = exp(mix(0, log(MoonLanding.zoom), e))
-            let c = MoonLanding.sceneCenter(in: size)
-            let land = MoonLanding.spot(in: size)
-            let q = CGPoint(x: CGFloat(mix(Float(c.x), Float(land.x), e)),
-                            y: CGFloat(mix(Float(c.y), Float(land.y), e)))
-            target = MoonLanding.cameraTarget(bringing: q, at: zoom, in: size)
+            zoom = 1 + 0.55 * q * q       // le zoom s'installe, il ne saute pas
+            target = .zero
             cine = 0
-            frameW = 0        // la cible du vol place déjà l'objet elle-même
-            // La surtension du boom SURVIT au raccord : à la dernière image du
-            // boom elle vaut encore 0,054, ce qui pèse 12 % sur le gain du
-            // néon. La couper net ferait clignoter tout l'objet d'une image à
-            // l'autre — elle continue donc de mourir dans l'envol.
+            frameW = 0
             b.cineCtl.y = surge(t)
-            // L'aurore monte pendant qu'il vole, et le fond du shader s'ouvre
-            // en même temps : la lueur du monolithe devient additive sur elle.
-            // Sans écran d'accueil orange derrière, on garde le fond noir du
-            // shader : ouvrir sur du vide ne ferait qu'éteindre la flaque.
-            let a = clamp01((t - tFlight) / (flight * 0.75))
-            if landsOnAurora {
-                b.aurora = smoothstep(a)
-                b.cineCtl.z = Float(smoothstep(a))
+            if t < tVeils {
+                let p = clamp01((t - tNight) / night)
+                b.solo = Float(smoothstep(p))          // la nuit avale la pierre
+                b.night.x = Float(smoothstep(p)) * 0.85 // les étoiles naissent
+            } else if t < tDark {
+                let p = clamp01((t - tVeils) / veils)
+                b.solo = 1
+                b.night.x = 0.85
+                b.night.y = 0.72 * Float(smoothstep(p)) // la marée des voiles
+                b.birdAge = t - tVeils - 0.15           // la volée, au loin
+            } else {
+                // ---- L'ÉCLIPSE. Le dernier voile couvre tout ; les étoiles
+                // s'éteignent dessous. Noir absolu, un battement.
+                let p = clamp01((t - tDark) / eclipse)
+                b.solo = 1
+                b.night.x = 0.85 * Float(1 - p)
+                b.night.y = 0.72 + 0.28 * Float(smoothstep(p))
+                b.birdAge = t - tVeils - 0.15
             }
-            b.edgeFade = Float(smoothstep(a))
-            // La vie vient quand l'objet TOUCHE : un objet qui flotterait
-            // déjà en vol raconterait deux choses à la fois.
-            b.idleLife = Float(smoothstep(clamp01((t - tFlight - flight * 0.3)
-                                                  / (flight * 0.6))))
+        } else {
+            // ---- LE RIDEAU. Derrière le noir, la scène a déjà changé : la
+            // caméra est posée sur le point d'arrivée, l'aurore est là, la
+            // lune éteinte à sa place. Le voile se retire vers le haut comme
+            // une fumée qu'on aspire — l'aurore d'abord, la lune en dernier,
+            // qui se rallume dans les dernières volutes. Elle n'a pas
+            // voyagé : la nuit l'a déplacée.
+            let open = clamp01((t - tEclipse) / unveil)
+            sCam = 1
+            zoom = MoonLanding.zoom
+            target = MoonLanding.cameraTarget(
+                bringing: MoonLanding.spot(in: size), at: zoom, in: size)
+            cine = 0
+            frameW = 0
+            b.curtain = open
+            b.reveal = Float(smoothstep(clamp01((open - 0.50) / 0.35)))
+            b.idleLife = Float(smoothstep(clamp01((open - 0.75) / 0.25)))
+            if landsOnAurora {
+                b.aurora = 1
+                b.cineCtl.z = 1
+            }
+            b.edgeFade = 1
         }
 
         // Le décentrage. Le shader pose l'objet là où `pC` s'annule, c'est-à-dire
@@ -569,7 +612,7 @@ struct MoonSplashBeat {
     /// L'instant où l'objet TOUCHE — la première fois que le ressort atteint
     /// sa cible, avant de la dépasser : tan(ωx) = −ζ/ω donne x = 0,299 de la
     /// course. C'est là que la vibration doit tomber, pas à la fin du plan.
-    static var touchdown: Double { tFlight + flight * 0.299 }
+
 }
 
 // MARK: - La vue
@@ -678,13 +721,36 @@ struct MoonSplashView: View {
                                        cineCtl: b.cineCtl,
                                        edgeFade: b.edgeFade,
                                        soloNeon: b.solo,
-                                       idleLife: b.idleLife)
+                                       idleLife: b.idleLife,
+                                       night: b.night)
                             .frame(width: buf.width, height: buf.height)
                             .drawingGroup()
                             .scaleEffect(1 / px, anchor: .topLeading)
                             .frame(width: size.width, height: size.height,
                                    alignment: .topLeading)
                             .ignoresSafeArea()
+                        }
+
+                        // La volée d'oiseaux, au loin — visible seulement là
+                        // où elle croise la lueur de la lune.
+                        if b.birdAge >= 0 {
+                            NightBirds(age: b.birdAge,
+                                       moon: MoonLanding.sceneCenter(in: size))
+                                .ignoresSafeArea()
+                        }
+
+                        // Le rideau d'encre : il couvre tout à l'entrée du
+                        // dernier temps, puis se retire vers le haut sur la
+                        // page de connexion.
+                        if b.curtain >= 0, b.curtain < 1 {
+                            Rectangle()
+                                .fill(.black)
+                                .colorEffect(ShaderLibrary.inkCurtain(
+                                    .float2(size.width, size.height),
+                                    .float(clock),
+                                    .float(Float(b.curtain))))
+                                .ignoresSafeArea()
+                                .allowsHitTesting(false)
                         }
                     }
                 }
@@ -740,7 +806,12 @@ struct MoonSplashView: View {
             RocketHaptics.shared.launch(ignite: MoonSplashBeat.ignite,
                                         travel: MoonSplashBeat.travel,
                                         boom: MoonSplashBeat.boom,
-                                        flight: MoonSplashBeat.flight,
+                                        coda: MoonSplashBeat.night
+                                              + MoonSplashBeat.veils
+                                              + MoonSplashBeat.eclipse
+                                              + MoonSplashBeat.unveil,
+                                        heartbeat: MoonSplashBeat.heartbeat,
+                                        relight: MoonSplashBeat.relight,
                                         beats: MoonSplashBeat.beats)
             // Une seule attente : la fin du plan. Tout le rythme haptique
             // est parti d'un bloc au moteur, il n'a plus besoin d'être

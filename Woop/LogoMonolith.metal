@@ -260,7 +260,7 @@ static float lmStars(float2 pos, float t) {
                                     float3 sdfRanges, float3 moonPlace,
                                     float3 camera, float4 cineCtl,
                                     float edgeFade, float soloNeon,
-                                    float idleLife,
+                                    float idleLife, float2 night,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -1238,6 +1238,12 @@ static float lmStars(float2 pos, float t) {
                       * (1.0 - 0.55 * saturate(bloomE * 2.0));
         star = lmStars(position + para, t) * starVis * STARFIELD;
     }
+    // LE PLAN DE NUIT (`night.x`) : le ciel étoilé se rallume à la demande —
+    // le champ complet dormait derrière l'interrupteur STARFIELD depuis le
+    // premier jour, en attendant qu'un hôte en veuille un. C'est ce plan-là.
+    if (night.x > 0.0) {
+        star += lmStars(position + para, t) * night.x;
+    }
 
     // ---- Composition : le pavé OCCULTE le sol (jamais additionné) ; le
     // filet, le glare, les raies et le halo vivent par-dessus tout.
@@ -1245,7 +1251,11 @@ static float lmStars(float2 pos, float t) {
     // Le facteur explicite le faisait une SECONDE fois — la flaque partait en
     // (1−bodyCov)², donc à la lisière du pavé elle ne valait que 25 % au lieu
     // de 50 %. C'était la troisième cause du décollement de l'objet.
-    float3 E = star * float3(0.92, 0.95, 1.02) + poolCol * body01;
+    // Les étoiles ne sont occultées par le pavé QUE s'il est visible : pendant
+    // le plan de nuit la pierre a fondu dans le noir (`solo`), et un rectangle
+    // invisible qui mangerait des étoiles trahirait sa présence.
+    float3 E = star * float3(0.92, 0.95, 1.02) * (1.0 - bodyCov * body01)
+             + poolCol * body01;
     // Le voile a disparu : il est DANS faceCol, mélangé à la laque et non
     // ajouté par-dessus. L'arête s'ajoute au corps — elle est déjà fenêtrée
     // par hasFlank et se fera occulter par bodyCov comme le reste.
@@ -1262,6 +1272,38 @@ static float lmStars(float2 pos, float t) {
     // ne l'applique qu'une fois, ne raccorderait plus.
     E += (rimCol + haloContrib * (1.0 - bodyCov)) * body01
        + bloomCol * bloomE + streakCol;
+
+    // ---- LES VOILES D'ENCRE (`night.y`). Des écharpes PLUS NOIRES QUE LA
+    // NUIT glissent devant la lune et l'éclipsent — de la fumée en
+    // contre-jour, dont seuls les bords existent, léchés d'orange là où le
+    // néon les atteint. Elles vivent en espace ÉCRAN (une fumée qui passe
+    // devant l'objectif ne zoome pas avec la scène) et dérivent avec
+    // l'horloge, donc se figent proprement sous `-moonSplashFreeze`.
+    // `night.y` est la MARÉE : 0 = ciel clair, 1 = éclipse totale — la
+    // couverture avance avec elle, la texture ne fait que ramper.
+    if (night.y > 0.0) {
+        float2 vp = position / max(size.y, 1.0);
+        float f1 = lmFbm(vp * float2(1.35, 2.10)
+                         + float2(-t * 0.045 - night.y * 0.9, 3.7));
+        float f2 = lmFbm(vp * float2(1.90, 2.90)
+                         + float2(t * 0.030 + 8.2, -t * 0.012 + 1.3));
+        // Calibrage de la marée, mesuré sur captures : à 2,4/−1,55 la
+        // couverture était TOTALE dès y = 0,7 — l'écran devenait noir une
+        // seconde trop tôt et les voiles n'existaient jamais en tant que
+        // voiles. À 2,7/−2,25 : y = 0,72 donne des écharpes semi-couvrantes
+        // qui laissent respirer la lune, et y = 1 couvre tout, partout.
+        float raw = 0.62 * f1 + 0.55 * f2 + night.y * 2.7 - 2.25;
+        float V = smoothstep(0.0, 0.42, raw);
+        // Le bord : une bande étroite autour de la lisière de la fumée, qui
+        // ne s'allume que près du tube (bloomE est l'énergie locale du néon)
+        // et s'éteint à l'approche du noir total.
+        float edge = exp(-raw * raw / (0.12 * 0.12));
+        float3 edgeCol = float3(1.00, 0.55, 0.20) * edge
+                       * (0.35 * bloomE + 0.012)
+                       * (1.0 - saturate((night.y - 0.80) * 5.0));
+        E = E * (1.0 - V) + edgeCol;
+    }
+
     float3 c = 1.0 - exp(-1.35 * E * exposure);
     c = c * c / (c + 0.0085);
     // ---- L'ALPHA DE L'ATTERRISSAGE. Le shader est né OPAQUE (il possède son
@@ -1277,4 +1319,32 @@ static float lmStars(float2 pos, float t) {
     // fond d'accueil au lieu de casser le banding de la laque.
     c += (lmHash21(position * 1.113 + dither2) - 0.5) * ((1.6 / 255.0) * alpha);
     return half4(half3(saturate(c)), half(alpha));
+}
+
+// MARK: - Le rideau d'encre
+//
+// La dernière image de l'éclipse : un voile de fumée noire couvre tout
+// l'écran, puis SE RETIRE VERS LE HAUT — l'aurore de la connexion se découvre
+// par le bas, la lune posée en dernier. Le bord n'est pas une ligne : c'est
+// une lisière de fumée, déformée par le même fbm que les voiles, avec un
+// filet de chaleur très discret là où elle vient de passer.
+//
+// `open` : 0 = tout couvert, 1 = tout découvert. La sortie est prémultipliée —
+// corps noir (0,0,0,α), lisière émissive quasi nulle.
+[[ stitchable ]] half4 inkCurtain(float2 position, half4 color,
+                                  float2 size, float t, float open) {
+    float2 vp = position / max(size.y, 1.0);
+    float yn = position.y / max(size.y, 1.0);
+    // La ligne du rideau monte avec `open`, et la fumée la déchire.
+    float line = mix(1.12, -0.38, open);
+    float f = lmFbm(vp * float2(1.6, 2.4) + float2(t * 0.03, -t * 0.05));
+    float d = yn - (line + (f - 0.5) * 0.30);
+    // d < 0 : au-dessus de la lisière, couvert.
+    float a = smoothstep(0.02, -0.12, d);
+    // Le filet de chaleur : à peine là, et seulement pendant que le rideau
+    // bouge — un bord qui resterait chaud une fois posé lirait « bug ».
+    float edge = exp(-d * d / (0.05 * 0.05))
+               * 0.09 * saturate(open * 4.0) * (1.0 - open);
+    float3 c = float3(1.00, 0.52, 0.18) * edge;
+    return half4(half3(c), half(a));
 }
