@@ -112,6 +112,8 @@ struct MonolithScene: View {
     /// À 1, le pavé disparaît : il ne reste que le croissant de néon dans le
     /// noir. L'état du travelling du splash.
     var soloNeon: Float = 0
+    /// La vie de l'objet posé — cf. MonolithCanvas.
+    var idleLife: Float = 0
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -179,7 +181,8 @@ struct MonolithScene: View {
                                faceR: faceR, benchBoost: benchBoost,
                                benchSweep: benchSweep,
                                camera: camera, cineCtl: cineCtl,
-                               edgeFade: edgeFade, soloNeon: soloNeon)
+                               edgeFade: edgeFade, soloNeon: soloNeon,
+                               idleLife: idleLife)
             }
         }
         // Le pavé tourne sous le doigt : glissement horizontal → lacet, et
@@ -244,6 +247,9 @@ struct MonolithCanvas: View {
     var cineCtl: SIMD4<Float> = SIMD4(0, 0, 0, -1)
     var edgeFade: Float = 0
     var soloNeon: Float = 0
+    /// La vie de l'objet POSÉ : flottement lent et grésillement rare. Nulle
+    /// pendant la cinématique, pleine une fois la lune arrivée sur la page.
+    var idleLife: Float = 0
 
     fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
 
@@ -261,7 +267,7 @@ struct MonolithCanvas: View {
                 .float3(0.5, 0.485, 0.71),
                 .float3(camera.x, camera.y, camera.z),
                 .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
-                .float(edgeFade), .float(soloNeon),
+                .float(edgeFade), .float(soloNeon), .float(idleLife),
                 .image(MoonSDF.image))))
     }
 

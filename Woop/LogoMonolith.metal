@@ -260,6 +260,7 @@ static float lmStars(float2 pos, float t) {
                                     float3 sdfRanges, float3 moonPlace,
                                     float3 camera, float4 cineCtl,
                                     float edgeFade, float soloNeon,
+                                    float idleLife,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -309,8 +310,42 @@ static float lmStars(float2 pos, float t) {
     float cine = cineCtl.x, boom = cineCtl.y, bgFade = cineCtl.z;
     float solo = saturate(soloNeon);
     float body01 = 1.0 - solo;              // ce qui reste du pavé
+    // ---- LE GRÉSILLEMENT DU NÉON POSÉ. Une fois l'objet arrivé sur la page,
+    // il ne doit plus jamais avoir l'air ARRÊTÉ — un objet parfaitement
+    // immobile lit « image figée », donc « bug ». Mais le grésillement
+    // permanent a déjà été refusé une fois dans cette maison (la barre
+    // d'onglets), et à raison : un tube qui crépite sans cesse, c'est un tube
+    // en fin de vie. Ce qui fait premium, c'est la RARETÉ — la lumière est
+    // parfaitement tenue, et de loin en loin elle a un frisson.
+    //
+    // L'IRRÉGULARITÉ EST DANS LE CALENDRIER, PAS DANS LA FORME : une fenêtre
+    // de 7,03 s sur trois environ porte un frisson, dont l'instant de départ,
+    // la durée et la profondeur sont tirés du même hash. On n'entend donc
+    // jamais de métronome, et pourtant chaque frisson est propre.
+    float sizzle = 1.0;
+    if (idleLife > 0.0) {
+        const float per = 900.0 / 128.0;        // k entier : la boucle 900 s tient
+        float ph = t / per;
+        float slot = floor(ph);
+        float h = lmHash21(float2(fmod(slot, 128.0) * 1.31 + 5.7, 2.3));
+        if (h < 0.42) {
+            float x = (ph - slot) * per - h * 2.4;
+            if (x > 0.0 && x < 0.34) {
+                // Deux ou trois battements serrés qui s'éteignent : le gaz
+                // hésite une fraction de seconde, puis se reprend.
+                float dec = exp(-x / 0.068);
+                float osc = fabs(sin(x * (74.0 + 46.0 * h)));
+                sizzle -= (0.09 + 0.07 * h) * dec * osc;
+            }
+        }
+        // Et un frémissement continu à la limite du perceptible : c'est lui
+        // qui empêche l'image de paraître gelée ENTRE deux frissons.
+        sizzle *= 1.0 + 0.013 * sin(PH * 211.0 * t + 1.9)
+                      + 0.008 * sin(PH * 331.0 * t + 0.4);
+    }
+
     float neonGain = (1.0 + 0.18 * boostEnv) * breath * flick * ignite
-                   * (1.0 + 2.2 * boom);
+                   * (1.0 + 2.2 * boom) * mix(1.0, sizzle, saturate(idleLife));
     float bloomWiden = (1.0 + 0.10 * boostEnv) * (1.0 + 0.9 * boom);
 
     // La fenêtre de bord (petit cadre) et la vie des raies : une raie
@@ -369,12 +404,22 @@ static float lmStars(float2 pos, float t) {
     // vie en 1,7 pt de tremblement d'écran, et le rail CPU qui suit la
     // courbe compte sur des angles CONSTANTS pour rester verrouillé au tube.
     float live = 1.0 - cine;
+    // LE PAVÉ POSÉ RESPIRE. Les micro-balancements d'origine ont des périodes
+    // de 82 et 31 secondes : à cette lenteur, l'objet paraît IMMOBILE, et un
+    // objet immobile au bout d'une animation lit « c'est bloqué ». `idleLife`
+    // ajoute donc un flottement lent mais PERCEPTIBLE — ±4,8° de lacet sur
+    // des périodes de 6,4 et 9,7 secondes, incommensurables, plus un souffle
+    // de tangage à 11,7 s pour que le mouvement ne soit pas un simple
+    // va-et-vient. Il tourne doucement sur lui-même, comme un objet suspendu.
     float yaw = 0.2450 + userYaw
               + (0.0175 * sin(PH * 11.0 * t + 0.7)
                + 0.0087 * sin(PH * 29.0 * t + 2.9)
-               + 0.05 * tilt.x) * live;
+               + 0.05 * tilt.x) * live
+              + idleLife * (0.055 * sin(PH * 140.0 * t + 0.4)
+                          + 0.028 * sin(PH * 93.0 * t + 2.2));
     float pitch = -0.0698 + (0.0070 * sin(PH * 17.0 * t + 1.3)
-                             + 0.04 * tilt.y) * live;
+                             + 0.04 * tilt.y) * live
+                + idleLife * 0.013 * sin(PH * 77.0 * t + 1.1);
     float cyw = cos(yaw), syw = sin(yaw), cpt = cos(pitch), spt = sin(pitch);
     float2 Ex = float2(cyw, syw * spt);
     float2 Ey = float2(0.0, cpt);
