@@ -104,6 +104,9 @@ struct MoonSplashBeat {
     /// Le pavé est-il encore là ? Après la détonation, il n'existe plus —
     /// il ne rapetisse pas, il n'est plus dessiné du tout.
     var showObject: Bool = true
+    /// La vie de l'objet POSÉ : flottement lent et grésillement rare. Elle
+    /// s'allume avec le néon, à la renaissance.
+    var idleLife: Float = 0
     /// Le plan se rend-il à demi-résolution ? Vrai tant qu'il n'y a que du
     /// néon flou à l'écran — voir `MoonSplashView`.
     var lowRes: Bool = false
@@ -328,6 +331,10 @@ struct MoonSplashBeat {
             // de naissance du shader (exposition 0,35 → 1 puis ignition) fait
             // exactement ce travail, et elle existe depuis le premier jour.
             b.reveal = Float(smoothstep(clamp01(a / 0.55)))
+            // La vie vient AVEC la lumière : dès que le néon tient, l'objet
+            // se met à flotter et son gaz à hésiter. Un objet qui s'allume
+            // puis reste figé lit « image bloquée ».
+            b.idleLife = Float(smoothstep(clamp01((a - 0.35) / 0.7)))
             b.cineCtl.y = surge(t)
             b.burstAge = t - detonation
             b.flash = 0.12 * exp(-a / 0.22)      // la braise de l'explosion
@@ -722,7 +729,8 @@ struct MoonSplashView: View {
                                                      b.camera.z * Float(px)),
                                        cineCtl: b.cineCtl,
                                        edgeFade: b.edgeFade,
-                                       soloNeon: b.solo)
+                                       soloNeon: b.solo,
+                                       idleLife: b.idleLife)
                             .frame(width: buf.width, height: buf.height)
                             .drawingGroup()
                             .scaleEffect(1 / px, anchor: .topLeading)
@@ -848,7 +856,8 @@ struct LandedMonolithView: View {
                           cineCtl: SIMD4(0, 0, 1, -1),
                           edgeFade: 1,
                           revealOverride: 1,
-                          hitArea: MoonLanding.hitRect(in: size))
+                          hitArea: MoonLanding.hitRect(in: size),
+                          idleLife: 1)
         }
         .ignoresSafeArea()
     }
