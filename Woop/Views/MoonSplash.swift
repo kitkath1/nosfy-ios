@@ -295,8 +295,13 @@ struct MoonSplashBeat {
             b.showObject = a < 0.16
             // Le flash : montée quasi instantanée, longue retombée.
             let d = a - 0.16
-            b.flash = d < 0 ? Double(charge * charge) * 0.35
-                            : exp(-d / 0.34)
+            // L'ÉCLAIR EST BREF. À 0,34 s d'extinction il tenait l'écran une
+            // demi-seconde, et une lumière qui s'attarde n'est plus un éclair,
+            // c'est un projecteur — le tell n°1 du cheap. 0,13 s, et un pic à
+            // 0,72 : la détonation ÉBLOUIT puis rend l'image, elle ne la
+            // confisque pas.
+            b.flash = d < 0 ? Double(charge * charge) * 0.22
+                            : 0.72 * exp(-d / 0.13)
             b.burstAge = d
             // L'aurore se découvre DANS l'éclair — on ne la voit pas arriver.
             let rise = clamp01((a - 0.16) / 0.50)
@@ -325,7 +330,7 @@ struct MoonSplashBeat {
             b.reveal = Float(smoothstep(clamp01(a / 0.55)))
             b.cineCtl.y = surge(t)
             b.burstAge = t - detonation
-            b.flash = 0.30 * exp(-a / 0.30)      // la braise de l'explosion
+            b.flash = 0.12 * exp(-a / 0.22)      // la braise de l'explosion
             if landsOnAurora {
                 b.aurora = 1
                 b.cineCtl.z = 1

@@ -22,9 +22,8 @@ struct MoonBurst: View {
     var origin: CGPoint
     var target: CGPoint
 
-    /// 260 éclats : en dessous on compte les points, au-dessus le Canvas
-    /// commence à peser plus que le shader qu'il recouvre.
-    private static let count = 260
+    /// 340 éclats — mais des ÉCLATS, pas des confettis : voir `draw`.
+    private static let count = 340
     private static let life: Double = 2.05
     /// L'instant du RAPPEL : avant, les éclats fuient ; après, ils reviennent.
     private static let recall: Double = 0.62
@@ -39,7 +38,41 @@ struct MoonBurst: View {
         .allowsHitTesting(false)
     }
 
+    // TROIS RÈGLES, ET C'EST TOUT CE QUI SÉPARE UNE GERBE D'UN LANCER DE
+    // CONFETTIS.
+    //
+    // 1. UNE ÉTINCELLE QUI FILE EST UN TRAIT, PAS UN POINT. À 700 points par
+    //    seconde, un éclat parcourt douze points pendant qu'une image est
+    //    affichée : l'œil, comme l'obturateur, voit une TRAÎNÉE. Des disques
+    //    ronds à cette vitesse ne peuvent lire que « confetti ». On trace donc
+    //    le segment parcouru, et il se raccourcit tout seul quand l'éclat
+    //    ralentit — la forme raconte la vitesse sans qu'on ait à l'écrire.
+    //
+    // 2. LOI DE PUISSANCE SUR LES MAGNITUDES. Une nuée de très fines, quelques
+    //    moyennes, deux ou trois vives : c'est la hiérarchie qui fait lire
+    //    « poussière de lumière » plutôt que « semis régulier ». Exposant 3,2,
+    //    la même leçon que le ciel du monolithe et que la pluie d'étoiles de
+    //    la carte.
+    //
+    // 3. UNE COQUILLE, PAS UN NUAGE. Les vitesses se serrent autour d'une
+    //    valeur commune (±28 %) au lieu de s'étaler de un à quatre : le front
+    //    de l'explosion se lit comme un souffle qui s'ouvre, et non comme un
+    //    sac qu'on renverse.
     private func draw(_ ctx: inout GraphicsContext, size: CGSize) {
+        // L'ONDE : un cercle très fin qui s'ouvre et meurt en un tiers de
+        // seconde. Trois points d'épaisseur, presque rien — mais c'est lui qui
+        // donne l'échelle du souffle, et sans lui la gerbe flotte.
+        if age < 0.42 {
+            let u = age / 0.42
+            let r = 24 + 420 * (1 - pow(1 - u, 2.2))
+            let a = (1 - u) * (1 - u) * 0.5
+            ctx.stroke(Path(ellipseIn: CGRect(x: origin.x - r, y: origin.y - r,
+                                              width: r * 2, height: r * 2)),
+                       with: .color(Color(red: 1.0, green: 0.93, blue: 0.80)
+                           .opacity(a)),
+                       lineWidth: 1.2 + 1.6 * (1 - u))
+        }
+
         for i in 0..<Self.count {
             let h1 = Self.hash(i, 11), h2 = Self.hash(i, 29)
             let h3 = Self.hash(i, 47), h4 = Self.hash(i, 71)
@@ -53,17 +86,21 @@ struct MoonBurst: View {
             let u = a / span
             guard u < 1 else { continue }
 
-            // Direction : légèrement biaisée vers le haut, comme toute gerbe
-            // qui a de l'élan et pas encore de poids.
+            // UNE COQUILLE, pas un nuage : les vitesses se serrent autour
+            // d'une valeur commune. Un souffle qui s'ouvre, et non un sac
+            // qu'on renverse.
             let ang = h1 * 2 * .pi
-            let speed = 260 + 720 * h2 * h2
+            let speed = 620 * (0.72 + 0.56 * h2)
             // Traînée exponentielle : l'éclat part vite et se pose. Intégrale
             // exacte, jamais une position intégrée image par image.
             let drag = 3.1
             let travelled = speed * (1 - exp(-drag * a)) / drag
-            let gravity = 150.0 * a * a
+            // Le poids est un MURMURE. À 150 les éclats retombaient en cloche
+            // — le geste d'un feu d'artifice de kermesse. Une poussière de
+            // lumière ne pèse presque rien : elle s'ouvre et s'éteint.
+            let gravity = 26.0 * a * a
             let flyX = origin.x + cos(ang) * travelled
-            let flyY = origin.y + sin(ang) * travelled * 0.86 + gravity
+            let flyY = origin.y + sin(ang) * travelled * 0.92 + gravity
 
             // LE RAPPEL. Après 62 % de la course, l'éclat est repris par la
             // lune qui se reforme — d'autant plus vite qu'il est petit.
@@ -90,10 +127,33 @@ struct MoonBurst: View {
             let col = Color(red: 1.0,
                             green: 0.97 - 0.23 * warm,
                             blue: 0.90 - 0.55 * warm)
-            let r = (0.9 + 2.0 * h3 * h3) * (0.55 + 0.45 * (1 - u))
-            ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r,
-                                            width: r * 2, height: r * 2)),
-                     with: .color(col.opacity(env * tw)))
+
+            // LA MAGNITUDE SUIT UNE LOI DE PUISSANCE — exposant 3,2. La très
+            // grande majorité des éclats sont à la limite du visible ; deux ou
+            // trois portent la lumière. C'est cette hiérarchie, et elle seule,
+            // qui fait lire « poussière » au lieu de « semis ».
+            let mag = 0.055 + 0.945 * pow(h3, 3.2)
+            let w = (0.30 + 1.15 * mag) * (0.6 + 0.4 * (1 - u))
+            let alpha = env * tw * (0.16 + 0.84 * mag)
+
+            // ET ON TRACE LE SEGMENT PARCOURU, pas un disque. À six cents
+            // points par seconde, l'éclat couvre dix points le temps d'une
+            // image : l'œil voit une TRAÎNÉE. Un rond, à cette vitesse, ne
+            // peut lire que « confetti ». Le trait se raccourcit tout seul
+            // quand la traînée freine — la forme raconte la vitesse sans
+            // qu'on ait à l'écrire — et redevient un point à l'arrivée.
+            let back = max(a - 0.026, 0)
+            let tBack = speed * (1 - exp(-drag * back)) / drag
+            let bx0 = origin.x + cos(ang) * tBack
+            let by0 = origin.y + sin(ang) * tBack * 0.92 + 26.0 * back * back
+            let px = bx0 + (land.x - bx0) * k
+            let py = by0 + (land.y - by0) * k
+
+            var seg = Path()
+            seg.move(to: CGPoint(x: px, y: py))
+            seg.addLine(to: CGPoint(x: x, y: y))
+            ctx.stroke(seg, with: .color(col.opacity(alpha)),
+                       style: StrokeStyle(lineWidth: w, lineCap: .round))
         }
     }
 
