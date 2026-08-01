@@ -47,11 +47,13 @@ final class RocketHaptics {
     /// une fois lancé, il tient l'horloge du moteur haptique et ne dépend plus
     /// des aléas de la boucle d'affichage — c'est la seule façon d'avoir une
     /// vibration RÉGULIÈRE pendant qu'un shader coûteux occupe le GPU.
-    func launch(ignite: Double, travel: Double, boom: Double, flight: Double,
+    func launch(ignite: Double, travel: Double, boom: Double, coda: Double,
+                heartbeat: Double, relight: Double,
                 beats: [(time: Double, hard: Bool)]) {
         guard let engine else { return }
         let tBoom = ignite + travel
         let tFlight = tBoom + boom
+        let flight = coda
 
         var events: [CHHapticEvent] = []
 
@@ -99,14 +101,33 @@ final class RocketHaptics {
                 relativeTime: beat.time))
         }
 
-        // ---- Le contact, à la première arrivée du ressort.
+        // ---- LE BATTEMENT, au cœur du noir de l'éclipse : un coup sourd et
+        // grave, comme un cœur — pas un choc. C'est le seul événement du
+        // silence, il doit peser.
         events.append(CHHapticEvent(
             eventType: .hapticTransient,
             parameters: [
-                .init(parameterID: .hapticIntensity, value: 0.45),
-                .init(parameterID: .hapticSharpness, value: 0.55),
+                .init(parameterID: .hapticIntensity, value: 0.85),
+                .init(parameterID: .hapticSharpness, value: 0.08),
             ],
-            relativeTime: tFlight + flight * 0.299))
+            relativeTime: heartbeat))
+        events.append(CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [
+                .init(parameterID: .hapticIntensity, value: 0.45),
+                .init(parameterID: .hapticSharpness, value: 0.05),
+            ],
+            relativeTime: heartbeat,
+            duration: 0.28))
+
+        // ---- La caresse, quand la lune se rallume sur la page.
+        events.append(CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                .init(parameterID: .hapticIntensity, value: 0.30),
+                .init(parameterID: .hapticSharpness, value: 0.30),
+            ],
+            relativeTime: relight))
 
         // ---- LA MONTÉE EN RÉGIME. C'est cette courbe, et rien d'autre, qui
         // fait « fusée » : le grondement part à peine perceptible, enfle
@@ -121,7 +142,13 @@ final class RocketHaptics {
                 .init(relativeTime: tBoom - 0.25, value: 2.20),
                 .init(relativeTime: tBoom, value: 4.00),
                 .init(relativeTime: tBoom + 0.55, value: 1.30),
-                .init(relativeTime: tFlight, value: 0.55),
+                // La nuit : le grondement redescend en murmure pendant que la
+                // pierre fond, s'éteint tout à fait juste avant le battement —
+                // le noir doit être aussi SILENCIEUX à la main qu'à l'œil —
+                // et ne revient plus : le rideau se lève sans un bruit.
+                .init(relativeTime: tFlight, value: 0.40),
+                .init(relativeTime: heartbeat - 0.30, value: 0.12),
+                .init(relativeTime: heartbeat - 0.05, value: 0.0),
                 .init(relativeTime: tFlight + flight, value: 0.0),
             ],
             relativeTime: 0)
