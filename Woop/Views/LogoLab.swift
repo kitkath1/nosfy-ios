@@ -128,6 +128,10 @@ struct MonolithScene: View {
     @State private var releaseAt: Date = .distantPast
     @State private var releaseYaw: Float = 0
     @State private var releaseVel: Float = 0
+    /// La dernière position où la lumière a murmuré — le son suit le geste
+    /// par PAS d'angle, pas par image : tourner lentement murmure peu.
+    @State private var chimeYaw: Float = 0
+    @State private var chimeTick = 0
 
     private var motion: SkyMotion { .shared }
 
@@ -195,9 +199,21 @@ struct MonolithScene: View {
                     if !dragging {
                         dragging = true
                         yawAtGrab = userYaw(at: .now)
+                        chimeYaw = yawAtGrab
+                        MonolithChime.shared.prepare()
                     }
                     yawLive = max(-Self.yawLimit, min(Self.yawLimit,
                         yawAtGrab + Float(v.translation.width) * Self.radPerPoint))
+                    // La lumière murmure par pas de ~5° de rotation, à un
+                    // volume qui suit l'ampleur du pas — et la main reçoit
+                    // un tic très doux au même instant : l'œil, l'oreille et
+                    // la paume racontent le même reflet.
+                    let step = abs(yawLive - chimeYaw)
+                    if step > 0.085 {
+                        MonolithChime.shared.turn(speed: Double(min(step / 0.30, 1)))
+                        chimeYaw = yawLive
+                        chimeTick += 1
+                    }
                 }
                 .onEnded { v in
                     releaseYaw = yawLive
@@ -207,11 +223,15 @@ struct MonolithScene: View {
                     releaseVel = fling * Self.radPerPoint * Self.damping
                     releaseAt = .now
                     dragging = false
+                    MonolithChime.shared.release(
+                        fling: Double(min(abs(releaseVel) / 1.6, 1)))
                 },
             // Pendant la cinématique, le pavé est un PLAN, pas un objet qu'on
             // manipule : le doigt ne doit pas pouvoir contrarier la caméra.
             including: interactive ? .all : .subviews
         )
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.32),
+                         trigger: chimeTick)
         .onAppear { motion.start(reduceMotion: reduceMotion) }
         .onChange(of: scenePhase) { _, phase in
             // Le gyroscope s'arrête sur `scenePhase` SEULEMENT — jamais
