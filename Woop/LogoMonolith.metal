@@ -260,7 +260,7 @@ static float lmStars(float2 pos, float t) {
                                     float3 sdfRanges, float3 moonPlace,
                                     float3 camera, float4 cineCtl,
                                     float edgeFade, float soloNeon,
-                                    float idleLife, float2 night,
+                                    float idleLife, float3 night,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -1307,10 +1307,42 @@ static float lmStars(float2 pos, float t) {
         // LES NUAGES passent DEVANT : ils absorbent la lumière du néon et des
         // étoiles là où ils sont, et leur ventre s'allume au halo. C'est ce
         // double mouvement — éteindre ET luire — qui les rend présents.
+        // Le ciel a un DÉGRADÉ : l'horizon pèse un peu plus que le zénith,
+        // comme toute nuit réelle — un ciel uniforme lit « fond d'écran ».
+        float yn0 = position.y / max(size.y, 1.0);
+        float skyGrad = 0.85 + 0.30 * smoothstep(0.15, 0.95, yn0);
         float occ = 0.30 * cloud * night.x;
-        float skyE = moonGlow * (0.055 + 0.16 * cloud) * night.x;
+        float skyE = moonGlow * (0.055 + 0.16 * cloud) * night.x * skyGrad;
         E = E * (1.0 - occ)
           + glowCol * skyE * (1.0 - bodyCov * body01);
+
+        // L'ANNEAU DE HALO — le cercle de glace des nuits froides, le
+        // 22 degrés des photographes de lune. Un cerne fin, à peine là,
+        // qui donne au ciel sa PROFONDEUR d'optique : la lumière ne fait
+        // pas que baigner, elle se réfracte.
+        float ringD = (rC - 172.0) / 30.0;
+        float ring = exp(-ringD * ringD) * 0.032 * night.x;
+        E += glowCol * ring * (1.0 - bodyCov * body01);
+
+        // LE LISERÉ ARGENTÉ : la lisière des nuages face à la lune brille —
+        // le silver lining. Une bande étroite sur le bord de la densité,
+        // qui n'existe que dans le halo proche et s'éteint avec lui.
+        float lin = exp(-pow((dens - 0.62) / 0.10, 2.0))
+                  * moonGlow * moonGlow * 0.22 * night.x;
+        E += mix(float3(0.95, 0.93, 0.88), glowCol, 0.55)
+           * lin * (1.0 - bodyCov * body01);
+
+        // LES FANTÔMES D'OBJECTIF : deux reflets internes très pâles, froids,
+        // sur la diagonale opposée à la lune — le « glass » d'une vraie
+        // optique. Ils se cuivrent avec la marée, comme leur source.
+        float2 g1 = pC - float2(126.0, 198.0);
+        float2 g2 = pC - float2(196.0, 308.0);
+        float gh = 0.022 * pow(1.0 + dot(g1, g1) / (52.0 * 52.0), -2.0)
+                 + 0.012 * pow(1.0 + dot(g2, g2) / (30.0 * 30.0), -2.0);
+        float3 ghostCol = mix(float3(0.46, 0.56, 0.78),
+                              float3(0.80, 0.30, 0.14),
+                              saturate(night.y * 0.85));
+        E += ghostCol * gh * night.x * (1.0 - bodyCov * body01);
 
         // LA BRUME BASSE : des nappes qui respirent au pied du cadre — le sol
         // du plan. Sans elle, la lune flotte dans un vide ; avec elle, la
@@ -1339,6 +1371,17 @@ static float lmStars(float2 pos, float t) {
                            * edge * (0.35 * bloomE + 0.30 * moonGlow + 0.012)
                            * (1.0 - saturate((night.y - 0.80) * 5.0));
             E = E * (1.0 - V) + edgeCol;
+        }
+
+        // LA BRAISE (`night.z`) : quand le dernier nuage avale la lune, son
+        // contour continue de rougeoyer À TRAVERS la cendre — un fil de
+        // charbon ardent qui pulse une fois, faiblit, et meurt. C'est elle
+        // qui habite le noir, à la place de tout artifice : la lune ne
+        // disparaît pas, elle s'étouffe.
+        if (night.z > 0.0) {
+            float emberE = exp(-dAbs / 3.4) * night.z;
+            float pulse = 0.70 + 0.30 * sin(PH * 270.0 * t + 1.0);
+            E += float3(0.62, 0.095, 0.030) * (emberE * pulse);
         }
 
         // LA VIGNETTE : le cadre gothique — les coins s'enfoncent dans le

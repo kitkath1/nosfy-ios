@@ -78,7 +78,7 @@ enum MoonSDF {
             .float3(padding, tightRange, wideRange),
             .float3(0.5, 0.485, 0.71),
             .float3(0, 0, 1), .float4(0, 0, 0, -1),
-            .float(0), .float(0), .float(0), .float2(0, 0), .image(image))
+            .float(0), .float(0), .float(0), .float3(0, 0, 0), .image(image))
     }
 
     // MARK: Fabrication
