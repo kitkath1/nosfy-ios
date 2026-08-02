@@ -351,6 +351,20 @@ static float lmStars(float2 pos, float t) {
 
     float neonGain = (1.0 + 0.18 * boostEnv) * breath * flick * ignite
                    * (1.0 + 2.2 * boom) * mix(1.0, sizzle, saturate(idleLife));
+    // L'AGONIE SE LIT DANS LE GAIN AVANT DE SE LIRE DANS LA COULEUR :
+    // — un tremblement irrégulier qui s'amplifie (la lumière vue à travers
+    //   une atmosphère qui remue), périodes en k entiers, boucle intacte ;
+    // — deux CHUTES brèves et désordonnées : le tube lutte avant de céder
+    //   (bref et narratif — rien à voir avec un grésillement permanent) ;
+    // — et le SURSAUT : juste avant la fin, la lumière remonte un instant,
+    //   puis s'effondre. La dramaturgie de toutes les morts de cinéma.
+    float agony = blood * (1.0 - smoothstep(0.97, 1.0, blood));
+    float tremble = 1.0 + agony * (0.030 * sin(PH * 530.0 * t + 0.7)
+                                 + 0.018 * sin(PH * 717.0 * t + 2.9));
+    float drops = exp(-pow((blood - 0.45) / 0.025, 2.0))
+                + 0.7 * exp(-pow((blood - 0.66) / 0.020, 2.0));
+    float gasp = 0.35 * exp(-pow((blood - 0.915) / 0.028, 2.0));
+    neonGain *= tremble * (1.0 - 0.45 * drops) * (1.0 + gasp);
     float bloomWiden = (1.0 + 0.10 * boostEnv) * (1.0 + 0.9 * boom);
 
     // La fenêtre de bord (petit cadre) et la vie des raies : une raie
@@ -420,11 +434,11 @@ static float lmStars(float2 pos, float t) {
               + (0.0175 * sin(PH * 11.0 * t + 0.7)
                + 0.0087 * sin(PH * 29.0 * t + 2.9)
                + 0.05 * tilt.x) * live
-              + idleLife * (0.055 * sin(PH * 140.0 * t + 0.4)
-                          + 0.028 * sin(PH * 93.0 * t + 2.2));
+              + idleLife * (0.075 * sin(PH * 140.0 * t + 0.4)
+                          + 0.038 * sin(PH * 93.0 * t + 2.2));
     float pitch = -0.0698 + (0.0070 * sin(PH * 17.0 * t + 1.3)
                              + 0.04 * tilt.y) * live
-                + idleLife * 0.013 * sin(PH * 77.0 * t + 1.1);
+                + idleLife * 0.018 * sin(PH * 77.0 * t + 1.1);
     float cyw = cos(yaw), syw = sin(yaw), cpt = cos(pitch), spt = sin(pitch);
     float2 Ex = float2(cyw, syw * spt);
     float2 Ey = float2(0.0, cpt);
@@ -589,6 +603,28 @@ static float lmStars(float2 pos, float t) {
     float dAbs = fabs(dPt);
     float dIn = max(-dPt, 0.0);                 // profondeur DANS le croissant
 
+    // LE FRONT DE TEINTURE. L'ombre ne prend pas la lune partout à la fois :
+    // elle la TRAVERSE. Le front avance le long du tube — la corne haute
+    // cède d'abord, le sang descend le dos, gagne le ventre, atteint la
+    // corne droite en dernier. Paramétré par l'angle (le même que la
+    // comète), DÉROULÉ pour être monotone le long du chemin : 1,168 à la
+    // pointe haute → 0,594 à la pointe droite. Derrière le front, deux
+    // bandes : l'ambre à la lisière, le sang au cœur mort. Et SUR le front,
+    // la frange de PÉNOMBRE — un cheveu de cendre bleutée entre l'or mourant
+    // et le rouge, l'ozone des vraies éclipses.
+    float2 mvB = uv - float2(0.5, 0.5);
+    float angB = atan2(mvB.y, mvB.x) * (1.0 / TAU) + 0.5;
+    float auw = (angB < 0.35) ? angB + 1.0 : angB;
+    float frontU = mix(1.24, 0.545, blood);
+    float bloodWall = smoothstep(frontU - 0.05, frontU + 0.07, auw);
+    float bloodDeep = max(smoothstep(frontU + 0.15, frontU + 0.30, auw),
+                          smoothstep(0.85, 1.0, blood));
+    float bloodCore = max(smoothstep(frontU + 0.05, frontU + 0.17, auw),
+                          smoothstep(0.90, 1.0, blood));
+    float fringeB = exp(-pow((auw - frontU) / 0.035, 2.0))
+                  * smoothstep(0.02, 0.10, blood)
+                  * (1.0 - smoothstep(0.90, 0.98, blood));
+
     // Le tube n'est pas uniforme : des accents fbm par abscisse, à dérive
     // sinusoïdale, plancher 0,78 — un néon inégal, jamais interrompu.
     float2 drTube = float2(2.9 * sin(PH * 2.0 * t + 0.4),
@@ -616,7 +652,6 @@ static float lmStars(float2 pos, float t) {
     // portait seul le blanc, il fallait cette énergie ; maintenant que le FIL
     // DE PLASMA s'en charge, le tube peut redescendre et rester DORÉ. Mesure
     // à l'envers pour la cible (255, 165, 60) : E = (3,4 ; 0,92 ; 0,24).
-    float bloodWall = smoothstep(0.15, 0.75, blood);
     float tubeE = (3.4 * coreG + 0.34 * flankG) * tubeMod * neonGain
                 * (1.0 - 0.42 * bloodWall);
     // La couleur suit l'ÉNERGIE, pas la géométrie : les seuils se recalent
@@ -630,9 +665,11 @@ static float lmStars(float2 pos, float t) {
     float3 tubeC = mix(float3(1.00, 0.30, 0.045), float3(1.00, 0.45, 0.135),
                        smoothstep(0.6, 2.4, tubeE));
     tubeC *= float3(1.0, 1.0 + 0.015 * tempo, 1.0 + 0.030 * tempo);
-    // or → ambre → cuivre → sang : deux fondus échelonnés, jamais un seul.
-    tubeC = mix(tubeC, float3(0.92, 0.38, 0.10), smoothstep(0.10, 0.45, blood));
-    tubeC = mix(tubeC, float3(0.58, 0.10, 0.035), smoothstep(0.40, 0.85, blood));
+    // or → ambre → cuivre → sang : des BANDES derrière le front, jamais un
+    // fondu global — et la frange de pénombre sur le front lui-même.
+    tubeC = mix(tubeC, float3(0.92, 0.38, 0.10), bloodWall);
+    tubeC = mix(tubeC, float3(0.58, 0.10, 0.035), bloodDeep);
+    tubeC = mix(tubeC, float3(0.52, 0.60, 0.72), fringeB * 0.55);
 
     // ---- LE FIL DE PLASMA : le DOUBLET. C'est ce que montre la référence et
     // qu'un tube simple ne peut pas produire — dans un vrai néon, le gaz qui
@@ -657,7 +694,6 @@ static float lmStars(float2 pos, float t) {
     // Plancher 0,58 : le plasma d'un néon hésite, il ne se coupe jamais.
     float filMod = 0.58 + 0.80 * accFil * accFil;
     float filD = dIn - 2.10;
-    float bloodCore = smoothstep(0.55, 0.95, blood);   // le cœur cède en DERNIER
     float filE = 4.2 * exp(-filD * filD / (0.34 * 0.34)) * filMod * neonGain
                * (1.0 - 0.30 * bloodCore);
     // Plus BLANC que l'arête : c'est le cœur, pas la paroi. Pendant
@@ -1323,10 +1359,14 @@ static float lmStars(float2 pos, float t) {
         float3 glowCol = mix(float3(1.00, 0.86, 0.62),
                              float3(0.50, 0.56, 0.68),
                              saturate(rC / 320.0));
+        // Le sang gagne les nuages DE PROCHE EN LOIN : les ventres près de
+        // la lune se cuivrent avant le ciel — ils sont plus près de la
+        // source. Une cohérence qu'on ressent sans la voir.
+        float prox = 0.22 * saturate(rC / 380.0);
         glowCol = mix(glowCol, float3(0.90, 0.44, 0.14),
-                      smoothstep(0.10, 0.50, blood));
+                      smoothstep(0.10 + prox, 0.50 + prox, blood));
         glowCol = mix(glowCol, float3(0.55, 0.13, 0.06),
-                      smoothstep(0.45, 0.90, blood));
+                      smoothstep(0.45 + prox, 0.90 + prox, blood));
 
         // LES NUAGES passent DEVANT : ils absorbent la lumière du néon et des
         // étoiles là où ils sont, et leur ventre s'allume au halo. C'est ce
@@ -1347,6 +1387,11 @@ static float lmStars(float2 pos, float t) {
         float ringD = (rC - mix(172.0, 118.0, blood)) / mix(30.0, 22.0, blood);
         float ring = exp(-ringD * ringD) * 0.032 * night.x
                    * (1.0 + 0.6 * smoothstep(0.55, 0.90, blood));
+        // Au pic, le cerne se DÉDOUBLE — les deux halos concentriques des
+        // nuits de glace, le second à peine là.
+        float ring2D = (rC - mix(280.0, 192.0, blood)) / 34.0;
+        ring += exp(-ring2D * ring2D) * 0.013 * night.x
+              * smoothstep(0.50, 0.85, blood);
         E += glowCol * ring * (1.0 - bodyCov * body01);
 
         // LE LISERÉ ARGENTÉ : la lisière des nuages face à la lune brille —
@@ -1404,15 +1449,20 @@ static float lmStars(float2 pos, float t) {
         // qui habite le noir, à la place de tout artifice : la lune ne
         // disparaît pas, elle s'étouffe.
         if (night.z > 0.0) {
-            float emberE = exp(-dAbs / 3.4) * night.z;
+            float emberE = exp(-dAbs / 3.4) * (night.z * night.z);
             float pulse = 0.70 + 0.30 * sin(PH * 270.0 * t + 1.0);
             E += float3(0.62, 0.095, 0.030) * (emberE * pulse);
+            // LE DERNIER BATTEMENT : la comète blanche survit à la braise —
+            // z² meurt vite, z lentement — un unique point froid qui court
+            // encore sur le fil rouge éteint, faiblit, meurt. Le noir de
+            // l'éclipse n'est plus vide : il contient un cœur qui bat.
+            E += cometC * cometE * saturate(night.z * 1.7);
         }
 
         // LA VIGNETTE : le cadre gothique — les coins s'enfoncent dans le
         // noir pendant que le centre garde sa lune.
         float2 dc = position - 0.5 * size;
-        float vign = smoothstep(0.55, 1.05,
+        float vign = smoothstep(mix(0.55, 0.42, blood), mix(1.05, 0.90, blood),
                                 length(dc) / (0.5 * max(size.x, size.y)));
         E *= 1.0 - 0.55 * vign * night.x;
     }

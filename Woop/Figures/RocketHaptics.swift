@@ -49,7 +49,8 @@ final class RocketHaptics {
     /// vibration RÉGULIÈRE pendant qu'un shader coûteux occupe le GPU.
     func launch(ignite: Double, travel: Double, boom: Double, coda: Double,
                 heartbeat: Double, relight: Double,
-                beats: [(time: Double, hard: Bool)]) {
+                beats: [(time: Double, hard: Bool)],
+                struggles: [Double] = []) {
         guard let engine else { return }
         let tBoom = ignite + travel
         let tFlight = tBoom + boom
@@ -99,6 +100,18 @@ final class RocketHaptics {
                           value: beat.hard ? 0.65 : 0.40),
                 ],
                 relativeTime: beat.time))
+        }
+
+        // ---- LA LUTTE : deux secousses sourdes quand le néon chute — la
+        // main sent la lune se débattre avant de céder.
+        for st in struggles {
+            events.append(CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 0.42),
+                    .init(parameterID: .hapticSharpness, value: 0.12),
+                ],
+                relativeTime: st))
         }
 
         // ---- LE BATTEMENT, au cœur du noir de l'éclipse : un coup sourd et
