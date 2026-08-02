@@ -113,7 +113,13 @@ struct MoonSplashBeat {
     // de 6,2 pt entre deux vues, pour un tube qui en fait 15 de large — le
     // recouvrement devient confortable, et le plan cesse d'être saccadé même
     // si la cadence flanche.
-    static let ignite = 1.00
+    /// LE PROLOGUE : la lune au loin — une petite lueur dans le noir. Sans
+    /// lui, le gros plan s'affichait d'un coup et lisait comme un bug.
+    static let prologue = 0.55
+    /// LA PLONGÉE : la caméra s'engouffre dans la lune, du lointain au gros
+    /// plan — une approche, pas une apparition.
+    static let dive = 0.95
+    static var ignite: Double { prologue + dive }
     static let travel = 4.80
     static let boom = 1.70
     /// LA NUIT : la pierre fond, le clair de lune s'installe, la brume monte.
@@ -148,12 +154,12 @@ struct MoonSplashBeat {
     /// perçue. Départ à la POINTE HAUTE, descente du grand dos extérieur,
     /// puis tout le ventre VERS LA POINTE DROITE, où le boom éclate. Un seul
     /// geste, une seule direction, aucune redite.
-    /// Le départ se fait UN SOUFFLE APRÈS la corne : la première image montre
-    /// le dos doux du tube, jamais la pointe — et sans virage de corne à
-    /// franchir au réveil, le début du travelling est un pur glissement.
-    /// (Moins de chemin dans le même temps : tout le voyage respire mieux.)
-    static let pathStart: Float = MoonPath.landmarks.horn2 + 0.14
-    static let pathEnd: Float = MoonPath.landmarks.horn1 + 1
+    /// Le voyage S'OUVRE sur la pointe haute — l'image que la maison aime —
+    /// et s'arrête UN SOUFFLE AVANT la pointe droite : l'arrivée reste de la
+    /// matière, la pointe de fin ne se montre qu'au boom, quand la lune
+    /// entière se découvre.
+    static let pathStart: Float = MoonPath.landmarks.horn2
+    static let pathEnd: Float = MoonPath.landmarks.horn1 + 1 - 0.12
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
     /// dorée, le fil de plasma, le grain du dépoli.
@@ -229,9 +235,7 @@ struct MoonSplashBeat {
         var frameW: Float = 1
 
         if t < tBoom {
-            // Allumage puis travelling : un seul mouvement continu le long du
-            // contour. Pendant l'allumage la caméra pousse déjà (×15 → ×13) :
-            // une image qui naît immobile est une image morte.
+            // Prologue, plongée, puis travelling — un seul mouvement continu.
             let pIgnite = clamp01(t / ignite)
             b.reveal = Float(smoothstep(pIgnite))
             let pTravel = clamp01((t - tTravel) / travel)
@@ -258,11 +262,28 @@ struct MoonSplashBeat {
             // points : un travelling arrière se perçoit multiplicativement,
             // et interpoler le grossissement à plat donnerait un mouvement qui
             // ralentit visiblement vers la fin.
-            zoom = t < tTravel
-                ? exp(mix(log(closeZoom * 0.82), log(closeZoom),
-                          Float(smoothstep(pIgnite))))
-                : exp(mix(log(closeZoom), log(travelZoom), Float(pTravel)))
-            target = sceneTarget(arc: sCam)
+            if t < prologue {
+                // ---- LE PROLOGUE : la lune AU LOIN. Une petite lueur qui
+                // s'éveille dans le noir, à peine formée — l'œil comprend
+                // qu'il regarde quelque chose de distant, et l'entrée en
+                // matière cesse d'être une apparition brutale.
+                zoom = 0.35
+                target = .zero
+                b.reveal = 0.38 * Float(smoothstep(clamp01(t / prologue)))
+            } else if t < tTravel {
+                // ---- LA PLONGÉE : la caméra s'engouffre. Le grossissement
+                // court sur ses OCTAVES (×0,35 → ×10) avec une accélération
+                // franche — on est ASPIRÉ vers la pointe — et la cible glisse
+                // du centre de la lune au départ du voyage.
+                let p = Float(clamp01((t - prologue) / dive))
+                let e = pow(p, 1.6)
+                zoom = exp(mix(log(0.35), log(closeZoom), e))
+                target = sceneTarget(arc: pathStart) * Float(smoothstep(Double(p)))
+                b.reveal = 0.38 + 0.62 * Float(smoothstep(clamp01(Double(p))))
+            } else {
+                zoom = exp(mix(log(closeZoom), log(travelZoom), Float(pTravel)))
+                target = sceneTarget(arc: sCam)
+            }
             b.cineCtl.w = MoonPath.angle(at: sComet)
             b.solo = 1        // le pavé n'existe pas encore
             b.lowRes = true   // il n'y a que du néon flou à dessiner
