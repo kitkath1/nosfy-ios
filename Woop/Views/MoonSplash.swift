@@ -148,7 +148,11 @@ struct MoonSplashBeat {
     /// perçue. Départ à la POINTE HAUTE, descente du grand dos extérieur,
     /// puis tout le ventre VERS LA POINTE DROITE, où le boom éclate. Un seul
     /// geste, une seule direction, aucune redite.
-    static let pathStart: Float = MoonPath.landmarks.horn2
+    /// Le départ se fait UN SOUFFLE APRÈS la corne : la première image montre
+    /// le dos doux du tube, jamais la pointe — et sans virage de corne à
+    /// franchir au réveil, le début du travelling est un pur glissement.
+    /// (Moins de chemin dans le même temps : tout le voyage respire mieux.)
+    static let pathStart: Float = MoonPath.landmarks.horn2 + 0.14
     static let pathEnd: Float = MoonPath.landmarks.horn1 + 1
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
