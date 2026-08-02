@@ -100,8 +100,6 @@ struct MoonSplashBeat {
     var idleLife: Float = 0
     /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante).
     var night: SIMD3<Float> = .zero
-    /// L'ouverture du rideau final, 0..1. Négatif = pas de rideau.
-    var curtain: Double = -1
     /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
     var birdAge: Double = -1
 
@@ -123,8 +121,9 @@ struct MoonSplashBeat {
     /// L'ÉCLIPSE : le dernier banc avale la lune — il ne reste que sa
     /// BRAISE, le contour qui rougeoie sous la cendre, puis meurt.
     static let eclipse = 1.00
-    /// LE RIDEAU : le noir se retire vers le haut sur la page de connexion.
-    static let unveil = 1.35
+    /// LA RENAISSANCE : dans le noir, la lune posée se rallume — du rouge à
+    /// l'or — puis SA lumière rallume la page.
+    static let unveil = 1.55
     static var total: Double {
         ignite + travel + boom + night + veils + eclipse + unveil
     }
@@ -138,7 +137,7 @@ struct MoonSplashBeat {
     /// L'instant du battement sourd — quand la braise commence à mourir.
     static var heartbeat: Double { tDark + 0.55 }
     /// L'instant où la lune se rallume sur la page.
-    static var relight: Double { tEclipse + unveil * 0.62 }
+    static var relight: Double { tEclipse + 0.45 }
 
     /// LE VOYAGE VA DE POINTE À POINTE, jamais autour. Le tour complet du
     /// contour repassait par le creux intérieur — et les deux parois du
@@ -332,27 +331,32 @@ struct MoonSplashBeat {
                 b.night.z = Float(rise * (1 - die))
             }
         } else {
-            // ---- LE RIDEAU. Derrière le noir, la scène a déjà changé : la
-            // caméra est posée sur le point d'arrivée, l'aurore est là, la
-            // lune éteinte à sa place. Le voile se retire vers le haut comme
-            // une fumée qu'on aspire — l'aurore d'abord, la lune en dernier,
-            // qui se rallume dans les dernières volutes. Elle n'a pas
-            // voyagé : la nuit l'a déplacée.
-            let open = clamp01((t - tEclipse) / unveil)
+            // ---- LA RENAISSANCE : « la lune rallume le monde ». Aucune
+            // frontière ne traverse l'écran, aucun objet ne se déplace — le
+            // rideau était un WIPE, le vocabulaire des présentations, pas du
+            // cinéma. Ici, tout est LUMIÈRE : dans le noir absolu, un point
+            // de braise se rallume à sa place — rouge, puis or, la braise
+            // s'éteignant dans l'or qui monte — et alors seulement sa lumière
+            // allume la page : l'aurore s'embrase depuis le bas comme si le
+            // néon venait d'y mettre le feu. Le récit se boucle : c'est la
+            // lune qui allume l'app.
+            let a = t - tEclipse
             sCam = 1
             zoom = MoonLanding.zoom
             target = MoonLanding.cameraTarget(
                 bringing: MoonLanding.spot(in: size), at: zoom, in: size)
             cine = 0
             frameW = 0
-            b.curtain = open
-            b.reveal = Float(smoothstep(clamp01((open - 0.50) / 0.35)))
-            b.idleLife = Float(smoothstep(clamp01((open - 0.75) / 0.25)))
+            // Rouge → or : la braise meurt pendant que le néon reprend.
+            b.reveal = Float(smoothstep(clamp01(a / 0.75)))
+            b.night.z = Float(0.60 * (1 - smoothstep(clamp01(a / 0.55))))
+            // Le monde s'allume APRÈS elle : la causalité se lit.
             if landsOnAurora {
-                b.aurora = 1
+                b.aurora = smoothstep(clamp01((a - 0.45) / 0.85))
                 b.cineCtl.z = 1
             }
             b.edgeFade = 1
+            b.idleLife = Float(smoothstep(clamp01((a - 0.90) / 0.50)))
         }
 
         // Le décentrage. Le shader pose l'objet là où `pC` s'annule, c'est-à-dire
@@ -745,19 +749,6 @@ struct MoonSplashView: View {
                                 .ignoresSafeArea()
                         }
 
-                        // Le rideau d'encre : il couvre tout à l'entrée du
-                        // dernier temps, puis se retire vers le haut sur la
-                        // page de connexion.
-                        if b.curtain >= 0, b.curtain < 1 {
-                            Rectangle()
-                                .fill(.black)
-                                .colorEffect(ShaderLibrary.inkCurtain(
-                                    .float2(size.width, size.height),
-                                    .float(clock),
-                                    .float(Float(b.curtain))))
-                                .ignoresSafeArea()
-                                .allowsHitTesting(false)
-                        }
                     }
                 }
 

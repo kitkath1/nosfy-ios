@@ -309,6 +309,11 @@ static float lmStars(float2 pos, float t) {
     // pas un projecteur qu'on ajoute.
     float cine = cineCtl.x, boom = cineCtl.y, bgFade = cineCtl.z;
     float solo = saturate(soloNeon);
+    // L'AGONIE DE LA LUNE DE SANG, en étapes — pilotée par la marée des
+    // nuages. Une vraie éclipse n'est pas un virage de teinte : la lumière
+    // TOMBE pendant que la couleur monte, la paroi cède avant le cœur, le
+    // halo se contracte. `blood` est l'avancement de cette agonie.
+    float blood = smoothstep(0.25, 0.80, night.y);
     float body01 = 1.0 - solo;              // ce qui reste du pavé
     // ---- LE GRÉSILLEMENT DU NÉON POSÉ. Une fois l'objet arrivé sur la page,
     // il ne doit plus jamais avoir l'air ARRÊTÉ — un objet parfaitement
@@ -611,7 +616,9 @@ static float lmStars(float2 pos, float t) {
     // portait seul le blanc, il fallait cette énergie ; maintenant que le FIL
     // DE PLASMA s'en charge, le tube peut redescendre et rester DORÉ. Mesure
     // à l'envers pour la cible (255, 165, 60) : E = (3,4 ; 0,92 ; 0,24).
-    float tubeE = (3.4 * coreG + 0.34 * flankG) * tubeMod * neonGain;
+    float bloodWall = smoothstep(0.15, 0.75, blood);
+    float tubeE = (3.4 * coreG + 0.34 * flankG) * tubeMod * neonGain
+                * (1.0 - 0.42 * bloodWall);
     // La couleur suit l'ÉNERGIE, pas la géométrie : les seuils se recalent
     // tout seuls sur le tube rétréci (le blanc démarre à |dPt| = 0,79 pt).
     // La rampe vers le blanc est SUPPRIMÉE. C'est elle qui délavait le tube :
@@ -623,6 +630,9 @@ static float lmStars(float2 pos, float t) {
     float3 tubeC = mix(float3(1.00, 0.30, 0.045), float3(1.00, 0.45, 0.135),
                        smoothstep(0.6, 2.4, tubeE));
     tubeC *= float3(1.0, 1.0 + 0.015 * tempo, 1.0 + 0.030 * tempo);
+    // or → ambre → cuivre → sang : deux fondus échelonnés, jamais un seul.
+    tubeC = mix(tubeC, float3(0.92, 0.38, 0.10), smoothstep(0.10, 0.45, blood));
+    tubeC = mix(tubeC, float3(0.58, 0.10, 0.035), smoothstep(0.40, 0.85, blood));
 
     // ---- LE FIL DE PLASMA : le DOUBLET. C'est ce que montre la référence et
     // qu'un tube simple ne peut pas produire — dans un vrai néon, le gaz qui
@@ -647,9 +657,15 @@ static float lmStars(float2 pos, float t) {
     // Plancher 0,58 : le plasma d'un néon hésite, il ne se coupe jamais.
     float filMod = 0.58 + 0.80 * accFil * accFil;
     float filD = dIn - 2.10;
-    float filE = 4.2 * exp(-filD * filD / (0.34 * 0.34)) * filMod * neonGain;
-    // Plus BLANC que l'arête : c'est le cœur, pas la paroi.
-    float3 filC = float3(1.00, 0.93, 0.82);
+    float bloodCore = smoothstep(0.55, 0.95, blood);   // le cœur cède en DERNIER
+    float filE = 4.2 * exp(-filD * filD / (0.34 * 0.34)) * filMod * neonGain
+               * (1.0 - 0.30 * bloodCore);
+    // Plus BLANC que l'arête : c'est le cœur, pas la paroi. Pendant
+    // l'éclipse il vire au rose, puis au rouge — quelques dixièmes APRÈS la
+    // paroi : ce décalage est le détail qu'on ne remarque pas mais qu'on
+    // ressent.
+    float3 filC = mix(float3(1.00, 0.93, 0.82),
+                      float3(0.94, 0.24, 0.14), bloodCore);
 
     // ---- LA COMÈTE : une particule qui court DANS le tube. C'est la couche
     // qui manquait pour que le néon soit VIVANT et pas seulement allumé —
@@ -756,6 +772,9 @@ static float lmStars(float2 pos, float t) {
         // était la couleur d'un FLANC de néon, pas d'un verre : un dépoli
         // diffuse la lumière du cœur BLANC, il est bien plus clair en G et B.
         glassC = mix(float3(1.00, 0.56, 0.22), float3(1.00, 0.78, 0.54), edgeLit);
+        glassC = mix(glassC, float3(0.48, 0.10, 0.05),
+                     smoothstep(0.20, 0.80, blood));
+        glassE *= 1.0 - 0.45 * bloodWall;
     }
     float glassA = 0.62 * glassCov;             // l'opacité du dépoli
 
@@ -1242,7 +1261,8 @@ static float lmStars(float2 pos, float t) {
     // le champ complet dormait derrière l'interrupteur STARFIELD depuis le
     // premier jour, en attendant qu'un hôte en veuille un. C'est ce plan-là.
     if (night.x > 0.0) {
-        star += lmStars(position + para, t) * night.x;
+        star += lmStars(position + para, t) * night.x
+              * (1.0 + 0.7 * smoothstep(0.30, 0.80, blood));
     }
 
     // ---- Composition : le pavé OCCULTE le sol (jamais additionné) ; le
@@ -1283,7 +1303,7 @@ static float lmStars(float2 pos, float t) {
     // cadre. `night.x` installe l'atmosphère ; `night.y` est la MARÉE, qui
     // gorge ces mêmes nuages d'encre jusqu'à l'éclipse totale — et teinte le
     // ciel de cuivre sombre en route : la lune de sang.
-    if (night.x > 0.0 || night.y > 0.0) {
+    if (night.x > 0.0 || night.y > 0.0 || night.z > 0.0) {
         float2 vp = position / max(size.y, 1.0);
         float f1 = lmFbm(vp * float2(1.35, 2.10)
                          + float2(-t * 0.045 - night.y * 0.9, 3.7));
@@ -1295,14 +1315,18 @@ static float lmStars(float2 pos, float t) {
         // LE CLAIR DE LUNE : un Moffat large ancré sur la lune. Ivoire chaud
         // contre elle, gris d'acier à trois cents points — le contraste
         // chaud/froid est ce qui fait « nuit », pas le noir.
-        float rr = rC / 150.0;
-        float moonGlow = pow(1.0 + rr * rr, -1.35);
+        // Le halo SE CONTRACTE avec l'agonie : la lumière meurt, le cerne se
+        // resserre — et les étoiles gagnent une seconde de présence, parce
+        // que le ciel s'ouvre quand la lune faiblit.
+        float rr = rC / mix(150.0, 96.0, blood);
+        float moonGlow = pow(1.0 + rr * rr, -1.35) * (1.0 - 0.35 * blood);
         float3 glowCol = mix(float3(1.00, 0.86, 0.62),
                              float3(0.50, 0.56, 0.68),
                              saturate(rC / 320.0));
-        // La lune de sang : le ciel se cuivre avec la marée.
-        glowCol = mix(glowCol, float3(0.85, 0.28, 0.12),
-                      saturate(night.y * 0.85));
+        glowCol = mix(glowCol, float3(0.90, 0.44, 0.14),
+                      smoothstep(0.10, 0.50, blood));
+        glowCol = mix(glowCol, float3(0.55, 0.13, 0.06),
+                      smoothstep(0.45, 0.90, blood));
 
         // LES NUAGES passent DEVANT : ils absorbent la lumière du néon et des
         // étoiles là où ils sont, et leur ventre s'allume au halo. C'est ce
@@ -1320,8 +1344,9 @@ static float lmStars(float2 pos, float t) {
         // 22 degrés des photographes de lune. Un cerne fin, à peine là,
         // qui donne au ciel sa PROFONDEUR d'optique : la lumière ne fait
         // pas que baigner, elle se réfracte.
-        float ringD = (rC - 172.0) / 30.0;
-        float ring = exp(-ringD * ringD) * 0.032 * night.x;
+        float ringD = (rC - mix(172.0, 118.0, blood)) / mix(30.0, 22.0, blood);
+        float ring = exp(-ringD * ringD) * 0.032 * night.x
+                   * (1.0 + 0.6 * smoothstep(0.55, 0.90, blood));
         E += glowCol * ring * (1.0 - bodyCov * body01);
 
         // LE LISERÉ ARGENTÉ : la lisière des nuages face à la lune brille —
@@ -1407,32 +1432,4 @@ static float lmStars(float2 pos, float t) {
     // fond d'accueil au lieu de casser le banding de la laque.
     c += (lmHash21(position * 1.113 + dither2) - 0.5) * ((1.6 / 255.0) * alpha);
     return half4(half3(saturate(c)), half(alpha));
-}
-
-// MARK: - Le rideau d'encre
-//
-// La dernière image de l'éclipse : un voile de fumée noire couvre tout
-// l'écran, puis SE RETIRE VERS LE HAUT — l'aurore de la connexion se découvre
-// par le bas, la lune posée en dernier. Le bord n'est pas une ligne : c'est
-// une lisière de fumée, déformée par le même fbm que les voiles, avec un
-// filet de chaleur très discret là où elle vient de passer.
-//
-// `open` : 0 = tout couvert, 1 = tout découvert. La sortie est prémultipliée —
-// corps noir (0,0,0,α), lisière émissive quasi nulle.
-[[ stitchable ]] half4 inkCurtain(float2 position, half4 color,
-                                  float2 size, float t, float open) {
-    float2 vp = position / max(size.y, 1.0);
-    float yn = position.y / max(size.y, 1.0);
-    // La ligne du rideau monte avec `open`, et la fumée la déchire.
-    float line = mix(1.12, -0.38, open);
-    float f = lmFbm(vp * float2(1.6, 2.4) + float2(t * 0.03, -t * 0.05));
-    float d = yn - (line + (f - 0.5) * 0.30);
-    // d < 0 : au-dessus de la lisière, couvert.
-    float a = smoothstep(0.02, -0.12, d);
-    // Le filet de chaleur : à peine là, et seulement pendant que le rideau
-    // bouge — un bord qui resterait chaud une fois posé lirait « bug ».
-    float edge = exp(-d * d / (0.05 * 0.05))
-               * 0.09 * saturate(open * 4.0) * (1.0 - open);
-    float3 c = float3(1.00, 0.52, 0.18) * edge;
-    return half4(half3(c), half(a));
 }
