@@ -102,6 +102,8 @@ struct MoonSplashBeat {
     var night: SIMD3<Float> = .zero
     /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
     var birdAge: Double = -1
+    /// Le lacet d'arrivée : la lune renaît de biais et pivote vers sa pose.
+    var arriveYaw: Float = 0
 
     // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
     // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
@@ -326,8 +328,10 @@ struct MoonSplashBeat {
                 b.night.x = Float(1 - p)
                 b.night.y = 0.72 + 0.28 * Float(smoothstep(p))
                 b.birdAge = t - tVeils - 0.15
+                // La braise (z²) meurt vite ; la comète (z) lui survit —
+                // le dernier battement vit dans cette queue.
                 let rise = smoothstep(clamp01(a / 0.30))
-                let die = smoothstep(clamp01((a - 0.40) / (eclipse - 0.50)))
+                let die = smoothstep(clamp01((a - 0.40) / (eclipse - 0.40)))
                 b.night.z = Float(rise * (1 - die))
             }
         } else {
@@ -350,6 +354,13 @@ struct MoonSplashBeat {
             // Rouge → or : la braise meurt pendant que le néon reprend.
             b.reveal = Float(smoothstep(clamp01(a / 0.75)))
             b.night.z = Float(0.60 * (1 - smoothstep(clamp01(a / 0.55))))
+            // ELLE SE TOURNE VERS NOUS. La lune renaît de biais (~12°) et
+            // pivote vers sa pose pendant que l'or monte — dépasse d'un
+            // cheveu, revient. Ce qui rend ce geste riche, ce n'est pas la
+            // géométrie : les REFLETS balaient pendant qu'elle tourne (le
+            // fantôme du néon s'écarte du tube, la bande spéculaire traverse
+            // la tranche — le shader attendait qu'on tourne l'objet).
+            b.arriveYaw = 0.21 * (1 - spring(Float(clamp01(a / 1.10))))
             // Le monde s'allume APRÈS elle : la causalité se lit.
             if landsOnAurora {
                 b.aurora = smoothstep(clamp01((a - 0.45) / 0.85))
@@ -395,6 +406,26 @@ struct MoonSplashBeat {
     static var beats: [(time: Double, hard: Bool)] {
         let L = MoonPath.landmarks
         return [(time(atArc: L.kink1 + 1), false)]
+    }
+
+    /// Les deux chutes de la lutte du néon : la main les reçoit au moment où
+    /// l'œil les voit. On cherche numériquement où l'agonie traverse ses
+    /// seuils — la partition est une fonction pure, il suffit de la lire.
+    static var struggles: [Double] {
+        func blood(at t: Double) -> Double {
+            let p = min(max((t - tVeils) / veils, 0), 1)
+            let y = 0.72 * (p * p * (3 - 2 * p))
+            let b = min(max((y - 0.25) / 0.55, 0), 1)
+            return b * b * (3 - 2 * b)
+        }
+        return [0.45, 0.66].compactMap { target in
+            var lo = tVeils, hi = tDark
+            for _ in 0..<28 {
+                let mid = (lo + hi) / 2
+                if blood(at: mid) < target { lo = mid } else { hi = mid }
+            }
+            return blood(at: hi) > target - 0.02 ? hi : nil
+        }
     }
 
     /// L'état d'arrivée, figé — ce que voit `reduceMotion`, et ce que doit
@@ -724,6 +755,7 @@ struct MoonSplashView: View {
                         // d'évaluer le contenu une première fois.
                         if armed || Self.freeze != nil {
                         MonolithCanvas(size: buf, t: clock,
+                                       userYaw: b.arriveYaw,
                                        reveal: b.reveal,
                                        faceR: MoonLanding.faceR,
                                        camera: SIMD3(b.camera.x, b.camera.y,
@@ -809,7 +841,8 @@ struct MoonSplashView: View {
                                               + MoonSplashBeat.unveil,
                                         heartbeat: MoonSplashBeat.heartbeat,
                                         relight: MoonSplashBeat.relight,
-                                        beats: MoonSplashBeat.beats)
+                                        beats: MoonSplashBeat.beats,
+                                        struggles: MoonSplashBeat.struggles)
             // Une seule attente : la fin du plan. Tout le rythme haptique
             // est parti d'un bloc au moteur, il n'a plus besoin d'être
             // réveillé ici. Le garde d'annulation reste : passer le splash
