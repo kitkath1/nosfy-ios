@@ -104,6 +104,8 @@ struct MoonSplashBeat {
     var curtain: Double = -1
     /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
     var birdAge: Double = -1
+    /// L'âge du moment des yeux, dans le noir. Négatif = rien.
+    var eyeAge: Double = -1
 
     // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
     // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
@@ -116,12 +118,12 @@ struct MoonSplashBeat {
     static let ignite = 1.00
     static let travel = 9.00
     static let boom = 1.70
-    /// LA NUIT : la pierre fond dans le noir, les étoiles naissent.
-    static let night = 0.90
-    /// LES VOILES : l'encre passe devant la lune, la volée traverse.
-    static let veils = 1.90
-    /// L'ÉCLIPSE : le dernier voile couvre tout. Noir absolu.
-    static let eclipse = 0.45
+    /// LA NUIT : la pierre fond, le clair de lune s'installe, la brume monte.
+    static let night = 1.20
+    /// LES VOILES : les bancs de nuages passent, la volée traverse.
+    static let veils = 2.20
+    /// L'ÉCLIPSE : le dernier banc avale la lune. Noir — et les YEUX.
+    static let eclipse = 1.15
     /// LE RIDEAU : le noir se retire vers le haut sur la page de connexion.
     static let unveil = 1.35
     static var total: Double {
@@ -134,8 +136,10 @@ struct MoonSplashBeat {
     private static var tVeils: Double { tNight + night }
     private static var tDark: Double { tVeils + veils }
     private static var tEclipse: Double { tDark + eclipse }
-    /// L'instant du battement sourd, au cœur du noir.
-    static var heartbeat: Double { tDark + eclipse * 0.5 }
+    /// L'instant du battement sourd — pile à l'ouverture des yeux.
+    static var heartbeat: Double { tDark + 0.48 }
+    /// Le début du moment des yeux, dans le noir installé.
+    static var eyesAt: Double { tDark + 0.38 }
     /// L'instant où la lune se rallume sur la page.
     static var relight: Double { tEclipse + unveil * 0.62 }
 
@@ -296,22 +300,24 @@ struct MoonSplashBeat {
             b.cineCtl.y = surge(t)
             if t < tVeils {
                 let p = clamp01((t - tNight) / night)
-                b.solo = Float(smoothstep(p))          // la nuit avale la pierre
-                b.night.x = Float(smoothstep(p)) * 0.85 // les étoiles naissent
+                b.solo = Float(smoothstep(p))       // la nuit avale la pierre
+                b.night.x = Float(smoothstep(p))    // le ciel s'installe entier
             } else if t < tDark {
                 let p = clamp01((t - tVeils) / veils)
                 b.solo = 1
-                b.night.x = 0.85
-                b.night.y = 0.72 * Float(smoothstep(p)) // la marée des voiles
+                b.night.x = 1
+                b.night.y = 0.72 * Float(smoothstep(p)) // la marée des nuages
                 b.birdAge = t - tVeils - 0.15           // la volée, au loin
             } else {
-                // ---- L'ÉCLIPSE. Le dernier voile couvre tout ; les étoiles
-                // s'éteignent dessous. Noir absolu, un battement.
-                let p = clamp01((t - tDark) / eclipse)
+                // ---- L'ÉCLIPSE. Le dernier banc avale la lune en un tiers de
+                // seconde, les étoiles s'éteignent dessous — puis le noir
+                // TIENT, et dans ce noir, les yeux s'ouvrent.
+                let p = clamp01((t - tDark) / 0.35)
                 b.solo = 1
-                b.night.x = 0.85 * Float(1 - p)
+                b.night.x = Float(1 - p)
                 b.night.y = 0.72 + 0.28 * Float(smoothstep(p))
                 b.birdAge = t - tVeils - 0.15
+                b.eyeAge = t - Self.eyesAt
             }
         } else {
             // ---- LE RIDEAU. Derrière le noir, la scène a déjà changé : la
@@ -736,6 +742,14 @@ struct MoonSplashView: View {
                         if b.birdAge >= 0 {
                             NightBirds(age: b.birdAge,
                                        moon: MoonLanding.sceneCenter(in: size))
+                                .ignoresSafeArea()
+                        }
+
+                        // Les yeux du diablotin, dans le noir de l'éclipse.
+                        if b.eyeAge >= 0 {
+                            DemonEyes(age: b.eyeAge,
+                                      center: CGPoint(x: size.width * 0.5,
+                                                      y: size.height * 0.43))
                                 .ignoresSafeArea()
                         }
 

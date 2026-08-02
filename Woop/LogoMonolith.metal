@@ -1273,35 +1273,80 @@ static float lmStars(float2 pos, float t) {
     E += (rimCol + haloContrib * (1.0 - bodyCov)) * body01
        + bloomCol * bloomE + streakCol;
 
-    // ---- LES VOILES D'ENCRE (`night.y`). Des écharpes PLUS NOIRES QUE LA
-    // NUIT glissent devant la lune et l'éclipsent — de la fumée en
-    // contre-jour, dont seuls les bords existent, léchés d'orange là où le
-    // néon les atteint. Elles vivent en espace ÉCRAN (une fumée qui passe
-    // devant l'objectif ne zoome pas avec la scène) et dérivent avec
-    // l'horloge, donc se figent proprement sous `-moonSplashFreeze`.
-    // `night.y` est la MARÉE : 0 = ciel clair, 1 = éclipse totale — la
-    // couverture avance avec elle, la texture ne fait que ramper.
-    if (night.y > 0.0) {
+    // ---- LE CIEL DE NUIT (`night`). La première version posait des voiles
+    // NOIRS sur une nuit NOIRE : rien n'existait, l'univers spooky était
+    // invisible par construction. La leçon est celle de tous les plans de
+    // nuit du cinéma gothique : ON NE VOIT LA NUIT QUE PARCE QUE LA LUNE
+    // L'ÉCLAIRE. Il faut donc un HALO — le clair de lune, large, ivoire au
+    // cœur et gris froid au loin —, des NUAGES dont le ventre s'allume dans
+    // cette lumière pendant que leur dos reste noir, et une VIGNETTE qui
+    // cadre. `night.x` installe l'atmosphère ; `night.y` est la MARÉE, qui
+    // gorge ces mêmes nuages d'encre jusqu'à l'éclipse totale — et teinte le
+    // ciel de cuivre sombre en route : la lune de sang.
+    if (night.x > 0.0 || night.y > 0.0) {
         float2 vp = position / max(size.y, 1.0);
         float f1 = lmFbm(vp * float2(1.35, 2.10)
                          + float2(-t * 0.045 - night.y * 0.9, 3.7));
         float f2 = lmFbm(vp * float2(1.90, 2.90)
                          + float2(t * 0.030 + 8.2, -t * 0.012 + 1.3));
-        // Calibrage de la marée, mesuré sur captures : à 2,4/−1,55 la
-        // couverture était TOTALE dès y = 0,7 — l'écran devenait noir une
-        // seconde trop tôt et les voiles n'existaient jamais en tant que
-        // voiles. À 2,7/−2,25 : y = 0,72 donne des écharpes semi-couvrantes
-        // qui laissent respirer la lune, et y = 1 couvre tout, partout.
-        float raw = 0.62 * f1 + 0.55 * f2 + night.y * 2.7 - 2.25;
-        float V = smoothstep(0.0, 0.42, raw);
-        // Le bord : une bande étroite autour de la lisière de la fumée, qui
-        // ne s'allume que près du tube (bloomE est l'énergie locale du néon)
-        // et s'éteint à l'approche du noir total.
-        float edge = exp(-raw * raw / (0.12 * 0.12));
-        float3 edgeCol = float3(1.00, 0.55, 0.20) * edge
-                       * (0.35 * bloomE + 0.012)
-                       * (1.0 - saturate((night.y - 0.80) * 5.0));
-        E = E * (1.0 - V) + edgeCol;
+        float dens = 0.62 * f1 + 0.55 * f2;          // ~0,2..1,0
+        float cloud = smoothstep(0.35, 0.95, dens);
+
+        // LE CLAIR DE LUNE : un Moffat large ancré sur la lune. Ivoire chaud
+        // contre elle, gris d'acier à trois cents points — le contraste
+        // chaud/froid est ce qui fait « nuit », pas le noir.
+        float rr = rC / 150.0;
+        float moonGlow = pow(1.0 + rr * rr, -1.35);
+        float3 glowCol = mix(float3(1.00, 0.86, 0.62),
+                             float3(0.50, 0.56, 0.68),
+                             saturate(rC / 320.0));
+        // La lune de sang : le ciel se cuivre avec la marée.
+        glowCol = mix(glowCol, float3(0.85, 0.28, 0.12),
+                      saturate(night.y * 0.85));
+
+        // LES NUAGES passent DEVANT : ils absorbent la lumière du néon et des
+        // étoiles là où ils sont, et leur ventre s'allume au halo. C'est ce
+        // double mouvement — éteindre ET luire — qui les rend présents.
+        float occ = 0.30 * cloud * night.x;
+        float skyE = moonGlow * (0.055 + 0.16 * cloud) * night.x;
+        E = E * (1.0 - occ)
+          + glowCol * skyE * (1.0 - bodyCov * body01);
+
+        // LA BRUME BASSE : des nappes qui respirent au pied du cadre — le sol
+        // du plan. Sans elle, la lune flotte dans un vide ; avec elle, la
+        // scène a une assise, et l'œil comprend qu'il regarde un PAYSAGE.
+        // Teinte acier mêlée au halo : la brume n'a pas de couleur à elle,
+        // elle prend celle de la nuit.
+        float yn = position.y / max(size.y, 1.0);
+        if (yn > 0.60 && night.x > 0.0) {
+            float mist = lmFbm(float2(vp.x * 1.1 - t * 0.012,
+                                      vp.y * 3.4 + t * 0.020));
+            float band = smoothstep(0.66, 1.02, yn);
+            float mistE = band * (0.35 + 0.65 * mist) * 0.055 * night.x;
+            E += mix(float3(0.55, 0.58, 0.66), glowCol, 0.35) * mistE;
+        }
+
+        // LA MARÉE. Calibrée sur captures : à 2,7/−2,25, y = 0,72 donne des
+        // écharpes semi-couvrantes qui laissent respirer la lune, y = 1
+        // couvre tout, partout.
+        if (night.y > 0.0) {
+            float raw = dens + night.y * 2.7 - 2.25;
+            float V = smoothstep(0.0, 0.42, raw);
+            float edge = exp(-raw * raw / (0.12 * 0.12));
+            float3 edgeCol = mix(float3(1.00, 0.55, 0.20),
+                                 float3(0.80, 0.24, 0.10),
+                                 saturate(night.y * 0.85))
+                           * edge * (0.35 * bloomE + 0.30 * moonGlow + 0.012)
+                           * (1.0 - saturate((night.y - 0.80) * 5.0));
+            E = E * (1.0 - V) + edgeCol;
+        }
+
+        // LA VIGNETTE : le cadre gothique — les coins s'enfoncent dans le
+        // noir pendant que le centre garde sa lune.
+        float2 dc = position - 0.5 * size;
+        float vign = smoothstep(0.55, 1.05,
+                                length(dc) / (0.5 * max(size.x, size.y)));
+        E *= 1.0 - 0.55 * vign * night.x;
     }
 
     float3 c = 1.0 - exp(-1.35 * E * exposure);
