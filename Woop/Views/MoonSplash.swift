@@ -98,14 +98,12 @@ struct MoonSplashBeat {
     /// La vie de l'objet POSÉ : flottement lent et grésillement rare
     /// (cf. MonolithCanvas). Elle s'allume quand l'objet touche.
     var idleLife: Float = 0
-    /// Le plan de nuit : (étoiles, marée des voiles d'encre).
-    var night: SIMD2<Float> = .zero
+    /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante).
+    var night: SIMD3<Float> = .zero
     /// L'ouverture du rideau final, 0..1. Négatif = pas de rideau.
     var curtain: Double = -1
     /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
     var birdAge: Double = -1
-    /// L'âge du moment des yeux, dans le noir. Négatif = rien.
-    var eyeAge: Double = -1
 
     // Les temps de la partition. LE TRAVELLING EST LONG, ET C'EST LE SUJET :
     // sept secondes pour un contour de 429 points de scène, soit 61 pt/s —
@@ -116,14 +114,15 @@ struct MoonSplashBeat {
     // recouvrement devient confortable, et le plan cesse d'être saccadé même
     // si la cadence flanche.
     static let ignite = 1.00
-    static let travel = 9.00
+    static let travel = 4.80
     static let boom = 1.70
     /// LA NUIT : la pierre fond, le clair de lune s'installe, la brume monte.
     static let night = 1.20
     /// LES VOILES : les bancs de nuages passent, la volée traverse.
     static let veils = 2.20
-    /// L'ÉCLIPSE : le dernier banc avale la lune. Noir — et les YEUX.
-    static let eclipse = 1.15
+    /// L'ÉCLIPSE : le dernier banc avale la lune — il ne reste que sa
+    /// BRAISE, le contour qui rougeoie sous la cendre, puis meurt.
+    static let eclipse = 1.00
     /// LE RIDEAU : le noir se retire vers le haut sur la page de connexion.
     static let unveil = 1.35
     static var total: Double {
@@ -136,12 +135,20 @@ struct MoonSplashBeat {
     private static var tVeils: Double { tNight + night }
     private static var tDark: Double { tVeils + veils }
     private static var tEclipse: Double { tDark + eclipse }
-    /// L'instant du battement sourd — pile à l'ouverture des yeux.
-    static var heartbeat: Double { tDark + 0.48 }
-    /// Le début du moment des yeux, dans le noir installé.
-    static var eyesAt: Double { tDark + 0.38 }
+    /// L'instant du battement sourd — quand la braise commence à mourir.
+    static var heartbeat: Double { tDark + 0.55 }
     /// L'instant où la lune se rallume sur la page.
     static var relight: Double { tEclipse + unveil * 0.62 }
+
+    /// LE VOYAGE VA DE POINTE À POINTE, jamais autour. Le tour complet du
+    /// contour repassait par le creux intérieur — et les deux parois du
+    /// croissant étant à quelques points l'une de l'autre, l'œil croyait
+    /// REVENIR SUR SES PAS : c'était ça, l'« aller-retour » et la lenteur
+    /// perçue. Départ à la POINTE HAUTE, descente du grand dos extérieur,
+    /// puis tout le ventre VERS LA POINTE DROITE, où le boom éclate. Un seul
+    /// geste, une seule direction, aucune redite.
+    static let pathStart: Float = MoonPath.landmarks.horn2
+    static let pathEnd: Float = MoonPath.landmarks.horn1 + 1
 
     /// L'ALLUMAGE est très près : ×11, on lit la matière du tube — la paroi
     /// dorée, le fil de plasma, le grain du dépoli.
@@ -223,15 +230,15 @@ struct MoonSplashBeat {
             let pIgnite = clamp01(t / ignite)
             b.reveal = Float(smoothstep(pIgnite))
             let pTravel = clamp01((t - tTravel) / travel)
-            // La caméra avance à vitesse RIGOUREUSEMENT constante.
-            sCam = arc(at: eased(Float(pTravel)))
-            // La comète va un peu plus vite — d'un facteur constant, jamais
-            // d'une oscillation : elle DÉRIVE régulièrement vers l'avant du
-            // cadre au lieu d'y osciller. Sur les sept secondes elle prend
-            // 0,05 d'abscisse, soit 137 points d'écran : on la voit
-            // franchement gagner du terrain, sans que rien ne change de
-            // régime.
-            let sComet = eased(Float(pTravel)) * (1 + cometLead)
+            // La caméra avance à vitesse RIGOUREUSEMENT constante, de la
+            // pointe haute vers la pointe droite.
+            let span = pathEnd - pathStart
+            sCam = pathStart + eased(Float(pTravel)) * span
+            // La comète va un peu plus vite — d'un facteur constant : elle
+            // DÉRIVE régulièrement vers l'avant du cadre, atteint la pointe
+            // juste avant la caméra, et l'y attend.
+            let sComet = min(pathStart + eased(Float(pTravel))
+                             * (1 + cometLead) * span, pathEnd)
             // L'allumage POUSSE : on entre dans le tube, on ne s'en retire
             // pas. (Il partait de ×15 pour finir à ×13 — un travelling
             // arrière de 13 % sous un commentaire qui promettait l'inverse.)
@@ -262,7 +269,7 @@ struct MoonSplashBeat {
             // le mouvement puissant sans le rendre brusque.
             let p = clamp01((t - tBoom) / boom)
             let e = 1 - pow(1 - Float(p), 3.0)
-            sCam = arc(at: 1)
+            sCam = pathEnd
             zoom = exp(mix(log(closeZoom), 0, e))
             target = sceneTarget(arc: sCam) * (1 - e)
             cine = 1 - e
@@ -282,7 +289,7 @@ struct MoonSplashBeat {
             // angulaire, vers la place que sa loi propre lui donne à cet
             // instant : à la fin du boom les deux valeurs coïncident, et la
             // sentinelle peut être rendue sans que rien ne bouge.
-            b.cineCtl.w = lerpAngle(MoonPath.angle(at: 1 + cometLead),
+            b.cineCtl.w = lerpAngle(MoonPath.angle(at: pathEnd),
                                     naturalHead(shaderClock), e)
         } else if t < tEclipse {
             // ---- LE PLAN DE NUIT. La pierre fond dans le noir sans bouger
@@ -310,14 +317,19 @@ struct MoonSplashBeat {
                 b.birdAge = t - tVeils - 0.15           // la volée, au loin
             } else {
                 // ---- L'ÉCLIPSE. Le dernier banc avale la lune en un tiers de
-                // seconde, les étoiles s'éteignent dessous — puis le noir
-                // TIENT, et dans ce noir, les yeux s'ouvrent.
-                let p = clamp01((t - tDark) / 0.35)
+                // seconde, les étoiles s'éteignent dessous — et il ne reste
+                // que la BRAISE : le contour du croissant qui rougeoie à
+                // travers la cendre du nuage, pulse une fois, et meurt. Le
+                // battement haptique tombe au début de cette mort.
+                let a = t - tDark
+                let p = clamp01(a / 0.35)
                 b.solo = 1
                 b.night.x = Float(1 - p)
                 b.night.y = 0.72 + 0.28 * Float(smoothstep(p))
                 b.birdAge = t - tVeils - 0.15
-                b.eyeAge = t - Self.eyesAt
+                let rise = smoothstep(clamp01(a / 0.30))
+                let die = smoothstep(clamp01((a - 0.40) / (eclipse - 0.50)))
+                b.night.z = Float(rise * (1 - die))
             }
         } else {
             // ---- LE RIDEAU. Derrière le noir, la scène a déjà changé : la
@@ -368,29 +380,17 @@ struct MoonSplashBeat {
     /// On inverse la chaîne complète : `s` → la progression brute de la table
     /// de vitesse, puis l'inverse analytique du smoothstep, puis le temps.
     static func time(atArc s: Float) -> Double {
-        // Position de `s` dans la table (elle est croissante).
-        var lo = 0, hi = warp.count - 1
-        while hi - lo > 1 {
-            let mid = (lo + hi) / 2
-            if warp[mid] <= s { lo = mid } else { hi = mid }
-        }
-        let span = max(warp[hi] - warp[lo], 1e-9)
-        let x = (Float(lo) + (s - warp[lo]) / span) / Float(warp.count - 1)
-        // Inverse de smoothstep : p = 1/2 − sin(asin(1 − 2x)/3).
-        let clamped = min(max(x, 0), 1)
-        let p = 0.5 - sin(asin(1 - 2 * clamped) / 3)
+        // Le parcours est linéaire de pointe à pointe : l'inversion est
+        // une règle de trois.
+        let p = (s - pathStart) / max(pathEnd - pathStart, 1e-6)
         return tTravel + Double(min(max(p, 0), 1)) * travel
     }
 
-    /// Les quatre rendez-vous du travelling, dans l'ordre : les deux crochets
-    /// (touche brève) et les deux cornes (touche plus ferme — la tangente y
-    /// tourne de 160°, c'est le vrai virage).
+    /// Les rendez-vous du voyage : le seul accident du segment est le crochet
+    /// de la vague droite (les deux cornes sont le départ et l'arrivée).
     static var beats: [(time: Double, hard: Bool)] {
         let L = MoonPath.landmarks
-        return [(time(atArc: L.kink1), false),
-                (time(atArc: L.horn1), true),
-                (time(atArc: L.kink2), false),
-                (time(atArc: L.horn2), true)].sorted { $0.time < $1.time }
+        return [(time(atArc: L.kink1 + 1), false)]
     }
 
     /// L'état d'arrivée, figé — ce que voit `reduceMotion`, et ce que doit
@@ -742,14 +742,6 @@ struct MoonSplashView: View {
                         if b.birdAge >= 0 {
                             NightBirds(age: b.birdAge,
                                        moon: MoonLanding.sceneCenter(in: size))
-                                .ignoresSafeArea()
-                        }
-
-                        // Les yeux du diablotin, dans le noir de l'éclipse.
-                        if b.eyeAge >= 0 {
-                            DemonEyes(age: b.eyeAge,
-                                      center: CGPoint(x: size.width * 0.5,
-                                                      y: size.height * 0.43))
                                 .ignoresSafeArea()
                         }
 
