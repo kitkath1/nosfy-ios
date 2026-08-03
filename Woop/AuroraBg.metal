@@ -67,16 +67,36 @@ constant float3 BG_BRUME = float3(1.00, 0.95, 0.94);  // la brume des ombres
 constant float3 BG_CREME = float3(1.00, 0.93, 0.73);  // ce que devient l'orange > 169
 constant float3 BG_BLANC = float3(1.00, 0.99, 0.97);  // le cœur, au-delà de la crème
 constant float3 BG_GRIS  = float3(0.91, 0.90, 0.89);  // la brume de la marge gauche
+// Le jaune du néon de la lune (le tube du logo posé sur la connexion), plus
+// clair et plus VERT que l'or : c'est ce demi-ton qui fait « jaune » et non
+// « doré ». Réservé à la home.
+constant float3 BG_JAUNE = float3(1.00, 0.83, 0.42);
 
-constant float BG_CY     = 0.975;   // la crête, au ras du bord bas
-constant float BG_LAM_UP = 0.080;   // montée de la lumière
-constant float BG_LAM_DN = 0.125;   // chute sous la crête
+// La forme de la lumière, par page. Mesuré au pixel sur `-bgLab` : avec les
+// valeurs de la CONNEXION, le noir occupe 40 % de la hauteur, une bande morte
+// s'étale de 40 à 50 %, l'orange vit de 50 à 80 % et le blanc est écrasé dans
+// le dernier cinquième. La HOME garde les mêmes 40 % de noir mais supprime la
+// bande morte : la crête remonte dans le cadre et la montée s'allonge, donc
+// l'orange démarre aussitôt la nuit finie et le blanc a la place d'exister.
+constant float4 BG_SHAPE_LOGIN = float4(0.975, 0.080, 0.125, 0.30);
+// La chute sous la crête est plus de DEUX FOIS plus lente que sur la
+// connexion : là-bas la crête est au ras du bord bas, donc il n'y a rien à
+// éclairer dessous ; ici elle est remontée dans le cadre et tout le bas de
+// l'écran vit sous elle. Avec la valeur du login, le blanc retombait en crème
+// dès la crête passée — mesuré à 5,7 % de pixels clairs contre 19 % au login.
+constant float4 BG_SHAPE_HOME  = float4(0.780, 0.205, 0.460, 0.350);
+
 constant float BG_K      = 1.85;    // le compresseur de niveau
 
 // La masse analytique des foyers (sans rideaux) — partagée entre le champ et
 // la naissance des poussières, pour qu'elles naissent DANS la lumière.
 // `sh` : le glissement du plan MOYEN (les foyers) sous l'inclinaison.
-static float2 bgMass(float2 q, float aspect, float t, float sh) {
+// `shape` = (hauteur de la crête, λ de montée, λ de chute, plancher de nuit).
+// La connexion garde les valeurs mesurées d'origine — crête au ras du bord bas,
+// montée très courte. La home, elle, remonte tout : c'est le SEUL réglage qui
+// change entre les deux pages, et il vaut mieux qu'il soit un paramètre qu'un
+// second shader recopié.
+static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape) {
     // Respirations franches, périodes premières entre elles — c'est elles
     // qu'on doit VOIR : « anime davantage » (verdict v2).
     float b1 = 0.87 + 0.13 * sin(t * 6.2832 / 19.0);
@@ -93,12 +113,12 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
     float droite = bgGauss(q.x, xDroite, 0.210);
 
     // La crête bombe sous le cœur, et respire doucement à la verticale.
-    float cy = BG_CY - 0.022 * coeur + 0.010 * sin(t * 6.2832 / 11.0);
+    float cy = shape.x - 0.022 * coeur + 0.010 * sin(t * 6.2832 / 11.0);
 
     // Le halo orange MONTE plus haut que le cœur : son λ s'allonge.
-    float lamUp = BG_LAM_UP * (1.0 + 1.85 * droite);
+    float lamUp = shape.y * (1.0 + 1.85 * droite);
     float up = exp(-max(cy - q.y, 0.0) / lamUp);
-    float dn = exp(-max(q.y - cy, 0.0) / BG_LAM_DN);
+    float dn = exp(-max(q.y - cy, 0.0) / shape.z);
 
     // Socle discret : ce qui vit entre les foyers doit être du sombre, pas du
     // brun — un tapis chaud trop large est exactement le « brun opaque ».
@@ -120,7 +140,7 @@ static float2 bgMass(float2 q, float aspect, float t, float sh) {
 // rideaux au point courant — la caresse du login s'en habille pour avoir la
 // matière du fond, jamais du coton.
 static float3 bgField(float2 position, float2 size, float t, float2 tilt,
-                      thread float &curOut) {
+                      float4 shape, float doreBoost, thread float &curOut) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
@@ -133,7 +153,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     float lift = tilt.y * 0.016;
 
     float2 qf = float2(q.x - shFar, q.y + lift * 0.6);
-    float2 m = bgMass(qf, aspect, t, shMid - shFar);
+    float2 m = bgMass(qf, aspect, t, shMid - shFar, shape);
     float E = m.x, Eg = m.y;
 
     // Les rideaux : le plan PROCHE. Moyenne 1 par construction — mais en
@@ -149,9 +169,10 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     E *= 0.70 + 1.05 * cur;
     Eg *= 0.80 + 0.42 * cur;   // la brume est plus lisse que le feu
 
-    // La nuit avale la moitié haute — mais la lumière monte un cran plus
-    // haut (« monte-le un peu », verdict login v2).
-    float nuit = smoothstep(0.30, 0.58, q.y + lift);
+    // La nuit avale le haut de l'écran. Où elle s'arrête est LE réglage qui
+    // sépare les deux pages : la connexion lui laisse la moitié, la home la
+    // rétrécit à ses quarante pour cent.
+    float nuit = smoothstep(shape.w, shape.w + 0.28, q.y + lift);
     E *= nuit;
     Eg *= nuit;
 
@@ -172,8 +193,13 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     // La touche de JAUNE : un ANNEAU doré serré entre l'orange franc et la
     // crème — l'écho du néon. Plus large, il mangerait la plage v 0,45-0,72
     // où vit l'orange VIF (le défaut mesuré de la v2).
-    float dore = 0.75 * smoothstep(0.55, 0.78, v) * (1.0 - haut);
-    tint = mix(tint, BG_OR, dore);
+    // `doreBoost` élargit l'anneau vers le BAS de la plage : la home veut le
+    // jaune du néon de la lune bien plus présent que la connexion, sans pour
+    // autant manger la crème du cœur — donc on descend le seuil, on ne monte
+    // pas l'amplitude.
+    float dore = (0.75 + 0.25 * doreBoost)
+               * smoothstep(0.55 - 0.22 * doreBoost, 0.78, v) * (1.0 - haut);
+    tint = mix(tint, mix(BG_OR, BG_JAUNE, doreBoost), dore);
     tint = mix(tint, BG_CREME, haut);
     tint = mix(tint, BG_BLANC, smoothstep(0.78, 0.97, v));
     float3 c = clamp(tint * v, 0.0, 1.0);
@@ -190,7 +216,9 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     // ---- Les poussières : le plan le plus proche. Fines, rares, nées dans
     // la lumière seulement, elles montent en s'éteignant. σ ≥ 0,55 pt — en
     // dessous, un grain passe ENTRE les pixels de la dalle et disparaît.
-    if (q.y > 0.46) {
+    // Les poussières ne naissent que là où il y a de la lumière : la borne
+    // suit donc la nuit de la page au lieu d'être figée à mi-écran.
+    if (q.y > shape.w + 0.16) {
         float2 pp = position - float2(shNear, lift) * size.y;
         float lane = 16.0;
         float ix = floor(pp.x / lane);
@@ -207,7 +235,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float g = exp(-dot(dp, dp) / (0.60 * 0.60));
             if (g > 0.002) {
                 float2 qo = float2(xc / size.y, yBirth);
-                float2 born = bgMass(qo, aspect, t, 0.0);
+                float2 born = bgMass(qo, aspect, t, 0.0, shape);
                 float glow = clamp(born.x + born.y, 0.0, 1.0);
                 if (glow < 0.15) continue;   // jamais d'étincelle sur du noir
                 float env = sin(3.14159 * life);
@@ -234,7 +262,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float2 dp = pp - float2(xc, yc);
             if (dot(dp, dp) > 30.0 * 30.0) continue;
             float2 qo = float2(xc / size.y, yBirth);
-            float2 born = bgMass(qo, aspect, t, 0.0);
+            float2 born = bgMass(qo, aspect, t, 0.0, shape);
             float glow = clamp(born.x + born.y, 0.0, 1.0);
             if (glow < 0.15) continue;
             float env = sin(3.14159 * life);
@@ -266,7 +294,21 @@ static float3 bgDither(float3 c, float2 position, float t) {
 [[ stitchable ]] half4 bgAurora(float2 position, half4 color,
                                 float2 size, float t, float2 tilt) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cur);
+    c = bgDither(c, position, t);
+    return half4(half3(c), 1.0) * color.a;
+}
+
+// La HOME : le même fond, la même matière, mais la lumière REMONTE. Le noir
+// garde ses quarante pour cent en haut ; dessous, la bande morte disparaît et
+// l'orange, le jaune du néon puis le blanc ont chacun la place d'exister.
+// C'est le même champ que la connexion à deux constantes près — surtout pas
+// un second shader : la transition entre les deux pages n'aurait plus rien à
+// interpoler.
+[[ stitchable ]] half4 bgAuroraHome(float2 position, half4 color,
+                                    float2 size, float t, float2 tilt) {
+    float cur = 0.0;
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_HOME, 1.0, cur);
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }
@@ -281,7 +323,7 @@ static float3 bgDither(float3 c, float2 position, float t) {
                                      float2 size, float t, float2 tilt,
                                      device const float *trail, int trailN) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cur);
 
     // PAS d'ombre de lisibilité : deux tentatives (0,42 puis 0,20 de force)
     // ont éteint la nappe orange de pleine largeur qui fait le fond —

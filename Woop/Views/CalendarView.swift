@@ -1,7 +1,16 @@
 import SwiftUI
 import SwiftData
 
-struct CalendarView: View {
+/// Le calendrier n'est plus un onglet : il vit DANS Progression, sous les
+/// courbes. C'est sa place naturelle — la grille du mois donne un contexte
+/// visuel aux graphiques, et l'app descend à quatre onglets, ce qui libère le
+/// centre de la barre pour le bouton de séance.
+///
+/// La vue n'a donc plus de chrome à elle : ni `NavigationStack`, ni fond, ni
+/// `ScrollView` — elle s'insère dans ceux de son hôte. Elle garde en revanche
+/// sa propre `@Query` et son propre état de mois : le mois affiché n'a rien à
+/// voir avec la période choisie pour les courbes.
+struct CalendarSection: View {
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
     @State private var monthAnchor: Date = .now
     @State private var selectedDay: Date?
@@ -20,26 +29,12 @@ struct CalendarView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // EXACTEMENT le même ciel que la home : horloge globale, état
-                // partagé (scroll, révélation, gyro) — changer d'onglet ne
-                // change rien. Un onglet caché n'est pas rendu : coût nul.
-                WoopBackground(animated: true)
-                ScrollView {
-                    VStack(spacing: 18) {
-                        monthCard
-                        if let selectedDay {
-                            daySection(selectedDay)
-                        }
-                        streakCard
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                    .padding(.bottom, 120)
-                }
+        VStack(spacing: 18) {
+            monthCard
+            if let selectedDay {
+                daySection(selectedDay)
             }
-            .navigationTitle("Calendrier")
+            streakCard
         }
     }
 

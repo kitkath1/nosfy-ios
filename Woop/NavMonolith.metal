@@ -61,6 +61,27 @@ static float nsdRound(float2 p, float2 b, float r) {
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+/// Triangle équilatéral, apex vers le BAS dans un repère y-haut (recette iq).
+static float nsdTri(float2 p, float r) {
+    const float k = 1.7320508;
+    p.x = fabs(p.x) - r;
+    p.y = p.y + r / k;
+    if (p.x + k * p.y > 0.0) p = float2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+    p.x -= clamp(p.x, -2.0 * r, 0.0);
+    return -length(p) * sign(p.y);
+}
+
+/// Le glyphe play : le même triangle, tourné pointe à DROITE, puis arrondi par
+/// soustraction. Notre y DESCEND — le quart de tour se prend donc dans l'autre
+/// sens qu'en repère mathématique, et c'est exactement le piège : le signe
+/// inverse donne un triangle qui pointe à gauche, soit un bouton « retour ».
+/// Le décalage `0.14 r` recentre le glyphe OPTIQUEMENT : un triangle posé sur
+/// son centre géométrique penche toujours du côté de son dos.
+static float nsdPlay(float2 p, float r, float round) {
+    float2 q = float2(p.y, p.x - r * 0.14);
+    return nsdTri(q, r) - round;
+}
+
 /// Une dent de scie devenue bande douce. On passe par un TRIANGLE avant le
 /// seuil : la dent de scie brute casse net au raccord (aliasing garanti sur un
 /// fil de 3 pt à 3x), le triangle est continu partout et reste symétrique — un
@@ -86,10 +107,18 @@ static float nburn(float c, float tint) {
 // `floorLvl` = le plancher du fil. Un métal ne tombe JAMAIS au noir : il
 //              reflète un environnement sombre, ce qui est très différent d'un
 //              trou. Sans plancher, l'anneau se lit troué, en pointillés.
+// `play`     = (centre x dans le repère barre, remontée y, rayon, grésillement).
+//              Un rayon nul éteint tout le bloc : la barre d'origine, intacte.
+// `playMtl`  = (dureté du lobe spéculaire, chanfrein en pt, rayon du glyphe,
+//               force du rasant du galet)
+// `playRing` = (demi-largeur de l'anneau, sa dose, l'allumage 0→1, la buée)
+// `playFx`   = (arrondi du glyphe, vitesse du grésillement, sa blancheur, —)
 [[ stitchable ]] half4 navMonolith(float2 position, half4 color,
                                    float2 size, float t, float pad,
                                    float4 pill, float4 mtl, float4 mtl2,
-                                   float4 look, float floorLvl) {
+                                   float4 look, float floorLvl,
+                                   float4 play, float4 playMtl, float4 playRing,
+                                   float4 playFx) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -237,6 +266,162 @@ static float nburn(float c, float tint) {
     float halo = exp(-max(adp - lw, 0.0) / 2.6) * look.w * lift * (1.0 + 0.6 * press);
     rgb += chrome * halo * 0.30;
 
+    // ---- LE BOUTON PLAY -------------------------------------------------
+    // Un galet noir SATINÉ dans lequel le glyphe play est EXTRUDÉ en laque
+    // noire. Tout le secret tient là : le galet est MAT, le glyphe est
+    // BRILLANT. Un disque brillant partout se lit en plastique ; c'est le
+    // contraste mat/laqué qui donne le noir profond de la référence, où
+    // presque tout est noir et où le liseré spéculaire SEUL dessine la forme.
+    float playA = 0.0;
+    if (play.z > 0.5) {
+        float R = play.z;
+        float2 qb = p - float2(-halfB.x + play.x, -play.y);
+        float rr = length(qb);
+        float dd = rr - R;
+
+        // L'ombre du galet SUR la pierre : il flotte au-dessus de la barre, il
+        // doit s'y poser. Peinte avant le disque, sinon elle passe dessus.
+        rgb *= 1.0 - exp(-max(dd - 1.0, 0.0) / 9.0) * 0.47;
+
+        // --- le galet, mat ---
+        float din = smoothstep(0.7, -0.7, dd);
+        float ux2 = clamp(qb.x / R * 0.5 + 0.5, 0.0, 1.0);
+        float uy2 = clamp(qb.y / R * 0.5 + 0.5, 0.0, 1.0);
+        float3 pbase = mix(float3(0.0980, 0.1020, 0.1137),
+                           float3(0.0157, 0.0157, 0.0196),
+                           uy2 * uy2 * (3.0 - 2.0 * uy2));
+        // Le dôme intérieur colle à la paroi, pondéré haut-gauche : c'est lui
+        // qui fait le galet POLI plutôt que le rond découpé.
+        float pwall = exp(-max(-dd, 0.0) / (R * 0.34));
+        float pupleft = clamp(0.62 * (1.0 - uy2) + 0.38 * (1.0 - ux2), 0.0, 1.0);
+        float3 stone2 = pbase * (1.0 - 0.34 * pwall)
+                      + pwall * pow(pupleft, 2.2) * 0.10;
+        // Le rasant : l'anneau extérieur du galet attrape la lumière au bord.
+        // C'est LUI, le « un peu plus de reflet » — la capsule plafonne à 3 %
+        // de spéculaire, le galet monte à ~9 %. Même famille, un cran au-dessus.
+        stone2 += pow(clamp(rr / R, 0.0, 1.0), 6.0) * playMtl.w
+                  * (0.45 + 0.55 * (1.0 - uy2)) * float3(0.84, 0.87, 0.94);
+
+        // --- le glyphe, laqué ---
+        float gr = max(playMtl.z, 1.0);
+        // Le chanfrein ne peut pas AVALER le glyphe : au-delà de ~45 % du
+        // rayon, le triangle n'est plus qu'un galet dans le galet et le play
+        // cesse de se lire. Ce plafond est ce qui garde la forme reconnaissable
+        // quand on pousse le bourrelet de laque à fond.
+        float ch = clamp(playMtl.y, 0.3, gr * 0.45);
+        float rnd = gr * clamp(playFx.x, 0.0, 0.35);
+        float dg = nsdPlay(qb, gr, rnd);
+        // Gradient du SDF — unitaire par construction, donc échantillonné à pas
+        // FIXE en points. Jamais `dfdx` : sur un chanfrein d'un point à 3x, une
+        // dérivée d'écran ne rend que du bruit.
+        float e = 0.30;
+        float2 gn = normalize(float2(
+            nsdPlay(qb + float2(e, 0.0), gr, rnd) - nsdPlay(qb - float2(e, 0.0), gr, rnd),
+            nsdPlay(qb + float2(0.0, e), gr, rnd) - nsdPlay(qb - float2(0.0, e), gr, rnd))
+            + float2(1e-5, 0.0));
+        // Chanfrein en quart-de-rond : la normale bascule de l'horizontale au
+        // contour jusqu'à la verticale sur le plat du glyphe.
+        float uch = clamp(-dg / ch, 0.0, 1.0);
+        float nxy = sqrt(max(1.0 - uch * uch, 0.0));
+        float3 nrm = normalize(float3(gn * nxy, uch + 0.02));
+
+        // Deux sources, comme la pierre : une large en haut-gauche, un rebond
+        // faible en bas-droite. L'exposant ÉNORME fait la laque — sous ~150
+        // c'est du métal brossé, pas de l'émail.
+        float3 V = float3(0.0, 0.0, 1.0);
+        float3 H1 = normalize(normalize(float3(-0.52, -0.66, 0.54)) + V);
+        float3 H2 = normalize(normalize(float3(0.46, 0.60, 0.46)) + V);
+        float gloss = max(playMtl.x, 4.0);
+        float spec = pow(max(dot(nrm, H1), 0.0), gloss)
+                   + pow(max(dot(nrm, H2), 0.0), gloss * 0.40) * 0.30;
+        // Genou doux : un lobe aussi dur écrête en escalier sur quatre pixels.
+        // `x/(1+x)` le couche sans lui prendre son nerf.
+        spec = spec / (1.0 + 0.55 * spec);
+
+        // Le noir de la laque n'est pas plat : il renvoie l'ambiance du dôme.
+        float3 lacquer = float3(0.0196, 0.0208, 0.0235)
+                       + pwall * pow(pupleft, 2.4) * 0.030;
+        float gin = smoothstep(0.55, -0.55, dg);
+        float3 pcol = mix(stone2, lacquer + spec * float3(0.94, 0.96, 1.00) * 1.15,
+                          gin);
+
+        // --- LE SOUFFLE -------------------------------------------------------
+        // PAS de grésillement. Un tube qui accroche se lit comme une PANNE, pas
+        // comme une invitation : l'œil est câblé pour lire une lumière qui saute
+        // comme un défaut, et le bouton a alors l'air cassé. Ce qu'il faut, c'est
+        // une respiration — continue, sans accident, qui ne redescend jamais à
+        // zéro. Deux sinus incommensurables suffisent : l'œil n'y entend aucune
+        // période, et n'y voit aucune saccade.
+        float ign = clamp(playRing.z, 0.0, 1.0);
+        float sz = clamp(play.w, 0.0, 1.0);
+        float vs = max(playFx.y, 0.05);
+        float a1 = 0.5 + 0.5 * sin(t * 0.62 * vs);
+        float a2 = 0.5 + 0.5 * sin(t * 0.41 * vs + 2.1);
+        // Le plancher à 0,68 est le cœur du réglage : la lampe RESPIRE, elle ne
+        // clignote pas. Descendre plus bas et le bouton se met à battre.
+        float lvl = 0.68 + 0.22 * a1 + 0.10 * a2;
+        float amp = max(sz * lvl, ign);
+        float aura = max(ign, sz * lvl);
+        // La teinte dérive lentement de l'or au blanc chaud, sur la seconde
+        // horloge : le glyphe change de température, pas de luminosité — c'est
+        // beaucoup plus doux à l'œil qu'une pulsation d'intensité.
+        float blanc = clamp(playFx.z * (0.30 + 0.55 * a2) + ign, 0.0, 1.0);
+        if (amp > 0.001) {
+            float coreness = smoothstep(0.0, -gr * 0.55, dg);
+            float3 fire = mix(float3(1.00, 0.58, 0.16),
+                              float3(1.00, 0.97, 0.92),
+                              blanc * (0.45 + 0.55 * coreness));
+            // Fondu écran, jamais une addition : la leçon du login — une
+            // addition écrête et le blanc devient une tache plate.
+            pcol = 1.0 - (1.0 - pcol) * (1.0 - fire * (amp * gin));
+            // Le galet s'éclaire PAR le glyphe : la lumière fuit dans la
+            // matière au lieu de s'arrêter net au contour.
+            float bleed = exp(-max(dg, 0.0) / (gr * 0.42)) * (1.0 - gin);
+            pcol = 1.0 - (1.0 - pcol)
+                   * (1.0 - mix(float3(1.00, 0.50, 0.13), fire, 0.35)
+                            * (bleed * amp * 0.55));
+        }
+
+        rgb = mix(rgb, pcol, din);
+
+        // --- l'anneau : le même métal liquide que la pastille, en plus retenu ---
+        float add = fabs(dd);
+        float rw = max(playRing.x, 0.3);
+        float rdir = dot(qb / max(R, 1.0), axis) * mtl.x * 1.30 - t * mtl2.y
+                   - 1.7 * (1.0 - smoothstep(0.0, W, add)) * mtl.w;
+        float3 rchrome = float3(nstripe(fract(rdir + mtl2.z), soft),
+                                nstripe(fract(rdir), soft),
+                                nstripe(fract(rdir - mtl2.w), soft));
+        rchrome = fl + (1.0 - fl) * rchrome;
+        rchrome = mix(rchrome, float3(nburn(rchrome.r, gold.r),
+                                      nburn(rchrome.g, gold.g),
+                                      nburn(rchrome.b, gold.b)),
+                      clamp(look.y, 0.0, 1.0));
+        float rtq = clamp(-qb.y / max(R, 1.0), 0.0, 1.0);
+        float ringAmt = (1.0 - smoothstep(rw * 0.70, rw * 1.55, add))
+                      * (0.30 + 0.58 * pow(rtq, 1.15) + 0.26 * pow(1.0 - rtq, 2.4))
+                      * (playRing.y + 0.50 * aura);
+        rgb += rchrome * ringAmt;
+
+        // La buée courte, collée au galet : son sertissage.
+        float phalo = exp(-max(add - rw, 0.0) / (2.6 + 10.0 * ign))
+                    * (playRing.w + 0.20 * aura) * (1.0 + 1.2 * ign);
+        rgb += mix(rchrome, float3(1.00, 0.72, 0.34), aura * 0.7) * (phalo * 0.34);
+
+        // L'INVITE : une nappe LARGE et très douce qui déborde sur la page.
+        // Elle ne cerne pas le bouton, elle le POSE dans une lueur — c'est elle,
+        // et pas le glyphe, qui dit « appuie ». Le dosage est étroit : sous
+        // ~15 pt de portée elle redevient un contour, et au-delà de ~0,20
+        // d'amplitude elle vire au néon. Elle ne vit que DEHORS (`1 - din`),
+        // sinon elle laiterait le galet et tuerait son noir.
+        float invite = exp(-max(add, 0.0) / (playFx.w * 90.0 + 40.0 * ign))
+                     * (0.09 + 0.20 * aura) * (1.0 - din);
+        rgb += mix(float3(1.00, 0.60, 0.20), float3(1.00, 0.86, 0.58), blanc)
+               * (invite * playFx.w * 7.0);
+
+        playA = max(din, max(max(ringAmt, phalo * 0.7), invite * 1.4));
+    }
+
     // ---- LE TRAIT NOIR --------------------------------------------------
     // Un contour SERRÉ, juste dehors, qui cerne la capsule sur tout son tour.
     // Ce n'est pas l'ombre portée — celle-ci est large, orientée vers le bas et
@@ -278,6 +463,7 @@ static float nburn(float c, float tint) {
     float lum = max(max(rgb.r, rgb.g), rgb.b);
     // `pin` entre dans l'alpha : la part de pastille qui dépasse de la capsule
     // doit être OPAQUE (sa pierre est noire, donc invisible sans alpha propre).
-    float a = clamp(max(max(inside, pin), max(lum * 1.6, shadow)), 0.0, 1.0);
+    float a = clamp(max(max(max(inside, pin), playA),
+                        max(lum * 1.6, shadow)), 0.0, 1.0);
     return half4(half3(min(rgb, float3(a))), half(a));      // prémultiplié
 }
