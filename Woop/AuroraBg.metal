@@ -96,7 +96,13 @@ constant float BG_K      = 1.85;    // le compresseur de niveau
 // montée très courte. La home, elle, remonte tout : c'est le SEUL réglage qui
 // change entre les deux pages, et il vaut mieux qu'il soit un paramètre qu'un
 // second shader recopié.
-static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape) {
+// `cine` = (niveau 0→1, abscisse de la lune en fraction de LARGEUR). La
+// cinématique de connexion : les foyers remontent vers la lune et le feu du
+// bas S'ÉTEINT en proportion — l'énergie quitte la page, elle ne fusionne
+// pas au centre. La fusion créait une nappe à luminance moyenne plein écran,
+// c'est-à-dire exactement le marron (verdict « fond marron moche »).
+static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape,
+                     float2 cine) {
     // Respirations franches, périodes premières entre elles — c'est elles
     // qu'on doit VOIR : « anime davantage » (verdict v2).
     float b1 = 0.87 + 0.13 * sin(t * 6.2832 / 19.0);
@@ -106,6 +112,12 @@ static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape) {
     // Les foyers dérivent largement, et glissent avec l'inclinaison.
     float xCoeur  = aspect * 0.38 + 0.035 * sin(t * 6.2832 / 21.0)       + sh;
     float xDroite = aspect * 0.90 + 0.030 * sin(t * 6.2832 / 15.0 + 2.6) + sh;
+    // Ce sont les SOURCES qui se déplacent — vers l'abscisse de la lune,
+    // pas vers le centre : la lumière ne change pas de couleur, elle change
+    // d'adresse, et l'œil la suit jusqu'à l'objet dans lequel on va plonger.
+    float xLune = aspect * cine.y;
+    xCoeur  = mix(xCoeur,  xLune, cine.x);
+    xDroite = mix(xDroite, xLune, cine.x);
 
     // Dômes MOUS (exposant 2, larges) : les bords des foyers ne doivent pas
     // se lire — « trop superposé » (verdict v2).
@@ -124,13 +136,17 @@ static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape) {
     // brun — un tapis chaud trop large est exactement le « brun opaque ».
     // L'amplitude du halo orange le laisse à v ≈ 0,8 à la crête : un anneau
     // or-orange au bord droit, PAS une fusion blanche avec le cœur.
-    float h = 0.09 + 2.45 * b1 * coeur + 1.28 * b2 * droite;
+    // Le drainage : le feu du bas MEURT pendant que la lune s'engorge. Rien
+    // ne traverse l'orange sombre — la lumière s'éteint sur place et renaît
+    // plus haut, dans le monolithe (côté SwiftUI).
+    float h = (0.09 + 2.45 * b1 * coeur + 1.28 * b2 * droite)
+            * (1.0 - 0.55 * cine.x);
     float E = h * up * dn;
 
     // La brume grise de la marge gauche : SON plan, plus haut, plus lent.
     float colG = bgGauss(q.x, aspect * 0.045 + sh * 0.7, 0.105);
     float upG  = exp(-max(1.02 - q.y, 0.0) / 0.165);
-    float Eg = 0.55 * b3 * colG * upG;
+    float Eg = 0.55 * b3 * colG * upG * (1.0 - 0.85 * cine.x);
 
     return float2(E, Eg);
 }
@@ -140,7 +156,8 @@ static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape) {
 // rideaux au point courant — la caresse du login s'en habille pour avoir la
 // matière du fond, jamais du coton.
 static float3 bgField(float2 position, float2 size, float t, float2 tilt,
-                      float4 shape, float doreBoost, thread float &curOut) {
+                      float4 shape, float doreBoost, float2 cine, float boost,
+                      thread float &curOut) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
@@ -153,8 +170,13 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     float lift = tilt.y * 0.016;
 
     float2 qf = float2(q.x - shFar, q.y + lift * 0.6);
-    float2 m = bgMass(qf, aspect, t, shMid - shFar, shape);
+    float2 m = bgMass(qf, aspect, t, shMid - shFar, shape, cine);
     float E = m.x, Eg = m.y;
+    // L'accueil : au débouché de la cinématique, la crête de la home reçoit
+    // un surcroît qui retombe en ~0,3 s de constante — la page répond à la
+    // lumière d'où l'on vient. Sur E, avant le tone map : les noirs (E≈0)
+    // ne bougent pas, seul ce qui vit s'anime.
+    E *= 1.0 + 0.9 * boost;
 
     // Les rideaux : le plan PROCHE. Moyenne 1 par construction — mais en
     // nappes LARGES et douces (domaine réduit, contraste baissé) : ils font
@@ -197,9 +219,10 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     // jaune du néon de la lune bien plus présent que la connexion, sans pour
     // autant manger la crème du cœur — donc on descend le seuil, on ne monte
     // pas l'amplitude.
-    float dore = (0.75 + 0.25 * doreBoost)
-               * smoothstep(0.55 - 0.22 * doreBoost, 0.78, v) * (1.0 - haut);
-    tint = mix(tint, mix(BG_OR, BG_JAUNE, doreBoost), dore);
+    float doreT = clamp(doreBoost + cine.x, 0.0, 1.0);
+    float dore = (0.75 + 0.25 * doreT)
+               * smoothstep(0.55 - 0.22 * doreT, 0.78, v) * (1.0 - haut);
+    tint = mix(tint, mix(BG_OR, BG_JAUNE, doreT), dore);
     tint = mix(tint, BG_CREME, haut);
     tint = mix(tint, BG_BLANC, smoothstep(0.78, 0.97, v));
     float3 c = clamp(tint * v, 0.0, 1.0);
@@ -235,7 +258,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float g = exp(-dot(dp, dp) / (0.60 * 0.60));
             if (g > 0.002) {
                 float2 qo = float2(xc / size.y, yBirth);
-                float2 born = bgMass(qo, aspect, t, 0.0, shape);
+                float2 born = bgMass(qo, aspect, t, 0.0, shape, cine);
                 float glow = clamp(born.x + born.y, 0.0, 1.0);
                 if (glow < 0.15) continue;   // jamais d'étincelle sur du noir
                 float env = sin(3.14159 * life);
@@ -262,7 +285,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float2 dp = pp - float2(xc, yc);
             if (dot(dp, dp) > 30.0 * 30.0) continue;
             float2 qo = float2(xc / size.y, yBirth);
-            float2 born = bgMass(qo, aspect, t, 0.0, shape);
+            float2 born = bgMass(qo, aspect, t, 0.0, shape, cine);
             float glow = clamp(born.x + born.y, 0.0, 1.0);
             if (glow < 0.15) continue;
             float env = sin(3.14159 * life);
@@ -294,7 +317,8 @@ static float3 bgDither(float3 c, float2 position, float t) {
 [[ stitchable ]] half4 bgAurora(float2 position, half4 color,
                                 float2 size, float t, float2 tilt) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0,
+                       float2(0.0), 0.0, cur);
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }
@@ -306,9 +330,11 @@ static float3 bgDither(float3 c, float2 position, float t) {
 // un second shader : la transition entre les deux pages n'aurait plus rien à
 // interpoler.
 [[ stitchable ]] half4 bgAuroraHome(float2 position, half4 color,
-                                    float2 size, float t, float2 tilt) {
+                                    float2 size, float t, float2 tilt,
+                                    float welcome) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_HOME, 1.0, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_HOME, 1.0,
+                       float2(0.0), welcome, cur);
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }
@@ -321,9 +347,11 @@ static float3 bgDither(float3 c, float2 position, float t) {
 // Triplets (x, y, âge en s) côté SwiftUI.
 [[ stitchable ]] half4 bgAuroraLogin(float2 position, half4 color,
                                      float2 size, float t, float2 tilt,
+                                     float2 cine,
                                      device const float *trail, int trailN) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cine,
+                       0.0, cur);
 
     // PAS d'ombre de lisibilité : deux tentatives (0,42 puis 0,20 de force)
     // ont éteint la nappe orange de pleine largeur qui fait le fond —
@@ -356,4 +384,57 @@ static float3 bgDither(float3 c, float2 position, float t) {
 
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
+}
+
+// MARK: - La lumière de la plongée
+//
+// L'overlay de la cinématique de connexion, en fondu écran (.screen côté
+// SwiftUI) : le BLOOM du tube qui grossit jusqu'à remplir le cadre, des
+// STRIES radiales qui vendent la vitesse, et le FLASH blanc-or qui cache la
+// coupe. Tout est en coordonnées ÉCRAN, hors du sous-arbre zoomé : c'est ce
+// qui reste net pendant que la page, elle, se pixellise sous le zoom — le
+// bloom couvre exactement ce que le zoom abîme.
+//
+// Les trois couleurs sont CELLES du monolithe (cœur du filament, or, spill
+// orange) : on plonge dans le tube, pas dans un rond flou inventé.
+//
+// `u` : la progression de la plongée (0 → 1). `flash` : le voile de la coupe.
+// La texture est échantillonnée sur la DIRECTION (d/r), pas sur l'angle :
+// atan2 a une couture à ±π qui rayerait le bloom d'un trait vertical.
+[[ stitchable ]] half4 diveLight(float2 position, half4 color,
+                                 float2 size, float t, float2 center,
+                                 float u, float flash) {
+    float2 d = position - center;
+    float r = length(d);
+    float2 nd = d / max(r, 1.0);
+    float diag = length(size);
+    float uu = clamp(u, 0.0, 1.0);
+
+    // Invisible pendant l'aspiration (u = 0) : cette phase appartient à la
+    // surge du monolithe, pas au bloom.
+    float vis = smoothstep(0.02, 0.20, uu);
+
+    float radius = 60.0 + (1.4 * diag - 60.0) * pow(uu, 2.4);
+    float k = clamp(r / max(radius, 1.0), 0.0, 1.0);
+    float base = exp(-k * k * 2.2);
+
+    float3 col = mix(float3(1.00, 0.93, 0.82), float3(1.00, 0.78, 0.34),
+                     smoothstep(0.0, 0.55, k));
+    col = mix(col, float3(1.00, 0.50, 0.16), smoothstep(0.45, 1.0, k));
+
+    // La matière du tube : un fbm qui DÉFILE vers l'extérieur avec u — on
+    // avance dedans, il recule autour de nous.
+    float tex = bgFbm(nd * 2.6 + float2(0.0, r * 0.012 - t * 1.3 - uu * 6.0));
+    float amp = base * (0.72 + 0.50 * tex) * (0.55 + 0.45 * uu) * vis;
+
+    // Les stries : fines en angle (nd serré), longues en rayon (fréquence
+    // radiale basse) — des rayons de lumière, pas du bruit.
+    float str = pow(bgFbm(nd * 6.5 + float2(r * 0.002 - uu * 3.0, t * 0.11)), 3.0);
+    str *= uu * exp(-r / (diag * 0.7)) * vis;
+
+    float3 rgb = col * amp + float3(1.00, 0.85, 0.55) * (str * 1.1);
+    rgb += float3(1.00, 0.97, 0.90) * clamp(flash, 0.0, 1.0);
+    rgb = clamp(rgb, 0.0, 1.0);
+    rgb = bgDither(rgb, position, t);
+    return half4(half3(rgb), 1.0) * color.a;
 }

@@ -22,6 +22,12 @@ struct AuroraLoginView: View {
     /// (`woop.phone` → `WoopConfig.credentials`) : c'est l'appelant qui décide
     /// quoi en faire, l'écran ne touche pas aux réglages.
     var onConnect: (String) -> Void = { _ in }
+    /// Posé par la racine quand CONNEXION est touché : le fond draine alors
+    /// sa lumière vers la lune (l'aspiration de la cinématique de sortie).
+    var cineStart: Date? = nil
+
+    /// La cérémonie est en cours : la page se déshabille.
+    private var leaving: Bool { cineStart != nil }
 
     /// `-loginPressed` fige le CONNEXION en état tap : la fumée d'échappée
     /// se capture sans devoir garder le doigt posé (le pattern des bancs).
@@ -44,7 +50,8 @@ struct AuroraLoginView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            AuroraLoginBackground(traces: traces, bench: Self.trailBench)
+            AuroraLoginBackground(traces: traces, bench: Self.trailBench,
+                                  cineStart: cineStart)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
@@ -61,10 +68,29 @@ struct AuroraLoginView: View {
             // se termine. Il occupe tout l'écran en rendu (son halo et sa
             // flaque en ont besoin) mais ne capte le doigt que dans son
             // voisinage : la caresse continue de vivre sur toute la page.
+            // Pendant l'aspiration, il INSPIRE : seul objet qui grossit
+            // pendant que tout le reste s'éteint — l'œil est déjà sur lui
+            // quand la caméra part.
             LandedMonolithView()
                 .allowsHitTesting(true)
+                .scaleEffect(leaving ? 1.06 : 1.0,
+                             anchor: UnitPoint(x: 0.315, y: 0.335))
+                .animation(.easeInOut(duration: ConnexionCine.aspiration),
+                           value: leaving)
 
+            // La surge : le halo d'or qui enfle sur la lune pendant que la
+            // page se vide.
+            if let cineStart {
+                MoonSurge(start: cineStart)
+            }
+
+            // La page se déshabille : le contenu fond en glissant d'un cheveu
+            // vers le bas — elle s'incline pour le départ. À la fin de
+            // l'aspiration il ne reste que la nuit et la lune.
             content
+                .opacity(leaving ? 0 : 1)
+                .offset(y: leaving ? 12 : 0)
+                .animation(.easeIn(duration: 0.5).delay(0.15), value: leaving)
 
             // Le grain de la maison : les nappes chaudes bandent sur OLED.
             WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
@@ -72,8 +98,13 @@ struct AuroraLoginView: View {
                 .allowsHitTesting(false)
         }
         // Les micro-repères verticaux de la référence : des murmures
-        // d'archive sur le bord gauche, à peine là.
-        .overlay(alignment: .topLeading) { edgeTags }
+        // d'archive sur le bord gauche, à peine là. Premiers partis à
+        // l'aspiration — un murmure n'a pas de cérémonie d'adieu.
+        .overlay(alignment: .topLeading) {
+            edgeTags
+                .opacity(leaving ? 0 : 1)
+                .animation(.easeOut(duration: 0.4), value: leaving)
+        }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
                          trigger: hapticTick)
         .statusBarHidden()
@@ -195,6 +226,9 @@ struct AuroraLoginBackground: View {
     var traces: [TouchTrace] = []
     /// Le banc : une caresse figée en travers de la page.
     var bench: Bool = false
+    /// La cinématique de sortie, si CONNEXION a été touché : les foyers du
+    /// fond convergent vers l'or à mesure que l'horloge avance.
+    var cineStart: Date? = nil
     /// L'inclinaison de l'appareil (muette au simulateur : ici le doigt
     /// appartient à la caresse, pas à la parallaxe).
     @StateObject private var tilt = BgTilt()
@@ -205,12 +239,21 @@ struct AuroraLoginBackground: View {
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
                 let flashing = sin(t * 0.83 + 0.7) > 0.933
+                let cine = cineStart.map {
+                    ConnexionCine.cineLevel(tl.date.timeIntervalSince($0))
+                } ?? 0
+                // L'abscisse de la lune, en fraction de largeur : c'est vers
+                // ELLE que les foyers remontent, pas vers le centre.
+                let xLune = MoonLanding.spot(in: geo.size).x
+                    / max(geo.size.width, 1)
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.bgAuroraLogin(
                         .float2(geo.size.width, geo.size.height), .float(t),
                         .float2(Float(tilt.value.x), Float(tilt.value.y)),
-                        .floatArray(trailArray(at: tl.date, size: geo.size))))
+                        .float2(Float(cine), Float(xLune)),
+                        .floatArray(trailArray(at: tl.date, size: geo.size,
+                                               fastForward: cine * 1.4))))
                     .onChange(of: flashing) { _, on in
                         if on { SparkleChime.shared.play() }
                     }
@@ -219,8 +262,11 @@ struct AuroraLoginBackground: View {
     }
 
     /// Les triplets (x, y, âge) que consomme le shader. Jamais vide : un
-    /// point sentinelle hors champ garde le buffer valide.
-    private func trailArray(at now: Date, size: CGSize) -> [Float] {
+    /// point sentinelle hors champ garde le buffer valide. `fastForward`
+    /// vieillit la caresse d'autorité pendant l'aspiration : les lueurs
+    /// meurent de leur mort naturelle, pas d'un fondu plaqué dessus.
+    private func trailArray(at now: Date, size: CGSize,
+                            fastForward: Double = 0) -> [Float] {
         if bench {
             // La caresse figée : six lueurs en travers de la page, la plus
             // jeune en tête — l'âge fige la traîne au milieu de sa vie.
@@ -233,7 +279,7 @@ struct AuroraLoginBackground: View {
         }
         var arr: [Float] = []
         for tr in traces {
-            let age = Float(now.timeIntervalSince(tr.born))
+            let age = Float(now.timeIntervalSince(tr.born)) + Float(fastForward)
             if age < 1.4 {
                 arr += [Float(tr.point.x), Float(tr.point.y), age]
             }

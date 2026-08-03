@@ -145,6 +145,62 @@ struct RootView: View {
                 set: { selection = Self.order[$0] })
     }
 
+    /// L'horloge de la cinématique de connexion, ou `nil` hors cérémonie.
+    @State private var cineStart: Date?
+    /// La home arrive de trop près (1,28) et se pose en reculant.
+    @State private var homeArriving = false
+    /// La barre bijou monte du bas, en ressort, un temps après la page.
+    @State private var barArriving = false
+    /// La bouffée d'invite du galet, déclenchée à la pose de la barre.
+    @State private var invitePulseAt: Date?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotionRoot
+
+    /// CONNEXION touché : la plongée dans la lune. L'aspiration part tout de
+    /// suite (le fond du login lit `cineStart` et draine sa lumière vers le
+    /// monolithe), le grondement aussi — son motif porte ses propres courbes,
+    /// calées sur la même partition. La page bascule à l'instant EXACT du
+    /// flash plein, sans animation : la coupe se cache dans le BLANC, pas
+    /// dans le noir — c'est ce qui interdit le marron. La frame la plus
+    /// coûteuse (le montage du TabView et de ses shaders) est délibérément
+    /// la plus couverte.
+    private func startConnexionCinematic() {
+        guard cineStart == nil else { return }
+        if reduceMotionRoot {
+            // Ni zoom ni flash : un fondu sobre, et aucun grondement.
+            withAnimation(.easeOut(duration: 0.5)) { showAuth = false }
+            return
+        }
+        DiveRumble.shared.prepare()
+        cineStart = .now
+        DiveRumble.shared.play()
+        DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.swapAt) {
+            var tx = Transaction()
+            tx.disablesAnimations = true
+            withTransaction(tx) {
+                showAuth = false
+                homeArriving = true
+                barArriving = true
+            }
+            HomeWelcome.start = .now
+            // L'atterrissage s'anime au tick SUIVANT : posé dans la même
+            // transaction, il serait avalé par `disablesAnimations`.
+            DispatchQueue.main.async {
+                withAnimation(.easeOut(duration: 0.85)) { homeArriving = false }
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                    barArriving = false
+                }
+            }
+        }
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + ConnexionCine.swapAt + ConnexionCine.barLanding) {
+            invitePulseAt = .now
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.end + 0.2) {
+            cineStart = nil
+        }
+    }
+
     /// Le galet play : il ouvre une séance. C'est lui qui a remplacé le bouton
     /// « Commencer un entraînement » de la home — et il démarre DIRECTEMENT,
     /// sans feuille de confirmation : une cérémonie qui demanderait ensuite
@@ -335,14 +391,26 @@ struct RootView: View {
             // appliqué au TabView, il ne masque rien.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 JewelTabBar(items: Self.tabItems, selection: tabIndex,
-                            play: PlayParams()) { startWorkout() }
+                            play: PlayParams(),
+                            onPlay: { startWorkout() },
+                            invitePulse: invitePulseAt)
                     .frame(height: 64)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 4)
+                    // L'arrivée de la cinématique : la barre monte du bas en
+                    // ressort, un temps APRÈS la page — les meubles entrent
+                    // après les murs. `offset` et non un inset animé : la
+                    // place est déjà réservée, rien ne re-layoute.
+                    .offset(y: barArriving ? 90 : 0)
             }
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
             .tint(Color(red: 1.0, green: 0.80, blue: 0.48))
+            // L'atterrissage : au débouché du flash, la home est vue de trop
+            // près et se pose en reculant. L'ancre est un cheveu AU-DESSUS du
+            // centre : le recul se lit alors comme une DESCENTE — on arrive.
+            .scaleEffect(homeArriving ? 1.28 : 1.0,
+                         anchor: UnitPoint(x: 0.5, y: 0.42))
             .modifier(ActiveAccessory(workout: active, namespace: overlayZoom,
                                       hidden: selection == .exercises) {
                 sheetWorkout = active
@@ -369,21 +437,36 @@ struct RootView: View {
                     .zIndex(8)
                     .transition(.opacity)
                 if !showSplash {
-                    AuroraLoginView { digits in
-                        // CONNEXION entre SANS CONDITION : le parcours se teste
-                        // de bout en bout, champ vide compris. Mais on ne retient
-                        // que ce qui est un numéro — une saisie vide écraserait
-                        // `woop.phone`, et avec lui la session Supabase déjà
-                        // ouverte (elle abandonne son jeton dès que l'identité
-                        // change, cf. SupabaseSession.token()).
-                        if digits.count == 10 {
-                            UserDefaults.standard.set(digits, forKey: "woop.phone")
-                        }
-                        withAnimation(.easeOut(duration: 0.6)) { showAuth = false }
+                    // La caméra : la page entière peut plonger dans la lune —
+                    // zoomée et floutée par `DivingContainer`, immobile tant
+                    // que `cineStart` est nul.
+                    DivingContainer(start: cineStart) {
+                        AuroraLoginView(onConnect: { digits in
+                            // CONNEXION entre SANS CONDITION : le parcours se
+                            // teste de bout en bout, champ vide compris. Mais
+                            // on ne retient que ce qui est un numéro — une
+                            // saisie vide écraserait `woop.phone`, et avec lui
+                            // la session Supabase déjà ouverte (elle abandonne
+                            // son jeton dès que l'identité change).
+                            if digits.count == 10 {
+                                UserDefaults.standard.set(digits, forKey: "woop.phone")
+                            }
+                            startConnexionCinematic()
+                        }, cineStart: cineStart)
                     }
                     .transition(.opacity)
                     .zIndex(9)
                 }
+            }
+
+            // La lumière de la plongée : bloom du tube, stries, flash — en
+            // coordonnées ÉCRAN, au-dessus de TOUT. C'est elle qui reste
+            // nette pendant que la page se pixellise sous le zoom, et c'est
+            // sous son blanc plein que la page change. Elle avale aussi le
+            // doigt le temps de la cérémonie.
+            if let cineStart {
+                DiveLightOverlay(start: cineStart)
+                    .zIndex(20)
             }
 
             if showSplash {
@@ -425,6 +508,16 @@ struct RootView: View {
             let workouts = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
             Task.detached { await SupabaseSync.shared.push(snapshots) }
+            // `-cineTest` : la cinématique de connexion se déclenche seule,
+            // 1,5 s après l'arrivée sur la page (captures automatisées — le
+            // simulateur ne sait pas taper sur CONNEXION).
+            if CommandLine.arguments.contains("-cineTest") {
+                while showSplash {
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                }
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                startConnexionCinematic()
+            }
         }
         #if DEBUG
         .overlay(alignment: .topTrailing) {

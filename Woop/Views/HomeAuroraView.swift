@@ -702,11 +702,16 @@ struct AuroraFloor: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
+                // L'accueil : au débouché de la cinématique de connexion, la
+                // crête reçoit un surcroît qui retombe — la page répond à la
+                // lumière d'où l'on vient. Zéro en temps normal.
+                let welcome = ConnexionCine.welcome(at: tl.date)
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.bgAuroraHome(
                         .float2(geo.size.width, geo.size.height), .float(t),
-                        .float2(Float(tilt.value.x), Float(tilt.value.y))))
+                        .float2(Float(tilt.value.x), Float(tilt.value.y)),
+                        .float(Float(welcome))))
             }
         }
     }
