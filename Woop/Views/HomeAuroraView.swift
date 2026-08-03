@@ -16,13 +16,13 @@ struct HomeAuroraLab: View {
 
     /// L'ordre des onglets, tenu ICI plutôt que dans `WoopTab` : ce fichier est
     /// partagé, et une conformance ajoutée à l'énum se paie en conflits.
-    private static let order: [WoopTab] = [.home, .exercises, .progress, .calendar]
+    private static let order: [WoopTab] = [.home, .exercises, .progress, .profile]
 
     private static let tabItems: [(icon: String, label: String)] = [
         ("house.fill", "Accueil"),
-        ("figure.strengthtraining.functional", "Exercices"),
-        ("chart.line.uptrend.xyaxis", "Progrès"),
-        ("calendar", "Calendrier"),
+        ("figure.strengthtraining.functional", "Entraînements"),
+        ("chart.line.uptrend.xyaxis", "Progression"),
+        ("person", "Profil"),
     ]
 
     /// Le pont entre l'onglet nommé et l'index attendu par la barre.
@@ -59,7 +59,7 @@ struct HomeAuroraLab: View {
                     Color.black.ignoresSafeArea()
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
-                Tab("Calendrier", systemImage: "calendar", value: WoopTab.calendar) {
+                Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     Color.black.ignoresSafeArea()
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
@@ -68,10 +68,14 @@ struct HomeAuroraLab: View {
             // donc la pile de cartes s'arrête au-dessus d'elle au lieu de couler
             // dessous, et elle se pose d'elle-même au-dessus de l'indicateur.
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                JewelTabBar(items: Self.tabItems, selection: tabIndex)
-                    .frame(height: 64)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 4)
+                JewelTabBar(items: Self.tabItems, selection: tabIndex,
+                            play: PlayParams()) {
+                    // Le branchement sur le démarrage de séance viendra ; pour
+                    // l'instant le galet ne fait que s'allumer.
+                }
+                .frame(height: 64)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 4)
             }
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
@@ -153,7 +157,6 @@ struct HomeAuroraView: View {
                         Group {
                             greeting
                             weeklyCard
-                            actionZone
                         }
                         .padding(.horizontal, 20)
                         // Le carrousel déborde du gabarit : pleine largeur,
@@ -187,7 +190,12 @@ struct HomeAuroraView: View {
 
     private var weeklyCard: some View {
         Button {} label: {
-            ObjectiveGlassCard(achieved: doneThisWeek >= Goal.weeklyTarget) {
+            // L'obsidienne, pas le verre : c'est la matière que Kathryn a
+            // retenue (verdict du 2026-08-02). Elle a aussi l'avantage d'être
+            // franchement sombre — sur une aurore qui monte jusqu'à 60 % de
+            // l'écran, une carte de verre translucide prendrait la couleur du
+            // sol et disparaîtrait.
+            ObsidianGlassCard {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Objectif hebdomadaire")
                         .font(.inter(12, .medium))
@@ -210,18 +218,13 @@ struct HomeAuroraView: View {
                 }
             }
         }
-        .buttonStyle(ObjectiveCardPressStyle())
+        .buttonStyle(ObsidianCardPressStyle())
     }
 
-    @ViewBuilder
-    private var actionZone: some View {
-        if activeWorkout == nil {
-            // La fumée d'échappée en or léger : la cohérence avec la page
-            // de connexion aurora.
-            DiamondPrimaryButton(title: "Commencer un entraînement",
-                                 smokeWarmth: 0.4) { askStart = true }
-        }
-    }
+    // Le bouton « Commencer un entraînement » a été RETIRÉ : c'est le galet
+    // play, au centre de la barre d'onglets, qui démarre désormais une séance.
+    // Un appel à l'action en double — un pavé dans la page ET un bouton qui
+    // respire en bas — annulerait justement ce que le galet cherche à être.
 
     private var startSheet: some View {
         VStack(spacing: 0) {
@@ -686,8 +689,14 @@ struct AuroraHomeBackground: View {
     }
 }
 
-/// L'hôte du shader `homeAurora`.
+/// L'hôte de l'aurore. Depuis le 2026-08-02 c'est `bgAuroraHome` — le MÊME
+/// champ que la page de connexion (mêmes rideaux, mêmes poussières, même
+/// parallaxe à trois plans), à deux constantes près : la crête remonte dans le
+/// cadre et la nuit se rétrécit à 40 % de la hauteur. L'ancien `homeAurora`
+/// reste dans AuroraHome.metal, plus référencé.
 struct AuroraFloor: View {
+    @StateObject private var tilt = BgTilt()
+
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
@@ -695,8 +704,9 @@ struct AuroraFloor: View {
                     .truncatingRemainder(dividingBy: 900))
                 Rectangle()
                     .fill(.white)
-                    .colorEffect(ShaderLibrary.homeAurora(
-                        .float2(geo.size.width, geo.size.height), .float(t)))
+                    .colorEffect(ShaderLibrary.bgAuroraHome(
+                        .float2(geo.size.width, geo.size.height), .float(t),
+                        .float2(Float(tilt.value.x), Float(tilt.value.y))))
             }
         }
     }

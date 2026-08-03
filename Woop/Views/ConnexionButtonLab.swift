@@ -46,6 +46,10 @@ struct DiamondInputField: View {
     let placeholder: String
     @Binding var text: String
     var icon: String = "envelope"
+    /// Le clavier appelé. L'email est le défaut historique ; la connexion
+    /// demande un numéro, et un pavé numérique sur un champ de téléphone n'est
+    /// pas un détail — c'est la moitié du confort de saisie.
+    var keyboard: UIKeyboardType = .emailAddress
 
     @FocusState private var focused: Bool
 
@@ -79,7 +83,7 @@ struct DiamondInputField: View {
                         .init(color: .white.opacity(0.58), location: 1.0)
                     ], startPoint: .top, endPoint: .bottom))
                     .tint(Color.white.opacity(0.75))
-                    .keyboardType(.emailAddress)
+                    .keyboardType(keyboard)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focused)

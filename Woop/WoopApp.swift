@@ -83,8 +83,14 @@ struct RootView: View {
     private static let neonLab = CommandLine.arguments.contains("-neonLab")
     /// Banc d'essai du cadran éclipse : `-counterLab`, page noire nue.
     private static let counterLab = CommandLine.arguments.contains("-counterLab")
-    /// Banc d'essai de la connexion aurore : `-loginLab`, page expérimentale.
+    /// La connexion aurore ouverte NUE, sans callback : `-loginLab`. Ce n'est
+    /// plus un banc — c'est le vrai écran d'entrée, juste isolé pour le régler.
     private static let loginLab = CommandLine.arguments.contains("-loginLab")
+    /// ARCHIVE de l'ancien écran d'authentification — la nébuleuse vivante,
+    /// l'aura des sphères, les yeux du diablotin : `-authNebula`. Il ne fait
+    /// plus partie du parcours (la connexion aurore l'a remplacé) mais il a
+    /// coûté trop cher pour être supprimé, et il reste rejouable tel quel.
+    private static let authNebula = CommandLine.arguments.contains("-authNebula")
     /// Banc d'essai du monolithe logo : `-logoLab`, page noire nue.
     private static let logoLab = CommandLine.arguments.contains("-logoLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
@@ -124,6 +130,40 @@ struct RootView: View {
 
     private var active: Workout? { activeWorkouts.first }
 
+    /// L'ordre des onglets et leurs glyphes, tenus ici : la barre bijou parle
+    /// en INDICE, le TabView en `WoopTab`, et ce pont est le seul endroit qui
+    /// connaisse les deux.
+    private static let order: [WoopTab] = [.home, .exercises, .progress, .profile]
+    private static let tabItems: [(icon: String, label: String)] = [
+        ("house.fill", "Accueil"),
+        ("figure.strengthtraining.functional", "Entraînements"),
+        ("chart.line.uptrend.xyaxis", "Progression"),
+        ("person", "Profil"),
+    ]
+    private var tabIndex: Binding<Int> {
+        Binding(get: { Self.order.firstIndex(of: selection) ?? 0 },
+                set: { selection = Self.order[$0] })
+    }
+
+    /// Le galet play : il ouvre une séance. C'est lui qui a remplacé le bouton
+    /// « Commencer un entraînement » de la home — et il démarre DIRECTEMENT,
+    /// sans feuille de confirmation : une cérémonie qui demanderait ensuite
+    /// « es-tu sûre ? » ne serait plus une cérémonie. Le geste reste
+    /// réversible, « Annuler cette séance » vit dans l'overlay.
+    private func startWorkout() {
+        guard active == nil else {
+            // Une séance est déjà ouverte : le galet la RAMÈNE au lieu d'en
+            // créer une seconde, que rien dans l'app ne saurait afficher.
+            sheetWorkout = active
+            return
+        }
+        let workout = Workout()
+        modelContext.insert(workout)
+        try? modelContext.save()
+        WorkoutActivityController.ensure(workout)
+        selection = .exercises
+    }
+
     var body: some View {
         if Self.splashTest {
             splashBench
@@ -142,7 +182,9 @@ struct RootView: View {
         } else if Self.counterLab {
             CounterLab()
         } else if Self.loginLab {
-            LoginLab()
+            AuroraLoginView()
+        } else if Self.authNebula {
+            AuthView { _ in }
         } else if Self.homeLab {
             HomeAuroraLab()
         } else if Self.bgLab {
@@ -192,7 +234,7 @@ struct RootView: View {
             // horloge (temps absolu modulo 900 s) : elles sont en phase, quoi
             // qu'il arrive.
             if !showSplash {
-                LoginLab()
+                AuroraLoginView()
             }
 
             if showSplash {
@@ -265,23 +307,42 @@ struct RootView: View {
             if !showSplash && !showAuth {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
-                    HomeView(selection: $selection)
+                    HomeAuroraView(selection: $selection)
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
                     value: WoopTab.exercises) {
                     ExercisesView()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
                     ProgressionView()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     ProfileView()
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
             }
-            // Verre fumé permanent : le verre adaptatif devenait laiteux sur
-            // la brume cramée (libellés illisibles) ; en sombre forcé, la
-            // lumière qui le traverse devient une signature.
-            .toolbarColorScheme(.dark, for: .tabBar)
+            // La barre native est MASQUÉE au profit de la barre bijou. Le verre
+            // liquide d'Apple est translucide par nature : posé sur l'aurore il
+            // en prend la couleur et la barre devient un reflet du sol.
+            // L'obsidienne, elle, reste NOIRE sur le feu — c'est ce contraste
+            // qui fait le bijou. Le TabView demeure pour ce qu'il fait bien :
+            // l'état et les piles de navigation.
+            //
+            // `toolbarVisibility` se pose sur le CONTENU de chaque onglet :
+            // appliqué au TabView, il ne masque rien.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                JewelTabBar(items: Self.tabItems, selection: tabIndex,
+                            play: PlayParams()) { startWorkout() }
+                    .frame(height: 64)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 4)
+            }
+            // L'accent suit le mood : le violet de l'app jure dans un écran
+            // d'or. Ici la sélection est une lumière chaude.
+            .tint(Color(red: 1.0, green: 0.80, blue: 0.48))
             .modifier(ActiveAccessory(workout: active, namespace: overlayZoom,
                                       hidden: selection == .exercises) {
                 sheetWorkout = active
@@ -308,8 +369,16 @@ struct RootView: View {
                     .zIndex(8)
                     .transition(.opacity)
                 if !showSplash {
-                    AuthView { phone in
-                        UserDefaults.standard.set(phone, forKey: "woop.phone")
+                    AuroraLoginView { digits in
+                        // CONNEXION entre SANS CONDITION : le parcours se teste
+                        // de bout en bout, champ vide compris. Mais on ne retient
+                        // que ce qui est un numéro — une saisie vide écraserait
+                        // `woop.phone`, et avec lui la session Supabase déjà
+                        // ouverte (elle abandonne son jeton dès que l'identité
+                        // change, cf. SupabaseSession.token()).
+                        if digits.count == 10 {
+                            UserDefaults.standard.set(digits, forKey: "woop.phone")
+                        }
                         withAnimation(.easeOut(duration: 0.6)) { showAuth = false }
                     }
                     .transition(.opacity)

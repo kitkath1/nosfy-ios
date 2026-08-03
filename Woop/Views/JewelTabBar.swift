@@ -53,6 +53,56 @@ struct JewelParams: Equatable {
     var floorLevel: Double = 0.30
 }
 
+/// Les réglages du bouton play central — le galet noir dans lequel le glyphe
+/// est extrudé en laque. Même logique que `JewelParams` : le banc les fouette,
+/// la valeur retenue devient le défaut.
+struct PlayParams: Equatable {
+    /// Rayon du galet, en points. Il DÉBORDE largement de la capsule par le
+    /// haut : c'est ce débordement qui le sort du rang des onglets.
+    var radius: Double = 33
+    /// De combien il remonte au-dessus du centre de la barre.
+    var rise: Double = 20
+    /// L'air qu'il se réserve de chaque côté dans la barre. Presque rien :
+    /// le galet MORD sur ses voisins, il n'attend pas qu'on lui fasse place.
+    var gap: Double = 1
+    /// Dureté du lobe spéculaire. ÉNORME, et c'est le point : sous ~150 le
+    /// glyphe est du métal brossé, au-delà de 300 c'est de l'émail noir.
+    var gloss: Double = 696
+    /// Largeur du chanfrein du glyphe, en points. C'est sur cette rampe seule
+    /// que vit le reflet. Large — un chanfrein étroit donne une arête coupante
+    /// de métal ; c'est l'épaisseur qui fait le bourrelet de laque.
+    var chamfer: Double = 4.19
+    /// Rayon du triangle play, en points.
+    var glyph: Double = 11
+    /// Le rasant du galet : son anneau extérieur. LE « un peu plus de reflet »
+    /// que la barre — elle plafonne à 3 % de spéculaire, lui va bien au-delà.
+    var fresnel: Double = 0.239
+    /// Demi-largeur de l'anneau de métal liquide.
+    var ringW: Double = 1.0
+    /// Sa dose. À ZÉRO : l'or de la pastille suffit, un second cercle doré
+    /// autour du galet et le bouton devient un jouet. Le galet se tient par
+    /// son rasant, pas par un sertissage.
+    var ringAmt: Double = 0
+    /// La buée courte collée au galet — son sertissage.
+    var halo: Double = 0.10
+    /// Le SOUFFLE : la lueur permanente du glyphe. Une respiration continue,
+    /// jamais un clignotement — un néon qui accroche se lit comme une panne,
+    /// pas comme une invitation.
+    var breath: Double = 0.72
+    /// Sa vitesse. Lent : c'est une braise, pas un cœur qui s'emballe.
+    var breathSpeed: Double = 1.0
+    /// Combien la lueur dérive vers le BLANC. C'est la TEMPÉRATURE qui varie,
+    /// pas la luminosité — beaucoup plus doux à l'œil qu'une pulsation.
+    var whiteness: Double = 0.55
+    /// L'INVITE : la nappe large et douce autour du galet, celle qui appelle le
+    /// doigt avant même qu'on le pose. Le réglage est étroit — trop courte, ce
+    /// n'est qu'un contour ; trop forte, c'est du néon.
+    var invite: Double = 0.20
+    /// L'arrondi du triangle, en fraction de son rayon. Rond, le play cesse de
+    /// se lire ; anguleux, il redevient un pictogramme.
+    var round: Double = 0.10
+}
+
 // MARK: - La barre
 
 /// La barre d'onglets « monolithe » : une capsule d'obsidienne, et une pastille
@@ -64,6 +114,10 @@ struct JewelTabBar: View {
     let items: [(icon: String, label: String)]
     @Binding var selection: Int
     var params: JewelParams = JewelParams()
+    /// Le bouton play central. `nil` : la barre d'origine, sans disque, à
+    /// slots égaux — le banc s'en sert pour comparer avant/après.
+    var play: PlayParams?
+    var onPlay: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -99,6 +153,15 @@ struct JewelTabBar: View {
     /// sélectionné. On ne peut pas corriger l'état pendant le rendu ; on lit
     /// donc la péremption au lieu de l'écrire.
     @State private var lastPulse: Date = .distantPast
+    /// Le doigt sur le galet : sa propre rampe, indépendante de la pastille.
+    @State private var playAt: Date = .distantPast
+    @State private var playDown = false
+    @State private var playPulse: Date = .distantPast
+
+    /// Le rang devant lequel s'ouvre la fente du galet. Au milieu de la liste :
+    /// avec quatre onglets, deux à gauche, deux à droite, et le disque tombe
+    /// EXACTEMENT au centre de la barre.
+    private var mid: Int { items.count / 2 }
 
     var body: some View {
         GeometryReader { geo in
@@ -106,9 +169,14 @@ struct JewelTabBar: View {
             let barH = geo.size.height
             let w = barW + Self.pad * 2
             let h = barH + Self.pad * 2
-            let slot = barW / CGFloat(max(items.count, 1))
+            // La fente que le galet se réserve. Les onglets se partagent le
+            // reste — ils rétrécissent, ils ne se chevauchent jamais.
+            let playW = play.map { CGFloat($0.radius * 2 + $0.gap * 2) } ?? 0
+            let slot = max(barW - playW, 1) / CGFloat(max(items.count, 1))
             let pillHH = barH * 0.5 - Self.inset
             let pillHW = slot * 0.5 - Self.insetX
+            let playR = CGFloat(play?.radius ?? 0)
+            let playRise = CGFloat(play?.rise ?? 0)
 
             // `.topLeading` partout : le rectangle du shader est PLUS GRAND que
             // la barre (marge d'ombre), et un ZStack centré le recentrerait —
@@ -120,8 +188,10 @@ struct JewelTabBar: View {
                     let now = tl.date
                     let t = Float(now.timeIntervalSinceReferenceDate
                         .truncatingRemainder(dividingBy: 900))
-                    let m = motion(at: now, slot: slot)
+                    let m = motion(at: now, slot: slot, playW: playW)
                     let press = pressLevel(at: now)
+                    let ignite = playLevel(at: now)
+                    let playX = slot * CGFloat(mid) + playW * 0.5
 
                     Rectangle()
                         .fill(.white)
@@ -137,7 +207,21 @@ struct JewelTabBar: View {
                                     Float(params.shiftRed), Float(params.shiftBlue)),
                             .float4(Float(params.influence), Float(params.gold),
                                     Float(params.lineW), Float(params.glow)),
-                            .float(Float(params.floorLevel)))))
+                            .float(Float(params.floorLevel)),
+                            .float4(Float(playX), Float(playRise),
+                                    Float(playR), Float(play?.breath ?? 0)),
+                            .float4(Float(play?.gloss ?? 0),
+                                    Float(play?.chamfer ?? 1),
+                                    Float(play?.glyph ?? 1),
+                                    Float(play?.fresnel ?? 0)),
+                            .float4(Float(play?.ringW ?? 1),
+                                    Float(play?.ringAmt ?? 0),
+                                    Float(ignite),
+                                    Float(play?.halo ?? 0)),
+                            .float4(Float(play?.round ?? 0.1),
+                                    Float(play?.breathSpeed ?? 1),
+                                    Float(play?.whiteness ?? 0.55),
+                                    Float(play?.invite ?? 0)))))
                         .offset(x: -Self.pad, y: -Self.pad)
                 }
                 .allowsHitTesting(false)
@@ -148,6 +232,11 @@ struct JewelTabBar: View {
                         .truncatingRemainder(dividingBy: 900)
                     HStack(spacing: 0) {
                         ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                            // La fente du galet s'ouvre AVANT l'onglet du
+                            // milieu : deux icônes, le disque, deux icônes.
+                            if i == mid, playW > 0 {
+                                Color.clear.frame(width: playW)
+                            }
                             slotView(index: i, item: item, slot: slot, clock: clock)
                         }
                     }
@@ -162,8 +251,11 @@ struct JewelTabBar: View {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { v in
-                            let i = min(max(Int(v.location.x / max(slot, 1)), 0),
-                                        items.count - 1)
+                            // La fente du galet ne sélectionne RIEN : sans ce
+                            // filtre, glisser sur le bouton ferait basculer
+                            // l'onglet du milieu sous le doigt.
+                            guard let i = tabIndex(atX: v.location.x, slot: slot,
+                                                   playW: playW) else { return }
                             if selection != i { selection = i }
                             if !isDown { pressedAt = .now; isDown = true }
                             if !dragging { dragAt = .now; dragging = true }
@@ -174,6 +266,31 @@ struct JewelTabBar: View {
                             dragAt = .now; dragging = false
                         }
                 )
+
+                // Le galet : sa zone de toucher vit AU-DESSUS de la rangée, donc
+                // elle capte le doigt avant elle. Le dessin, lui, est entièrement
+                // dans le shader — ici il n'y a qu'un disque transparent.
+                if play != nil {
+                    Circle()
+                        .fill(.clear)
+                        .frame(width: playR * 2, height: playR * 2)
+                        .contentShape(.circle)
+                        .position(x: barW * 0.5, y: barH * 0.5 - playRise)
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in
+                                    if !playDown { playAt = .now; playDown = true }
+                                    playPulse = .now
+                                }
+                                .onEnded { _ in
+                                    playAt = .now; playDown = false
+                                    onPlay()
+                                }
+                        )
+                        .accessibilityLabel("Démarrer une séance")
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { onPlay() }
+                }
             }
             .frame(width: barW, height: barH, alignment: .topLeading)
             .onAppear {
@@ -184,7 +301,7 @@ struct JewelTabBar: View {
             .onChange(of: selection) { _, _ in
                 let target = CGFloat(selection)
                 guard target != toU else { return }
-                fromU = motion(at: .now, slot: slot).u
+                fromU = motion(at: .now, slot: slot, playW: playW).u
                 toU = target
                 moveStart = .now
             }
@@ -225,9 +342,25 @@ struct JewelTabBar: View {
     /// ici plutôt que confié à `withAnimation` : un uniform de shader n'est pas
     /// animable par SwiftUI, mais la timeline nous donne l'instant à chaque
     /// image — autant s'en servir.
-    private func motion(at date: Date, slot: CGFloat)
+    /// L'onglet sous l'abscisse `x`, ou `nil` si le doigt est dans la fente du
+    /// galet — elle n'appartient à personne.
+    private func tabIndex(atX x: CGFloat, slot: CGFloat, playW: CGFloat) -> Int? {
+        let leftEnd = slot * CGFloat(mid)
+        if playW > 0, x >= leftEnd, x < leftEnd + playW { return nil }
+        let shifted = x < leftEnd ? x : x - playW
+        return min(max(Int(shifted / max(slot, 1)), 0), items.count - 1)
+    }
+
+    private func motion(at date: Date, slot: CGFloat, playW: CGFloat)
         -> (x: CGFloat, u: CGFloat, zoom: CGFloat, zoomW: CGFloat) {
-        func point(_ u: CGFloat) -> CGFloat { slot * (u + 0.5) }
+        // La pastille TRAVERSE la fente du galet au lieu de sauter par-dessus :
+        // l'offset s'ouvre linéairement sur le dernier pas avant le milieu.
+        // Elle passe donc DERRIÈRE le disque — qui la couvre, puisqu'il est
+        // peint après elle dans le shader.
+        func point(_ u: CGFloat) -> CGFloat {
+            slot * (u + 0.5)
+                + playW * min(max(u - CGFloat(mid) + 1, 0), 1)
+        }
         guard fromU >= 0, toU >= 0 else {
             let u = CGFloat(selection)
             return (point(u), u, 1, 1)
@@ -281,6 +414,23 @@ struct JewelTabBar: View {
     private func pressLevel(at date: Date) -> Double {
         let (down, ref) = held(at: date, flag: isDown, since: pressedAt)
         let dur = down ? 0.10 : 0.26
+        let raw = min(max(date.timeIntervalSince(ref) / dur, 0), 1)
+        let eased = raw * raw * (3 - 2 * raw)
+        return down ? eased : 1 - eased
+    }
+
+    /// L'allumage du galet. Il s'allume PLUS VITE qu'il ne s'éteint — un
+    /// interrupteur claque, une braise met du temps à mourir. C'est cette
+    /// dissymétrie, et rien d'autre, qui fait la chaleur de l'objet.
+    private func playLevel(at date: Date) -> Double {
+        guard play != nil else { return 0 }
+        var down = playDown
+        var ref = playAt
+        if playDown, date.timeIntervalSince(playPulse) > Self.stale {
+            down = false
+            ref = playPulse.addingTimeInterval(Self.stale)
+        }
+        let dur = down ? 0.07 : 0.42
         let raw = min(max(date.timeIntervalSince(ref) / dur, 0), 1)
         let eased = raw * raw * (3 - 2 * raw)
         return down ? eased : 1 - eased

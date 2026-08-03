@@ -9,7 +9,20 @@ import SwiftUI
 /// s'échappent de la lumière — et, posés dessus, le registre de la maison :
 /// titre Inter en bas à gauche, l'input et le bouton CONNEXION de la famille
 /// diamant. L'AuthView réelle n'est pas touchée : tout vit ici.
-struct LoginLab: View {
+/// L'écran d'entrée de l'app — le seul. Le splash de la lune se termine
+/// dessus : `LandedMonolithView`, plus bas, EST l'objet sur lequel la
+/// cinématique se pose. L'ancien écran d'authentification (nébuleuse et
+/// diablotins, `AuthView`) est passé en archive derrière `-authNebula`.
+///
+/// Ce n'est plus un banc : `-loginLab` l'ouvre nu, la racine l'ouvre avec un
+/// `onConnect`. Un seul type pour les deux — un doublon d'écran de connexion
+/// dériverait en deux jours.
+struct AuroraLoginView: View {
+    /// Le numéro saisi, en chiffres. C'est la clé de la session Supabase
+    /// (`woop.phone` → `WoopConfig.credentials`) : c'est l'appelant qui décide
+    /// quoi en faire, l'écran ne touche pas aux réglages.
+    var onConnect: (String) -> Void = { _ in }
+
     /// `-loginPressed` fige le CONNEXION en état tap : la fumée d'échappée
     /// se capture sans devoir garder le doigt posé (le pattern des bancs).
     private static let pressed = CommandLine.arguments.contains("-loginPressed")
@@ -17,7 +30,7 @@ struct LoginLab: View {
     /// capture sans doigt.
     private static let trailBench = CommandLine.arguments.contains("-loginTrail")
 
-    @State private var email = ""
+    @State private var phone = ""
     /// La caresse : les derniers points du doigt, horodatés — le shader en
     /// fait des lueurs qui s'évasent et meurent en une seconde.
     @State private var traces: [TouchTrace] = []
@@ -106,7 +119,7 @@ struct LoginLab: View {
                 title
                     .padding(.bottom, 14)
 
-                Text("Ton email suffit — tes séances\nte retrouvent partout.")
+                Text("Ton numéro suffit — tes séances\nte retrouvent partout.")
                     .font(.inter(14))
                     .foregroundStyle(.white.opacity(0.50))
                     .lineSpacing(4)
@@ -114,13 +127,20 @@ struct LoginLab: View {
             }
             .allowsHitTesting(false)
 
-            DiamondInputField(placeholder: "Adresse email", text: $email)
+            DiamondInputField(placeholder: "Numéro de téléphone", text: $phone,
+                              icon: "phone", keyboard: .phonePad)
                 .padding(.bottom, 14)
 
             // La fumée du tap en or léger : sur l'aurore, le blanc pur
             // suffit presque — l'or la marie au fond.
+            //
+            // Le bouton n'est PAS conditionné à la validité du numéro : on
+            // teste le parcours de bout en bout, et c'est l'appelant qui
+            // décide s'il retient la saisie.
             DiamondConnexionButton(benchPress: Self.pressed ? 1 : nil,
-                                   smokeWarmth: 0.4) {}
+                                   smokeWarmth: 0.4) {
+                onConnect(phone.filter(\.isNumber))
+            }
         }
         .padding(.horizontal, 26)
         .padding(.bottom, 22)
@@ -268,5 +288,5 @@ final class SparkleChime {
 }
 
 #Preview {
-    LoginLab()
+    AuroraLoginView()
 }

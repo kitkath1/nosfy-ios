@@ -41,6 +41,14 @@ struct ProgressionView: View {
                             maxWeightCard
                             SynthesisCard(workouts: finished, period: timeframe)
                         }
+
+                        // Le calendrier, rapatrié de son ancien onglet. Il vient
+                        // APRÈS les courbes : on lit d'abord la tendance, puis on
+                        // va chercher le jour. L'inverse ferait de la page un
+                        // calendrier auquel on aurait accroché des graphiques.
+                        // Affiché même sans séance : une grille vide reste une
+                        // invitation, là où un écran vide ne dit rien.
+                        CalendarSection()
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
