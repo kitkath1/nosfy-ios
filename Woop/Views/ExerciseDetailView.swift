@@ -5,18 +5,21 @@ import SwiftData
 
 /// LA fiche d'un exercice — et son éditeur. Elle a absorbé l'ancienne feuille
 /// modale `LogExerciseSheet` : il n'y a plus « consulter », puis « ouvrir pour
-/// saisir ». Il y a un seul écran, où l'on règle et où l'on lance. Un geste et
-/// un écran de moins, pour la musculation comme pour le cardio.
+/// saisir ». Il y a un seul écran, où l'on règle et où l'on lance.
 ///
-/// La page est NOIRE, sans ciel : la photo occupe le haut et son fond doit se
-/// perdre dans la page — une nébuleuse derrière elle redessinerait aussitôt son
-/// rectangle. La tab bar s'efface pour la même raison de fond : la barre
-/// d'action du bas est le seul plancher, et deux barres empilées ne feraient que
-/// se disputer le geste.
+/// La page est NOIRE, et s'organise comme la référence : le chevron dans son
+/// chip de verre sous une nappe de braise, le titre, la photo fondue dans sa
+/// carte sombre, et en plancher la DALLE — carte blanche draggable dont le
+/// bord bas s'échancre autour de la pastille de séance (l'incrustation vit
+/// dans `NotchedCard.swift`, la dalle dans `ExerciseSetupCard.swift`).
+///
+/// Le banc : `-exoLab` ouvre cette fiche seule (+ `-activeWorkout` pour voir
+/// la pastille et son échancrure).
 struct ExerciseDetailView: View {
     let exercise: Exercise
 
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
 
     @State private var confirmation: String?
@@ -34,6 +37,9 @@ struct ExerciseDetailView: View {
     @State private var steadySpeed: Double = 7
     @State private var incline: Double = 0
 
+    /// La pastille de série que les rangées de la dalle éditent.
+    @State private var selectedSet = 0
+
     /// La série en cours d'exécution au compteur, s'il y en a une. Un `item:`
     /// plutôt qu'un booléen : c'est l'indice qui porte l'information, et il ne
     /// peut pas se désynchroniser.
@@ -44,44 +50,110 @@ struct ExerciseDetailView: View {
     }
 
     private var active: Workout? { workouts.first { $0.isActive } }
+    private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
+
+    /// La silhouette de la carte noire : coins hauts seulement — elle file
+    /// bord à bord et jusqu'en bas d'écran, comme la référence.
+    private static let pageShape = UnevenRoundedRectangle(
+        cornerRadii: .init(topLeading: 40, bottomLeading: 0,
+                           bottomTrailing: 0, topTrailing: 40),
+        style: .continuous)
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    hero
-                    header
+        GeometryReader { geo in
+            // LA CARTE NOIRE : pleine largeur bord à bord, grands coins hauts
+            // arrondis — c'est elle qui s'inscrit sur la braise, et c'est dans
+            // ses deux coins que l'orange apparaît en négatif. Tout le contenu
+            // vit dedans, et le scroll se coupe sur sa silhouette : jamais un
+            // pixel de contenu ne remonte sur l'orange.
+            ZStack(alignment: .top) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        titleBlock
 
-                    if let lastTime {
-                        LastTimeBanner(text: lastTime)
+                        // 40 % de l'écran, pas un point de plus : la photo est
+                        // une présence, plus le sujet de la page.
+                        hero(height: geo.size.height * 0.40)
+
+                        if let lastTime {
+                            LastTimeBanner(text: lastTime)
+                        }
+
+                        // Le cardio garde ses blocs sombres : la dalle blanche
+                        // est le système de la musculation — il rejoindra le
+                        // reste quand le composant sera généralisé.
+                        if !isStrength {
+                            editor
+                        }
+
+                        if let confirmation {
+                            Label(confirmation, systemImage: "checkmark.circle.fill")
+                                .font(.inter(13, .medium))
+                                .foregroundStyle(Color.woopGold)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
+                        if active == nil {
+                            Text("Aucune séance en cours — elle sera créée automatiquement.")
+                                .font(.inter(12))
+                                .foregroundStyle(Color.inkMuted)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
                     }
-
-                    editor
-
-                    if let confirmation {
-                        Label(confirmation, systemImage: "checkmark.circle.fill")
-                            .font(.inter(13, .medium))
-                            .foregroundStyle(Color.woopGold)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
-                    if active == nil {
-                        Text("Aucune séance en cours — elle sera créée automatiquement.")
-                            .font(.inter(12))
-                            .foregroundStyle(Color.inkMuted)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 26)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 26)
+                .scrollIndicators(.hidden)
+                .background(Self.pageShape.fill(Color.black))
+                .clipShape(Self.pageShape)
+            }
+            // Le socle et la braise vivent en FOND, hors jeu de layout : la
+            // carte-braise a déjà fait dérailler la largeur de la page une
+            // fois — plus rien d'elle ne participe à la mise en page.
+            .background {
+                ZStack(alignment: .top) {
+                    Color.black
+                    HeaderEmberCard()
+                }
+                .ignoresSafeArea()
+            }
+            .safeAreaInset(edge: .top, spacing: 0) { headerChips }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if isStrength {
+                    ExerciseSetupSlab(
+                        exercise: exercise,
+                        sets: $sets,
+                        restSeconds: $restSeconds,
+                        selected: $selectedSet,
+                        canAdd: canAddSeries,
+                        onAdd: {
+                            withAnimation(.spring(response: 0.35,
+                                                  dampingFraction: 0.75)) {
+                                addSeries()
+                                selectedSet = sets.count - 1
+                            }
+                        },
+                        sliderLabel: launchTarget == nil
+                            ? "Glisser pour enregistrer"
+                            : "Glisser pour lancer l'entraînement",
+                        onSlide: {
+                            if let index = launchTarget {
+                                running = RunningSeries(id: index)
+                            } else {
+                                save()
+                            }
+                        }
+                    )
+                } else {
+                    primaryAction
+                }
             }
         }
-        // Le geste principal est ancré en bas d'écran, pas perdu dans un coin de
-        // barre de navigation : c'est LE bouton de cette page.
-        .safeAreaInset(edge: .bottom) { primaryAction }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        // Le chevron du chip a remplacé la barre système : deux flèches de
+        // retour seraient une de trop.
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         // L'appareil confirme la série en même temps que les paillettes partent.
         .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
@@ -98,19 +170,69 @@ struct ExerciseDetailView: View {
 
     // MARK: En-tête
 
-    /// La photo ENTIÈRE, sans cadre : ni liseré, ni angles arrondis, ni éclats
-    /// semés sur le contour. Le fond de l'image est déjà le noir de la page —
-    /// dès qu'on retire le sertissage, il n'y a plus une image dans une carte,
-    /// il y a un corps qui flotte dans le noir. Le masque ne fait qu'éteindre
-    /// les bords, là où une jambe ou un montant de machine viendrait buter net
-    /// sur l'arête du cadre : c'est ce qui reste du rectangle, et c'est ce qu'on
-    /// efface.
-    ///
-    /// 272 pt au lieu de 340 : la photo ne prend plus tout le haut de l'écran,
-    /// et tout ce qui la suit remonte d'autant.
-    private var hero: some View {
+    /// Le chevron dans son carré de verre, et son double « … » en face —
+    /// celui-ci s'ouvrira plus tard en carte (date, heure) : il a déjà sa
+    /// place, il n'a pas encore son geste.
+    private var headerChips: some View {
+        HStack {
+            headerChip("chevron.left", label: "Retour") { dismiss() }
+            Spacer()
+            headerChip("ellipsis", label: "Options") {}
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+    }
+
+    private func headerChip(_ symbol: String, label: String,
+                            action: @escaping () -> Void) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
+        return Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.inkPrimary)
+                .frame(width: 44, height: 44)
+                .background {
+                    // Verre fumé FONCÉ, comme le chip « Done » de la référence :
+                    // un objet sombre posé sur la braise, qu'elle traverse à
+                    // peine — le halo vient de la nappe, pas d'une ombre.
+                    Color.clear
+                        .glassEffect(.regular.tint(Color.black.opacity(0.5))
+                            .interactive(), in: shape)
+                }
+                .overlay(shape.strokeBorder(Color.white.opacity(0.08),
+                                            lineWidth: 1))
+                .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    /// EXACTEMENT le titre de la home — même fonte, même graisse, même
+    /// interlettrage négatif — et sur UNE ligne, toujours. Le sous-titre dit
+    /// la zone travaillée, en retrait, comme la référence.
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(exercise.name)
+                .font(.inter(30, .semibold))
+                .tracking(-0.3)
+                .foregroundStyle(WoopGradient.titleFade)
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
+            Text("\(exercise.category.rawValue) • \(exercise.muscle)")
+                .font(.inter(13))
+                .foregroundStyle(Color.inkMuted)
+        }
+    }
+
+    /// La photo NUE, fondue dans le noir de la carte : ni liseré, ni lueur,
+    /// ni angles — un cadre dessiné redonnerait « une image dans une boîte »,
+    /// et c'est exactement ce qui rendait cheap. Le fond de l'image est déjà
+    /// le noir de la page ; les masques n'éteignent que les bords, là où une
+    /// jambe ou un montant de machine buterait net sur l'arête.
+    private func hero(height: CGFloat) -> some View {
         ExercisePhoto(exercise: exercise, fills: false)
-            .frame(height: 272)
+            .frame(height: height)
             .frame(maxWidth: .infinity)
             .mask {
                 LinearGradient(
@@ -123,8 +245,8 @@ struct ExerciseDetailView: View {
                     startPoint: .top, endPoint: .bottom
                 )
             }
-            // Deux masques chaînés se multiplient : les quatre bords s'éteignent
-            // sans avoir à composer un dégradé bidimensionnel.
+            // Deux masques chaînés se multiplient : les quatre bords
+            // s'éteignent sans dégradé bidimensionnel.
             .mask {
                 LinearGradient(
                     stops: [
@@ -138,31 +260,14 @@ struct ExerciseDetailView: View {
             }
     }
 
-    /// EXACTEMENT le titre de la home — même fonte, même graisse, même
-    /// interlettrage négatif. Une fiche n'est pas un autre registre que
-    /// l'accueil : c'est la même voix qui nomme la journée et le mouvement.
-    ///
-    /// Et sur UNE ligne, toujours. Un titre qui passe à la ligne pousse tout
-    /// l'écran vers le bas et fait respirer la page différemment selon la
-    /// longueur du nom ; les noms les plus longs se resserrent plutôt que de
-    /// se casser en deux. Le sous-titre violet a disparu avec le reste des
-    /// accents colorés de cette page.
-    private var header: some View {
-        Text(exercise.name)
-            .font(.inter(30, .semibold))
-            .tracking(-0.3)
-            .foregroundStyle(WoopGradient.titleFade)
-            .lineLimit(1)
-            .minimumScaleFactor(0.62)
-    }
-
-    // MARK: L'éditeur
+    // MARK: L'éditeur cardio
 
     @ViewBuilder
     private var editor: some View {
         switch exercise.tracking {
         case .setsRepsWeight:
-            StrengthBlock(sets: $sets, restSeconds: $restSeconds)
+            // La musculation vit dans la dalle : rien ici.
+            EmptyView()
         case .intervals:
             IntervalBlock(phases: $phases, repeatCount: $repeatCount)
         case .steady:
@@ -171,29 +276,13 @@ struct ExerciseDetailView: View {
         }
     }
 
-    // MARK: Le geste principal
+    // MARK: Le geste principal du cardio
 
-    /// Le bas de l'écran dit toujours l'étape suivante. Tant qu'une série
-    /// attend, un seul geste : la lancer. Une fois tout fait, les deux suites
-    /// possibles se présentent côte à côte — en refaire une, ou enregistrer.
+    /// Le bas d'écran du cardio, inchangé : sa fiche ne fait qu'enregistrer.
     private var primaryAction: some View {
         VStack(spacing: 10) {
-            if canAddSeries {
-                Button {
-                    withAnimation(.easeOut(duration: 0.25)) { addSeries() }
-                } label: {
-                    Label("Ajouter une série", systemImage: "plus")
-                }
-                .buttonStyle(WoopSecondaryButtonStyle())
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
-
-            DiamondPrimaryButton(title: primaryTitle) {
-                if let index = pendingSeries {
-                    running = RunningSeries(id: index)
-                } else {
-                    save()
-                }
+            DiamondPrimaryButton(title: "Enregistrer l'exercice") {
+                save()
             }
         }
         .padding(.horizontal, 20)
@@ -214,21 +303,27 @@ struct ExerciseDetailView: View {
         }
     }
 
-    private var primaryTitle: String {
-        pendingSeries == nil ? "Enregistrer l'exercice" : "Lancer la série"
+    /// La série que le slider lancera : celle qu'on regarde si elle reste à
+    /// faire, sinon la première en attente. `nil` : tout est fait, le slider
+    /// enregistre.
+    private var launchTarget: Int? {
+        guard isStrength else { return nil }
+        if sets.indices.contains(selectedSet), !sets[selectedSet].isDone {
+            return selectedSet
+        }
+        return pendingSeries
     }
 
-    /// La première série pas encore faite. Nul pour le cardio, qui n'a pas de
-    /// séries à lancer : sa fiche ne fait qu'enregistrer.
+    /// La première série pas encore faite.
     private var pendingSeries: Int? {
-        guard exercise.tracking == .setsRepsWeight else { return nil }
+        guard isStrength else { return nil }
         return sets.firstIndex { !$0.isDone }
     }
 
     /// On ne propose d'en ajouter une qu'une fois les précédentes faites :
-    /// sinon le bas de l'écran offrirait deux gestes concurrents.
+    /// sinon la rangée offrirait deux gestes concurrents.
     private var canAddSeries: Bool {
-        exercise.tracking == .setsRepsWeight && pendingSeries == nil
+        isStrength && pendingSeries == nil
     }
 
     private func addSeries() {
@@ -252,6 +347,9 @@ struct ExerciseDetailView: View {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.62)) {
                 sets[index].isDone = true
                 sets[index].durationSeconds = seconds
+                // Le regard avance tout seul : la pastille suivante à faire
+                // devient celle qu'on règle.
+                selectedSet = sets.firstIndex { !$0.isDone } ?? index
             }
         }
     }
@@ -280,10 +378,8 @@ struct ExerciseDetailView: View {
 
     // MARK: Enregistrement
 
-    /// Enregistrer ne quitte PAS la fiche. La feuille modale se refermait, mais
-    /// une page poussée qui se dépile renverrait à la bibliothèque — or on
-    /// enchaîne souvent le même exercice deux fois. On confirme, on repart d'une
-    /// série vierge réglée sur les derniers chiffres, et on reste là.
+    /// Enregistrer ne quitte PAS la fiche. On confirme, on repart d'une série
+    /// vierge réglée sur les derniers chiffres, et on reste là.
     private func save() {
         var draft = LoggedDraft()
         switch exercise.tracking {
@@ -300,10 +396,11 @@ struct ExerciseDetailView: View {
         }
         add(draft)
 
-        if exercise.tracking == .setsRepsWeight {
+        if isStrength {
             let last = sets.last
             withAnimation(.easeOut(duration: 0.25)) {
                 sets = [DraftSet(reps: last?.reps ?? 12, weight: last?.weight ?? 20)]
+                selectedSet = 0
             }
         }
     }
@@ -352,5 +449,84 @@ struct ExerciseDetailView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
             withAnimation { confirmation = nil }
         }
+    }
+}
+
+// MARK: - La carte-braise du header
+
+/// La bande embrasée du haut de page — et c'est une CARTE, pas un décor :
+/// plus tard elle se DÉPLIERA (la référence todo-list : date, heure, Done).
+/// D'où son nom et sa frontière nette ; l'ouverture viendra s'y brancher.
+///
+/// La matière n'est pas imitée, elle est REPRISE : `bgAurora`, le champ
+/// embrasé de la connexion. L'aurore y vit dans le bas d'un écran entier —
+/// on rend donc le champ à sa hauteur virtuelle (`fieldHeight`) et on n'en
+/// CADRE que la tranche basse, la plus riche : les rideaux de feu remplissent
+/// la bande, la crête brûle juste derrière les coins de la carte noire.
+///
+/// 30 Hz suffisent : c'est un fond, pas un geste sous le doigt.
+struct HeaderEmberCard: View {
+    /// Hauteur visible de la bande — à peine plus que le header : la carte
+    /// noire commence vers 118 pt, ses coins mordent jusqu'à ~158. Une bande
+    /// plus haute gaspille la crête derrière le noir, là où personne ne la
+    /// voit (le premier cadrage brûlait ENTIÈREMENT sous la carte).
+    var height: CGFloat = 150
+    /// Hauteur virtuelle du champ dont on cadre le bas. Comprimé : la crête
+    /// et ses rideaux remplissent la bande au lieu de s'étirer sur un écran.
+    /// C'est la crête — le fil embrasé du bord bas du champ, PLEINE largeur —
+    /// qui doit affleurer derrière les coins de la carte noire ; les rideaux,
+    /// eux, sont capricieux et se massent d'un côté selon l'instant.
+    var fieldHeight: CGFloat = 260
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 4096))
+                Rectangle()
+                    .fill(.black)   // JAMAIS .clear : le `* color.a` avale tout
+                    .frame(width: geo.size.width, height: fieldHeight)
+                    .colorEffect(ShaderLibrary.bgAurora(
+                        .float2(geo.size.width, fieldHeight),
+                        .float(t),
+                        .float2(0, 0)))
+                    .frame(width: geo.size.width, height: height,
+                           alignment: .bottom)
+                    .clipped()
+                    // LE LIT DE BRAISE : le champ respire sur de longues
+                    // minutes et passe par des creux presque noirs — un
+                    // header-carte doit brûler à CHAQUE instant. Trois nappes
+                    // fixes en `plusLighter` garantissent le plancher de feu,
+                    // centres enfouis sous la carte noire : seule leur épaule
+                    // haute affleure, et l'aurore vivante module par-dessus.
+                    // En overlay : jamais dans le jeu de layout.
+                    .overlay(alignment: .bottom) {
+                        ZStack(alignment: .bottom) {
+                            Ellipse()
+                                .fill(Color(red: 1.0, green: 0.52, blue: 0.14))
+                                .frame(width: 520, height: 130)
+                                .blur(radius: 50)
+                                .opacity(0.42)
+                                .offset(y: 60)
+                            Ellipse()
+                                .fill(Color(red: 0.95, green: 0.25, blue: 0.05))
+                                .frame(width: 280, height: 95)
+                                .blur(radius: 40)
+                                .opacity(0.38)
+                                .offset(x: -135, y: 48)
+                            Ellipse()
+                                .fill(Color(red: 1.0, green: 0.68, blue: 0.25))
+                                .frame(width: 230, height: 80)
+                                .blur(radius: 34)
+                                .opacity(0.40)
+                                .offset(x: 150, y: 44)
+                        }
+                        .blendMode(.plusLighter)
+                    }
+                    .clipped()
+            }
+        }
+        .frame(height: height)
+        .allowsHitTesting(false)
     }
 }

@@ -101,6 +101,9 @@ struct RootView: View {
     private static let homeLab = CommandLine.arguments.contains("-homeLab")
     /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
     private static let bgLab = CommandLine.arguments.contains("-bgLab")
+    /// Banc de la fiche d'exercice : `-exoLab` ouvre la fiche du premier
+    /// exercice du catalogue (+ `-activeWorkout` pour la pastille incrustée).
+    private static let exoLab = CommandLine.arguments.contains("-exoLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -245,6 +248,10 @@ struct RootView: View {
             HomeAuroraLab()
         } else if Self.bgLab {
             AuroraBgLab()
+        } else if Self.exoLab {
+            NavigationStack {
+                ExerciseDetailView(exercise: ExerciseCatalog.all[0])
+            }
         } else if Self.logoLab {
             LogoLab()
         } else if Self.navLab {
