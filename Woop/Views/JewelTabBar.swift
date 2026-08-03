@@ -118,6 +118,10 @@ struct JewelTabBar: View {
     /// slots égaux — le banc s'en sert pour comparer avant/après.
     var play: PlayParams?
     var onPlay: () -> Void = {}
+    /// Une bouffée d'invite commandée du dehors (l'arrivée de la cinématique
+    /// de connexion) : le halo du galet respire UNE fois — attaque 0,12 s,
+    /// extinction 0,5 s — puis rend la main au réglage de repos.
+    var invitePulse: Date?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -221,7 +225,8 @@ struct JewelTabBar: View {
                             .float4(Float(play?.round ?? 0.1),
                                     Float(play?.breathSpeed ?? 1),
                                     Float(play?.whiteness ?? 0.55),
-                                    Float(play?.invite ?? 0)))))
+                                    Float((play?.invite ?? 0)
+                                          * (1 + 1.6 * pulseEnv(at: now)))))))
                         .offset(x: -Self.pad, y: -Self.pad)
                 }
                 .allowsHitTesting(false)
@@ -417,6 +422,15 @@ struct JewelTabBar: View {
         let raw = min(max(date.timeIntervalSince(ref) / dur, 0), 1)
         let eased = raw * raw * (3 - 2 * raw)
         return down ? eased : 1 - eased
+    }
+
+    /// L'enveloppe de la bouffée d'invite : attaque 0,12 s, extinction 0,5 s.
+    private func pulseEnv(at date: Date) -> Double {
+        guard let invitePulse else { return 0 }
+        let dt = date.timeIntervalSince(invitePulse)
+        if dt < 0 || dt > 2.0 { return 0 }
+        if dt < 0.12 { return dt / 0.12 }
+        return exp(-(dt - 0.12) / 0.5)
     }
 
     /// L'allumage du galet. Il s'allume PLUS VITE qu'il ne s'éteint — un
