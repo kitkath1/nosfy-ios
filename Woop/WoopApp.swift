@@ -381,7 +381,10 @@ struct RootView: View {
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
                     value: WoopTab.exercises) {
-                    ExercisesView()
+                    // La page nuit immersive : elle reçoit la sélection pour
+                    // que son chevron ramène à la home — la barre bijou se
+                    // retire quand elle est à l'écran (cf. safeAreaInset).
+                    ExercisesView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
@@ -403,19 +406,27 @@ struct RootView: View {
             // `toolbarVisibility` se pose sur le CONTENU de chaque onglet :
             // appliqué au TabView, il ne masque rien.
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                JewelTabBar(items: Self.tabItems, selection: tabIndex,
-                            play: PlayParams(),
-                            onPlay: { startWorkout() },
-                            invitePulse: invitePulseAt)
-                    .frame(height: 64)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 4)
-                    // L'arrivée de la cinématique : la barre monte du bas en
-                    // ressort, un temps APRÈS la page — les meubles entrent
-                    // après les murs. `offset` et non un inset animé : la
-                    // place est déjà réservée, rien ne re-layoute.
-                    .offset(y: barArriving ? 90 : 0)
+                // La page Exercices est immersive : la barre se retire quand
+                // on y entre (son chevron fait la sortie) et remonte en
+                // ressort au retour — le `if` rend aussi sa place à la page.
+                if selection != .exercises {
+                    JewelTabBar(items: Self.tabItems, selection: tabIndex,
+                                play: PlayParams(),
+                                onPlay: { startWorkout() },
+                                invitePulse: invitePulseAt)
+                        .frame(height: 64)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 4)
+                        // L'arrivée de la cinématique : la barre monte du bas en
+                        // ressort, un temps APRÈS la page — les meubles entrent
+                        // après les murs. `offset` et non un inset animé : la
+                        // place est déjà réservée, rien ne re-layoute.
+                        .offset(y: barArriving ? 90 : 0)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .animation(.spring(response: 0.5, dampingFraction: 0.85),
+                       value: selection == .exercises)
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
             .tint(Color(red: 1.0, green: 0.80, blue: 0.48))
