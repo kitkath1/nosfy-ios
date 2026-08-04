@@ -55,7 +55,8 @@ static float efbm(float2 p) {
 // porte l'onde du toucher. Au repos : puff = 0, age grand, tout dort.
 [[ stitchable ]] half4 eclipseHalo(float2 position, half4 color,
                                    float2 size, float t, float R,
-                                   float puff, float age) {
+                                   float puff, float age,
+                                   float ignite, float gloss) {
     // Deux blancs purs, deux ors réchauffés d'orange (demande du 2026-07-30 :
     // « une teinte légèrement orangée en plus dans les halos »).
     const float3 cols[4] = { float3(0.93, 0.95, 1.00),
@@ -87,6 +88,7 @@ static float efbm(float2 p) {
     float3 rimGlow = float3(0.0);
     float3 backTint = float3(0.0);
     float3 smokeGlow = float3(0.0);
+    float3 reflGlow = float3(0.0);
     for (int i = 0; i < 4; i++) {
         float ang = phase[i] + t * speed[i];
         float2 hd = float2(cos(ang), sin(ang));
@@ -112,7 +114,11 @@ static float efbm(float2 p) {
         // Un cœur discret dans un VOILE large : la lumière diffuse loin,
         // sans jamais dessiner son enveloppe.
         float g = 0.52 * exp(-q) + 0.48 * exp(-q * 0.32);
-        float w = wgt[i] * (1.0 + 0.35 * puff);
+        // L'allumage en canon de la naissance : la basse d'abord, puis les
+        // voix hautes — à ignite = 1 (le régime courant), rien ne change.
+        float ig = clamp(ignite * 1.9 - float(i) * 0.24, 0.0, 1.0);
+        ig = ig * ig * (3.0 - 2.0 * ig);
+        float w = wgt[i] * (1.0 + 0.35 * puff) * ig;
         light += cols[i] * (g * breath * w);
         // Ce que chaque voix pose sur le liseré et sur le velours.
         float facing = max(dot(n, hd), 0.0);
@@ -122,6 +128,8 @@ static float efbm(float2 p) {
         // volutes ne jaillissent que FACE aux voix, l'ombre entre elles
         // reste muette (sinon quatre voix couvrent tout : donut gris).
         smokeGlow += cols[i] * (pow(facing, 7.0) * breath * w);
+        // Et son REFLET dans la laque du disque (liquid glass noir).
+        reflGlow += cols[i] * (pow(facing, kap[i] * 0.5 + 2.0) * breath * w);
     }
 
     // La couronne : hairline au bord exact, faible partout, vive au passage
@@ -179,6 +187,19 @@ static float efbm(float2 p) {
     float cloth = 0.80 + 0.40 * efbm(p * 0.02 + float2(7.0, 3.0));
     float3 velvet = (float3(0.008, 0.008, 0.011) + backTint * 0.05)
                     * (edge * cloth);
+    // Liquid glass noir (gloss > 0) : le velours devient laque. Les quatre
+    // voix se REFLÈTENT dans le disque — arcs doux couchés contre le bord
+    // interne — et une nappe froide vernit le haut du dôme. À gloss = 0,
+    // le velours d'origine est intouché.
+    if (gloss > 0.001) {
+        float nrD = clamp(r / max(R, 1.0), 0.0, 1.0);
+        float innerBand = smoothstep(0.40, 0.88, nrD)
+                          * (1.0 - smoothstep(0.945, 1.0, nrD));
+        float3 lacquer = reflGlow * (innerBand * 0.30);
+        float sheenUp = pow(clamp(-p.y / max(R, 1.0), 0.0, 1.0), 2.4);
+        lacquer += float3(0.72, 0.78, 0.92) * (sheenUp * innerBand * 0.062);
+        velvet += lacquer * (gloss * insideDisc);
+    }
 
     // Le fondu de l'hôte : TOUTE la lumière extérieure meurt dans le noir
     // bien avant le bord du rectangle du shader — sinon le premier tap

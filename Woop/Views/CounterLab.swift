@@ -72,6 +72,21 @@ struct EclipseCounter: View {
     var benchPress: Float? = nil
     /// Diamètre du disque de velours.
     var diameter: CGFloat = 250
+    /// Naissance du cadran (cérémonie d'arrivée) : les quatre voix
+    /// s'allument en canon sur ~1,2 s. nil = déjà né (bancs, usage courant).
+    /// ANTIDATÉE par l'appelant si des proto-halos ont déjà commencé le
+    /// geste ailleurs — ignite reprend alors au niveau atteint.
+    var birth: Date? = nil
+    /// L'horloge des CHIFFRES et du grossissement — le vrai instant de la
+    /// coupe, distinct de `birth` quand celle-ci est antidatée.
+    var faceBirth: Date? = nil
+    /// La RENAISSANCE : le cadran naît de la petite bille du morphisme —
+    /// il grossit de ce diamètre-là jusqu'à `diameter`, avec un
+    /// micro-dépassement de ressort. nil = taille pleine dès la naissance.
+    var birthDiameter: CGFloat? = nil
+    /// La laque : 0 = velours d'origine, 1 = liquid glass noir — les halos
+    /// se reflètent dans le disque.
+    var gloss: Float = 0
 
     /// L'horodatage du tap : l'enveloppe de la bouffée (attaque 0,10 s,
     /// extinction ~0,7 s) se rejoue dans le TimelineView — un paramètre de
@@ -87,7 +102,10 @@ struct EclipseCounter: View {
     private var overflow: CGFloat { diameter * 0.58 }
 
     var body: some View {
-        let side = diameter + overflow * 2
+        // Le cadre reste taillé pour le diamètre ÉPANOUI (le cadran grossit
+        // d'un souffle à la naissance) : la frame ne bouge jamais, seul le
+        // rayon du shader respire — rien ne re-layoute à 60 Hz.
+        let side = ceil(diameter * 1.06) + overflow * 2
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
             let t = Float(tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900))
@@ -98,15 +116,38 @@ struct EclipseCounter: View {
             let decay = exp(-max(age - 0.10, 0) / 0.70)
             let puff = benchPress ?? Float(attack * decay)
             let shaderAge = benchPress == nil ? Float(age) : 0.45
+            let ignite = birth.map {
+                Float(min(max(tl.date.timeIntervalSince($0) / 1.25, 0), 1))
+            } ?? 1
+            // L'éveil du chrono : à la naissance, les chiffres n'existent
+            // pas encore — le disque d'abord, les halos ensuite, la parole
+            // en dernier. Et le cadran GROSSIT d'un souffle en arrivant
+            // (250 → ~262 pt). Sans naissance : tout est là, comme toujours.
+            let fb = faceBirth ?? birth
+            let fe = fb.map { tl.date.timeIntervalSince($0) } ?? 9
+            let faceU = min(max((fe - 0.55) / 0.6, 0), 1)
+            let faceIn = faceU * faceU * (3 - 2 * faceU)
+            // La renaissance : 34 → 250 pt en ressort, micro-dépassement
+            // puis assise — la bille du morphisme DEVIENT le cadran.
+            let dia = birthDiameter.map {
+                Self.rebornDiameter(fe, from: $0, to: diameter)
+            } ?? diameter
+            // Le shader SORTI du ZStack : une expression de plus dans l'appel
+            // et le type-checker abandonne (la leçon des 36 arguments).
+            let halo = ShaderLibrary.eclipseHalo(
+                .float2(side, side), .float(t), .float(dia / 2),
+                .float(puff), .float(shaderAge),
+                .float(ignite), .float(gloss))
             ZStack {
                 Rectangle()
                     .fill(.white)
                     .frame(width: side, height: side)
-                    .colorEffect(ShaderLibrary.eclipseHalo(
-                        .float2(side, side), .float(t), .float(diameter / 2),
-                        .float(puff), .float(shaderAge)))
-                sweep(progress: elapsed.truncatingRemainder(dividingBy: 60) / 60)
+                    .colorEffect(halo)
+                sweep(progress: elapsed.truncatingRemainder(dividingBy: 60) / 60,
+                      dia: dia)
+                    .opacity(faceIn)
                 face(elapsed: Int(elapsed))
+                    .opacity(faceIn)
             }
             .frame(width: side, height: side)
             .onChange(of: Int(elapsed)) { _, s in
@@ -164,7 +205,7 @@ struct EclipseCounter: View {
 
     /// L'aiguille-balayage : un fil de lumière qui parcourt le tour en une
     /// minute, tête vive, queue qui se perd — un trait, pas un anneau.
-    private func sweep(progress: Double) -> some View {
+    private func sweep(progress: Double, dia: CGFloat) -> some View {
         let p = min(max(progress, 0.0001), 1.0)
         return Circle()
             .trim(from: 0, to: p)
@@ -178,11 +219,25 @@ struct EclipseCounter: View {
                 ], center: .center),
                 style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
             .rotationEffect(.degrees(-90))
-            .frame(width: diameter + 20, height: diameter + 20)
+            // Assise sur le limbe (+6, pas +20) : décollée, l'aiguille lit
+            // comme une rayure d'écran (verdict du panel).
+            .frame(width: dia + 6, height: dia + 6)
     }
 
     static func format(_ s: Int) -> String {
         "\(s / 60):" + String(format: "%02d", s % 60)
+    }
+
+    /// La courbe de renaissance : easeOutBack (c1 = 1,5), dépassement ~+6 %
+    /// puis assise — sortie du body, le type-checker n'en veut pas là-bas.
+    private static func rebornDiameter(_ fe: Double, from bd: CGFloat,
+                                       to full: CGFloat) -> CGFloat {
+        guard fe < 1.6 else { return full }
+        // Une ÉCLOSION, pas un pop de widget : plus lent, dépassement doux.
+        let u = min(max((fe - 0.05) / 0.95, 0), 1)
+        let c1 = 0.8
+        let s = 1 + (c1 + 1) * pow(u - 1, 3) + c1 * pow(u - 1, 2)
+        return bd + (full - bd) * CGFloat(s)
     }
 }
 

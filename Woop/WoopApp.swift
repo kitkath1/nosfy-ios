@@ -104,6 +104,10 @@ struct RootView: View {
     /// Banc de la fiche d'exercice : `-exoLab` ouvre la fiche du premier
     /// exercice du catalogue (+ `-activeWorkout` pour la pastille incrustée).
     private static let exoLab = CommandLine.arguments.contains("-exoLab")
+    /// Banc de la lentille liquide : `-lensLab` — page papier, bulle de
+    /// verre au bord bas, drag jusqu'à la cérémonie blanc → noir du cadran.
+    /// `-lensFreeze <p>` fige la progression du drag (captures).
+    private static let lensLab = CommandLine.arguments.contains("-lensLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -252,6 +256,8 @@ struct RootView: View {
             NavigationStack {
                 ExerciseDetailView(exercise: ExerciseCatalog.all[0])
             }
+        } else if Self.lensLab {
+            LiquidLensLab()
         } else if Self.logoLab {
             LogoLab()
         } else if Self.navLab {
