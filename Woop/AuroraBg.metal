@@ -75,16 +75,32 @@ constant float3 BG_JAUNE = float3(1.00, 0.83, 0.42);
 // La forme de la lumière, par page. Mesuré au pixel sur `-bgLab` : avec les
 // valeurs de la CONNEXION, le noir occupe 40 % de la hauteur, une bande morte
 // s'étale de 40 à 50 %, l'orange vit de 50 à 80 % et le blanc est écrasé dans
-// le dernier cinquième. La HOME garde les mêmes 40 % de noir mais supprime la
-// bande morte : la crête remonte dans le cadre et la montée s'allonge, donc
-// l'orange démarre aussitôt la nuit finie et le blanc a la place d'exister.
+// le dernier cinquième.
 constant float4 BG_SHAPE_LOGIN = float4(0.975, 0.080, 0.125, 0.30);
-// La chute sous la crête est plus de DEUX FOIS plus lente que sur la
-// connexion : là-bas la crête est au ras du bord bas, donc il n'y a rien à
-// éclairer dessous ; ici elle est remontée dans le cadre et tout le bas de
-// l'écran vit sous elle. Avec la valeur du login, le blanc retombait en crème
-// dès la crête passée — mesuré à 5,7 % de pixels clairs contre 19 % au login.
-constant float4 BG_SHAPE_HOME  = float4(0.780, 0.205, 0.460, 0.350);
+// La HOME depuis le 2026-08-04 : la lumière a CHANGÉ DE BORD (verdict
+// Kathryn, réf. « My Jams »). Le halo ne monte plus du sol — il DESCEND du
+// haut, depuis la Dynamic Island, et le bas de la page est rendu à la nuit :
+// la pile de cartes y vit sur du noir. Même champ, même matière : le shader
+// est simplement RETOURNÉ (y et inclinaison verticale inversés). Ces valeurs
+// se lisent donc dans le repère retourné — crête 0.94 = à 6 % du bord
+// HAUT de l'écran ; nuit 0.46 = le noir est total sous 54 % de la hauteur.
+constant float4 BG_SHAPE_HOME  = float4(0.940, 0.150, 0.420, 0.460);
+// Le niveau du champ, propre à la home : à pleine puissance (v1), le cœur
+// blanc noyait le titre et la lumière tenait 60 % de l'écran. Ici le champ
+// n'est qu'une nappe d'or — le BLANC appartient au bloom de l'île, seul.
+// 0,52 et pas 0,60 : au sommet de la respiration, le blanc remontait encore
+// noyer « Bonjour Kathryn » (« des fois on voit plus le nom »).
+constant float BG_HOME_GAIN = 0.52;
+// Où vivent les foyers (cœur blanc, halo orange), en fraction de largeur.
+// La home tire les siens vers la GAUCHE : sa lumière descend se poser sur le
+// coin doré de la carte Objectif, et le bord droit retombe dans la nuit.
+// Le cœur blanc est AU RAS du bord (0,07) : à 0,18 son flanc passait encore
+// derrière le titre, qui se noyait à chaque crue de la respiration.
+constant float2 BG_FOYERS_LOGIN = float2(0.38, 0.90);
+constant float2 BG_FOYERS_HOME  = float2(0.07, 0.50);
+// La naissance : la crête part AU-DESSUS du cadre (là où vivait la lune) et
+// descend se poser — pendant l'aube, la lumière est VERSÉE par le haut.
+constant float4 BG_SHAPE_HOME_BIRTH = float4(1.060, 0.100, 0.200, 0.520);
 
 constant float BG_K      = 1.85;    // le compresseur de niveau
 
@@ -96,13 +112,17 @@ constant float BG_K      = 1.85;    // le compresseur de niveau
 // montée très courte. La home, elle, remonte tout : c'est le SEUL réglage qui
 // change entre les deux pages, et il vaut mieux qu'il soit un paramètre qu'un
 // second shader recopié.
+// `foyers` = (abscisse du cœur blanc, abscisse du halo orange), en fraction
+// de largeur : la connexion les garde à leurs places mesurées (0.38, 0.90),
+// la home les tire vers la GAUCHE — sa lumière fait écho au coin doré de la
+// carte Objectif (verdict du 2026-08-04).
 // `cine` = (niveau 0→1, abscisse de la lune en fraction de LARGEUR). La
 // cinématique de connexion : les foyers remontent vers la lune et le feu du
 // bas S'ÉTEINT en proportion — l'énergie quitte la page, elle ne fusionne
 // pas au centre. La fusion créait une nappe à luminance moyenne plein écran,
 // c'est-à-dire exactement le marron (verdict « fond marron moche »).
 static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape,
-                     float2 cine) {
+                     float2 foyers, float2 cine) {
     // Respirations franches, périodes premières entre elles — c'est elles
     // qu'on doit VOIR : « anime davantage » (verdict v2).
     float b1 = 0.87 + 0.13 * sin(t * 6.2832 / 19.0);
@@ -110,8 +130,8 @@ static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape,
     float b3 = 0.88 + 0.12 * sin(t * 6.2832 / 17.0 + 4.0);
 
     // Les foyers dérivent largement, et glissent avec l'inclinaison.
-    float xCoeur  = aspect * 0.38 + 0.035 * sin(t * 6.2832 / 21.0)       + sh;
-    float xDroite = aspect * 0.90 + 0.030 * sin(t * 6.2832 / 15.0 + 2.6) + sh;
+    float xCoeur  = aspect * foyers.x + 0.035 * sin(t * 6.2832 / 21.0)       + sh;
+    float xDroite = aspect * foyers.y + 0.030 * sin(t * 6.2832 / 15.0 + 2.6) + sh;
     // Ce sont les SOURCES qui se déplacent — vers l'abscisse de la lune,
     // pas vers le centre : la lumière ne change pas de couleur, elle change
     // d'adresse, et l'œil la suit jusqu'à l'objet dans lequel on va plonger.
@@ -156,8 +176,8 @@ static float2 bgMass(float2 q, float aspect, float t, float sh, float4 shape,
 // rideaux au point courant — la caresse du login s'en habille pour avoir la
 // matière du fond, jamais du coton.
 static float3 bgField(float2 position, float2 size, float t, float2 tilt,
-                      float4 shape, float doreBoost, float2 cine, float boost,
-                      thread float &curOut) {
+                      float4 shape, float2 foyers, float doreBoost,
+                      float2 cine, float gain, thread float &curOut) {
     float2 q = position / max(size.y, 1.0);
     float aspect = size.x / max(size.y, 1.0);
 
@@ -170,13 +190,13 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
     float lift = tilt.y * 0.016;
 
     float2 qf = float2(q.x - shFar, q.y + lift * 0.6);
-    float2 m = bgMass(qf, aspect, t, shMid - shFar, shape, cine);
+    float2 m = bgMass(qf, aspect, t, shMid - shFar, shape, foyers, cine);
     float E = m.x, Eg = m.y;
-    // L'accueil : au débouché de la cinématique, la crête de la home reçoit
-    // un surcroît qui retombe en ~0,3 s de constante — la page répond à la
-    // lumière d'où l'on vient. Sur E, avant le tone map : les noirs (E≈0)
-    // ne bougent pas, seul ce qui vit s'anime.
-    E *= 1.0 + 0.9 * boost;
+    // La naissance : pendant l'aube de la cinématique, TOUTE la masse est
+    // mise à l'échelle — à 0 la page est la nuit pure, à 1 elle est
+    // elle-même. Sur E, avant le tone map : la montée traverse les teintes
+    // calibrées au lieu d'un fondu gris.
+    E *= gain;
 
     // Les rideaux : le plan PROCHE. Moyenne 1 par construction — mais en
     // nappes LARGES et douces (domaine réduit, contraste baissé) : ils font
@@ -258,7 +278,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float g = exp(-dot(dp, dp) / (0.60 * 0.60));
             if (g > 0.002) {
                 float2 qo = float2(xc / size.y, yBirth);
-                float2 born = bgMass(qo, aspect, t, 0.0, shape, cine);
+                float2 born = bgMass(qo, aspect, t, 0.0, shape, foyers, cine);
                 float glow = clamp(born.x + born.y, 0.0, 1.0);
                 if (glow < 0.15) continue;   // jamais d'étincelle sur du noir
                 float env = sin(3.14159 * life);
@@ -285,7 +305,7 @@ static float3 bgField(float2 position, float2 size, float t, float2 tilt,
             float2 dp = pp - float2(xc, yc);
             if (dot(dp, dp) > 30.0 * 30.0) continue;
             float2 qo = float2(xc / size.y, yBirth);
-            float2 born = bgMass(qo, aspect, t, 0.0, shape, cine);
+            float2 born = bgMass(qo, aspect, t, 0.0, shape, foyers, cine);
             float glow = clamp(born.x + born.y, 0.0, 1.0);
             if (glow < 0.15) continue;
             float env = sin(3.14159 * life);
@@ -317,24 +337,67 @@ static float3 bgDither(float3 c, float2 position, float t) {
 [[ stitchable ]] half4 bgAurora(float2 position, half4 color,
                                 float2 size, float t, float2 tilt) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0,
-                       float2(0.0), 0.0, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN,
+                       BG_FOYERS_LOGIN, 0.0, float2(0.0), 1.0, cur);
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }
 
-// La HOME : le même fond, la même matière, mais la lumière REMONTE. Le noir
-// garde ses quarante pour cent en haut ; dessous, la bande morte disparaît et
-// l'orange, le jaune du néon puis le blanc ont chacun la place d'exister.
-// C'est le même champ que la connexion à deux constantes près — surtout pas
-// un second shader : la transition entre les deux pages n'aurait plus rien à
-// interpoler.
+// La HOME : le même fond, la même matière, mais RETOURNÉ — la lumière ne
+// monte plus du sol, elle DESCEND du haut. Le champ calibré est appelé sur
+// la position verticale inversée (l'inclinaison verticale suit) : les foyers,
+// les rideaux, la loi de couleur anti-brun, tout est réutilisé tel quel, et
+// même les poussières jouent le jeu — nées dans la lumière, elles TOMBENT
+// maintenant du halo au lieu d'en monter. Surtout pas un second champ.
+// Par-dessus, le foyer NOMMÉ de la page : un bloom serré sur la Dynamic
+// Island — c'est d'elle que la lumière semble sourdre — posé en fondu écran
+// (jamais d'écrêtage), texturé par les rideaux comme la caresse du login.
+// `birth` : l'aube de la cinématique de connexion. La crête part au-dessus
+// du cadre — là où la lune s'est dissoute — et descend se poser pendant que
+// la masse monte de rien à tout : la lumière est versée par le haut. Hors
+// cérémonie, 1.
 [[ stitchable ]] half4 bgAuroraHome(float2 position, half4 color,
                                     float2 size, float t, float2 tilt,
-                                    float welcome) {
+                                    float birth) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_HOME, 1.0,
-                       float2(0.0), welcome, cur);
+    float b = clamp(birth, 0.0, 1.0);
+    float bs = b * b * (3.0 - 2.0 * b);
+    float4 shape = mix(BG_SHAPE_HOME_BIRTH, BG_SHAPE_HOME, bs);
+    float2 flipped = float2(position.x, size.y - position.y);
+    float2 tiltF = float2(tilt.x, -tilt.y);
+    // « Anime davantage les halos » (le même verdict que sur le login) : les
+    // foyers de la home DÉRIVENT plus largement que ceux de la connexion —
+    // le paramètre est là pour ça — et le niveau du champ respire, ample et
+    // lent. Périodes premières entre elles : jamais de pompage synchronisé.
+    float2 foyers = BG_FOYERS_HOME;
+    foyers.x += 0.055 * sin(t * 6.2832 / 17.0 + 1.3);
+    foyers.y += 0.045 * sin(t * 6.2832 / 23.0 + 4.2);
+    float gain = BG_HOME_GAIN * (0.86 + 0.20 * sin(t * 6.2832 / 11.0 + 0.7));
+    float3 c = bgField(flipped, size, t, tiltF, shape, foyers, bs,
+                       float2(0.0), b * gain, cur);
+
+    // Le bloom de l'île : un cœur crème serré autour d'elle, une nappe d'or
+    // large qui coule dessous. En fondu écran, il éclaire sans jamais brûler
+    // le champ. Le cœur reste SUR l'île ; la nappe, elle, penche à gauche —
+    // vers le coin allumé de la carte Objectif — et elle VIT : son propre
+    // souffle (9 s, à contretemps du champ), une dérive latérale lente, et
+    // les rideaux qui la texturent plus franchement que la v3.
+    float souffle = 0.82 + 0.26 * sin(t * 6.2832 / 9.0 + 2.0);
+    float sway = 0.38 + 0.035 * sin(t * 6.2832 / 14.0 + 5.1);
+    float2 pi1 = position - float2(size.x * 0.5, 8.0);
+    float2 pi2 = position - float2(size.x * sway, 30.0);
+    float2 di1 = pi1 / float2(size.x * 0.13, size.y * 0.035);
+    float2 di2 = pi2 / float2(size.x * 0.42, size.y * 0.15);
+    float coeurIle = exp(-dot(di1, di1));
+    float Li = (1.60 * coeurIle + 0.80 * exp(-dot(di2, di2)) * souffle)
+             * (0.62 + 0.75 * cur) * bs;
+    if (Li > 0.001) {
+        float vi = 1.0 - exp(-Li * 1.6);
+        float3 ti = mix(BG_JAUNE, float3(1.00, 0.97, 0.90),
+                        clamp(coeurIle * 1.2, 0.0, 1.0));
+        c = 1.0 - (1.0 - c) * (1.0 - ti * vi);
+    }
+
     c = bgDither(c, position, t);
     return half4(half3(c), 1.0) * color.a;
 }
@@ -350,8 +413,8 @@ static float3 bgDither(float3 c, float2 position, float t) {
                                      float2 cine,
                                      device const float *trail, int trailN) {
     float cur = 0.0;
-    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN, 0.0, cine,
-                       0.0, cur);
+    float3 c = bgField(position, size, t, tilt, BG_SHAPE_LOGIN,
+                       BG_FOYERS_LOGIN, 0.0, cine, 1.0, cur);
 
     // PAS d'ombre de lisibilité : deux tentatives (0,42 puis 0,20 de force)
     // ont éteint la nappe orange de pleine largeur qui fait le fond —
@@ -386,55 +449,161 @@ static float3 bgDither(float3 c, float2 position, float t) {
     return half4(half3(c), 1.0) * color.a;
 }
 
-// MARK: - La lumière de la plongée
+
+// MARK: - La dissolution de la lune
 //
-// L'overlay de la cinématique de connexion, en fondu écran (.screen côté
-// SwiftUI) : le BLOOM du tube qui grossit jusqu'à remplir le cadre, des
-// STRIES radiales qui vendent la vitesse, et le FLASH blanc-or qui cache la
-// coupe. Tout est en coordonnées ÉCRAN, hors du sous-arbre zoomé : c'est ce
-// qui reste net pendant que la page, elle, se pixellise sous le zoom — le
-// bloom couvre exactement ce que le zoom abîme.
+// Le tube de néon devient POUSSIÈRE : des centaines de braises naissent SUR
+// l'arc du croissant, dans un balayage qui court le long du tube (la
+// dissolution voyage, elle ne claque pas), dérivent en apesanteur pendant
+// l'apnée, puis la gravité les reprend et elles retombent en arcs — la pluie
+// d'étoiles des cartes swap, réappliquée à la lune. La page change DERRIÈRE
+// ce nuage : il est le seul témoin de continuité, et la couture devient
+// introuvable.
 //
-// Les trois couleurs sont CELLES du monolithe (cœur du filament, or, spill
-// orange) : on plonge dans le tube, pas dans un rond flou inventé.
+// Même inversion que `swapBurst` : le mouvement COMMUN (dérive + gravité) est
+// retiré avant la recherche du secteur — ce qui reste est quasi radial autour
+// du centre du croissant, donc un fragment ne teste que cinq secteurs.
 //
-// `u` : la progression de la plongée (0 → 1). `flash` : le voile de la coupe.
-// La texture est échantillonnée sur la DIRECTION (d/r), pas sur l'angle :
-// atan2 a une couture à ±π qui rayerait le bloom d'un trait vertical.
-[[ stitchable ]] half4 diveLight(float2 position, half4 color,
-                                 float2 size, float t, float2 center,
-                                 float u, float flash) {
-    float2 d = position - center;
-    float r = length(d);
-    float2 nd = d / max(r, 1.0);
-    float diag = length(size);
-    float uu = clamp(u, 0.0, 1.0);
+// `e`     : l'horloge de la cérémonie (secondes depuis le tap).
+// `moon`  : (centre x, centre y, rayon de l'arc du tube — en points écran).
+// `tilt`  : la parallaxe de l'appareil, comme les poussières du fond.
+//
+// Les temps ci-dessous DOIVENT suivre ConnexionCine (Swift) : le balayage de
+// dissolution, l'instant de la chute. Ils sont dupliqués sciemment — un
+// uniform par constante coûterait plus qu'il ne protège.
+constant float MD_SWEEP0 = 1.45;   // le balayage s'amorce…
+constant float MD_SWEEP  = 0.60;   // …et court le long de l'arc
+constant float MD_FALL   = 2.55;   // la gravité reprend le nuage
+constant float MD_GRAV   = 150.0;  // pt/s² — une chute DOUCE
+constant float MD_END    = 3.70;
 
-    // Invisible pendant l'aspiration (u = 0) : cette phase appartient à la
-    // surge du monolithe, pas au bloom.
-    float vis = smoothstep(0.02, 0.20, uu);
+[[ stitchable ]] half4 moonDust(float2 position, half4 color,
+                                float2 size, float t, float e,
+                                float3 moon, float2 tilt) {
+    if (e < MD_SWEEP0 || e > MD_END) { return half4(0.0); }
 
-    float radius = 60.0 + (1.4 * diag - 60.0) * pow(uu, 2.4);
-    float k = clamp(r / max(radius, 1.0), 0.0, 1.0);
-    float base = exp(-k * k * 2.2);
+    float2 C = moon.xy + tilt * 9.0;
+    float R = max(moon.z, 8.0);
 
-    float3 col = mix(float3(1.00, 0.93, 0.82), float3(1.00, 0.78, 0.34),
-                     smoothstep(0.0, 0.55, k));
-    col = mix(col, float3(1.00, 0.50, 0.16), smoothstep(0.45, 1.0, k));
+    // Le mouvement commun : une dérive de fumée qui monte à peine pendant
+    // l'apesanteur, puis la chute — douce d'abord (la gravité "reprend" le
+    // nuage, elle ne le lâche pas d'une falaise).
+    float uf = max(e - MD_FALL, 0.0);
+    float2 common = float2(0.0, -6.0 * min(e - MD_SWEEP0, 1.2))
+                  + float2(0.0, 0.5 * MD_GRAV * uf * uf);
 
-    // La matière du tube : un fbm qui DÉFILE vers l'extérieur avec u — on
-    // avance dedans, il recule autour de nous.
-    float tex = bgFbm(nd * 2.6 + float2(0.0, r * 0.012 - t * 1.3 - uu * 6.0));
-    float amp = base * (0.72 + 0.50 * tex) * (0.55 + 0.45 * uu) * vis;
+    float2 pc = position - C - common;
+    float rc = length(pc);
+    // Rejet grossier : la portée du nuage au moment courant.
+    float reach = R + 90.0 * (e - MD_SWEEP0) + 40.0;
+    if (rc > reach) { return half4(0.0); }
 
-    // Les stries : fines en angle (nd serré), longues en rayon (fréquence
-    // radiale basse) — des rayons de lumière, pas du bruit.
-    float str = pow(bgFbm(nd * 6.5 + float2(r * 0.002 - uu * 3.0, t * 0.11)), 3.0);
-    str *= uu * exp(-r / (diag * 0.7)) * vis;
+    const float SECTORS = 160.0;
+    float ang = atan2(pc.y, pc.x);
+    float sIdx = floor((ang + 3.14159265) / 6.2831853 * SECTORS);
 
-    float3 rgb = col * amp + float3(1.00, 0.85, 0.55) * (str * 1.1);
-    rgb += float3(1.00, 0.97, 0.90) * clamp(flash, 0.0, 1.0);
-    rgb = clamp(rgb, 0.0, 1.0);
-    rgb = bgDither(rgb, position, t);
-    return half4(half3(rgb), 1.0) * color.a;
+    float3 c = float3(0.0);
+    float a = 0.0;
+
+    for (int k = -2; k <= 2; k++) {
+        float s = sIdx + float(k);
+        s = s - SECTORS * floor(s / SECTORS);
+        for (int j = 0; j < 4; j++) {
+            float4 h = bgHash42(float2(s * 1.71 + 3.7, 9.1 + 4.7 * float(j)));
+            float th = (s + 0.5 + (h.z - 0.5) * 0.9) / SECTORS * 6.2831853
+                       - 3.14159265;
+
+            // Le CROISSANT : les braises naissent sur l'arc, denses côté dos
+            // (à gauche), rares vers les pointes — la silhouette de la lune
+            // se lit dans le nuage lui-même. `open` est l'angle du creux.
+            float back = cos(th - 3.14159265);       // 1 au dos, -1 au creux
+            float cres = smoothstep(-0.55, 0.25, back);
+            if (h.w > 0.15 + 0.85 * cres) { continue; }
+
+            // Le balayage : la dissolution part du DOS et court vers les
+            // pointes, avec un peu de flottement par braise.
+            float sweep = (1.0 - cres) * MD_SWEEP;
+            float tb = MD_SWEEP0 + sweep + h.x * 0.22;
+            float u = e - tb;
+            if (u <= 0.0) { continue; }
+
+            // L'arrachement : un souffle radial MINUSCULE qui décélère —
+            // la lune ne explose pas, elle s'effrite.
+            float speed = 14.0 + 34.0 * h.y;
+            float drift = speed * u / (1.0 + 0.9 * u);
+            float wob = sin(t * (0.8 + 1.4 * h.z) + h.w * 6.283) * 2.6;
+            float rr = R * (0.86 + 0.28 * h.z) + drift + wob;
+            float2 pos = float2(cos(th), sin(th)) * rr;
+            float2 dp = pc - pos;
+            float q = dot(dp, dp);
+            if (q > 900.0) { continue; }
+
+            // L'enveloppe : née dans le balayage, elle vit longtemps — la
+            // fin n'arrive qu'avec la pluie posée.
+            float life = clamp((e - tb) / (MD_END - tb), 0.0, 1.0);
+            float env = min(u / 0.10, 1.0) * (1.0 - smoothstep(0.72, 1.0, life));
+            float twk = 0.62 + 0.38 * sin(t * (1.6 + 3.8 * h.z) + h.y * 6.283);
+            // Loi de puissance : une nuée de minuscules, quelques franches.
+            float bright = 0.55 + 0.45 * pow(h.z, 2.2);
+            float amp = env * twk * bright;
+            if (amp < 0.004) { continue; }
+
+            // La queue de comète, seulement quand ça TOMBE : alignée sur la
+            // vitesse (dérive radiale mourante + gravité).
+            float lum;
+            float core = exp(-q / (0.92 * 0.92));
+            if (uf > 0.02) {
+                float2 vel = float2(cos(th), sin(th))
+                             * (speed / ((1.0 + 0.9 * u) * (1.0 + 0.9 * u)))
+                             + float2(0.0, MD_GRAV * uf);
+                float vlen = max(length(vel), 1.0);
+                float2 vu = vel / vlen;
+                float along = dot(dp, vu);
+                float across = dot(dp, float2(-vu.y, vu.x));
+                float tl = 4.0 + 15.0 * clamp(vlen / 320.0, 0.0, 1.0);
+                float trail = exp(-across * across / (0.50 * 0.50))
+                              * exp(-max(-along, 0.0) / tl) * step(along, 0.0);
+                lum = core + trail * 0.48;
+            } else {
+                lum = core;
+            }
+
+            // Une braise sur neuf ouvre une croix courte — le bijou.
+            if (h.x > 0.89) {
+                float rayL = 1.5 + 3.2 * env;
+                lum += (exp(-dp.y * dp.y / (0.30 * 0.30)
+                            - dp.x * dp.x / (rayL * rayL))
+                        + exp(-dp.x * dp.x / (0.30 * 0.30)
+                              - dp.y * dp.y / (rayL * rayL))) * 0.40;
+            }
+
+            // Blanches-crème à la naissance (le tube), or puis braise en
+            // tombant — la couleur RACONTE le refroidissement.
+            float3 tint = mix(float3(1.00, 0.95, 0.86),
+                              float3(1.00, 0.64, 0.22),
+                              clamp(life * 1.5, 0.0, 1.0));
+            float g = lum * amp;
+            c += tint * g;
+            a += g;
+        }
+    }
+
+    // L'arc encore allumé : la part du tube que le balayage n'a pas prise
+    // brille toujours — c'est LUI qui couvre le fondu du monolithe. Il
+    // s'éteint du dos vers les pointes, exactement au rythme des naissances.
+    float back = cos(ang - 3.14159265);
+    float cres = smoothstep(-0.55, 0.25, back);
+    float lit = step(e, MD_SWEEP0 + (1.0 - cres) * MD_SWEEP);
+    float ring = exp(-pow(fabs(rc - R), 2.0) / (3.2 * 3.2))
+               * cres * lit * smoothstep(MD_END, MD_SWEEP0, e);
+    c += float3(1.00, 0.58, 0.18) * (ring * 0.85);
+    c += float3(1.00, 0.88, 0.62) * (exp(-pow(fabs(rc - R), 2.0) / 1.1) * cres * lit * 0.85);
+    a += ring * 0.8;
+
+    // Fondu d'hôte + couleur = couverture (émissif) : les leçons payées.
+    float2 toEdge = min(position, size - position);
+    float hostFade = smoothstep(0.0, 60.0, min(toEdge.x, toEdge.y));
+    a = clamp(a * 3.4, 0.0, 1.0) * hostFade;
+    c = clamp(c, 0.0, 1.0) * a;
+    return half4(half3(c), half(a)) * color.a;
 }
