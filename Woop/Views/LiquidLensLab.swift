@@ -102,7 +102,7 @@ struct LiquidLensLab: View {
     /// Le temps écoulé depuis le sommet — doigt (état) ou cycle auto (pur).
     private func summitElapsed(now: Date, t: Double) -> Double? {
         if Self.cycling {
-            let tau = t.truncatingRemainder(dividingBy: 13.5)
+            let tau = t.truncatingRemainder(dividingBy: 14.5)
             return tau > 3.85 ? tau - 3.85 : nil
         }
         if Self.frozen != nil { return nil }
@@ -156,7 +156,7 @@ struct LiquidLensLab: View {
             .float2(Float(d.boundsMin.x), Float(d.boundsMin.y)),
             .float2(Float(d.boundsMax.x), Float(d.boundsMax.y)),
             .float(tS), .float(Float(d.dry)), .float(birthV),
-            .float(1.0), .float(0.0))
+            .float(1.0), .float(0.0), .float2(cX, cY))
         return ZStack {
             Self.paper
             // Le grain du papier : il se tord lui aussi sous le verre.
@@ -556,11 +556,14 @@ struct LiquidLensLab: View {
         let f0 = Float(lens.f0), dispV = Float(lens.disp)
         let emberV = Float(lens.ember), squashV = Float(lens.squash)
         let tS = Float(t)
+        // LA LAQUE : la matière condensée emplit le verre par sa
+        // profondeur — et y RESTE : le cadran est ce condensat.
+        let lacquerV = Float(0.9 * sstep(0.55, 1.0, d.dry))
         let lensShader = ShaderLibrary.liquidLens(
             .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
             .float(f0), .float(dispV), .float(emberV),
             .float(squashV), .float(1.0), .float(tS),
-            .float(0.0), .float(0.0), .float(0.0), .float(0.0),
+            .float(0.0), .float(0.0), .float(0.0), .float(lacquerV),
             .float(Float(lens.ripple)), .float(Float(lens.ripplePhase)))
         let hasTrail = d.sta.count >= 8 && d.dry < 0.999
         let birthV = Float(sstep(24, 170, Double(d.pathLen)))
@@ -569,16 +572,30 @@ struct LiquidLensLab: View {
             .float2(Float(d.boundsMin.x), Float(d.boundsMin.y)),
             .float2(Float(d.boundsMax.x), Float(d.boundsMax.y)),
             .float(tS), .float(Float(d.dry)), .float(birthV),
-            .float(1.0), .float(1.0))
+            .float(1.0), .float(1.0), .float2(cX, cY))
+        // LE HALO : l'énergie diffusée s'allume derrière la pastille —
+        // les quatre voix du vrai cadran — et y RESTE.
+        let igV = Float(sstep(0.25, 0.95, d.dry))
+        let glowShader = ShaderLibrary.eclipseGlow(
+            .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
+            .float(tS), .float(igV))
         let landed = ne - (SummitCine.enter + SummitCine.descend)
-        // Le chip n'apparaît qu'APRÈS l'annonce — le battement reste seul.
-        let chipIn = min(max((landed - 5.3) / 0.5, 0), 1)
+        // LES CHIFFRES : ils affleurent du condensat, au battement.
+        let faceIn = sstep(4.5, 5.6, max(landed, 0))
+        // Le chip n'apparaît qu'après l'affleurement.
+        let chipIn = min(max((landed - 6.3) / 0.5, 0), 1)
         return ZStack {
             ZStack {
                 Color.black
                 NightSpotlight()
                     .allowsHitTesting(false)
                 NightStars(t: t)
+                    .allowsHitTesting(false)
+                // L'énergie de l'encre, devenue halo — DERRIÈRE l'objet,
+                // réfractée par son verre : elle s'y reflète, à demeure.
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(glowShader)
                     .allowsHitTesting(false)
                 if hasTrail {
                     Rectangle()
@@ -593,6 +610,24 @@ struct LiquidLensLab: View {
             .compositingGroup()
             .layerEffect(lensShader,
                          maxSampleOffset: CGSize(width: 110, height: 110))
+            // LES CHIFFRES DU CADRAN — la continuité directe du condensat,
+            // affleurant du fond de la laque, sous les reflets du verre.
+            if faceIn > 0.001 {
+                VStack(spacing: 6) {
+                    Text("SÉRIE 1")
+                        .font(.inter(12, .semibold))
+                        .tracking(3.0)
+                        .foregroundStyle(Color.white.opacity(0.50))
+                    Text("0:00")
+                        .font(.inter(46, .medium))
+                        .foregroundStyle(Color.white.opacity(0.92))
+                }
+                .opacity(faceIn)
+                .blur(radius: (1 - faceIn) * 7)
+                .scaleEffect(0.95 + 0.05 * faceIn)
+                .position(lens.center)
+                .allowsHitTesting(false)
+            }
             if !Self.cycling {
                 Button {
                     summitAt = nil
