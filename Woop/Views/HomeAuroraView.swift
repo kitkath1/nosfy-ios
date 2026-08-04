@@ -97,20 +97,9 @@ struct SwapDeckLab: View {
     var body: some View {
         ZStack {
             AuroraHomeBackground()
-            VStack(spacing: 22) {
-                SwapDeck(workouts: deck, topCard: $topCard) { _ in }
-                HStack(spacing: 9) {
-                    ForEach(deck.indices, id: \.self) { index in
-                        let current = deck.isEmpty ? 0 : topCard % deck.count
-                        Circle()
-                            .fill(index == current
-                                  ? Color(red: 1.0, green: 0.78, blue: 0.45)
-                                  : Color.white.opacity(0.16))
-                            .frame(width: index == current ? 7 : 5,
-                                   height: index == current ? 7 : 5)
-                    }
-                }
-            }
+            // Comme dans la home : plus de points sous la pile — l'éventail
+            // suffit à dire qu'il y a d'autres cartes.
+            SwapDeck(workouts: deck, topCard: $topCard) { _ in }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -148,6 +137,11 @@ struct HomeAuroraView: View {
         finished.filter { $0.startedAt >= weekStart }.count
     }
 
+    /// L'arrivée de la cinématique : le contenu naît APRÈS la lumière — un
+    /// souffle après l'aube, jamais avant elle. Hors cérémonie, tout est là
+    /// dès la première image.
+    @State private var contentBorn = true
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -170,8 +164,19 @@ struct HomeAuroraView: View {
                 } action: { _, offset in
                     SkyState.shared.scroll = offset
                 }
+                .opacity(contentBorn ? 1 : 0)
+                .offset(y: contentBorn ? 0 : 10)
             }
             .navigationBarHidden(true)
+            .onAppear {
+                guard HomeWelcome.start != nil else { return }
+                contentBorn = false
+                // La lumière d'abord (l'aube part 0,45 s après la coupe), le
+                // contenu un souffle plus tard — c'est elle qui le révèle.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                    withAnimation(.easeOut(duration: 0.65)) { contentBorn = true }
+                }
+            }
             .navigationDestination(isPresented: $showAllWorkouts) { WorkoutsListView() }
             .navigationDestination(item: $opened) { WorkoutDetailView(workout: $0) }
             .sheet(isPresented: $askStart) { startSheet }
@@ -305,30 +310,14 @@ struct HomeAuroraView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
             } else {
+                // Les points de position ont été RETIRÉS (verdict du
+                // 2026-08-04) : l'éventail montre déjà qu'il y a d'autres
+                // cartes — un compteur dessous ne faisait que le redire.
                 SwapDeck(workouts: swapped, topCard: $topCard) { opened = $0 }
                     .padding(.top, 16)
-                dots
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 20)
             }
         }
         .padding(.top, 4)
-    }
-
-    /// Les points de la pile : celui de la carte du dessus s'allume d'or.
-    private var dots: some View {
-        HStack(spacing: 9) {
-            ForEach(swapped.indices, id: \.self) { index in
-                let current = swapped.isEmpty ? 0 : topCard % swapped.count
-                Circle()
-                    .fill(index == current
-                          ? Color(red: 1.0, green: 0.78, blue: 0.45)
-                          : Color.white.opacity(0.16))
-                    .frame(width: index == current ? 7 : 5,
-                           height: index == current ? 7 : 5)
-                    .animation(.easeOut(duration: 0.25), value: topCard)
-            }
-        }
     }
 }
 
@@ -368,24 +357,31 @@ struct SwapDeck: View {
     /// qui vient de partir revient, sans jamais se voir traverser l'écran.
     private var slots: [(depth: Int, workout: Workout)] {
         guard !workouts.isEmpty else { return [] }
-        let shown = min(workouts.count, 3)
+        let shown = min(workouts.count, 4)
         return (0..<shown).reversed().map { depth in
             (depth, workouts[(topCard + depth) % workouts.count])
         }
     }
 
-    /// La carte, aux mesures de la référence (≈ 207 × 265 pt) : dimensionnée
-    /// à la main — un `aspectRatio` dans une pile se bat avec la hauteur du
-    /// conteneur et finit par déborder — et assez basse pour que la pile,
-    /// ses points ET la barre d'onglets tiennent ensemble à l'écran.
-    static let cardHeight: CGFloat = 265
-    static let cardWidth: CGFloat = 207
-    private static let sinkStep: CGFloat = 20
-    /// La hauteur du bloc : la carte, le recul des suivantes, et un peu d'air.
-    static let deckHeight = cardHeight + sinkStep * 2 + 10
-    /// Où se trouve le centre de la carte du dessus dans le bloc : la pile
-    /// est centrée, et la carte du dessus est remontée d'un cran de recul.
-    static let topCardCenterY = deckHeight / 2 - sinkStep
+    /// La carte, un cran au-dessus de la référence d'origine (207 × 265) :
+    /// verdict du 2026-08-04 — « un peu plus grosses, toujours noires ».
+    /// Dimensionnée à la main — un `aspectRatio` dans une pile se bat avec la
+    /// hauteur du conteneur et finit par déborder — et assez basse pour que la
+    /// pile, ses points ET la barre d'onglets tiennent ensemble à l'écran.
+    static let cardHeight: CGFloat = 282
+    static let cardWidth: CGFloat = 220
+    /// L'éventail : les cartes de dessous ne se cachent plus SOUS la
+    /// première, elles dépassent sur les CÔTÉS — une main de cartes
+    /// entrouverte. Écart latéral, léger enfoncement, inclinaison de l'aile.
+    private static let fanStep: CGFloat = 40
+    private static let fanDip: CGFloat = 12
+    private static let fanTilt: Double = 5.0
+    private static let fanShrink: CGFloat = 0.93
+    /// La hauteur du bloc : la carte et l'air des coins levés de l'éventail.
+    static let deckHeight = cardHeight + 26
+    /// Où se trouve le centre de la carte du dessus dans le bloc : au centre —
+    /// l'éventail s'écarte sur les côtés, il ne s'empile plus vers le bas.
+    static let topCardCenterY = deckHeight / 2
     /// La marge où respire la gerbe : les bijoux volent bien au-delà de la
     /// pile — un shader ne peint que dans son rectangle hôte.
     private static let burstRoom: CGFloat = 290
@@ -458,17 +454,28 @@ struct SwapDeck: View {
                     // en descendant. Inversé, le reflet se détachait loin
                     // dessous — invisible dans la home, où cette bande tombe
                     // derrière la barre d'onglets.
+                    //
+                    // Il est COURT : il meurt en 26 pt (0,10 de la hauteur) au
+                    // lieu de 146 (0,55). Sur l'aurore embrasée, un reflet long
+                    // n'ajoute rien — le sol y est déjà à 98 % de blanc, la
+                    // lumière ne peut plus s'y ajouter — sauf les BLOCS DE
+                    // TEXTE de la carte, qui tombaient à 38-55 pt sous elle et
+                    // se lisaient en deux plaques pâles rectangulaires
+                    // (« la card transparente, le calque derrière »). Ce qui
+                    // pose la carte sur un sol poli, c'est la bande de CONTACT,
+                    // pas la traîne : coupée avant le cartouche, il reste le
+                    // reflet et plus le fantôme.
                     LinearGradient(stops: [
-                        .init(color: .white.opacity(0.95), location: 0.0),
-                        .init(color: .white.opacity(0.30), location: 0.22),
-                        .init(color: .white.opacity(0.0), location: 0.55)
+                        .init(color: .white.opacity(0.90), location: 0.0),
+                        .init(color: .white.opacity(0.28), location: 0.045),
+                        .init(color: .white.opacity(0.0), location: 0.10)
                     ], startPoint: .top, endPoint: .bottom)
                 }
                 .blur(radius: 3)
-                .opacity(0.70)
+                .opacity(0.60)
                 .rotationEffect(.degrees(-Double(drag.width) / 30), anchor: .top)
                 .offset(x: drag.width,
-                        y: Self.cardHeight - Self.sinkStep + 3 + drag.height * 0.25)
+                        y: Self.cardHeight + 3 + drag.height * 0.25)
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
         }
@@ -477,12 +484,12 @@ struct SwapDeck: View {
     @ViewBuilder
     private func card(_ workout: Workout, depth: Int) -> some View {
         let isTop = depth == 0
-        let deepest = depth == min(workouts.count, 3) - 1 && workouts.count > 1
+        let deepest = depth == min(workouts.count, 4) - 1 && workouts.count > 1
         let gone = workout.persistentModelID == vanished
-        // Le recul des cartes de dessous : elles descendent et rétrécissent
-        // à peine — juste assez pour dire « il y en a d'autres ».
-        let sink = CGFloat(depth) * Self.sinkStep
-        let shrink = 1 - CGFloat(depth) * 0.05
+        // L'éventail : la deuxième carte dépasse à DROITE, la troisième à
+        // GAUCHE — on ne les devine plus sous la première, on les voit,
+        // chacune de son côté. La plus profonde reste le quai de retour.
+        let wing: CGFloat = depth == 1 ? 1 : (depth == 2 ? -1 : 0)
 
         SwapWorkoutCard(workout: workout, seed: Float(depth),
                         charge: isTop ? charge : 0,
@@ -493,9 +500,19 @@ struct SwapDeck: View {
             // vide, le doigt passait au travers et c'est la page qui
             // scrollait. C'est toute la panne du geste.
             .contentShape(Rectangle())
-            .scaleEffect(isTop ? 1 - min(abs(drag.width), 140) / 2600 : shrink)
-            .offset(x: isTop ? drag.width : 0,
-                    y: (isTop ? drag.height * 0.25 : 0) + sink - Self.sinkStep)
+            // Le voile : les ailes restent NOIRES mais reculent d'un demi-ton
+            // dans la nuit — la première carte garde la lumière pour elle.
+            // En opacité animée, pas en `if` : à la promotion d'une aile, le
+            // voile se lève avec le ressort au lieu de sauter.
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.black.opacity(isTop ? 0 : 0.34))
+                    .allowsHitTesting(false)
+            }
+            .scaleEffect(isTop ? 1 - min(abs(drag.width), 140) / 2600
+                               : Self.fanShrink)
+            .offset(x: isTop ? drag.width : wing * Self.fanStep,
+                    y: isTop ? drag.height * 0.25 : Self.fanDip)
             // Le basculement 3D : la carte n'est plus une image qui glisse,
             // c'est un objet qu'on incline — elle pivote autour de son axe
             // vertical vers le côté où l'on tire, et s'incline vers l'avant
@@ -506,8 +523,10 @@ struct SwapDeck: View {
             .rotation3DEffect(.degrees(isTop ? -Double(drag.height) / 15 : 0),
                               axis: (x: 1, y: 0, z: 0), perspective: 0.62)
             // Et le pivot BAS reste, en retrait : la carte bascule dans la
-            // main, elle ne tourne pas autour de son nombril.
-            .rotationEffect(.degrees(isTop ? Double(drag.width) / 30 : 0),
+            // main, elle ne tourne pas autour de son nombril — et les ailes
+            // s'inclinent chacune vers son bord, comme une main de cartes.
+            .rotationEffect(.degrees(isTop ? Double(drag.width) / 30
+                                           : Double(wing) * Self.fanTilt),
                             anchor: .bottom)
             // La carte de fond reste invisible, et celle qui vient de partir
             // aussi : ni l'une ni l'autre ne doit se voir revenir.
@@ -658,11 +677,12 @@ struct SwapBurstLayer: View {
 
 // MARK: - Le ciel réchauffé
 
-/// La nuit de la page : noir absolu, l'aurore de la connexion qui monte du
-/// bas — les mêmes tons de la photo, mais en murmure : elle n'est qu'un sol
-/// sous le contenu — et, gardées du ciel d'origine, les poussières
-/// d'étoiles du HAUT (la passe `nebulaStars` seule : la nébuleuse, elle, a
-/// laissé la place à l'aurore).
+/// La nuit de la page : noir absolu, le halo de l'aurore qui DESCEND du haut
+/// — versé par la Dynamic Island, les mêmes tons que la connexion mais en
+/// plafond de lumière, et tout le bas rendu à la nuit — et, gardées du ciel
+/// d'origine, les poussières d'étoiles (la passe `nebulaStars` seule),
+/// déménagées dans le noir du BAS : là où le halo vit, elles seraient
+/// invisibles ; c'est la nuit qui a besoin d'elles.
 struct AuroraHomeBackground: View {
     var body: some View {
         ZStack {
@@ -670,14 +690,14 @@ struct AuroraHomeBackground: View {
 
             AuroraFloor()
 
-            // Les particules du haut : le champ d'étoiles du ciel de la
-            // maison, éteint avant le bas pour laisser l'aurore seule.
+            // Les particules du bas : le champ d'étoiles du ciel de la
+            // maison, éteint avant le halo pour laisser la nuit seule.
             StarDustCeiling()
                 .mask {
                     LinearGradient(stops: [
-                        .init(color: .white, location: 0.0),
-                        .init(color: .white.opacity(0.55), location: 0.16),
-                        .init(color: .clear, location: 0.36)
+                        .init(color: .clear, location: 0.44),
+                        .init(color: .white.opacity(0.50), location: 0.68),
+                        .init(color: .white.opacity(0.80), location: 1.0)
                     ], startPoint: .top, endPoint: .bottom)
                 }
 
@@ -689,11 +709,11 @@ struct AuroraHomeBackground: View {
     }
 }
 
-/// L'hôte de l'aurore. Depuis le 2026-08-02 c'est `bgAuroraHome` — le MÊME
-/// champ que la page de connexion (mêmes rideaux, mêmes poussières, même
-/// parallaxe à trois plans), à deux constantes près : la crête remonte dans le
-/// cadre et la nuit se rétrécit à 40 % de la hauteur. L'ancien `homeAurora`
-/// reste dans AuroraHome.metal, plus référencé.
+/// L'hôte de l'aurore. Depuis le 2026-08-04 `bgAuroraHome` est RETOURNÉ — le
+/// MÊME champ que la page de connexion (mêmes rideaux, mêmes poussières, même
+/// parallaxe à trois plans) mais la lumière descend du HAUT, versée par la
+/// Dynamic Island, et le bas de la page est rendu à la nuit. L'ancien
+/// `homeAurora` reste dans AuroraHome.metal, plus référencé.
 struct AuroraFloor: View {
     @StateObject private var tilt = BgTilt()
 
@@ -702,16 +722,17 @@ struct AuroraFloor: View {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
-                // L'accueil : au débouché de la cinématique de connexion, la
-                // crête reçoit un surcroît qui retombe — la page répond à la
-                // lumière d'où l'on vient. Zéro en temps normal.
-                let welcome = ConnexionCine.welcome(at: tl.date)
+                // L'aube : au débouché de la cinématique de connexion, la
+                // lumière NAÎT — avec la forme du login (un fil de crête au
+                // bord bas) qui se déploie vers celle de la home. Hors
+                // cérémonie, 1 : la page est elle-même.
+                let birth = ConnexionCine.birth(at: tl.date)
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.bgAuroraHome(
                         .float2(geo.size.width, geo.size.height), .float(t),
                         .float2(Float(tilt.value.x), Float(tilt.value.y)),
-                        .float(Float(welcome))))
+                        .float(Float(birth))))
             }
         }
     }
