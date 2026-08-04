@@ -134,13 +134,17 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                  + 0.30 * pow(max(-dot(nrm, gdir), 0.0), 3.4);
     float w = 0.13 + 0.87 * lobe;
 
-    // La hairline, et la buée qui la double : au repos ce sont les accents
-    // organiques ; sous le geste, le dégradé lisse du foyer prend la main.
+    // La hairline, et la buée qui la double. AU REPOS ELLE N'EXISTE PLUS
+    // (verdict du 2026-08-04 : le liseré clair autour des cartes noires
+    // « on dirait un bug ») — la carte est un noir pur posé sur la nuit, et
+    // l'arête ne NAÎT que du geste ou du toucher, avec le tube.
+    float gesteVif = clamp(max(charge, lit), 0.0, 1.0);
     float rimSmooth = mix(rim, w, clamp(charge * 0.88, 0.0, 1.0));
     float line = exp(-d * d / (lw * lw))
-                 * (0.09 + 0.62 * rimSmooth) * (1.0 + 0.85 * charge);
+                 * (0.09 + 0.62 * rimSmooth) * (1.0 + 0.85 * charge)
+                 * gesteVif;
     float halo = exp(-max(d, 0.0) / (5.0 + 3.0 * charge))
-                 * smoothstep(-0.8, 0.8, d) * 0.10 * rimSmooth;
+                 * smoothstep(-0.8, 0.8, d) * 0.10 * rimSmooth * gesteVif;
 
     // Dehors : à peine une buée serrée contre l'arête. Le halo derrière la
     // carte reste un murmure — c'est la retenue qui fait le premium.

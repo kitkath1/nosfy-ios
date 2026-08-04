@@ -83,14 +83,19 @@ constant float4 BG_SHAPE_LOGIN = float4(0.975, 0.080, 0.125, 0.30);
 // la pile de cartes y vit sur du noir. Même champ, même matière : le shader
 // est simplement RETOURNÉ (y et inclinaison verticale inversés). Ces valeurs
 // se lisent donc dans le repère retourné — crête 0.94 = à 6 % du bord
-// HAUT de l'écran ; nuit 0.46 = le noir est total sous 54 % de la hauteur.
-constant float4 BG_SHAPE_HOME  = float4(0.940, 0.150, 0.420, 0.460);
+// HAUT de l'écran ; nuit 0.44 = le noir est total sous 56 % de la hauteur.
+// Montée 0.17 et nuit 0.44 (au lieu de 0.15/0.46) : « augmente le halo » —
+// la lumière descend un peu plus loin dans la page.
+constant float4 BG_SHAPE_HOME  = float4(0.940, 0.170, 0.420, 0.440);
 // Le niveau du champ, propre à la home : à pleine puissance (v1), le cœur
 // blanc noyait le titre et la lumière tenait 60 % de l'écran. Ici le champ
 // n'est qu'une nappe d'or — le BLANC appartient au bloom de l'île, seul.
-// 0,52 et pas 0,60 : au sommet de la respiration, le blanc remontait encore
-// noyer « Bonjour Kathryn » (« des fois on voit plus le nom »).
-constant float BG_HOME_GAIN = 0.52;
+// 0,40 : le champ n'est plus qu'une nappe d'OR — à 0,58 puis 0,52, son cœur
+// gauche montait encore au blanc aux crues de la respiration et mangeait le
+// titre (« encore trop sur le côté gauche, on voit plus le texte »). Le
+// BLANC de la page part désormais essentiellement de l'île : c'est le bloom
+// qui le porte, seul.
+constant float BG_HOME_GAIN = 0.40;
 // Où vivent les foyers (cœur blanc, halo orange), en fraction de largeur.
 // La home tire les siens vers la GAUCHE : sa lumière descend se poser sur le
 // coin doré de la carte Objectif, et le bord droit retombe dans la nuit.
@@ -382,19 +387,25 @@ static float3 bgDither(float3 c, float2 position, float t) {
     // vers le coin allumé de la carte Objectif — et elle VIT : son propre
     // souffle (9 s, à contretemps du champ), une dérive latérale lente, et
     // les rideaux qui la texturent plus franchement que la v3.
+    // Le SOUFFLE BLANC de l'île (verdict du 2026-08-04) : bien plus poussé —
+    // amplitude 3,3, élargi le long de l'île, avec sa propre respiration —
+    // mais tenu COURT en hauteur (σ vertical resserré à 4,2 % de l'écran) :
+    // il doit mourir avant « Bonjour Kathryn », jamais descendre dessus.
     float souffle = 0.82 + 0.26 * sin(t * 6.2832 / 9.0 + 2.0);
+    float souffleIle = 0.88 + 0.16 * sin(t * 6.2832 / 7.3 + 1.1);
     float sway = 0.38 + 0.035 * sin(t * 6.2832 / 14.0 + 5.1);
-    float2 pi1 = position - float2(size.x * 0.5, 8.0);
+    float2 pi1 = position - float2(size.x * 0.5, 10.0);
     float2 pi2 = position - float2(size.x * sway, 30.0);
-    float2 di1 = pi1 / float2(size.x * 0.13, size.y * 0.035);
+    float2 di1 = pi1 / float2(size.x * 0.19, size.y * 0.042);
     float2 di2 = pi2 / float2(size.x * 0.42, size.y * 0.15);
     float coeurIle = exp(-dot(di1, di1));
-    float Li = (1.60 * coeurIle + 0.80 * exp(-dot(di2, di2)) * souffle)
+    float Li = (3.30 * coeurIle * souffleIle
+              + 1.00 * exp(-dot(di2, di2)) * souffle)
              * (0.62 + 0.75 * cur) * bs;
     if (Li > 0.001) {
         float vi = 1.0 - exp(-Li * 1.6);
-        float3 ti = mix(BG_JAUNE, float3(1.00, 0.97, 0.90),
-                        clamp(coeurIle * 1.2, 0.0, 1.0));
+        float3 ti = mix(BG_JAUNE, float3(1.00, 0.99, 0.96),
+                        clamp(coeurIle * 1.35, 0.0, 1.0));
         c = 1.0 - (1.0 - c) * (1.0 - ti * vi);
     }
 
