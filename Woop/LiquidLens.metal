@@ -161,14 +161,22 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
 [[ stitchable ]] half4 inkTrail(float2 position, half4 color, float2 size,
                                 device const float *sta, int staCount,
                                 float2 bMin, float2 bMax, float t,
-                                float dry, float birth, float scale) {
+                                float dry, float birth, float scale,
+                                float night) {
     position *= scale;
     int K = staCount / 4;
     if (K < 2 || dry >= 0.999 || birth < 0.004) { return half4(0.0); }
+    // ===== L'ÉVAPORATION (nuit) : l'encre rend son souffle à la nuit.
+    // Toute l'IMAGE du vol s'élève (la géométrie est interrogée plus bas
+    // que le pixel : ce qui est tombé remonte sans la pastille).
+    float ev = night > 0.5 ? dry : 0.0;
+    float lift = ev * ev * 380.0;
     if (position.x < bMin.x - 240.0 || position.x > bMax.x + 240.0 ||
-        position.y < bMin.y - 240.0 || position.y > bMax.y + 240.0) {
+        position.y < bMin.y - 240.0 - lift ||
+        position.y > bMax.y + 240.0) {
         return half4(0.0);
     }
+    float2 posGeo = position + float2(0.0, lift);
     // La distance signée au tracé : le segment le plus proche, son u,
     // son âge, sa flânerie, son côté. 23 segments de maths simples —
     // les fbm, eux, n'existent que près du chemin.
@@ -180,8 +188,8 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
         float2 p1 = float2(sta[(k+1) * 4],   sta[(k+1) * 4 + 1]);
         float2 v = p1 - p0;
         float vv = max(dot(v, v), 1e-4);
-        float hseg = clamp(dot(position - p0, v) / vv, 0.0, 1.0);
-        float2 dv = position - (p0 + v * hseg);
+        float hseg = clamp(dot(posGeo - p0, v) / vv, 0.0, 1.0);
+        float2 dv = posGeo - (p0 + v * hseg);
         float d2 = dot(dv, dv);
         float uk = (float(k) + hseg) / float(K - 1);
         float ak = mix(sta[k * 4 + 2], sta[(k+1) * 4 + 2], hseg);
@@ -207,25 +215,36 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // LE DOMAINE TORDU : la silhouette billowe — c'est elle qui vit.
     // Deux octaves partout : la tache est floue, la troisième octave est
     // sous son propre flou — le simulateur, lui, la paie plein pot.
-    float2 p = position * 0.006;
+    float2 posA = posGeo;
+    float2 p = posA * 0.006;
     float warpA = lfbm2(p + float2(0.0, -t * 0.055)) * 1.16;
     float warpB = lfbm2(p * 2.3 + float2(5.2, t * 0.085)) * 1.16;
-    float d1 = sd - (warpA - 0.5) * 110.0 - (warpB - 0.5) * 34.0;
+    // En s'évaporant, la silhouette se DÉCHIRE : les warps s'exagèrent.
+    float d1 = sd - ((warpA - 0.5) * 110.0 + (warpB - 0.5) * 34.0)
+                    * (1.0 + 0.8 * ev);
     // La pointe naît en fondu ; la base s'élargit et se noie (au-delà du
     // départ, la distance devient radiale d'elle-même : le fondu est
     // géométrique, aucun bord).
-    float tipIn = smoothstep(0.0, 0.06, u);
+    // Dans la NUIT, la nappe naît en VOILE : la densité pleine n'arrive
+    // que plus haut derrière la pastille — jamais de soupe au contact.
+    float tipIn = smoothstep(0.0, mix(0.06, 0.22, night), u);
     float spread = 34.0 * smoothstep(0.85, 1.0, u);
     // LES LOBES : le cœur + deux nappes fantômes, chacun sa largeur.
     float wMain = (26.0 + 15.0 * (1.0 - u) + 17.0 * min(age * 0.5, 1.0))
-                  * (0.80 + 0.55 * linger) + spread;
-    float off1 = 30.0 + 34.0 * (warpB - 0.35);
-    float off2 = -36.0 - 30.0 * (warpA - 0.35);
+                  * (0.80 + 0.55 * linger) * (1.0 - 0.18 * night) + spread;
+    // L'ÉTALEMENT : les volutes gonflent, la densité se conserve — elle
+    // pâlit PARCE QU'elle s'étale, jamais parce qu'on la baisse.
+    float wGrow = 1.0 + 2.6 * ev;
+    wMain *= wGrow;
+    float rarefy = 1.0 / wGrow;
+    float off1 = (30.0 + 34.0 * (warpB - 0.35)) * (1.0 + 0.5 * ev);
+    float off2 = (-36.0 - 30.0 * (warpA - 0.35)) * (1.0 + 0.5 * ev);
     float dens = exp(-(d1 * d1) / (wMain * wMain))
                  * (0.54 + 0.46 * warpA) * (0.85 + 0.45 * linger);
     float wHeart = wMain * 0.42;
     dens += exp(-(d1 * d1) / (wHeart * wHeart))
-            * (0.45 + 0.55 * warpB) * (0.55 + 0.65 * linger);
+            * (0.45 + 0.55 * warpB) * (0.55 + 0.65 * linger)
+            * (1.0 - 0.5 * ev);
     float w1 = wMain * 0.55;
     float dl1 = d1 - off1;
     dens += exp(-(dl1 * dl1) / (w1 * w1)) * 0.34 * (0.35 + 0.85 * warpB);
@@ -234,42 +253,52 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     dens += exp(-(dl2 * dl2) / (w2 * w2)) * 0.27 * (0.35 + 0.85 * warpA);
     // Le grain du pigment mouillé — seulement dans l'encre visible.
     if (dens > 0.05) {
-        float fine = lfbm2(position * 0.030
+        float fine = lfbm2(posA * 0.030
                            + float2(warpB * 2.1, t * 0.05));
         dens *= 0.72 + 0.55 * fine;
     }
     // LES VRILLES : l'encre fraîche en jette, la vieille se pose.
     float vrilEnv = exp(-(d1 * d1) / (wMain * wMain * 4.0));
     if (vrilEnv > 0.015) {
-        float tf = lfbm2(float2(position.y * 0.013 + warpA * 1.7,
-                                position.x * 0.011 - t * 0.07
+        float tf = lfbm2(float2(posA.y * 0.013 + warpA * 1.7,
+                                posA.x * 0.011 - t * 0.07
                                 + warpB * 1.3)) * 1.16;
         dens += pow(smoothstep(0.52, 0.88, tf), 2.0) * vrilEnv
-                * (0.35 + 0.65 * live) * 0.55;
+                * (0.35 + 0.65 * live) * 0.55 * (1.0 - ev);
     }
+    dens *= mix(1.0, rarefy, night);
     dens *= tipIn * birth;
     // La fleur d'eau sous la bille — au point exact du doigt.
     float2 tip = float2(sta[0], sta[1]);
     float2 dtp = position - tip;
     float bloom = exp(-dot(dtp, dtp) / (78.0 * 78.0))
-                  * (0.40 + 0.60 * live) * birth;
+                  * (0.40 + 0.60 * live) * birth
+                  * (1.0 - smoothstep(0.10, 0.45, ev));
     if (dens < 0.004 && bloom < 0.004) { return half4(0.0); }
     // DISCRÈTE : des ambres translucides, jamais des bruns — la sienne et
     // l'ombre ne sont plus que des soupçons, la fumée se lit dans la FORME.
+    // Sur le papier, le jaune porte et la sienne ombre ; dans la NUIT,
+    // c'est le BLANC qui porte la lumière (orange et jaune la réchauffent),
+    // et l'ombre n'existe pas — la nuit est déjà l'ombre.
     float3 yellow = float3(1.00, 0.88, 0.45);
-    float3 orange = float3(1.00, 0.55, 0.20);
+    float3 orange = mix(float3(1.00, 0.55, 0.20),
+                        float3(1.00, 0.64, 0.32), night);
     float3 sienna = float3(0.62, 0.28, 0.10);
-    float3 bloomC = float3(1.00, 0.72, 0.32);
-    float3 c = mix(yellow, orange, smoothstep(0.10, 0.55, dens));
-    c = mix(c, sienna, 0.18 * smoothstep(0.65, 1.70, dens));
-    c = mix(c, yellow, 0.22 * smoothstep(0.62, 0.92, warpB)
+    float3 bloomC = mix(float3(1.00, 0.72, 0.32),
+                        float3(1.00, 0.90, 0.70), night);
+    float3 lowC = mix(yellow, float3(0.99, 0.975, 0.945), night);
+    float3 c = mix(lowC, orange, smoothstep(0.10, 0.55, dens));
+    c = mix(c, sienna, 0.18 * smoothstep(0.65, 1.70, dens)
+                        * (1.0 - night));
+    c = mix(c, yellow, (0.22 + 0.16 * night)
+                        * smoothstep(0.62, 0.92, warpB)
                         * (1.0 - smoothstep(0.9, 1.6, dens)));
     c = mix(c, sienna, 0.10 * smoothstep(0.70, 0.95, warpA)
-                        * smoothstep(0.35, 0.9, dens));
+                        * smoothstep(0.35, 0.9, dens) * (1.0 - night));
     // LES NUAGES DE BLANC : des poches de lait qui dérivent dans l'encre.
     float cmask = 0.0;
     if (dens > 0.12) {
-        float cloud = lfbm2(position * 0.008
+        float cloud = lfbm2(posA * 0.008
                             + float2(t * 0.050, -t * 0.075)
                             + warpA * 0.9);
         cmask = smoothstep(0.52, 0.82, cloud)
@@ -281,9 +310,9 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // s'éteignent. Du scintillement CONNEXE : jamais des paillettes.
     float glintM = 0.0;
     if (dens > 0.10) {
-        float n1 = lnoise(position * 0.021
+        float n1 = lnoise(posA * 0.021
                           + float2(t * 0.11, -t * 0.07) + warpA * 0.6);
-        float n2 = lnoise(position * 0.017
+        float n2 = lnoise(posA * 0.017
                           + float2(-t * 0.09, t * 0.06));
         float r1 = pow(1.0 - fabs(2.0 * n1 - 1.0), 6.0);
         float r2 = pow(1.0 - fabs(2.0 * n2 - 1.0), 6.0);
@@ -294,14 +323,34 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                  * (0.30 + 0.70 * live);
         c = mix(c, float3(1.00, 0.96, 0.88), min(1.7 * glintM, 0.85));
     }
-    // DISCRÈTE (−40 %) : une présence qui se devine, pas une affiche.
-    float aInk = (1.0 - exp(-dens * 0.72)) * (0.28 + 0.30 * live)
+    // Sur le papier, DISCRÈTE (−40 %) : une présence qui se devine. Sur
+    // la NUIT, l'inverse : l'alpha est la seule lumière — l'encre doit
+    // RAYONNER, blanche et chaude, seule source vivante de la descente.
+    // LA DÉCHIRURE EN ÉCHARPES : un seuil SPATIAL monte dans un bruit
+    // large — les volutes fines meurent d'abord, les cœurs en dernier,
+    // chacune à son heure. Jamais un front, jamais un fondu global.
+    float wispK = 1.0;
+    if (ev > 0.001) {
+        float wispN = lfbm2(posGeo * 0.0045
+                            + float2(t * 0.03, -t * 0.05)) * 1.16;
+        float th = -0.15 + 1.05 * ev;
+        wispK = smoothstep(th, th + 0.25,
+                           wispN + 0.28 * min(dens, 1.2));
+        wispK *= 1.0 - smoothstep(0.93, 1.0, ev);
+        // Et en s'évaporant, l'encre REFROIDIT : la braise glisse vers
+        // le blanc de lune — elle ne meurt pas, elle devient la nuit.
+        c = mix(c, float3(0.94, 0.95, 0.97),
+                0.75 * smoothstep(0.15, 0.85, ev));
+    }
+    float fold = night > 0.5 ? wispK : 1.0 - dry;
+    float aInk = (1.0 - exp(-dens * mix(0.72, 0.95, night)))
+                 * (0.28 + 0.30 * live) * (1.0 + 0.30 * night)
                  * (1.0 + 0.18 * cmask + 0.55 * glintM);
-    float aBloom = bloom * 0.13;
+    float aBloom = bloom * mix(0.13, 0.02, night);
     float total = aInk + aBloom;
     if (total < 0.0008) { return half4(0.0); }
     float3 cTot = (c * aInk + bloomC * aBloom) / total;
-    float a = min(total * (1.0 - dry), 0.40);
+    float a = min(total * fold, mix(0.40, 0.46, night));
     return half4(half3(cTot * a), half(a)) * color.a;
 }
 
@@ -315,7 +364,9 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                                   float2 size, float2 center, float R,
                                   float f0, float disp, float ember,
                                   float squash, float shade, float t,
-                                  float vision, float spill, float sceneIg) {
+                                  float vision, float spill, float sceneIg,
+                                  float nightFill, float ripple,
+                                  float ripplePhase) {
     float2 d = position - center;
     d.y *= squash;
     float r = length(d);
@@ -364,6 +415,12 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // ---- Dedans : la calotte de verre.
     float bell = sqrt(max(1.0 - nr * nr, 0.0));
     float f = mix(1.32, f0, pow(bell, 0.82));
+    // L'ONDE DE LA GOUTTE : après l'atterrissage, une vague circulaire
+    // traverse la surface — l'eau qui tremble, brève, amortie.
+    if (ripple > 0.002) {
+        f *= 1.0 + ripple * 0.05 * sin(nr * 24.0 - ripplePhase)
+                 * (0.35 + 0.65 * bell);
+    }
     float sep = disp * 0.055 * pow(nr, 2.4);
     float2 dir = float2(d.x, d.y / squash);
     float2 pR = clamp(center + dir * (f * (1.0 - sep)), lo, hi);
@@ -377,6 +434,20 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     rgb *= 1.0 - 0.045 * pow(nr, 3.5) * shade;
     float frost = smoothstep(0.955, 1.0, nr);
     rgb = mix(rgb, float3(0.965, 0.955, 0.935), frost * 0.14 * shade);
+
+    // ---- LA NUIT DANS LE VERRE : pendant le zoom du sommet, l'intérieur
+    // se remplit d'une nuit lunaire — on n'entre pas dans un décor, on
+    // entre dans l'OBJET. Le velours vfbm (le drap du cadran), et une
+    // clarté de lune à peine posée par le haut du verre.
+    if (nightFill > 0.001) {
+        float cloth = 0.80 + 0.40 * vfbm(d * 0.02 + float2(7.0, 3.0));
+        float3 nightC = float3(0.012, 0.013, 0.020) * cloth;
+        nightC += float3(0.050, 0.056, 0.072)
+                  * pow(clamp(-n.y, 0.0, 1.0), 2.0);
+        float depth = 0.55 + 0.45 * bell;
+        float inside = 1.0 - smoothstep(R - 1.0, R + 0.5, r);
+        rgb = mix(rgb, nightC, nightFill * depth * inside);
+    }
 
     // ---- Le ruban « inspiration » du drag (meurt dans la condensation).
     if (ember > 0.004) {
