@@ -162,21 +162,22 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                                 device const float *sta, int staCount,
                                 float2 bMin, float2 bMax, float t,
                                 float dry, float birth, float scale,
-                                float night) {
+                                float night, float2 pillC) {
     position *= scale;
     int K = staCount / 4;
     if (K < 2 || dry >= 0.999 || birth < 0.004) { return half4(0.0); }
-    // ===== L'ÉVAPORATION (nuit) : l'encre rend son souffle à la nuit.
-    // Toute l'IMAGE du vol s'élève (la géométrie est interrogée plus bas
-    // que le pixel : ce qui est tombé remonte sans la pastille).
-    float ev = night > 0.5 ? dry : 0.0;
-    float lift = ev * ev * 380.0;
-    if (position.x < bMin.x - 240.0 || position.x > bMax.x + 240.0 ||
-        position.y < bMin.y - 240.0 - lift ||
-        position.y > bMax.y + 240.0) {
+    // ===== LA TRANSFORMATION (nuit) : rien ne disparaît. La matière se
+    // REGROUPE au centre de la bulle — l'image du vol se CONTRACTE vers
+    // elle (interrogation radiale amont : conservation exacte) — pendant
+    // que son énergie s'étend derrière en HALO (peint par eclipseGlow).
+    // Le cadran naîtra de ce condensat.
+    float cond = night > 0.5 ? dry : 0.0;
+    float pull = 1.0 + 2.2 * cond * cond;
+    float2 posGeo = pillC + (position - pillC) * pull;
+    if (posGeo.x < bMin.x - 240.0 || posGeo.x > bMax.x + 240.0 ||
+        posGeo.y < bMin.y - 240.0 || posGeo.y > bMax.y + 240.0) {
         return half4(0.0);
     }
-    float2 posGeo = position + float2(0.0, lift);
     // La distance signée au tracé : le segment le plus proche, son u,
     // son âge, sa flânerie, son côté. 23 segments de maths simples —
     // les fbm, eux, n'existent que près du chemin.
@@ -219,9 +220,9 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     float2 p = posA * 0.006;
     float warpA = lfbm2(p + float2(0.0, -t * 0.055)) * 1.16;
     float warpB = lfbm2(p * 2.3 + float2(5.2, t * 0.085)) * 1.16;
-    // En s'évaporant, la silhouette se DÉCHIRE : les warps s'exagèrent.
+    // En se condensant, la silhouette se LISSE : le cœur liquide prime.
     float d1 = sd - ((warpA - 0.5) * 110.0 + (warpB - 0.5) * 34.0)
-                    * (1.0 + 0.8 * ev);
+                    * (1.0 - 0.55 * cond);
     // La pointe naît en fondu ; la base s'élargit et se noie (au-delà du
     // départ, la distance devient radiale d'elle-même : le fondu est
     // géométrique, aucun bord).
@@ -232,19 +233,16 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // LES LOBES : le cœur + deux nappes fantômes, chacun sa largeur.
     float wMain = (26.0 + 15.0 * (1.0 - u) + 17.0 * min(age * 0.5, 1.0))
                   * (0.80 + 0.55 * linger) * (1.0 - 0.18 * night) + spread;
-    // L'ÉTALEMENT : les volutes gonflent, la densité se conserve — elle
-    // pâlit PARCE QU'elle s'étale, jamais parce qu'on la baisse.
-    float wGrow = 1.0 + 2.6 * ev;
-    wMain *= wGrow;
-    float rarefy = 1.0 / wGrow;
-    float off1 = (30.0 + 34.0 * (warpB - 0.35)) * (1.0 + 0.5 * ev);
-    float off2 = (-36.0 - 30.0 * (warpA - 0.35)) * (1.0 + 0.5 * ev);
+    // LA CONDENSATION conserve la matière : l'image se contracte (pull),
+    // la densité monte d'autant — rien ne pâlit, tout se resserre.
+    float rarefy = min(pull, 2.6);
+    float off1 = (30.0 + 34.0 * (warpB - 0.35)) * (1.0 - 0.6 * cond);
+    float off2 = (-36.0 - 30.0 * (warpA - 0.35)) * (1.0 - 0.6 * cond);
     float dens = exp(-(d1 * d1) / (wMain * wMain))
                  * (0.54 + 0.46 * warpA) * (0.85 + 0.45 * linger);
     float wHeart = wMain * 0.42;
     dens += exp(-(d1 * d1) / (wHeart * wHeart))
-            * (0.45 + 0.55 * warpB) * (0.55 + 0.65 * linger)
-            * (1.0 - 0.5 * ev);
+            * (0.45 + 0.55 * warpB) * (0.55 + 0.65 * linger);
     float w1 = wMain * 0.55;
     float dl1 = d1 - off1;
     dens += exp(-(dl1 * dl1) / (w1 * w1)) * 0.34 * (0.35 + 0.85 * warpB);
@@ -264,7 +262,7 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                                 posA.x * 0.011 - t * 0.07
                                 + warpB * 1.3)) * 1.16;
         dens += pow(smoothstep(0.52, 0.88, tf), 2.0) * vrilEnv
-                * (0.35 + 0.65 * live) * 0.55 * (1.0 - ev);
+                * (0.35 + 0.65 * live) * 0.55 * (1.0 - cond);
     }
     dens *= mix(1.0, rarefy, night);
     dens *= tipIn * birth;
@@ -273,7 +271,7 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     float2 dtp = position - tip;
     float bloom = exp(-dot(dtp, dtp) / (78.0 * 78.0))
                   * (0.40 + 0.60 * live) * birth
-                  * (1.0 - smoothstep(0.10, 0.45, ev));
+                  * (1.0 - smoothstep(0.10, 0.45, cond));
     if (dens < 0.004 && bloom < 0.004) { return half4(0.0); }
     // DISCRÈTE : des ambres translucides, jamais des bruns — la sienne et
     // l'ombre ne sont plus que des soupçons, la fumée se lit dans la FORME.
@@ -326,23 +324,15 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // Sur le papier, DISCRÈTE (−40 %) : une présence qui se devine. Sur
     // la NUIT, l'inverse : l'alpha est la seule lumière — l'encre doit
     // RAYONNER, blanche et chaude, seule source vivante de la descente.
-    // LA DÉCHIRURE EN ÉCHARPES : un seuil SPATIAL monte dans un bruit
-    // large — les volutes fines meurent d'abord, les cœurs en dernier,
-    // chacune à son heure. Jamais un front, jamais un fondu global.
-    float wispK = 1.0;
-    if (ev > 0.001) {
-        float wispN = lfbm2(posGeo * 0.0045
-                            + float2(t * 0.03, -t * 0.05)) * 1.16;
-        float th = -0.15 + 1.05 * ev;
-        wispK = smoothstep(th, th + 0.25,
-                           wispN + 0.28 * min(dens, 1.2));
-        wispK *= 1.0 - smoothstep(0.93, 1.0, ev);
-        // Et en s'évaporant, l'encre REFROIDIT : la braise glisse vers
-        // le blanc de lune — elle ne meurt pas, elle devient la nuit.
-        c = mix(c, float3(0.94, 0.95, 0.97),
-                0.75 * smoothstep(0.15, 0.85, ev));
+    // En se condensant, l'encre CHAUFFE vers l'or-blanc du cadran —
+    // puis SE REMET au verre : le condensat passe le relais à la laque
+    // et aux chiffres. Aucune disparition : une passation.
+    float fold = 1.0 - dry;
+    if (night > 0.5) {
+        c = mix(c, float3(1.00, 0.86, 0.55),
+                0.6 * smoothstep(0.35, 0.90, cond));
+        fold = 1.0 - smoothstep(0.90, 1.0, cond);
     }
-    float fold = night > 0.5 ? wispK : 1.0 - dry;
     float aInk = (1.0 - exp(-dens * mix(0.72, 0.95, night)))
                  * (0.28 + 0.30 * live) * (1.0 + 0.30 * night)
                  * (1.0 + 0.18 * cmask + 0.55 * glintM);
@@ -352,6 +342,24 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     float3 cTot = (c * aInk + bloomC * aBloom) / total;
     float a = min(total * fold, mix(0.40, 0.46, night));
     return half4(half3(cTot * a), half(a)) * color.a;
+}
+
+// MARK: Le halo de la transformation
+//
+// L'ÉNERGIE de l'encre diffusée : les quatre voix du cadran (formules
+// exactes d'eclipseWorld) s'allument DERRIÈRE la pastille à mesure que
+// la matière se condense — et le verre, devant, les réfracte : le halo
+// se reflète dans la matière Liquid Glass sans un seul trucage.
+[[ stitchable ]] half4 eclipseGlow(float2 position, half4 color,
+                                   float2 size, float2 center, float R,
+                                   float t, float ig) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = position - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+    float3 c = eclipseWorld(d, r, R, t, ig);
+    float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
+    return half4(half3(c), half(a)) * color.a;
 }
 
 // MARK: La lentille
