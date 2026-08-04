@@ -1,4 +1,5 @@
 #include <metal_stdlib>
+#include <SwiftUI/SwiftUI_Metal.h>
 using namespace metal;
 
 // MARK: - La carte « swap » de la home aurora (banc `-homeLab`)
@@ -81,24 +82,28 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float d = scRound(p, halfB, r);
     float inside = smoothstep(0.6, -1.2, d);
 
-    // ---- Le noir MAT, presque absolu : une poudre statique très fine qui
-    // ne se voit que là où la lumière passe. Aucun dégradé franc — la carte
-    // est un vide, pas une plaque (verdict « minimal, aéré »).
+    // ---- Le noir MAT — mais une MATIÈRE, plus un vide. Depuis que le
+    // liseré de repos est mort (2026-08-04), c'est la SURFACE qui doit
+    // faire lire la carte sur la nuit : un anthracite d'obsidienne (14/255
+    // en haut, 6 en bas), grainé de poudre. Ni halo ni ombre — la carte
+    // n'est pas cernée, elle EST là (verdict « premium par défaut »).
     float powder = scnoise(p * 0.9 + seed * 13.0) * 0.55
                  + scnoise(p * 2.7 + seed * 7.0) * 0.45;
     float uvY = clamp((p.y + halfB.y) / (2.0 * halfB.y), 0.0, 1.0);
-    float matte = mix(0.019, 0.008, uvY) * (1.0 + 0.30 * (powder - 0.5));
+    float matte = mix(0.055, 0.024, uvY) * (1.0 + 0.30 * (powder - 0.5));
 
-    // ---- La lumière : un souffle qui descend du bord haut (le velours
-    // qu'on devine), et un reflet très lent qui traverse en ~34 s — blanc
-    // à peine tiédi d'or, jamais une couleur posée sur la carte.
+    // ---- La lumière : le velours du bord haut, RENFORCÉ — c'est la
+    // lumière DE LA PAGE (le halo vit au-dessus) qui se pose sur le haut de
+    // chaque carte et meurt en un quart de hauteur : la séparation vient
+    // d'un éclairage cohérent, jamais d'un contour. Et un reflet très lent
+    // qui traverse en ~34 s — blanc à peine tiédi d'or.
     float band = (p.x + p.y * 0.55) / max(halfB.x, 1.0);
     float cpos = fract(t / 34.0 + seed * 0.37) * 3.4 - 1.7;
     float sheen = exp(-(band - cpos) * (band - cpos) / (0.62 * 0.62));
     float3 light = float3(1.00, 0.94, 0.86)
-                   * (sheen * (0.008 + 0.022 * powder));
-    light += float3(1.00, 0.97, 0.93)
-             * (exp(-uvY * 6.5) * 0.016 * (0.6 + 0.4 * powder));
+                   * (sheen * (0.010 + 0.026 * powder));
+    light += float3(1.00, 0.94, 0.85)
+             * (exp(-uvY * 5.5) * 0.050 * (0.7 + 0.3 * powder));
 
     // ---- La hairline : blanche en haut comme toute la famille diamant,
     // réchauffée d'or seulement en descendant — l'arête est la SEULE
@@ -240,6 +245,17 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
         }
     }
 
+    // ---- LE POINÇON : le croissant du logo, en haut à droite — invisible
+    // au repos, il ne se révèle que sous la lumière du geste, comme un
+    // poinçon d'orfèvre sous la lampe. Un fil d'or fin à la teinte du tube,
+    // jamais un badge. La dernière chose qu'on voit d'une carte avant la
+    // fumée, c'est sa lune.
+    float2 pm = p - float2(halfB.x - 36.0, -halfB.y + 38.0);
+    float ringM = fabs(length(pm) - 10.5);
+    float angM = atan2(pm.y, pm.x);
+    float cresM = smoothstep(-0.45, 0.35, cos(angM - 3.90));
+    float tubeM = exp(-ringM * ringM / (1.15 * 1.15)) * cresM;
+
     // ---- Composition. Dedans : le noir mat, sa lumière, et le dégradé qui
     // entre par l'arête du côté du foyer (l'obsidienne reste noire au
     // centre). Dehors : de la lumière émissive pure (couleur = couverture) —
@@ -247,7 +263,8 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float3 inCol = float3(matte) + light
                    + rimCol * (line * inside * 0.9)
                    + float3(1.00, 0.99, 0.97) * innerWhite
-                   + neonIn;
+                   + neonIn
+                   + sheathCol * (tubeM * 0.34 * gesteVif * inside);
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);
     // La part du néon qui a franchi le bord porte sa propre couverture :
@@ -578,4 +595,74 @@ static float auroraDots(float2 position, float t) {
           - 0.5) * (2.0 / 255.0);
     c = clamp(c, 0.0, 1.0);
     return half4(half3(c), 1.0) * color.a;
+}
+
+// MARK: - La fumée du swap
+
+// La carte arrachée ne s'enfuit plus : elle SE DÉFAIT. Ce layerEffect mange
+// les pixels RÉELS de la carte — le titre, le cartouche, la matière, le tube
+// allumé — jamais un dessin par-dessus (la gerbe de bijoux est remplacée :
+// « pas une traînée de confettis »). Un front de dissolution part du bord
+// ARRIÈRE (celui qu'on laisse derrière soi) et court vers là où le doigt
+// tire — le même voyage que la dissolution de la lune, jamais un claquement.
+// Devant le front, la carte est encore entière mais ONDULE de plus en plus
+// (une étoffe qui se défait — la déformation d'abord, la disparition
+// ensuite) ; derrière, la matière s'étire, dérive dans le vent du geste,
+// monte un peu, et s'érode en LAMBEAUX — un seuil de bruit, jamais un fondu
+// uniforme, c'est lui qui fait la fumée.
+//
+// `age` : secondes depuis l'arrachement. `way` : ±1 en x, le côté du geste.
+// `pad` : la marge de la couche autour de la carte — la fumée voyage loin,
+// et un layerEffect ne peint que dans ses bornes.
+// Les temps DOIVENT suivre SwapDeck (Swift) : bascule de pile à 0,50 s,
+// démontage à 1,05 s.
+
+constant float SMK_SWEEP = 0.42;   // le front traverse la carte
+constant float SMK_LIFE  = 0.45;   // du passage du front à la mort du pixel
+
+/// Le rotationnel approché d'un fbm : un vent qui TOURBILLONNE sans jamais
+/// diverger — la recette classique du curl noise, en deux évaluations.
+static float2 smkCurl(float2 p, float t, float seed) {
+    float2 q = p * 0.021 + float2(seed * 7.1, t * 0.55);
+    float n0 = scfbm(q);
+    float nx = scfbm(q + float2(0.055, 0.0));
+    float ny = scfbm(q + float2(0.0, 0.055));
+    return float2(n0 - ny, nx - n0) * 18.0;
+}
+
+[[ stitchable ]] half4 swapSmoke(float2 position, SwiftUI::Layer layer,
+                                 float2 size, float t, float age,
+                                 float2 way, float pad, float seed) {
+    float W = max(size.x - 2.0 * pad, 1.0);
+    // L'avancement le long du geste : 0 au bord arrière, 1 au bord avant.
+    float sx = (way.x > 0.0) ? (position.x - pad) / W
+                             : ((size.x - pad) - position.x) / W;
+    // Le front n'est jamais une règle : il se déchire sur un bruit lent.
+    float rag = scfbm(float2(position.y * 0.030 + seed * 9.0, t * 0.40));
+    float f = age / SMK_SWEEP;
+    float tau = (f - clamp(sx, -0.35, 1.35) - 0.22 * (rag - 0.5)) * SMK_SWEEP;
+
+    // L'étoffe : TOUTE la carte ondule, de plus en plus fort à mesure que
+    // le front avance — même la part encore entière est déjà en train de
+    // se défaire.
+    float2 curl = smkCurl(position, t, seed);
+    float2 disp = curl * (0.14 + 1.10 * clamp(f, 0.0, 1.3));
+
+    // La fumée : passé le front, le vent du geste emporte la matière — vite
+    // d'abord, puis elle traîne (1/(1+3u)), monte, et le tourbillon l'étire
+    // en filaments qui s'évasent avec le temps.
+    float u = max(tau, 0.0);
+    float slow = 1.0 / (1.0 + 3.0 * u);
+    float2 wind = float2(way.x * (170.0 + 120.0 * scnoise(position * 0.050 + seed * 3.0)),
+                         -55.0 - 65.0 * scnoise(position * 0.043 + seed * 5.0 + 3.7));
+    disp += wind * u * slow + curl * (9.5 * u);
+    half4 c = layer.sample(position - disp);
+
+    // L'érosion en lambeaux : un seuil de bruit qui monte — les pixels les
+    // plus « denses » du bruit survivent en wisps, le reste se troue.
+    float n = scfbm(position * 0.045 + float2(seed * 13.0, -t * 0.30));
+    float erode = u / SMK_LIFE;
+    float a = smoothstep(erode - 0.38, erode + 0.10, n + 0.20);
+    a *= 1.0 - smoothstep(0.70, 1.0, erode);
+    return c * half(clamp(a, 0.0, 1.0));
 }
