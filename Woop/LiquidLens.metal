@@ -41,6 +41,14 @@ static float lfbm(float2 p) {
     return v;
 }
 
+// Deux octaves : pour les champs DOUX (nuages, grain) — la troisième
+// octave y est invisible et le simulateur compte ses fbm.
+static float lfbm2(float2 p) {
+    float v = 0.5 * lnoise(p);
+    v += 0.25 * lnoise(p * 2.03 + float2(11.7, 5.9));
+    return v;
+}
+
 // Le fbm du VELOURS — clone exact d'`efbm` (EclipseHalo.metal), mêmes
 // décalages (17.1, 9.3) : le monde peint ici doit tisser le MÊME drap que
 // le cadran, sinon la coupe se voit dans la trame.
@@ -135,37 +143,166 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     return 1.0 - exp(-c * 1.55);
 }
 
-// MARK: Les volutes d'encre
+// MARK: La tache d'encre — L'ENCRE DANS L'EAU
 //
-// La fumée noir-orangé qui suit le doigt, PEINTE DANS LA COUCHE que le
-// verre réfracte — on la voit se tordre derrière la bille. Ses couleurs
-// sont celles des quatre voix : ce sont les FUTURS halos, ils convergent
-// dans la vision quand elle s'allume.
-[[ stitchable ]] half4 inkVeil(float2 position, half4 color, float2 size,
-                               float2 center, float R, float pDrive,
-                               float t, float vision) {
-    float gate = smoothstep(0.05, 0.35, pDrive) * (1.0 - vision);
-    if (gate < 0.004) { return half4(0.0); }
-    float2 rel = position - center;
-    // Sorties précoces : les volutes vivent dans un couloir — pas deux fbm
-    // par pixel sur tout l'écran.
-    if (fabs(rel.x) > 175.0) { return half4(0.0); }
-    // Le couloir du geste : sous la bille, le chemin déjà parcouru.
-    float belowY = position.y - (center.y + R * 0.15);
-    float wake = smoothstep(-30.0, 60.0, belowY)
-                 * (1.0 - smoothstep(0.0, size.y * 0.78, belowY));
-    float widen = 70.0 + 40.0 * smoothstep(0.0, 500.0, belowY);
-    float corridor = exp(-pow(rel.x / widen, 2.0));
-    float2 q = position * 0.012;
-    float f1 = lfbm(q + float2(0.0, t * 0.10));
-    float f2 = lfbm(q * 1.9 + float2(3.7, -t * 0.16) + 1.8 * f1);
-    float wisp = pow(clamp(f2 * 1.35 - 0.25, 0.0, 1.0), 2.2);
-    float a = wisp * wake * corridor * gate * 0.34;
-    // Charbon dans les creux ; or profond et champagne dans les crêtes.
-    float3 c = mix(float3(0.13, 0.10, 0.085),
-                   mix(float3(1.00, 0.70, 0.33), float3(1.00, 0.78, 0.50), f1),
-                   smoothstep(0.35, 0.85, f2));
-    return half4(half3(c * a), half(a)) * color.a;
+// Une TACHE, pas un tube — et une tache qui suit le VRAI tracé : les
+// stations vivent en abscisse curviligne (x, y, âge, flânerie), le pixel
+// cherche sa distance SIGNÉE au chemin — descentes, crochets, boucles,
+// tout est permis au doigt (le paramétrage par la hauteur seule tirait
+// des traits droits dès que le geste se repliait). La silhouette est
+// tordue par le domaine, la densité vit en lobes, des VRILLES s'étirent
+// (des champs continus, jamais des points), la composition suit
+// Beer-Lambert. DISCRÈTE : ambres translucides, jamais des bruns. Et
+// dedans : les nuages de lait, et les CAUSTIQUES — deux champs ridés qui
+// dérivent en sens contraires, leurs croisements s'allument et
+// s'éteignent : des filaments de lumière qui scintillent, la lumière qui
+// danse dans l'eau. Naissance et dissolution en fondu — aucune alpha
+// n'atteint un bord de garde (le verre réfracte et agrandit toute coupe).
+[[ stitchable ]] half4 inkTrail(float2 position, half4 color, float2 size,
+                                device const float *sta, int staCount,
+                                float2 bMin, float2 bMax, float t,
+                                float dry, float birth, float scale) {
+    position *= scale;
+    int K = staCount / 4;
+    if (K < 2 || dry >= 0.999 || birth < 0.004) { return half4(0.0); }
+    if (position.x < bMin.x - 240.0 || position.x > bMax.x + 240.0 ||
+        position.y < bMin.y - 240.0 || position.y > bMax.y + 240.0) {
+        return half4(0.0);
+    }
+    // La distance signée au tracé : le segment le plus proche, son u,
+    // son âge, sa flânerie, son côté. 23 segments de maths simples —
+    // les fbm, eux, n'existent que près du chemin.
+    float bestD2 = 1e12;
+    float u = 0.0, age = 0.0, linger = 0.0;
+    float wSum = 0.0, uSum = 0.0, aSum = 0.0, lSum = 0.0;
+    for (int k = 0; k < K - 1; k++) {
+        float2 p0 = float2(sta[k * 4],       sta[k * 4 + 1]);
+        float2 p1 = float2(sta[(k+1) * 4],   sta[(k+1) * 4 + 1]);
+        float2 v = p1 - p0;
+        float vv = max(dot(v, v), 1e-4);
+        float hseg = clamp(dot(position - p0, v) / vv, 0.0, 1.0);
+        float2 dv = position - (p0 + v * hseg);
+        float d2 = dot(dv, dv);
+        float uk = (float(k) + hseg) / float(K - 1);
+        float ak = mix(sta[k * 4 + 2], sta[(k+1) * 4 + 2], hseg);
+        float lk = mix(sta[k * 4 + 3], sta[(k+1) * 4 + 3], hseg);
+        if (d2 < bestD2) {
+            bestD2 = d2;
+            u = uk; age = ak; linger = lk;
+        }
+        // Voronoï DOUX : les attributs se mélangent entre segments
+        // proches — aucun pli ne peut plus tracer d'arête.
+        float wk = exp(-d2 / (70.0 * 70.0));
+        wSum += wk; uSum += wk * uk; aSum += wk * ak; lSum += wk * lk;
+    }
+    if (wSum > 1e-5) {
+        u = uSum / wSum; age = aSum / wSum; linger = lSum / wSum;
+    }
+    // Distance NON signée : continue partout (le signe sautait sur la
+    // frontière de Voronoï des plis concaves → arêtes droites). Les deux
+    // bords billowent quand même : les champs sont spatiaux, pas miroirs.
+    float sd = sqrt(bestD2);
+    if (sd > 230.0) { return half4(0.0); }
+    float live = exp(-age * 0.5);
+    // LE DOMAINE TORDU : la silhouette billowe — c'est elle qui vit.
+    // Deux octaves partout : la tache est floue, la troisième octave est
+    // sous son propre flou — le simulateur, lui, la paie plein pot.
+    float2 p = position * 0.006;
+    float warpA = lfbm2(p + float2(0.0, -t * 0.055)) * 1.16;
+    float warpB = lfbm2(p * 2.3 + float2(5.2, t * 0.085)) * 1.16;
+    float d1 = sd - (warpA - 0.5) * 110.0 - (warpB - 0.5) * 34.0;
+    // La pointe naît en fondu ; la base s'élargit et se noie (au-delà du
+    // départ, la distance devient radiale d'elle-même : le fondu est
+    // géométrique, aucun bord).
+    float tipIn = smoothstep(0.0, 0.06, u);
+    float spread = 34.0 * smoothstep(0.85, 1.0, u);
+    // LES LOBES : le cœur + deux nappes fantômes, chacun sa largeur.
+    float wMain = (26.0 + 15.0 * (1.0 - u) + 17.0 * min(age * 0.5, 1.0))
+                  * (0.80 + 0.55 * linger) + spread;
+    float off1 = 30.0 + 34.0 * (warpB - 0.35);
+    float off2 = -36.0 - 30.0 * (warpA - 0.35);
+    float dens = exp(-(d1 * d1) / (wMain * wMain))
+                 * (0.54 + 0.46 * warpA) * (0.85 + 0.45 * linger);
+    float wHeart = wMain * 0.42;
+    dens += exp(-(d1 * d1) / (wHeart * wHeart))
+            * (0.45 + 0.55 * warpB) * (0.55 + 0.65 * linger);
+    float w1 = wMain * 0.55;
+    float dl1 = d1 - off1;
+    dens += exp(-(dl1 * dl1) / (w1 * w1)) * 0.34 * (0.35 + 0.85 * warpB);
+    float w2 = wMain * 0.44;
+    float dl2 = d1 - off2;
+    dens += exp(-(dl2 * dl2) / (w2 * w2)) * 0.27 * (0.35 + 0.85 * warpA);
+    // Le grain du pigment mouillé — seulement dans l'encre visible.
+    if (dens > 0.05) {
+        float fine = lfbm2(position * 0.030
+                           + float2(warpB * 2.1, t * 0.05));
+        dens *= 0.72 + 0.55 * fine;
+    }
+    // LES VRILLES : l'encre fraîche en jette, la vieille se pose.
+    float vrilEnv = exp(-(d1 * d1) / (wMain * wMain * 4.0));
+    if (vrilEnv > 0.015) {
+        float tf = lfbm2(float2(position.y * 0.013 + warpA * 1.7,
+                                position.x * 0.011 - t * 0.07
+                                + warpB * 1.3)) * 1.16;
+        dens += pow(smoothstep(0.52, 0.88, tf), 2.0) * vrilEnv
+                * (0.35 + 0.65 * live) * 0.55;
+    }
+    dens *= tipIn * birth;
+    // La fleur d'eau sous la bille — au point exact du doigt.
+    float2 tip = float2(sta[0], sta[1]);
+    float2 dtp = position - tip;
+    float bloom = exp(-dot(dtp, dtp) / (78.0 * 78.0))
+                  * (0.40 + 0.60 * live) * birth;
+    if (dens < 0.004 && bloom < 0.004) { return half4(0.0); }
+    // DISCRÈTE : des ambres translucides, jamais des bruns — la sienne et
+    // l'ombre ne sont plus que des soupçons, la fumée se lit dans la FORME.
+    float3 yellow = float3(1.00, 0.88, 0.45);
+    float3 orange = float3(1.00, 0.55, 0.20);
+    float3 sienna = float3(0.62, 0.28, 0.10);
+    float3 bloomC = float3(1.00, 0.72, 0.32);
+    float3 c = mix(yellow, orange, smoothstep(0.10, 0.55, dens));
+    c = mix(c, sienna, 0.18 * smoothstep(0.65, 1.70, dens));
+    c = mix(c, yellow, 0.22 * smoothstep(0.62, 0.92, warpB)
+                        * (1.0 - smoothstep(0.9, 1.6, dens)));
+    c = mix(c, sienna, 0.10 * smoothstep(0.70, 0.95, warpA)
+                        * smoothstep(0.35, 0.9, dens));
+    // LES NUAGES DE BLANC : des poches de lait qui dérivent dans l'encre.
+    float cmask = 0.0;
+    if (dens > 0.12) {
+        float cloud = lfbm2(position * 0.008
+                            + float2(t * 0.050, -t * 0.075)
+                            + warpA * 0.9);
+        cmask = smoothstep(0.52, 0.82, cloud)
+                * smoothstep(0.15, 0.50, dens);
+        c = mix(c, float3(1.00, 0.985, 0.955), 0.75 * cmask);
+    }
+    // LES CAUSTIQUES : deux champs ridés à contre-courant — leurs
+    // croisements sont des filaments de lumière qui naissent, glissent et
+    // s'éteignent. Du scintillement CONNEXE : jamais des paillettes.
+    float glintM = 0.0;
+    if (dens > 0.10) {
+        float n1 = lnoise(position * 0.021
+                          + float2(t * 0.11, -t * 0.07) + warpA * 0.6);
+        float n2 = lnoise(position * 0.017
+                          + float2(-t * 0.09, t * 0.06));
+        float r1 = pow(1.0 - fabs(2.0 * n1 - 1.0), 6.0);
+        float r2 = pow(1.0 - fabs(2.0 * n2 - 1.0), 6.0);
+        // La lumière ne danse que dans l'EAU : les caustiques meurent
+        // avec le séchage, et restent un murmure — pas du strass.
+        glintM = r1 * r2 * smoothstep(0.12, 0.40, dens)
+                 * (1.0 - smoothstep(1.2, 1.9, dens))
+                 * (0.30 + 0.70 * live);
+        c = mix(c, float3(1.00, 0.96, 0.88), min(1.7 * glintM, 0.85));
+    }
+    // DISCRÈTE (−40 %) : une présence qui se devine, pas une affiche.
+    float aInk = (1.0 - exp(-dens * 0.72)) * (0.28 + 0.30 * live)
+                 * (1.0 + 0.18 * cmask + 0.55 * glintM);
+    float aBloom = bloom * 0.13;
+    float total = aInk + aBloom;
+    if (total < 0.0008) { return half4(0.0); }
+    float3 cTot = (c * aInk + bloomC * aBloom) / total;
+    float a = min(total * (1.0 - dry), 0.40);
+    return half4(half3(cTot * a), half(a)) * color.a;
 }
 
 // MARK: La lentille
