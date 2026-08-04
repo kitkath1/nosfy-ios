@@ -1,22 +1,26 @@
 import SwiftUI
 
-// MARK: - Banc de la lentille liquide (`-lensLab`) — BANC A : LA MONTÉE
+// MARK: - Banc de la lentille liquide (`-lensLab`) — BANCS A + B
 //
-// Une page de papier, une bulle de verre qui affleure au bord bas. Le doigt
-// la cueille et la PORTE : la pill suit le doigt, grossit en montant, le
-// verre s'étire avec la vitesse — du liquide, pas un widget. Derrière elle,
-// une traînée d'encre FINE s'écrit sur le papier là où le doigt est passé —
-// charbon noir, braise orange, pointes jaunes : les couleurs des halos.
-// Elle vit un instant, boit le papier, sèche. Relâcher : le liquide retombe
-// en ressort et repasse sur sa propre encre pendant qu'elle s'efface.
+// LA MONTÉE (Banc A, validé) : une page de papier, une bulle de verre que
+// le doigt cueille et PORTE — elle grossit en montant, s'étire avec la
+// vitesse — et derrière elle la tache d'encre dans l'eau s'écrit sur le
+// vrai tracé du geste, vit, boit le papier, sèche.
 //
-// RIEN D'AUTRE : pas de relais du haut, pas de transformation, pas de nuit
-// — c'est le banc de LA MONTÉE seule. Verdict de Kathryn avant tout geste
-// suivant (bancs B, C, D).
+// LE SOMMET (Banc B) : le doigt a terminé son œuvre en haut de l'écran —
+// une pause très courte et très puissante : la fusée gronde (rampe
+// haptique qui accélère), le zoom plonge DANS la pastille, et l'intérieur
+// du verre se remplit de NUIT lunaire — la coupe se cache dans la nuit du
+// verre, on entre dans l'objet, jamais dans un décor. Puis la renaissance :
+// la pastille reparaît par le haut de l'univers noir et REDESCEND, seule
+// (le doigt ne l'accompagne pas), suivie de son encre de nuit — blanche,
+// orange, jaune — dans une nuit très sombre : velours lunaire, clarté à
+// peine posée, étoiles rares. Elle se pose au centre. Le cadran à sa
+// surface, c'est le Banc C.
 //
 // `-lensFreeze <p>` fige la montée à p ∈ [0,1] (captures au banc).
-// `-lensAuto` rejoue la montée seul, en boucle de 7 s (films) — le
-// simulateur ne drague pas (l'école `-cineTest`).
+// `-lensAuto` rejoue le cycle COMPLET en boucle de 11 s (films) — montée,
+// sommet, coupe, descente, pose — le simulateur ne drague pas.
 // Toute la chorégraphie est FONCTION PURE du temps et du doigt — aucune
 // animation SwiftUI sur les uniforms (l'école ConnexionCine).
 struct LiquidLensLab: View {
@@ -46,6 +50,10 @@ struct LiquidLensLab: View {
     @State private var release: (climb: Double, x: CGFloat, at: Date)?
     /// L'étirement lissé (vitesse verticale du doigt) — le verre est liquide.
     @State private var stretch: Double = 0
+    /// LE SOMMET : le doigt a atteint le haut — la partition prend la main
+    /// (pause-fusée, coupe, descente). REJOUER la relâche.
+    @State private var summitAt: Date?
+    @State private var summitFx: CGFloat?
 
     var body: some View {
         GeometryReader { geo in
@@ -55,19 +63,66 @@ struct LiquidLensLab: View {
                 let now = tl.date
                 let t = now.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
-                let d = drive(now: now, t: t, w: w, h: h)
-                let lens = lensState(w: w, h: h, t: t,
-                                     climb: d.climb, fx: d.fx)
-                whiteWorld(w: w, h: h, t: t, climb: d.climb,
-                           lens: lens, d: d)
-                    .contentShape(Rectangle())
-                    .gesture(dragGesture(h: h),
-                             isEnabled: Self.frozen == nil && !Self.cycling)
+                let se = summitElapsed(now: now, t: t)
+                ZStack {
+                    if let e = se, e >= SummitCine.cutAt {
+                        // L'UNIVERS NOIR : renaissance et descente.
+                        nightWorld(w: w, h: h, t: t,
+                                   ne: e - SummitCine.cutAt,
+                                   ax: summitX(w: w))
+                    } else {
+                        let d = drive(now: now, t: t, w: w, h: h)
+                        let lens = flared(lensState(w: w, h: h, t: t,
+                                                    climb: d.climb,
+                                                    fx: d.fx), se: se)
+                        let e = se ?? 0
+                        let zAnchor = UnitPoint(
+                            x: lens.center.x / max(w, 1),
+                            y: lens.center.y / max(h, 1))
+                        whiteWorld(w: w, h: h, t: t, climb: d.climb,
+                                   lens: lens, d: d,
+                                   nightFill: SummitCine.nightFill(e))
+                            .scaleEffect(SummitCine.scale(e),
+                                         anchor: zAnchor)
+                            .blur(radius: SummitCine.blur(e))
+                    }
+                }
+                .contentShape(Rectangle())
+                .gesture(dragGesture(h: h),
+                         isEnabled: Self.frozen == nil && !Self.cycling
+                                    && summitAt == nil)
             }
         }
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        .onAppear { RocketHaptics.shared.prepare() }
+    }
+
+    /// Le temps écoulé depuis le sommet — doigt (état) ou cycle auto (pur).
+    private func summitElapsed(now: Date, t: Double) -> Double? {
+        if Self.cycling {
+            let tau = t.truncatingRemainder(dividingBy: 13.5)
+            return tau > 3.85 ? tau - 3.85 : nil
+        }
+        if Self.frozen != nil { return nil }
+        if let s = summitAt { return now.timeIntervalSince(s) }
+        return nil
+    }
+
+    /// L'abscisse du sommet : là où le doigt a fini (ou le chemin auto).
+    private func summitX(w: CGFloat) -> CGFloat {
+        if let fx = summitFx { return fx }
+        return w * 0.5 + w * 0.055 * CGFloat(sin(9.1))
+    }
+
+    /// La braise chauffe avec le grondement du sommet — fonction pure,
+    /// le ViewBuilder n'accepte pas de mutation.
+    private func flared(_ lens: Lens, se: Double?) -> Lens {
+        guard let e = se else { return lens }
+        var l = lens
+        l.ember = max(l.ember, SummitCine.flare(e))
+        return l
     }
 
     // MARK: Le monde blanc
@@ -76,7 +131,7 @@ struct LiquidLensLab: View {
     /// papier, grain, encre, textes. Le layerEffect la réfracte en bloc.
     private func whiteWorld(w: CGFloat, h: CGFloat, t: Double,
                             climb: Double, lens: Lens,
-                            d: Drive) -> some View {
+                            d: Drive, nightFill: Double) -> some View {
         // Les scalaires SORTIS de l'appel : le type-checker abandonne sinon
         // (leçon des 36 arguments de navMonolith).
         let sizeW = Float(w), sizeH = Float(h)
@@ -85,11 +140,13 @@ struct LiquidLensLab: View {
         let f0 = Float(lens.f0), dispV = Float(lens.disp)
         let emberV = Float(lens.ember), squashV = Float(lens.squash)
         let tS = Float(t)
+        let nightV = Float(nightFill)
         let lensShader = ShaderLibrary.liquidLens(
             .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
             .float(f0), .float(dispV), .float(emberV),
             .float(squashV), .float(1.0), .float(tS),
-            .float(0.0), .float(0.0), .float(0.0))
+            .float(0.0), .float(0.0), .float(0.0), .float(nightV),
+            .float(0.0), .float(0.0))
         let hasTrail = d.sta.count >= 8 && d.dry < 0.999
         // La tache NAÎT en fondu avec la longueur du chemin — jamais de
         // seuil qui pop (la leçon du calque rectangulaire).
@@ -99,7 +156,7 @@ struct LiquidLensLab: View {
             .float2(Float(d.boundsMin.x), Float(d.boundsMin.y)),
             .float2(Float(d.boundsMax.x), Float(d.boundsMax.y)),
             .float(tS), .float(Float(d.dry)), .float(birthV),
-            .float(1.0))
+            .float(1.0), .float(0.0))
         return ZStack {
             Self.paper
             // Le grain du papier : il se tord lui aussi sous le verre.
@@ -170,8 +227,21 @@ struct LiquidLensLab: View {
                              still: true)
         }
         if Self.cycling {
-            return cyclePose(tau: t.truncatingRemainder(dividingBy: 7.0),
+            return cyclePose(tau: t.truncatingRemainder(dividingBy: 11.0),
                              t: t, w: w, h: h, still: false)
+        }
+        // LE SOMMET (doigt) : la pill tenue en haut pendant la pause-fusée,
+        // son encre figée dont les âges continuent de courir.
+        if summitAt != nil, let fx = summitFx {
+            var d = Drive(climb: 1.02, fx: fx)
+            let pts = dragPath.map { (pos: $0.pos,
+                                      age: now.timeIntervalSince($0.at)) }
+            if let tr = stations(from: pts) {
+                d.sta = tr.sta; d.boundsMin = tr.bMin
+                d.boundsMax = tr.bMax; d.pathLen = tr.len
+                d.dry = 0
+            }
+            return d
         }
         if let loc = fingerLoc {
             var d = Drive(climb: climbOf(y: loc.y, h: h), fx: loc.x)
@@ -235,15 +305,7 @@ struct LiquidLensLab: View {
         }
         let loc = finger(riseTau)
         var d = Drive(climb: climbOf(y: loc.y, h: h), fx: loc.x)
-        if tau > 4.5 && !still {
-            let e = tau - 4.5
-            d.climb = max(climbOf(y: finger(3.8).y, h: h)
-                          * exp(-6.0 * e) * cos(5.2 * e), -0.05)
-            d.fx = w / 2 + (finger(3.8).x - w / 2) * CGFloat(exp(-4.0 * e))
-            d.dry = sstep(0.25, 2.0, e)
-        } else {
-            d.dry = 0
-        }
+        d.dry = 0
         if let tr = stations(from: pts) {
             d.sta = tr.sta; d.boundsMin = tr.bMin
             d.boundsMax = tr.bMax; d.pathLen = tr.len
@@ -323,6 +385,8 @@ struct LiquidLensLab: View {
         var center: CGPoint
         var radius: CGFloat
         var f0 = 0.80, disp = 0.22, ember = 0.0, squash = 1.0
+        /// L'onde de la goutte (atterrissage) — amplitude et phase.
+        var ripple = 0.0, ripplePhase = 0.0
     }
 
     private func lensState(w: CGFloat, h: CGFloat, t: Double,
@@ -358,6 +422,7 @@ struct LiquidLensLab: View {
     private func dragGesture(h: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { v in
+                guard summitAt == nil else { return }
                 let now = Date()
                 if fingerLoc == nil {
                     dragPath = [Sample(pos: v.location, at: now)]
@@ -376,17 +441,266 @@ struct LiquidLensLab: View {
                         dragPath.removeFirst(dragPath.count - 90)
                     }
                 }
+                // LE SOMMET : le doigt a terminé son œuvre — la partition
+                // prend la main, la fusée gronde.
+                if climbOf(y: v.location.y, h: h) >= 0.985 {
+                    summitAt = now
+                    summitFx = v.location.x
+                    fingerLoc = nil
+                    stretch = 0
+                    let touch = SummitCine.cutAt + SummitCine.enter
+                                + SummitCine.descend
+                    RocketHaptics.shared.surge(
+                        rise: SummitCine.cutAt - 0.05,
+                        contact: touch, beat: touch + 4.5)
+                }
             }
-            .onEnded { v in
-                guard let loc = fingerLoc else { return }
+            .onEnded { _ in
+                guard summitAt == nil, let loc = fingerLoc else { return }
                 fingerLoc = nil
                 stretch = 0
                 release = (climbOf(y: loc.y, h: h), loc.x, .now)
             }
     }
 
+    // MARK: L'univers noir — la renaissance et la descente
+
+    /// La géométrie de la descente : la pastille perce le bord haut un
+    /// souffle après la coupe, tombe avec grâce (étirée par sa vitesse),
+    /// se pose au centre avec un tremblement amorti. Fonction pure de `ne`.
+    private func nightLens(w: CGFloat, h: CGFloat, t: Double,
+                           ne: Double, ax: CGFloat) -> Lens {
+        let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
+        let e2 = u * u * (3 - 2 * u)
+        // PETITE à la renaissance — elle grossit surtout en arrivant.
+        let radius = w * 0.115 + w * 0.185 * CGFloat(sstep(0.35, 1.0, u))
+        let cyStart = -radius - 60
+        let cyEnd = h * 0.50
+        var cy = cyStart + (cyEnd - cyStart) * CGFloat(e2)
+        let cx = ax + (w / 2 - ax) * CGFloat(sstep(0.20, 0.90, u))
+        // L'étirement suit la vitesse (dérivée de la course), et meurt
+        // à l'approche de la pose.
+        let vel = 6 * u * (1 - u)
+        var squash = 1 - 0.10 * min(vel / 1.5, 1) * (1 - sstep(0.85, 1.0, u))
+        let landed = ne - (SummitCine.enter + SummitCine.descend)
+        var radiusV = radius
+        var ripple = 0.0
+        if landed > 0 {
+            // L'ATTERRISSAGE EN GOUTTE : écrasement au contact, rebond
+            // plus haut, retombée — deux oscillations lisibles, et l'onde
+            // circulaire qui traverse la surface du verre.
+            squash *= 1 + 0.11 * sin(landed * 14.5) * exp(-landed * 3.2)
+            cy += CGFloat(2.6 * sin(landed * 2.1) * exp(-landed * 1.1))
+            ripple = exp(-landed * 2.8)
+            // L'ÉVAPORATION est l'affaire de l'encre seule : la pastille
+            // veille, sereine — aucune gorgée, aucun pouls de perle.
+            // L'ANNONCE : après le silence, l'écho visuel du battement —
+            // la pastille pèse une fois, discrètement.
+            let bt = landed - 4.5
+            radiusV *= 1 + 0.012 * CGFloat(exp(-bt * bt / (0.18 * 0.18)))
+        }
+        var lens = Lens(center: CGPoint(x: cx, y: cy), radius: radiusV)
+        lens.f0 = 0.72
+        lens.disp = 0.85
+        // La braise vit pendant la chute, s'apaise en braise de VEILLE une
+        // fois posée — sur la nuit, une pastille sans braise est invisible.
+        // Elle souffle une fois avec le battement de l'annonce.
+        let fall = 0.24 * (1 - sstep(0.0, 1.2, max(landed, 0)))
+        let veille = (0.11 + 0.05 * sin(t * 0.9))
+                     * sstep(0.6, 1.6, max(landed, 0))
+        let bt = max(landed, 0) - 4.5
+        let echo = 0.20 * exp(-bt * bt / (0.20 * 0.20))
+        lens.ember = min(max(fall, veille) + echo, 1.0)
+        lens.squash = squash
+        lens.ripple = ripple
+        lens.ripplePhase = max(landed, 0) * 30
+        return lens
+    }
+
+    /// L'encre de la descente : le chemin RÉEL de la pastille, rééchantillonné
+    /// comme un drag — blanche, orange, jaune, elle éclaire la nuit.
+    private func nightTrail(w: CGFloat, h: CGFloat,
+                            ne: Double, ax: CGFloat) -> Drive {
+        var d = Drive(climb: 0, fx: ax)
+        guard ne > SummitCine.enter + 0.10 else { return d }
+        var pts: [(pos: CGPoint, age: Double)] = []
+        let t0 = max(SummitCine.enter, ne - 1.9)
+        let n = 30
+        for i in 0...n {
+            let tp = t0 + (ne - t0) * Double(i) / Double(n)
+            let l = nightLens(w: w, h: h, t: 0, ne: tp, ax: ax)
+            pts.append((l.center, ne - tp))
+        }
+        if let tr = stations(from: pts) {
+            d.sta = tr.sta; d.boundsMin = tr.bMin
+            d.boundsMax = tr.bMax; d.pathLen = tr.len
+            let landed = ne - (SummitCine.enter + SummitCine.descend)
+            // LE REPLI : après la pose, l'encre est bue par la pastille —
+            // le front du repli est piloté par `dry` côté shader (nuit).
+            // Lent, majestueux. Elle rejoindra les halos au Banc D.
+            d.dry = sstep(1.0, 3.8, max(landed, 0))
+        }
+        return d
+    }
+
+    /// Le monde noir : velours lunaire, clarté à peine posée, étoiles
+    /// rares — et la pastille de verre qui descend, réfractant sa nuit et
+    /// son encre. Le REJOUER du banc apparaît une fois posée.
+    private func nightWorld(w: CGFloat, h: CGFloat, t: Double,
+                            ne: Double, ax: CGFloat) -> some View {
+        let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax)
+        let d = nightTrail(w: w, h: h, ne: ne, ax: ax)
+        let sizeW = Float(w), sizeH = Float(h)
+        let cX = Float(lens.center.x), cY = Float(lens.center.y)
+        let rad = Float(lens.radius)
+        let f0 = Float(lens.f0), dispV = Float(lens.disp)
+        let emberV = Float(lens.ember), squashV = Float(lens.squash)
+        let tS = Float(t)
+        let lensShader = ShaderLibrary.liquidLens(
+            .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
+            .float(f0), .float(dispV), .float(emberV),
+            .float(squashV), .float(1.0), .float(tS),
+            .float(0.0), .float(0.0), .float(0.0), .float(0.0),
+            .float(Float(lens.ripple)), .float(Float(lens.ripplePhase)))
+        let hasTrail = d.sta.count >= 8 && d.dry < 0.999
+        let birthV = Float(sstep(24, 170, Double(d.pathLen)))
+        let trailShader = ShaderLibrary.inkTrail(
+            .float2(sizeW, sizeH), .floatArray(d.sta),
+            .float2(Float(d.boundsMin.x), Float(d.boundsMin.y)),
+            .float2(Float(d.boundsMax.x), Float(d.boundsMax.y)),
+            .float(tS), .float(Float(d.dry)), .float(birthV),
+            .float(1.0), .float(1.0))
+        let landed = ne - (SummitCine.enter + SummitCine.descend)
+        // Le chip n'apparaît qu'APRÈS l'annonce — le battement reste seul.
+        let chipIn = min(max((landed - 5.3) / 0.5, 0), 1)
+        return ZStack {
+            ZStack {
+                Color.black
+                NightSpotlight()
+                    .allowsHitTesting(false)
+                NightStars(t: t)
+                    .allowsHitTesting(false)
+                if hasTrail {
+                    Rectangle()
+                        .fill(.white)
+                        .colorEffect(trailShader)
+                        .allowsHitTesting(false)
+                }
+                WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: w, height: h)
+            .compositingGroup()
+            .layerEffect(lensShader,
+                         maxSampleOffset: CGSize(width: 110, height: 110))
+            if !Self.cycling {
+                Button {
+                    summitAt = nil
+                    summitFx = nil
+                    fingerLoc = nil
+                    release = nil
+                    dragPath = []
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("REJOUER")
+                            .font(.inter(11, .semibold))
+                            .tracking(2.6)
+                    }
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 9)
+                    .background(Capsule().stroke(Color.white.opacity(0.16),
+                                                 lineWidth: 1))
+                }
+                .opacity(chipIn * chipIn * (3 - 2 * chipIn))
+                .position(x: w / 2, y: h - 52)
+            }
+        }
+        .frame(width: w, height: h)
+        .clipped()
+    }
+
     private func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
         let u = min(max((x - a) / (b - a), 0), 1)
         return u * u * (3 - 2 * u)
+    }
+}
+
+// MARK: - La partition du sommet
+//
+// Le doigt a fini son œuvre : une pause tenue (la fusée gronde), le zoom
+// en chute DANS le verre (l'école ConnexionCine : 8^(u^1,8), le flou
+// couvre la trame avant qu'elle ne se voie), la nuit qui remplit
+// l'intérieur — et LA COUPE, cachée dans la nuit du verre : l'écran est
+// déjà tout entier l'intérieur de l'objet quand le monde change dessous.
+enum SummitCine {
+    /// La pause tenue — la fusée gronde, rien ne bouge encore. MAJESTUEUSE :
+    /// on laisse le grondement peser avant le premier millimètre de chute.
+    static let hold: Double = 0.50
+    /// Le zoom en chute — long, retenu au départ, violent à la fin.
+    static let dive: Double = 1.40
+    /// LA COUPE — l'écran est plein de la nuit du verre.
+    static let cutAt: Double = hold + dive
+    /// La renaissance perce le bord haut un souffle après la coupe…
+    static let enter: Double = 0.22
+    /// …et la descente cinématique dure jusqu'à la pose.
+    static let descend: Double = 2.30
+
+    static func diveU(_ e: Double) -> Double {
+        min(max((e - hold) / dive, 0), 1)
+    }
+    static func scale(_ e: Double) -> CGFloat {
+        CGFloat(pow(8.0, pow(diveU(e), 2.05)))
+    }
+    static func blur(_ e: Double) -> CGFloat {
+        CGFloat(16 * s(0.35, 1.0, diveU(e)))
+    }
+    /// La nuit s'installe dans le verre PENDANT la chute et s'achève
+    /// avant elle : un battement de nuit pure précède la coupe.
+    static func nightFill(_ e: Double) -> Double { s(0.22, 0.72, diveU(e)) }
+
+    /// La braise chauffe avec le grondement — la fusée avant le départ.
+    static func flare(_ e: Double) -> Double {
+        0.30 + 0.55 * min(e / cutAt, 1.0)
+    }
+
+    private static func s(_ a: Double, _ b: Double, _ x: Double) -> Double {
+        let u = min(max((x - a) / (b - a), 0), 1)
+        return u * u * (3 - 2 * u)
+    }
+}
+
+// MARK: - Les étoiles rares
+//
+/// La nuit n'est pas un noir plat : quatorze étoiles posées une fois
+/// (hash pur), qui respirent à peine — des billes douces (cœur net + halo),
+/// jamais des points durs.
+private struct NightStars: View {
+    let t: Double
+    var body: some View {
+        Canvas { ctx, sz in
+            for i in 0..<14 {
+                let s = Double(i) * 39.7 + 11.3
+                let hx = abs((sin(s * 12.9898) * 43758.5453)
+                    .truncatingRemainder(dividingBy: 1))
+                let hy = abs((sin(s * 78.233) * 24634.6345)
+                    .truncatingRemainder(dividingBy: 1))
+                let x = sz.width * (0.06 + 0.88 * hx)
+                let y = sz.height * (0.05 + 0.80 * hy)
+                let breath = 0.5 + 0.5 * sin(t * (0.35 + 0.22 * hx) + s)
+                let a = 0.05 + 0.13 * breath * breath
+                let r: Double = hx > 0.72 ? 1.6 : 1.1
+                ctx.fill(Path(ellipseIn:
+                    CGRect(x: x - r * 2.2, y: y - r * 2.2,
+                           width: r * 4.4, height: r * 4.4)),
+                         with: .color(.white.opacity(a * 0.25)))
+                ctx.fill(Path(ellipseIn:
+                    CGRect(x: x - r / 2, y: y - r / 2,
+                           width: r, height: r)),
+                         with: .color(.white.opacity(a)))
+            }
+        }
     }
 }

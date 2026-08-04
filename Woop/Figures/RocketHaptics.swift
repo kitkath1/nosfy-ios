@@ -185,6 +185,98 @@ final class RocketHaptics {
         try? p.start(atTime: CHHapticTimeImmediate)
     }
 
+    /// LA PAUSE DU SOMMET (lentille liquide) : une fusée sur le point de
+    /// décoller. Le grondement part à peine perceptible, la montée en régime
+    /// ACCÉLÈRE — les crans se resserrent vers la fin — et la détonation
+    /// sèche tombe à l'instant exact de la coupe. Suivent LE TOUCHER DE LA
+    /// GOUTTE (l'atterrissage, léger et précis) et, après le silence du
+    /// repli, L'ANNONCE : un battement grave qui pèse — l'école du cœur du
+    /// splash. Muet au simulateur.
+    func surge(rise: Double, contact: Double, beat: Double,
+               ticks: [Double] = []) {
+        guard let engine else { return }
+        var events: [CHHapticEvent] = [
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 0.9),
+                    .init(parameterID: .hapticSharpness, value: 0.08),
+                ],
+                relativeTime: 0, duration: rise + 0.05),
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 1.0),
+                    .init(parameterID: .hapticSharpness, value: 0.70),
+                ],
+                relativeTime: rise),
+            // Le toucher de la goutte.
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 0.50),
+                    .init(parameterID: .hapticSharpness, value: 0.42),
+                ],
+                relativeTime: contact),
+            // L'annonce : un coup sourd et grave, épaulé d'une courte
+            // tenue — un cœur, pas un choc.
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 0.85),
+                    .init(parameterID: .hapticSharpness, value: 0.08),
+                ],
+                relativeTime: beat),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 0.45),
+                    .init(parameterID: .hapticSharpness, value: 0.05),
+                ],
+                relativeTime: beat, duration: 0.28),
+        ]
+        // Les PERLES de la dévidée : tick… tick… tick, en crescendo —
+        // l'horlogerie d'un bijou qu'on remonte.
+        for (i, tk) in ticks.enumerated() {
+            events.append(CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity,
+                          value: 0.24 + 0.07 * Float(i)),
+                    .init(parameterID: .hapticSharpness, value: 0.55),
+                ],
+                relativeTime: tk))
+        }
+        let ramp = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [
+                .init(relativeTime: 0, value: 0.10),
+                .init(relativeTime: rise * 0.45, value: 0.32),
+                .init(relativeTime: rise * 0.75, value: 0.75),
+                .init(relativeTime: rise * 0.93, value: 1.60),
+                .init(relativeTime: rise, value: 2.40),
+                .init(relativeTime: rise + 0.05, value: 0.0),
+                // La courbe REMONTE à 1 après la coupe — sans quoi elle
+                // muselait le toucher de la goutte et le battement.
+                .init(relativeTime: rise + 0.10, value: 1.0),
+            ],
+            relativeTime: 0)
+        let pitch = CHHapticParameterCurve(
+            parameterID: .hapticSharpnessControl,
+            controlPoints: [
+                .init(relativeTime: 0, value: -0.30),
+                .init(relativeTime: rise * 0.80, value: 0.10),
+                .init(relativeTime: rise, value: 0.50),
+            ],
+            relativeTime: 0)
+        guard let pattern = try? CHHapticPattern(events: events,
+                                                 parameterCurves: [ramp, pitch]),
+              let p = try? engine.makePlayer(with: pattern) else { return }
+        player = p
+        try? engine.start()
+        try? p.start(atTime: CHHapticTimeImmediate)
+    }
+
     /// Coupe net — quand on passe le splash d'un toucher, le grondement ne
     /// doit pas continuer sous l'écran suivant.
     func stop() {
