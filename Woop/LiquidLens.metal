@@ -69,11 +69,19 @@ static float vfbm(float2 p) {
 // le liseré. Utilisée par la VISION (courbée dans la bille), par le
 // DÉBORDEMENT (à l'échelle réelle), et — c'est le point — IDENTIQUE à ce
 // que le cadran affichera après la coupe : les halos ne sentent rien.
-static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
-    const float3 cols[4] = { float3(0.93, 0.95, 1.00),
-                             float3(1.00, 0.70, 0.33),
-                             float3(1.00, 1.00, 1.00),
-                             float3(1.00, 0.78, 0.50) };
+static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
+                           float rimK, float occK) {
+    // LA PALETTE DE L'ENCRE, jusqu'au bout : le halo EST l'encre qui
+    // continue — orange franc, orange doré, jaune, et au plus un blanc
+    // CHAUD discret. (La parité de palette avec EclipseCounter est
+    // suspendue pour la Transformation — loi de Kathryn, 04-08 soir.)
+    // TYPE FEU, PLUS ORANGÉ (Kathryn : « les halos plus orangés » —
+    // l'or recule). VERROU : les arcs de reflet de liquidLens (rc[])
+    // clonent ces valeurs — les changer ENSEMBLE, toujours.
+    const float3 cols[4] = { float3(1.00, 0.78, 0.40),
+                             float3(1.00, 0.54, 0.16),
+                             float3(1.00, 0.92, 0.78),
+                             float3(1.00, 0.64, 0.26) };
     const float speed[4] = {  6.2832 / 47.0, -6.2832 / 29.0,
                               6.2832 / 19.0, -6.2832 / 71.0 };
     const float phase[4] = { 0.4, 2.6, 4.4, 5.6 };
@@ -83,25 +91,35 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     const float bper[4]  = { 13.0, 8.1, 5.2, 21.0 };
     const float bbase[4] = { 0.72, 0.62, 0.50, 0.66 };
     const float bamp[4]  = { 0.28, 0.38, 0.50, 0.30 };
-    const float wgt[4]   = { 0.50, 0.85, 0.85, 0.32 };
+    const float wgt[4]   = { 0.55, 0.85, 0.45, 0.50 };
     const float kap[4]   = { 5.0, 9.0, 22.0, 3.5 };
 
     float2 n = r > 0.5 ? d / r : float2(0.0, -1.0);
     float insideDisc = 1.0 - smoothstep(R - 1.0, R + 0.5, r);
-    float occ = smoothstep(R - 0.5, R + 1.8, r);
+    // occK : les voix SURVIVENT derrière la pastille — la lentille est
+    // DEVANT le halo, c'est son Beer-Lambert qui occulte, jamais un trou
+    // peint (la signature « éclipse » mesurée : limbe in/out 0,47).
+    float occ = mix(1.0, smoothstep(R - 0.5, R + 1.8, r), occK);
     float angP = atan2(d.y, d.x);
 
     float3 light = float3(0.0);
     float3 rimGlow = float3(0.0);
     float3 backTint = float3(0.0);
+    // LE CANON DE LA NAISSANCE suit la matière : l'orange de l'encre
+    // d'abord, l'or, le blanc — la bleutée en DERNIER : le froid n'est
+    // qu'un refroidissement d'une lumière déjà là, jamais un allumage.
+    const float dly[4] = { 0.30, 0.00, 0.55, 0.12 };
     for (int i = 0; i < 4; i++) {
-        float igv = clamp(ig * 1.9 - float(i) * 0.24, 0.0, 1.0);
+        float igv = clamp((ig - dly[i]) / (1.0 - dly[i]), 0.0, 1.0);
         igv = igv * igv * (3.0 - 2.0 * igv);
         if (igv < 0.003) { continue; }
         float ang = phase[i] + t * speed[i];
         float2 hd = float2(cos(ang), sin(ang));
-        float rho = R * (rho0[i] + 0.05 * sin(t * 6.2832 / (bper[i] * 2.7)
-                                              + phase[i] * 3.0));
+        // L'énergie S'ÉTEND depuis le bord du verre vers son orbite :
+        // elle émane de l'objet, elle n'apparaît pas sur place.
+        float grow = mix(0.97, rho0[i], igv);
+        float rho = R * (grow + 0.05 * sin(t * 6.2832 / (bper[i] * 2.7)
+                                           + phase[i] * 3.0));
         float dAng = angP - ang;
         dAng -= 6.2832 * floor(dAng / 6.2832 + 0.5);
         float rad = r - rho;
@@ -114,9 +132,17 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
         float g = 0.52 * exp(-q) + 0.48 * exp(-q * 0.32);
         float wv = wgt[i] * igv;
         float facing = max(dot(n, hd), 0.0);
-        light += cols[i] * (g * breath * wv);
-        rimGlow  += cols[i] * (pow(facing, kap[i]) * breath * wv);
-        backTint += cols[i] * (pow(facing, 2.5) * breath * wv);
+        // LA MÊME MATIÈRE : chaque voix naît à la teinte de l'encre
+        // (orange → or) et GLISSE vers sa couleur — les chaudes restent
+        // orange par nature, le blanc et la bleutée sont l'encre qui
+        // refroidit. À ig = 1, les voix exactes du cadran.
+        float3 carrier = mix(float3(1.00, 0.60, 0.26),
+                             float3(1.00, 0.76, 0.40), igv);
+        float3 colv = mix(carrier, cols[i],
+                          igv * igv * (3.0 - 2.0 * igv));
+        light += colv * (g * breath * wv);
+        rimGlow  += colv * (pow(facing, kap[i]) * breath * wv);
+        backTint += colv * (pow(facing, 2.5) * breath * wv);
     }
 
     // Le velours du disque (drap vfbm ≡ efbm) + le liseré aux accents —
@@ -136,7 +162,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     if (ring > 0.004) {
         float acc = vfbm(d * 0.05 + float2(t * 0.11, -t * 0.07));
         acc = acc * acc * acc;
-        rim = (float3(0.05) + rimGlow * (0.55 + 2.2 * acc)) * ring;
+        // rimK : derrière la pastille-lentille, le liseré fin est quasi
+        // éteint — une ligne de 1-2 px sous la dispersion du verre devient
+        // un arc-en-ciel (l'arc vert mesuré par les quatre juges : le
+        // canal vert seul échantillonnait la ligne).
+        rim = (float3(0.05) + rimGlow * (0.55 + 2.2 * acc)) * (ring * rimK);
     }
 
     float3 c = light * occ + rim + velvet * insideDisc;
@@ -165,7 +195,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                                 float night, float2 pillC) {
     position *= scale;
     int K = staCount / 4;
-    if (K < 2 || dry >= 0.999 || birth < 0.004) { return half4(0.0); }
+    // Sur la nuit, dry = 1 n'éteint plus rien : le condensat est un état
+    // permanent du cadran, pas une fin.
+    if (K < 2 || (night < 0.5 && dry >= 0.999) || birth < 0.004) {
+        return half4(0.0);
+    }
     // ===== LA TRANSFORMATION (nuit) : rien ne disparaît. La matière se
     // REGROUPE au centre de la bulle — l'image du vol se CONTRACTE vers
     // elle (interrogation radiale amont : conservation exacte) — pendant
@@ -266,6 +300,10 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     }
     dens *= mix(1.0, rarefy, night);
     dens *= tipIn * birth;
+    // Le grain de poussière du centre : la contraction mappe le voisinage
+    // du pixel central pile sur la pointe du chemin — adouci.
+    dens *= 1.0 - 0.30 * night
+            * (1.0 - smoothstep(0.0, 12.0, length(posGeo - pillC)));
     // La fleur d'eau sous la bille — au point exact du doigt.
     float2 tip = float2(sta[0], sta[1]);
     float2 dtp = position - tip;
@@ -279,12 +317,16 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // c'est le BLANC qui porte la lumière (orange et jaune la réchauffent),
     // et l'ombre n'existe pas — la nuit est déjà l'ombre.
     float3 yellow = float3(1.00, 0.88, 0.45);
+    // Anti-brun : sur la nuit, la saturation MONTE quand la lumière
+    // baisse — l'ambre boueux venait d'un orange trop lavé.
     float3 orange = mix(float3(1.00, 0.55, 0.20),
-                        float3(1.00, 0.64, 0.32), night);
+                        float3(1.00, 0.58, 0.24), night);
     float3 sienna = float3(0.62, 0.28, 0.10);
     float3 bloomC = mix(float3(1.00, 0.72, 0.32),
                         float3(1.00, 0.90, 0.70), night);
-    float3 lowC = mix(yellow, float3(0.99, 0.975, 0.945), night);
+    // Le voile porteur de la nuit est une crème DORÉE : du blanc pur à
+    // faible alpha sur du noir lit « fumée grise » — une seconde matière.
+    float3 lowC = mix(yellow, float3(1.00, 0.88, 0.64), night);
     float3 c = mix(lowC, orange, smoothstep(0.10, 0.55, dens));
     c = mix(c, sienna, 0.18 * smoothstep(0.65, 1.70, dens)
                         * (1.0 - night));
@@ -331,16 +373,23 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     if (night > 0.5) {
         c = mix(c, float3(1.00, 0.86, 0.55),
                 0.6 * smoothstep(0.35, 0.90, cond));
-        fold = 1.0 - smoothstep(0.90, 1.0, cond);
+        // La passation est LONGUE, et elle ne finit JAMAIS à zéro : le
+        // condensat RESTE — un cœur d'encre calme marbre l'intérieur du
+        // cadran à demeure (« le cadran est ce condensat »). La matière
+        // de la pill de base ne quitte plus le verre.
+        fold = 0.40 + 0.60 * (1.0 - smoothstep(0.70, 1.0, cond));
     }
     float aInk = (1.0 - exp(-dens * mix(0.72, 0.95, night)))
-                 * (0.28 + 0.30 * live) * (1.0 + 0.30 * night)
+                 * (0.28 + 0.30 * live) * (1.0 + 0.42 * night)
                  * (1.0 + 0.18 * cmask + 0.55 * glintM);
     float aBloom = bloom * mix(0.13, 0.02, night);
     float total = aInk + aBloom;
     if (total < 0.0008) { return half4(0.0); }
     float3 cTot = (c * aInk + bloomC * aBloom) / total;
-    float a = min(total * fold, mix(0.40, 0.46, night));
+    // LA BRAISE : sur la nuit, l'encre a le droit d'être incandescente —
+    // le plafond montait à peine à 0,46 : une brique poudreuse, pas du
+    // métal en fusion (pic mesuré 138/255 par le panel).
+    float a = min(total * fold, mix(0.40, 0.58, night));
     return half4(half3(cTot * a), half(a)) * color.a;
 }
 
@@ -352,12 +401,80 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
 // se reflète dans la matière Liquid Glass sans un seul trucage.
 [[ stitchable ]] half4 eclipseGlow(float2 position, half4 color,
                                    float2 size, float2 center, float R,
-                                   float t, float ig) {
+                                   float t, float ig, float pulse,
+                                   float flare, float flareAng) {
     if (ig < 0.004) { return half4(0.0); }
     float2 d = position - center;
     float r = length(d);
     if (r > size.y * 0.9) { return half4(0.0); }
-    float3 c = eclipseWorld(d, r, R, t, ig);
+    // occK 0,55 : un lobe d'or doit se voir CONTINUER à travers le limbe
+    // — l'indice de transparence le plus fort. rimK 0,05 : le liseré
+    // peint du monde se calme derrière l'objet.
+    float3 c = eclipseWorld(d, r, R, t, ig, 0.02, 0.55);
+    // LA NAPPE : l'énergie diffuse de l'encre, étalée DERRIÈRE tout le
+    // disque — le monde que le verre réfracte. Sans elle, la lentille
+    // transmet du noir sur du noir et l'intérieur lit « peint ». Elle
+    // respire lentement entre l'orange et l'or : l'encre, toujours.
+    float napp = exp(-(r * r) / (1.55 * R * 1.55 * R));
+    // LA NAPPE OCCULTÉE : l'arrière du cœur s'assombrit de 70 % — la
+    // nuit derrière le disque reste nuit (le Beer-Lambert n'a plus à
+    // lutter contre une inondation) ; le monde au large, celui que le
+    // limbe-miroir échantillonne, reste intact.
+    napp *= mix(0.30, 1.0, smoothstep(0.72 * R, 1.06 * R, r));
+    if (napp > 0.004) {
+        // TYPE FEU : cœur blanc-flamme près de la source, orange vif au
+        // large — plus l'effet miel doré.
+        float3 warm = mix(float3(1.00, 0.52, 0.16),
+                          float3(1.00, 0.76, 0.46), napp);
+        warm = mix(warm, float3(1.00, 0.62, 0.26),
+                   0.25 + 0.25 * sin(t * 0.45));
+        // LA BRAME DE FLAMME : le lit VIT — des langues qui montent et
+        // lèchent autour du verre. Le champ s'ADVECTE vers le large le
+        // long de chaque rayon (aucune couture angulaire, aucune
+        // particule, jamais un strobe : une respiration de feu).
+        // LA BRAME EN FLOW-MAP : deux couches advectées en alternance,
+        // fondues en triangle — l'offset reste BORNÉ. (Advecter sans
+        // borne le long de fdir déchiquetait le champ en rais fins :
+        // deux pixels voisins divergeaient de TOUT l'offset accumulé.)
+        // Langues étirées le long du rayon (anisotropie 0,55).
+        float2 fdir = d / max(r, 1.0);
+        float Tf = 2.6;
+        float ph0 = fract(t / Tf);
+        float ph1 = fract(t / Tf + 0.5);
+        float2 off = fdir * (R * 0.22 * Tf);
+        float2 q0 = d - off * ph0;
+        float2 q1 = d - off * ph1;
+        float qr0 = dot(q0, fdir);
+        float qr1 = dot(q1, fdir);
+        q0 = (q0 - fdir * qr0) + fdir * (qr0 * 0.55);
+        q1 = (q1 - fdir * qr1) + fdir * (qr1 * 0.55);
+        float w0 = 1.0 - fabs(2.0 * ph0 - 1.0);
+        float fl = mix(vfbm(q1 * 0.010 + float2(9.4, 2.6)),
+                       vfbm(q0 * 0.010 + float2(3.7, 8.1)), w0);
+        // LA RAFALE DU TAP : les flammes sortent un peu, du côté touché —
+        // la MÊME brame, amplifiée un souffle, jamais une couche neuve.
+        float gust = flare * (0.30 + 0.70
+                              * (0.5 + 0.5 * cos(atan2(d.y, d.x)
+                                                 - flareAng)));
+        float cl = (0.55 + 0.75 * fl) * (1.0 + 1.5 * gust);
+        c += warm * (napp * 0.50 * ig * cl);
+        // LA BRAME PORTE TOUT : le champ advecté module le lit ENTIER
+        // (voix comprises) — les rais eux-mêmes s'écoulent vers le
+        // large, plus seulement l'enveloppe qui respire.
+        c *= 0.72 + 0.55 * fl;
+        // LES POINTES BLANCHES : un feu a des langues qui BLANCHISSENT —
+        // rares, portées par le même champ, vivantes sur toute la vie
+        // du cadran (plus seulement au sommet de la rampe).
+        float tip = pow(max(fl - 0.58, 0.0) / 0.42, 2.2);
+        c += float3(1.00, 0.92, 0.80)
+             * (napp * ig * tip * 0.85 * (1.0 + 2.6 * gust));
+        // ET LE HALO ENTIER se soulève avec la rafale — voix comprises,
+        // du côté touché : l'effet du tap se voit, pas seulement les
+        // langues.
+        c *= 1.0 + 0.40 * gust;
+    }
+    // LE HALO PULSE AVEC LA PASTILLE — même battement, même seconde.
+    c *= 1.0 + 0.12 * pulse;
     float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
     return half4(half3(c), half(a)) * color.a;
 }
@@ -374,7 +491,8 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                                   float squash, float shade, float t,
                                   float vision, float spill, float sceneIg,
                                   float nightFill, float ripple,
-                                  float ripplePhase) {
+                                  float ripplePhase, float pulse,
+                                  float nScene) {
     float2 d = position - center;
     d.y *= squash;
     float r = length(d);
@@ -412,6 +530,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
         float crest = 0.35 + 0.65 * pow(clamp(-n.y, 0.0, 1.0), 1.2);
         float glow = exp(-outD / (R * 0.032)) * ember * crest;
         rgb = rgb * (1.0 - sh) + float3(1.0, 0.52, 0.14) * (glow * 0.18);
+        // LE SILLON DE CONTACT : le verre PÈSE sur son lit d'or — un
+        // creux étroit contre le limbe, muet sur le papier.
+        float nOn = smoothstep(0.05, 0.35, nightFill);
+        float groove = exp(-pow(outD / max(R * 0.055, 2.0), 2.0));
+        rgb *= 1.0 - groove * 0.25 * nOn;
         // Le ménisque du front, côté papier.
         if (spill > 0.001) {
             float men = exp(-pow((r - Rw) / 16.0, 2.0));
@@ -422,7 +545,18 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
 
     // ---- Dedans : la calotte de verre.
     float bell = sqrt(max(1.0 - nr * nr, 0.0));
-    float f = mix(1.32, f0, pow(bell, 0.82));
+    // Le LANGAGE du verre (fenêtre/arcs/miroir/fil) suit la SCÈNE :
+    // dans la nuit, nScene = la rampe d'ignition des voix elle-même —
+    // la fenêtre du jour meurt PENDANT que les arcs naissent, même
+    // rampe. La MATIÈRE (absorption), elle, suit nightFill.
+    float nightOn = max(smoothstep(0.05, 0.35, nightFill), nScene);
+    // LE VERRE RECUEILLE : sur la nuit, la bande qui échantillonne HORS
+    // du disque passe de 6 % à 17 % du rayon — la couronne du halo se
+    // replie ~3:1 dans le sixième externe. Garde-fou maxSampleOffset :
+    // (edgeF − 1)·R ≤ 105 pt. Jour : nightOn = 0, formule d'origine.
+    float edgeF = 1.32 + nightOn * clamp(105.0 / max(R, 1.0) - 0.32,
+                                         0.0, 0.26);
+    float f = mix(edgeF, f0, pow(bell, mix(0.82, 1.45, nightOn)));
     // L'ONDE DE LA GOUTTE : après l'atterrissage, une vague circulaire
     // traverse la surface — l'eau qui tremble, brève, amortie.
     if (ripple > 0.002) {
@@ -430,10 +564,24 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
                  * (0.35 + 0.65 * bell);
     }
     float sep = disp * 0.055 * pow(nr, 2.4);
+    // Au limbe, sur la nuit, les trois canaux se resserrent : l'écart
+    // faisait échantillonner le halo or par le seul canal vert — un fil
+    // teal + indigo sur le bord (mesuré par deux juges). La dispersion
+    // vit dans le corps du verre, pas sur son fil.
+    // Kill COMPLET dès 0,90 : le sillon de contact est un trait fin
+    // juste dehors — la dispersion résiduelle en refaisait une frange.
+    sep *= 1.0 - nightOn * smoothstep(0.70, 0.90, nr);
     float2 dir = float2(d.x, d.y / squash);
-    float2 pR = clamp(center + dir * (f * (1.0 - sep)), lo, hi);
-    float2 pG = clamp(center + dir * (f * (1.0 + sep * 0.40)), lo, hi);
-    float2 pB = clamp(center + dir * (f * (1.0 + sep * 1.35)), lo, hi);
+    // Chaque échantillon reste À PORTÉE du layerEffect (maxSampleOffset
+    // 110) : au sommet du zoom, R explose et les offsets dépassaient la
+    // garantie — le GPU rendait des TUILES rectangulaires (les blocs à
+    // x = 256/512 mesurés par le panel). Le verre ne cède JAMAIS.
+    float2 pR = center + dir * (f * (1.0 - sep));
+    float2 pG = center + dir * (f * (1.0 + sep * 0.40));
+    float2 pB = center + dir * (f * (1.0 + sep * 1.35));
+    pR = clamp(position + clamp(pR - position, -105.0, 105.0), lo, hi);
+    pG = clamp(position + clamp(pG - position, -105.0, 105.0), lo, hi);
+    pB = clamp(position + clamp(pB - position, -105.0, 105.0), lo, hi);
     half4 sG = layer.sample(pG);
     float3 rgb = float3(layer.sample(pR).r, sG.g, layer.sample(pB).b);
 
@@ -441,20 +589,66 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // plein de nuit ont les mêmes reflets.
     rgb *= 1.0 - 0.045 * pow(nr, 3.5) * shade;
     float frost = smoothstep(0.955, 1.0, nr);
-    rgb = mix(rgb, float3(0.965, 0.955, 0.935), frost * 0.14 * shade);
+    // Le givre gris est une teinte froide : il meurt sur la nuit.
+    rgb = mix(rgb, float3(0.965, 0.955, 0.935),
+              frost * 0.14 * shade * (1.0 - nightOn));
 
     // ---- LA NUIT DANS LE VERRE : pendant le zoom du sommet, l'intérieur
     // se remplit d'une nuit lunaire — on n'entre pas dans un décor, on
     // entre dans l'OBJET. Le velours vfbm (le drap du cadran), et une
     // clarté de lune à peine posée par le haut du verre.
+    float mA = 0.5;
     if (nightFill > 0.001) {
-        float cloth = 0.80 + 0.40 * vfbm(d * 0.02 + float2(7.0, 3.0));
-        float3 nightC = float3(0.012, 0.013, 0.020) * cloth;
-        nightC += float3(0.050, 0.056, 0.072)
-                  * pow(clamp(-n.y, 0.0, 1.0), 2.0);
-        float depth = 0.55 + 0.45 * bell;
+        // LE VERRE QUI SE REMPLIT — un VOLUME traversé, jamais une
+        // peinture. La nuit est une nuit d'ENCRE : le bleu meurt en
+        // premier, la traversée est ambre sombre.
         float inside = 1.0 - smoothstep(R - 1.0, R + 0.5, r);
-        rgb = mix(rgb, nightC, nightFill * depth * inside);
+        // LA PAROI : la corde s'amincit VITE au limbe — le monde chaud
+        // traverse le bord du verre plein ; le cœur garde la nuit.
+        // La paroi reste PLEINE jusqu'à nr ≈ 0,95 : le fil de feu du
+        // limbe fait ~8 px (la signature validée : 5-9 px), plus jamais
+        // une bande de transmission de 60 px.
+        float chord = pow(bell, mix(1.45, 0.55, nightOn));
+        // LE MARBRE DE L'ÉPAISSEUR : la densité varie — deux échelles du
+        // drap, dérives à contre-courant, parallaxe (le fond bouge
+        // moins). Poche dense = plus sombre ET plus rouge ; veine = plus
+        // claire ET plus or : la PROFONDEUR varie, pas une teinte.
+        float2 md = d * mix(1.00, 0.72, bell);
+        mA = vfbm(md * 0.011 + float2(t * 0.017, -t * 0.011));
+        float mB = vfbm(md * 0.034 + mA * 0.7
+                        + float2(-t * 0.010, t * 0.006));
+        float marble = 0.62 * mA + 0.38 * mB
+                       + 0.05 * sin(t * 0.42 + mA * 6.0);
+        // Le marbre naît AVEC la nuit — jamais une trame qui « apparaît ».
+        float mAmp = 0.45 * smoothstep(0.15, 0.55, nightFill);
+        // L'ONYX : profondeur 3,0, spectre qui tue le caramel (le R/B
+        // 2,70 mesuré ÉTAIT la signature de l'absorption trop courte).
+        // Cœur T_r ≈ 2 % — un noir vivant, jamais un aplat.
+        float L = 2.7 * chord * nightFill * inside * (0.78 + mAmp * marble);
+        L *= 1.0 - 0.14 * pulse;
+        float3 T = exp(-float3(1.95, 2.35, 2.85) * L);
+        float cloth = 0.80 + 0.40 * mA;
+        float moon = pow(clamp(-d.y / max(r, R * 0.18), 0.0, 1.0), 2.0);
+        // LA BRAISE QUI COUVE : seules les poches denses émettent, au
+        // FOND du volume (bell²) — le limbe TRANSMET. Lune baissée : la
+        // vraie lumière vient du lit d'or, en bas. Sous les chiffres, la
+        // braise se calme (lisibilité de « 0:00 »).
+        float pool = smoothstep(0.45, 0.85, marble)
+                     * (1.0 - 0.35 * exp(-(r * r)
+                                         / (0.30 * R * 0.30 * R)));
+        // Émissions au strict minimum : un objet transparent n'émet
+        // presque rien — le marbre vfbm reste la seule vie interne.
+        float3 nightC = float3(0.0040, 0.0034, 0.0028) * cloth
+                        + float3(0.006, 0.005, 0.004) * moon
+                        + float3(0.014, 0.008, 0.003)
+                          * (pool * bell * bell);
+        // L'ABSORPTION EN LINÉAIRE : défaire le tonemap du monde
+        // échantillonné, traverser T, re-tonemapper — la SOURCE perce la
+        // fumée, les ombres meurent franchement.
+        float3 linW = -log(max(1.0 - min(rgb, float3(0.985)),
+                               float3(0.015))) * (1.0 / 1.55);
+        rgb = 1.0 - exp(-(linW * T) * 1.55);
+        rgb += nightC * (1.0 - T);
     }
 
     // ---- Le ruban « inspiration » du drag (meurt dans la condensation).
@@ -481,7 +675,8 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     // puis elle grandit avec le débordement jusqu'à devenir la bille.
     if (vision > 0.001) {
         float2 dFish = n * (pow(nr, 1.45) * R);
-        float3 seen = eclipseWorld(dFish, length(dFish), sceneR, t, sceneIg);
+        float3 seen = eclipseWorld(dFish, length(dFish), sceneR, t,
+                                   sceneIg, 1.0, 1.0);
         // La profondeur du verre : la vision est plus dense au cœur.
         float depth = 0.55 + 0.45 * bell;
         float inside = 1.0 - smoothstep(R - 1.0, R + 0.5, r);
@@ -494,11 +689,109 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig) {
     float down = clamp(n.y, 0.0, 1.0);
     float specK = shade * (1.0 - 0.78 * clamp(ember, 0.0, 1.0))
                   * (1.0 - 0.45 * smoothstep(0.6, 1.0, spill));
-    rgb += float3(1.0) * (pow(up, 2.6) * band * 0.17 * specK);
-    rgb += float3(1.0) * (pow(down, 3.2) * band * 0.06 * specK);
+    float fres = 0.06 + 0.94 * pow(1.0 - bell, 5.0);
+    // LES ARCS DES VOIX : les VRAIS halos se reflètent sur la courbe —
+    // géométrie miroir sphérique exacte (azimut conservé, compression
+    // radiale ~3:1, Fresnel qui les éteint vers le cœur), ancrés sur les
+    // positions qui DÉRIVENT. VERROU : ces constantes sont le clone
+    // exact d'eclipseWorld (cols/speed/phase/rho0/srs/sts/bper/bbase/
+    // bamp/wgt) — toute retouche de palette du halo DOIT se refléter ici.
+    float reflOn = nightOn * specK;
+    float lipEnv = 0.0;
+    if (reflOn > 0.004 && nr > 0.50) {
+        const float3 rc[4]  = { float3(1.00, 0.78, 0.40),
+                                float3(1.00, 0.54, 0.16),
+                                float3(1.00, 0.92, 0.78),
+                                float3(1.00, 0.64, 0.26) };
+        const float rsp[4]  = {  6.2832 / 47.0, -6.2832 / 29.0,
+                                 6.2832 / 19.0, -6.2832 / 71.0 };
+        const float rph[4]  = { 0.4, 2.6, 4.4, 5.6 };
+        const float rr0[4]  = { 1.02, 0.98, 1.01, 1.14 };
+        const float rsr[4]  = { 0.34, 0.19, 0.10, 0.42 };
+        const float rst[4]  = { 0.66, 0.50, 0.34, 0.72 };
+        const float rbp[4]  = { 13.0, 8.1, 5.2, 21.0 };
+        const float rbb[4]  = { 0.72, 0.62, 0.50, 0.66 };
+        const float rba[4]  = { 0.28, 0.38, 0.50, 0.30 };
+        const float rwg[4]  = { 0.55, 0.85, 0.45, 0.50 };
+        float phi = atan2(d.y, d.x);
+        float3 refl = float3(0.0);
+        for (int i = 0; i < 4; i++) {
+            float ang = rph[i] + t * rsp[i];
+            float rho = rr0[i] + 0.05 * sin(t * 6.2832 / (rbp[i] * 2.7)
+                                            + rph[i] * 3.0);
+            float br  = rbb[i] + rba[i] * sin(t * 6.2832 / rbp[i]
+                                              + rph[i] * 5.0);
+            float s = min((1.0 + sqrt(1.0 + 8.0 * rho * rho))
+                          / (4.0 * rho), 1.0) - 0.055;
+            float dA = phi - ang;
+            dA -= 6.2832 * floor(dA / 6.2832 + 0.5);
+            float sigA = 1.15 * rst[i] / rho;
+            float gA = exp(-dA * dA / (sigA * sigA));
+            float sigR = 0.035 + 0.28 * rsr[i];
+            float drr = (nr - s) / sigR;
+            refl   += rc[i] * (gA * exp(-drr * drr) * br * rwg[i]);
+            lipEnv += gA * br * rwg[i];
+        }
+        rgb += min(refl * (fres * 0.42 * reflOn * (0.85 + 0.30 * mA)
+                           * (1.0 + 0.30 * pulse)), float3(0.14));
+    }
+    float nGain = 1.0 + 0.25 * nightFill;
+    // Le lobe haut n'a rien à refléter la nuit (le ciel EST la nuit) ;
+    // le lobe bas devient feu et suit les voix via lipEnv.
+    rgb += float3(1.0) * (pow(up, 2.6) * band * 0.13 * specK * nGain
+                          * (1.0 - 0.75 * nightOn));
+    rgb += mix(float3(1.0), float3(1.00, 0.78, 0.42), nightOn)
+           * (pow(down, 3.2) * band * 0.06 * specK * nGain
+              * mix(1.0, 0.40 + 0.60 * min(lipEnv, 1.0), nightOn));
+    // Le fil ne brille QUE face aux voix — fini le cercle parfait : la
+    // séparation vient de l'éclairage, jamais d'un contour.
     float lip = exp(-pow((nr - 0.994) / 0.010, 2.0));
-    rgb += float3(1.0, 0.99, 0.96) * (lip * 0.09 * shade
-                                      * (1.0 - 0.6 * smoothstep(0.7, 1.0, spill)));
+    rgb += mix(float3(1.0, 0.99, 0.96), float3(1.00, 0.90, 0.74), nightOn)
+           * (lip * mix(0.09, 0.030 + 0.11 * min(lipEnv, 1.0), nightOn)
+              * shade * nGain
+              * (1.0 - 0.6 * smoothstep(0.7, 1.0, spill)));
+    // LA FENÊTRE SPÉCULAIRE : compacte, bord DUR, étirée en arc (deux
+    // lobes), calée sur la caustique validée de la phase blanche —
+    // nr 0,61, azimut −29°, hors zone des chiffres. Base dès le papier :
+    // rien ne s'allume en couche.
+    float3 N3 = float3(n.x * nr, n.y * nr, bell);
+    // Resserrée (« too much » de Kathryn) : −60 % de surface, lobes
+    // rapprochés en ARC, un tiers d'intensité en moins, teinte chaude —
+    // un reflet de fenêtre, plus une fève de bonbon.
+    const float3 Lw  = float3(0.533, -0.296, 0.792);
+    const float3 Lw2 = float3(0.494, -0.359, 0.792);
+    float sw = max(max(dot(N3, Lw), dot(N3, Lw2)), 0.0);
+    float winCore = smoothstep(0.9865, 0.9955, sw);
+    float winSh   = 0.16 * smoothstep(0.952, 0.9865, sw);
+    // LA PASSATION : la fenêtre du jour MEURT sur la rampe même qui
+    // allume les arcs des voix — une lumière qui change de source,
+    // jamais un spot synthétique sur la nuit (« trop jouet », Kathryn).
+    float winK = 0.18 * pow(1.0 - nightOn, 1.6) * specK;
+    rgb += float3(1.00, 0.965, 0.90) * ((0.50 * winCore + winSh) * winK);
+    // LE LIMBE-MIROIR : Schlick × échantillon RÉFLÉCHI au-delà du bord —
+    // le limbe recopie le VRAI lit d'or (sa trame, ses voix, son heure) :
+    // embrasé en bas face au halo, nuit en haut.
+    // Resserré (61 → ~23 px) et calmé la nuit — le limbe ne vit que là
+    // où le monde l'éclaire ; il respire avec le pouls.
+    float rimZ = smoothstep(mix(0.80, 0.90, nightOn),
+                            mix(0.97, 0.985, nightOn), nr)
+                 * (1.0 - smoothstep(mix(0.988, 0.994, nightOn), 1.0, nr));
+    // Asservi aux voix comme le fil : le miroir ne recopie plus la nappe
+    // symétrique — l'anneau CASSE côté nuit.
+    // Le pouls du miroir est retiré : le lit pulse désormais lui-même
+    // (eclipseGlow) et le miroir l'échantillonne — le garder ici
+    // multiplierait les deux battements.
+    float rimW = rimZ * (0.55 - 0.25 * nightOn) * specK
+                 * mix(1.0, 0.35 + 0.65 * min(lipEnv, 1.0), nightOn);
+    if (rimW > 0.004) {
+        float mEnv = (1.0 + (1.0 - nr) * 2.3) / max(nr, 0.5);
+        mEnv = min(mEnv, 1.0 + 100.0 / max(r, 1.0));
+        float3 env = float3(layer.sample(clamp(center + dir * mEnv,
+                                               lo, hi)).rgb);
+        // Anti-clip : la saturation feu du monde survit au reflet.
+        env *= mix(float3(1.0), float3(1.00, 0.92, 0.80), nightOn);
+        rgb += env * (fres * rimW);
+    }
 
     // Anticrénelage du bord : sur le papier on retombe sur lui ; sur le
     // monde débordé on fond vers le TRANSPARENT — le vrai monde dessous.
