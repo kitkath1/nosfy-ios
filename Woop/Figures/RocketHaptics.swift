@@ -199,8 +199,8 @@ final class RocketHaptics {
             CHHapticEvent(
                 eventType: .hapticContinuous,
                 parameters: [
-                    .init(parameterID: .hapticIntensity, value: 0.9),
-                    .init(parameterID: .hapticSharpness, value: 0.08),
+                    .init(parameterID: .hapticIntensity, value: 1.0),
+                    .init(parameterID: .hapticSharpness, value: 0.14),
                 ],
                 relativeTime: 0, duration: rise + 0.05),
             CHHapticEvent(
@@ -235,6 +235,23 @@ final class RocketHaptics {
                 ],
                 relativeTime: beat, duration: 0.28),
         ]
+        // LA SECOUSSE : par-dessus le grondement continu (qui sature à
+        // 1,0), une rafale de transitoires qui s'ACCÉLÈRE — c'est elle
+        // qui fait « très fort » : la fusée secoue, elle ne ronronne pas.
+        var tk = 0.0
+        var step = 0.11
+        while tk < rise {
+            events.append(CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity,
+                          value: Float(0.70 + 0.30 * tk / max(rise, 0.1))),
+                    .init(parameterID: .hapticSharpness, value: 0.45),
+                ],
+                relativeTime: tk))
+            tk += step
+            step = max(step * 0.86, 0.035)
+        }
         // Les PERLES de la dévidée : tick… tick… tick, en crescendo —
         // l'horlogerie d'un bijou qu'on remonte.
         for (i, tk) in ticks.enumerated() {
@@ -250,10 +267,11 @@ final class RocketHaptics {
         let ramp = CHHapticParameterCurve(
             parameterID: .hapticIntensityControl,
             controlPoints: [
-                .init(relativeTime: 0, value: 0.10),
-                .init(relativeTime: rise * 0.45, value: 0.32),
-                .init(relativeTime: rise * 0.75, value: 0.75),
-                .init(relativeTime: rise * 0.93, value: 1.60),
+                // TRÈS FORTE dès que la pastille est en haut : la fusée
+                // gronde à pleine charge sur toute la pause tenue.
+                .init(relativeTime: 0, value: 0.85),
+                .init(relativeTime: rise * 0.30, value: 1.60),
+                .init(relativeTime: rise * 0.60, value: 2.10),
                 .init(relativeTime: rise, value: 2.40),
                 .init(relativeTime: rise + 0.05, value: 0.0),
                 // La courbe REMONTE à 1 après la coupe — sans quoi elle
@@ -273,6 +291,67 @@ final class RocketHaptics {
                                                  parameterCurves: [ramp, pitch]),
               let p = try? engine.makePlayer(with: pattern) else { return }
         player = p
+        try? engine.start()
+        try? p.start(atTime: CHHapticTimeImmediate)
+    }
+
+    // MARK: Le grondement du drag — n'existe qu'au doigt, en crescendo.
+
+    private var dragPlayer: CHHapticPatternPlayer?
+
+    /// À chaque mouvement du drag, avec la montée [0,1] : le grondement
+    /// naît au premier millimètre, enfle en crescendo (climb^1,6), reste
+    /// doux — la fusée du sommet prend le relais. Muet au simulateur.
+    func dragLevel(_ climb: Double) {
+        guard let engine else { return }
+        if dragPlayer == nil {
+            let ev = CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    .init(parameterID: .hapticIntensity, value: 1.0),
+                    .init(parameterID: .hapticSharpness, value: 0.06),
+                ],
+                relativeTime: 0, duration: 60)
+            guard let pattern = try? CHHapticPattern(events: [ev],
+                                                     parameters: []),
+                  let p = try? engine.makePlayer(with: pattern)
+            else { return }
+            dragPlayer = p
+            try? engine.start()
+            try? p.start(atTime: CHHapticTimeImmediate)
+        }
+        let level = Float(0.04 + 0.72 * pow(max(climb, 0), 1.6))
+        try? dragPlayer?.sendParameters([
+            CHHapticDynamicParameter(
+                parameterID: .hapticIntensityControl,
+                value: level, relativeTime: 0),
+            CHHapticDynamicParameter(
+                parameterID: .hapticSharpnessControl,
+                value: Float(-0.2 + 0.35 * climb), relativeTime: 0),
+        ], atTime: CHHapticTimeImmediate)
+    }
+
+    func dragEnd() {
+        try? dragPlayer?.stop(atTime: CHHapticTimeImmediate)
+        dragPlayer = nil
+    }
+
+    /// Le souffle sourd de la rafale — le tap sur le cadran.
+    func tapFlare() {
+        guard let engine else { return }
+        let ev = [
+            CHHapticEvent(eventType: .hapticTransient, parameters: [
+                .init(parameterID: .hapticIntensity, value: 0.55),
+                .init(parameterID: .hapticSharpness, value: 0.30),
+            ], relativeTime: 0),
+            CHHapticEvent(eventType: .hapticContinuous, parameters: [
+                .init(parameterID: .hapticIntensity, value: 0.22),
+                .init(parameterID: .hapticSharpness, value: 0.05),
+            ], relativeTime: 0.01, duration: 0.16),
+        ]
+        guard let pattern = try? CHHapticPattern(events: ev,
+                                                 parameters: []),
+              let p = try? engine.makePlayer(with: pattern) else { return }
         try? engine.start()
         try? p.start(atTime: CHHapticTimeImmediate)
     }
@@ -334,5 +413,82 @@ final class MoonTheme {
             player?.stop()
             player?.volume = 0.55
         }
+    }
+}
+
+// MARK: - Le thème de la lentille
+//
+/// La pièce de la Transformation : sombre, sobre, élégante. Elle n'entre
+/// qu'au SOMMET — quand la partition devient fixe (la montée au doigt reste
+/// muette, portée par le grondement seul). Bourdon grave qui enfle vers la
+/// coupe, souffle aspiré, impact feutré à la coupe, pad de nuit pendant la
+/// descente, goutte cristalline à la pose, murmure qui monte avec la
+/// condensation, cloche grave au battement — puis LE SILENCE : l'arrivée
+/// n'a pas de boucle. Synthétisée hors ligne (script au scratchpad de la
+/// session), embarquée en AAC.
+/// Mixée en `.ambient` + `mixWithOthers` : jamais par-dessus sa musique.
+@MainActor
+final class LensTheme {
+    static let shared = LensTheme()
+    private var player: AVAudioPlayer?
+
+    private init() {}
+
+    func prepare() {
+        guard player == nil,
+              let url = Bundle.main.url(forResource: "LensTheme",
+                                        withExtension: "m4a") else { return }
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        player = try? AVAudioPlayer(contentsOf: url)
+        player?.volume = 0.50
+        player?.prepareToPlay()
+    }
+
+    func play() {
+        guard let player else { return }
+        player.currentTime = 0
+        player.volume = 0.50
+        player.play()
+    }
+
+    func stop() {
+        guard let player, player.isPlaying else { return }
+        player.setVolume(0, fadeDuration: 0.35)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak player] in
+            player?.stop()
+            player?.volume = 0.50
+        }
+    }
+}
+
+// MARK: - Le tick de la rafale
+//
+/// DialTap — la langue sonore du cadran, hauteur qui varie d'un rien :
+/// deux taps ne sonnent jamais exactement pareil.
+@MainActor
+final class LensChime {
+    static let shared = LensChime()
+    private var tap: AVAudioPlayer?
+
+    private init() {}
+
+    func prepare() {
+        guard tap == nil,
+              let url = Bundle.main.url(forResource: "DialTap",
+                                        withExtension: "wav") else { return }
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        tap = try? AVAudioPlayer(contentsOf: url)
+        tap?.enableRate = true
+        tap?.volume = 0.5
+        tap?.prepareToPlay()
+    }
+
+    func flare() {
+        guard let tap else { return }
+        tap.rate = Float.random(in: 0.94 ... 1.06)
+        tap.currentTime = 0
+        tap.play()
     }
 }

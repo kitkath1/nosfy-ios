@@ -54,6 +54,10 @@ struct LiquidLensLab: View {
     /// (pause-fusée, coupe, descente). REJOUER la relâche.
     @State private var summitAt: Date?
     @State private var summitFx: CGFloat?
+    /// LA RAFALE : un tap sur le cadran posé fait sortir les flammes —
+    /// l'instant du toucher et son azimut (depuis le centre).
+    @State private var flareAt: Date?
+    @State private var flareAng: Double = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -69,7 +73,7 @@ struct LiquidLensLab: View {
                         // L'UNIVERS NOIR : renaissance et descente.
                         nightWorld(w: w, h: h, t: t,
                                    ne: e - SummitCine.cutAt,
-                                   ax: summitX(w: w))
+                                   ax: summitX(w: w), now: now)
                     } else {
                         let d = drive(now: now, t: t, w: w, h: h)
                         let lens = flared(lensState(w: w, h: h, t: t,
@@ -91,12 +95,31 @@ struct LiquidLensLab: View {
                 .gesture(dragGesture(h: h),
                          isEnabled: Self.frozen == nil && !Self.cycling
                                     && summitAt == nil)
+                // LE TAP SUR LE CADRAN POSÉ : les flammes sortent un peu,
+                // du côté touché — un souffle, un tick, jamais un menu.
+                .simultaneousGesture(SpatialTapGesture().onEnded { v in
+                    let nowD = Date()
+                    let tt = nowD.timeIntervalSinceReferenceDate
+                        .truncatingRemainder(dividingBy: 900)
+                    guard let e = summitElapsed(now: nowD, t: tt),
+                          e - SummitCine.cutAt - SummitCine.enter
+                            - SummitCine.descend > 0.8 else { return }
+                    flareAt = nowD
+                    flareAng = Double(atan2(v.location.y - h * 0.5,
+                                            v.location.x - w * 0.5))
+                    RocketHaptics.shared.tapFlare()
+                    LensChime.shared.flare()
+                })
             }
         }
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .onAppear { RocketHaptics.shared.prepare() }
+        .onAppear {
+            RocketHaptics.shared.prepare()
+            LensTheme.shared.prepare()
+            LensChime.shared.prepare()
+        }
     }
 
     /// Le temps écoulé depuis le sommet — doigt (état) ou cycle auto (pur).
@@ -146,7 +169,7 @@ struct LiquidLensLab: View {
             .float(f0), .float(dispV), .float(emberV),
             .float(squashV), .float(1.0), .float(tS),
             .float(0.0), .float(0.0), .float(0.0), .float(nightV),
-            .float(0.0), .float(0.0))
+            .float(0.0), .float(0.0), .float(0.0), .float(nightV))
         let hasTrail = d.sta.count >= 8 && d.dry < 0.999
         // La tache NAÎT en fondu avec la longueur du chemin — jamais de
         // seuil qui pop (la leçon du calque rectangulaire).
@@ -227,7 +250,10 @@ struct LiquidLensLab: View {
                              still: true)
         }
         if Self.cycling {
-            return cyclePose(tau: t.truncatingRemainder(dividingBy: 11.0),
+            // 14,5 comme summitElapsed : les DEUX horloges du banc sur le
+            // même cycle — le 11.0 hérité du Banc A désynchronisait la
+            // phase blanche dès le deuxième tour de film.
+            return cyclePose(tau: t.truncatingRemainder(dividingBy: 14.5),
                              t: t, w: w, h: h, still: false)
         }
         // LE SOMMET (doigt) : la pill tenue en haut pendant la pause-fusée,
@@ -387,6 +413,8 @@ struct LiquidLensLab: View {
         var f0 = 0.80, disp = 0.22, ember = 0.0, squash = 1.0
         /// L'onde de la goutte (atterrissage) — amplitude et phase.
         var ripple = 0.0, ripplePhase = 0.0
+        /// Le pouls du chrono — l'enveloppe du battement de la seconde.
+        var pulse = 0.0
     }
 
     private func lensState(w: CGFloat, h: CGFloat, t: Double,
@@ -433,6 +461,10 @@ struct LiquidLensLab: View {
                 let target = min(max(Double(-v.velocity.height) / 2600,
                                      -0.05), 0.14)
                 stretch += (target - stretch) * 0.25
+                // LE GRONDEMENT DU DRAG : n'existe qu'au doigt posé, en
+                // crescendo avec la montée — muet au simulateur.
+                RocketHaptics.shared.dragLevel(
+                    climbOf(y: v.location.y, h: h))
                 if let last = dragPath.last,
                    hypot(v.location.x - last.pos.x,
                          v.location.y - last.pos.y) > 7 {
@@ -450,12 +482,18 @@ struct LiquidLensLab: View {
                     stretch = 0
                     let touch = SummitCine.cutAt + SummitCine.enter
                                 + SummitCine.descend
+                    // Le grondement du drag passe le relais à la fusée,
+                    // et LE THÈME entre en scène — la partition est fixe
+                    // à partir d'ici (silence après l'arrivée).
+                    RocketHaptics.shared.dragEnd()
+                    LensTheme.shared.play()
                     RocketHaptics.shared.surge(
                         rise: SummitCine.cutAt - 0.05,
                         contact: touch, beat: touch + 4.5)
                 }
             }
             .onEnded { _ in
+                RocketHaptics.shared.dragEnd()
                 guard summitAt == nil, let loc = fingerLoc else { return }
                 fingerLoc = nil
                 stretch = 0
@@ -485,6 +523,7 @@ struct LiquidLensLab: View {
         let landed = ne - (SummitCine.enter + SummitCine.descend)
         var radiusV = radius
         var ripple = 0.0
+        var pulseV = 0.0
         if landed > 0 {
             // L'ATTERRISSAGE EN GOUTTE : écrasement au contact, rebond
             // plus haut, retombée — deux oscillations lisibles, et l'onde
@@ -498,10 +537,30 @@ struct LiquidLensLab: View {
             // la pastille pèse une fois, discrètement.
             let bt = landed - 4.5
             radiusV *= 1 + 0.012 * CGFloat(exp(-bt * bt / (0.18 * 0.18)))
+            // LE POULS DU CHRONO : attaque 0,10 s (3 frames — plus
+            // jamais un scale qui claque en 1 frame), retombée douce ;
+            // la somme one(x) + one(x+1) laisse la queue traverser la
+            // seconde sans pop au wrap. La LUMIÈRE bat sur la même
+            // enveloppe (uniform pulse → limbe, arcs, miroir).
+            // Calé sur la MÊME horloge que les chiffres (origine 5.6) :
+            // la pastille bat pile quand la seconde bascule.
+            if landed > 5.6 {
+                let ph = (landed - 5.6).truncatingRemainder(dividingBy: 1.0)
+                let on = sstep(5.6, 6.6, landed)
+                func one(_ u: Double) -> Double {
+                    u <= 0 ? 0 : sstep(0, 0.10, u) * exp(-max(u - 0.10, 0) / 0.30)
+                }
+                pulseV = (one(ph) + one(ph + 1.0)) * on
+                radiusV *= 1 + CGFloat(0.009 * pulseV)
+            }
         }
         var lens = Lens(center: CGPoint(x: cx, y: cy), radius: radiusV)
+        lens.pulse = pulseV
         lens.f0 = 0.72
-        lens.disp = 0.85
+        // Dispersion quasi nulle sur TOUTE la nuit : chaque frange verte
+        // mesurée venait d'elle (même à 0,35, des étincelles G≈2R
+        // survivaient sur la descente) — le verre de nuit ne disperse pas.
+        lens.disp = 0.12
         // La braise vit pendant la chute, s'apaise en braise de VEILLE une
         // fois posée — sur la nuit, une pastille sans braise est invisible.
         // Elle souffle une fois avec le battement de l'annonce.
@@ -523,13 +582,25 @@ struct LiquidLensLab: View {
                             ne: Double, ax: CGFloat) -> Drive {
         var d = Drive(climb: 0, fx: ax)
         guard ne > SummitCine.enter + 0.10 else { return d }
+        // LE CHEMIN S'ARRÊTE À LA POSE. La fenêtre glissante suivait la
+        // pastille immobile : tous les points convergeaient, stations()
+        // tombait sous ses gardes (S ≤ 14) et TOUTE l'encre se démontait
+        // d'un coup ~1,9 s après l'atterrissage — le « battement noir »
+        // mesuré par les juges, rejeté deux fois par Kathryn. Figé à la
+        // pose, le chemin demeure, ses âges courent, et la condensation
+        // a une matière à contracter pendant que le halo s'étend.
+        let land = SummitCine.enter + SummitCine.descend
+        let neP = min(ne, land)
         var pts: [(pos: CGPoint, age: Double)] = []
-        let t0 = max(SummitCine.enter, ne - 1.9)
+        let t0 = max(SummitCine.enter, neP - 1.9)
         let n = 30
         for i in 0...n {
-            let tp = t0 + (ne - t0) * Double(i) / Double(n)
+            let tp = t0 + (neP - t0) * Double(i) / Double(n)
             let l = nightLens(w: w, h: h, t: 0, ne: tp, ax: ax)
-            pts.append((l.center, ne - tp))
+            // Âges capés : live plancher 0,27 — le condensat respire et
+            // garde ses caustiques À DEMEURE (sans borne, live → 0,03 :
+            // un cœur mort).
+            pts.append((l.center, min(ne - tp, 2.6)))
         }
         if let tr = stations(from: pts) {
             d.sta = tr.sta; d.boundsMin = tr.bMin
@@ -547,7 +618,8 @@ struct LiquidLensLab: View {
     /// rares — et la pastille de verre qui descend, réfractant sa nuit et
     /// son encre. Le REJOUER du banc apparaît une fois posée.
     private func nightWorld(w: CGFloat, h: CGFloat, t: Double,
-                            ne: Double, ax: CGFloat) -> some View {
+                            ne: Double, ax: CGFloat,
+                            now: Date) -> some View {
         let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax)
         let d = nightTrail(w: w, h: h, ne: ne, ax: ax)
         let sizeW = Float(w), sizeH = Float(h)
@@ -558,14 +630,25 @@ struct LiquidLensLab: View {
         let tS = Float(t)
         // LA LAQUE : la matière condensée emplit le verre par sa
         // profondeur — et y RESTE : le cadran est ce condensat.
-        let lacquerV = Float(0.9 * sstep(0.55, 1.0, d.dry))
+        // 0,66 : la nuit emplit le verre mais le monde chaud ET le
+        // condensat restent LISIBLES à travers le dôme — le cadran est la
+        // pill de base, remplie (le sommet, lui, garde sa nuit à 0,9).
+        let lacquerV = Float(0.66 * sstep(0.55, 1.0, d.dry))
+        // Tôt et long : la lumière orbitale vit déjà quand l'encre finit
+        // sa contraction — et le LANGAGE du verre (nScene) bascule sur
+        // CETTE rampe : la fenêtre du jour meurt pendant que les arcs
+        // naissent, mathématiquement ensemble.
+        let igV = Float(sstep(0.08, 0.85, d.dry))
         let lensShader = ShaderLibrary.liquidLens(
             .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
             .float(f0), .float(dispV), .float(emberV),
             .float(squashV), .float(1.0), .float(tS),
             .float(0.0), .float(0.0), .float(0.0), .float(lacquerV),
-            .float(Float(lens.ripple)), .float(Float(lens.ripplePhase)))
-        let hasTrail = d.sta.count >= 8 && d.dry < 0.999
+            .float(Float(lens.ripple)), .float(Float(lens.ripplePhase)),
+            .float(Float(lens.pulse)), .float(igV))
+        // La couche d'encre ne se démonte JAMAIS sur la nuit : le
+        // condensat est l'intérieur permanent du cadran.
+        let hasTrail = d.sta.count >= 8
         let birthV = Float(sstep(24, 170, Double(d.pathLen)))
         let trailShader = ShaderLibrary.inkTrail(
             .float2(sizeW, sizeH), .floatArray(d.sta),
@@ -575,15 +658,24 @@ struct LiquidLensLab: View {
             .float(1.0), .float(1.0), .float2(cX, cY))
         // LE HALO : l'énergie diffusée s'allume derrière la pastille —
         // les quatre voix du vrai cadran — et y RESTE.
-        let igV = Float(sstep(0.25, 0.95, d.dry))
+        // La rafale du tap : attaque 2 frames, retombée douce ~0,35 s.
+        let fe = flareAt.map { now.timeIntervalSince($0) } ?? 99.0
+        let flareV = Float(sstep(0, 0.06, fe)
+                           * exp(-max(fe - 0.06, 0) / 0.45))
         let glowShader = ShaderLibrary.eclipseGlow(
             .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
-            .float(tS), .float(igV))
+            .float(tS), .float(igV), .float(Float(lens.pulse)),
+            .float(flareV), .float(Float(flareAng)))
         let landed = ne - (SummitCine.enter + SummitCine.descend)
         // LES CHIFFRES : ils affleurent du condensat, au battement.
         let faceIn = sstep(4.5, 5.6, max(landed, 0))
         // Le chip n'apparaît qu'après l'affleurement.
         let chipIn = min(max((landed - 6.3) / 0.5, 0), 1)
+        // LE TEMPS DÉFILE : le chrono compte dès que la surface est
+        // prête — même origine que le pouls (5,6) : chaque bascule de
+        // seconde EST un battement de la pastille.
+        let elapsed = max(0, Int(landed - 5.6))
+        let timeStr = String(format: "%d:%02d", elapsed / 60, elapsed % 60)
         return ZStack {
             ZStack {
                 Color.black
@@ -618,8 +710,9 @@ struct LiquidLensLab: View {
                         .font(.inter(12, .semibold))
                         .tracking(3.0)
                         .foregroundStyle(Color.white.opacity(0.50))
-                    Text("0:00")
+                    Text(timeStr)
                         .font(.inter(46, .medium))
+                        .monospacedDigit()
                         .foregroundStyle(Color.white.opacity(0.92))
                 }
                 .opacity(faceIn)
@@ -635,6 +728,9 @@ struct LiquidLensLab: View {
                     fingerLoc = nil
                     release = nil
                     dragPath = []
+                    flareAt = nil
+                    RocketHaptics.shared.dragEnd()
+                    LensTheme.shared.stop()
                 } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.counterclockwise")
