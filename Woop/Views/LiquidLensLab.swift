@@ -24,6 +24,26 @@ import SwiftUI
 // Toute la chorégraphie est FONCTION PURE du temps et du doigt — aucune
 // animation SwiftUI sur les uniforms (l'école ConnexionCine).
 struct LiquidLensLab: View {
+    // MARK: Les prises du vrai parcours
+    //
+    // Le banc reste EXACTEMENT le banc : toutes ces prises ont la valeur par
+    // défaut de `-lensLab`, et `LiquidLensLab()` continue de rendre la même
+    // image au pixel. Branchée sur une fiche d'exercice, la cinématique se
+    // contente de dire d'autres mots et de savoir sortir.
+
+    /// La promesse du monde blanc — le nom de l'exercice, dans le parcours.
+    var headline: String = "Une nouvelle ère\nd'entraînement."
+    /// Le mot gravé au-dessus du chrono, une fois la nuit posée.
+    var faceLabel: String = "SÉRIE 1"
+    /// L'exercice est terminé : le temps sous tension, en secondes. Sa
+    /// présence est CE QUI DISTINGUE le parcours du banc.
+    var onFinish: ((Int) -> Void)?
+    /// Repartir sans rien compter, tant que la nuit n'est pas tombée.
+    var onCancel: (() -> Void)?
+
+    /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
+    private var isJourney: Bool { onFinish != nil }
+
     private static let frozen: Double? = {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "-lensFreeze"), i + 1 < args.count,
@@ -90,6 +110,22 @@ struct LiquidLensLab: View {
                                          anchor: zAnchor)
                             .blur(radius: SummitCine.blur(e))
                     }
+                    // L'ÉCHAPPÉE. Tant que le doigt n'a pas atteint le
+                    // sommet, on doit pouvoir revenir : sans elle, entrer
+                    // dans la lentille serait un piège. Elle meurt avec le
+                    // monde blanc — la nuit, elle, se termine par le bouton.
+                    if isJourney, summitAt == nil, let onCancel {
+                        Button(action: onCancel) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Color.black.opacity(0.32))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Revenir à l'exercice")
+                        .position(x: 42, y: 64)
+                    }
                 }
                 .contentShape(Rectangle())
                 .gesture(dragGesture(h: h),
@@ -119,6 +155,12 @@ struct LiquidLensLab: View {
             RocketHaptics.shared.prepare()
             LensTheme.shared.prepare()
             LensChime.shared.prepare()
+        }
+        // Le banc vivait seul et pour toujours ; dans le parcours la vue
+        // s'en va, et le thème ne doit pas lui survivre.
+        .onDisappear {
+            LensTheme.shared.stop()
+            RocketHaptics.shared.dragEnd()
         }
     }
 
@@ -194,7 +236,7 @@ struct LiquidLensLab: View {
                     .colorEffect(trailShader)
                     .allowsHitTesting(false)
             }
-            Text("Une nouvelle ère\nd'entraînement.")
+            Text(headline)
                 .font(.inter(27, .medium))
                 .foregroundStyle(Self.ink)
                 .multilineTextAlignment(.center)
@@ -706,7 +748,7 @@ struct LiquidLensLab: View {
             // affleurant du fond de la laque, sous les reflets du verre.
             if faceIn > 0.001 {
                 VStack(spacing: 6) {
-                    Text("SÉRIE 1")
+                    Text(faceLabel)
                         .font(.inter(12, .semibold))
                         .tracking(3.0)
                         .foregroundStyle(Color.white.opacity(0.50))
@@ -721,7 +763,18 @@ struct LiquidLensLab: View {
                 .position(lens.center)
                 .allowsHitTesting(false)
             }
-            if !Self.cycling {
+            // LA SORTIE. Dans le parcours, le cadran n'est plus un cul-de-sac :
+            // le primaire de la maison affleure une fois les chiffres posés,
+            // et rend le temps sous tension à la fiche.
+            if isJourney {
+                DiamondPrimaryButton(title: "Terminer l'exercice") {
+                    onFinish?(elapsed)
+                }
+                .padding(.horizontal, 26)
+                .opacity(chipIn * chipIn * (3 - 2 * chipIn))
+                .allowsHitTesting(chipIn > 0.6)
+                .position(x: w / 2, y: h - 78)
+            } else if !Self.cycling {
                 Button {
                     summitAt = nil
                     summitFx = nil

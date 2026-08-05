@@ -25,8 +25,9 @@ struct ExerciseDetailView: View {
     @State private var confirmation: String?
 
     // Le brouillon. Il vivait dans la feuille modale ; c'est désormais l'état de
-    // la page elle-même.
-    @State private var sets: [DraftSet] = [DraftSet()]
+    // la page elle-même. On part de ZÉRO série : la première naît du geste de
+    // lancement, elle n'attend pas déjà là.
+    @State private var sets: [DraftSet] = []
     @State private var restSeconds = 60
     @State private var phases: [DraftPhase] = [
         DraftPhase(kind: .repos, seconds: 30, speed: 6),
@@ -37,8 +38,8 @@ struct ExerciseDetailView: View {
     @State private var steadySpeed: Double = 7
     @State private var incline: Double = 0
 
-    /// La pastille de série que les rangées de la dalle éditent.
-    @State private var selectedSet = 0
+    /// Ce que le dôme a déjà versé de son papier sur la page [0,1].
+    @State private var flood: Double = 0
 
     /// La série en cours d'exécution au compteur, s'il y en a une. Un `item:`
     /// plutôt qu'un booléen : c'est l'indice qui porte l'information, et il ne
@@ -67,44 +68,9 @@ struct ExerciseDetailView: View {
             // vit dedans, et le scroll se coupe sur sa silhouette : jamais un
             // pixel de contenu ne remonte sur l'orange.
             ZStack(alignment: .top) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
-                        titleBlock
-
-                        // 40 % de l'écran, pas un point de plus : la photo est
-                        // une présence, plus le sujet de la page.
-                        hero(height: geo.size.height * 0.40)
-
-                        if let lastTime {
-                            LastTimeBanner(text: lastTime)
-                        }
-
-                        // Le cardio garde ses blocs sombres : la dalle blanche
-                        // est le système de la musculation — il rejoindra le
-                        // reste quand le composant sera généralisé.
-                        if !isStrength {
-                            editor
-                        }
-
-                        if let confirmation {
-                            Label(confirmation, systemImage: "checkmark.circle.fill")
-                                .font(.inter(13, .medium))
-                                .foregroundStyle(Color.woopGold)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-
-                        if active == nil {
-                            Text("Aucune séance en cours — elle sera créée automatiquement.")
-                                .font(.inter(12))
-                                .foregroundStyle(Color.inkMuted)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 18)
-                    .padding(.bottom, 26)
+                Group {
+                    if isStrength { strengthPage } else { cardioPage }
                 }
-                .scrollIndicators(.hidden)
                 .background(Self.pageShape.fill(Color.black))
                 .clipShape(Self.pageShape)
             }
@@ -114,37 +80,28 @@ struct ExerciseDetailView: View {
             .background {
                 ZStack(alignment: .top) {
                     Color.black
-                    HeaderEmberCard()
+                    // La braise se tait pendant la lentille : elle brûle à
+                    // 30 Hz sous un plein écran qui, lui, tourne à 60.
+                    if running == nil { HeaderEmberCard() }
                 }
                 .ignoresSafeArea()
             }
             .safeAreaInset(edge: .top, spacing: 0) { headerChips }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if isStrength {
-                    ExerciseSetupSlab(
-                        exercise: exercise,
-                        sets: $sets,
-                        restSeconds: $restSeconds,
-                        selected: $selectedSet,
-                        canAdd: canAddSeries,
-                        onAdd: {
-                            withAnimation(.spring(response: 0.35,
-                                                  dampingFraction: 0.75)) {
-                                addSeries()
-                                selectedSet = sets.count - 1
-                            }
-                        },
-                        sliderLabel: launchTarget == nil
-                            ? "Glisser pour enregistrer"
-                            : "Glisser pour lancer l'entraînement",
-                        onSlide: {
-                            if let index = launchTarget {
-                                running = RunningSeries(id: index)
-                            } else {
-                                save()
-                            }
-                        }
-                    )
+                    VStack(spacing: 14) {
+                        SeriesCard(done: sets.filter(\.isDone).count,
+                                   total: sets.count)
+                            .padding(.horizontal, 20)
+
+                        ExerciseSetupSlab(
+                            exercise: exercise,
+                            progress: doneFraction,
+                            label: "Glisser pour démarrer",
+                            flood: $flood,
+                            onLaunch: launch
+                        )
+                    }
                 } else {
                     primaryAction
                 }
@@ -157,15 +114,89 @@ struct ExerciseDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         // L'appareil confirme la série en même temps que les paillettes partent.
         .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
-        .fullScreenCover(item: $running) { series in
-            LiveExerciseView(exercise: exercise,
-                             seriesNumber: series.id + 1,
-                             target: target(for: series.id)) { seconds in
-                complete(series.id, seconds: seconds)
-            } onCancel: {
-                running = nil
+        // LE RACCORD. Le dôme verse son papier sur la page pendant le geste ;
+        // quand la lentille se pose, elle ouvre sur CE papier-là. Aucune
+        // transition n'est jouée : il n'y a rien à traverser, c'est le même
+        // blanc qui continue.
+        .overlay {
+            ZStack {
+                if flood > 0.001 {
+                    Self.paper
+                        .opacity(floodVeil)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+                if let series = running {
+                    LiquidLensLab(
+                        headline: exercise.name,
+                        faceLabel: "SÉRIE \(series.id + 1)",
+                        onFinish: { seconds in
+                            complete(series.id, seconds: seconds)
+                        },
+                        onCancel: {
+                            running = nil
+                            withAnimation(.easeOut(duration: 0.28)) {
+                                flood = 0
+                            }
+                        }
+                    )
+                }
             }
         }
+    }
+
+    /// Le papier arrive VITE — la page a basculé bien avant la fin du geste,
+    /// pour que le dernier tiers de la course se fasse déjà dans le blanc.
+    private var floodVeil: Double {
+        let u = min(max((flood - 0.12) / 0.46, 0), 1)
+        return u * u * (3 - 2 * u)
+    }
+
+    /// Le papier de la maison — celui du dôme, celui de la lentille.
+    private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
+
+    // MARK: Les deux corps de page
+
+    /// La musculation ne défile PAS : le titre en haut, la photo qui flotte au
+    /// milieu de ce qui reste, et rien d'autre. C'est le vide autour d'elle qui
+    /// la rend petite — la caler sous le titre laissait un trou en dessous.
+    private var strengthPage: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            titleBlock
+            Spacer(minLength: 10)
+            // Plafonnée, jamais imposée : sur un petit écran ou en gros
+            // caractères, c'est elle qui cède, pas la mise en page.
+            hero(maxHeight: 170)
+            Spacer(minLength: 10)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    /// Le cardio garde sa page qui défile et ses blocs sombres : le dôme blanc
+    /// est le système de la musculation — il rejoindra le reste quand le
+    /// composant sera généralisé.
+    private var cardioPage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                titleBlock
+                hero(maxHeight: 210)
+                if let lastTime { LastTimeBanner(text: lastTime) }
+                editor
+                if let confirmation {
+                    Label(confirmation, systemImage: "checkmark.circle.fill")
+                        .font(.inter(13, .medium))
+                        .foregroundStyle(Color.woopGold)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 26)
+        }
+        .scrollIndicators(.hidden)
     }
 
     // MARK: En-tête
@@ -230,10 +261,9 @@ struct ExerciseDetailView: View {
     /// et c'est exactement ce qui rendait cheap. Le fond de l'image est déjà
     /// le noir de la page ; les masques n'éteignent que les bords, là où une
     /// jambe ou un montant de machine buterait net sur l'arête.
-    private func hero(height: CGFloat) -> some View {
+    private func hero(maxHeight: CGFloat) -> some View {
         ExercisePhoto(exercise: exercise, fills: false)
-            .frame(height: height)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: maxHeight)
             .mask {
                 LinearGradient(
                     stops: [
@@ -303,32 +333,25 @@ struct ExerciseDetailView: View {
         }
     }
 
-    /// La série que le slider lancera : celle qu'on regarde si elle reste à
-    /// faire, sinon la première en attente. `nil` : tout est fait, le slider
-    /// enregistre.
-    private var launchTarget: Int? {
-        guard isStrength else { return nil }
-        if sets.indices.contains(selectedSet), !sets[selectedSet].isDone {
-            return selectedSet
+    /// Ce que la pastille affiche de la séance : la part des séries faites.
+    private var doneFraction: Double {
+        guard !sets.isEmpty else { return 0 }
+        return Double(sets.filter(\.isDone).count) / Double(sets.count)
+    }
+
+    /// Le geste de lancement. La page part de zéro série : la première naît
+    /// ici, et chaque relance en crée une nouvelle quand les précédentes sont
+    /// faites — on ne règle plus AVANT, on fait, et la carte compte.
+    private func launch() {
+        let index: Int
+        if let pending = sets.firstIndex(where: { !$0.isDone }) {
+            index = pending
+        } else {
+            sets.append(DraftSet(reps: sets.last?.reps ?? 12,
+                                 weight: sets.last?.weight ?? 20))
+            index = sets.count - 1
         }
-        return pendingSeries
-    }
-
-    /// La première série pas encore faite.
-    private var pendingSeries: Int? {
-        guard isStrength else { return nil }
-        return sets.firstIndex { !$0.isDone }
-    }
-
-    /// On ne propose d'en ajouter une qu'une fois les précédentes faites :
-    /// sinon la rangée offrirait deux gestes concurrents.
-    private var canAddSeries: Bool {
-        isStrength && pendingSeries == nil
-    }
-
-    private func addSeries() {
-        sets.append(DraftSet(reps: sets.last?.reps ?? 12,
-                             weight: sets.last?.weight ?? 20))
+        running = RunningSeries(id: index)
     }
 
     private func target(for index: Int) -> String {
@@ -338,18 +361,18 @@ struct ExerciseDetailView: View {
     }
 
     private func complete(_ index: Int, seconds: Int) {
+        // Le papier tombe AVANT la lentille : on sort de la nuit du cadran
+        // vers la nuit de la page. Le laisser monté ferait un éclair blanc
+        // entre les deux noirs.
+        flood = 0
         running = nil
-        // Le plein écran met un peu moins d'une demi-seconde à se refermer.
-        // Valider tout de suite ferait jouer les paillettes derrière lui, donc
-        // pour personne — on attend que le bloc soit à l'air libre.
+        // Valider tout de suite ferait jouer les paillettes pendant que la
+        // page se réinstalle — on attend qu'elle soit à l'air libre.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
             guard sets.indices.contains(index) else { return }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.62)) {
                 sets[index].isDone = true
                 sets[index].durationSeconds = seconds
-                // Le regard avance tout seul : la pastille suivante à faire
-                // devient celle qu'on règle.
-                selectedSet = sets.firstIndex { !$0.isDone } ?? index
             }
         }
     }
@@ -397,11 +420,9 @@ struct ExerciseDetailView: View {
         add(draft)
 
         if isStrength {
-            let last = sets.last
-            withAnimation(.easeOut(duration: 0.25)) {
-                sets = [DraftSet(reps: last?.reps ?? 12, weight: last?.weight ?? 20)]
-                selectedSet = 0
-            }
+            // On repart de zéro série : la carte redit « 0 série en cours »,
+            // et le prochain geste en fera naître une.
+            withAnimation(.easeOut(duration: 0.25)) { sets = [] }
         }
     }
 

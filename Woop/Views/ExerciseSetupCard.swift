@@ -16,8 +16,10 @@ import SwiftUI
 enum SlabGeometry {
     /// Marge de la carte blanche au bord d'écran.
     static let cardMargin: CGFloat = 12
-    /// Rayon des coins hauts de la carte.
-    static let topRadius: CGFloat = 40
+    /// Rayon des coins hauts — assez grand pour que la crête se lise comme un
+    /// DÔME et non comme une carte : c'est le blanc qui se lève de la page.
+    /// `NotchedCardShape` le plafonne de toute façon à la moitié de la hauteur.
+    static let topRadius: CGFloat = 100
     /// Rayon des coins bas — petits, comme la référence : le bord file
     /// presque directement dans le S de l'encoche.
     static let bottomRadius: CGFloat = 8
@@ -40,38 +42,49 @@ enum SlabGeometry {
     static var pillDrop: CGFloat { pillHeight - (notchDepth - gap) }
 }
 
-// MARK: - La dalle : carte blanche échancrée + pastille
+// MARK: - La dalle : le dôme blanc de lancement + la pastille
 
-/// Le plancher de la fiche d'exercice : la carte blanche draggable (poignée,
-/// pastilles de séries, réglages, slider de lancement) et, quand une séance
-/// est ouverte, la pastille noire incrustée dans son échancrure.
+/// Le plancher de la fiche d'exercice, et le GESTE de la page : un dôme de
+/// papier qui monte du bas de l'écran, porte l'invite « Glisser pour
+/// démarrer », et que le doigt tire vers le haut pour lancer la série. La
+/// pastille de séance reste incrustée dans son échancrure.
 ///
-/// Le drag de la poignée est un TEASER : la dalle suit le doigt avec une
-/// résistance élastique et revient en ressort. Les morphismes (réduction,
-/// agrandissement) viendront se brancher sur ce même geste plus tard — d'où
-/// la géométrie entièrement paramétrée dans `SlabGeometry`.
+/// Deux choses le distinguent de l'ancienne dalle-formulaire. Sa CRÊTE n'a
+/// pas d'arête : elle s'éteint dans le noir de la page (`crestFade`) — le
+/// blanc se lève, il ne se pose pas. Et son drag n'est plus un teaser
+/// décoratif : c'est le début du geste de la lentille, que le blanc de ce
+/// dôme prolongera en inondant la page.
 struct ExerciseSetupSlab: View {
     let exercise: Exercise
-    @Binding var sets: [DraftSet]
-    @Binding var restSeconds: Int
-    /// La série que les rangées de réglage éditent.
-    @Binding var selected: Int
-    let canAdd: Bool
-    let onAdd: () -> Void
-    let sliderLabel: String
-    let onSlide: () -> Void
+    /// Fraction des séries faites, pour le filet de la pastille.
+    var progress: Double = 0
+    let label: String
+    /// Fraction de la course déjà parcourue [0,1] — la page s'en sert pour
+    /// se remplir du MÊME papier que ce dôme : quand la lentille se pose
+    /// dessus, il n'y a aucune couture, juste la suite du même blanc.
+    @Binding var flood: Double
+    /// Le doigt a tiré le dôme jusqu'au bout de sa course.
+    let onLaunch: () -> Void
 
-    @State private var teaser: CGFloat = 0
+    /// Ce que le doigt a tiré vers le haut, en points — toujours positif.
+    @State private var pull: CGFloat = 0
+    @State private var fired = 0
+
+    /// La course qui déclenche. Assez longue pour qu'un frôlement en passant
+    /// ne lance rien, assez courte pour tenir dans un pouce.
+    private static let travel: CGFloat = 116
 
     /// L'incrustation fait partie de l'IDENTITÉ de l'écran : la pastille est
     /// toujours là, l'échancrure toujours creusée. Le branchement sur l'état
     /// réel de la séance viendra avec le retravail du composant pastille —
     /// la forme sait déjà se refermer (`notchDepth` animatable).
     private let hasPill = true
-    private var idx: Int { min(max(selected, 0), max(sets.count - 1, 0)) }
-    private var doneFraction: Double {
-        guard !sets.isEmpty else { return 0 }
-        return Double(sets.filter(\.isDone).count) / Double(sets.count)
+
+    /// Ce que la dalle a monté à l'écran : la résistance s'épaissit vers la
+    /// fin de la course, pour que le geste se SENTE arriver au bout.
+    private var lift: CGFloat {
+        let u = min(pull / Self.travel, 1)
+        return u * Self.travel * 0.34
     }
 
     var body: some View {
@@ -79,17 +92,45 @@ struct ExerciseSetupSlab: View {
             card
                 .padding(.horizontal, SlabGeometry.cardMargin)
                 .padding(.bottom, hasPill ? SlabGeometry.pillDrop : 0)
+                // Le geste vit sur le dôme SEUL : posé sur la pile entière,
+                // il volerait les touchers des boutons de la pastille.
+                .gesture(lifter)
 
             if hasPill {
-                WorkoutPill(exercise: exercise, progress: doneFraction)
+                WorkoutPill(exercise: exercise, progress: progress)
                     .padding(.horizontal, SlabGeometry.pillMargin)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .offset(y: teaser)
+        .offset(y: -lift)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: fired)
     }
 
-    // MARK: La carte blanche
+    private var lifter: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { v in
+                pull = max(0, -v.translation.height)
+                flood = Double(min(pull / Self.travel, 1))
+            }
+            .onEnded { _ in
+                if pull >= Self.travel {
+                    fired += 1
+                    // La page est déjà blanche : la lentille se pose dessus
+                    // sans que rien ne change de couleur.
+                    flood = 1
+                    onLaunch()
+                } else {
+                    withAnimation(.easeOut(duration: 0.22)) { flood = 0 }
+                }
+                withAnimation(.spring(response: 0.42,
+                                      dampingFraction: 0.74)) {
+                    pull = 0
+                }
+            }
+    }
+
+    // MARK: Le dôme de papier
 
     /// Pas du blanc pur : sur l'OLED noir, le #FFF crame dans une pièce
     /// sombre. Un blanc cassé à peine chaud, comme la référence.
@@ -104,79 +145,114 @@ struct ExerciseSetupSlab: View {
                          filletRadius: SlabGeometry.fillet)
     }
 
+    /// La crête ne se coupe pas : le papier s'allume sur ses premiers points
+    /// de haut. Une arête franche entre le blanc et le noir, c'est un COLLAGE
+    /// — et c'est ce que « un peu fondue » voulait dire.
+    private var crestFade: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: .white.opacity(0.0), location: 0.0),
+                .init(color: .white.opacity(0.28), location: 0.045),
+                .init(color: .white.opacity(0.90), location: 0.145),
+                .init(color: .white, location: 0.24)
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
+
     private var card: some View {
-        VStack(spacing: 14) {
-            grabber
-            SetChipsRow(sets: sets, selected: $selected,
-                        canAdd: canAdd, onAdd: onAdd)
-
-            VStack(spacing: 8) {
-                SetupRow(icon: "scalemass", label: "Poids (kg)") {
-                    LightDecimalStepper(label: "Charge",
-                                        value: weightBinding,
-                                        range: 0...300, step: 2.5, unit: "kg")
-                }
-                SetupRow(icon: "repeat", label: "Répétitions") {
-                    LightNumberStepper(label: "Répétitions",
-                                       value: repsBinding,
-                                       range: 1...60, step: 1, unit: "reps")
-                }
-                SetupRow(icon: "timer", label: "Récupération") {
-                    LightNumberStepper(label: "Récupération",
-                                       value: $restSeconds,
-                                       range: 0...300, step: 15, unit: "s")
-                }
-            }
-
-            SlideToStart(label: sliderLabel, onTrigger: onSlide)
+        VStack(spacing: 11) {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.58))
+            Text(label)
+                .font(.inter(15, .medium))
+                .foregroundStyle(Color.black.opacity(0.55))
         }
-        .padding(.top, 9)
-        .padding(.horizontal, 14)
+        .padding(.top, 84)
         // Le contenu se retire de l'encoche quand elle se creuse.
-        .padding(.bottom, (hasPill ? SlabGeometry.notchDepth : 0) + 12)
+        .padding(.bottom, (hasPill ? SlabGeometry.notchDepth : 0) + 26)
+        .padding(.horizontal, 14)
         .frame(maxWidth: .infinity)
-        .background(cardShape.fill(Self.paper))
+        .background(cardShape.fill(Self.paper).mask(crestFade))
         // La zone tactile suit l'échancrure : sans ça, la carte volerait les
         // touchers destinés aux boutons de la pastille.
         .contentShape(cardShape)
     }
+}
 
-    /// Le trait noir de préhension — celui qui manque à la maquette. Sa zone
-    /// de drag est bien plus large que lui : personne ne vise un fil de 5 pt.
-    private var grabber: some View {
-        Capsule()
-            .fill(Color.black.opacity(0.24))
-            .frame(width: 36, height: 5)
-            .frame(maxWidth: .infinity)
-            .frame(height: 22)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture()
-                    .onChanged { v in
-                        // Résistance élastique : la dalle suit, de moins en
-                        // moins — elle promet le geste sans encore le tenir.
-                        let pulled = v.translation.height * 0.30
-                        teaser = max(-18, min(26, pulled))
-                    }
-                    .onEnded { _ in
-                        withAnimation(.spring(response: 0.4,
-                                              dampingFraction: 0.68)) {
-                            teaser = 0
-                        }
-                    }
-            )
+// MARK: - La carte des séries
+
+/// UNE carte pour toute la partie « série » — elle a absorbé la rangée de
+/// pastilles de l'ancienne dalle. Tant qu'aucune série n'a été lancée, elle
+/// ne raconte qu'une chose : il n'y en a aucune.
+///
+/// Les points sont des POINTS, pas des lumières : la matière lumineuse
+/// (`LightDial`) viendra quand le modèle saura dire « prévue » et « en
+/// cours » — aujourd'hui une série n'est que faite ou pas faite.
+struct SeriesCard: View {
+    let done: Int
+    let total: Int
+
+    private static let shape = RoundedRectangle(cornerRadius: 22,
+                                                style: .continuous)
+
+    /// La série qu'on est en train de faire : la première pas encore cochée,
+    /// ou la dernière quand tout est fait.
+    private var current: Int { min(done + 1, max(total, 1)) }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            if total == 0 {
+                // Rien à compter : une seule phrase, et la carte se tait.
+                Text("0 série en cours")
+                    .font(.inter(15, .medium))
+                    .foregroundStyle(Color.inkSecondary)
+            } else {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Série \(current) sur \(total)")
+                        .font(.inter(15, .semibold))
+                        .foregroundStyle(Color.inkPrimary)
+                    Text(subtitle)
+                        .font(.inter(12))
+                        .foregroundStyle(Color.inkMuted)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if total > 0 { dots }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
+        .background {
+            // Le même verre fumé que les chips du header : sur cette page, il
+            // n'y a qu'une seule matière sombre.
+            Color.clear
+                .glassEffect(.regular.tint(Color.black.opacity(0.5)),
+                             in: Self.shape)
+        }
+        .overlay(Self.shape.strokeBorder(Color.white.opacity(0.08),
+                                         lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(total == 0 ? "Aucune série en cours"
+                                       : "Série \(current) sur \(total)")
     }
 
-    // MARK: Liaisons vers la série sélectionnée
-
-    private var weightBinding: Binding<Double> {
-        Binding(get: { sets.indices.contains(idx) ? sets[idx].weight : 0 },
-                set: { if sets.indices.contains(idx) { sets[idx].weight = $0 } })
+    private var subtitle: String {
+        guard total > 0 else { return "0 série en cours" }
+        if done == 0 { return "\(total) série\(total > 1 ? "s" : "") au total" }
+        return "\(done) faite\(done > 1 ? "s" : "") sur \(total)"
     }
 
-    private var repsBinding: Binding<Int> {
-        Binding(get: { sets.indices.contains(idx) ? sets[idx].reps : 1 },
-                set: { if sets.indices.contains(idx) { sets[idx].reps = $0 } })
+    private var dots: some View {
+        HStack(spacing: 7) {
+            ForEach(0..<total, id: \.self) { i in
+                Circle()
+                    .fill(Color.white.opacity(i < done ? 0.88 : 0.16))
+                    .frame(width: 6, height: 6)
+            }
+        }
     }
 }
 
