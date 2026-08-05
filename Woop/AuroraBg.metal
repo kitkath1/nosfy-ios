@@ -378,8 +378,35 @@ static float3 bgDither(float3 c, float2 position, float t) {
     foyers.x += 0.055 * sin(t * 6.2832 / 17.0 + 1.3);
     foyers.y += 0.045 * sin(t * 6.2832 / 23.0 + 4.2);
     float gain = BG_HOME_GAIN * (0.86 + 0.20 * sin(t * 6.2832 / 11.0 + 0.7));
-    float3 c = bgField(flipped, size, t, tiltF, shape, foyers, bs,
+    // L'ANNEAU JAUNE SE REFERME (2026-08-05, « la teinte est un peu trop
+    // dorée »). Il valait 1 sur la home : il remplaçait l'or par le jaune du
+    // néon, montait son amplitude ET abaissait son seuil de 0,55 à 0,33 — le
+    // jaune baignait donc toute la plage moyenne. Mesuré contre la
+    // carte-braise de la fiche d'exercice, qui appelle LE MÊME champ avec
+    // l'anneau éteint : G/R 0,72-0,87 chez nous contre 0,55 chez elle. À
+    // 0,30 le jaune redevient un accent près de la crête, l'orange reprend
+    // le milieu.
+    float3 c = bgField(flipped, size, t, tiltF, shape, foyers, bs * 0.30,
                        float2(0.0), b * gain, cur);
+
+    // LA BRAISE. La descente vers le noir se délavait en gris-beige
+    // (saturation mesurée 0,38 quand la fiche d'exercice tient 0,78 au même
+    // niveau) : c'était la vieille parade anti-marron, qui dégrise sous
+    // v ≈ 0,30. Or le marron est un orange sombre DÉSATURÉ — l'orange sombre
+    // SATURÉ, lui, est une braise. On re-teinte donc le bas de la lumière
+    // vers l'orange profond À LUMINANCE CONSTANTE : la teinte tourne, le
+    // niveau ne bouge pas, donc rien ne s'assombrit ni ne se salit. Le blanc
+    // de l'île est hors d'atteinte, la bande s'éteint bien avant lui.
+    {
+        float lum = dot(c, float3(0.299, 0.587, 0.114));
+        float band = smoothstep(0.010, 0.055, lum)
+                   * (1.0 - smoothstep(0.36, 0.74, lum));
+        if (band > 0.001) {
+            float3 braise = float3(1.00, 0.50, 0.19);
+            float3 reh = braise * (lum / dot(braise, float3(0.299, 0.587, 0.114)));
+            c = mix(c, reh, band * 0.62 * bs);
+        }
+    }
 
     // Le bloom de l'île : un cœur crème serré autour d'elle, une nappe d'or
     // large qui coule dessous. En fondu écran, il éclaire sans jamais brûler
@@ -404,7 +431,12 @@ static float3 bgDither(float3 c, float2 position, float t) {
              * (0.62 + 0.75 * cur) * bs;
     if (Li > 0.001) {
         float vi = 1.0 - exp(-Li * 1.6);
-        float3 ti = mix(BG_JAUNE, float3(1.00, 0.99, 0.96),
+        // La JUPE DU BLOOM était peinte en jaune (BG_JAUNE, G/R 0,83) — et
+        // c'est ELLE, pas le champ, qui portait toute la plage moyenne du
+        // haut de page : refermer l'anneau doré n'y avait rien changé
+        // (mesuré 0,72 → 0,73). Elle passe à la braise. Le CŒUR reste blanc :
+        // le souffle sous l'île est intact, seule sa nappe se réchauffe.
+        float3 ti = mix(float3(1.00, 0.58, 0.24), float3(1.00, 0.99, 0.96),
                         clamp(coeurIle * 1.35, 0.0, 1.0));
         c = 1.0 - (1.0 - c) * (1.0 - ti * vi);
     }
