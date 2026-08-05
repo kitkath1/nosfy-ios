@@ -91,6 +91,9 @@ struct RootView: View {
     /// plus partie du parcours (la connexion aurore l'a remplacé) mais il a
     /// coûté trop cher pour être supprimé, et il reste rejouable tel quel.
     private static let authNebula = CommandLine.arguments.contains("-authNebula")
+    /// Banc de la flamme bijou : `-flameLab`, page noire nue — l'objet 3D
+    /// qui danse, pivote au doigt, et fume au tap.
+    private static let flameLab = CommandLine.arguments.contains("-flameLab")
     /// Banc d'essai du monolithe logo : `-logoLab`, page noire nue.
     private static let logoLab = CommandLine.arguments.contains("-logoLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
@@ -109,9 +112,14 @@ struct RootView: View {
     /// `-lensFreeze <p>` fige la progression du drag (captures).
     private static let lensLab = CommandLine.arguments.contains("-lensLab")
     /// Banc de la flamme ember : `-emberLab`, page noire nue — la flamme
-    /// emoji laquée, seule au centre. `-emberFreeze` fige le temps (captures),
-    /// `-emberFPS` loggue la cadence réelle.
+    /// emoji laquée, seule au centre. `-emberFreeze` fige le temps (captures).
     private static let emberLab = CommandLine.arguments.contains("-emberLab")
+    /// Banc de la page de succès : `-successLab` — le travelling rasant, la
+    /// pose, le barillet des trois pastilles, la molette. `-successAuto`
+    /// rejoue le cycle en boucle, `-successFreeze <t>` fige la partition,
+    /// `-successFPS` loggue la cadence.
+    private static let successLab = CommandLine.arguments
+        .contains("-successLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -136,8 +144,6 @@ struct RootView: View {
     /// termine, il n'y a plus de séance ouverte — présentée sur un booléen, la
     /// feuille se viderait en plein récapitulatif.
     @State private var sheetWorkout: Workout?
-    /// Morphisme : la carte de séance est la source du zoom vers la feuille.
-    @Namespace private var overlayZoom
 
     private var active: Workout? { activeWorkouts.first }
 
@@ -167,18 +173,17 @@ struct RootView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotionRoot
 
-    /// CONNEXION touché : la plongée dans la lune. L'aspiration part tout de
-    /// suite (le fond du login lit `cineStart` et draine sa lumière vers le
-    /// monolithe), le grondement aussi — son motif porte ses propres courbes,
-    /// calées sur la même partition. La page bascule à l'instant EXACT du
-    /// flash plein, sans animation : la coupe se cache dans le BLANC, pas
-    /// dans le noir — c'est ce qui interdit le marron. La frame la plus
-    /// coûteuse (le montage du TabView et de ses shaders) est délibérément
-    /// la plus couverte.
+    /// CONNEXION touché : la lune se dissout en braises. L'aspiration part
+    /// tout de suite (le fond draine, la caméra du shader se penche), le
+    /// grondement aussi — son motif porte ses propres courbes, calées sur la
+    /// même partition. La page bascule au CŒUR DE L'APNÉE, sans animation :
+    /// plein noir derrière le nuage suspendu, qui ne bronche pas d'un pixel —
+    /// la couture est introuvable. Puis la gravité reprend les braises et la
+    /// home s'allume là où elles se posent.
     private func startConnexionCinematic() {
         guard cineStart == nil else { return }
         if reduceMotionRoot {
-            // Ni zoom ni flash : un fondu sobre, et aucun grondement.
+            // Ni caméra ni braises : un fondu sobre, et aucun grondement.
             withAnimation(.easeOut(duration: 0.5)) { showAuth = false }
             return
         }
@@ -186,6 +191,11 @@ struct RootView: View {
         cineStart = .now
         DiveRumble.shared.play()
         DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.swapAt) {
+            // L'horloge de l'aube se pose AVANT le montage : le `onAppear` de
+            // la home la lit pendant le commit de la transaction — posée
+            // après, il la manquait et le contenu naissait avec la nuit au
+            // lieu d'attendre la lumière.
+            HomeWelcome.start = .now
             var tx = Transaction()
             tx.disablesAnimations = true
             withTransaction(tx) {
@@ -193,18 +203,16 @@ struct RootView: View {
                 homeArriving = true
                 barArriving = true
             }
-            HomeWelcome.start = .now
-            // L'atterrissage s'anime au tick SUIVANT : posé dans la même
-            // transaction, il serait avalé par `disablesAnimations`.
-            DispatchQueue.main.async {
-                withAnimation(.easeOut(duration: 0.85)) { homeArriving = false }
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-                    barArriving = false
-                }
+        }
+        // L'atterrissage se lance AVEC l'aube, pas à la coupe : pendant
+        // l'apnée la home est une nuit immobile — rien ne doit y bouger.
+        DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.barAt) {
+            withAnimation(.easeOut(duration: 1.0)) { homeArriving = false }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                barArriving = false
             }
         }
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + ConnexionCine.swapAt + ConnexionCine.barLanding) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.breathAt) {
             invitePulseAt = .now
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + ConnexionCine.end + 0.2) {
@@ -262,8 +270,12 @@ struct RootView: View {
             }
         } else if Self.lensLab {
             LiquidLensLab()
+        } else if Self.successLab {
+            SuccessLab()
         } else if Self.emberLab {
             EmberFlameLab()
+        } else if Self.flameLab {
+            FlameLab()
         } else if Self.logoLab {
             LogoLab()
         } else if Self.navLab {
@@ -419,7 +431,12 @@ struct RootView: View {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
                                 onPlay: { startWorkout() },
-                                invitePulse: invitePulseAt)
+                                invitePulse: invitePulseAt,
+                                // Une séance ouverte : le triangle du galet se
+                                // referme en cercle de néon. Le même bouton la
+                                // RAMÈNE alors au lieu d'en ouvrir une seconde
+                                // (voir `startWorkout`).
+                                running: active != nil)
                         .frame(height: 64)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 4)
@@ -436,15 +453,19 @@ struct RootView: View {
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
             .tint(Color(red: 1.0, green: 0.80, blue: 0.48))
-            // L'atterrissage : au débouché du flash, la home est vue de trop
-            // près et se pose en reculant. L'ancre est un cheveu AU-DESSUS du
-            // centre : le recul se lit alors comme une DESCENTE — on arrive.
-            .scaleEffect(homeArriving ? 1.28 : 1.0,
+            // L'atterrissage : un tassement discret — la page se pose avec sa
+            // lumière, elle n'arrive plus « de trop près » (le zoom appartient
+            // à la lune, pas à la home). L'ancre au-dessus du centre fait lire
+            // le recul comme une descente.
+            .scaleEffect(homeArriving ? 1.05 : 1.0,
                          anchor: UnitPoint(x: 0.5, y: 0.42))
-            .modifier(ActiveAccessory(workout: active, namespace: overlayZoom,
-                                      hidden: selection == .exercises) {
-                sheetWorkout = active
-            })
+            // PLUS AUCUNE CARTE FLOTTANTE. La séance en cours se dit
+            // désormais par le SEUL galet de la barre, qui referme son
+            // triangle en cercle de néon — « seul le bouton central animé
+            // suffit » (2026-08-05). Une pastille de lecteur en plus disait
+            // la même chose une seconde fois, et mangeait le bas de chaque
+            // page. Le galet ramène la séance, et c'est dans la feuille
+            // qu'on la termine.
             .sheet(item: $sheetWorkout) { workout in
                 // « Annuler cette séance » la supprime pendant que la feuille
                 // se referme : on ne lit pas un objet déjà sorti de la base.
@@ -455,7 +476,6 @@ struct RootView: View {
                         sheetWorkout = nil
                         selection = .exercises
                     }
-                    .navigationTransition(.zoom(sourceID: "activeOverlay", in: overlayZoom))
                 }
             }
             }
@@ -467,35 +487,32 @@ struct RootView: View {
                     .zIndex(8)
                     .transition(.opacity)
                 if !showSplash {
-                    // La caméra : la page entière peut plonger dans la lune —
-                    // zoomée et floutée par `DivingContainer`, immobile tant
-                    // que `cineStart` est nul.
-                    DivingContainer(start: cineStart) {
-                        AuroraLoginView(onConnect: { digits in
-                            // CONNEXION entre SANS CONDITION : le parcours se
-                            // teste de bout en bout, champ vide compris. Mais
-                            // on ne retient que ce qui est un numéro — une
-                            // saisie vide écraserait `woop.phone`, et avec lui
-                            // la session Supabase déjà ouverte (elle abandonne
-                            // son jeton dès que l'identité change).
-                            if digits.count == 10 {
-                                UserDefaults.standard.set(digits, forKey: "woop.phone")
-                            }
-                            startConnexionCinematic()
-                        }, cineStart: cineStart)
-                    }
+                    // Plus aucun conteneur zoomé : la caméra de la cérémonie
+                    // vit DANS le shader de la lune (CineMonolith, côté
+                    // AuroraLoginView) — le rendu reste vectoriel.
+                    AuroraLoginView(onConnect: { digits in
+                        // CONNEXION entre SANS CONDITION : le parcours se
+                        // teste de bout en bout, champ vide compris. Mais
+                        // on ne retient que ce qui est un numéro — une
+                        // saisie vide écraserait `woop.phone`, et avec lui
+                        // la session Supabase déjà ouverte (elle abandonne
+                        // son jeton dès que l'identité change).
+                        if digits.count == 10 {
+                            UserDefaults.standard.set(digits, forKey: "woop.phone")
+                        }
+                        startConnexionCinematic()
+                    }, cineStart: cineStart)
                     .transition(.opacity)
                     .zIndex(9)
                 }
             }
 
-            // La lumière de la plongée : bloom du tube, stries, flash — en
-            // coordonnées ÉCRAN, au-dessus de TOUT. C'est elle qui reste
-            // nette pendant que la page se pixellise sous le zoom, et c'est
-            // sous son blanc plein que la page change. Elle avale aussi le
-            // doigt le temps de la cérémonie.
+            // Le nuage de braises : au-dessus de TOUT. La page change
+            // DERRIÈRE lui pendant l'apnée et il ne bronche pas d'un pixel —
+            // le seul témoin de continuité entre les deux mondes. Il avale
+            // aussi le doigt le temps de la cérémonie.
             if let cineStart {
-                DiveLightOverlay(start: cineStart)
+                MoonDustOverlay(start: cineStart)
                     .zIndex(20)
             }
 
@@ -545,7 +562,15 @@ struct RootView: View {
                 while showSplash {
                     try? await Task.sleep(nanoseconds: 200_000_000)
                 }
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                // Le marqueur : l'app signale ELLE-MÊME l'arrivée sur la
+                // connexion (un détecteur d'image se fait berner par le
+                // splash, qui a lui aussi son bas lumineux). La capture lit
+                // ce fichier via le conteneur et sait que le tap tombe
+                // exactement six secondes plus tard.
+                let marker = URL.documentsDirectory.appending(path: "cine-armed")
+                try? Date.now.ISO8601Format().write(to: marker, atomically: true,
+                                                    encoding: .utf8)
+                try? await Task.sleep(nanoseconds: 6_000_000_000)
                 startConnexionCinematic()
             }
         }
@@ -580,32 +605,6 @@ struct RootView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             WoopCelebration.shared.deliver()
         }
-    }
-}
-
-/// L'overlay de séance n'existe que s'il y a une séance ouverte. On n'utilise
-/// plus `tabViewBottomAccessory` : sa hauteur est figée par le système, trop
-/// petite pour le halo égaliseur + la ligne entraînement/Arrêter. La carte
-/// flotte donc au-dessus de la barre d'onglets, en verre liquide natif.
-/// Cachée sur l'onglet Exercices : c'est là qu'on ajoute — la carte masquerait
-/// les boutons d'ajout en bas des fiches.
-private struct ActiveAccessory: ViewModifier {
-    let workout: Workout?
-    let namespace: Namespace.ID
-    var hidden: Bool = false
-    let onTap: () -> Void
-
-    func body(content: Content) -> some View {
-        content.overlay(alignment: .bottom) {
-            if let workout, !hidden {
-                ActiveWorkoutOverlay(workout: workout, onOpen: onTap)
-                    .matchedTransitionSource(id: "activeOverlay", in: namespace)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 58)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.easeOut(duration: 0.25), value: hidden)
     }
 }
 

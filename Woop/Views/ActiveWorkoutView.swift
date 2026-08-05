@@ -1,105 +1,15 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Overlay de séance en cours
-
-/// Carte flottante au-dessus de la barre d'onglets, sur le modèle du « en cours
-/// de lecture » d'iOS. Verre liquide natif : elle survole le contenu, donc elle
-/// doit le laisser transparaître. Un halo « égaliseur » respire en tête, comme
-/// une piste audio ; l'entraînement et le geste de fin vivent en dessous.
-struct ActiveWorkoutOverlay: View {
-    let workout: Workout
-    let onOpen: () -> Void
-
-    @Environment(\.modelContext) private var context
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var confirmStop = false
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
-
-        VStack(spacing: 13) {
-            // Poignée, comme sur les vrais overlays d'appel : elle dit
-            // « je m'ouvre » sans un mot.
-            Capsule()
-                .fill(Color.white.opacity(0.28))
-                .frame(width: 38, height: 5)
-
-            BreathingGlow(paused: reduceMotion)
-                .frame(height: 60)
-
-            HStack(spacing: 12) {
-                PulsingDot()
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Séance en cours")
-                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                        .foregroundStyle(Color.inkPrimary)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(Color.inkMuted)
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.up")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.woopViolet)
-            }
-            .padding(.horizontal, 6)
-
-            // Le geste de fin porte son nom en entier : il mérite sa ligne.
-            FinishWorkoutButton { confirmStop = true }
-                .padding(.horizontal, 6)
-        }
-        .padding(.init(top: 16, leading: 14, bottom: 20, trailing: 14))
-        .background {
-            // Verre liquide natif, rien d'autre : pas de fill, pas de liseré
-            // maison — le matériau porte seul le relief et la réfraction.
-            Color.clear
-                .glassEffect(.regular.tint(Color.black.opacity(0.30)).interactive(),
-                             in: shape)
-        }
-        .contentShape(shape)
-        .onTapGesture(perform: onOpen)
-        .alert(workout.exerciseCount == 0 ? "Annuler cette séance ?"
-                                          : "Terminer cette séance ?",
-               isPresented: $confirmStop) {
-            Button("Continuer la séance", role: .cancel) {}
-            if workout.exerciseCount == 0 {
-                Button("Annuler", role: .destructive) { cancelWorkout() }
-            } else {
-                Button("Terminer") { finish() }
-            }
-        } message: {
-            Text(workout.exerciseCount == 0
-                 ? "Aucun exercice enregistré — la séance sera supprimée."
-                 : "\(workout.exerciseCount) exercices · \(workout.setCount) séries · \(Int(workout.duration / 60)) minutes.")
-        }
-    }
-
-    private var subtitle: String {
-        let count = workout.exerciseCount
-        let exos = count == 0 ? "aucun exercice" : "\(count) exercice\(count > 1 ? "s" : "")"
-        return "\(exos) · \(Int(workout.duration / 60)) min"
-    }
-
-    private func finish() {
-        workout.endedAt = .now
-        try? context.save()
-        WorkoutActivityController.end()
-        // Un entraînement de plus dans la semaine : la home doit le fêter.
-        WoopCelebration.shared.workoutFinished()
-        let snapshot = workout.snapshot()
-        Task.detached { await SupabaseSync.shared.push([snapshot]) }
-    }
-
-    private func cancelWorkout() {
-        context.delete(workout)
-        try? context.save()
-        WorkoutActivityController.end()
-    }
-}
+// MARK: - La séance en cours se dit par le GALET
+//
+// Il n'y a plus d'overlay de séance. La carte flottante en verre liquide
+// (poignée, halo égaliseur, « Terminer l'entraînement » en pleine largeur) a
+// été retirée le 2026-08-05, comme la pastille de lecteur qui l'avait
+// brièvement remplacée : « seul le bouton central animé suffit ». Une séance
+// ouverte se lit maintenant au galet de la barre, dont le triangle se referme
+// en cercle de néon (JewelTabBar, paramètre `running`) — et c'est ce même
+// galet qui ramène la séance, la feuille portant le geste de fin.
 
 // MARK: - Le geste de fin
 
