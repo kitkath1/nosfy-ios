@@ -108,6 +108,10 @@ struct RootView: View {
     /// verre au bord bas, drag jusqu'à la cérémonie blanc → noir du cadran.
     /// `-lensFreeze <p>` fige la progression du drag (captures).
     private static let lensLab = CommandLine.arguments.contains("-lensLab")
+    /// Banc de la flamme ember : `-emberLab`, page noire nue — la flamme
+    /// emoji laquée, seule au centre. `-emberFreeze` fige le temps (captures),
+    /// `-emberFPS` loggue la cadence réelle.
+    private static let emberLab = CommandLine.arguments.contains("-emberLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -258,6 +262,8 @@ struct RootView: View {
             }
         } else if Self.lensLab {
             LiquidLensLab()
+        } else if Self.emberLab {
+            EmberFlameLab()
         } else if Self.logoLab {
             LogoLab()
         } else if Self.navLab {
