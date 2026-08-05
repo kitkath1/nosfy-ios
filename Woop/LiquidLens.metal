@@ -399,14 +399,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
 // exactes d'eclipseWorld) s'allument DERRIÈRE la pastille à mesure que
 // la matière se condense — et le verre, devant, les réfracte : le halo
 // se reflète dans la matière Liquid Glass sans un seul trucage.
-[[ stitchable ]] half4 eclipseGlow(float2 position, half4 color,
-                                   float2 size, float2 center, float R,
-                                   float t, float ig, float pulse,
-                                   float flare, float flareAng) {
-    if (ig < 0.004) { return half4(0.0); }
-    float2 d = position - center;
-    float r = length(d);
-    if (r > size.y * 0.9) { return half4(0.0); }
+// LE LIT DE FEU, en coordonnées MONDE — une seule fonction pour les deux
+// entrées (le cadran posé, et la caméra du travelling qui le rase). Le
+// VERROU tient : il n'existe qu'un seul feu, une seule palette.
+static float3 glowShade(float2 d, float r, float R, float t, float ig,
+                        float pulse, float flare, float flareAng) {
     // occK 0,55 : un lobe d'or doit se voir CONTINUER à travers le limbe
     // — l'indice de transparence le plus fort. rimK 0,05 : le liseré
     // peint du monde se calme derrière l'objet.
@@ -475,6 +472,37 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     }
     // LE HALO PULSE AVEC LA PASTILLE — même battement, même seconde.
     c *= 1.0 + 0.12 * pulse;
+    return c;
+}
+
+[[ stitchable ]] half4 eclipseGlow(float2 position, half4 color,
+                                   float2 size, float2 center, float R,
+                                   float t, float ig, float pulse,
+                                   float flare, float flareAng) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = position - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+    float3 c = glowShade(d, r, R, t, ig, pulse, flare, flareAng);
+    float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
+    return half4(half3(c), half(a)) * color.a;
+}
+
+// LA CAMÉRA DU TRAVELLING — le MÊME lit de feu, regardé de tout près.
+// Le zoom vit ICI, dans le shader : le champ est recalculé à pleine
+// résolution à tout grossissement (l'école ConnexionCine — une image
+// agrandie, « c'était exactement le cheap »). `camZ` est le
+// grossissement, `camO` l'origine écran du monde.
+[[ stitchable ]] half4 successGlow(float2 position, half4 color,
+                                   float2 size, float2 center, float R,
+                                   float t, float ig, float pulse,
+                                   float flare, float flareAng,
+                                   float camZ, float2 camO) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = (position - camO) / max(camZ, 0.0001) - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+    float3 c = glowShade(d, r, R, t, ig, pulse, flare, flareAng);
     float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
     return half4(half3(c), half(a)) * color.a;
 }
