@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 // MARK: - Barre d'onglets « monolithe » (design system)
@@ -74,17 +75,24 @@ struct PlayParams: Equatable {
     var chamfer: Double = 4.19
     /// Rayon du triangle play, en points.
     var glyph: Double = 11
-    /// Le rasant du galet : son anneau extérieur. LE « un peu plus de reflet »
-    /// que la barre — elle plafonne à 3 % de spéculaire, lui va bien au-delà.
-    var fresnel: Double = 0.239
+    /// Le rasant du galet : la lumière que son arête attrape. Il valait 0,239,
+    /// réglé quand la home était NOIRE — le galet n'avait alors que lui pour se
+    /// détacher du fond. Sur l'aurore embrasée sa silhouette est gratuite (du
+    /// noir sur du blanc), et ce même rasant redevient ce qu'on ne veut pas :
+    /// un liseré clair tout autour du disque. Réduit à un souffle — juste de
+    /// quoi dire que la pierre TOURNE, pas de quoi la cerner.
+    var fresnel: Double = 0.09
     /// Demi-largeur de l'anneau de métal liquide.
     var ringW: Double = 1.0
     /// Sa dose. À ZÉRO : l'or de la pastille suffit, un second cercle doré
     /// autour du galet et le bouton devient un jouet. Le galet se tient par
     /// son rasant, pas par un sertissage.
     var ringAmt: Double = 0
-    /// La buée courte collée au galet — son sertissage.
-    var halo: Double = 0.10
+    /// La buée courte collée au galet. À ZÉRO, comme l'anneau : c'est un
+    /// sertissage de métal, et le galet n'en veut pas. La lumière lui vient de
+    /// son glyphe, jamais d'un cercle posé autour de lui. Le banc peut toujours
+    /// la rallumer pour comparer.
+    var halo: Double = 0
     /// Le SOUFFLE : la lueur permanente du glyphe. Une respiration continue,
     /// jamais un clignotement — un néon qui accroche se lit comme une panne,
     /// pas comme une invitation.
@@ -95,8 +103,10 @@ struct PlayParams: Equatable {
     /// pas la luminosité — beaucoup plus doux à l'œil qu'une pulsation.
     var whiteness: Double = 0.55
     /// L'INVITE : la nappe large et douce autour du galet, celle qui appelle le
-    /// doigt avant même qu'on le pose. Le réglage est étroit — trop courte, ce
-    /// n'est qu'un contour ; trop forte, c'est du néon.
+    /// doigt avant même qu'on le pose. C'est la CONTINUATION de la lampe du
+    /// glyphe, pas un cercle autour du disque : sa portée vaut `invite × 130`
+    /// points, et sous une vingtaine elle redevient un contour — le défaut qui
+    /// la faisait lire comme un second sertissage.
     var invite: Double = 0.20
     /// L'arrondi du triangle, en fraction de son rayon. Rond, le play cesse de
     /// se lire ; anguleux, il redevient un pictogramme.
@@ -125,16 +135,19 @@ struct JewelTabBar: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Marge de débordement : l'ombre portée vit DEHORS, en alpha.
-    private static let pad: CGFloat = 40
+    /// Marge de débordement : l'ombre portée et la nappe du galet vivent
+    /// DEHORS, en alpha. Assez large pour que le shader ait la place de les
+    /// éteindre en douceur — à 40 pt elles butaient sur le bord et la barre
+    /// portait une plaque rectangulaire en travers de l'aurore.
+    private static let pad: CGFloat = 80
     /// Retrait de la pastille par rapport à l'arête de la barre. Serré : au
     /// repos la pastille remplit franchement la barre — c'est la proportion de
     /// la référence. Elle n'a plus besoin de place pour grossir depuis que le
     /// shader la laisse SORTIR de la capsule.
     private static let inset: CGFloat = 8
-    /// Retrait latéral : la pastille de la référence est plus ramassée qu'un
-    /// simple créneau — elle serre la glyphe au lieu de remplir sa case.
-    private static let insetX: CGFloat = 14
+    /// Le zoom maximal de la pastille sous le doigt. Il sert AUSSI à borner son
+    /// rayon : à plein régime le disque ne doit pas mordre la case voisine.
+    private static let maxZoom: CGFloat = 1.38
     /// Durée du voyage de la pastille.
     private static let travel: TimeInterval = 0.42
 
@@ -161,6 +174,10 @@ struct JewelTabBar: View {
     @State private var playAt: Date = .distantPast
     @State private var playDown = false
     @State private var playPulse: Date = .distantPast
+    /// Compteur de touchers du galet — c'est lui qui déclenche le retour
+    /// haptique. Un compteur, pas un booléen : deux appuis d'affilée doivent
+    /// se sentir deux fois.
+    @State private var playTaps = 0
 
     /// Le rang devant lequel s'ouvre la fente du galet. Au milieu de la liste :
     /// avec quatre onglets, deux à gauche, deux à droite, et le disque tombe
@@ -177,8 +194,14 @@ struct JewelTabBar: View {
             // reste — ils rétrécissent, ils ne se chevauchent jamais.
             let playW = play.map { CGFloat($0.radius * 2 + $0.gap * 2) } ?? 0
             let slot = max(barW - playW, 1) / CGFloat(max(items.count, 1))
-            let pillHH = barH * 0.5 - Self.inset
-            let pillHW = slot * 0.5 - Self.insetX
+            // La pastille est un DISQUE — même demi-largeur, même demi-hauteur,
+            // et le shader en fait un cercle exact. Elle était plus haute que
+            // large (22,0 × 23,5 pt mesurés au repos), et le zoom, qui ne
+            // suivait qu'aux deux tiers en largeur, l'étirait franchement en
+            // œuf sous le doigt (27,5 × 33,1, soit un rapport de 0,83). Le rayon
+            // vient de la HAUTEUR de la barre — elle seule est stable — plafonné
+            // pour qu'à plein zoom le cercle ne morde pas la case voisine.
+            let pillR = min(barH * 0.5 - Self.inset, slot * 0.5 / Self.maxZoom)
             let playR = CGFloat(play?.radius ?? 0)
             let playRise = CGFloat(play?.rise ?? 0)
 
@@ -196,21 +219,34 @@ struct JewelTabBar: View {
                     let press = pressLevel(at: now)
                     let ignite = playLevel(at: now)
                     let playX = slot * CGFloat(mid) + playW * 0.5
+                    // Les scalaires sont sortis de l'appel : à trente-six
+                    // arguments dont plusieurs expressions arithmétiques, le
+                    // type-checker de Swift abandonne (« unable to type-check
+                    // this expression in reasonable time »). Un `let` typé
+                    // Float par valeur coupe court à l'inférence.
+                    let pill = Float(pillR * m.zoom)
+                    let pulse = pulseEnv(at: now)
+                    let inv = Float((play?.invite ?? 0) * (1 + 1.6 * pulse))
+                    // Le réveil du bijou : sur la même bouffée que le galet,
+                    // le fil de métal liquide FRÉMIT — le train de rayures
+                    // accélère et la buée s'ouvre un instant, puis tout
+                    // reprend son pas. Le bijou se réveille, il n'explose pas.
+                    let wireSpeed = Float(params.speed * (1 + 3.0 * pulse))
+                    let wireGlow = Float(params.glow + 0.40 * pulse)
 
                     Rectangle()
                         .fill(.white)
                         .frame(width: w, height: h)
                         .colorEffect(Self.dithered(ShaderLibrary.navMonolith(
                             .float2(w, h), .float(t), .float(Float(Self.pad)),
-                            .float4(Float(m.x), Float(pillHW * m.zoomW),
-                                    Float(pillHH * m.zoom), Float(press)),
+                            .float4(Float(m.x), pill, pill, Float(press)),
                             .float4(Float(params.repetition),
                                     Float(params.angle * .pi / 180),
                                     Float(params.softness), Float(params.contour)),
-                            .float4(Float(params.distortion), Float(params.speed),
+                            .float4(Float(params.distortion), wireSpeed,
                                     Float(params.shiftRed), Float(params.shiftBlue)),
                             .float4(Float(params.influence), Float(params.gold),
-                                    Float(params.lineW), Float(params.glow)),
+                                    Float(params.lineW), wireGlow),
                             .float(Float(params.floorLevel)),
                             .float4(Float(playX), Float(playRise),
                                     Float(playR), Float(play?.breath ?? 0)),
@@ -225,8 +261,7 @@ struct JewelTabBar: View {
                             .float4(Float(play?.round ?? 0.1),
                                     Float(play?.breathSpeed ?? 1),
                                     Float(play?.whiteness ?? 0.55),
-                                    Float((play?.invite ?? 0)
-                                          * (1 + 1.6 * pulseEnv(at: now)))))))
+                                    inv))))
                         .offset(x: -Self.pad, y: -Self.pad)
                 }
                 .allowsHitTesting(false)
@@ -284,7 +319,16 @@ struct JewelTabBar: View {
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { _ in
-                                    if !playDown { playAt = .now; playDown = true }
+                                    if !playDown {
+                                        playAt = .now; playDown = true
+                                        // Le son part AVEC la lueur, à l'instant
+                                        // où le doigt se pose. Au relâcher il
+                                        // aurait un temps de retard : on
+                                        // entendrait le bouton après l'avoir vu
+                                        // s'allumer, et le geste se dédoublerait.
+                                        PlayChime.shared.strike()
+                                        playTaps += 1
+                                    }
                                     playPulse = .now
                                 }
                                 .onEnded { _ in
@@ -314,6 +358,10 @@ struct JewelTabBar: View {
         // Un choc FRANC, pas le petit clic de sélection : la pastille est un
         // objet lourd qui se pose, le doigt doit le sentir arriver.
         .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0), trigger: selection)
+        // Le galet a le sien, plus SEC : ce n'est pas un onglet qui se pose,
+        // c'est un interrupteur qui claque. (Le simulateur ne vibre pas — la
+        // partie haptique ne se juge que sur l'iPhone.)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.95), trigger: playTaps)
     }
 
     private func slotView(index i: Int, item: (icon: String, label: String),
@@ -357,7 +405,7 @@ struct JewelTabBar: View {
     }
 
     private func motion(at date: Date, slot: CGFloat, playW: CGFloat)
-        -> (x: CGFloat, u: CGFloat, zoom: CGFloat, zoomW: CGFloat) {
+        -> (x: CGFloat, u: CGFloat, zoom: CGFloat) {
         // La pastille TRAVERSE la fente du galet au lieu de sauter par-dessus :
         // l'offset s'ouvre linéairement sur le dernier pas avant le milieu.
         // Elle passe donc DERRIÈRE le disque — qui la couvre, puisqu'il est
@@ -368,9 +416,9 @@ struct JewelTabBar: View {
         }
         guard fromU >= 0, toU >= 0 else {
             let u = CGFloat(selection)
-            return (point(u), u, 1, 1)
+            return (point(u), u, 1)
         }
-        if reduceMotion { return (point(toU), toU, 1, 1) }
+        if reduceMotion { return (point(toU), toU, 1) }
         let u = min(max(date.timeIntervalSince(moveStart) / Self.travel, 0), 1)
         let v = u - 1
         // easeOutBack : la pastille dépasse d'un cheveu puis se pose. C'est ce
@@ -384,14 +432,13 @@ struct JewelTabBar: View {
         // la barre — ce léger débordement suffit à la faire DÉCOLLER, alors
         // qu'une pastille bien plus grosse cessait d'être un onglet.
         //
-        // La LARGEUR ne suit qu'aux deux tiers : à plein régime, une croissance
-        // uniforme ferait une saucisse qui avale deux cases. En montant moins
-        // vite en largeur qu'en hauteur, la pastille s'ARRONDIT — une bulle qui
-        // se soulève plutôt qu'un rectangle qu'on tire.
+        // Il est UNIFORME : une bulle qui grossit reste une bulle. La largeur
+        // ne suivait qu'aux deux tiers pour éviter « la saucisse qui avale deux
+        // cases » — mais ce plafond-là est déjà tenu par le rayon (borné à
+        // `slot / 2 / maxZoom`), et l'anisotropie ne servait plus qu'à ovaliser.
         let bump = 0.10 * sin(.pi * u)
         let zoom = 1 + bump + 0.28 * dragLevel(at: date)
-        let zoomW = 1 + (zoom - 1) * 0.62
-        return (point(cur), cur, zoom, zoomW)
+        return (point(cur), cur, zoom)
     }
 
     /// La tenue du doigt qui traîne : 0 lâché, 1 en glisse. Montée vive à la
@@ -454,5 +501,41 @@ struct JewelTabBar: View {
         var s = shader
         s.dithersColor = true
         return s
+    }
+}
+
+// MARK: - Le son du galet
+
+/// Le petit bruit de lumière du bouton play. C'est le MÊME que l'amorçage du
+/// tube des cartes — `NeonIgnite` : clac d'amorce, souffle d'air, bourdon de
+/// verre qui monte. Un play qui s'allume et un néon qui prend, c'est le même
+/// geste ; lui donner un son à part aurait fait deux mondes dans la même page.
+///
+/// Joué en `.ambient` + `mixWithOthers` : jamais par-dessus la musique de la
+/// salle. Le lecteur est préparé une fois et rejoué depuis zéro — recharger le
+/// fichier à chaque appui ajouterait un retard audible sur le premier tap.
+@MainActor
+final class PlayChime {
+    static let shared = PlayChime()
+
+    private let player: AVAudioPlayer?
+
+    private init() {
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        guard let url = Bundle.main.url(forResource: "NeonIgnite",
+                                        withExtension: "wav") else {
+            player = nil
+            return
+        }
+        player = try? AVAudioPlayer(contentsOf: url)
+        player?.prepareToPlay()
+    }
+
+    func strike() {
+        guard let player else { return }
+        player.volume = 0.40
+        player.currentTime = 0
+        player.play()
     }
 }

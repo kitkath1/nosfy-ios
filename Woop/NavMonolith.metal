@@ -56,7 +56,12 @@ static float nfbm(float2 p) {
 }
 
 /// Distance signée au rectangle arrondi (négatif dedans). `r = b.y` → capsule.
+/// Le rayon est BRIDÉ aux deux demi-côtés : au-delà, la formule ne rend plus
+/// une boîte arrondie mais une VESICA — deux arcs de cercle qui se coupent en
+/// pointes sur le petit côté. C'est ce qui pinçait la pastille dès que sa
+/// demi-hauteur dépassait sa demi-largeur, et l'ovalisait sous le doigt.
 static float nsdRound(float2 p, float2 b, float r) {
+    r = min(r, min(b.x, b.y));
     float2 q = abs(p) - b + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
@@ -345,81 +350,124 @@ static float nburn(float c, float tint) {
         float3 pcol = mix(stone2, lacquer + spec * float3(0.94, 0.96, 1.00) * 1.15,
                           gin);
 
-        // --- LE SOUFFLE -------------------------------------------------------
+        // --- LA LAMPE ---------------------------------------------------------
         // PAS de grésillement. Un tube qui accroche se lit comme une PANNE, pas
         // comme une invitation : l'œil est câblé pour lire une lumière qui saute
         // comme un défaut, et le bouton a alors l'air cassé. Ce qu'il faut, c'est
         // une respiration — continue, sans accident, qui ne redescend jamais à
         // zéro. Deux sinus incommensurables suffisent : l'œil n'y entend aucune
         // période, et n'y voit aucune saccade.
+        //
+        // Et TOUT part du triangle. Le glyphe n'est pas un pictogramme qu'on
+        // colorie : c'est LA SOURCE. Un cœur qui sature en blanc, l'orange qui
+        // reprend la main en s'en éloignant, une seule nappe continue qui
+        // traverse la laque, éclaire le galet mat par en dedans, puis va mourir
+        // sur la page. Le triangle rempli d'un aplat — mesuré à R = 0,710
+        // CONSTANT sur dix-huit points de large, plafonné par le fondu écran —
+        // ne lisait pas comme une lampe : une lampe a un cœur surexposé, et
+        // c'est le contraste cœur/bord qui fait la lumière, jamais l'intensité
+        // moyenne.
         float ign = clamp(playRing.z, 0.0, 1.0);
         float sz = clamp(play.w, 0.0, 1.0);
         float vs = max(playFx.y, 0.05);
-        float a1 = 0.5 + 0.5 * sin(t * 0.62 * vs);
-        float a2 = 0.5 + 0.5 * sin(t * 0.41 * vs + 2.1);
-        // Le plancher à 0,68 est le cœur du réglage : la lampe RESPIRE, elle ne
-        // clignote pas. Descendre plus bas et le bouton se met à battre.
-        float lvl = 0.68 + 0.22 * a1 + 0.10 * a2;
+        // LES HORLOGES. Elles battaient à 10,1 s et 15,3 s : à cette lenteur, la
+        // lampe ne « clignote » plus du tout — on peut regarder le bouton dix
+        // secondes sans rien voir bouger, et l'invite n'existe pas. 2,6 s et
+        // 4,2 s : un cœur au repos. Toujours deux périodes incommensurables,
+        // toujours des sinus — c'est ce qui sépare une respiration d'un
+        // grésillement (refusé : « ça fait bug »).
+        float a1 = 0.5 + 0.5 * sin(t * 2.42 * vs);
+        float a2 = 0.5 + 0.5 * sin(t * 1.49 * vs + 2.1);
+        // Et le plancher descend de 0,68 à 0,55 : il faut voir la lumière
+        // MONTER. Jamais zéro pour autant — une lampe qui s'éteint se lit comme
+        // une panne, pas comme une invitation.
+        float lvl = 0.55 + 0.30 * a1 + 0.15 * a2;
         float amp = max(sz * lvl, ign);
         float aura = max(ign, sz * lvl);
-        // La teinte dérive lentement de l'or au blanc chaud, sur la seconde
-        // horloge : le glyphe change de température, pas de luminosité — c'est
+        // La teinte dérive lentement de l'orange au blanc chaud, sur la seconde
+        // horloge : le glyphe change de TEMPÉRATURE, pas de luminosité — c'est
         // beaucoup plus doux à l'œil qu'une pulsation d'intensité.
         float blanc = clamp(playFx.z * (0.30 + 0.55 * a2) + ign, 0.0, 1.0);
+        // Le SDF du glyphe, normalisé par son rayon : UNE seule coordonnée pour
+        // tout le champ de lumière, dedans comme dehors.
+        float dgn = dg / max(gr, 1.0);
+        float core = smoothstep(0.12, -0.55, dgn);
+        float3 chaud = float3(1.00, 0.50, 0.11);
+        float3 blancChaud = float3(1.00, 0.96, 0.90);
         if (amp > 0.001) {
-            float coreness = smoothstep(0.0, -gr * 0.55, dg);
-            float3 fire = mix(float3(1.00, 0.58, 0.16),
-                              float3(1.00, 0.97, 0.92),
-                              blanc * (0.45 + 0.55 * coreness));
+            float3 fire = mix(chaud, blancChaud,
+                              clamp(0.30 + 0.90 * blanc, 0.0, 1.0) * core);
+            // Le cœur POUSSE au-delà de 1 avant d'être écrêté : c'est cette
+            // surexposition, et elle seule, qui fait lire une source plutôt
+            // qu'une surface teintée. Le facteur est dosé pour qu'au CREUX de la
+            // respiration il retombe SOUS l'écrêtage : sinon le cœur reste collé
+            // à 1 tout le temps et la lampe cesse de battre.
+            float lampe = clamp(amp * (0.45 + 1.30 * core), 0.0, 1.0);
             // Fondu écran, jamais une addition : la leçon du login — une
             // addition écrête et le blanc devient une tache plate.
-            pcol = 1.0 - (1.0 - pcol) * (1.0 - fire * (amp * gin));
-            // Le galet s'éclaire PAR le glyphe : la lumière fuit dans la
-            // matière au lieu de s'arrêter net au contour.
-            float bleed = exp(-max(dg, 0.0) / (gr * 0.42)) * (1.0 - gin);
+            pcol = 1.0 - (1.0 - pcol) * (1.0 - fire * (lampe * gin));
+            // Le galet s'éclaire PAR son glyphe. La nappe décroît sur ~1,15
+            // rayon de glyphe (13 pt) au lieu de 0,42 (4,6 pt) : elle traverse
+            // la pierre entière au lieu de s'arrêter au chanfrein, et c'est ce
+            // noir HABITÉ — pas un anneau — qui pose le bouton sur la page.
+            float bleed = exp(-max(dgn, 0.0) / 1.15) * (1.0 - gin);
             pcol = 1.0 - (1.0 - pcol)
-                   * (1.0 - mix(float3(1.00, 0.50, 0.13), fire, 0.35)
-                            * (bleed * amp * 0.55));
+                   * (1.0 - mix(chaud, fire, 0.30) * (bleed * amp * 0.46));
         }
 
         rgb = mix(rgb, pcol, din);
 
-        // --- l'anneau : le même métal liquide que la pastille, en plus retenu ---
+        // --- PAS D'ANNEAU AU REPOS -------------------------------------------
+        // Le fil de métal liquide était rallumé EN PERMANENCE par le souffle :
+        // `playRing.y + 0,50 × aura`, avec `aura` ≈ 0,5 à 0,7 même au repos. Le
+        // curseur « anneau » était donc à zéro et le liseré doré s'affichait
+        // quand même — mesuré à L = 0,478 juste dehors contre 0,341 quatre
+        // points plus loin, un fil de deux points tout autour du galet.
+        // Verdict : « il ne faut pas de contour métal ». L'anneau et sa buée
+        // n'obéissent plus qu'à leurs curseurs, tous deux à zéro par défaut :
+        // le galet se tient par son rasant et par sa lampe, pas par un
+        // sertissage. Le banc (`-navLab`) peut toujours les rallumer.
         float add = fabs(dd);
         float rw = max(playRing.x, 0.3);
-        float rdir = dot(qb / max(R, 1.0), axis) * mtl.x * 1.30 - t * mtl2.y
-                   - 1.7 * (1.0 - smoothstep(0.0, W, add)) * mtl.w;
-        float3 rchrome = float3(nstripe(fract(rdir + mtl2.z), soft),
-                                nstripe(fract(rdir), soft),
-                                nstripe(fract(rdir - mtl2.w), soft));
-        rchrome = fl + (1.0 - fl) * rchrome;
-        rchrome = mix(rchrome, float3(nburn(rchrome.r, gold.r),
-                                      nburn(rchrome.g, gold.g),
-                                      nburn(rchrome.b, gold.b)),
-                      clamp(look.y, 0.0, 1.0));
-        float rtq = clamp(-qb.y / max(R, 1.0), 0.0, 1.0);
-        float ringAmt = (1.0 - smoothstep(rw * 0.70, rw * 1.55, add))
-                      * (0.30 + 0.58 * pow(rtq, 1.15) + 0.26 * pow(1.0 - rtq, 2.4))
-                      * (playRing.y + 0.50 * aura);
-        rgb += rchrome * ringAmt;
+        float ringAmt = 0.0, phalo = 0.0;
+        if (playRing.y > 0.001 || playRing.w > 0.001) {
+            float rdir = dot(qb / max(R, 1.0), axis) * mtl.x * 1.30 - t * mtl2.y
+                       - 1.7 * (1.0 - smoothstep(0.0, W, add)) * mtl.w;
+            float3 rchrome = float3(nstripe(fract(rdir + mtl2.z), soft),
+                                    nstripe(fract(rdir), soft),
+                                    nstripe(fract(rdir - mtl2.w), soft));
+            rchrome = fl + (1.0 - fl) * rchrome;
+            rchrome = mix(rchrome, float3(nburn(rchrome.r, gold.r),
+                                          nburn(rchrome.g, gold.g),
+                                          nburn(rchrome.b, gold.b)),
+                          clamp(look.y, 0.0, 1.0));
+            float rtq = clamp(-qb.y / max(R, 1.0), 0.0, 1.0);
+            ringAmt = (1.0 - smoothstep(rw * 0.70, rw * 1.55, add))
+                    * (0.30 + 0.58 * pow(rtq, 1.15) + 0.26 * pow(1.0 - rtq, 2.4))
+                    * playRing.y;
+            phalo = exp(-max(add - rw, 0.0) / 2.6) * playRing.w;
+            rgb += rchrome * (ringAmt + phalo * 0.34);
+        }
 
-        // La buée courte, collée au galet : son sertissage.
-        float phalo = exp(-max(add - rw, 0.0) / (2.6 + 10.0 * ign))
-                    * (playRing.w + 0.20 * aura) * (1.0 + 1.2 * ign);
-        rgb += mix(rchrome, float3(1.00, 0.72, 0.34), aura * 0.7) * (phalo * 0.34);
+        // L'INVITE : la nappe large et très douce qui déborde sur la page. Elle
+        // ne cerne pas le bouton — elle est la CONTINUATION de la lampe du
+        // glyphe une fois la pierre traversée, même teinte, même respiration.
+        // Sa portée passe de 18 à 26 pt : sous ~20 pt ce n'est plus une nappe,
+        // c'est un contour, et c'est précisément ce qui la faisait lire comme un
+        // sertissage de plus. Elle ne vit que DEHORS (`1 - din`), sinon elle
+        // laiterait le galet et tuerait son noir.
+        // Elle RESPIRE avec le glyphe, et franchement : son amplitude suit le
+        // CARRÉ de la respiration (rapport 2,2 entre creux et crête au lieu de
+        // 1,25 — à 1,25 personne ne voit rien), et sa portée enfle avec elle,
+        // donc la nappe avance et recule au lieu de seulement pâlir.
+        float appel = clamp(aura, 0.0, 1.0);
+        float invite = exp(-max(add, 0.0)
+                           / (playFx.w * 130.0 * (0.72 + 0.38 * appel)
+                              + 40.0 * ign))
+                     * (0.05 + 0.36 * appel * appel) * (1.0 - din);
+        rgb += mix(chaud, blancChaud, blanc) * (invite * playFx.w * 6.5);
 
-        // L'INVITE : une nappe LARGE et très douce qui déborde sur la page.
-        // Elle ne cerne pas le bouton, elle le POSE dans une lueur — c'est elle,
-        // et pas le glyphe, qui dit « appuie ». Le dosage est étroit : sous
-        // ~15 pt de portée elle redevient un contour, et au-delà de ~0,20
-        // d'amplitude elle vire au néon. Elle ne vit que DEHORS (`1 - din`),
-        // sinon elle laiterait le galet et tuerait son noir.
-        float invite = exp(-max(add, 0.0) / (playFx.w * 90.0 + 40.0 * ign))
-                     * (0.09 + 0.20 * aura) * (1.0 - din);
-        rgb += mix(float3(1.00, 0.60, 0.20), float3(1.00, 0.86, 0.58), blanc)
-               * (invite * playFx.w * 7.0);
-
-        playA = max(din, max(max(ringAmt, phalo * 0.7), invite * 1.4));
+        playA = max(din, max(max(ringAmt, phalo * 0.7), invite * 1.2));
     }
 
     // ---- LE TRAIT NOIR --------------------------------------------------
@@ -450,8 +498,13 @@ static float nburn(float c, float tint) {
            * float3(0.96, 0.97, 1.0) * 0.22;
 
     // ---- L'OMBRE PORTÉE -------------------------------------------------
-    float shadow = exp(-max(d - 2.0, 0.0) / 22.0) * (1.0 - inside)
-                 * (0.26 + 0.62 * smoothstep(-0.2, 0.9, uy)) * 0.60;
+    // COURTE. Sur l'ancienne home noire une ombre de 22 pt de constante ne se
+    // voyait pas ; sur l'aurore embrasée c'est un lavis NOIR sur un sol
+    // incandescent, et le rectangle du shader le tranchait net. Elle se réduit
+    // donc à un contact — 9 pt, un tiers de la force. Ce qui détache la capsule
+    // sur ce fond, ce n'est de toute façon pas son ombre : c'est son noir.
+    float shadow = exp(-max(d - 2.0, 0.0) / 9.0) * (1.0 - inside)
+                 * (0.26 + 0.62 * smoothstep(-0.2, 0.9, uy)) * 0.34;
     shadow = max(shadow, outline);
 
     // Dither : un demi-niveau. Sans lui, un dégradé de 2 % bande atrocement
@@ -463,7 +516,32 @@ static float nburn(float c, float tint) {
     float lum = max(max(rgb.r, rgb.g), rgb.b);
     // `pin` entre dans l'alpha : la part de pastille qui dépasse de la capsule
     // doit être OPAQUE (sa pierre est noire, donc invisible sans alpha propre).
+    //
+    // La lumière molle, elle, porte sa PROPRE couverture — pas 1,6 fois. Au
+    // delà, le shader retire au fond plus qu'il ne lui ajoute : sur l'aurore
+    // blanche de la home, le halo du galet devenait un voile beige (mesuré :
+    // (1,00 0,99 0,97) qui tombe à (0,90 0,82 0,73) — il ASSOMBRISSAIT le sol
+    // qu'il était censé éclairer). Couleur = couverture : ça éclaire, ça ne
+    // salit pas. C'est la règle de `swapCard`, elle vaut ici aussi.
     float a = clamp(max(max(max(inside, pin), playA),
-                        max(lum * 1.6, shadow)), 0.0, 1.0);
+                        max(lum, shadow)), 0.0, 1.0);
+
+    // ---- LE FONDU D'HÔTE ------------------------------------------------
+    // Toute la lumière et toute l'ombre meurent AVANT le bord du rectangle.
+    // Sans lui elles butent dessus et la barre porte une PLAQUE rectangulaire :
+    // mesurée au pixel sur la home, une cassure franche à y = 702 pt — le haut
+    // exact du rectangle — l'aurore pure au-dessus, voilée en dessous, en
+    // travers de tout l'écran. C'est la leçon déjà écrite dans `swapCard`
+    // (AuroraHome.metal) : le débord se dissout, il ne se coupe jamais.
+    // La capsule, la pastille et le galet vivent tous à plus de 40 pt du bord :
+    // le fondu ne les touche pas, il n'éteint que ce qui déborde.
+    // La bande de fondu vaut 0,42 × `pad` : assez large pour éteindre sans
+    // marche, assez étroite pour laisser à la nappe du galet une vingtaine de
+    // points de pleine amplitude au-dessus de lui. Plus large, elle mangeait
+    // l'invite ; plus étroite, le fondu redevenait une arête.
+    float2 toEdge = min(position, size - position);
+    float host = smoothstep(0.0, pad * 0.42, min(toEdge.x, toEdge.y));
+    rgb *= host;
+    a *= host;
     return half4(half3(min(rgb, float3(a))), half(a));      // prémultiplié
 }

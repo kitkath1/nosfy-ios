@@ -341,14 +341,8 @@ struct SwapDeck: View {
     /// La carte qui vient de partir : gardée invisible le temps que la pile
     /// se réorganise, sinon on la voit retraverser l'écran vers le fond.
     @State private var vanished: PersistentIdentifier?
-    /// La gerbe en cours — ARCHIVE : elle ne sert plus qu'au banc
-    /// `-deckBurst`. Au swap, c'est la fumée qui a pris sa place (« pas une
-    /// traînée de confettis »).
+    /// La gerbe en cours, s'il y en a une.
     @State private var burst: Burst?
-    /// La dissolution en cours : la carte arrachée part en fumée SUR PLACE,
-    /// figée dans le geste — c'est sa copie, au-dessus de la pile, qui se
-    /// défait pendant que la pile se referme dessous.
-    @State private var smoke: SwapSmoke?
     /// Le dernier grain haptique joué : le moteur se sature si on le nourrit
     /// à chaque image du geste.
     @State private var lastTick: Date = .distantPast
@@ -399,9 +393,6 @@ struct SwapDeck: View {
     /// `-deckBurst` rejoue la pluie en boucle (toutes les 3 s) : une pluie
     /// se juge en la regardant TOMBER, pas sur une image figée.
     private static let benchBurst = CommandLine.arguments.contains("-deckBurst")
-    /// `-deckSmoke` rejoue l'arrachement en boucle (toutes les 2,8 s) : la
-    /// fumée se juge en la regardant SE DÉFAIRE, pas sur une image figée.
-    private static let benchSmoke = CommandLine.arguments.contains("-deckSmoke")
 
     /// La montée du geste : 0 au repos, 1 quand le doigt a décidé. C'est elle
     /// qui embrase l'écrin de la carte.
@@ -424,9 +415,8 @@ struct SwapDeck: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: Self.deckHeight)
-        // La gerbe (archive du banc) et la FUMÉE vivent AU-DESSUS de la pile
-        // et lui survivent : hébergées ici, elles continuent de se défaire
-        // alors que la pile s'est déjà refermée dessous.
+        // La gerbe vit AU-DESSUS de la pile et lui survit : hébergée ici, elle
+        // continue de s'ouvrir alors que la carte a déjà quitté l'écran.
         .overlay {
             if let burst {
                 SwapBurstLayer(burst: burst, room: Self.burstRoom)
@@ -434,32 +424,15 @@ struct SwapDeck: View {
                     .allowsHitTesting(false)
             }
         }
-        .overlay {
-            if let smoke {
-                SwapSmokeLayer(smoke: smoke)
-                    .allowsHitTesting(false)
-            }
-        }
         .onAppear {
-            if Self.benchBurst, burst == nil {
-                // Au banc, la carte est au repos : la pluie part de SON
-                // contour, et se rejoue en boucle.
-                let seed = { burst = Burst(at: .now, origin: .zero,
-                                           way: CGSize(width: 1, height: 0)) }
+            guard Self.benchBurst, burst == nil else { return }
+            // Au banc, la carte est au repos : la pluie part de SON contour,
+            // et se rejoue en boucle pour qu'on puisse la regarder tomber.
+            let seed = { burst = Burst(at: .now, origin: .zero,
+                                       way: CGSize(width: 1, height: 0)) }
+            seed()
+            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
                 seed()
-                Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-                    seed()
-                }
-            }
-            if Self.benchSmoke {
-                // L'arrachement rejoué en boucle : le geste d'un pouce vers
-                // la droite, sans doigt.
-                Timer.scheduledTimer(withTimeInterval: 2.8, repeats: true) { _ in
-                    DispatchQueue.main.async {
-                        guard !flying else { return }
-                        fly(from: CGSize(width: 132, height: -16))
-                    }
-                }
             }
         }
     }
@@ -499,11 +472,7 @@ struct SwapDeck: View {
                     ], startPoint: .top, endPoint: .bottom)
                 }
                 .blur(radius: 3)
-                // Pendant la fumée, le reflet s'éteint : il montrerait la
-                // carte INTACTE pendant qu'elle se défait au-dessus — le sol
-                // ne peut pas refléter ce qui n'existe plus.
-                .opacity(smoke == nil ? 0.60 : 0)
-                .animation(.easeOut(duration: 0.18), value: smoke == nil)
+                .opacity(0.60)
                 .rotationEffect(.degrees(-Double(drag.width) / 30), anchor: .top)
                 .offset(x: drag.width,
                         y: Self.cardHeight + 3 + drag.height * 0.25)
@@ -616,41 +585,46 @@ struct SwapDeck: View {
             }
     }
 
-    /// La volée : la carte ne s'enfuit plus — elle SE DÉFAIT. À l'instant de
-    /// l'arrachement elle quitte la pile, et sa copie de fumée, figée dans
-    /// le geste, se dissout au-dessus (le front voyage, l'étoffe ondule, la
-    /// matière part en lambeaux — `swapSmoke`). Le grave monte dans la
-    /// main ; la pile se referme sur la suivante pendant que la fumée vit
-    /// encore. Les temps suivent le shader : SMK_SWEEP + SMK_LIFE ≈ 0,9 s.
+    /// La volée, et tout ce qui l'accompagne : la gerbe de bijoux s'ouvre à
+    /// l'instant de l'arrachement, le grave monte dans la main, le verre
+    /// sonne — puis la pile se referme sur la suivante.
     private func fly(from translation: CGSize) {
         guard let departing = slots.first(where: { $0.depth == 0 })?.workout
         else { return }
         flying = true
         let side: CGFloat = translation.width > 0 ? 1 : -1
 
-        // Un seul commit, sans animation : la carte du slot disparaît et sa
-        // copie de fumée naît EXACTEMENT dans sa pose — pixel pour pixel,
-        // sinon la couture se voit.
-        var t0 = Transaction()
-        t0.disablesAnimations = true
-        withTransaction(t0) {
-            smoke = SwapSmoke(workout: departing, at: .now,
-                              drag: translation, side: side,
-                              seed: Float((topCard % 7) + 1))
-            vanished = departing.persistentModelID
-            drag = .zero
-        }
+        // La gerbe naît là où la carte se trouve À CET INSTANT : les bijoux
+        // sortent de SON contour, pas d'un point abstrait.
+        burst = Burst(at: .now,
+                      origin: CGSize(width: translation.width,
+                                     height: translation.height * 0.25),
+                      way: CGSize(width: side, height: 0))
         SwapFeedback.shared.swipe()
 
-        // La pile monte d'un cran EN ressort quand la carte est bien plus
-        // fumée que carte — la suivante arrive à travers le nuage.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) {
+        withAnimation(.easeOut(duration: 0.46)) {
+            drag = CGSize(width: side * (Self.cardWidth + 420),
+                          height: translation.height * 0.5)
+        }
+        // La carte est hors champ : on la masque, on remet le geste à zéro
+        // sans animation, et la pile monte d'un cran EN ressort.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                vanished = departing.persistentModelID
+                drag = .zero
+            }
             topCard = (topCard + 1) % max(workouts.count, 1)
             flying = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
             vanished = nil
-            smoke = nil
+        }
+        // La pluie tombe longtemps : la couche vit jusqu'à la dernière
+        // étoile (2,4 s côté shader).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
+            burst = nil
         }
     }
 }
@@ -698,71 +672,6 @@ struct SwapBurstLayer: View {
             }
         }
         .blendMode(.plusLighter)
-    }
-}
-
-// MARK: - La fumée du swap
-
-/// Une dissolution en cours : quelle carte, quand, et la pose exacte du
-/// geste à l'instant de l'arrachement.
-struct SwapSmoke {
-    let workout: Workout
-    let at: Date
-    let drag: CGSize
-    let side: CGFloat
-    let seed: Float
-}
-
-/// L'hôte du layerEffect `swapSmoke` : la carte arrachée, reproduite dans sa
-/// pose exacte (les MÊMES transformations que le slot — la copie naît pixel
-/// pour pixel sur la carte qu'elle remplace), enveloppée d'une marge où la
-/// fumée peut voyager : un layerEffect ne peint que dans ses bornes.
-/// Montée SEULEMENT pendant la dissolution — au repos, rien, coût nul.
-struct SwapSmokeLayer: View {
-    let smoke: SwapSmoke
-    /// La marge de voyage de la fumée (vent + tourbillon sur ~0,9 s).
-    private static let room: CGFloat = 200
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
-            let t = Float(tl.date.timeIntervalSinceReferenceDate
-                .truncatingRemainder(dividingBy: 900))
-            let age = Float(tl.date.timeIntervalSince(smoke.at))
-            let w = SwapDeck.cardWidth + Self.room * 2
-            let h = SwapDeck.cardHeight + Self.room * 2
-            let len = max(sqrt(smoke.drag.width * smoke.drag.width
-                               + smoke.drag.height * smoke.drag.height), 1)
-            // La braise REFROIDIT : le tube est incandescent à l'instant de
-            // l'arrachement, puis il meurt en un demi-souffle — la fin n'est
-            // que fumée noire. Charge figée à 1, toute la dissolution lisait
-            // « cadre qui brûle », jamais « carte qui part en fumée ».
-            let cooling = Float(max(0, 1 - age * 1.8))
-            SwapWorkoutCard(workout: smoke.workout, seed: 0, charge: cooling,
-                            tapAt: .distantPast,
-                            pull: CGSize(width: smoke.drag.width / len,
-                                         height: smoke.drag.height / len))
-                .frame(width: SwapDeck.cardWidth, height: SwapDeck.cardHeight)
-                .padding(Self.room)
-                .compositingGroup()
-                .layerEffect(ShaderLibrary.swapSmoke(
-                    .float2(w, h), .float(t), .float(age),
-                    .float2(Float(smoke.side), 0),
-                    .float(Float(Self.room)), .float(smoke.seed)),
-                    maxSampleOffset: CGSize(width: Self.room,
-                                            height: Self.room))
-                // La couche garde la TAILLE de la carte pour le layout : la
-                // fumée déborde visuellement, jamais géométriquement.
-                .frame(width: SwapDeck.cardWidth, height: SwapDeck.cardHeight)
-                // La pose du slot, à l'identique (voir card(_:depth:)).
-                .scaleEffect(1 - min(abs(smoke.drag.width), 140) / 2600)
-                .offset(x: smoke.drag.width, y: smoke.drag.height * 0.25)
-                .rotation3DEffect(.degrees(Double(smoke.drag.width) / 11),
-                                  axis: (x: 0, y: 1, z: 0), perspective: 0.62)
-                .rotation3DEffect(.degrees(-Double(smoke.drag.height) / 15),
-                                  axis: (x: 1, y: 0, z: 0), perspective: 0.62)
-                .rotationEffect(.degrees(Double(smoke.drag.width) / 30),
-                                anchor: .bottom)
-        }
     }
 }
 
