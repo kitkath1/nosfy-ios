@@ -196,12 +196,14 @@ struct LiquidLensLab: View {
             RocketHaptics.shared.prepare()
             LensTheme.shared.prepare()
             LensChime.shared.prepare()
+            Paillettes.shared.prepare()
         }
         // Le banc vivait seul et pour toujours ; dans le parcours la vue
         // s'en va, et le thème ne doit pas lui survivre.
         .onDisappear {
             LensTheme.shared.stop()
             RocketHaptics.shared.dragEnd()
+            Paillettes.shared.cancelAnnounce()
         }
     }
 
@@ -550,6 +552,12 @@ struct LiquidLensLab: View {
         if fingerLoc == nil {
             dragPath = [Sample(pos: loc, at: now)]
         }
+        // LA POUSSIÈRE SONORE : semée à la distance parcourue sur le
+        // chemin blanc — le doigt qui s'arrête se tait.
+        if let prev = fingerLoc {
+            Paillettes.shared.travel(hypot(loc.x - prev.x, loc.y - prev.y),
+                                     level: climbOf(y: loc.y, h: h))
+        }
         fingerLoc = loc
         release = nil
         // La vitesse verticale, lissée → l'étirement du verre.
@@ -582,12 +590,18 @@ struct LiquidLensLab: View {
             RocketHaptics.shared.surge(
                 rise: SummitCine.cutAt - 0.05,
                 contact: touch, beat: touch + 4.5)
+            // LES CHIFFRES AFFLEURENT (landed 4,5) : là où le thème
+            // sonnait un dong grave, c'est désormais une paillette qui
+            // monte — la voix de la poussière du geste, une octave plus
+            // haut. Même instant que le battement haptique.
+            Paillettes.shared.announce(after: touch + 4.5)
             onSummit?()
         }
     }
 
     private func fingerLifted(h: CGFloat) {
         RocketHaptics.shared.dragEnd()
+        Paillettes.shared.end()
         guard summitAt == nil, let loc = fingerLoc else { return }
         fingerLoc = nil
         stretch = 0

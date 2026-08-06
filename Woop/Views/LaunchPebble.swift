@@ -193,7 +193,14 @@ struct LaunchPebble: View {
             let bas = Self.toward(0.600, 0.530, 0.440, fv)
             let basH = Self.toward(0.630, 0.560, 0.460, fv)
             let corps = Self.toward(0.840, 0.790, 0.700, fv)
-            let epaule = Self.toward(0.700, 0.660, 0.600, fv)
+            // L'ÉPAULE EST MORTE. Mesurée par le jury : 225 → 164 → 220 en
+            // trois pixels sous le fil, sur tout l'arc — un creux étroit
+            // coincé entre deux clairs, c'est-à-dire un CONTOUR dessiné,
+            // pas un éclairage. La règle qui remplace le réglage : sur
+            // toute coupe verticale de la crête, la dérivée ne change de
+            // signe qu'UNE fois. Le volume vient du corps, du fil et du
+            // bloom — jamais d'une rainure.
+            let flanc = Self.toward(0.878, 0.822, 0.726, fv)
             let piedChaud = Self.toward(0.957, 0.871, 0.792, fv)
             let foyerC = Self.toward(0.975, 0.915, 0.780, fv)
 
@@ -214,7 +221,7 @@ struct LaunchPebble: View {
                             .init(color: bas, location: 0.0),
                             .init(color: basH, location: 0.35),
                             .init(color: corps, location: 0.80),
-                            .init(color: epaule, location: 0.952),
+                            .init(color: flanc, location: 0.93),
                             .init(color: piedChaud, location: 0.997),
                             .init(color: piedChaud, location: 1.0)
                         ],
@@ -349,10 +356,11 @@ struct LaunchPebble: View {
             }
             .mask(arcFade)
 
-            // LA POUDRE DE DIAMANT : le galet souffle ses étincelles au
-            // sommet de chaque respiration — davantage sous le doigt.
-            dustField(w: w, D: D, squash: squash, cyD: cyD, t: t,
-                      heat: heat, live: 1 - 0.9 * fv)
+            // LA POUDRE : un champ, calculé par pixel — le galet souffle
+            // sa brume au sommet de chaque respiration, davantage sous le
+            // doigt.
+            dust(w: w, H: H, D: D, squash: squash, cyD: cyD, t: t,
+                 heat: heat, live: 1 - 0.9 * fv)
 
             // L'invite, moderne et légère : deux chevrons gris
             // superposés en cascade, et le mot COUCHÉ DANS L'ARC —
@@ -403,42 +411,21 @@ struct LaunchPebble: View {
     /// est un dessin, pas de la lumière. Elles naissent sur la crête,
     /// flottent (elles ne fusent pas), meurent en cloche, et l'émission
     /// suit l'EXPIRATION du galet — le doigt la redouble.
-    private func dustField(w: CGFloat, D: CGFloat, squash: CGFloat,
-                           cyD: CGFloat, t: Double, heat: Double,
-                           live: Double) -> some View {
-        Canvas { ctx, _ in
-            let breathe = 0.5 + 0.5 * sin(t * 0.63)
-            let emission = (0.35 + 0.65 * breathe * breathe)
-                           * (1 + 1.2 * heat) * live
-            for i in 0..<56 {
-                let h1 = Self.hash01(i * 7 + 11)
-                let h2 = Self.hash01(i * 7 + 12)
-                let h3 = Self.hash01(i * 7 + 13)
-                let h4 = Self.hash01(i * 7 + 14)
-                let T = 4.0 + 3.0 * h1
-                let life = (t / T + h2 * 7)
-                    .truncatingRemainder(dividingBy: 1)
-                let ang = (h3 - 0.5) * 1.9
-                let x0 = w / 2 + (D + 2) * sin(ang)
-                let y0 = cyD - (D + 2) * cos(ang) / squash
-                let rise = life * (14 + 10 * h4)
-                let x = x0 + sin(t * 0.45 + h2 * 6.28) * 3.5
-                let y = y0 - rise
-                let bell = life < 0.30 ? life / 0.30 : (1 - life) / 0.70
-                // Un grain de poudre est petit ET NET : la finesse vient
-                // de la TAILLE, pas de la transparence — diviser les deux
-                // efface la brume au lieu de l'affiner. (Encre totale :
-                // 13× moins qu'avant, pour un grain 6× plus fin.)
-                let a = bell * (0.22 + 0.26 * h4) * emission
-                guard a > 0.008 else { continue }
-                let s = 0.14 + 0.14 * h4
-                ctx.fill(Path(ellipseIn: CGRect(
-                    x: x - s, y: y - s, width: 2 * s, height: 2 * s)),
-                    with: .color(Color(red: 0.99, green: 0.97, blue: 0.93)
-                        .opacity(a)))
-            }
-        }
-        .allowsHitTesting(false)
+    private func dust(w: CGFloat, H: CGFloat, D: CGFloat, squash: CGFloat,
+                      cyD: CGFloat, t: Double, heat: Double,
+                      live: Double) -> some View {
+        let breathe = 0.5 + 0.5 * sin(t * 0.63)
+        let emission = Float((0.35 + 0.65 * breathe * breathe)
+                             * (1 + 1.2 * heat) * live)
+        let cx = Float(w / 2), cy = Float(cyD)
+        let rd = Float(D), sq = Float(squash), tt = Float(t)
+        return Rectangle()
+            .fill(.black)   // JAMAIS .clear : le `* color.a` avale tout
+            .colorEffect(ShaderLibrary.pebbleDust(
+                .float2(cx, cy), .float2(rd, sq),
+                .float(tt), .float(emission)))
+            .frame(width: w, height: H)
+            .allowsHitTesting(false)
     }
 
     /// Les poussières d'étoiles de la nuit, au-dessus de la crête —

@@ -88,6 +88,9 @@ struct ExerciseDetailView: View {
     @State private var summited = false
     /// Le drag de retour en cours : son point de départ (y global).
     @State private var returnFrom: CGFloat?
+    /// Le point précédent du doigt — la poussière sonore se sème à la
+    /// DISTANCE parcourue, jamais au temps.
+    @State private var lastDrive: CGPoint?
 
     private static func sstep(_ a: Double, _ b: Double,
                               _ x: Double) -> Double {
@@ -259,6 +262,7 @@ struct ExerciseDetailView: View {
                 RocketHaptics.shared.prepare()
                 LensTheme.shared.prepare()
                 LensChime.shared.prepare()
+                Paillettes.shared.prepare()
             }
             .onChange(of: geo.size) { _, s in
                 if s.height > 100 {
@@ -625,6 +629,13 @@ struct ExerciseDetailView: View {
             // Le grondement vit dès le premier point — le MÊME moteur que
             // la lentille : au relais, il ne change pas de main.
             RocketHaptics.shared.dragLevel(c)
+            // La poussière sonore de la nuit ; passé le relais, c'est la
+            // lentille qui la sème (une seule source à la fois).
+            if let prev = lastDrive {
+                Paillettes.shared.travel(hypot(p.x - prev.x, p.y - prev.y),
+                                         level: c)
+            }
+            lastDrive = p
         }
     }
 
@@ -650,7 +661,9 @@ struct ExerciseDetailView: View {
         lensHandoff = nil
         summited = false
         lensShown = false
+        lastDrive = nil
         RocketHaptics.shared.dragEnd()
+        Paillettes.shared.end()
         withAnimation(.spring(response: 0.40, dampingFraction: 0.80)) {
             driveClimb = 0
         }
@@ -667,7 +680,19 @@ struct ExerciseDetailView: View {
                 guard lensShown, !summited,
                       lensHandoff?.live != true,
                       v.translation.height > 0 else { return }
-                if returnFrom == nil { returnFrom = v.startLocation.y }
+                if returnFrom == nil {
+                    returnFrom = v.startLocation.y
+                    lastDrive = v.location
+                }
+                // La poussière suit aussi le chemin du retour.
+                if let prev = lastDrive {
+                    Paillettes.shared.travel(
+                        hypot(v.location.x - prev.x,
+                              v.location.y - prev.y),
+                        level: Self.climbGlobal(y: v.location.y,
+                                                h: pageFull.height))
+                }
+                lastDrive = v.location
                 // ~300 pt de descente pour défaire toute la plongée.
                 let back = Double(v.translation.height) / 300.0
                 let c = max(Self.dawnEnd * (1 - back), 0)
@@ -680,7 +705,9 @@ struct ExerciseDetailView: View {
             .onEnded { v in
                 guard returnFrom != nil else { return }
                 returnFrom = nil
+                lastDrive = nil
                 RocketHaptics.shared.dragEnd()
+                Paillettes.shared.end()
                 if driveClimb < 0.11 {
                     // Revenue assez loin : la fiche reprend sa nuit.
                     closeBack()
