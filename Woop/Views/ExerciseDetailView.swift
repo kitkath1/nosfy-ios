@@ -7,12 +7,16 @@ import SwiftData
 /// modale `LogExerciseSheet` : il n'y a plus « consulter », puis « ouvrir pour
 /// saisir ». Il y a un seul écran, où l'on règle et où l'on lance.
 ///
-/// La page est NOIRE, et s'organise comme la référence : le chevron dans son
-/// chip de verre sous une nappe de braise, le titre, la photo fondue dans sa
-/// carte sombre, et en plancher le GALET D'AUBE — un galet de verre noir
-/// draggable où la lumière dort (`LaunchPebble.swift`), posé au-dessus du
-/// lecteur de séance (`WorkoutPill.swift`, désormais souverain en bas de
-/// page). L'ancien dôme blanc et son échancrure dorment, inutilisés, dans
+/// La page est NOIRE, et LA CARTE EST MORTE en musculation : plus de fond
+/// posé, plus de découpe à grands coins — c'était cette arête franche à
+/// 115 pt, avec le feu coupé net derrière, qui donnait la lecture « une
+/// carte qui scrolle ». Le feu du header a désormais une QUEUE et s'éteint
+/// tout seul dans la nuit de la page (voir `HeaderEmberCard`), la photo
+/// monte dedans, et le titre passe SOUS elle, sur deux lignes. En plancher
+/// le GALET D'AUBE — un galet de verre noir draggable où la lumière dort
+/// (`LaunchPebble.swift`). Le cardio, lui, garde sa carte et son fond : sa
+/// page défile, et un contenu qui défile a besoin d'un couteau.
+/// L'ancien dôme blanc et son échancrure dorment, inutilisés, dans
 /// `ExerciseSetupCard.swift` / `NotchedCard.swift`.
 ///
 /// Le banc : `-exoLab` ouvre cette fiche seule (+ `-activeWorkout` pour voir
@@ -221,17 +225,20 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         GeometryReader { geo in
-            // LA CARTE NOIRE : pleine largeur bord à bord, grands coins hauts
-            // arrondis — c'est elle qui s'inscrit sur la braise, et c'est dans
-            // ses deux coins que l'orange apparaît en négatif. Tout le contenu
-            // vit dedans, et le scroll se coupe sur sa silhouette : jamais un
-            // pixel de contenu ne remonte sur l'orange.
+            // LA CARTE NOIRE, désormais RÉSERVÉE AU CARDIO : pleine largeur,
+            // grands coins hauts, elle s'inscrit sur la braise et coupe le
+            // scroll sur sa silhouette — jamais un pixel de contenu ne remonte
+            // sur l'orange. La musculation ne défile pas : elle n'a rien à
+            // couper, donc elle n'a plus de carte du tout. Le noir lui vient
+            // du socle, en fond, comme à tout le monde.
             ZStack(alignment: .top) {
-                Group {
-                    if isStrength { strengthPage } else { cardioPage }
+                if isStrength {
+                    strengthPage
+                } else {
+                    cardioPage
+                        .background(Self.pageShape.fill(Color.black))
+                        .clipShape(Self.pageShape)
                 }
-                .background(Self.pageShape.fill(Color.black))
-                .clipShape(Self.pageShape)
             }
             // Le socle et la braise vivent en FOND, hors jeu de layout : la
             // carte-braise a déjà fait dérailler la largeur de la page une
@@ -241,9 +248,32 @@ struct ExerciseDetailView: View {
                     Color.black
                     // La braise se tait pendant la lentille : elle brûle à
                     // 30 Hz sous un plein écran qui, lui, tourne à 60.
-                    if running == nil { HeaderEmberCard() }
+                    // En muscu elle n'est plus ICI, en fond, mais AU-DESSUS,
+                    // en lumière (l'overlay juste dessous) ; le cardio, qui
+                    // garde sa carte noire, garde son feu derrière elle.
+                    if !isStrength, running == nil { HeaderEmberCard() }
                 }
                 .ignoresSafeArea()
+            }
+            // LA LUMIÈRE DE LA PAGE — au-dessus du contenu, et c'est une
+            // nécessité, pas une coquetterie. La photo est un fichier à fond
+            // NOIR OPAQUE : posée par-dessus un feu de fond, elle y poinçonne
+            // un rectangle noir de 240 pt de large, et le seul remède (fondre
+            // son quart haut) effacerait la tête et les épaules du sujet. En
+            // additif le problème n'existe pas : sur la nuit de la page le
+            // noir du halo n'AJOUTE rien, et sur la photo la lumière se POSE
+            // au lieu de masquer — le montant de la machine et l'épaule du
+            // sujet prennent leur liseré chaud. Ce n'est plus un fond derrière
+            // une image, c'est une source qui éclaire une scène.
+            // Sous les chips et sous la carte Série : les deux `safeAreaInset`
+            // sont appliqués après, leur verre fumé reste intact.
+            .overlay {
+                ZStack(alignment: .top) {
+                    Color.clear
+                    if isStrength, running == nil { ExoHeaderGlow() }
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
             }
             // La taille pour le banc — JAMAIS une géométrie d'avant le
             // premier layout (le zéro faisait le NaN ci-dessus).
@@ -275,7 +305,9 @@ struct ExerciseDetailView: View {
             .safeAreaInset(edge: .top, spacing: 0) { headerChips }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if isStrength {
-                    VStack(spacing: 14) {
+                    // 46 et non 14 : la carte Série remonte de 32 pt et
+                    // cesse d'être collée au galet.
+                    VStack(spacing: 46) {
                         SeriesCard(done: sets.filter(\.isDone).count,
                                    total: sets.count)
                             .padding(.horizontal, 20)
@@ -403,20 +435,31 @@ struct ExerciseDetailView: View {
 
     // MARK: Les deux corps de page
 
-    /// La musculation ne défile PAS : le titre en haut, la photo qui flotte au
-    /// milieu de ce qui reste, et rien d'autre. C'est le vide autour d'elle qui
-    /// la rend petite — la caler sous le titre laissait un trou en dessous.
+    /// La musculation ne défile PAS, et l'ordre s'est INVERSÉ : la photo
+    /// d'abord, haut et grande, puis le titre SOUS elle. Deux raisons, et
+    /// aucune n'est décorative. La première : le tiers haut de l'image est
+    /// exactement là où la queue de braise vient mourir — c'est l'image qui
+    /// reçoit le feu, pas une arête. La seconde : le titre a enfin la place
+    /// de se déplier sur deux lignes au lieu d'être écrasé à 80 % de son
+    /// corps pour tenir sur une seule.
+    ///
+    /// Les airs sont FIXES et tout le mou tombe en bas, sur le `Spacer`
+    /// final : la photo doit se poser au même endroit sur toutes les fiches,
+    /// sinon la braise l'accueille à une hauteur différente à chaque
+    /// exercice. Sur un écran court, c'est la photo qui cède (son 300 est un
+    /// plafond, jamais une exigence), pas la mise en page.
     private var strengthPage: some View {
         VStack(alignment: .leading, spacing: 0) {
-            titleBlock
-            Spacer(minLength: 10)
-            // Plafonnée, jamais imposée : sur un petit écran ou en gros
-            // caractères, c'est elle qui cède, pas la mise en page.
-            hero(maxHeight: 170)
-            Spacer(minLength: 10)
+            Color.clear.frame(height: 12)
+            // Bord à bord : elle est en `.fit`, elle se centre toute seule
+            // dans la largeur, et les 20 pt de gouttière n'appartiennent
+            // qu'au texte.
+            hero(maxHeight: 285)
+            Color.clear.frame(height: 8)
+            titleBlock(big: true)
+                .padding(.horizontal, 20)
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 18)
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -427,7 +470,7 @@ struct ExerciseDetailView: View {
     private var cardioPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                titleBlock
+                titleBlock(big: false)
                 hero(maxHeight: 210)
                 if let lastTime { LastTimeBanner(text: lastTime) }
                 editor
@@ -486,16 +529,31 @@ struct ExerciseDetailView: View {
     }
 
     /// EXACTEMENT le titre de la home — même fonte, même graisse, même
-    /// interlettrage négatif — et sur UNE ligne, toujours. Le sous-titre dit
-    /// la zone travaillée, en retrait, comme la référence.
-    private var titleBlock: some View {
+    /// interlettrage négatif, même dégradé. Le sous-titre dit la zone
+    /// travaillée, en retrait, comme la référence.
+    ///
+    /// `big` : la version de la fiche muscu, sur DEUX lignes. Le corps ne
+    /// change pas (30, comme partout) — ce qui change, c'est qu'il n'est
+    /// plus ÉCRASÉ : « Woodchopper poulie haute » demande ~450 pt sur une
+    /// ligne pour 362 disponibles, donc le `minimumScaleFactor(0,62)` le
+    /// rendait en réalité à 24. Deux lignes, et il retrouve sa taille
+    /// pleine. La largeur est bornée à 300 pour que la coupure tombe après
+    /// « Woodchopper » (le mouvement, puis la machine) et pas après
+    /// « poulie » — sur les noms courts, la borne ne se voit jamais.
+    ///
+    /// `WoopGradient.titleFade` est déjà DIAGONAL, précisément pour ce cas :
+    /// un dégradé horizontal rallume le début de chaque ligne et un titre
+    /// sur deux lignes se met à clignoter. Rien à y toucher.
+    private func titleBlock(big: Bool) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(exercise.name)
                 .font(.inter(30, .semibold))
                 .tracking(-0.3)
                 .foregroundStyle(WoopGradient.titleFade)
-                .lineLimit(1)
-                .minimumScaleFactor(0.62)
+                .lineLimit(big ? 2 : 1)
+                .minimumScaleFactor(big ? 0.9 : 0.62)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: big ? 300 : nil, alignment: .leading)
             Text("\(exercise.category.rawValue) • \(exercise.muscle)")
                 .font(.inter(13))
                 .foregroundStyle(Color.inkMuted)
@@ -844,6 +902,40 @@ struct ExerciseDetailView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
             withAnimation { confirmation = nil }
         }
+    }
+}
+
+// MARK: - Le halo du header (musculation)
+
+/// LA LUMIÈRE DU HAUT DE FICHE : une seule source, hors cadre, en haut à
+/// droite. Elle remplace le cadrage de `bgAurora` le jour où la carte noire
+/// est morte — voir `ExoHeaderGlow.metal`, qui raconte pourquoi aucun
+/// recadrage de ce champ-là ne pouvait donner un dégradé.
+///
+/// La hauteur est celle de la LUMIÈRE, pas d'une bande : il n'y a pas de
+/// bord bas à cacher, le champ arrive à zéro tout seul bien avant 340. Elle
+/// est posée en `plusLighter` par la page — ce halo n'est pas un fond, il
+/// ÉCLAIRE ce qui est déjà dessiné.
+///
+/// 30 Hz suffisent : la seule chose qui bouge est une respiration de 22 s.
+struct ExoHeaderGlow: View {
+    var height: CGFloat = 340
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 4096))
+                Rectangle()
+                    .fill(.black)   // JAMAIS .clear : le `* color.a` avale tout
+                    .colorEffect(ShaderLibrary.exoHeaderGlow(
+                        .float2(geo.size.width, height),
+                        .float(t)))
+            }
+        }
+        .frame(height: height)
+        .blendMode(.plusLighter)
+        .allowsHitTesting(false)
     }
 }
 
