@@ -100,6 +100,9 @@ struct TreasureView: View {
     @State private var settled = false
     /// Le contenu sous la vidéo est né.
     @State private var born = false
+    /// L'horloge de la fumée de la pièce, ou `nil` si personne n'y touche.
+    @State private var smokeStart: Date?
+    @State private var smokeEnd: Date?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -125,7 +128,7 @@ struct TreasureView: View {
                 // milieu : centré au cordeau, il paraît tomber trop bas —
                 // l'œil place le centre optique plus haut que le centre
                 // géométrique.
-                .padding(.bottom, H * 0.06)
+                .padding(.bottom, H * 0.14)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.black)
@@ -204,27 +207,118 @@ struct TreasureView: View {
 
     @ViewBuilder
     private func content(screenHeight H: CGFloat) -> some View {
+        // La pièce vaut 15 % de la hauteur d'écran, comme demandé.
+        let coinR = H * 0.075
+
         VStack(spacing: 0) {
             Text("Ton trésor")
                 .font(.inter(30, .semibold))
                 .tracking(-0.3)
                 .foregroundStyle(WoopGradient.silverText)
 
-            Text("Chaque séance terminée y dépose sa pièce.")
+            // La coupure est IMPOSÉE. Sur une ligne, le sous-titre faisait
+            // 288 px de large contre 141 au titre : un T renversé, bas-lourd,
+            // qui ouvrait le bloc au lieu de le refermer. Et il cassait tout
+            // seul, très mal, au premier cran de Dynamic Type au-dessus de L.
+            Text("Chaque séance terminée\ny dépose sa pièce.")
                 .font(.inter(14))
                 .foregroundStyle(Color.inkSecondary)
                 .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                // `fixedSize` vertical : sans lui SwiftUI laisse le texte se
+                // faire écraser par la largeur idéale de ses frères et le
+                // TRONQUE — mesuré à l'écran, « Chaque séance terminée… »
+                // avec des points de suspension, alors que la place est là.
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 9)
-                .padding(.horizontal, 34)
+                .padding(.horizontal, 30)
 
-            Image("piece-woop")
-                .resizable()
-                .scaledToFit()
-                .frame(height: H * 0.15)
-                .padding(.top, 30)
+            // LA PIÈCE, VIVANTE — plus le PNG. Elle prend la même softbox
+            // que tout le reste, elle tourne au doigt, et son croissant
+            // respire. Elle règle aussi un reproche du jury : l'emblème était
+            // joué DEUX FOIS sur la page (le croissant du coffre, puis celui
+            // de la pièce), la seconde en plus gros et sans rien apporter.
+            //
+            // LE GABARIT EST OBLIGATOIRE. L'hôte du shader fait 3,4 rayons
+            // (il lui faut de la place pour son halo) : laissé libre, il
+            // impose sa taille et la pièce vient RECOUVRIR le titre — mesuré
+            // à 138 pt de débord vers le haut. Ce `Color.clear` fixe la place
+            // en layout, et l'overlay laisse la lumière sortir (SwiftUI ne
+            // rogne pas une overlay).
+            //
+            // Repères, depuis le haut de la boîte : centre de la pièce à
+            // 1 rayon, centre du reflet à 3 rayons — ils se touchent donc
+            // exactement à 2 rayons, le bas du métal.
+            let host = coinR * MoonCoinView.hostScale
 
+            Color.clear
+                .frame(width: coinR * 2, height: coinR * 3.3)
+                .overlay(alignment: .top) {
+                    ZStack(alignment: .top) {
+                        // LE HALO. Très bas — 4 % de pic sur deux rayons et
+                        // demi. Plus fort, il fusionne avec le bloom que la
+                        // pièce porte déjà et l'objet cesse d'être un bijou
+                        // pour devenir une lampe posée sur la page.
+                        RadialGradient(
+                            colors: [Color(red: 1.0, green: 0.78, blue: 0.36)
+                                        .opacity(0.040), .clear],
+                            center: .center, startRadius: coinR * 0.5,
+                            endRadius: coinR * 2.5)
+                            .frame(width: coinR * 5, height: coinR * 5)
+                            .offset(y: -coinR * 1.5)
+                            .blendMode(.plusLighter)
+                            .allowsHitTesting(false)
+
+                        MoonCoinView(coinR: coinR, onTap: fireSmoke)
+                            // LA FUMÉE SOMBRE. Elle sort de la pièce, sur la
+                            // nuit de la page — à peine plus claire qu'elle.
+                            // C'est l'inverse exact du header, où le fond est
+                            // le halo orange : là-bas une fumée sombre ferait
+                            // une tache, ici une fumée claire ferait un nuage
+                            // posé sur l'écran.
+                            .overlay {
+                                if let smokeStart {
+                                    CoinSmoke(center: CGPoint(x: host / 2,
+                                                              y: host / 2),
+                                              radius: coinR,
+                                              start: smokeStart, end: smokeEnd,
+                                              palette: .dark)
+                                }
+                            }
+                            .offset(y: coinR - host / 2)
+
+                        // LE REFLET. Le procédé des cartes de l'accueil :
+                        // l'objet RETOURNÉ sous lui-même, éteint en dégradé.
+                        // Comme c'est le MÊME shader, il suit le lacet tout
+                        // seul — tourner la pièce fait danser son reflet, sans
+                        // une ligne de synchronisation.
+                        MoonCoinView(coinR: coinR, draggable: false)
+                            .scaleEffect(y: -1)
+                            .mask(
+                                // Les arrêts sont calés sur la géométrie : le
+                                // reflet naît là où les deux métaux se
+                                // touchent (0,21 de son cadre) et meurt avant
+                                // le bas du gabarit (0,62).
+                                LinearGradient(stops: [
+                                    .init(color: .clear, location: 0.0),
+                                    .init(color: .black.opacity(0.30),
+                                          location: 0.21),
+                                    .init(color: .clear, location: 0.62)
+                                ], startPoint: .top, endPoint: .bottom)
+                            )
+                            .blur(radius: 3.0)
+                            .offset(y: coinR * 3 - host / 2)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.top, 24)
+
+            // La pastille DESCEND. Collée sous la pièce, les deux se lisaient
+            // comme une sucette — un disque d'or posé sur une pilule d'or,
+            // même axe, même matière : une forme de composant, pas une
+            // composition.
             TreasureBadgeView(count: coins)
-                .padding(.top, 2)
+                .padding(.top, 26)
         }
         .frame(maxWidth: .infinity)
     }
@@ -235,17 +329,48 @@ struct TreasureView: View {
     @ViewBuilder
     private var closeButton: some View {
         if born {
+            // LE CHEVRON DE LA MAISON, à l'identique de la fiche
+            // d'exercice : 44 pt, coin continu de 15, verre fumé noir, liseré
+            // blanc à 8 %. L'ancien — un `chevron.down` dans un rond de
+            // matériau — était le seul élément non-or de la page, et il
+            // tombait en plein sur le coffre.
             Button(action: onClose) {
-                Image(systemName: "chevron.down")
+                Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.inkSecondary)
-                    .frame(width: 38, height: 38)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .foregroundStyle(Color.inkPrimary)
+                    .frame(width: 44, height: 44)
+                    .background {
+                        Color.clear.glassEffect(
+                            .regular.tint(Color.black.opacity(0.5)).interactive(),
+                            in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                    .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
-            .padding(.leading, 16)
-            .padding(.top, 60)
+            .buttonStyle(.plain)
+            .padding(.leading, 20)
+            .padding(.top, 16)
             .transition(.opacity)
             .accessibilityLabel("Fermer")
+        }
+    }
+
+    /// Le toucher de la pièce : la bouffée naît, puis se démonte une fois
+    /// éteinte pour rendre les 30 Hz du TimelineView. (L'haptique et le
+    /// tintement partent, eux, depuis `MoonCoinView` — au plus près du
+    /// doigt.)
+    private func fireSmoke() {
+        smokeStart = .now
+        smokeEnd = nil
+        let mark = Date.now.addingTimeInterval(0.14)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            smokeEnd = mark
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            guard smokeEnd == mark else { return }
+            smokeStart = nil
+            smokeEnd = nil
         }
     }
 
@@ -332,7 +457,7 @@ struct TreasureLab: View {
 struct TreasureBadgeView: View {
     let count: Int
 
-    private static let plateHeight: CGFloat = 36
+    private static let plateHeight: CGFloat = 54
     /// Le débord de l'hôte : la poussière monte à ~46 pt de la plaque, et le
     /// fondu d'hôte du shader en mange 10 de plus.
     private static let pad: CGFloat = 34
@@ -340,7 +465,7 @@ struct TreasureBadgeView: View {
     /// La largeur ne dépend que du NOMBRE de chiffres — le badge ne change
     /// pas de taille entre 111 et 999.
     private var plateWidth: CGFloat {
-        CGFloat(String(max(count, 0)).count) * 13 + 42
+        CGFloat(String(max(count, 0)).count) * 25 + 56
     }
 
     var body: some View {
@@ -367,7 +492,7 @@ struct TreasureBadgeView: View {
             // L'encre : un brun profond, pas du noir — sur l'or, le noir pur
             // fait un trou, le brun fait une gravure.
             Text("\(count)")
-                .font(.inter(19, .semibold))
+                .font(.inter(38, .semibold))
                 .foregroundStyle(Color(red: 0.204, green: 0.114, blue: 0.020))
         }
         .frame(width: hostW, height: hostH)

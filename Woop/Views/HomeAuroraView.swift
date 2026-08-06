@@ -181,8 +181,10 @@ struct HomeAuroraView: View {
                 GeometryReader { proxy in
                     if let anchor, let smokeStart {
                         let box = proxy[anchor]
-                        ChestSmoke(center: CGPoint(x: box.midX, y: box.midY),
-                                   start: smokeStart, end: smokeEnd)
+                        CoinSmoke(center: CGPoint(x: box.midX, y: box.midY),
+                                  radius: TreasureCoinButton.diameter / 2,
+                                  start: smokeStart, end: smokeEnd,
+                                  palette: .light)
                     }
                 }
                 .allowsHitTesting(false)
@@ -230,7 +232,7 @@ struct HomeAuroraView: View {
 
             Spacer(minLength: 8)
 
-            TreasureChestButton(onPress: chestTouched, action: openTreasure)
+            TreasureCoinButton(onPress: chestTouched, action: openTreasure)
         }
         .padding(.top, 14)
     }
