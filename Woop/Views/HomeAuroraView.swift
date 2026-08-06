@@ -124,6 +124,12 @@ struct HomeAuroraView: View {
     @State private var topCard = 0
     /// La séance qu'un toucher vient d'ouvrir.
     @State private var opened: Workout?
+    /// L'horloge de la fumée du coffre, ou `nil` si personne n'y touche.
+    @State private var smokeStart: Date?
+    /// L'instant où le doigt s'est levé (la fumée retombe à partir de là).
+    @State private var smokeEnd: Date?
+    /// La page du trésor.
+    @State private var showTreasure = false
 
     private var finished: [Workout] { workouts.filter { !$0.isActive } }
     private var activeWorkout: Workout? { workouts.first { $0.isActive } }
@@ -167,8 +173,24 @@ struct HomeAuroraView: View {
                 .opacity(contentBorn ? 1 : 0)
                 .offset(y: contentBorn ? 0 : 10)
             }
+            // La fumée du coffre se dessine ICI, hors du défilement : le
+            // coffre publie sa place (ChestBoundsKey) et le nuage — qui
+            // déborde de près de cent points — s'étale sans rencontrer le
+            // bord du ScrollView, qui l'aurait tranché au couteau.
+            .overlayPreferenceValue(ChestBoundsKey.self) { anchor in
+                GeometryReader { proxy in
+                    if let anchor, let smokeStart {
+                        let box = proxy[anchor]
+                        ChestSmoke(center: CGPoint(x: box.midX, y: box.midY),
+                                   start: smokeStart, end: smokeEnd)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+            .sensoryFeedback(.impact(weight: .light), trigger: smokeStart)
             .navigationBarHidden(true)
             .onAppear {
+                fireSmokeBenchIfAsked()
                 guard HomeWelcome.start != nil else { return }
                 contentBorn = false
                 // La lumière d'abord (l'aube part 0,45 s après la coupe), le
@@ -180,17 +202,82 @@ struct HomeAuroraView: View {
             .navigationDestination(isPresented: $showAllWorkouts) { WorkoutsListView() }
             .navigationDestination(item: $opened) { WorkoutDetailView(workout: $0) }
             .sheet(isPresented: $askStart) { startSheet }
+            // Plein écran, et non une destination de navigation : la page du
+            // trésor doit couvrir AUSSI la barre bijou (posée en
+            // `safeAreaInset` à la racine) — une cinématique avec une barre
+            // d'onglets qui flotte par-dessus n'est plus une cinématique.
+            .fullScreenCover(isPresented: $showTreasure) {
+                TreasureView(
+                    coins: TreasurePurse.coins(finishedWorkouts: finished.count)
+                ) {
+                    showTreasure = false
+                }
+            }
         }
     }
 
     // MARK: En-tête, objectif, CTA — la home noire, à l'identique
 
+    /// Le salut, et le coffre à sa droite — même ligne, même hauteur d'œil.
+    /// La marge droite lui vient du `.padding(.horizontal, 20)` du groupe
+    /// au-dessus : il ne touche pas la paroi.
     private var greeting: some View {
-        Text("Bonjour Kathryn")
-            .font(.inter(30, .semibold))
-            .tracking(-0.3)
-            .foregroundStyle(WoopGradient.silverText)
-            .padding(.top, 14)
+        HStack(alignment: .center, spacing: 12) {
+            Text("Bonjour Kathryn")
+                .font(.inter(30, .semibold))
+                .tracking(-0.3)
+                .foregroundStyle(WoopGradient.silverText)
+
+            Spacer(minLength: 8)
+
+            TreasureChestButton(onPress: chestTouched, action: openTreasure)
+        }
+        .padding(.top, 14)
+    }
+
+    /// Le doigt se pose, le doigt se lève — l'horloge de la fumée vit ICI
+    /// parce que c'est la page qui la dessine (le coffre, lui, défile).
+    private func chestTouched(_ pressed: Bool) {
+        if pressed {
+            smokeStart = .now
+            smokeEnd = nil
+        } else {
+            let mark = Date.now
+            smokeEnd = mark
+            // La bouffée s'éteint en ~0,45 s ; on démonte le sous-arbre une
+            // fois qu'il ne reste rien à dessiner, pour rendre les 30 Hz du
+            // TimelineView. Une autre bouffée a pu naître entre-temps : on
+            // n'éteint que la SIENNE.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                guard smokeEnd == mark else { return }
+                smokeStart = nil
+                smokeEnd = nil
+            }
+        }
+    }
+
+    /// `-coffreSmoke` : la bouffée part SEULE, deux secondes après l'arrivée,
+    /// et la page du trésor ne s'ouvre pas (c'est l'action du bouton, pas le
+    /// toucher, qui l'ouvre). Le simulateur ne sait pas poser un doigt sur
+    /// l'écran — sans ce déclencheur, la fumée n'est vérifiable que sur
+    /// l'appareil. Même idée que `-aubeFire` pour la traversée du dôme.
+    private func fireSmokeBenchIfAsked() {
+        guard CommandLine.arguments.contains("-coffreSmoke") else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            chestTouched(true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                chestTouched(false)
+            }
+        }
+    }
+
+    /// Le toucher fume, PUIS la page s'ouvre. Ouverte au même instant, la
+    /// fumée serait recouverte avant d'avoir été vue — on lui laisse le
+    /// temps de naître sur la home.
+    private func openTreasure() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            showTreasure = true
+        }
     }
 
     private var weeklyCard: some View {
