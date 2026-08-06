@@ -120,6 +120,9 @@ struct RootView: View {
     /// `-successFPS` loggue la cadence.
     private static let successLab = CommandLine.arguments
         .contains("-successLab")
+    /// Banc de la page du trésor : `-coffreLab` — le gros plan du coffre qui
+    /// vient se poser en haut, le titre, la pièce et le compte. Rejouable.
+    private static let coffreLab = CommandLine.arguments.contains("-coffreLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -272,6 +275,8 @@ struct RootView: View {
             LiquidLensLab()
         } else if Self.successLab {
             SuccessLab()
+        } else if Self.coffreLab {
+            TreasureLab()
         } else if Self.emberLab {
             EmberFlameLab()
         } else if Self.flameLab {
