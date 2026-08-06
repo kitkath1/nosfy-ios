@@ -123,6 +123,11 @@ struct RootView: View {
     /// Banc de la page du trésor : `-coffreLab` — le gros plan du coffre qui
     /// vient se poser en haut, le titre, la pièce et le compte. Rejouable.
     private static let coffreLab = CommandLine.arguments.contains("-coffreLab")
+    /// Banc de la pièce de lune : `-pieceLab` — l'anneau d'or, la laque et le
+    /// croissant, tournables au doigt. `-pieceSmall` la montre aux tailles
+    /// réelles du header, `-pieceFreeze <rad>` fige le lacet pour comparer
+    /// deux tours de fouettage au MÊME angle.
+    private static let pieceLab = CommandLine.arguments.contains("-pieceLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -277,6 +282,8 @@ struct RootView: View {
             SuccessLab()
         } else if Self.coffreLab {
             TreasureLab()
+        } else if Self.pieceLab {
+            MoonCoinLab()
         } else if Self.emberLab {
             EmberFlameLab()
         } else if Self.flameLab {
