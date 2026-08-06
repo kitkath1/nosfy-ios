@@ -9,9 +9,11 @@ import SwiftData
 ///
 /// La page est NOIRE, et s'organise comme la référence : le chevron dans son
 /// chip de verre sous une nappe de braise, le titre, la photo fondue dans sa
-/// carte sombre, et en plancher la DALLE — carte blanche draggable dont le
-/// bord bas s'échancre autour de la pastille de séance (l'incrustation vit
-/// dans `NotchedCard.swift`, la dalle dans `ExerciseSetupCard.swift`).
+/// carte sombre, et en plancher le GALET D'AUBE — un galet de verre noir
+/// draggable où la lumière dort (`LaunchPebble.swift`), posé au-dessus du
+/// lecteur de séance (`WorkoutPill.swift`, désormais souverain en bas de
+/// page). L'ancien dôme blanc et son échancrure dorment, inutilisés, dans
+/// `ExerciseSetupCard.swift` / `NotchedCard.swift`.
 ///
 /// Le banc : `-exoLab` ouvre cette fiche seule (+ `-activeWorkout` pour voir
 /// la pastille et son échancrure).
@@ -38,7 +40,7 @@ struct ExerciseDetailView: View {
     @State private var steadySpeed: Double = 7
     @State private var incline: Double = 0
 
-    /// Ce que le dôme a déjà versé de son papier sur la page [0,1].
+    /// Ce que la lumière du galet a déjà versé sur la page [0,1].
     @State private var flood: Double = 0
 
     /// La série en cours d'exécution au compteur, s'il y en a une. Un `item:`
@@ -52,6 +54,55 @@ struct ExerciseDetailView: View {
 
     private var active: Workout? { workouts.first { $0.isActive } }
     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
+
+    // MARK: Le banc de l'aube — le simulateur ne drague pas (l'école -cineTest)
+
+    /// `-aubeAuto` rejoue en boucle la montée de lumière du galet, sans
+    /// jamais déclencher ; `-aubeFire` joue UNE traversée complète (aube →
+    /// pose de la lentille → retour à la nuit) ; `-aubeFreeze <u>` fige la
+    /// course à u ∈ [0,1] pour les captures. Sans argument : inertes.
+    private static let aubeAuto = CommandLine.arguments.contains("-aubeAuto")
+    private static let aubeFire = CommandLine.arguments.contains("-aubeFire")
+    private static let aubeFreeze: Double? = {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-aubeFreeze"), i + 1 < args.count,
+              let v = Double(args[i + 1]) else { return nil }
+        return min(max(v, 0), 1)
+    }()
+
+    private func runAubeBench() async {
+        if let u = Self.aubeFreeze { flood = u; return }
+        guard Self.aubeAuto || Self.aubeFire else { return }
+        try? await Task.sleep(for: .seconds(2))
+        if Self.aubeFire {
+            // La montée, au tempo d'un doigt décidé.
+            let t0 = Date()
+            while !Task.isCancelled {
+                let u = Date().timeIntervalSince(t0) / 1.3
+                if u >= 1 { break }
+                flood = u * u * (3 - 2 * u)
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+            flood = 1
+            launch()
+            try? await Task.sleep(for: .seconds(5))
+            // Le retour : la nuit du cadran tombe sur la nuit de la page,
+            // même transaction — le chemin de complete(), sans la coche.
+            flood = 0
+            running = nil
+        } else {
+            // La boucle de l'aube : montée, retombée, silence — sans doigt.
+            let t0 = Date()
+            while !Task.isCancelled {
+                let ph = Date().timeIntervalSince(t0)
+                    .truncatingRemainder(dividingBy: 5.6)
+                let r = min(max((ph - 1.6) / 1.3, 0), 1)
+                let f = min(max((ph - 3.4) / 0.7, 0), 1)
+                flood = (r * r * (3 - 2 * r)) * (1 - f * f * (3 - 2 * f))
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+        }
+    }
 
     /// La silhouette de la carte noire : coins hauts seulement — elle file
     /// bord à bord et jusqu'en bas d'écran, comme la référence.
@@ -94,11 +145,18 @@ struct ExerciseDetailView: View {
                                    total: sets.count)
                             .padding(.horizontal, 20)
 
-                        ExerciseSetupSlab(
-                            exercise: exercise,
-                            progress: doneFraction,
+                        // LA BULLE DE LA LENTILLE, du côté de la nuit :
+                        // même course, même écriture de `flood` que le
+                        // dôme qu'elle remplace — mais le verre est le
+                        // VRAI (le shader de la lentille, appelé avec les
+                        // nombres de son repos). Bord à bord, elle déborde
+                        // jusqu'au bord physique de l'écran.
+                        // Le lecteur (`WorkoutPill`) est retiré du décor
+                        // pour l'instant — il reviendra, décision à venir.
+                        LaunchPebble(
                             label: "Glisser pour démarrer",
                             flood: $flood,
+                            asleep: running != nil,
                             onLaunch: launch
                         )
                     }
@@ -107,6 +165,7 @@ struct ExerciseDetailView: View {
                 }
             }
         }
+        .task { await runAubeBench() }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.
         .navigationBarBackButtonHidden(true)
@@ -114,10 +173,11 @@ struct ExerciseDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         // L'appareil confirme la série en même temps que les paillettes partent.
         .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
-        // LE RACCORD. Le dôme verse son papier sur la page pendant le geste ;
-        // quand la lentille se pose, elle ouvre sur CE papier-là. Aucune
-        // transition n'est jouée : il n'y a rien à traverser, c'est le même
-        // blanc qui continue.
+        // LE RACCORD. La lumière du galet inonde la page pendant le geste —
+        // le verre chauffe sur la MÊME rampe que ce voile ; quand la
+        // lentille se pose, elle ouvre sur CE papier-là. Aucune transition
+        // n'est jouée : il n'y a rien à traverser, c'est la même lumière
+        // qui continue.
         .overlay {
             ZStack {
                 if flood > 0.001 {
