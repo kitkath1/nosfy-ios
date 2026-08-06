@@ -492,3 +492,133 @@ final class LensChime {
         tap.play()
     }
 }
+
+// MARK: - La poussière sonore du drag
+//
+/// PAILLETTE — le grain de lumière sonore du geste : quand le doigt porte
+/// la bulle, du cristal minuscule s'égrène derrière elle. Ce n'est pas un
+/// effet de bouton (un son par appui) mais une TEXTURE : elle se sème à la
+/// DISTANCE PARCOURUE, jamais au temps — un doigt qui s'arrête se tait, un
+/// doigt qui file laisse une traînée. Chaque grain sort à une hauteur et à
+/// un volume différents (deux paillettes ne sonnent jamais pareil), et
+/// l'ensemble reste sous le seuil de l'attention : on le sent, on ne
+/// l'écoute pas.
+///
+/// Un POOL de lecteurs : les grains se chevauchent : rejouer un seul
+/// `AVAudioPlayer` le couperait net à chaque nouveau grain — le hachage
+/// qui trahit l'échantillon. `.ambient` : le mode silencieux est respecté,
+/// et la musique de l'utilisateur continue.
+@MainActor
+final class Paillettes {
+    static let shared = Paillettes()
+
+    private var pool: [AVAudioPlayer] = []
+    private var next = 0
+    private var lastAt: TimeInterval = 0
+    /// La distance qu'il reste à parcourir avant le prochain grain.
+    private var toNext: CGFloat = 0
+
+    private init() {}
+
+    func prepare() {
+        guard pool.isEmpty,
+              let url = Bundle.main.url(forResource: "Paillette",
+                                        withExtension: "wav") else { return }
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        for _ in 0..<6 {
+            guard let p = try? AVAudioPlayer(contentsOf: url) else { continue }
+            p.enableRate = true
+            p.volume = 0
+            p.prepareToPlay()
+            pool.append(p)
+        }
+        toNext = Self.stride()
+    }
+
+    /// Le doigt a parcouru `distance` points depuis le dernier appel.
+    /// `level` ∈ [0,1] : la montée — plus haut, plus clair et plus dense.
+    func travel(_ distance: CGFloat, level: Double) {
+        guard !pool.isEmpty, distance > 0 else { return }
+        toNext -= distance
+        guard toNext <= 0 else { return }
+        toNext = Self.stride() * (1.0 - 0.35 * CGFloat(min(max(level, 0), 1)))
+        grain(level: level)
+    }
+
+    /// Le geste s'achève : la traînée s'arrête, mais on ne coupe rien —
+    /// les grains en vol finissent de s'éteindre.
+    func end() { toNext = Self.stride() }
+
+    // MARK: L'annonce des chiffres
+
+    /// LA PAILLETTE D'ANNONCE — trois grains en arpège montant, à
+    /// l'instant où les chiffres affleurent sur le cadran. Elle remplace
+    /// le battement grave du thème (un DONG de 1,5 s de traîne, mesuré à
+    /// 76 % sous 150 Hz, retiré du fichier) : l'annonce se fait par la
+    /// même matière que la poussière du geste, en plus haut et en plus
+    /// bref. Déclenchée par le code, donc collée aux chiffres à la frame
+    /// près, quoi qu'il arrive à la partition.
+    func announce(after delay: TimeInterval) {
+        announceToken &+= 1
+        let token = announceToken
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(max(delay, 0)))
+            guard token == self.announceToken else { return }
+            self.arpeggio()
+        }
+    }
+
+    /// La cinématique s'en va avant l'heure : l'annonce ne doit pas
+    /// sonner dans le vide.
+    func cancelAnnounce() { announceToken &+= 1 }
+
+    private var announceToken = 0
+
+    private func arpeggio() {
+        // Trois degrés qui montent (tierce mineure, quarte) sur 145 ms :
+        // assez pour qu'on entende une INTENTION, trop court pour qu'on
+        // entende une mélodie.
+        let steps: [(TimeInterval, Float, Float)] = [
+            (0.000, 1.00, 0.055),
+            (0.072, 1.19, 0.048),
+            (0.145, 1.41, 0.040)
+        ]
+        for (dt, rate, vol) in steps {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(dt))
+                self.play(rate: rate, volume: vol)
+            }
+        }
+    }
+
+    private func grain(level: Double) {
+        let now = CACurrentMediaTime()
+        // Jamais deux grains collés : en dessous de 45 ms l'oreille entend
+        // une mitraille, pas une poudre.
+        guard now - lastAt > 0.045 else { return }
+        lastAt = now
+        // La hauteur monte AVEC le geste — c'est la même dramaturgie que
+        // le grondement haptique, une octave de cristal en chemin.
+        let lv = min(max(level, 0), 1)
+        // TRÈS discret : sous le seuil de l'attention. Un grain qu'on
+        // remarque isolément est un son d'interface ; une poudre, on la
+        // sent seulement quand le doigt bouge.
+        play(rate: Float.random(in: 0.82 ... 1.08) + Float(lv) * 0.40,
+             volume: Float.random(in: 0.030 ... 0.065) + Float(lv) * 0.045)
+    }
+
+    private func play(rate: Float, volume: Float) {
+        guard !pool.isEmpty else { return }
+        let p = pool[next]
+        next = (next + 1) % pool.count
+        p.rate = rate
+        p.volume = volume
+        p.currentTime = 0
+        p.play()
+    }
+
+    /// L'espacement de base, en points de doigt — jamais régulier : une
+    /// cadence fixe s'entend comme un métronome.
+    private static func stride() -> CGFloat { CGFloat.random(in: 11 ... 26) }
+}
