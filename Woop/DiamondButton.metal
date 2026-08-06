@@ -100,8 +100,19 @@ static float rimLight(float2 p, float2 halfB, float t) {
     float outside = max(d, 0.0);
     // Fondu court : la buée reste collée au liseré, la fumée ne
     // s'échappe presque pas du bouton. Au tap, elle s'épanouit un peu.
+    //
+    // AU REPOS, elle ne pèse plus que 30 % — LE CADRE. À 0,50, la buée
+    // valait encore 0,50 · e^(-34/15) · 1,6 ≈ 0,083 d'alpha en arrivant au
+    // BORD DU RECTANGLE-HÔTE (pad = 34 pt), soit ~21 niveaux de gris coupés
+    // NET en un pixel : sur un fond noir, l'œil ne lit pas une buée, il lit
+    // un cadre rectangulaire autour du bouton. À 0,15 la même arête tombe à
+    // ~6 niveaux et disparaît dans le noir.
+    // Le tap est INTACT : le facteur repart exactement à 0,50 quand `press`
+    // atteint 1, donc l'état pressé rend 0,50 + 0,14 = 0,64, au niveau près
+    // ce qu'il rendait avant.
+    float haloAmp = 0.50 * (0.30 + 0.70 * press) + 0.14 * press;
     float halo = exp(-outside / (15.0 + 5.0 * press))
-                 * smoothstep(-0.8, 0.8, d) * (0.50 + 0.14 * press) * rim;
+                 * smoothstep(-0.8, 0.8, d) * haloAmp * rim;
     // L'onde du toucher : un anneau qui s'évase du liseré et s'éteint.
     if (burst > 0.001) {
         float ring = 8.0 + (1.0 - burst) * 30.0;
