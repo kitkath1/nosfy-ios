@@ -41,6 +41,29 @@ struct LiquidLensLab: View {
     /// Repartir sans rien compter, tant que la nuit n'est pas tombée.
     var onCancel: (() -> Void)?
 
+    /// LE GESTE UNIQUE — la cinquième prise du parcours. Le doigt qui a
+    /// commencé sur la fiche d'exercice continue de porter la bulle ICI :
+    /// la fiche transmet sa position (en points plein écran, l'espace de
+    /// cette vue) tant que SON geste vit, puis le relâcher. La montée,
+    /// l'encre, le sommet passent par les MÊMES fonctions que le doigt
+    /// interne — pas une deuxième mécanique. `nil`, le défaut, laisse le
+    /// banc et le parcours d'hier identiques au pixel.
+    struct Handoff: Equatable {
+        /// Le doigt, en points plein écran.
+        var point: CGPoint
+        /// Sa vitesse verticale — l'étirement du verre.
+        var velocityY: CGFloat
+        /// `false` : le doigt vient de relâcher.
+        var live: Bool
+    }
+    var handoff: Handoff? = nil
+
+    /// La sixième prise : le SOMMET vient d'être franchi — la partition
+    /// prend la main. La fiche s'en sert pour désarmer son drag de
+    /// retour : dans la nuit du chrono, plus rien ne tire vers le bas.
+    /// `nil`, le défaut, ne change rien au banc ni au parcours d'hier.
+    var onSummit: (() -> Void)? = nil
+
     /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
     private var isJourney: Bool { onFinish != nil }
 
@@ -146,6 +169,24 @@ struct LiquidLensLab: View {
                     RocketHaptics.shared.tapFlare()
                     LensChime.shared.flare()
                 })
+                // LE GESTE UNIQUE : le doigt de la fiche entre par la
+                // même porte que le doigt interne. À l'apparition, s'il
+                // est déjà posé, la bulle naît DÉJÀ soulevée sous lui.
+                .onChange(of: handoff) { _, hf in
+                    guard isJourney, let hf else { return }
+                    if hf.live {
+                        fingerMoved(hf.point, velocityY: hf.velocityY,
+                                    h: h)
+                    } else {
+                        fingerLifted(h: h)
+                    }
+                }
+                .onAppear {
+                    if isJourney, let hf = handoff, hf.live {
+                        fingerMoved(hf.point, velocityY: hf.velocityY,
+                                    h: h)
+                    }
+                }
             }
         }
         .ignoresSafeArea()
@@ -492,55 +533,65 @@ struct LiquidLensLab: View {
     private func dragGesture(h: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { v in
-                guard summitAt == nil else { return }
-                let now = Date()
-                if fingerLoc == nil {
-                    dragPath = [Sample(pos: v.location, at: now)]
-                }
-                fingerLoc = v.location
-                release = nil
-                // La vitesse verticale, lissée → l'étirement du verre.
-                let target = min(max(Double(-v.velocity.height) / 2600,
-                                     -0.05), 0.14)
-                stretch += (target - stretch) * 0.25
-                // LE GRONDEMENT DU DRAG : n'existe qu'au doigt posé, en
-                // crescendo avec la montée — muet au simulateur.
-                RocketHaptics.shared.dragLevel(
-                    climbOf(y: v.location.y, h: h))
-                if let last = dragPath.last,
-                   hypot(v.location.x - last.pos.x,
-                         v.location.y - last.pos.y) > 7 {
-                    dragPath.append(Sample(pos: v.location, at: now))
-                    if dragPath.count > 90 {
-                        dragPath.removeFirst(dragPath.count - 90)
-                    }
-                }
-                // LE SOMMET : le doigt a terminé son œuvre — la partition
-                // prend la main, la fusée gronde.
-                if climbOf(y: v.location.y, h: h) >= 0.985 {
-                    summitAt = now
-                    summitFx = v.location.x
-                    fingerLoc = nil
-                    stretch = 0
-                    let touch = SummitCine.cutAt + SummitCine.enter
-                                + SummitCine.descend
-                    // Le grondement du drag passe le relais à la fusée,
-                    // et LE THÈME entre en scène — la partition est fixe
-                    // à partir d'ici (silence après l'arrivée).
-                    RocketHaptics.shared.dragEnd()
-                    LensTheme.shared.play()
-                    RocketHaptics.shared.surge(
-                        rise: SummitCine.cutAt - 0.05,
-                        contact: touch, beat: touch + 4.5)
-                }
+                fingerMoved(v.location, velocityY: v.velocity.height, h: h)
             }
             .onEnded { _ in
-                RocketHaptics.shared.dragEnd()
-                guard summitAt == nil, let loc = fingerLoc else { return }
-                fingerLoc = nil
-                stretch = 0
-                release = (climbOf(y: loc.y, h: h), loc.x, .now)
+                fingerLifted(h: h)
             }
+    }
+
+    /// Le corps du geste, EXTRAIT tel quel : le doigt interne et le
+    /// `handoff` de la fiche passent par la même porte — une seule
+    /// mécanique de montée, d'encre et de sommet.
+    private func fingerMoved(_ loc: CGPoint, velocityY: CGFloat,
+                             h: CGFloat) {
+        guard summitAt == nil else { return }
+        let now = Date()
+        if fingerLoc == nil {
+            dragPath = [Sample(pos: loc, at: now)]
+        }
+        fingerLoc = loc
+        release = nil
+        // La vitesse verticale, lissée → l'étirement du verre.
+        let target = min(max(Double(-velocityY) / 2600, -0.05), 0.14)
+        stretch += (target - stretch) * 0.25
+        // LE GRONDEMENT DU DRAG : n'existe qu'au doigt posé, en
+        // crescendo avec la montée — muet au simulateur.
+        RocketHaptics.shared.dragLevel(climbOf(y: loc.y, h: h))
+        if let last = dragPath.last,
+           hypot(loc.x - last.pos.x, loc.y - last.pos.y) > 7 {
+            dragPath.append(Sample(pos: loc, at: now))
+            if dragPath.count > 90 {
+                dragPath.removeFirst(dragPath.count - 90)
+            }
+        }
+        // LE SOMMET : le doigt a terminé son œuvre — la partition
+        // prend la main, la fusée gronde.
+        if climbOf(y: loc.y, h: h) >= 0.985 {
+            summitAt = now
+            summitFx = loc.x
+            fingerLoc = nil
+            stretch = 0
+            let touch = SummitCine.cutAt + SummitCine.enter
+                        + SummitCine.descend
+            // Le grondement du drag passe le relais à la fusée,
+            // et LE THÈME entre en scène — la partition est fixe
+            // à partir d'ici (silence après l'arrivée).
+            RocketHaptics.shared.dragEnd()
+            LensTheme.shared.play()
+            RocketHaptics.shared.surge(
+                rise: SummitCine.cutAt - 0.05,
+                contact: touch, beat: touch + 4.5)
+            onSummit?()
+        }
+    }
+
+    private func fingerLifted(h: CGFloat) {
+        RocketHaptics.shared.dragEnd()
+        guard summitAt == nil, let loc = fingerLoc else { return }
+        fingerLoc = nil
+        stretch = 0
+        release = (climbOf(y: loc.y, h: h), loc.x, .now)
     }
 
     // MARK: L'univers noir — la renaissance et la descente

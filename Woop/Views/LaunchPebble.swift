@@ -23,20 +23,27 @@ struct LaunchPebble: View {
     let label: String
     /// Fraction de la course déjà parcourue [0,1] — la page monte son
     /// voile dessus, le verre chauffe sa braise sur LA MÊME rampe.
+    /// C'est désormais la FICHE qui l'écrit (depuis la montée du doigt) :
+    /// le galet la lit, il ne la possède plus.
     @Binding var flood: Double
     /// La lentille couvre la page : le verre dort (horloges en pause).
     var asleep: Bool = false
-    /// Le doigt a tiré jusqu'au bout de la course.
+    /// LE GESTE UNIQUE : le galet ne déclenche plus rien lui-même — il
+    /// RAPPORTE son doigt (en points plein écran) à la fiche, qui blanchit
+    /// la page, monte la lentille déjà soulevée, et lui passe le relais.
+    let onDrive: (CGPoint, CGFloat) -> Void
+    let onRelease: (CGPoint, CGFloat) -> Void
+    /// Le lancement direct — pour l'accessibilité seulement.
     let onLaunch: () -> Void
 
     @State private var pull: CGFloat = 0
-    @State private var fired = 0
     /// La renaissance : quand la nuit de la page revient, la braise se
     /// rallume d'une bouffée (attaque 0,12 s, retombée ~0,9 s).
     @State private var wakeAt: Date?
-
-    /// La course qui déclenche — celle du dôme, validée au pouce.
-    private static let travel: CGFloat = 116
+    /// LA VIBRATION FORTE qui annonce le début : un coup lourd dès que le
+    /// doigt engage vraiment le galet, une fois par geste.
+    @State private var beganBeat = 0
+    @State private var began = false
     /// La place réservée dans la mise en page. Le verre déborde : en haut
     /// pour son halo et la portée de sa réfraction (`maxSampleOffset`),
     /// en bas jusqu'au bord physique de l'écran, sous la zone sûre.
@@ -47,11 +54,11 @@ struct LaunchPebble: View {
     /// Le papier de la maison — celui du voile, celui de la lentille.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
 
-    /// Ce que le geste a soulevé : la même résistance que le dôme — le
-    /// verre monte d'un tiers du tirage, le bout de course se SENT.
+    /// Ce que le geste a soulevé : le galet monte AVEC le doigt — suivi
+    /// direct sur 60 pt (toute la montée nocturne se VOIT sur la page),
+    /// puis la résistance s'épaissit, et de toute façon l'aube arrive.
     private var lift: CGFloat {
-        let u = min(pull / Self.travel, 1)
-        return u * Self.travel * 0.34
+        min(pull, 60) + max(pull - 60, 0) * 0.25
     }
 
     var body: some View {
@@ -66,8 +73,8 @@ struct LaunchPebble: View {
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
         .gesture(lifter)
-        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
-                         trigger: fired)
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
+                         trigger: beganBeat)
         .onChange(of: asleep) { was, sleeps in
             if was && !sleeps { wakeAt = Date() }
         }
@@ -92,7 +99,10 @@ struct LaunchPebble: View {
             //   les deux mondes. Le souffle se tait sous le doigt.
             let calm = 1.0 - min(Double(pull) / 40.0, 1.0)
             let u = flood
-            let heat = sstep(0.02, 0.75, u)
+            // La chaleur vit sur la MONTÉE NOCTURNE (flood ≤ 0,22 au bout
+            // du temps 1) : la braise fait son crescendo pendant que la
+            // page est encore sombre — c'est là qu'on doit la voir.
+            let heat = sstep(0.02, 0.26, u)
             // La rampe du voile — LA MÊME que floodVeil côté fiche : le
             // verre se fond quand la page se remplit.
             let fu = min(max((u - 0.12) / 0.46, 0), 1)
@@ -107,12 +117,20 @@ struct LaunchPebble: View {
             //   calotte grandit vers la crête et sa braise fait son
             //   crescendo : le repos est la maquette, le geste réveille
             //   le verre de feu de la lentille.
-            let D = w * 0.60 + 2.6 * sin(t * 0.63) * calm
+            // La respiration ×2,5 (« elle peut le faire davantage ») —
+            // mêmes horloges que la bulle de la lentille, amplitude d'un
+            // être qui dort.
+            let D = w * 0.60 + 6.5 * sin(t * 0.63) * calm
             let squash = 1.08
             let crestY = Self.padTop + 20 - lift
-                         + 3.5 * sin(t * 0.80) * calm
+                         + 6.0 * sin(t * 0.80) * calm
             let cyD = crestY + D / squash
-            let Rg = D * (0.62 + 0.41 * heat)
+            // La calotte n'approche JAMAIS son limbe du bord : à 1,03 D
+            // son échantillonnage sortait de la nacre et peignait les
+            // « traits noirs dégueus » du verdict. Le feu du geste vient
+            // des traits de LUMIÈRE au-dessus — eux ne savent pas faire
+            // de noir.
+            let Rg = D * (0.62 + 0.06 * heat)
             let cX = Float(w / 2)
             let cY = Float(cyD)
 
@@ -121,9 +139,9 @@ struct LaunchPebble: View {
             //   bouffée de renaissance, et l'anti-fournaise : elle cède
             //   au voile.
             let emberBase = 0.06 + 0.04 * sin(t * 0.9)
-            let emberV = Float(min((emberBase + 0.85 * heat
+            let emberV = Float(min((emberBase + 0.40 * heat
                                     + 0.25 * Double(wake)) * (1 - 0.85 * fv),
-                                   1.0))
+                                   0.55))
 
             // — Les prises du verre : magnification douce, dispersion
             //   quasi nulle (les franges couleur « sentent le procédé »).
@@ -233,7 +251,7 @@ struct LaunchPebble: View {
             .overlay {
                 dress(w: w, H: H, D: D, squash: squash, cyD: cyD,
                       crestY: crestY, heat: heat, fv: fv,
-                      inkFade: inkFade)
+                      inkFade: inkFade, t: t)
             }
             .offset(y: -Self.padTop)
             .allowsHitTesting(false)
@@ -247,7 +265,11 @@ struct LaunchPebble: View {
     /// droite, nette, posée SUR le dôme.
     private func dress(w: CGFloat, H: CGFloat, D: CGFloat, squash: CGFloat,
                        cyD: CGFloat, crestY: CGFloat, heat: Double,
-                       fv: Double, inkFade: Double) -> some View {
+                       fv: Double, inkFade: Double,
+                       t: Double) -> some View {
+        // L'ancre de l'écriture : la crête SANS son souffle — elle suit
+        // le doigt (lift), jamais la respiration.
+        let inkY = Self.padTop + 20 - lift
         // La palette du contre-jury : bloom AMBRE saturé (R/G ≥ 1,8 — le
         // beige est la dérive marron), un « baiser » orange vif contre le
         // fil pour que la lumière PRENNE sur la crête, et l'arête des
@@ -262,8 +284,10 @@ struct LaunchPebble: View {
         let bloomC = Color(red: 1.00, green: 0.55, blue: 0.18)
         let flancC = Color(red: 0.42, green: 0.22, blue: 0.075)
         let live = (1 - 0.90 * fv)
-        let filA = 1.0 * live
-        let bloomA = (0.55 + 0.9 * heat) * live
+        // La couronne respire avec le corps — même horloge 0,63.
+        let breathe = 0.5 + 0.5 * sin(t * 0.63)
+        let filA = (0.88 + 0.12 * breathe) * live
+        let bloomA = (0.55 + 0.9 * heat) * (0.78 + 0.30 * breathe) * live
         // Décroissance dès la crête : à l'aplomb des flancs le fil est
         // déjà éteint, l'ambre prend le relais.
         let c0 = min((crestY + D * 0.02) / H, 1)
@@ -302,11 +326,15 @@ struct LaunchPebble: View {
             // Le fil vit tout entier CÔTÉ NUIT (D + 1, soudé au pied) :
             // contre le noir il est une lumière.
             ZStack(alignment: .topLeading) {
+                // « L'ancre orange s'étire vers le haut » : sous la
+                // chaleur du geste, le bloom s'élargit et s'élève.
                 Ellipse()
-                    .stroke(bloomC.opacity(bloomA), lineWidth: 8)
-                    .blur(radius: 6)
-                    .frame(width: 2 * (D + 4), height: 2 * (D + 4) / squash)
-                    .position(x: w / 2, y: cyD)
+                    .stroke(bloomC.opacity(bloomA),
+                            lineWidth: 8 + 12 * heat)
+                    .blur(radius: 6 + 9 * heat)
+                    .frame(width: 2 * (D + 4 + 10 * heat),
+                           height: 2 * (D + 4 + 10 * heat) / squash)
+                    .position(x: w / 2, y: cyD - 8 * heat)
                 Ellipse()
                     .stroke(baiserC.opacity(0.90 * live), lineWidth: 2.0)
                     .blur(radius: 0.6)
@@ -321,23 +349,96 @@ struct LaunchPebble: View {
             }
             .mask(arcFade)
 
-            // L'encre ASSISE dans le papier (~#2A2622, luma ~40) — plus
-            // claire, elle flottait.
+            // LA POUDRE DE DIAMANT : le galet souffle ses étincelles au
+            // sommet de chaque respiration — davantage sous le doigt.
+            dustField(w: w, D: D, squash: squash, cyD: cyD, t: t,
+                      heat: heat, live: 1 - 0.9 * fv)
+
+            // L'invite, moderne et légère : deux chevrons gris
+            // superposés en cascade, et le mot COUCHÉ DANS L'ARC —
+            // une gravure, pas une étiquette.
             Group {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.165, green: 0.149,
-                                           blue: 0.133))
-                    .position(x: w / 2, y: crestY + 56)
+                chevrons(t: t)
+                    .position(x: w / 2, y: inkY + 26)
+                // DROIT, HAUT, ET IMMOBILE. Deux fautes payées ici :
+                // couché dans l'arc il lisait « bug d'affichage » ; puis,
+                // même droit, ancré à la crête il DÉRIVAIT de ±6 pt avec
+                // la respiration du galet — une ligne de texte qui flotte
+                // sans arrêt, c'est exactement ce qu'on lit comme fake.
+                // La matière respire, l'écriture ne respire pas.
                 Text(label)
-                    .font(.inter(15, .medium))
-                    .foregroundStyle(Color(red: 0.165, green: 0.149,
-                                           blue: 0.133).opacity(0.94))
-                    .position(x: w / 2, y: crestY + 88)
+                    .font(.inter(13, .light))
+                    .tracking(0.6)
+                    .foregroundStyle(Color.black.opacity(0.42))
+                    .position(x: w / 2, y: inkY + 58)
             }
             .opacity(inkFade)
         }
         .frame(width: w, height: H)
+    }
+
+    /// Les deux chevrons gris superposés — celui du haut respire une
+    /// demi-phase en avance : l'invitation, jamais un panneau.
+    private func chevrons(t: Double) -> some View {
+        let a1 = 0.5 + 0.5 * sin(t * 2.0)
+        let a2 = 0.5 + 0.5 * sin(t * 2.0 - 0.9)
+        return ZStack {
+            Image(systemName: "chevron.up")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.14 + 0.18 * a1))
+                .offset(y: -4.5)
+            Image(systemName: "chevron.up")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.14 + 0.18 * a2))
+                .offset(y: 3.5)
+        }
+    }
+
+    /// LA POUDRE : une BRUME au-dessus de la crête, jamais des points.
+    /// À bout de bras on ne doit voir qu'un voile ; un grain ne se
+    /// distingue qu'en approchant. D'où : des motes SOUS LE PIXEL
+    /// (0,28-0,56 pt — l'anti-aliasing fait le reste), une opacité de
+    /// souffle (≤ 0,14), et beaucoup — une poudre est une QUANTITÉ, pas
+    /// une taille. Aucune croix, aucun trait : un pictogramme d'étincelle
+    /// est un dessin, pas de la lumière. Elles naissent sur la crête,
+    /// flottent (elles ne fusent pas), meurent en cloche, et l'émission
+    /// suit l'EXPIRATION du galet — le doigt la redouble.
+    private func dustField(w: CGFloat, D: CGFloat, squash: CGFloat,
+                           cyD: CGFloat, t: Double, heat: Double,
+                           live: Double) -> some View {
+        Canvas { ctx, _ in
+            let breathe = 0.5 + 0.5 * sin(t * 0.63)
+            let emission = (0.35 + 0.65 * breathe * breathe)
+                           * (1 + 1.2 * heat) * live
+            for i in 0..<56 {
+                let h1 = Self.hash01(i * 7 + 11)
+                let h2 = Self.hash01(i * 7 + 12)
+                let h3 = Self.hash01(i * 7 + 13)
+                let h4 = Self.hash01(i * 7 + 14)
+                let T = 4.0 + 3.0 * h1
+                let life = (t / T + h2 * 7)
+                    .truncatingRemainder(dividingBy: 1)
+                let ang = (h3 - 0.5) * 1.9
+                let x0 = w / 2 + (D + 2) * sin(ang)
+                let y0 = cyD - (D + 2) * cos(ang) / squash
+                let rise = life * (14 + 10 * h4)
+                let x = x0 + sin(t * 0.45 + h2 * 6.28) * 3.5
+                let y = y0 - rise
+                let bell = life < 0.30 ? life / 0.30 : (1 - life) / 0.70
+                // Un grain de poudre est petit ET NET : la finesse vient
+                // de la TAILLE, pas de la transparence — diviser les deux
+                // efface la brume au lieu de l'affiner. (Encre totale :
+                // 13× moins qu'avant, pour un grain 6× plus fin.)
+                let a = bell * (0.22 + 0.26 * h4) * emission
+                guard a > 0.008 else { continue }
+                let s = 0.14 + 0.14 * h4
+                ctx.fill(Path(ellipseIn: CGRect(
+                    x: x - s, y: y - s, width: 2 * s, height: 2 * s)),
+                    with: .color(Color(red: 0.99, green: 0.97, blue: 0.93)
+                        .opacity(a)))
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     /// Les poussières d'étoiles de la nuit, au-dessus de la crête —
@@ -347,16 +448,19 @@ struct LaunchPebble: View {
     private func starField(w: CGFloat, crestY: CGFloat,
                            t: Double) -> some View {
         Canvas { ctx, _ in
-            for i in 0..<18 {
+            // La même finesse que la poudre : sous le pixel, en souffle —
+            // sinon la brume devient fine et les étoiles restent des
+            // points, l'incohérence saute aux yeux.
+            for i in 0..<26 {
                 let h1 = Self.hash01(i * 3 + 1)
                 let h2 = Self.hash01(i * 3 + 2)
                 let h3 = Self.hash01(i * 3 + 3)
                 let x = 14 + h1 * (w - 28)
                 let y = crestY - 14 - h2 * 108
-                let r = 0.5 + h3 * 0.5
+                let r = 0.16 + h3 * 0.16
                 let tw = 0.55 + 0.45 * sin(t * (0.30 + h1 * 0.55)
                                            + h2 * 6.28)
-                let a = (0.06 + 0.18 * h3) * tw
+                let a = (0.14 + 0.22 * h3) * tw
                 ctx.fill(
                     Path(ellipseIn: CGRect(x: x - r, y: y - r,
                                            width: 2 * r, height: 2 * r)),
@@ -396,22 +500,24 @@ struct LaunchPebble: View {
         return u * u * (3 - 2 * u)
     }
 
-    // MARK: Le geste — le contrat du dôme, inchangé
+    // MARK: Le geste — UN SEUL, rapporté à la fiche en plein écran
 
+    /// Le galet ne juge plus la course : il monte sous le doigt et
+    /// rapporte chaque position (espace .global = l'espace de la
+    /// lentille) — la fiche décide du voile, du montage et du relais.
     private var lifter: some Gesture {
-        DragGesture(minimumDistance: 6)
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { v in
                 pull = max(0, -v.translation.height)
-                flood = Double(min(pull / Self.travel, 1))
-            }
-            .onEnded { _ in
-                if pull >= Self.travel {
-                    fired += 1
-                    flood = 1
-                    onLaunch()
-                } else {
-                    withAnimation(.easeOut(duration: 0.22)) { flood = 0 }
+                if pull > 8, !began {
+                    began = true
+                    beganBeat += 1
                 }
+                onDrive(v.location, v.velocity.height)
+            }
+            .onEnded { v in
+                began = false
+                onRelease(v.location, v.velocity.height)
                 withAnimation(.spring(response: 0.42,
                                       dampingFraction: 0.74)) {
                     pull = 0
