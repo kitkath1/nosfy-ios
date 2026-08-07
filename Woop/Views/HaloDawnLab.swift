@@ -81,6 +81,25 @@ struct HaloDeck: View {
     /// chaque image du geste.
     @State private var lastTick: Date = .distantPast
     @State private var hapticTick = 0
+    // LA MAIN RACONTE LA MÊME CHORÉGRAPHIE QUE L'ŒIL, et chaque temps a sa
+    // matière — un seul déclencheur pour tout donnerait un moteur qui tape
+    // toujours pareil, et on ne sentirait plus rien passer.
+    //   • `grainTick` : le FROTTEMENT de la traversée. Un grain fin dont la
+    //     cadence suit la profondeur — c'est ce qui donne une matière au
+    //     trou, comme une carte qu'on pousse dans une fente serrée ;
+    //   • `seuilTick` : LE FRANCHISSEMENT de la lèvre, sec et net. Le même
+    //     instant que le balayage du liseré, à l'image près ;
+    //   • `fondTick` : LE FOND. Sourd, lourd, une seule fois.
+    @State private var grainTick = 0
+    @State private var seuilTick = 0
+    @State private var fondTick = 0
+    /// Le dernier grain de frottement, et la profondeur où il est tombé :
+    /// le grain se déclenche à la DISTANCE parcourue, pas au temps. Une
+    /// cadence fixe donnerait le même frottement pour un geste lent et pour
+    /// un geste vif — or c'est justement la vitesse qu'on doit sentir.
+    @State private var dernierGrain: CGFloat = -999
+    /// Le seuil a déjà sonné pour CE geste.
+    @State private var seuilSonne = false
     /// L'horodatage de l'activation : la bouffée du néon intérieur.
     @State private var firedAt: Date = .distantPast
     /// Le seuil a déjà sonné pour CE geste : l'amorçage ne tinte qu'une
@@ -169,6 +188,13 @@ struct HaloDeck: View {
     /// film — on tombe sur celle d'à côté et on corrige un défaut qui
     /// n'existe pas. Ici l'état est nommé, donc reproductible d'un tour à
     /// l'autre et comparable à sa capture.
+    /// L'EXPÉRIENCE D'ATTRIBUTION. `-isoFente` ne rend QUE la fente,
+    /// `-isoPile` ne rend QUE la pile. Quand un défaut se voit et qu'on ne
+    /// sait pas de quelle couche il vient, on ne devine pas : on éteint
+    /// l'une, puis l'autre. Deux captures, et c'est attribué.
+    private static let isoFente = CommandLine.arguments.contains("-isoFente")
+    private static let isoPile = CommandLine.arguments.contains("-isoPile")
+
     private static let benchSunk: CGFloat? = {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: "-deckSunk"), i + 1 < a.count,
@@ -241,13 +267,15 @@ struct HaloDeck: View {
                 //    les chevrons vivent entre la carte et la fente, donc la
                 //    carte doit les COUVRIR en descendant. Devant, ils
                 //    s'imprimaient sur sa face comme un décalque.
-                fenteVue(couche: 0)
+                if !Self.isoPile { fenteVue(couche: 0) }
+                if !Self.isoPile && !Self.isoFente {
                 VStack(spacing: 14) {
                     SlotChevrons(awake: appel)
                     Color.clear.frame(width: 1, height: GoldSlot.height)
                 }
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, Self.fentePied)
+                }
                 // 2. LES CARTES, et LE MASQUE — c'est lui, et rien d'autre,
                 //    qui décidait qu'on ne voyait pas la carte entrer.
                 //
@@ -272,13 +300,15 @@ struct HaloDeck: View {
                 //    s'arrête juste avant le liseré, qui passe par-dessus la
                 //    couture. Sans ce retrait, on verrait une coupe nette de
                 //    carte tangente au néon.
-                cartes(contact: contact)
-                    .mask { masqueDeBouche(lipY: lipY) }
+                if !Self.isoFente {
+                    cartes(contact: contact)
+                        .mask { masqueDeBouche(lipY: lipY) }
+                }
                 // 3. LE PREMIER PLAN de la fente : la lumière, ET la moitié
                 //    PROCHE du creux (peinte opaque par le shader en couche
                 //    1) — c'est elle qui coupe la carte à l'équateur et la
                 //    fait entrer AU MILIEU du trou, pas derrière.
-                fenteVue(couche: 1)
+                if !Self.isoPile { fenteVue(couche: 1) }
             }
             .onAppear {
                 self.contact = contact
@@ -295,6 +325,15 @@ struct HaloDeck: View {
         }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5),
                          trigger: hapticTick)
+        // Le frottement : très léger, très sec — un grain, pas un coup.
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.28),
+                         trigger: grainTick)
+        // Le franchissement : net et ferme, c'est le sommet du geste.
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.85),
+                         trigger: seuilTick)
+        // Le fond : sourd et lourd, une seule fois.
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 0.62),
+                         trigger: fondTick)
         .onAppear {
             if Self.benchPull { drag = CGSize(width: 0, height: 96) }
             if Self.benchAuto {
@@ -345,7 +384,8 @@ struct HaloDeck: View {
         VStack {
             Spacer()
             GoldSlot(awake: eveil, swallow: Double(enfonce), couche: couche,
-                     sunk: Double(max(drag.height - contact, 0)))
+                     sunk: Double(max(drag.height - contact, 0)),
+                     charge: Double(charge))
                 .padding(.bottom, Self.fentePied)
         }
         .animation(.easeOut(duration: 0.35), value: eveil)
@@ -720,6 +760,23 @@ struct HaloDeck: View {
                         lastTick = now
                         hapticTick += 1
                     }
+                    // LE FROTTEMENT DE LA GORGE. Il ne commence qu'au
+                    // CONTACT de la lèvre — avant, la carte est en l'air et
+                    // n'a rien à frotter — et il tombe tous les 5 points
+                    // PARCOURUS, pas toutes les tant de secondes : un geste
+                    // vif doit crisser plus vite qu'un geste lent.
+                    let dedans = d.height - contact
+                    if dedans > 0, dedans - dernierGrain >= 5 {
+                        dernierGrain = dedans
+                        grainTick += 1
+                    }
+                    // LE FRANCHISSEMENT, à l'image près du balayage du
+                    // liseré : la main et l'œil doivent dire la même chose
+                    // au même instant, sinon ni l'un ni l'autre n'est cru.
+                    if !seuilSonne, dedans >= GoldSlot.coupe {
+                        seuilSonne = true
+                        seuilTick += 1
+                    }
                     // L'AIMANT sonne UNE fois : passé lui, la fente tient la
                     // carte et finira le geste toute seule. On ne demande pas
                     // de la précision à un pouce.
@@ -761,6 +818,11 @@ struct HaloDeck: View {
                 }
                 armed = false
                 axis = nil
+                if d.height < contact * Self.prise {
+                    // Geste abandonné : la carte remonte, tout se réarme.
+                    seuilSonne = false
+                }
+                dernierGrain = -999
             }
     }
 
@@ -822,6 +884,17 @@ struct HaloDeck: View {
     private func avaler() {
         firedAt = .now
         hapticTick += 1
+        // Si le doigt a lâché AVANT la lèvre, c'est le mécanisme qui
+        // franchit : le coup sec tombe à l'instant où le bord bas passe la
+        // coupe, pas au début de l'animation.
+        if !seuilSonne {
+            let reste = max(GoldSlot.coupe - (drag.height - contact), 0)
+            let quand = 0.78 * Double(reste / max(Self.gorge, 1))
+            DispatchQueue.main.asyncAfter(deadline: .now() + quand) {
+                seuilSonne = true
+                seuilTick += 1
+            }
+        }
         // DEUX TEMPS, ET C'EST LE POINT. Une seule courbe menait la carte du
         // bord de la lèvre au fond en 0,52 s : l'unique instant qui vaut la
         // peine — le bord bas qui franchit la lèvre et traverse la bouche —
@@ -842,7 +915,7 @@ struct HaloDeck: View {
         }
         // Le choc du fond, quand elle a disparu.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.06) {
-            hapticTick += 1
+            fondTick += 1
             SwapFeedback.shared.ignite()
         }
         // Puis la page se remet : la carte revient au centre. La récompense
@@ -929,6 +1002,13 @@ struct GoldSlot: View {
     /// De combien de points le bas de la carte est passé sous la lèvre :
     /// le shader en déduit la silhouette qui COUPE son filet lointain.
     var sunk: Double = 0
+    /// LA CHARGE DU GESTE, 0 au repos. C'est elle, et rien d'autre, qui
+    /// allume le liseré. Au repos la fente est un dégradé de noir sans un
+    /// lumen — la loi payée sur les cartes le 2026-08-04 (« le liseré clair
+    /// au repos, on dirait un bug ») : l'arête ne naît que du doigt. Un
+    /// contour lumineux posé en permanence EST un objet ; un contour qui
+    /// n'apparaît que sous le doigt est une RÉPONSE.
+    var charge: Double = 0
 
     // UNE FENTE SERRE CE QUI ENTRE DEDANS. C'était la vraie erreur, et
     // aucune quantité de lumière ne l'aurait rattrapée : à 244 pour une
@@ -977,7 +1057,8 @@ struct GoldSlot: View {
                     .float(Float(awake)), .float(Float(swallow)),
                     .float(Float(couche)), .float(Float(Self.radius)),
                     .float(Float(sunk)),
-                    .float(Float(HaloDeckCard.width / 2))))
+                    .float(Float(HaloDeckCard.width / 2)),
+                    .float(Float(charge))))
         }
         .frame(width: Self.width, height: Self.height)
         .allowsHitTesting(false)
