@@ -54,22 +54,36 @@ import UIKit
 // moyenne, +23 % au p99, pour 0,8 Mo de plus. Ça ne crée pas de détail —
 // ça cesse d'en détruire.
 //
+// LA BOUCLE EST LÉGÈRE, ET C'EST MESURÉ. Elle ne joue QU'À l'échelle 1,00,
+// où 1 179 px d'écran sont nourris par 1 920 px de source : le 2160p n'y sert
+// à RIEN, et il coûtait cher — mesuré à l'écran, 26,8 img/s effectives pour
+// 30 attendues, avec jusqu'à trois images répétées d'affilée. Le 2160p reste
+// pour la cinématique (jouée une fois, puis démontée) ; la boucle, qui tourne
+// à l'infini sous la page, est un H.264 1080p de 1,0 Mo au lieu de 3,4.
+//
 // LA BOUCLE EST UN VA-ET-VIENT, ET C'EST OBLIGATOIRE. La luminance monte sans
 // arrêt de 5 à 8 s (0,0310 → 0,0494) : reboucler 8 → 5 ferait chuter la
 // lumière de 37 % en une image, un clignotement toutes les 2,4 s. Et aucune
 // fenêtre ne referme la boucle (la montée est monotone : la meilleure laisse
-// encore 3,3 % d'écart). Le fichier de boucle est donc [8→5 à l'envers] suivi
-// de [5→8] : il COMMENCE et FINIT sur la même image, mesurée à 0,0495 des deux
-// côtés — saut nul par construction —, et la lune respire au lieu de battre.
+// encore 3,3 % d'écart). Le fichier de boucle est donc [5→8] suivi de [8→5 à
+// l'envers] : il COMMENCE et FINIT sur l'image du RELAIS, mesurée à 0,0309 des
+// deux côtés contre 0,0307 côté cinématique — saut nul au bouclage ET au
+// raccord. La lune respire au lieu de battre.
 enum BravoCine {
     /// Les deux seuls débits propres à 60 comme à 120 Hz.
     static let rateFast: Float = 2.5
     static let rateSlow: Float = 1.25
     /// La chute, en temps SOURCE.
     static let fallSrc: Double = 2.90
-    /// Le relais vers la boucle : image 191 (7,958 s), la première image du
-    /// fichier de boucle. On ne calcule jamais depuis `duration`.
-    static let handoffFrame: Int64 = 191
+    /// LE RELAIS : image 120 (5,00 s), et c'est la PREMIÈRE image du fichier
+    /// de boucle — vérifié, 0,0307 contre 0,0309.
+    ///
+    /// Il était à l'image 191 (7,958 s). La queue durait alors 4,05 s pendant
+    /// lesquelles le delta inter-image de la source vaut 0,0016 à 0,0049 :
+    /// QUATRE SECONDES OÙ RIEN NE BOUGE. C'était ça, « grave lente ». La queue
+    /// tombe à 1,68 s et l'arrivée de 5,21 s à 2,84 s.
+    /// On ne calcule jamais depuis `duration`.
+    static let handoffFrame: Int64 = 120
     static var handoffSrc: Double { Double(handoffFrame) / 24.0 }
 
     /// La chute à l'écran : 1,16 s.
@@ -83,7 +97,6 @@ enum BravoCine {
     static var handoffAt: Double {
         fallScreen + (handoffSrc - fallSrc) / Double(rateSlow)
     }
-    static let crossFade: Double = 0.30
 
     static let zoomOpen: CGFloat = 3.90
     static let zoomRest: CGFloat = 1.00
@@ -130,6 +143,16 @@ struct BravoView: View {
     @State private var visible = false
     @State private var startedAt = Date()
     @State private var handoffObserver: Any?
+    @State private var loopReady: NSKeyValueObservation?
+    /// La partition est finie : plus rien ne bouge côté SwiftUI. On ARRÊTE
+    /// l'horloge — sans quoi la page recalcule la géométrie de la vidéo et
+    /// repasse son masque, son rognage et son flou SOIXANTE FOIS PAR SECONDE
+    /// pour rien, et c'est ça qui mangeait la cadence (mesuré : 25 img/s
+    /// effectives pour 30 attendues, jusqu'à 6 images répétées d'affilée —
+    /// le codec n'y était pour rien, passer la boucle de 2160p à 1080p n'avait
+    /// rien changé). La vidéo, elle, continue toute seule : elle vit dans
+    /// CoreAnimation, pas dans la passe SwiftUI.
+    @State private var settled = false
 
     @State private var repsValue = 12
     @State private var kilosValue = 20
@@ -146,7 +169,7 @@ struct BravoView: View {
             // matière à éteindre.
             let slotRest = W * 9.0 / 16.0
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion)) { tl in
+                                    paused: reduceMotion || settled)) { tl in
                 let e = clock(tl.date)
                 let z = BravoCine.zoom(e)
                 let slot = H + (slotRest - H) * CGFloat(BravoCine.pull(e))
@@ -201,7 +224,9 @@ struct BravoView: View {
                 }
             }
             .frame(width: vw, height: vh)
-            .blur(radius: blur)
+            // Un flou de rayon nul reste une PASSE HORS ÉCRAN : on le démonte
+            // dès qu'il ne peint plus rien.
+            .modifier(SoftBlur(radius: blur))
         }
         .frame(width: W, height: max(slot, 1))
         .clipped()
@@ -310,7 +335,16 @@ struct BravoView: View {
             let q = AVQueuePlayer()
             q.isMuted = true
             q.automaticallyWaitsToMinimizeStalling = false
-            looper = AVPlayerLooper(player: q, templateItem: AVPlayerItem(url: lurl))
+            let item = AVPlayerItem(url: lurl)
+            looper = AVPlayerLooper(player: q, templateItem: item)
+            // LE PRÉCHARGEMENT. `preroll` amorce le pipeline de décodage SANS
+            // avancer l'horloge : au relais, la première image est déjà prête
+            // et la couche n'a pas une seule frame de noir à montrer. Il n'est
+            // appelable qu'une fois l'item `.readyToPlay` — d'où l'observation.
+            loopReady = q.observe(\.status, options: [.initial, .new]) { p, _ in
+                guard p.status == .readyToPlay else { return }
+                p.preroll(atRate: BravoCine.rateSlow) { _ in }
+            }
             loop = q
         }
 
@@ -340,11 +374,20 @@ struct BravoView: View {
             queue: .main) { [weak p] in
                 loop?.play()
                 loop?.rate = BravoCine.rateSlow
-                withAnimation(.easeInOut(duration: BravoCine.crossFade)) {
+                // ÉCHANGE SEC, JAMAIS UN FONDU. Le fondu croisé de 0,30 s
+                // était LE « flash noir » : pendant qu'il courait, la couche
+                // entrante n'avait pas encore produit sa première image, donc
+                // le composite se mélangeait à du NOIR — mesuré à l'écran,
+                // 0,0497 → 0,0299 en 0,13 s, soit 60 %, exactement ce que
+                // rend un mélange à mi-course contre du noir.
+                // Les deux couches montrent la MÊME image (l'image 120), donc
+                // un échange en une frame est invisible par construction. Les
+                // 50 ms laissent au décodeur le temps de présenter la sienne ;
+                // se tromper d'une image ne coûte rien, elles sont identiques.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     onLoop = true
+                    p?.pause()
                 }
-                DispatchQueue.main.asyncAfter(
-                    deadline: .now() + BravoCine.crossFade + 0.1) { p?.pause() }
             }
 
         // `play()` d'abord, le débit ENSUITE : `play()` est littéralement
@@ -352,6 +395,10 @@ struct BravoView: View {
         p.play()
         p.rate = BravoCine.rateFast
         withAnimation(.easeOut(duration: 0.40)) { visible = true }
+
+        // L'arrêt de l'horloge, un souffle après la naissance du contenu.
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + BravoCine.contentAt + 0.90) { settled = true }
 
         // LE PALIER UNIQUE, sur le rebond : la scène décélère au même
         // instant, donc la loi « jamais un scale qui claque » est tenue par
@@ -364,9 +411,19 @@ struct BravoView: View {
     private func teardown() {
         if let handoffObserver { cine?.removeTimeObserver(handoffObserver) }
         handoffObserver = nil
+        loopReady?.invalidate(); loopReady = nil
         cine?.pause(); cine = nil
         loop?.pause(); loop = nil
         looper = nil
+    }
+}
+
+/// Un flou qui n'existe que lorsqu'il peint : en dessous de 0,2 pt, le
+/// modificateur est retiré de l'arbre plutôt que de coûter une passe pour rien.
+private struct SoftBlur: ViewModifier {
+    let radius: CGFloat
+    func body(content: Content) -> some View {
+        if radius > 0.2 { content.blur(radius: radius) } else { content }
     }
 }
 
