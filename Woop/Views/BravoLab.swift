@@ -102,8 +102,19 @@ enum BravoCine {
     static let diveFor: Double = 0.46
     static let countAt: Double = 3.16
     static let countFor: Double = 1.25
-    static let pullAt: Double = 4.55
-    static let pullFor: Double = 0.95
+    /// LE REZOOM SUR LA LUNE. Après la gerbe, la caméra ne recule pas tout de
+    /// suite : elle VA CHERCHER le croissant, seul objet allumé de la page,
+    /// et le tient un souffle. L'ancre GLISSE de la pastille vers la pièce —
+    /// une caméra qui se rapproche recadre, elle ne se contente pas de grossir.
+    static let moonAt: Double = 4.58
+    static let moonFor: Double = 0.72
+    static let camMoon: CGFloat = 5.20
+    /// La place de la pièce dans la capsule, mesurée sur la référence :
+    /// centre à 0,248 de la largeur, donc à −0,252 du centre.
+    static let coinOffset: CGFloat = -0.252
+
+    static let pullAt: Double = 5.68
+    static let pullFor: Double = 1.05
     /// Le grossissement du plongeon. 2,40 et pas plus : au-delà, la pastille
     /// (rapport 2,71 mesuré sur la référence) devient plus large que l'écran.
     static let camDive: CGFloat = 2.40
@@ -113,13 +124,21 @@ enum BravoCine {
     /// s'éloigne — c'est le recul qui les emporte, pas un fondu.
     static var burstAt: Double { countAt + countFor }
     /// Le contenu naît une fois la caméra revenue.
-    static var contentAt: Double { pullAt + pullFor - 0.15 }
+    static var contentAt: Double { pullAt + pullFor - 0.20 }
 
-    /// La caméra : 1 → 2,40 → 1. Départ et arrivée à pente nulle.
+    /// Le glissement de l'ancre, de la pastille vers la lune.
+    static func anchorMix(_ e: Double) -> CGFloat {
+        CGFloat(sstep(moonAt, moonAt + moonFor, e))
+    }
+
+    /// La caméra : 1 → 2,40 (la pastille) → 5,20 (la lune) → 1. Chaque palier
+    /// part et arrive à pente nulle : elle ne s'arrête jamais net.
     static func camZ(_ e: Double) -> CGFloat {
-        let up = sstep(diveAt, diveAt + diveFor, e)
-        let down = sstep(pullAt, pullAt + pullFor, e)
-        return 1 + (camDive - 1) * CGFloat(up - down)
+        let up = CGFloat(sstep(diveAt, diveAt + diveFor, e))
+        let moon = CGFloat(sstep(moonAt, moonAt + moonFor, e))
+        let down = CGFloat(sstep(pullAt, pullAt + pullFor, e))
+        let z = 1 + (camDive - 1) * up + (camMoon - camDive) * moon
+        return 1 + (z - 1) * (1 - down)
     }
 
     /// La pastille affleure pendant que la caméra plonge.
@@ -216,7 +235,14 @@ struct BravoView: View {
             // Le créneau de repos vaut EXACTEMENT la hauteur de l'image à
             // l'échelle 1 : l'image touche ses bords, donc le fondu a de la
             // matière à éteindre.
-            let slotRest = W * 9.0 / 16.0
+            // LE CRÉNEAU RESPIRE. Les deux cartes de saisie sont parties : la
+            // vidéo peut prendre 330 pt au lieu de 221. L'IMAGE, elle, reste à
+            // l'échelle 1,00 — c'est le seul cadrage qui montre toute la scène,
+            // et dès 1,25 la ligne de coupe tombe sur un satellite (251/255,
+            // mesuré). Les 109 pt de plus sont donc de la NUIT autour d'elle,
+            // invisible sur OLED, et c'est ce qui donne son air à la page.
+            let imgH = W * 9.0 / 16.0
+            let slotRest = min(H * 0.387, imgH + 118)
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
                                     paused: reduceMotion || settled)) { tl in
                 let e = clock(tl.date)
@@ -229,23 +255,41 @@ struct BravoView: View {
                 // pastille ne bouge pas d'un pixel pendant qu'on plonge — c'est
                 // la caméra qui vient à elle.
                 let cam = BravoCine.camZ(e)
-                let aY = slotRest + 16 + 27
+                let pillW = 54 * BravoPillView.ratio
+                // LE CENTRE OPTIQUE. Les cartes parties, le bloc (pastille +
+                // textes + échappée) ne fait plus que 206 pt : collé sous la
+                // vidéo il laissait 40 % de la page vide en bas. Il respire
+                // donc dans TOUT ce qui reste, et se pose un peu AU-DESSUS du
+                // milieu — centré au cordeau, l'œil le trouve trop bas
+                // (la leçon de la page du trésor).
+                let blockH: CGFloat = 206
+                let gap = max((H - slotRest - blockH) * 0.42, 18)
+                let aY = slotRest + gap + 27
+                // L'ANCRE GLISSE de la pastille vers la lune pendant le rezoom.
+                let aX = W / 2 + pillW * BravoCine.coinOffset
+                    * BravoCine.anchorMix(e)
+                let anchor = CGPoint(x: aX, y: aY)
                 ZStack(alignment: .top) {
                     Color.black.ignoresSafeArea()
                     cinema(W: W, slot: slot, zoom: z,
                            blur: BravoCine.blur(e), cam: cam)
-                        .offset(y: aY * (1 - cam))
-                    BravoPillView(center: CGPoint(x: W / 2, y: aY),
+                        .offset(x: (anchor.x - W / 2) * (1 - cam),
+                                y: anchor.y * (1 - cam))
+                    BravoPillView(center: CGPoint(
+                                    x: anchor.x + (W / 2 - anchor.x) * cam,
+                                    y: aY),
                                   height: 54 * cam,
                                   amount: BravoCine.pillIn(e),
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam)
-                    CoinBurst(center: CGPoint(x: W / 2, y: aY),
+                    CoinBurst(center: CGPoint(
+                                x: anchor.x + (W / 2 - anchor.x) * cam,
+                                y: aY),
                               age: e - BravoCine.burstAt,
                               cam: cam,
                               halfW: 54 * 2.71 / 2)
                     VStack(spacing: 0) {
-                        Color.clear.frame(height: slotRest + 16 + 54 + 18)
+                        Color.clear.frame(height: slotRest + gap + 54 + 20)
                         content
                             .opacity(bornU)
                             .offset(y: (1 - bornU) * 18)
@@ -338,6 +382,10 @@ struct BravoView: View {
 
     // MARK: Le texte, les cartes, les deux gestes
 
+    /// LA PAGE EST NUE. Les deux cartes de saisie et le bouton primaire sont
+    /// retirés : il ne reste que le titre, le sous-titre et l'échappée. Ce qui
+    /// veut dire que le sous-titre ne peut PLUS demander de saisir quoi que ce
+    /// soit — il ne reste que sa première phrase.
     private var content: some View {
         VStack(spacing: 0) {
             Text("Bravo")
@@ -345,49 +393,25 @@ struct BravoView: View {
                 .tracking(-0.3)
                 .foregroundStyle(WoopGradient.silverText)
 
-            // La coupure est FORCÉE. Mesuré dans les vraies Inter : la ligne
-            // longue fait 330 pt pour 353 disponibles — elle tient, mais
-            // laissée libre elle se recomposerait au premier cran de Dynamic
-            // Type et le bloc entier déborderait de la page.
-            Text("Votre série est terminée.\nVeuillez indiquer vos répétitions et poids soulevés.")
+            Text("Votre série est terminée.")
                 .font(.inter(14))
                 .foregroundStyle(Color.inkSecondary)
                 .multilineTextAlignment(.center)
-                .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 8)
+                .padding(.top, 9)
                 .padding(.horizontal, 20)
-
-            VStack(spacing: 12) {
-                GlassStepperCard(title: "RÉPÉTITIONS", symbol: "flame.fill",
-                                 unit: "REPS", value: $repsValue,
-                                 range: 1...60, perPoint: 1.0 / 13.0)
-                GlassStepperCard(title: "POIDS", symbol: "dumbbell.fill",
-                                 unit: "KG", value: $kilosValue,
-                                 range: 0...300, perPoint: 1.0 / 9.0)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-
-            DiamondPrimaryButton(title: "Lancer le chronomètre") {
-                onStartTimer(repsValue, kilosValue)
-            }
-            .padding(.horizontal, 20)
-            // 30 pt au moins : sous le bouton, la fumée d'échappée du tap est
-            // calculée jusqu'à 30 pt et l'anneau du burst monte à 38.
-            .padding(.top, 20)
 
             // LE LIEN — ni fond ni contour : sur la nuit, un cadre clair se
             // lit comme un bug. C'est l'encre seule qui le dit.
             Button(action: onFinish) {
-                Text("Terminer l'exercice")
+                Text("Revenir à l'exercice")
                     .font(.inter(15, .medium))
                     .foregroundStyle(Color.inkSecondary)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.top, 2)
+            .padding(.top, 26)
         }
         .frame(maxWidth: .infinity)
     }
@@ -763,14 +787,14 @@ struct BravoPillView: View {
     @State private var burstTick = 0
 
     /// Mesuré : 361 × 133 px.
-    private static let ratio: CGFloat = 2.71
+    static let ratio: CGFloat = 2.71
     /// Le liseré, en points d'ÉCRAN au repos. Kathryn le veut à 0,7 — plus fin
     /// que sa propre référence, qui mesure 1,2 pt à l'échelle. Il suit la
     /// caméra : une caméra qui s'approche grossit aussi le fil.
     private static let rimRest: CGFloat = 0.7
 
     var body: some View {
-        let w = height * Self.ratio
+        let w = height * BravoPillView.ratio
         let coinR = height * 0.30
         GeometryReader { geo in
             let sw = Float(geo.size.width), sh = Float(geo.size.height)
@@ -831,7 +855,8 @@ struct BravoPillView: View {
             DialChime.shared.minute()
             burstTick += 1
         }
-        .sensoryFeedback(.impact(weight: .medium, intensity: 0.85),
+        // LA VIBRATION EST LOURDE : c'est une masse qui sort, pas une paillette.
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                          trigger: burstTick)
     }
 }
@@ -868,7 +893,14 @@ struct CoinBurst: View {
     /// Le demi-grand axe de la capsule, pour caler la naissance de la nappe.
     let halfW: CGFloat
 
-    private static let count = 20
+    /// EN MASSE, ET COLLÉES. Le premier jet ouvrait un éventail de ±83° avec
+    /// des vitesses du simple au triple et des départs échelonnés sur 0,11 s :
+    /// vingt pièces éparpillées, donc « un peu cheap ». Elles partent
+    /// maintenant ENSEMBLE (0,035 s d'écart, juste assez pour qu'on ne lise
+    /// pas une seule forme qui grandit), dans un cône serré de ±24°, à des
+    /// vitesses voisines — la grappe reste une GRAPPE, et c'est la masse qui
+    /// fait l'effet, pas la dispersion.
+    private static let count = 34
     private static let life: Double = 1.55
 
     var body: some View {
@@ -904,7 +936,7 @@ struct CoinBurst: View {
 
         // ---- LES PIÈCES.
         for i in 0..<Self.count {
-            let delay = 0.11 * Self.hash(i, 7)
+            let delay = 0.035 * Self.hash(i, 7)
             let span = Self.life - delay
             let u = (age - delay) / span
             guard u > 0, u < 1 else { continue }
@@ -913,10 +945,10 @@ struct CoinBurst: View {
             // Elles sortent VERS LE HAUT, en éventail large — mais jamais à la
             // verticale pure : une gerbe symétrique se lit comme une fontaine
             // de décor.
-            let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 2.9
-            let speed = 95 + 165 * Self.hash(i, 2)
+            let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 0.84
+            let speed = 158 + 82 * Self.hash(i, 2)
             let dx = cos(ang) * speed * t
-            let dy = sin(ang) * speed * t + 265 * t * t   // la pesanteur
+            let dy = sin(ang) * speed * t + 310 * t * t   // la pesanteur
             let p = CGPoint(x: center.x + dx * cam, y: center.y + dy * cam)
 
             let alpha = pow(sin(.pi * pow(u, 0.58)), 1.1)
