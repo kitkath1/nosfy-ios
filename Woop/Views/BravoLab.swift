@@ -91,8 +91,44 @@ enum BravoCine {
     /// Le recul du cadrage, qui part à la seconde où la pièce touche.
     static let settleFor: Double = 1.50
     static var settledAt: Double { fallScreen + settleFor }
-    /// Le contenu naît dès que le cadrage est posé — pas à la fin de la vidéo.
-    static var contentAt: Double { settledAt + 0.24 }
+    // ---- LA DEUXIÈME CAMÉRA. Elle ne bouge NI la vidéo NI la pastille par
+    // un `scaleEffect` : la vidéo lit la caméra dans la GÉOMÉTRIE DE SON CADRE
+    // et la pastille dans les COORDONNÉES qu'on passe à son shader. Les deux
+    // sont donc redessinées à la résolution de l'écran à chaque échelle —
+    // jamais une image agrandie. C'est l'école du monolithe de la connexion.
+    // Le reste de la page (textes, cartes, boutons) n'a pas besoin d'être
+    // transformé : il naît APRÈS le recul, quand la caméra est déjà revenue.
+    static let diveAt: Double = 2.66
+    static let diveFor: Double = 0.46
+    static let countAt: Double = 3.16
+    static let countFor: Double = 1.25
+    static let pullAt: Double = 4.55
+    static let pullFor: Double = 0.95
+    /// Le grossissement du plongeon. 2,40 et pas plus : au-delà, la pastille
+    /// (rapport 2,71 mesuré sur la référence) devient plus large que l'écran.
+    static let camDive: CGFloat = 2.40
+    /// Le contenu naît une fois la caméra revenue.
+    static var contentAt: Double { pullAt + pullFor - 0.15 }
+
+    /// La caméra : 1 → 2,40 → 1. Départ et arrivée à pente nulle.
+    static func camZ(_ e: Double) -> CGFloat {
+        let up = sstep(diveAt, diveAt + diveFor, e)
+        let down = sstep(pullAt, pullAt + pullFor, e)
+        return 1 + (camDive - 1) * CGFloat(up - down)
+    }
+
+    /// La pastille affleure pendant que la caméra plonge.
+    static func pillIn(_ e: Double) -> Double {
+        sstep(diveAt - 0.10, diveAt + 0.34, e)
+    }
+
+    /// Le compte. EaseOut : il part vite et s'assoit — un butin qu'on
+    /// dénombre, pas un chronomètre qui défile.
+    static func count(_ e: Double, to total: Int) -> Int {
+        let u = min(max((e - countAt) / countFor, 0), 1)
+        let eased = 1 - pow(1 - u, 2.2)
+        return Int((Double(total) * eased).rounded())
+    }
     /// Le relais, à l'écran : 5,21 s.
     static var handoffAt: Double {
         fallScreen + (handoffSrc - fallSrc) / Double(rateSlow)
@@ -175,10 +211,24 @@ struct BravoView: View {
                 let slot = H + (slotRest - H) * CGFloat(BravoCine.pull(e))
                 let bornU = BravoCine.sstep(BravoCine.contentAt,
                                             BravoCine.contentAt + 0.70, e)
-                ZStack {
+                // LE POINT D'ANCRAGE de la deuxième caméra : le centre de la
+                // pastille au repos. Tout se dilate autour de LUI, donc la
+                // pastille ne bouge pas d'un pixel pendant qu'on plonge — c'est
+                // la caméra qui vient à elle.
+                let cam = BravoCine.camZ(e)
+                let aY = slotRest + 16 + 27
+                ZStack(alignment: .top) {
                     Color.black.ignoresSafeArea()
+                    cinema(W: W, slot: slot, zoom: z,
+                           blur: BravoCine.blur(e), cam: cam)
+                        .offset(y: aY * (1 - cam))
+                    BravoPillView(center: CGPoint(x: W / 2, y: aY),
+                                  height: 54 * cam,
+                                  amount: BravoCine.pillIn(e),
+                                  count: BravoCine.count(e, to: 50),
+                                  cam: cam)
                     VStack(spacing: 0) {
-                        cinema(W: W, slot: slot, zoom: z, blur: BravoCine.blur(e))
+                        Color.clear.frame(height: slotRest + 16 + 54 + 18)
                         content
                             .opacity(bornU)
                             .offset(y: (1 - bornU) * 18)
@@ -209,9 +259,12 @@ struct BravoView: View {
     /// L'ordre des modificateurs EST le sujet : l'image prend sa taille
     /// zoomée, le créneau la ROGNE, et le fondu ne s'applique qu'ensuite —
     /// donc à la résolution de l'écran, sur des bords fixes.
-    private func cinema(W: CGFloat, slot: CGFloat,
-                        zoom: CGFloat, blur: CGFloat) -> some View {
-        let vw = W * zoom
+    private func cinema(W: CGFloat, slot: CGFloat, zoom: CGFloat,
+                        blur: CGFloat, cam: CGFloat) -> some View {
+        // La caméra entre ICI, dans la GÉOMÉTRIE — pas dans un `scaleEffect`.
+        // L'AVPlayerLayer reçoit de nouvelles bornes et redécode à la bonne
+        // taille : le grossissement est sans perte.
+        let vw = W * zoom * cam
         let vh = vw * 9.0 / 16.0
         return ZStack {
             Color.black
@@ -228,7 +281,7 @@ struct BravoView: View {
             // dès qu'il ne peint plus rien.
             .modifier(SoftBlur(radius: blur))
         }
-        .frame(width: W, height: max(slot, 1))
+        .frame(width: W * cam, height: max(slot * cam, 1))
         .clipped()
         .mask(edgeFade)
         .opacity(visible ? 1 : 0)
@@ -264,7 +317,6 @@ struct BravoView: View {
                 .font(.inter(30, .semibold))
                 .tracking(-0.3)
                 .foregroundStyle(WoopGradient.silverText)
-                .padding(.top, 22)
 
             // La coupure est FORCÉE. Mesuré dans les vraies Inter : la ligne
             // longue fait 330 pt pour 353 disponibles — elle tient, mais
@@ -276,7 +328,7 @@ struct BravoView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 9)
+                .padding(.top, 8)
                 .padding(.horizontal, 20)
 
             VStack(spacing: 12) {
@@ -288,7 +340,7 @@ struct BravoView: View {
                                  range: 0...300, perPoint: 1.0 / 9.0)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 24)
+            .padding(.top, 18)
 
             DiamondPrimaryButton(title: "Lancer le chronomètre") {
                 onStartTimer(repsValue, kilosValue)
@@ -296,7 +348,7 @@ struct BravoView: View {
             .padding(.horizontal, 20)
             // 30 pt au moins : sous le bouton, la fumée d'échappée du tap est
             // calculée jusqu'à 30 pt et l'anneau du burst monte à 38.
-            .padding(.top, 26)
+            .padding(.top, 20)
 
             // LE LIEN — ni fond ni contour : sur la nuit, un cadre clair se
             // lit comme un bug. C'est l'encre seule qui le dit.
@@ -398,7 +450,7 @@ struct BravoView: View {
 
         // L'arrêt de l'horloge, un souffle après la naissance du contenu.
         DispatchQueue.main.asyncAfter(
-            deadline: .now() + BravoCine.contentAt + 0.90) { settled = true }
+            deadline: .now() + BravoCine.contentAt + 1.10) { settled = true }
 
         // LE PALIER UNIQUE, sur le rebond : la scène décélère au même
         // instant, donc la loi « jamais un scale qui claque » est tenue par
@@ -647,3 +699,86 @@ struct BravoLab: View {
 }
 
 #Preview { BravoLab() }
+
+// MARK: - La pastille du butin
+
+/// La capsule de nuit cerclée d'un fil d'or, la pièce en anthracite et le
+/// compte. Sa géométrie arrive en POINTS D'ÉCRAN, déjà multipliée par la
+/// caméra : le shader la redessine à chaque échelle, donc le fil de 0,7 pt
+/// reste un vrai fil antialiasé même quand la caméra a plongé de 2,4×.
+///
+/// Le rapport 2,71 : 1 et la place de la pièce (à 0,25 de la largeur) sont
+/// MESURÉS sur la référence de Kathryn, pas choisis.
+struct BravoPillView: View {
+    let center: CGPoint
+    /// Hauteur de la capsule, caméra comprise.
+    let height: CGFloat
+    let amount: Double
+    let count: Int
+    let cam: CGFloat
+
+    /// Mesuré : 361 × 133 px.
+    private static let ratio: CGFloat = 2.71
+    /// Le liseré, en points d'ÉCRAN au repos. Kathryn le veut à 0,7 — plus fin
+    /// que sa propre référence, qui mesure 1,2 pt à l'échelle. Il suit la
+    /// caméra : une caméra qui s'approche grossit aussi le fil.
+    private static let rimRest: CGFloat = 0.7
+
+    var body: some View {
+        let w = height * Self.ratio
+        let coinR = height * 0.30
+        GeometryReader { geo in
+            let sw = Float(geo.size.width), sh = Float(geo.size.height)
+            TimelineView(.animation(minimumInterval: 1.0 / 12.0)) { tl in
+                let t = Float(tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900))
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.bravoPill(
+                        .float2(sw, sh),
+                        .float2(Float(center.x), Float(center.y)),
+                        .float2(Float(w / 2), Float(height / 2)),
+                        .float(Float(Self.rimRest * cam)),
+                        .float(t),
+                        .float(Float(amount))))
+                    .allowsHitTesting(false)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .overlay {
+                content(coinR: coinR, w: w)
+                    .position(center)
+                    .opacity(amount)
+                    .allowsHitTesting(false)
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    private func content(coinR: CGFloat, w: CGFloat) -> some View {
+        HStack(spacing: height * 0.14) {
+            // LA PIÈCE DU HEADER DE LA HOME, en anthracite : `matte: 1` éteint
+            // le MÉTAL seul et laisse le croissant en néon. Le cadre est plus
+            // petit que l'hôte du shader — le bloom déborde volontairement,
+            // comme sur la référence.
+            MoonCoinView(coinR: coinR, draggable: false, matte: 1)
+                .frame(width: coinR * 2.2, height: coinR * 2.2)
+            Text("\(count)")
+                .font(Font.custom("Inter-Light",
+                                  size: height * 0.50).monospacedDigit())
+                .tracking(0.5)
+                .foregroundStyle(LinearGradient(stops: [
+                    .init(color: .white.opacity(0.92), location: 0.0),
+                    .init(color: .white.opacity(0.72), location: 0.55),
+                    .init(color: .white.opacity(0.48), location: 1.0)
+                ], startPoint: .top, endPoint: .bottom))
+                .contentTransition(.numericText())
+        }
+        .frame(width: w, height: height)
+        // Le compte SONNE tous les dix, jamais à chaque unité : cinquante tics
+        // seraient une mitraillette. Un tock grave à l'arrivée referme.
+        .onChange(of: count / 10) { _, _ in DialChime.shared.second() }
+        .onChange(of: count == 50) { _, done in
+            if done { DialChime.shared.minute() }
+        }
+    }
+}

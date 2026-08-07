@@ -24,6 +24,10 @@ struct MoonCoinView: View {
     /// Lacet imposé (captures).
     var yawOverride: Float? = nil
     var idleLife: Float = 1
+    /// LE MAT, 0 → 1. À 0 (partout ailleurs dans l'app) la pièce est en or et
+    /// rien ne change. À 1, le MÉTAL SEUL passe à l'anthracite neutre et le
+    /// croissant reste en néon : c'est la pièce de la page BRAVO.
+    var matte: Float = 0
     var fps: Double = 30
     /// Un toucher SANS glissement. Il vit ici, à côté du lacet, plutôt que
     /// dans un `Button` autour : deux reconnaisseurs empilés se disputent le
@@ -98,7 +102,7 @@ struct MoonCoinView: View {
                     .float(reduceMotion ? 0 : idleLife),
                     .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
                     .float3(0.5, 0.485, 0.71),
-                    .float4(Self.rimIn, Self.moonFit, 0, 0),
+                    .float4(Self.rimIn, Self.moonFit, matte, 0),
                     .image(MoonSDF.image)))
         }
         .frame(width: side, height: side)
