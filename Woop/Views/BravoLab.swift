@@ -244,7 +244,7 @@ struct BravoView: View {
             let imgH = W * 9.0 / 16.0
             let slotRest = min(H * 0.387, imgH + 118)
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion || settled)) { tl in
+                                    paused: reduceMotion)) { tl in
                 let e = clock(tl.date)
                 let z = BravoCine.zoom(e)
                 let slot = H + (slotRest - H) * CGFloat(BravoCine.pull(e))
@@ -282,12 +282,12 @@ struct BravoView: View {
                                   amount: BravoCine.pillIn(e),
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam)
-                    CoinBurst(center: CGPoint(
-                                x: anchor.x + (W / 2 - anchor.x) * cam,
-                                y: aY),
+                    CoinField(source: CGPoint(x: W / 2, y: aY),
+                              anchor: anchor, cam: cam,
                               age: e - BravoCine.burstAt,
-                              cam: cam,
-                              halfW: 54 * 2.71 / 2)
+                              clock: tl.date.timeIntervalSinceReferenceDate
+                                  .truncatingRemainder(dividingBy: 900),
+                              ground: H - 58)
                     VStack(spacing: 0) {
                         Color.clear.frame(height: slotRest + gap + 54 + 20)
                         content
@@ -500,9 +500,11 @@ struct BravoView: View {
         p.rate = BravoCine.rateFast
         withAnimation(.easeOut(duration: 0.40)) { visible = true }
 
-        // L'arrêt de l'horloge, un souffle après la naissance du contenu.
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + BravoCine.contentAt + 1.10) { settled = true }
+        // L'HORLOGE NE S'ARRÊTE PLUS. Elle s'arrêtait parce que plus rien ne
+        // bougeait une fois la page posée — ce n'est plus vrai : le lit de
+        // pièces clignote à demeure, chacune à sa période. Le prix est une
+        // passe SwiftUI par image ; c'est le sujet de la page, pas du gaspillage.
+        _ = settled
 
         // LE PALIER UNIQUE, sur le rebond : la scène décélère au même
         // instant, donc la loi « jamais un scale qui claque » est tenue par
@@ -861,147 +863,176 @@ struct BravoPillView: View {
     }
 }
 
-// MARK: - La gerbe de pièces
+// MARK: - Le champ de pièces
 
-/// À l'instant où le compte se ferme, la pastille CRACHE son butin : une
-/// vingtaine de mini-pièces qui jaillissent, tournent sur elles-mêmes et
-/// retombent — et la nuit s'allume autour d'elles.
+/// Une pièce du champ : six flottants, c'est tout ce que le shader connaît.
+private struct FieldCoin {
+    var x: Float = 0, y: Float = 0, r: Float = 0
+    var yaw: Float = 0, lit: Float = 0, alpha: Float = 0
+}
+
+/// LA GERBE ET LE LIT SONT LA MÊME CHOSE. Les pièces jaillissent de la
+/// pastille, retombent, TOUCHENT LE SOL et y restent — puis leur croissant
+/// s'allume et s'éteint, chacune à son rythme. Rien n'apparaît de nulle part,
+/// rien ne disparaît : le butin s'accumule sous les yeux, et le bas de la page
+/// cesse d'être un trou pour devenir le SOL de la scène — celui-là même sur
+/// lequel la pièce du plan large pose son reflet.
 ///
-/// La physique est celle de la gerbe de bijoux déjà validée dans l'app
-/// (`SparkleBurst`) : des départs ÉCHELONNÉS — une gerbe parfaitement synchrone
-/// se lit comme une seule forme qui grandit —, un terme quadratique qui est la
-/// pesanteur (sans lui la gerbe s'échappe et ne PÈSE rien), un allumage franc
-/// et une extinction longue.
-///
-/// Ce qui change, c'est l'OBJET : pas des étoiles à quatre branches mais des
-/// PIÈCES. Chacune est une ellipse dont le demi-axe horizontal bat en
-/// |cos(φ)| — c'est-à-dire un disque qui tourne sur son axe vertical, le
-/// mouvement même des satellites de la vidéo — avec un fil clair sur la
-/// tranche qui accroche la lumière quand elle passe de profil.
-///
-/// LA NUIT QUI S'ALLUME n'est PAS une couche qui s'allume (la loi l'interdit) :
-/// c'est l'or de la pastille qui SE DIFFUSE. Même teinte, même enveloppe que la
-/// gerbe, né au bord de la capsule et poussé vers le large — l'énergie qui
-/// sort avec les pièces, pas un calque posé dessus.
-struct CoinBurst: View {
-    /// D'où part la gerbe — le centre de la pastille.
-    let center: CGPoint
-    /// Le temps écoulé depuis le jaillissement. Négatif : rien.
-    let age: Double
-    /// La caméra : les pièces sont des objets de la scène, elles la suivent.
+/// Tout est FONCTION PURE du temps : aucune intégration par image, donc la
+/// gerbe est la même à chaque lecture et se règle au banc.
+struct CoinField: View {
+    /// Le centre de la pastille, au repos (avant caméra).
+    let source: CGPoint
+    /// Le point d'ancrage de la caméra et son grossissement.
+    let anchor: CGPoint
     let cam: CGFloat
-    /// Le demi-grand axe de la capsule, pour caler la naissance de la nappe.
-    let halfW: CGFloat
+    /// Le temps depuis le jaillissement. Négatif : le champ n'existe pas.
+    let age: Double
+    /// L'horloge de la page, pour le clignotement.
+    let clock: Double
+    /// La ligne de sol, au repos.
+    let ground: CGFloat
 
-    /// EN MASSE, ET COLLÉES. Le premier jet ouvrait un éventail de ±83° avec
-    /// des vitesses du simple au triple et des départs échelonnés sur 0,11 s :
-    /// vingt pièces éparpillées, donc « un peu cheap ». Elles partent
-    /// maintenant ENSEMBLE (0,035 s d'écart, juste assez pour qu'on ne lise
-    /// pas une seule forme qui grandit), dans un cône serré de ±24°, à des
-    /// vitesses voisines — la grappe reste une GRAPPE, et c'est la masse qui
-    /// fait l'effet, pas la dispersion.
-    private static let count = 34
-    private static let life: Double = 1.55
+    static let count = 34
+    /// La pesanteur, en points par seconde carrée.
+    private static let g: Double = 310
 
     var body: some View {
-        Canvas(opaque: false, colorMode: .nonLinear,
-               rendersAsynchronously: false) { ctx, _ in
-            guard age > 0, age < Self.life else { return }
-            draw(&ctx)
+        GeometryReader { geo in
+            let w = Float(geo.size.width), h = Float(geo.size.height)
+            let coins = pack(field())
+            if !coins.isEmpty {
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.coinField(
+                        .float2(w, h),
+                        .floatArray(coins),
+                        .float(Float(clock)),
+                        .float2(Float(neonSource().x), Float(neonSource().y)),
+                        .float(Float(neonAmp()))))
+                    .allowsHitTesting(false)
+            }
         }
-        .blendMode(.plusLighter)
+        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 
-    private func draw(_ ctx: inout GraphicsContext) {
-        // ---- LA NAPPE : l'or de la capsule qui se diffuse dans la nuit.
-        // Attaque en trois images, extinction longue — jamais un flash.
-        let up = min(age / 0.14, 1)
-        let env = up * exp(-max(age - 0.14, 0) / 0.62)
-        if env > 0.004 {
-            let r = (halfW + 420 * CGFloat(min(age / 0.9, 1))) * cam
-            ctx.fill(
-                Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
-                                       width: r * 2, height: r * 2)),
-                with: .radialGradient(
-                    Gradient(stops: [
-                        .init(color: Color.woopGold.opacity(0.175 * env),
-                              location: 0.0),
-                        .init(color: Color.woopGold.opacity(0.075 * env),
-                              location: 0.34),
-                        .init(color: .clear, location: 1.0)
-                    ]),
-                    center: center, startRadius: 0, endRadius: r))
-        }
-
-        // ---- LES PIÈCES.
-        for i in 0..<Self.count {
-            let delay = 0.035 * Self.hash(i, 7)
-            let span = Self.life - delay
-            let u = (age - delay) / span
-            guard u > 0, u < 1 else { continue }
-            let t = u * span
-
-            // Elles sortent VERS LE HAUT, en éventail large — mais jamais à la
-            // verticale pure : une gerbe symétrique se lit comme une fontaine
-            // de décor.
-            let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 0.84
-            let speed = 158 + 82 * Self.hash(i, 2)
-            let dx = cos(ang) * speed * t
-            let dy = sin(ang) * speed * t + 310 * t * t   // la pesanteur
-            let p = CGPoint(x: center.x + dx * cam, y: center.y + dy * cam)
-
-            let alpha = pow(sin(.pi * pow(u, 0.58)), 1.1)
-            // LE TOURNOIEMENT : le demi-axe horizontal bat en |cos| — un
-            // disque qui tourne sur son axe vertical. Chaque pièce a sa
-            // vitesse et sa phase, sinon les vingt tournent en chœur.
-            let spin = 7.0 + 5.5 * Self.hash(i, 4)
-            let phase = Self.hash(i, 6) * 6.28
-            // MESURÉ À L'ŒIL AU PREMIER JET : à 3,4-6,0 pt les pièces
-            // lisaient comme des GRAINS d'or, pas comme des pièces — on ne
-            // voyait plus ni la tranche ni le tournoiement. Il leur faut assez
-            // de surface pour qu'un disque se distingue d'un point.
-            let ry = (5.6 + 4.0 * Self.hash(i, 3)) * cam
-            let openness = abs(cos(spin * t + phase))
-            let rx = ry * (0.10 + 0.90 * openness)
-
-            let box = CGRect(x: p.x - rx, y: p.y - ry,
-                             width: rx * 2, height: ry * 2)
-
-            // Le halo d'abord : sans lui la pièce est un pictogramme posé sur
-            // le fond, pas un métal qui prend la lumière de la scène.
-            let hr = ry * 2.4
-            ctx.fill(
-                Path(ellipseIn: CGRect(x: p.x - hr, y: p.y - hr,
-                                       width: hr * 2, height: hr * 2)),
-                with: .radialGradient(
-                    Gradient(colors: [Color.woopGold.opacity(0.26 * alpha),
-                                      .clear]),
-                    center: p, startRadius: 0, endRadius: hr))
-
-            // Le corps : l'or s'assombrit vers le bas, comme toute la scène.
-            ctx.fill(Path(ellipseIn: box), with: .linearGradient(
-                Gradient(colors: [
-                    Color(red: 1.0, green: 0.90, blue: 0.66).opacity(0.95 * alpha),
-                    Color(red: 0.72, green: 0.47, blue: 0.14).opacity(0.90 * alpha)
-                ]),
-                startPoint: CGPoint(x: p.x, y: p.y - ry),
-                endPoint: CGPoint(x: p.x, y: p.y + ry)))
-
-            // LA TRANCHE : quand la pièce passe de profil (openness → 0), son
-            // épaisseur accroche la lumière. C'est ce fil qui fait qu'on lit
-            // un solide qui tourne et non une ellipse qui respire.
-            let edge = pow(1 - openness, 2.2)
-            if edge > 0.02 {
-                ctx.fill(Path(ellipseIn: box.insetBy(dx: -0.4 * cam,
-                                                     dy: -0.4 * cam)),
-                         with: .color(Color(red: 1.0, green: 0.95, blue: 0.82)
-                            .opacity(0.55 * edge * alpha)))
-            }
-        }
+    /// LA SOURCE DU NÉON : la pièce de la pastille, à −0,252 de sa largeur.
+    /// C'est elle qui éclaire tout le champ — la lampe de la scène, pas une
+    /// teinte décidée par pièce.
+    private func neonSource() -> CGPoint {
+        let rest = CGPoint(x: source.x + 54 * BravoPillView.ratio
+                              * BravoCine.coinOffset,
+                           y: source.y)
+        return cameraed(rest)
     }
 
-    /// Hachage pur : la gerbe est la MÊME à chaque lecture, donc réglable.
+    /// Le croissant de la pastille respire déjà (±18 % sur 5 s) : le champ lit
+    /// LA MÊME enveloppe, donc les reflets battent avec leur source.
+    private func neonAmp() -> Double {
+        0.86 + 0.18 * sin(clock * 6.2832 * 180 / 900 + 1.7)
+    }
+
+    /// Le passage repos → écran : tout se dilate autour de l'ancre.
+    private func cameraed(_ p: CGPoint) -> CGPoint {
+        CGPoint(x: anchor.x + (p.x - anchor.x) * cam,
+                y: anchor.y + (p.y - anchor.y) * cam)
+    }
+
+    private func field() -> [FieldCoin] {
+        guard age > 0 else { return [] }
+        var out: [FieldCoin] = []
+        out.reserveCapacity(Self.count)
+        for i in 0..<Self.count {
+            // EN MASSE, ET COLLÉES : 0,035 s d'écart seulement — juste assez
+            // pour qu'on ne lise pas une seule forme qui grandit.
+            let delay = 0.035 * Self.hash(i, 7)
+            let tau = age - delay
+            guard tau > 0 else { continue }
+
+            let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 0.84
+            let speed = 158 + 82 * Self.hash(i, 2)
+            let vy = sin(ang) * speed
+            let vx = cos(ang) * speed
+            // L'ÉVENTAIL S'OUVRE EN TOMBANT. Le cône de départ est serré (c'est
+            // ce qui fait la masse), mais un terme latéral quadratique écarte
+            // les pièces à mesure qu'elles descendent : elles partent en
+            // grappe et se posent en TAS, pas en colonne.
+            let drift = (Self.hash(i, 11) - 0.5) * 340
+
+            let restR = 5.6 + 4.0 * Self.hash(i, 3)
+            // Chaque pièce a son sol, à quelques points près : une ligne
+            // parfaite se lirait comme une étagère.
+            let gy = Double(ground) - 26 * Self.hash(i, 12)
+
+            // L'INSTANT DU CONTACT, résolu en fermé : g·τ² + vy·τ + (y0 − gy) = 0.
+            let c0 = Double(source.y) - gy
+            let disc = vy * vy - 4 * Self.g * c0
+            let tLand = disc > 0 ? (-vy + disc.squareRoot()) / (2 * Self.g) : 99
+
+            var x: Double, y: Double, yaw: Double, litRamp: Double
+            if tau < tLand {
+                x = Double(source.x) + vx * tau + drift * tau * tau
+                y = Double(source.y) + vy * tau + Self.g * tau * tau
+                yaw = (7.0 + 5.5 * Self.hash(i, 4)) * tau
+                     + Self.hash(i, 6) * 6.28
+                litRamp = 0
+            } else {
+                // LA POSE. Un glissement court qui s'éteint, un rebond amorti,
+                // et le lacet qui se range sur un angle de repos : une pièce
+                // qui touche le sol ne s'arrête pas net et ne tourne pas
+                // éternellement.
+                let d = tau - tLand
+                let slide = (1 - exp(-3.4 * d)) / 3.4
+                x = Double(source.x) + vx * tLand + drift * tLand * tLand
+                  + (vx + 2 * drift * tLand) * slide
+                let bounce = 13 * abs(sin(d * 9.5)) * exp(-d * 4.2)
+                y = gy - bounce
+                let spin = 7.0 + 5.5 * Self.hash(i, 4)
+                // LE LACET DE REPOS EST LARGE. À ±0,68 rad, |cos| restait
+                // proche de 1 et les pièces se posaient presque de FACE :
+                // des disques ronds, donc des billes. À ±1,25, elles
+                // s'adossent, leurs ellipses s'ouvrent et leur tranche se voit.
+                let rest = (Self.hash(i, 8) - 0.5) * 2.50
+                yaw = rest + (spin * tLand + Self.hash(i, 6) * 6.28 - rest)
+                    * exp(-d * 3.0)
+                litRamp = min(d / 0.8, 1)
+            }
+
+            // LE CLIGNOTEMENT. Chaque pièce a SA porte, de 5,5 à 11 s, et sa
+            // phase : à tout instant certaines brûlent, d'autres dorment, et
+            // aucune ne bat avec sa voisine. C'est la loi du barillet — on ne
+            // fait pas apparaître une lumière, on monte l'allumage de la même
+            // matière : une pièce éteinte reste une pièce, on la devine à son
+            // métal qui accroche la softbox.
+            let period = 5.5 + 5.5 * Self.hash(i, 9)
+            let phase = Self.hash(i, 10) * 6.28
+            let wave = 0.5 + 0.5 * sin(clock * 6.2832 / period + phase)
+            let gate = Self.sstep(0.34, 0.74, wave)
+            let lit = tau < tLand ? 1.0 : (1 - litRamp) + litRamp * gate
+
+            let p = cameraed(CGPoint(x: x, y: y))
+            out.append(FieldCoin(x: Float(p.x), y: Float(p.y),
+                                 r: Float(restR * Double(cam)),
+                                 yaw: Float(yaw), lit: Float(lit),
+                                 alpha: 1))
+        }
+        return out
+    }
+
+    private func pack(_ coins: [FieldCoin]) -> [Float] {
+        var a: [Float] = []
+        a.reserveCapacity(coins.count * 6)
+        for c in coins { a += [c.x, c.y, c.r, c.yaw, c.lit, c.alpha] }
+        return a
+    }
+
+    private static func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
+        let u = min(max((x - a) / (b - a), 0), 1)
+        return u * u * (3 - 2 * u)
+    }
+
+    /// Hachage pur : le champ est le MÊME à chaque lecture, donc réglable.
     private static func hash(_ i: Int, _ k: Int) -> Double {
         let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
         return s - floor(s)
