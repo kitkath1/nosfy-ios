@@ -965,7 +965,9 @@ struct SwapWorkoutCard: View {
                         // quoi que ce soit ici. Le neutre de ce paramètre
                         // n'est PAS zéro — zéro voudrait dire « le bord bas
                         // touche la ligne de coupe d'une fente ».
-                        .float(neon), .float(0), .float(-4000)))
+                        // `nu` 0 : ici l'arête et le tube naissent ensemble du
+                        // geste, c'est la loi de la home.
+                        .float(neon), .float(0), .float(-4000), .float(0)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
@@ -1102,6 +1104,52 @@ final class SwapFeedback {
             ], relativeTime: 0.02)
 
         guard let pattern = try? CHHapticPattern(events: [strike, swell],
+                                                 parameterCurves: [shape]),
+              let player = try? engine.makePlayer(with: pattern) else { return }
+        try? engine.start()
+        try? player.start(atTime: CHHapticTimeImmediate)
+    }
+
+    /// LE CHOC DU DÉZOOM — le plus lourd de toute l'app, et il ne s'obtient
+    /// PAS avec une intensité.
+    ///
+    /// `.sensoryFeedback(.impact(intensity: 1))` plafonne : quoi qu'on écrive,
+    /// un transitoire seul se sent comme un clic. Le POIDS vient de
+    /// l'enveloppe — deux transitoires très rapprochés (le corps ne les
+    /// sépare pas, il entend un coup plus gros) et une continue longue, très
+    /// peu « sharp », qui décroît lentement. C'est la queue qui fait la masse ;
+    /// l'attaque ne fait que la déclencher.
+    ///
+    /// 0,72 s au total, contre 0,60 pour `rumble()` : la carte qui se pose ne
+    /// s'arrache pas, elle ATTERRIT, et un atterrissage résonne plus longtemps
+    /// qu'il ne claque.
+    func slam() {
+        guard let engine else { return }
+        let strike = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.58)
+        ], relativeTime: 0)
+        // Le doublon, à 35 ms : sous 50 ms le corps ne compte plus les coups,
+        // il en sent UN, plus gros. Au-delà, il en compte deux et ça devient
+        // un roulement.
+        let echo = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.92),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.30)
+        ], relativeTime: 0.035)
+        let swell = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.05)
+        ], relativeTime: 0.01, duration: 0.72)
+        let shape = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [
+                .init(relativeTime: 0.00, value: 1.00),
+                .init(relativeTime: 0.10, value: 0.92),
+                .init(relativeTime: 0.34, value: 0.55),
+                .init(relativeTime: 0.72, value: 0.00)
+            ], relativeTime: 0.01)
+
+        guard let pattern = try? CHHapticPattern(events: [strike, echo, swell],
                                                  parameterCurves: [shape]),
               let player = try? engine.makePlayer(with: pattern) else { return }
         try? engine.start()
