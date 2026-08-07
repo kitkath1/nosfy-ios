@@ -79,7 +79,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                                 float2 size, float t,
                                 float pad, float radius, float seed,
                                 float charge, float2 pull, float lit,
-                                float noir, float enterre) {
+                                float noir, float enterre, float nu) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
@@ -214,7 +214,22 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // (verdict du 2026-08-04 : le liseré clair autour des cartes noires
     // « on dirait un bug ») — la carte est un noir pur posé sur la nuit, et
     // l'arête ne NAÎT que du geste ou du toucher, avec le tube.
-    float gesteVif = clamp(max(charge, lit), 0.0, 1.0) * jourTube;
+    // `nu` : LA CARTE GARDE SON TUBE ET PERD SON CONTOUR.
+    //
+    // `lit` allumait deux choses d'un coup — le tube, et le liseré de l'arête
+    // avec son halo et ses paillettes. Sur la pile c'est juste : le tube naît
+    // du geste, et l'arête aussi. Sur la carte de la révélation, non : elle
+    // porte son tube en permanence, donc elle portait aussi, en permanence, un
+    // CADRE CLAIR autour d'elle — une bande grise de neuf points hors du bord,
+    // avec des coins arrondis, sur un fond noir. C'est-à-dire exactement la
+    // grammaire refusée huit fois sur la fente : un contour lumineux fermé
+    // d'épaisseur égale autour d'un aplat noir.
+    //
+    // `nu` sépare les deux. Le tube reste ; le contour, sa buée et les
+    // paillettes s'éteignent. Zéro partout ailleurs — la pile et l'accueil ne
+    // bougent pas d'un lumen.
+    float bord = 1.0 - clamp(nu, 0.0, 1.0);
+    float gesteVif = clamp(max(charge, lit), 0.0, 1.0) * jourTube * bord;
     float rimSmooth = mix(rim, w, clamp(charge * 0.88, 0.0, 1.0));
     float line = exp(-d * d / (lw * lw))
                  * (0.09 + 0.62 * rimSmooth) * (1.0 + 0.85 * charge)
@@ -280,6 +295,8 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                      + sheathCol * (nSheath * 1.00)
                      + glowColN * (nGlow * 0.48)
                      + float3(1.00, 0.40, 0.10) * (nWash * 0.13);
+    // Le tube, LUI, ne connaît pas `nu` : c'est la seule lumière qui reste
+    // quand le contour s'éteint.
     neonCol *= hot * lit * jourTube;
     // Un vrai néon ÉCLAIRE ce qui l'entoure : une part de sa nappe franchit
     // le bord de la carte et va se poser sur l'aurore. Amputée au contour,
@@ -292,8 +309,12 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // blanc et court, le tube est ambre et long — sinon les deux lueurs se
     // mélangent en bouillie. (Je l'avais fondue dans le tube « une seule
     // source » : juste en physique, faux pour l'œil, elle manquait.)
+    // Elle appartient à la famille du CONTOUR, donc elle s'éteint avec lui :
+    // permanente, elle posait une frise blanche sur les vingt points intérieurs
+    // de l'arête — un second cadre, emboîté dans le premier.
     float inward = max(-d, 0.0);
-    float innerWhite = exp(-inward / 20.0) * w * lit * 0.34 * inside * jourTube;
+    float innerWhite = exp(-inward / 20.0) * w * lit * 0.34 * inside * jourTube
+                     * bord;
 
     // ---- LE FILET DU CHANT — la pièce qui rend la carte lisible dans un
     // trou noir, et la seule qui ne coûte rien à ce qui est acquis.

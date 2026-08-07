@@ -10,28 +10,95 @@ import SwiftUI
 /// reprennent la matière de la home (`swapCard`), passée en NOIR PROFOND —
 /// sur un fond orange vif, l'anthracite de la nuit remonterait en gris.
 ///
-/// `-haloFreeze <t>` fige l'horloge du fond (captures au banc).
-struct HaloDawnLab: View {
-    /// L'instant figé du banc, s'il y en a un.
-    private static let freeze: Float? = {
+/// L'HORLOGE DU BANC — et c'est elle qui manquait pour attribuer un défaut.
+///
+/// `-haloFreeze <t>` ne figeait que le fond. La fente, les cartes et les
+/// chevrons gardaient chacun leur propre `TimelineView` vivant : deux
+/// captures du « même » état ne l'étaient jamais, et tout diff entre deux
+/// rendus mesurait d'abord le temps qui passe. Une couche qu'on éteint pour
+/// l'accuser doit être la SEULE variable entre les deux images.
+///
+/// Elle sert aussi au test qui tranche « calque ou trou » : deux instants
+/// éloignés changent tout le fond derrière la fente. Un TROU rend les mêmes
+/// pixels aux deux instants ; un calque, non.
+enum HaloClock {
+    static let freeze: Double? = {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "-haloFreeze"), i + 1 < args.count,
-              let v = Float(args[i + 1]) else { return nil }
+              let v = Double(args[i + 1]) else { return nil }
         return v
     }()
 
+    /// L'instant à donner à un shader, figé ou non.
+    static func t(_ date: Date) -> Double {
+        freeze ?? date.timeIntervalSinceReferenceDate
+            .truncatingRemainder(dividingBy: 900)
+    }
+}
+
+/// `-haloFreeze <t>` fige l'horloge de TOUTE la page (captures au banc).
+/// `-noGrain` retire `WoopGrain` : c'est le seul vrai calque plein écran de
+/// la composition, il doit pouvoir sortir de l'équation quand on cherche
+/// d'où vient un voile.
+struct HaloDawnLab: View {
+    private static let noGrain = CommandLine.arguments.contains("-noGrain")
+
+    /// Le gain révélé, ou `nil` : la page joue, ou la carte est en scène.
+    @State private var revele: Int? = nil
+    /// La pile est encore à l'écran. Elle ne part pas AVEC la révélation, elle
+    /// part 0,45 s plus tard — le temps que le voile soit opaque. La retirer
+    /// tout de suite ferait disparaître la fente en pleine flambée, sous un
+    /// voile encore transparent : une coupe franche au milieu du seul beat qui
+    /// annonce la suite.
+    @State private var pileVisible = true
+
     var body: some View {
         ZStack {
-            HaloDawnBackground(freeze: Self.freeze)
+            HaloDawnBackground(dort: revele != nil)
                 .ignoresSafeArea()
 
-            HaloDeck()
+            // LA PILE SORT DE LA HIÉRARCHIE pendant la révélation, et ce n'est
+            // pas de l'esthétique : quatre cartes à shader, la fente et
+            // l'aurore à 30 Hz sous une carte plein écran, c'est la cadence
+            // qui tombe — la leçon déjà payée sur la flamme (« pas fluide,
+            // trop cheap »). Un `.opacity(0)` ne suffirait pas : une vue
+            // transparente rend quand même.
+            if pileVisible {
+                HaloDeck { gagne in
+                    revele = gagne
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                        pileVisible = false
+                    }
+                }
+            }
 
             // Le grain de la maison : les nappes crème bandent autant que
             // les nappes de nuit.
-            WoopGrain(density: 0.028, lightAlpha: 0.020, darkAlpha: 0.024)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            if !Self.noGrain {
+                WoopGrain(density: 0.028, lightAlpha: 0.020, darkAlpha: 0.024)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+
+            if let gagne = revele {
+                WahouReveal(gain: gagne) {
+                    // La carte est consommée : la pile est REBATTUE. C'est
+                    // aussi ce qui rend les quatre shaders — une pile qu'on
+                    // remonterait dans son état d'avant redemanderait de garder
+                    // son état vivant pendant toute la cinématique.
+                    pileVisible = true
+                    revele = nil
+                }
+            }
+        }
+        .onAppear {
+            // `-wahouLab` ouvre la page directement sur la révélation : la
+            // juger suppose de la rejouer vingt fois, et retraverser tout le
+            // geste à chaque tour est le meilleur moyen de ne jamais la finir.
+            if WahouReveal.bench {
+                pileVisible = false
+                revele = 200
+            }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -42,13 +109,17 @@ struct HaloDawnLab: View {
 /// L'hôte du fond : plein écran, 30 Hz comme l'aurore du login — les foyers
 /// dérivent en dizaines de secondes, la cadence n'a pas besoin de plus.
 struct HaloDawnBackground: View {
-    var freeze: Float? = nil
+    /// L'aurore DORT pendant la révélation. Elle est sous un voile à 92 % : la
+    /// faire vivre à 30 Hz plein écran, c'est un shader complet par image pour
+    /// huit pour cent d'une braise que personne ne regarde — et c'est autant
+    /// d'images en moins pour le plongeon, qui lui se regarde. Ses foyers
+    /// dérivent en dizaines de secondes : personne ne la voit s'arrêter.
+    var dort: Bool = false
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                let t = freeze ?? Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
+            TimelineView(.animation(minimumInterval: dort ? 3600 : 1.0 / 30.0)) { tl in
+                let t = Float(HaloClock.t(tl.date))
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.haloDawn(
@@ -71,8 +142,15 @@ struct HaloDawnBackground: View {
 /// charge la carte — l'arête prend feu, le tube de néon s'allume — et passé
 /// le seuil elle est activée : la pile tourne, la suivante monte au centre.
 struct HaloDeck: View {
+    /// La carte a touché le fond : la page passe la main à la révélation, et
+    /// lui donne le gain qu'elle emportait.
+    var onRevele: (Int) -> Void = { _ in }
+
     /// L'index de la carte du dessus : la pile tourne en boucle.
     @State private var top = 0
+    /// L'instant du FOND — celui qui embrase le trait de la fente. C'est
+    /// l'amorce de toute la dernière étape.
+    @State private var fondAt: Date = .distantPast
     /// La descente du doigt sur la carte du dessus.
     @State private var drag: CGSize = .zero
     /// Le doigt est posé : le néon respire avant même qu'on tire.
@@ -120,8 +198,22 @@ struct HaloDeck: View {
     /// deux parkings sont hors champ : la faire passer de l'un à l'autre ne
     /// se voit pas, et c'est le seul saut du mécanisme.
     @State private var reservePark: Double = -2
-    /// Un cran est en cours : on n'en empile pas deux.
+    /// Un cran est en cours : on n'en joue pas deux à la fois.
     @State private var enCran = false
+    /// LES CRANS QUE LE DOIGT A DEMANDÉS ET QUI N'ONT PAS ENCORE ÉTÉ JOUÉS.
+    ///
+    /// Ils étaient JETÉS : `cranter` sortait sur un `guard !enCran` et le
+    /// cran disparaissait. Un cran dure 0,48 s, la course d'un cran fait
+    /// 78 pt — un flic un peu vif traverse trois crans en deux dixièmes, donc
+    /// deux sur trois partaient à la poubelle. La pile ne bougeait que d'un
+    /// rang quel que soit l'élan, et on revenait sans cesse sur la même
+    /// carte : le doigt donnait des crans que le mécanisme ne rendait pas.
+    ///
+    /// Une molette ne perd pas de crans : elle les ENFILE. Bornée à trois —
+    /// au-delà ce n'est plus un geste, c'est un balayage de la main, et une
+    /// pile qui continue de tourner deux secondes après qu'on l'a lâchée
+    /// n'obéit plus à personne.
+    @State private var enAttente = 0
     /// Quelle offre est au CENTRE. Les offres sont attachées à la POSITION
     /// sur le rail, pas à l'identité de la carte — c'est ce qui permet à la
     /// réserve de porter, avant même d'entrer, l'offre dont elle aura
@@ -133,13 +225,32 @@ struct HaloDeck: View {
     /// est la réserve, elle emprunte la sienne au tour d'après.
     private static let gains = [100, 200, 300]
 
-    /// Le cran de rail d'un rang, en pas — l'ordre du convoi de gauche à
-    /// droite est : réserve, aile gauche, centre, aile droite.
+    /// LE SENS DE LECTURE DE LA PILE, et c'est tout le sujet du barillet.
+    ///
+    /// Le rail portait ses offres dans l'ordre du DÉPLACEMENT : l'aile droite
+    /// à +1, la gauche à −1. Or tirer à droite fait glisser le paquet vers la
+    /// droite, donc c'est l'aile GAUCHE qui monte au centre — on REMONTAIT la
+    /// liste. Un des deux sens descendait : 100 → 300 → 200, et arrivée sur
+    /// 200 le cran suivant, dans le même sens, redonnait 100. Le calcul était
+    /// cohérent avec lui-même ; c'est la lecture qui était à l'envers.
+    ///
+    /// Les signes sont donc inversés ICI, dans les offres, et nulle part
+    /// ailleurs : les cartes suivent toujours le doigt au pixel près, seul le
+    /// montant que porte chaque PLACE change. Tirer à droite monte la liste
+    /// (100 → 200 → 300), tirer à gauche la descend (100 → 300 → 200).
+    ///
+    /// La RÉSERVE suit le même principe que sa position (`cranDeRepos`) :
+    /// elle vaut ce que vaudra la place où elle entre. Garée à gauche elle
+    /// deviendra l'aile gauche, garée à droite l'aile droite — et comme les
+    /// deux ailes ne portent pas le même pas, son offre suit son parking.
+    /// Sans ça elle changeait de montant au moment de la renumérotation, dans
+    /// un sens sur deux ; invisible aujourd'hui (les jetons des ailes sont à
+    /// opacité nulle), mais faux dès que `gains` s'allongera.
     private func pasDuRang(_ rang: Int) -> Int {
         switch rang {
-        case 1:  return 1
-        case 3:  return -1
-        case 2:  return -2
+        case 1:  return -1
+        case 3:  return 1
+        case 2:  return reservePark < 0 ? 2 : -2
         default: return 0
         }
     }
@@ -228,7 +339,10 @@ struct HaloDeck: View {
     }
 
     /// La distance du bas de l'écran (utile) à laquelle la fente est posée.
-    private static let fentePied: CGFloat = 116
+    /// Non privée : la révélation en a besoin pour faire NAÎTRE la grande
+    /// carte exactement à la bouche du trou. Une constante recopiée là-bas
+    /// finirait par diverger, et la carte sortirait à côté du trou.
+    static let fentePied: CGFloat = 116
     /// LE JOUR : de combien le masque des cartes rentre à l'intérieur de
     /// l'ouverture. La carte s'arrête avant le liseré, qui recouvre la
     /// couture. À 2,5 la coupe du halo de la carte affleurait encore le
@@ -385,7 +499,15 @@ struct HaloDeck: View {
             Spacer()
             GoldSlot(awake: eveil, swallow: Double(enfonce), couche: couche,
                      sunk: Double(max(drag.height - contact, 0)),
-                     charge: Double(charge))
+                     // Le sommet, dans le même repère que `sunk` : il part de
+                     // la hauteur de la carte au-dessus de la lèvre et
+                     // descend DEUX FOIS plus vite qu'elle, puisqu'elle se
+                     // tasse en s'enfonçant. C'est exactement le
+                     // `raccourci` que la carte s'applique — même loi, une
+                     // seule source.
+                     haut: Double(max(drag.height - contact, 0)
+                                  - HaloDeckCard.height * (1 - 0.52 * enfonce)),
+                     charge: Double(charge), flashAt: fondAt)
                 .padding(.bottom, Self.fentePied)
         }
         .animation(.easeOut(duration: 0.35), value: eveil)
@@ -715,7 +837,7 @@ struct HaloDeck: View {
         let p = cranDeRepos(rang(of: id)) + rail
         let s = pose(p)
         let ecart = abs(p)
-        badge(gain(of: id))
+        GainBadge(valeur: gain(of: id))
             .offset(x: s.x + nudge, y: s.y + HaloDeckCard.height / 2 + 26)
             .opacity(max(0, 1 - ecart * 1.7) * (drag.height > 2 ? 0 : 1))
             .animation(.easeOut(duration: 0.18), value: drag.height > 2)
@@ -834,7 +956,12 @@ struct HaloDeck: View {
     /// troisième — la voyageuse — qui rejoint l'aile opposée en traversant
     /// toute la page derrière les deux autres.
     private func cranter(vers sens: Int) {
-        guard !enCran else { return }   // une horloge ne bat pas deux fois
+        // Une horloge ne bat pas deux fois — mais elle n'oublie pas le coup
+        // qu'on lui a donné pendant qu'elle battait : il part dans la file.
+        guard !enCran else {
+            enAttente = max(-3, min(3, enAttente + sens))
+            return
+        }
         enCran = true
 
         // La RÉSERVE se gare du côté par lequel elle va entrer. Les deux
@@ -861,7 +988,10 @@ struct HaloDeck: View {
                 top = (top + (sens > 0 ? 3 : 1)) % 4
                 // L'offre suit le rail : la carte qui monte au centre
                 // portait déjà la sienne, on ne fait que renommer le repère.
-                offerBase = ((offerBase + (sens > 0 ? -1 : 1)) % 3 + 3) % 3
+                // Le pas est celui de `pasDuRang`, au signe près — les deux
+                // doivent bouger ENSEMBLE, sinon le montant saute d'un cran à
+                // l'instant de la renumérotation.
+                offerBase = ((offerBase + (sens > 0 ? 1 : -1)) % 3 + 3) % 3
                 reservePark = sens > 0 ? 2 : -2
                 rail = 0
             }
@@ -871,6 +1001,14 @@ struct HaloDeck: View {
             landedAt = .now
             hapticTick += 1
             enCran = false
+            // Et s'il reste des crans dans la file, le suivant part tout de
+            // suite : même ressort, même durée, rien n'est raccourci. Le
+            // barillet rend simplement TOUS les crans qu'on lui a donnés.
+            if enAttente != 0 {
+                let suivant = enAttente > 0 ? 1 : -1
+                enAttente -= suivant
+                cranter(vers: suivant)
+            }
         }
     }
 
@@ -913,19 +1051,27 @@ struct HaloDeck: View {
                 drag = CGSize(width: 0, height: contact + Self.enfoncement)
             }
         }
-        // Le choc du fond, quand elle a disparu.
+        // Le choc du fond, quand elle a disparu. C'est aussi l'AMORCE : le
+        // trait de la fente s'embrase, et c'est de cet embrasement que la
+        // grande carte va naître.
+        let gagne = gain(of: (top + 4) % 4)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.06) {
             fondTick += 1
             SwapFeedback.shared.ignite()
+            fondAt = .now
         }
-        // Puis la page se remet : la carte revient au centre. La récompense
-        // prendra sa place ici — pour l'instant on rend la main.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.75) {
-            withAnimation(.spring(response: 0.52, dampingFraction: 0.86)) {
-                drag = .zero
-            }
+        // LA RÉVÉLATION prend le relais 0,26 s plus tard — le temps que
+        // l'éclat monte et commence à retomber. Elle ne démarre pas AVEC lui :
+        // deux lumières qui naissent au même instant n'en font qu'une, et on
+        // perdrait le beat qui dit « quelque chose arrive ».
+        //
+        // (La carte ne revient plus au centre : elle est dans le trou, elle y
+        // reste. C'est la révélation qui rendra la main.)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.32) {
+            onRevele(gagne)
         }
     }
+
 
     /// LE SEUL POSTE QUE TROIS TOURS DE JURY N'AVAIENT JAMAIS ARBITRÉ, et
     /// le bloquant unanime du tour 3 : la légende était composée un QUART
@@ -944,38 +1090,10 @@ struct HaloDeck: View {
     /// tombe donc entre 1,22 et 1,29, et le corps entre 15,9 et 16,8 :
     /// 16 est le centre, et c'est aussi le chiffre sur lequel deux des
     /// trois juges se rejoignent (le troisième demandait 17).
-    /// Le gain de la carte : la pièce de lune de la maison, en petit, et le
-    /// nombre. La pièce est FIGÉE (lacet imposé, vie au repos coupée) : à ce
-    /// diamètre son croissant ne vaut plus que quelques pixels, l'animer
-    /// coûterait un shader de plus par carte pour du frémissement que
-    /// personne ne verrait.
-    private func badge(_ valeur: Int) -> some View {
-        HStack(spacing: 6) {
-            // Le double cadre : le grand porte le bloom du shader, le petit
-            // décide de la place que le jeton prend dans la capsule. Sans
-            // lui, la marge du bloom (3,4 rayons) rendrait le badge deux
-            // fois trop haut ; en clipant, on couperait le bloom net.
-            MoonCoinView(coinR: 9, draggable: false, yawOverride: 0,
-                         idleLife: 0, fps: 6)
-                .frame(width: 9 * MoonCoinView.hostScale,
-                       height: 9 * MoonCoinView.hostScale)
-                .frame(width: 21, height: 21)
-            Text("\(valeur)")
-                .font(.inter(13, .semibold))
-                .foregroundStyle(Color(red: 1.0, green: 0.93, blue: 0.80))
-        }
-        .padding(.leading, 4)
-        .padding(.trailing, 12)
-        .padding(.vertical, 5)
-        // Le jeton reprend la matière de la carte : un noir profond, posé
-        // sans contour. Sur l'orange du fond, c'est le contraste qui le
-        // détache — jamais un liseré.
-        .background {
-            Capsule(style: .continuous)
-                .fill(Color.black.opacity(0.88))
-        }
-    }
-
+    ///
+    /// (Le jeton de gain a déménagé dans `GainBadge`, WahouReveal.swift : la
+    /// révélation le porte aussi, et deux copies d'un même jeton finissent
+    /// toujours par diverger d'un point de rayon ou d'un demi-ton.)
     private var legende: some View {
         Text("Glisser vers le bas pour activer")
             .font(.inter(16, .medium))
@@ -1002,6 +1120,11 @@ struct GoldSlot: View {
     /// De combien de points le bas de la carte est passé sous la lèvre :
     /// le shader en déduit la silhouette qui COUPE son filet lointain.
     var sunk: Double = 0
+    /// Et de combien son bord HAUT — négatif tant qu'il est au-dessus de la
+    /// fente. La carte se raccourcit en s'enfonçant : son sommet et son pied
+    /// n'ont pas la même course, et une occlusion qui n'en connaît qu'une
+    /// éteint la page bien après que la carte soit partie.
+    var haut: Double = -1000
     /// LA CHARGE DU GESTE, 0 au repos. C'est elle, et rien d'autre, qui
     /// allume le liseré. Au repos la fente est un dégradé de noir sans un
     /// lumen — la loi payée sur les cartes le 2026-08-04 (« le liseré clair
@@ -1009,6 +1132,11 @@ struct GoldSlot: View {
     /// contour lumineux posé en permanence EST un objet ; un contour qui
     /// n'apparaît que sous le doigt est une RÉPONSE.
     var charge: Double = 0
+    /// L'instant où la carte a touché le FOND. C'est la DATE qui traverse,
+    /// jamais la valeur : l'éclat se calcule ici, sous l'horloge 30 Hz de la
+    /// fente. Calculé dehors, il ne serait rafraîchi qu'aux rares redessins de
+    /// la pile — et on n'en verrait qu'une image sur dix.
+    var flashAt: Date = .distantPast
 
     // UNE FENTE SERRE CE QUI ENTRE DEDANS. C'était la vraie erreur, et
     // aucune quantité de lumière ne l'aurait rattrapée : à 244 pour une
@@ -1044,8 +1172,14 @@ struct GoldSlot: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-            let t = Float(tl.date.timeIntervalSinceReferenceDate
-                .truncatingRemainder(dividingBy: 900))
+            let t = Float(HaloClock.t(tl.date))
+            // L'ÉCLAT : attaque très courte (0,07 s — c'est un coup de flash,
+            // pas une montée) puis extinction en ~0,5 s. Il doit être MORT
+            // avant que la carte n'arrive au pic du zoom, sinon deux lumières
+            // se disputent l'écran.
+            let depuis = tl.date.timeIntervalSince(flashAt)
+            let eclat = depuis < 0 ? 0.0
+                : min(depuis / 0.07, 1) * exp(-max(depuis - 0.07, 0) / 0.50)
             Rectangle()
                 .fill(.white)
                 .frame(width: Self.width + Self.pad * 2,
@@ -1056,9 +1190,9 @@ struct GoldSlot: View {
                     .float(t), .float(Float(Self.pad)),
                     .float(Float(awake)), .float(Float(swallow)),
                     .float(Float(couche)), .float(Float(Self.radius)),
-                    .float(Float(sunk)),
+                    .float(Float(sunk)), .float(Float(haut)),
                     .float(Float(HaloDeckCard.width / 2)),
-                    .float(Float(charge))))
+                    .float(Float(charge)), .float(Float(eclat))))
         }
         .frame(width: Self.width, height: Self.height)
         .allowsHitTesting(false)
@@ -1075,7 +1209,7 @@ struct SlotChevrons: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
+            let t = HaloClock.t(tl.date)
             VStack(spacing: 3) {
                 ForEach(0..<3, id: \.self) { i in
                     // Chacun a sa phase : la cascade se lit comme un
@@ -1149,8 +1283,7 @@ struct HaloDeckCard: View {
             let w = geo.size.width + Self.pad * 2
             let h = geo.size.height + Self.pad * 2
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                let t = Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
+                let t = Float(HaloClock.t(tl.date))
                 // 0,08 s d'attaque, ~0,40 s d'extinction : un souffle, pas
                 // un clignotement.
                 let since = tl.date.timeIntervalSince(tapAt)
@@ -1166,7 +1299,8 @@ struct HaloDeckCard: View {
                         .float(Float(Self.pad)), .float(Float(Self.radius)),
                         .float(seed), .float(charge),
                         .float2(Float(pull.width), Float(pull.height)),
-                        .float(neon), .float(1), .float(Float(enterre))))
+                        .float(neon), .float(1), .float(Float(enterre)),
+                        .float(0)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }

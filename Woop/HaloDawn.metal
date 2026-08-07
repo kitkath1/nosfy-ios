@@ -316,12 +316,16 @@ static float hdRoundBox(float2 p, float2 b, float r) {
 // `couche` : 0 = le dedans, peint DERRIÈRE la carte ; 1 = la lèvre proche
 // (opaque) et ce qui sort, peints DEVANT elle.
 // `sunk` : de combien de points le bord bas de la carte est passé sous
-// l'arête lointaine. `cw` : sa demi-largeur.
+// l'arête lointaine. `haut` : idem pour son bord HAUT — la carte se
+// raccourcit en s'enfonçant, son sommet a donc sa propre course et une
+// occlusion qui ne connaît que le pied éteint la page longtemps après le
+// passage. `cw` : sa demi-largeur.
 [[ stitchable ]] half4 goldSlot(float2 position, half4 color,
                                 float2 size, float t,
                                 float pad, float awake, float swallow,
                                 float couche, float rayon,
-                                float sunk, float cw, float charge) {
+                                float sunk, float haut, float cw,
+                                float charge, float eclat) {
     float2 p = position - size * 0.5;
     float2 b = max(size * 0.5 - pad, float2(2.0));
     float ouvert = clamp(awake, 0.0, 1.0);
@@ -360,8 +364,22 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // dix tours. Un contour lumineux fermé posé en permanence sur la page
     // EST un objet ; un contour qui n'existe que sous le doigt est une
     // RÉPONSE. On ne peut pas lire comme un bouton ce qui n'est pas là.
-    float feu = clamp(charge, 0.0, 1.0);
-    float lueur = ouvert * feu * (1.0 - 0.30 * blocage);
+    // L'ÉCLAT — le seul moment où la fente parle SANS le doigt.
+    //
+    // Toute la lumière de la fente descendait de `charge` (le geste) ou de
+    // `sunk` (la course de la carte). Une fois la carte au fond, les deux sont
+    // immobiles : il n'existait AUCUN événement « ça y est, elle est tombée ».
+    // Or c'est lui qui amorce la révélation — le trait s'embrase, et c'est de
+    // cet embrasement que la carte renaît.
+    //
+    // Il s'ajoute au feu au lieu de le remplacer : à cet instant le doigt vient
+    // de lâcher, `charge` retombe, et une lumière qui décroît pendant que
+    // l'éclat monte donnerait un creux au milieu du beat.
+    float feu = clamp(charge + 1.35 * eclat, 0.0, 1.0);
+    // L'éclat POUSSE au-delà du plafond du geste : sans ça, une fente déjà à
+    // pleine charge n'aurait rien de plus à donner et le beat serait muet.
+    float sur = clamp(eclat, 0.0, 1.0);
+    float lueur = ouvert * (feu + 0.9 * sur) * (1.0 - 0.30 * blocage);
 
     // Le scintillement du fond. Il module la TEMPÉRATURE plus que la
     // luminance : à ±30 % de luminance sur une gorge presque noire, c'est le
@@ -409,7 +427,15 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     gainX = clamp(gainX, 0.70, 1.06);
     const float3 teinteT = float3(1.00, 0.90, 0.78);
     const float3 teinteP = float3(0.74, 0.72, 0.72);
-    float3 dedans = teinteP * (0.061 + 0.303 * puits)
+    // LE PLANCHER EST À 18/255, ET C'EST LE COROLLAIRE OBLIGATOIRE DE LA
+    // CAVITÉ OPAQUE. Tant que le fond du trou était un film, sa valeur à
+    // l'écran était celle de la page (216) et le plancher de la MATIÈRE ne se
+    // voyait pas. Opaque, c'est lui qu'on regarde : à 0,061 il rendait 11/255,
+    // et `WoopGrain` pose par-dessus tout des carrés blancs à 2 % — soit +42 %
+    // de modulation sur un fond à 11, exactement les petites étincelles déjà
+    // refusées deux fois, dans une couche qu'aucun dither ne rattrape.
+    // 0,095 × 0,74 = 0,0703 → 17,9/255. Le seuil est mesuré, pas choisi.
+    float3 dedans = teinteP * (0.095 + 0.303 * puits)
                   + teinteT * (0.303 * tranche * gainX);
 
     // LA NAPPE DE CONTACT — le rebond de la braise sur ce qui descend. Elle
@@ -495,16 +521,17 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // LE LISERÉ, sur le contour et allumé par le seul geste. Cœur mince,
     // gaine courte : le rapport cœur/halo est ce qui fait qu'un filet EST un
     // filet et pas une bande.
-    float lw = 0.75 + 0.55 * feu;
+    float lw = 0.75 + 0.55 * feu + 0.85 * sur;
     float coeurL = exp(-d * d / (lw * lw));
-    float gaineL = exp(-fabs(d) / (2.6 + 2.2 * feu)) * (d > 0.0 ? 1.0 : exp(d * 0.55));
+    float gaineL = exp(-fabs(d) / (2.6 + 2.2 * feu + 5.0 * sur))
+                 * (d > 0.0 ? 1.0 : exp(d * 0.55));
 
     // ---- LA LUEUR QUI MONTE : ce qui sort de la bouche et se pose sur la
     // page AU-DESSUS d'elle. Rien en dessous, rien sur les côtés — un trou
     // n'éclaire pas la page qui l'entoure par en dessous ; une lampe posée
     // dessus, si, et c'était l'indice le plus bruyant de tous.
     float dehors = max(d, 0.0);
-    float monte = exp(-dehors / (11.0 + 14.0 * feu))
+    float monte = exp(-dehors / (11.0 + 14.0 * feu + 26.0 * sur))
                 * smoothstep(-1.0, 2.0, d)
                 * (1.0 - smoothstep(-b.y - 2.0, -b.y + 24.0, p.y));
 
@@ -512,7 +539,31 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // épaules : une ligne qui s'arrête SUR l'objet est un T franc ; une
     // ligne qui s'arrête à son bord se relit « le bord droit finit où
     // l'arrondi commence » — une forme, pas une occlusion.
+    //
+    // ET C'ÉTAIT ÇA, LE CALQUE — celui qu'on voit PENDANT la descente et une
+    // fois la carte rentrée. La silhouette n'avait qu'UNE borne, le bord BAS
+    // de la carte : au-dessus de lui elle valait 1, sans fin, sur toute la
+    // hauteur du rectangle hôte. Une fois la carte avalée (`sunk` > 66) son
+    // bord bas passe SOUS la fente, et la silhouette se met alors à éteindre
+    // le liseré et la lueur PARTOUT — y compris 78 pt au-dessus et 30 pt en
+    // dessous de l'ouverture, là où il n'y a plus la moindre carte. Mesuré :
+    // une marche VERTICALE de 24 à 26 niveaux à |x| = 82,5 exactement, sous
+    // une fente où plus rien ne descend. Une occlusion à bord droit, pleine
+    // hauteur, posée sur une page qui n'a rien à occulter : c'est la
+    // définition d'un calque, et il durait toute la fin de la séquence.
+    //
+    // Une occlusion est BORNÉE PAR L'OBJET QUI L'OPÈRE. Trois bornes, donc,
+    // et pas une :
+    //   • le bord BAS (`yBasC`), déjà là ;
+    //   • le bord HAUT (`yHautC`) : la carte se RACCOURCIT en s'enfonçant,
+    //     son sommet descend deux fois plus vite que son pied. Sans cette
+    //     borne, une carte partie depuis longtemps continue d'occulter ;
+    //   • la LIGNE DE COUPE : `masqueDeBouche` interdit tout pixel de carte
+    //     en dessous. Rien ne peut y occulter quoi que ce soit.
+    float yHautC = -b.y + haut;
     float sil = smoothstep(0.5, -0.5, p.y - yBasC)
+              * smoothstep(-0.5, 0.5, p.y - yHautC)
+              * smoothstep(HD_COUPE + 0.5, HD_COUPE - 0.5, p.y)
               * (1.0 - smoothstep(cw - 4.5, cw - 3.5, fabs(p.x)))
               * smoothstep(0.0, 2.0, sunk);
 
@@ -651,8 +702,10 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // « la fente est DERRIÈRE elle » de la contradiction, et elle est
     // intouchable.
     float3 lum = teinteT * (cheveu * 0.30)
-               + creme  * (coeurL * (0.30 + 1.05 * feu) * vif * cote * (1.0 - sil))
-               + ambre  * (gaineL * (0.22 + 0.72 * feu) * vif * cote * (1.0 - sil))
+               + creme  * (coeurL * (0.30 + 1.05 * feu + 1.30 * sur)
+                           * vif * cote * (1.0 - sil))
+               + ambre  * (gaineL * (0.22 + 0.72 * feu + 0.95 * sur)
+                           * vif * cote * (1.0 - sil))
                + nacre  * (balayage * levre * inside * 0.50 * cote)
                + nacre  * (devant * 0.85)
                + cendre * (monte * 0.26 * lueur * (1.0 - sil))
@@ -687,13 +740,29 @@ static float hdRoundBox(float2 p, float2 b, float r) {
         // traverse toute la largeur, c'est le bord bas d'un calque
         // translucide posé sur la page.
         //
-        // Une courbe unique n'a pas de genou, par construction. La
-        // couverture suit donc la MÊME loi que la matière : elle décroît
-        // avec la profondeur, et c'est le puits lui-même qui rejoint la page
-        // en bas. On corrige une marche sans en fabriquer une autre.
+        // ET LA COUVERTURE ÉTAIT LE CALQUE. Faire suivre à l'ALPHA la loi de
+        // la matière tuait bien le genou, mais au prix exact du sujet : plus
+        // la cavité s'enfonçait, plus elle devenait TRANSPARENTE. Mesuré sur
+        // l'écran, au point près et confirmé par le modèle : à 4 pt sous
+        // l'arête R 72 (prédit 70,6), à 58 pt R 216 (prédit 218) pour une
+        // page à 229 — 89 % de la page passait au travers du fond du trou.
+        // Une cavité qui se fond dans la PAGE au lieu de se fondre dans le
+        // NOIR n'est pas un trou : c'est un film gris posé dessus. C'était ça,
+        // le « calque » — pendant la descente il débordait de 17 pt de chaque
+        // côté de la carte et de 23 pt sous la ligne de coupe, et une fois la
+        // carte avalée il était tout ce qui restait à l'écran.
+        //
+        // Le test qui tranche, et qu'aucun réglage ne trompe : deux instants
+        // du fond éloignés (`-haloFreeze 0` / `300`) changent tout ce qu'il y
+        // a derrière la fente. Un TROU rend les mêmes pixels aux deux
+        // instants. Un calque, non.
+        //
+        // Le genou, lui, n'a jamais eu besoin de l'alpha : il venait de DEUX
+        // dégradés qui se croisaient. Il n'en reste qu'un, la loi du puits, et
+        // une courbe unique n'a pas de genou par construction. Le bord bas
+        // n'est pas une marche à adoucir — c'est la lèvre proche, et une
+        // entaille FINIT quelque part.
         a = clamp(inside, 0.0, 1.0);
-        float couv = clamp(0.10 + 0.90 * (tranche + puits), 0.0, 1.0);
-        a *= couv;
         c = (dedans + nacre * poussiere) * a;
         c = min(c, float3(a));
     } else {
