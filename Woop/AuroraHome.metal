@@ -70,16 +70,58 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
 // `charge` : la montée du geste (0 au repos → 1 quand le doigt a décidé).
 // Tout l'écrin s'embrase : la hairline s'épaissit et vire à l'or, le halo
 // déborde loin, les facettes s'éveillent — les bords FONDENT en lumière.
+// `noir` : 0 = l'obsidienne de la home, calibrée pour la nuit. 1 = le NOIR
+// PROFOND, pour les pages claires — la matière est la même (poudre,
+// brossage, incidence), elle est simplement descendue de deux crans. Sur un
+// fond orange vif, l'anthracite de la home remonte en gris ; ce paramètre
+// est ce qui garde la carte NOIRE sans lui ajouter de contour.
 [[ stitchable ]] half4 swapCard(float2 position, half4 color,
                                 float2 size, float t,
                                 float pad, float radius, float seed,
-                                float charge, float2 pull, float lit) {
+                                float charge, float2 pull, float lit,
+                                float noir, float enterre) {
     float2 center = size * 0.5;
     float2 p = position - center;
     float2 halfB = max(center - pad, float2(1.0));
     float r = min(radius, min(halfB.x, halfB.y));
     float d = scRound(p, halfB, r);
     float inside = smoothstep(0.6, -1.2, d);
+
+    // ---- L'ENTERREMENT. `enterre` dit de combien de points, comptés depuis
+    // le bord BAS et DANS LE REPÈRE DE LA CARTE, celle-ci est passée sous la
+    // lèvre d'une fente. En dessous, elle n'est plus éclairée par rien : ni
+    // tube, ni hairline, ni fresnel, ni buée.
+    //
+    // LA RAISON, et c'est la leçon de la fente : un objet qui entre dans un
+    // trou PERD SON CONTOUR. Le tube de néon est le pire objet qu'on puisse
+    // faire descendre dans le noir — une ligne lumineuse FERMÉE, la forme la
+    // plus lisible qui soit —, et il continuait tranquillement sous la
+    // lèvre. On voyait alors quatre contours emboîtés dans vingt points
+    // (tube, silhouette, coupe du masque, liseré de la fente), et l'œil ne
+    // lit qu'une chose devant des contours empilés : DES PLANS SUPERPOSÉS.
+    // Aucune quantité de noir ne rattrape ça — c'est le trait qu'il faut
+    // supprimer, pas la lumière qu'il faut baisser.
+    //
+    // DEUX RAMPES, parce que deux exigences CONTRAIRES, toutes deux payées
+    // (une rampe unique a échoué dans les deux sens : retardée, les montants
+    // brillaient vingt points dans le creux ; serrée, la face était tranchée
+    // au cutter) :
+    //  • le TUBE meurt DÈS L'ARÊTE LOINTAINE, sur quatorze points. Une ligne
+    //    lumineuse fermée est la forme la plus lisible qui soit : dans un
+    //    trou, elle redessine à elle seule le plan qu'on essaie de supprimer.
+    //    Ce qui entre s'éteint ;
+    //  • la FACE, elle, PLONGE dans l'ombre sur trente points et n'atteint
+    //    le noir qu'à la ligne de coupe. Un objet qui entre dans une cavité
+    //    entre dans son ombre — et c'est le seul indice qui manquait : la
+    //    carte était éclairée pareil à zéro et à soixante-dix points.
+    //
+    // `enterre` est NÉGATIF tant que la carte n'a pas atteint la coupe. La
+    // valeur neutre est donc très négative (la home passe −4000), et non
+    // zéro : à −4000, `prof` reste sous toutes les bornes et les deux rampes
+    // rendent 1 partout, exactement.
+    float prof = enterre - (halfB.y - p.y);
+    float jour     = 1.0 - smoothstep(-30.0, 0.0, prof);
+    float jourTube = 1.0 - smoothstep(-39.0, -25.0, prof);
 
     // ---- Le noir MAT — mais une MATIÈRE, plus un vide. Depuis que le
     // liseré de repos est mort (2026-08-04), c'est la SURFACE qui doit
@@ -95,6 +137,14 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float brush = scnoise(p * float2(0.35, 6.2) + seed * 21.0) - 0.5;
     float matte = mix(0.082, 0.032, uvY)
                 * (1.0 + 0.26 * (powder - 0.5) + 0.16 * brush);
+    // Le noir profond : on descend le niveau, on GARDE le grain (le facteur
+    // multiplie la modulation avec la base) — une carte assombrie qui perd
+    // sa poudre devient un trou découpé, exactement ce qu'on veut éviter.
+    matte *= 1.0 - 0.74 * noir;
+    // Ce qui est dans le trou est plus sombre que ce qui est dehors — mais
+    // pas noir pur : une matte à zéro redeviendrait une découpe, et c'est
+    // justement le grain qui reste qui dit que la carte est TOUJOURS LÀ.
+    matte *= 0.20 + 0.80 * jour;
 
     // ---- La lumière : une vraie INCIDENCE. Le halo vit au-dessus de la
     // page, donc la carte est éclairée par le haut — le lustre prend
@@ -117,6 +167,14 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // rejeté : « on dirait un bug »).
     light += float3(1.00, 0.96, 0.90)
              * (exp(-max(-d, 0.0) / 9.5) * 0.030 * (0.55 + 0.45 * (1.0 - uvY)));
+    // Le lustre suit le noir : sur une page claire, une carte très sombre
+    // qui garde son lustre de nuit se met à briller comme du plastique.
+    // Le fresnel du bord, lui, est CONSERVÉ — c'est la seule chose qui dit
+    // l'épaisseur de la dalle, et sans lui la carte redevient une découpe.
+    light *= 1.0 - 0.55 * noir;
+    // Le fresnel du bord meurt avec le reste : c'est LUI qui dessinait le
+    // second contour, doublant le tube à trois points de distance.
+    light *= jour;
 
     // ---- La hairline : blanche en haut comme toute la famille diamant,
     // réchauffée d'or seulement en descendant — l'arête est la SEULE
@@ -156,7 +214,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // (verdict du 2026-08-04 : le liseré clair autour des cartes noires
     // « on dirait un bug ») — la carte est un noir pur posé sur la nuit, et
     // l'arête ne NAÎT que du geste ou du toucher, avec le tube.
-    float gesteVif = clamp(max(charge, lit), 0.0, 1.0);
+    float gesteVif = clamp(max(charge, lit), 0.0, 1.0) * jourTube;
     float rimSmooth = mix(rim, w, clamp(charge * 0.88, 0.0, 1.0));
     float line = exp(-d * d / (lw * lw))
                  * (0.09 + 0.62 * rimSmooth) * (1.0 + 0.85 * charge)
@@ -169,7 +227,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     float outside = max(d, 0.0);
     float reach = 9.0 + 13.0 * charge;
     float glow = exp(-outside / reach) * smoothstep(-1.2, 1.2, d)
-                 * w * charge * 0.20;
+                 * w * charge * 0.20 * jourTube;
     float grad = clamp(outside / (reach * 1.6), 0.0, 1.0);
     float3 glowCol = mix(float3(1.00, 0.96, 0.89),
                          float3(1.00, 0.74, 0.32), grad);
@@ -222,7 +280,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                      + sheathCol * (nSheath * 1.00)
                      + glowColN * (nGlow * 0.48)
                      + float3(1.00, 0.40, 0.10) * (nWash * 0.13);
-    neonCol *= hot * lit;
+    neonCol *= hot * lit * jourTube;
     // Un vrai néon ÉCLAIRE ce qui l'entoure : une part de sa nappe franchit
     // le bord de la carte et va se poser sur l'aurore. Amputée au contour,
     // la lumière redevenait un trait dessiné.
@@ -235,7 +293,30 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
     // mélangent en bouillie. (Je l'avais fondue dans le tube « une seule
     // source » : juste en physique, faux pour l'œil, elle manquait.)
     float inward = max(-d, 0.0);
-    float innerWhite = exp(-inward / 20.0) * w * lit * 0.34 * inside;
+    float innerWhite = exp(-inward / 20.0) * w * lit * 0.34 * inside * jourTube;
+
+    // ---- LE FILET DU CHANT — la pièce qui rend la carte lisible dans un
+    // trou noir, et la seule qui ne coûte rien à ce qui est acquis.
+    //
+    // Mesuré au jury : la poussière de la fente ne couvre qu'UN POUR CENT de
+    // la bouche. Elle ne peut donc rien porter du tout, et une gorge noire
+    // remettait la carte en noir sur noir — le mur des huit tours. Rallumer
+    // la gorge, c'était revenir à l'or refusé ; éclairer la FACE, c'était
+    // tuer l'acquis « elle plonge dans l'ombre ». La sortie est ailleurs :
+    // au fond de la fente il y a une LUNE, donc une source, donc le CHANT de
+    // la carte — sa tranche basse — la REGARDE et s'allume, pendant que sa
+    // face s'en détourne et s'éteint. Une seule physique, deux effets
+    // contraires, et aucun réglage à arbitrer.
+    //
+    // Un TRAIT DROIT, jamais un tour complet : il meurt trente points avant
+    // les coins. Un liseré qui fait le tour redevient un contour fermé, et
+    // c'est exactement ce qui a coûté les huit tours. Il est nul tant que la
+    // carte n'est pas à huit points de la coupe (le tube meurt là : les deux
+    // ne coexistent jamais), et la lèvre opaque le couvre dès qu'il passe —
+    // la part engloutie ne récupère aucun bord bas.
+    float chant = exp(-max(halfB.y - p.y, 0.0) / 1.35) * inside
+                * (1.0 - smoothstep(halfB.x - 30.0, halfB.x - 12.0, fabs(p.x)))
+                * smoothstep(-31.0, -5.0, enterre);
 
     // ---- Les pointes-bijou : le murmure du REPOS, et rien d'autre. Les
     // démultiplier sous le geste faisait grésiller l'arête de petites
@@ -254,7 +335,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
             twk = pow(twk, 16.0);
             float2 dpg = p - cg;
             glitter = exp(-dot(dpg, dpg) / (0.7 * 0.7)) * on * twk * 0.6
-                      * (1.0 - clamp(charge * 1.25, 0.0, 1.0));
+                      * (1.0 - clamp(charge * 1.25, 0.0, 1.0)) * jourTube;
         }
     }
 
@@ -277,6 +358,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                    + rimCol * (line * inside * 0.9)
                    + float3(1.00, 0.99, 0.97) * innerWhite
                    + neonIn
+                   + float3(1.00, 0.62, 0.52) * (chant * 0.56)
                    + sheathCol * (tubeM * 0.34 * gesteVif * inside);
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);
