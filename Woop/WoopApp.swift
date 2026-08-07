@@ -114,6 +114,9 @@ struct RootView: View {
     /// Banc de la flamme ember : `-emberLab`, page noire nue — la flamme
     /// emoji laquée, seule au centre. `-emberFreeze` fige le temps (captures).
     private static let emberLab = CommandLine.arguments.contains("-emberLab")
+    /// Banc de l'aube aux halos : `-haloLab` — page de lumière sans un
+    /// pixel de noir, blanc du coin gauche, halos orange qui dérivent.
+    private static let haloLab = CommandLine.arguments.contains("-haloLab")
     /// Banc de la page de succès : `-successLab` — le travelling rasant, la
     /// pose, le barillet des trois pastilles, la molette. `-successAuto`
     /// rejoue le cycle en boucle, `-successFreeze <t>` fige la partition,
@@ -278,6 +281,8 @@ struct RootView: View {
             }
         } else if Self.lensLab {
             LiquidLensLab()
+        } else if Self.haloLab {
+            HaloDawnLab()
         } else if Self.successLab {
             SuccessLab()
         } else if Self.coffreLab {

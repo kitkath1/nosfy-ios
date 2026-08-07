@@ -960,7 +960,12 @@ struct SwapWorkoutCard: View {
                         .float(Float(Self.pad)), .float(24), .float(seed),
                         .float(charge),
                         .float2(Float(pull.width), Float(pull.height)),
-                        .float(neon)))
+                        // `noir` 0 : la home garde son obsidienne.
+                        // `enterre` très négatif : rien n'est enfoncé dans
+                        // quoi que ce soit ici. Le neutre de ce paramètre
+                        // n'est PAS zéro — zéro voudrait dire « le bord bas
+                        // touche la ligne de coupe d'une fente ».
+                        .float(neon), .float(0), .float(-4000)))
             }
             .offset(x: -Self.pad, y: -Self.pad)
         }
