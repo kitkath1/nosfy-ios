@@ -321,7 +321,9 @@ struct BravoView: View {
                               // il montait SUR le lien « Revenir à l'exercice ».
                               // À 118 il se pose dans la nuit du bas, sous le
                               // texte et au-dessus du bord — son propre plan.
-                              ground: H - 118,
+                              // Le « sol » est HORS ÉCRAN : les pièces ne se
+                              // posent plus, elles sortent du champ.
+                              ground: H + 420,
                               width: W)
                     VStack(spacing: 0) {
                         Color.clear.frame(height: slotRest + gap + 54 + 20)
@@ -971,9 +973,12 @@ struct CoinField: View {
                 .float3(0.5, 0.485, 0.71),
                 // knobs.z = 1 : LE MAT. Le métal glisse vers l'anthracite, le
                 // bloc néon n'est pas touché.
-                .float4(0.86, 0.62, 1.0, 0),
+                // knobs.z = 1 le MAT, knobs.w = 1 le POLI : ces pièces-là sont
+                // plus sombres et plus brillantes que celle de la pastille.
+                .float4(0.86, 0.62, 1.0, 1.0),
                 .image(MoonSDF.image)))
             .position(st.p)
+            .opacity(st.alpha)
     }
 
     // MARK: La partition d'une pièce
@@ -985,6 +990,7 @@ struct CoinField: View {
         var r: CGFloat
         var yaw: Double
         var lit: Double
+        var alpha: Double
     }
 
     private func cameraed(_ p: CGPoint) -> CGPoint {
@@ -1052,8 +1058,17 @@ struct CoinField: View {
             // l'intérieur plutôt que de les laisser sortir par les flancs.
             let margin = Double(restR) * 1.6 + 14
             x = min(max(x, margin), Double(width) - margin)
+            // ELLES NE S'ACCUMULENT PLUS EN BAS. Le tas au sol a été refusé
+            // deux fois : les pièces sombres qui se recouvrent y dessinaient
+            // des croissants parasites. Elles tombent donc et s'éteignent
+            // AVANT le bas de la page — la gerbe redevient un geste, pas un
+            // décor qui reste.
+            let fade = 1 - Self.sstep(Double(ground) * 0.70,
+                                      Double(ground) * 0.90, y)
+            guard fade > 0.01 else { continue }
             out.append(State(i: i, p: cameraed(CGPoint(x: x, y: y)),
-                             r: CGFloat(restR) * cam, yaw: yaw, lit: lit))
+                             r: CGFloat(restR) * cam, yaw: yaw, lit: lit,
+                             alpha: fade))
         }
         return out
     }
