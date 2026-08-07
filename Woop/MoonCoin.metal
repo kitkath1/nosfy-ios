@@ -159,6 +159,18 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
                                 float3(0.520, 0.505, 0.478), matte);
     const float3 GOLD_DEEP = mix(float3(0.238, 0.130, 0.026),
                                  float3(0.026, 0.025, 0.024), matte);
+    // LE POLI (`knobs.w`, 0 par défaut — rien ne bouge nulle part ailleurs).
+    // Les pièces qui JAILLISSENT ne sont pas la pièce de la pastille : elles
+    // doivent être plus sombres ET plus brillantes — du métal noir POLI, pas
+    // du métal mat. Un mat et un poli ne se distinguent pas par leur couleur
+    // mais par la LARGEUR de leur spéculaire : le poli enfonce la base de
+    // 42 %, double la haute lumière, et resserre les lobes (les exposants
+    // montent). C'est ce contraste-là qui fait le luxe, pas un or plus clair.
+    const float poli = clamp(knobs.w, 0.0, 1.0);
+    const float3 GOLD_P = GOLD * (1.0 - 0.42 * poli);
+    const float3 GOLD_HOTP = GOLD_HOT * (1.0 + 1.45 * poli);
+    #define GOLD GOLD_P
+    #define GOLD_HOT GOLD_HOTP
 
     // ------------------------------------------------------------------
     // LE LUSTRE — la matière qui respire
@@ -202,8 +214,8 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
         const float3 N = normalize(EX3 * (rd.x * s) + EY3 * (rd.y * s)
                                    + EZ3 * nz);
         const float ndv = clamp(dot(N, V), 0.0, 1.0);
-        const float sp1 = pow(clamp(dot(N, H1), 0.0, 1.0), 78.0);
-        const float sp2 = pow(clamp(dot(N, H2), 0.0, 1.0), 34.0);
+        const float sp1 = pow(clamp(dot(N, H1), 0.0, 1.0), 78.0 + 110.0 * poli);
+        const float sp2 = pow(clamp(dot(N, H2), 0.0, 1.0), 34.0 + 52.0 * poli);
         const float wr1 = pow(clamp(dot(N, H1), 0.0, 1.0), 9.0);
 
         // Fresnel : sur un métal poli, la tranche du bourrelet s'allume
@@ -316,7 +328,7 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
         const float2 sd = normalize(pS + 1e-5);
         const float3 N = normalize(EX3 * sd.x + EY3 * sd.y);
         const float ndv = clamp(dot(N, V), 0.0, 1.0);
-        const float sp = pow(clamp(dot(N, H1), 0.0, 1.0), 46.0);
+        const float sp = pow(clamp(dot(N, H1), 0.0, 1.0), 46.0 + 70.0 * poli);
         const float wr = pow(clamp(dot(N, H1), 0.0, 1.0), 7.0);
         const float fres = pow(1.0 - ndv, 2.4);
 
