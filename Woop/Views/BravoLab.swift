@@ -257,6 +257,12 @@ struct BravoView: View {
     /// CoreAnimation, pas dans la passe SwiftUI.
     @State private var settled = false
 
+    /// LE TOUCHER DE LA PASTILLE : une fumée d'or sombre s'en échappe et
+    /// quelques petites pièces sautent. Rien ne change d'état — c'est une
+    /// RÉPONSE, pas un mode.
+    @State private var tapAt: Date?
+    @State private var tapEnd: Date?
+    @State private var tapTick = 0
     @State private var repsValue = 12
     @State private var kilosValue = 20
 
@@ -276,8 +282,17 @@ struct BravoView: View {
             // et dès 1,25 la ligne de coupe tombe sur un satellite (251/255,
             // mesuré). Les 109 pt de plus sont donc de la NUIT autour d'elle,
             // invisible sur OLED, et c'est ce qui donne son air à la page.
-            let imgH = W * 9.0 / 16.0
-            let slotRest = min(H * 0.387, imgH + 118)
+            // LA SOURCE EST RECADRÉE À 92 % DE SA LARGEUR, et c'est mesuré :
+            // sur cette ligne de coupe, la luminance vaut 0 et le gradient 0
+            // à TOUTES les images — on tranche dans du noir absolu. À 86 % on
+            // entamait déjà un satellite (164/255, gradient 126). Le rapport
+            // passe de 16:9 à 1766:1080, donc l'image gagne 9 % de hauteur
+            // sans qu'une seule pièce soit coupée. C'est tout ce que la source
+            // peut donner : agrandir DAVANTAGE demande un rendu en portrait.
+            let imgH = W * 1080.0 / 1766.0
+            // Le créneau colle à l'image : elle touche ses bords, donc le
+            // fondu a de la matière à éteindre (la leçon du trésor).
+            let slotRest = imgH
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
                                     paused: reduceMotion)) { tl in
                 let e = clock(tl.date)
@@ -299,8 +314,13 @@ struct BravoView: View {
                 // donc dans TOUT ce qui reste, et se pose un peu AU-DESSUS du
                 // milieu — centré au cordeau, l'œil le trouve trop bas
                 // (la leçon de la page du trésor).
+                // TOUT REMONTE. Le bloc se posait à 42 % de l'espace libre —
+                // il restait un trou entre la vidéo et la pastille, et un
+                // autre sous les chiffres. À 0,17 la page se resserre vers le
+                // haut et la nuit se rassemble EN BAS, d'un seul tenant,
+                // là où le lien l'occupe.
                 let blockH: CGFloat = 234
-                let gap = max((H - slotRest - blockH) * 0.42, 18)
+                let gap = max((H - slotRest - blockH) * 0.17, 16)
                 let aY = slotRest + gap + 27
                 // L'ANCRE GLISSE de la pastille vers la lune pendant le rezoom.
                 let aX = W / 2 + pillW * BravoCine.coinOffset
@@ -320,8 +340,27 @@ struct BravoView: View {
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam,
                                   neonBoost: BravoCine.neonBoost(e),
-                                  flare: BravoCine.pillFlare(e),
+                                  flare: max(BravoCine.pillFlare(e),
+                                             tapFlare(tl.date)),
                                   pulse: BravoCine.neonPulse(e, t: tPage))
+                        .contentShape(Rectangle())
+                        .onTapGesture { fireTap() }
+                    // La poignée du toucher : moins nombreuses, plus petites,
+                    // et elles ne montent pas aussi haut.
+                    if let tapAt {
+                        CoinField(source: CGPoint(x: W / 2, y: aY),
+                                  anchor: anchor, cam: cam,
+                                  age: tl.date.timeIntervalSince(tapAt),
+                                  clock: tPage, ground: H + 420, width: W,
+                                  count: 7, sizeMin: 6.5, sizeSpan: 3.5,
+                                  lift: 0.62)
+                        CoinSmoke(center: CGPoint(
+                                    x: anchor.x + (W / 2 - anchor.x) * cam,
+                                    y: aY),
+                                  radius: 54 * cam * 0.34,
+                                  start: tapAt, end: tapEnd, palette: .dark)
+                            .allowsHitTesting(false)
+                    }
                     CoinField(source: CGPoint(x: W / 2, y: aY),
                               anchor: anchor, cam: cam,
                               age: e - BravoCine.burstAt,
@@ -339,9 +378,7 @@ struct BravoView: View {
                               width: W)
                     VStack(spacing: 0) {
                         Color.clear.frame(height: slotRest + gap + 54 + 20)
-                        content
-                            .opacity(bornU)
-                            .offset(y: (1 - bornU) * 18)
+                        content(e)
                         Spacer(minLength: 0)
                         footerLink
                             .opacity(bornU)
@@ -356,6 +393,8 @@ struct BravoView: View {
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
         .background(Color.black)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7),
+                         trigger: tapTick)
         .onAppear {
             CoinChime.shared.prepare()
             start()
@@ -381,7 +420,7 @@ struct BravoView: View {
         // L'AVPlayerLayer reçoit de nouvelles bornes et redécode à la bonne
         // taille : le grossissement est sans perte.
         let vw = W * zoom * cam
-        let vh = vw * 9.0 / 16.0
+        let vh = vw * 1080.0 / 1766.0
         return ZStack {
             Color.black
             ZStack {
@@ -438,12 +477,23 @@ struct BravoView: View {
     /// série. Le lien, lui, ne vit PLUS ici — il est épinglé au footer, où il
     /// était bien : une échappée se pose au bord de la page, pas au milieu
     /// d'une composition.
-    private var content: some View {
+    /// Chaque ligne arrive à SON tour. Un bloc qui monte d'un seul morceau
+    /// est un calque qu'on déplace ; échelonné, c'est une page qui s'écrit.
+    /// Les écarts (0,00 / 0,13 / 0,26 / 0,33 / 0,40) sont assez courts pour
+    /// qu'on ne les compte pas, assez longs pour qu'on les sente.
+    private func rise(_ d: Double, _ e: Double) -> Double {
+        BravoCine.sstep(BravoCine.contentAt + d,
+                        BravoCine.contentAt + d + 0.62, e)
+    }
+
+    private func content(_ e: Double) -> some View {
         VStack(spacing: 0) {
             Text("Bravo")
                 .font(.inter(30, .semibold))
                 .tracking(-0.3)
                 .foregroundStyle(WoopGradient.silverText)
+                .opacity(rise(0, e))
+                .offset(y: (1 - rise(0, e)) * 16)
 
             Text("Votre série est terminée.")
                 .font(.inter(14))
@@ -452,8 +502,10 @@ struct BravoView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 9)
                 .padding(.horizontal, 20)
+                .opacity(rise(0.13, e))
+                .offset(y: (1 - rise(0.13, e)) * 14)
 
-            kpis.padding(.top, 30)
+            kpis(e).padding(.top, 30)
         }
         .frame(maxWidth: .infinity)
     }
@@ -465,16 +517,22 @@ struct BravoView: View {
     /// sous lui, et rien autour. Aucune carte, aucun trait, aucun fond : sur
     /// la nuit, trois colonnes d'encre suffisent — la séparation vient de
     /// l'espace, jamais d'un séparateur.
-    private var kpis: some View {
+    private func kpis(_ e: Double) -> some View {
         HStack(spacing: 0) {
-            kpi("\(repsValue)", "REPS")
-            kpi("\(kilosValue)", "KG")
-            kpi("1:00", "REPOS")
+            kpi("\(repsValue)", "REPS", 0.26, e)
+            kpi("\(kilosValue)", "KG", 0.33, e)
+            kpi("1:00", "REPOS", 0.40, e)
         }
         .padding(.horizontal, 26)
     }
 
-    private func kpi(_ value: String, _ unit: String) -> some View {
+    private func kpi(_ value: String, _ unit: String,
+                     _ delay: Double, _ e: Double) -> some View {
+        let u = rise(delay, e)
+        return kpiBody(value, unit).opacity(u).offset(y: (1 - u) * 18)
+    }
+
+    private func kpiBody(_ value: String, _ unit: String) -> some View {
         VStack(spacing: 6) {
             Text(value)
                 .font(Font.custom("Inter-Light", size: 34).monospacedDigit())
@@ -612,6 +670,30 @@ struct BravoView: View {
             guard let image else { return }
             let ui = UIImage(cgImage: image)
             DispatchQueue.main.async { loopFirstFrame = ui }
+        }
+    }
+
+    /// Le souffle du toucher : la même enveloppe que le jaillissement, en
+    /// plus court — la pastille répond, elle ne rejoue pas la cérémonie.
+    private func tapFlare(_ now: Date) -> Double {
+        guard let tapAt else { return 0 }
+        let x = now.timeIntervalSince(tapAt)
+        guard x > 0 else { return 0 }
+        return min(x / 0.07, 1) * exp(-max(x - 0.07, 0) / 0.34) * 0.72
+    }
+
+    /// Un tintement MINIMAL — le son de pièce déjà synthétisé de la maison,
+    /// pas une fanfare — et une vibration souple. La fumée se démonte une
+    /// fois éteinte pour rendre ses images.
+    private func fireTap() {
+        tapAt = .now
+        tapEnd = nil
+        tapTick += 1
+        CoinChime.shared.chink()
+        let mark = Date.now.addingTimeInterval(0.16)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { tapEnd = mark }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            if tapEnd == mark { tapAt = nil; tapEnd = nil }
         }
     }
 
@@ -997,7 +1079,12 @@ struct CoinField: View {
     /// le bord d'écran n'est plus une pièce, c'est un défaut.
     let width: CGFloat
 
-    static let count = 24
+    /// Le nombre et le calibre : la gerbe du compte en veut vingt-quatre de
+    /// 11-17 pt ; le TOUCHER n'en veut qu'une poignée, plus petites.
+    var count: Int = 24
+    var sizeMin: Double = 11
+    var sizeSpan: Double = 6
+    var lift: Double = 1
     private static let g: Double = 310
 
     var body: some View {
@@ -1057,19 +1144,19 @@ struct CoinField: View {
     private func states() -> [State] {
         guard age > 0 else { return [] }
         var out: [State] = []
-        out.reserveCapacity(Self.count)
-        for i in 0..<Self.count {
+        out.reserveCapacity(count)
+        for i in 0..<count {
             let delay = 0.035 * Self.hash(i, 7)
             let tau = age - delay
             guard tau > 0 else { continue }
 
             let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 0.84
-            let speed = 158 + 82 * Self.hash(i, 2)
+            let speed = (158 + 82 * Self.hash(i, 2)) * lift
             let vy = sin(ang) * speed, vx = cos(ang) * speed
             // L'éventail s'ouvre en tombant : elles partent en grappe serrée
             // et se posent en TAS, jamais en colonne.
             let drift = (Self.hash(i, 11) - 0.5) * 360
-            let restR = 11.0 + 6.0 * Self.hash(i, 3)
+            let restR = sizeMin + sizeSpan * Self.hash(i, 3)
             let gy = Double(ground) - 30 * Self.hash(i, 12)
 
             // L'instant du contact, en fermé.
