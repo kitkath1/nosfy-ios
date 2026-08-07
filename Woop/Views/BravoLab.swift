@@ -301,7 +301,7 @@ struct BravoView: View {
             // fondu a de la matière à éteindre (la leçon du trésor).
             let slotRest = imgH
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion)) { tl in
+                                    paused: reduceMotion || settled)) { tl in
                 let e = clock(tl.date)
                 let z = BravoCine.zoom(e)
                 let slot = H + (slotRest - H) * CGFloat(BravoCine.pull(e))
@@ -349,7 +349,10 @@ struct BravoView: View {
                                   neonBoost: BravoCine.neonBoost(e),
                                   flare: max(BravoCine.pillFlare(e),
                                              tapFlare(tl.date)),
-                                  pulse: BravoCine.neonPulse(e, t: tPage))
+                                  // Le pouls est calculé DANS la pastille, sur
+                                  // sa propre horloge : elle continue de battre
+                                  // quand celle de la page s'est arrêtée.
+                                  pulse: 0)
                         .contentShape(Rectangle())
                         .onTapGesture { fireTap() }
                     // La poignée du toucher : moins nombreuses, plus petites,
@@ -694,6 +697,19 @@ struct BravoView: View {
                     onLoop = true
                     p?.pause()
                 }
+                // ET ON LE DÉMONTE. La cinématique est un master 2160p HEVC :
+                // le garder en mémoire après le relais, c'est laisser un
+                // décodeur 4K vivant sous la page pour rien, à côté des deux
+                // boucles. Une fois la boucle à l'écran, il n'a plus rien à
+                // montrer — on le rend.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    if let ho = handoffObserver {
+                        cine?.removeTimeObserver(ho)
+                        handoffObserver = nil
+                    }
+                    cine?.replaceCurrentItem(with: nil)
+                    cine = nil
+                }
             }
 
         // `play()` d'abord, le débit ENSUITE : `play()` est littéralement
@@ -702,11 +718,16 @@ struct BravoView: View {
         p.rate = BravoCine.rateFast
         withAnimation(.easeOut(duration: 0.40)) { visible = true }
 
-        // L'HORLOGE NE S'ARRÊTE PLUS. Elle s'arrêtait parce que plus rien ne
-        // bougeait une fois la page posée — ce n'est plus vrai : le lit de
-        // pièces clignote à demeure, chacune à sa période. Le prix est une
-        // passe SwiftUI par image ; c'est le sujet de la page, pas du gaspillage.
-        _ = settled
+        // L'HORLOGE DE LA PAGE S'ARRÊTE UNE FOIS TOUT POSÉ. Elle recalculait
+        // la géométrie de la vidéo, repassait son masque, son rognage et son
+        // flou, et réévaluait tout le champ de pièces SOIXANTE FOIS PAR
+        // SECONDE alors que plus rien ne bouge — trois lecteurs vivants
+        // par-dessus, et la page ramait. Ce qui doit continuer à vivre (l'or
+        // de la pastille, le pouls de sa lune) a sa PROPRE horloge à 12 Hz,
+        // dans le composant ; les deux vidéos, elles, vivent dans
+        // CoreAnimation et n'ont jamais eu besoin de la passe SwiftUI.
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + BravoCine.contentAt + 2.6) { settled = true }
 
         // LE PALIER UNIQUE, sur le rebond : la scène décélère au même
         // instant, donc la loi « jamais un scale qui claque » est tenue par
@@ -1025,7 +1046,8 @@ struct BravoPillView: View {
     let neonBoost: Double
     /// Le souffle du jaillissement, 0 → 1 → 0.
     let flare: Double
-    /// Le pouls du néon de la lune, 0 → 1 : la capsule le reprend.
+    /// Inutilisé — conservé pour ne pas changer l'ordre des membres. Le pouls
+    /// est calculé dans le corps, sur l'horloge propre du composant.
     let pulse: Double
 
     @State private var burstTick = 0
@@ -1049,6 +1071,12 @@ struct BravoPillView: View {
             TimelineView(.animation(minimumInterval: 1.0 / 12.0)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
+                // Le scalaire SORTI de l'appel : une expression de plus dans
+                // un `colorEffect` et le type-checker abandonne (la leçon des
+                // 36 arguments de `navMonolith`).
+                let tc: Double = Double(t) + neonBoost
+                let ph: Double = tc * 6.2832 * 180.0 / 900.0 + 1.7
+                let pulseNow: Float = Float(0.5 + 0.5 * sin(ph))
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.bravoPill(
@@ -1059,7 +1087,7 @@ struct BravoPillView: View {
                         .float(t),
                         .float(Float(amount)),
                         .float(Float(flare)),
-                        .float(Float(pulse))))
+                        .float(pulseNow)))
                     .allowsHitTesting(false)
             }
             .frame(width: geo.size.width, height: geo.size.height)
