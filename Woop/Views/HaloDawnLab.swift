@@ -1,5 +1,34 @@
 import SwiftUI
 
+// MARK: - LA PAGE DÉMON
+//
+// C'est le nom de tout ce qui vit ici, du premier geste à la dernière image :
+// `page_demon`. Une pile de cartes noires sur une aurore orange, chacune
+// portant un démon en vidéo et un gain ; on fait tourner le barillet du doigt,
+// on TIRE la carte choisie VERS LE BAS, une fente dorée l'avale — et de son
+// embrasement la carte renaît, plein écran, pour révéler le démon gagné.
+//
+// LA CHAÎNE, dans l'ordre où on la traverse :
+//   1. `HaloDawnBackground` / `haloDawn`   — l'aurore, la nuit en plafond
+//   2. `HaloDeck`                          — le RAIL rigide, quatre cartes
+//                                            pour trois places, le barillet
+//   3. `HaloDeckCard` / `swapCard`         — l'obsidienne, le tube, le démon
+//   4. `DemonVideo`                        — les trois boucles aller-retour
+//   5. `GoldSlot` / `goldSlot`             — la fente : le trou, l'avalement,
+//                                            l'éclat du fond touché
+//   6. `WahouReveal` / `WahouAura`         — la cinématique et son aura
+//
+// LES BANCS, tous cumulables :
+//   `-haloLab`               la page
+//   `-haloFreeze <t>`        fige TOUTES les couches (le seul état comparable)
+//   `-noGrain`               retire `WoopGrain`, le seul calque plein écran
+//   `-deckSunk <pt>`         fige la carte à tant de points sous la lèvre
+//   `-deckSwallow`           rejoue l'avalement en boucle
+//   `-deckAuto`              fait tourner le barillet tout seul
+//   `-deckPulled`            fige la carte en pleine descente
+//   `-isoFente` / `-isoPile` n'affiche qu'une couche (attribution)
+//   `-wahouLab`              ouvre directement sur la révélation, en boucle
+//
 // MARK: - Banc d'essai (`-haloLab`)
 
 /// La page d'aurore orange : la nuit repliée en haut, le feu qui monte du
