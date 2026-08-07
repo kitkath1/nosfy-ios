@@ -139,9 +139,20 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
     // (1,000 / 0,955 / 0,830), donc quasi neutre, et multiplié par 3,3 il
     // lavait la teinte partout où il frappait. Une haute lumière d'or reste
     // DE L'OR : elle monte en luminance sans monter vers le blanc.
-    const float3 GOLD = float3(1.000, 0.762, 0.318);
-    const float3 GOLD_HOT = float3(1.000, 0.898, 0.606);
-    const float3 GOLD_DEEP = float3(0.238, 0.130, 0.026);
+    // LE MAT (`knobs.z`, 0 par défaut — la pièce du header et celle du trésor
+    // ne bougent PAS d'un octet). À 1, le MÉTAL SEUL devient un anthracite
+    // neutre : la pièce de la page BRAVO est un galet noir mat qui garde tous
+    // ses reflets, sa tranche et son épaisseur. Le bloc NÉON du croissant, lui,
+    // n'est pas touché — c'est toute l'idée : le métal s'éteint, la lune reste
+    // allumée. (Mesuré sur la référence de Kathryn : corps [42,41,37]/255,
+    // donc un gris NEUTRE, pas un noir chaud.)
+    const float matte = clamp(knobs.z, 0.0, 1.0);
+    const float3 GOLD = mix(float3(1.000, 0.762, 0.318),
+                            float3(0.118, 0.112, 0.104), matte);
+    const float3 GOLD_HOT = mix(float3(1.000, 0.898, 0.606),
+                                float3(0.268, 0.258, 0.242), matte);
+    const float3 GOLD_DEEP = mix(float3(0.238, 0.130, 0.026),
+                                 float3(0.026, 0.025, 0.024), matte);
 
     // ------------------------------------------------------------------
     // LE LUSTRE — la matière qui respire
