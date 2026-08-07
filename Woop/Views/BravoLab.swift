@@ -126,6 +126,16 @@ enum BravoCine {
     /// Le contenu naît une fois la caméra revenue.
     static var contentAt: Double { pullAt + pullFor - 0.20 }
 
+    /// L'AVANCE D'HORLOGE DU CROISSANT. Le néon respire sur 5 s et son point
+    /// chaud parcourt le tube en 3,5 s : sur un plongeon de 0,72 s on n'en
+    /// voyait qu'un cinquième, donc rien du tout. L'horloge de la pièce prend
+    /// donc 3,2 s d'avance par seconde pendant qu'on s'approche — elle vit
+    /// quatre fois plus vite le temps qu'on la regarde, puis reprend son
+    /// rythme, simplement décalée. Monotone et continu : jamais un saut.
+    static func neonBoost(_ e: Double) -> Double {
+        3.2 * min(max(e - moonAt, 0), 1.8)
+    }
+
     /// Le glissement de l'ancre, de la pastille vers la lune.
     static func anchorMix(_ e: Double) -> CGFloat {
         CGFloat(sstep(moonAt, moonAt + moonFor, e))
@@ -281,7 +291,8 @@ struct BravoView: View {
                                   height: 54 * cam,
                                   amount: BravoCine.pillIn(e),
                                   count: BravoCine.count(e, to: 50),
-                                  cam: cam)
+                                  cam: cam,
+                                  neonBoost: BravoCine.neonBoost(e))
                     CoinField(source: CGPoint(x: W / 2, y: aY),
                               anchor: anchor, cam: cam,
                               age: e - BravoCine.burstAt,
@@ -785,6 +796,8 @@ struct BravoPillView: View {
     let amount: Double
     let count: Int
     let cam: CGFloat
+    /// L'avance d'horloge de la pièce pendant que la caméra plonge sur elle.
+    let neonBoost: Double
 
     @State private var burstTick = 0
 
@@ -831,7 +844,8 @@ struct BravoPillView: View {
             // le MÉTAL seul et laisse le croissant en néon. Le cadre est plus
             // petit que l'hôte du shader — le bloom déborde volontairement,
             // comme sur la référence.
-            MoonCoinView(coinR: coinR, draggable: false, matte: 1)
+            MoonCoinView(coinR: coinR, draggable: false, matte: 1,
+                         timeBoost: neonBoost)
                 .frame(width: coinR * 2.2, height: coinR * 2.2)
             Text("\(count)")
                 .font(Font.custom("Inter-Light",
@@ -865,166 +879,146 @@ struct BravoPillView: View {
 
 // MARK: - Le champ de pièces
 
-/// Une pièce du champ : six flottants, c'est tout ce que le shader connaît.
-private struct FieldCoin {
-    var x: Float = 0, y: Float = 0, r: Float = 0
-    var yaw: Float = 0, lit: Float = 0, alpha: Float = 0
-}
-
-/// LA GERBE ET LE LIT SONT LA MÊME CHOSE. Les pièces jaillissent de la
-/// pastille, retombent, TOUCHENT LE SOL et y restent — puis leur croissant
-/// s'allume et s'éteint, chacune à son rythme. Rien n'apparaît de nulle part,
-/// rien ne disparaît : le butin s'accumule sous les yeux, et le bas de la page
-/// cesse d'être un trou pour devenir le SOL de la scène — celui-là même sur
-/// lequel la pièce du plan large pose son reflet.
+/// LA VRAIE PIÈCE DU HEADER, EN NOIR MAT, AVEC SON NÉON. Pas une imitation :
+/// c'est `moonCoin` lui-même — l'anneau poli, la face de laque, la tranche,
+/// la softbox de la maison, le croissant en néon qui respire et son point
+/// chaud qui voyage le long du tube. Le seul changement est `knobs.z = 1`,
+/// qui fait glisser le MÉTAL vers un anthracite neutre et laisse le bloc néon
+/// intact : le métal s'éteint, la lune reste allumée.
 ///
-/// Tout est FONCTION PURE du temps : aucune intégration par image, donc la
-/// gerbe est la même à chaque lecture et se règle au banc.
+/// Le premier jet était un modèle réduit écrit à la main — silhouette, laque,
+/// tranche, croissant booléen — pour ne pas payer trente-quatre fois un shader
+/// de 450 lignes. C'était du carton : à côté de la vraie pièce, rien ne tient.
+/// Le calcul refait proprement : à 14 pt de rayon, l'hôte fait 48 pt de côté,
+/// et `moonCoin` sort AVANT tout calcul dès que le pixel dépasse le halo
+/// (`dSil > coinR·0,52`). La surface réellement ombrée tourne autour de
+/// 2 500 px² par pièce en @3x — vingt-quatre pièces coûtent donc ~2 % de
+/// l'écran. Ce qu'il ne faut PAS faire, c'est monter vingt-quatre
+/// `MoonCoinView` : chacune porterait son propre `TimelineView`. Ici une seule
+/// horloge — celle de la page — pilote tout le champ.
+///
+/// MOINS NOMBREUSES ET PLUS GROSSES. À 6-10 pt une pièce est un grain, quelle
+/// que soit la qualité du shader. Vingt-quatre à 11-17 pt lisent comme un tas.
 struct CoinField: View {
-    /// Le centre de la pastille, au repos (avant caméra).
     let source: CGPoint
-    /// Le point d'ancrage de la caméra et son grossissement.
     let anchor: CGPoint
     let cam: CGFloat
     /// Le temps depuis le jaillissement. Négatif : le champ n'existe pas.
     let age: Double
-    /// L'horloge de la page, pour le clignotement.
+    /// L'horloge de la page (repliée sur 900 s, comme partout).
     let clock: Double
-    /// La ligne de sol, au repos.
     let ground: CGFloat
 
-    static let count = 34
-    /// La pesanteur, en points par seconde carrée.
+    static let count = 24
     private static let g: Double = 310
 
     var body: some View {
-        GeometryReader { geo in
-            let w = Float(geo.size.width), h = Float(geo.size.height)
-            let coins = pack(field())
-            if !coins.isEmpty {
-                Rectangle()
-                    .fill(.white)
-                    .colorEffect(ShaderLibrary.coinField(
-                        .float2(w, h),
-                        .floatArray(coins),
-                        .float(Float(clock)),
-                        .float2(Float(neonSource().x), Float(neonSource().y)),
-                        .float(Float(neonAmp()))))
-                    .allowsHitTesting(false)
+        ZStack {
+            ForEach(states(), id: \.i) { st in
+                coin(st)
             }
         }
-        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 
-    /// LA SOURCE DU NÉON : la pièce de la pastille, à −0,252 de sa largeur.
-    /// C'est elle qui éclaire tout le champ — la lampe de la scène, pas une
-    /// teinte décidée par pièce.
-    private func neonSource() -> CGPoint {
-        let rest = CGPoint(x: source.x + 54 * BravoPillView.ratio
-                              * BravoCine.coinOffset,
-                           y: source.y)
-        return cameraed(rest)
+    private func coin(_ st: State) -> some View {
+        let side = st.r * MoonCoinView.hostScale
+        return Rectangle()
+            .fill(.white)
+            .frame(width: side, height: side)
+            .colorEffect(ShaderLibrary.moonCoin(
+                .float2(Float(side), Float(side)),
+                .float(Float(clock)),
+                .float2(0, 0),
+                .float(Float(st.yaw)),
+                .float(Float(st.r)),
+                // `reveal` porte l'allumage du NÉON : à 0 la pièce garde son
+                // métal, sa tranche et ses reflets — une pièce éteinte reste
+                // une pièce. On ne fait jamais apparaître une lumière.
+                .float(Float(st.lit)),
+                .float(1),
+                .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
+                .float3(0.5, 0.485, 0.71),
+                // knobs.z = 1 : LE MAT. Le métal glisse vers l'anthracite, le
+                // bloc néon n'est pas touché.
+                .float4(0.86, 0.62, 1.0, 0),
+                .image(MoonSDF.image)))
+            .position(st.p)
     }
 
-    /// Le croissant de la pastille respire déjà (±18 % sur 5 s) : le champ lit
-    /// LA MÊME enveloppe, donc les reflets battent avec leur source.
-    private func neonAmp() -> Double {
-        0.86 + 0.18 * sin(clock * 6.2832 * 180 / 900 + 1.7)
+    // MARK: La partition d'une pièce
+
+    struct State: Identifiable {
+        let i: Int
+        var id: Int { i }
+        var p: CGPoint
+        var r: CGFloat
+        var yaw: Double
+        var lit: Double
     }
 
-    /// Le passage repos → écran : tout se dilate autour de l'ancre.
     private func cameraed(_ p: CGPoint) -> CGPoint {
         CGPoint(x: anchor.x + (p.x - anchor.x) * cam,
                 y: anchor.y + (p.y - anchor.y) * cam)
     }
 
-    private func field() -> [FieldCoin] {
+    private func states() -> [State] {
         guard age > 0 else { return [] }
-        var out: [FieldCoin] = []
+        var out: [State] = []
         out.reserveCapacity(Self.count)
         for i in 0..<Self.count {
-            // EN MASSE, ET COLLÉES : 0,035 s d'écart seulement — juste assez
-            // pour qu'on ne lise pas une seule forme qui grandit.
             let delay = 0.035 * Self.hash(i, 7)
             let tau = age - delay
             guard tau > 0 else { continue }
 
             let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 0.84
             let speed = 158 + 82 * Self.hash(i, 2)
-            let vy = sin(ang) * speed
-            let vx = cos(ang) * speed
-            // L'ÉVENTAIL S'OUVRE EN TOMBANT. Le cône de départ est serré (c'est
-            // ce qui fait la masse), mais un terme latéral quadratique écarte
-            // les pièces à mesure qu'elles descendent : elles partent en
-            // grappe et se posent en TAS, pas en colonne.
-            let drift = (Self.hash(i, 11) - 0.5) * 340
+            let vy = sin(ang) * speed, vx = cos(ang) * speed
+            // L'éventail s'ouvre en tombant : elles partent en grappe serrée
+            // et se posent en TAS, jamais en colonne.
+            let drift = (Self.hash(i, 11) - 0.5) * 360
+            let restR = 11.0 + 6.0 * Self.hash(i, 3)
+            let gy = Double(ground) - 30 * Self.hash(i, 12)
 
-            let restR = 5.6 + 4.0 * Self.hash(i, 3)
-            // Chaque pièce a son sol, à quelques points près : une ligne
-            // parfaite se lirait comme une étagère.
-            let gy = Double(ground) - 26 * Self.hash(i, 12)
-
-            // L'INSTANT DU CONTACT, résolu en fermé : g·τ² + vy·τ + (y0 − gy) = 0.
+            // L'instant du contact, en fermé.
             let c0 = Double(source.y) - gy
             let disc = vy * vy - 4 * Self.g * c0
             let tLand = disc > 0 ? (-vy + disc.squareRoot()) / (2 * Self.g) : 99
 
-            var x: Double, y: Double, yaw: Double, litRamp: Double
+            var x: Double, y: Double, yaw: Double, ramp: Double
             if tau < tLand {
                 x = Double(source.x) + vx * tau + drift * tau * tau
                 y = Double(source.y) + vy * tau + Self.g * tau * tau
-                yaw = (7.0 + 5.5 * Self.hash(i, 4)) * tau
-                     + Self.hash(i, 6) * 6.28
-                litRamp = 0
+                yaw = (7.0 + 5.5 * Self.hash(i, 4)) * tau + Self.hash(i, 6) * 6.28
+                ramp = 0
             } else {
-                // LA POSE. Un glissement court qui s'éteint, un rebond amorti,
-                // et le lacet qui se range sur un angle de repos : une pièce
-                // qui touche le sol ne s'arrête pas net et ne tourne pas
-                // éternellement.
                 let d = tau - tLand
                 let slide = (1 - exp(-3.4 * d)) / 3.4
                 x = Double(source.x) + vx * tLand + drift * tLand * tLand
                   + (vx + 2 * drift * tLand) * slide
-                let bounce = 13 * abs(sin(d * 9.5)) * exp(-d * 4.2)
-                y = gy - bounce
-                let spin = 7.0 + 5.5 * Self.hash(i, 4)
-                // LE LACET DE REPOS EST LARGE. À ±0,68 rad, |cos| restait
-                // proche de 1 et les pièces se posaient presque de FACE :
-                // des disques ronds, donc des billes. À ±1,25, elles
-                // s'adossent, leurs ellipses s'ouvrent et leur tranche se voit.
-                let rest = (Self.hash(i, 8) - 0.5) * 2.50
-                yaw = rest + (spin * tLand + Self.hash(i, 6) * 6.28 - rest)
-                    * exp(-d * 3.0)
-                litRamp = min(d / 0.8, 1)
+                y = gy - 13 * abs(sin(d * 9.5)) * exp(-d * 4.2)
+                // Le lacet se range sur un angle de repos LARGE : à quelques
+                // dixièmes de radian la pièce se pose presque de face, donc
+                // ronde. Adossée, son ellipse s'ouvre et sa tranche se voit.
+                let rest = (Self.hash(i, 8) - 0.5) * 2.30
+                yaw = rest + ((7.0 + 5.5 * Self.hash(i, 4)) * tLand
+                              + Self.hash(i, 6) * 6.28 - rest) * exp(-d * 3.0)
+                ramp = min(d / 0.8, 1)
             }
 
-            // LE CLIGNOTEMENT. Chaque pièce a SA porte, de 5,5 à 11 s, et sa
-            // phase : à tout instant certaines brûlent, d'autres dorment, et
-            // aucune ne bat avec sa voisine. C'est la loi du barillet — on ne
-            // fait pas apparaître une lumière, on monte l'allumage de la même
-            // matière : une pièce éteinte reste une pièce, on la devine à son
-            // métal qui accroche la softbox.
+            // LE CLIGNOTEMENT : chaque pièce sa porte (5,5 à 11 s) et sa
+            // phase. À tout instant certaines brûlent, d'autres dorment, et
+            // aucune ne bat avec sa voisine.
             let period = 5.5 + 5.5 * Self.hash(i, 9)
             let phase = Self.hash(i, 10) * 6.28
             let wave = 0.5 + 0.5 * sin(clock * 6.2832 / period + phase)
             let gate = Self.sstep(0.34, 0.74, wave)
-            let lit = tau < tLand ? 1.0 : (1 - litRamp) + litRamp * gate
+            let lit = tau < tLand ? 1.0 : (1 - ramp) + ramp * gate
 
-            let p = cameraed(CGPoint(x: x, y: y))
-            out.append(FieldCoin(x: Float(p.x), y: Float(p.y),
-                                 r: Float(restR * Double(cam)),
-                                 yaw: Float(yaw), lit: Float(lit),
-                                 alpha: 1))
+            out.append(State(i: i, p: cameraed(CGPoint(x: x, y: y)),
+                             r: CGFloat(restR) * cam, yaw: yaw, lit: lit))
         }
         return out
-    }
-
-    private func pack(_ coins: [FieldCoin]) -> [Float] {
-        var a: [Float] = []
-        a.reserveCapacity(coins.count * 6)
-        for c in coins { a += [c.x, c.y, c.r, c.yaw, c.lit, c.alpha] }
-        return a
     }
 
     private static func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
@@ -1032,7 +1026,6 @@ struct CoinField: View {
         return u * u * (3 - 2 * u)
     }
 
-    /// Hachage pur : le champ est le MÊME à chaque lecture, donc réglable.
     private static func hash(_ i: Int, _ k: Int) -> Double {
         let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
         return s - floor(s)
