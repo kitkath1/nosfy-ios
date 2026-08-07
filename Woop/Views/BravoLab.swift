@@ -107,6 +107,11 @@ enum BravoCine {
     /// Le grossissement du plongeon. 2,40 et pas plus : au-delà, la pastille
     /// (rapport 2,71 mesuré sur la référence) devient plus large que l'écran.
     static let camDive: CGFloat = 2.40
+    /// LE JAILLISSEMENT : à la seconde où le compte se ferme. La gerbe part
+    /// donc AVANT le recul (4,41 contre 4,55) : les pièces sortent pendant que
+    /// la caméra est encore au plus près, et elles retombent pendant qu'elle
+    /// s'éloigne — c'est le recul qui les emporte, pas un fondu.
+    static var burstAt: Double { countAt + countFor }
     /// Le contenu naît une fois la caméra revenue.
     static var contentAt: Double { pullAt + pullFor - 0.15 }
 
@@ -235,6 +240,10 @@ struct BravoView: View {
                                   amount: BravoCine.pillIn(e),
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam)
+                    CoinBurst(center: CGPoint(x: W / 2, y: aY),
+                              age: e - BravoCine.burstAt,
+                              cam: cam,
+                              halfW: 54 * 2.71 / 2)
                     VStack(spacing: 0) {
                         Color.clear.frame(height: slotRest + 16 + 54 + 18)
                         content
@@ -251,7 +260,10 @@ struct BravoView: View {
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
         .background(Color.black)
-        .onAppear(perform: start)
+        .onAppear {
+            CoinChime.shared.prepare()
+            start()
+        }
         .onDisappear(perform: teardown)
     }
 
@@ -748,6 +760,8 @@ struct BravoPillView: View {
     let count: Int
     let cam: CGFloat
 
+    @State private var burstTick = 0
+
     /// Mesuré : 361 × 133 px.
     private static let ratio: CGFloat = 2.71
     /// Le liseré, en points d'ÉCRAN au repos. Kathryn le veut à 0,7 — plus fin
@@ -808,8 +822,156 @@ struct BravoPillView: View {
         // Le compte SONNE tous les dix, jamais à chaque unité : cinquante tics
         // seraient une mitraillette. Un tock grave à l'arrivée referme.
         .onChange(of: count / 10) { _, _ in DialChime.shared.second() }
+        // LE JAILLISSEMENT SONNE UNE FOIS : le tintement de pièce synthétisé
+        // de la maison, et le tock grave qui referme le compte. Jamais les
+        // vingt pièces séparément — ce serait une averse de gravier.
         .onChange(of: count == 50) { _, done in
-            if done { DialChime.shared.minute() }
+            guard done else { return }
+            CoinChime.shared.chink()
+            DialChime.shared.minute()
+            burstTick += 1
         }
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.85),
+                         trigger: burstTick)
+    }
+}
+
+// MARK: - La gerbe de pièces
+
+/// À l'instant où le compte se ferme, la pastille CRACHE son butin : une
+/// vingtaine de mini-pièces qui jaillissent, tournent sur elles-mêmes et
+/// retombent — et la nuit s'allume autour d'elles.
+///
+/// La physique est celle de la gerbe de bijoux déjà validée dans l'app
+/// (`SparkleBurst`) : des départs ÉCHELONNÉS — une gerbe parfaitement synchrone
+/// se lit comme une seule forme qui grandit —, un terme quadratique qui est la
+/// pesanteur (sans lui la gerbe s'échappe et ne PÈSE rien), un allumage franc
+/// et une extinction longue.
+///
+/// Ce qui change, c'est l'OBJET : pas des étoiles à quatre branches mais des
+/// PIÈCES. Chacune est une ellipse dont le demi-axe horizontal bat en
+/// |cos(φ)| — c'est-à-dire un disque qui tourne sur son axe vertical, le
+/// mouvement même des satellites de la vidéo — avec un fil clair sur la
+/// tranche qui accroche la lumière quand elle passe de profil.
+///
+/// LA NUIT QUI S'ALLUME n'est PAS une couche qui s'allume (la loi l'interdit) :
+/// c'est l'or de la pastille qui SE DIFFUSE. Même teinte, même enveloppe que la
+/// gerbe, né au bord de la capsule et poussé vers le large — l'énergie qui
+/// sort avec les pièces, pas un calque posé dessus.
+struct CoinBurst: View {
+    /// D'où part la gerbe — le centre de la pastille.
+    let center: CGPoint
+    /// Le temps écoulé depuis le jaillissement. Négatif : rien.
+    let age: Double
+    /// La caméra : les pièces sont des objets de la scène, elles la suivent.
+    let cam: CGFloat
+    /// Le demi-grand axe de la capsule, pour caler la naissance de la nappe.
+    let halfW: CGFloat
+
+    private static let count = 20
+    private static let life: Double = 1.55
+
+    var body: some View {
+        Canvas(opaque: false, colorMode: .nonLinear,
+               rendersAsynchronously: false) { ctx, _ in
+            guard age > 0, age < Self.life else { return }
+            draw(&ctx)
+        }
+        .blendMode(.plusLighter)
+        .allowsHitTesting(false)
+    }
+
+    private func draw(_ ctx: inout GraphicsContext) {
+        // ---- LA NAPPE : l'or de la capsule qui se diffuse dans la nuit.
+        // Attaque en trois images, extinction longue — jamais un flash.
+        let up = min(age / 0.14, 1)
+        let env = up * exp(-max(age - 0.14, 0) / 0.62)
+        if env > 0.004 {
+            let r = (halfW + 420 * CGFloat(min(age / 0.9, 1))) * cam
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r,
+                                       width: r * 2, height: r * 2)),
+                with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: Color.woopGold.opacity(0.175 * env),
+                              location: 0.0),
+                        .init(color: Color.woopGold.opacity(0.075 * env),
+                              location: 0.34),
+                        .init(color: .clear, location: 1.0)
+                    ]),
+                    center: center, startRadius: 0, endRadius: r))
+        }
+
+        // ---- LES PIÈCES.
+        for i in 0..<Self.count {
+            let delay = 0.11 * Self.hash(i, 7)
+            let span = Self.life - delay
+            let u = (age - delay) / span
+            guard u > 0, u < 1 else { continue }
+            let t = u * span
+
+            // Elles sortent VERS LE HAUT, en éventail large — mais jamais à la
+            // verticale pure : une gerbe symétrique se lit comme une fontaine
+            // de décor.
+            let ang = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 2.9
+            let speed = 95 + 165 * Self.hash(i, 2)
+            let dx = cos(ang) * speed * t
+            let dy = sin(ang) * speed * t + 265 * t * t   // la pesanteur
+            let p = CGPoint(x: center.x + dx * cam, y: center.y + dy * cam)
+
+            let alpha = pow(sin(.pi * pow(u, 0.58)), 1.1)
+            // LE TOURNOIEMENT : le demi-axe horizontal bat en |cos| — un
+            // disque qui tourne sur son axe vertical. Chaque pièce a sa
+            // vitesse et sa phase, sinon les vingt tournent en chœur.
+            let spin = 7.0 + 5.5 * Self.hash(i, 4)
+            let phase = Self.hash(i, 6) * 6.28
+            // MESURÉ À L'ŒIL AU PREMIER JET : à 3,4-6,0 pt les pièces
+            // lisaient comme des GRAINS d'or, pas comme des pièces — on ne
+            // voyait plus ni la tranche ni le tournoiement. Il leur faut assez
+            // de surface pour qu'un disque se distingue d'un point.
+            let ry = (5.6 + 4.0 * Self.hash(i, 3)) * cam
+            let openness = abs(cos(spin * t + phase))
+            let rx = ry * (0.10 + 0.90 * openness)
+
+            let box = CGRect(x: p.x - rx, y: p.y - ry,
+                             width: rx * 2, height: ry * 2)
+
+            // Le halo d'abord : sans lui la pièce est un pictogramme posé sur
+            // le fond, pas un métal qui prend la lumière de la scène.
+            let hr = ry * 2.4
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: p.x - hr, y: p.y - hr,
+                                       width: hr * 2, height: hr * 2)),
+                with: .radialGradient(
+                    Gradient(colors: [Color.woopGold.opacity(0.26 * alpha),
+                                      .clear]),
+                    center: p, startRadius: 0, endRadius: hr))
+
+            // Le corps : l'or s'assombrit vers le bas, comme toute la scène.
+            ctx.fill(Path(ellipseIn: box), with: .linearGradient(
+                Gradient(colors: [
+                    Color(red: 1.0, green: 0.90, blue: 0.66).opacity(0.95 * alpha),
+                    Color(red: 0.72, green: 0.47, blue: 0.14).opacity(0.90 * alpha)
+                ]),
+                startPoint: CGPoint(x: p.x, y: p.y - ry),
+                endPoint: CGPoint(x: p.x, y: p.y + ry)))
+
+            // LA TRANCHE : quand la pièce passe de profil (openness → 0), son
+            // épaisseur accroche la lumière. C'est ce fil qui fait qu'on lit
+            // un solide qui tourne et non une ellipse qui respire.
+            let edge = pow(1 - openness, 2.2)
+            if edge > 0.02 {
+                ctx.fill(Path(ellipseIn: box.insetBy(dx: -0.4 * cam,
+                                                     dy: -0.4 * cam)),
+                         with: .color(Color(red: 1.0, green: 0.95, blue: 0.82)
+                            .opacity(0.55 * edge * alpha)))
+            }
+        }
+    }
+
+    /// Hachage pur : la gerbe est la MÊME à chaque lecture, donc réglable.
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
     }
 }
