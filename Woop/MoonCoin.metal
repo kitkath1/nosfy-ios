@@ -147,10 +147,16 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
     // allumée. (Mesuré sur la référence de Kathryn : corps [42,41,37]/255,
     // donc un gris NEUTRE, pas un noir chaud.)
     const float matte = clamp(knobs.z, 0.0, 1.0);
+    // L'ANTHRACITE A ÉTÉ REMONTÉ. À 0,118 / 0,268 le métal était si sombre
+    // qu'il ne restait que le néon : on ne lisait plus une PIÈCE, juste un
+    // croissant qui flotte. Un métal mat n'est pas un métal éteint — il rend
+    // moins, mais il rend. Ses hautes lumières montent donc à 0,52, et sa
+    // base à 0,19 : l'anneau, la tranche et le fresnel de la face
+    // redeviennent visibles sur la nuit.
     const float3 GOLD = mix(float3(1.000, 0.762, 0.318),
-                            float3(0.118, 0.112, 0.104), matte);
+                            float3(0.190, 0.181, 0.169), matte);
     const float3 GOLD_HOT = mix(float3(1.000, 0.898, 0.606),
-                                float3(0.268, 0.258, 0.242), matte);
+                                float3(0.520, 0.505, 0.478), matte);
     const float3 GOLD_DEEP = mix(float3(0.238, 0.130, 0.026),
                                  float3(0.026, 0.025, 0.024), matte);
 
