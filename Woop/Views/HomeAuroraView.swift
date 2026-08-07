@@ -129,7 +129,7 @@ struct HomeAuroraView: View {
     /// L'instant où le doigt s'est levé (la fumée retombe à partir de là).
     @State private var smokeEnd: Date?
     /// La page du trésor.
-    @State private var showTreasure = false
+    @State private var showCoffreFort = false
 
     private var finished: [Workout] { workouts.filter { !$0.isActive } }
     private var activeWorkout: Workout? { workouts.first { $0.isActive } }
@@ -174,15 +174,15 @@ struct HomeAuroraView: View {
                 .offset(y: contentBorn ? 0 : 10)
             }
             // La fumée du coffre se dessine ICI, hors du défilement : le
-            // coffre publie sa place (ChestBoundsKey) et le nuage — qui
+            // coffre publie sa place (CoffreFortCoinBounds) et le nuage — qui
             // déborde de près de cent points — s'étale sans rencontrer le
             // bord du ScrollView, qui l'aurait tranché au couteau.
-            .overlayPreferenceValue(ChestBoundsKey.self) { anchor in
+            .overlayPreferenceValue(CoffreFortCoinBounds.self) { anchor in
                 GeometryReader { proxy in
                     if let anchor, let smokeStart {
                         let box = proxy[anchor]
                         CoinSmoke(center: CGPoint(x: box.midX, y: box.midY),
-                                  radius: TreasureCoinButton.diameter / 2,
+                                  radius: CoffreFortCoinButton.diameter / 2,
                                   start: smokeStart, end: smokeEnd,
                                   palette: .light)
                     }
@@ -208,11 +208,11 @@ struct HomeAuroraView: View {
             // trésor doit couvrir AUSSI la barre bijou (posée en
             // `safeAreaInset` à la racine) — une cinématique avec une barre
             // d'onglets qui flotte par-dessus n'est plus une cinématique.
-            .fullScreenCover(isPresented: $showTreasure) {
-                TreasureView(
-                    coins: TreasurePurse.coins(finishedWorkouts: finished.count)
+            .fullScreenCover(isPresented: $showCoffreFort) {
+                CoffreFortFlow(
+                    coins: CoffreFortPurse.coins(finishedWorkouts: finished.count)
                 ) {
-                    showTreasure = false
+                    showCoffreFort = false
                 }
             }
         }
@@ -232,7 +232,7 @@ struct HomeAuroraView: View {
 
             Spacer(minLength: 8)
 
-            TreasureCoinButton(onPress: chestTouched, action: openTreasure)
+            CoffreFortCoinButton(onPress: chestTouched, action: openCoffreFort)
         }
         .padding(.top, 14)
     }
@@ -276,9 +276,9 @@ struct HomeAuroraView: View {
     /// Le toucher fume, PUIS la page s'ouvre. Ouverte au même instant, la
     /// fumée serait recouverte avant d'avoir été vue — on lui laisse le
     /// temps de naître sur la home.
-    private func openTreasure() {
+    private func openCoffreFort() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-            showTreasure = true
+            showCoffreFort = true
         }
     }
 

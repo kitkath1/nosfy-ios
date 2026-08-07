@@ -19,7 +19,7 @@ import SwiftUI
 /// par le bord du `ScrollView`, et un trait droit dans un nuage se voit à la
 /// première image. La pièce publie donc son cadre, et c'est le ZStack de la
 /// page — hors défilement — qui dessine la fumée à cette place.
-struct ChestBoundsKey: PreferenceKey {
+struct CoffreFortCoinBounds: PreferenceKey {
     static let defaultValue: Anchor<CGRect>? = nil
     static func reduce(value: inout Anchor<CGRect>?,
                        nextValue: () -> Anchor<CGRect>?) {
@@ -34,7 +34,7 @@ struct ChestBoundsKey: PreferenceKey {
 /// taille à la ligne du salut et ferait grandir tout le header de cent
 /// points. Une overlay n'est pas rognée par SwiftUI, donc la lumière sort
 /// librement.
-struct TreasureCoinButton: View {
+struct CoffreFortCoinButton: View {
     var onPress: (Bool) -> Void
     var action: () -> Void
 
@@ -46,7 +46,7 @@ struct TreasureCoinButton: View {
     var body: some View {
         Color.clear
             .frame(width: Self.diameter, height: Self.diameter)
-            .anchorPreference(key: ChestBoundsKey.self, value: .bounds) { $0 }
+            .anchorPreference(key: CoffreFortCoinBounds.self, value: .bounds) { $0 }
             .overlay {
                 MoonCoinView(coinR: Self.diameter / 2, onTap: {
                     onPress(true)

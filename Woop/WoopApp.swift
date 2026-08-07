@@ -286,7 +286,7 @@ struct RootView: View {
         } else if Self.successLab {
             SuccessLab()
         } else if Self.coffreLab {
-            TreasureLab()
+            CoffreFortLab()
         } else if Self.pieceLab {
             MoonCoinLab()
         } else if Self.emberLab {

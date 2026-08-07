@@ -10,14 +10,14 @@ import UIKit
 // une MAQUETTE assumée, tenue en UN SEUL endroit : le jour où l'économie est
 // tranchée, c'est ce corps-là qu'on remplace, et pas une ligne de la page ne
 // bouge.
-enum TreasurePurse {
+enum CoffreFortPurse {
     static func coins(finishedWorkouts: Int) -> Int { finishedWorkouts * 25 }
 }
 
 // MARK: - La partition
 
 /// Les temps de la cinématique, en secondes depuis l'ouverture de la page.
-enum TreasureCine {
+enum CoffreFortCine {
     /// Le cadrage de REPOS.
     ///
     /// La source est en 16:9 ; pour qu'elle couvre 40 % de la hauteur d'un
@@ -63,10 +63,19 @@ final class CinematicPlayerHost: UIView {
 
 struct CinematicPlayer: UIViewRepresentable {
     let player: AVPlayer
+    /// Le fond de l'hôte. NOIR partout (une cinématique se joue sur du noir) —
+    /// sauf pour un lecteur qui BOUCLE : à chaque bouclage, `AVPlayerLooper`
+    /// change d'item et la couche se vide le temps d'une à trois images. Avec
+    /// un fond noir, ce vide est un FLASH NOIR, une fois par période ; avec un
+    /// fond transparent, c'est l'image posée dessous qui apparaît — et comme
+    /// le fichier de boucle commence et finit sur la même image, c'est
+    /// exactement celle qu'on devait voir.
+    var opaqueBackground: Bool = true
 
     func makeUIView(context: Context) -> CinematicPlayerHost {
         let view = CinematicPlayerHost()
-        view.backgroundColor = .black
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
         // `resizeAspect`, et non `resizeAspectFill`. La vidéo est en 16:9
         // PAYSAGE, sa place fait 40 % de la hauteur d'un écran de téléphone :
         // remplir imposait de jeter 35 % de la largeur, et ce tiers-là
@@ -83,6 +92,8 @@ struct CinematicPlayer: UIViewRepresentable {
 
     func updateUIView(_ view: CinematicPlayerHost, context: Context) {
         if view.playerLayer.player !== player { view.playerLayer.player = player }
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
     }
 }
 
@@ -90,7 +101,7 @@ struct CinematicPlayer: UIViewRepresentable {
 
 /// Une page toute noire, la cinématique du coffre en gros plan qui vient se
 /// poser en haut, puis le titre, la pièce et le compte.
-struct TreasureView: View {
+struct CoffreFortView: View {
     let coins: Int
     var onClose: () -> Void = {}
 
@@ -114,7 +125,7 @@ struct TreasureView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    video(slot: H * TreasureCine.slotRatio,
+                    video(slot: H * CoffreFortCine.slotRatio,
                           screenWidth: geo.size.width, screenHeight: H)
                     Spacer(minLength: 0)
                     content(screenHeight: H)
@@ -137,6 +148,7 @@ struct TreasureView: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .overlay(alignment: .topLeading) { closeButton }
+        .overlay(alignment: .bottom) { descente }
         .onAppear(perform: start)
         .onDisappear { player?.pause() }
     }
@@ -168,7 +180,7 @@ struct TreasureView: View {
         // rendu 3D. C'est elle qu'il faut éteindre.
         .mask(edgeMask)
         .scaleEffect(zoomNow, anchor: .center)
-        .offset(y: settled || reduceMotion ? 0 : H * TreasureCine.zoomDrop)
+        .offset(y: settled || reduceMotion ? 0 : H * CoffreFortCine.zoomDrop)
         .opacity(visible ? 1 : 0)
         // La PLACE — 40 % de l'écran — est réservée ici, et elle ne coupe
         // rien : pendant l'ouverture l'image déborde volontiers de l'écran,
@@ -178,7 +190,7 @@ struct TreasureView: View {
     }
 
     private var zoomNow: CGFloat {
-        settled || reduceMotion ? TreasureCine.restScale : TreasureCine.zoom
+        settled || reduceMotion ? CoffreFortCine.restScale : CoffreFortCine.zoom
     }
 
     /// Une passe horizontale masquée par une passe verticale : les deux
@@ -252,7 +264,11 @@ struct TreasureView: View {
             let host = coinR * MoonCoinView.hostScale
 
             Color.clear
-                .frame(width: coinR * 2, height: coinR * 3.3)
+                // 2,95 rayon et non 3,3 : c'est ce gabarit — la place
+                // réservée au reflet — qui tenait la pastille à 85 pt sous le
+                // métal, pas son `padding`. Le reflet meurt maintenant à 2,93
+                // rayon (voir les arrêts du masque), donc la place suit.
+                .frame(width: coinR * 2, height: coinR * 2.95)
                 .overlay(alignment: .top) {
                     ZStack(alignment: .top) {
                         // LE HALO. Très bas — 4 % de pic sur deux rayons et
@@ -303,7 +319,7 @@ struct TreasureView: View {
                                     .init(color: .clear, location: 0.0),
                                     .init(color: .black.opacity(0.30),
                                           location: 0.21),
-                                    .init(color: .clear, location: 0.62)
+                                    .init(color: .clear, location: 0.47)
                                 ], startPoint: .top, endPoint: .bottom)
                             )
                             .blur(radius: 3.0)
@@ -313,12 +329,13 @@ struct TreasureView: View {
                 }
                 .padding(.top, 24)
 
-            // La pastille DESCEND. Collée sous la pièce, les deux se lisaient
-            // comme une sucette — un disque d'or posé sur une pilule d'or,
-            // même axe, même matière : une forme de composant, pas une
-            // composition.
-            TreasureBadgeView(count: coins)
-                .padding(.top, 26)
+            // La pastille REMONTE (verdict du 2026-08-07). Descendue à 26 pt
+            // pour ne pas former « une sucette » avec la pièce, elle partait
+            // trop loin : le gouffre entre les deux cassait le groupe au lieu
+            // de l'aérer. À 6 pt elle respire encore — le reflet de la pièce
+            // meurt avant elle — sans se décrocher du compte qu'elle porte.
+            CoffreFortBadgeView(count: coins)
+                .padding(.top, 6)
         }
         .frame(maxWidth: .infinity)
     }
@@ -374,6 +391,24 @@ struct TreasureView: View {
         }
     }
 
+    /// L'INVITE À DESCENDRE. Les trois chevrons de la page démon
+    /// (`SlotChevrons`) — ce sont déjà les flèches de la maison, en cascade
+    /// déphasée pour se lire comme un mouvement et non comme trois
+    /// clignotants. Les reprendre ici, c'est dire au doigt que la page
+    /// continue AVEC LE MÊME SIGNE que celui qu'il retrouvera en bas.
+    ///
+    /// Elles naissent avec le contenu : pendant la cinématique il n'y a rien
+    /// à aller chercher, et une invite qui clignote sous un plan-séquence le
+    /// désamorce.
+    @ViewBuilder
+    private var descente: some View {
+        if born {
+            SlotChevrons()
+                .padding(.bottom, 26)
+                .transition(.opacity)
+        }
+    }
+
     // MARK: La mise en route
 
     private func start() {
@@ -395,7 +430,7 @@ struct TreasureView: View {
         p.automaticallyWaitsToMinimizeStalling = false
         player = p
 
-        withAnimation(.easeOut(duration: TreasureCine.fadeIn)) { visible = true }
+        withAnimation(.easeOut(duration: CoffreFortCine.fadeIn)) { visible = true }
         p.play()
 
         guard !reduceMotion else {
@@ -406,14 +441,60 @@ struct TreasureView: View {
             return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + TreasureCine.settleAt) {
-            withAnimation(.easeInOut(duration: TreasureCine.settleFor)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + CoffreFortCine.settleAt) {
+            withAnimation(.easeInOut(duration: CoffreFortCine.settleFor)) {
                 settled = true
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + TreasureCine.contentAt) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + CoffreFortCine.contentAt) {
             withAnimation(.easeOut(duration: 0.65)) { born = true }
         }
+    }
+}
+
+// MARK: - Le parcours
+
+/// Deux pages plein écran empilées : le coffre-fort, puis la PAGE DÉMON.
+/// On descend d'un geste, on remonte du même.
+///
+/// POURQUOI UN PAGER ET PAS UNE NAVIGATION. Les deux pages sont le même
+/// lieu — le trésor et ce qu'on y gagne. Une pile de navigation les
+/// séparerait par une transition latérale et un bouton retour, c'est-à-dire
+/// par la grammaire de « je change d'écran ». Le défilement paginé dit
+/// l'inverse : c'est la même scène, elle continue plus bas.
+///
+/// LE PIÈGE DU GESTE, et pourquoi ça marche quand même. La page démon a pour
+/// geste central de TIRER UNE CARTE VERS LE BAS — la même direction que le
+/// pager. Ça ne se dispute pas, parce que sa `DragGesture` a une distance
+/// minimale de ZÉRO : elle prend le doigt à l'instant du contact et gagne
+/// donc sur le défilement partout où il y a une carte. Ailleurs sur la page,
+/// c'est le pager qui répond. À vérifier sur appareil : c'est le genre
+/// d'arbitrage que le simulateur juge mal.
+///
+/// `LazyVStack` : la page démon porte quatre cartes à shader, une aurore
+/// plein écran et son grain. Les monter d'avance ferait tourner tout ça
+/// derrière le coffre-fort, invisible et payé plein tarif — la leçon déjà
+/// payée sur la home, dont le ciel tournait derrière le splash.
+struct CoffreFortFlow: View {
+    let coins: Int
+    var onClose: () -> Void = {}
+
+    var body: some View {
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 0) {
+                CoffreFortView(coins: coins, onClose: onClose)
+                    .containerRelativeFrame(.vertical)
+                HaloDawnLab()
+                    .containerRelativeFrame(.vertical)
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
+        .background(Color.black)
+        .ignoresSafeArea()
+        .statusBarHidden()
+        .persistentSystemOverlays(.hidden)
     }
 }
 
@@ -421,7 +502,7 @@ struct TreasureView: View {
 
 /// `-coffreLab` : la page du trésor seule, rejouable. Sans lui, chaque tour
 /// de réglage coûtait la traversée splash → connexion → home → toucher.
-struct TreasureLab: View {
+struct CoffreFortLab: View {
     @State private var run = 0
 
     var body: some View {
@@ -429,7 +510,7 @@ struct TreasureLab: View {
             Color.black.ignoresSafeArea()
             // `id` : rejouer, c'est remonter la vue — le lecteur repart de
             // zéro et la partition avec lui.
-            TreasureView(coins: 325)
+            CoffreFortFlow(coins: 325)
                 .id(run)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -454,7 +535,7 @@ struct TreasureLab: View {
 /// nimbe. La plaque, son liseré, son balayage et la poudre vivent dans UN
 /// shader (`treasureBadge`) ; le texte, lui, reste du texte — il doit rester
 /// lisible, sélectionnable par l'accessibilité, et net à toutes les tailles.
-struct TreasureBadgeView: View {
+struct CoffreFortBadgeView: View {
     let count: Int
 
     private static let plateHeight: CGFloat = 54
