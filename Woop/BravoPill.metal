@@ -31,7 +31,8 @@ static float pfbm(float2 p) {
 [[ stitchable ]] half4 bravoPill(float2 position, half4 color,
                                  float2 size, float2 center,
                                  float2 halfB, float rimW,
-                                 float t, float amount, float flare) {
+                                 float t, float amount, float flare,
+                                 float pulse) {
     if (amount < 0.002) { return half4(0.0); }
     const float2 p = position - center;
 
@@ -57,13 +58,30 @@ static float pfbm(float2 p) {
     const float2 n = normalize(float2(p.x / hx, p.y / hy) + 1e-5);
     // Les deux foyers, opposés, et qui DÉRIVENT très lentement : l'or vit,
     // il n'est pas peint. 47 s, premier avec rien d'autre sur la page.
-    const float a0 = -1.98 + 0.16 * sin(t * 6.2832 / 47.0);
+    // LES FOYERS TOURNENT VRAIMENT. À 47 s de période, la dérive existait
+    // sur le papier et pas à l'œil : la pastille était une image fixe. À
+    // 13 s, la lumière fait le tour de la capsule pendant qu'on la regarde —
+    // c'est la même arête, elle est simplement éclairée par une lampe qui
+    // bouge. Et son amplitude respire sur une seconde période, première avec
+    // la première : jamais un balancier.
+    const float a0 = -1.98 + 1.05 * sin(t * 6.2832 / 13.0)
+                           + 0.34 * sin(t * 6.2832 / 29.0 + 1.1);
     const float2 f1 = float2(cos(a0), sin(a0));
     const float k1 = pow(max(dot(n, f1), 0.0), 3.0);
     const float k2 = pow(max(dot(n, -f1), 0.0), 3.0);
+    // LE BALAYAGE : un point vif qui COURT le long du fil, plus serré que les
+    // foyers et plus rapide. C'est lui qui fait qu'on voit du métal poli et
+    // non un trait dessiné — un liseré qui ne bouge pas est un contour.
+    const float aSw = t * 6.2832 / 7.3;
+    const float2 fs = float2(cos(aSw), sin(aSw));
+    const float ks = pow(max(dot(n, fs), 0.0), 22.0);
     // 0,10 au plus terne, 1,0 au foyer : le facteur 240 de la référence, en
     // luminance perçue.
-    const float lit = 0.10 + 0.90 * clamp(k1 + k2, 0.0, 1.0);
+    // Le pouls du néon de la lune remonte dans son écrin : la capsule prend
+    // la lumière de l'objet qu'elle porte. Ce n'est pas une couche qui
+    // s'allume — c'est la même lumière, une seconde fois.
+    const float lit = (0.10 + 0.90 * clamp(k1 + k2, 0.0, 1.0))
+                      * (0.88 + 0.24 * pulse);
 
     const float3 GOLD = float3(1.000, 0.762, 0.318);
     const float3 GOLD_HOT = float3(1.000, 0.920, 0.780);
@@ -72,6 +90,7 @@ static float pfbm(float2 p) {
     const float band = smoothstep(rimW * 0.5 + aa, rimW * 0.5 - aa, abs(d));
     float3 gold = mix(GOLD, GOLD_HOT, clamp(lit * lit, 0.0, 1.0));
     col += gold * (band * lit);
+    col += GOLD_HOT * (band * ks * 0.85);
 
     // ---- LA BUÉE, dehors seulement, et seulement AUX FOYERS. C'est elle
     // qu'on voit déborder sur la référence, en haut et en bas.
@@ -84,6 +103,9 @@ static float pfbm(float2 p) {
     // Et un souffle très court collé au fil, côté intérieur : le verre prend
     // la lumière de son propre cerclage.
     col += GOLD * (exp(-max(-d, 0.0) / 2.4) * inside * lit * 0.010);
+    // L'intérieur, près de la pièce, respire avec elle.
+    col += GOLD * (exp(-length(p - float2(-0.252 * 2.0 * hx, 0.0))
+                       / (hy * 1.9)) * inside * pulse * 0.030);
 
     // ---- LE SOUFFLE DU JAILLISSEMENT. Quand les lunes s'échappent, la
     // capsule s'éclaire DE L'INTÉRIEUR, à l'endroit d'où elles partent — la
