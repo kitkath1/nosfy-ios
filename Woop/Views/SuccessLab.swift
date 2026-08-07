@@ -272,14 +272,49 @@ struct SuccessLab: View {
                                         SuccessCine.titleB, max(landed, 0))
         let dialIn = SuccessCine.sstep(SuccessCine.dialA,
                                        SuccessCine.dialB, max(landed, 0))
+        // Le REJOUER ne sort qu'une fois la partition finie : il ne doit
+        // jamais entrer dans le champ pendant que le barillet tombe.
+        let replayIn = SuccessCine.sstep(SuccessCine.dialB + 0.4,
+                                         SuccessCine.dialB + 1.2,
+                                         max(landed, 0))
         return ZStack {
             world(w: w, h: h, t: t, mid: mid, left: left, right: right,
                   ink: ink)
             titles(g: g, opacity: titleIn)
             molette(g: g, opacity: dialIn)
+            replay(w: w, h: h, opacity: replayIn)
         }
         .frame(width: w, height: h)
         .clipped()
+    }
+
+    /// Le REJOUER du banc — le même chip que la lentille : une capsule au
+    /// fil ténu, en bas de page. Il n'existe qu'au banc au doigt : en
+    /// `-successAuto` la boucle rejoue toute seule, et sur une pose figée
+    /// il n'y a rien à rejouer.
+    @ViewBuilder
+    private func replay(w: CGFloat, h: CGFloat,
+                        opacity: Double) -> some View {
+        if Self.frozen == nil, !Self.cycling, opacity > 0.001 {
+            Button(action: fire) {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("REJOUER")
+                        .font(.inter(11, .semibold))
+                        .tracking(2.6)
+                }
+                .foregroundStyle(Color.white.opacity(0.55))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
+                .background(Capsule().stroke(Color.white.opacity(0.16),
+                                             lineWidth: 1))
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .opacity(opacity)
+            .position(x: w / 2, y: h - 58)
+        }
     }
 
     /// Le monde sous le verre, puis LES TROIS LENTILLES enchaînées : chacune
