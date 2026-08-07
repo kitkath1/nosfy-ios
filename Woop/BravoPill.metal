@@ -31,7 +31,7 @@ static float pfbm(float2 p) {
 [[ stitchable ]] half4 bravoPill(float2 position, half4 color,
                                  float2 size, float2 center,
                                  float2 halfB, float rimW,
-                                 float t, float amount) {
+                                 float t, float amount, float flare) {
     if (amount < 0.002) { return half4(0.0); }
     const float2 p = position - center;
 
@@ -84,6 +84,22 @@ static float pfbm(float2 p) {
     // Et un souffle très court collé au fil, côté intérieur : le verre prend
     // la lumière de son propre cerclage.
     col += GOLD * (exp(-max(-d, 0.0) / 2.4) * inside * lit * 0.010);
+
+    // ---- LE SOUFFLE DU JAILLISSEMENT. Quand les lunes s'échappent, la
+    // capsule s'éclaire DE L'INTÉRIEUR, à l'endroit d'où elles partent — la
+    // place de la pièce, à −0,252 de la largeur. Ce n'est pas un flash posé
+    // dessus : c'est l'énergie qui sort, donc elle naît dans la matière et le
+    // fil d'or la reprend au passage.
+    if (flare > 0.003) {
+        const float2 src = float2(-0.252 * 2.0 * hx, 0.0);
+        const float dl = length(p - src);
+        const float core = exp(-dl / (hy * 1.15));
+        const float wide = exp(-dl / (hy * 3.4));
+        col += float3(1.000, 0.895, 0.735) * (core * 0.62 * flare * inside);
+        col += float3(1.000, 0.762, 0.318) * (wide * 0.26 * flare);
+        // Le fil d'or prend le souffle sur toute sa longueur.
+        col += GOLD_HOT * (band * flare * 0.55);
+    }
 
     col *= amount;
     const float a = clamp(max(max(col.r, col.g), col.b) * 1.45, 0.0, 1.0);

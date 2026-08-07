@@ -126,6 +126,16 @@ enum BravoCine {
     /// Le contenu naît une fois la caméra revenue.
     static var contentAt: Double { pullAt + pullFor - 0.20 }
 
+    /// LE SOUFFLE DE LA PASTILLE au moment où ses lunes s'échappent : un halo
+    /// clair naît DANS la capsule, à l'endroit exact d'où les pièces sortent,
+    /// et retombe. Attaque en cinq images, extinction en 0,55 s — l'énergie
+    /// qui part avec elles, pas un flash posé dessus.
+    static func pillFlare(_ e: Double) -> Double {
+        let x = e - burstAt
+        guard x > 0 else { return 0 }
+        return min(x / 0.085, 1) * exp(-max(x - 0.085, 0) / 0.55)
+    }
+
     /// L'AVANCE D'HORLOGE DU CROISSANT. Le néon respire sur 5 s et son point
     /// chaud parcourt le tube en 3,5 s : sur un plongeon de 0,72 s on n'en
     /// voyait qu'un cinquième, donc rien du tout. L'horloge de la pièce prend
@@ -133,7 +143,13 @@ enum BravoCine {
     /// quatre fois plus vite le temps qu'on la regarde, puis reprend son
     /// rythme, simplement décalée. Monotone et continu : jamais un saut.
     static func neonBoost(_ e: Double) -> Double {
-        3.2 * min(max(e - moonAt, 0), 1.8)
+        // EN PERMANENCE, PAS SEULEMENT AU PLONGEON. Au repos, la lune de la
+        // pastille ne scintillait pas : son souffle fait ±18 % sur 5 s et son
+        // point chaud parcourt le tube en 3,5 s — à cette échelle, sur un
+        // objet de 16 pt, c'est indétectable. Son horloge court donc 3,6×
+        // plus vite À DEMEURE (souffle de 1,4 s, point chaud de 1,0 s : un
+        // tube de néon qui VIT), avec un supplément pendant qu'on l'approche.
+        2.6 * max(e, 0) + 3.2 * min(max(e - moonAt, 0), 1.8)
     }
 
     /// Le glissement de l'ancre, de la pastille vers la lune.
@@ -292,13 +308,21 @@ struct BravoView: View {
                                   amount: BravoCine.pillIn(e),
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam,
-                                  neonBoost: BravoCine.neonBoost(e))
+                                  neonBoost: BravoCine.neonBoost(e),
+                                  flare: BravoCine.pillFlare(e))
                     CoinField(source: CGPoint(x: W / 2, y: aY),
                               anchor: anchor, cam: cam,
                               age: e - BravoCine.burstAt,
                               clock: tl.date.timeIntervalSinceReferenceDate
                                   .truncatingRemainder(dividingBy: 900),
-                              ground: H - 58)
+                              // LE SOL, ENTRE DEUX ÉCUEILS. À 58 pt du bas le
+                              // tas était collé au footer, coupé par le bord
+                              // et mêlé au bouton de rejeu : « moche ». À 168
+                              // il montait SUR le lien « Revenir à l'exercice ».
+                              // À 118 il se pose dans la nuit du bas, sous le
+                              // texte et au-dessus du bord — son propre plan.
+                              ground: H - 118,
+                              width: W)
                     VStack(spacing: 0) {
                         Color.clear.frame(height: slotRest + gap + 54 + 20)
                         content
@@ -798,6 +822,8 @@ struct BravoPillView: View {
     let cam: CGFloat
     /// L'avance d'horloge de la pièce pendant que la caméra plonge sur elle.
     let neonBoost: Double
+    /// Le souffle du jaillissement, 0 → 1 → 0.
+    let flare: Double
 
     @State private var burstTick = 0
 
@@ -824,7 +850,8 @@ struct BravoPillView: View {
                         .float2(Float(w / 2), Float(height / 2)),
                         .float(Float(Self.rimRest * cam)),
                         .float(t),
-                        .float(Float(amount))))
+                        .float(Float(amount)),
+                        .float(Float(flare))))
                     .allowsHitTesting(false)
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -908,6 +935,9 @@ struct CoinField: View {
     /// L'horloge de la page (repliée sur 900 s, comme partout).
     let clock: Double
     let ground: CGFloat
+    /// La largeur de la page : le tas doit tenir DEDANS. Une pièce coupée par
+    /// le bord d'écran n'est plus une pièce, c'est un défaut.
+    let width: CGFloat
 
     static let count = 24
     private static let g: Double = 310
@@ -1009,12 +1039,19 @@ struct CoinField: View {
             // LE CLIGNOTEMENT : chaque pièce sa porte (5,5 à 11 s) et sa
             // phase. À tout instant certaines brûlent, d'autres dorment, et
             // aucune ne bat avec sa voisine.
-            let period = 5.5 + 5.5 * Self.hash(i, 9)
-            let phase = Self.hash(i, 10) * 6.28
-            let wave = 0.5 + 0.5 * sin(clock * 6.2832 / period + phase)
-            let gate = Self.sstep(0.34, 0.74, wave)
-            let lit = tau < tLand ? 1.0 : (1 - ramp) + ramp * gate
+            // LE LIT N'A PAS DE LUNES. Un tas de croissants qui clignotent au
+            // pied de la page faisait une guirlande — « moche ». Les pièces
+            // SORTENT allumées de la pastille (ce sont ses lunes qui partent),
+            // et leur néon s'éteint EN SE POSANT : ce qui reste au sol est du
+            // métal nu, sombre, qui n'accroche que la softbox. La seule
+            // lumière de la page redevient la pastille, et le tas devient ce
+            // qu'il doit être — de la matière, pas un décor lumineux.
+            let lit = tau < tLand ? 1.0 : (1 - ramp)
 
+            // Le tas tient dans la page : on ramène les extrêmes vers
+            // l'intérieur plutôt que de les laisser sortir par les flancs.
+            let margin = Double(restR) * 1.6 + 14
+            x = min(max(x, margin), Double(width) - margin)
             out.append(State(i: i, p: cameraed(CGPoint(x: x, y: y)),
                              r: CGFloat(restR) * cam, yaw: yaw, lit: lit))
         }
