@@ -63,10 +63,19 @@ final class CinematicPlayerHost: UIView {
 
 struct CinematicPlayer: UIViewRepresentable {
     let player: AVPlayer
+    /// Le fond de l'hôte. NOIR partout (une cinématique se joue sur du noir) —
+    /// sauf pour un lecteur qui BOUCLE : à chaque bouclage, `AVPlayerLooper`
+    /// change d'item et la couche se vide le temps d'une à trois images. Avec
+    /// un fond noir, ce vide est un FLASH NOIR (mesuré : luminance 0,0000, une
+    /// fois par période) ; avec un fond transparent, c'est l'image posée
+    /// dessous qui apparaît — et comme le fichier de boucle commence et finit
+    /// sur la même image, c'est exactement celle qu'on devait voir.
+    var opaqueBackground: Bool = true
 
     func makeUIView(context: Context) -> CinematicPlayerHost {
         let view = CinematicPlayerHost()
-        view.backgroundColor = .black
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
         // `resizeAspect`, et non `resizeAspectFill`. La vidéo est en 16:9
         // PAYSAGE, sa place fait 40 % de la hauteur d'un écran de téléphone :
         // remplir imposait de jeter 35 % de la largeur, et ce tiers-là
@@ -83,6 +92,8 @@ struct CinematicPlayer: UIViewRepresentable {
 
     func updateUIView(_ view: CinematicPlayerHost, context: Context) {
         if view.playerLayer.player !== player { view.playerLayer.player = player }
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
     }
 }
 

@@ -180,6 +180,14 @@ struct BravoView: View {
     @State private var startedAt = Date()
     @State private var handoffObserver: Any?
     @State private var loopReady: NSKeyValueObservation?
+    /// LE FILET SOUS LE TRAPÈZE. `AVPlayerLooper` change d'item à chaque
+    /// bouclage, et la couche vidéo se VIDE le temps d'une à trois images —
+    /// mesuré sur 25 s d'enregistrement : deux trous à luminance 0,0000
+    /// exactement, espacés d'une période de boucle. Comme le fichier commence
+    /// et finit sur la MÊME image, il suffit de poser cette image dessous et
+    /// de rendre l'hôte du lecteur transparent : le trou se remplit tout seul
+    /// avec ce qu'on devait y voir. Aucune synchronisation, aucun fondu.
+    @State private var loopFirstFrame: UIImage?
     /// La partition est finie : plus rien ne bouge côté SwiftUI. On ARRÊTE
     /// l'horloge — sans quoi la page recalcule la géométrie de la vidéo et
     /// repasse son masque, son rognage et son flou SOIXANTE FOIS PAR SECONDE
@@ -269,11 +277,18 @@ struct BravoView: View {
         return ZStack {
             Color.black
             ZStack {
+                // Le filet : la première image de la boucle, posée SOUS les
+                // lecteurs. On ne la voit jamais — sauf pendant les une à
+                // trois images où la boucle change d'item.
+                if let loopFirstFrame, onLoop {
+                    Image(uiImage: loopFirstFrame).resizable()
+                }
                 if let cine {
                     CinematicPlayer(player: cine).opacity(onLoop ? 0 : 1)
                 }
                 if let loop {
-                    CinematicPlayer(player: loop).opacity(onLoop ? 1 : 0)
+                    CinematicPlayer(player: loop, opaqueBackground: false)
+                        .opacity(onLoop ? 1 : 0)
                 }
             }
             .frame(width: vw, height: vh)
@@ -389,6 +404,7 @@ struct BravoView: View {
             q.automaticallyWaitsToMinimizeStalling = false
             let item = AVPlayerItem(url: lurl)
             looper = AVPlayerLooper(player: q, templateItem: item)
+            grabLoopFirstFrame(url: lurl)
             // LE PRÉCHARGEMENT. `preroll` amorce le pipeline de décodage SANS
             // avancer l'horloge : au relais, la première image est déjà prête
             // et la couche n'a pas une seule frame de noir à montrer. Il n'est
@@ -457,6 +473,21 @@ struct BravoView: View {
         // la physique de l'image et non par une courbe.
         DispatchQueue.main.asyncAfter(deadline: .now() + BravoCine.fallScreen) {
             cine?.rate = BravoCine.rateSlow
+        }
+    }
+
+    /// La première image du fichier de boucle, extraite une fois, à tolérance
+    /// NULLE : on veut CETTE image-là, pas sa voisine.
+    private func grabLoopFirstFrame(url: URL) {
+        let gen = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+        gen.appliesPreferredTrackTransform = true
+        gen.requestedTimeToleranceBefore = .zero
+        gen.requestedTimeToleranceAfter = .zero
+        gen.generateCGImagesAsynchronously(
+            forTimes: [NSValue(time: .zero)]) { _, image, _, _, _ in
+            guard let image else { return }
+            let ui = UIImage(cgImage: image)
+            DispatchQueue.main.async { loopFirstFrame = ui }
         }
     }
 

@@ -405,7 +405,13 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
 
     const float3 NEON_CORE = float3(1.000, 0.930, 0.780);
     const float3 NEON = float3(1.000, 0.520, 0.105);
-    const float lit = reveal * breath;
+    // LE NÉON SUIT LE MAT. Sur la pièce d'or (matte = 0) rien ne change ;
+    // sur le galet noir de la page BRAVO, le croissant descend à 52 % — à
+    // pleine intensité il DOMINE la capsule, alors que la référence de
+    // Kathryn le montre discret. `lit` porte le néon, son bain (`spill`) et
+    // sa part de bloom : les trois baissent ensemble, donc la matière reste
+    // cohérente au lieu de se décoller de sa lueur.
+    const float lit = reveal * breath * mix(1.0, 0.52, matte);
     float3 neon = NEON_CORE * (core * 1.35 * travel)
                 + NEON * (shell * 0.95 + glow * 0.34);
     neon *= lit;
