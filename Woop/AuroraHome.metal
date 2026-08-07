@@ -318,6 +318,23 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                 * (1.0 - smoothstep(halfB.x - 30.0, halfB.x - 12.0, fabs(p.x)))
                 * smoothstep(-31.0, -5.0, enterre);
 
+    // ---- LA LUMIÈRE DE LA FENTE, POSÉE SUR LA CARTE.
+    //
+    // Ce n'est PAS un halo de la carte : un second contour fermé, emboîté
+    // dans le liseré de la fente, c'est « on voit les traits », refusé au
+    // troisième tour. C'est la MÊME lumière — celle du trou — qui éclaire
+    // ce qui s'en approche. Une seule source, deux surfaces : à ce
+    // moment-là les deux effets ne se concurrencent plus, ils se
+    // rehaussent.
+    //
+    // D'où sa forme, qui est tout le sujet : massée en BAS, là où la carte
+    // touche la fente, et qui MEURT en remontant le long des flancs. Elle
+    // ne fait jamais le tour, elle n'atteint jamais le bord haut.
+    float versBas = exp(-max(halfB.y - p.y, 0.0) / 26.0);
+    float bordProche = exp(-max(-d, 0.0) / 13.0);
+    float lueurFente = versBas * bordProche * inside
+                     * smoothstep(-46.0, -2.0, enterre);
+
     // ---- Les pointes-bijou : le murmure du REPOS, et rien d'autre. Les
     // démultiplier sous le geste faisait grésiller l'arête de petites
     // étoiles — « cheap », même verdict que les étoiles-bijou du cadran.
@@ -359,6 +376,7 @@ static float scRim(float2 p, float2 halfB, float t, float seed) {
                    + float3(1.00, 0.99, 0.97) * innerWhite
                    + neonIn
                    + float3(1.00, 0.62, 0.52) * (chant * 0.56)
+                   + float3(1.00, 0.74, 0.44) * (lueurFente * 0.30)
                    + sheathCol * (tubeM * 0.34 * gesteVif * inside);
     float aRim = clamp((line + halo + glitter) * 1.6, 0.0, 1.0);
     float aGlow = clamp(glow, 0.0, 1.0);

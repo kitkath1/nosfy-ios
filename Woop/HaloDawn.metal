@@ -321,7 +321,7 @@ static float hdRoundBox(float2 p, float2 b, float r) {
                                 float2 size, float t,
                                 float pad, float awake, float swallow,
                                 float couche, float rayon,
-                                float sunk, float cw) {
+                                float sunk, float cw, float charge) {
     float2 p = position - size * 0.5;
     float2 b = max(size * 0.5 - pad, float2(2.0));
     float ouvert = clamp(awake, 0.0, 1.0);
@@ -339,14 +339,10 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     float r = min(bEff.y, rayon);
     float d = hdRoundBox(p, bEff, r);
 
-    // LA LISIÈRE RESPIRE. Un point et demi d'amplitude, sur vingt à trente
-    // secondes. Ce n'est PAS une déformation de la forme — la forme reste
-    // celle qui a été validée : c'est le BORD qui vit, comme la lisière de
-    // la nuit dans l'aurore. Assez pour qu'aucun point du contour ne soit
-    // sur la même courbe idéale ; jamais assez pour qu'on voie onduler.
-    float souffleBord = (hdfbm(float2(p.x * 0.019 + 3.1, t * 0.038)) - 0.5)
-                      * 3.0;
-    d -= souffleBord;
+    // LE CONTOUR EST LISSE, et c'est une décision. Une version faisait
+    // respirer la lisière par un bruit lent — juste sur un vrai trou, faux
+    // ici : sur un contour qu'on TRICHE, une ondulation ne dit pas
+    // « vivant », elle dit « mal détouré ».
 
     float inside = smoothstep(0.9, -0.9, d);
     float levre = smoothstep(HD_COUPE - 1.2, HD_COUPE + 1.2, p.y);
@@ -357,7 +353,15 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // la gorge tombait à 43 % à l'instant précis où la silhouette devait s'y
     // détacher, et la carte redevenait noir sur noir.
     float blocage = smoothstep(0.0, 46.0, max(sunk, 0.0));
-    float lueur = ouvert * (1.0 - 0.55 * blocage);
+    // LE LISERÉ NAÎT DU GESTE, ET DE RIEN D'AUTRE. Au repos la fente n'a NI
+    // liseré NI lueur : c'est un dégradé de noir, point. C'est la loi déjà
+    // payée sur les cartes (verdict du 2026-08-04 : « le liseré clair au
+    // repos, on dirait un bug ») — et c'est elle qui règle enfin le mur des
+    // dix tours. Un contour lumineux fermé posé en permanence sur la page
+    // EST un objet ; un contour qui n'existe que sous le doigt est une
+    // RÉPONSE. On ne peut pas lire comme un bouton ce qui n'est pas là.
+    float feu = clamp(charge, 0.0, 1.0);
+    float lueur = ouvert * feu * (1.0 - 0.30 * blocage);
 
     // Le scintillement du fond. Il module la TEMPÉRATURE plus que la
     // luminance : à ±30 % de luminance sur une gorge presque noire, c'est le
@@ -368,11 +372,45 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     float vif = (0.78 + 0.22 * flash) * frem;
 
     // ---- LE DEDANS (couche 0) : du graphite, une braise au FOND.
-    float versLevre = clamp((HD_COUPE - p.y) / max(HD_COUPE + b.y, 1.0),
-                            0.0, 1.0);
-    float braise = 0.38 + 0.62 * exp(-versLevre * 2.6);
-    float3 dedans = float3(0.028, 0.025, 0.022)
-                  + float3(0.175, 0.150, 0.130) * (braise * ouvert * vif);
+    // LE DÉGRADÉ ÉTAIT À L'ENVERS DEPUIS LE DÉBUT, et c'est LUI la touche de
+    // piano. Je le justifiais par « la lumière entre par le bas, le cœur
+    // blanc est sous la fente » — le raisonnement est faux : la LÈVRE PROCHE
+    // bouche cette lumière. La seule paroi qu'elle puisse éclairer est la
+    // LOINTAINE. Mesuré sur la version refusée, la bouche s'éclaircissait en
+    // descendant (18,5 → 29,8, +61 %) : une cavité plus claire au fond qu'à
+    // son entrée n'existe pas.
+    //
+    // Le vrai profil est celui de toute entaille : LA TRANCHE du matériau,
+    // vue de champ sur trois points et demi juste sous l'arête, puis un
+    // DÉCROCHEMENT franc — la matière finit, le vide commence — puis un
+    // puits qui s'éteint vite puis lentement.
+    //
+    // Le plancher est à 18, pas plus bas, et ce n'est pas un goût : WoopGrain
+    // pose par-dessus tout ~180 carrés blancs fixes à 2 % (HaloDawnLab:32).
+    // Sur un fond à 11 ça fait +42 % de modulation — ça refabrique les
+    // petites étincelles refusées deux fois, dans une couche qu'aucun dither
+    // ne rattrape.
+    float z = p.y + b.y;
+    float tranche = clamp(1.0 - z / 3.5, 0.0, 1.0);
+    tranche *= tranche * (3.0 - 2.0 * tranche);
+    // Le puits s'assombrit CONTINÛMENT jusqu'au bas de la fente : c'est la
+    // loi qui manquait. Une cavité plus claire au fond qu'à son entrée
+    // n'existe pas — et une forme qui s'assombrit vers le bas se lit comme
+    // un creux, quand celle qui s'éclaircit se lit comme un objet bombé.
+    float puits = exp(-max(z - 3.8, 0.0) / 9.5)
+                + 0.055 * exp(-max(z - 3.8, 0.0) / 30.0);
+    // Le gain horizontal. LE CŒUR BLANC N'EST PAS À GAUCHE : mesuré, le
+    // maximum de la page est en bas au CENTRE (L 241-245, saturation 0,075) ;
+    // la gauche est l'orange sombre et saturé (L 198, sat 0,44). J'éclairais
+    // depuis une source qui n'existe pas — c'est exactement ce que l'œil
+    // appelle « fake ». Maximum ramené à x = −0,12, rapport 1,42:1.
+    float xn = p.x / max(b.x, 1.0);
+    float gainX = 1.04 - 0.31 * (xn + 0.12) - 0.10 * (xn + 0.12) * (xn + 0.12);
+    gainX = clamp(gainX, 0.70, 1.06);
+    const float3 teinteT = float3(1.00, 0.90, 0.78);
+    const float3 teinteP = float3(0.74, 0.72, 0.72);
+    float3 dedans = teinteP * (0.061 + 0.303 * puits)
+                  + teinteT * (0.303 * tranche * gainX);
 
     // LA NAPPE DE CONTACT — le rebond de la braise sur ce qui descend. Elle
     // VOYAGE avec le bord bas de la carte, donc plus de désert au milieu de
@@ -383,11 +421,29 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // milieu. Il n'est pas porté par des particules — mesuré au jury, la
     // poussière ne couvre qu'UN POUR CENT de la bouche et ne peut donc rien
     // porter du tout.
+    // ELLE EST UNE BANDE, PAS UN DEMI-PLAN. `exp(-max(p.y - yBasC, 0)/9)`
+    // vaut UN partout AU-DESSUS du bord bas de la carte, puisque le `max`
+    // y est nul : la nappe était à pleine puissance sur toute la hauteur.
+    // Cachée derrière la carte au centre, elle FUYAIT de dix points sur ses
+    // deux flancs et l'ourlait d'un gris plus clair sur toute sa hauteur —
+    // deux sombres à quinze niveaux l'un de l'autre avec une couture douce
+    // entre eux, et l'œil lit un CALQUE translucide, pas deux objets. Une
+    // fois la carte au fond, le même débord devenait un RECTANGLE clair à
+    // bords verticaux dans un trou aux coins arrondis.
+    //
+    // C'est le piège de la distance signée, celui qui avait déjà rempli
+    // tout le creux de buée au troisième tour et qui est commenté en toutes
+    // lettres plus haut. Il faut donc éteindre du côté HAUT aussi.
+    //
+    // Et le garde-fou latéral s'arrête À la largeur de la carte, plus dix
+    // points au-delà : une lumière de contact ne dépasse pas l'objet
+    // qu'elle touche.
     float nappe = exp(-max(p.y - yBasC, 0.0) / 9.0)
-                * (1.0 - smoothstep(cw - 6.0, cw + 10.0, fabs(p.x)))
+                * smoothstep(-3.5, 1.0, p.y - yBasC)
+                * (1.0 - smoothstep(cw - 14.0, cw - 1.0, fabs(p.x)))
                 * smoothstep(0.0, 3.0, sunk)
                 * (1.0 + 0.42 * smoothstep(20.0, 6.0, (HD_COUPE + b.y) - sunk));
-    dedans += float3(0.060, 0.052, 0.045) * nappe;
+    dedans += float3(0.070, 0.060, 0.052) * (nappe * feu);
 
     // ---- LA LÈVRE PROCHE : de l'OBSIDIENNE, plus du chrome.
     //
@@ -398,29 +454,57 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     float grain = hdnoise(p * float2(0.42, 5.6) + 13.0) - 0.5;
     float poudre = hdnoise(p * 1.1 + 41.0) - 0.5;
     float sousLevre = max(p.y - HD_COUPE, 0.0);
-    // ELLE SE DISSOUT DANS LA PAGE : pas de bord net entre la fente et la
-    // page. Le fondu court sur les treize derniers points et déborde du
-    // contour — c'était la dernière signature d'objet qui restait.
-    float corps = smoothstep(2.0, -13.0, d) * levre;
-    float3 obsidienne = float3(0.052, 0.049, 0.047)
-                      * (1.0 + 0.42 * poudre + 0.30 * grain)
-                      * (0.55 + 0.45 * exp(-sousLevre / 15.0));
+    // LA LÈVRE OPAQUE N'EXISTE PLUS, ET SA SUPPRESSION EST GRATUITE.
+    //
+    // Le pixel le plus SOMBRE de toute la composition (L 7,4) était dix
+    // points SOUS la ligne de coupe, dans cette lèvre : la chose qui est
+    // DEVANT était quatre fois plus sombre que la cavité. Pour un trou c'est
+    // impossible, et c'est ça, avec le reflet central, qui fabriquait la
+    // touche de piano.
+    //
+    // Or elle n'occultait RIEN : `masqueDeBouche` est un demi-plan pleine
+    // largeur à la ligne de coupe, appliqué en `.mask` sur les cartes —
+    // aucun pixel de carte ne peut exister en dessous, quoi que fasse le
+    // shader. Ces vingt-trois points d'obsidienne ne servaient qu'à poser
+    // une barre noire sur la page.
+    //
+    // Sous la coupe, désormais : LA PAGE. L'entaille ne fait plus que
+    // trente-neuf points de haut, et elle finit sur une droite.
+    float corps = 0.0;
+    float3 obsidienne = float3(0.0);
+    (void)poudre; (void)grain; (void)sousLevre;
 
-    // UNE SEULE SPÉCULAIRE, étroite, sur l'arête même de la déchirure — et
-    // ASYMÉTRIQUE. Le cœur blanc de la page est en bas à GAUCHE : la lèvre
-    // est donc franchement éclairée à gauche et presque éteinte à droite.
-    // Un objet éclairé par sa propre lumière est un objet ; éclairé par la
-    // lumière de la pièce, il en fait partie. C'est le mouvement le plus
-    // premium disponible ici, et il ne coûte rien — la source existe déjà.
+    // PLUS DE SPÉCULAIRE AU MILIEU DE LA MASSE. Mesuré sur la capture : un
+    // pic à L 78 à mi-hauteur d'une forme sombre qui vaut 20 autour. Un
+    // reflet au MILIEU d'une masse sombre est la signature d'une surface
+    // CONVEXE — une barre de caoutchouc, une touche de piano, un galet. Un
+    // trou n'a jamais de lumière en son centre : elle est au BORD, ou nulle
+    // part. C'était le défaut le plus destructeur de la version refusée.
     float cote = 0.34 + 0.66 * (1.0 - smoothstep(-0.9, 0.8, p.x / b.x));
-    float arete = exp(-sousLevre * sousLevre / (1.9 * 1.9)) * levre * inside;
+
+    // LE CHEVEU DE L'ARÊTE PROCHE : un point de haut, à peine plus clair que
+    // la page (1,06 ×), et il MEURT AUX DEUX BOUTS — il ne touche ni le coin
+    // gauche ni le droit. Une ligne claire qui n'atteint aucun des deux
+    // coins ne peut pas fermer un contour : le grief payé huit fois
+    // (« contour lumineux fermé d'épaisseur égale ») devient
+    // géométriquement inatteignable, pour le prix d'un profil en x.
+    float cheveu = exp(-pow((p.y - HD_COUPE) / 0.9, 2.0))
+                 * exp(-pow((xn + 0.20) / 0.62, 4.0))
+                 * (1.0 - smoothstep(0.86, 1.0, fabs(xn)));
+
+    // LE LISERÉ, sur le contour et allumé par le seul geste. Cœur mince,
+    // gaine courte : le rapport cœur/halo est ce qui fait qu'un filet EST un
+    // filet et pas une bande.
+    float lw = 0.75 + 0.55 * feu;
+    float coeurL = exp(-d * d / (lw * lw));
+    float gaineL = exp(-fabs(d) / (2.6 + 2.2 * feu)) * (d > 0.0 ? 1.0 : exp(d * 0.55));
 
     // ---- LA LUEUR QUI MONTE : ce qui sort de la bouche et se pose sur la
     // page AU-DESSUS d'elle. Rien en dessous, rien sur les côtés — un trou
     // n'éclaire pas la page qui l'entoure par en dessous ; une lampe posée
     // dessus, si, et c'était l'indice le plus bruyant de tous.
     float dehors = max(d, 0.0);
-    float monte = exp(-dehors / (12.0 + 9.0 * ouvert))
+    float monte = exp(-dehors / (11.0 + 14.0 * feu))
                 * smoothstep(-1.0, 2.0, d)
                 * (1.0 - smoothstep(-b.y - 2.0, -b.y + 24.0, p.y));
 
@@ -492,8 +576,8 @@ static float hdRoundBox(float2 p, float2 b, float r) {
         if (prof > 0.82) { devant += g * 0.55; }
         else             { poussiere += g; }
     }
-    poussiere *= inside * ouvert;
-    devant *= inside * ouvert;
+    poussiere *= inside * ouvert * (0.18 + 0.82 * feu);
+    devant *= inside * ouvert * feu;
 
     // ---- LA FUMÉE, aux ÉPAULES.
     //
@@ -534,7 +618,7 @@ static float hdRoundBox(float2 p, float2 b, float r) {
                             * lat * (1.0 - haut * 0.55);
             fumee += bouffee * gros * enveloppe * f;
         }
-        fumee *= 0.62;
+        fumee *= 0.62 * feu;
     }
 
     // LE SOUFFLE DE LA LÈVRE : au franchissement, un unique reflet part du
@@ -554,14 +638,24 @@ static float hdRoundBox(float2 p, float2 b, float r) {
     // le goût de la maison, premium et minimal.
     const float3 nacre  = float3(1.00, 0.98, 0.96);
     const float3 cendre = float3(0.88, 0.86, 0.85);
+    // Le filet du geste reprend la famille de l'arête des cartes : cœur
+    // presque blanc, gaine ambre. Il n'existe que sous le doigt, donc il ne
+    // peut pas salir la page au repos.
+    const float3 creme  = float3(1.00, 0.97, 0.90);
+    const float3 ambre  = float3(1.00, 0.68, 0.30);
     // La fumée est GRISE. Jamais blanche, jamais orange : c'est la couleur
     // que la maison met entre le noir et l'ambre.
     const float3 gris   = float3(0.66, 0.64, 0.63);
 
-    float3 lum = nacre  * (arete * cote * (0.34 + 0.62 * lueur) * vif)
+    // LE LISERÉ est coupé par la carte comme le reste : c'est la moitié
+    // « la fente est DERRIÈRE elle » de la contradiction, et elle est
+    // intouchable.
+    float3 lum = teinteT * (cheveu * 0.30)
+               + creme  * (coeurL * (0.30 + 1.05 * feu) * vif * cote * (1.0 - sil))
+               + ambre  * (gaineL * (0.22 + 0.72 * feu) * vif * cote * (1.0 - sil))
                + nacre  * (balayage * levre * inside * 0.50 * cote)
                + nacre  * (devant * 0.85)
-               + cendre * (monte * 0.24 * lueur * (1.0 - sil))
+               + cendre * (monte * 0.26 * lueur * (1.0 - sil))
                + gris   * (fumee * 0.85 * fade);
     lum *= fade;
 
@@ -573,7 +667,33 @@ static float hdRoundBox(float2 p, float2 b, float r) {
         // moindre pour cent de transparence injectait dans toute la gorge de
         // quoi doubler sa valeur. Un trou à travers lequel on voit la page
         // n'est pas un trou, c'est une découpe.
+        // LA FORME SE REFERME. En arrêtant le noir à la ligne de coupe,
+        // il ne restait qu'une bande interrompue par la carte, dont les deux
+        // bouts — les arcs de coin de la fente — ne se rattachaient à rien :
+        // deux oreilles posées sur la zone la plus claire de l'écran, et une
+        // silhouette composite « carte + appendices » où l'œil ne peut plus
+        // décider qui déborde de quoi.
+        //
+        // J'avais supprimé la lèvre parce qu'elle n'occultait rien : c'était
+        // vrai, mais elle faisait autre chose — elle FERMAIT LA FORME. Un
+        // trou n'est pas seulement un occulteur, c'est une silhouette.
+        //
+        // UNE SEULE LOI, ET C'EST TOUT LE SUJET. La version d'avant posait
+        // un SECOND dégradé — une dissolution du bord bas — par-dessus
+        // celui du puits, pour adoucir la marche contre la page. Les deux
+        // pentes se croisaient vers le bas de la fente, et deux dégradés qui
+        // se croisent font un GENOU : mesuré, une marche sur 97 % de la
+        // largeur à huit points du bas, aux trois profondeurs. Un genou qui
+        // traverse toute la largeur, c'est le bord bas d'un calque
+        // translucide posé sur la page.
+        //
+        // Une courbe unique n'a pas de genou, par construction. La
+        // couverture suit donc la MÊME loi que la matière : elle décroît
+        // avec la profondeur, et c'est le puits lui-même qui rejoint la page
+        // en bas. On corrige une marche sans en fabriquer une autre.
         a = clamp(inside, 0.0, 1.0);
+        float couv = clamp(0.10 + 0.90 * (tranche + puits), 0.0, 1.0);
+        a *= couv;
         c = (dedans + nacre * poussiere) * a;
         c = min(c, float3(a));
     } else {
