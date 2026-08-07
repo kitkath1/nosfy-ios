@@ -126,6 +126,15 @@ enum BravoCine {
     /// Le contenu naît une fois la caméra revenue.
     static var contentAt: Double { pullAt + pullFor - 0.20 }
 
+    /// LE POULS DU NÉON, reproduit à l'identique du shader de la pièce :
+    /// même horloge (celle-là même qu'on avance avec `neonBoost`), même
+    /// période, même amplitude. C'est ce qui garantit que la capsule bat AVEC
+    /// sa lune et non à côté d'elle.
+    static func neonPulse(_ e: Double, t: Double) -> Double {
+        let tc = t + neonBoost(e)
+        return 0.5 + 0.5 * sin(tc * 6.2832 * 180 / 900 + 1.7)
+    }
+
     /// LE SOUFFLE DE LA PASTILLE au moment où ses lunes s'échappent : un halo
     /// clair naît DANS la capsule, à l'endroit exact d'où les pièces sortent,
     /// et retombe. Attaque en cinq images, extinction en 0,55 s — l'énergie
@@ -280,6 +289,8 @@ struct BravoView: View {
                 // pastille au repos. Tout se dilate autour de LUI, donc la
                 // pastille ne bouge pas d'un pixel pendant qu'on plonge — c'est
                 // la caméra qui vient à elle.
+                let tPage = tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900)
                 let cam = BravoCine.camZ(e)
                 let pillW = 54 * BravoPillView.ratio
                 // LE CENTRE OPTIQUE. Les cartes parties, le bloc (pastille +
@@ -288,7 +299,7 @@ struct BravoView: View {
                 // donc dans TOUT ce qui reste, et se pose un peu AU-DESSUS du
                 // milieu — centré au cordeau, l'œil le trouve trop bas
                 // (la leçon de la page du trésor).
-                let blockH: CGFloat = 206
+                let blockH: CGFloat = 234
                 let gap = max((H - slotRest - blockH) * 0.42, 18)
                 let aY = slotRest + gap + 27
                 // L'ANCRE GLISSE de la pastille vers la lune pendant le rezoom.
@@ -309,7 +320,8 @@ struct BravoView: View {
                                   count: BravoCine.count(e, to: 50),
                                   cam: cam,
                                   neonBoost: BravoCine.neonBoost(e),
-                                  flare: BravoCine.pillFlare(e))
+                                  flare: BravoCine.pillFlare(e),
+                                  pulse: BravoCine.neonPulse(e, t: tPage))
                     CoinField(source: CGPoint(x: W / 2, y: aY),
                               anchor: anchor, cam: cam,
                               age: e - BravoCine.burstAt,
@@ -331,6 +343,9 @@ struct BravoView: View {
                             .opacity(bornU)
                             .offset(y: (1 - bornU) * 18)
                         Spacer(minLength: 0)
+                        footerLink
+                            .opacity(bornU)
+                            .padding(.bottom, 30)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -419,10 +434,10 @@ struct BravoView: View {
 
     // MARK: Le texte, les cartes, les deux gestes
 
-    /// LA PAGE EST NUE. Les deux cartes de saisie et le bouton primaire sont
-    /// retirés : il ne reste que le titre, le sous-titre et l'échappée. Ce qui
-    /// veut dire que le sous-titre ne peut PLUS demander de saisir quoi que ce
-    /// soit — il ne reste que sa première phrase.
+    /// LE BLOC DU MILIEU : le titre, la ligne, et les trois chiffres de la
+    /// série. Le lien, lui, ne vit PLUS ici — il est épinglé au footer, où il
+    /// était bien : une échappée se pose au bord de la page, pas au milieu
+    /// d'une composition.
     private var content: some View {
         VStack(spacing: 0) {
             Text("Bravo")
@@ -438,19 +453,53 @@ struct BravoView: View {
                 .padding(.top, 9)
                 .padding(.horizontal, 20)
 
-            // LE LIEN — ni fond ni contour : sur la nuit, un cadre clair se
-            // lit comme un bug. C'est l'encre seule qui le dit.
-            Button(action: onFinish) {
-                Text("Revenir à l'exercice")
-                    .font(.inter(15, .medium))
-                    .foregroundStyle(Color.inkSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 26)
+            kpis.padding(.top, 30)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// LES TROIS CHIFFRES DE LA SÉRIE. Pas des champs — ils ne se règlent
+    /// plus —, des CONSTATS : ce qui a été fait. D'où le traitement d'un
+    /// trophée et non d'un contrôle : le chiffre en dégradé plein (l'argent
+    /// de la maison, celui du titre), l'unité en petites capitales espacées
+    /// sous lui, et rien autour. Aucune carte, aucun trait, aucun fond : sur
+    /// la nuit, trois colonnes d'encre suffisent — la séparation vient de
+    /// l'espace, jamais d'un séparateur.
+    private var kpis: some View {
+        HStack(spacing: 0) {
+            kpi("\(repsValue)", "REPS")
+            kpi("\(kilosValue)", "KG")
+            kpi("1:00", "REPOS")
+        }
+        .padding(.horizontal, 26)
+    }
+
+    private func kpi(_ value: String, _ unit: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(Font.custom("Inter-Light", size: 34).monospacedDigit())
+                .tracking(0.5)
+                .foregroundStyle(WoopGradient.silverText)
+            Text(unit)
+                .font(.inter(9.5, .semibold))
+                .tracking(3.4)
+                .foregroundStyle(Color.white.opacity(0.30))
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// L'ÉCHAPPÉE, au footer — ni fond ni contour : sur la nuit, un cadre
+    /// clair se lit comme un bug. C'est l'encre seule qui le dit.
+    private var footerLink: some View {
+        Button(action: onFinish) {
+            Text("Revenir à l'exercice")
+                .font(.inter(15, .medium))
+                .foregroundStyle(Color.inkSecondary)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: La mise en route
@@ -826,6 +875,8 @@ struct BravoPillView: View {
     let neonBoost: Double
     /// Le souffle du jaillissement, 0 → 1 → 0.
     let flare: Double
+    /// Le pouls du néon de la lune, 0 → 1 : la capsule le reprend.
+    let pulse: Double
 
     @State private var burstTick = 0
 
@@ -837,6 +888,10 @@ struct BravoPillView: View {
     private static let rimRest: CGFloat = 0.7
 
     var body: some View {
+        // La capsule respire AVEC son néon : ±0,7 % de hauteur. Assez pour
+        // que la page ne soit pas une image, trop peu pour qu'on voie un
+        // objet qui grossit.
+        let height = self.height * (1 + 0.007 * CGFloat(pulse))
         let w = height * BravoPillView.ratio
         let coinR = height * 0.30
         GeometryReader { geo in
@@ -853,7 +908,8 @@ struct BravoPillView: View {
                         .float(Float(Self.rimRest * cam)),
                         .float(t),
                         .float(Float(amount)),
-                        .float(Float(flare))))
+                        .float(Float(flare)),
+                        .float(Float(pulse))))
                     .allowsHitTesting(false)
             }
             .frame(width: geo.size.width, height: geo.size.height)
