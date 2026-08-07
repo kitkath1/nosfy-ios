@@ -247,6 +247,13 @@ struct BravoView: View {
     /// de rendre l'hôte du lecteur transparent : le trou se remplit tout seul
     /// avec ce qu'on devait y voir. Aucune synchronisation, aucun fondu.
     @State private var loopFirstFrame: UIImage?
+    /// LE TAS AU SOL, en vidéo. Ce que j'avais tenté de fabriquer en shader —
+    /// et que Kathryn a refusé deux fois — existe en rendu 3D : un tas de
+    /// pièces posé sur un sol sombre, sous une colonne de lumière. Il comble
+    /// exactement le vide du bas de page, et il le comble PAR LE SUJET.
+    @State private var floor: AVQueuePlayer?
+    @State private var floorLooper: AVPlayerLooper?
+    @State private var floorFrame: UIImage?
     /// La partition est finie : plus rien ne bouge côté SwiftUI. On ARRÊTE
     /// l'horloge — sans quoi la page recalcule la géométrie de la vidéo et
     /// repasse son masque, son rognage et son flou SOIXANTE FOIS PAR SECONDE
@@ -381,8 +388,11 @@ struct BravoView: View {
                         content(e)
                         Spacer(minLength: 0)
                         footerLink
-                            .opacity(bornU)
-                            .padding(.bottom, 30)
+                            .opacity(rise(0.47, e))
+                        // LE SOL, tout en bas. Il naît en dernier, après les
+                        // chiffres et l'échappée : la page se referme dessus.
+                        floorVideo(W: W)
+                            .opacity(rise(0.56, e))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -447,6 +457,40 @@ struct BravoView: View {
         .clipped()
         .mask(edgeFade)
         .opacity(visible ? 1 : 0)
+        .allowsHitTesting(false)
+    }
+
+    /// LE TAS AU SOL. La source est PORTRAIT (2160 × 3836) et son sujet ne
+    /// vit que dans les 18 % du bas : on n'en garde que les 24 % inférieurs,
+    /// et la coupe tombe dans une bande mesurée à 2,8/255 — du noir, donc
+    /// invisible. À 393 pt de large elle fait 168 pt : un vrai footer.
+    /// 2 160 px de source pour 1 179 à l'écran : on DÉCIME, aucun étirement.
+    ///
+    /// Comme celle du header, elle NE BOUCLE PAS : sa lumière monte de 355 %
+    /// du début à la fin. Le fichier embarqué est donc un VA-ET-VIENT — il
+    /// commence et finit sur la même image (0,0065 contre 0,0067, mesuré) —,
+    /// et le même filet est posé dessous : à chaque changement d'item,
+    /// `AVPlayerLooper` vide la couche pendant une à trois images.
+    @ViewBuilder
+    private func floorVideo(W: CGFloat) -> some View {
+        let h = W * 502.0 / 1180.0
+        ZStack {
+            if let floorFrame {
+                Image(uiImage: floorFrame).resizable()
+            }
+            if let floor {
+                CinematicPlayer(player: floor, opaqueBackground: false)
+            }
+        }
+        .frame(width: W, height: h)
+        .clipped()
+        // Le haut de la coupe s'éteint sur 9 % : la bande y est déjà à
+        // 2,8/255, ce fondu ne fait que garantir qu'aucune arête ne se lise.
+        .mask(LinearGradient(stops: [
+            .init(color: .clear, location: 0.0),
+            .init(color: .black, location: 0.09),
+            .init(color: .black, location: 1.0)
+        ], startPoint: .top, endPoint: .bottom))
         .allowsHitTesting(false)
     }
 
@@ -596,6 +640,20 @@ struct BravoView: View {
             loop = q
         }
 
+        // LE SOL : monté et amorcé comme la boucle du header.
+        if let furl = Bundle.main.url(forResource: "piece-sol",
+                                      withExtension: "mp4") {
+            let q = AVQueuePlayer()
+            q.isMuted = true
+            q.automaticallyWaitsToMinimizeStalling = false
+            floorLooper = AVPlayerLooper(player: q,
+                                         templateItem: AVPlayerItem(url: furl))
+            floor = q
+            q.play()
+            q.rate = BravoCine.rateSlow
+            grabFirstFrame(url: furl) { floorFrame = $0 }
+        }
+
         let p = AVPlayer(playerItem: AVPlayerItem(url: url))
         // La piste audio a été retirée à l'encodage ; le muet est une
         // ceinture — une cinématique ne coupe jamais la musique de personne.
@@ -661,6 +719,14 @@ struct BravoView: View {
     /// La première image du fichier de boucle, extraite une fois, à tolérance
     /// NULLE : on veut CETTE image-là, pas sa voisine.
     private func grabLoopFirstFrame(url: URL) {
+        grabFirstFrame(url: url) { loopFirstFrame = $0 }
+    }
+
+    /// La première image d'un fichier, à tolérance NULLE : on veut CETTE
+    /// image-là, pas sa voisine — c'est le filet qui bouche le trou du
+    /// bouclage, il doit porter exactement ce qu'on devait voir.
+    private func grabFirstFrame(url: URL,
+                                _ done: @escaping (UIImage) -> Void) {
         let gen = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         gen.appliesPreferredTrackTransform = true
         gen.requestedTimeToleranceBefore = .zero
@@ -669,7 +735,7 @@ struct BravoView: View {
             forTimes: [NSValue(time: .zero)]) { _, image, _, _, _ in
             guard let image else { return }
             let ui = UIImage(cgImage: image)
-            DispatchQueue.main.async { loopFirstFrame = ui }
+            DispatchQueue.main.async { done(ui) }
         }
     }
 
@@ -704,6 +770,8 @@ struct BravoView: View {
         cine?.pause(); cine = nil
         loop?.pause(); loop = nil
         looper = nil
+        floor?.pause(); floor = nil
+        floorLooper = nil
     }
 }
 
