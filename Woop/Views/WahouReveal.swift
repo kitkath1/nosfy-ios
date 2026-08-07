@@ -147,8 +147,7 @@ struct WahouReveal: View {
                         // l'indice se déduit du montant qui voyage déjà — rien
                         // de plus à faire traverser, et rien qui puisse
                         // diverger de ce que portait la carte dans la pile.
-                        WahouCard(allume: allume,
-                                  demon: max(gain / 100 - 1, 0))
+                        WahouCard(allume: allume)
                             // L'ASSIETTE D'ABORD, le tour ensuite : la carte
                             // se couche dans SON plan, puis tourne dans celui
                             // de la scène. L'ordre inverse ferait basculer
@@ -195,9 +194,61 @@ struct WahouReveal: View {
                     // exactement le partage qu'on veut : la matière respire
                     // lentement, la caméra glisse.
                     .drawingGroup()
+                    // LE DÉMON RESTE DEHORS, ET C'EST OBLIGATOIRE.
+                    //
+                    // `drawingGroup` rasterise son sous-arbre en Metal, et il
+                    // ne sait pas rendre une vue UIKit : l'`AVPlayerLayer` y
+                    // devient un carré jaune barré de rouge — le placeholder
+                    // d'une couche qu'il ne peut pas dessiner. La vidéo est
+                    // donc SŒUR du groupe, pas fille, et elle reçoit
+                    // exactement la même caméra : mêmes rotations dans le même
+                    // ordre, et l'échelle et le déplacement portés par le
+                    // parent commun. Deux transformations recopiées finiraient
+                    // par diverger ; celles-ci sont écrites une fois chacune.
                     .scaleEffect(zoom * taille)
                     .offset(x: pan, y: depart * (1 - monte))
                     .allowsHitTesting(false)
+
+                    // LE DÉMON, SŒUR DU GROUPE ET PAS SA FILLE — deux fois
+                    // pour la même raison, et les deux valent d'être dites.
+                    //
+                    // 1. `drawingGroup` rasterise en Metal et ne sait pas
+                    //    rendre une couche UIKit : l'`AVPlayerLayer` y devient
+                    //    un carré jaune barré de rouge, le placeholder d'une
+                    //    vue qu'il ne peut pas dessiner.
+                    // 2. Et `blendMode` posé en `.overlay` PAR-DESSUS ce
+                    //    groupe ne fusionnait pas : le rectangle noir de la
+                    //    vidéo se posait tel quel sur la carte, plus sombre
+                    //    que sa propre matière. Un mode de fusion a besoin
+                    //    d'un GROUPE DE COMPOSITION explicite pour savoir avec
+                    //    quoi fusionner — sans `compositingGroup`, la vidéo et
+                    //    la carte n'appartiennent pas au même calque et
+                    //    `plusLighter` n'a rien à additionner.
+                    //
+                    // Elle reçoit exactement la même caméra : mêmes rotations
+                    // dans le même ordre, même échelle, même déplacement.
+                    DemonVideo(offre: max(gain / 100 - 1, 0))
+                        .frame(width: HaloDeckCard.width
+                                      * HaloDeckCard.filmTaille,
+                               height: HaloDeckCard.height
+                                       * HaloDeckCard.filmTaille)
+                        .frame(width: HaloDeckCard.width,
+                               height: HaloDeckCard.height)
+                        .mask {
+                            RoundedRectangle(cornerRadius: HaloDeckCard.radius,
+                                             style: .continuous)
+                        }
+                        .rotation3DEffect(.degrees(pente),
+                                          axis: (x: 1, y: 0, z: 0),
+                                          perspective: 0.62)
+                        .rotation3DEffect(.degrees(tour),
+                                          axis: (x: 0, y: 1, z: 0),
+                                          perspective: 0.46)
+                        .scaleEffect(zoom * taille)
+                        .offset(x: pan, y: depart * (1 - monte))
+                        .opacity(Double(allume))
+                        .blendMode(.plusLighter)
+                        .allowsHitTesting(false)
                 }
 
                 // LA ZONE DE TOUCHE. Elle est posée à part, à la taille FINALE
@@ -227,6 +278,11 @@ struct WahouReveal: View {
                     .transition(.opacity)
                 }
             }
+            // LE GROUPE DE COMPOSITION : c'est lui qui donne au `plusLighter`
+            // du démon un calque commun avec la carte. Sans lui, la vidéo se
+            // compose sur la fenêtre et son fond noir recouvre l'obsidienne au
+            // lieu de disparaître dedans.
+            .compositingGroup()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .topTrailing) { chevron }
             .onAppear {
@@ -421,8 +477,6 @@ struct WahouReveal: View {
 struct WahouCard: View {
     /// Le tube et la lumière du bord, 0 → 1.
     var allume: Float = 1
-    /// L'indice du démon qui vit au milieu.
-    var demon: Int? = nil
 
     /// La marge du shader : sous le tube allumé, la nappe large porte à 75 pt.
     private static let pad: CGFloat = 62
@@ -461,25 +515,9 @@ struct WahouCard: View {
                     .float(1)))
         }
         .frame(width: HaloDeckCard.width, height: HaloDeckCard.height)
-        // Ici PAS de masque d'enterrement : la carte est sortie du trou, elle
-        // n'est plus dans l'ombre de personne. `plusLighter` comme dans la
-        // pile — le noir de la vidéo disparaît, le démon s'allume dans
-        // l'obsidienne au lieu d'y être collé.
-        .overlay {
-            if let demon {
-                DemonVideo(offre: demon)
-                    .frame(width: HaloDeckCard.width * HaloDeckCard.filmTaille,
-                           height: HaloDeckCard.height * HaloDeckCard.filmTaille)
-                    .frame(width: HaloDeckCard.width,
-                           height: HaloDeckCard.height)
-                    .mask {
-                        RoundedRectangle(cornerRadius: HaloDeckCard.radius,
-                                         style: .continuous)
-                    }
-                    .blendMode(.plusLighter)
-                    .allowsHitTesting(false)
-            }
-        }
+        // Le démon ne vit PAS ici mais dans `WahouReveal`, sœur du
+        // `drawingGroup` : cette vue-ci est rasterisée, et une couche UIKit ne
+        // survit pas à une rasterisation Metal.
         .allowsHitTesting(false)
     }
 }
