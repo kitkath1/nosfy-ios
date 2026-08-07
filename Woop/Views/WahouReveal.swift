@@ -142,7 +142,13 @@ struct WahouReveal: View {
                         // collé dessus. Elle suit l'échelle et la place, rien
                         // de plus — elle appartient à la scène, pas à l'objet.
                         WahouAura(vie: aura, devant: 0, touche: touche)
-                        WahouCard(allume: allume)
+                        // LE DÉMON DE LA CARTE AVALÉE. Le lien est gratuit :
+                        // les gains valent 100/200/300 dans cet ordre, donc
+                        // l'indice se déduit du montant qui voyage déjà — rien
+                        // de plus à faire traverser, et rien qui puisse
+                        // diverger de ce que portait la carte dans la pile.
+                        WahouCard(allume: allume,
+                                  demon: max(gain / 100 - 1, 0))
                             // L'ASSIETTE D'ABORD, le tour ensuite : la carte
                             // se couche dans SON plan, puis tourne dans celui
                             // de la scène. L'ordre inverse ferait basculer
@@ -415,6 +421,8 @@ struct WahouReveal: View {
 struct WahouCard: View {
     /// Le tube et la lumière du bord, 0 → 1.
     var allume: Float = 1
+    /// L'indice du démon qui vit au milieu.
+    var demon: Int? = nil
 
     /// La marge du shader : sous le tube allumé, la nappe large porte à 75 pt.
     private static let pad: CGFloat = 62
@@ -453,6 +461,25 @@ struct WahouCard: View {
                     .float(1)))
         }
         .frame(width: HaloDeckCard.width, height: HaloDeckCard.height)
+        // Ici PAS de masque d'enterrement : la carte est sortie du trou, elle
+        // n'est plus dans l'ombre de personne. `plusLighter` comme dans la
+        // pile — le noir de la vidéo disparaît, le démon s'allume dans
+        // l'obsidienne au lieu d'y être collé.
+        .overlay {
+            if let demon {
+                DemonVideo(offre: demon)
+                    .frame(width: HaloDeckCard.width * HaloDeckCard.filmTaille,
+                           height: HaloDeckCard.height * HaloDeckCard.filmTaille)
+                    .frame(width: HaloDeckCard.width,
+                           height: HaloDeckCard.height)
+                    .mask {
+                        RoundedRectangle(cornerRadius: HaloDeckCard.radius,
+                                         style: .continuous)
+                    }
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            }
+        }
         .allowsHitTesting(false)
     }
 }

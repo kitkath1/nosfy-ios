@@ -255,11 +255,17 @@ struct HaloDeck: View {
         }
     }
 
-    /// L'offre portée par une carte, déduite de sa place sur le rail.
-    private func gain(of id: Int) -> Int {
-        let i = ((offerBase + pasDuRang(rang(of: id))) % 3 + 3) % 3
-        return Self.gains[i]
+    /// L'INDICE D'OFFRE d'une carte, déduit de sa place sur le rail. UNE SEULE
+    /// source pour le montant ET pour le démon : deux modulos jumeaux
+    /// finissent toujours par diverger, et le jour où ils divergent on voit le
+    /// démon 1 sur une carte à 300 — un défaut qu'aucune capture ne rattrape
+    /// parce qu'il ne dure que le temps d'un cran.
+    private func offre(of id: Int) -> Int {
+        ((offerBase + pasDuRang(rang(of: id))) % 3 + 3) % 3
     }
+
+    /// L'offre portée par une carte, déduite de sa place sur le rail.
+    private func gain(of id: Int) -> Int { Self.gains[offre(of: id)] }
     /// L'instant où une carte s'est POSÉE au centre : le cran est consommé,
     /// elle souffle sa bouffée de néon.
     @State private var landedAt: Date = .distantPast
@@ -792,7 +798,8 @@ struct HaloDeck: View {
                      // se poser. L'horodatage traverse, pas la valeur — la
                      // carte a son horloge à 30 Hz, la pile n'en a pas.
                      tapAt: isTop ? max(firedAt, landedAt) : .distantPast,
-                     enterre: enterre)
+                     enterre: enterre,
+                     demon: offre(of: id))
             .contentShape(Rectangle())
             // Les ailes reculent d'un demi-ton — mais en OPACITÉ, pas sous
             // un voile noir : sur un fond orange, un voile noir les
@@ -1256,6 +1263,8 @@ struct HaloDeckCard: View {
     /// qu'elle est au-dessus : c'est là que se joue l'entrée dans l'ombre.
     /// `horsFente` = la carte n'est dans aucune fente.
     var enterre: CGFloat = HaloDeckCard.horsFente
+    /// L'indice du démon qui vit au milieu, ou `nil` pour une carte nue.
+    var demon: Int? = nil
     /// Assez négatif pour que les deux rampes du shader rendent 1 partout,
     /// quelle que soit la hauteur de la carte : c'est la valeur neutre.
     static let horsFente: CGFloat = -4000
@@ -1276,6 +1285,62 @@ struct HaloDeckCard: View {
         Color.clear
             .frame(width: Self.width, height: Self.height)
             .background { ecrin }
+            .overlay { if let demon { film(demon) } }
+    }
+
+    /// LE DÉMON, POSÉ SUR LA MATIÈRE — et le mode de fusion n'est pas un goût.
+    ///
+    /// Les vidéos sont sur fond NOIR. Posées en normal, ce noir recouvrirait la
+    /// dalle dans un rectangle : son noir n'est pas celui de la carte (la
+    /// compression n'y arrive jamais), donc on verrait une plaque plus claire
+    /// au milieu — un calque, exactement ce qu'on vient de passer une session à
+    /// tuer sur la fente. En `plusLighter`, le noir DISPARAÎT sans détourage :
+    /// le démon s'ALLUME dans l'obsidienne, et le grain, le brossage et le
+    /// lustre continuent d'exister sous lui.
+    /// De combien le démon est plus petit que la carte. `resizeAspect` le pose
+    /// déjà à sa hauteur ; ce facteur lui donne son air — un sujet qui touche
+    /// les deux bords d'un cadre l'occupe, il ne l'habite pas.
+    static let filmTaille: CGFloat = 0.84
+
+    @ViewBuilder
+    private func film(_ i: Int) -> some View {
+        DemonVideo(offre: i)
+            .frame(width: Self.width * Self.filmTaille,
+                   height: Self.height * Self.filmTaille)
+            .frame(width: Self.width, height: Self.height)
+            .mask {
+                RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
+            }
+            .blendMode(.plusLighter)
+            // L'ENTERREMENT VAUT AUSSI POUR LUI, et c'est le couplage qu'on
+            // oublie. La face de la carte PLONGE DANS L'OMBRE en entrant dans
+            // la fente — c'est `jour` dans le shader, un acquis de la séquence
+            // d'entrée. Le film, lui, n'est pas dans le shader : sans ce
+            // masque, on aurait un démon en pleine lumière au fond d'un trou
+            // noir, soit la famille de défauts qui a coûté huit tours.
+            //
+            // Le dégradé n'imite pas la loi du shader, il l'ÉCHANTILLONNE :
+            // même rampe, mêmes bornes, pris en sept points. Une loi voisine
+            // dériverait de la vraie à mesure que la carte s'enfonce, et une
+            // ombre qui glisse toute seule sur un objet est le genre de faute
+            // qu'on ne voit pas mais qu'on sent.
+            .mask {
+                LinearGradient(stops: Self.paliers(enterre),
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .allowsHitTesting(false)
+    }
+
+    /// `jour` du shader, échantillonné du haut vers le bas de la carte.
+    /// `prof = enterre − hauteur × (1 − y)`, puis `1 − smoothstep(−30, 0, prof)`.
+    private static func paliers(_ enterre: CGFloat) -> [Gradient.Stop] {
+        (0...6).map { k in
+            let y = CGFloat(k) / 6
+            let prof = enterre - height * (1 - y)
+            let t = min(max((prof + 30) / 30, 0), 1)
+            let jour = 1 - t * t * (3 - 2 * t)
+            return .init(color: .white.opacity(jour), location: y)
+        }
     }
 
     private var ecrin: some View {
