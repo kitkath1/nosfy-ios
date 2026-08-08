@@ -25,6 +25,17 @@ struct MoonCoinView: View {
     var yawOverride: Float? = nil
     var idleLife: Float = 1
     var fps: Double = 30
+    /// L'INTENSITÉ DU CROISSANT. 1 partout ailleurs. Le tube a un PLANCHER de
+    /// 0,85 pt de large : sous 28 pt de rayon il cesse de rétrécir avec la
+    /// pièce, donc plus la pièce est petite, plus le néon y est gros — à 10 pt
+    /// il mange le métal et la pièce n'est plus qu'un disque orange. Sur une
+    /// miniature, on le baisse.
+    var reveal: Float = 1
+    /// LE MAT. 0 = la pièce d'or du header et du trésor, inchangée. 1 = un
+    /// galet d'anthracite neutre qui garde tous ses reflets, sa tranche et son
+    /// épaisseur — le métal s'éteint, la lune reste allumée (le néon descend
+    /// à 52 % avec lui, sinon le croissant domine une pièce noire).
+    var matte: Float = 0
     /// Un toucher SANS glissement. Il vit ici, à côté du lacet, plutôt que
     /// dans un `Button` autour : deux reconnaisseurs empilés se disputent le
     /// doigt, et on perd soit la rotation soit l'ouverture. Ici la
@@ -94,11 +105,11 @@ struct MoonCoinView: View {
                     .float2(Float(tilt.dx), Float(tilt.dy)),
                     .float(userYaw(at: tl.date)),
                     .float(Float(coinR)),
-                    .float(1),
+                    .float(reveal),
                     .float(reduceMotion ? 0 : idleLife),
                     .float3(MoonSDF.padding, MoonSDF.tightRange, MoonSDF.wideRange),
                     .float3(0.5, 0.485, 0.71),
-                    .float4(Self.rimIn, Self.moonFit, 0, 0),
+                    .float4(Self.rimIn, Self.moonFit, matte, 0),
                     .image(MoonSDF.image)))
         }
         .frame(width: side, height: side)

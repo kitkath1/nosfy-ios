@@ -139,9 +139,38 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
     // (1,000 / 0,955 / 0,830), donc quasi neutre, et multiplié par 3,3 il
     // lavait la teinte partout où il frappait. Une haute lumière d'or reste
     // DE L'OR : elle monte en luminance sans monter vers le blanc.
-    const float3 GOLD = float3(1.000, 0.762, 0.318);
-    const float3 GOLD_HOT = float3(1.000, 0.898, 0.606);
-    const float3 GOLD_DEEP = float3(0.238, 0.130, 0.026);
+    // LE MAT (`knobs.z`, 0 par défaut — la pièce du header et celle du trésor
+    // ne bougent PAS d'un octet). À 1, le MÉTAL SEUL devient un anthracite
+    // neutre : la pièce de la page BRAVO est un galet noir mat qui garde tous
+    // ses reflets, sa tranche et son épaisseur. Le bloc NÉON du croissant, lui,
+    // n'est pas touché — c'est toute l'idée : le métal s'éteint, la lune reste
+    // allumée. (Mesuré sur la référence de Kathryn : corps [42,41,37]/255,
+    // donc un gris NEUTRE, pas un noir chaud.)
+    const float matte = clamp(knobs.z, 0.0, 1.0);
+    // L'ANTHRACITE A ÉTÉ REMONTÉ. À 0,118 / 0,268 le métal était si sombre
+    // qu'il ne restait que le néon : on ne lisait plus une PIÈCE, juste un
+    // croissant qui flotte. Un métal mat n'est pas un métal éteint — il rend
+    // moins, mais il rend. Ses hautes lumières montent donc à 0,52, et sa
+    // base à 0,19 : l'anneau, la tranche et le fresnel de la face
+    // redeviennent visibles sur la nuit.
+    const float3 GOLD = mix(float3(1.000, 0.762, 0.318),
+                            float3(0.190, 0.181, 0.169), matte);
+    const float3 GOLD_HOT = mix(float3(1.000, 0.898, 0.606),
+                                float3(0.520, 0.505, 0.478), matte);
+    const float3 GOLD_DEEP = mix(float3(0.238, 0.130, 0.026),
+                                 float3(0.026, 0.025, 0.024), matte);
+    // LE POLI (`knobs.w`, 0 par défaut — rien ne bouge nulle part ailleurs).
+    // Les pièces qui JAILLISSENT ne sont pas la pièce de la pastille : elles
+    // doivent être plus sombres ET plus brillantes — du métal noir POLI, pas
+    // du métal mat. Un mat et un poli ne se distinguent pas par leur couleur
+    // mais par la LARGEUR de leur spéculaire : le poli enfonce la base de
+    // 42 %, double la haute lumière, et resserre les lobes (les exposants
+    // montent). C'est ce contraste-là qui fait le luxe, pas un or plus clair.
+    const float poli = clamp(knobs.w, 0.0, 1.0);
+    const float3 GOLD_P = GOLD * (1.0 - 0.42 * poli);
+    const float3 GOLD_HOTP = GOLD_HOT * (1.0 + 1.45 * poli);
+    #define GOLD GOLD_P
+    #define GOLD_HOT GOLD_HOTP
 
     // ------------------------------------------------------------------
     // LE LUSTRE — la matière qui respire
@@ -185,8 +214,8 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
         const float3 N = normalize(EX3 * (rd.x * s) + EY3 * (rd.y * s)
                                    + EZ3 * nz);
         const float ndv = clamp(dot(N, V), 0.0, 1.0);
-        const float sp1 = pow(clamp(dot(N, H1), 0.0, 1.0), 78.0);
-        const float sp2 = pow(clamp(dot(N, H2), 0.0, 1.0), 34.0);
+        const float sp1 = pow(clamp(dot(N, H1), 0.0, 1.0), 78.0 + 110.0 * poli);
+        const float sp2 = pow(clamp(dot(N, H2), 0.0, 1.0), 34.0 + 52.0 * poli);
         const float wr1 = pow(clamp(dot(N, H1), 0.0, 1.0), 9.0);
 
         // Fresnel : sur un métal poli, la tranche du bourrelet s'allume
@@ -299,7 +328,7 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
         const float2 sd = normalize(pS + 1e-5);
         const float3 N = normalize(EX3 * sd.x + EY3 * sd.y);
         const float ndv = clamp(dot(N, V), 0.0, 1.0);
-        const float sp = pow(clamp(dot(N, H1), 0.0, 1.0), 46.0);
+        const float sp = pow(clamp(dot(N, H1), 0.0, 1.0), 46.0 + 70.0 * poli);
         const float wr = pow(clamp(dot(N, H1), 0.0, 1.0), 7.0);
         const float fres = pow(1.0 - ndv, 2.4);
 
@@ -394,7 +423,13 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
 
     const float3 NEON_CORE = float3(1.000, 0.930, 0.780);
     const float3 NEON = float3(1.000, 0.520, 0.105);
-    const float lit = reveal * breath;
+    // LE NÉON SUIT LE MAT. Sur la pièce d'or (matte = 0) rien ne change ;
+    // sur le galet noir de la page BRAVO, le croissant descend à 52 % — à
+    // pleine intensité il DOMINE la capsule, alors que la référence de
+    // Kathryn le montre discret. `lit` porte le néon, son bain (`spill`) et
+    // sa part de bloom : les trois baissent ensemble, donc la matière reste
+    // cohérente au lieu de se décoller de sa lueur.
+    const float lit = reveal * breath * mix(1.0, 0.52, matte);
     float3 neon = NEON_CORE * (core * 1.35 * travel)
                 + NEON * (shell * 0.95 + glow * 0.34);
     neon *= lit;

@@ -22,6 +22,9 @@ struct WoopApp: App {
         if CommandLine.arguments.contains("-demoData") {
             DemoData.seedIfEmpty(in: container)
         }
+        if CommandLine.arguments.contains("-demoForce") {
+            DemoData.seedDemo(in: container)
+        }
         if CommandLine.arguments.contains("-activeWorkout") {
             DemoData.seedActiveWorkout(in: container)
         }
@@ -131,6 +134,11 @@ struct RootView: View {
     /// réelles du header, `-pieceFreeze <rad>` fige le lacet pour comparer
     /// deux tours de fouettage au MÊME angle.
     private static let pieceLab = CommandLine.arguments.contains("-pieceLab")
+    /// Banc des stories : `-storyLab` — la carte noire qu'on tire vers le
+    /// haut, le portail qui s'ouvre, puis les trois écrans. La carte revient
+    /// à la fermeture, donc la cinématique se rejoue à volonté sans rien
+    /// toucher — c'est la méthode maison pour juger un enchaînement.
+    private static let storyLab = CommandLine.arguments.contains("-storyLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -257,6 +265,8 @@ struct RootView: View {
             moonSplashBench
         } else if Self.cometTest {
             cometBench
+        } else if Self.storyLab {
+            StoryLab()
         } else if Self.buttonLab {
             ConnexionButtonLab()
         } else if Self.cardLab {
@@ -591,24 +601,6 @@ struct RootView: View {
                 startConnexionCinematic()
             }
         }
-        #if DEBUG
-        .overlay(alignment: .topTrailing) {
-            // Bouton de test : rejoue le splash. Debug uniquement.
-            if !showSplash {
-                Button {
-                    showSplash = true
-                } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.inkSecondary)
-                        .frame(width: 34, height: 34)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                .padding(.trailing, 16)
-                .padding(.top, 4)
-            }
-        }
-        #endif
     }
 
     /// Un entraînement vient d'être terminé : la récompense doit être VUE. On
@@ -649,11 +641,28 @@ enum DemoData {
         try? context.save()
     }
 
+    /// `-demoForce` : sème les séances de démo MÊME si la base en contient
+    /// déjà. `seedIfEmpty` refuse dès qu'il existe UNE séance, quelle qu'elle
+    /// soit — y compris une séance ACTIVE, qui est justement exclue de la pile
+    /// de la home. Une base avec une seule séance en cours ne pouvait donc ni
+    /// afficher de cartes ni être semée : elle restait coincée sur l'état
+    /// vide. Rien n'est effacé, on ajoute.
+    @MainActor
+    static func seedDemo(in container: ModelContainer) {
+        seed(in: container)
+    }
+
     @MainActor
     static func seedIfEmpty(in container: ModelContainer) {
         let context = container.mainContext
         let existing = (try? context.fetchCount(FetchDescriptor<Workout>())) ?? 0
         guard existing == 0 else { return }
+        seed(in: container)
+    }
+
+    @MainActor
+    private static func seed(in container: ModelContainer) {
+        let context = container.mainContext
 
         let calendar = Calendar.current
         func daysAgo(_ days: Int, hour: Int = 18) -> Date {

@@ -124,6 +124,8 @@ struct HomeAuroraView: View {
     @State private var topCard = 0
     /// La séance qu'un toucher vient d'ouvrir.
     @State private var opened: Workout?
+    /// La story en cours d'ouverture, et le rectangle d'où elle part.
+    @State private var story: StoryLaunch?
     /// L'horloge de la fumée du coffre, ou `nil` si personne n'y touche.
     @State private var smokeStart: Date?
     /// L'instant où le doigt s'est levé (la fumée retombe à partir de là).
@@ -213,6 +215,15 @@ struct HomeAuroraView: View {
                     coins: CoffreFortPurse.coins(finishedWorkouts: finished.count)
                 ) {
                     showCoffreFort = false
+                }
+            }
+            // La story, pour la même raison : elle doit couvrir la barre bijou.
+            .fullScreenCover(item: $story) { launch in
+                StoryPortal(from: launch.rect,
+                            session: StorySession(workout: launch.workout)) {
+                    var tx = Transaction()
+                    tx.disablesAnimations = true
+                    withTransaction(tx) { story = nil }
                 }
             }
         }
@@ -385,24 +396,29 @@ struct HomeAuroraView: View {
                 .padding(.horizontal, 20)
 
             if swapped.isEmpty {
-                WoopCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Ta progression commence avec ta première séance.")
-                            .font(.inter(14, .medium))
-                            .foregroundStyle(Color.inkPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Elle apparaîtra ici une fois terminée.")
-                            .font(.inter(13))
-                            .foregroundStyle(Color.inkMuted)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
+                // La pile vide n'est plus une phrase dans une boîte : c'est la
+                // même carte, néon allumé, et des chevrons qui descendent vers
+                // le galet de la barre.
+                SwapEmptyCard()
+                    .padding(.top, 16)
             } else {
                 // Les points de position ont été RETIRÉS (verdict du
                 // 2026-08-04) : l'éventail montre déjà qu'il y a d'autres
                 // cartes — un compteur dessous ne faisait que le redire.
-                SwapDeck(workouts: swapped, topCard: $topCard) { opened = $0 }
+                SwapDeck(workouts: swapped, topCard: $topCard,
+                         onOpen: { opened = $0 },
+                         onStory: { workout, rect in
+                             // SANS ANIMATION DE PRÉSENTATION. Le portail est
+                             // la seule chose qui doit bouger ; la montée
+                             // système d'un `fullScreenCover` par-dessus
+                             // ferait deux mouvements contradictoires.
+                             var tx = Transaction()
+                             tx.disablesAnimations = true
+                             withTransaction(tx) {
+                                 story = StoryLaunch(workout: workout,
+                                                     rect: rect)
+                             }
+                         })
                     .padding(.top, 16)
             }
         }
@@ -417,10 +433,28 @@ struct HomeAuroraView: View {
 /// déjà visible — on sait qu'il y en a une autre. Passé le seuil, la carte
 /// part en volée et la suivante monte à sa place. Rien ne se perd : la
 /// pile tourne en boucle.
+/// L'axe d'un geste sur la carte du dessus, verrouillé une fois pour toutes.
+enum SwapAxis { case undecided, side, up }
+
+/// Le rectangle de la carte du dessus, remonté jusqu'au deck. Le zéro n'écrase
+/// jamais une vraie valeur : les cartes du dessous n'en publient pas, et une
+/// réduction naïve les laisserait effacer celle du dessus.
+struct TopCardRectKey: PreferenceKey {
+    static let defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if next != .zero { value = next }
+    }
+}
+
 struct SwapDeck: View {
     let workouts: [Workout]
     @Binding var topCard: Int
     var onOpen: (Workout) -> Void
+    /// Le tirage VERS LE HAUT ouvre la story de la séance. Le rectangle rendu
+    /// est celui de la carte à l'écran, à l'instant du lâcher : c'est là que
+    /// le portail commence à s'ouvrir.
+    var onStory: (Workout, CGRect) -> Void = { _, _ in }
 
     /// Le déplacement du doigt sur la carte du dessus.
     @State private var drag: CGSize = SwapDeck.benchSwipe
@@ -440,6 +474,16 @@ struct SwapDeck: View {
     /// Le tube a-t-il déjà pris pour CE geste : l'amorçage ne sonne qu'une
     /// fois, pas à chaque image passée au-dessus du seuil.
     @State private var ignited = false
+    /// L'AXE DU GESTE, verrouillé aux dix premiers points. Il n'y a qu'UN
+    /// reconnaisseur sur cette carte et il consomme déjà les deux axes : en
+    /// ajouter un second pour le tirage vertical ne marche pas, le premier
+    /// avale tout. C'est donc le même geste qui décide, une fois, de ce qu'il
+    /// est — et il ne change plus d'avis avant le lâcher.
+    @State private var axis: SwapAxis = .undecided
+    /// La montée de la carte quand on la tire vers le haut.
+    @State private var lift: CGFloat = 0
+    /// Le rectangle de la carte du dessus, à l'écran, au repos.
+    @State private var topRect: CGRect = .zero
 
     /// Les cartes visibles, de la plus profonde à celle du dessus (l'ordre
     /// de rendu). La plus profonde est transparente : c'est là que la carte
@@ -483,10 +527,17 @@ struct SwapDeck: View {
     /// se juge en la regardant TOMBER, pas sur une image figée.
     private static let benchBurst = CommandLine.arguments.contains("-deckBurst")
 
+    /// Le seuil du tirage vertical. Plus haut que celui du swap : une story
+    /// est un aller sans retour, elle ne doit pas partir sur un frôlement.
+    static let liftThreshold: CGFloat = 110
+
     /// La montée du geste : 0 au repos, 1 quand le doigt a décidé. C'est elle
-    /// qui embrase l'écrin de la carte.
+    /// qui embrase l'écrin de la carte — le tirage vertical l'embrase AUSSI,
+    /// donc la carte prend feu dans la main avant de partir en story.
     private var charge: Float {
-        Float(min(abs(drag.width) / Self.threshold, 1))
+        let side = abs(drag.width) / Self.threshold
+        let up = lift / Self.liftThreshold
+        return Float(min(max(side, up), 1))
     }
 
     /// Où le doigt tire, en vecteur unitaire — le foyer de lumière s'y rend.
@@ -513,6 +564,7 @@ struct SwapDeck: View {
                     .allowsHitTesting(false)
             }
         }
+        .onPreferenceChange(TopCardRectKey.self) { topRect = $0 }
         .onAppear {
             guard Self.benchBurst, burst == nil else { return }
             // Au banc, la carte est au repos : la pluie part de SON contour,
@@ -585,6 +637,18 @@ struct SwapDeck: View {
                         tapAt: isTop ? tapAt : .distantPast,
                         pull: pull)
             .frame(width: Self.cardWidth, height: Self.cardHeight)
+            // Le rectangle de la carte du dessus, AU REPOS, en coordonnées
+            // écran : c'est de là que le portail de la story part. Il est lu
+            // avant les transformations du geste — la montée du doigt lui est
+            // ajoutée au lâcher, pas ici.
+            .background {
+                if isTop {
+                    GeometryReader { g in
+                        Color.clear.preference(key: TopCardRectKey.self,
+                                               value: g.frame(in: .global))
+                    }
+                }
+            }
             // SANS ceci, seuls les GLYPHES sont tactiles : la carte est un
             // vide, le doigt passait au travers et c'est la page qui
             // scrollait. C'est toute la panne du geste.
@@ -601,7 +665,7 @@ struct SwapDeck: View {
             .scaleEffect(isTop ? 1 - min(abs(drag.width), 140) / 2600
                                : Self.fanShrink)
             .offset(x: isTop ? drag.width : wing * Self.fanStep,
-                    y: isTop ? drag.height * 0.25 : Self.fanDip)
+                    y: isTop ? drag.height * 0.25 - lift : Self.fanDip)
             // Le basculement 3D : la carte n'est plus une image qui glisse,
             // c'est un objet qu'on incline — elle pivote autour de son axe
             // vertical vers le côté où l'on tire, et s'incline vers l'avant
@@ -623,15 +687,16 @@ struct SwapDeck: View {
             .zIndex(Double(10 - depth))
             .animation(.spring(response: 0.46, dampingFraction: 0.80), value: topCard)
             .allowsHitTesting(isTop && !flying)
-            // Le toucher allume le tube AVANT d'ouvrir : sans ce court
-            // délai, la navigation emporte la carte et la bouffée ne se
-            // voit jamais.
+            // LE TOUCHER OUVRE LA STORY. Le tube s'allume d'abord : sans ce
+            // court délai, l'ouverture emporte la carte et la bouffée ne se
+            // voit jamais. La fiche de séance reste accessible par
+            // « Tout voir ».
             .onTapGesture {
                 guard isTop else { return }
                 tapAt = .now
                 SwapFeedback.shared.ignite()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
-                    onOpen(workout)
+                    onStory(workout, topRect)
                 }
             }
             .gesture(isTop ? swipeGesture() : nil)
@@ -641,7 +706,33 @@ struct SwapDeck: View {
         DragGesture(minimumDistance: 6)
             .onChanged { value in
                 guard !flying else { return }
-                drag = value.translation
+
+                // LE VERROU D'AXE, décidé une seule fois. Sur les dix premiers
+                // points, le geste choisit ce qu'il est : latéral, c'est le
+                // swap ; vers le HAUT, c'est la story. Et il ne revient plus
+                // dessus — un axe qui se rediscute en cours de route donne un
+                // geste qui hésite sous le doigt.
+                if axis == .undecided {
+                    let dx = abs(value.translation.width)
+                    let dy = abs(value.translation.height)
+                    if max(dx, dy) > 10 {
+                        // Vers le BAS, rien de neuf : c'est le swap qui garde
+                        // la main, la story ne se tire que vers le haut.
+                        axis = (dy > dx && value.translation.height < 0)
+                            ? .up : .side
+                    }
+                }
+
+                if axis == .up {
+                    // LA RÉSISTANCE : suivi franc sur soixante points, puis
+                    // 25 % — la carte a du poids, elle ne colle pas au doigt
+                    // jusqu'au bout de l'écran.
+                    let pull = max(0, -value.translation.height)
+                    lift = min(pull, 60) + max(pull - 60, 0) * 0.25
+                    drag = CGSize(width: 0, height: value.translation.height)
+                } else {
+                    drag = value.translation
+                }
                 // L'amorçage : une seule fois par geste, à l'instant où le
                 // tube prend. Au-delà, c'est le grain qui parle.
                 if !ignited, charge > 0.12 {
@@ -660,6 +751,29 @@ struct SwapDeck: View {
             }
             .onEnded { value in
                 guard !flying else { return }
+                let wasUp = axis == .up
+                axis = .undecided
+
+                if wasUp {
+                    let go = lift > Self.liftThreshold
+                        || value.predictedEndTranslation.height < -260
+                    if go, let top = slots.first(where: { $0.depth == 0 })?
+                        .workout {
+                        // Le portail part du rectangle où la carte est
+                        // RÉELLEMENT, c'est-à-dire soulevée : sans ça il
+                        // s'ouvrirait d'un cran plus bas que ce que la main
+                        // vient de porter, et la continuité se casse.
+                        onStory(top, topRect.offsetBy(dx: 0, dy: -lift))
+                    }
+                    withAnimation(.spring(response: 0.42,
+                                          dampingFraction: 0.86)) {
+                        lift = 0
+                        drag = .zero
+                    }
+                    ignited = false
+                    return
+                }
+
                 let go = abs(value.translation.width) > Self.threshold
                     || abs(value.predictedEndTranslation.width) > 220
                 guard go else {
