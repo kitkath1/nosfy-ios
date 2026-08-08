@@ -67,6 +67,32 @@ struct LiquidLensLab: View {
     /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
     private var isJourney: Bool { onFinish != nil }
 
+    // MARK: Le repos
+
+    /// LE CADRAN A DEUX MÉTIERS, et un seul visage. Sous tension il MONTE,
+    /// pendant le repos il DESCEND vers zéro — mais c'est le même verre, les
+    /// mêmes halos, la même pastille. On ne change pas d'écran entre l'effort
+    /// et la récupération : on n'a jamais quitté le cadran.
+    @State private var restStart: Date?
+    @State private var restDuration: Int = 0
+    /// L'ALLUMAGE DU REPOS : 3, 2, 1, GO. Rien dans l'app ne décomptait quoi
+    /// que ce soit — et un repos qui démarre en silence ne se remarque pas.
+    /// Le vrai repos ne commence qu'APRÈS le GO : un repos de 45 s doit durer
+    /// 45 s, pas 42.
+    static let igniteBeats: Double = 3
+    static let igniteHold: Double = 0.42
+    static var igniteSpan: Double { igniteBeats + igniteHold }
+    /// La saisie de la série est ouverte : le cadran passe derrière du verre.
+    @State private var entering = false
+    /// Ce que le sheet est en train d'écrire.
+    @State private var draftReps = 12
+    @State private var draftKilos: Double = 20
+    @State private var draftRest: Int?
+    /// Le rang de la série en cours, pour le titre du sheet.
+    @State private var seriesRank = 1
+
+    private var resting: Bool { restStart != nil }
+
     private static let frozen: Double? = {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "-lensFreeze"), i + 1 < args.count,
@@ -189,9 +215,41 @@ struct LiquidLensLab: View {
                 }
             }
         }
+        // LE CADRAN RECULE SOUS LA FEUILLE. Ni coupe ni page nouvelle : il
+        // reste là, entier et vivant, simplement remis à sa place de fond. Le
+        // flou est ce qui donne au verre du sheet quelque chose à réfracter,
+        // et l'assombrissement ce qui rend ses chiffres lisibles.
+        // PAS DE FLOU MANUEL. Le materiau natif fait DEJA le sien : flouter
+        // la source avant qu'il l'echantillonne, c'est un double flou, et
+        // c'est exactement ce qui aplatissait la refraction et donnait une
+        // dalle sombre au lieu d'un verre. On ne garde que le recul et un
+        // voile leger, pour que les chiffres du cadran ne se battent pas avec
+        // ceux de la feuille.
+        .scaleEffect(entering ? 0.972 : 1)
+        .overlay {
+            Color.black.opacity(entering ? 0.22 : 0)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+        .animation(.easeInOut(duration: 0.34), value: entering)
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // LA SAISIE DE LA SÉRIE — au-dessus de CE cadran, jamais ailleurs.
+        .sheet(isPresented: $entering) {
+            SetEntrySheet(rank: seriesRank,
+                          reps: $draftReps,
+                          kilos: $draftKilos,
+                          rest: $draftRest) {
+                guard let secs = draftRest else { return }
+                // Le slide est allé au bout : la série est prise, le repos
+                // part, et c'est le MÊME cadran qui se met à descendre.
+                restDuration = secs
+                restStart = .now
+                seriesRank += 1
+                entering = false
+            }
+        }
         .onAppear {
             RocketHaptics.shared.prepare()
             LensTheme.shared.prepare()
@@ -614,7 +672,8 @@ struct LiquidLensLab: View {
     /// souffle après la coupe, tombe avec grâce (étirée par sa vitesse),
     /// se pose au centre avec un tremblement amorti. Fonction pure de `ne`.
     private func nightLens(w: CGFloat, h: CGFloat, t: Double,
-                           ne: Double, ax: CGFloat) -> Lens {
+                           ne: Double, ax: CGFloat,
+                           dateNow: Date = .distantPast) -> Lens {
         let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
         let e2 = u * u * (3 - 2 * u)
         // PETITE à la renaissance — elle grossit surtout en arrivant.
@@ -661,7 +720,29 @@ struct LiquidLensLab: View {
                 radiusV *= 1 + CGFloat(0.009 * pulseV)
             }
         }
-        var lens = Lens(center: CGPoint(x: cx, y: cy), radius: radiusV)
+        // L'ALLUMAGE DU REPOS : la bulle GONFLE D'UN COUP et se recale au
+        // centre. Écrit ici, dans la fonction pure du temps, et non par un
+        // `withAnimation` sur une variable — c'est la loi de ce fichier, et
+        // c'est ce qui garantit que rien ne dérive : la taille est une
+        // FONCTION de l'instant du slide, pas un état qu'on pousse.
+        //
+        // Le coup part fort (montée en 0,16 s), retombe en deux oscillations
+        // amorties, et se stabilise 14 % plus gros qu'à l'effort : le repos
+        // n'est pas une parenthèse, c'est l'autre moitié de l'exercice, et sa
+        // scène est plus grande.
+        var cxV = cx
+        if let rs = restStart {
+            let a = max(0, dateNow.timeIntervalSince(rs))
+            let rise = sstep(0, 0.16, a)
+            let ring = exp(-a * 3.4) * cos(a * 12.0)
+            radiusV *= 1 + CGFloat(rise * (0.14 + 0.30 * ring))
+            // Le recentrage : si le doigt avait biaisé la bulle, elle revient
+            // franchement au milieu pendant la même course.
+            let k = CGFloat(sstep(0, 0.34, a))
+            cxV += (w / 2 - cxV) * k
+            cy += (h * 0.50 - cy) * k
+        }
+        var lens = Lens(center: CGPoint(x: cxV, y: cy), radius: radiusV)
         lens.pulse = pulseV
         lens.f0 = 0.72
         // Dispersion quasi nulle sur TOUTE la nuit : chaque frange verte
@@ -727,7 +808,7 @@ struct LiquidLensLab: View {
     private func nightWorld(w: CGFloat, h: CGFloat, t: Double,
                             ne: Double, ax: CGFloat,
                             now: Date) -> some View {
-        let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax)
+        let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax, dateNow: now)
         let d = nightTrail(w: w, h: h, ne: ne, ax: ax)
         let sizeW = Float(w), sizeH = Float(h)
         let cX = Float(lens.center.x), cY = Float(lens.center.y)
@@ -782,7 +863,40 @@ struct LiquidLensLab: View {
         // prête — même origine que le pouls (5,6) : chaque bascule de
         // seconde EST un battement de la pastille.
         let elapsed = max(0, Int(landed - 5.6))
-        let timeStr = String(format: "%d:%02d", elapsed / 60, elapsed % 60)
+        // LES DEUX MÉTIERS DU CADRAN. Sous tension, il monte depuis le
+        // sommet ; en repos, il descend vers zéro depuis l'instant du slide.
+        // Même verre, mêmes halos, même pastille — on ne change pas d'écran
+        // entre l'effort et la récupération, sinon le repos devient un
+        // ailleurs et on perd le fil de l'exercice.
+        // L'âge de l'allumage : négatif tant qu'il n'y a pas de repos.
+        let ignite: Double = restStart.map { now.timeIntervalSince($0) } ?? -1
+        let counting = ignite >= 0 && ignite < Self.igniteSpan
+        let left: Int? = restStart.map {
+            max(0, restDuration
+                - Int(max(0, now.timeIntervalSince($0) - Self.igniteSpan)))
+        }
+        // Pendant l'allumage, le cadran ne montre plus l'heure : il montre le
+        // compte. C'est le même verre, la même place — seul le contenu change.
+        let countWord: String? = {
+            guard counting else { return nil }
+            let n = Int(Self.igniteBeats - ignite) + 1
+            return n >= 1 ? String(min(n, Int(Self.igniteBeats))) : "GO"
+        }()
+        let shown = left ?? elapsed
+        let timeStr = countWord ?? String(format: "%d:%02d",
+                                          shown / 60, shown % 60)
+        let faceTitle = counting ? "REPOS DANS" : (resting ? "REPOS" : faceLabel)
+        // Chaque chiffre TOMBE : il arrive gros, se pose, et s'efface avant le
+        // suivant. Un compte à rebours dont les chiffres se remplacent sans
+        // bouger n'est pas un compte à rebours, c'est une horloge.
+        let beatPhase = counting ? ignite - floor(ignite) : 0
+        let countScale = counting
+            ? 1.0 + 0.55 * exp(-beatPhase * 7.0) : 1.0
+        let countFade = counting
+            ? min(1, beatPhase * 9) * (1 - sstep(0.78, 1.0, beatPhase)) : 1.0
+        // Le verre du sheet a besoin que le fond RECULE : sans ça les deux
+        // plans se disputent l'œil et la feuille a l'air collée sur l'image.
+        let veil: Double = entering ? 1 : 0
         return ZStack {
             ZStack {
                 Color.black
@@ -813,14 +927,20 @@ struct LiquidLensLab: View {
             // affleurant du fond de la laque, sous les reflets du verre.
             if faceIn > 0.001 {
                 VStack(spacing: 6) {
-                    Text(faceLabel)
+                    Text(faceTitle)
                         .font(.inter(12, .semibold))
                         .tracking(3.0)
-                        .foregroundStyle(Color.white.opacity(0.50))
+                        .foregroundStyle(resting
+                                         ? Color(red: 1.0, green: 0.62, blue: 0.22)
+                                            .opacity(0.90)
+                                         : Color.white.opacity(0.50))
                     Text(timeStr)
-                        .font(.inter(46, .medium))
+                        .font(.inter(counting ? 64 : 46,
+                                     counting ? .semibold : .medium))
                         .monospacedDigit()
                         .foregroundStyle(Color.white.opacity(0.92))
+                        .scaleEffect(countScale)
+                        .opacity(countFade)
                 }
                 .opacity(faceIn)
                 .blur(radius: (1 - faceIn) * 7)
@@ -832,8 +952,21 @@ struct LiquidLensLab: View {
             // le primaire de la maison affleure une fois les chiffres posés,
             // et rend le temps sous tension à la fiche.
             if isJourney {
-                DiamondPrimaryButton(title: "Terminer l'exercice") {
-                    onFinish?(elapsed)
+                // LE MÊME BOUTON, DEUX DESTINATIONS, et c'est voulu. Sous
+                // tension, « Terminer » veut dire « j'ai fini CETTE série » :
+                // il ouvre la saisie. Pendant le repos, la série est déjà
+                // enregistrée, donc il veut dire « j'ai fini L'EXERCICE » et
+                // il emmène au récapitulatif. Un second bouton pour la
+                // deuxième intention encombrerait le cadran d'une décision
+                // qu'on ne prend qu'une fois.
+                DiamondPrimaryButton(title: resting ? "Terminer l'exercice"
+                                                    : "Terminer la série") {
+                    if resting {
+                        onFinish?(elapsed)
+                    } else {
+                        draftRest = nil
+                        entering = true
+                    }
                 }
                 .padding(.horizontal, 26)
                 .opacity(chipIn * chipIn * (3 - 2 * chipIn))

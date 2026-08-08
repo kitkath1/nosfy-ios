@@ -25,6 +25,19 @@ struct WoopApp: App {
         if CommandLine.arguments.contains("-demoForce") {
             DemoData.seedDemo(in: container)
         }
+        #if DEBUG
+        // LA PILE DE LA HOME NE S'AFFICHE QU'AVEC DES SÉANCES TERMINÉES, et
+        // `seedIfEmpty` refuse de semer dès qu'il existe UNE séance, fût-elle
+        // en cours. Une base contenant une seule séance active restait donc
+        // coincée sur l'état vide, sans aucun moyen d'en sortir — et sans
+        // cartes, ni le swap ni les stories ne sont atteignables.
+        //
+        // En debug, on ne s'en remet plus à un argument de lancement (qui
+        // n'atteint pas l'app selon la façon dont elle est lancée) : on
+        // GARANTIT quelques séances terminées. Rien n'est effacé, et la
+        // condition est « aucune terminée », pas « base vide ».
+        DemoData.seedDemoIfNoneFinished(in: container)
+        #endif
         if CommandLine.arguments.contains("-activeWorkout") {
             DemoData.seedActiveWorkout(in: container)
         }
@@ -139,6 +152,9 @@ struct RootView: View {
     /// à la fermeture, donc la cinématique se rejoue à volonté sans rien
     /// toucher — c'est la méthode maison pour juger un enchaînement.
     private static let storyLab = CommandLine.arguments.contains("-storyLab")
+    /// Banc du sheet de saisie de série : `-setLab` — la molette fluide, les
+    /// chips de repos et le slider à galet, au-dessus d'un faux cadran.
+    private static let setLab = CommandLine.arguments.contains("-setLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -267,6 +283,8 @@ struct RootView: View {
             cometBench
         } else if Self.storyLab {
             StoryLab()
+        } else if Self.setLab {
+            SetEntryLab()
         } else if Self.buttonLab {
             ConnexionButtonLab()
         } else if Self.cardLab {
@@ -649,6 +667,17 @@ enum DemoData {
     /// vide. Rien n'est effacé, on ajoute.
     @MainActor
     static func seedDemo(in container: ModelContainer) {
+        seed(in: container)
+    }
+
+    /// Sème si la base ne contient AUCUNE séance terminée — la seule condition
+    /// qui compte pour la pile de la home, puisque c'est elle qu'elle affiche.
+    /// Une base pleine de séances en cours est, pour la home, une base vide.
+    @MainActor
+    static func seedDemoIfNoneFinished(in container: ModelContainer) {
+        let context = container.mainContext
+        let all = (try? context.fetch(FetchDescriptor<Workout>())) ?? []
+        guard all.allSatisfy({ $0.endedAt == nil }) else { return }
         seed(in: container)
     }
 
