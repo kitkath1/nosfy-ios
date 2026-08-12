@@ -130,6 +130,10 @@ struct RootView: View {
     /// Banc de la flamme ember : `-emberLab`, page noire nue — la flamme
     /// emoji laquée, seule au centre. `-emberFreeze` fige le temps (captures).
     private static let emberLab = CommandLine.arguments.contains("-emberLab")
+    /// Banc de la page BRAVO : `-bravoLab` — la pluie de pièces accélérée, le
+    /// recul du cadrage, le gel, puis la saisie et les deux gestes.
+    /// `-bravoAuto` rejoue en boucle, `-bravoFreeze` ouvre la page posée.
+    private static let bravoLab = CommandLine.arguments.contains("-bravoLab")
     /// Banc de l'aube aux halos : `-haloLab` — page de lumière sans un
     /// pixel de noir, blanc du coin gauche, halos orange qui dérivent.
     private static let haloLab = CommandLine.arguments.contains("-haloLab")
@@ -317,6 +321,8 @@ struct RootView: View {
             CoffreFortLab()
         } else if Self.pieceLab {
             MoonCoinLab()
+        } else if Self.bravoLab {
+            BravoLab()
         } else if Self.emberLab {
             EmberFlameLab()
         } else if Self.flameLab {

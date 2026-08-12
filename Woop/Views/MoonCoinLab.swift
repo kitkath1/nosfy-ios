@@ -24,6 +24,19 @@ struct MoonCoinView: View {
     /// Lacet imposé (captures).
     var yawOverride: Float? = nil
     var idleLife: Float = 1
+    /// LE MAT, 0 → 1. À 0 (partout ailleurs dans l'app) la pièce est en or et
+    /// rien ne change. À 1, le MÉTAL SEUL passe à l'anthracite neutre et le
+    /// croissant reste en néon : c'est la pièce de la page BRAVO.
+    var matte: Float = 0
+    /// UN SUPPLÉMENT D'HORLOGE, en secondes, ajouté à `t`. À 0 partout ailleurs
+    /// (rien ne change). La page BRAVO s'en sert pendant qu'elle plonge sur la
+    /// pièce : le croissant respire sur 5 s et son point chaud voyage en 3,5 s
+    /// — sur un zoom de 0,7 s on n'en voyait qu'un cinquième, donc RIEN. En
+    /// avançant l'horloge de la pièce à mesure que la caméra approche, le néon
+    /// SCINTILLE pendant qu'on le regarde. C'est un décalage MONOTONE et
+    /// continu, jamais un facteur : multiplier `t` (qui vaut des centaines)
+    /// ferait sauter la phase d'un coup.
+    var timeBoost: Double = 0
     var fps: Double = 30
     /// L'INTENSITÉ DU CROISSANT. 1 partout ailleurs. Le tube a un PLANCHER de
     /// 0,85 pt de large : sous 28 pt de rayon il cesse de rétrécir avec la
@@ -101,7 +114,7 @@ struct MoonCoinView: View {
                 .frame(width: side, height: side)
                 .colorEffect(ShaderLibrary.moonCoin(
                     .float2(Float(side), Float(side)),
-                    .float(t),
+                    .float(t + Float(timeBoost)),
                     .float2(Float(tilt.dx), Float(tilt.dy)),
                     .float(userYaw(at: tl.date)),
                     .float(Float(coinR)),

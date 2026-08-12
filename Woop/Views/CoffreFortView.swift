@@ -66,10 +66,10 @@ struct CinematicPlayer: UIViewRepresentable {
     /// Le fond de l'hôte. NOIR partout (une cinématique se joue sur du noir) —
     /// sauf pour un lecteur qui BOUCLE : à chaque bouclage, `AVPlayerLooper`
     /// change d'item et la couche se vide le temps d'une à trois images. Avec
-    /// un fond noir, ce vide est un FLASH NOIR, une fois par période ; avec un
-    /// fond transparent, c'est l'image posée dessous qui apparaît — et comme
-    /// le fichier de boucle commence et finit sur la même image, c'est
-    /// exactement celle qu'on devait voir.
+    /// un fond noir, ce vide est un FLASH NOIR (mesuré : luminance 0,0000, une
+    /// fois par période) ; avec un fond transparent, c'est l'image posée
+    /// dessous qui apparaît — et comme le fichier de boucle commence et finit
+    /// sur la même image, c'est exactement celle qu'on devait voir.
     var opaqueBackground: Bool = true
 
     func makeUIView(context: Context) -> CinematicPlayerHost {
