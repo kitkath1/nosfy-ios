@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Banc de la lentille liquide (`-lensLab`) — BANCS A + B
 //
@@ -35,9 +36,25 @@ struct LiquidLensLab: View {
     var headline: String = "Une nouvelle ère\nd'entraînement."
     /// Le mot gravé au-dessus du chrono, une fois la nuit posée.
     var faceLabel: String = "SÉRIE 1"
-    /// L'exercice est terminé : le temps sous tension, en secondes. Sa
-    /// présence est CE QUI DISTINGUE le parcours du banc.
-    var onFinish: ((Int) -> Void)?
+    /// Le rang de la série — il vient de la FICHE, qui seule sait où elle en
+    /// est. Le cadran ne compte plus les séries : un cycle complet (chrono →
+    /// saisie → repos → envol) n'en vit qu'UNE, puis rend la main.
+    var seriesNumber: Int = 1
+
+    /// CE QUE LA SÉRIE A ÉTÉ : les chiffres saisis dans la feuille, le repos
+    /// choisi, et le temps sous tension au moment du « Terminer ». C'est le
+    /// paquet que l'envol remonte à la fiche — la donnée ne meurt plus dans
+    /// les brouillons du cadran.
+    struct SeriesOutcome {
+        var reps: Int
+        var kilos: Double
+        var restSeconds: Int
+        var effortSeconds: Int
+    }
+    /// LA SÉRIE EST FINIE ET LA PASTILLE PARTIE : appelé une fois, quand
+    /// l'envol s'achève — la fiche démonte le cadran et pose la page BRAVO.
+    /// Sa présence est CE QUI DISTINGUE le parcours du banc.
+    var onFinish: ((SeriesOutcome) -> Void)?
     /// Repartir sans rien compter, tant que la nuit n'est pas tombée.
     var onCancel: (() -> Void)?
 
@@ -82,14 +99,31 @@ struct LiquidLensLab: View {
     static let igniteBeats: Double = 3
     static let igniteHold: Double = 0.42
     static var igniteSpan: Double { igniteBeats + igniteHold }
+    /// L'ENVOL — la fin du repos, et la sortie du cadran. D'abord la
+    /// VIBRANCE : la pastille tremble et chauffe sur place, la lumière bat.
+    /// Puis l'ASCENSION : une chute libre inversée — elle part lentement et
+    /// accélère jusqu'à percer le bord haut, comme elle était arrivée par lui.
+    /// Un souffle de noir ferme la partition avant que la fiche pose BRAVO :
+    /// la pièce de la page suivante TOMBE de ce même bord — le raccord est
+    /// dans le geste, pas dans un fondu.
+    static let envolShudder: Double = 0.55
+    static let envolRise: Double = 0.75
+    static var envolSpan: Double { envolShudder + envolRise + 0.12 }
+    /// L'instant du départ — posé par la fin du décompte, ou par le lien
+    /// « Passer le repos ». Toute la chorégraphie est fonction pure de lui.
+    @State private var envolAt: Date?
+    /// `onFinish` ne part qu'UNE fois.
+    @State private var envolFired = false
     /// La saisie de la série est ouverte : le cadran passe derrière du verre.
     @State private var entering = false
     /// Ce que le sheet est en train d'écrire.
     @State private var draftReps = 12
     @State private var draftKilos: Double = 20
     @State private var draftRest: Int?
-    /// Le rang de la série en cours, pour le titre du sheet.
-    @State private var seriesRank = 1
+    /// Le chrono affiché à l'instant du « Terminer la série » : c'est LUI le
+    /// temps sous tension — pas l'horloge qui continue de courir sous la
+    /// feuille et le repos.
+    @State private var effortSeconds = 0
 
     private var resting: Bool { restStart != nil }
 
@@ -101,6 +135,13 @@ struct LiquidLensLab: View {
     }()
 
     private static let cycling = CommandLine.arguments.contains("-lensAuto")
+
+    /// `-envolFire` (parcours seulement) : le banc de la FIN DU REPOS. Sitôt
+    /// le cadran posé et son chip levé, la série se prend toute seule — repos
+    /// de 3 s, sans feuille ni slide — et l'envol part à l'heure. Le
+    /// simulateur ne drague pas et ne tape pas : c'est la seule façon de voir
+    /// le décompte, la vibrance, l'ascension et la coupe vers BRAVO en film.
+    private static let envolFire = CommandLine.arguments.contains("-envolFire")
 
     /// Le papier de la maison — le crème de la dalle d'exercice.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
@@ -207,6 +248,13 @@ struct LiquidLensLab: View {
                         fingerLifted(h: h)
                     }
                 }
+                // LE BATTEMENT DU REPOS. La fin du décompte est un ÉVÉNEMENT,
+                // pas un zéro qui s'affiche : chaque frame vérifie l'horloge
+                // et arme l'envol à l'instant exact — l'école du Canvas de la
+                // fumée (l'état s'écrit dans l'onChange, jamais dans le rendu).
+                // Pur du temps, donc revenir d'arrière-plan après un repos
+                // écoulé déclenche l'envol tout seul, sans rattrapage.
+                .onChange(of: now) { _, d in heartbeat(d) }
                 .onAppear {
                     if isJourney, let hf = handoff, hf.live {
                         fingerMoved(hf.point, velocityY: hf.velocityY,
@@ -237,7 +285,7 @@ struct LiquidLensLab: View {
         .persistentSystemOverlays(.hidden)
         // LA SAISIE DE LA SÉRIE — au-dessus de CE cadran, jamais ailleurs.
         .sheet(isPresented: $entering) {
-            SetEntrySheet(rank: seriesRank,
+            SetEntrySheet(rank: seriesNumber,
                           reps: $draftReps,
                           kilos: $draftKilos,
                           rest: $draftRest) {
@@ -246,7 +294,6 @@ struct LiquidLensLab: View {
                 // part, et c'est le MÊME cadran qui se met à descendre.
                 restDuration = secs
                 restStart = .now
-                seriesRank += 1
                 entering = false
             }
         }
@@ -666,6 +713,43 @@ struct LiquidLensLab: View {
         release = (climbOf(y: loc.y, h: h), loc.x, .now)
     }
 
+    // MARK: La fin du repos
+
+    /// Le battement : armé chaque frame par l'horloge du TimelineView. Deux
+    /// événements seulement — le décompte touche zéro (l'envol part), et
+    /// l'envol s'achève (le résultat remonte à la fiche, UNE fois).
+    private func heartbeat(_ d: Date) {
+        guard isJourney else { return }
+        // Le banc de l'envol : le repos s'arme tout seul, chip levé.
+        if Self.envolFire, restStart == nil, let s = summitAt,
+           d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
+               + SummitCine.descend + 7.2 {
+            restDuration = 3
+            restStart = d
+        }
+        guard let rs = restStart else { return }
+        if envolAt == nil,
+           d.timeIntervalSince(rs) >= Self.igniteSpan + Double(restDuration) {
+            startEnvol(d)
+        }
+        if let ea = envolAt, !envolFired,
+           d.timeIntervalSince(ea) >= Self.envolSpan {
+            envolFired = true
+            onFinish?(SeriesOutcome(reps: draftReps,
+                                    kilos: draftKilos,
+                                    restSeconds: restDuration,
+                                    effortSeconds: effortSeconds))
+        }
+    }
+
+    /// Le départ — par le décompte ou par le lien « Passer le repos » :
+    /// même envol, même partition, même main.
+    private func startEnvol(_ d: Date = .now) {
+        guard envolAt == nil else { return }
+        envolAt = d
+        EnvolHaptic.play(liftAt: Self.envolShudder)
+    }
+
     // MARK: L'univers noir — la renaissance et la descente
 
     /// La géométrie de la descente : la pastille perce le bord haut un
@@ -673,7 +757,8 @@ struct LiquidLensLab: View {
     /// se pose au centre avec un tremblement amorti. Fonction pure de `ne`.
     private func nightLens(w: CGFloat, h: CGFloat, t: Double,
                            ne: Double, ax: CGFloat,
-                           dateNow: Date = .distantPast) -> Lens {
+                           dateNow: Date = .distantPast,
+                           envol ev: Double = -1) -> Lens {
         let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
         let e2 = u * u * (3 - 2 * u)
         // PETITE à la renaissance — elle grossit surtout en arrivant.
@@ -742,6 +827,29 @@ struct LiquidLensLab: View {
             cxV += (w / 2 - cxV) * k
             cy += (h * 0.50 - cy) * k
         }
+        // L'ENVOL. Deux temps, écrits ici comme tout le reste — fonction pure
+        // de l'instant du départ, jamais un `withAnimation`.
+        //
+        // LA VIBRANCE d'abord : la pastille TREMBLE sur place — deux
+        // sinusoïdes rapides sans rapport entier, l'amplitude monte avec elle.
+        // Ce n'est pas un ressort qui joue : c'est une énergie qui s'accumule
+        // et qui va la porter. Elle gonfle un souffle en même temps.
+        //
+        // Puis l'ASCENSION : une chute libre INVERSÉE (q², le miroir exact de
+        // sa descente d'arrivée) — elle part d'un rien et accélère jusqu'à
+        // percer le bord haut. Le tremblement meurt au décollage : on ne
+        // tremble plus quand on est porté. L'étirement vertical dit la
+        // vitesse, comme à l'aller.
+        let vib = ev >= 0 ? min(max(ev / Self.envolShudder, 0), 1) : 0.0
+        if ev >= 0 {
+            let q = max(0, (ev - Self.envolShudder) / Self.envolRise)
+            let tremble = vib * (1 - min(q * 2.2, 1))
+            cxV += CGFloat(sin(ev * 86.0) * 2.6 * tremble)
+            cy += CGFloat(sin(ev * 71.0 + 1.3) * 2.1 * tremble)
+            radiusV *= 1 + CGFloat(0.055 * vib)
+            cy -= (h * 0.5 + radiusV + 80) * CGFloat(q * q)
+            squash *= 1 - 0.16 * min(q * 1.6, 1)
+        }
         var lens = Lens(center: CGPoint(x: cxV, y: cy), radius: radiusV)
         lens.pulse = pulseV
         lens.f0 = 0.72
@@ -761,6 +869,13 @@ struct LiquidLensLab: View {
         lens.squash = squash
         lens.ripple = ripple
         lens.ripplePhase = max(landed, 0) * 30
+        // La vibrance CHAUFFE : la braise remonte comme au sommet, et la
+        // lumière bat sur l'enveloppe du tremblement — c'est tout le verre
+        // qui annonce le départ, pas seulement sa position.
+        if vib > 0 {
+            lens.ember = min(lens.ember + 0.5 * vib, 1.0)
+            lens.pulse = max(lens.pulse, 0.9 * vib)
+        }
         return lens
     }
 
@@ -808,7 +923,12 @@ struct LiquidLensLab: View {
     private func nightWorld(w: CGFloat, h: CGFloat, t: Double,
                             ne: Double, ax: CGFloat,
                             now: Date) -> some View {
-        let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax, dateNow: now)
+        // L'envol en cours, sinon -1. Le chemin d'encre, lui, ne le voit
+        // JAMAIS : il rejoue des instants passés de la pastille, et l'envol
+        // n'appartient qu'au présent.
+        let ev = envolAt.map { now.timeIntervalSince($0) } ?? -1
+        let lens = nightLens(w: w, h: h, t: t, ne: ne, ax: ax, dateNow: now,
+                             envol: ev)
         let d = nightTrail(w: w, h: h, ne: ne, ax: ax)
         let sizeW = Float(w), sizeH = Float(h)
         let cX = Float(lens.center.x), cY = Float(lens.center.y)
@@ -826,7 +946,11 @@ struct LiquidLensLab: View {
         // sa contraction — et le LANGAGE du verre (nScene) bascule sur
         // CETTE rampe : la fenêtre du jour meurt pendant que les arcs
         // naissent, mathématiquement ensemble.
+        // Au décollage, le halo S'ÉTEINT : la lumière appartenait à la
+        // pastille posée — elle ne reste pas au sol quand l'objet part.
         let igV = Float(sstep(0.08, 0.85, d.dry))
+            * Float(1 - sstep(Self.envolShudder,
+                              Self.envolShudder + 0.5, max(ev, 0)))
         let lensShader = ShaderLibrary.liquidLens(
             .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
             .float(f0), .float(dispV), .float(emberV),
@@ -925,6 +1049,9 @@ struct LiquidLensLab: View {
                          maxSampleOffset: CGSize(width: 110, height: 110))
             // LES CHIFFRES DU CADRAN — la continuité directe du condensat,
             // affleurant du fond de la laque, sous les reflets du verre.
+            // Pendant la vibrance ils TREMBLENT AVEC la pastille (leur
+            // position est son centre) et s'effacent avant le décollage :
+            // l'objet part entier, pas ses chiffres.
             if faceIn > 0.001 {
                 VStack(spacing: 6) {
                     Text(faceTitle)
@@ -942,7 +1069,7 @@ struct LiquidLensLab: View {
                         .scaleEffect(countScale)
                         .opacity(countFade)
                 }
-                .opacity(faceIn)
+                .opacity(faceIn * (1 - sstep(0.05, 0.32, max(ev, 0))))
                 .blur(radius: (1 - faceIn) * 7)
                 .scaleEffect(0.95 + 0.05 * faceIn)
                 .position(lens.center)
@@ -952,26 +1079,37 @@ struct LiquidLensLab: View {
             // le primaire de la maison affleure une fois les chiffres posés,
             // et rend le temps sous tension à la fiche.
             if isJourney {
-                // LE MÊME BOUTON, DEUX DESTINATIONS, et c'est voulu. Sous
-                // tension, « Terminer » veut dire « j'ai fini CETTE série » :
-                // il ouvre la saisie. Pendant le repos, la série est déjà
-                // enregistrée, donc il veut dire « j'ai fini L'EXERCICE » et
-                // il emmène au récapitulatif. Un second bouton pour la
-                // deuxième intention encombrerait le cadran d'une décision
-                // qu'on ne prend qu'une fois.
-                DiamondPrimaryButton(title: resting ? "Terminer l'exercice"
-                                                    : "Terminer la série") {
-                    if resting {
-                        onFinish?(elapsed)
-                    } else {
-                        draftRest = nil
-                        entering = true
-                    }
+                // DEUX MOMENTS, DEUX POIDS. Sous tension, « Terminer la
+                // série » est LE geste de la page : un CTA plein. Pendant le
+                // repos, la série est déjà prise et la sortie viendra toute
+                // seule à la fin du décompte — ce qui reste n'est qu'une
+                // échappée : « Passer le repos », un lien d'encre seule
+                // (l'école du footer de BRAVO — sur la nuit, un cadre clair
+                // se lit comme un bug). Le fondu croisé est écrit sur
+                // l'horloge du repos, comme tout le reste du fichier.
+                let chipInS = chipIn * chipIn * (3 - 2 * chipIn)
+                let igniteT = max(ignite, 0)
+                DiamondPrimaryButton(title: "Terminer la série") {
+                    effortSeconds = elapsed
+                    draftRest = nil
+                    entering = true
                 }
                 .padding(.horizontal, 26)
-                .opacity(chipIn * chipIn * (3 - 2 * chipIn))
-                .allowsHitTesting(chipIn > 0.6)
+                .opacity(chipInS * (1 - sstep(0, 0.25, igniteT)))
+                .allowsHitTesting(chipIn > 0.6 && !resting)
                 .position(x: w / 2, y: h - 78)
+                Button { startEnvol(now) } label: {
+                    Text("Passer le repos")
+                        .font(.inter(15, .medium))
+                        .foregroundStyle(Color.white.opacity(0.55))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .opacity(chipInS * sstep(0.30, 0.70, igniteT)
+                         * (1 - sstep(0, 0.18, max(ev, 0))))
+                .allowsHitTesting(resting && envolAt == nil)
+                .position(x: w / 2, y: h - 72)
             } else if !Self.cycling {
                 Button {
                     summitAt = nil
@@ -1007,6 +1145,29 @@ struct LiquidLensLab: View {
     private func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
         let u = min(max((x - a) / (b - a), 0), 1)
         return u * u * (3 - 2 * u)
+    }
+}
+
+// MARK: - L'haptique de l'envol
+
+/// LE DÉPART DANS LA MAIN. Quatre grains qui enflent pendant que la pastille
+/// tremble — l'énergie qui s'accumule —, puis UN coup net au décollage.
+/// Écrite à part, comme le veut la maison : le slam de la carte, la course du
+/// galet et le grondement de la fusée ont chacun leur signature, et deux
+/// gestes qui tapent pareil finissent par se confondre dans la main.
+enum EnvolHaptic {
+    static func play(liftAt: Double) {
+        let soft = UIImpactFeedbackGenerator(style: .soft)
+        let rigid = UIImpactFeedbackGenerator(style: .rigid)
+        soft.prepare(); rigid.prepare()
+        for (i, t) in [0.0, 0.14, 0.27, 0.40].enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + t) {
+                soft.impactOccurred(intensity: 0.30 + 0.16 * Double(i))
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + liftAt) {
+            rigid.impactOccurred(intensity: 1.0)
+        }
     }
 }
 

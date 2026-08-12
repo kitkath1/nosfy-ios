@@ -227,7 +227,11 @@ enum BravoCine {
 
 struct BravoView: View {
     var reps: Int = 12
-    var kilos: Int = 20
+    /// En `Double` comme partout dans le modèle (`DraftSet.weight`) : le jour
+    /// où la molette gagne des demi-kilos, la page les affiche déjà.
+    var kilos: Double = 20
+    /// Le repos réellement choisi dans la feuille — le troisième constat.
+    var rest: Int = 60
     var onStartTimer: (Int, Int) -> Void = { _, _ in }
     var onFinish: () -> Void = {}
 
@@ -271,7 +275,7 @@ struct BravoView: View {
     @State private var tapEnd: Date?
     @State private var tapTick = 0
     @State private var repsValue = 12
-    @State private var kilosValue = 20
+    @State private var kilosValue: Double = 20
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private static let skipCine = CommandLine.arguments.contains("-bravoFreeze")
@@ -565,10 +569,16 @@ struct BravoView: View {
     /// la nuit, trois colonnes d'encre suffisent — la séparation vient de
     /// l'espace, jamais d'un séparateur.
     private func kpis(_ e: Double) -> some View {
-        HStack(spacing: 0) {
+        // Les kilos entiers s'écrivent entiers (l'école de la molette) ; le
+        // repos s'écrit comme le cadran l'a décompté.
+        let kiloText = kilosValue == kilosValue.rounded()
+            ? String(Int(kilosValue.rounded()))
+            : String(format: "%.1f", kilosValue)
+        return HStack(spacing: 0) {
             kpi("\(repsValue)", "REPS", 0.26, e)
-            kpi("\(kilosValue)", "KG", 0.33, e)
-            kpi("1:00", "REPOS", 0.40, e)
+            kpi(kiloText, "KG", 0.33, e)
+            kpi(String(format: "%d:%02d", rest / 60, rest % 60),
+                "REPOS", 0.40, e)
         }
         .padding(.horizontal, 26)
     }
@@ -796,14 +806,9 @@ struct BravoView: View {
     }
 }
 
-/// Un flou qui n'existe que lorsqu'il peint : en dessous de 0,2 pt, le
-/// modificateur est retiré de l'arbre plutôt que de coûter une passe pour rien.
-private struct SoftBlur: ViewModifier {
-    let radius: CGFloat
-    func body(content: Content) -> some View {
-        if radius > 0.2 { content.blur(radius: radius) } else { content }
-    }
-}
+// (Le `SoftBlur` privé qui vivait ici a rejoint la maison : `StoryVideo.swift`
+// porte désormais le même, partagé — deux copies du même nom dans un module,
+// et le compilateur tranche.)
 
 // MARK: - La carte de saisie
 

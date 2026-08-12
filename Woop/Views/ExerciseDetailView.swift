@@ -135,6 +135,20 @@ struct ExerciseDetailView: View {
         var appended = false
     }
 
+    /// LA SÉRIE TERMINÉE, entre l'envol et le retour : ce que la pastille a
+    /// remporté en partant. Tant qu'il est non-nil, la page BRAVO est posée ;
+    /// son retour écrit ces chiffres dans la carte — pas avant : la carte
+    /// s'actualise sous les yeux, à l'air libre, jamais sous une page.
+    @State private var finished: FinishedSeries?
+
+    private struct FinishedSeries {
+        let index: Int
+        let reps: Int
+        let kilos: Double
+        let rest: Int
+        let seconds: Int
+    }
+
     private var active: Workout? { workouts.first { $0.isActive } }
     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
 
@@ -387,8 +401,9 @@ struct ExerciseDetailView: View {
                     LiquidLensLab(
                         headline: exercise.name,
                         faceLabel: "SÉRIE \(series.id + 1)",
-                        onFinish: { seconds in
-                            complete(series.id, seconds: seconds)
+                        seriesNumber: series.id + 1,
+                        onFinish: { outcome in
+                            startBravo(series.id, outcome)
                         },
                         onCancel: {
                             running = nil
@@ -418,6 +433,18 @@ struct ExerciseDetailView: View {
                     // réversible. Simultané : la lentille garde ses
                     // gestes (un drag bas, chez elle, ne fait rien).
                     .simultaneousGesture(returnDrag)
+                }
+                // LA PAGE BRAVO. Elle remplace le cadran à l'instant où la
+                // pastille a percé le bord haut — noir sur noir, la coupe
+                // est invisible, et sa pièce TOMBE du même bord : le raccord
+                // est dans le geste. Le cadran est DÉMONTÉ, pas caché : deux
+                // plein-écrans vivants empilés, c'est la cadence qui paie
+                // (la leçon mesurée de la page elle-même).
+                if let f = finished {
+                    BravoView(reps: f.reps,
+                              kilos: f.kilos,
+                              rest: f.rest,
+                              onFinish: { closeBravo(f) })
                 }
             }
         }
@@ -788,23 +815,38 @@ struct ExerciseDetailView: View {
         return "\(set.reps) reps · \(set.weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
     }
 
-    private func complete(_ index: Int, seconds: Int) {
-        // Le papier tombe AVANT la lentille : on sort de la nuit du cadran
-        // vers la nuit de la page. Le laisser monté ferait un éclair blanc
-        // entre les deux noirs.
+    /// L'envol s'achève : le cadran rend la main, la page BRAVO prend la
+    /// scène. Le papier tombe en même temps que la lentille — on passe d'une
+    /// nuit à l'autre, le voile blanc n'a rien à faire entre les deux.
+    private func startBravo(_ index: Int, _ o: LiquidLensLab.SeriesOutcome) {
+        finished = FinishedSeries(index: index,
+                                  reps: o.reps,
+                                  kilos: o.kilos,
+                                  rest: o.restSeconds,
+                                  seconds: o.effortSeconds)
         flood = 0
         running = nil
         lensHandoff = nil
         driveClimb = 0
         lensShown = false
         summited = false
+    }
+
+    /// « Revenir à l'exercice » : BRAVO se retire, et la carte s'actualise —
+    /// avec les VRAIS chiffres de la feuille, pas les valeurs de départ. Le
+    /// repos choisi devient celui de l'exercice.
+    private func closeBravo(_ f: FinishedSeries) {
+        finished = nil
+        restSeconds = f.rest
         // Valider tout de suite ferait jouer les paillettes pendant que la
         // page se réinstalle — on attend qu'elle soit à l'air libre.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
-            guard sets.indices.contains(index) else { return }
+            guard sets.indices.contains(f.index) else { return }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.62)) {
-                sets[index].isDone = true
-                sets[index].durationSeconds = seconds
+                sets[f.index].reps = f.reps
+                sets[f.index].weight = f.kilos
+                sets[f.index].isDone = true
+                sets[f.index].durationSeconds = f.seconds
             }
         }
     }
