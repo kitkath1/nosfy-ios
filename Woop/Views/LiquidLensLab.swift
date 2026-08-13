@@ -142,6 +142,11 @@ struct LiquidLensLab: View {
     /// simulateur ne drague pas et ne tape pas : c'est la seule façon de voir
     /// le décompte, la vibrance, l'ascension et la coupe vers BRAVO en film.
     private static let envolFire = CommandLine.arguments.contains("-envolFire")
+    /// `-sheetFire` (parcours seulement) : la FEUILLE DE SAISIE s'ouvre toute
+    /// seule sitôt le chip levé — le banc du sheet, pour le juger sur le
+    /// cadran VIVANT et ses halos (on ne juge un verre que sur ce qui vit
+    /// dessous, jamais sur du noir).
+    private static let sheetFire = CommandLine.arguments.contains("-sheetFire")
 
     /// Le papier de la maison — le crème de la dalle d'exercice.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
@@ -263,17 +268,14 @@ struct LiquidLensLab: View {
                 }
             }
         }
-        // LE CADRAN RECULE SOUS LA FEUILLE. Ni coupe ni page nouvelle : il
-        // reste là, entier et vivant, simplement remis à sa place de fond. Le
-        // flou est ce qui donne au verre du sheet quelque chose à réfracter,
-        // et l'assombrissement ce qui rend ses chiffres lisibles.
-        // PAS DE FLOU MANUEL. Le materiau natif fait DEJA le sien : flouter
-        // la source avant qu'il l'echantillonne, c'est un double flou, et
-        // c'est exactement ce qui aplatissait la refraction et donnait une
-        // dalle sombre au lieu d'un verre. On ne garde que le recul et un
-        // voile leger, pour que les chiffres du cadran ne se battent pas avec
-        // ceux de la feuille.
-        .scaleEffect(entering ? 0.972 : 1)
+        // LE CADRAN NE RECULE PLUS SOUS LA FEUILLE. Le recul (0,972)
+        // découvrait la FICHE BLANCHE qui vit derrière la lentille — les
+        // « traits blancs » autour de l'écran (16 pt aux flancs, 36 pt en
+        // haut : exactement les 2,8 % du recul). Le voile seul suffit : il
+        // assombrit le cadran pour que ses chiffres ne se battent pas avec
+        // ceux de la feuille — et PAS DE FLOU MANUEL : le matériau natif
+        // fait DÉJÀ le sien, flouter la source avant qu'il l'échantillonne
+        // aplatissait la réfraction en dalle sombre.
         .overlay {
             Color.black.opacity(entering ? 0.22 : 0)
                 .ignoresSafeArea()
@@ -284,18 +286,38 @@ struct LiquidLensLab: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         // LA SAISIE DE LA SÉRIE — au-dessus de CE cadran, jamais ailleurs.
-        .sheet(isPresented: $entering) {
-            SetEntrySheet(rank: seriesNumber,
-                          reps: $draftReps,
-                          kilos: $draftKilos,
-                          rest: $draftRest) {
-                guard let secs = draftRest else { return }
-                // Le slide est allé au bout : la série est prise, le repos
-                // part, et c'est le MÊME cadran qui se met à descendre.
-                restDuration = secs
-                restStart = .now
-                entering = false
+        // NOTRE panneau, PAS un sheet système : la présentation d'iOS 26
+        // recule toute la fenêtre et révèle un fond gris (le cadre mesuré
+        // autour de l'écran), et un verre posé dans SA couche n'échantillonne
+        // jamais la vraie scène — deux tentatives payées. Ici la feuille vit
+        // dans l'arbre du cadran : le Liquid Glass réfracte l'auréole POUR DE
+        // VRAI, comme les chips du header sur la braise.
+        .overlay(alignment: .bottom) {
+            GeometryReader { g in
+                ZStack(alignment: .bottom) {
+                    Color.clear
+                    if entering {
+                        SetEntrySheet(rank: seriesNumber,
+                                      reps: $draftReps,
+                                      kilos: $draftKilos,
+                                      rest: $draftRest,
+                                      onDismiss: { entering = false }) {
+                            guard let secs = draftRest else { return }
+                            // Le slide est allé au bout : la série est prise,
+                            // le repos part, et c'est le MÊME cadran qui se
+                            // met à descendre.
+                            restDuration = secs
+                            restStart = .now
+                            entering = false
+                        }
+                        .frame(height: g.size.height * 0.62)
+                        .transition(.move(edge: .bottom))
+                    }
+                }
+                .ignoresSafeArea()
             }
+            .animation(.spring(response: 0.42, dampingFraction: 0.86),
+                       value: entering)
         }
         .onAppear {
             RocketHaptics.shared.prepare()
@@ -726,6 +748,13 @@ struct LiquidLensLab: View {
                + SummitCine.descend + 7.2 {
             restDuration = 3
             restStart = d
+        }
+        // Le banc de la feuille : elle s'ouvre toute seule, chip levé.
+        if Self.sheetFire, !entering, restStart == nil, let s = summitAt,
+           d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
+               + SummitCine.descend + 7.2 {
+            draftRest = nil
+            entering = true
         }
         guard let rs = restStart else { return }
         if envolAt == nil,

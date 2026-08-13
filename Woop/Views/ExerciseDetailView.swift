@@ -206,6 +206,22 @@ struct ExerciseDetailView: View {
                 try? await Task.sleep(for: .milliseconds(16))
             }
             driveMoved(point(at: 1.0), -1400)
+            // LE RELAIS PEUT RATER À LA RELANCE. Si la lentille s'est montée
+            // trop tard (relance plus lente que le premier lancement — mesuré :
+            // install fraîche OK, terminate+launch bloqué au monde blanc,
+            // bulle au repos), le doigt synthétique a fini son œuvre avant
+            // qu'elle ne l'entende : le `handoff` ne change plus, elle ne
+            // saura jamais. Le banc rejoue donc la fin de la montée jusqu'à
+            // ce que le sommet soit PRIS — un vrai doigt, lui, insisterait.
+            var tries = 0
+            while !summited, tries < 6, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(400))
+                for k in 0...10 {
+                    driveMoved(point(at: 0.5 + 0.05 * Double(k)), -1400)
+                    try? await Task.sleep(for: .milliseconds(16))
+                }
+                tries += 1
+            }
             driveEnded(point(at: 1.0), 0)
         } else {
             // La boucle de l'aube : montée SOUS le seuil de la bulle,

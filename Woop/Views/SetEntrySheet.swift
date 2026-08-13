@@ -18,6 +18,9 @@ struct SetEntrySheet: View {
     /// Le repos choisi, en secondes. `nil` = pas encore choisi, et c'est LUI
     /// qui fait refuser le slide : sans repos, il n'y a rien à lancer.
     @Binding var rest: Int?
+    /// Tirer la feuille vers le bas la range — notre panneau n'a plus de
+    /// système pour le faire à sa place.
+    var onDismiss: () -> Void = {}
     var onConfirm: () -> Void
 
     /// Les repos proposés. Six valeurs, toutes visibles d'un coup : une liste
@@ -25,52 +28,147 @@ struct SetEntrySheet: View {
     /// trop.
     static let restChoices: [Int] = [30, 45, 60, 90, 120, 180]
 
+    /// LE MOOD DU SLIDER, 0 → 1 : écrit par le galet (saisie × course), lu
+    /// par la feuille — le fond S'EMBRASE pendant que le doigt avance :
+    /// blanc chaud, jaune, orange, rouge. La palette de la maison — jamais
+    /// de violet ici (verdict de Kathryn). Fonction pure du doigt :
+    /// dé-draguer la fait redescendre d'elle-même, rien à annuler.
+    @State private var mood: CGFloat = 0
+    /// Le drag de rangement (sur la zone du header seulement : les molettes
+    /// possèdent leurs propres glissements).
+    @State private var pull: CGFloat = 0
+    /// Le compteur de refus — chaque incrément fait TREMBLER les pastilles
+    /// repos en rouge : le slide qui refuse montre POURQUOI.
+    @State private var restNudge = 0
+
+    /// La secousse : l'offset et le rouge voyagent ensemble.
+    private struct ChipNudge {
+        var x: CGFloat = 0
+        var red: Double = 0
+    }
+
+    /// La silhouette du panneau : coins hauts seuls — le bas appartient à
+    /// l'écran, et un rim de verre au ras du bord physique est une faute
+    /// déjà payée (le CADRE FANTÔME).
+    private static let shape = UnevenRoundedRectangle(
+        cornerRadii: .init(topLeading: 34, bottomLeading: 0,
+                           bottomTrailing: 0, topTrailing: 34),
+        style: .continuous)
+
     var body: some View {
         VStack(spacing: 0) {
-            header
             // TOUT TIENT SANS DÉFILER, et ce n'est pas un confort : le repos
             // est le SEUL champ obligatoire, et un champ obligatoire qu'il
             // faut aller chercher sous la ligne de flottaison est un champ
             // qu'on oublie — le slide refuserait sans que rien n'explique
             // pourquoi. Trois blocs, une moitié d'écran, aucun défilement.
-            VStack(spacing: 14) {
-                FluidPicker(title: "RÉPÉTITIONS", unit: "reps",
-                            value: repsBinding, range: 1...50, step: 1)
-                FluidPicker(title: "CHARGE", unit: "kg",
-                            value: $kilos, range: 4...100, step: 1)
-                restRow
+            VStack(spacing: 0) {
+                header
+                // 20 d'interligne (et non 14) : « repos est trop collé »
+                // (verdict Kathryn) — les trois blocs respirent.
+                VStack(spacing: 20) {
+                    FluidPicker(title: "RÉPÉTITIONS", unit: "reps",
+                                value: repsBinding, range: 1...50, step: 1)
+                    FluidPicker(title: "CHARGE", unit: "kg",
+                                value: $kilos, range: 4...100, step: 1)
+                    restRow
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
             Spacer(minLength: 0)
 
             GaletSlide(label: "Glisser pour lancer le repos",
-                       validate: { rest != nil },
+                       validate: {
+                           // Le refus MONTRE sa raison : sans repos choisi,
+                           // les pastilles tremblent en rouge.
+                           if rest == nil { restNudge += 1 }
+                           return rest != nil
+                       },
+                       onMood: { m in mood = m },
                        onConfirm: onConfirm)
-                .padding(.horizontal, 18)
-                .padding(.bottom, 18)
-                .padding(.top, 4)
+                // 20 : la pilule s'ALIGNE sur la grille des molettes et des
+                // chips (verdict jury) — l'air du médaillon est garanti par
+                // l'emboîtement, plus par la marge.
+                .padding(.horizontal, 20)
+                .padding(.bottom, 38)
+                .padding(.top, 18)
         }
-        // LA HAUTEUR EST UN ARBITRAGE, pas un confort. À 0,50 le contenu
-        // était comprimé et le header passait sous la poignée ; plus haut que
-        // 0,62 la feuille mange l'auréole du cadran — or c'est elle qui donne
-        // au verre quelque chose à réfracter. 0,62 est le point où les trois
-        // blocs respirent sans que la lumière du fond disparaisse.
-        .presentationDetents([.fraction(0.62)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(34)
-        // LE FOND DU SHEET EST DU VERRE, pas une dalle : c'est la page
-        // derrière qui doit continuer d'exister sous la feuille.
-        // LE TEINT EST LÉGER À DESSEIN. À 0,42 de noir, le verre n'était plus
-        // du verre : il ne restait qu'une dalle sombre, parce qu'un verre ne
-        // se voit QUE par ce qu'il déforme. Sur le cadran et ses halos il a de
-        // quoi mordre — c'est là qu'il faut le juger, pas sur du noir.
-        .presentationBackground {
-            Color.clear.glassEffect(
-                .regular.tint(Color.black.opacity(0.24)),
-                in: RoundedRectangle(cornerRadius: 34, style: .continuous))
+        // LE VERRE EST LE VRAI — dans l'arbre du cadran, il échantillonne
+        // l'auréole et les chiffres POUR DE VRAI. Le sheet système est mort :
+        // sa présentation reculait toute la fenêtre (le cadre gris mesuré
+        // autour de l'écran), et un verre dans sa couche n'avait rien à
+        // réfracter. Ici, c'est le même verre que les chips du header sur la
+        // braise — la maison n'en connaît qu'un.
+        .background {
+            ZStack {
+                Color.clear.glassEffect(
+                    .regular.tint(Color.black.opacity(0.30)),
+                    in: Self.shape)
+                // L'EMBRASEMENT — le fond suit le doigt : une nappe qui
+                // monte du slider et traverse la palette de la maison,
+                // blanc chaud → jaune → orange → rouge, avec la course.
+                // Elle vit SUR le verre et SOUS le contenu : la couleur
+                // baigne la feuille sans jamais teinter les chiffres.
+                Self.shape
+                    .fill(LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: Self.fire(mood)
+                                .opacity(0.10 * Double(mood)),
+                                  location: 0.55),
+                            .init(color: Self.fire(mood)
+                                .opacity(0.34 * Double(mood)),
+                                  location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                    .allowsHitTesting(false)
+            }
         }
-        .presentationBackgroundInteraction(.disabled)
+        // Le fil du bord : SEULEMENT là où la feuille se détache de la page.
+        // Un liseré qui suivrait les flancs jusqu'au bas d'écran est
+        // exactement la faute qu'on vient de tuer.
+        .overlay {
+            Self.shape
+                .strokeBorder(LinearGradient(
+                    stops: [
+                        .init(color: Color.white.opacity(0.16), location: 0),
+                        .init(color: Color.white.opacity(0.03), location: 0.18),
+                        .init(color: .clear, location: 0.45)
+                    ],
+                    startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
+        // La poignée est à NOUS désormais — le système n'en pose plus.
+        .overlay(alignment: .top) {
+            Capsule()
+                .fill(Color.white.opacity(0.28))
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
+                .allowsHitTesting(false)
+        }
+        .offset(y: pull)
+        // LE RANGEMENT : tirer la feuille depuis son header. Les molettes et
+        // le galet gardent leurs gestes — le drag de rangement ne vit que
+        // sur la zone haute.
+        .gesture(dismissDrag)
+    }
+
+    private var dismissDrag: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { v in
+                guard v.startLocation.y < 110 else { return }
+                pull = max(0, v.translation.height)
+            }
+            .onEnded { v in
+                guard v.startLocation.y < 110 else { return }
+                if pull > 90 {
+                    onDismiss()
+                } else {
+                    withAnimation(.spring(response: 0.34,
+                                          dampingFraction: 0.82)) { pull = 0 }
+                }
+            }
     }
 
     /// `reps` est un `Int` mais la molette travaille en `Double` : une molette
@@ -100,20 +198,20 @@ struct SetEntrySheet: View {
     // MARK: Le repos
 
     private var restRow: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Text("REPOS")
                     .font(.inter(9.5, .medium))
                     .tracking(1.6)
                     .foregroundStyle(Color.white.opacity(0.42))
-                // La seule information manquante possible : on la désigne,
-                // plutôt que d'attendre que le slide la reproche.
+                // La seule information manquante possible : on la désigne
+                // en ROUGE, plutôt que d'attendre que le slide la reproche.
                 if rest == nil {
                     Text("à choisir")
                         .font(.inter(9.5, .medium))
                         .tracking(0.4)
-                        .foregroundStyle(Color(red: 1.0, green: 0.66, blue: 0.28)
-                            .opacity(0.85))
+                        .foregroundStyle(Color(red: 1.0, green: 0.40, blue: 0.30)
+                            .opacity(0.9))
                 }
             }
             HStack(spacing: 7) {
@@ -123,6 +221,28 @@ struct SetEntrySheet: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // LE REFUS SE MONTRE ICI : le slide bute → les pastilles tremblent
+        // (±8 pt, 0,4 s) dans une lueur rouge qui s'éteint — on comprend
+        // d'un coup d'œil pourquoi le drag n'a pas marché.
+        .keyframeAnimator(initialValue: ChipNudge(),
+                          trigger: restNudge) { view, v in
+            view.offset(x: v.x)
+                .shadow(color: Color(red: 1.0, green: 0.25, blue: 0.18)
+                    .opacity(v.red * 0.65), radius: 9)
+        } keyframes: { _ in
+            KeyframeTrack(\.x) {
+                CubicKeyframe(-8, duration: 0.06)
+                CubicKeyframe(7, duration: 0.07)
+                CubicKeyframe(-4, duration: 0.07)
+                CubicKeyframe(2, duration: 0.07)
+                CubicKeyframe(0, duration: 0.09)
+            }
+            KeyframeTrack(\.red) {
+                LinearKeyframe(1.0, duration: 0.08)
+                LinearKeyframe(0.75, duration: 0.20)
+                LinearKeyframe(0.0, duration: 0.42)
+            }
+        }
     }
 
     private func restChip(_ seconds: Int) -> some View {
@@ -169,6 +289,25 @@ struct SetEntrySheet: View {
                         Color.clear.glassEffect(
                             .regular.tint(Color.black.opacity(0.24)),
                             in: Capsule(style: .continuous))
+                            .overlay {
+                                // TANT QU'AUCUN REPOS N'EST CHOISI, les
+                                // pastilles VIVENT en rouge : un liseré
+                                // grenat qui pulse doucement — l'invitation
+                                // permanente, avant même que le slide ne
+                                // refuse.
+                                if rest == nil {
+                                    Capsule(style: .continuous)
+                                        .strokeBorder(
+                                            Color(red: 0.90, green: 0.22,
+                                                  blue: 0.18),
+                                            lineWidth: 1)
+                                        .phaseAnimator([0.14, 0.52]) { v, o in
+                                            v.opacity(o)
+                                        } animation: { _ in
+                                            .easeInOut(duration: 1.05)
+                                        }
+                                }
+                            }
                     }
                 }
         }
@@ -182,6 +321,30 @@ struct SetEntrySheet: View {
         case 90: return "1min30"
         default: return "\(s / 60)min"
         }
+    }
+
+    /// LA PALETTE DU DRAG — blanc chaud, jaune, orange, rouge : le feu de
+    /// la maison. Trois segments, jamais une interpolation directe
+    /// blanc→rouge (elle passerait par un rose sale — la leçon de la
+    /// chauffe du médaillon).
+    static func fire(_ u: CGFloat) -> Color {
+        let x = min(max(Double(u), 0), 1)
+        if x < 0.35 {
+            let k = x / 0.35
+            return Color(red: 1.0,
+                         green: 0.97 - (0.97 - 0.84) * k,
+                         blue: 0.88 - (0.88 - 0.35) * k)
+        }
+        if x < 0.70 {
+            let k = (x - 0.35) / 0.35
+            return Color(red: 1.0,
+                         green: 0.84 - (0.84 - 0.55) * k,
+                         blue: 0.35 - (0.35 - 0.18) * k)
+        }
+        let k = (x - 0.70) / 0.30
+        return Color(red: 1.0 - (1.0 - 0.88) * k,
+                     green: 0.55 - (0.55 - 0.22) * k,
+                     blue: 0.18 - (0.18 - 0.10) * k)
     }
 }
 
