@@ -212,7 +212,12 @@ struct HomeAuroraView: View {
             // d'onglets qui flotte par-dessus n'est plus une cinématique.
             .fullScreenCover(isPresented: $showCoffreFort) {
                 CoffreFortFlow(
-                    coins: CoffreFortPurse.coins(finishedWorkouts: finished.count)
+                    // La règle des pièces : 20 par SÉRIE faite — le trésor
+                    // compte les séries de toutes les séances terminées.
+                    coins: CoffreFortPurse.coins(
+                        doneSeries: finished
+                            .flatMap { $0.exercises ?? [] }
+                            .reduce(0) { $0 + $1.completedSets })
                 ) {
                     showCoffreFort = false
                 }

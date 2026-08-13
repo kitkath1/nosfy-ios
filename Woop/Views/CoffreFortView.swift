@@ -11,7 +11,12 @@ import UIKit
 // tranchée, c'est ce corps-là qu'on remplace, et pas une ligne de la page ne
 // bouge.
 enum CoffreFortPurse {
-    static func coins(finishedWorkouts: Int) -> Int { finishedWorkouts * 25 }
+    /// L'ÉCONOMIE EST TRANCHÉE (13 août 2026) : chaque SÉRIE terminée
+    /// rapporte 20 pièces. La fiche, BRAVO et le coffre disent le même
+    /// nombre — et si la règle bouge un jour, c'est toujours CE corps-là
+    /// qu'on remplace, pas une ligne des pages.
+    static let perSeries = 20
+    static func coins(doneSeries: Int) -> Int { doneSeries * perSeries }
 }
 
 // MARK: - La partition

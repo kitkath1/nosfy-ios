@@ -92,6 +92,38 @@ struct ExerciseDetailView: View {
     @State private var summited = false
     /// Le drag de retour en cours : son point de départ (y global).
     @State private var returnFrom: CGFloat?
+
+    // MARK: Le header qui se rétrécit
+
+    /// L'offset du scroll de la page muscu — LE scalaire du header : toute
+    /// la partition du rétrécissement est fonction pure de lui, remonter
+    /// rembobine pixel pour pixel. Jamais un withAnimation.
+    @State private var scrollY: CGFloat = 0
+    /// La photo au repos : 225 (« réduis encore les images », 13 août) —
+    /// c'était 285.
+    private static let heroCap: CGFloat = 225
+    /// La course du rétrécissement, en points de scroll.
+    private static let collapseSpan: CGFloat = 140
+    /// La place réservée en tête du scroll (photo + titre étendus) : FIXE.
+    /// Le header se dessine en OVERLAY au-dessus — un inset qui changerait
+    /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
+    /// maison : on anime en offset, jamais la place réservée).
+    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 92
+    /// `-headerFreeze <y>` : fige l'offset vu par le header (le simulateur
+    /// ne scrolle pas) — les poses du morphing se capturent.
+    private static let headerFreeze: CGFloat? = {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-headerFreeze"),
+              i + 1 < args.count,
+              let v = Double(args[i + 1]) else { return nil }
+        return CGFloat(v)
+    }()
+    private var headerY: CGFloat { Self.headerFreeze ?? scrollY }
+
+    private static func lp(_ a: CGFloat, _ b: CGFloat,
+                           _ u: Double) -> CGFloat {
+        a + (b - a) * CGFloat(u)
+    }
     /// Le point précédent du doigt — la poussière sonore se sème à la
     /// DISTANCE parcourue, jamais au temps.
     @State private var lastDrive: CGPoint?
@@ -331,13 +363,33 @@ struct ExerciseDetailView: View {
             // une image, c'est une source qui éclaire une scène.
             // Sous les chips et sous la carte Série : les deux `safeAreaInset`
             // sont appliqués après, leur verre fumé reste intact.
+            // LE FOND DU HEADER — photo entière + grand titre, SOUS la
+            // lumière : la photo est un fichier à fond noir opaque, elle
+            // doit rester sous l'additif pour que la lumière se POSE sur
+            // elle (au-dessus, elle poinçonne un rectangle noir dans
+            // l'aurore — payé au premier retour de Kathryn).
+            .overlay(alignment: .top) {
+                if isStrength { collapsingHeaderBack }
+            }
             .overlay {
                 ZStack(alignment: .top) {
                     Color.clear
-                    if isStrength, running == nil { ExoHeaderGlow() }
+                    if isStrength, running == nil {
+                        // La lumière s'apaise quand le header se condense :
+                        // la petite carte n'a pas besoin d'un feu derrière.
+                        ExoHeaderGlow()
+                            .opacity(1 - 0.8 * Self.sstep(0, 90,
+                                                          Double(headerY)))
+                    }
                 }
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
+            }
+            // LA CARTE-NOTIFICATION + sa vignette — AU-DESSUS de la
+            // lumière : le verre reste intact (le sandwich de la maison :
+            // glow < carte de verre), et la vignette recadrée y est nette.
+            .overlay(alignment: .top) {
+                if isStrength { collapsingHeaderFront }
             }
             // La taille pour le banc — JAMAIS une géométrie d'avant le
             // premier layout (le zéro faisait le NaN ci-dessus).
@@ -369,27 +421,9 @@ struct ExerciseDetailView: View {
             .safeAreaInset(edge: .top, spacing: 0) { headerChips }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if isStrength {
-                    // 46 et non 14 : la carte Série remonte de 32 pt et
-                    // cesse d'être collée au galet.
-                    VStack(spacing: 46) {
-                        SeriesCard(done: sets.filter(\.isDone).count,
-                                   total: sets.count)
-                            .padding(.horizontal, 20)
-                            // La cible des pièces : la carte se déclare en
-                            // global, la volée sait où se poser.
-                            .background {
-                                GeometryReader { p in
-                                    Color.clear
-                                        .onAppear {
-                                            seriesCardFrame =
-                                                p.frame(in: .global)
-                                        }
-                                        .onChange(of: p.frame(in: .global)) {
-                                            _, f in seriesCardFrame = f
-                                        }
-                                }
-                            }
-
+                    // La carte Séries a DÉMÉNAGÉ dans le flux du scroll
+                    // (sous le header) — le galet reste seul en bas.
+                    VStack(spacing: 0) {
                         // LA BULLE DE LA LENTILLE, du côté de la nuit :
                         // même course, même écriture de `flood` que le
                         // dôme qu'elle remplace — mais le verre est le
@@ -575,33 +609,75 @@ struct ExerciseDetailView: View {
 
     // MARK: Les deux corps de page
 
-    /// La musculation ne défile PAS, et l'ordre s'est INVERSÉ : la photo
-    /// d'abord, haut et grande, puis le titre SOUS elle. Deux raisons, et
-    /// aucune n'est décorative. La première : le tiers haut de l'image est
-    /// exactement là où la queue de braise vient mourir — c'est l'image qui
-    /// reçoit le feu, pas une arête. La seconde : le titre a enfin la place
-    /// de se déplier sur deux lignes au lieu d'être écrasé à 80 % de son
-    /// corps pour tenir sur une seule.
-    ///
-    /// Les airs sont FIXES et tout le mou tombe en bas, sur le `Spacer`
-    /// final : la photo doit se poser au même endroit sur toutes les fiches,
-    /// sinon la braise l'accueille à une hauteur différente à chaque
-    /// exercice. Sur un écran court, c'est la photo qui cède (son 300 est un
-    /// plafond, jamais une exigence), pas la mise en page.
+    /// LA MUSCULATION DÉFILE DÉSORMAIS — et son header SE RÉTRÉCIT. La
+    /// photo et le titre ne vivent plus dans le flux : ils sont dessinés
+    /// par `collapsingHeader` en overlay, au-dessus du scroll, et le flux
+    /// ne fait que leur RÉSERVER une place fixe en tête. Au scroll, la
+    /// photo se réduit en vignette dans une petite carte de verre
+    /// (« notification »), le titre s'y condense, et l'historique des
+    /// séries monte dessous. Le galet, lui, ne bouge pas du bas.
     private var strengthPage: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Color.clear.frame(height: 12)
-            // Bord à bord : elle est en `.fit`, elle se centre toute seule
-            // dans la largeur, et les 20 pt de gouttière n'appartiennent
-            // qu'au texte.
-            hero(maxHeight: 285)
-            Color.clear.frame(height: 8)
-            titleBlock(big: true)
-                .padding(.horizontal, 20)
-            Spacer(minLength: 0)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // La place du header étendu — FIXE : le header se dessine
+                // au-dessus et se rétrécit sans que rien ne re-layoute.
+                Color.clear.frame(height: Self.expandedHeader)
+                // LA FLAMME-JAUGE (le composant de la session parallèle,
+                // commité d75cf88) tient désormais la place de l'ancienne
+                // carte Séries — même verre, même rôle, sa vie à elle.
+                FlammeJauge(done: sets.filter(\.isDone).count)
+                    .padding(.horizontal, 20)
+                    // La cible des pièces : la carte se déclare en global,
+                    // la volée sait où se poser — même en plein scroll.
+                    .background {
+                        GeometryReader { p in
+                            Color.clear
+                                .onAppear {
+                                    seriesCardFrame = p.frame(in: .global)
+                                }
+                                .onChange(of: p.frame(in: .global)) { _, f in
+                                    seriesCardFrame = f
+                                }
+                        }
+                    }
+                    .padding(.top, 4)
+                historySection
+                Color.clear.frame(height: 30)
+            }
         }
-        .padding(.bottom, 10)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .scrollIndicators(.hidden)
+        .onScrollGeometryChange(for: CGFloat.self) { geo in
+            geo.contentOffset.y + geo.contentInsets.top
+        } action: { _, y in
+            scrollY = max(0, y)
+        }
+    }
+
+    /// L'HISTORIQUE DES SÉRIES — les lignes de la story 2, adoptées par la
+    /// fiche : faites en or et pièces, à venir en encre éteinte.
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("HISTORIQUE DES SÉRIES")
+                .font(.inter(10, .medium))
+                .tracking(2.6)
+                .foregroundStyle(Color.white.opacity(0.40))
+                .padding(.top, 26)
+                .padding(.bottom, 2)
+            ForEach(Array(sets.enumerated()), id: \.element.id) { i, s in
+                SetHistoryRow(rank: i + 1,
+                              reps: s.reps,
+                              kilos: s.weight,
+                              seconds: s.isDone ? s.durationSeconds
+                                                : restSeconds,
+                              done: s.isDone)
+            }
+            if sets.isEmpty {
+                Text("Aucune série encore — glisse pour démarrer.")
+                    .font(.inter(13))
+                    .foregroundStyle(Color.inkMuted)
+            }
+        }
+        .padding(.horizontal, 20)
     }
 
     /// Le cardio garde sa page qui défile et ses blocs sombres : le dôme blanc
@@ -626,6 +702,145 @@ struct ExerciseDetailView: View {
             .padding(.bottom, 26)
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: Le header qui se rétrécit
+
+    /// La ligne specs de la carte-notification : « 24 kg • 12 reps ».
+    private var headerSpecs: String {
+        let reps = sets.first?.reps ?? 12
+        let kg = sets.first?.weight ?? 20
+        let kgText = kg == kg.rounded()
+            ? String(Int(kg)) : String(format: "%.1f", kg)
+        return "\(kgText) kg • \(reps) reps"
+    }
+
+    /// LE HEADER QUI SE RÉTRÉCIT — en DEUX couches, et c'est structurel :
+    /// la photo entière et le grand titre vivent SOUS la lumière additive
+    /// (le fond noir opaque de la photo doit recevoir la lumière, pas la
+    /// poinçonner) ; la carte-notification et sa vignette recadrée vivent
+    /// AU-DESSUS (le verre reste intact). Le fondu croisé fit→fills fait
+    /// le pont entre les deux couches sans que l'œil le voie.
+    ///
+    /// Tout est fonction pure de `headerY` — remonter rembobine pixel pour
+    /// pixel, aucun withAnimation. La grammaire est celle de StoryPortal :
+    /// UN scalaire interpole position, taille ET rayon. (Jamais de
+    /// matchedGeometryEffect — la maison anime à la main.)
+
+    /// Les nombres partagés de la partition — UNE seule loi pour les deux
+    /// couches (l'obligation des lois accordées, l'école ExercisesView).
+    private struct HeaderPose {
+        let u: Double
+        let pw: CGFloat, ph: CGFloat, px: CGFloat, rad: CGFloat
+        let swap: Double, cardIn: Double, bigOut: Double
+        init(W: CGFloat, y: CGFloat) {
+            u = ExerciseDetailView.sstep(
+                0, Double(ExerciseDetailView.collapseSpan), Double(y))
+            pw = ExerciseDetailView.lp(W, 54, u)
+            ph = ExerciseDetailView.lp(ExerciseDetailView.heroCap, 54, u)
+            px = ExerciseDetailView.lp(0, 28, u)
+            rad = ExerciseDetailView.lp(0, 14, u)
+            // L'entière (.fit, bords fondus) cède TÔT à la vignette
+            // recadrée : le .fit qui rapetisse dans un cadre qui change
+            // d'aspect flotte — le recadrage l'ancre (mesuré à u=0,5).
+            swap = ExerciseDetailView.sstep(0.45, 0.72, u)
+            // La carte ne naît qu'une fois la photo presque posée.
+            cardIn = ExerciseDetailView.sstep(0.58, 0.92, u)
+            bigOut = 1 - ExerciseDetailView.sstep(0.28, 0.62, u)
+        }
+    }
+
+    /// La couche ARRIÈRE : photo entière + grand titre, sous la lumière.
+    private var collapsingHeaderBack: some View {
+        GeometryReader { g in
+            let p = HeaderPose(W: g.size.width, y: headerY)
+            ZStack(alignment: .topLeading) {
+                if p.bigOut > 0.001 {
+                    titleBlock(big: true)
+                        .padding(.horizontal, 20)
+                        .offset(y: Self.lp(12 + Self.heroCap + 8,
+                                           12 + Self.heroCap - 18, p.u))
+                        .opacity(p.bigOut)
+                }
+                if p.swap < 0.999 {
+                    hero(maxHeight: Self.heroCap)
+                        .frame(width: p.pw, height: p.ph)
+                        .clipShape(RoundedRectangle(cornerRadius: p.rad,
+                                                    style: .continuous))
+                        .offset(x: p.px, y: 12)
+                        .opacity(1 - p.swap)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// La couche AVANT : la carte-notification et sa vignette, sur la
+    /// lumière — le verre exact de la maison.
+    private var collapsingHeaderFront: some View {
+        GeometryReader { g in
+            let W = g.size.width
+            let p = HeaderPose(W: W, y: headerY)
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 12) {
+                    // La place de la vignette : la photo la survole.
+                    Color.clear.frame(width: 54, height: 54)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(exercise.name)
+                            .font(.inter(16, .semibold))
+                            .foregroundStyle(Color.inkPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text(headerSpecs)
+                            .font(.inter(12))
+                            .foregroundStyle(Color.inkMuted)
+                    }
+                    Spacer(minLength: 8)
+                    let earned = sets.filter(\.isDone).count
+                        * CoffreFortPurse.perSeries
+                    if earned > 0 {
+                        HStack(spacing: 5) {
+                            Text("+\(earned)")
+                                .font(.inter(14, .semibold))
+                                .foregroundStyle(Color.woopGold.opacity(0.92))
+                                .monospacedDigit()
+                            // La pièce GELÉE de la maison — la recette de
+                            // la story, au néon baissé.
+                            MoonCoinView(coinR: 13, draggable: false,
+                                         yawOverride: 0.34, idleLife: 0,
+                                         fps: 6, reveal: 0.34, matte: 1)
+                                .frame(width: 13 * MoonCoinView.hostScale,
+                                       height: 13 * MoonCoinView.hostScale)
+                                .frame(width: 28, height: 28)
+                        }
+                    }
+                }
+                .padding(.leading, 8)
+                .padding(.trailing, 14)
+                .frame(width: W - 40, height: 66)
+                .background {
+                    Color.clear.glassEffect(
+                        .regular.tint(Color.black.opacity(0.5)),
+                        in: RoundedRectangle(cornerRadius: 22,
+                                             style: .continuous))
+                }
+                .overlay(RoundedRectangle(cornerRadius: 22,
+                                          style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                .opacity(p.cardIn)
+                .offset(x: 20, y: 6)
+
+                if p.swap > 0.001 {
+                    ExercisePhoto(exercise: exercise, fills: true)
+                        .frame(width: p.pw, height: p.ph)
+                        .clipShape(RoundedRectangle(cornerRadius: p.rad,
+                                                    style: .continuous))
+                        .offset(x: p.px, y: 12)
+                        .opacity(p.swap)
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: En-tête

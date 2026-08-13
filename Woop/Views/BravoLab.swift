@@ -557,6 +557,28 @@ struct BravoView: View {
                 .offset(y: (1 - rise(0.13, e)) * 14)
 
             kpis(e).padding(.top, 30)
+
+            // LE GAIN — l'économie tranchée : 20 pièces la série. BRAVO
+            // annonce ce que le coffre comptera, avec la pièce gelée de
+            // la maison (jamais une image).
+            HStack(spacing: 6) {
+                Text("+\(CoffreFortPurse.perSeries)")
+                    .font(.inter(16, .semibold))
+                    .foregroundStyle(Color.woopGold.opacity(0.92))
+                    .monospacedDigit()
+                MoonCoinView(coinR: 13, draggable: false, yawOverride: 0.34,
+                             idleLife: 0, fps: 6, reveal: 0.34, matte: 1)
+                    .frame(width: 13 * MoonCoinView.hostScale,
+                           height: 13 * MoonCoinView.hostScale)
+                    .frame(width: 28, height: 28)
+                Text("pièces gagnées")
+                    .font(.inter(13))
+                    .foregroundStyle(Color.inkSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 20)
+            .opacity(rise(0.46, e))
+            .offset(y: (1 - rise(0.46, e)) * 14)
         }
         .frame(maxWidth: .infinity)
     }
