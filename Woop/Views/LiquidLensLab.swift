@@ -81,6 +81,14 @@ struct LiquidLensLab: View {
     /// `nil`, le défaut, ne change rien au banc ni au parcours d'hier.
     var onSummit: (() -> Void)? = nil
 
+    /// LA PORTE POSÉE — la septième prise. `true` : le cadran naît
+    /// directement à demeure (sommet antidaté, pas de plongée à jouer) et
+    /// COMPTE 3-2-1 avant de lancer le temps — l'allumage du repos,
+    /// rebranché sur l'effort. C'est la porte du bouton « Lancer
+    /// l'exercice » du panneau Recommencer. `false`, le défaut, ne change
+    /// rien : tout départ au geste passe toujours par le sommet.
+    var posedStart: Bool = false
+
     /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
     private var isJourney: Bool { onFinish != nil }
 
@@ -124,6 +132,9 @@ struct LiquidLensLab: View {
     /// temps sous tension — pas l'horloge qui continue de courir sous la
     /// feuille et le repos.
     @State private var effortSeconds = 0
+    /// L'ALLUMAGE DE L'EFFORT (porte posée seulement) : l'instant où le
+    /// 3-2-1 d'avant-série commence — le chrono ne part qu'après son GO.
+    @State private var effortIgnite: Date?
 
     private var resting: Bool { restStart != nil }
 
@@ -324,6 +335,13 @@ struct LiquidLensLab: View {
             LensTheme.shared.prepare()
             LensChime.shared.prepare()
             Paillettes.shared.prepare()
+            // LA PORTE POSÉE : le sommet est antidaté LOIN derrière — toute
+            // la SummitCine est déjà jouée, le cadran naît à demeure. Le
+            // 3-2-1 d'effort part un souffle après l'entrée en fondu.
+            if posedStart, summitAt == nil {
+                summitAt = .now - 20
+                effortIgnite = .now + 0.45
+            }
         }
         // Le banc vivait seul et pour toujours ; dans le parcours la vue
         // s'en va, et le thème ne doit pas lui survivre.
@@ -1015,7 +1033,15 @@ struct LiquidLensLab: View {
         // LE TEMPS DÉFILE : le chrono compte dès que la surface est
         // prête — même origine que le pouls (5,6) : chaque bascule de
         // seconde EST un battement de la pastille.
-        let elapsed = max(0, Int(landed - 5.6))
+        // La porte posée a sa propre origine : le chrono ne part qu'au GO
+        // de l'allumage d'effort — jamais de l'atterrissage antidaté.
+        let elapsed: Int = {
+            if let ei = effortIgnite {
+                return max(0, Int(now.timeIntervalSince(ei)
+                                  - Self.igniteSpan))
+            }
+            return max(0, Int(landed - 5.6))
+        }()
         // LES DEUX MÉTIERS DU CADRAN. Sous tension, il monte depuis le
         // sommet ; en repos, il descend vers zéro depuis l'instant du slide.
         // Même verre, mêmes halos, même pastille — on ne change pas d'écran
@@ -1023,26 +1049,40 @@ struct LiquidLensLab: View {
         // ailleurs et on perd le fil de l'exercice.
         // L'âge de l'allumage : négatif tant qu'il n'y a pas de repos.
         let ignite: Double = restStart.map { now.timeIntervalSince($0) } ?? -1
-        let counting = ignite >= 0 && ignite < Self.igniteSpan
+        // L'allumage d'EFFORT (porte posée) : le même 3-2-1, avant la
+        // série — il se tait dès que le repos existe.
+        let eIg: Double = restStart == nil
+            ? (effortIgnite.map { now.timeIntervalSince($0) } ?? -1) : -1
+        let restCounting = ignite >= 0 && ignite < Self.igniteSpan
+        let effortCounting = eIg >= 0 && eIg < Self.igniteSpan
+        let counting = restCounting || effortCounting
+        // L'horloge du battement — celle du compte en cours.
+        let beat = restCounting ? ignite : eIg
         let left: Int? = restStart.map {
             max(0, restDuration
                 - Int(max(0, now.timeIntervalSince($0) - Self.igniteSpan)))
         }
         // Pendant l'allumage, le cadran ne montre plus l'heure : il montre le
         // compte. C'est le même verre, la même place — seul le contenu change.
+        // `Int` tronque VERS ZÉRO : l'ancien `Int(3 − ignite) + 1` rendait 1
+        // sur toute la tenue (3 ; 3,42) — le « 1 » retombait deux fois et le
+        // GO n'existait pas. Le seuil se teste AVANT la troncature.
         let countWord: String? = {
-            guard counting else { return nil }
-            let n = Int(Self.igniteBeats - ignite) + 1
+            guard counting, beat >= 0 else { return nil }
+            let n = beat >= Self.igniteBeats
+                ? 0 : Int(Self.igniteBeats - beat) + 1
             return n >= 1 ? String(min(n, Int(Self.igniteBeats))) : "GO"
         }()
         let shown = left ?? elapsed
         let timeStr = countWord ?? String(format: "%d:%02d",
                                           shown / 60, shown % 60)
-        let faceTitle = counting ? "REPOS DANS" : (resting ? "REPOS" : faceLabel)
+        let faceTitle = restCounting ? "REPOS DANS"
+            : (effortCounting ? "\(faceLabel) DANS"
+            : (resting ? "REPOS" : faceLabel))
         // Chaque chiffre TOMBE : il arrive gros, se pose, et s'efface avant le
         // suivant. Un compte à rebours dont les chiffres se remplacent sans
         // bouger n'est pas un compte à rebours, c'est une horloge.
-        let beatPhase = counting ? ignite - floor(ignite) : 0
+        let beatPhase = counting ? beat - floor(beat) : 0
         let countScale = counting
             ? 1.0 + 0.55 * exp(-beatPhase * 7.0) : 1.0
         let countFade = counting
@@ -1118,14 +1158,21 @@ struct LiquidLensLab: View {
                 // l'horloge du repos, comme tout le reste du fichier.
                 let chipInS = chipIn * chipIn * (3 - 2 * chipIn)
                 let igniteT = max(ignite, 0)
+                // La porte posée : le CTA attend la fin du 3-2-1 d'effort —
+                // on ne termine pas une série qui n'a pas commencé.
+                let effortGate = effortIgnite == nil ? 1.0
+                    : sstep(Self.igniteSpan - 0.15, Self.igniteSpan + 0.35,
+                            max(effortIgnite.map {
+                                now.timeIntervalSince($0) } ?? 0, 0))
                 DiamondPrimaryButton(title: "Terminer la série") {
                     effortSeconds = elapsed
                     draftRest = nil
                     entering = true
                 }
                 .padding(.horizontal, 26)
-                .opacity(chipInS * (1 - sstep(0, 0.25, igniteT)))
-                .allowsHitTesting(chipIn > 0.6 && !resting)
+                .opacity(chipInS * (1 - sstep(0, 0.25, igniteT)) * effortGate)
+                .allowsHitTesting(chipIn > 0.6 && !resting
+                                  && effortGate > 0.6)
                 .position(x: w / 2, y: h - 78)
                 Button { startEnvol(now) } label: {
                     Text("Passer le repos")

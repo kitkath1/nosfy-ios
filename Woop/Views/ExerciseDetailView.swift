@@ -149,6 +149,19 @@ struct ExerciseDetailView: View {
         let seconds: Int
     }
 
+    /// LA QUESTION DU RETOUR. Après BRAVO, le panneau « Recommencer ? »
+    /// porte la série vécue tant qu'il est à l'écran — l'écriture dans la
+    /// carte attend sa SORTIE : c'est elle qu'on regarde (les pièces, le
+    /// compte), et le panneau qui descend la découvre.
+    @State private var restartAsk: FinishedSeries?
+    /// La volée de pièces vers la carte Série : l'instant du départ.
+    @State private var coinsAt: Date?
+    /// La carte Série en repère global — la cible des pièces.
+    @State private var seriesCardFrame: CGRect = .zero
+    /// Le prochain montage du cadran naît POSÉ (le bouton du panneau) —
+    /// pas de plongée, un 3-2-1 à la place.
+    @State private var posedLaunch = false
+
     private var active: Workout? { workouts.first { $0.isActive } }
     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
 
@@ -168,6 +181,27 @@ struct ExerciseDetailView: View {
     }()
 
     private func runAubeBench() async {
+        // `-restartFire` : le panneau « Recommencer ? » se monte seul
+        // (le simulateur ne revient pas de BRAVO au doigt) ;
+        // `-restartAuto` le referme à 3 s (la volée de pièces se filme) ;
+        // `-restartLaunch` appuie sur « Lancer » à 3 s (la porte posée).
+        if CommandLine.arguments.contains("-restartFire") {
+            try? await Task.sleep(for: .seconds(1.4))
+            if sets.isEmpty {
+                sets.append(DraftSet(reps: 12, weight: 20))
+            }
+            let ask = FinishedSeries(index: 0, reps: 12, kilos: 20,
+                                     rest: 60, seconds: 47)
+            restartAsk = ask
+            if CommandLine.arguments.contains("-restartAuto") {
+                try? await Task.sleep(for: .seconds(3))
+                exitRestart(ask, thenLaunch: false)
+            } else if CommandLine.arguments.contains("-restartLaunch") {
+                try? await Task.sleep(for: .seconds(3))
+                exitRestart(ask, thenLaunch: true)
+            }
+            return
+        }
         if let u = Self.aubeFreeze { flood = u; return }
         guard Self.aubeAuto || Self.aubeFire else { return }
         try? await Task.sleep(for: .seconds(2))
@@ -341,6 +375,20 @@ struct ExerciseDetailView: View {
                         SeriesCard(done: sets.filter(\.isDone).count,
                                    total: sets.count)
                             .padding(.horizontal, 20)
+                            // La cible des pièces : la carte se déclare en
+                            // global, la volée sait où se poser.
+                            .background {
+                                GeometryReader { p in
+                                    Color.clear
+                                        .onAppear {
+                                            seriesCardFrame =
+                                                p.frame(in: .global)
+                                        }
+                                        .onChange(of: p.frame(in: .global)) {
+                                            _, f in seriesCardFrame = f
+                                        }
+                                }
+                            }
 
                         // LA BULLE DE LA LENTILLE, du côté de la nuit :
                         // même course, même écriture de `flood` que le
@@ -432,11 +480,16 @@ struct ExerciseDetailView: View {
                             }
                         },
                         handoff: lensHandoff,
-                        onSummit: { summited = true }
+                        onSummit: { summited = true },
+                        posedStart: posedLaunch
                     )
                     .opacity(lensShown
                              ? 1
                              : Self.sstep(0.18, Self.dawnEnd, driveClimb))
+                    // La porte POSÉE entre en fondu (launchPosed anime son
+                    // montage) ; la porte du geste reste une coupe — son
+                    // écriture d'état n'est pas animée, le fondu ne joue pas.
+                    .transition(.opacity)
                     // L'atterrissage : la bulle se POSE dans le monde
                     // blanc au moment de sa révélation.
                     .scaleEffect(lensShown ? 1.0 : 1.04)
@@ -461,6 +514,50 @@ struct ExerciseDetailView: View {
                               kilos: f.kilos,
                               rest: f.rest,
                               onFinish: { closeBravo(f) })
+                }
+                // LE PANNEAU DU RETOUR — « Recommencer ? ». Le conteneur
+                // reste monté (transparent, sourd au doigt quand vide) :
+                // c'est lui qui joue l'entrée et la sortie du panneau.
+                GeometryReader { g in
+                    ZStack(alignment: .bottom) {
+                        Color.clear
+                        if let ask = restartAsk {
+                            RestartSheet(
+                                onLaunch: {
+                                    exitRestart(ask, thenLaunch: true)
+                                },
+                                onDismiss: {
+                                    exitRestart(ask, thenLaunch: false)
+                                })
+                                .frame(height: g.size.height * 0.52)
+                                .transition(.move(edge: .bottom))
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .animation(.spring(response: 0.45,
+                                       dampingFraction: 0.86),
+                               value: restartAsk == nil)
+                }
+                .allowsHitTesting(restartAsk != nil)
+                // LES PIÈCES DE LA SÉRIE — au-dessus de tout : la carte
+                // s'écrit en lumière pendant que le panneau descend.
+                if let at = coinsAt {
+                    GeometryReader { g in
+                        let og = g.frame(in: .global).origin
+                        let tgt = seriesCardFrame == .zero
+                            ? CGPoint(x: g.size.width - 64,
+                                      y: g.size.height - 210)
+                            : CGPoint(x: seriesCardFrame.maxX - 44 - og.x,
+                                      y: seriesCardFrame.midY - og.y)
+                        SeriesCoinFlight(
+                            start: at,
+                            source: CGPoint(x: g.size.width / 2,
+                                            y: g.size.height * 0.74),
+                            target: tgt,
+                            onDone: { coinsAt = nil })
+                    }
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
                 }
             }
         }
@@ -762,6 +859,7 @@ struct ExerciseDetailView: View {
         lensHandoff = nil
         summited = false
         lensShown = false
+        posedLaunch = false
         lastDrive = nil
         RocketHaptics.shared.dragEnd()
         Paillettes.shared.end()
@@ -846,6 +944,7 @@ struct ExerciseDetailView: View {
         driveClimb = 0
         lensShown = false
         summited = false
+        posedLaunch = false
     }
 
     /// « Revenir à l'exercice » : BRAVO se retire, et la carte s'actualise —
@@ -854,10 +953,34 @@ struct ExerciseDetailView: View {
     private func closeBravo(_ f: FinishedSeries) {
         finished = nil
         restSeconds = f.rest
-        // Valider tout de suite ferait jouer les paillettes pendant que la
-        // page se réinstalle — on attend qu'elle soit à l'air libre.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
-            guard sets.indices.contains(f.index) else { return }
+        // La carte ne s'écrit PLUS ici : l'écriture attend la sortie du
+        // panneau « Recommencer ? » — les pièces et le compte se REGARDENT,
+        // et c'est le panneau qui descend qui les découvre.
+        restartAsk = f
+    }
+
+    /// La sortie du panneau — les trois chemins (drag, « Non », « Lancer »)
+    /// passent ici.
+    private func exitRestart(_ f: FinishedSeries, thenLaunch: Bool) {
+        restartAsk = nil
+        if thenLaunch {
+            // Le cadran couvre la scène dans un instant : la carte s'écrit
+            // sans cérémonie — les pièces n'ont de sens qu'à l'air libre.
+            settleSeries(f, coins: false)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) {
+                launchPosed()
+            }
+        } else {
+            settleSeries(f, coins: true)
+        }
+    }
+
+    /// L'écriture de la série, et sa lumière : la volée de pièces part
+    /// d'abord, la carte s'allume quand elles se posent.
+    private func settleSeries(_ f: FinishedSeries, coins: Bool) {
+        guard sets.indices.contains(f.index), !sets[f.index].isDone
+        else { return }
+        let write = {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.62)) {
                 sets[f.index].reps = f.reps
                 sets[f.index].weight = f.kilos
@@ -865,6 +988,38 @@ struct ExerciseDetailView: View {
                 sets[f.index].durationSeconds = f.seconds
             }
         }
+        if coins {
+            coinsAt = .now
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55,
+                                          execute: write)
+        } else {
+            write()
+        }
+    }
+
+    /// LA PORTE POSÉE : le cadran naît directement à demeure — pas de
+    /// plongée, pas de sommet à gravir. Le panneau descend, le cadran
+    /// s'éclaire en fondu, et c'est LUI qui compte 3-2-1 avant de lancer
+    /// le temps (l'allumage du repos, rebranché sur l'effort).
+    private func launchPosed() {
+        let index: Int
+        let appended: Bool
+        if let pending = sets.firstIndex(where: { !$0.isDone }) {
+            index = pending
+            appended = false
+        } else {
+            sets.append(DraftSet(reps: sets.last?.reps ?? 12,
+                                 weight: sets.last?.weight ?? 20))
+            index = sets.count - 1
+            appended = true
+        }
+        posedLaunch = true
+        summited = true
+        lensShown = true
+        withAnimation(.easeOut(duration: 0.40)) {
+            running = RunningSeries(id: index, appended: appended)
+        }
+        launchBeat += 1
     }
 
     // MARK: Historique
