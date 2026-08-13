@@ -110,6 +110,9 @@ struct RootView: View {
     /// Banc de la flamme bijou : `-flameLab`, page noire nue — l'objet 3D
     /// qui danse, pivote au doigt, et fume au tap.
     private static let flameLab = CommandLine.arguments.contains("-flameLab")
+    /// Banc de la flamme-jauge : `-jaugeLab`, page noire nue — la carte
+    /// « Séries » au néon orange, cinq flammes qui s'allument en boucle.
+    private static let jaugeLab = CommandLine.arguments.contains("-jaugeLab")
     /// Banc d'essai du monolithe logo : `-logoLab`, page noire nue.
     private static let logoLab = CommandLine.arguments.contains("-logoLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
@@ -325,6 +328,8 @@ struct RootView: View {
             BravoLab()
         } else if Self.emberLab {
             EmberFlameLab()
+        } else if Self.jaugeLab {
+            FlammeJaugeLab()
         } else if Self.flameLab {
             FlameLab()
         } else if Self.logoLab {
