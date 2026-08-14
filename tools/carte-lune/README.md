@@ -3,7 +3,14 @@
 **LE TEMPLATE DU SET.** Le moteur (shader `CarteLune.metal`, banc
 `CarteLuneLab.swift`, sons/haptiques `LuneDust.swift`, forge
 `LuneForge.swift`) est COMMUN à toutes les cartes et ne se duplique
-jamais. Chaque carte n'apporte que ses fichiers dans `Woop/Media/` :
+jamais.
+
+**LE COMPOSANT-RÉSULTAT S'APPELLE « CarteVivante »** (dans
+CarteLuneLab.swift) : la carte avec tout dedans — tilt, foil, fumée du
+tap, plongée, haptiques, sons. Contrat de rebranchement (booster,
+collection, fin de séance…) : `CarteVivante(art: Image?, depth:
+Image?)` et c'est tout — nil/nil affiche carte-lune-1. Le banc
+`-luneLab` n'est que son écrin d'atelier. Chaque carte n'apporte que ses fichiers dans `Woop/Media/` :
 
     carte-<nom>.png            l'illustration (cadre compris)
     carte-<nom>-depth.png      sa profondeur (demi-résolution, gris)

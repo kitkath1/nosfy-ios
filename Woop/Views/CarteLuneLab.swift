@@ -75,12 +75,12 @@ struct CarteLuneLab: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            CarteLuneScene(frozen: Self.frozen, still: Self.still,
-                           flat: Self.flat, smokeFreeze: Self.smokeFreeze,
-                           glow: Self.glow, diveAuto: Self.diveAuto,
-                           diveFreeze: Self.diveFreeze,
-                           art: carte.map { Image(uiImage: $0.art) },
-                           depth: carte.map { Image(uiImage: $0.depth) })
+            CarteVivante(frozen: Self.frozen, still: Self.still,
+                         flat: Self.flat, smokeFreeze: Self.smokeFreeze,
+                         glow: Self.glow, diveAuto: Self.diveAuto,
+                         diveFreeze: Self.diveFreeze,
+                         art: carte.map { Image(uiImage: $0.art) },
+                         depth: carte.map { Image(uiImage: $0.depth) })
             VStack(spacing: 10) {
                 Spacer()
                 if let note = forgeNote {
@@ -164,11 +164,26 @@ final class LuneMotion {
 
 // MARK: - La scène
 
-/// L'hôte du shader `carteLune` : 60 fps (la loi des cinématiques), et une
-/// inclinaison FONCTION PURE DU TEMPS (le pattern du monolithe) : glissement
-/// pendant le geste, retour exponentiel vers le balancement propre au
-/// relâcher. Rien ne s'accumule par image.
-struct CarteLuneScene: View {
+// MARK: - LA CARTE VIVANTE — le composant qu'on rebranche partout
+
+/// « CarteVivante » : LE RÉSULTAT du chantier, en un seul composant.
+/// Tout ce qui se voit au banc vit ICI : l'inclinaison au doigt (ou au
+/// gyroscope, ou le balancement propre), le foil qui balaie, le tap qui
+/// fait expirer la fumée du contour (+ haptique + poussière sonore), et
+/// l'appui long qui PLONGE dans le monde de la carte.
+///
+/// LE CONTRAT DE REBRANCHEMENT (booster, collection, fin de séance…) :
+///   CarteVivante(art: Image?, depth: Image?)  — c'est TOUT.
+///   nil/nil → carte-lune-1 ; sinon l'art composé (cadre posé) et SA
+///   depth. Le composant est autonome : gestes, sons, haptiques, 60 fps.
+///   Les autres paramètres sont les flags de fouettage du banc
+///   (-luneTilt, -luneStill, -luneDive…), tous facultatifs.
+///
+/// Sous le capot : 60 fps (la loi des cinématiques), inclinaison
+/// FONCTION PURE DU TEMPS (le pattern du monolithe) — glissement pendant
+/// le geste, retour exponentiel vers le balancement propre au relâcher,
+/// rien ne s'accumule par image.
+struct CarteVivante: View {
     var frozen: SIMD2<Float>? = nil
     var still = false
     var flat = false
