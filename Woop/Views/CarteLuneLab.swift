@@ -39,7 +39,9 @@ private func luneBundled(_ name: String) -> Image {
 ///   `-luneForgeNow` forge une carte au lancement (le test « GPT
 ///     répond ») ; `-luneForgeQualite low|medium|high` règle le peintre
 ///     (défaut HIGH — consigne Kathryn) ; `-luneForgeFamille <nom>`
-///     force une famille (fouetter un registre, curer le pool).
+///     force une famille (fouetter un registre, curer le pool) ;
+///   `-luneForgeServeur` : le bouton passe par forge-card (le VRAI
+///     flow — pool-ou-neuf, user de test) au lieu d'OpenAI en direct.
 ///
 /// LA PLONGÉE (appui long) : la caméra passe la vitre — la carte grossit
 /// jusqu'à sortir son cadre de l'écran, un chemin de caméra scripté prend
@@ -64,6 +66,7 @@ struct CarteLuneLab: View {
     private static let diveFreeze: Float? = UserDefaults.standard
         .string(forKey: "luneDiveAt").flatMap(Float.init)
     private static let forgeNow = CommandLine.arguments.contains("-luneForgeNow")
+    private static let forgeServeur = CommandLine.arguments.contains("-luneForgeServeur")
 
     /// La FORGE : la carte générée du moment remplace carte-lune-1 dans la
     /// même scène — même shader, même cadre, mêmes gestes. C'est le contrat
@@ -118,9 +121,20 @@ struct CarteLuneLab: View {
         forgeNote = nil
         Task {
             do {
-                let c = try await LuneForge.forger()
+                let c: LuneForge.Carte
+                if Self.forgeServeur {
+                    // Le VRAI flow : forge-card décide pool-ou-neuf.
+                    let jwt = try await ForgeServeur.jwtBanc()
+                    c = try await ForgeServeur.tirer(
+                        jwt: jwt,
+                        famille: UserDefaults.standard
+                            .string(forKey: "luneForgeFamille"))
+                } else {
+                    c = try await LuneForge.forger()
+                }
                 carte = c
                 forgeNote = "\(c.famille.nom) · \(c.famille.rarete)"
+                    + (Self.forgeServeur ? " · serveur" : "")
             } catch {
                 forgeNote = "forge froide : \(error.localizedDescription)"
             }

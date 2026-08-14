@@ -274,12 +274,25 @@ enum LuneForge {
                     .flatMap(UIImage.init(contentsOfFile:))
         else { throw Erreur.cadre }
 
-        let art = composer(illustration: brut, cadre: cadre,
-                           rarete: famille.rarete)
-        let depth = depthV0()
+        let (art, depth) = try habiller(illustration: brut,
+                                        rarete: famille.rarete)
         let carte = Carte(art: art, depth: depth, famille: famille, scene: scene)
         archiver(carte)
         return carte
+    }
+
+    /// L'HABILLAGE — partagé entre la forge locale et ForgeServeur :
+    /// l'illustration nue (du peintre ou du pool) devient une carte du
+    /// set (cadre + lunes de rareté) avec sa depth v0.
+    static func habiller(illustration: UIImage,
+                         rarete: String) throws -> (art: UIImage, depth: UIImage) {
+        guard let cadre = UIImage(named: "carte-cadre")
+                ?? Bundle.main.path(forResource: "carte-cadre", ofType: "png")
+                    .flatMap(UIImage.init(contentsOfFile:))
+        else { throw Erreur.cadre }
+        return (composer(illustration: illustration, cadre: cadre,
+                         rarete: rarete),
+                depthV0())
     }
 
     /// GPT-5 invente la scène. Les modèles gpt-5 raisonnent : l'effort bas
