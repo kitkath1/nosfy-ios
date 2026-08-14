@@ -1,4 +1,7 @@
 .claude/settings.local.json
 
+# Secrets locaux (clé OpenAI des cartes) — JAMAIS versionnés
+.secrets/
+
 # Sortie xcodebuild en ligne de commande (SYMROOT projet)
 build/
