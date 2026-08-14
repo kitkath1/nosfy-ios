@@ -382,19 +382,92 @@ struct BoosterLab: View {
     private static let open = CommandLine.arguments.contains("-boosterOpen")
     private static let cine = CommandLine.arguments.contains("-boosterCine")
 
+    @StateObject private var handle = BoosterHandle()
+    @State private var carteOpacity: Double = 0
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            BoosterStage(still: Self.still, frozenTear: Self.tear,
-                         startOpen: Self.open, startDos: Self.dos,
-                         mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
-                         gallery: Self.gallery, cine: Self.cine)
-                .ignoresSafeArea()
+            // PLEIN ÉCRAN, pas la safe area : la SCNView rend sur tout
+            // l'écran — un GeometryReader en safe area donnerait un
+            // overlay 12 % trop petit et décalé (le liseré de la carte
+            // scène dépassait au-dessus, payé à la capture).
+            GeometryReader { geo in
+                ZStack {
+                    BoosterStage(still: Self.still, frozenTear: Self.tear,
+                                 startOpen: Self.open, startDos: Self.dos,
+                                 mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
+                                 gallery: Self.gallery, cine: Self.cine,
+                                 handle: handle)
+                        .ignoresSafeArea()
+                        // Recognizers désactivés ≠ hit-test désactivé :
+                        // sans ça le SCNView avale les touches destinées
+                        // à la carte vivante.
+                        .allowsHitTesting(!handle.revealed)
+                    if handle.revealed {
+                        // LE RECOUVREMENT MÊME-IMAGE : CarteVivante posée
+                        // exactement sur la carte SceneKit immobile —
+                        // projection ANALYTIQUE de la pose de destination
+                        // (plan 0,60×0,80 · scale 1,05 · centre (0, 0.02,
+                        // 0.55) · caméra z 1,86 · FOV 60 vertical) :
+                        // projW = H·0,63/(2·1,31·tan 30°). Jamais de
+                        // projectPoint à attach — mauvaise caméra.
+                        let H = geo.size.height
+                        let projW = H * 0.41647
+                        CarteVivante()
+                            .frame(width: min(projW + 46, 426))
+                            .offset(y: -0.01322 * H)
+                            .opacity(carteOpacity)
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    carteOpacity = 1
+                                }
+                                // Recouvrir D'ABORD, éteindre ENSUITE :
+                                // l'extinction attend l'overlay opaque —
+                                // en retard c'est invisible, en avance
+                                // c'est un trou noir d'une frame.
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                                    handle.coordinator?.extinguishForHandoff()
+                                }
+                            }
+                    }
+                }
+            }
+            .ignoresSafeArea()
+            // LE BOUTON DE RELANCE du banc : réarme toute la cérémonie
+            // à volonté — indispensable depuis que le tap appartient à
+            // CarteVivante après le raccord. Posé AU-DESSUS de tout
+            // (l'overlay carte capte les touches sur toute sa frame).
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button {
+                        carteOpacity = 0
+                        handle.revealed = false
+                        handle.coordinator?.replay()
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.35))
+                            .padding(12)
+                    }
+                }
+            }
+            .padding(.trailing, 6)
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
     }
+}
+
+/// La poignée du raccord : le chef d'orchestre y annonce la révélation
+/// (la vue monte CarteVivante), la vue y commande l'extinction de la
+/// scène une fois l'overlay opaque.
+final class BoosterHandle: ObservableObject {
+    @Published var revealed = false
+    weak var coordinator: BoosterStage.Coordinator?
 }
 
 // MARK: - La cage SceneKit
@@ -412,6 +485,7 @@ struct BoosterStage: UIViewRepresentable {
     var frozenYawDeg: Float? = nil
     var gallery: Bool = false
     var cine: Bool = false
+    var handle: BoosterHandle? = nil
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -423,6 +497,8 @@ struct BoosterStage: UIViewRepresentable {
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
                                    gallery: gallery)
+        context.coordinator.handle = handle
+        handle?.coordinator = context.coordinator
         if cine {
             context.coordinator.autoCeremony(after: 1.4)
         }
@@ -449,6 +525,8 @@ struct BoosterStage: UIViewRepresentable {
     final class Coordinator: NSObject {
         private weak var view: SCNView?
         private var stage: BoosterScene?
+        /// La poignée du raccord CarteVivante (nil hors handoff).
+        weak var handle: BoosterHandle?
         private var still = false
         private var dos = false
         private var mylar = false
@@ -1224,73 +1302,206 @@ struct BoosterStage: UIViewRepresentable {
         private func finishTear() {
             guard let stage else { return }
             mode = .opening
+            // L'ENVOL part à t=0 et AVANT setTear(1) : sa rampe de tearU
+            // doit partir de la valeur vivante (un saut 0,82→1
+            // téléporterait un demi-tour de rouleau). Accroche 0→0,30 s,
+            // rupture à 0,42 s — pile le claquement grave cuit dans
+            // `dechirure-finale` que rip() lance maintenant.
+            stage.flyOffCap()
             stage.setTear(1, sparking: true)
             // La bande cède : LE GRAND RRRIP, le coup profond dans la
             // paume, et la lune BAT une fois — puis veille, incandescente.
-            haptics.bedStop()
+            // Le lit haptique ne MEURT plus ici : la carte va frotter
+            // contre la fente, il l'accompagne jusqu'à la libération.
+            haptics.bedIntensity(0.25)
             haptics.commitThunk()
             stage.moonPulse()
             sfx?.rip()
             sfx?.crackleOff()
             stopInvite()
+            // La respiration au repos rend l'antenne : le pilote de la
+            // sortie devient l'UNIQUE écrivain du sachet (deux mains sur
+            // position.y et l'étreinte serait illisible).
+            stage.packNode.removeAnimation(forKey: "bob", blendOutDuration: 0.15)
+            stage.packNode.removeAnimation(forKey: "sway", blendOutDuration: 0.15)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { [weak self] in
+                // La rupture de la bande : le coup sec dans la paume.
+                // (La lèvre, elle, appartient au pilote de la sortie —
+                // un seul écrivain pour tornGlow.)
+                self?.haptics.pop(0.9)
+            }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) { [weak self] in
                 guard let self, let stage = self.stage else { return }
                 stage.setSparking(false)
-                // La bande, déjà enroulée par le peeling, S'ARRACHE :
-                // elle part en l'air en tournant et meurt en vol.
-                stage.flyOffCap()
-                stage.fadeTornGlow(over: 1.0)
                 // La carte s'éveille et sort DOS D'ABORD — le motif
-                // croissants offert, la question posée.
+                // croissants offert. Le reste appartient au pilote.
                 stage.cardNode.isHidden = false
                 stage.cardNode.eulerAngles.y = 0
-                SCNTransaction.begin()
-                SCNTransaction.animationDuration = 1.1
-                SCNTransaction.animationTimingFunction =
-                    CAMediaTimingFunction(name: .easeInEaseOut)
-                stage.packNode.eulerAngles.x = -0.14
-                stage.cardNode.position.y = 0.78
-                SCNTransaction.commit()
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) {
-                    self.presentCard()
-                }
+                self.extractCard()
             }
         }
 
-        /// La carte quitte le sachet et prend la scène ; le sachet s'efface
-        /// par le bas, la lumière remonte — et le troisième acte s'ouvre :
-        /// le sacre, sombre et émouvant.
-        private func presentCard() {
+        /// LA SORTIE DE LA CARTE — « ZOOM ET RÉVÉLATION » (verdict
+        /// Kathryn : la PHYSICALITÉ était le cheap — plus un beat, plus
+        /// un rebond, plus une déformation. La caméra fait le drame, la
+        /// carte fait UN seul geste).
+        ///
+        /// Partition (·k via -cardExitSlow) :
+        ///   0,0→0,4  la bande achève de sortir, rien ne bouge
+        ///   0,4→1,5  L'APPROCHE — dolly-in vers la fente (z 2,05→1,50,
+        ///            la fente au tiers haut du cadre), la braise
+        ///            s'éveille, la poudre naît en rampe
+        ///   1,5→2,0  LA SUSPENSION — tout est tenu, le glow INSPIRE
+        ///            (0,85→0,95 en 0,5 s — une houle, pas un beat)
+        ///   2,0      bake de reparentage À L'ARRÊT (la carte quitte le
+        ///            sachet AVANT que son opacité ne fonde — sinon le
+        ///            fondu du parent l'emporterait) ; pincement ×0,75
+        ///            laissé STATIQUE : il correspond à la fente, et la
+        ///            décompression est ABSORBÉE par le flip (scale
+        ///            0,98 au profil — illisible, l'historique le
+        ///            faisait déjà)
+        ///   2,0→4,6  L'ÉLÉVATION — la carte monte en UN easeInOutCubic
+        ///            de 2,6 s pendant que la caméra RECULE pour
+        ///            l'accueillir (1,50→2,05, regard → 0) et que le
+        ///            sachet, STATUE ABSOLUE, meurt par la lumière :
+        ///            ses néons d'abord, son opacité ensuite, la lèvre
+        ///            esclave du fondu, la poudre tarie en rampe
+        ///   4,6→4,85 LA POSE — silence tenu, puis le flip (qui garde
+        ///            SON dolly 2,05→1,86 et son apex, intouchés)
+        ///
+        /// Le sachet ne bouge JAMAIS : zéro rotation, zéro translation,
+        /// zéro serrage. La carte : zéro settle, zéro tremblement, zéro
+        /// animation de scale. Un écrivain par propriété.
+        private func extractCard() {
             guard let stage else { return }
-            // Figée depuis l'intérieur, la carte emporterait le pincement :
-            // on bake le monde AVANT de la poser (le piège documenté).
-            let world = stage.cardNode.worldTransform
-            stage.cardNode.removeFromParentNode()
-            stage.scene.rootNode.addChildNode(stage.cardNode)
-            stage.cardNode.transform = world
+            let card = stage.cardNode
+            let pack = stage.packNode
+            let bodyMat = stage.bodyNode.geometry?.firstMaterial
+            let sparks = stage.sparks
+            let sparkNode = stage.sparkNode
+            let cam = stage.cameraNode
+            let k = UserDefaults.standard.object(forKey: "cardExitSlow") != nil
+                ? max(UserDefaults.standard.double(forKey: "cardExitSlow"), 0.05)
+                : 1.0
 
-            // LE TEMPS MORT : la carte dérive à peine, dos offert, la
-            // caméra pousse doucement — une demi-seconde de question.
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.5
-            SCNTransaction.animationTimingFunction =
-                CAMediaTimingFunction(name: .easeOut)
-            stage.cardNode.position.y += 0.04
-            stage.cameraNode.position.z = 1.86
-            SCNTransaction.commit()
-            // Le sachet vide s'efface par le bas pendant la question.
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.7
-            SCNTransaction.animationTimingFunction =
-                CAMediaTimingFunction(controlPoints: 0.5, 0, 0.8, 0.4)
-            stage.packNode.position.y = -1.7
-            SCNTransaction.commit()
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
-                self?.flipCard()
+            func ss(_ a: Float, _ b: Float, _ x: Float) -> Float {
+                let t = min(max((x - a) / (b - a), 0), 1)
+                return t * t * (3 - 2 * t)
             }
+            let bodyEmission = bodyMat?.emission
+            // Le porteur de poudre est garé en bout de course après
+            // setTear(1) : recentré sur la fente, À L'ARRÊT, avant tout.
+            sparkNode.position.x = 0
+
+            // — l'état du bake (rempli à t = 2,0, tout à l'arrêt) —
+            var y0w: Float = 0
+            var rise: Float = 0
+
+            // Le pilote : caméra, lumière, poudre, sachet-lumière et le
+            // geste unique de la carte — fonctions pures du temps.
+            func poseC(_ t: Float) {
+                // La caméra : plongée vers la fente, puis retrait
+                // d'accueil — jonctions à vitesse nulle.
+                let a = ss(0.4, 1.5, t)
+                let r = ss(2.0, 4.6, t)
+                let lift = a * (1 - r)
+                cam.position.z = 2.05 - 0.55 * lift
+                cam.position.y = 0.26 * lift
+                cam.eulerAngles = SCNVector3(0.053 * lift, 0, 0)
+
+                // La braise : décrue post-RRRIP → éveil → houle (0,5 s,
+                // jamais un beat) → tenue → esclave du fondu du sachet.
+                var glow: Float = 1.0 - 0.4 * ss(0.0, 0.4, t)
+                glow += 0.25 * ss(0.4, 1.5, t)
+                glow += 0.10 * ss(1.5, 2.0, t)
+                glow *= 1.0 - ss(3.4, 4.5, t)
+                bodyMat?.setValue(CGFloat(glow), forKey: "tornGlow")
+
+                // La poudre de diamant : des RAMPES, jamais des marches.
+                sparks.birthRate = CGFloat(4 + 26 * ss(0.4, 2.6, t))
+                    * CGFloat(1.0 - ss(4.0, 4.5, t))
+
+                // Le sachet, STATUE : il meurt par la lumière — ses
+                // néons d'abord (silhouette), son opacité ensuite (la
+                // carte n'est plus son enfant, le fondu ne l'emporte
+                // pas). Jamais un seul mouvement.
+                let neons = 1.0 - ss(2.6, 3.8, t)
+                bodyEmission?.intensity = CGFloat(0.6 * neons)
+                bodyMat?.setValue(CGFloat(neons), forKey: "moonCharge")
+                pack.opacity = CGFloat(1.0 - ss(4.0, 4.55, t))
+
+                // La carte : UN seul geste — easeInOutCubic de 2,6 s,
+                // zéro settle, zéro tremblement, scale intouché (le
+                // pincement statique appartient à la fente, le flip
+                // l'absorbera comme il l'a toujours fait).
+                var v: Float = 0
+                if t >= 2.0 {
+                    let x = min((t - 2.0) / 2.6, 1)
+                    let e = x < 0.5
+                        ? 4 * x * x * x
+                        : 1 - powf(-2 * x + 2, 3) / 2
+                    card.position.y = y0w + rise * e
+                    v = (x < 0.5 ? 12 * x * x : 3 * (2 - 2 * x) * (2 - 2 * x)) / 3
+                }
+                DispatchQueue.main.async { [weak self] in
+                    self?.sfx?.crackle(0.5 * v)
+                    self?.haptics.bedIntensity(0.08 + 0.35 * v)
+                }
+            }
+
+            // LE BAKE à l'arrêt complet (t = 2,0) : la carte quitte le
+            // sachet AVANT le fondu d'opacité du parent, le monde est
+            // exact sans course, le pincement reste tel quel.
+            let bake = SCNAction.run { [weak self] _ in
+                guard let self, let stage = self.stage else { return }
+                let world = card.worldTransform
+                card.removeFromParentNode()
+                stage.scene.rootNode.addChildNode(card)
+                card.transform = world
+                y0w = card.position.y
+                rise = 0.75 - y0w
+                DispatchQueue.main.async { DustChime.shared.puff() }
+            }
+
+            func seg(_ start: Float, _ dur: Float,
+                     _ pose: @escaping (Float) -> Void) -> SCNAction {
+                .customAction(duration: TimeInterval(dur) * k) { _, el in
+                    pose(start + Float(Double(el) / k))
+                }
+            }
+
+            stage.scene.rootNode.runAction(.sequence([
+                seg(0, 1.5, poseC),
+                // Fin du dolly : la poudre accroche la lumière — le
+                // seul geste haptique de l'approche, doux.
+                .run { [weak self] _ in
+                    DispatchQueue.main.async { self?.haptics.sparkle() }
+                },
+                seg(1.5, 0.5, poseC),
+                bake,
+                seg(2.0, 2.6, poseC),
+                // Fin de montée : le frottement meurt, silence tenu.
+                .run { [weak self] _ in
+                    DispatchQueue.main.async {
+                        self?.sfx?.crackleOff()
+                        self?.haptics.bedStop()
+                    }
+                },
+                seg(4.6, 0.25, poseC),
+                // Le témoin passe au flip : SON dolly (2,05 → 1,86),
+                // SON apex, SON assise — intouchés.
+                .run { [weak self] _ in
+                    guard let self, let stage = self.stage else { return }
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.35
+                    SCNTransaction.animationTimingFunction =
+                        CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
+                    stage.cameraNode.position.z = 1.86
+                    SCNTransaction.commit()
+                    DispatchQueue.main.async { self.flipCard() }
+                },
+            ]))
         }
 
         /// LE FLIP : 0,35 s, et TOUT concentré sur la frame de profil —
@@ -1317,9 +1528,21 @@ struct BoosterStage: UIViewRepresentable {
                 self.ambience?.act(BoosterAmbience.sacre, over: 1.4)
             }
 
-            // L'assise : un ressort discret après le flip.
+            // L'assise : un ressort discret après le flip — et pendant
+            // qu'elle se joue, LA CONVERGENCE : la caméra rentre à
+            // l'identité (exposition 0, bloom 0) pour que le rendu
+            // SceneKit de la carte devienne le PNG nu — la scène ne
+            // contient plus que la carte, ça se lit comme le sacre qui
+            // se pose, pas comme un réglage.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { [weak self] in
                 guard let self, let stage = self.stage else { return }
+                if let camera = stage.cameraNode.camera {
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.45
+                    camera.exposureOffset = 0
+                    camera.bloomIntensity = 0
+                    SCNTransaction.commit()
+                }
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.2
                 SCNTransaction.animationTimingFunction =
@@ -1332,9 +1555,59 @@ struct BoosterStage: UIViewRepresentable {
                     SCNTransaction.animationTimingFunction =
                         CAMediaTimingFunction(name: .easeInEaseOut)
                     stage.cardNode.scale = SCNVector3(1.05, 1.05, 1.05)
+                    // .revealed SEULEMENT quand la carte est posée : le
+                    // completionBlock de la SECONDE détente — jamais un
+                    // asyncAfter deviné (la carte serait encore en
+                    // ressort, l'overlay taillé pour 1,05 sur une carte
+                    // à 1,09 = bords qui doublent).
+                    SCNTransaction.completionBlock = { [weak self] in
+                        DispatchQueue.main.async {
+                            guard let self else { return }
+                            self.mode = .revealed
+                            self.handle?.revealed = true
+                        }
+                    }
                     SCNTransaction.commit()
                 }
-                self.mode = .revealed
+            }
+        }
+
+        /// LA RELANCE du banc : dégèle la vue, rearme les gestes et
+        /// rebâtit une scène neuve — la cérémonie se rejoue à volonté,
+        /// même après le raccord (où la SCNView a été gelée et ses
+        /// recognizers désarmés).
+        func replay() {
+            guard let view else { return }
+            view.isHidden = false
+            view.isPlaying = true
+            view.rendersContinuously = true
+            view.gestureRecognizers?.forEach { $0.isEnabled = true }
+            attach(to: view, still: still, dos: dos, mylar: mylar,
+                   yawDeg: yawDeg, gallery: galleryOn)
+            if CommandLine.arguments.contains("-boosterCine") {
+                autoCeremony(after: 1.0)
+            }
+        }
+
+        /// L'EXTINCTION sous l'overlay opaque : la carte scène se cache
+        /// (masquage sec sous une image identique déjà affichée =
+        /// invisible), le tonemap sort de la boucle d'un coup
+        /// (wantsHDR n'est pas animable — la marche est cachée), et la
+        /// SCNView rend le GPU. CarteVivante règne seule.
+        func extinguishForHandoff() {
+            guard let stage, let view else { return }
+            stage.cardNode.isHidden = true
+            stage.cameraNode.camera?.wantsHDR = false
+            view.gestureRecognizers?.forEach { $0.isEnabled = false }
+            // Laisser quelques frames emporter la carte cachée AVANT de
+            // geler — PUIS CACHER LA VUE : gelée mais visible, sa
+            // dernière frame reste affichée à jamais (la nappe de braise
+            // sous la carte — le « trop éclairé en bas » payé au banc).
+            // Le noir du ZStack prend le relais, CarteVivante règne.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak view] in
+                view?.isPlaying = false
+                view?.rendersContinuously = false
+                view?.isHidden = true
             }
         }
     }
