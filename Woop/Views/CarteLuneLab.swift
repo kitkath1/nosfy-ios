@@ -154,8 +154,19 @@ final class LuneMotion {
     static let shared = LuneMotion()
     private let mgr = CMMotionManager()
     private var pitchRef: Float?
+    private var rollRef: Float?
     private(set) var live = false
     private(set) var tilt = SIMD2<Float>(0, 0)
+
+    /// Le neutre se reprend à la pose de tenue ACTUELLE — appelé au
+    /// montage d'une carte. Sans lui, le neutre daterait du premier
+    /// écran de la vie du process (et le ROLL n'avait même pas de
+    /// référence : une prise en main roulée penchait la carte juste
+    /// après le raccord booster).
+    func recalibrate() {
+        pitchRef = nil
+        rollRef = nil
+    }
 
     func start() {
         guard mgr.isDeviceMotionAvailable, !mgr.isDeviceMotionActive
@@ -165,10 +176,12 @@ final class LuneMotion {
                                      to: .main) { [weak self] m, _ in
             guard let self, let m else { return }
             let pitch = Float(m.attitude.pitch)
+            let roll = Float(m.attitude.roll)
             if pitchRef == nil { pitchRef = pitch }
+            if rollRef == nil { rollRef = roll }
             live = true
             let target = SIMD2(
-                max(-1, min(1, Float(m.attitude.roll) * 2.0)),
+                max(-1, min(1, (roll - (rollRef ?? 0)) * 2.0)),
                 max(-1, min(1, (pitch - (pitchRef ?? 0)) * 2.0)))
             // Filtre doux : le poignet tremble, la carte non.
             tilt += (target - tilt) * 0.16
@@ -270,21 +283,39 @@ struct CarteVivante: View {
                      0.42 * Float(sin(t * 2 * .pi / 9.7 + 1.2)))
     }
 
+    /// L'instant du montage — l'origine de l'éveil (rearmé à onAppear).
+    @State private var mountAt = Date()
+
+    /// L'ÉVEIL : au montage la carte part de PLAT et se met à respirer
+    /// en ~2 s. Le raccord booster pose CarteVivante sur une carte
+    /// scène parfaitement frontale — un premier frame incliné (phase
+    /// arbitraire du sway, roll du gyro) serait LA couture. Le doigt et
+    /// les poses figées du banc ne sont jamais atténués.
+    private func wake(at date: Date) -> Float {
+        let age = Float(date.timeIntervalSince(mountAt))
+        guard age.isFinite, age >= 0, age < 8 else { return 1 }
+        return 1 - exp(-age / 0.8)
+    }
+
     /// L'inclinaison du DOIGT (ou du gyroscope, ou du balancement) à une
     /// date donnée — fonction pure.
     private func baseTilt(at date: Date) -> SIMD2<Float> {
         if let frozen { return frozen }
         if LuneMotion.shared.live {
-            return dragging ? tiltLive : LuneMotion.shared.tilt
+            return dragging ? tiltLive
+                : LuneMotion.shared.tilt * wake(at: date)
         }
         if dragging { return tiltLive }
         let age = Float(date.timeIntervalSince(releaseAt))
         let sw = sway(at: date)
-        guard age.isFinite, age >= 0, age < 30 else { return sw }
+        guard age.isFinite, age >= 0, age < 30 else {
+            return sw * wake(at: date)
+        }
         // Le relâcher rejoint le balancement : l'écart s'éteint, jamais
         // de saut — la carte reprend sa respiration où elle se trouve.
         let swAtRelease = sway(at: releaseAt)
-        return sw + (releaseTilt - swAtRelease) * exp(-2.6 * age)
+        return (sw + (releaseTilt - swAtRelease) * exp(-2.6 * age))
+            * wake(at: date)
     }
 
     /// L'inclinaison rendue : pendant la plongée, un CHEMIN DE CAMÉRA
@@ -339,8 +370,17 @@ struct CarteVivante: View {
                     // naturel ») : une seule image, la fenêtre au pivot —
                     // le palier 2 multiplane est débranché, son pipeline
                     // attend le chantier full-IA.
+                    // Le foil S'ALLUME à l'éveil (à foil 0 / tilt 0 le
+                    // shader est l'identité — la bande dorée serait
+                    // sinon PEINTE dès la première frame, pile sur la
+                    // couture du raccord). Les poses figées du banc
+                    // gardent leur foil plein.
                     CarteLuneCard(size: cs, tilt: tilt, t: t, dive: dEnv,
-                                  dolly: dolly, art: art, depth: depth)
+                                  dolly: dolly,
+                                  foil: frozen != nil ? 1 : Self.sstep(
+                                      0.15, 1.8,
+                                      Float(tl.date.timeIntervalSince(mountAt))),
+                                  art: art, depth: depth)
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
                     // raconte le voyage, la rotation ne fait qu'y vaciller.
@@ -415,6 +455,9 @@ struct CarteVivante: View {
                 LuneBreath.shared.dive()
             })
         .onAppear {
+            mountAt = Date()
+            // Le neutre gyro = la pose de tenue de CET écran.
+            LuneMotion.shared.recalibrate()
             LuneMotion.shared.start()
             LuneBreath.shared.prepare()
             DustChime.shared.prepare()
