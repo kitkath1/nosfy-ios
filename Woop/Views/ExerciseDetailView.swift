@@ -99,6 +99,14 @@ struct ExerciseDetailView: View {
     /// la partition du rétrécissement est fonction pure de lui, remonter
     /// rembobine pixel pour pixel. Jamais un withAnimation.
     @State private var scrollY: CGFloat = 0
+    /// La fenêtre visible du scroll (hors insets). Le contenu se garantit
+    /// toujours « une fenêtre + la course » de hauteur : une page courte
+    /// n'a sinon pas 140 pt à offrir, et l'élastique du système rouvre le
+    /// header au relâcher (payé : « je dois maintenir le drag »).
+    @State private var viewportH: CGFloat = 0
+    /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
+    /// la loi du zoom interne en a besoin, jamais pendant le scroll.
+    @State private var heroAspect: CGFloat = 0.8
     /// La photo au repos : 225 (« réduis encore les images », 13 août) —
     /// c'était 285.
     private static let heroCap: CGFloat = 225
@@ -108,7 +116,9 @@ struct ExerciseDetailView: View {
     /// Le header se dessine en OVERLAY au-dessus — un inset qui changerait
     /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
     /// maison : on anime en offset, jamais la place réservée).
-    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 92
+    /// 118 : le bloc titre en consomme ~96 — le reste est l'air entre le
+    /// sous-titre et la flamme (« espace plus », 14 août).
+    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
     /// `-headerFreeze <y>` : fige l'offset vu par le header (le simulateur
     /// ne scrolle pas) — les poses du morphing se capturent.
     private static let headerFreeze: CGFloat? = {
@@ -409,6 +419,11 @@ struct ExerciseDetailView: View {
                 LensTheme.shared.prepare()
                 LensChime.shared.prepare()
                 Paillettes.shared.prepare()
+                // Le rapport de la photo, UNE fois — la loi du zoom
+                // interne du morphing le lit à chaque frame de scroll.
+                if let img = UIImage(named: exercise.image) {
+                    heroAspect = img.size.width / max(img.size.height, 1)
+                }
             }
             .onChange(of: geo.size) { _, s in
                 if s.height > 100 {
@@ -644,12 +659,43 @@ struct ExerciseDetailView: View {
                 historySection
                 Color.clear.frame(height: 30)
             }
+            // LA COURSE GARANTIE : le repos à 140 doit être une position
+            // LÉGITIME du scroll — sinon, avec une série ou deux, le
+            // contenu ne dépasse la fenêtre que de quelques points et le
+            // ressort du système rembobine tout le morphing au relâcher.
+            .frame(minHeight: viewportH > 0
+                       ? viewportH + Self.collapseSpan : nil,
+                   alignment: .top)
         }
         .scrollIndicators(.hidden)
+        // L'AIMANT : jamais de repos à mi-morphing.
+        .scrollTargetBehavior(HeaderSnapBehavior(span: Self.collapseSpan))
         .onScrollGeometryChange(for: CGFloat.self) { geo in
             geo.contentOffset.y + geo.contentInsets.top
         } action: { _, y in
             scrollY = max(0, y)
+        }
+        .onScrollGeometryChange(for: CGFloat.self) { geo in
+            geo.containerSize.height - geo.contentInsets.top
+                - geo.contentInsets.bottom
+        } action: { _, h in
+            if abs(viewportH - h) > 0.5 { viewportH = h }
+        }
+    }
+
+    /// L'AIMANT DU HEADER : entre 0 et 140 la cible du scroll est poussée
+    /// vers ouvert ou condensé — la vitesse du geste décide, la position
+    /// tranche les gestes lents. Au-delà de la course, l'historique défile
+    /// librement sous la carte sticky, l'aimant se tait.
+    private struct HeaderSnapBehavior: ScrollTargetBehavior {
+        let span: CGFloat
+        func updateTarget(_ target: inout ScrollTarget,
+                          context: TargetContext) {
+            let y = target.rect.origin.y
+            guard y > 0.5, y < span - 0.5 else { return }
+            let vy = context.velocity.dy
+            let closes = vy > 100 || (vy >= -100 && y > span * 0.5)
+            target.rect.origin.y = closes ? span : 0
         }
     }
 
@@ -657,12 +703,9 @@ struct ExerciseDetailView: View {
     /// fiche : faites en or et pièces, à venir en encre éteinte.
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("HISTORIQUE DES SÉRIES")
-                .font(.inter(10, .medium))
-                .tracking(2.6)
-                .foregroundStyle(Color.white.opacity(0.40))
-                .padding(.top, 26)
-                .padding(.bottom, 2)
+            // (Le libellé « HISTORIQUE DES SÉRIES » est mort — « enlève »,
+            // 14 août : les lignes se présentent seules.)
+            Color.clear.frame(height: 16)
             ForEach(Array(sets.enumerated()), id: \.element.id) { i, s in
                 SetHistoryRow(rank: i + 1,
                               reps: s.reps,
@@ -671,11 +714,8 @@ struct ExerciseDetailView: View {
                                                 : restSeconds,
                               done: s.isDone)
             }
-            if sets.isEmpty {
-                Text("Aucune série encore — glisse pour démarrer.")
-                    .font(.inter(13))
-                    .foregroundStyle(Color.inkMuted)
-            }
+            // (L'état vide ne dit plus rien — l'invite, c'est le galet
+            // et ses chevrons, pas une phrase.)
         }
         .padding(.horizontal, 20)
     }
@@ -733,43 +773,94 @@ struct ExerciseDetailView: View {
         let u: Double
         let pw: CGFloat, ph: CGFloat, px: CGFloat, rad: CGFloat
         let swap: Double, cardIn: Double, bigOut: Double
-        init(W: CGFloat, y: CGFloat) {
+        /// Le zoom INTERNE du contenu (l'école « le fond de la photo est
+        /// le noir de la page ») : un SEUL rendu recadré dont le contenu
+        /// se resserre — fit-équivalent au repos (l'image entière, zoom
+        /// fitZ), recadrage plein dans la vignette (zoom 1). `hard`
+        /// éteint les bords fondus sur la même course.
+        let zoom: CGFloat, hard: Double
+        init(W: CGFloat, y: CGFloat, aspect: CGFloat) {
             u = ExerciseDetailView.sstep(
                 0, Double(ExerciseDetailView.collapseSpan), Double(y))
             pw = ExerciseDetailView.lp(W, 54, u)
             ph = ExerciseDetailView.lp(ExerciseDetailView.heroCap, 54, u)
             px = ExerciseDetailView.lp(0, 28, u)
             rad = ExerciseDetailView.lp(0, 14, u)
-            // L'entière (.fit, bords fondus) cède TÔT à la vignette
-            // recadrée : le .fit qui rapetisse dans un cadre qui change
-            // d'aspect flotte — le recadrage l'ancre (mesuré à u=0,5).
+            // Le PASSAGE DE COUCHE (sous la lumière → sur la lumière) :
+            // les deux copies sont désormais pixel-identiques, le fondu
+            // ne croise plus deux images — il est invisible par nature.
             swap = ExerciseDetailView.sstep(0.45, 0.72, u)
             // La carte ne naît qu'une fois la photo presque posée.
             cardIn = ExerciseDetailView.sstep(0.58, 0.92, u)
             bigOut = 1 - ExerciseDetailView.sstep(0.28, 0.62, u)
+            // fit et fill du MÊME pipeline : le rapport des deux échelles
+            // ne dépend que des deux aspects (cadre, image).
+            let fA = Double(pw / max(ph, 1))
+            let r = fA / Double(max(aspect, 0.01))
+            let fitZ = r < 1 ? r : 1 / r
+            zoom = CGFloat(fitZ + (1 - fitZ)
+                           * ExerciseDetailView.sstep(0.10, 0.90, u))
+            hard = ExerciseDetailView.sstep(0.30, 0.78, u)
         }
     }
 
-    /// La couche ARRIÈRE : photo entière + grand titre, sous la lumière.
+    /// LA PHOTO DU MORPHING — UN SEUL RENDU pour les deux couches, et
+    /// c'est lui qui a tué la saccade. L'ancien fondu croisait la photo
+    /// entière (.fit) et la vignette recadrée (.fill) : deux images
+    /// différentes — un saut de taille du sujet au milieu — et des vues
+    /// montées/démontées en plein geste (décodage d'image sous le doigt,
+    /// le hoquet senti). Ici le cadre rétrécit pendant que le CONTENU se
+    /// resserre en continu : le fond de la photo étant un noir opaque sur
+    /// une page noire, « l'image entière » n'est qu'un recadrage dézoomé
+    /// du même pipeline. Le clip et les masques viennent APRÈS le zoom :
+    /// ils vivent dans le repère du cadre, pas du contenu.
+    private func morphPhoto(_ p: HeaderPose) -> some View {
+        Image(exercise.image)
+            .resizable()
+            .interpolation(.high)
+            .aspectRatio(contentMode: .fill)
+            .frame(width: p.pw, height: p.ph)
+            .scaleEffect(p.zoom)
+            .clipShape(RoundedRectangle(cornerRadius: p.rad,
+                                        style: .continuous))
+            // Les bords fondus du héros (les masques de `hero`), qui se
+            // referment avec `hard` : au repos la photo fond dans la
+            // nuit, en vignette le recadrage net n'en a plus besoin.
+            .mask {
+                LinearGradient(stops: [
+                    .init(color: .white.opacity(p.hard), location: 0.0),
+                    .init(color: .white, location: 0.07),
+                    .init(color: .white, location: 0.86),
+                    .init(color: .white.opacity(p.hard), location: 1.0)
+                ], startPoint: .top, endPoint: .bottom)
+            }
+            .mask {
+                LinearGradient(stops: [
+                    .init(color: .white.opacity(p.hard), location: 0.0),
+                    .init(color: .white, location: 0.05),
+                    .init(color: .white, location: 0.95),
+                    .init(color: .white.opacity(p.hard), location: 1.0)
+                ], startPoint: .leading, endPoint: .trailing)
+            }
+            .accessibilityHidden(true)
+    }
+
+    /// La couche ARRIÈRE : photo + grand titre, sous la lumière. TOUT
+    /// reste monté en permanence — l'opacité seule joue (un montage à
+    /// mi-course décode l'image sous le doigt : la saccade payée).
     private var collapsingHeaderBack: some View {
         GeometryReader { g in
-            let p = HeaderPose(W: g.size.width, y: headerY)
+            let p = HeaderPose(W: g.size.width, y: headerY,
+                               aspect: heroAspect)
             ZStack(alignment: .topLeading) {
-                if p.bigOut > 0.001 {
-                    titleBlock(big: true)
-                        .padding(.horizontal, 20)
-                        .offset(y: Self.lp(12 + Self.heroCap + 8,
-                                           12 + Self.heroCap - 18, p.u))
-                        .opacity(p.bigOut)
-                }
-                if p.swap < 0.999 {
-                    hero(maxHeight: Self.heroCap)
-                        .frame(width: p.pw, height: p.ph)
-                        .clipShape(RoundedRectangle(cornerRadius: p.rad,
-                                                    style: .continuous))
-                        .offset(x: p.px, y: 12)
-                        .opacity(1 - p.swap)
-                }
+                titleBlock(big: true)
+                    .padding(.horizontal, 20)
+                    .offset(y: Self.lp(12 + Self.heroCap + 8,
+                                       12 + Self.heroCap - 18, p.u))
+                    .opacity(p.bigOut)
+                morphPhoto(p)
+                    .offset(x: p.px, y: 12)
+                    .opacity(1 - p.swap)
             }
         }
         .allowsHitTesting(false)
@@ -780,7 +871,7 @@ struct ExerciseDetailView: View {
     private var collapsingHeaderFront: some View {
         GeometryReader { g in
             let W = g.size.width
-            let p = HeaderPose(W: W, y: headerY)
+            let p = HeaderPose(W: W, y: headerY, aspect: heroAspect)
             ZStack(alignment: .topLeading) {
                 HStack(spacing: 12) {
                     // La place de la vignette : la photo la survole.
@@ -830,14 +921,12 @@ struct ExerciseDetailView: View {
                 .opacity(p.cardIn)
                 .offset(x: 20, y: 6)
 
-                if p.swap > 0.001 {
-                    ExercisePhoto(exercise: exercise, fills: true)
-                        .frame(width: p.pw, height: p.ph)
-                        .clipShape(RoundedRectangle(cornerRadius: p.rad,
-                                                    style: .continuous))
-                        .offset(x: p.px, y: 12)
-                        .opacity(p.swap)
-                }
+                // La MÊME photo que la couche arrière, pixel pour pixel —
+                // montée en permanence : le passage de couche est un pur
+                // fondu d'opacité entre deux rendus identiques.
+                morphPhoto(p)
+                    .offset(x: p.px, y: 12)
+                    .opacity(p.swap)
             }
         }
         .allowsHitTesting(false)

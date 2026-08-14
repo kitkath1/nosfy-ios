@@ -50,6 +50,15 @@ struct LaunchPebble: View {
     static let height: CGFloat = 160
     private static let padTop: CGFloat = 120
     private static let padBottom: CGFloat = 60
+    /// La marge LATÉRALE du raster — LE CARRÉ BLANC DU TÉLÉPHONE. Le dôme
+    /// déborde de ~40 pt de chaque côté de l'écran et le limbe de la
+    /// calotte échantillonne jusqu'à 1,32 R : sans marge, la couche
+    /// s'arrête au bord et le shader clampe ses lectures sur la DERNIÈRE
+    /// colonne — la nacre coupée s'y étale en petit bloc net (visible sur
+    /// l'appareil seulement, affaire de précision GPU ; le simulateur
+    /// passait à côté). La marge donne au limbe du vrai monde à boire,
+    /// exactement comme `padTop` le fait pour le halo.
+    private static let padSide: CGFloat = 120
 
     /// Le papier de la maison — celui du voile, celui de la lentille.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
@@ -92,6 +101,9 @@ struct LaunchPebble: View {
     private func canvas(t: Double, wake: Float) -> some View {
         GeometryReader { geo in
             let w = geo.size.width
+            // La largeur du RASTER : l'écran plus ses deux marges — tout
+            // ce que le verre peut lire vit dans la couche.
+            let W2 = w + 2 * Self.padSide
             let H = Self.padTop + geo.size.height + Self.padBottom
 
             // — Les horloges du repos : CELLES de la bulle de la lentille
@@ -131,7 +143,7 @@ struct LaunchPebble: View {
             // des traits de LUMIÈRE au-dessus — eux ne savent pas faire
             // de noir.
             let Rg = D * (0.62 + 0.06 * heat)
-            let cX = Float(w / 2)
+            let cX = Float(W2 / 2)
             let cY = Float(cyD)
 
             // — La braise : CHUCHOTÉE au repos (elle vit à l'intérieur du
@@ -145,7 +157,7 @@ struct LaunchPebble: View {
 
             // — Les prises du verre : magnification douce, dispersion
             //   quasi nulle (les franges couleur « sentent le procédé »).
-            let sizeW = Float(w), sizeH = Float(H)
+            let sizeW = Float(W2), sizeH = Float(H)
             let radV = Float(Rg)
             // f0 0,97 au repos : à 0,92 la discontinuité de magnification
             // au bord de la calotte dessinait un anneau fantôme dans la
@@ -211,7 +223,10 @@ struct LaunchPebble: View {
 
                 // LES PETITES LUMIÈRES DERRIÈRE ELLE — « très discrètes,
                 // à peine des suggestions » (jury : 1-2 px, ≤ 40 %).
+                // Décalées de la marge : leurs positions vivent dans le
+                // repère de l'ÉCRAN, le raster est plus large qu'elles.
                 starField(w: w, crestY: crestY, t: t)
+                    .offset(x: Self.padSide)
 
                 // Le dôme nacre : dessin DIRECT, lisse jusqu'au bord —
                 // plus AUCUNE structure à portée du limbe.
@@ -227,7 +242,7 @@ struct LaunchPebble: View {
                         ],
                         center: .center, startRadius: 0, endRadius: D))
                     .frame(width: 2 * D, height: 2 * D / squash)
-                    .position(x: w / 2, y: cyD)
+                    .position(x: W2 / 2, y: cyD)
 
                 // LE FOYER : l'éclat chaud localisé sous la flèche — un
                 // voile, pas un anneau. Dans la couche : le verre le
@@ -245,10 +260,10 @@ struct LaunchPebble: View {
                         center: .center, startRadius: 0,
                         endRadius: w * 0.40))
                     .frame(width: w * 0.80, height: 190)
-                    .position(x: w / 2, y: crestY + 84)
+                    .position(x: W2 / 2, y: crestY + 84)
                     .blur(radius: 14)
             }
-            .frame(width: w, height: H)
+            .frame(width: W2, height: H)
             .compositingGroup()
             .layerEffect(lensShader,
                          maxSampleOffset: CGSize(width: 110, height: 110))
@@ -260,7 +275,7 @@ struct LaunchPebble: View {
                       crestY: crestY, heat: heat, fv: fv,
                       inkFade: inkFade, t: t)
             }
-            .offset(y: -Self.padTop)
+            .offset(x: -Self.padSide, y: -Self.padTop)
             .allowsHitTesting(false)
         }
     }
@@ -362,25 +377,13 @@ struct LaunchPebble: View {
             dust(w: w, H: H, D: D, squash: squash, cyD: cyD, t: t,
                  heat: heat, live: 1 - 0.9 * fv)
 
-            // L'invite, moderne et légère : deux chevrons gris
-            // superposés en cascade, et le mot COUCHÉ DANS L'ARC —
-            // une gravure, pas une étiquette.
-            Group {
-                chevrons(t: t)
-                    .position(x: w / 2, y: inkY + 26)
-                // DROIT, HAUT, ET IMMOBILE. Deux fautes payées ici :
-                // couché dans l'arc il lisait « bug d'affichage » ; puis,
-                // même droit, ancré à la crête il DÉRIVAIT de ±6 pt avec
-                // la respiration du galet — une ligne de texte qui flotte
-                // sans arrêt, c'est exactement ce qu'on lit comme fake.
-                // La matière respire, l'écriture ne respire pas.
-                Text(label)
-                    .font(.inter(13, .light))
-                    .tracking(0.6)
-                    .foregroundStyle(Color.black.opacity(0.42))
-                    .position(x: w / 2, y: inkY + 58)
-            }
-            .opacity(inkFade)
+            // L'invite, réduite à son geste : les deux chevrons seuls.
+            // (L'inscription « Glisser pour démarrer » est morte —
+            // « enlève », 14 août. Le `label` survit en accessibilité :
+            // le bouton du lecteur d'écran garde son nom.)
+            chevrons(t: t)
+                .position(x: w / 2, y: inkY + 30)
+                .opacity(inkFade)
         }
         .frame(width: w, height: H)
     }
