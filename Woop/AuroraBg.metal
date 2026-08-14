@@ -505,6 +505,126 @@ static float3 bgDither(float3 c, float2 position, float t) {
     return half4(half3(c), 1.0) * color.a;
 }
 
+// LA BANNIÈRE DU PROFIL : trois GRANDS halos — le blanc à cœur, le jaune,
+// l'orange braise — qui NAVIGUENT dans le rectangle et se FONDENT l'un
+// dans l'autre (composition en écran : la lumière s'additionne sans
+// jamais cramer). Le noir est interdit par construction : le plancher est
+// une braise profonde SATURÉE (la leçon anti-marron : l'orange sombre
+// désaturé est un marron, l'orange sombre saturé est une braise).
+// Périodes premières entre elles : la danse ne repasse jamais deux fois
+// par le même chemin. `t` en secondes (mod 900 côté hôte).
+[[ stitchable ]] half4 banniereHalos(float2 position, half4 color,
+                                     float2 size, float t) {
+    float A = size.x / max(size.y, 1.0);
+    float2 p = float2(position.x / size.y, position.y / size.y);
+
+    // Le plancher : jamais noir — une braise profonde, et respire à
+    // peine (période 31 s). Le marron se corrige APRÈS composition, à
+    // luminance constante.
+    float plancher = 1.0 + 0.10 * sin(t * 6.2832 / 31.0 + 2.1);
+    float3 c = float3(0.130, 0.046, 0.010) * plancher;
+
+    // LE BLANC — le cœur de lumière, TRÈS large : les halos se marchent
+    // dessus, c'est ce chevauchement qui fait le fondu.
+    {
+        float2 ctr = float2(A * (0.50 + 0.17 * sin(t * 6.2832 / 17.0)),
+                            0.32 + 0.13 * sin(t * 6.2832 / 23.0 + 1.7));
+        float sig = 0.60 * (1.0 + 0.10 * sin(t * 6.2832 / 19.0 + 0.6));
+        float2 d = (p - ctr) / sig;
+        float g = exp(-dot(d, d));
+        float souffle = 0.92 + 0.14 * sin(t * 6.2832 / 13.0 + 3.9);
+        float3 h = float3(1.00, 0.965, 0.905) * (1.18 * g * souffle);
+        c = 1.0 - (1.0 - c) * (1.0 - clamp(h, 0.0, 1.0));
+    }
+    // LE JAUNE — l'or qui rôde à gauche, fondu dans le blanc.
+    {
+        float2 ctr = float2(A * (0.26 + 0.16 * sin(t * 6.2832 / 13.0 + 0.8)),
+                            0.60 + 0.15 * sin(t * 6.2832 / 19.0 + 4.0));
+        float sig = 0.54 * (1.0 + 0.12 * sin(t * 6.2832 / 29.0 + 2.2));
+        float2 d = (p - ctr) / sig;
+        float g = exp(-dot(d, d));
+        float souffle = 0.90 + 0.16 * sin(t * 6.2832 / 11.0 + 1.3);
+        float3 h = float3(1.00, 0.80, 0.30) * (1.00 * g * souffle);
+        c = 1.0 - (1.0 - c) * (1.0 - clamp(h, 0.0, 1.0));
+    }
+    // L'ORANGE — la braise qui veille à droite, large et lente.
+    {
+        float2 ctr = float2(A * (0.76 + 0.15 * sin(t * 6.2832 / 29.0 + 2.4)),
+                            0.56 + 0.14 * sin(t * 6.2832 / 11.0 + 5.3));
+        float sig = 0.56 * (1.0 + 0.11 * sin(t * 6.2832 / 17.0 + 4.8));
+        float2 d = (p - ctr) / sig;
+        float g = exp(-dot(d, d));
+        float souffle = 0.90 + 0.15 * sin(t * 6.2832 / 23.0 + 0.4);
+        float3 h = float3(1.00, 0.46, 0.12) * (1.05 * g * souffle);
+        c = 1.0 - (1.0 - c) * (1.0 - clamp(h, 0.0, 1.0));
+    }
+
+    // L'ANTI-MARRON (la leçon de la maison) : le marron est un orange
+    // moyen DÉSATURÉ — on re-teinte la plage basse et moyenne vers la
+    // braise saturée À LUMINANCE CONSTANTE : la teinte tourne, le niveau
+    // ne bouge pas, le brun disparaît sans assombrir.
+    {
+        float lum = dot(c, float3(0.299, 0.587, 0.114));
+        float band = smoothstep(0.015, 0.09, lum)
+                   * (1.0 - smoothstep(0.42, 0.80, lum));
+        if (band > 0.001) {
+            float3 braise = float3(1.00, 0.44, 0.10);
+            float3 reh = braise * (lum / dot(braise, float3(0.299, 0.587, 0.114)));
+            c = mix(c, reh, band * 0.60);
+        }
+    }
+
+    // L'épaule douce : les blancs restent crémeux, jamais coupés net.
+    c = c / (1.0 + 0.14 * c);
+    c = clamp(c * 1.16, 0.0, 1.0);
+
+    c = bgDither(c, position, t);
+    return half4(half3(c), 1.0) * color.a;
+}
+
+// LE MÉTAL DU PROFIL : la page rendue à un noir de MÉTAL BROSSÉ hyper
+// réaliste — micro-stries anisotropes (sur-échantillonnées ×3 : le
+// Nyquist des stries, payé sur la carte Objectif), un large reflet
+// diagonal très doux (la tôle qui accroche une lumière lointaine), une
+// vignette profonde. STATIQUE : le métal ne bouge pas, le shader se rend
+// une fois (pas de TimelineView côté hôte).
+[[ stitchable ]] half4 profilMetal(float2 position, half4 color,
+                                   float2 size) {
+    float2 uv = position / max(size, float2(1.0));
+
+    // Les stries du brossage : du bruit étiré à l'extrême en x, trois
+    // prises moyennées en y pour éteindre le scintillement.
+    float stries = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float y = position.y + (float(i) - 1.0) * 0.35;
+        float2 q = float2(position.x * 0.011, y * 1.35);
+        float n = fract(sin(dot(floor(q), float2(127.1, 311.7))) * 43758.5453);
+        float n2 = fract(sin(dot(floor(q) + float2(0.0, 1.0),
+                                 float2(127.1, 311.7))) * 43758.5453);
+        float fy = fract(q.y);
+        fy = fy * fy * (3.0 - 2.0 * fy);
+        stries += mix(n, n2, fy);
+    }
+    stries /= 3.0;
+
+    // Le fond : un noir chaud à peine modelé par les stries.
+    float v = 0.030 + 0.026 * stries;
+
+    // Le reflet : une bande diagonale large, très douce — elle éclaire le
+    // brossage plus qu'elle n'éclaire le fond (le métal se lit là).
+    float axe = dot(uv, normalize(float2(0.42, 1.0)));
+    float bande = exp(-pow((axe - 0.42) / 0.34, 2.0));
+    v += bande * (0.030 + 0.050 * stries);
+
+    // La vignette : les bords rendus à la nuit.
+    float2 e = uv - float2(0.5, 0.46);
+    v *= 1.0 - 0.55 * clamp(dot(e, e) * 1.9, 0.0, 1.0);
+
+    // La teinte : un métal légèrement chaud, jamais bleu.
+    float3 c = v * float3(1.03, 0.99, 0.94);
+    return half4(half3(clamp(c, 0.0, 1.0)), 1.0) * color.a;
+}
+
 // La page de connexion : le même fond, plus deux choses. L'ombre du bloc
 // texte — le cœur blanc monte juste derrière le titre et l'input, sans elle
 // rien n'est lisible — et la caresse du doigt, portée du login aurora : de
