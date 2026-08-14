@@ -50,7 +50,19 @@ workouts / logged_exercises / strength_sets / cardio_phases, RLS par user.
 Comptes par numéro (table `WoopConfig.accounts`, pas de signup libre).
 Edge function `weekly-synthesis` : écrite, PAS déployée.
 
-## Le backend des cartes (à construire — voir tools/carte-lune/README.md)
+## Le backend des cartes (EN PLACE depuis le 14-08 — voir tools/carte-lune/README.md)
+
+État : migration `20260814180000_cartes_lune.sql` POUSSÉE (après le
+`migration repair` des deux migrations de juillet), bucket `cards`
+public créé, les 2 références du peintre uploadées dans
+`cards/refs/`, la fonction `forge-card` DÉPLOYÉE avec
+`OPENAI_API_KEY` en secret, et un tirage de bout en bout VÉRIFIÉ
+(user de test `kat44426+woop-forge-test@gmail.com`, pool=1,
+collection=1, PNG servi par l'URL publique). Réglages du tirage dans
+forge-card : `PART_NEUF` 0,35 · poids 60/27/10/3. ATTENTION : la
+partition des prompts y est une COPIE de LuneForge.swift — toute
+évolution se réplique à la main. `.secrets/supabase-service-role`
+contient la clé service_role (management API, jamais dans l'app).
 
 Le principe : une génération IA n'est pas reproductible → toute carte
 est une image STOCKÉE, canonique — c'est ce qui permet que deux users
