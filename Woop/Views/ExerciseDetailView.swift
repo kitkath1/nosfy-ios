@@ -107,6 +107,8 @@ struct ExerciseDetailView: View {
     /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
     /// la loi du zoom interne en a besoin, jamais pendant le scroll.
     @State private var heroAspect: CGFloat = 0.8
+    /// La main de l'aimant : commande les retours aux ancres.
+    @State private var headerScrollPos = ScrollPosition()
     /// La photo au repos : 225 (« réduis encore les images », 13 août) —
     /// c'était 285.
     private static let heroCap: CGFloat = 225
@@ -636,7 +638,14 @@ struct ExerciseDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // La place du header étendu — FIXE : le header se dessine
                 // au-dessus et se rétrécit sans que rien ne re-layoute.
-                Color.clear.frame(height: Self.expandedHeader)
+                // Coupée en deux pour porter LES ANCRES de l'aimant : le
+                // scrollTo par ancre est sourd aux insets — aucun repère
+                // à convertir, le système aligne l'ancre sous les chips.
+                Color.clear.frame(height: Self.collapseSpan)
+                    .id(Self.snapOpenID)
+                Color.clear.frame(height: Self.expandedHeader
+                                          - Self.collapseSpan)
+                    .id(Self.snapCollapsedID)
                 // LA FLAMME-JAUGE (le composant de la session parallèle,
                 // commité d75cf88) tient désormais la place de l'ancienne
                 // carte Séries — même verre, même rôle, sa vie à elle.
@@ -668,36 +677,46 @@ struct ExerciseDetailView: View {
                    alignment: .top)
         }
         .scrollIndicators(.hidden)
-        // L'AIMANT : jamais de repos à mi-morphing.
-        .scrollTargetBehavior(HeaderSnapBehavior(span: Self.collapseSpan))
-        .onScrollGeometryChange(for: CGFloat.self) { geo in
-            geo.contentOffset.y + geo.contentInsets.top
-        } action: { _, y in
-            scrollY = max(0, y)
+        .scrollPosition($headerScrollPos)
+        // UNE SEULE sonde pour l'offset ET la fenêtre — la leçon payée :
+        // une sonde séparée qui renvoie une CONSTANTE (la fenêtre) ne
+        // change jamais, donc ne rappelle jamais — viewportH restait à 0
+        // et la course garantie n'existait pas (« toujours pas », 14-08).
+        // Ici l'offset change à chaque frame et emporte la fenêtre.
+        .onScrollGeometryChange(for: ScrollProbe.self) { geo in
+            ScrollProbe(
+                y: geo.contentOffset.y + geo.contentInsets.top,
+                vh: geo.containerSize.height - geo.contentInsets.top
+                    - geo.contentInsets.bottom)
+        } action: { _, p in
+            scrollY = max(0, p.y)
+            if abs(viewportH - p.vh) > 0.5 { viewportH = p.vh }
         }
-        .onScrollGeometryChange(for: CGFloat.self) { geo in
-            geo.containerSize.height - geo.contentInsets.top
-                - geo.contentInsets.bottom
-        } action: { _, h in
-            if abs(viewportH - h) > 0.5 { viewportH = h }
+        // L'AIMANT : jamais de repos à mi-morphing. Au premier repos
+        // naturel dans la zone, on rejoint l'ancre la plus proche — par
+        // ANCRE, pas par offset : aucun repère d'inset à deviner.
+        .onScrollPhaseChange { _, phase in
+            guard phase == .idle,
+                  scrollY > 2, scrollY < Self.collapseSpan - 2
+            else { return }
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
+                headerScrollPos.scrollTo(
+                    id: scrollY > Self.collapseSpan * 0.5
+                        ? Self.snapCollapsedID : Self.snapOpenID,
+                    anchor: .top)
+            }
         }
     }
 
-    /// L'AIMANT DU HEADER : entre 0 et 140 la cible du scroll est poussée
-    /// vers ouvert ou condensé — la vitesse du geste décide, la position
-    /// tranche les gestes lents. Au-delà de la course, l'historique défile
-    /// librement sous la carte sticky, l'aimant se tait.
-    private struct HeaderSnapBehavior: ScrollTargetBehavior {
-        let span: CGFloat
-        func updateTarget(_ target: inout ScrollTarget,
-                          context: TargetContext) {
-            let y = target.rect.origin.y
-            guard y > 0.5, y < span - 0.5 else { return }
-            let vy = context.velocity.dy
-            let closes = vy > 100 || (vy >= -100 && y > span * 0.5)
-            target.rect.origin.y = closes ? span : 0
-        }
+    /// La sonde du scroll — les deux nombres dans UNE valeur : l'offset
+    /// (la partition du header) et la fenêtre visible (la course
+    /// garantie).
+    private struct ScrollProbe: Equatable {
+        var y: CGFloat
+        var vh: CGFloat
     }
+    private static let snapOpenID = "headerSnapOpen"
+    private static let snapCollapsedID = "headerSnapClosed"
 
     /// L'HISTORIQUE DES SÉRIES — les lignes de la story 2, adoptées par la
     /// fiche : faites en or et pièces, à venir en encre éteinte.
