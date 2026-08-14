@@ -35,7 +35,11 @@ private func luneBundled(_ name: String) -> Image {
 ///   `-luneGlow <gain>` règle le baiser du liseré sur la fumée (défaut
 ///     0,35 — les démons vivent à 1,55) ;
 ///   `-luneDive` rejoue la PLONGÉE en boucle (11 s de période) ;
-///   `-luneDiveAt <t>` fige la plongée à cet âge (captures).
+///   `-luneDiveAt <t>` fige la plongée à cet âge (captures) ;
+///   `-luneForgeNow` forge une carte au lancement (le test « GPT
+///     répond ») ; `-luneForgeQualite low|medium|high` règle le peintre
+///     (défaut HIGH — consigne Kathryn) ; `-luneForgeFamille <nom>`
+///     force une famille (fouetter un registre, curer le pool).
 ///
 /// LA PLONGÉE (appui long) : la caméra passe la vitre — la carte grossit
 /// jusqu'à sortir son cadre de l'écran, un chemin de caméra scripté prend
@@ -59,6 +63,14 @@ struct CarteLuneLab: View {
     private static let diveAuto = CommandLine.arguments.contains("-luneDive")
     private static let diveFreeze: Float? = UserDefaults.standard
         .string(forKey: "luneDiveAt").flatMap(Float.init)
+    private static let forgeNow = CommandLine.arguments.contains("-luneForgeNow")
+
+    /// La FORGE : la carte générée du moment remplace carte-lune-1 dans la
+    /// même scène — même shader, même cadre, mêmes gestes. C'est le contrat
+    /// du set rendu visible : seule l'illustration change.
+    @State private var carte: LuneForge.Carte?
+    @State private var chauffe = false
+    @State private var forgeNote: String?
 
     var body: some View {
         ZStack {
@@ -66,11 +78,54 @@ struct CarteLuneLab: View {
             CarteLuneScene(frozen: Self.frozen, still: Self.still,
                            flat: Self.flat, smokeFreeze: Self.smokeFreeze,
                            glow: Self.glow, diveAuto: Self.diveAuto,
-                           diveFreeze: Self.diveFreeze)
+                           diveFreeze: Self.diveFreeze,
+                           art: carte.map { Image(uiImage: $0.art) },
+                           depth: carte.map { Image(uiImage: $0.depth) })
+            VStack(spacing: 10) {
+                Spacer()
+                if let note = forgeNote {
+                    Text(note)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.45))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .padding(.horizontal, 40)
+                }
+                Button(action: forger) {
+                    HStack(spacing: 8) {
+                        if chauffe { ProgressView().tint(.white.opacity(0.6)) }
+                        Text(chauffe ? "la forge chauffe…" : "Forger une carte")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.white.opacity(chauffe ? 0.5 : 0.85))
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 11)
+                    .background(Capsule().stroke(.white.opacity(0.22), lineWidth: 1))
+                }
+                .disabled(chauffe)
+                .padding(.bottom, 26)
+            }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
+        .task { if Self.forgeNow { forger() } }
+    }
+
+    private func forger() {
+        guard !chauffe else { return }
+        chauffe = true
+        forgeNote = nil
+        Task {
+            do {
+                let c = try await LuneForge.forger()
+                carte = c
+                forgeNote = "\(c.famille.nom) · \(c.famille.rarete)"
+            } catch {
+                forgeNote = "forge froide : \(error.localizedDescription)"
+            }
+            chauffe = false
+        }
     }
 }
 
@@ -121,6 +176,9 @@ struct CarteLuneScene: View {
     var glow: Float = 0.35
     var diveAuto = false
     var diveFreeze: Float? = nil
+    /// La carte FORGÉE du moment (art + depth) — nil : carte-lune-1.
+    var art: Image? = nil
+    var depth: Image? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -253,7 +311,7 @@ struct CarteLuneScene: View {
                     // le palier 2 multiplane est débranché, son pipeline
                     // attend le chantier full-IA.
                     CarteLuneCard(size: cs, tilt: tilt, t: t, dive: dEnv,
-                                  dolly: dolly)
+                                  dolly: dolly, art: art, depth: depth)
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
                     // raconte le voyage, la rotation ne fait qu'y vaciller.
@@ -355,12 +413,16 @@ struct CarteLuneCard: View {
     /// inclinaison. Le `maxSampleOffset` doit la couvrir.
     var amp: Float = 13
     var foil: Float = 1
+    /// Carte forgée : l'art et SA depth remplacent carte-lune-1 — le
+    /// shader, lui, ne sait même pas que l'image a changé (le contrat).
+    var art: Image? = nil
+    var depth: Image? = nil
 
     private static let card = luneBundled("carte-lune-1")
     private static let depth = luneBundled("carte-lune-1-depth")
 
     var body: some View {
-        Self.card
+        (art ?? Self.card)
             .resizable()
             .frame(width: size.width, height: size.height)
             .layerEffect(Self.dithered(ShaderLibrary.carteLuneV5(
@@ -368,7 +430,7 @@ struct CarteLuneCard: View {
                 .float2(CGFloat(tilt.x), CGFloat(tilt.y)),
                 .float(t), .float(amp), .float(foil),
                 .float(CGFloat(dive)), .float(CGFloat(dolly)),
-                .image(Self.depth))),
+                .image(depth ?? Self.depth))),
                 maxSampleOffset: CGSize(width: 36, height: 30))
     }
 
