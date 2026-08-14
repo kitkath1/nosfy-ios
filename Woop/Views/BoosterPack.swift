@@ -83,6 +83,9 @@ enum BoosterShader {
     float tornGlow;
     float rimGain;
     float metalLift;
+    float inviteU;
+    float inviteGlow;
+    float moonCharge;
     #pragma body
     float bu = _surface.diffuseTexcoord.x;
     if (bu > 0.68) { bu -= 0.345; }
@@ -96,6 +99,24 @@ enum BoosterShader {
     /// gris-mylar du film pour la recette métal (metalLift 0 = laque noire,
     /// 1 = mylar : un métal au basecolor noir est un trou noir).
     private static let sheen = """
+    // La lueur d'INVITE : un front fantôme qui balaie la ligne de
+    // découpe — le geste montré par la lumière, sans un mot d'UI.
+    // (La CHARGE de la lune ne vit pas ici : deux pièges payés — à cet
+    // étage `_surface.emission` est vide, et une texture liée par KVC ne
+    // se lie pas de façon fiable. Elle vit dans moonGlowNode, une
+    // surcouche additive à carte pré-masquée.)
+    float invBand = exp(-pow((bv - 0.8896) / 0.010, 2.0));
+    float invFront = exp(-pow((bu - inviteU) / 0.035, 2.0));
+    _surface.emission.rgb += ember * invBand * invFront * inviteGlow * 1.6;
+    // La CHARGE de la lune : les traits du croissant et de son étoile
+    // vivent dans la DIFFUSE (elle, elle est chargée à cet étage —
+    // l'émission est vide et les textures KVC ne se lient pas, pièges
+    // payés). On les RE-ÉMET, masqués autour du croissant, pilotés par
+    // la déchirure. À pleine charge, le trait franchit le seuil de bloom.
+    float moonMask = exp(-(pow((bu - 0.50) / 0.11, 2.0)
+                           + pow((bv - 0.68) / 0.13, 2.0)));
+    _surface.emission.rgb += _surface.diffuse.rgb * moonMask * moonCharge * 5.0;
+
     float3 shN = normalize(_surface.normal);
     float3 shV = normalize(_surface.view);
     float shRim = pow(1.0 - saturate(dot(shN, shV)), 3.5);
@@ -105,24 +126,54 @@ enum BoosterShader {
     _surface.roughness = _surface.roughness * mix(1.0, 0.55, shRim);
     """
 
-    /// Le corps : muet sous la ligne, lèvre braise sur la tranche ouverte.
+    /// Le corps : muet sous la ligne, et sur la tranche ouverte le
+    /// DÉGRADÉ DE REFROIDISSEMENT — blanc fusion au front, orange, puis
+    /// rouge sombre qui s'éteint : le métal qui refroidit dans le sillage
+    /// de la perle.
     static let body = preamble + """
     if (bv > 0.8896) { discard_fragment(); }
     float lip = smoothstep(0.012, 0.0, 0.8896 - bv);
     float opened = smoothstep(bu, bu + 0.012, tearU);
-    _surface.emission.rgb += ember * lip * opened * tornGlow * 2.4;
+    float behind = saturate((tearU - bu) / 0.12);
+    float3 heat = mix(float3(1.0, 0.93, 0.78), float3(0.75, 0.12, 0.02), behind);
+    _surface.emission.rgb += heat * lip * opened * tornGlow * (2.8 - 1.9 * behind);
     """ + sheen
 
-    /// La bande : rongée derrière le front, cœur blanc sur la morsure.
+    /// La bande : plus AUCUN discard derrière le front — elle reste
+    /// entière et le peeling (modificateur de géométrie) la soulève.
+    /// La morsure blanche vit à cheval sur le front.
     static let cap = preamble + """
     if (bv < 0.8896) { discard_fragment(); }
     float jag = (fract(sin(bv * 817.7) * 43758.5453) - 0.5) * 0.014;
     float front = tearU + jag;
-    if (bu < front) { discard_fragment(); }
-    float d = bu - front;
+    float d = abs(bu - front);
     float burn = smoothstep(0.020, 0.0, d);
     _surface.emission.rgb += (ember * 2.2 + float3(1.0, 0.85, 0.6) * burn) * burn * tornGlow;
     """ + sheen
+
+    /// LE PEELING (modificateur de GÉOMÉTRIE de la bande) : la partie
+    /// déjà déchirée s'enroule vers l'arrière autour de la ligne de
+    /// déchirure, et FRISSONNE — le papier vit sous le geste. `u_time`
+    /// est fourni par SceneKit.
+    static let capGeometry = """
+    #pragma arguments
+    float tearU;
+    float hingeY;
+    #pragma body
+    float cu = _geometry.texcoords[0].x;
+    if (cu > 0.68) { cu -= 0.345; }
+    float cv = _geometry.texcoords[0].y;
+    if (cv > 0.8896 && cu < tearU) {
+        float t = clamp((tearU - cu) / 0.22, 0.0, 1.0);
+        float ang = t * 2.2
+            + sin(scn_frame.time * 24.0 + cu * 55.0) * 0.10 * t;
+        float dy = _geometry.position.y - hingeY;
+        float c = cos(ang);
+        float s = sin(ang);
+        _geometry.position.y = hingeY + dy * c;
+        _geometry.position.z = _geometry.position.z + dy * s;
+    }
+    """
 }
 
 // MARK: - La scène
@@ -138,7 +189,12 @@ final class BoosterScene {
     let bodyNode: SCNNode
     let capNode: SCNNode
     let cardNode: SCNNode
+    let moonGlowNode: SCNNode
+    let moonGlowMaterial: SCNMaterial
+    let perleNode: SCNNode
+    private var tearLightSource: SCNLight?
     let sparks: SCNParticleSystem
+    let accents: SCNParticleSystem
     let sparkNode = SCNNode()
     let cameraNode = SCNNode()
     let yTear: Float
@@ -172,7 +228,7 @@ final class BoosterScene {
         // Dans les deux cas la laque reçoit SA PROPRE normal map
         // (clearCoatNormal) — sans elle le vernis ignore les plis et les
         // stries refusent de se froisser.
-        func material(modifier: String) -> SCNMaterial {
+        func material(modifier: String, geometry: String? = nil) -> SCNMaterial {
             let m = SCNMaterial()
             m.lightingModel = .physicallyBased
             m.diffuse.contents = Self.image("booster-color")
@@ -198,17 +254,40 @@ final class BoosterScene {
             m.clearCoatNormal.contents = Self.image("booster-normal")
             m.clearCoatNormal.intensity = 1.1
             m.isDoubleSided = true
-            m.shaderModifiers = [.surface: modifier]
+            if let geometry {
+                m.shaderModifiers = [.surface: modifier, .geometry: geometry]
+            } else {
+                m.shaderModifiers = [.surface: modifier]
+            }
             m.setValue(0.0 as CGFloat, forKey: "tearU")
             m.setValue(0.0 as CGFloat, forKey: "tornGlow")
             m.setValue(0.55 as CGFloat, forKey: "rimGain")
             m.setValue((mylar ? 1.0 : 0.0) as CGFloat, forKey: "metalLift")
+            m.setValue(-1.0 as CGFloat, forKey: "inviteU")
+            m.setValue(0.0 as CGFloat, forKey: "inviteGlow")
+            m.setValue(0.0 as CGFloat, forKey: "moonCharge")
             return m
         }
         bodyNode = SCNNode(geometry: mesh.geometry.copy() as? SCNGeometry)
         bodyNode.geometry?.materials = [material(modifier: BoosterShader.body)]
         capNode = SCNNode(geometry: mesh.geometry.copy() as? SCNGeometry)
-        capNode.geometry?.materials = [material(modifier: BoosterShader.cap)]
+        capNode.geometry?.materials = [material(modifier: BoosterShader.cap,
+                                                geometry: BoosterShader.capGeometry)]
+        // La charnière du peeling : la ligne de déchirure en Y modèle.
+        capNode.geometry?.firstMaterial?
+            .setValue(CGFloat(mesh.yTear), forKey: "hingeY")
+
+        // ---- la surcouche de CHARGE de la lune ----
+        // Un second rendu du maillage, additif, dont la carte émissive est
+        // PRÉ-MASQUÉE hors-ligne (croissant + étoile seuls, centre mesuré
+        // au centroïde). Son emission.intensity EST la charge — une vraie
+        // propriété animable, aucun uniforme KVC à lier (deux pièges de
+        // liaison payés avant d'en arriver là).
+        // La charge de la lune vit DANS le shader de découpe (re-émission
+        // de la diffuse masquée) — cinq pièges de surcouche payés avant
+        // d'y revenir. Le nœud fantôme reste pour l'API, vide.
+        moonGlowMaterial = SCNMaterial()
+        moonGlowNode = SCNNode()
 
         // ---- la carte récompense, endormie dans le sachet ----
         // Placeholder du chantier cartes : la carte-lune détourée, à plat.
@@ -221,18 +300,99 @@ final class BoosterScene {
         cm.isDoubleSided = true
         plane.materials = [cm]
         cardNode = SCNNode(geometry: plane)
-        cardNode.position = SCNVector3(0, -0.035, 0)
+        cardNode.position = SCNVector3(0, -0.035, 0.03)
         cardNode.eulerAngles.y = .pi
+        // La carte DORT CACHÉE tant que le sachet est clos : sa tête
+        // dépassait la ligne de déchirure et se voyait par la fente
+        // ouverte (le carré noir des captures). Elle se montre à
+        // l'ouverture, pas avant.
+        cardNode.isHidden = true
+        // LE DOS de la carte (le motif croissants du sachet) : un second
+        // plan collé dos à dos — la carte peut sortir DOS D'ABORD pour
+        // le retournement.
+        let backPlane = SCNPlane(width: 0.60, height: 0.60 * 1.519)
+        let backMat = SCNMaterial()
+        backMat.lightingModel = .constant
+        backMat.diffuse.contents = Self.image("carte-dos")
+        backMat.isDoubleSided = false
+        backPlane.materials = [backMat]
+        let backNode = SCNNode(geometry: backPlane)
+        backNode.position = SCNVector3(0, 0, -0.001)
+        backNode.eulerAngles.y = .pi
+        cardNode.addChildNode(backNode)
 
-        // ---- les étincelles du front de déchirure ----
-        sparks = Self.makeSparks()
+        // ---- le front de déchirure : trois températures ----
+        // La MORSURE blanche vit dans le shader ; ici, la POUDRE DE
+        // DIAMANT qui coule de l'entaille (froide, fine, lente — le jet
+        // d'étincelles orange a été recalé « feu d'artifice »), et le
+        // VOILE DE FUMÉE presque invisible qui monte du sillage.
+        sparks = Self.makeDiamondFall()
+        accents = Self.makeSmokeVeil()
         sparkNode.addParticleSystem(sparks)
+        sparkNode.addParticleSystem(accents)
         sparkNode.position = SCNVector3(0, yTear + 0.01, -0.07)
+        // LA PERLE DE DÉCOUPE : la bille incandescente qui suit le doigt
+        // — c'est ELLE qui coupe. Billboard additif, pulsation rapide,
+        // le bloom la fait rayonner. Cachée hors découpe.
+        let perlePlane = SCNPlane(width: 0.055, height: 0.055)
+        let perleMat = SCNMaterial()
+        perleMat.lightingModel = .constant
+        perleMat.diffuse.contents = Self.pearlDot()
+        perleMat.blendMode = .add
+        perleMat.writesToDepthBuffer = false
+        perleMat.isDoubleSided = true
+        perlePlane.materials = [perleMat]
+        perleNode = SCNNode(geometry: perlePlane)
+        perleNode.position = SCNVector3(0, 0, -0.02)
+        perleNode.constraints = [SCNBillboardConstraint()]
+        perleNode.isHidden = true
+        let pulse = CABasicAnimation(keyPath: "scale")
+        pulse.fromValue = SCNVector3(0.86, 0.86, 0.86)
+        pulse.toValue = SCNVector3(1.14, 1.14, 1.14)
+        pulse.duration = 0.055
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        perleNode.addAnimation(pulse, forKey: "perlePulse")
+        sparkNode.addChildNode(perleNode)
+        // LA LUMIÈRE DE LA DÉCHIRURE : le front qui brûle éclaire le
+        // mylar — une omni braise qui SUIT le doigt (elle vit sur le
+        // porteur de poudre), calibrée sur la braise de scène (38).
+        let tearLight = SCNLight()
+        tearLight.type = .omni
+        tearLight.color = UIColor(red: 1.0, green: 0.5, blue: 0.18, alpha: 1)
+        tearLight.intensity = 0
+        // Atténuation 3,0 comme la braise omni maison : en dessous de
+        // ~1,0 le simulateur rend le volume de clustering de l'omni en
+        // CUBE NOIR (le carré fantôme, une bissection entière pour le
+        // coincer). Intensité compensée en conséquence.
+        tearLight.attenuationEndDistance = 3.0
+        tearLightSource = tearLight
+        let tearLightNode = SCNNode()
+        tearLightNode.light = tearLight
+        tearLightNode.position = SCNVector3(0, 0, -0.03)
+        // PIÈGE SIMULATEUR : le GPU paravirtualisé rend le volume de
+        // clustering de cette omni en CUBE NOIR collé au front (une
+        // bissection entière pour le coincer — ni particules, ni carte,
+        // ni surcouche : la LUMIÈRE). Sur iPhone elle est saine ; au
+        // banc simulé, la lèvre de braise du shader porte seule la lueur.
+        #if !targetEnvironment(simulator)
+        if !CommandLine.arguments.contains("-boosterNoTearLight") {
+            sparkNode.addChildNode(tearLightNode)
+        }
+        #endif
 
+        bodyNode.name = "corps"
+        capNode.name = "bande"
+        moonGlowNode.name = "lune"
+        cardNode.name = "carte"
+        sparkNode.name = "poudre"
         packNode.addChildNode(bodyNode)
         packNode.addChildNode(capNode)
+        packNode.addChildNode(moonGlowNode)
         packNode.addChildNode(cardNode)
-        packNode.addChildNode(sparkNode)
+        if !CommandLine.arguments.contains("-boosterNoFront") {
+            packNode.addChildNode(sparkNode)
+        }
         // La vraie face avant du maillage regarde -Z : demi-tour pour la
         // présenter à la caméra. Et le PINCEMENT : l'asset est trapu (0,81),
         // à x·0,75 il retombe au ratio d'un vrai booster (0,60) — échelle
@@ -329,6 +489,7 @@ final class BoosterScene {
         scene.lightingEnvironment.contents = Self.hdrStudio ?? Self.studioEnvironment()
         scene.lightingEnvironment.intensity = 1.0
         scene.background.contents = UIColor.black
+        print("[booster-bench] lune: geo=\(moonGlowNode.geometry != nil) op=\(moonGlowNode.opacity)")
         print("[booster-bench] scène : mylar=\(mylar) env=\(Self.hdrStudio?.lastPathComponent ?? "FALLBACK 8 bits") emission=\(bodyNode.geometry?.firstMaterial?.emission.intensity ?? -1)")
 
         if gallery {
@@ -413,7 +574,76 @@ final class BoosterScene {
         }
         // Le front en espace modèle : x = (0,5 - s)·largeur, sur la face avant.
         sparkNode.position.x = (0.5 - tearProgress) * 0.78
-        sparks.birthRate = sparking ? 520 : 0
+        setSparking(sparking)
+        // La lune se charge avec la progression (et l'invite se tait dès
+        // la première morsure) — l'écho sur la surcouche ET la lumière
+        // qui se répand.
+        for node in [bodyNode, capNode] {
+            node.geometry?.firstMaterial?
+                .setValue(CGFloat(tearProgress), forKey: "moonCharge")
+        }
+        // Le front allumé sous le doigt, une braise résiduelle sinon.
+        tearLightSource?.intensity = sparking
+            ? CGFloat(22 + 42 * tearProgress)
+            : CGFloat(10 * tearProgress)
+        for node in [bodyNode, capNode] {
+            node.geometry?.firstMaterial?
+                .setValue(0.0 as CGFloat, forKey: "inviteGlow")
+        }
+    }
+
+    /// Le battement de la lune quand la bande cède : un flash bref qui
+    /// retombe à l'incandescence de veille (elle veille jusqu'à la carte).
+    func moonPulse() {
+        for node in [bodyNode, capNode] {
+            guard let m = node.geometry?.firstMaterial else { continue }
+            let pulse = CABasicAnimation(keyPath: "moonCharge")
+            pulse.fromValue = 2.0
+            pulse.toValue = 1.0
+            pulse.duration = 0.45
+            pulse.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            m.addAnimation(pulse, forKey: "moonPulse")
+            m.setValue(1.0 as CGFloat, forKey: "moonCharge")
+        }
+        if let light = tearLightSource {
+            let flash = CABasicAnimation(keyPath: "intensity")
+            flash.fromValue = 120
+            flash.toValue = 10
+            flash.duration = 0.5
+            flash.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            light.addAnimation(flash, forKey: "tearFlash")
+            light.intensity = 10
+        }
+    }
+
+    /// La lueur d'invite : le front fantôme balaie la ligne de découpe
+    /// (~0,9 s), s'allume vite, meurt en fin de course.
+    func inviteSweep() {
+        for node in [bodyNode, capNode] {
+            guard let m = node.geometry?.firstMaterial else { continue }
+            let sweep = CABasicAnimation(keyPath: "inviteU")
+            sweep.fromValue = 0.34
+            sweep.toValue = 0.66
+            sweep.duration = 0.9
+            sweep.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            let glow = CAKeyframeAnimation(keyPath: "inviteGlow")
+            glow.values = [0, 1, 1, 0]
+            glow.keyTimes = [0, 0.18, 0.72, 1]
+            glow.duration = 0.9
+            m.addAnimation(sweep, forKey: "inviteSweep")
+            m.addAnimation(glow, forKey: "inviteGlow")
+        }
+    }
+
+    /// Allume ou éteint le front : la poudre de diamant (BEAUCOUP), et
+    /// le voile de fumée qui monte du sillage. Interrupteurs de bissection
+    /// au banc : `-boosterNoDust` / `-boosterNoSmoke`.
+    func setSparking(_ on: Bool) {
+        let noDust = CommandLine.arguments.contains("-boosterNoDust")
+        let noSmoke = CommandLine.arguments.contains("-boosterNoSmoke")
+        sparks.birthRate = (on && !noDust) ? 4200 : 0
+        accents.birthRate = (on && !noSmoke) ? 26 : 0
+        perleNode.isHidden = !on
     }
 
     /// L'éteignoir de la lèvre, une fois la bande partie.
@@ -428,12 +658,55 @@ final class BoosterScene {
     }
 
     /// La pénombre de cérémonie pendant la découpe (le geste Pocket).
+    /// SYMÉTRIQUE : la levée restaure l'état INITIAL exact — le bug du
+    /// « trop clair en bas » venait d'une levée qui installait un état
+    /// plus lumineux (env 1,5 / braise 140) et qui survivait au retour
+    /// à l'anneau.
     func dim(_ on: Bool) {
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.4
-        scene.lightingEnvironment.intensity = on ? 0.55 : 1.5
-        keyLight.intensity = on ? 110 : 320
-        embers.intensity = on ? 60 : 140
+        scene.lightingEnvironment.intensity = on ? 0.55 : 1.0
+        keyLight.intensity = on ? 110 : 260
+        embers.intensity = on ? 60 : 38
+        SCNTransaction.commit()
+    }
+
+    /// La lumière qui SALUE — réservée à l'instant où la carte se
+    /// présente (l'ancienne « levée » généreuse, à sa vraie place).
+    func celebrate() {
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.5
+        scene.lightingEnvironment.intensity = 1.5
+        keyLight.intensity = 320
+        embers.intensity = 140
+        SCNTransaction.commit()
+    }
+
+    /// La pointe de bloom du flip : attaque brève, décrue douce.
+    func bloomSpike() {
+        guard let camera = cameraNode.camera else { return }
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.1
+        camera.bloomIntensity = 1.15
+        SCNTransaction.commit()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.6
+            camera.bloomIntensity = 0.6
+            SCNTransaction.commit()
+        }
+    }
+
+    /// La bande s'ARRACHE : déjà enroulée par le peeling, elle se
+    /// détache, part en l'air en tournant, et meurt en vol.
+    func flyOffCap() {
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.55
+        SCNTransaction.animationTimingFunction =
+            CAMediaTimingFunction(controlPoints: 0.3, 0, 1, 1)
+        capNode.position = SCNVector3(0.35, 1.1, 0.5)
+        capNode.eulerAngles = SCNVector3(1.4, 0.6, 2.2)
+        capNode.opacity = 0
         SCNTransaction.commit()
     }
 
@@ -444,36 +717,142 @@ final class BoosterScene {
         return UIImage(contentsOfFile: path)
     }
 
-    private static func makeSparks() -> SCNParticleSystem {
+    /// La POUDRE DE DIAMANT : elle ne jaillit pas, elle COULE — vitesse
+    /// quasi nulle, cône serré vers le bas, chute lente, rideau dense de
+    /// micro-étoiles blanches à peine dorées. La densité fait le velours,
+    /// la lenteur fait le luxe. Longue traîne qui fond.
+    private static func makeDiamondFall() -> SCNParticleSystem {
         let p = SCNParticleSystem()
         p.birthRate = 0
-        p.particleLifeSpan = 0.42
-        p.particleLifeSpanVariation = 0.18
-        p.particleSize = 0.011
-        p.particleSizeVariation = 0.006
-        p.particleVelocity = 0.34
-        p.particleVelocityVariation = 0.22
-        p.emittingDirection = SCNVector3(0, 0.6, -1)
-        p.spreadingAngle = 55
-        p.acceleration = SCNVector3(0, -0.6, 0)
-        p.particleColor = UIColor(red: 1.0, green: 0.72, blue: 0.35, alpha: 1)
-        p.particleColorVariation = SCNVector4(0.06, 0.1, 0.05, 0)
+        p.particleLifeSpan = 1.4
+        p.particleLifeSpanVariation = 0.4
+        p.particleSize = 0.0018
+        p.particleSizeVariation = 0.0011
+        p.particleVelocity = 0.04
+        p.particleVelocityVariation = 0.03
+        p.emittingDirection = SCNVector3(0, -0.6, -0.5)
+        p.spreadingAngle = 20
+        p.acceleration = SCNVector3(0, -0.15, 0)
+        p.emitterShape = SCNBox(width: 0.07, height: 0.008, length: 0.008,
+                                chamferRadius: 0)
+        p.birthLocation = .volume
+        // Blanc à peine doré — du diamant qui a quitté le feu.
+        p.particleColor = UIColor(red: 1.0, green: 0.95, blue: 0.88, alpha: 1)
+        p.particleColorVariation = SCNVector4(0.0, 0.03, 0.08, 0)
         p.blendMode = .additive
-        p.particleImage = sparkDot()
+        p.particleImage = diamondGlint()
         p.isLightingEnabled = false
+        // La traîne fond au lieu de mourir sec.
+        let fade = CAKeyframeAnimation()
+        fade.values = [1.0, 1.0, 0.0]
+        fade.keyTimes = [0, 0.55, 1]
+        fade.duration = 1.0
+        p.propertyControllers = [
+            .opacity: SCNParticlePropertyController(animation: fade),
+        ]
         return p
     }
 
-    /// Un point braise doux, dessiné à la main — pas d'asset.
-    private static func sparkDot() -> UIImage {
-        let side = 32.0
+    /// Le VOILE DE FUMÉE : une dizaine de volutes par seconde, grosses et
+    /// presque invisibles, en fondu alpha (la fumée VOILE, elle n'illumine
+    /// pas), qui montent lentement du sillage, tournent et gonflent en se
+    /// dissolvant. La mémoire du passage.
+    private static func makeSmokeVeil() -> SCNParticleSystem {
+        let p = SCNParticleSystem()
+        p.birthRate = 0
+        p.particleLifeSpan = 2.6
+        p.particleLifeSpanVariation = 0.6
+        p.particleSize = 0.10
+        p.particleSizeVariation = 0.04
+        p.particleVelocity = 0.06
+        p.particleVelocityVariation = 0.03
+        p.emittingDirection = SCNVector3(0, 1, -0.15)
+        p.spreadingAngle = 30
+        p.particleAngleVariation = 180
+        p.particleAngularVelocity = 18
+        p.particleAngularVelocityVariation = 14
+        p.particleColor = UIColor(red: 0.42, green: 0.38, blue: 0.34, alpha: 0.55)
+        p.blendMode = .alpha
+        p.particleImage = smokeWisp()
+        p.isLightingEnabled = false
+        // Naît de rien, s'installe, se dissout. (Le contrôleur de TAILLE
+        // a été retiré : suspect du carré noir — taille fixe.)
+        let fade = CAKeyframeAnimation()
+        fade.values = [0.0, 1.0, 1.0, 0.0]
+        fade.keyTimes = [0, 0.22, 0.55, 1]
+        fade.duration = 1.0
+        p.propertyControllers = [
+            .opacity: SCNParticlePropertyController(animation: fade),
+        ]
+        return p
+    }
+
+    /// La micro-étoile à quatre branches — LA signature diamant : un cœur
+    /// vif et quatre aiguilles fines qui fondent.
+    private static func diamondGlint() -> UIImage {
+        let side = 24.0
+        let mid = side / 2
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
         return renderer.image { ctx in
-            let colors = [UIColor.white.withAlphaComponent(0.95).cgColor,
-                          UIColor(red: 1, green: 0.6, blue: 0.2, alpha: 0.5).cgColor,
+            let g = ctx.cgContext
+            let space = CGColorSpaceCreateDeviceRGB()
+            // les quatre aiguilles
+            let armColors = [UIColor.white.withAlphaComponent(0.9).cgColor,
+                             UIColor.white.withAlphaComponent(0).cgColor] as CFArray
+            let arm = CGGradient(colorsSpace: space, colors: armColors,
+                                 locations: [0, 1])!
+            for (dx, dy) in [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)] {
+                g.saveGState()
+                g.clip(to: CGRect(x: dx == 0 ? mid - 0.8 : (dx > 0 ? mid : 0),
+                                  y: dy == 0 ? mid - 0.8 : (dy > 0 ? mid : 0),
+                                  width: dx == 0 ? 1.6 : mid,
+                                  height: dy == 0 ? 1.6 : mid))
+                g.drawLinearGradient(arm,
+                    start: CGPoint(x: mid, y: mid),
+                    end: CGPoint(x: mid + dx * mid, y: mid + dy * mid),
+                    options: [])
+                g.restoreGState()
+            }
+            // le cœur
+            let core = [UIColor.white.cgColor,
+                        UIColor.white.withAlphaComponent(0).cgColor] as CFArray
+            let coreGrad = CGGradient(colorsSpace: space, colors: core,
+                                      locations: [0, 1])!
+            g.drawRadialGradient(coreGrad,
+                startCenter: CGPoint(x: mid, y: mid), startRadius: 0,
+                endCenter: CGPoint(x: mid, y: mid), endRadius: 3.2,
+                options: [])
+        }
+    }
+
+    /// La perle : cœur blanc fusion, halo braise généreux — la comète.
+    private static func pearlDot() -> UIImage {
+        let side = 64.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
+        return renderer.image { ctx in
+            let colors = [UIColor.white.cgColor,
+                          UIColor(red: 1, green: 0.85, blue: 0.55, alpha: 0.75).cgColor,
+                          UIColor(red: 1, green: 0.45, blue: 0.12, alpha: 0.28).cgColor,
                           UIColor.clear.cgColor] as CFArray
             let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                  colors: colors, locations: [0, 0.35, 1])!
+                                  colors: colors, locations: [0, 0.18, 0.45, 1])!
+            ctx.cgContext.drawRadialGradient(grad,
+                startCenter: CGPoint(x: side / 2, y: side / 2), startRadius: 0,
+                endCenter: CGPoint(x: side / 2, y: side / 2), endRadius: side / 2,
+                options: [])
+        }
+    }
+
+    /// Une volute douce, sans bord — le voile.
+    private static func smokeWisp() -> UIImage {
+        let side = 64.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
+        return renderer.image { ctx in
+            let colors = [UIColor.white.withAlphaComponent(0.16).cgColor,
+                          UIColor.white.withAlphaComponent(0.06).cgColor,
+                          UIColor.clear.cgColor] as CFArray
+            let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                  colors: colors, locations: [0, 0.45, 1])!
             ctx.cgContext.drawRadialGradient(grad,
                 startCenter: CGPoint(x: side / 2, y: side / 2), startRadius: 0,
                 endCenter: CGPoint(x: side / 2, y: side / 2), endRadius: side / 2,

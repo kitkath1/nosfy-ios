@@ -102,6 +102,44 @@ final class BoosterHaptics {
         else { fallback.impactOccurred(intensity: 0.7) }
     }
 
+    /// Un crépitement de déchirure : la saveur suit la vitesse du geste.
+    /// Netteté HAUTE — c'est elle qui fait « mylar » (basse, ça fait
+    /// caoutchouc).
+    func pop(_ v: Float) {
+        guard engine != nil else {
+            fallback.impactOccurred(intensity: 0.5)
+            return
+        }
+        if v > 0.7 || Float.random(in: 0 ... 1) < 0.15 {
+            transient(1.0, 1.0)
+        } else if Float.random(in: 0 ... 1) < 0.5 {
+            transient(Float.random(in: 0.65 ... 0.85), 0.95)
+        } else {
+            transient(Float.random(in: 0.45 ... 0.6), 0.8)
+        }
+    }
+
+    /// La paire scintillante de la carte présentée, calée sur le carillon.
+    func sparkle() {
+        guard let engine else {
+            fallback.impactOccurred(intensity: 0.6)
+            return
+        }
+        revive()
+        let a = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            .init(parameterID: .hapticIntensity, value: 0.6),
+            .init(parameterID: .hapticSharpness, value: 0.45),
+        ], relativeTime: 0)
+        let b = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            .init(parameterID: .hapticIntensity, value: 0.35),
+            .init(parameterID: .hapticSharpness, value: 0.7),
+        ], relativeTime: 0.09)
+        if let p = try? CHHapticPattern(events: [a, b], parameters: []),
+           let player = try? engine.makePlayer(with: p) {
+            try? player.start(atTime: CHHapticTimeImmediate)
+        }
+    }
+
     /// Le coup sourd de l'engagement : l'impact profond + un grondement
     /// de 180 ms qui meurt — le mécanisme qui s'enclenche.
     func commitThunk() {
@@ -218,6 +256,96 @@ final class BoosterAmbience {
     }
 }
 
+/// Les bruits de la cérémonie : la BRAISE qui suit le doigt pendant la
+/// découpe (deux boucles sans couture — éparse et dense — fondues selon
+/// la vitesse du geste), et le CARILLON féérique quand la carte se
+/// présente. Même étiquette que la musique : mélangé, respectueux du
+/// silencieux, jamais contre la playlist.
+final class BoosterSFX {
+    private let engine = AVAudioEngine()
+    private var eparse: AVAudioPlayerNode?
+    private var dense: AVAudioPlayerNode?
+    private var chimePlayer: AVAudioPlayerNode?
+    private var chimeBuf: AVAudioPCMBuffer?
+    private var ripPlayer: AVAudioPlayerNode?
+    private var ripBuf: AVAudioPCMBuffer?
+    private var ready = false
+    /// Le plafond du crépitement dans le mix (la braise reste un garni).
+    private static let crackleCeiling: Float = 0.5
+
+    init() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.ambient, mode: .default,
+                                 options: [.mixWithOthers])
+        func load(_ name: String, loop: Bool) -> AVAudioPlayerNode? {
+            guard let url = Bundle.main.url(forResource: name,
+                                            withExtension: "caf"),
+                  let file = try? AVAudioFile(forReading: url),
+                  let buf = AVAudioPCMBuffer(
+                      pcmFormat: file.processingFormat,
+                      frameCapacity: AVAudioFrameCount(file.length)),
+                  (try? file.read(into: buf)) != nil else { return nil }
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: engine.mainMixerNode, format: buf.format)
+            player.volume = 0
+            if loop {
+                player.scheduleBuffer(buf, at: nil, options: .loops)
+            } else if chimeBuf == nil {
+                chimeBuf = buf
+            } else {
+                ripBuf = buf
+            }
+            return player
+        }
+        eparse = load("dechirure-lente", loop: true)
+        dense = load("dechirure-franche", loop: true)
+        chimePlayer = load("feerie-carillon", loop: false)
+        ripPlayer = load("dechirure-finale", loop: false)
+        engine.prepare()
+        guard (try? engine.start()) != nil else { return }
+        eparse?.play()
+        dense?.play()
+        chimePlayer?.play()
+        ripPlayer?.play()
+        ready = true
+    }
+
+    /// La braise sous le doigt : v = vitesse du geste (0…1). L'éparse
+    /// porte les gestes lents, la dense monte avec la fougue.
+    func crackle(_ v: Float) {
+        guard ready else { return }
+        let w = min(max((v - 0.25) / 0.55, 0), 1)
+        let g = powf(min(max(v, 0), 1), 0.6) * Self.crackleCeiling
+        eparse?.volume = (1 - w) * g
+        dense?.volume = w * g
+    }
+
+    func crackleOff() {
+        eparse?.volume = 0
+        dense?.volume = 0
+    }
+
+    /// LE GRAND RRRIP : la bande qui cède — la déchirure accélère et
+    /// se libère d'un coup sec.
+    func rip() {
+        guard ready, let ripPlayer, let ripBuf else { return }
+        ripPlayer.volume = 0.85
+        ripPlayer.scheduleBuffer(ripBuf, at: nil)
+    }
+
+    /// Le carillon féérique, un seul, au sacre de la carte.
+    func chime() {
+        guard ready, let chimePlayer, let chimeBuf else { return }
+        chimePlayer.volume = 0.9
+        chimePlayer.scheduleBuffer(chimeBuf, at: nil)
+    }
+
+    deinit {
+        if ready { engine.stop() }
+    }
+}
+
 // MARK: - Banc d'essai (`-boosterLab`)
 
 /// Page noire nue : le booster de récompense seul — le sachet noir laqué au
@@ -252,6 +380,7 @@ struct BoosterLab: View {
     private static let yawDeg: Float? = UserDefaults.standard
         .string(forKey: "boosterYaw").flatMap(Float.init)
     private static let open = CommandLine.arguments.contains("-boosterOpen")
+    private static let cine = CommandLine.arguments.contains("-boosterCine")
 
     var body: some View {
         ZStack {
@@ -259,7 +388,7 @@ struct BoosterLab: View {
             BoosterStage(still: Self.still, frozenTear: Self.tear,
                          startOpen: Self.open, startDos: Self.dos,
                          mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
-                         gallery: Self.gallery)
+                         gallery: Self.gallery, cine: Self.cine)
                 .ignoresSafeArea()
         }
         .statusBarHidden()
@@ -282,6 +411,7 @@ struct BoosterStage: UIViewRepresentable {
     var mylar: Bool = false
     var frozenYawDeg: Float? = nil
     var gallery: Bool = false
+    var cine: Bool = false
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -293,6 +423,9 @@ struct BoosterStage: UIViewRepresentable {
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
                                    gallery: gallery)
+        if cine {
+            context.coordinator.autoCeremony(after: 1.4)
+        }
         if let s = frozenTear {
             context.coordinator.freezeTear(at: s)
         } else if startOpen {
@@ -331,13 +464,41 @@ struct BoosterStage: UIViewRepresentable {
         /// Les mains et l'oreille du manège.
         private let haptics = BoosterHaptics()
         private var ambience: BoosterAmbience?
+        private var sfx: BoosterSFX?
+        /// Le geste de découpe, côté sensations : vitesse lissée du doigt,
+        /// distance accumulée depuis le dernier crépitement, seuil tiré
+        /// au sort (les pops suivent la DISTANCE déchirée, pas le temps —
+        /// une déchirure lente crépite lentement, comme du vrai foil).
+        private var tearBedV: Float = 0
+        private var tearAccum: Float = 0
+        private var tearPrev: Float = 0
+        private var popThreshold: Float = 0.03
+        /// L'horloge de l'invite : tant que le sachet posé n'est pas
+        /// mordu, la lueur fantôme balaie la ligne toutes les ~4 s.
+        private var inviteTimer: Timer?
+
+        private func startInvite() {
+            inviteTimer?.invalidate()
+            let timer = Timer(fire: Date().addingTimeInterval(1.4),
+                              interval: 4.2, repeats: true) { [weak self] _ in
+                guard let self, self.mode == .idle,
+                      let stage = self.stage,
+                      stage.tearProgress == 0, self.restingFront else { return }
+                stage.inviteSweep()
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            inviteTimer = timer
+        }
+
+        private func stopInvite() {
+            inviteTimer?.invalidate()
+            inviteTimer = nil
+        }
         /// Le geste en cours : écran → progression, calé au premier point.
         private var tearOriginX: CGFloat = 0
         private var tearSpanX: CGFloat = 1
         private var tearStartProgress: Float = 0
-        private var lastTickStep = 0
         private let tick = UIImpactFeedbackGenerator(style: .light)
-        private let thud = UIImpactFeedbackGenerator(style: .medium)
 
         // ---- le tour du sachet (l'idiome maison : inertie amortie) ----
         /// Le lacet vrai, non borné : π = recto face caméra, 0 = verso.
@@ -402,6 +563,7 @@ struct BoosterStage: UIViewRepresentable {
             self.galleryOn = gallery
             stopSpin()
             stopScroll()
+            stopInvite()
             guard let stage = BoosterScene(still: still, mylar: mylar,
                                            gallery: gallery) else { return }
             self.stage = stage
@@ -432,6 +594,7 @@ struct BoosterStage: UIViewRepresentable {
                 }
             } else {
                 mode = .idle
+                if !still { startInvite() }
             }
         }
 
@@ -717,6 +880,7 @@ struct BoosterStage: UIViewRepresentable {
                 stage.floorNode.isHidden = true
                 stage.beginIdleBreath()
                 self.mode = .idle
+                self.startInvite()
             }
         }
 
@@ -791,7 +955,9 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         func freezeTear(at s: Float) {
-            stage?.setTear(s, sparking: false)
+            // La poudre reste allumée : une capture de découpe sans sa
+            // poudre ne juge rien (le rendu tourne en continu, elle vit).
+            stage?.setTear(s, sparking: true)
             stage?.dim(true)
         }
 
@@ -799,6 +965,7 @@ struct BoosterStage: UIViewRepresentable {
             guard let stage else { return }
             stage.setTear(1, sparking: false)
             stage.capNode.isHidden = true
+            stage.cardNode.isHidden = false
             // Reparentée D'ABORD, posée ENSUITE : figée depuis l'intérieur
             // du sachet, la carte emporterait le pincement x·0,75 dans sa
             // transformation monde — présentée maigre, sans un mot.
@@ -809,6 +976,41 @@ struct BoosterStage: UIViewRepresentable {
             stage.cardNode.scale = SCNVector3(1.05, 1.05, 1.05)
             stage.packNode.position.y = -1.7
             mode = .revealed
+        }
+
+        /// `-boosterCine` : la cérémonie se joue TOUTE SEULE (le banc de
+        /// filmage — impossible de glisser un doigt via simctl). Une
+        /// déchirure d'~1,1 s au rythme d'une vraie main, puis la fin.
+        func autoCeremony(after delay: TimeInterval) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self, let stage = self.stage, self.mode == .idle
+                else { return }
+                self.mode = .tearing
+                stage.dim(true)
+                if self.sfx == nil, !self.still { self.sfx = BoosterSFX() }
+                self.haptics.bedStart()
+                var p: Float = 0
+                let timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60,
+                                                 repeats: true) { [weak self] t in
+                    guard let self, let stage = self.stage else {
+                        t.invalidate()
+                        return
+                    }
+                    p += 0.9 / 66
+                    let eased = p * p * (3 - 2 * p)
+                    stage.setTear(min(eased, 0.9), sparking: true)
+                    self.tearBedV = 0.55
+                    self.sfx?.crackle(0.55)
+                    stage.packNode.eulerAngles.x =
+                        Float.random(in: -1 ... 1) * 0.006
+                    if p >= 0.9 {
+                        t.invalidate()
+                        self.sfx?.crackleOff()
+                        self.finishTear()
+                    }
+                }
+                RunLoop.main.add(timer, forMode: .common)
+            }
         }
 
         // MARK: gestes
@@ -897,8 +1099,14 @@ struct BoosterStage: UIViewRepresentable {
                     tearOriginX = CGFloat(min(left.x, right.x))
                     tearSpanX = max(CGFloat(abs(right.x - left.x)), 1)
                     tearStartProgress = stage.tearProgress
-                    lastTickStep = Int(tearStartProgress * 8)
                     stage.dim(true)
+                    // La main et l'oreille s'arment avec la découpe.
+                    tearBedV = 0
+                    tearAccum = 0
+                    tearPrev = stage.tearProgress
+                    popThreshold = Float.random(in: 0.015 ... 0.045)
+                    haptics.bedStart()
+                    if sfx == nil, !still { sfx = BoosterSFX() }
                     tick.prepare()
                 } else if packHit != nil {
                     // Attraper le sachet — y compris en plein vol : la main
@@ -913,10 +1121,25 @@ struct BoosterStage: UIViewRepresentable {
                     let s = Float((g.location(in: view).x - tearOriginX) / tearSpanX)
                     let progress = max(tearStartProgress, min(s, 1))
                     stage.setTear(progress, sparking: true)
-                    let step = Int(progress * 8)
-                    if step > lastTickStep {
-                        lastTickStep = step
-                        tick.impactOccurred(intensity: 0.6)
+                    // La sensation suit le geste : le lit gronde avec la
+                    // VITESSE, les crépitements tombent avec la DISTANCE.
+                    let delta = max(stage.tearProgress - tearPrev, 0)
+                    tearPrev = stage.tearProgress
+                    // Le plancher monte avec la CHARGE de la lune : plus
+                    // elle brûle, plus la paume gronde, même à geste lent.
+                    tearBedV = tearBedV * 0.8 + min(delta * 28, 1) * 0.2
+                    haptics.bedIntensity(0.2 + 0.3 * stage.tearProgress
+                                         + 0.5 * powf(tearBedV, 0.7))
+                    // Le foil RÉSISTE : le sachet tremble sous l'effort,
+                    // proportionnellement à la vitesse du geste.
+                    stage.packNode.eulerAngles.x =
+                        Float.random(in: -1 ... 1) * 0.010 * tearBedV
+                    sfx?.crackle(tearBedV)
+                    tearAccum += delta
+                    if tearAccum >= popThreshold {
+                        tearAccum = 0
+                        popThreshold = Float.random(in: 0.015 ... 0.045)
+                        haptics.pop(tearBedV)
                     }
                 case .spinning:
                     let t = g.translation(in: view)
@@ -948,7 +1171,9 @@ struct BoosterStage: UIViewRepresentable {
             case .ended, .cancelled:
                 switch mode {
                 case .tearing:
-                    stage.sparks.birthRate = 0
+                    stage.setSparking(false)
+                    haptics.bedStop()
+                    sfx?.crackleOff()
                     if stage.tearProgress > 0.82 {
                         finishTear()
                     } else {
@@ -1000,15 +1225,26 @@ struct BoosterStage: UIViewRepresentable {
             guard let stage else { return }
             mode = .opening
             stage.setTear(1, sparking: true)
-            thud.impactOccurred()
+            // La bande cède : LE GRAND RRRIP, le coup profond dans la
+            // paume, et la lune BAT une fois — puis veille, incandescente.
+            haptics.bedStop()
+            haptics.commitThunk()
+            stage.moonPulse()
+            sfx?.rip()
+            sfx?.crackleOff()
+            stopInvite()
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
                 guard let self, let stage = self.stage else { return }
-                stage.sparks.birthRate = 0
-                stage.capNode.isHidden = true
+                stage.setSparking(false)
+                // La bande, déjà enroulée par le peeling, S'ARRACHE :
+                // elle part en l'air en tournant et meurt en vol.
+                stage.flyOffCap()
                 stage.fadeTornGlow(over: 1.0)
-
-                // Le sachet s'incline, la carte sort de la fente.
+                // La carte s'éveille et sort DOS D'ABORD — le motif
+                // croissants offert, la question posée.
+                stage.cardNode.isHidden = false
+                stage.cardNode.eulerAngles.y = 0
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 1.1
                 SCNTransaction.animationTimingFunction =
@@ -1028,32 +1264,78 @@ struct BoosterStage: UIViewRepresentable {
         /// le sacre, sombre et émouvant.
         private func presentCard() {
             guard let stage else { return }
-            ambience?.act(BoosterAmbience.sacre, over: 1.8)
+            // Figée depuis l'intérieur, la carte emporterait le pincement :
+            // on bake le monde AVANT de la poser (le piège documenté).
             let world = stage.cardNode.worldTransform
             stage.cardNode.removeFromParentNode()
             stage.scene.rootNode.addChildNode(stage.cardNode)
             stage.cardNode.transform = world
 
+            // LE TEMPS MORT : la carte dérive à peine, dos offert, la
+            // caméra pousse doucement — une demi-seconde de question.
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.9
+            SCNTransaction.animationDuration = 0.5
             SCNTransaction.animationTimingFunction =
-                CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1.0)
-            stage.cardNode.position = SCNVector3(0, 0.02, 0.55)
-            stage.cardNode.eulerAngles = SCNVector3(0, 0, 0)
-            stage.cardNode.scale = SCNVector3(1.05, 1.05, 1.05)
-            stage.packNode.position.y = -1.7
-            stage.dim(false)
+                CAMediaTimingFunction(name: .easeOut)
+            stage.cardNode.position.y += 0.04
+            stage.cameraNode.position.z = 1.86
             SCNTransaction.commit()
-
-            let cardMaterial = stage.cardNode.geometry?.firstMaterial
-            cardMaterial?.emission.intensity = 0.5
+            // Le sachet vide s'efface par le bas pendant la question.
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = 1.4
-            cardMaterial?.emission.intensity = 0
+            SCNTransaction.animationDuration = 0.7
+            SCNTransaction.animationTimingFunction =
+                CAMediaTimingFunction(controlPoints: 0.5, 0, 0.8, 0.4)
+            stage.packNode.position.y = -1.7
             SCNTransaction.commit()
 
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            mode = .revealed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
+                self?.flipCard()
+            }
+        }
+
+        /// LE FLIP : 0,35 s, et TOUT concentré sur la frame de profil —
+        /// pointe de bloom, carillon, paume, lumière qui salue. Un seul
+        /// éclat dans une scène presque noire.
+        private func flipCard() {
+            guard let stage else { return }
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.35
+            SCNTransaction.animationTimingFunction =
+                CAMediaTimingFunction(controlPoints: 0.55, 0, 0.2, 1)
+            stage.cardNode.position = SCNVector3(0, 0.02, 0.55)
+            // du dos (≈ π monde) vers la FACE (0) : le demi-tour.
+            stage.cardNode.eulerAngles = SCNVector3(0, 0, 0)
+            stage.cardNode.scale = SCNVector3(0.98, 0.98, 0.98)
+            SCNTransaction.commit()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) { [weak self] in
+                guard let self, let stage = self.stage else { return }
+                stage.bloomSpike()
+                stage.celebrate()
+                self.sfx?.chime()
+                self.haptics.sparkle()
+                self.ambience?.act(BoosterAmbience.sacre, over: 1.4)
+            }
+
+            // L'assise : un ressort discret après le flip.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { [weak self] in
+                guard let self, let stage = self.stage else { return }
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.2
+                SCNTransaction.animationTimingFunction =
+                    CAMediaTimingFunction(name: .easeOut)
+                stage.cardNode.scale = SCNVector3(1.09, 1.09, 1.09)
+                SCNTransaction.commit()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.25
+                    SCNTransaction.animationTimingFunction =
+                        CAMediaTimingFunction(name: .easeInEaseOut)
+                    stage.cardNode.scale = SCNVector3(1.05, 1.05, 1.05)
+                    SCNTransaction.commit()
+                }
+                self.mode = .revealed
+            }
         }
     }
 }
