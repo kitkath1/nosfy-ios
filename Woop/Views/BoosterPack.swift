@@ -86,6 +86,8 @@ enum BoosterShader {
     float inviteU;
     float inviteGlow;
     float moonCharge;
+    float skewU;
+    float cornerU;
     #pragma body
     float bu = _surface.diffuseTexcoord.x;
     if (bu > 0.68) { bu -= 0.345; }
@@ -134,45 +136,133 @@ enum BoosterShader {
     if (bv > 0.8896) { discard_fragment(); }
     float lip = smoothstep(0.012, 0.0, 0.8896 - bv);
     float opened = smoothstep(bu, bu + 0.012, tearU);
-    float behind = saturate((tearU - bu) / 0.12);
+    float behind = saturate((tearU - bu) / 0.20);
     float3 heat = mix(float3(1.0, 0.93, 0.78), float3(0.75, 0.12, 0.02), behind);
-    _surface.emission.rgb += heat * lip * opened * tornGlow * (2.8 - 1.9 * behind);
+    _surface.emission.rgb += heat * lip * opened * tornGlow
+        * (0.35 + 2.45 * pow(1.0 - behind, 2.0));
+    // Le FIL D'OR devant le front : la lame posée sur la ligne, qui
+    // attend le doigt (capture 1 de la référence).
+    _surface.emission.rgb += float3(1.0, 0.80, 0.42)
+        * lip * (1.0 - opened) * tornGlow * 1.3;
+    // Le RENFLEMENT blanc-or AU front — le bloom fait le halo.
+    float frontGlow = exp(-pow((bu - tearU) / 0.015, 2.0));
+    _surface.emission.rgb += float3(1.0, 0.93, 0.72)
+        * lip * frontGlow * tornGlow * 4.5;
+    // L'OMBRE FAUSSE du rouleau sur l'illustration (capture 2) : une
+    // ellipse douce sous le front, qui meurt avec la braise.
+    float sh = exp(-(pow((bu - tearU) / 0.05, 2.0)
+                     + pow((0.8896 - bv) / 0.035, 2.0)));
+    _surface.diffuse.rgb *= 1.0 - 0.45 * sh * tornGlow;
     """ + sheen
 
     /// La bande : plus AUCUN discard derrière le front — elle reste
     /// entière et le peeling (modificateur de géométrie) la soulève.
-    /// La morsure blanche vit à cheval sur le front.
+    /// La morsure blanche vit à cheval sur le front — le MÊME front
+    /// oblique que la géométrie (skew + coin), sinon la braise et le
+    /// pli divergent au coin.
     static let cap = preamble + """
     if (bv < 0.8896) { discard_fragment(); }
+    float nvc = saturate((bv - 0.8896) / 0.077);
+    float cornerC = exp(-pow((bu - 0.353) / 0.06, 2.0));
+    float frontC = tearU + skewU * nvc + cornerU * nvc * cornerC;
     float jag = (fract(sin(bv * 817.7) * 43758.5453) - 0.5) * 0.014;
-    float front = tearU + jag;
+    float front = frontC + jag;
     float d = abs(bu - front);
     float burn = smoothstep(0.020, 0.0, d);
     _surface.emission.rgb += (ember * 2.2 + float3(1.0, 0.85, 0.6) * burn) * burn * tornGlow;
+    // Le TUBE DE BRAISE : les flancs enroulés (la normale a quitté la
+    // frontale) s'allument — la tranche du rouleau remplace la
+    // tearLight, morte au simulateur. Indifférent au pli avant/dos.
+    float3 rollN = normalize(_surface.normal);
+    float turned = 1.0 - abs(rollN.z);
+    _surface.emission.rgb += ember * turned * turned * tornGlow * 0.9;
     """ + sheen
 
-    /// LE PEELING (modificateur de GÉOMÉTRIE de la bande) : la partie
-    /// déjà déchirée s'enroule vers l'arrière autour de la ligne de
-    /// déchirure, et FRISSONNE — le papier vit sous le geste. `u_time`
-    /// est fourni par SceneKit.
+    /// LE PEELING (modificateur de GÉOMÉTRIE de la bande) : l'ENROULEMENT
+    /// DÉVELOPPABLE À CHARNIÈRE MOBILE — la bande s'enroule en spirale
+    /// autour du FRONT lui-même (la ligne quasi verticale qui avance avec
+    /// tearU), comme un scotch qu'on pèle. Plus jamais l'axe horizontal
+    /// fixe hingeY : il donnait un volet basculé à angle plafonné.
+    ///
+    /// Géométrie mesurée dans booster.bin : u→x affine de pente −2,795
+    /// (torn = cu < frontU = côté +x modèle) ; le sachet vit sous une
+    /// scale de node (0,75, 1, 0,45) — le rouleau est calculé en unités
+    /// MONDE puis recompensé par axe, sinon il s'écrase en ellipse.
+    /// Spirale d'Archimède (r grandit avec θ) : les tours ne se
+    /// superposent jamais sur le même cylindre (z-fighting).
+    /// Le frisson module le RAYON (une onde qui voyage dans l'étoffe),
+    /// plus l'angle du volet. Normales ET tangentes tournent avec la
+    /// matière — sans elles le spéculaire et le froissé restent plats.
+    ///
+    /// AUCUNE porte en v : les sommets sous la ligne de déchirure
+    /// suivent le rouleau (leurs fragments sont de toute façon jetés par
+    /// le discard de surface) — c'est ce qui évite la membrane étirée
+    /// entre le corps immobile et la bande enroulée.
     static let capGeometry = """
     #pragma arguments
     float tearU;
-    float hingeY;
+    float curlR;
+    float curlK;
+    float skewU;
+    float cornerU;
+    float flutterAmp;
+    float flutterW;
+    float curlDir;
+    float breathGain;
+    float releaseT;
+    float rollWobble;
     #pragma body
-    float cu = _geometry.texcoords[0].x;
-    if (cu > 0.68) { cu -= 0.345; }
+    // LE FRONT EN POSITION X, PAS EN u : les deux peaux du sachet (tube)
+    // ont des pentes u→x OPPOSÉES — un gate en cu enroule la face et
+    // étire le dos en drapeau (payé aux deux premières captures). La
+    // ligne de front est verticale en espace modèle : tout sommet de
+    // bande à sa gauche (+x = côté départ de la découpe) roule, les
+    // deux plis ensemble. x(u) face avant : 1,3933 − 2,795·u.
     float cv = _geometry.texcoords[0].y;
-    if (cv > 0.8896 && cu < tearU) {
-        float t = clamp((tearU - cu) / 0.22, 0.0, 1.0);
-        float ang = t * 2.2
-            + sin(scn_frame.time * 24.0 + cu * 55.0) * 0.10 * t;
-        float dy = _geometry.position.y - hingeY;
-        float c = cos(ang);
-        float s = sin(ang);
-        _geometry.position.y = hingeY + dy * c;
-        _geometry.position.z = _geometry.position.z + dy * s;
+    float nv = saturate((cv - 0.8896) / 0.077);
+    float xs = _geometry.position.x;
+    float corner = exp(-pow((xs - 0.4067) / 0.17, 2.0));
+    float frontU = tearU + skewU * nv + cornerU * nv * corner;
+    float xFront = 1.3933 - 2.795 * frontU;
+    float dm = xs - xFront;
+    if (dm > 0.0) {
+        float dw = dm * 0.75;
+        float r = curlR * (1.0 + flutterAmp
+            * sin(scn_frame.time * flutterW + xs * 14.0 + cv * 26.0));
+        // L'ACCROCHE de l'envol : le rouleau se SUR-TEND (rayon serré
+        // de 20 %) et tremble en bloc — il résiste avant la rupture.
+        r = r * (1.0 - 0.20 * releaseT);
+        float theta = dw / max(r, 0.005);
+        r = r + curlK * theta;
+        theta = dw / max(r, 0.005) + rollWobble;
+        float c = cos(theta);
+        float s = sin(theta);
+        _geometry.position.x = xFront + (r * s) / 0.75;
+        _geometry.position.z += curlDir * r * (1.0 - c) / 0.45;
+        float nx = _geometry.normal.x;
+        float nz = _geometry.normal.z;
+        _geometry.normal.x = nx * c - curlDir * nz * s;
+        _geometry.normal.z = curlDir * nx * s + nz * c;
+        float tx = _geometry.tangent.x;
+        float tz = _geometry.tangent.z;
+        _geometry.tangent.x = tx * c - curlDir * tz * s;
+        _geometry.tangent.z = curlDir * tx * s + tz * c;
+    } else {
+        _geometry.position.z += sin(scn_frame.time * 1.2 + cv * 3.0)
+            * breathGain * saturate(1.0 - abs(cv - 0.5) * 1.6);
     }
+    """
+
+    /// La RESPIRATION du corps : le même bombé que la partie non pelée
+    /// de la bande — les deux copies du maillage respirent d'un seul
+    /// souffle, sinon un jour s'ouvre pile sur la ligne de déchirure.
+    static let bodyGeometry = """
+    #pragma arguments
+    float breathGain;
+    #pragma body
+    float bgv = _geometry.texcoords[0].y;
+    _geometry.position.z += sin(scn_frame.time * 1.2 + bgv * 3.0)
+        * breathGain * saturate(1.0 - abs(bgv - 0.5) * 1.6);
     """
 }
 
@@ -266,16 +356,32 @@ final class BoosterScene {
             m.setValue(-1.0 as CGFloat, forKey: "inviteU")
             m.setValue(0.0 as CGFloat, forKey: "inviteGlow")
             m.setValue(0.0 as CGFloat, forKey: "moonCharge")
+            m.setValue(Self.benchValue("boosterSkew", 0.012), forKey: "skewU")
+            m.setValue(Self.benchValue("boosterCorner", 0.022), forKey: "cornerU")
+            m.setValue(Self.benchValue("boosterBreath", still ? 0 : 0.008),
+                       forKey: "breathGain")
             return m
         }
         bodyNode = SCNNode(geometry: mesh.geometry.copy() as? SCNGeometry)
-        bodyNode.geometry?.materials = [material(modifier: BoosterShader.body)]
+        bodyNode.geometry?.materials = [material(modifier: BoosterShader.body,
+                                                 geometry: BoosterShader.bodyGeometry)]
         capNode = SCNNode(geometry: mesh.geometry.copy() as? SCNGeometry)
         capNode.geometry?.materials = [material(modifier: BoosterShader.cap,
                                                 geometry: BoosterShader.capGeometry)]
-        // La charnière du peeling : la ligne de déchirure en Y modèle.
-        capNode.geometry?.firstMaterial?
-            .setValue(CGFloat(mesh.yTear), forKey: "hingeY")
+        // Les réglages du rouleau (banc : -boosterCurlR / -boosterCurlK /
+        // -boosterFlutter / -boosterFlutterW / -boosterCurlDir).
+        // curlDir −1 = vers la caméra (à trancher à la capture — le piège
+        // des enroulements GLB inversés).
+        if let capMat = capNode.geometry?.firstMaterial {
+            capMat.setValue(Self.benchValue("boosterCurlR", 0.055), forKey: "curlR")
+            capMat.setValue(Self.benchValue("boosterCurlK", 0.0045), forKey: "curlK")
+            capMat.setValue(Self.benchValue("boosterFlutter", still ? 0 : 0.12),
+                            forKey: "flutterAmp")
+            capMat.setValue(Self.benchValue("boosterFlutterW", 16), forKey: "flutterW")
+            capMat.setValue(Self.benchValue("boosterCurlDir", -1), forKey: "curlDir")
+            capMat.setValue(0.0 as CGFloat, forKey: "releaseT")
+            capMat.setValue(0.0 as CGFloat, forKey: "rollWobble")
+        }
 
         // ---- la surcouche de CHARGE de la lune ----
         // Un second rendu du maillage, additif, dont la carte émissive est
@@ -290,12 +396,16 @@ final class BoosterScene {
         moonGlowNode = SCNNode()
 
         // ---- la carte récompense, endormie dans le sachet ----
-        // Placeholder du chantier cartes : la carte-lune détourée, à plat.
-        let plane = SCNPlane(width: 0.60, height: 0.60 * 1.519)
+        // L'ASPECT DE LA FORGE (1086×1448 ≈ 1,333), plus jamais 1,519 :
+        // le raccord CarteVivante est un recouvrement même-image — aucun
+        // fondu ne survit à 14 % d'écart d'aspect. Et la carte de
+        // cérémonie porte le MÊME art que CarteVivante (carte-lune-1 par
+        // défaut ; la forge remplacera les deux côtés à la fois).
+        let plane = SCNPlane(width: 0.60, height: 0.60 * 1448.0 / 1086.0)
         let cm = SCNMaterial()
         cm.lightingModel = .constant
-        cm.diffuse.contents = Self.image("booster-carte")
-        cm.emission.contents = Self.image("booster-carte")
+        cm.diffuse.contents = Self.image("carte-lune-1")
+        cm.emission.contents = Self.image("carte-lune-1")
         cm.emission.intensity = 0
         cm.isDoubleSided = true
         plane.materials = [cm]
@@ -310,7 +420,10 @@ final class BoosterScene {
         // LE DOS de la carte (le motif croissants du sachet) : un second
         // plan collé dos à dos — la carte peut sortir DOS D'ABORD pour
         // le retournement.
-        let backPlane = SCNPlane(width: 0.60, height: 0.60 * 1.519)
+        // (carte-dos.png reste au ratio 1,517 : ~12 % d'écrasement sur le
+        // nouveau plan, vu en mouvement seulement — ré-export à faire si
+        // l'œil l'attrape.)
+        let backPlane = SCNPlane(width: 0.60, height: 0.60 * 1448.0 / 1086.0)
         let backMat = SCNMaterial()
         backMat.lightingModel = .constant
         backMat.diffuse.contents = Self.image("carte-dos")
@@ -697,20 +810,99 @@ final class BoosterScene {
         }
     }
 
-    /// La bande s'ARRACHE : déjà enroulée par le peeling, elle se
-    /// détache, part en l'air en tournant, et meurt en vol.
+    /// La bande s'ARRACHE en quatre temps : ACCROCHE (le dernier bout
+    /// se déchire en rampe, le rouleau se sur-tend et tremble — il
+    /// résiste), RUPTURE à 0,42 s (pile le claquement grave cuit dans
+    /// `dechirure-finale`), BALISTIQUE en espace monde (reparentage +
+    /// bake — le piège du pincement — puis parabole et tumbling
+    /// cumulatif), et la MORT HORS CADRE (jamais d'évaporation sur
+    /// place, jamais d'opacité sur le rouleau double-face).
+    /// À appeler AVANT setTear(1) : la rampe part de la valeur vivante
+    /// (un saut 0,82→1 téléporterait un demi-tour de rouleau).
     func flyOffCap() {
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 0.55
-        SCNTransaction.animationTimingFunction =
-            CAMediaTimingFunction(controlPoints: 0.3, 0, 1, 1)
-        capNode.position = SCNVector3(0.35, 1.1, 0.5)
-        capNode.eulerAngles = SCNVector3(1.4, 0.6, 2.2)
-        capNode.opacity = 0
-        SCNTransaction.commit()
+        guard let capMat = capNode.geometry?.firstMaterial,
+              let bodyMat = bodyNode.geometry?.firstMaterial else { return }
+        // 1) L'accroche : tearU file au bout en 0,30 s…
+        let uEnd = CGFloat(BoosterShader.u0
+            + (BoosterShader.u1 - BoosterShader.u0) * 1.03)
+        for m in [bodyMat, capMat] {
+            let ramp = CABasicAnimation(keyPath: "tearU")
+            ramp.fromValue = m.value(forKey: "tearU")
+            ramp.toValue = uEnd
+            ramp.duration = 0.30
+            ramp.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            m.addAnimation(ramp, forKey: "tearRamp")
+            m.setValue(uEnd, forKey: "tearU")
+        }
+        // …le rouleau se serre…
+        let strain = CABasicAnimation(keyPath: "releaseT")
+        strain.fromValue = 0
+        strain.toValue = 1
+        strain.duration = 0.30
+        strain.timingFunction = CAMediaTimingFunction(name: .easeIn)
+        capMat.addAnimation(strain, forKey: "strain")
+        capMat.setValue(1.0 as CGFloat, forKey: "releaseT")
+        // …et tremble en deux rebonds amortis (~5 Hz : lisible même
+        // aux 18-36 img/s du simulateur).
+        let wobble = CAKeyframeAnimation(keyPath: "rollWobble")
+        wobble.values = [0, 0.07, -0.05, 0.025, 0]
+        wobble.keyTimes = [0, 0.25, 0.55, 0.8, 1]
+        wobble.duration = 0.42
+        capMat.addAnimation(wobble, forKey: "wobble")
+
+        // 2) La rupture, puis le vol.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { [weak self] in
+            guard let self else { return }
+            // La PRÉSENTATION, pas le modèle : le sachet est en pleine
+            // bascule animée — le modèle rendrait la pose finale et la
+            // bande se téléporterait.
+            let world = self.capNode.presentation.worldTransform
+            self.capNode.removeFromParentNode()
+            self.scene.rootNode.addChildNode(self.capNode)
+            self.capNode.transform = world
+            // DEUX TRANSACTIONS CHAÎNÉES, jamais d'animations à
+            // fillMode .forwards : à leur frontière la présentation
+            // retombait UNE frame sur le modèle — le maillage complet
+            // du sachet culbutant sur place (payé à la capture). Avec
+            // les transactions, le MODÈLE voyage avec la présentation
+            // et finit hors cadre : aucun retour possible.
+            let p0 = self.capNode.position
+            let e0 = self.capNode.eulerAngles
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.30
+            SCNTransaction.animationTimingFunction =
+                CAMediaTimingFunction(controlPoints: 0.25, 0.6, 0.6, 1)
+            self.capNode.position = SCNVector3(p0.x + 0.45, p0.y + 0.60,
+                                               p0.z + 0.35)
+            self.capNode.eulerAngles = SCNVector3(e0.x + 0.8, e0.y + 0.5,
+                                                  e0.z + 1.6)
+            SCNTransaction.completionBlock = { [weak self] in
+                guard let self else { return }
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.55
+                SCNTransaction.animationTimingFunction =
+                    CAMediaTimingFunction(controlPoints: 0.4, 0, 0.9, 0.6)
+                self.capNode.position = SCNVector3(p0.x + 1.7, p0.y + 0.25,
+                                                   p0.z + 0.70)
+                self.capNode.eulerAngles = SCNVector3(e0.x + 2.2, e0.y + 1.4,
+                                                      e0.z + 4.6)
+                SCNTransaction.completionBlock = { [weak self] in
+                    self?.capNode.isHidden = true
+                }
+                SCNTransaction.commit()
+            }
+            SCNTransaction.commit()
+        }
     }
 
     // MARK: fabriques
+
+    /// Un réglage de banc : la paire `-boosterX 0.06` arrive par le
+    /// domaine d'arguments d'UserDefaults (même circuit que -boosterTear).
+    private static func benchValue(_ key: String, _ fallback: CGFloat) -> CGFloat {
+        guard UserDefaults.standard.object(forKey: key) != nil else { return fallback }
+        return CGFloat(UserDefaults.standard.double(forKey: key))
+    }
 
     private static func image(_ name: String) -> UIImage? {
         guard let path = Bundle.main.path(forResource: name, ofType: "png") else { return nil }
