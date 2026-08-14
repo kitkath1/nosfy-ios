@@ -4,25 +4,37 @@ import SwiftUI
 // MARK: - Banc d'essai (`-boosterLab`)
 
 /// Page noire nue : le booster de récompense seul — le sachet noir laqué au
-/// croissant, flottant dans son studio braise. Le doigt l'incline ; posé sur
-/// la bande du haut, il TRACE la découpe : un trait de lumière blanc-orangé
-/// avance sous le doigt (le geste de Pokémon Pocket), la bande tombe, la
-/// carte sort du sachet et vient se présenter.
+/// croissant, flottant dans son studio braise. Une pichenette le fait
+/// TOURNER (inertie amortie, puis il se pose en douceur sur la face la plus
+/// proche — recto ou verso) ; le doigt posé sur la bande du haut, face
+/// avant, TRACE la découpe : un trait de lumière blanc-orangé avance sous
+/// le doigt (le geste de Pokémon Pocket), la bande tombe, la carte sort du
+/// sachet et vient se présenter.
 ///
 /// Sous-flags de capture (le pattern des bancs) :
 ///   `-boosterStill` coupe le flottement au repos ;
+///   `-boosterDos` démarre verso face caméra ;
+///   `-boosterYaw <deg>` fige un lacet arbitraire (180 = recto, 90 = profil) ;
+///   `-boosterMylar` charge la recette matière « mylar métallisé »
+///     (par défaut : « laque noire ») ;
 ///   `-boosterTear <s>` fige une déchirure entamée à s (0…1) ;
 ///   `-boosterOpen` démarre sachet ouvert, carte présentée.
 struct BoosterLab: View {
     private static let still = CommandLine.arguments.contains("-boosterStill")
+    private static let dos = CommandLine.arguments.contains("-boosterDos")
+    private static let mylar = CommandLine.arguments.contains("-boosterMylar")
     private static let tear: Float? = UserDefaults.standard
         .string(forKey: "boosterTear").flatMap(Float.init)
+    private static let yawDeg: Float? = UserDefaults.standard
+        .string(forKey: "boosterYaw").flatMap(Float.init)
     private static let open = CommandLine.arguments.contains("-boosterOpen")
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            BoosterStage(still: Self.still, frozenTear: Self.tear, startOpen: Self.open)
+            BoosterStage(still: Self.still, frozenTear: Self.tear,
+                         startOpen: Self.open, startDos: Self.dos,
+                         mylar: Self.mylar, frozenYawDeg: Self.yawDeg)
                 .ignoresSafeArea()
         }
         .statusBarHidden()
@@ -35,11 +47,15 @@ struct BoosterLab: View {
 
 /// L'hôte du sachet : 60 fps (la découpe et les étincelles sont des
 /// mouvements continus), gestes UIKit — le hit-test décide si le doigt
-/// incline le sachet ou tranche la bande.
+/// fait tourner le sachet ou tranche la bande (la découpe ne s'arme que
+/// recto posé face caméra).
 struct BoosterStage: UIViewRepresentable {
     var still: Bool
     var frozenTear: Float?
     var startOpen: Bool
+    var startDos: Bool = false
+    var mylar: Bool = false
+    var frozenYawDeg: Float? = nil
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -48,7 +64,8 @@ struct BoosterStage: UIViewRepresentable {
         view.preferredFramesPerSecond = 60
         view.isPlaying = true
         view.rendersContinuously = true
-        context.coordinator.attach(to: view, still: still)
+        context.coordinator.attach(to: view, still: still, dos: startDos,
+                                   mylar: mylar, yawDeg: frozenYawDeg)
         if let s = frozenTear {
             context.coordinator.freezeTear(at: s)
         } else if startOpen {
@@ -73,8 +90,11 @@ struct BoosterStage: UIViewRepresentable {
         private weak var view: SCNView?
         private var stage: BoosterScene?
         private var still = false
+        private var dos = false
+        private var mylar = false
+        private var yawDeg: Float?
 
-        private enum Mode { case idle, tilting, tearing, opening, revealed }
+        private enum Mode { case idle, spinning, tearing, opening, revealed }
         private var mode: Mode = .idle
         /// Le geste en cours : écran → progression, calé au premier point.
         private var tearOriginX: CGFloat = 0
@@ -84,14 +104,102 @@ struct BoosterStage: UIViewRepresentable {
         private let tick = UIImpactFeedbackGenerator(style: .light)
         private let thud = UIImpactFeedbackGenerator(style: .medium)
 
-        func attach(to view: SCNView, still: Bool) {
+        // ---- le tour du sachet (l'idiome maison : inertie amortie) ----
+        /// Le lacet vrai, non borné : π = recto face caméra, 0 = verso.
+        private var yaw: Float = .pi
+        private var yawVel: Float = 0
+        private var grabYaw: Float = .pi
+        private var pitch: Float = 0
+        private var spinLink: CADisplayLink?
+        /// Écran → radians : une pleine largeur de drag ≈ un demi-tour.
+        private static let radPerPoint: Float = 0.010
+        /// Frein de l'inertie (s⁻¹) ; sous `magnetBelow` rad/s, l'aimant
+        /// de la face la plus proche prend la main (ressort quasi
+        /// critique) — le sachet ne s'arrête jamais de profil.
+        private static let friction: Float = 2.0
+        private static let magnetBelow: Float = 1.2
+        private static let stiffness: Float = 60
+
+        func attach(to view: SCNView, still: Bool, dos: Bool = false,
+                    mylar: Bool = false, yawDeg: Float? = nil) {
             self.view = view
             self.still = still
-            guard let stage = BoosterScene(still: still) else { return }
+            self.dos = dos
+            self.mylar = mylar
+            self.yawDeg = yawDeg
+            stopSpin()
+            guard let stage = BoosterScene(still: still, mylar: mylar) else { return }
             self.stage = stage
             view.scene = stage.scene
             view.pointOfView = stage.cameraNode
+            yaw = yawDeg.map { $0 * .pi / 180 } ?? (dos ? 0 : .pi)
+            yawVel = 0
+            pitch = 0
+            applyPose()
             mode = .idle
+        }
+
+        /// Le sachet est-il posé recto face caméra ? (La découpe ne s'arme
+        /// que là — sur le verso ou en plein tour, le doigt fait tourner.)
+        private var restingFront: Bool {
+            spinLink == nil
+                && abs(atan2f(sinf(yaw - .pi), cosf(yaw - .pi))) < 0.35
+        }
+
+        private func applyPose() {
+            guard let stage else { return }
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0
+            stage.packNode.eulerAngles.y = yaw
+            stage.packNode.eulerAngles.x = pitch
+            SCNTransaction.commit()
+        }
+
+        private func startSpin() {
+            stopSpin()
+            let link = CADisplayLink(target: self, selector: #selector(spinStep(_:)))
+            link.add(to: .main, forMode: .common)
+            spinLink = link
+        }
+
+        private func stopSpin() {
+            spinLink?.invalidate()
+            spinLink = nil
+        }
+
+        /// Une frame de vol libre : frein exponentiel tant que ça file,
+        /// puis le ressort de l'aimant vers la face la plus proche.
+        @objc private func spinStep(_ link: CADisplayLink) {
+            // Le link RETIENT sa cible : si l'écran est parti, on se coupe
+            // soi-même — sinon le coordinateur tournerait pour personne.
+            guard view?.window != nil else {
+                stopSpin()
+                return
+            }
+            let dt = Float(min(max(link.targetTimestamp - link.timestamp,
+                                   1.0 / 240), 1.0 / 30))
+            if abs(yawVel) > Self.magnetBelow {
+                yawVel *= exp(-Self.friction * dt)
+            } else {
+                let target = (yaw / .pi).rounded() * .pi
+                yawVel += (target - yaw) * Self.stiffness * dt
+                yawVel *= exp(-2 * sqrtf(Self.stiffness) * dt)
+                if abs(yaw - target) < 0.002, abs(yawVel) < 0.02 {
+                    // Posé. On replie le lacet dans [0 ; 2π) pour ne pas
+                    // dériver à l'infini au fil des pichenettes.
+                    var settled = fmodf(target, 2 * .pi)
+                    if settled < 0 { settled += 2 * .pi }
+                    yaw = settled
+                    yawVel = 0
+                    stopSpin()
+                    applyPose()
+                    tick.impactOccurred(intensity: 0.4)
+                    return
+                }
+            }
+            yaw += yawVel * dt
+            pitch *= exp(-6 * dt)
+            applyPose()
         }
 
         func freezeTear(at s: Float) {
@@ -121,7 +229,8 @@ struct BoosterStage: UIViewRepresentable {
             guard mode == .revealed, let view else { return }
             // Un toucher, et le banc se réarme : la cérémonie se rejoue à
             // volonté — la méthode maison pour juger un enchaînement.
-            attach(to: view, still: still)
+            attach(to: view, still: still, dos: dos, mylar: mylar,
+                   yawDeg: yawDeg)
         }
 
         @objc func pan(_ g: UIPanGestureRecognizer) {
@@ -132,7 +241,8 @@ struct BoosterStage: UIViewRepresentable {
                 let p = g.location(in: view)
                 let hits = view.hitTest(p, options: [.ignoreHiddenNodes: true])
                 let packHit = hits.first { $0.node === stage.bodyNode || $0.node === stage.capNode }
-                if let hit = packHit, hit.localCoordinates.y > stage.yTear - 0.07 {
+                if let hit = packHit, restingFront,
+                   hit.localCoordinates.y > stage.yTear - 0.07 {
                     mode = .tearing
                     // La course écran de la découpe : la largeur projetée du
                     // sachet à hauteur de la ligne — convertie DEPUIS le
@@ -150,7 +260,11 @@ struct BoosterStage: UIViewRepresentable {
                     stage.dim(true)
                     tick.prepare()
                 } else if packHit != nil {
-                    mode = .tilting
+                    // Attraper le sachet — y compris en plein vol : la main
+                    // vole l'élan, le tour reprend sous le doigt.
+                    mode = .spinning
+                    stopSpin()
+                    grabYaw = yaw
                 }
             case .changed:
                 switch mode {
@@ -163,15 +277,11 @@ struct BoosterStage: UIViewRepresentable {
                         lastTickStep = step
                         tick.impactOccurred(intensity: 0.6)
                     }
-                case .tilting:
+                case .spinning:
                     let t = g.translation(in: view)
-                    let yaw = Float(t.x / 240).clamped(to: -0.5 ... 0.5)
-                    let pitch = Float(t.y / 320).clamped(to: -0.3 ... 0.3)
-                    SCNTransaction.begin()
-                    SCNTransaction.animationDuration = 0
-                    stage.packNode.eulerAngles.y = .pi + yaw
-                    stage.packNode.eulerAngles.x = pitch
-                    SCNTransaction.commit()
+                    yaw = grabYaw + Float(t.x) * Self.radPerPoint
+                    pitch = Float(t.y / 320).clamped(to: -0.3 ... 0.3)
+                    applyPose()
                 default:
                     break
                 }
@@ -187,15 +297,13 @@ struct BoosterStage: UIViewRepresentable {
                         stage.dim(false)
                         mode = .idle
                     }
-                case .tilting:
-                    SCNTransaction.begin()
-                    SCNTransaction.animationDuration = 0.6
-                    SCNTransaction.animationTimingFunction =
-                        CAMediaTimingFunction(name: .easeOut)
-                    stage.packNode.eulerAngles.y = .pi
-                    stage.packNode.eulerAngles.x = 0
-                    SCNTransaction.commit()
+                case .spinning:
+                    // La pichenette : l'élan du relâcher part en vol libre,
+                    // l'aimant posera le sachet sur la face la plus proche.
+                    yawVel = (Float(g.velocity(in: view).x) * Self.radPerPoint)
+                        .clamped(to: -14 ... 14)
                     mode = .idle
+                    startSpin()
                 default:
                     mode = mode == .revealed ? .revealed : .idle
                 }
