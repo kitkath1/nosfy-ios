@@ -445,6 +445,66 @@ static float3 bgDither(float3 c, float2 position, float t) {
     return half4(half3(c), 1.0) * color.a;
 }
 
+// LA PAGE PROFIL : le champ de la home MIROITÉ — le halo vient de la
+// DROITE. Copie conforme de `bgAuroraHome` avec le flip x DANS le shader
+// (jamais un scaleEffect côté SwiftUI : la parallaxe répondrait à
+// l'envers, le dither serait recalculé sur des positions incohérentes) ;
+// le flip vit ICI et pas dans bgField : le champ est partagé avec le
+// login. Le cœur du bloom de l'île reste centré (l'île est au milieu) ;
+// seule sa NAPPE penche — à droite désormais (sway miroité). Nouvelle
+// fonction, signature identique : l'arité des appels existants ne bouge
+// pas d'un cheveu.
+[[ stitchable ]] half4 bgAuroraProfil(float2 position, half4 color,
+                                      float2 size, float t, float2 tilt,
+                                      float birth) {
+    float cur = 0.0;
+    float b = clamp(birth, 0.0, 1.0);
+    float bs = b * b * (3.0 - 2.0 * b);
+    float4 shape = mix(BG_SHAPE_HOME_BIRTH, BG_SHAPE_HOME, bs);
+    float2 flipped = float2(size.x - position.x, size.y - position.y);
+    float2 tiltF = float2(-tilt.x, -tilt.y);
+    float2 foyers = BG_FOYERS_HOME;
+    foyers.x += 0.055 * sin(t * 6.2832 / 17.0 + 1.3);
+    foyers.y += 0.045 * sin(t * 6.2832 / 23.0 + 4.2);
+    float gain = BG_HOME_GAIN * (0.86 + 0.20 * sin(t * 6.2832 / 11.0 + 0.7));
+    float3 c = bgField(flipped, size, t, tiltF, shape, foyers, bs * 0.30,
+                       float2(0.0), b * gain, cur);
+
+    // La braise à luminance constante — la même loi que la home.
+    {
+        float lum = dot(c, float3(0.299, 0.587, 0.114));
+        float band = smoothstep(0.010, 0.055, lum)
+                   * (1.0 - smoothstep(0.36, 0.74, lum));
+        if (band > 0.001) {
+            float3 braise = float3(1.00, 0.50, 0.19);
+            float3 reh = braise * (lum / dot(braise, float3(0.299, 0.587, 0.114)));
+            c = mix(c, reh, band * 0.62 * bs);
+        }
+    }
+
+    // Le bloom de l'île : cœur centré intact, la nappe miroitée à droite.
+    float souffle = 0.82 + 0.26 * sin(t * 6.2832 / 9.0 + 2.0);
+    float souffleIle = 0.88 + 0.16 * sin(t * 6.2832 / 7.3 + 1.1);
+    float sway = 0.62 - 0.035 * sin(t * 6.2832 / 14.0 + 5.1);
+    float2 pi1 = position - float2(size.x * 0.5, 10.0);
+    float2 pi2 = position - float2(size.x * sway, 30.0);
+    float2 di1 = pi1 / float2(size.x * 0.19, size.y * 0.042);
+    float2 di2 = pi2 / float2(size.x * 0.42, size.y * 0.15);
+    float coeurIle = exp(-dot(di1, di1));
+    float Li = (3.30 * coeurIle * souffleIle
+              + 1.00 * exp(-dot(di2, di2)) * souffle)
+             * (0.62 + 0.75 * cur) * bs;
+    if (Li > 0.001) {
+        float vi = 1.0 - exp(-Li * 1.6);
+        float3 ti = mix(float3(1.00, 0.58, 0.24), float3(1.00, 0.99, 0.96),
+                        clamp(coeurIle * 1.35, 0.0, 1.0));
+        c = 1.0 - (1.0 - c) * (1.0 - ti * vi);
+    }
+
+    c = bgDither(c, position, t);
+    return half4(half3(c), 1.0) * color.a;
+}
+
 // La page de connexion : le même fond, plus deux choses. L'ombre du bloc
 // texte — le cœur blanc monte juste derrière le titre et l'input, sans elle
 // rien n'est lisible — et la caresse du doigt, portée du login aurora : de

@@ -167,6 +167,9 @@ struct RootView: View {
     /// au gyroscope en main. `-luneTilt <tx,ty>` fige l'inclinaison,
     /// `-luneStill` coupe le balancement propre.
     private static let luneLab = CommandLine.arguments.contains("-luneLab")
+    /// Banc de la page profil-collection : `-profilLab` — le halo versé de
+    /// la droite, l'avatar-pastille, le trésor et les dos vides.
+    private static let profilLab = CommandLine.arguments.contains("-profilLab")
     /// Banc du booster de récompense : `-boosterLab` — le sachet noir laqué
     /// au croissant, qu'on incline au doigt et qu'on ouvre en traçant la
     /// découpe braise sur la bande du haut ; la carte sort du sachet.
@@ -305,6 +308,8 @@ struct RootView: View {
             SetEntryLab()
         } else if Self.luneLab {
             CarteLuneLab()
+        } else if Self.profilLab {
+            ProfilLab()
         } else if Self.boosterLab {
             BoosterLab()
         } else if Self.buttonLab {
@@ -481,7 +486,9 @@ struct RootView: View {
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
-                    ProfileView()
+                    // La maison des cartes : le halo versé de la droite, le
+                    // chevron ramène à la home (le pattern d'Exercices).
+                    ProfilLuneView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
             }

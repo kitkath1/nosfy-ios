@@ -129,19 +129,15 @@ struct ExercisesView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 12) {
-                Button {
-                    withAnimation(.easeOut(duration: 0.3)) { selection = .home }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.inkPrimary)
-                        .frame(width: 34, height: 34)
-                        .glassEffect(.regular.tint(Color.black.opacity(0.35))
-                                         .interactive(),
-                                     in: .circle)
+                // Le composant unique de la maison (verdict 14-08 : le
+                // même chevron sur toutes les pages) — l'ancien rond de
+                // 34 pt teinté à 0,35 était la variante divergente.
+                ChipVerre(symbole: "chevron.left",
+                          label: "Retour à l'accueil") {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        selection = .home
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Retour à l'accueil")
 
                 Text("Exercices")
                     .font(.inter(32, .bold))

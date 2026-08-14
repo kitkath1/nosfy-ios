@@ -351,30 +351,14 @@ struct CoffreFortView: View {
     @ViewBuilder
     private var closeButton: some View {
         if born {
-            // LE CHEVRON DE LA MAISON, à l'identique de la fiche
-            // d'exercice : 44 pt, coin continu de 15, verre fumé noir, liseré
-            // blanc à 8 %. L'ancien — un `chevron.down` dans un rond de
-            // matériau — était le seul élément non-or de la page, et il
-            // tombait en plein sur le coffre.
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.inkPrimary)
-                    .frame(width: 44, height: 44)
-                    .background {
-                        Color.clear.glassEffect(
-                            .regular.tint(Color.black.opacity(0.5)).interactive(),
-                            in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    }
-                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
-                    .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .padding(.leading, 20)
-            .padding(.top, 16)
-            .transition(.opacity)
-            .accessibilityLabel("Fermer")
+            // LE CHEVRON DE LA MAISON — le composant unique (ChipVerre,
+            // la recette de la fiche d'exercice extraite le 14-08 :
+            // « le même composant sur toutes les pages »).
+            ChipVerre(symbole: "chevron.left", label: "Fermer",
+                      action: onClose)
+                .padding(.leading, 20)
+                .padding(.top, 16)
+                .transition(.opacity)
         }
     }
 
