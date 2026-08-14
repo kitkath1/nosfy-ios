@@ -142,15 +142,22 @@ final class BoosterScene {
     let sparkNode = SCNNode()
     let cameraNode = SCNNode()
     let yTear: Float
+    /// L'anneau de la galerie : cinq clones muets (pas de carte, pas de
+    /// découpe) mirés dans le sol d'encre. Le VRAI sachet prend la place
+    /// du clone centré à l'engagement — identiques, l'échange est invisible.
+    let galleryPacks: [SCNNode]
+    let floorNode: SCNNode
+    private let still: Bool
     private let keyLight = SCNLight()
     private let embers = SCNLight()
 
     /// La progression de déchirure, 0…1, monotone (on ne recolle pas).
     private(set) var tearProgress: Float = 0
 
-    init?(still: Bool, mylar: Bool = false) {
+    init?(still: Bool, mylar: Bool = false, gallery: Bool = false) {
         guard let mesh = BoosterBin.load() else { return nil }
         yTear = mesh.yTear
+        self.still = still
 
         // ---- la matière commune, corps et bande ----
         // Deux recettes au banc. L'ancienne (metalness 0,45 sur albédo noir)
@@ -239,17 +246,67 @@ final class BoosterScene {
         packNode.position = SCNVector3(0, -0.02, 0)
         scene.rootNode.addChildNode(packNode)
 
+        // ---- l'anneau de la galerie + le sol miroir ----
+        var clones: [SCNNode] = []
+        for _ in 0 ..< Self.ringCount {
+            let group = SCNNode()
+            for src in [bodyNode, capNode] {
+                let child = SCNNode()
+                if let g = src.geometry?.copy() as? SCNGeometry,
+                   let m = g.firstMaterial?.copy() as? SCNMaterial {
+                    g.materials = [m]
+                    child.geometry = g
+                }
+                group.addChildNode(child)
+            }
+            group.scale = SCNVector3(0.75, 1, 0.45)
+            group.isHidden = true
+            scene.rootNode.addChildNode(group)
+            clones.append(group)
+        }
+        galleryPacks = clones
+
+        // Le sol : encre pure, seul le reflet des sachets y vit (la
+        // réflexion se compose PAR-DESSUS le diffuse noir), teinté braise,
+        // éteint à une hauteur de sachet.
+        let floor = SCNFloor()
+        floor.reflectivity = 0.11
+        floor.reflectionFalloffStart = 0
+        floor.reflectionFalloffEnd = 0.42
+        floor.reflectionResolutionScaleFactor = 0.4
+        let fm = SCNMaterial()
+        fm.lightingModel = .constant
+        fm.diffuse.contents = UIColor(white: 0.004, alpha: 1)
+        fm.multiply.contents = UIColor(red: 1.0, green: 0.80, blue: 0.65, alpha: 1)
+        floor.materials = [fm]
+        floorNode = SCNNode(geometry: floor)
+        floorNode.position = SCNVector3(0, -0.52, 0)
+        floorNode.isHidden = true
+        scene.rootNode.addChildNode(floorNode)
+
         // ---- caméra + studio ----
+        // La galerie regarde à l'OBJECTIF LONG (champ 42°, caméra reculée,
+        // le regard Pocket : presque pas de convergence) ; la cérémonie
+        // garde son cadrage commité (60° à 2,05).
         let camera = SCNCamera()
-        camera.zNear = 0.05
+        // 0,5 et pas 0,05 : la précision du tampon de profondeur se
+        // concentre près de zNear — à 0,05 les deux peaux du sachet
+        // aminci (z·0,45) se battaient au pixel, le dessin du recto
+        // scintillait à travers le dos (glitch vu par Kathryn au manège).
+        // Rien dans la scène ne s'approche à moins de ~1,5 de la caméra.
+        camera.zNear = 0.5
         camera.wantsHDR = true
         camera.wantsExposureAdaptation = false
         camera.exposureOffset = -0.4
         camera.bloomThreshold = 1.0
         camera.bloomIntensity = 0.55
         camera.bloomBlurRadius = 12
+        // z 4,0 à 42° : l'écran étroit d'un téléphone ne montre ~1,3 unité
+        // de large — il faut ce recul pour que les voisins de l'anneau
+        // dépassent des bords comme chez Pocket.
+        camera.fieldOfView = gallery ? 42 : 60
         cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 0, 2.05)
+        cameraNode.position = SCNVector3(0, 0, gallery ? 4.0 : 2.05)
         scene.rootNode.addChildNode(cameraNode)
 
         keyLight.type = .directional
@@ -274,24 +331,73 @@ final class BoosterScene {
         scene.background.contents = UIColor.black
         print("[booster-bench] scène : mylar=\(mylar) env=\(Self.hdrStudio?.lastPathComponent ?? "FALLBACK 8 bits") emission=\(bodyNode.geometry?.firstMaterial?.emission.intensity ?? -1)")
 
-        if !still {
-            // Le flottement au repos : une respiration, pas un manège.
-            let bob = CABasicAnimation(keyPath: "position.y")
-            bob.fromValue = -0.032
-            bob.toValue = -0.008
-            bob.duration = 2.8
-            bob.autoreverses = true
-            bob.repeatCount = .infinity
-            bob.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            packNode.addAnimation(bob, forKey: "bob")
-            let sway = CABasicAnimation(keyPath: "eulerAngles.z")
-            sway.fromValue = -0.022
-            sway.toValue = 0.022
-            sway.duration = 3.7
-            sway.autoreverses = true
-            sway.repeatCount = .infinity
-            sway.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            packNode.addAnimation(sway, forKey: "sway")
+        if gallery {
+            packNode.isHidden = true
+            floorNode.isHidden = false
+            for p in galleryPacks { p.isHidden = false }
+        } else if !still {
+            beginIdleBreath()
+        }
+    }
+
+    /// Le flottement au repos : une respiration, pas un manège. Appelé à
+    /// l'init hors galerie, et à l'arrivée du dolly d'engagement.
+    func beginIdleBreath() {
+        guard !still else { return }
+        let bob = CABasicAnimation(keyPath: "position.y")
+        bob.fromValue = -0.032
+        bob.toValue = -0.008
+        bob.duration = 2.8
+        bob.autoreverses = true
+        bob.repeatCount = .infinity
+        bob.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        packNode.addAnimation(bob, forKey: "bob")
+        let sway = CABasicAnimation(keyPath: "eulerAngles.z")
+        sway.fromValue = -0.022
+        sway.toValue = 0.022
+        sway.duration = 3.7
+        sway.autoreverses = true
+        sway.repeatCount = .infinity
+        sway.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        packNode.addAnimation(sway, forKey: "sway")
+    }
+
+    // MARK: la galerie
+
+    /// L'anneau est un VRAI CERCLE (le manège Pocket) : huit sachets sur
+    /// un rayon de 1,4, chacun tourné vers l'EXTÉRIEUR du cercle — devant
+    /// on lit la face, et la rangée du fond montre les DOS aux croissants.
+    /// Le devant du cercle coïncide avec la place de cérémonie (z 0).
+    /// Dix sachets, rayon 1,25 : les voisins ±1 se font couper par les
+    /// bords de l'écran (faces de trois-quarts), et la rangée du fond
+    /// (±4) montre ses petits DOS dans les interstices — la géographie
+    /// exacte de la réf Pocket. (À 1,6 les ±1 sortaient de l'écran d'un
+    /// cheveu : mesuré à la capture.)
+    static let ringCount = 10
+    static let ringRadius: Float = 1.25
+
+    /// L'allumage en cascade de la mise en place : un facteur par sachet,
+    /// multiplié à l'émission de l'anneau (1 = plein feu).
+    var galleryLight = [Float](repeating: 1, count: BoosterScene.ringCount)
+
+    /// Pose tout l'anneau pour une rotation donnée (cran flottant, sans
+    /// butées — un cercle n'en a pas).
+    func applyGallery(offset: Float) {
+        let n = Float(Self.ringCount)
+        for (i, pack) in galleryPacks.enumerated() {
+            let theta = (Float(i) - offset) * (2 * .pi / n)
+            pack.position = SCNVector3(
+                sinf(theta) * Self.ringRadius, -0.02,
+                -Self.ringRadius + cosf(theta) * Self.ringRadius)
+            pack.eulerAngles.y = .pi + theta
+            // Le feu appartient au sachet qui se présente ; les dos du
+            // fond restent lisibles mais éteints.
+            let facing = max(cosf(theta), 0)
+            pack.opacity = 1
+            for child in pack.childNodes {
+                child.geometry?.firstMaterial?.emission.intensity =
+                    CGFloat((0.08 + 0.52 * facing * facing) * galleryLight[i])
+            }
         }
     }
 
