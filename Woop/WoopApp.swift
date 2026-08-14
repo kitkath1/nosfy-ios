@@ -162,6 +162,17 @@ struct RootView: View {
     /// Banc du sheet de saisie de série : `-setLab` — la molette fluide, les
     /// chips de repos et le slider à galet, au-dessus d'un faux cadran.
     private static let setLab = CommandLine.arguments.contains("-setLab")
+    /// Banc de la carte-lune récompense : `-luneLab` — la carte-fenêtre
+    /// (parallaxe de profondeur) sous son foil braise, inclinable au doigt,
+    /// au gyroscope en main. `-luneTilt <tx,ty>` fige l'inclinaison,
+    /// `-luneStill` coupe le balancement propre.
+    private static let luneLab = CommandLine.arguments.contains("-luneLab")
+    /// Banc du booster de récompense : `-boosterLab` — le sachet noir laqué
+    /// au croissant, qu'on incline au doigt et qu'on ouvre en traçant la
+    /// découpe braise sur la bande du haut ; la carte sort du sachet.
+    /// `-boosterStill` fige le flottement, `-boosterTear <s>` fige une
+    /// découpe entamée, `-boosterOpen` démarre carte présentée.
+    private static let boosterLab = CommandLine.arguments.contains("-boosterLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -292,6 +303,10 @@ struct RootView: View {
             StoryLab()
         } else if Self.setLab {
             SetEntryLab()
+        } else if Self.luneLab {
+            CarteLuneLab()
+        } else if Self.boosterLab {
+            BoosterLab()
         } else if Self.buttonLab {
             ConnexionButtonLab()
         } else if Self.cardLab {
