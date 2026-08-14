@@ -21,6 +21,34 @@ struct ProfilLuneView: View {
     @State private var showReglages = false
     /// Le rebond de la pastille pièces au tap (0 → 1 → 0).
     @State private var coinKick: CGFloat = 0
+    /// LA sonde du scroll — une seule, le champ vivant (le piège de la
+    /// sonde constante : une sonde qui renvoie une constante ne rappelle
+    /// jamais).
+    @State private var scrollY: CGFloat = 0
+    /// `-profilPli <p>` fige l'apparition du blur (captures).
+    private static let pliFreeze: CGFloat? = UserDefaults.standard
+        .string(forKey: "profilPli").flatMap { Double($0) }
+        .map { CGFloat($0) }
+    /// `-profilReglages` ouvre l'overlay réglages au lancement (captures).
+    private static let reglagesNow =
+        CommandLine.arguments.contains("-profilReglages")
+
+    /// L'embrasement secret de KD (tap sur le rond, lot C).
+    @State private var flambe: CGFloat = 0
+    /// L'anneau d'XP éphémère (tap sur le badge Level, lot C).
+    @State private var anneau: CGFloat = 0
+
+    /// L'apparition du blur : comme TOUS les headers Apple — dès que le
+    /// contenu passe dessous, le verre est là (rampe courte de 26 pt).
+    private var pli: CGFloat {
+        if let f = Self.pliFreeze { return min(max(f, 0), 1) }
+        return min(max(scrollY / 26, 0), 1)
+    }
+
+    private static func sstep(_ v: CGFloat) -> CGFloat {
+        let t = min(max(v, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
 
     /// Le trésor : la règle de la maison, 20 pièces par série faite.
     private var pieces: Int {
@@ -31,9 +59,57 @@ struct ProfilLuneView: View {
     }
 
     var body: some View {
-        ZStack {
-            ProfilAuroraBackground()
-            VStack(spacing: 0) {
+        GeometryReader { geo in
+            let p = pli
+            let ps = Self.sstep(p)
+            ZStack(alignment: .top) {
+                ProfilFondNoir()
+
+                ScrollView {
+                    VStack(spacing: 0) {
+                        banniere(geo)
+                        nomBloc
+                        ongletCartes
+                            .padding(.top, 26)
+                        registres
+                            .padding(.top, 16)
+                    }
+                    .padding(.bottom, 120)
+                }
+                .onScrollGeometryChange(for: CGFloat.self) { g in
+                    g.contentOffset.y + g.contentInsets.top
+                } action: { _, y in
+                    scrollY = y
+                }
+
+                // LE HEADER FONDU (verdict : « pas de blur dégueu avec
+                // trait ») : un DÉGRADÉ NOIR pur qui naît au scroll — du
+                // noir plein sous la barre de statut, dissous en rien,
+                // sans arête. Le contenu passe dessous et s'y éteint.
+                LinearGradient(stops: [
+                    .init(color: .black, location: 0.0),
+                    .init(color: .black.opacity(0.86), location: 0.42),
+                    .init(color: .black.opacity(0.0), location: 1.0),
+                ], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 148)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .top)
+                    .opacity(ps)
+                    .allowsHitTesting(false)
+
+                // Le titre du header : « Profil » se révèle avec le fondu,
+                // centré sur la ligne des chips.
+                Text("Profil")
+                    .font(.inter(17, .semibold))
+                    .tracking(-0.2)
+                    .foregroundStyle(Color.inkPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .padding(.top, 4)
+                    .opacity(ps)
+                    .offset(y: 5 * (1 - ps))
+                    .allowsHitTesting(false)
+
                 // La rangée canonique : le chevron EXACTEMENT où il vit
                 // sur la fiche d'exercice, les réglages en face.
                 RangeeChips(retour: {
@@ -48,93 +124,156 @@ struct ProfilLuneView: View {
                         }
                     }
                 }
-                ScrollView {
-                    VStack(spacing: 0) {
-                        identite
-                            .padding(.top, 6)
-                        ongletCartes
-                            .padding(.top, 30)
-                        registres
-                            .padding(.top, 16)
-                    }
-                    .padding(.bottom, 120)
-                }
-            }
 
-            // L'overlay des réglages — le panneau de verre in-tree (la
-            // sheet système tue le vrai Liquid Glass, leçon du médaillon).
-            if showReglages {
-                ReglagesOverlay(pieces: pieces) {
-                    withAnimation(.spring(response: 0.4,
-                                          dampingFraction: 0.9)) {
-                        showReglages = false
+                // KD LE VOYAGEUR — une seule vue transformée (la leçon
+                // morphPhoto) : elle quitte le trône par une trajectoire
+                // bombée et vient se tacker à côté du chevron. Et sur
+                // l'ÉLASTIQUE du haut (tirer la page vers le bas), il SUIT
+                // le contenu et grossit d'un souffle — la respiration du
+                // zoom interne de la fiche, jamais une déchirure.
+                // L'overlay des réglages — le panneau de verre in-tree (la
+                // sheet système tue le vrai Liquid Glass, leçon du
+                // médaillon).
+                if showReglages {
+                    ReglagesOverlay(pieces: pieces) {
+                        withAnimation(.spring(response: 0.4,
+                                              dampingFraction: 0.9)) {
+                            showReglages = false
+                        }
                     }
+                    .transition(.opacity)
+                    .zIndex(10)
                 }
-                .transition(.opacity)
-                .zIndex(10)
             }
         }
         .fullScreenCover(isPresented: $showCoffre) {
             CoffreFortFlow(coins: pieces, onClose: { showCoffre = false })
         }
+        .onAppear {
+            if Self.reglagesNow { showReglages = true }
+        }
     }
 
-    // MARK: L'identité — le rond, le nom, le niveau, le trésor
+    // MARK: L'identité — la bannière, KD à cheval, le nom, le trésor
 
-    private var identite: some View {
-        VStack(spacing: 12) {
-            RondAvatar(initiales: "KD")
-            Text("Kathryn")
-                .font(.inter(28, .bold))
-                .tracking(-0.3)
-                .foregroundStyle(Color.inkPrimary)
-            Text("Level 1")
-                .font(.inter(12, .semibold))
-                .tracking(0.6)
-                .foregroundStyle(Color.inkSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule().strokeBorder(Color.white.opacity(0.16),
-                                           lineWidth: 1))
-
-            // La pastille de la page BRAVO, en petit : le trésor. Au tap
-            // elle SE RÉVEILLE (rebond + brille) puis ouvre le coffre —
-            // le délai est celui du bouton-pièce de la home (0,34 s).
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.42)) {
-                    coinKick = 1
-                }
-                withAnimation(.easeOut(duration: 0.5).delay(0.32)) {
-                    coinKick = 0
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                    showCoffre = true
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text("\(pieces)")
-                        .font(.inter(17, .bold))
-                        .foregroundStyle(Color.inkPrimary)
-                        .contentTransition(.numericText())
-                    Text("pièces lune")
-                        .font(.inter(12, .semibold))
-                        .tracking(0.8)
-                        .foregroundStyle(Color.inkMuted)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .glassEffect(.regular.tint(Color.black.opacity(0.45))
-                                 .interactive(),
-                             in: .capsule)
-                .scaleEffect(1 + 0.10 * coinKick)
+    /// LA BANNIÈRE (la référence Adobe) : l'aurora vivante ENFERMÉE dans
+    /// un rectangle de ~20 % de l'écran — le reste de la page est rendu au
+    /// noir profond. KD est collé À CHEVAL sur son bord bas, la pastille
+    /// des pièces posée sur le côté droit.
+    private func banniere(_ geo: GeometryProxy) -> some View {
+        BanniereHalos()
+            .frame(height: max(150, geo.size.height * 0.20))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
+            .overlay(alignment: .bottomTrailing) {
+                pastillePieces
+                    .padding(.trailing, 14)
+                    .padding(.bottom, 14)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(pieces) pièces lune — ouvrir le coffre")
-            .padding(.top, 4)
+            .overlay(alignment: .bottomLeading) {
+                RondAvatar(initiales: "KD", taille: 72,
+                           flambe: flambe, anneau: anneau)
+                    .padding(.leading, 18)
+                    .offset(y: 36)
+                    .onTapGesture {
+                        UIImpactFeedbackGenerator(style: .light)
+                            .impactOccurred(intensity: 0.7)
+                        withAnimation(.easeOut(duration: 0.22)) { flambe = 1 }
+                        withAnimation(.easeOut(duration: 0.9).delay(0.25)) {
+                            flambe = 0
+                        }
+                    }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 56 + 8)
+    }
+
+    /// Le nom, réduit, avec l'identifiant dessous — aligné sous KD.
+    private var nomBloc: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 14) {
+                Text("Kathryn")
+                    .font(.inter(17, .bold))
+                    .tracking(-0.2)
+                    .foregroundStyle(Color.inkPrimary)
+                // Le badge — un tap dévoile l'ANNEAU d'XP autour de KD,
+                // deux secondes, puis il s'efface (sobre, jamais permanent).
+                Button {
+                    withAnimation(.spring(response: 0.4,
+                                          dampingFraction: 0.8)) {
+                        anneau = 1
+                    }
+                    withAnimation(.easeOut(duration: 0.7).delay(2.0)) {
+                        anneau = 0
+                    }
+                } label: {
+                    Text("Level 1")
+                        .font(.inter(11, .semibold))
+                        .tracking(0.5)
+                        .foregroundStyle(Color.inkSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule().strokeBorder(
+                                Color.white.opacity(0.16), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            Text("@kathrynd")
+                .font(.inter(12, .semibold))
+                .tracking(0.3)
+                .foregroundStyle(Color.inkMuted)
         }
-        .frame(maxWidth: .infinity)
+        .padding(.leading, 16 + 20)
+        .padding(.trailing, 20)
+        .padding(.top, 44)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// La pastille de la page BRAVO, en petit, posée SUR la bannière. Au
+    /// tap elle SE RÉVEILLE (rebond + brille) puis ouvre le coffre — le
+    /// délai est celui du bouton-pièce de la home (0,34 s).
+    private var pastillePieces: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.42)) {
+                coinKick = 1
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.32)) {
+                coinKick = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+                showCoffre = true
+            }
+        } label: {
+            HStack(spacing: 7) {
+                // La pièce 3D de BRAVO — la recette gelée, en petit.
+                MoonCoinView(coinR: 11, draggable: false,
+                             yawOverride: 0.34, idleLife: 0, fps: 6,
+                             reveal: 0.34, matte: 0)
+                    .frame(width: 11 * MoonCoinView.hostScale,
+                           height: 11 * MoonCoinView.hostScale)
+                    .frame(width: 24, height: 24)
+                    .rotationEffect(.degrees(Double(coinKick) * -14))
+                Text("\(pieces)")
+                    .font(.inter(15, .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                    .contentTransition(.numericText())
+                Text("pièces")
+                    .font(.inter(11, .semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(Color.inkSecondary)
+            }
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .glassEffect(.regular.tint(Color.black.opacity(0.5))
+                             .interactive(),
+                         in: .capsule)
+            .scaleEffect(1 + 0.10 * coinKick)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(pieces) pièces — ouvrir le coffre")
     }
 
     // MARK: Le titre de la collection
@@ -211,9 +350,17 @@ struct ProfilLuneView: View {
 /// Le rond centré : KD très FIN, habillé d'un dégradé de braises
 /// SOMBRES qui voyage lentement dans les lettres, posé sur une matière
 /// d'obsidienne — noir mat traversé d'un reflet poli qui tourne. Le fil
-/// blanc animé de 0,7 pt reste, seul bijou.
+/// blanc animé de 0,7 pt reste, seul bijou. `taille` pilote TOUT
+/// (lettres, lueurs, fil) : c'est la même vue qui voyage du trône au
+/// dock du header.
 struct RondAvatar: View {
     var initiales: String
+    var taille: CGFloat = 72
+    /// L'embrasement secret (0 → 1) : les braises sombres montent au
+    /// rouge-or une seconde.
+    var flambe: CGFloat = 0
+    /// L'anneau d'XP éphémère (0 → 1) : un arc fin autour du rond.
+    var anneau: CGFloat = 0
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
@@ -226,36 +373,51 @@ struct RondAvatar: View {
                 * 2.0 * .pi
             let ax = 0.5 + 0.5 * cos(phase)
             let ay = 0.5 + 0.5 * sin(phase)
+            let k = taille / 72
+            let f = Double(flambe)
+            // L'écho du halo : blanc chaud, jaune, orange — la palette de
+            // la bannière, qui dérive dans les lettres.
             Text(initiales)
-                .font(.inter(22, .light))
-                .tracking(3.5)
+                .font(.inter(22 * k, .light))
+                .tracking(3.5 * k)
                 .foregroundStyle(LinearGradient(
-                    colors: [Color(red: 0.42, green: 0.15, blue: 0.04),
-                             Color(red: 0.93, green: 0.44, blue: 0.13),
-                             Color(red: 0.55, green: 0.20, blue: 0.06)],
+                    colors: [Color(red: 1.00, green: 0.96, blue: 0.90),
+                             Color(red: 1.00, green: 0.80, blue: 0.32),
+                             Color(red: 1.00, green: 0.48 + 0.20 * f,
+                                   blue: 0.14 + 0.20 * f)],
                     startPoint: UnitPoint(x: ax, y: ay),
                     endPoint: UnitPoint(x: 1 - ax, y: 1 - ay)))
-                .neonGlow(.profilBraise, radius: 7, opacity: 0.35)
-                .frame(width: 72, height: 72)
+                .neonGlow(.profilBraise, radius: 7 * k,
+                          opacity: 0.30 + 0.50 * f)
+                .frame(width: taille, height: taille)
                 .background {
-                    // L'obsidienne : noir mat, un reflet poli qui tourne
-                    // lentement à contresens, une lueur froide au nord.
+                    // LE VERRE NOIR (verdict : « verre noir sublime et
+                    // reflet blanc ») : la profondeur sombre d'une bille
+                    // de verre, la calotte de reflet blanc en haut, et
+                    // l'éclat spéculaire qui la signe.
                     ZStack {
-                        Circle().fill(Color.black)
-                        Circle().fill(AngularGradient(stops: [
-                            .init(color: .clear, location: 0.0),
-                            .init(color: .white.opacity(0.055),
-                                  location: 0.10),
-                            .init(color: .clear, location: 0.24),
-                            .init(color: .clear, location: 0.55),
-                            .init(color: .white.opacity(0.03),
-                                  location: 0.66),
-                            .init(color: .clear, location: 0.80),
-                        ], center: .center, angle: -tour))
                         Circle().fill(RadialGradient(
-                            colors: [Color.white.opacity(0.07), .clear],
-                            center: UnitPoint(x: 0.35, y: 0.18),
-                            startRadius: 0, endRadius: 40))
+                            colors: [Color(white: 0.17),
+                                     Color(white: 0.05),
+                                     Color(white: 0.01)],
+                            center: UnitPoint(x: 0.38, y: 0.24),
+                            startRadius: 1, endRadius: taille * 0.85))
+                        // La calotte : le reflet d'une fenêtre lointaine.
+                        Ellipse()
+                            .fill(LinearGradient(
+                                colors: [.white.opacity(0.30),
+                                         .white.opacity(0.0)],
+                                startPoint: .top, endPoint: .bottom))
+                            .frame(width: taille * 0.70,
+                                   height: taille * 0.32)
+                            .offset(y: -taille * 0.27)
+                            .blur(radius: 1)
+                        // L'éclat : un point de blanc pur, à peine flou.
+                        Circle()
+                            .fill(Color.white.opacity(0.55))
+                            .frame(width: taille * 0.055)
+                            .offset(x: -taille * 0.17, y: -taille * 0.31)
+                            .blur(radius: 0.4)
                     }
                 }
                 .clipShape(Circle())
@@ -270,6 +432,22 @@ struct RondAvatar: View {
                             .init(color: .white.opacity(0.05), location: 1.0),
                         ], center: .center, angle: tour),
                         lineWidth: 0.7))
+                // L'anneau d'XP : un arc de braise ultra-fin, éphémère —
+                // il n'existe qu'au tap du badge (jamais un bijou de plus
+                // en permanence). Le tiers plein = l'XP du niveau, en dur
+                // tant que la mécanique n'existe pas.
+                .overlay(
+                    Circle()
+                        .trim(from: 0, to: 0.30 * anneau)
+                        .stroke(LinearGradient(
+                            colors: [.profilBraise,
+                                     Color(red: 1.0, green: 0.75,
+                                           blue: 0.40)],
+                            startPoint: .leading, endPoint: .trailing),
+                            style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: taille + 12, height: taille + 12)
+                        .opacity(Double(anneau)))
         }
     }
 }
@@ -291,12 +469,16 @@ struct ReglagesOverlay: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Le voile : un tap le referme.
-            Color.black.opacity(0.48)
+            // Le voile : PRESQUE RIEN — le verre doit refléter le monde
+            // derrière lui, le voile ne fait que capter le tap de sortie.
+            Color.black.opacity(0.10)
                 .ignoresSafeArea()
                 .onTapGesture { fermer() }
 
             let forme = RoundedRectangle(cornerRadius: 28, style: .continuous)
+            // Le conteneur d'iOS 26 : c'est LUI qui allume la vraie
+            // lentille du Liquid Glass sur les grandes formes.
+            GlassEffectContainer {
             VStack(spacing: 0) {
                 Capsule()
                     .fill(Color.white.opacity(0.22))
@@ -367,24 +549,23 @@ struct ReglagesOverlay: View {
                 .padding(.bottom, 26)
             }
             .frame(maxWidth: .infinity)
-            .background {
-                Color.clear
-                    .glassEffect(.regular.tint(Color.black.opacity(0.55)),
-                                 in: forme)
+            // LE LIQUID GLASS CLAIR (verdict : « ça doit refléter
+            // derrière ») : Glass.clear — le verre le plus lentille
+            // d'iOS 26, celui des contrôles posés sur la vidéo. Le monde
+            // se réfracte dedans, les bords le courbent.
+            .glassEffect(.clear.interactive(), in: forme)
             }
-            .overlay(forme.strokeBorder(Color.white.opacity(0.10),
-                                        lineWidth: 1))
-            .clipShape(forme)
             .padding(.horizontal, 8)
             .padding(.bottom, 6)
             .offset(y: glisse)
-            // Le drag FLUIDE : simultané (il vit même par-dessus les
-            // lignes-boutons, qui gardent leur tap), suivi du doigt 1:1
-            // vers le bas, caoutchouc vers le haut, et la décision de
-            // fermeture lit la VITESSE (predictedEnd), pas juste la
-            // distance — un petit geste vif ferme, un grand geste lent
-            // hésitant revient.
-            .simultaneousGesture(DragGesture(minimumDistance: 10)
+            .contentShape(Rectangle())
+            // Le drag IMPARABLE : priorité haute avec distance minimale —
+            // le panneau suit le doigt 1:1 partout (même en partant d'une
+            // ligne-bouton : un tap ne bouge pas de 12 pt, le geste échoue
+            // et le bouton reçoit son tap). Caoutchouc vers le haut, et la
+            // fermeture lit la VITESSE (predictedEnd) : un petit geste vif
+            // ferme, un grand geste hésitant revient en ressort.
+            .highPriorityGesture(DragGesture(minimumDistance: 12)
                 .onChanged { v in
                     let h = v.translation.height
                     glisse = h >= 0 ? h : h / 6
@@ -492,6 +673,10 @@ struct CGUPage: View {
 struct DosVide: View {
     var pips: Int
     @State private var pulse: CGFloat = 0
+    /// Le RÊVE (lot A) : toutes les 8-15 s, un frisson de liseré très bas
+    /// parcourt un dos au hasard — la collection respire. Chaque dos tire
+    /// sa propre horloge : jamais deux frissons synchronisés.
+    @State private var frisson: CGFloat = 0
 
     private static let dos: Image = {
         guard let p = Bundle.main.path(forResource: "carte-dos-vide",
@@ -508,41 +693,58 @@ struct DosVide: View {
             withAnimation(.easeOut(duration: 0.16)) { pulse = 1 }
             withAnimation(.easeOut(duration: 0.7).delay(0.16)) { pulse = 0 }
         } label: {
+            // L'anneau est ÉTEINT par défaut (le dos désaturé, gris
+            // sombre) et il S'ALLUME en orange — au tap (pleine flamme),
+            // ou quand son horloge le décide (une braise DISCRÈTE, à
+            // peine 45 % — verdict « plus discret et subtil »).
+            let allume = max(pulse, frisson * 0.45)
             ZStack {
                 Self.dos
                     .resizable()
-                    .aspectRatio(1024.0 / 1536.0, contentMode: .fit)
-                // Le néon : l'image elle-même, en écran — net puis diffus.
+                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .saturation(0.05)
+                    .brightness(-0.015)
                 Self.dos
                     .resizable()
-                    .aspectRatio(1024.0 / 1536.0, contentMode: .fit)
+                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .opacity(allume)
+                Self.dos
+                    .resizable()
+                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
                     .blendMode(.screen)
-                    .opacity(0.85 * pulse)
+                    .opacity(0.55 * allume)
                 Self.dos
                     .resizable()
-                    .aspectRatio(1024.0 / 1536.0, contentMode: .fit)
+                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
                     .blur(radius: 5)
                     .blendMode(.screen)
-                    .opacity(0.9 * pulse)
+                    .opacity(0.5 * allume)
             }
-            .overlay(alignment: .bottom) {
-                HStack(spacing: 3) {
-                    ForEach(0..<pips, id: \.self) { _ in
-                        CroissantLune(taille: 8,
-                                      couleur: .profilBraise
-                                          .opacity(0.5 + 0.5 * pulse))
-                    }
-                }
-                .padding(.bottom, 9)
-            }
-            // Le gabarit EXPLICITE (la maquette : QUATRE dos visibles par
-            // rangée) — `aspectRatio(.fit)` seul se cale sur la hauteur
-            // proposée et les dos sortaient géants.
-            .frame(width: 80, height: 80 * 1536.0 / 1024.0)
+            // Gabarit explicite (quatre dos par rangée) + le rayon de
+            // 8 pt demandé. (Plus de lunes sous les dos.)
+            .frame(width: 80, height: 80 * 1672.0 / 941.0)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .scaleEffect(1 + 0.035 * pulse)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Emplacement de carte vide")
+        .task {
+            // L'ALLUMAGE (verdict : « toutes les 4 secondes certaines
+            // s'allument orange ») : chaque dos tire son horloge autour
+            // de 4 s — décalées entre elles, quelques cartes s'embrasent
+            // à chaque instant, jamais toutes ensemble. Coût nul entre
+            // deux allumages (pas de TimelineView).
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(Double.random(in: 5.0...9.0)))
+                guard !Task.isCancelled else { break }
+                // La braise se réveille LENTEMENT et s'éteint encore plus
+                // lentement — un souffle, pas un clignotement.
+                withAnimation(.easeInOut(duration: 0.9)) { frisson = 1 }
+                withAnimation(.easeOut(duration: 1.5).delay(0.9)) {
+                    frisson = 0
+                }
+            }
+        }
     }
 }
 
@@ -587,44 +789,33 @@ struct CroissantLune: View {
     }
 }
 
-// MARK: - Le fond miroité
+// MARK: - Le fond de nuit
 
-/// Le ciel de la home, versé depuis la DROITE : même scène à cinq couches
-/// (`bgAuroraProfil` = le champ miroité DANS le shader), mêmes étoiles —
-/// le champ d'étoiles n'a pas de biais latéral, il reste tel quel.
-struct ProfilAuroraBackground: View {
+/// La page est rendue au NOIR : un dégradé subtil et profond (verdict :
+/// « un fond noir dégradé joli, pas métal ») — chaud en haut, éteint en
+/// bas. Le grain de la maison par-dessus.
+struct ProfilFondNoir: View {
     var body: some View {
         ZStack {
             Color.black
-            ProfilAuroraFloor()
-            StarDustCeiling()
-                .mask {
-                    LinearGradient(stops: [
-                        .init(color: .clear, location: 0.44),
-                        .init(color: .white.opacity(0.50), location: 0.68),
-                        .init(color: .white.opacity(0.80), location: 1.0),
-                    ], startPoint: .top, endPoint: .bottom)
-                }
-            // Le voile de nuit — LÉGER en haut (verdict Kathryn : le halo
-            // doit rester lumineux comme la home), il n'assoit que le bas
-            // où vivent les cartes.
             LinearGradient(stops: [
-                .init(color: .black.opacity(0.0), location: 0.0),
-                .init(color: .black.opacity(0.08), location: 0.42),
-                .init(color: .black.opacity(0.16), location: 1.0),
+                .init(color: Color(red: 0.075, green: 0.062, blue: 0.052),
+                      location: 0.0),
+                .init(color: Color(red: 0.030, green: 0.026, blue: 0.023),
+                      location: 0.38),
+                .init(color: .black, location: 1.0),
             ], startPoint: .top, endPoint: .bottom)
-
             WoopGrain()
         }
-        .clipped()
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 }
 
-private struct ProfilAuroraFloor: View {
-    @StateObject private var tilt = BgTilt()
-
+/// L'hôte des halos de la bannière : trois grands foyers blanc/jaune/
+/// orange qui naviguent et se fondent — jamais de noir (30 Hz, la
+/// cadence des fonds).
+private struct BanniereHalos: View {
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
@@ -632,10 +823,9 @@ private struct ProfilAuroraFloor: View {
                     .truncatingRemainder(dividingBy: 900))
                 Rectangle()
                     .fill(.white)
-                    .colorEffect(ShaderLibrary.bgAuroraProfil(
-                        .float2(geo.size.width, geo.size.height), .float(t),
-                        .float2(Float(tilt.value.x), Float(tilt.value.y)),
-                        .float(1.0)))
+                    .colorEffect(ShaderLibrary.banniereHalos(
+                        .float2(geo.size.width, geo.size.height),
+                        .float(t)))
             }
         }
     }
