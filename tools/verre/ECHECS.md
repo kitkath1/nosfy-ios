@@ -65,7 +65,37 @@ auto-jugé ~9,5, recalé à 2/10. Les fautes mesurées ensuite :
   mêmes échelles) avec un format de verdict imposé ; en libre, il
   généralise.
 
-## 6. Les échecs d'outillage
+## 6. LA POUSSÉE DU COIN DROIT (17-08) — quatre leçons payées
+- **NaN × 0 = NaN.** `atan2(max(vx,0), max(vy,0))` vaut `atan2(0,0)` —
+  indéfini — sur TOUT ce qui est à gauche et sous le coin. Le garde
+  `× gate` (nul dans cette zone) ne protège de rien : le NaN traverse
+  l'énergie, la couleur ET l'alpha. Résultat : un **panneau noir
+  rectangulaire** sur l'intérieur de la carte, aux bords exactement
+  x = W−26 pt et y = 26 pt (la signature du coin). Invisible aux sondes
+  de flanc, qui ne regardent que les 18 premiers points — c'est
+  `zones.py` qui l'a attrapé (centre 0,001 au lieu de 0,048). Garde :
+  `max(v, 1e-4)`, jamais `max(v, 0.0)`, avant toute fonction indéfinie
+  en zéro.
+- **NE JAMAIS CALIBRER SUR LA RÉFÉRENCE AGRANDIE.** Sa photo fait
+  1,35 px/pt, la capture du simu 3 px/pt : pour comparer, j'agrandissais
+  la sienne au LANCZOS — qui **dépasse** sur un trait d'un pixel et m'a
+  affiché un pic de 0,88 à 48° qui n'existe pas (sa vraie valeur native :
+  0,55). J'ai calé mon fil dessus et posé **×1,94 de sa lumière**.
+  Loi : mesurer chacun à SA résolution native, et comparer la **masse
+  lumineuse intégrée** (invariante par échelle), jamais les pics.
+- **Une lumière fonction de la seule distance au bord ne peut être
+  qu'une bande PARALLÈLE au bord.** La sienne descend en diagonale
+  (le front rentre d'1 pt tous les 2 pt de descente, mesuré case par
+  case) ; la mienne avait une pente de 0,00 — mathématiquement
+  inévitable. Pour une diagonale, il faut une coordonnée diagonale.
+- **Plateau + falaise = un CONTOUR.** Une bande construite en
+  `smoothstep` d'entrée, dessus plat, `smoothstep` de sortie a deux
+  épaules : elle se lit comme un objet collé (« une tache »), pas comme
+  de la lumière. Un seul lobe, sans seuil, se lit comme de la matière.
+  Le test qui tranche : la carte numérique par cases de 2 pt — un
+  dessus plat s'y voit au premier coup d'œil.
+
+## 7. Les échecs d'outillage
 - `xcodebuild | grep` masque le code de sortie (payé encore) : toujours
   `> log 2>&1; EXIT=$?` + `stat` du metallib AVANT toute capture.
 - Un tour de jury a jugé des captures effacées : vérifier l'existence des

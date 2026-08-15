@@ -190,10 +190,64 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ... et le creux S'EFFACE en bas (mesuré à y=85 % : le lait
         // touche l'arête, 0,77 à -2 px pendant que le fil est mort) :
         // c'est le « lait sans fil », la signature du bas du flanc.
+        // Le creux n'existe QUE dans le tiers haut (mesuré : 0,35 à
+        // 1,4 pt à y=21-34 %) ; sous y=45 % la photo n'a plus de creux
+        // du tout — le fil se prolonge en ÉPAULE (0,61 à 1,4 pt, 0,59 à
+        // 2,1). Mon creux courait sur toute la hauteur : il coupait le
+        // flanc en deux.
         float creuxD = mix(smoothstep(0.4, 2.6, tR), 1.0,
-                           smoothstep(0.78, 0.88, fy));
-        E += (0.60 * exp(-tR / 18.0) * creuxD * profR)
+                           smoothstep(0.34, 0.50, fy));
+        // LA DIFFUSION INTERNE (sa loi n°2, « micro diffusion dans la
+        // matière ») : sous y=45 % la photo tient 0,55-0,62 jusqu'à 4 pt
+        // et ne retombe au noir qu'à 18 pt. J'étais à 0,33 — d'où la
+        // droite « plate ». Portée 15 pt, amplitude ×1,8.
+        E += (1.05 * exp(-tR / 13.0) * creuxD * profR
+              * smoothstep(0.08, 0.24, fy))
              * float3(1.0, 0.90, 0.80);
+        // LE GLISSEMENT (17-08, sa loi n°1) : sous le coin droit la
+        // lumière ne s'arrête pas au fil — elle ACCROCHE le coin, se
+        // comprime dans la courbe et GLISSE dans le verre. C'est elle
+        // qui fait lire « gonflé » au lieu de « bord éclairé ».
+        // Mesuré à l'arc (θ<12°) : 0,49-0,63 à 2-7 pt sous le coin,
+        // éteint à 7-14 pt (0,21) ; et une seconde flaque à y=28 %
+        // (0,47 à 3-7 pt), morte à y=40 %. Portée COURTE : elle hugge
+        // l'arête, elle n'éclaire pas la carte.
+        // Le profil radial mesuré (réf, pas de 0,7 pt) le dit exactement :
+        // fil au bord — SILLON à 1,4 pt (0,35) — puis une BANDE claire et
+        // LARGE de 2,8 à 8,4 pt (0,60-0,77) — puis une chute NETTE à
+        // 10,5 pt. Elle vit de y=18 % à 40 %, pic à 26 %, et meurt plus
+        // bas (la flaque prend le relais). Ce n'est pas une nappe qui
+        // décroît : c'est une bande DÉTACHÉE du fil, et c'est ce
+        // détachement qui donne l'épaisseur du verre.
+        // ... et elle est en LENTILLE, pas en dalle : étroite et vive en
+        // haut (y=21 % : 0,77 mais finie à 5,5 pt), large au ventre
+        // (y=26-30 % : 9,5 pt), éteinte à 40 %.
+        // ASYMÉTRIQUE : elle monte doucement depuis y=16 % et TOMBE vite
+        // après le ventre (à y=34 % la photo est déjà revenue à 0,46).
+        float dfyD = fy - 0.216;
+        float bellD = exp(-dfyD * dfyD / (dfyD < 0.0 ? 0.00135 : 0.0077));
+        // LA DEUXIÈME TACHE, tuée le 17-08 : je l'avais construite en
+        // DALLE — smoothstep d'entrée à 2,6 pt, plateau, puis falaise à
+        // 9,6. Mesuré à y=26 % (2 / 5 / 9 / 14 pt) : elle fait
+        // 0,55 / 0,68 / 0,44 / 0,21 (un SOMMET à 5 pt puis ça retombe),
+        // moi 0,66 / 0,75 / 0,72 / 0,21 — plat jusqu'à 9 pt PUIS une
+        // falaise. Un dessus plat avec une falaise, ça a un CONTOUR :
+        // ça se lit comme un losange collé au bord. Un seul lobe, pas
+        // de seuil, pas d'épaule : la lumière n'a plus de bord.
+        // ELLE EST EN DIAGONALE — son verdict du 17-08, et la carte
+        // numérique de sa photo (case de 2 pt) le prouve : le front de
+        // lumière est à 5 pt du bord à y=24, 7 pt à y=30, 10 pt à y=34,
+        // 13 pt à y=40. **Il rentre d'1 pt tous les 2 pt de descente.**
+        // La mienne était à 4-6 pt de y=24 à y=40 — PENTE ZÉRO, parce
+        // qu'une lumière fonction de la seule distance au bord ne PEUT
+        // être qu'une bande parallèle au bord. Ce n'est pas une bande :
+        // c'est un COIN de lumière qui entre par l'angle et s'ouvre en
+        // descendant (5 pt de large à y=26, 11 pt à y=40).
+        float frontD = 2.0 + 0.50 * (q.y - 20.0);
+        float bandeD = smoothstep(0.8, 2.4, tR)
+                     * (1.0 - smoothstep(frontD - 2.0, frontD + 2.0, tR))
+                     * bellD;
+        E += (0.92 * bandeD) * float3(1.0, 0.94, 0.88);
 
         // ---- 4. LA NAPPE DU COIN HAUT-DROIT — une gaussienne elliptique
         // TOURNÉE qui entre par le coin et descend en biais vers le
@@ -365,8 +419,20 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // laissaient des creux de −0,42 entre eux.
         float envL = 0.90
                    + 0.50 * exp(-(fy - 0.23) * (fy - 0.23) / 0.0035);
-        float3 eRim = (2.70 * wR * envR) * float3(1.0, 0.975, 0.955)
-                    + (envT * wT) * cTop
+        // LA TRANCHE FINE (17-08) : le fil droit de la photo est un
+        // CHEVEU RAIDE — 0,92 au bord, 0,66 à 0,7 pt, 0,42 à 1,4 pt.
+        // Le mien avait un DOS PLAT (0,62 / 0,67 / 0,40) : trop large
+        // pour son énergie, donc « sage ». σ 0,75 → 0,55 et l'amplitude
+        // remonte : même masse de lumière, mais taillée.
+        // ... et son épaisseur VARIE avec la hauteur (mesuré à 1,4 pt :
+        // 0,42 à y=50 %, 0,61 à 60 %, 0,76 à 70 %) : cheveu à mi-hauteur,
+        // épaule vers le bas. C'est cette variation qui rend la tranche
+        // « nerveuse » au lieu de sage — un fil d'épaisseur constante lit
+        // comme un trait tracé.
+        float sR = mix(0.55, 0.95, smoothstep(0.42, 0.80, fy));
+        float gR = exp(-d * d / (2.0 * sR * sR));
+        E += (3.60 * wR * envR * gR) * float3(1.0, 0.975, 0.955);
+        float3 eRim = (envT * wT) * cTop
                     + (envB * wB) * cBas;
         // Le fil GAUCHE vit À PART : sigma fin (0,6) et PIC DÉCALÉ DE
         // 0,9 pt DEDANS — un pic posé sur d=0 perd la moitié de sa
@@ -384,8 +450,58 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // PHASE 4 : les coins sont des HOTSPOTS (mesurés : ils meurent
         // en 10-20 pt), plus des queues de 50 pt — c'est la queue du TR
         // qui coulait le long du flanc droit (+0,5 d'énergie à y=23 %).
-        eRim += (1.30 * exp(-dTR / 10.0)) * vgBlancChaud
-              + (2.20 * exp(-dBR / 13.0)) * vgCreme
+        // LE FOUET DU COIN DROIT (17-08) : un hotspot isotrope
+        // (exp(-dTR/10)) donne un ARRONDI ÉCLAIRÉ — 0,47 tout le long
+        // de l'arc, « trop dessiné ». La photo, elle, a une amplitude
+        // ANGULAIRE : plateau discret côté flanc, épaule à 40°, PIC À
+        // LA DIAGONALE 48-54° (0,88 / 0,81 / 0,78), décrue jusqu'à
+        // 0,36 sur la tranche haute. La lumière accroche le coin et se
+        // COMPRIME dans la courbe : elle n'est pas répartie, elle est
+        // concentrée là où l'arc tourne le plus vite face à la source.
+        float2 vTR = float2(q.x - (W - rH), rH - q.y);
+        // Le gate s'ouvre TARD côté flanc : à θ<10° c'est le fil du
+        // flanc qui porte la lumière, pas le coin (sinon les deux
+        // s'additionnent et le bout du coin crame, +0,16 mesuré).
+        float gateTR = smoothstep(-3.0, 3.0, vTR.x)
+                     * smoothstep(0.0, 6.0, vTR.y);
+        // LE GARDE (payé cash) : `atan2(0,0)` est indéfini, et partout à
+        // gauche/sous le coin les deux max() valaient 0 → NaN. Or
+        // **NaN × 0 = NaN** : `gateTR` à zéro ne protège de RIEN, le NaN
+        // traverse E, rgbIn et l'alpha — un PANNEAU NOIR rectangulaire
+        // sur tout l'intérieur de la carte (bords à x=W-26 pt et y=26 pt,
+        // la signature du coin). Invisible aux sondes de flanc, qui ne
+        // regardent que les 18 premiers points : c'est zones.py qui l'a
+        // attrapé (centre 0,001 au lieu de 0,048).
+        float thTR = atan2(max(vTR.y, 1e-4), max(vTR.x, 1e-4));
+        // SON VERDICT DU 17-08 : « t'as fait une TACHE, c'est un petit
+        // TRAIT DIAGONAL FIN ». Mesuré à la coupe perpendiculaire, tous
+        // les 4° : sa lumière de coin est un PIC COURT — 0,53 (36°),
+        // 0,73 (44°), **0,88 (48°)**, 0,77 (52°), 0,67 (56°) — un
+        // événement de 16° d'arc, soit 7 pt de long. La mienne était un
+        // PLATEAU de 20° (0,62 → 0,78 → 0,69) : la même lumière étalée
+        // sur le double de surface, et l'œil ne lit plus un trait mais
+        // une tache. Un socle constant + un pic serré (σ 4,5°), plus
+        // l'épaulement de 40° qui allongeait la tache.
+        // RECALÉ À LA RÉSOLUTION NATIVE (17-08) : mon « pic à 0,88 à
+        // 48° » était un ARTEFACT — j'avais mesuré sa photo AGRANDIE
+        // (490 px étirés à 1086) et le LANCZOS dépasse sur un trait d'un
+        // pixel. Sa vraie valeur native à 48° est 0,55, et son maximum
+        // n'est pas là : la MASSE lumineuse (seule grandeur qui ne
+        // dépend pas de la résolution) vaut 0,40 / 0,45 / 0,61 / 0,79 /
+        // 0,73 / 0,64 / 0,52 à 32-40-48-56-64-72-80° — une houle douce
+        // qui culmine à 56-64°, pas un paquet sur la diagonale. Je
+        // posais ×1,24 de sa lumière sur l'arc, et ×1,94 à 48°.
+        float dthS = thTR - 0.977;                 // 56° : son vrai ventre
+        float arcTR = 0.46 + 0.50 * exp(-dthS * dthS / 0.075);
+        // ... et il est FIN : sa coupe fait 1,1-1,3 pt de large contre
+        // 1,5-1,6 chez moi. Le coin prend donc son PROPRE noyau (σ 0,50
+        // au lieu du 0,75 des tranches — on ne touche pas à la border,
+        // elle est bonne), posé 0,9 pt dans le verre, là où sa crête est
+        // mesurée de 44° à 56°.
+        float dcTR = d + 0.9;
+        float gCoin = exp(-dcTR * dcTR / (2.0 * 0.42 * 0.42));
+        E += (arcTR * gateTR * gCoin) * vgBlancChaud;
+        eRim += (2.20 * exp(-dBR / 13.0)) * vgCreme
               + (1.65 * exp(-dBL / 20.0)) * float3(1.0, 0.58, 0.26)
               + (0.18 * exp(-dTL / 8.0)) * float3(1.0, 0.97, 0.94);
         E += eRim * gT;
