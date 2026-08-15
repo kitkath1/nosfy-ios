@@ -507,10 +507,14 @@ struct RootView: View {
             // `toolbarVisibility` se pose sur le CONTENU de chaque onglet :
             // appliqué au TabView, il ne masque rien.
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                // La page Exercices est immersive : la barre se retire quand
-                // on y entre (son chevron fait la sortie) et remonte en
-                // ressort au retour — le `if` rend aussi sa place à la page.
-                if selection != .exercises {
+                // Les pages Exercices et Profil sont IMMERSIVES : la barre
+                // se retire quand on y entre — leur chevron fait la sortie,
+                // c'est la même grammaire — et elle remonte en ressort au
+                // retour ; le `if` rend aussi sa place à la page. Le profil
+                // est une maison de cartes : la barre lui mangeait le bas
+                // de sa collection pour une navigation que son chevron
+                // assure déjà.
+                if selection != .exercises && selection != .profile {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
                                 onPlay: { startWorkout() },
@@ -532,7 +536,8 @@ struct RootView: View {
                 }
             }
             .animation(.spring(response: 0.5, dampingFraction: 0.85),
-                       value: selection == .exercises)
+                       value: selection == .exercises
+                           || selection == .profile)
             // L'accent suit le mood : le violet de l'app jure dans un écran
             // d'or. Ici la sélection est une lumière chaude.
             .tint(Color(red: 1.0, green: 0.80, blue: 0.48))

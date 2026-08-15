@@ -82,12 +82,21 @@ final class BoosterLoopLayerView: UIView {
 /// laisse une image noire au raccord), le looper RETENU par le
 /// coordinateur, et le muet obligatoire.
 ///
-/// LA COUTURE DU FICHIER, elle, a été réglée AVANT l'app : la source
-/// bouclait mal (écart 4,4/255 entre sa dernière et sa première image).
-/// `Woop/Media/booster-loop.mp4` est recuit avec un fondu croisé de 0,5 s
-/// de la queue sur la tête — mesuré à 2,03, quand deux images
-/// consécutives ordinaires en valent déjà 1,40. La couture est au niveau
-/// du mouvement naturel : il n'y en a plus.
+/// LE FICHIER EST RECUIT AVANT L'APP, pour trois raisons :
+/// 1. la source bouclait mal (écart 4,4/255 entre sa dernière et sa
+///    première image) — un fondu croisé de 0,85 s de la queue sur la tête
+///    la ramène à **1,17**, quand deux images consécutives ordinaires en
+///    valent déjà 0,66 : la couture est au niveau du mouvement naturel ;
+/// 2. le cadrage était SERRÉ sur les trois sachets, donc la fumée blanche
+///    de gauche et le reflet au sol restaient hors champ. Le champ est
+///    élargi au maximum que la source permet — les sachets passent de
+///    73 % à ~45 % de la largeur, et la scène respire enfin ;
+/// 3. la boucle est RALENTIE à 0,85× (3,75 s) : la fumée dérive plus
+///    lentement et l'œil n'accroche plus la période.
+///
+/// Ce qui trahissait « une vidéo », ce n'était pas la couture — c'était
+/// le RECTANGLE : des bords qui coupent la fumée net. D'où le masque sur
+/// les côtés ET le pied, côté vue.
 struct BoosterLoopVideo: UIViewRepresentable {
     final class Coordinator {
         var player: AVQueuePlayer?
@@ -101,9 +110,8 @@ struct BoosterLoopVideo: UIViewRepresentable {
         let v = BoosterLoopLayerView()
         v.backgroundColor = .clear
         v.isUserInteractionEnabled = false
-        // Le cadre du header est plus large que la vidéo (3:2) : elle
-        // remplit et c'est le haut/bas qui se recadre — de la fumée et du
-        // reflet, jamais les sachets.
+        // Le header est taillé au ratio EXACT du fichier (1,6) : rien
+        // n'est recadré, toute la scène recuisinée est à l'écran.
         v.playerLayer.videoGravity = .resizeAspectFill
         guard let url = Bundle.main.url(forResource: "booster-loop",
                                         withExtension: "mp4") else {
@@ -148,6 +156,9 @@ struct BoosterPopup: View {
 
     private static let forme = RoundedRectangle(cornerRadius: 34,
                                                 style: .continuous)
+    /// Le ratio du fichier recuit — le header est taillé dessus pour que
+    /// rien ne soit recadré.
+    private static let ratioVideo: CGFloat = 1.6
 
     var body: some View {
         ZStack {
@@ -159,8 +170,10 @@ struct BoosterPopup: View {
                 .onTapGesture { onFermer() }
 
             GeometryReader { g in
-                let W = min(g.size.width - 44, 352)
-                panneau(W: W, headerH: W * 0.60)
+                let W = min(g.size.width - 28, 384)
+                // Le header est au RATIO EXACT du fichier recuit (1,6) :
+                // aucune marge de recadrage, la scène entière est là.
+                panneau(W: W, headerH: W / Self.ratioVideo)
                     .frame(width: W)
                     .scaleEffect(born ? 1 : 0.92)
                     .opacity(born ? 1 : 0)
@@ -176,10 +189,10 @@ struct BoosterPopup: View {
 
     private func panneau(W: CGFloat, headerH: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // La réserve du header : le texte remonte de 30 pt DANS la
-            // fumée — la vidéo et le titre se recouvrent au lieu de se
-            // succéder, il n'y a jamais de ligne d'horizon entre eux.
-            Color.clear.frame(height: headerH - 30)
+            // La réserve du header, plus 24 pt d'AIR FRANC : la scène a
+            // fini de s'éteindre bien avant le titre (le masque la fond
+            // dès 55 % de sa hauteur), le texte ne lui marche pas dessus.
+            Color.clear.frame(height: headerH + 24)
 
             Text("Un booster t'attend")
                 .font(.inter(20, .semibold))
@@ -199,7 +212,7 @@ struct BoosterPopup: View {
                 onOuvrir()
             }
             .padding(.horizontal, 26)
-            .padding(.top, 20)
+            .padding(.top, 28)
 
             // L'échappée en ENCRE SEULE — sur la nuit, un cadre clair se
             // lit comme un bug (l'école du footer de BRAVO).
@@ -211,27 +224,44 @@ struct BoosterPopup: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.top, 2)
-            .padding(.bottom, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
         }
         // LE VERRE EST LE VRAI (il échantillonne la page vivante), et
-        // par-dessus LA NUIT QUI FOND : quasi opaque en haut — elle épouse
-        // le noir de la vidéo, la couture verre/vidéo jurait (verdict) —,
-        // transparente en pied : le diamant vit sur l'air.
+        // par-dessus LA NUIT QUI FOND.
+        //
+        // ELLE FOND AU PIED DE LA VIDÉO, PAS À UNE FRACTION DU PANNEAU.
+        // Les paliers étaient posés en dur (0,95 → 0,88 à 38 % → 0,25 au
+        // pied) alors que la vidéo, elle, finissait à 57 % : mesuré, il
+        // restait **69 % de noir** à sa base — le vrai verre n'avait
+        // aucune chance de se voir, et le fondu ne devenait rien. Les
+        // paliers se calculent donc sur `headerH / hauteur du panneau` :
+        // noir plein sous l'image (elle a besoin de son fond), chute
+        // franche dans les 34 pt qui suivent, puis le verre règne — le
+        // titre, le sous-titre et le diamant vivent dessus.
         .background {
-            ZStack {
-                // Jamais `.interactive()` sur un grand verre : il vole les
-                // gestes de ce qui vit dessus.
-                Color.clear.glassEffect(
-                    .regular.tint(Color.black.opacity(0.30)),
-                    in: Self.forme)
-                Self.forme
-                    .fill(LinearGradient(stops: [
-                        .init(color: .black.opacity(0.95), location: 0),
-                        .init(color: .black.opacity(0.88), location: 0.38),
-                        .init(color: .black.opacity(0.25), location: 1)
-                    ], startPoint: .top, endPoint: .bottom))
-                    .allowsHitTesting(false)
+            GeometryReader { p in
+                let H = max(p.size.height, 1)
+                let pied = min(headerH / H, 0.9)
+                ZStack {
+                    // Jamais `.interactive()` sur un grand verre : il vole
+                    // les gestes de ce qui vit dessus.
+                    Color.clear.glassEffect(
+                        .regular.tint(Color.black.opacity(0.30)),
+                        in: Self.forme)
+                    Self.forme
+                        .fill(LinearGradient(stops: [
+                            .init(color: .black.opacity(0.95), location: 0),
+                            .init(color: .black.opacity(0.92),
+                                  location: pied * 0.56),
+                            .init(color: .black.opacity(0.34),
+                                  location: pied),
+                            .init(color: .black.opacity(0.20),
+                                  location: min(pied + 34 / H, 0.99)),
+                            .init(color: .black.opacity(0.20), location: 1)
+                        ], startPoint: .top, endPoint: .bottom))
+                        .allowsHitTesting(false)
+                }
             }
         }
         // La vidéo file bord à bord : c'est le panneau qui porte les coins.
@@ -240,12 +270,24 @@ struct BoosterPopup: View {
         .overlay(alignment: .top) {
             BoosterLoopVideo()
                 .frame(width: W, height: headerH)
+                // LE PIED : la scène s'éteint bien avant le titre.
                 .mask(LinearGradient(stops: [
                     .init(color: .white, location: 0),
-                    .init(color: .white, location: 0.50),
-                    .init(color: .white.opacity(0.35), location: 0.80),
+                    .init(color: .white, location: 0.46),
+                    .init(color: .white.opacity(0.34), location: 0.76),
                     .init(color: .clear, location: 1.0)
                 ], startPoint: .top, endPoint: .bottom))
+                // LES FLANCS — c'est EUX qui disaient « vidéo » : un bord
+                // net qui tranche la fumée se lit comme un clip collé sur
+                // la page. Fondus, la fumée naît et meurt dans le noir du
+                // panneau, et il n'y a plus de rectangle nulle part. Les
+                // sachets vivent entre 31 % et 78 % : ils n'y touchent pas.
+                .mask(LinearGradient(stops: [
+                    .init(color: .clear, location: 0.0),
+                    .init(color: .white, location: 0.12),
+                    .init(color: .white, location: 0.88),
+                    .init(color: .clear, location: 1.0)
+                ], startPoint: .leading, endPoint: .trailing))
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
         }
