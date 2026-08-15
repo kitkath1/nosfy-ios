@@ -34,6 +34,30 @@ struct ProfilLuneView: View {
     private static let reglagesNow =
         CommandLine.arguments.contains("-profilReglages")
 
+    /// LE DÉPLIEMENT DE LA CARTE (le geste wahou du 15-08) : on TIRE la
+    /// bannière vers le bas, elle grandit et s'arrête juste au-dessus de
+    /// la poignée-lune — le reste de la page s'éteint vers le bas, le
+    /// booster plonge dans le sol (option A), et KD voyage au centre.
+    /// UN SEUL curseur (0 → 1) pilote tout : hauteur, trajet, extinction,
+    /// plongée. `-profilCarteP <p>` le fige (captures du voyage).
+    private static let carteFreeze: CGFloat? = UserDefaults.standard
+        .string(forKey: "profilCarteP").flatMap { Double($0) }
+        .map { CGFloat($0) }
+    @State private var carteP: CGFloat =
+        min(max(ProfilLuneView.carteFreeze ?? 0, 0), 1)
+    /// Le p au début du geste (la carte se tire depuis n'importe où).
+    @State private var carteBase: CGFloat = 0
+    /// La prise en main : l'haptique une fois, le verrou du scroll.
+    @State private var carteSaisie = false
+    /// Un geste MONTANT né sur la carte fermée : mort — on ne vole pas un
+    /// scroll qu'on ne peut plus rendre (le prix du highPriorityGesture).
+    @State private var carteMorte = false
+    /// Le booster PLANQUÉ le temps du dépliement — l'aller-retour du
+    /// géant dans le sol, JAMAIS persisté (l'enterrement au doigt, lui,
+    /// l'est).
+    @State private var boosterPlanque =
+        (ProfilLuneView.carteFreeze ?? 0) > 0.04
+
     /// L'embrasement secret de KD (tap sur le rond, lot C).
     @State private var flambe: CGFloat = 0
     /// L'anneau d'XP éphémère (tap sur le badge Level, lot C).
@@ -69,11 +93,19 @@ struct ProfilLuneView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         banniere(geo)
-                        nomBloc
-                        ongletCartes
-                            .padding(.top, 26)
-                        registres
-                            .padding(.top, 16)
+                        // Le reste de la page : la carte qui grandit le
+                        // POUSSE vers le bas (la sortie demandée), et il
+                        // s'éteint vite — la bande sous la carte ouverte
+                        // ne doit jamais montrer un lambeau de texte.
+                        Group {
+                            nomBloc
+                            ongletCartes
+                                .padding(.top, 26)
+                            registres
+                                .padding(.top, 16)
+                        }
+                        .opacity(1 - min(1, Double(carteP) * 2.4))
+                        .allowsHitTesting(carteP < 0.05)
                     }
                     .padding(.bottom, 120)
                 }
@@ -81,6 +113,8 @@ struct ProfilLuneView: View {
                 // scroll monte jusqu'au bord physique de l'écran, le
                 // liseré noir de 8 pt fait le tour.
                 .ignoresSafeArea(edges: .top)
+                // La carte dépliée possède l'écran : le scroll dort.
+                .scrollDisabled(carteP > 0.02 || carteSaisie)
                 .onScrollGeometryChange(for: CGFloat.self) { g in
                     // BORNÉE à 140 : au-delà, tout ce qui dépend du
                     // scroll est déjà à fond (blur, titre, fondu du
@@ -159,7 +193,8 @@ struct ProfilLuneView: View {
                 // le tire vers le haut, le sheet de verre s'ouvre. Sticky
                 // au bas, il S'EFFACE dans la nuit au scroll et revient
                 // en haut de course.
-                TirageBooster(pieces: pieces, scrollY: scrollY)
+                TirageBooster(pieces: pieces, scrollY: scrollY,
+                              planque: boosterPlanque)
 
                 // L'overlay des réglages — le panneau de verre in-tree (la
                 // sheet système tue le vrai Liquid Glass, leçon du
@@ -198,10 +233,42 @@ struct ProfilLuneView: View {
             topLeadingRadius: 55, bottomLeadingRadius: 44,
             bottomTrailingRadius: 44, topTrailingRadius: 55,
             style: .continuous)
-        return BanniereHalos()
+        // LE DÉPLIEMENT : fermée, la carte fait ~30 % du haut ; tirée,
+        // elle grandit en PRISE DIRECTE sous le doigt et son bord bas
+        // s'arrête juste AU-DESSUS de la poignée-lune (la réserve du
+        // bas). Le GeometryReader vit dans le safe area : l'écran vrai =
+        // taille + les deux insets.
+        let ecranH = geo.size.height + geo.safeAreaInsets.top
+            + geo.safeAreaInsets.bottom
+        let base = max(230, geo.size.height * 0.30)
+        let cible = ecranH - 5 - 128
+        let hauteur = base + (cible - base) * carteP
+        let swoop = Self.sstep(min(carteP, 1))
+        // KD LE VOYAGEUR, ACTE II : fermé il chevauche le bord bas ;
+        // déplié il TRÔNE au centre, sous la ligne chevron/réglages.
+        // Comme le bord bas descend avec le doigt, sa trajectoire est
+        // une parabole vivante — il suit l'arête, puis remonte au trône
+        // en grossissant d'un souffle. Une seule vue (la leçon
+        // morphPhoto), jamais deux.
+        let taille = 72 + 18 * swoop
+        let ax = 18 + ((geo.size.width - 10 - taille) / 2 - 18) * swoop
+        let ay = (hauteur - taille / 2) * (1 - swoop) + 112 * swoop
+        // Le nom naît au CENTRE quand la carte est presque ouverte —
+        // jamais deux « Kathryn » à l'écran (celui du corps s'éteint
+        // bien avant).
+        let nomCentre = min(max((carteP - 0.62) / 0.38, 0), 1)
+        // Les halos ne grandissent qu'à 55 % du dépliement : la lumière
+        // reste en haut, le bas de la carte ouverte redevient braise
+        // profonde — la nuit orangée, jamais une page blanche.
+        return BanniereHalos(norme: base + 0.55 * (hauteur - base))
+            // L'ANTI-BRUN (la loi de la maison : tenir la SATURATION) :
+            // dépliée, la traîne du halo blanc délave l'orange du bas en
+            // beige — la saturation remonte AVEC le dépliement et le
+            // brun redevient braise. Fermée : intacte au pixel.
+            .saturation(1 + 0.45 * Double(min(carteP, 1)))
             // Tout le HAUT de l'écran, Dynamic Island comprise (le
             // scroll ignore le safe area) — ~30 % de la page.
-            .frame(height: max(230, geo.size.height * 0.30))
+            .frame(height: hauteur)
             .clipShape(coque)
             // LA DALLE DE VERRE (la référence des capsules) : le
             // Glass.clear du panneau réglages, posé en couvercle SUR les
@@ -220,11 +287,36 @@ struct ProfilLuneView: View {
                     .padding(.trailing, 14)
                     .padding(.bottom, 14)
             }
-            .overlay(alignment: .bottomLeading) {
-                RondAvatar(initiales: "KD", taille: 72,
+            // L'identité au centre de la carte ouverte — le SLOT du
+            // futur contenu vivra dessous (« plus tard on mettra des
+            // choses dedans »).
+            .overlay(alignment: .top) {
+                if nomCentre > 0.001 {
+                    VStack(spacing: 3) {
+                        // L'ENCRE SOMBRE : le haut de la carte est un
+                        // cœur de lumière — le blanc y est invisible.
+                        Text("Kathryn")
+                            .font(.inter(20, .bold))
+                            .tracking(-0.2)
+                            .foregroundStyle(
+                                Color(red: 0.18, green: 0.10, blue: 0.04))
+                        Text("@kathrynd")
+                            .font(.inter(12, .semibold))
+                            .tracking(0.3)
+                            .foregroundStyle(
+                                Color(red: 0.18, green: 0.10, blue: 0.04)
+                                    .opacity(0.55))
+                    }
+                    .padding(.top, 112 + taille + 14)
+                    .opacity(nomCentre)
+                    .offset(y: 8 * (1 - nomCentre))
+                    .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                RondAvatar(initiales: "KD", taille: taille,
                            flambe: flambe, anneau: anneau)
-                    .padding(.leading, 18)
-                    .offset(y: 36)
+                    .offset(x: ax, y: ay)
                     .onTapGesture {
                         UIImpactFeedbackGenerator(style: .light)
                             .impactOccurred(intensity: 0.7)
@@ -239,6 +331,76 @@ struct ProfilLuneView: View {
             // collée au châssis.
             .padding(.horizontal, 5)
             .padding(.top, 5)
+            // LE TIRAGE DE LA CARTE : high priority (le pan du scroll
+            // gagne sinon), mais seulement quand il a un sens — page en
+            // haut de course, ou carte déjà en main / dépliée. Scrollée,
+            // la bannière rend la main au scroll (.subviews).
+            .highPriorityGesture(
+                carteDrag(course: cible - base),
+                including: (carteP > 0.02 || carteSaisie || scrollY <= 2)
+                    ? .all : .subviews)
+    }
+
+    /// Le geste du dépliement — la hauteur en prise directe (1:1), la
+    /// butée douce au-delà de l'ouvert, et l'AIMANT au lâcher
+    /// (`predictedEnd`, la grammaire de la maison). L'haptique : prise
+    /// medium au décollage, coup FERME au dock ouvert, medium au retour.
+    private func carteDrag(course: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { v in
+                if carteMorte { return }
+                if !carteSaisie {
+                    // Un geste MONTANT sur la carte fermée = un scroll
+                    // volé qu'on ne peut plus rendre : il meurt (le
+                    // contenu se tire depuis le corps de la page).
+                    if carteP < 0.5 && v.translation.height < 0 {
+                        carteMorte = true
+                        return
+                    }
+                    carteSaisie = true
+                    carteBase = carteP
+                    UIImpactFeedbackGenerator(style: .medium)
+                        .impactOccurred(intensity: 0.8)
+                }
+                let brut = carteBase + v.translation.height / course
+                carteP = brut <= 1
+                    ? max(0, brut)
+                    : 1 + (brut - 1) * 0.12
+                syncPlanque()
+            }
+            .onEnded { v in
+                defer { carteMorte = false }
+                guard carteSaisie else { return }
+                carteSaisie = false
+                let pred = carteBase
+                    + v.predictedEndTranslation.height / course
+                // Généreux à l'ouverture (un élan suffit), franc à la
+                // fermeture (la carte ne se referme pas par accident).
+                let ouvre = carteBase < 0.5 ? pred > 0.28 : pred > 0.55
+                UIImpactFeedbackGenerator(style: ouvre ? .heavy : .medium)
+                    .impactOccurred(intensity: ouvre ? 0.9 : 0.75)
+                withAnimation(.spring(response: 0.52,
+                                      dampingFraction: 0.82)) {
+                    carteP = ouvre ? 1 : 0
+                }
+                // Le géant répond au verdict : il plonge quand la carte
+                // s'installe, il REJAILLIT quand elle remonte (option A).
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.8)
+                    .delay(ouvre ? 0 : 0.1)) {
+                    boosterPlanque = ouvre
+                }
+            }
+    }
+
+    /// La plongée du géant EN DIRECT pendant le geste : dès que la carte
+    /// quitte son perchoir, il glisse dans le sol ; si le doigt remonte
+    /// avant de lâcher, il rejaillit — l'aller-retour vivant.
+    private func syncPlanque() {
+        let np = carteP > 0.04
+        guard np != boosterPlanque else { return }
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            boosterPlanque = np
+        }
     }
 
     /// Le nom, réduit, avec l'identifiant dessous — aligné sous KD.
@@ -419,6 +581,11 @@ struct TirageBooster: View {
     /// Le scroll de la page : le géant s'efface dans la nuit dès qu'on
     /// descend, et revient en haut de course.
     var scrollY: CGFloat = 0
+    /// PLANQUÉ : la carte du profil se déplie au-dessus — le géant plonge
+    /// dans le sol (option A) et seule la poignée-lune reste, ENDORMIE
+    /// (pas de hit-test : on ne déterre rien sous une carte ouverte).
+    /// Jamais persisté, contrairement à `enterre`.
+    var planque: Bool = false
     /// Le prix d'un booster — la règle actée du 15-08.
     static let prix = 20
 
@@ -471,7 +638,7 @@ struct TirageBooster: View {
                     // effacé dès ~90 pt de scroll.
                     let fondu = 1 - min(max(scrollY / 90, 0), 1)
 
-                    if !enterre {
+                    if !enterre && !planque {
                         // LE GÉANT NU : la lune à moitié visible, coupe
                         // nette au bord (le fondu du bas était moins
                         // bien — verdict). `invite` = la remontée
@@ -583,6 +750,10 @@ struct TirageBooster: View {
                                     deterrer()
                                 }
                             })
+                        // Sous la carte dépliée, la poignée VEILLE mais
+                        // ne répond pas — on ne déterre rien tant que la
+                        // carte possède l'écran.
+                        .allowsHitTesting(!planque)
                         .opacity(Double(fondu))
                         .transition(.opacity)
                     }
@@ -597,7 +768,7 @@ struct TirageBooster: View {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(
                         Double.random(in: 6.0...8.5)))
-                    guard !Task.isCancelled, !ouvert, !enterre,
+                    guard !Task.isCancelled, !ouvert, !enterre, !planque,
                           tire == 0, pousse == 0 else { continue }
                     withAnimation(.easeInOut(duration: 0.55)) {
                         invite = 9
@@ -1270,6 +1441,13 @@ struct ProfilFondNoir: View {
 /// orange qui naviguent et se fondent — jamais de noir (30 Hz, la
 /// cadence des fonds).
 private struct BanniereHalos: View {
+    /// La hauteur de RÉFÉRENCE passée au shader à la place de la vraie
+    /// (il normalise tout par size.y) : la carte dépliée garde des halos
+    /// à l'échelle de la bannière — sans elle, ils s'étirent avec la
+    /// carte et tout le haut devient un blanc soufflé. L'arité du
+    /// stitchable ne bouge pas (le piège de la page blanche).
+    var norme: CGFloat? = nil
+
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
@@ -1278,7 +1456,8 @@ private struct BanniereHalos: View {
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.banniereHalos(
-                        .float2(geo.size.width, geo.size.height),
+                        .float2(geo.size.width,
+                                norme ?? geo.size.height),
                         .float(t)))
             }
         }
