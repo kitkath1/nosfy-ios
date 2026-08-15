@@ -58,26 +58,23 @@ struct SetHistoryRow: View {
         // 58 → 66 : 4 pt d'air de plus en haut et en bas (15-08) — les
         // petites cartes noires respirent dans la carte dépliée.
         .frame(height: 66)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [Color.black.opacity(done ? 0.72 : 0.55),
-                             Color.black.opacity(done ? 0.50 : 0.40)],
-                    startPoint: .top, endPoint: .bottom))
-        }
-        .overlay {
-            // Le filet en lumière rasante de la story : franc en haut à
-            // gauche, éteint en bas à droite — jamais un contour fermé.
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(LinearGradient(
-                    stops: [.init(color: .white.opacity(done ? 0.16 : 0.09),
-                                  location: 0),
-                            .init(color: .white.opacity(0.04),
-                                  location: 0.38),
-                            .init(color: .white.opacity(0.0), location: 1)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 0.8)
-        }
+        // LE GALET DE VERRE FUMÉ (15-08) : un noir profond mais
+        // TRANSLUCIDE — la lumière chaude de l'écrin passe dessous et ne
+        // se lit qu'en nuances, le texte blanc reste franc. Par-dessus,
+        // le couvercle de verre du profil : ce sont ses arêtes qui font
+        // lire « galet » et non « rectangle sombre ».
+        // CHAQUE LIGNE EST UN GALET D'OBSIDIENNE (15-08) : la même
+        // matière que la carte qui les contient — verre fumé noir, huile
+        // d'or le long des arêtes, biseau. La ligne FAITE allume sa lampe
+        // (`lit`), celle qui attend la garde basse : c'est l'ÉCLAIRAGE
+        // qui dit l'état, plus une opacité de texte.
+        // (Ni `glassEffect` ni contour dessiné : le premier dédoublait
+        // les lignes en fantômes — le matériau réfracte sa voisine — et
+        // le second doublait l'arête que le shader trace déjà.)
+        // SANS FOND (verdict du 15-08, avec la référence sous les yeux) :
+        // la liste est posée DIRECTEMENT sur le verre de la carte — ni
+        // capsule, ni arête. C'est le verre qui porte tout ; une
+        // sous-carte par ligne cassait la lecture « une seule dalle ».
         .accessibilityElement(children: .combine)
         .accessibilityLabel(done
             ? "Série \(rank) faite : \(reps) répétitions, \(kiloText) kilos"

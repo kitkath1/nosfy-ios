@@ -141,7 +141,10 @@ struct FlammeJauge<Detail: View>: View {
         // MÉDAILLON (58 pt) — mais ce n'est plus lui qui décide : la
         // dalle vit maintenant au-dessus de son minimum, et c'est ce vide
         // autour du texte qui la rend calme.
-        let padV = 17 + 3 * CGFloat(o)
+        // 17 → 13 fermé (16-08, Phase 1 restauration : la carte de la
+        // référence fait ~127 pt — le bandeau a rendu 6 pt chez l'hôte,
+        // padV rend les 8 autres). Ouvert : 20, comme avant.
+        let padV = 11 + 9 * CGFloat(o)
         let padG = 14 + 2 * CGFloat(o)
         let padD = 16 + 2 * CGFloat(o)
         return VStack(spacing: 0) {
@@ -174,18 +177,27 @@ struct FlammeJauge<Detail: View>: View {
     /// dans la dalle, c'est leur place.)
     private func bandeauEcrin(o: Double) -> some View {
         let vie = 1 - Self.sstep(0.02, 0.30, o)
+        // LE BANDEAU EST SOMBRE LUI AUSSI (15-08) : toute la carte est
+        // d'un seul verre fumé, la lumière ne vit qu'à l'intérieur. Donc
+        // l'encre redevient BLANCHE — et le point, lui, passe à l'ORANGE
+        // (la référence de Kathryn : une pastille de braise à côté du
+        // mot).
         return ZStack {
             Capsule()
-                .fill(FlammePalette.encre.opacity(0.20))
+                .fill(Color.white.opacity(0.22))
                 .frame(width: 34, height: 4)
             HStack(spacing: 7) {
                 Circle()
-                    .fill(FlammePalette.encre.opacity(0.78))
-                    .frame(width: 5, height: 5)
+                    .fill(FlammePalette.flamme)
+                    .frame(width: 4.5, height: 4.5)
+                    .shadow(color: FlammePalette.coeur.opacity(0.55),
+                            radius: 2.5)
+                // BEIGE DORÉ, pas blanc (le microscope du 16-08 : la
+                // référence encre « Training » à ~(0,78 ; 0,70 ; 0,53)).
                 Text("Training")
                     .font(.inter(11, .medium))
                     .tracking(0.3)
-                    .foregroundStyle(FlammePalette.encre.opacity(0.62))
+                    .foregroundStyle(Color(red: 0.78, green: 0.70, blue: 0.53))
                     .lineLimit(1)
                     .fixedSize()
                 Spacer(minLength: 0)
@@ -244,9 +256,18 @@ struct FlammeJauge<Detail: View>: View {
             // opacité nulle garde sa hauteur et gonflerait le bijou.
             // Il reste MONTÉ (hauteur nulle) — on ne monte rien en plein
             // geste, la saccade a déjà été payée ailleurs.
-            detail()
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+            // EN OVERLAY sur une plaque claire (15-08, tour 3 du verre) :
+            // posé DANS le layout, ses lignes gelées à 358 pt débordaient
+            // la proposition — et le `.frame(width:)` de l'hôte CENTRE
+            // l'enfant trop grand : la carte fermée s'étalait à 390 pt au
+            // lieu de 362 (mesuré au gradient, encarts 6 pt au lieu de
+            // 20). Un overlay ne pèse rien dans la mesure ; pendant la
+            // croissance le surplus est rogné par l'écrin, sous une
+            // opacité encore basse.
+            Color.clear
+                .frame(maxWidth: .infinity)
                 .frame(height: o > 0.001 ? nil : 0, alignment: .top)
+                .overlay(alignment: .topLeading) { detail() }
         }
         .padding(.leading, padG)
         .padding(.trailing, padD)
@@ -311,25 +332,40 @@ struct FlammeJauge<Detail: View>: View {
         }
         let veineAngle = angle
 
+        // DANS L'ÉCRIN, LA DALLE N'EXISTE PLUS (la référence du 15-08) :
+        // le médaillon, le titre et la jauge sont posés DIRECTEMENT sur
+        // le verre de la carte — aucune sous-carte, aucun sertissage.
+        // Seule la nappe chaude du médaillon survit : c'est de la
+        // lumière, pas une boîte. Hors écrin (le banc -jaugeLab), le
+        // bijou garde sa plaque noire d'origine.
         return coque
-            .fill(LinearGradient(
-                stops: [
-                    .init(color: Color(red: 0.102, green: 0.098, blue: 0.106), location: 0.0),
-                    .init(color: Color(red: 0.071, green: 0.067, blue: 0.075), location: 0.55),
-                    .init(color: Color(red: 0.051, green: 0.047, blue: 0.055), location: 1.0),
-                ],
-                startPoint: .top, endPoint: .bottom))
+            .fill(dansEcrin
+                  ? LinearGradient(colors: [.clear, .clear],
+                                   startPoint: .top, endPoint: .bottom)
+                  : LinearGradient(
+                        stops: [
+                            .init(color: Color(red: 0.102, green: 0.098, blue: 0.106), location: 0.0),
+                            .init(color: Color(red: 0.071, green: 0.067, blue: 0.075), location: 0.55),
+                            .init(color: Color(red: 0.051, green: 0.047, blue: 0.055), location: 1.0),
+                        ],
+                        startPoint: .top, endPoint: .bottom))
             .overlay {
                 // La lumière de la flamme se couche sur la plaque : une nappe
                 // chaude ancrée sur le médaillon, qui respire avec lui.
+                // DANS L'ÉCRIN (restauration 16-08) : elle est REVENUE, mais
+                // RAS DU MÉDAILLON — la référence la montre (le verre autour
+                // du disque tient à ~0,2 de médiane, la lumière de la flamme
+                // diffuse dans l'épaisseur) ; sa version large peignait tout
+                // le corps, celle-ci meurt à 0,34 de rayon.
                 EllipticalGradient(
                     stops: [
-                        .init(color: FlammePalette.coeur.opacity(0.10 * souffle), location: 0.0),
-                        .init(color: FlammePalette.braise.opacity(0.045 * souffle), location: 0.45),
+                        .init(color: FlammePalette.coeur.opacity((dansEcrin ? 0.21 : 0.10) * souffle), location: 0.0),
+                        .init(color: FlammePalette.braise.opacity((dansEcrin ? 0.09 : 0.045) * souffle), location: 0.45),
                         .init(color: .clear, location: 1.0),
                     ],
                     center: UnitPoint(x: 0.115, y: 0.5),
-                    startRadiusFraction: 0, endRadiusFraction: 0.62)
+                    startRadiusFraction: 0,
+                    endRadiusFraction: dansEcrin ? 0.50 : 0.62)
                 .blendMode(.plusLighter)
             }
             .overlay {
@@ -339,7 +375,10 @@ struct FlammeJauge<Detail: View>: View {
                 // sur presque tout l'écran, redessinée à chaque image, est
                 // la couche la plus chère de la carte — et la moins
                 // regardée quand elle bouge.
-                if !bouge {
+                // (Grain, vignette et sertissage MEURENT dans l'écrin —
+                // la dalle n'existe plus, on ne dessine pas la boîte
+                // d'une chose invisible.)
+                if !bouge, !dansEcrin {
                     GrainTexture.tuile
                         .resizable(resizingMode: .tile)
                         .opacity(0.045)
@@ -349,24 +388,28 @@ struct FlammeJauge<Detail: View>: View {
             }
             .overlay {
                 // La vignette : les coins s'éteignent, le contenu s'assoit.
-                EllipticalGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.60),
-                        .init(color: Color.black.opacity(0.15), location: 1.0),
-                    ],
-                    center: .center,
-                    startRadiusFraction: 0, endRadiusFraction: 0.82)
+                if !dansEcrin {
+                    EllipticalGradient(
+                        stops: [
+                            .init(color: .clear, location: 0.60),
+                            .init(color: Color.black.opacity(0.15), location: 1.0),
+                        ],
+                        center: .center,
+                        startRadiusFraction: 0, endRadiusFraction: 0.82)
+                }
             }
             .overlay {
                 // Le sertissage : la tranche prend la lumière en haut.
-                coque
-                    .strokeBorder(LinearGradient(
-                        stops: [
-                            .init(color: Color.white.opacity(0.12), location: 0.0),
-                            .init(color: Color.white.opacity(0.04), location: 0.4),
-                            .init(color: Color.white.opacity(0.02), location: 1.0),
-                        ],
-                        startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                if !dansEcrin {
+                    coque
+                        .strokeBorder(LinearGradient(
+                            stops: [
+                                .init(color: Color.white.opacity(0.12), location: 0.0),
+                                .init(color: Color.white.opacity(0.04), location: 0.4),
+                                .init(color: Color.white.opacity(0.02), location: 1.0),
+                            ],
+                            startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                }
             }
             .overlay {
                 // LA VEINE : l'arc d'or qui vit sur la tranche. Longues
@@ -571,13 +614,38 @@ struct FlammeMedaillon: View {
             Circle()
                 .fill(RadialGradient(
                     stops: [
-                        .init(color: Color(red: 0.168, green: 0.126, blue: 0.106), location: 0.0),
-                        .init(color: Color(red: 0.112, green: 0.088, blue: 0.080), location: 0.62),
-                        .init(color: Color(red: 0.070, green: 0.056, blue: 0.058), location: 1.0),
+                        // Phase 9 restauration : la niche de la référence
+                        // est plus CHAUDE et plus claire (sa zone gauche
+                        // mesure 0,204 de médiane — la mienne stagnait à
+                        // 0,115, tout le déficit vivait ici).
+                        .init(color: Color(red: 0.225, green: 0.170, blue: 0.140), location: 0.0),
+                        .init(color: Color(red: 0.150, green: 0.118, blue: 0.105), location: 0.62),
+                        .init(color: Color(red: 0.085, green: 0.068, blue: 0.070), location: 1.0),
                     ],
                     center: UnitPoint(x: 0.5, y: 0.44),
                     startRadius: 0, endRadius: 34))
                 .opacity(1 - essor)
+            // L'ANNEAU (la référence du 15-08) : un cercle d'or net,
+            // VIF SUR L'ARC BAS — la flamme l'éclaire par en dessous,
+            // comme un chaton de bague pris à contre-jour. Il meurt avec
+            // la niche à l'ouverture.
+            Circle()
+                .strokeBorder(AngularGradient(
+                    stops: [
+                        .init(color: FlammePalette.or.opacity(0.14), location: 0.00),
+                        .init(color: FlammePalette.or.opacity(0.48), location: 0.18),
+                        .init(color: FlammePalette.flamme.opacity(0.88), location: 0.32),
+                        .init(color: FlammePalette.or.opacity(0.50), location: 0.44),
+                        .init(color: FlammePalette.or.opacity(0.13), location: 0.60),
+                        .init(color: FlammePalette.or.opacity(0.10), location: 0.82),
+                        .init(color: FlammePalette.or.opacity(0.14), location: 1.00),
+                    ],
+                    center: .center,
+                    // 0 = à droite ; l'arc vif (0,32) tombe au SUD-OUEST,
+                    // comme la référence — la flamme éclaire l'anneau en
+                    // contre-plongée gauche.
+                    angle: .zero), lineWidth: 1.4)
+                .opacity((1 - essor) * (0.75 + 0.25 * souffle))
 
             // L'ambiance qui respire — et qui prend sa grande inspiration
             // quand une série se valide.

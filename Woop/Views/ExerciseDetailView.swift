@@ -144,7 +144,40 @@ struct ExerciseDetailView: View {
     private static let liseré: CGFloat = 1
     /// LE BANDEAU d'aurora, carte fermée : plus un liseré, un vrai
     /// bandeau — il porte la poignée et l'inscription « Training ».
-    private static let bande0: CGFloat = 48
+    /// 48 → 42 (16-08, Phase 1 restauration) : la référence mesure la
+    /// carte fermée à ~127 pt (ratio 2,83:1) — le bandeau rend 6 pt,
+    /// padV rend les 8 autres (FlammeJauge).
+    private static let bande0: CGFloat = 40
+
+    // MARK: - Le banc de RESTAURATION du verre (`-verreLab`, 16-08)
+    //
+    // La photo woodchopper meurt, remplacée par le HUD de réglage ; le
+    // galet dort (sa lumière crème polluerait les modes OUTSIDE/×16) ;
+    // le CALQUE — la référence de Kathryn recalée sur la géométrie de la
+    // carte — se superpose en live. Trois commandes : M cycle les 5 modes
+    // du shader, C l'opacité du calque (0→25→50→75→100→0), B le blink
+    // 250 ms. `-verreMode <0-4>` et `-calque <0-1>` posent l'état initial.
+    private static let verreLab = CommandLine.arguments.contains("-verreLab")
+    private static let verreMode0: Int = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-verreMode"), i + 1 < a.count,
+              let v = Int(a[i + 1]) else { return 0 }
+        return min(max(v, 0), 4)
+    }()
+    private static let calque0: Double = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-calque"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 0 }
+        return min(max(v, 0), 1)
+    }()
+    /// La référence, lue depuis le dépôt (le simulateur lit le disque de
+    /// l'hôte ; sur téléphone elle est simplement absente).
+    private static let calqueImage = UIImage(contentsOfFile:
+        "/Users/kathryn/Desktop/woochoper-ios/tools/verre/reference-card.png")
+    private static let verreModeNoms = ["FINAL", "SDF", "IN", "OUT", "×16"]
+    @State private var verreMode = ExerciseDetailView.verreMode0
+    @State private var calqueOp = ExerciseDetailView.calque0
+    @State private var calqueBlink = false
 
     /// LA NORME MENTIE (le piège du profil, payé une fois pour toutes) :
     /// le shader `banniereHalos` normalise TOUT par sa hauteur. L'écrin
@@ -459,7 +492,9 @@ struct ExerciseDetailView: View {
             // elle (au-dessus, elle poinçonne un rectangle noir dans
             // l'aurore — payé au premier retour de Kathryn).
             .overlay(alignment: .top) {
-                if isStrength { collapsingHeaderBack }
+                // Au banc du verre, la photo meurt : sa place devient la
+                // zone de réglage (le HUD), et rien ne pollue la nuit.
+                if isStrength, !Self.verreLab { collapsingHeaderBack }
             }
             // (LES HALOS ORANGE DU HEADER SONT MORTS — 15-08, « ils font
             // cheap au-dessus de l'image ». La musculation n'a plus de
@@ -472,6 +507,11 @@ struct ExerciseDetailView: View {
             // du dessous est le geste, le tap vit dans le flux.
             .overlay(alignment: .topLeading) {
                 if isStrength { carteSeries }
+            }
+            // Le HUD du banc — AU-DESSUS de tout, et lui SEUL est
+            // touchable (la carte des séries reste sourde au doigt).
+            .overlay(alignment: .top) {
+                if Self.verreLab { verreHud }
             }
             // La taille pour le banc — JAMAIS une géométrie d'avant le
             // premier layout (le zéro faisait le NaN ci-dessus).
@@ -519,14 +559,20 @@ struct ExerciseDetailView: View {
                         // jusqu'au bord physique de l'écran.
                         // Le lecteur (`WorkoutPill`) est retiré du décor
                         // pour l'instant — il reviendra, décision à venir.
-                        LaunchPebble(
-                            label: "Lancer l'exercice",
-                            flood: $flood,
-                            asleep: running != nil,
-                            onDrive: { p, vy in driveMoved(p, vy) },
-                            onRelease: { p, vy in driveEnded(p, vy) },
-                            onLaunch: launch
-                        )
+                        // Au banc du verre : le galet dort — sa lumière
+                        // crème inonderait les modes OUTSIDE et ×16.
+                        if Self.verreLab {
+                            Color.clear.frame(height: 10)
+                        } else {
+                            LaunchPebble(
+                                label: "Lancer l'exercice",
+                                flood: $flood,
+                                asleep: running != nil,
+                                onDrive: { p, vy in driveMoved(p, vy) },
+                                onRelease: { p, vy in driveEnded(p, vy) },
+                                onLaunch: launch
+                            )
+                        }
                     }
                 } else {
                     primaryAction
@@ -1045,7 +1091,9 @@ struct ExerciseDetailView: View {
             // laissait un coin de nuit — le « problème de fondu » des
             // coins du haut. Le bas, lui, ne touche rien : il reste
             // serré.
-            let rH = Self.lp(20, 55, u), rB = Self.lp(20, 30, u)
+            // Fermé 26 (Phase 1 restauration : la référence mesure son
+            // rayon à 23-28 pt — 20 était trop serré, tranché au calque).
+            let rH = Self.lp(26, 55, u), rB = Self.lp(26, 30, u)
             let ecrin = UnevenRoundedRectangle(
                 topLeadingRadius: rH, bottomLeadingRadius: rB,
                 bottomTrailingRadius: rB, topTrailingRadius: rH,
@@ -1088,15 +1136,44 @@ struct ExerciseDetailView: View {
             // L'ÉCRIN D'AURORA — le champ du profil, en fond (jamais dans
             // la pile de layout : il est GLOUTON, un GeometryReader sans
             // taille propre, et il ferait exploser la mesure de la dalle).
-            .background {
-                BanniereHalos(norme: Self.normeEcrin(h),
-                              cadence: carteBouge ? 1.0 / 12.0 : 1.0 / 30.0)
-                    // L'ANTI-BRUN, la loi de la maison : dépliée, la
-                    // traîne du halo blanc délave l'orange du bas en
-                    // beige — la saturation remonte AVEC la course.
-                    .saturation(1 + 0.45 * u)
-            }
+            // LA MATIÈRE : L'OBSIDIENNE (15-08, après le verdict « c'est
+            // plat, 0/10, ce n'est même pas du liquid glass »). Mes
+            // dégradés SwiftUI ne feront JAMAIS du verre : un verre, ce
+            // n'est pas une couleur, c'est un ÉCLAIRAGE — une source
+            // posée hors du cadre, de l'huile d'or qui coule le long des
+            // arêtes, un faisceau froid oblique qui révèle la courbure,
+            // et un biseau qui donne son épaisseur à la dalle. Tout cela
+            // existe déjà, calé AU PIXEL sur une photo (l'or est mesuré
+            // canal par canal dans `oIris`) : c'est `obsidianSurface`,
+            // la carte obsidienne. On ne réécrit pas une matière validée,
+            // on la RÉUTILISE.
+            // La lampe s'approche quand la carte est en main (`lit`), et
+            // la matière se fige pendant la course (la loi de fluidité).
+            // LE VERRE COULANT — un SEUL `colorEffect` à la place de
+            // quatre couches. L'obsidienne a servi de première marche
+            // (sa loi de couleur est ici), mais sa lampe seule ne fait
+            // pas les RUBANS : il fallait un champ filamenteux.
+            // Toujours en `.background` : jamais dans la pile de layout,
+            // clippé par l'écrin juste dessous — les rubans épousent les
+            // coins gratuitement — et il couvre AUSSI le bandeau, donc un
+            // filament passe derrière la poignée sans qu'on ait rien à
+            // faire.
+            // LE VERRE GONFLÉ (la référence du 15-08, MESURÉE au pixel) :
+            // un seul shader fait tout — surface, épaule, trait angulaire,
+            // brumes intérieures, blooms et rayons dans l'air. Posé APRÈS
+            // le clip (un `.background` posé après n'est pas rogné) : la
+            // lumière déborde, le contenu reste clippé par l'écrin.
             .clipShape(ecrin)
+            // LE CALQUE (banc du verre) : la référence posée SUR la carte,
+            // clippée par l'écrin — l'outil de superposition/blink.
+            .overlay {
+                if Self.verreLab { calqueOverlay(ecrin: ecrin) }
+            }
+            .background {
+                VerreGonfle(rayonHaut: rH, rayonBas: rB,
+                            allege: carteBouge && !Self.carteLourd,
+                            mode: Self.verreLab ? verreMode : 0)
+            }
             .frame(width: g.size.width - 2 * x)
             // La cible des pièces : la carte se déclare en global, la
             // volée sait où se poser — ouverte comme fermée. JAMAIS
@@ -1117,6 +1194,63 @@ struct ExerciseDetailView: View {
             .offset(x: x, y: y)
         }
         .allowsHitTesting(false)
+    }
+
+    /// LE CALQUE de restauration : la référence de Kathryn étirée sur la
+    /// géométrie exacte de la carte. En blink, elle bat à 250 ms — les
+    /// erreurs sautent aux yeux (la loi du brief : superposition, jamais
+    /// de mémoire visuelle).
+    @ViewBuilder
+    private func calqueOverlay(ecrin: UnevenRoundedRectangle) -> some View {
+        if calqueOp > 0.001, let ui = Self.calqueImage {
+            if calqueBlink {
+                TimelineView(.periodic(from: .now, by: 0.25)) { tl in
+                    let on = Int(tl.date.timeIntervalSinceReferenceDate
+                                 / 0.25) % 2 == 0
+                    Image(uiImage: ui)
+                        .resizable()
+                        .opacity(on ? calqueOp : 0)
+                }
+                .clipShape(ecrin)
+                .allowsHitTesting(false)
+            } else {
+                Image(uiImage: ui)
+                    .resizable()
+                    .opacity(calqueOp)
+                    .clipShape(ecrin)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// Le HUD du banc : trois commandes monospace sur la nuit — M (les
+    /// 5 modes du shader), C (l'opacité du calque), B (le blink).
+    private var verreHud: some View {
+        HStack(spacing: 14) {
+            Button {
+                verreMode = (verreMode + 1) % 5
+            } label: {
+                Text("M·\(Self.verreModeNoms[verreMode])")
+            }
+            Button {
+                let pas: [Double] = [0, 0.25, 0.5, 0.75, 1.0]
+                calqueOp = pas.first(where: { $0 > calqueOp + 0.01 }) ?? 0
+            } label: {
+                Text("C·\(Int((calqueOp * 100).rounded()))%")
+            }
+            Button {
+                calqueBlink.toggle()
+            } label: {
+                Text(calqueBlink ? "B·ON" : "B·off")
+            }
+        }
+        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
+        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Capsule().fill(Color.white.opacity(0.10)))
+        .padding(.top, 6)
     }
 
     /// La liste des séries, née DANS la carte ouverte : les faites en or
@@ -1170,11 +1304,13 @@ struct ExerciseDetailView: View {
     /// une copie). Sa CLARTÉ suit la carte : posés sur la nuit ils sont de
     /// verre fumé et blancs ; quand l'écrin d'aurora monte sous eux, le
     /// verre devient transparent et le glyphe passe à l'encre sombre.
+    /// (La CLARTÉ est retombée à zéro le 15-08 : la carte ouverte est
+    /// redevenue du verre FUMÉ, donc le fond sous les chips est sombre —
+    /// ils gardent leur verre de nuit et leur glyphe blanc. Le mécanisme
+    /// de bascule reste dans `ChipVerre`, prêt pour un fond clair.)
     private var headerChips: some View {
-        RangeeChips(retour: { dismiss() },
-                    clarte: Double(min(max(carteP, 0), 1))) {
-            ChipVerre(symbole: "ellipsis", label: "Options",
-                      clarte: Double(min(max(carteP, 0), 1))) {}
+        RangeeChips(retour: { dismiss() }) {
+            ChipVerre(symbole: "ellipsis", label: "Options") {}
         }
     }
 

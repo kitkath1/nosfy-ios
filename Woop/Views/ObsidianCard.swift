@@ -37,7 +37,11 @@ struct ObsidianCardPressStyle: ButtonStyle {
 /// haut-gauche. Toute la matière vit dans `obsidianSurface`
 /// (Woop/ObsidianCard.metal) ; ici, seulement le cadrage (marge de
 /// débordement pour le bloom et l'ombre portée) et la rampe du toucher.
-private struct ObsidianSurface: View {
+/// PARTAGÉE (15-08) : la fiche d'exercice l'emploie comme matière de sa
+/// carte des séries et de ses lignes. C'est la seule matière « verre fumé
+/// noir » du dépôt calée AU PIXEL sur une photo (l'or est mesuré canal
+/// par canal dans `oIris`) — on ne la réécrit pas, on la réutilise.
+struct ObsidianSurface: View {
     var cornerRadius: CGFloat
     var lit: Bool
     var paused: Bool
