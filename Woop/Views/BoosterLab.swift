@@ -492,9 +492,9 @@ struct BoosterLab: View {
     @StateObject private var handle = BoosterHandle()
     @State private var carteOpacity: Double = 0
     // ---- l'étage d'ENREGISTREMENT (post-sacre) ----
-    /// Le tirage du balayage (points, brut) et la montée d'envol animée.
+    /// Le tirage du balayage (points, brut) et le départ du vol.
     @State private var envolY: CGFloat = 0
-    @State private var flyRise: CGFloat = 0
+    @State private var envolStart: Date?
     @State private var envolArmed = false
     @State private var inviteKilled = false
     @State private var registreBorn = Date()
@@ -528,39 +528,94 @@ struct BoosterLab: View {
                         // projectPoint à attach — mauvaise caméra.
                         let H = geo.size.height
                         let projW = H * 0.41647
+                        let cardW = min(projW + 46, 426)
                         let cardH = projW * 1448.0 / 1086.0
-                        // Le tirage ÉLASTIQUE du balayage : la main sent
-                        // la résistance, la carte s'incline, prête.
-                        let rise = 60 * tanh(envolY / 110)
-                        ZStack {
-                            CarteVivante(rarete: handle.rarete)
-                                .frame(width: min(projW + 46, 426))
-                                .rotation3DEffect(
-                                    .degrees(-9 * Double(min((rise + flyRise)
-                                        / 60, 1))),
-                                    axis: (x: 1, y: 0, z: 0),
-                                    perspective: 0.4)
-                                .offset(y: -0.01322 * H - rise - flyRise)
-                                .opacity(carteOpacity)
-                            // LE REGISTRE : les lunes de la typologie +
-                            // « Nouveau » écrit par la lumière. Il ne
-                            // suit pas la carte : il s'efface dès que le
-                            // balayage s'arme — elle part SEULE.
-                            SacreRegistre(lunes: handle.lunes,
-                                          nouvelle: handle.nouvelle,
-                                          born: registreBorn)
-                                .offset(y: -0.01322 * H + cardH / 2 + 42)
-                                .opacity(envolArmed || flyRise > 0 ? 0 : 1)
-                                .animation(.easeOut(duration: 0.2),
-                                           value: envolArmed)
-                            // LE DOIGT DE LUMIÈRE, au-dessus de la carte.
-                            if !inviteKilled {
-                                DoigtDeLumiere(born: registreBorn)
-                                    .offset(y: -0.01322 * H - cardH / 2 - 64)
+                        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+                            let age = tl.date.timeIntervalSince(registreBorn)
+                            // — LE VOL (l'avion) : fonction pure du temps.
+                            // Cabrée, montée quadratique, dérive, roulis,
+                            // et elle S'AMENUISE en s'éloignant — un
+                            // avion devient un point, puis rien.
+                            let fp = envolStart.map {
+                                min(max(tl.date.timeIntervalSince($0) / 0.92,
+                                        0), 1)
+                            } ?? 0
+                            let climb = 0.62 * Double(H)
+                                * (0.35 * fp * fp + 0.65 * fp * fp * fp)
+                            let drift = 26 * fp * fp
+                            let roll = 6 * sstepD(0.12, 0.5, fp)
+                            let vScale = 1 - 0.9 * pow(sstepD(0.04, 0.96, fp),
+                                                       0.85)
+                            let vFade = 1 - sstepD(0.86, 1.0, fp)
+                            // — LA RÉPÉTITION : la carte RÊVE de partir.
+                            // Toutes les ~3,6 s, le nez se lève, elle
+                            // monte comme retenue par un fil, se repose
+                            // avec un soupçon de rebond. L'insistance
+                            // grandit doucement si personne ne répond.
+                            let insiste = 1 + 0.55 * min(age / 11, 1)
+                            let u = age.truncatingRemainder(dividingBy: 3.6)
+                            let dreaming = !inviteKilled && envolY <= 0
+                                && envolStart == nil
+                            let dream = dreaming
+                                ? insiste * (sstepD(0.0, 0.55, u)
+                                    - sstepD(0.55, 1.35, u)
+                                    - 0.10 * (sstepD(1.35, 1.55, u)
+                                        - sstepD(1.55, 1.95, u)))
+                                : 0
+                            let dreamLift = 7.5 * dream
+                            // — LE TIRAGE élastique : beaucoup d'assiette,
+                            // peu de montée — l'avion CABRE avant de
+                            // quitter la piste, le seuil se sent.
+                            let rise = 60 * tanh(Double(envolY) / 110)
+                            let pitch = envolStart != nil
+                                ? -18 - 14 * sstepD(0.0, 0.35, fp)
+                                : -2.8 * dream - 18 * sstepD(0, 130,
+                                                             Double(envolY))
+                            // — L'AIR : la brise du repos, qui s'emballe
+                            // avec le tirage et raconte le décollage.
+                            let boost = 1 + Double(envolY) / 55 + fp * 5.5
+                            ZStack {
+                                CourantAscendant(date: tl.date,
+                                                 born: registreBorn,
+                                                 boost: boost, front: false)
+                                    .frame(width: cardW + 96,
+                                           height: cardH + 170)
+                                    .offset(y: -0.01322 * H)
+                                CarteVivante(rarete: handle.rarete)
+                                    .frame(width: cardW)
+                                    .rotation3DEffect(
+                                        .degrees(pitch),
+                                        axis: (x: 1, y: 0, z: 0),
+                                        perspective: 0.4)
+                                    .rotationEffect(.degrees(roll))
+                                    .scaleEffect(vScale)
+                                    .offset(x: drift,
+                                            y: -0.01322 * H - rise
+                                                - dreamLift - climb)
+                                    .opacity(carteOpacity * vFade)
+                                CourantAscendant(date: tl.date,
+                                                 born: registreBorn,
+                                                 boost: boost, front: true)
+                                    .frame(width: cardW + 96,
+                                           height: cardH + 170)
+                                    .offset(y: -0.01322 * H)
+                                // LE REGISTRE : les lunes + « Nouveau ».
+                                // Il ne suit pas la carte : il s'efface
+                                // dès que le balayage s'arme — elle part
+                                // SEULE.
+                                SacreRegistre(lunes: handle.lunes,
+                                              nouvelle: handle.nouvelle,
+                                              born: registreBorn)
+                                    .offset(y: -0.01322 * H + cardH / 2 + 42)
+                                    .opacity(envolArmed || envolStart != nil
+                                        ? 0 : 1)
+                                    .animation(.easeOut(duration: 0.2),
+                                               value: envolArmed)
                             }
                         }
                         .simultaneousGesture(DragGesture(minimumDistance: 12)
                             .onChanged { v in
+                                guard envolStart == nil else { return }
                                 inviteKilled = true
                                 let dy = v.translation.height
                                 if !envolArmed, dy < -40,
@@ -570,10 +625,11 @@ struct BoosterLab: View {
                                 if envolArmed { envolY = max(0, -dy) }
                             }
                             .onEnded { v in
-                                guard envolArmed else { return }
+                                guard envolArmed, envolStart == nil
+                                else { return }
                                 if envolY > 130 || v.predictedEndTranslation
                                     .height < -320 {
-                                    envoler(H: H, cardH: cardH)
+                                    envoler()
                                 } else {
                                     withAnimation(.spring(response: 0.4,
                                                           dampingFraction: 0.72)) {
@@ -612,7 +668,7 @@ struct BoosterLab: View {
                         handle.revealed = false
                         handle.flown = false
                         envolY = 0
-                        flyRise = 0
+                        envolStart = nil
                         envolArmed = false
                         inviteKilled = false
                         handle.coordinator?.replay()
@@ -639,17 +695,19 @@ struct BoosterLab: View {
         }
     }
 
-    /// L'ENVOL : la carte part SEULE (le registre s'est déjà effacé),
-    /// accélération pure vers le haut, un souffle dans la paume — puis
-    /// l'écran noir tient, et attend le raccord de la collection.
-    private func envoler(H: CGFloat, cardH: CGFloat) {
+    /// L'ENVOL-AVION : la carte part SEULE (le registre s'est déjà
+    /// effacé) — cabrée, montée quadratique avec dérive et roulis, et
+    /// elle S'AMENUISE en s'éloignant jusqu'au point, puis rien. Un
+    /// souffle dans la paume ; l'écran noir tient, et attend le raccord
+    /// de la collection. Le vol lui-même est piloté par la TimelineView
+    /// (fonction pure de l'âge d'`envolStart`, 0,92 s).
+    private func envoler() {
+        inviteKilled = true
+        envolStart = Date()
         handle.coordinator?.envolSouffle()
-        withAnimation(.easeIn(duration: 0.5)) {
-            flyRise = H / 2 + cardH
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.58) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             handle.flown = true
-            flyRise = 0
+            envolStart = nil
             envolY = 0
             envolArmed = false
         }
@@ -789,34 +847,57 @@ struct NouveauMot: View {
     }
 }
 
-/// LE DOIGT DE LUMIÈRE : l'invite du balayage, sans un mot d'UI (la loi
-/// maison — le geste montré par la lumière). Un point doux monte, et SA
-/// TRAÎNE est le chemin : rien n'est dessiné d'avance, tout s'évapore
-/// derrière lui. Toutes les ~2,8 s ; meurt au premier contact.
-struct DoigtDeLumiere: View {
+/// La brique des partitions de pose : le smoothstep.
+private func sstepD(_ a: Double, _ b: Double, _ x: Double) -> Double {
+    let k = min(max((x - a) / (b - a), 0), 1)
+    return k * k * (3 - 2 * k)
+}
+
+/// LE COURANT ASCENDANT : l'air lui-même monte autour de la carte — de
+/// fines poussières blanches qui dérivent vers le haut, scintillent à
+/// peine, entrent et sortent en fondu. Deux couches (derrière/devant la
+/// carte) pour la PROFONDEUR ; pendant le tirage et l'envol, le courant
+/// S'ACCÉLÈRE et les poussières s'étirent en traits de vitesse — l'air
+/// annonce le décollage, puis le raconte. (La comète-doigt est morte :
+/// « on ne comprend pas » — ici c'est l'objet et son air qui parlent.)
+struct CourantAscendant: View {
+    var date: Date
     var born: Date
+    /// 1 = brise du repos ; monte avec le tirage, s'emballe à l'envol.
+    var boost: Double
+    var front: Bool
+
+    private func fract(_ x: Double) -> Double { x - x.rounded(.down) }
+    private func r(_ i: Int, _ salt: Double) -> Double {
+        fract(sin(Double(i) * 127.1 + salt * 311.7) * 43758.5453)
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
-            let cycle = tl.date.timeIntervalSince(born)
-                .truncatingRemainder(dividingBy: 2.8)
-            let k = min(max(cycle / 1.15, 0), 1)
-            let e = k * k * (3 - 2 * k)
-            let fade = 1 - min(max((cycle - 1.35) / 0.45, 0), 1)
-            let course: CGFloat = 88
-            ZStack(alignment: .bottom) {
-                Capsule()
-                    .fill(LinearGradient(
-                        colors: [.white.opacity(0), .white.opacity(0.5)],
-                        startPoint: .bottom, endPoint: .top))
-                    .frame(width: 2.5, height: max(CGFloat(e) * course, 1))
-                Circle().fill(.white)
-                    .frame(width: 7, height: 7)
-                    .blur(radius: 1.5)
-                    .offset(y: -CGFloat(e) * course)
+        Canvas { ctx, size in
+            let t = date.timeIntervalSince(born)
+            guard t > 0 else { return }
+            let n = front ? 8 : 22
+            for i in 0 ..< n {
+                let r1 = r(i, front ? 11 : 1)
+                let r2 = r(i, 2), r3 = r(i, 3), r4 = r(i, 4)
+                let r5 = r(i, 5), r6 = r(i, 6)
+                let speed = (13 + 24 * r1) * max(boost, 1)
+                let period = Double(size.height) + 70
+                let yUp = fract((t * speed + r2 * period * 3) / period) * period
+                let y = Double(size.height) + 35 - yUp
+                let x = Double(size.width) * (0.06 + 0.88 * r3)
+                    + 13 * sin(t * (0.25 + 0.5 * r4) + r5 * 6.28)
+                // Fondu aux deux lisières, scintillement lent, et
+                // l'étirement en trait de vitesse quand l'air s'emballe.
+                let edge = min(yUp / 90, 1) * min((period - yUp) / 90, 1)
+                let flick = 0.72 + 0.28 * sin(t * (1.8 + 2.6 * r6) + r1 * 6.28)
+                let sz = (front ? 1.1 : 1.5) + 2.3 * r2
+                let stretch = 1 + (max(boost, 1) - 1) * 0.55
+                let rect = CGRect(x: x - sz / 2, y: y - sz * stretch / 2,
+                                  width: sz, height: sz * stretch)
+                ctx.opacity = (front ? 0.34 : 0.5) * edge * flick
+                ctx.fill(Ellipse().path(in: rect), with: .color(.white))
             }
-            .frame(height: course, alignment: .bottom)
-            .opacity(fade * 0.9)
         }
         .allowsHitTesting(false)
     }
