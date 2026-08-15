@@ -833,6 +833,11 @@ struct BoosterStage: UIViewRepresentable {
         private var cloneVel: Float = 0
         private var cloneGrab: Float = 0
         private var ringSpinLink: CADisplayLink?
+        /// LA PARALLAXE DU POIGNET (galerie, téléphone seulement) :
+        /// l'anneau contre-pivote de ~±1,6° avec l'inclinaison — la
+        /// profondeur sans un geste. Muette dès qu'un autre écrivain
+        /// tient l'anneau (doigt, aimant, engagement).
+        private var gyroLink: CADisplayLink?
 
         /// L'index de clone au centre pour une rotation donnée.
         private func centerIndex(_ off: Float) -> Int {
@@ -852,6 +857,7 @@ struct BoosterStage: UIViewRepresentable {
             stopSpin()
             stopScroll()
             stopInvite()
+            stopGalleryGyro()
             guard let stage = BoosterScene(still: still, mylar: mylar,
                                            gallery: gallery) else { return }
             self.stage = stage
@@ -880,10 +886,34 @@ struct BoosterStage: UIViewRepresentable {
                     ambience = BoosterAmbience()
                     ambience?.act(BoosterAmbience.manege, over: 2.4)
                 }
+                startGalleryGyro()
             } else {
                 mode = .idle
                 if !still { startInvite() }
             }
+        }
+
+        private func startGalleryGyro() {
+            LuneMotion.shared.start()
+            guard gyroLink == nil else { return }
+            let link = CADisplayLink(target: self,
+                                     selector: #selector(gyroStep(_:)))
+            link.add(to: .main, forMode: .common)
+            gyroLink = link
+        }
+
+        private func stopGalleryGyro() {
+            gyroLink?.invalidate()
+            gyroLink = nil
+        }
+
+        @objc private func gyroStep(_ link: CADisplayLink) {
+            // Au repos SEULEMENT : un seul écrivain par pose d'anneau.
+            guard let stage, mode == .galleryIdle,
+                  scrollLink == nil, ringSpinLink == nil,
+                  LuneMotion.shared.live else { return }
+            let bias = 0.045 * LuneMotion.shared.tilt.x
+            stage.applyGallery(offset: offset + bias)
         }
 
         /// Le sachet est-il posé recto face caméra ? (La découpe ne s'arme
@@ -1110,6 +1140,7 @@ struct BoosterStage: UIViewRepresentable {
             commitOffset = offset
             stopScroll()
             stopRingSpin()
+            stopGalleryGyro()
             // Le coup sourd du mécanisme qui s'enclenche — et la musique
             // change d'acte : la boîte à musique s'efface, la veillée
             // sombre s'installe sous la découpe.
