@@ -230,6 +230,15 @@ struct CarteVivante: View {
     @State private var tiltLive = SIMD2<Float>(0, 0)
     @State private var releaseAt: Date = .distantPast
     @State private var releaseTilt = SIMD2<Float>(0, 0)
+    /// LA CARESSE QUI ALLUME LE FOIL : frotter la carte fait monter une
+    /// brillance (la bande, elle, suit déjà le doigt via le tilt), qui
+    /// s'éteint en comète (~0,9 s) au relâcher — l'astiquage. Portée
+    /// par le paramètre `foil` existant : l'ARITÉ du stitchable est
+    /// soudée, on n'y touche pas (le piège de la page blanche).
+    @State private var polish: Float = 0
+    @State private var strokeAt: Date = .distantPast
+    @State private var lastTrans: CGSize = .zero
+    @State private var polishTickArmed = true
     /// Le dernier toucher : l'aura fait expirer le CONTOUR entier (le geste
     /// des démons) — pas de point de naissance, une seule date suffit.
     @State private var tapAt: Date = .distantPast
@@ -299,6 +308,14 @@ struct CarteVivante: View {
         // Un sway déjà éveillé au-dessus de la carte scène figée = une
         // double image qui tourne — LA couture (audit v5).
         return 1 - exp(-max(age - 0.6, 0) / 0.8)
+    }
+
+    /// La brillance de caresse à une date donnée : ce que le frottement
+    /// a chargé, éteint en exponentielle — la comète.
+    private func caresse(at date: Date) -> Float {
+        let age = Float(date.timeIntervalSince(strokeAt))
+        guard age.isFinite, age >= 0, age < 4 else { return 0 }
+        return polish * exp(-age / 0.9)
     }
 
     /// L'inclinaison du DOIGT (ou du gyroscope, ou du balancement) à une
@@ -379,11 +396,15 @@ struct CarteVivante: View {
                     // sinon PEINTE dès la première frame, pile sur la
                     // couture du raccord). Les poses figées du banc
                     // gardent leur foil plein.
+                    // …et LA CARESSE par-dessus : l'astiquage pousse le
+                    // foil au-delà de sa croisière (plafond 1,45 — plus
+                    // haut, l'iridescence clippe en aplats).
                     CarteLuneCard(size: cs, tilt: tilt, t: t, dive: dEnv,
                                   dolly: dolly,
-                                  foil: frozen != nil ? 1 : Self.sstep(
+                                  foil: frozen != nil ? 1 : min(Self.sstep(
                                       0.15, 1.8,
-                                      Float(tl.date.timeIntervalSince(mountAt))),
+                                      Float(tl.date.timeIntervalSince(mountAt)))
+                                      + 0.7 * caresse(at: tl.date), 1.45),
                                   art: art, depth: depth)
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
@@ -425,7 +446,10 @@ struct CarteVivante: View {
                     tiltAtGrab = tilt(at: .now)
                 }
                 let travel = abs(v.translation.width) + abs(v.translation.height)
-                if !dragging && travel > 10 { dragging = true }
+                if !dragging && travel > 10 {
+                    dragging = true
+                    lastTrans = v.translation
+                }
                 guard dragging else { return }
                 let raw = tiltAtGrab + SIMD2(
                     Float(v.translation.width) * Self.tiltPerPoint,
@@ -433,6 +457,23 @@ struct CarteVivante: View {
                 tiltLive = SIMD2(
                     max(-Self.tiltLimit, min(Self.tiltLimit, raw.x)),
                     max(-Self.tiltLimit, min(Self.tiltLimit, raw.y)))
+                // L'ASTIQUAGE : la vitesse du frottement charge la
+                // brillance. Un petit toc feutré quand elle prend —
+                // la carte ronronne sous le chiffon.
+                let dPolish = Float(abs(v.translation.width - lastTrans.width)
+                    + abs(v.translation.height - lastTrans.height))
+                lastTrans = v.translation
+                // On repart du poli DÉCRU (jamais du souvenir plein) :
+                // la comète s'éteint, le chiffon la rallume.
+                polish = min(caresse(at: .now) + dPolish * 0.0045, 1)
+                strokeAt = .now
+                if caresse(at: .now) > 0.75, polishTickArmed {
+                    polishTickArmed = false
+                    UIImpactFeedbackGenerator(style: .soft)
+                        .impactOccurred(intensity: 0.5)
+                } else if caresse(at: .now) < 0.35 {
+                    polishTickArmed = true
+                }
             }
             .onEnded { _ in
                 if dragging {
