@@ -491,6 +491,13 @@ struct BoosterLab: View {
 
     @StateObject private var handle = BoosterHandle()
     @State private var carteOpacity: Double = 0
+    // ---- l'étage d'ENREGISTREMENT (post-sacre) ----
+    /// Le tirage du balayage (points, brut) et la montée d'envol animée.
+    @State private var envolY: CGFloat = 0
+    @State private var flyRise: CGFloat = 0
+    @State private var envolArmed = false
+    @State private var inviteKilled = false
+    @State private var registreBorn = Date()
 
     var body: some View {
         ZStack {
@@ -511,7 +518,7 @@ struct BoosterLab: View {
                         // sans ça le SCNView avale les touches destinées
                         // à la carte vivante.
                         .allowsHitTesting(!handle.revealed)
-                    if handle.revealed {
+                    if handle.revealed, !handle.flown {
                         // LE RECOUVREMENT MÊME-IMAGE : CarteVivante posée
                         // exactement sur la carte SceneKit immobile —
                         // projection ANALYTIQUE de la pose de destination
@@ -521,22 +528,73 @@ struct BoosterLab: View {
                         // projectPoint à attach — mauvaise caméra.
                         let H = geo.size.height
                         let projW = H * 0.41647
-                        CarteVivante()
-                            .frame(width: min(projW + 46, 426))
-                            .offset(y: -0.01322 * H)
-                            .opacity(carteOpacity)
-                            .onAppear {
-                                withAnimation(.easeInOut(duration: 0.35)) {
-                                    carteOpacity = 1
-                                }
-                                // Recouvrir D'ABORD, éteindre ENSUITE :
-                                // l'extinction attend l'overlay opaque —
-                                // en retard c'est invisible, en avance
-                                // c'est un trou noir d'une frame.
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                                    handle.coordinator?.extinguishForHandoff()
-                                }
+                        let cardH = projW * 1448.0 / 1086.0
+                        // Le tirage ÉLASTIQUE du balayage : la main sent
+                        // la résistance, la carte s'incline, prête.
+                        let rise = 60 * tanh(envolY / 110)
+                        ZStack {
+                            CarteVivante(rarete: handle.rarete)
+                                .frame(width: min(projW + 46, 426))
+                                .rotation3DEffect(
+                                    .degrees(-9 * Double(min((rise + flyRise)
+                                        / 60, 1))),
+                                    axis: (x: 1, y: 0, z: 0),
+                                    perspective: 0.4)
+                                .offset(y: -0.01322 * H - rise - flyRise)
+                                .opacity(carteOpacity)
+                            // LE REGISTRE : les lunes de la typologie +
+                            // « Nouveau » écrit par la lumière. Il ne
+                            // suit pas la carte : il s'efface dès que le
+                            // balayage s'arme — elle part SEULE.
+                            SacreRegistre(lunes: handle.lunes,
+                                          nouvelle: handle.nouvelle,
+                                          born: registreBorn)
+                                .offset(y: -0.01322 * H + cardH / 2 + 42)
+                                .opacity(envolArmed || flyRise > 0 ? 0 : 1)
+                                .animation(.easeOut(duration: 0.2),
+                                           value: envolArmed)
+                            // LE DOIGT DE LUMIÈRE, au-dessus de la carte.
+                            if !inviteKilled {
+                                DoigtDeLumiere(born: registreBorn)
+                                    .offset(y: -0.01322 * H - cardH / 2 - 64)
                             }
+                        }
+                        .simultaneousGesture(DragGesture(minimumDistance: 12)
+                            .onChanged { v in
+                                inviteKilled = true
+                                let dy = v.translation.height
+                                if !envolArmed, dy < -40,
+                                   abs(dy) > 1.6 * abs(v.translation.width) {
+                                    envolArmed = true
+                                }
+                                if envolArmed { envolY = max(0, -dy) }
+                            }
+                            .onEnded { v in
+                                guard envolArmed else { return }
+                                if envolY > 130 || v.predictedEndTranslation
+                                    .height < -320 {
+                                    envoler(H: H, cardH: cardH)
+                                } else {
+                                    withAnimation(.spring(response: 0.4,
+                                                          dampingFraction: 0.72)) {
+                                        envolY = 0
+                                    }
+                                    envolArmed = false
+                                }
+                            })
+                        .onAppear {
+                            registreBorn = Date()
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                carteOpacity = 1
+                            }
+                            // Recouvrir D'ABORD, éteindre ENSUITE :
+                            // l'extinction attend l'overlay opaque —
+                            // en retard c'est invisible, en avance
+                            // c'est un trou noir d'une frame.
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                                handle.coordinator?.extinguishForHandoff()
+                            }
+                        }
                     }
                 }
             }
@@ -552,6 +610,11 @@ struct BoosterLab: View {
                     Button {
                         carteOpacity = 0
                         handle.revealed = false
+                        handle.flown = false
+                        envolY = 0
+                        flyRise = 0
+                        envolArmed = false
+                        inviteKilled = false
                         handle.coordinator?.replay()
                     } label: {
                         Image(systemName: "arrow.counterclockwise")
@@ -566,6 +629,30 @@ struct BoosterLab: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
+        .onAppear {
+            // La typologie au banc : `-boosterRarete <r>` + `-boosterNouveau`
+            // (dans l'app, la forge remplira la poignée elle-même).
+            handle.rarete = UserDefaults.standard
+                .string(forKey: "boosterRarete") ?? "rare"
+            handle.nouvelle = CommandLine.arguments
+                .contains("-boosterNouveau")
+        }
+    }
+
+    /// L'ENVOL : la carte part SEULE (le registre s'est déjà effacé),
+    /// accélération pure vers le haut, un souffle dans la paume — puis
+    /// l'écran noir tient, et attend le raccord de la collection.
+    private func envoler(H: CGFloat, cardH: CGFloat) {
+        handle.coordinator?.envolSouffle()
+        withAnimation(.easeIn(duration: 0.5)) {
+            flyRise = H / 2 + cardH
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.58) {
+            handle.flown = true
+            flyRise = 0
+            envolY = 0
+            envolArmed = false
+        }
     }
 }
 
@@ -574,7 +661,165 @@ struct BoosterLab: View {
 /// scène une fois l'overlay opaque.
 final class BoosterHandle: ObservableObject {
     @Published var revealed = false
+    /// L'ENVOL accompli : la carte est partie vers la collection —
+    /// l'écran noir tient, et attend le raccord (la page profil, l'autre
+    /// chantier).
+    @Published var flown = false
+    /// La typologie de la carte révélée (common/rare/epic/legendary —
+    /// les 4 lunes) et sa NOUVEAUTÉ dans la collection.
+    var rarete: String = "rare"
+    var nouvelle: Bool = false
     weak var coordinator: BoosterStage.Coordinator?
+
+    /// Les lunes de la typologie : le registre du sacre les pose une à une.
+    var lunes: Int {
+        switch rarete {
+        case "common": return 1
+        case "epic": return 3
+        case "legendary": return 4
+        default: return 2
+        }
+    }
+}
+
+// MARK: - Le registre du sacre (sous la carte)
+
+/// LES LUNES QUI SE POSENT : sous la carte, la typologie s'écrit avec le
+/// VRAI glyphe du logo — chaque lune naît d'un point de lumière flou qui
+/// se condense en croissant net, l'une après l'autre. Si la carte est
+/// NOUVELLE, la dernière atterrit dans un éclat bref, et c'est elle qui
+/// allume le mot. Monochrome blanc — l'or appartient à la carte.
+struct SacreRegistre: View {
+    var lunes: Int
+    var nouvelle: Bool
+    var born: Date
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+            let age = tl.date.timeIntervalSince(born)
+            VStack(spacing: 13) {
+                HStack(spacing: 9) {
+                    ForEach(0 ..< lunes, id: \.self) { i in
+                        let t = age - 0.35 - Double(i) * 0.16
+                        let k = min(max(t / 0.4, 0), 1)
+                        let e = k * k * (3 - 2 * k)
+                        CroissantLune(taille: 13,
+                                      couleur: .white.opacity(0.92))
+                            .scaleEffect(0.4 + 0.6 * e)
+                            .blur(radius: (1 - e) * 5)
+                            .opacity(e)
+                            .overlay {
+                                // L'éclat de la dernière lune (nouveauté).
+                                if nouvelle, i == lunes - 1 {
+                                    Circle().fill(.white)
+                                        .frame(width: 22, height: 22)
+                                        .blur(radius: 7)
+                                        .opacity(t > 0.4 && t < 0.75
+                                            ? (0.75 - t) * 2.4 : 0)
+                                }
+                            }
+                    }
+                }
+                if nouvelle {
+                    NouveauMot(age: age - (0.55 + Double(lunes) * 0.16))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// « NOUVEAU », ÉCRIT PAR LA LUMIÈRE : jamais un badge (loi Kathryn) —
+/// des capitales fines très espacées en dégradé blanc, révélées de
+/// gauche à droite par un stylo de lumière (le point brillant mène la
+/// lisière). Ensuite, le mot respire à peine et un RAPPEL DE FOIL le
+/// traverse toutes les ~5 s — la même matière que la carte au-dessus.
+struct NouveauMot: View {
+    var age: Double
+
+    var body: some View {
+        let k = min(max(age / 1.1, 0), 1)
+        let e = k * k * (3 - 2 * k)
+        let breath = 0.86 + 0.14 * sin(max(age - 1.1, 0) * 2 * .pi / 6.5)
+        let sweep = (age - 2.6).truncatingRemainder(dividingBy: 5.2) / 0.9
+
+        Text("NOUVEAU")
+            .font(.system(size: 12, weight: .light))
+            .kerning(4.5)
+            .foregroundStyle(LinearGradient(
+                colors: [.white, .white.opacity(0.5)],
+                startPoint: .top, endPoint: .bottom))
+            .overlay {
+                // Le rappel de foil : une bande claire qui traverse le
+                // mot, masquée par ses lettres.
+                GeometryReader { g in
+                    if age > 2.6, sweep >= 0, sweep <= 1 {
+                        LinearGradient(
+                            colors: [.clear, .white.opacity(0.9), .clear],
+                            startPoint: .leading, endPoint: .trailing)
+                            .frame(width: 34)
+                            .position(x: -17 + (g.size.width + 34)
+                                      * CGFloat(sweep),
+                                      y: g.size.height / 2)
+                    }
+                }
+                .mask(Text("NOUVEAU")
+                    .font(.system(size: 12, weight: .light)).kerning(4.5))
+            }
+            .mask(GeometryReader { g in
+                Rectangle()
+                    .frame(width: g.size.width * CGFloat(e) + 8)
+                    .position(x: (g.size.width * CGFloat(e) + 8) / 2 - 4,
+                              y: g.size.height / 2)
+            })
+            .overlay {
+                // Le stylo de lumière qui écrit, à la lisière du mot.
+                GeometryReader { g in
+                    if age > 0, e < 1 {
+                        Circle().fill(.white)
+                            .frame(width: 4, height: 4)
+                            .blur(radius: 1.8)
+                            .shadow(color: .white.opacity(0.9), radius: 5)
+                            .position(x: g.size.width * CGFloat(e),
+                                      y: g.size.height / 2)
+                    }
+                }
+            }
+            .opacity(age > 0 ? breath : 0)
+    }
+}
+
+/// LE DOIGT DE LUMIÈRE : l'invite du balayage, sans un mot d'UI (la loi
+/// maison — le geste montré par la lumière). Un point doux monte, et SA
+/// TRAÎNE est le chemin : rien n'est dessiné d'avance, tout s'évapore
+/// derrière lui. Toutes les ~2,8 s ; meurt au premier contact.
+struct DoigtDeLumiere: View {
+    var born: Date
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+            let cycle = tl.date.timeIntervalSince(born)
+                .truncatingRemainder(dividingBy: 2.8)
+            let k = min(max(cycle / 1.15, 0), 1)
+            let e = k * k * (3 - 2 * k)
+            let fade = 1 - min(max((cycle - 1.35) / 0.45, 0), 1)
+            let course: CGFloat = 88
+            ZStack(alignment: .bottom) {
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [.white.opacity(0), .white.opacity(0.5)],
+                        startPoint: .bottom, endPoint: .top))
+                    .frame(width: 2.5, height: max(CGFloat(e) * course, 1))
+                Circle().fill(.white)
+                    .frame(width: 7, height: 7)
+                    .blur(radius: 1.5)
+                    .offset(y: -CGFloat(e) * course)
+            }
+            .frame(height: course, alignment: .bottom)
+            .opacity(fade * 0.9)
+        }
+        .allowsHitTesting(false)
+    }
 }
 
 // MARK: - La cage SceneKit
@@ -1916,6 +2161,13 @@ struct BoosterStage: UIViewRepresentable {
                     SCNTransaction.commit()
                 }
             }
+        }
+
+        /// Le souffle de l'envol : la carte quitte la main — une
+        /// expiration descendante, rien d'autre (la partition du sacre
+        /// est déjà passée).
+        func envolSouffle() {
+            haptics.exhale()
         }
 
         /// LA RELANCE du banc : dégèle la vue, rearme les gestes et
