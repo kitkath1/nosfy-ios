@@ -689,6 +689,14 @@ struct RootView: View {
             } else if CommandLine.arguments.contains("-boosterManege") {
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 sacre.ouvrirManege()
+                // `-boosterRetourAuto` rejoue le chevron tout seul : c'est
+                // le banc du DÉMONTAGE (la nappe du manège survivait à la
+                // sortie — un CADisplayLink retenait son coordinateur).
+                if CommandLine.arguments.contains("-boosterRetourAuto") {
+                    try? await Task.sleep(nanoseconds: 12_000_000_000)
+                    sacre.fermerManege()
+                    selection = .home
+                }
             }
         }
         // Live Activity : une séance restée ouverte retrouve son île au

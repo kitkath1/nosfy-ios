@@ -185,4 +185,20 @@ final class LuneSacre {
             self.player?.setVolume(0, fadeDuration: 2.0)
         }
     }
+
+    /// LA SORTIE. Quitter le Sacre par le chevron doit emporter sa
+    /// musique — sinon elle chante par-dessus la home. On incrémente la
+    /// génération pour que le fondu de 8,4 s déjà programmé ne vienne pas
+    /// parler après nous.
+    func sortir(over seconds: TimeInterval = 0.7) {
+        guard let p = player else { return }
+        generation += 1
+        p.setVolume(0, fadeDuration: seconds)
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds + 0.05) {
+            [weak self] in
+            guard let self, self.player === p else { return }
+            p.stop()
+            self.player = nil
+        }
+    }
 }

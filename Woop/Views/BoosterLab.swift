@@ -1224,6 +1224,15 @@ struct BoosterStage: UIViewRepresentable {
 
     func updateUIView(_ uiView: SCNView, context: Context) {}
 
+    /// LE MANÈGE NE DOIT PAS SURVIVRE À SON ÉCRAN. Sans ce démontage, sa
+    /// nappe continuait de chanter par-dessus la home après le chevron :
+    /// un `CADisplayLink` retient sa cible, donc le coordinateur — et son
+    /// moteur audio — ne mouraient jamais. Voir `Coordinator.teardown()`.
+    static func dismantleUIView(_ uiView: SCNView,
+                                coordinator: Coordinator) {
+        coordinator.teardown()
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     // MARK: le chef d'orchestre
@@ -1509,6 +1518,47 @@ struct BoosterStage: UIViewRepresentable {
                 mode = .idle
                 if !still { startInvite() }
             }
+        }
+
+        /// LE DÉMONTAGE — sans lui, LE MANÈGE CONTINUE DE CHANTER après
+        /// le chevron (verdict Kathryn, 15-08). Deux causes empilées :
+        ///
+        /// 1. un `CADisplayLink` **RETIENT sa cible**. Tant qu'un seul
+        ///    tourne encore — le gyro, le défilement, l'anneau —, le
+        ///    coordinateur ne meurt jamais, donc son `deinit` (qui arrête
+        ///    le moteur audio) n'est jamais appelé : la nappe du manège
+        ///    joue par-dessus la home, indéfiniment ;
+        /// 2. CoreMotion continue de réveiller le fil principal soixante
+        ///    fois par seconde pour une scène que personne ne regarde.
+        ///
+        /// Le son SORT en fondu : l'ambiance est retenue le temps qu'il
+        /// s'achève, parce que son `deinit` couperait le moteur net.
+        func teardown() {
+            stopSpin()
+            stopScroll()
+            stopPlacing()
+            stopRingSpin()
+            stopGalleryGyro()
+            stopInvite()
+            stopHold()
+            LuneMotion.shared.stop()
+            // La musique de la carte s'en va aussi : on peut quitter le
+            // Sacre depuis l'étage de résultat, en pleine plongée.
+            // (Le démontage n'est pas isolé au fil principal, elle si.)
+            DispatchQueue.main.async { LuneSacre.shared.sortir() }
+            let sortante = ambience
+            sortante?.silence(over: 0.55)
+            ambience = nil
+            sfx = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                // La retenir jusqu'ici : relâchée plus tôt, son `deinit`
+                // arrêterait le moteur au milieu du fondu.
+                _ = sortante
+            }
+            view?.isPlaying = false
+            view?.rendersContinuously = false
+            print("[booster-bench] démontage : liens coupés, gyro arrêté, "
+                  + "sonnant=\(BoosterAmbience.sounding)")
         }
 
         /// Republie l'état « au manège » vers la poignée — elle est

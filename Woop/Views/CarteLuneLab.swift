@@ -193,6 +193,17 @@ final class LuneMotion {
             tilt += (target - tilt) * 0.16
         }
     }
+
+    /// LE SILENCE DU POIGNET. Sans lui, CoreMotion continue de réveiller
+    /// le fil principal soixante fois par seconde pour une scène que
+    /// personne ne regarde plus — payé au démontage du Manège, où le
+    /// gyro survivait au chevron.
+    func stop() {
+        guard mgr.isDeviceMotionActive else { return }
+        mgr.stopDeviceMotionUpdates()
+        live = false
+        tilt = .zero
+    }
 }
 
 // MARK: - La scène

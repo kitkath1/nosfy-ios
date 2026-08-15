@@ -82,21 +82,36 @@ final class BoosterLoopLayerView: UIView {
 /// laisse une image noire au raccord), le looper RETENU par le
 /// coordinateur, et le muet obligatoire.
 ///
-/// LE FICHIER EST RECUIT AVANT L'APP, pour trois raisons :
-/// 1. la source bouclait mal (écart 4,4/255 entre sa dernière et sa
-///    première image) — un fondu croisé de 0,85 s de la queue sur la tête
-///    la ramène à **1,17**, quand deux images consécutives ordinaires en
-///    valent déjà 0,66 : la couture est au niveau du mouvement naturel ;
-/// 2. le cadrage était SERRÉ sur les trois sachets, donc la fumée blanche
-///    de gauche et le reflet au sol restaient hors champ. Le champ est
-///    élargi au maximum que la source permet — les sachets passent de
-///    73 % à ~45 % de la largeur, et la scène respire enfin ;
-/// 3. la boucle est RALENTIE à 0,85× (3,75 s) : la fumée dérive plus
-///    lentement et l'œil n'accroche plus la période.
+/// LE FICHIER EST RECUIT AVANT L'APP. Et CE QUI FAISAIT VOIR LA BOUCLE
+/// N'ÉTAIT PAS LA COUTURE — elle était déjà au niveau du mouvement
+/// naturel. C'ÉTAIT UNE RAMPE D'EXPOSITION : la scène source **s'éclaire
+/// de 55 %** du début à la fin (luminance moyenne 3,93 → 6,11). L'œil ne
+/// voyait pas un raccord, il voyait la lumière monter puis retomber d'un
+/// coup dans le noir. Chaque image est donc ramenée à la luminance
+/// médiane du plan (gains 0,885 à 1,374) : la rampe tombe à **0 %**.
 ///
-/// Ce qui trahissait « une vidéo », ce n'était pas la couture — c'était
-/// le RECTANGLE : des bords qui coupent la fumée net. D'où le masque sur
-/// les côtés ET le pied, côté vue.
+/// LA DEUXIÈME CAUSE, DÉBUSQUÉE APRÈS : **la caméra DÉRIVE**. Une
+/// translation propre de +0,25 px par image en x et −0,17 en y — +21 et
+/// −16 px sur le plan. Un long fondu croisé sur un plan qui glisse ne
+/// fond pas, il DÉDOUBLE : les liserés des sachets sortaient en double
+/// exposition, et ça se lit « cheap » à dix mètres. Le plan est donc
+/// STABILISÉ (dérive mesurée par corrélation de phase sur la zone des
+/// sachets, droite ajustée en écartant les images que la fumée fait
+/// mentir, recalage bicubique, marges recoupées). Netteté au cœur du
+/// fondu : 6,25 contre 6,97 hors fondu — il ne reste que la fumée qui se
+/// mélange, et c'est exactement ce qu'on veut d'elle.
+///
+/// Sur cette base — plan fixe, exposition plate — le reste tient :
+/// - fondu croisé de 26 images (1,08 s) de la queue sur la tête ;
+/// - cadrage CENTRÉ sur les sachets (le cœur lumineux tombe à 49,7 % de
+///   la largeur) et élargi : la fumée blanche de gauche et le reflet au
+///   sol, hors champ dans la première coupe, sont dans le plan ;
+/// - boucle RALENTIE à 0,85× (3,46 s) : la fumée dérive plus lentement,
+///   l'œil n'accroche plus la période.
+///
+/// L'autre chose qui disait « une vidéo », c'était le RECTANGLE : des
+/// bords qui coupent la fumée net. D'où le masque sur les côtés ET le
+/// pied, côté vue.
 struct BoosterLoopVideo: UIViewRepresentable {
     final class Coordinator {
         var player: AVQueuePlayer?
@@ -158,7 +173,7 @@ struct BoosterPopup: View {
                                                 style: .continuous)
     /// Le ratio du fichier recuit — le header est taillé dessus pour que
     /// rien ne soit recadré.
-    private static let ratioVideo: CGFloat = 1.6
+    private static let ratioVideo: CGFloat = 1.45
 
     var body: some View {
         ZStack {
@@ -170,7 +185,7 @@ struct BoosterPopup: View {
                 .onTapGesture { onFermer() }
 
             GeometryReader { g in
-                let W = min(g.size.width - 28, 384)
+                let W = min(g.size.width - 14, 420)
                 // Le header est au RATIO EXACT du fichier recuit (1,6) :
                 // aucune marge de recadrage, la scène entière est là.
                 panneau(W: W, headerH: W / Self.ratioVideo)
@@ -189,10 +204,10 @@ struct BoosterPopup: View {
 
     private func panneau(W: CGFloat, headerH: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // La réserve du header, plus 24 pt d'AIR FRANC : la scène a
+            // La réserve du header, plus 34 pt d'AIR FRANC : la scène a
             // fini de s'éteindre bien avant le titre (le masque la fond
-            // dès 55 % de sa hauteur), le texte ne lui marche pas dessus.
-            Color.clear.frame(height: headerH + 24)
+            // dès 46 % de sa hauteur), le texte ne lui marche pas dessus.
+            Color.clear.frame(height: headerH + 34)
 
             Text("Un booster t'attend")
                 .font(.inter(20, .semibold))
@@ -212,7 +227,7 @@ struct BoosterPopup: View {
                 onOuvrir()
             }
             .padding(.horizontal, 26)
-            .padding(.top, 28)
+            .padding(.top, 32)
 
             // L'échappée en ENCRE SEULE — sur la nuit, un cadre clair se
             // lit comme un bug (l'école du footer de BRAVO).
@@ -224,8 +239,8 @@ struct BoosterPopup: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
-            .padding(.bottom, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 30)
         }
         // LE VERRE EST LE VRAI (il échantillonne la page vivante), et
         // par-dessus LA NUIT QUI FOND.
@@ -252,13 +267,13 @@ struct BoosterPopup: View {
                     Self.forme
                         .fill(LinearGradient(stops: [
                             .init(color: .black.opacity(0.95), location: 0),
-                            .init(color: .black.opacity(0.92),
+                            .init(color: .black.opacity(0.93),
                                   location: pied * 0.56),
-                            .init(color: .black.opacity(0.34),
+                            .init(color: .black.opacity(0.72),
                                   location: pied),
-                            .init(color: .black.opacity(0.20),
-                                  location: min(pied + 34 / H, 0.99)),
-                            .init(color: .black.opacity(0.20), location: 1)
+                            .init(color: .black.opacity(0.56),
+                                  location: min(pied + 40 / H, 0.99)),
+                            .init(color: .black.opacity(0.54), location: 1)
                         ], startPoint: .top, endPoint: .bottom))
                         .allowsHitTesting(false)
                 }
@@ -281,11 +296,11 @@ struct BoosterPopup: View {
                 // net qui tranche la fumée se lit comme un clip collé sur
                 // la page. Fondus, la fumée naît et meurt dans le noir du
                 // panneau, et il n'y a plus de rectangle nulle part. Les
-                // sachets vivent entre 31 % et 78 % : ils n'y touchent pas.
+                // sachets vivent entre 26 % et 76 % : ils n'y touchent pas.
                 .mask(LinearGradient(stops: [
                     .init(color: .clear, location: 0.0),
-                    .init(color: .white, location: 0.12),
-                    .init(color: .white, location: 0.88),
+                    .init(color: .white, location: 0.08),
+                    .init(color: .white, location: 0.92),
                     .init(color: .clear, location: 1.0)
                 ], startPoint: .leading, endPoint: .trailing))
                 .blendMode(.plusLighter)
