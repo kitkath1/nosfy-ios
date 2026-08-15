@@ -231,6 +231,9 @@ struct CarteVivante: View {
     /// lunes de la forge) : elle choisit la musique du sacre à la
     /// plongée. nil : les cordes de sacre-lune.
     var rarete: String? = nil
+    /// Le témoin de PLONGÉE pour l'hôte (l'étage d'enregistrement cache
+    /// son registre et son courant pendant le voyage dans la carte).
+    var onDive: ((Bool) -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -512,6 +515,13 @@ struct CarteVivante: View {
                 diveStart = .now
                 LuneBreath.shared.dive()
                 LuneSacre.shared.dive(rarete: rarete)
+                // L'hôte est prévenu : la plongée commence, et se
+                // terminera à la fin de la partition (retour compris).
+                onDive?(true)
+                DispatchQueue.main.asyncAfter(
+                    deadline: .now() + Double(Self.diveTotal) + 0.5) {
+                    onDive?(false)
+                }
             })
         .onAppear {
             mountAt = Date()

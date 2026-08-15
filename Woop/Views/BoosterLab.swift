@@ -498,6 +498,9 @@ struct BoosterLab: View {
     @State private var envolArmed = false
     @State private var inviteKilled = false
     @State private var registreBorn = Date()
+    /// La carte est en PLONGÉE (appui long) : le registre, le rêve et le
+    /// courant se taisent — le voyage règne seul.
+    @State private var carteEnPlongee = false
 
     var body: some View {
         ZStack {
@@ -555,7 +558,7 @@ struct BoosterLab: View {
                             let insiste = 1 + 0.55 * min(age / 11, 1)
                             let u = age.truncatingRemainder(dividingBy: 3.6)
                             let dreaming = !inviteKilled && envolY <= 0
-                                && envolStart == nil
+                                && envolStart == nil && !carteEnPlongee
                             let dream = dreaming
                                 ? insiste * (sstepD(0.0, 0.55, u)
                                     - sstepD(0.55, 1.35, u)
@@ -578,10 +581,50 @@ struct BoosterLab: View {
                                 CourantAscendant(date: tl.date,
                                                  born: registreBorn,
                                                  boost: boost, front: false)
-                                    .frame(width: cardW + 96,
+                                    .frame(width: min(cardW + 96,
+                                                      geo.size.width),
                                            height: cardH + 170)
                                     .offset(y: -0.01322 * H)
-                                CarteVivante(rarete: handle.rarete)
+                                    .opacity(carteEnPlongee ? 0 : 1)
+                                // LA FUMÉE D'ENVOL : le sillage de
+                                // l'avion — des volutes très fines qui
+                                // naissent derrière la carte le long de
+                                // sa trajectoire PASSÉE, s'élargissent
+                                // et s'évanouissent. (Les traits de
+                                // vitesse sont morts : « trop cheap ».)
+                                if fp > 0.02 {
+                                    Canvas { ctx, size in
+                                        for k in 0 ..< 16 {
+                                            let pk = fp - Double(k) * 0.05
+                                            guard pk > 0 else { continue }
+                                            let cy = 0.62 * Double(H)
+                                                * (0.35 * pk * pk
+                                                    + 0.65 * pk * pk * pk)
+                                            let cx = 26 * pk * pk
+                                                + 7 * sin(Double(k) * 2.1
+                                                          + fp * 8)
+                                            let a = fp - pk
+                                            let rad = 8 + 150 * a
+                                            let op = 0.05 * (1 - a * 4.2)
+                                            guard op > 0 else { continue }
+                                            let rect = CGRect(
+                                                x: size.width / 2 + cx
+                                                    - rad / 2,
+                                                y: size.height / 2 - cy + 34
+                                                    - rad / 2,
+                                                width: rad, height: rad)
+                                            ctx.opacity = op
+                                            ctx.fill(
+                                                Ellipse().path(in: rect),
+                                                with: .color(.white))
+                                        }
+                                    }
+                                    .blur(radius: 9)
+                                    .offset(y: -0.01322 * H)
+                                    .allowsHitTesting(false)
+                                }
+                                CarteVivante(rarete: handle.rarete,
+                                             onDive: { carteEnPlongee = $0 })
                                     .frame(width: cardW)
                                     .rotation3DEffect(
                                         .degrees(pitch),
@@ -596,26 +639,37 @@ struct BoosterLab: View {
                                 CourantAscendant(date: tl.date,
                                                  born: registreBorn,
                                                  boost: boost, front: true)
-                                    .frame(width: cardW + 96,
+                                    .frame(width: min(cardW + 96,
+                                                      geo.size.width),
                                            height: cardH + 170)
                                     .offset(y: -0.01322 * H)
+                                    .opacity(carteEnPlongee ? 0 : 1)
                                 // LE REGISTRE : les lunes + « Nouveau ».
-                                // Il ne suit pas la carte : il s'efface
-                                // dès que le balayage s'arme — elle part
-                                // SEULE.
+                                // Il ne suit pas la carte (elle part
+                                // SEULE), et il se tait pendant la
+                                // plongée — le voyage règne.
                                 SacreRegistre(lunes: handle.lunes,
                                               nouvelle: handle.nouvelle,
                                               born: registreBorn)
                                     .offset(y: -0.01322 * H + cardH / 2 + 42)
                                     .opacity(envolArmed || envolStart != nil
-                                        ? 0 : 1)
-                                    .animation(.easeOut(duration: 0.2),
+                                        || carteEnPlongee ? 0 : 1)
+                                    .animation(.easeOut(duration: 0.25),
                                                value: envolArmed)
+                                    .animation(.easeInOut(duration: 0.35),
+                                               value: carteEnPlongee)
                             }
                         }
+                        // Le cadre PLEIN ÉCRAN : sans lui, la bande du
+                        // courant (plus large que l'écran) faisait
+                        // déborder la pile et le GeometryReader posait
+                        // tout décalé — la carte doit être CENTRÉE.
+                        .frame(width: geo.size.width,
+                               height: geo.size.height)
                         .simultaneousGesture(DragGesture(minimumDistance: 12)
                             .onChanged { v in
-                                guard envolStart == nil else { return }
+                                guard envolStart == nil, !carteEnPlongee
+                                else { return }
                                 inviteKilled = true
                                 let dy = v.translation.height
                                 if !envolArmed, dy < -40,
@@ -625,8 +679,8 @@ struct BoosterLab: View {
                                 if envolArmed { envolY = max(0, -dy) }
                             }
                             .onEnded { v in
-                                guard envolArmed, envolStart == nil
-                                else { return }
+                                guard envolArmed, envolStart == nil,
+                                      !carteEnPlongee else { return }
                                 if envolY > 130 || v.predictedEndTranslation
                                     .height < -320 {
                                     envoler()
@@ -876,26 +930,29 @@ struct CourantAscendant: View {
         Canvas { ctx, size in
             let t = date.timeIntervalSince(born)
             guard t > 0 else { return }
-            let n = front ? 8 : 22
+            let n = front ? 9 : 26
             for i in 0 ..< n {
                 let r1 = r(i, front ? 11 : 1)
                 let r2 = r(i, 2), r3 = r(i, 3), r4 = r(i, 4)
                 let r5 = r(i, 5), r6 = r(i, 6)
-                let speed = (13 + 24 * r1) * max(boost, 1)
+                // L'air s'accélère avec le geste — mais JAMAIS de traits
+                // de vitesse (« trop cheap ») : la fumée d'envol raconte
+                // le sillage, les poussières restent des poussières.
+                let speed = (13 + 24 * r1) * min(max(boost, 1), 2.2)
                 let period = Double(size.height) + 70
                 let yUp = fract((t * speed + r2 * period * 3) / period) * period
                 let y = Double(size.height) + 35 - yUp
                 let x = Double(size.width) * (0.06 + 0.88 * r3)
                     + 13 * sin(t * (0.25 + 0.5 * r4) + r5 * 6.28)
-                // Fondu aux deux lisières, scintillement lent, et
-                // l'étirement en trait de vitesse quand l'air s'emballe.
+                // TRÈS fines, TRÈS subtiles (loi Kathryn) : des points
+                // d'un souffle, fondus aux lisières, qui scintillent à
+                // peine.
                 let edge = min(yUp / 90, 1) * min((period - yUp) / 90, 1)
-                let flick = 0.72 + 0.28 * sin(t * (1.8 + 2.6 * r6) + r1 * 6.28)
-                let sz = (front ? 1.1 : 1.5) + 2.3 * r2
-                let stretch = 1 + (max(boost, 1) - 1) * 0.55
-                let rect = CGRect(x: x - sz / 2, y: y - sz * stretch / 2,
-                                  width: sz, height: sz * stretch)
-                ctx.opacity = (front ? 0.34 : 0.5) * edge * flick
+                let flick = 0.65 + 0.35 * sin(t * (1.8 + 2.6 * r6) + r1 * 6.28)
+                let sz = (front ? 0.5 : 0.7) + (front ? 0.8 : 1.2) * r2
+                let rect = CGRect(x: x - sz / 2, y: y - sz / 2,
+                                  width: sz, height: sz)
+                ctx.opacity = (front ? 0.18 : 0.28) * edge * flick
                 ctx.fill(Ellipse().path(in: rect), with: .color(.white))
             }
         }
