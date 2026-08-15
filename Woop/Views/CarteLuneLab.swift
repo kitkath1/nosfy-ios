@@ -294,7 +294,11 @@ struct CarteVivante: View {
     private func wake(at date: Date) -> Float {
         let age = Float(date.timeIntervalSince(mountAt))
         guard age.isFinite, age >= 0, age < 8 else { return 1 }
-        return 1 - exp(-age / 0.8)
+        // TEMPS MORT 0,6 s : pendant le recouvrement du raccord (fondu
+        // + extinction de la SCNView, ~0,55 s), la carte reste PLATE.
+        // Un sway déjà éveillé au-dessus de la carte scène figée = une
+        // double image qui tourne — LA couture (audit v5).
+        return 1 - exp(-max(age - 0.6, 0) / 0.8)
     }
 
     /// L'inclinaison du DOIGT (ou du gyroscope, ou du balancement) à une

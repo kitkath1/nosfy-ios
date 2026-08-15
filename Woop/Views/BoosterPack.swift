@@ -86,6 +86,7 @@ enum BoosterShader {
     float inviteU;
     float inviteGlow;
     float moonCharge;
+    float deathGold;
     float skewU;
     float cornerU;
     #pragma body
@@ -128,18 +129,32 @@ enum BoosterShader {
     _surface.roughness = _surface.roughness * mix(1.0, 0.55, shRim);
     """
 
+    /// LA MORT PAR L'OR : à l'effacement du sachet, l'émission ne
+    /// s'assombrit JAMAIS en rouge — de l'orange qui baisse sur noir
+    /// traverse le marron (la loi anti-brun de toujours). `deathGold`
+    /// GLISSE la teinte vers un or-blanc de même luminance ; c'est la
+    /// chute hors cadre qui efface, pas une extinction rouge.
+    private static let deathTail = """
+    float dLum = dot(_surface.emission.rgb, float3(0.299, 0.587, 0.114));
+    _surface.emission.rgb = mix(_surface.emission.rgb,
+                                dLum * float3(1.7, 1.35, 0.8), deathGold);
+    """
+
     /// Le corps : muet sous la ligne, et sur la tranche ouverte le
-    /// DÉGRADÉ DE REFROIDISSEMENT — blanc fusion au front, orange, puis
-    /// rouge sombre qui s'éteint : le métal qui refroidit dans le sillage
-    /// de la perle.
+    /// DÉGRADÉ DE REFROIDISSEMENT — blanc fusion au front, or profond
+    /// dans le sillage, puis l'EXTINCTION PAR LA LUMINOSITÉ seule : la
+    /// teinte ne quitte jamais l'or (le rouge sombre est interdit — ce
+    /// sont la saturation et l'or qui tiennent, jamais le brun). Un
+    /// filet de braise dorée subsiste dans la fente : c'est lui que la
+    /// houle du zoom fait respirer.
     static let body = preamble + """
     if (bv > 0.8896) { discard_fragment(); }
     float lip = smoothstep(0.012, 0.0, 0.8896 - bv);
     float opened = smoothstep(bu, bu + 0.012, tearU);
     float behind = saturate((tearU - bu) / 0.20);
-    float3 heat = mix(float3(1.0, 0.93, 0.78), float3(0.75, 0.12, 0.02), behind);
+    float3 heat = mix(float3(1.0, 0.93, 0.78), float3(1.0, 0.55, 0.18), behind);
     _surface.emission.rgb += heat * lip * opened * tornGlow
-        * (0.35 + 2.45 * pow(1.0 - behind, 2.0));
+        * (0.09 + 2.71 * pow(1.0 - behind, 2.0));
     // Le FIL D'OR devant le front : la lame posée sur la ligne, qui
     // attend le doigt (capture 1 de la référence).
     _surface.emission.rgb += float3(1.0, 0.80, 0.42)
@@ -153,7 +168,7 @@ enum BoosterShader {
     float sh = exp(-(pow((bu - tearU) / 0.05, 2.0)
                      + pow((0.8896 - bv) / 0.035, 2.0)));
     _surface.diffuse.rgb *= 1.0 - 0.45 * sh * tornGlow;
-    """ + sheen
+    """ + sheen + deathTail
 
     /// La bande : plus AUCUN discard derrière le front — elle reste
     /// entière et le peeling (modificateur de géométrie) la soulève.
@@ -276,6 +291,14 @@ enum BoosterShader {
 final class BoosterScene {
     let scene = SCNScene()
     let packNode = SCNNode()
+    /// LE BERCEAU : le nœud qui porte TOUTE la respiration (bob, sway,
+    /// tremblement de découpe), PRÈS DE L'IDENTITÉ. Jamais d'animation
+    /// ni d'écriture d'euler sur le pack au lacet π : à lacet π la
+    /// décomposition change de forme au bruit près, et une animation de
+    /// composante (`eulerAngles.z`) ou son blend-out y devient une
+    /// roulette russe — LE « booster qui tourne » à la fin de
+    /// l'arrachement, c'était exactement ça.
+    let swayNode = SCNNode()
     let bodyNode: SCNNode
     let capNode: SCNNode
     let cardNode: SCNNode
@@ -356,6 +379,7 @@ final class BoosterScene {
             m.setValue(-1.0 as CGFloat, forKey: "inviteU")
             m.setValue(0.0 as CGFloat, forKey: "inviteGlow")
             m.setValue(0.0 as CGFloat, forKey: "moonCharge")
+            m.setValue(0.0 as CGFloat, forKey: "deathGold")
             m.setValue(Self.benchValue("boosterSkew", 0.012), forKey: "skewU")
             m.setValue(Self.benchValue("boosterCorner", 0.022), forKey: "cornerU")
             m.setValue(Self.benchValue("boosterBreath", still ? 0 : 0.008),
@@ -420,9 +444,9 @@ final class BoosterScene {
         // LE DOS de la carte (le motif croissants du sachet) : un second
         // plan collé dos à dos — la carte peut sortir DOS D'ABORD pour
         // le retournement.
-        // (carte-dos.png reste au ratio 1,517 : ~12 % d'écrasement sur le
-        // nouveau plan, vu en mouvement seulement — ré-export à faire si
-        // l'œil l'attrape.)
+        // (carte-dos.png ré-exportée au ratio 1,333 depuis dos_booster —
+        // champ de croissants pur, sans le liseré du cadre : plus aucun
+        // écrasement sur le plan.)
         let backPlane = SCNPlane(width: 0.60, height: 0.60 * 1448.0 / 1086.0)
         let backMat = SCNMaterial()
         backMat.lightingModel = .constant
@@ -517,7 +541,9 @@ final class BoosterScene {
         packNode.eulerAngles.y = .pi
         packNode.scale = SCNVector3(0.75, 1, 0.45)
         packNode.position = SCNVector3(0, -0.02, 0)
-        scene.rootNode.addChildNode(packNode)
+        swayNode.name = "berceau"
+        swayNode.addChildNode(packNode)
+        scene.rootNode.addChildNode(swayNode)
 
         // ---- l'anneau de la galerie + le sol miroir ----
         var clones: [SCNNode] = []
@@ -618,14 +644,17 @@ final class BoosterScene {
     /// l'init hors galerie, et à l'arrivée du dolly d'engagement.
     func beginIdleBreath() {
         guard !still else { return }
+        // Sur le BERCEAU, jamais sur le pack : autour de l'identité la
+        // décomposition d'euler est stable, l'animation de composante et
+        // son blend-out sont sains.
         let bob = CABasicAnimation(keyPath: "position.y")
-        bob.fromValue = -0.032
-        bob.toValue = -0.008
+        bob.fromValue = -0.012
+        bob.toValue = 0.012
         bob.duration = 2.8
         bob.autoreverses = true
         bob.repeatCount = .infinity
         bob.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        packNode.addAnimation(bob, forKey: "bob")
+        swayNode.addAnimation(bob, forKey: "bob")
         let sway = CABasicAnimation(keyPath: "eulerAngles.z")
         sway.fromValue = -0.022
         sway.toValue = 0.022
@@ -633,7 +662,7 @@ final class BoosterScene {
         sway.autoreverses = true
         sway.repeatCount = .infinity
         sway.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        packNode.addAnimation(sway, forKey: "sway")
+        swayNode.addAnimation(sway, forKey: "sway")
     }
 
     // MARK: la galerie
@@ -795,6 +824,15 @@ final class BoosterScene {
         SCNTransaction.commit()
     }
 
+    /// Les lumières braise de la cérémonie, pilotées par la sortie :
+    /// l'omni de scène et la tearLight (téléphone) meurent AVEC le
+    /// sachet — sinon elles le repeignent en rouge-orangé pendant la
+    /// chute (audit v5). k = 1 pleine braise, 0 éteintes.
+    func setEmberLights(_ k: CGFloat) {
+        embers.intensity = 60 * k
+        tearLightSource?.intensity = 10 * k
+    }
+
     /// La pointe de bloom du flip : attaque brève, décrue douce.
     func bloomSpike() {
         guard let camera = cameraNode.camera else { return }
@@ -813,9 +851,11 @@ final class BoosterScene {
     /// La bande s'ARRACHE en quatre temps : ACCROCHE (le dernier bout
     /// se déchire en rampe, le rouleau se sur-tend et tremble — il
     /// résiste), RUPTURE à 0,42 s (pile le claquement grave cuit dans
-    /// `dechirure-finale`), BALISTIQUE en espace monde (reparentage +
-    /// bake — le piège du pincement — puis parabole et tumbling
-    /// cumulatif), et la MORT HORS CADRE (jamais d'évaporation sur
+    /// `dechirure-finale`), GLISSEMENT en espace monde (reparentage +
+    /// bake — le piège du pincement — puis la bande FILE hors cadre en
+    /// planant, roulis total ≤ 0,5 rad : le tumble est MORT, la copie
+    /// du maillage complet qui culbutait se lisait « le booster
+    /// tourne »), et la MORT HORS CADRE (jamais d'évaporation sur
     /// place, jamais d'opacité sur le rouleau double-face).
     /// À appeler AVANT setTear(1) : la rampe part de la valeur vivante
     /// (un saut 0,82→1 téléporterait un demi-tour de rouleau).
@@ -874,18 +914,16 @@ final class BoosterScene {
                 CAMediaTimingFunction(controlPoints: 0.25, 0.6, 0.6, 1)
             self.capNode.position = SCNVector3(p0.x + 0.45, p0.y + 0.60,
                                                p0.z + 0.35)
-            self.capNode.eulerAngles = SCNVector3(e0.x + 0.8, e0.y + 0.5,
-                                                  e0.z + 1.6)
+            self.capNode.eulerAngles = SCNVector3(e0.x, e0.y, e0.z + 0.22)
             SCNTransaction.completionBlock = { [weak self] in
                 guard let self else { return }
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.55
                 SCNTransaction.animationTimingFunction =
                     CAMediaTimingFunction(controlPoints: 0.4, 0, 0.9, 0.6)
-                self.capNode.position = SCNVector3(p0.x + 1.7, p0.y + 0.25,
+                self.capNode.position = SCNVector3(p0.x + 1.7, p0.y + 0.95,
                                                    p0.z + 0.70)
-                self.capNode.eulerAngles = SCNVector3(e0.x + 2.2, e0.y + 1.4,
-                                                      e0.z + 4.6)
+                self.capNode.eulerAngles = SCNVector3(e0.x, e0.y, e0.z + 0.5)
                 SCNTransaction.completionBlock = { [weak self] in
                     self?.capNode.isHidden = true
                 }

@@ -687,8 +687,10 @@ struct BoosterStage: UIViewRepresentable {
             guard let stage else { return }
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0
-            stage.packNode.eulerAngles.y = yaw
-            stage.packNode.eulerAngles.x = pitch
+            // LE TRIPLET ENTIER depuis la base canonique — écrire une
+            // composante seule relit l'euler décomposé et peut retomber
+            // sur la forme alternative : le sachet couché une frame.
+            stage.packNode.eulerAngles = SCNVector3(pitch, yaw, 0)
             SCNTransaction.commit()
         }
 
@@ -967,8 +969,8 @@ struct BoosterStage: UIViewRepresentable {
         private func backOutGallery() {
             guard let stage else { return }
             mode = .backingOut
-            stage.packNode.removeAnimation(forKey: "bob")
-            stage.packNode.removeAnimation(forKey: "sway")
+            stage.swayNode.removeAnimation(forKey: "bob")
+            stage.swayNode.removeAnimation(forKey: "sway")
             stage.packNode.isHidden = true
             stage.galleryPacks[selectedSlot].isHidden = false
             stage.floorNode.isHidden = false
@@ -1079,8 +1081,12 @@ struct BoosterStage: UIViewRepresentable {
                     stage.setTear(min(eased, 0.9), sparking: true)
                     self.tearBedV = 0.55
                     self.sfx?.crackle(0.55)
-                    stage.packNode.eulerAngles.x =
-                        Float.random(in: -1 ... 1) * 0.006
+                    // Le tremblement vit sur le BERCEAU (identité), en
+                    // triplet entier — jamais sur le pack au lacet π,
+                    // où la décomposition d'euler change de forme au
+                    // bruit près (le « booster qui tourne »).
+                    stage.swayNode.eulerAngles = SCNVector3(
+                        Float.random(in: -1 ... 1) * 0.006, 0, 0)
                     if p >= 0.9 {
                         t.invalidate()
                         self.sfx?.crackleOff()
@@ -1209,9 +1215,12 @@ struct BoosterStage: UIViewRepresentable {
                     haptics.bedIntensity(0.2 + 0.3 * stage.tearProgress
                                          + 0.5 * powf(tearBedV, 0.7))
                     // Le foil RÉSISTE : le sachet tremble sous l'effort,
-                    // proportionnellement à la vitesse du geste.
-                    stage.packNode.eulerAngles.x =
-                        Float.random(in: -1 ... 1) * 0.010 * tearBedV
+                    // proportionnellement à la vitesse du geste. Sur le
+                    // BERCEAU (identité), en triplet entier — jamais sur
+                    // le pack au lacet π (forme alternative au bruit
+                    // près : le « booster qui tourne »).
+                    stage.swayNode.eulerAngles = SCNVector3(
+                        Float.random(in: -1 ... 1) * 0.010 * tearBedV, 0, 0)
                     sfx?.crackle(tearBedV)
                     tearAccum += delta
                     if tearAccum >= popThreshold {
@@ -1322,8 +1331,12 @@ struct BoosterStage: UIViewRepresentable {
             // La respiration au repos rend l'antenne : le pilote de la
             // sortie devient l'UNIQUE écrivain du sachet (deux mains sur
             // position.y et l'étreinte serait illisible).
-            stage.packNode.removeAnimation(forKey: "bob", blendOutDuration: 0.15)
-            stage.packNode.removeAnimation(forKey: "sway", blendOutDuration: 0.15)
+            stage.swayNode.removeAnimation(forKey: "bob", blendOutDuration: 0.15)
+            stage.swayNode.removeAnimation(forKey: "sway", blendOutDuration: 0.15)
+            // Et le berceau rentre à l'IDENTITÉ : le dernier jitter du
+            // tremblement (≤0,6°) ne doit rester cuit ni dans la pose
+            // du sachet ni dans le monde baké de la carte (audit v5).
+            stage.swayNode.eulerAngles = SCNVector3(0, 0, 0)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { [weak self] in
                 // La rupture de la bande : le coup sec dans la paume.
                 // (La lèvre, elle, appartient au pilote de la sortie —
@@ -1334,10 +1347,13 @@ struct BoosterStage: UIViewRepresentable {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) { [weak self] in
                 guard let self, let stage = self.stage else { return }
                 stage.setSparking(false)
-                // La carte s'éveille et sort DOS D'ABORD — le motif
-                // croissants offert. Le reste appartient au pilote.
+                // La carte s'éveille FACE VISIBLE (son orientation de
+                // naissance : y=π local sous le pack à π = identité
+                // monde) et NE TOURNERA PLUS JAMAIS — ni dos d'abord
+                // ni flip, verdict Kathryn. On n'écrit pas son euler
+                // ici : à lacet π ambiant, la composante relue est le
+                // piège de la forme alternative. Le pilote fait le reste.
                 stage.cardNode.isHidden = false
-                stage.cardNode.eulerAngles.y = 0
                 self.extractCard()
             }
         }
@@ -1349,30 +1365,39 @@ struct BoosterStage: UIViewRepresentable {
         ///
         /// Partition (·k via -cardExitSlow) :
         ///   0,0→0,4  la bande achève de sortir, rien ne bouge
-        ///   0,4→1,5  L'APPROCHE — dolly-in vers la fente (z 2,05→1,50,
-        ///            la fente au tiers haut du cadre), la braise
-        ///            s'éveille, la poudre naît en rampe
+        ///   0,4→1,5  L'APPROCHE — dolly-in vers le sachet PLEIN CADRE
+        ///            (z 2,05→1,35, TOUT en z : zéro tangage — le
+        ///            dé-tangage se lisait « la carte tourne »), la
+        ///            braise s'éveille, la poudre naît en rampe
         ///   1,5→2,0  LA SUSPENSION — tout est tenu, le glow INSPIRE
         ///            (0,85→0,95 en 0,5 s — une houle, pas un beat)
         ///   2,0      bake de reparentage À L'ARRÊT (la carte quitte le
         ///            sachet AVANT que son opacité ne fonde — sinon le
-        ///            fondu du parent l'emporterait) ; pincement ×0,75
-        ///            laissé STATIQUE : il correspond à la fente, et la
-        ///            décompression est ABSORBÉE par le flip (scale
-        ///            0,98 au profil — illisible, l'historique le
-        ///            faisait déjà)
-        ///   2,0→4,6  L'ÉLÉVATION — la carte monte en UN easeInOutCubic
-        ///            de 2,6 s pendant que la caméra RECULE pour
-        ///            l'accueillir (1,50→2,05, regard → 0) et que le
-        ///            sachet, STATUE ABSOLUE, meurt par la lumière :
-        ///            ses néons d'abord, son opacité ensuite, la lèvre
-        ///            esclave du fondu, la poudre tarie en rampe
-        ///   4,6→4,85 LA POSE — silence tenu, puis le flip (qui garde
-        ///            SON dolly 2,05→1,86 et son apex, intouchés)
+        ///            fondu du parent l'emporterait) + scale UNIFORME
+        ///            0,98 dès cette frame : la carte n'est JAMAIS
+        ///            rendue pincée (le ×0,75 hérité du sachet, grossi
+        ///            par le zoom, écrasait le dos de 25 % plein
+        ///            cadre ; 0,60·0,98 = 0,588 de large ≈ la largeur
+        ///            visuelle du sachet 0,61 — ça passe la fente, et
+        ///            la carte est encore cachée à cet instant)
+        ///   2,0→4,6  L'ÉLÉVATION — la carte monte FACE VISIBLE en UN
+        ///            easeInOutCubic de 2,6 s (elle ne tourne JAMAIS :
+        ///            ni dos d'abord, ni flip — verdict Kathryn)
+        ///            pendant que la caméra RECULE en z pur
+        ///            (1,35→2,05) ; à 2,9 LE SACHET PLONGE hors cadre
+        ///            par le bas (lâché easeIn cubique) en GLISSANT
+        ///            VERS L'OR (deathGold — jamais la baisse d'orange
+        ///            nue qui traverse le marron), lèvre et poudre
+        ///            taries avant la chute, braises de scène mortes
+        ///            avec lui
+        ///   4,6→4,85 LA POSE — silence tenu, puis la carte GLISSE à
+        ///            sa place (translation SEULE, dolly 2,05→1,86),
+        ///            le sacre à l'ARRIVÉE
         ///
-        /// Le sachet ne bouge JAMAIS : zéro rotation, zéro translation,
-        /// zéro serrage. La carte : zéro settle, zéro tremblement, zéro
-        /// animation de scale. Un écrivain par propriété.
+        /// Le sachet ne TOURNE jamais — il sort du cadre par le bas.
+        /// La carte ne tourne JAMAIS, point : zéro settle, zéro
+        /// tremblement, zéro animation de scale hors assise. Un
+        /// écrivain par propriété.
         private func extractCard() {
             guard let stage else { return }
             let card = stage.cardNode
@@ -1390,6 +1415,9 @@ struct BoosterStage: UIViewRepresentable {
                 return t * t * (3 - 2 * t)
             }
             let bodyEmission = bodyMat?.emission
+            // La pose de départ du sachet : la chute se calcule depuis
+            // elle (le pack est resté statique pendant la découpe).
+            let packY0 = pack.position.y
             // Le porteur de poudre est garé en bout de course après
             // setTear(1) : recentré sur la fente, À L'ARRÊT, avant tout.
             sparkNode.position.x = 0
@@ -1401,35 +1429,54 @@ struct BoosterStage: UIViewRepresentable {
             // Le pilote : caméra, lumière, poudre, sachet-lumière et le
             // geste unique de la carte — fonctions pures du temps.
             func poseC(_ t: Float) {
-                // La caméra : plongée vers la fente, puis retrait
-                // d'accueil — jonctions à vitesse nulle.
+                // La caméra : plongée vers le sachet PLEIN CADRE (le
+                // « plus gros zoom » du verdict), puis retrait
+                // d'accueil — jonctions à vitesse nulle, et TOUT EN Z :
+                // zéro tangage, zéro montée. Le dé-tangage pendant la
+                // montée changeait la perspective du plan de la carte
+                // (trapèze→rectangle) — ça se lisait « la carte
+                // tourne » (audit v5).
                 let a = ss(0.4, 1.5, t)
                 let r = ss(2.0, 4.6, t)
                 let lift = a * (1 - r)
-                cam.position.z = 2.05 - 0.55 * lift
-                cam.position.y = 0.26 * lift
-                cam.eulerAngles = SCNVector3(0.053 * lift, 0, 0)
+                cam.position.z = 2.05 - 0.70 * lift
+                cam.position.y = 0
+                cam.eulerAngles = SCNVector3(0, 0, 0)
 
                 // La braise : décrue post-RRRIP → éveil → houle (0,5 s,
                 // jamais un beat) → tenue → esclave du fondu du sachet.
                 var glow: Float = 1.0 - 0.4 * ss(0.0, 0.4, t)
                 glow += 0.25 * ss(0.4, 1.5, t)
                 glow += 0.10 * ss(1.5, 2.0, t)
-                glow *= 1.0 - ss(3.4, 4.5, t)
+                glow *= 1.0 - ss(2.9, 3.8, t)
                 bodyMat?.setValue(CGFloat(glow), forKey: "tornGlow")
 
-                // La poudre de diamant : des RAMPES, jamais des marches.
+                // La poudre de diamant : des RAMPES, jamais des marches
+                // — et tarie AVANT la chute (elle tombe avec le sachet).
                 sparks.birthRate = CGFloat(4 + 26 * ss(0.4, 2.6, t))
-                    * CGFloat(1.0 - ss(4.0, 4.5, t))
+                    * CGFloat(1.0 - ss(2.5, 3.1, t))
 
-                // Le sachet, STATUE : il meurt par la lumière — ses
-                // néons d'abord (silhouette), son opacité ensuite (la
-                // carte n'est plus son enfant, le fondu ne l'emporte
-                // pas). Jamais un seul mouvement.
-                let neons = 1.0 - ss(2.6, 3.8, t)
-                bodyEmission?.intensity = CGFloat(0.6 * neons)
-                bodyMat?.setValue(CGFloat(neons), forKey: "moonCharge")
-                pack.opacity = CGFloat(1.0 - ss(4.0, 4.55, t))
+                // LA CHUTE CINÉMATIQUE (verdict Kathryn) : dès que la
+                // carte a dégagé la fente, le sachet PLONGE hors cadre
+                // par le bas — un lâché en easeIn cubique. Plus
+                // d'opacité : ce qui sort du cadre n'a pas à s'éteindre
+                // (et les deux peaux du sachet aminci n'ont plus à se
+                // battre en transparence). Pendant la chute, LA MORT
+                // PAR L'OR : deathGold glisse la teinte de TOUTE
+                // l'émission vers l'or-blanc (la loi anti-brun — une
+                // baisse d'orange nue traverse le marron), la charge ne
+                // fait que s'ADOUCIR (plancher 50 %, jamais la zone
+                // boueuse), et les braises de scène (omni embers,
+                // tearLight du téléphone) meurent AVEC le sachet —
+                // sinon elles le repeignent en rouge pendant qu'il
+                // tombe (audit v5).
+                let drop = min(max((t - 2.9) / 1.25, 0), 1)
+                pack.position.y = packY0 - 2.0 * drop * drop * drop
+                bodyMat?.setValue(CGFloat(ss(2.4, 3.2, t)), forKey: "deathGold")
+                let charge = 1.0 - ss(3.0, 4.0, t)
+                bodyEmission?.intensity = CGFloat(0.6 * (0.5 + 0.5 * charge))
+                bodyMat?.setValue(CGFloat(charge), forKey: "moonCharge")
+                stage.setEmberLights(CGFloat(1.0 - ss(2.9, 4.0, t)))
 
                 // La carte : UN seul geste — easeInOutCubic de 2,6 s,
                 // zéro settle, zéro tremblement, scale intouché (le
@@ -1459,6 +1506,16 @@ struct BoosterStage: UIViewRepresentable {
                 card.removeFromParentNode()
                 stage.scene.rootNode.addChildNode(card)
                 card.transform = world
+                // Jamais pincée : le monde apporte le (0,75, 1, 0,45)
+                // du sachet — on le remplace par l'uniforme AVANT
+                // qu'elle ne se montre. Et l'orientation RENORMALISÉE
+                // au triplet canonique (identité = face caméra) : la
+                // décomposition du monde baké rend une forme au hasard
+                // du bruit, le résidu du berceau (≤0,35°) est jeté.
+                // Plus RIEN n'écrit ni n'anime son euler ensuite — une
+                // carte qui ne tourne jamais ne peut pas culbuter.
+                card.scale = SCNVector3(0.98, 0.98, 0.98)
+                card.eulerAngles = SCNVector3(0, 0, 0)
                 y0w = card.position.y
                 rise = 0.75 - y0w
                 DispatchQueue.main.async { DustChime.shared.puff() }
@@ -1489,37 +1546,37 @@ struct BoosterStage: UIViewRepresentable {
                     }
                 },
                 seg(4.6, 0.25, poseC),
-                // Le témoin passe au flip : SON dolly (2,05 → 1,86),
-                // SON apex, SON assise — intouchés.
+                // Le témoin passe à LA POSE : le dolly 2,05 → 1,86 et
+                // la glisse de la carte, ensemble — translation seule,
+                // le sacre à l'arrivée.
                 .run { [weak self] _ in
                     guard let self, let stage = self.stage else { return }
                     SCNTransaction.begin()
-                    SCNTransaction.animationDuration = 0.35
+                    SCNTransaction.animationDuration = 0.45
                     SCNTransaction.animationTimingFunction =
                         CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
                     stage.cameraNode.position.z = 1.86
                     SCNTransaction.commit()
-                    DispatchQueue.main.async { self.flipCard() }
+                    DispatchQueue.main.async { self.poseCard() }
                 },
             ]))
         }
 
-        /// LE FLIP : 0,35 s, et TOUT concentré sur la frame de profil —
-        /// pointe de bloom, carillon, paume, lumière qui salue. Un seul
-        /// éclat dans une scène presque noire.
-        private func flipCard() {
+        /// LA POSE : la carte GLISSE à sa place — translation SEULE,
+        /// jamais une rotation (verdict Kathryn : « je n'aime pas
+        /// qu'elle tourne » — Pocket sort les cartes face visible, le
+        /// flip est MORT). Le sacre — bloom, carillon, paume — éclate à
+        /// l'ARRIVÉE : un seul éclat dans une scène presque noire.
+        private func poseCard() {
             guard let stage else { return }
             SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.35
+            SCNTransaction.animationDuration = 0.45
             SCNTransaction.animationTimingFunction =
-                CAMediaTimingFunction(controlPoints: 0.55, 0, 0.2, 1)
+                CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
             stage.cardNode.position = SCNVector3(0, 0.02, 0.55)
-            // du dos (≈ π monde) vers la FACE (0) : le demi-tour.
-            stage.cardNode.eulerAngles = SCNVector3(0, 0, 0)
-            stage.cardNode.scale = SCNVector3(0.98, 0.98, 0.98)
             SCNTransaction.commit()
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { [weak self] in
                 guard let self, let stage = self.stage else { return }
                 stage.bloomSpike()
                 stage.celebrate()
@@ -1528,13 +1585,13 @@ struct BoosterStage: UIViewRepresentable {
                 self.ambience?.act(BoosterAmbience.sacre, over: 1.4)
             }
 
-            // L'assise : un ressort discret après le flip — et pendant
+            // L'assise : un ressort discret après la pose — et pendant
             // qu'elle se joue, LA CONVERGENCE : la caméra rentre à
             // l'identité (exposition 0, bloom 0) pour que le rendu
             // SceneKit de la carte devienne le PNG nu — la scène ne
             // contient plus que la carte, ça se lit comme le sacre qui
             // se pose, pas comme un réglage.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) { [weak self] in
                 guard let self, let stage = self.stage else { return }
                 if let camera = stage.cameraNode.camera {
                     SCNTransaction.begin()
