@@ -214,6 +214,42 @@ private func sstepD(_ a: Double, _ b: Double, _ x: Double) -> Double {
     return k * k * (3 - 2 * k)
 }
 
+// MARK: L'éclat de la pose
+
+/// LA LUMIÈRE SALUE LA CARTE POSÉE : un anneau de lueur blanc-or naît
+/// sur les liserés du slot et s'évase en s'éteignant, avec un souffle
+/// intérieur très bref — jamais un flash plein écran, un salut.
+struct EclatDePose: View {
+    var cadre: CGRect
+    var began: Date
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+            let t = tl.date.timeIntervalSince(began)
+            if t >= 0, t < 0.75 {
+                let p = min(t / 0.7, 1.0)
+                let e = 1 - (1 - p) * (1 - p)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8 + 10 * e,
+                                     style: .continuous)
+                        .stroke(Color(red: 1, green: 0.86, blue: 0.6)
+                            .opacity(0.85 * (1 - p)),
+                            lineWidth: 1.6 + 1.4 * (1 - p))
+                        .frame(width: cadre.width + 36 * e,
+                               height: cadre.height + 36 * e)
+                        .blur(radius: 0.6 + 3 * e)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(.white.opacity(0.20 * (1 - e)))
+                        .frame(width: cadre.width, height: cadre.height)
+                        .blur(radius: 6)
+                }
+                .position(x: cadre.midX, y: cadre.midY)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 // MARK: La bouffée du contact
 
 /// L'atterrissage souffle la poussière du slot : huit volutes très

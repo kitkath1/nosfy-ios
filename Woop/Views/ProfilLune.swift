@@ -74,6 +74,9 @@ struct ProfilLuneView: View {
     @State private var arriveeBegan = Date()
     @State private var fumeeBegan: Date?
     @State private var fumeeCentre: CGPoint = .zero
+    /// L'éclat de lumière qui salue la pose.
+    @State private var eclatBegan: Date?
+    @State private var eclatCadre: CGRect = .zero
     /// La rangée qui s'avance pendant l'accueil (les autres s'assombrissent).
     @State private var rangeeAvancee: String?
 
@@ -155,6 +158,14 @@ struct ProfilLuneView: View {
                         arriveeBegan = Date()
                         arriveeEnVol = a
                         arriveeEnAttente = nil
+                    }
+                    // La rangée SE REPOSE avant l'atterrissage : posée à
+                    // 1,06 elle décalait la cible — la carte doit tomber
+                    // EXACTEMENT dans le gabarit des dos (verdict).
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.35) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            rangeeAvancee = nil
+                        }
                     }
                 }
                 }
@@ -326,18 +337,24 @@ struct ProfilLuneView: View {
                         }
                         fumeeCentre = CGPoint(x: cible.midX, y: cible.midY)
                         fumeeBegan = Date()
-                        UIImpactFeedbackGenerator(style: .medium)
-                            .impactOccurred(intensity: 0.9)
-                        arriveeEnVol = nil
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                            withAnimation(.easeOut(duration: 0.4)) {
-                                rangeeAvancee = nil
-                            }
+                        eclatCadre = cible
+                        eclatBegan = Date()
+                        // LE SERTISSAGE RENFORCÉ : le coup profond, puis
+                        // l'écho sec — la carte se clipse pour de vrai.
+                        UIImpactFeedbackGenerator(style: .heavy)
+                            .impactOccurred(intensity: 1.0)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+                            UIImpactFeedbackGenerator(style: .rigid)
+                                .impactOccurred(intensity: 0.7)
                         }
+                        arriveeEnVol = nil
                     }
                 }
                 if let fb = fumeeBegan {
                     FumeeDArrivee(centre: fumeeCentre, began: fb)
+                }
+                if let eb = eclatBegan {
+                    EclatDePose(cadre: eclatCadre, began: eb)
                 }
             }
         }
@@ -1468,6 +1485,10 @@ struct DosVide: View {
                     .blendMode(.screen)
                     .opacity(0.5 * allume)
             }
+            // Le dos RESPIRE dans son gabarit (2,5 pt d'air) : la petite
+            // lune du coin gauche ne touche plus le rayon — elle était
+            // coupée (verdict).
+            .padding(2.5)
             // Gabarit explicite (quatre dos par rangée) + le rayon de
             // 8 pt demandé. (Plus de lunes sous les dos.)
             .frame(width: 80, height: 80 * 1672.0 / 941.0)
