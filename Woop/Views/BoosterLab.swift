@@ -1274,7 +1274,7 @@ struct BoosterStage: UIViewRepresentable {
                     tearBedV = 0
                     tearAccum = 0
                     tearPrev = stage.tearProgress
-                    popThreshold = Float.random(in: 0.015 ... 0.045)
+                    popThreshold = Float.random(in: 0.025 ... 0.06)
                     haptics.bedStart()
                     if sfx == nil, !still { sfx = BoosterSFX() }
                     tick.prepare()
@@ -1311,8 +1311,15 @@ struct BoosterStage: UIViewRepresentable {
                     tearAccum += delta
                     if tearAccum >= popThreshold {
                         tearAccum = 0
-                        popThreshold = Float.random(in: 0.015 ... 0.045)
-                        haptics.pop(tearBedV)
+                        // Des pops plus RARES et plus secs (le grain
+                        // premium), chacun annoncé par un raidissement
+                        // de 70 ms : la main sent que ça va céder.
+                        popThreshold = Float.random(in: 0.025 ... 0.06)
+                        haptics.stiffen()
+                        let pv = tearBedV
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                            [weak self] in self?.haptics.pop(pv)
+                        }
                     }
                 case .spinning:
                     let t = g.translation(in: view)
@@ -1406,9 +1413,10 @@ struct BoosterStage: UIViewRepresentable {
             stage.setTear(1, sparking: true)
             // La bande cède : LE GRAND RRRIP, le coup profond dans la
             // paume, et la lune BAT une fois — puis veille, incandescente.
-            // Le lit haptique ne MEURT plus ici : la carte va frotter
-            // contre la fente, il l'accompagne jusqu'à la libération.
-            haptics.bedIntensity(0.25)
+            // LE SILENCE APRÈS : le lit tombe à zéro pendant le zoom —
+            // c'est le creux qui rend le double coup et la montée
+            // audibles dans la main (partition v6).
+            haptics.bedIntensity(0)
             haptics.commitThunk()
             stage.moonPulse()
             sfx?.rip()
@@ -1424,10 +1432,11 @@ struct BoosterStage: UIViewRepresentable {
             // du sachet ni dans le monde baké de la carte (audit v5).
             stage.swayNode.eulerAngles = SCNVector3(0, 0, 0)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { [weak self] in
-                // La rupture de la bande : le coup sec dans la paume.
-                // (La lèvre, elle, appartient au pilote de la sortie —
-                // un seul écrivain pour tornGlow.)
-                self?.haptics.pop(0.9)
+                // La rupture de la bande : LE DOUBLE COUP — le grave
+                // dans l'os, le clac sec 40 ms derrière, calés sur le
+                // claquement cuit dans dechirure-finale. (La lèvre,
+                // elle, appartient au pilote — un seul écrivain.)
+                self?.haptics.ripThunk()
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) { [weak self] in
@@ -1577,9 +1586,17 @@ struct BoosterStage: UIViewRepresentable {
                     card.position.y = y0w + rise * e
                     v = (x < 0.5 ? 12 * x * x : 3 * (2 - 2 * x) * (2 - 2 * x)) / 3
                 }
+                // La partition de la main : SILENCE pendant l'approche
+                // (v = 0), le frottement de la montée avec la vitesse,
+                // et pendant la chute LE SOUFFLE DESCENDANT — un lit
+                // très doux qui glisse vers le grave (netteté en
+                // décalage négatif) et s'éteint avec le sachet.
+                let bedV: Float = v > 0.001 ? 0.06 + 0.32 * v : 0
+                let breath = 0.10 * (1 - drop) * ss(2.9, 3.2, t)
                 DispatchQueue.main.async { [weak self] in
                     self?.sfx?.crackle(0.5 * v)
-                    self?.haptics.bedIntensity(0.08 + 0.35 * v)
+                    self?.haptics.bedIntensity(max(bedV, breath))
+                    self?.haptics.bedSharpness(-0.35 * drop)
                 }
             }
 
@@ -1693,6 +1710,10 @@ struct BoosterStage: UIViewRepresentable {
                 stage.cardNode.scale = SCNVector3(1.09, 1.09, 1.09)
                 SCNTransaction.commit()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    // LE CLIC DE SERTISSAGE : au sommet du ressort, la
+                    // carte se clipse dans son cadre — un tap ferme et
+                    // mat, distinct du sparkle du sacre (280 ms avant).
+                    self.haptics.seatClick()
                     SCNTransaction.begin()
                     SCNTransaction.animationDuration = 0.25
                     SCNTransaction.animationTimingFunction =
