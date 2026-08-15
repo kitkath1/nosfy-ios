@@ -55,7 +55,9 @@ struct SetHistoryRow: View {
         }
         .padding(.leading, 10)
         .padding(.trailing, 12)
-        .frame(height: 58)
+        // 58 → 66 : 4 pt d'air de plus en haut et en bas (15-08) — les
+        // petites cartes noires respirent dans la carte dépliée.
+        .frame(height: 66)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(LinearGradient(

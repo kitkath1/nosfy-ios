@@ -40,6 +40,22 @@ struct FlammeJauge<Detail: View>: View {
     /// besoin d'images.
     var bouge: Bool = false
 
+    /// LA DALLE EST POSÉE DANS UN ÉCRIN (l'aurora de la fiche exo) : ses
+    /// coins rentrent d'un liseré pour rester concentriques à la coque
+    /// qui l'entoure, et sa VEINE d'or s'éteint — un arc de lumière qui
+    /// court sur la tranche, cerné par une lumière vivante, ce serait
+    /// deux bijoux qui se disputent le même bord.
+    var dansEcrin: Bool = false
+
+    /// LE BANDEAU DE LUMIÈRE en tête, quand la dalle est dans un écrin :
+    /// sa hauteur. Le composant n'y dessine rien d'opaque — l'aurora de
+    /// l'hôte y passe — mais il y POSE la poignée et les cinq flammes, en
+    /// encre sombre (la loi du dessin sombre sur la lumière). C'est ce
+    /// qui libère la ligne du titre et rend la carte plus compacte.
+    var bandeau: CGFloat = 0
+    /// Le liseré d'aurora qui cerne la dalle (côtés et bas).
+    var liseré: CGFloat = 0
+
     /// Ce qui vit dans la carte ouverte, sous l'en-tête. Le composant ne
     /// sait rien de son contenu : il l'héberge dans sa coque et le clippe.
     @ViewBuilder var detail: () -> Detail
@@ -106,23 +122,97 @@ struct FlammeJauge<Detail: View>: View {
         let taille = 1 + 0.25 * CGFloat(essor)
         // Les coins : bijou 26 fermé → la coque du profil ouverte (55 en
         // haut, concentrique au châssis derrière le liseré de 5 pt ; 44
-        // en bas).
-        let rHaut = 26 + (55 - 26) * CGFloat(o)
-        let rBas = 26 + (44 - 26) * CGFloat(o)
+        // en bas). Dans l'écrin, on rentre d'un liseré en bas (la
+        // concentricité vraie) ; en haut la dalle ne touche pas la coque
+        // — la bande d'aurora l'en sépare — donc son rayon n'a qu'à bien
+        // lire sous la lumière.
+        let rHaut = dansEcrin ? 18 + (26 - 18) * CGFloat(o)
+                              : 26 + (55 - 26) * CGFloat(o)
+        // Le bas de la dalle est concentrique à l'écrin, rentré d'un
+        // liseré (30 - 1 ouvert).
+        let rBas = dansEcrin ? 19 + (29 - 19) * CGFloat(o)
+                             : 26 + (44 - 26) * CGFloat(o)
         let coque = UnevenRoundedRectangle(
             topLeadingRadius: rHaut, bottomLeadingRadius: rBas,
             bottomTrailingRadius: rBas, topTrailingRadius: rHaut,
             style: .continuous)
-        return VStack(alignment: .leading, spacing: 0) {
+        // LA DALLE RESPIRE (« les textes trop collés en haut et en bas »,
+        // 15-08) : l'air intérieur remonte à 17 pt. Le plancher reste le
+        // MÉDAILLON (58 pt) — mais ce n'est plus lui qui décide : la
+        // dalle vit maintenant au-dessus de son minimum, et c'est ce vide
+        // autour du texte qui la rend calme.
+        let padV = 17 + 3 * CGFloat(o)
+        let padG = 14 + 2 * CGFloat(o)
+        let padD = 16 + 2 * CGFloat(o)
+        return VStack(spacing: 0) {
+            // LE BANDEAU DE LUMIÈRE : rien d'opaque — l'aurora de l'hôte
+            // le traverse — mais il porte la poignée (« tire-moi », la
+            // grammaire du profil) et les cinq flammes, montées ici pour
+            // dégager la ligne du titre. Aligné en BAS : ouvert, le
+            // bandeau devient tout le haut de l'écran et son contenu doit
+            // rester au bord de la dalle, pas flotter sous le chevron.
+            if bandeau > 0 {
+                bandeauEcrin(o: o)
+                    .frame(height: bandeau, alignment: .bottom)
+            }
+            dalle(t: t, date: date, o: o, essor: essor, taille: taille,
+                  coque: coque, padV: padV, padG: padG, padD: padD)
+                .padding(.horizontal, liseré)
+                .padding(.bottom, liseré)
+        }
+        .frame(maxWidth: .infinity,
+               maxHeight: o > 0.001 ? .infinity : nil,
+               alignment: .top)
+    }
+
+    /// Le contenu du bandeau, en encre sombre — la seule qui existe sur
+    /// la lumière. La POIGNÉE au centre (l'affordance du « tire-moi »),
+    /// et à gauche l'inscription MINIMALE : un point, un mot. Elle
+    /// s'efface dès les premiers centimètres de la course — un titre n'a
+    /// rien à faire sur une carte qui s'ouvre, le contenu parle.
+    /// (Les flammes y sont passées un instant : elles sont retournées
+    /// dans la dalle, c'est leur place.)
+    private func bandeauEcrin(o: Double) -> some View {
+        let vie = 1 - Self.sstep(0.02, 0.30, o)
+        return ZStack {
+            Capsule()
+                .fill(FlammePalette.encre.opacity(0.20))
+                .frame(width: 34, height: 4)
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(FlammePalette.encre.opacity(0.78))
+                    .frame(width: 5, height: 5)
+                Text("Training")
+                    .font(.inter(11, .medium))
+                    .tracking(0.3)
+                    .foregroundStyle(FlammePalette.encre.opacity(0.62))
+                    .lineLimit(1)
+                    .fixedSize()
+                Spacer(minLength: 0)
+            }
+            .opacity(vie)
+            .padding(.leading, 14 + liseré)
+        }
+        .frame(height: 20)
+        .padding(.bottom, 9)
+    }
+
+    /// LA DALLE — la carte noire elle-même, telle qu'elle a toujours été.
+    private func dalle(t: Float, date: Date, o: Double, essor: Double,
+                       taille: CGFloat, coque: UnevenRoundedRectangle,
+                       padV: CGFloat, padG: CGFloat,
+                       padD: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 14 + 8 * CGFloat(essor)) {
                 FlammeMedaillon(t: t, date: date, celebrateAt: celebrateAt,
-                                essor: essor)
+                                essor: essor, calme: bouge)
                     // Le scale rend TOUT plus grand (lueurs et ombres
                     // comprises) ; le frame donne la place — la ligne
                     // s'écarte, rien ne se chevauche.
                     .scaleEffect(taille)
                     .frame(width: 58 * taille, height: 58 * taille)
-                VStack(alignment: .leading, spacing: 10) {
+                // 10 → 15 : la jauge ne colle plus au sous-titre.
+                VStack(alignment: .leading, spacing: 15) {
                     HStack(alignment: .center, spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             titre
@@ -138,6 +228,9 @@ struct FlammeJauge<Detail: View>: View {
                                 .opacity(1 - min(1, essor * 2.2))
                         }
                         Spacer(minLength: 6)
+                        // Les cinq flammes vivent ICI, dans la dalle
+                        // noire — elles sont montées un instant dans le
+                        // bandeau le 15-08, Kathryn les a fait revenir.
                         FlammesRow(done: shownDone, total: total, t: t,
                                    date: date, igniteAt: igniteAt)
                     }
@@ -155,14 +248,15 @@ struct FlammeJauge<Detail: View>: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .frame(height: o > 0.001 ? nil : 0, alignment: .top)
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 16)
-        .padding(.vertical, 15)
+        .padding(.leading, padG)
+        .padding(.trailing, padD)
+        .padding(.vertical, padV)
         // La garde : l'air du header embarqué — l'en-tête descend sous
-        // la ligne du chevron quand la carte prend l'écran.
+        // la ligne du chevron quand la carte prend l'écran (morte quand
+        // c'est le bandeau qui écarte).
         .padding(.top, garde)
-        // Fermée : la taille naturelle du bijou, au pixel d'avant.
-        // En ouverture : la fiche impose le cadre, l'en-tête reste en tête.
+        // Fermée : la taille naturelle du bijou. En ouverture : l'hôte
+        // impose le cadre, l'en-tête reste en tête.
         .frame(maxWidth: .infinity,
                maxHeight: o > 0.001 ? .infinity : nil,
                alignment: .topLeading)
@@ -172,19 +266,26 @@ struct FlammeJauge<Detail: View>: View {
         .clipShape(coque)
     }
 
+    /// Le titre — en DÉGRADÉ (verdict du 15-08) : blanc en tête, gris au
+    /// pied. C'est la matière des titres de la maison (l'école du
+    /// `titleFade` de la home) : une lettre pleinement blanche est plate,
+    /// une lettre qui s'éteint vers le bas a du relief.
+    /// (Vit dans `FlammePalette` : `FlammeJauge` est un type GÉNÉRIQUE
+    /// depuis qu'il héberge son contenu, et Swift interdit les propriétés
+    /// statiques stockées dans un générique — l'erreur qui a fait échouer
+    /// deux builds le 15-08.)
     private var titre: some View {
         HStack(alignment: .firstTextBaseline, spacing: 5) {
             Text("Séries")
                 .font(.inter(18, .semibold))
-                .foregroundStyle(Color.white.opacity(0.96))
             Text("\(shownDone)")
                 .font(.inter(19, .bold))
-                .foregroundStyle(Color.white)
                 .contentTransition(.numericText(value: Double(shownDone)))
             Text("/ \(total)")
                 .font(.inter(14, .semibold))
                 .foregroundStyle(Color.white.opacity(0.40))
         }
+        .foregroundStyle(FlammePalette.encreTitre)
         .lineLimit(1)
         .fixedSize()
     }
@@ -273,7 +374,9 @@ struct FlammeJauge<Detail: View>: View {
                 // vitesse angulaire varie, et un arc court y sauterait.
                 // Éteinte EN COURSE : un dégradé angulaire recalculé sur
                 // tout le contour, en `plusLighter`, à chaque image.
-                if !bouge {
+                // Éteinte DANS L'ÉCRIN : la lumière qui entoure la dalle
+                // tient déjà ce rôle.
+                if !bouge, !dansEcrin {
                     coque
                         .strokeBorder(AngularGradient(
                             stops: [
@@ -318,6 +421,23 @@ enum FlammePalette {
     static let coeur = Color(red: 1.0, green: 0.40, blue: 0.04)
     /// Braise rouge, le bas de la rampe.
     static let braise = Color(red: 1.0, green: 0.22, blue: 0.02)
+    /// Le JAUNE de pointe — celui qui monte en tête de l'onde.
+    static let jaune = Color(red: 1.0, green: 0.87, blue: 0.30)
+
+    /// L'encre du titre — blanc en tête, gris au pied : une lettre
+    /// pleinement blanche est plate, une lettre qui s'éteint vers le bas
+    /// a du relief (l'école du `titleFade` de la home).
+    static let encreTitre = LinearGradient(
+        stops: [
+            .init(color: Color.white, location: 0.0),
+            .init(color: Color.white.opacity(0.97), location: 0.42),
+            .init(color: Color(white: 0.62), location: 1.0),
+        ],
+        startPoint: .top, endPoint: .bottom)
+    /// L'ENCRE — ce qui s'écrit SUR la lumière (le bandeau d'aurora).
+    /// Sur un cœur de lumière, le blanc n'existe pas et l'orange se
+    /// délave : seul un brun très sombre et SATURÉ tient (anti-marron).
+    static let encre = Color(red: 0.18, green: 0.10, blue: 0.04)
 
     /// La rampe verticale du néon : or en tête, braise au pied.
     static let neon = LinearGradient(
@@ -417,6 +537,8 @@ struct FlammeMedaillon: View {
     /// grossissant — la même inspiration que la cérémonie, tenue tant que
     /// la carte est dépliée (le « s'ouvre » du verdict du 15-08).
     var essor: Double = 0
+    /// La carte est EN COURSE : la poudre se tait (la loi de fluidité).
+    var calme: Bool = false
 
     /// L'inspiration de la cérémonie : attaque rapide, décrue longue.
     private var boost: Double {
@@ -432,6 +554,14 @@ struct FlammeMedaillon: View {
         let vif = Double(JaugeVent.flicker(t))
         let derive = Double(JaugeVent.derive(t))
         let b = min(1, boost + 0.55 * essor)
+        // (L'ONDE EST MORTE — 15-08, « le balayage de la flamme, c'est
+        // moche ». Une couleur qui VOYAGE à travers une petite forme est
+        // le langage d'un skeleton de chargement, pas d'une flamme : une
+        // vraie flamme a une anatomie de couleur STABLE — chaud au pied,
+        // or au corps, jaune à la pointe — et ce qui vit, c'est
+        // l'intensité et la forme. Le trait ne change donc plus jamais
+        // de couleur : la vie est passée DEDANS (les braises qui montent
+        // dans la silhouette) et dans la DANSE.)
         ZStack {
             // La niche : le rond chaud que la flamme éclaire — comme la
             // référence, une simple pastille, à peine plus claire au cœur.
@@ -451,69 +581,240 @@ struct FlammeMedaillon: View {
 
             // L'ambiance qui respire — et qui prend sa grande inspiration
             // quand une série se valide.
+            // (Le rouge braise est parti d'ici aussi — 15-08 : la nappe
+            // reste dans l'or et l'orange, comme le trait.)
             Circle()
                 .fill(RadialGradient(
                     stops: [
-                        .init(color: FlammePalette.coeur.opacity(0.20 + 0.10 * souffle + 0.25 * b), location: 0.0),
-                        .init(color: FlammePalette.braise.opacity(0.06 + 0.04 * souffle), location: 0.55),
+                        .init(color: FlammePalette.flamme.opacity(0.18 + 0.09 * souffle + 0.22 * b), location: 0.0),
+                        .init(color: FlammePalette.or.opacity(0.06 + 0.04 * souffle), location: 0.55),
                         .init(color: .clear, location: 1.0),
                     ],
                     center: .center, startRadius: 0, endRadius: 29))
                 .blendMode(.plusLighter)
 
-            // Le ventre : une lueur SOBRE — la réf n'a pas de cœur blanc,
-            // juste l'orange qui affleure sous le contour. La respiration
-            // reste, mais en sourdine.
-            Image(systemName: "flame.fill")
-                .font(.system(size: 22, weight: .regular))
-                .foregroundStyle(RadialGradient(
-                    stops: [
-                        .init(color: FlammePalette.flamme.opacity(0.75), location: 0.0),
-                        .init(color: FlammePalette.coeur.opacity(0.40), location: 0.60),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: UnitPoint(x: 0.5 + 0.04 * derive, y: 0.62),
-                    startRadius: 0, endRadius: 17))
-                .opacity(0.26 + 0.09 * souffle + 0.04 * vif + 0.25 * b)
-                .blur(radius: 2.2 - 0.5 * souffle)
-                .blendMode(.plusLighter)
-
-            // Le contour : l'orange DOUX et quasi uniforme de la référence —
-            // pas de rampe or→braise qui fait bijou. Fermé il danse à
-            // peine ; OUVERT le trait S'AFFINE (fondu croisé semibold →
-            // ultraLight, deux rendus montés en permanence — « épaisseur
-            // 1 px », 15-08) et la danse s'AMPLIFIE : penchement, souffle
-            // d'échelle — une flamme vivante, jamais un pictogramme figé.
+            // LA VIE EST DEDANS, ET LA FORME DANSE — les deux ensemble,
+            // la couleur ne bouge JAMAIS. Le tout pivote d'un seul bloc :
+            // le masque des braises est dans le même repère que le trait,
+            // elles ne peuvent pas en sortir.
             ZStack {
-                contour(.semibold, vif: vif, souffle: souffle, b: b)
-                    .opacity(1 - essor)
-                contour(.ultraLight, vif: vif, souffle: souffle, b: b)
-                    .opacity(essor)
+                interieur(t: t, souffle: souffle, vif: vif,
+                          derive: derive, b: b)
+                ZStack {
+                    contour(.light, vif: vif, souffle: souffle, b: b)
+                        .opacity(1 - essor)
+                    contour(.ultraLight, vif: vif, souffle: souffle, b: b)
+                        .opacity(essor)
+                }
             }
-            .rotationEffect(.degrees((1.3 + 4.5 * essor) * derive),
+            // LA DANSE ÉLÉGANTE (son mot : « pas cheap, très élégant »).
+            // Trois précautions contre le cartoon : l'amplitude est
+            // PETITE (2,4°), le moteur est le bruit LENT de la maison (et
+            // jamais une sinusoïde, qui ferait métronome), et l'échelle
+            // conserve le volume — la flamme qui s'étire en hauteur se
+            // resserre en largeur, comme une matière, pas comme une icône
+            // qu'on agrandit. Le pivot est au PIED : c'est la pointe qui
+            // mène, le pied reste posé.
+            .rotationEffect(.degrees((2.4 + 1.6 * essor) * derive),
                             anchor: .bottom)
-            .scaleEffect(1 + 0.05 * essor * souffle, anchor: .bottom)
+            .scaleEffect(x: 1 - 0.030 * souffle,
+                         y: 1 + 0.052 * souffle + 0.03 * essor * souffle,
+                         anchor: .bottom)
+            // Le flottement : un demi-point de dérive verticale, à peine
+            // perceptible — c'est ce qui empêche l'objet d'avoir l'air
+            // COLLÉ à la carte.
+            .offset(y: -0.5 * souffle)
+
+            // LA POUDRE DE DIAMANTS : elle SORT de la flamme — blanche
+            // et orange, elle monte, dérive et meurt en cloche. Éteinte
+            // pendant la course de la carte (`calme`) : c'est la loi de
+            // fluidité de la maison, le détail cède au mouvement.
+            if !calme {
+                poudre(t: t, souffle: souffle, b: b)
+            }
         }
         .frame(width: 58, height: 58)
         .compositingGroup()
     }
 
-    /// Le trait de la flamme, à la graisse demandée — la même lumière
-    /// pour les deux (le fondu croisé n'échange que l'épaisseur).
+    /// L'INTÉRIEUR DE LA FLAMME — l'option 2 : le ventre qui palpite, et
+    /// TROIS BRAISES qui naissent au pied, montent dans la silhouette et
+    /// s'éteignent avant la pointe. Tout est MASQUÉ par le glyphe plein :
+    /// rien ne peut déborder du trait, et c'est ce confinement qui fait
+    /// lire « ça brûle » au lieu de « ça scanne ». La différence avec le
+    /// balayage refusé : une braise est un petit point MOU qui monte, pas
+    /// un dégradé qui traverse toute la forme.
+    private func interieur(t: Float, souffle: Double, vif: Double,
+                           derive: Double, b: Double) -> some View {
+        ZStack {
+            // Le ventre : la lueur de fond, qui respire (option 1, gardée
+            // en socle — sans elle les braises flottent dans le vide).
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: FlammePalette.or.opacity(0.85),
+                              location: 0.0),
+                        .init(color: FlammePalette.flamme.opacity(0.45),
+                              location: 0.55),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 13))
+                .frame(width: 22, height: 22)
+                .offset(x: 0.6 * derive, y: 5)
+                .scaleEffect(1 + 0.10 * souffle)
+                // EN SOURDINE : à pleine puissance, le ventre et les
+                // braises fusionnaient en une masse qui palpite — on
+                // voyait un blob, pas des points qui montent.
+                .opacity(0.19 + 0.10 * souffle + 0.04 * vif + 0.20 * b)
+                .blur(radius: 2.8)
+
+            ForEach(0..<3, id: \.self) { i in
+                let br = Braise(i: i, t: Double(t))
+                Circle()
+                    .fill(RadialGradient(
+                        stops: [
+                            .init(color: FlammePalette.blanc, location: 0),
+                            .init(color: FlammePalette.or.opacity(0.55),
+                                  location: 0.5),
+                            .init(color: .clear, location: 1),
+                        ],
+                        center: .center, startRadius: 0, endRadius: br.r))
+                    .frame(width: br.r * 2, height: br.r * 2)
+                    .offset(x: br.x, y: br.y)
+                    .opacity(br.a * (0.40 + 0.20 * souffle + 0.32 * b))
+                    .blur(radius: 1.5)
+            }
+        }
+        .blendMode(.plusLighter)
+        // LE CONFINEMENT : le glyphe plein sert de masque, à la taille
+        // EXACTE du trait — les braises vivent dans la flamme, jamais
+        // autour.
+        .mask {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 26, weight: .light))
+        }
+    }
+
+    /// UNE BRAISE qui monte dans la flamme. Hors du ViewBuilder (la leçon
+    /// du vérificateur de types), déterministe : sa phase ne dépend que
+    /// du temps et de son indice.
+    private struct Braise {
+        let x: CGFloat, y: CGFloat, r: CGFloat, a: Double
+
+        init(i: Int, t: Double) {
+            let s = Braise.fract(sin(Double(i) * 78.233) * 43758.5453)
+            // Une combustion lente : ~2,4 s de vie, décalées entre elles.
+            let ph = Braise.fract(t / (2.4 + 0.7 * s) + Double(i) / 3.0)
+            // La montée ralentit vers la pointe (la flamme s'y resserre).
+            let m = 1 - pow(1 - ph, 2.0)
+            y = CGFloat(7.5 - 15.5 * m)
+            x = CGFloat((s - 0.5) * 3.2 + 1.1 * sin(t * 0.9 + s * 6.28))
+            // Elle rétrécit en montant : le haut de la flamme est étroit.
+            // PETITE (4 pt de rayon) : une braise doit rester un POINT de
+            // lumière qui monte — au-delà, elle remplit le ventre et
+            // redevient une masse qui pulse.
+            r = CGFloat(4.0 - 2.0 * m)
+            // La cloche : naissance douce, mort avant la pointe.
+            a = ph < 0.22 ? ph / 0.22 : max(0, 1 - (ph - 0.22) / 0.62)
+        }
+
+        private static func fract(_ x: Double) -> Double {
+            x - x.rounded(.down)
+        }
+    }
+
+    /// Douze micro-diamants, chacun sur son horloge (sa graine décale sa
+    /// naissance) : ils naissent au ventre de la flamme, montent en
+    /// s'écartant, et s'éteignent en cloche. Blancs pour la moitié,
+    /// orange pour l'autre — la famille diamant de l'app, en continu et
+    /// en sourdine. Déterministe : aucune horloge aléatoire, tout se
+    /// calcule sur `t` (le film se rejoue à l'identique).
+    private func poudre(t: Float, souffle: Double, b: Double) -> some View {
+        ZStack {
+            ForEach(0..<12, id: \.self) { i in
+                let g = Grain(i: i, t: Double(t))
+                DiamantShape()
+                    .fill(g.blanche ? FlammePalette.blanc : FlammePalette.or)
+                    .frame(width: g.l, height: g.h)
+                    .rotationEffect(.degrees(g.tour))
+                    .offset(x: g.x, y: g.y)
+                    .opacity(g.a * (0.34 + 0.22 * souffle + 0.3 * b))
+                    .blendMode(.plusLighter)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// UN GRAIN de la poudre. Tout se calcule ici, hors du ViewBuilder :
+    /// une expression longue dans un `ForEach` fait expirer le
+    /// vérificateur de types de Swift (leçon maison). Déterministe — le
+    /// hachage ne dépend que de l'indice, la phase que du temps : le même
+    /// film se rejoue à l'identique.
+    private struct Grain {
+        let x: CGFloat, y: CGFloat, l: CGFloat, h: CGFloat
+        let a: Double, tour: Double, blanche: Bool
+
+        init(i: Int, t: Double) {
+            let s = Grain.fract(sin(Double(i) * 127.1) * 43758.5453)
+            let s2 = Grain.fract(sin(Double(i) * 311.7 + 5.3) * 24634.6345)
+            blanche = s2 < 0.5
+            // Sa vie propre (~1,7 s), sa naissance décalée : jamais deux
+            // grains en chœur.
+            let ph = Grain.fract(t / (1.7 + 0.6 * s) + s)
+            // La montée : du ventre de la flamme vers le haut, en
+            // ralentissant — une braise qui s'élève, pas une fusée.
+            let mont = 1 - pow(1 - ph, 1.8)
+            y = CGFloat(8 - 26 * mont)
+            let cote: Double = s2 < 0.5 ? -1 : 1
+            x = CGFloat(cote * (1.5 + 7 * mont)
+                        + 1.6 * sin(t * 1.7 + s * 6.28))
+            // La cloche : naît, brille, meurt — jamais un pop.
+            let cloche = ph < 0.18 ? ph / 0.18 : 1 - (ph - 0.18) / 0.82
+            a = max(0, cloche)
+            // PLUS FINS (« les particules sont trop grosses ») : une
+            // poudre est une QUANTITÉ, pas une taille — sous le point,
+            // c'est l'anti-crénelage qui fait le grain.
+            l = CGFloat(0.9 + 0.6 * s)
+            h = CGFloat(1.5 + 0.9 * s)
+            tour = 18 * sin(t + s * 6.28)
+        }
+
+        private static func fract(_ x: Double) -> Double {
+            x - x.rounded(.down)
+        }
+    }
+
+    /// Le trait de la flamme — FIN (« trop grosse et néon », 15-08) et
+    /// VIVANT. Deux choses ont changé : la graisse a maigri d'un cran et
+    /// les deux lueurs portées sont divisées par deux (le néon retombe) ;
+    /// surtout, la couleur ne dort plus — une ONDE DE LUMIÈRE MONTE dans
+    /// le trait, cœur blanc en bas, orange au corps, jaune à la pointe,
+    /// et la position de l'onde dérive sur le bruit apériodique de la
+    /// maison. C'est le mouvement qui manquait : la flamme ne tremble
+    /// plus, elle BRÛLE.
     private func contour(_ poids: Font.Weight, vif: Double,
                          souffle: Double, b: Double) -> some View {
+        // L'ANATOMIE DE COULEUR, FIGÉE À JAMAIS : jaune à la pointe, or
+        // au corps, orange au pied. Aucun arrêt ne bouge — c'est ce qui
+        // sépare une flamme d'un effet de chargement. Et plus de rouge :
+        // la rampe s'arrête à l'orange.
         Image(systemName: "flame")
-            .font(.system(size: 28, weight: poids))
+            .font(.system(size: 26, weight: poids))
             .foregroundStyle(LinearGradient(
                 stops: [
-                    .init(color: Color(red: 1.0, green: 0.66, blue: 0.34), location: 0.0),
-                    .init(color: Color(red: 0.99, green: 0.56, blue: 0.24), location: 1.0),
+                    .init(color: FlammePalette.jaune, location: 0.0),
+                    .init(color: FlammePalette.or, location: 0.42),
+                    .init(color: Color(red: 1.0, green: 0.66, blue: 0.24),
+                          location: 1.0),
                 ],
                 startPoint: .top, endPoint: .bottom))
             .opacity(0.90 + 0.10 * vif)
-            .shadow(color: FlammePalette.coeur.opacity(0.45 + 0.12 * vif), radius: 3.5)
-            .shadow(color: FlammePalette.braise.opacity(0.22 + 0.12 * souffle + 0.25 * b),
-                    radius: 8)
+            .shadow(color: FlammePalette.or.opacity(0.20 + 0.06 * vif),
+                    radius: 2.6)
+            .shadow(color: FlammePalette.flamme.opacity(0.10
+                                                        + 0.05 * souffle
+                                                        + 0.12 * b),
+                    radius: 6)
     }
 }
 

@@ -1639,7 +1639,11 @@ struct ProfilFondNoir: View {
 /// L'hôte des halos de la bannière : trois grands foyers blanc/jaune/
 /// orange qui naviguent et se fondent — jamais de noir (30 Hz, la
 /// cadence des fonds).
-private struct BanniereHalos: View {
+/// PARTAGÉE (15-08) : la fiche d'exercice l'emploie comme ÉCRIN de sa
+/// carte des séries — même shader, même lumière, la consistance demandée.
+/// Ne jamais en faire une copie : deux exemplaires divergeraient au
+/// premier réglage.
+struct BanniereHalos: View {
     /// La hauteur de RÉFÉRENCE passée au shader à la place de la vraie
     /// (il normalise tout par size.y) : la carte dépliée garde des halos
     /// à l'échelle de la bannière — sans elle, ils s'étirent avec la
@@ -1647,9 +1651,15 @@ private struct BanniereHalos: View {
     /// stitchable ne bouge pas (le piège de la page blanche).
     var norme: CGFloat? = nil
 
+    /// La cadence du champ. 30 img/s au repos ; la fiche exo la baisse
+    /// PENDANT la course de sa carte — la lumière évolue sur des périodes
+    /// de 17 à 31 s, son frémissement est proprement invisible sous une
+    /// coque qui grandit, et c'est autant de passes de shader en moins.
+    var cadence: Double = 1.0 / 30.0
+
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            TimelineView(.animation(minimumInterval: cadence)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
                 Rectangle()

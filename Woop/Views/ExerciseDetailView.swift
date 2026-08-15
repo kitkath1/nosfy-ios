@@ -118,6 +118,12 @@ struct ExerciseDetailView: View {
     /// lumière (deux gestes rapprochés ne se coupent pas l'herbe sous le
     /// pied).
     @State private var carteBougeJeton = 0
+    /// LE CRANTAGE du geste : le cinquième de course franchi. La carte
+    /// crante sous le doigt comme un tiroir — dans les deux sens.
+    @State private var carteCran = 0
+    /// Le point de bascule déjà franchi (là où lâcher installerait la
+    /// carte) : on le SENT passer, c'est ce qui rend le geste sûr.
+    @State private var carteFranchi = false
     /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
     /// la loi du zoom interne en a besoin, jamais pendant le scroll.
     @State private var heroAspect: CGFloat = 0.8
@@ -128,10 +134,29 @@ struct ExerciseDetailView: View {
     /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
     /// plus long — la croissance se savoure sous le doigt.
     private static let collapseSpan: CGFloat = 220
-    /// La hauteur du bijou fermé — mesurée au premier layout (la valeur
-    /// de départ n'est qu'une estimation raisonnable) : c'est la base du
-    /// lerp de croissance de la carte.
+    /// La hauteur de la DALLE NOIRE fermée — mesurée au premier layout
+    /// (la valeur de départ n'est qu'une estimation raisonnable) : c'est
+    /// la base du lerp de croissance de la carte.
     @State private var carteFermeeH: CGFloat = 89
+    /// Le liseré de lumière : l'aurora qui affleure autour de la dalle.
+    /// FIN (1 pt) sur les côtés et en bas — c'est en HAUT que la lumière
+    /// a le droit de prendre de la place (verdict du 15-08, réf. Linear).
+    private static let liseré: CGFloat = 1
+    /// LE BANDEAU d'aurora, carte fermée : plus un liseré, un vrai
+    /// bandeau — il porte la poignée et l'inscription « Training ».
+    private static let bande0: CGFloat = 48
+
+    /// LA NORME MENTIE (le piège du profil, payé une fois pour toutes) :
+    /// le shader `banniereHalos` normalise TOUT par sa hauteur. L'écrin
+    /// fermé ne fait qu'une centaine de points — à cette échelle les
+    /// halos seraient gigantesques et le haut partirait en blanc soufflé.
+    /// On lui donne donc une hauteur de RÉFÉRENCE (celle d'une bannière
+    /// de profil) qui ne grandit qu'à 55 % de la course : la lumière
+    /// reste en haut, le bas de la carte ouverte redevient braise.
+    private static func normeEcrin(_ h: CGFloat) -> CGFloat {
+        let base: CGFloat = 230
+        return base + 0.55 * max(0, h - base)
+    }
     /// La place réservée en tête du scroll (photo + titre étendus) : FIXE.
     /// Le header se dessine en OVERLAY au-dessus — un inset qui changerait
     /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
@@ -436,20 +461,12 @@ struct ExerciseDetailView: View {
             .overlay(alignment: .top) {
                 if isStrength { collapsingHeaderBack }
             }
-            .overlay {
-                ZStack(alignment: .top) {
-                    Color.clear
-                    if isStrength, running == nil {
-                        // La lumière s'apaise quand le header se condense :
-                        // la petite carte n'a pas besoin d'un feu derrière.
-                        ExoHeaderGlow()
-                            .opacity(1 - 0.8 * Self.sstep(0, 90,
-                                                          Double(headerY)))
-                    }
-                }
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-            }
+            // (LES HALOS ORANGE DU HEADER SONT MORTS — 15-08, « ils font
+            // cheap au-dessus de l'image ». La musculation n'a plus de
+            // lumière posée sur sa photo : la seule source chaude de la
+            // page est désormais l'ÉCRIN d'aurora de la carte des séries.
+            // Le composant `ExoHeaderGlow` survit — le cardio et les
+            // leçons de `GaletSlide` s'y réfèrent encore.)
             // LA CARTE DES SÉRIES — AU-DESSUS de la lumière (le sandwich
             // de la maison : glow < carte), sourde au doigt : le scroll
             // du dessous est le geste, le tap vit dans le flux.
@@ -743,6 +760,8 @@ struct ExerciseDetailView: View {
                     // hoquet d'un montage en plein vol est évité.
                     carteBouge = true
                     carteBougeJeton += 1
+                    carteCran = Int(min(max(carteP, 0), 1) * 5)
+                    carteFranchi = carteP > (carteP < 0.5 ? 0.28 : 0.55)
                     UIImpactFeedbackGenerator(style: .medium)
                         .impactOccurred(intensity: 0.8)
                 }
@@ -751,10 +770,14 @@ struct ExerciseDetailView: View {
                     / Self.collapseSpan
                 carteP = brut <= 1 ? max(0, brut)
                                    : 1 + (brut - 1) * 0.12
+                grainDuGeste()
             }
             .onEnded { v in
                 guard carteSaisie else { return }
                 carteSaisie = false
+                // Le grondement s'éteint AVEC le doigt : la suite est un
+                // ressort, elle a son propre coup.
+                RocketHaptics.shared.dragEnd()
                 let pred = carteBase - v.predictedEndTranslation.height
                     / Self.collapseSpan
                 // GÉNÉREUX à l'ouverture (un élan suffit), FRANC à la
@@ -764,13 +787,52 @@ struct ExerciseDetailView: View {
             }
     }
 
+    /// LE GRAIN DU GESTE — ce qu'on sent en tirant la carte. Trois
+    /// couches : le GRONDEMENT continu (le moteur maison, celui du galet
+    /// — muet au simulateur, il ne vit qu'au téléphone) qui enfle avec la
+    /// course ; les CRANS, un petit coup tous les cinquièmes, dans les
+    /// deux sens, qui donnent à la carte le poids d'un tiroir ; et le
+    /// POINT DE BASCULE — un coup plus ferme au moment précis où lâcher
+    /// installerait la carte. C'est ce dernier qui rend le geste sûr :
+    /// la main sait, avant de lâcher, ce qui va se passer.
+    private func grainDuGeste() {
+        let p = min(max(carteP, 0), 1)
+        RocketHaptics.shared.dragLevel(Double(p) * 0.55)
+        let seuil: CGFloat = carteBase < 0.5 ? 0.28 : 0.55
+        let auDela = p > seuil
+        if auDela != carteFranchi {
+            carteFranchi = auDela
+            UIImpactFeedbackGenerator(style: .rigid)
+                .impactOccurred(intensity: 0.7)
+        } else {
+            let cran = Int(p * 5)
+            if cran != carteCran {
+                UIImpactFeedbackGenerator(style: .soft)
+                    .impactOccurred(intensity: 0.32)
+            }
+        }
+        carteCran = Int(p * 5)
+    }
+
     /// LE DOCK : la carte s'installe, ouverte ou fermée. Les deux chemins
     /// (le drag, le tap) y passent — une seule loi d'installation, et une
     /// seule chose à écrire : le curseur. Il n'y a plus rien d'autre à
     /// tenir.
     private func dock(_ ouvre: Bool) {
+        // LE COUP DE POSE, en DEUX temps — un objet qui a une masse ne
+        // fait pas « tic », il fait « toc… toc ». Ouverte : le coup ferme
+        // puis le petit verrou qui prend. RETRAIT : plus mat, et l'écho
+        // arrive plus tard — c'est le tiroir qui retombe dans son
+        // logement. Les deux ne se confondent jamais dans la main.
+        RocketHaptics.shared.dragEnd()
         UIImpactFeedbackGenerator(style: ouvre ? .heavy : .medium)
-            .impactOccurred(intensity: ouvre ? 0.9 : 0.75)
+            .impactOccurred(intensity: ouvre ? 0.9 : 0.8)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + (ouvre ? 0.07 : 0.11)
+        ) {
+            UIImpactFeedbackGenerator(style: ouvre ? .rigid : .soft)
+                .impactOccurred(intensity: ouvre ? 0.45 : 0.5)
+        }
         // Le ressort fait encore partie de la COURSE : la parure ne
         // revient qu'une fois la carte posée (sinon le détail se rallume
         // en plein vol — le pire moment).
@@ -965,29 +1027,57 @@ struct ExerciseDetailView: View {
             // dessus ; le bas s'arrête au-dessus du galet.
             let x = Self.lp(20, 5, u)
             let y = Self.lp(Self.expandedHeader + 4, 5 - cime, u)
+            // LA HAUTEUR DE L'ÉCRIN — mesurée bandeau et liseré compris
+            // (ils vivent DANS le composant). Ouvert : du châssis au galet.
             let h = Self.lp(carteFermeeH,
                             g.size.height - 15 + cime, u)
+            // LE BANDEAU — le seul élément qui change vraiment de nature
+            // pendant la course : un bandeau de lumière fermé, TOUT le
+            // haut de l'écran ouvert (le chevron et le « … » s'y posent).
+            // Ouvert, il descend BIEN SOUS les boutons : la dalle collait
+            // à 2 pt sous eux, elle respire maintenant à ~21 pt.
+            let bande = Self.lp(Self.bande0, max(Self.bande0, cime + 8), u)
+            // L'ÉCRIN : coins RESSERRÉS FERMÉ (l'allure « carte d'app »
+            // demandée le 15-08) — mais OUVERT, le haut redevient 55.
+            // CONTRAINTE DURE, payée : collée au châssis derrière 5 pt de
+            // nuit, la carte doit être CONCENTRIQUE à l'écran ; à 32 son
+            // coin coupait à l'intérieur de celui du téléphone et
+            // laissait un coin de nuit — le « problème de fondu » des
+            // coins du haut. Le bas, lui, ne touche rien : il reste
+            // serré.
+            let rH = Self.lp(20, 55, u), rB = Self.lp(20, 30, u)
+            let ecrin = UnevenRoundedRectangle(
+                topLeadingRadius: rH, bottomLeadingRadius: rB,
+                bottomTrailingRadius: rB, topTrailingRadius: rH,
+                style: .continuous)
             FlammeJauge(done: sets.filter(\.isDone).count,
                         ouverture: CGFloat(u),
-                        // La GARDE : dans la carte ouverte, l'en-tête se
-                        // pose JUSTE SOUS la ligne du chevron, jamais
-                        // dessous elle.
-                        garde: CGFloat(u) * max(0, cime - 16),
+                        // La garde est MORTE : c'est la bande d'aurora
+                        // qui écarte désormais l'en-tête du chevron.
+                        garde: 0,
                         // EN COURSE : le bijou allège sa parure (voir
                         // FlammeJauge) — la fluidité prime sur des
                         // détails que l'œil ne voit pas en mouvement.
-                        bouge: carteBouge && !Self.carteLourd) {
+                        bouge: carteBouge && !Self.carteLourd,
+                        // POSÉE DANS L'ÉCRIN : rayons rentrés d'un
+                        // liseré, et la veine d'or s'éteint — elle
+                        // rivaliserait avec la lumière qui l'entoure.
+                        dansEcrin: true,
+                        // Le bandeau de lumière et le liseré vivent DANS
+                        // le composant : lui seul sait où finit sa dalle
+                        // et où commence l'aurora qui la cerne.
+                        bandeau: bande,
+                        liseré: Self.liseré) {
                 // Les lignes sont posées à la largeur de la carte
                 // OUVERTE, une fois pour toutes : sinon les cinq lignes
                 // (et leurs textes) se REMESURENT à chaque image pendant
                 // que la carte s'élargit — c'est la moitié du coût.
-                listeSeries(u: u, largeur: g.size.width - 40)
+                listeSeries(u: u, largeur: g.size.width - 44)
             }
             // Au repos, la hauteur reste NATURELLE (le bijou au pixel
             // d'avant) et se MESURE — c'est la base du lerp ; imposée au
             // repos, la mesure se mordrait la queue.
-            .frame(width: g.size.width - 2 * x,
-                   height: u > 0.0005 ? h : nil)
+            .frame(height: u > 0.0005 ? h : nil)
             .onGeometryChange(for: CGFloat.self) { $0.size.height }
                 action: { nh in
                     if !carteBouge, headerY < 0.5,
@@ -995,6 +1085,19 @@ struct ExerciseDetailView: View {
                         carteFermeeH = nh
                     }
                 }
+            // L'ÉCRIN D'AURORA — le champ du profil, en fond (jamais dans
+            // la pile de layout : il est GLOUTON, un GeometryReader sans
+            // taille propre, et il ferait exploser la mesure de la dalle).
+            .background {
+                BanniereHalos(norme: Self.normeEcrin(h),
+                              cadence: carteBouge ? 1.0 / 12.0 : 1.0 / 30.0)
+                    // L'ANTI-BRUN, la loi de la maison : dépliée, la
+                    // traîne du halo blanc délave l'orange du bas en
+                    // beige — la saturation remonte AVEC la course.
+                    .saturation(1 + 0.45 * u)
+            }
+            .clipShape(ecrin)
+            .frame(width: g.size.width - 2 * x)
             // La cible des pièces : la carte se déclare en global, la
             // volée sait où se poser — ouverte comme fermée. JAMAIS
             // pendant la course : une écriture d'état par image
@@ -1062,39 +1165,17 @@ struct ExerciseDetailView: View {
     /// Le chevron dans son carré de verre, et son double « … » en face —
     /// celui-ci s'ouvrira plus tard en carte (date, heure) : il a déjà sa
     /// place, il n'a pas encore son geste.
+    /// LE COMPOSANT PARTAGÉ, enfin (le doublon privé de la fiche est mort
+    /// — `ChipVerre` porte la recette depuis le 14-08, la fiche en gardait
+    /// une copie). Sa CLARTÉ suit la carte : posés sur la nuit ils sont de
+    /// verre fumé et blancs ; quand l'écrin d'aurora monte sous eux, le
+    /// verre devient transparent et le glyphe passe à l'encre sombre.
     private var headerChips: some View {
-        HStack {
-            headerChip("chevron.left", label: "Retour") { dismiss() }
-            Spacer()
-            headerChip("ellipsis", label: "Options") {}
+        RangeeChips(retour: { dismiss() },
+                    clarte: Double(min(max(carteP, 0), 1))) {
+            ChipVerre(symbole: "ellipsis", label: "Options",
+                      clarte: Double(min(max(carteP, 0), 1))) {}
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 4)
-        .padding(.bottom, 8)
-    }
-
-    private func headerChip(_ symbol: String, label: String,
-                            action: @escaping () -> Void) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
-        return Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.inkPrimary)
-                .frame(width: 44, height: 44)
-                .background {
-                    // Verre fumé FONCÉ, comme le chip « Done » de la référence :
-                    // un objet sombre posé sur la braise, qu'elle traverse à
-                    // peine — le halo vient de la nappe, pas d'une ombre.
-                    Color.clear
-                        .glassEffect(.regular.tint(Color.black.opacity(0.5))
-                            .interactive(), in: shape)
-                }
-                .overlay(shape.strokeBorder(Color.white.opacity(0.08),
-                                            lineWidth: 1))
-                .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
     }
 
     /// EXACTEMENT le titre de la home — même fonte, même graisse, même
