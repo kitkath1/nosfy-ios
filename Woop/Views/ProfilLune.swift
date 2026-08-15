@@ -289,9 +289,21 @@ struct ProfilLuneView: View {
                 .transition(.opacity)
             }
         }
-        // Le banc de l'accueil : `-profilAccueil <rarete>` joue
-        // l'arrivée seule, sans cérémonie (boucle courte).
+        // Les bancs de l'accueil :
+        //   `-profilAccueil <rarete>` joue l'ARRIVÉE seule (boucle
+        //     courte : descente, fumée, éclat, compteur) ;
+        //   `-profilSacre` ouvre LE FLOW COMPLET — le Sacre monte
+        //     au-dessus du profil comme si le sheet l'avait publié
+        //     (avec `-boosterCine`, la cérémonie se joue seule jusqu'à
+        //     l'étage d'enregistrement ; il ne reste qu'à balayer vers
+        //     le haut pour voir l'envol et l'accueil).
         .task {
+            if CommandLine.arguments.contains("-profilSacre") {
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    sacreOuvert = true
+                }
+            }
             if let r = UserDefaults.standard.string(forKey: "profilAccueil") {
                 try? await Task.sleep(nanoseconds: 1_400_000_000)
                 lancerAccueil(rarete: r)

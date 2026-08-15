@@ -526,7 +526,14 @@ struct BoosterLab: View {
                     BoosterStage(still: Self.still, frozenTear: Self.tear,
                                  startOpen: Self.open, startDos: Self.dos,
                                  mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
-                                 gallery: Self.gallery || appMode,
+                                 // En mode app le manège précède la
+                                 // cérémonie — SAUF au banc du flow
+                                 // complet (`-boosterCine`), où elle se
+                                 // joue toute seule depuis le sachet
+                                 // posé (autoCeremony n'arme que sur
+                                 // `mode == .idle`, jamais en galerie).
+                                 gallery: (Self.gallery || appMode)
+                                     && !Self.cine,
                                  cine: Self.cine,
                                  handle: handle)
                         .ignoresSafeArea()
