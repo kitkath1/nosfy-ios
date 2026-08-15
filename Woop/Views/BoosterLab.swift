@@ -494,6 +494,13 @@ struct BoosterLab: View {
     private static let open = CommandLine.arguments.contains("-boosterOpen")
     private static let cine = CommandLine.arguments.contains("-boosterCine")
 
+    /// LE MODE APP : le Sacre monté au-dessus du profil — galerie
+    /// forcée, pas de bouton rejouer, et l'envol REND la carte à l'hôte
+    /// (le raccord d'accueil : auto-scroll, descente, fumée).
+    var appMode = false
+    /// La rareté de la carte au moment où elle s'est envolée.
+    var onCarteEnvolee: ((String) -> Void)? = nil
+
     @StateObject private var handle = BoosterHandle()
     @State private var carteOpacity: Double = 0
     // ---- l'étage d'ENREGISTREMENT (post-sacre) ----
@@ -519,7 +526,8 @@ struct BoosterLab: View {
                     BoosterStage(still: Self.still, frozenTear: Self.tear,
                                  startOpen: Self.open, startDos: Self.dos,
                                  mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
-                                 gallery: Self.gallery, cine: Self.cine,
+                                 gallery: Self.gallery || appMode,
+                                 cine: Self.cine,
                                  handle: handle)
                         .ignoresSafeArea()
                         // Recognizers désactivés ≠ hit-test désactivé :
@@ -739,6 +747,8 @@ struct BoosterLab: View {
             // à volonté — indispensable depuis que le tap appartient à
             // CarteVivante après le raccord. Posé AU-DESSUS de tout
             // (l'overlay carte capte les touches sur toute sa frame).
+            // En mode app, pas de rejouer : l'envol rend la main.
+            if !appMode {
             VStack {
                 Spacer()
                 HStack {
@@ -761,6 +771,7 @@ struct BoosterLab: View {
                 }
             }
             .padding(.trailing, 6)
+            }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -772,6 +783,14 @@ struct BoosterLab: View {
                 .string(forKey: "boosterRarete") ?? "rare"
             handle.nouvelle = CommandLine.arguments
                 .contains("-boosterNouveau")
+            // En mode app, la nouveauté vient de la COLLECTION : le
+            // registre du Sacre dit vrai, pas un flag de banc.
+            if appMode {
+                handle.nouvelle = CollectionLune.shared
+                    .destination(rarete: handle.rarete,
+                                 famille: ArtDuSacre.famillePlaceholder)
+                    .nouvelle
+            }
         }
     }
 
@@ -790,6 +809,8 @@ struct BoosterLab: View {
             envolStart = nil
             envolY = 0
             envolArmed = false
+            // Le mode app rend la carte à l'hôte : l'accueil commence.
+            onCarteEnvolee?(handle.rarete)
         }
     }
 }

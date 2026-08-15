@@ -63,6 +63,20 @@ struct ProfilLuneView: View {
     /// L'anneau d'XP éphémère (tap sur le badge Level, lot C).
     @State private var anneau: CGFloat = 0
 
+    // ---- L'ACCUEIL DU SACRE (le raccord de la collection) ----
+    /// Le store v1 mémoire — Supabase se branchera AVEC Kathryn.
+    @StateObject private var collection = CollectionLune.shared
+    /// Le Sacre monté au-dessus de la page (notification du sheet).
+    @State private var sacreOuvert = false
+    /// L'arrivée : en attente (l'auto-scroll roule), puis en vol.
+    @State private var arriveeEnAttente: ArriveeCarte?
+    @State private var arriveeEnVol: ArriveeCarte?
+    @State private var arriveeBegan = Date()
+    @State private var fumeeBegan: Date?
+    @State private var fumeeCentre: CGPoint = .zero
+    /// La rangée qui s'avance pendant l'accueil (les autres s'assombrissent).
+    @State private var rangeeAvancee: String?
+
     /// L'apparition du blur : comme TOUS les headers Apple — dès que le
     /// contenu passe dessous, le verre est là (rampe courte de 26 pt).
     private var pli: CGFloat {
@@ -90,6 +104,7 @@ struct ProfilLuneView: View {
             ZStack(alignment: .top) {
                 ProfilFondNoir()
 
+                ScrollViewReader { deroulez in
                 ScrollView {
                     VStack(spacing: 0) {
                         banniere(geo)
@@ -123,6 +138,25 @@ struct ProfilLuneView: View {
                     min(g.contentOffset.y + g.contentInsets.top, 140)
                 } action: { _, y in
                     if abs(y - scrollY) > 0.25 { scrollY = y }
+                }
+                // L'ACCUEIL, temps 1 : la page défile d'elle-même vers
+                // le registre de la rareté, la rangée s'avance, puis la
+                // carte entre en descente (temps 2, la couche d'accueil).
+                .onChange(of: arriveeEnAttente) { _, a in
+                    guard let a else { return }
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        deroulez.scrollTo("registre-\(a.rarete)",
+                                          anchor: .center)
+                    }
+                    withAnimation(.easeOut(duration: 0.35).delay(0.5)) {
+                        rangeeAvancee = a.rarete
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+                        arriveeBegan = Date()
+                        arriveeEnVol = a
+                        arriveeEnAttente = nil
+                    }
+                }
                 }
 
                 // LE HEADER FONDU (verdict : « pas de blur dégueu avec
@@ -217,6 +251,97 @@ struct ProfilLuneView: View {
         .onAppear {
             if Self.reglagesNow { showReglages = true }
         }
+        // ---- L'ACCUEIL DU SACRE ----
+        // La couche d'accueil (voile, descente, bouffée) lit les ancres
+        // des slots posées par les registres.
+        .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
+            accueilCouche(anchors)
+        }
+        // Le sheet du booster géant publie l'ouverture ; le Sacre monte
+        // au-dessus de la page, en fondu.
+        .onReceive(NotificationCenter.default.publisher(
+            for: .init("woop.ouvrirCarrouselBoosters"))) { _ in
+            withAnimation(.easeInOut(duration: 0.35)) { sacreOuvert = true }
+        }
+        .overlay {
+            if sacreOuvert {
+                BoosterLab(appMode: true, onCarteEnvolee: { rarete in
+                    // L'envol accompli : le noir du Sacre FOND vers la
+                    // page, puis la carte redescend chez elle.
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        sacreOuvert = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        lancerAccueil(rarete: rarete)
+                    }
+                })
+                .transition(.opacity)
+            }
+        }
+        // Le banc de l'accueil : `-profilAccueil <rarete>` joue
+        // l'arrivée seule, sans cérémonie (boucle courte).
+        .task {
+            if let r = UserDefaults.standard.string(forKey: "profilAccueil") {
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                lancerAccueil(rarete: r)
+            }
+        }
+    }
+
+    /// L'accueil commandé (par l'envol du Sacre, ou le banc).
+    private func lancerAccueil(rarete: String) {
+        let d = collection.destination(rarete: rarete,
+                                       famille: ArtDuSacre.famillePlaceholder)
+        withAnimation(.easeInOut(duration: 0.3)) {
+            arriveeEnAttente = ArriveeCarte(
+                rarete: rarete, famille: ArtDuSacre.famillePlaceholder,
+                slot: d.slot, doublon: d.doublon, nouvelle: d.nouvelle)
+        }
+    }
+
+    /// La couche d'accueil : le voile, la DESCENTE (l'avion qui
+    /// atterrit), la bouffée du contact — au-dessus de toute la page.
+    @ViewBuilder
+    private func accueilCouche(_ anchors: [String: Anchor<CGRect>])
+        -> some View {
+        GeometryReader { g in
+            ZStack {
+                if arriveeEnVol != nil || arriveeEnAttente != nil {
+                    Color.black.opacity(0.22)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                }
+                if let a = arriveeEnVol,
+                   let anchor = anchors["\(a.rarete)-\(a.slot)"] {
+                    let cible = g[anchor]
+                    DescenteCarte(art: ArtDuSacre.art, cible: cible,
+                                  began: arriveeBegan) {
+                        // L'ATTERRISSAGE : la rangée se met à jour SOUS
+                        // la bouffée, le sertissage dans la paume, le
+                        // compteur tique.
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            collection.poser(rarete: a.rarete,
+                                             famille: a.famille,
+                                             art: ArtDuSacre.art)
+                        }
+                        fumeeCentre = CGPoint(x: cible.midX, y: cible.midY)
+                        fumeeBegan = Date()
+                        UIImpactFeedbackGenerator(style: .medium)
+                            .impactOccurred(intensity: 0.9)
+                        arriveeEnVol = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                            withAnimation(.easeOut(duration: 0.4)) {
+                                rangeeAvancee = nil
+                            }
+                        }
+                    }
+                }
+                if let fb = fumeeBegan {
+                    FumeeDArrivee(centre: fumeeCentre, began: fb)
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: L'identité — la bannière, KD à cheval, le nom, le trésor
@@ -509,16 +634,18 @@ struct ProfilLuneView: View {
     // MARK: Les quatre registres
 
     private static let registresProfil: [(nom: String, sous: String,
-                                          pips: Int, total: Int)] = [
-        ("Une Lune", "Normal", 1, 4),
-        ("Deux Lunes", "Plus rare", 2, 11),
-        ("Trois Lunes", "Très rare", 3, 4),
-        ("Quatre Lunes", "Légendaire", 4, 6),
+                                          pips: Int, total: Int,
+                                          cle: String)] = [
+        ("Une Lune", "Normal", 1, 4, "common"),
+        ("Deux Lunes", "Plus rare", 2, 11, "rare"),
+        ("Trois Lunes", "Très rare", 3, 4, "epic"),
+        ("Quatre Lunes", "Légendaire", 4, 6, "legendary"),
     ]
 
     private var registres: some View {
         VStack(spacing: 22) {
             ForEach(Self.registresProfil, id: \.nom) { reg in
+                let collectees = collection.collectees(reg.cle)
                 VStack(spacing: 12) {
                     HStack(spacing: 10) {
                         HStack(spacing: 2.5) {
@@ -538,28 +665,54 @@ struct ProfilLuneView: View {
                                 .foregroundStyle(Color.inkMuted)
                         }
                         Spacer()
-                        Text("0 / \(reg.total)")
+                        Text("\(collectees.count) / \(reg.total)")
                             .font(.inter(13, .semibold))
                             .monospacedDigit()
                             .foregroundStyle(Color.inkMuted)
+                            .contentTransition(.numericText())
                         Image(systemName: "chevron.right")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.inkMuted)
                     }
                     .padding(.horizontal, 20)
 
-                    // Les dos vides — plus tard, les collectées prendront
-                    // leur place (pastille ×N pour les doublons, tap → la
-                    // scène de résultat).
+                    // Les collectées d'abord (l'ordre d'obtention, la
+                    // pastille ×N pour les doublons), puis les dos vides
+                    // qui attendent. Chaque slot pose son ANCRE : la
+                    // descente d'accueil vise ces rectangles.
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(0..<reg.total, id: \.self) { _ in
+                            ForEach(Array(collectees.enumerated()),
+                                    id: \.element.id) { i, o in
+                                CarteCollectionnee(obtenue: o)
+                                    .anchorPreference(
+                                        key: SlotAnchorKey.self,
+                                        value: .bounds) {
+                                        ["\(reg.cle)-\(i)": $0]
+                                    }
+                            }
+                            ForEach(collectees.count ..< reg.total,
+                                    id: \.self) { i in
                                 DosVide(pips: reg.pips)
+                                    .anchorPreference(
+                                        key: SlotAnchorKey.self,
+                                        value: .bounds) {
+                                        ["\(reg.cle)-\(i)": $0]
+                                    }
                             }
                         }
                         .padding(.horizontal, 20)
                     }
                 }
+                .id("registre-\(reg.cle)")
+                // L'accueil : la rangée visée S'AVANCE, les autres
+                // s'assombrissent — la caméra pousse sans casser le
+                // layout.
+                .scaleEffect(rangeeAvancee == reg.cle ? 1.06 : 1)
+                .opacity(rangeeAvancee == nil || rangeeAvancee == reg.cle
+                    ? 1 : 0.55)
+                .animation(.easeInOut(duration: 0.35),
+                           value: rangeeAvancee)
             }
         }
     }
