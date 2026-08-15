@@ -599,6 +599,18 @@ struct BoosterStage: UIViewRepresentable {
         let tap = UITapGestureRecognizer(target: context.coordinator,
                                          action: #selector(Coordinator.tap(_:)))
         view.addGestureRecognizer(tap)
+        // LA CHARGE AU MAINTIEN : le doigt posé sans déchirer. Le pan
+        // garde la priorité (il convertit la charge en découpe) — le
+        // long-press n'avale rien.
+        let hold = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.hold(_:)))
+        hold.minimumPressDuration = 0.18
+        hold.cancelsTouchesInView = false
+        view.addGestureRecognizer(hold)
+        if CommandLine.arguments.contains("-boosterHoldDemo") {
+            context.coordinator.holdDemo()
+        }
         return view
     }
 
@@ -658,6 +670,118 @@ struct BoosterStage: UIViewRepresentable {
             inviteTimer?.invalidate()
             inviteTimer = nil
         }
+        // ---- LA CHARGE AU MAINTIEN (le doigt posé sans déchirer) ----
+        /// La lune monte en incandescence sous le doigt immobile ; le
+        /// relâcher est LE SOUPIR (tout redescend, rendu pas puni) ; la
+        /// déchirure qui démarre HÉRITE du plancher de charge.
+        private var holdLink: CADisplayLink?
+        private var holdCharge: Float = 0
+        private var holdReleasing = false
+        private var holdLast: CFTimeInterval = 0
+
+        @objc func hold(_ g: UILongPressGestureRecognizer) {
+            guard let view, let stage else { return }
+            switch g.state {
+            case .began:
+                guard mode == .idle, restingFront,
+                      stage.tearProgress == 0, holdLink == nil else { return }
+                let hits = view.hitTest(g.location(in: view),
+                                        options: [.ignoreHiddenNodes: true])
+                guard hits.contains(where: { $0.node === stage.bodyNode
+                        || $0.node === stage.capNode }) else { return }
+                startHold()
+            case .ended, .cancelled, .failed:
+                beginHoldRelease()
+            default:
+                break
+            }
+        }
+
+        func startHold() {
+            guard holdLink == nil else { return }
+            stopInvite()
+            holdReleasing = false
+            holdLast = CACurrentMediaTime()
+            haptics.bedStart()
+            let link = CADisplayLink(target: self,
+                                     selector: #selector(holdStep(_:)))
+            link.add(to: .main, forMode: .common)
+            holdLink = link
+        }
+
+        @objc private func holdStep(_ link: CADisplayLink) {
+            guard let stage else { stopHold(); return }
+            let now = CACurrentMediaTime()
+            let dt = Float(min(now - holdLast, 1.0 / 20))
+            holdLast = now
+            if holdReleasing {
+                holdCharge -= dt / 0.7
+                if holdCharge <= 0 { stopHold(); return }
+            } else {
+                let was = holdCharge
+                holdCharge = min(holdCharge + dt / 1.6, 1)
+                // Le plateau : un petit verrou dans la paume — elle est
+                // pleine, tu peux déchirer.
+                if was < 1, holdCharge >= 1 { haptics.lock() }
+            }
+            stage.setHoldCharge(CGFloat(holdCharge))
+            haptics.bedIntensity(holdReleasing
+                ? 0.18 * holdCharge
+                : 0.05 + 0.22 * holdCharge)
+        }
+
+        func beginHoldRelease() {
+            guard holdLink != nil, mode == .idle, !holdReleasing
+            else { return }
+            holdReleasing = true
+            haptics.exhale()
+        }
+
+        private func stopHold() {
+            holdLink?.invalidate()
+            holdLink = nil
+            holdCharge = 0
+            holdReleasing = false
+            stage?.setHoldCharge(0)
+            haptics.bedIntensity(0)
+            haptics.bedStop()
+            if mode == .idle { startInvite() }
+        }
+
+        /// La découpe prend le relais du maintien : le plancher de
+        /// charge passe à setTear (la lune ne retombe pas), la lèvre
+        /// rend l'antenne, le lit haptique reste à la main du geste.
+        private func adoptHoldIntoTear() {
+            guard holdLink != nil, let stage else { return }
+            stage.holdChargeFloor = CGFloat(0.55 * holdCharge)
+            holdLink?.invalidate()
+            holdLink = nil
+            holdReleasing = false
+            holdCharge = 0
+            for node in [stage.bodyNode, stage.capNode] {
+                node.geometry?.firstMaterial?
+                    .setValue(0.0 as CGFloat, forKey: "lipGlow")
+            }
+        }
+
+        /// Le banc filmé de la charge (`-boosterHoldDemo`) : maintien →
+        /// soupir → maintien → la découpe prend le relais (simctl ne
+        /// sait pas poser un doigt).
+        func holdDemo() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                [weak self] in self?.startHold()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.6) {
+                [weak self] in self?.beginHoldRelease()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.2) {
+                [weak self] in self?.startHold()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6.6) {
+                [weak self] in self?.autoCeremony(after: 0)
+            }
+        }
+
         /// Le geste en cours : écran → progression, calé au premier point.
         private var tearOriginX: CGFloat = 0
         private var tearSpanX: CGFloat = 1
@@ -1151,6 +1275,9 @@ struct BoosterStage: UIViewRepresentable {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
                 guard let self, let stage = self.stage, self.mode == .idle
                 else { return }
+                // Un maintien en cours passe le relais : la lune garde
+                // son plancher de charge.
+                self.adoptHoldIntoTear()
                 self.mode = .tearing
                 stage.dim(true)
                 if self.sfx == nil, !self.still { self.sfx = BoosterSFX() }
@@ -1256,6 +1383,9 @@ struct BoosterStage: UIViewRepresentable {
                 }
                 if let hit = packHit, restingFront,
                    hit.localCoordinates.y > stage.yTear - 0.07 {
+                    // Le doigt qui a CHARGÉ mord maintenant : la
+                    // découpe hérite du plancher de la lune.
+                    adoptHoldIntoTear()
                     mode = .tearing
                     // La course écran de la découpe : la largeur projetée du
                     // sachet à hauteur de la ligne — convertie DEPUIS le
