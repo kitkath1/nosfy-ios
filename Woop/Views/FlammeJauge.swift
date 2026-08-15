@@ -12,10 +12,37 @@ import SwiftUI
 /// SATURATION reste haute. Un orange qui perd sa saturation en s'assombrissant
 /// devient marron ; ici la rampe descend en TEINTE (or → orange → braise
 /// rouge), jamais en saturation.
-struct FlammeJauge: View {
+///
+/// LE DÉPLIEMENT (15-08) : la carte sait désormais S'OUVRIR — `ouverture`
+/// (0 bijou fermé → 1 carte plein écran) fait grossir le médaillon qui
+/// s'embrase, arrondit les coins au rayon des grandes cartes, et révèle
+/// `detail` (la liste des séries, chez la fiche exo) sous l'en-tête, dans
+/// la même coque. À 0, rien ne change : le bijou du banc est intact.
+struct FlammeJauge<Detail: View>: View {
     /// Séries validées (1…5). La jauge, le compte et les petites flammes
     /// suivent tous cette seule valeur.
     var done: Int
+
+    /// Le dépliement [0,1] — piloté par le scroll de la fiche exo. La
+    /// coque est une fonction pure de lui : remonter rembobine.
+    var ouverture: CGFloat = 0
+
+    /// L'air ajouté EN TÊTE quand la carte embarque le header de la
+    /// fiche : l'en-tête flamme vient se poser sous la ligne du chevron.
+    var garde: CGFloat = 0
+
+    /// LA CARTE EST EN COURSE (dépliement sous le doigt ou ressort).
+    /// Le bijou allège alors sa parure : ses bruits tombent à 30 img/s
+    /// (leur frémissement est invisible sur une carte qui bouge) et les
+    /// deux couches les plus chères — le GRAIN tuilé et la VEINE d'or en
+    /// dégradé angulaire, toutes deux en mode de fusion sur toute la
+    /// surface — s'éteignent. Un mouvement n'a pas besoin de détail, il a
+    /// besoin d'images.
+    var bouge: Bool = false
+
+    /// Ce qui vit dans la carte ouverte, sous l'en-tête. Le composant ne
+    /// sait rien de son contenu : il l'héberge dans sa coque et le clippe.
+    @ViewBuilder var detail: () -> Detail
 
     /// Cinq séries, gravées dans le marbre.
     private let total = 5
@@ -33,7 +60,7 @@ struct FlammeJauge: View {
     @State private var celebrateAt: Date?
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation(minimumInterval: bouge ? 1.0 / 30.0 : nil)) { context in
             let t = Float(context.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 3600))
             content(t: t, date: context.date)
@@ -64,35 +91,85 @@ struct FlammeJauge: View {
         }
     }
 
+    private static func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
+        let u = min(max((x - a) / (b - a), 0), 1)
+        return u * u * (3 - 2 * u)
+    }
+
     private func content(t: Float, date: Date) -> some View {
-        HStack(spacing: 14) {
-            FlammeMedaillon(t: t, date: date, celebrateAt: celebrateAt)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        titre
-                        Text("Touchez pour voir le détail")
-                            .font(.inter(12, .regular))
-                            .foregroundStyle(Color.white.opacity(0.48))
-                            .lineLimit(1)
-                            .allowsTightening(true)
-                            .minimumScaleFactor(0.85)
+        let o = Double(min(max(ouverture, 0), 1))
+        // L'ESSOR DU MÉDAILLON : il grossit À PEINE (×1,25 — « je veux
+        // pas que la flamme soit aussi grosse », 15-08) et S'OUVRE : le
+        // trait s'affine, la niche s'efface, la danse s'amplifie — tout
+        // vit dans le médaillon, porté par `essor`.
+        let essor = Self.sstep(0.06, 0.92, o)
+        let taille = 1 + 0.25 * CGFloat(essor)
+        // Les coins : bijou 26 fermé → la coque du profil ouverte (55 en
+        // haut, concentrique au châssis derrière le liseré de 5 pt ; 44
+        // en bas).
+        let rHaut = 26 + (55 - 26) * CGFloat(o)
+        let rBas = 26 + (44 - 26) * CGFloat(o)
+        let coque = UnevenRoundedRectangle(
+            topLeadingRadius: rHaut, bottomLeadingRadius: rBas,
+            bottomTrailingRadius: rBas, topTrailingRadius: rHaut,
+            style: .continuous)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 14 + 8 * CGFloat(essor)) {
+                FlammeMedaillon(t: t, date: date, celebrateAt: celebrateAt,
+                                essor: essor)
+                    // Le scale rend TOUT plus grand (lueurs et ombres
+                    // comprises) ; le frame donne la place — la ligne
+                    // s'écarte, rien ne se chevauche.
+                    .scaleEffect(taille)
+                    .frame(width: 58 * taille, height: 58 * taille)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .center, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            titre
+                            // L'invite meurt avec l'ouverture : le détail
+                            // est LÀ — et l'espace pris par le médaillon
+                            // la tronquerait de toute façon.
+                            Text("Touchez pour voir le détail")
+                                .font(.inter(12, .regular))
+                                .foregroundStyle(Color.white.opacity(0.48))
+                                .lineLimit(1)
+                                .allowsTightening(true)
+                                .minimumScaleFactor(0.85)
+                                .opacity(1 - min(1, essor * 2.2))
+                        }
+                        Spacer(minLength: 6)
+                        FlammesRow(done: shownDone, total: total, t: t,
+                                   date: date, igniteAt: igniteAt)
                     }
-                    Spacer(minLength: 6)
-                    FlammesRow(done: shownDone, total: total, t: t,
-                               date: date, igniteAt: igniteAt)
+                    JaugeBraise(done: done, total: total, t: t, date: date,
+                                surgeAt: surgeAt, surgeFrom: surgeFrom)
                 }
-                JaugeBraise(done: done, total: total, t: t, date: date,
-                            surgeAt: surgeAt, surgeFrom: surgeFrom)
             }
+            // Le contenu de la carte ouverte, sous l'en-tête — clippé par
+            // la coque pendant la croissance (les lignes naissent dedans).
+            // FERMÉE, il n'a AUCUNE place : invisible ne suffit pas, une
+            // opacité nulle garde sa hauteur et gonflerait le bijou.
+            // Il reste MONTÉ (hauteur nulle) — on ne monte rien en plein
+            // geste, la saccade a déjà été payée ailleurs.
+            detail()
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(height: o > 0.001 ? nil : 0, alignment: .top)
         }
         .padding(.leading, 14)
         .padding(.trailing, 16)
         .padding(.vertical, 15)
-        .background(carte(t: t, date: date))
+        // La garde : l'air du header embarqué — l'en-tête descend sous
+        // la ligne du chevron quand la carte prend l'écran.
+        .padding(.top, garde)
+        // Fermée : la taille naturelle du bijou, au pixel d'avant.
+        // En ouverture : la fiche impose le cadre, l'en-tête reste en tête.
+        .frame(maxWidth: .infinity,
+               maxHeight: o > 0.001 ? .infinity : nil,
+               alignment: .topLeading)
+        .background(carte(t: t, date: date, coque: coque))
         // Les lueurs vivent DANS le bijou : sans ce clip, l'ombre portée de
         // la braise fuyait sous la carte en une bande dorée.
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .clipShape(coque)
     }
 
     private var titre: some View {
@@ -116,7 +193,8 @@ struct FlammeJauge: View {
     /// mate, une vignette qui assoit le contenu, le sertissage — et la VEINE :
     /// un court arc de lumière qui circule sur la tranche, cadencé par le
     /// bruit, et qui fait un tour rapide quand une série se valide.
-    private func carte(t: Float, date: Date) -> some View {
+    private func carte(t: Float, date: Date,
+                       coque: UnevenRoundedRectangle) -> some View {
         let souffle = 0.72 + 0.28 * Double(JaugeVent.souffle(t))
         // La veine : sa position du moment, et sa célébration éventuelle.
         let lent = Double(t) * 0.048
@@ -132,7 +210,7 @@ struct FlammeJauge: View {
         }
         let veineAngle = angle
 
-        return RoundedRectangle(cornerRadius: 26, style: .continuous)
+        return coque
             .fill(LinearGradient(
                 stops: [
                     .init(color: Color(red: 0.102, green: 0.098, blue: 0.106), location: 0.0),
@@ -156,11 +234,17 @@ struct FlammeJauge: View {
             .overlay {
                 // Le grain : 2-3 %, invisible en tant que tel — mais sans lui
                 // l'aplat dégradé se lit « rendu logiciel », pas « matière ».
-                GrainTexture.tuile
-                    .resizable(resizingMode: .tile)
-                    .opacity(0.045)
-                    .blendMode(.overlay)
-                    .allowsHitTesting(false)
+                // Éteint EN COURSE : une tuile de 96 px fondue en `overlay`
+                // sur presque tout l'écran, redessinée à chaque image, est
+                // la couche la plus chère de la carte — et la moins
+                // regardée quand elle bouge.
+                if !bouge {
+                    GrainTexture.tuile
+                        .resizable(resizingMode: .tile)
+                        .opacity(0.045)
+                        .blendMode(.overlay)
+                        .allowsHitTesting(false)
+                }
             }
             .overlay {
                 // La vignette : les coins s'éteignent, le contenu s'assoit.
@@ -174,7 +258,7 @@ struct FlammeJauge: View {
             }
             .overlay {
                 // Le sertissage : la tranche prend la lumière en haut.
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                coque
                     .strokeBorder(LinearGradient(
                         stops: [
                             .init(color: Color.white.opacity(0.12), location: 0.0),
@@ -187,23 +271,35 @@ struct FlammeJauge: View {
                 // LA VEINE : l'arc d'or qui vit sur la tranche. Longues
                 // queues de fondu — dans les coins d'un rectangle arrondi la
                 // vitesse angulaire varie, et un arc court y sauterait.
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .strokeBorder(AngularGradient(
-                        stops: [
-                            .init(color: .clear, location: 0.0),
-                            .init(color: .clear, location: 0.36),
-                            .init(color: FlammePalette.or.opacity(0.25), location: 0.46),
-                            .init(color: FlammePalette.blanc.opacity(0.85), location: 0.50),
-                            .init(color: FlammePalette.or.opacity(0.25), location: 0.54),
-                            .init(color: .clear, location: 0.64),
-                            .init(color: .clear, location: 1.0),
-                        ],
-                        center: .center, angle: .degrees(veineAngle)),
-                        lineWidth: 1)
-                    .blendMode(.plusLighter)
-                    .opacity(veineOp)
+                // Éteinte EN COURSE : un dégradé angulaire recalculé sur
+                // tout le contour, en `plusLighter`, à chaque image.
+                if !bouge {
+                    coque
+                        .strokeBorder(AngularGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: .clear, location: 0.36),
+                                .init(color: FlammePalette.or.opacity(0.25), location: 0.46),
+                                .init(color: FlammePalette.blanc.opacity(0.85), location: 0.50),
+                                .init(color: FlammePalette.or.opacity(0.25), location: 0.54),
+                                .init(color: .clear, location: 0.64),
+                                .init(color: .clear, location: 1.0),
+                            ],
+                            center: .center, angle: .degrees(veineAngle)),
+                            lineWidth: 1)
+                        .blendMode(.plusLighter)
+                        .opacity(veineOp)
+                }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .clipShape(coque)
+    }
+}
+
+/// Le bijou nu du banc et des appels historiques : fermé, sans contenu.
+extension FlammeJauge where Detail == EmptyView {
+    init(done: Int, ouverture: CGFloat = 0) {
+        self.init(done: done, ouverture: ouverture,
+                  detail: { EmptyView() })
     }
 }
 
@@ -317,6 +413,10 @@ struct FlammeMedaillon: View {
     let t: Float
     let date: Date
     let celebrateAt: Date?
+    /// L'OUVERTURE de la carte [0,1] : le médaillon s'embrase en
+    /// grossissant — la même inspiration que la cérémonie, tenue tant que
+    /// la carte est dépliée (le « s'ouvre » du verdict du 15-08).
+    var essor: Double = 0
 
     /// L'inspiration de la cérémonie : attaque rapide, décrue longue.
     private var boost: Double {
@@ -331,10 +431,13 @@ struct FlammeMedaillon: View {
         let souffle = Double(JaugeVent.souffle(t))
         let vif = Double(JaugeVent.flicker(t))
         let derive = Double(JaugeVent.derive(t))
-        let b = boost
+        let b = min(1, boost + 0.55 * essor)
         ZStack {
             // La niche : le rond chaud que la flamme éclaire — comme la
             // référence, une simple pastille, à peine plus claire au cœur.
+            // Elle S'EFFACE à l'ouverture : en grand elle lisait
+            // « bouton » — la flamme fine doit vivre seule sur la carte,
+            // avec son aura (« pas assez premium », 15-08).
             Circle()
                 .fill(RadialGradient(
                     stops: [
@@ -344,6 +447,7 @@ struct FlammeMedaillon: View {
                     ],
                     center: UnitPoint(x: 0.5, y: 0.44),
                     startRadius: 0, endRadius: 34))
+                .opacity(1 - essor)
 
             // L'ambiance qui respire — et qui prend sa grande inspiration
             // quand une série se valide.
@@ -375,23 +479,41 @@ struct FlammeMedaillon: View {
                 .blendMode(.plusLighter)
 
             // Le contour : l'orange DOUX et quasi uniforme de la référence —
-            // pas de rampe or→braise qui fait bijou. Il danse, à peine.
-            Image(systemName: "flame")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(LinearGradient(
-                    stops: [
-                        .init(color: Color(red: 1.0, green: 0.66, blue: 0.34), location: 0.0),
-                        .init(color: Color(red: 0.99, green: 0.56, blue: 0.24), location: 1.0),
-                    ],
-                    startPoint: .top, endPoint: .bottom))
-                .opacity(0.90 + 0.10 * vif)
-                .shadow(color: FlammePalette.coeur.opacity(0.45 + 0.12 * vif), radius: 3.5)
-                .shadow(color: FlammePalette.braise.opacity(0.22 + 0.12 * souffle + 0.25 * b),
-                        radius: 8)
-                .rotationEffect(.degrees(1.3 * derive), anchor: .bottom)
+            // pas de rampe or→braise qui fait bijou. Fermé il danse à
+            // peine ; OUVERT le trait S'AFFINE (fondu croisé semibold →
+            // ultraLight, deux rendus montés en permanence — « épaisseur
+            // 1 px », 15-08) et la danse s'AMPLIFIE : penchement, souffle
+            // d'échelle — une flamme vivante, jamais un pictogramme figé.
+            ZStack {
+                contour(.semibold, vif: vif, souffle: souffle, b: b)
+                    .opacity(1 - essor)
+                contour(.ultraLight, vif: vif, souffle: souffle, b: b)
+                    .opacity(essor)
+            }
+            .rotationEffect(.degrees((1.3 + 4.5 * essor) * derive),
+                            anchor: .bottom)
+            .scaleEffect(1 + 0.05 * essor * souffle, anchor: .bottom)
         }
         .frame(width: 58, height: 58)
         .compositingGroup()
+    }
+
+    /// Le trait de la flamme, à la graisse demandée — la même lumière
+    /// pour les deux (le fondu croisé n'échange que l'épaisseur).
+    private func contour(_ poids: Font.Weight, vif: Double,
+                         souffle: Double, b: Double) -> some View {
+        Image(systemName: "flame")
+            .font(.system(size: 28, weight: poids))
+            .foregroundStyle(LinearGradient(
+                stops: [
+                    .init(color: Color(red: 1.0, green: 0.66, blue: 0.34), location: 0.0),
+                    .init(color: Color(red: 0.99, green: 0.56, blue: 0.24), location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom))
+            .opacity(0.90 + 0.10 * vif)
+            .shadow(color: FlammePalette.coeur.opacity(0.45 + 0.12 * vif), radius: 3.5)
+            .shadow(color: FlammePalette.braise.opacity(0.22 + 0.12 * souffle + 0.25 * b),
+                    radius: 8)
     }
 }
 

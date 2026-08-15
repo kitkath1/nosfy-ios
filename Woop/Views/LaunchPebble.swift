@@ -377,12 +377,18 @@ struct LaunchPebble: View {
             dust(w: w, H: H, D: D, squash: squash, cyD: cyD, t: t,
                  heat: heat, live: 1 - 0.9 * fv)
 
-            // L'invite, réduite à son geste : les deux chevrons seuls.
-            // (L'inscription « Glisser pour démarrer » est morte —
-            // « enlève », 14 août. Le `label` survit en accessibilité :
-            // le bouton du lecteur d'écran garde son nom.)
+            // L'invite : les deux chevrons, et l'inscription RESSUSCITÉE
+            // (« il manque le texte minimal », 15 août — elle était morte
+            // du 14). Minimale : l'encre discrète sous les chevrons, le
+            // nom du geste, rien d'autre.
             chevrons(t: t)
                 .position(x: w / 2, y: inkY + 30)
+                .opacity(inkFade)
+            Text(label)
+                .font(.inter(13, .medium))
+                .tracking(0.1)
+                .foregroundStyle(Color.black.opacity(0.34))
+                .position(x: w / 2, y: inkY + 57)
                 .opacity(inkFade)
         }
         .frame(width: w, height: H)

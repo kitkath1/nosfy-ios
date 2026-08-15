@@ -93,27 +93,45 @@ struct ExerciseDetailView: View {
     /// Le drag de retour en cours : son point de départ (y global).
     @State private var returnFrom: CGFloat?
 
-    // MARK: Le header qui se rétrécit
+    // MARK: Le dépliement de la carte des séries
 
-    /// L'offset du scroll de la page muscu — LE scalaire du header : toute
-    /// la partition du rétrécissement est fonction pure de lui, remonter
-    /// rembobine pixel pour pixel. Jamais un withAnimation.
-    @State private var scrollY: CGFloat = 0
-    /// La fenêtre visible du scroll (hors insets). Le contenu se garantit
-    /// toujours « une fenêtre + la course » de hauteur : une page courte
-    /// n'a sinon pas 140 pt à offrir, et l'élastique du système rouvre le
-    /// header au relâcher (payé : « je dois maintenir le drag »).
-    @State private var viewportH: CGFloat = 0
+    /// LE CURSEUR DE LA CARTE (0 fermée → 1 ouverte) — et c'est LUI le
+    /// moteur, pas le scroll. Trois essais ont échoué à faire TENIR la
+    /// carte tant que le scroll la pilotait : son élastique, son inertie
+    /// et son aimant reprennent toujours la main (« ça tient toujours
+    /// pas »). La grammaire est désormais celle, éprouvée, de la carte
+    /// dépliable du profil : un curseur à soi, un drag à soi, une butée
+    /// et un aimant à soi. Rien d'autre ne peut y toucher.
+    @State private var carteP: CGFloat = 0
+    /// Le p au début du geste — la carte se tire depuis n'importe où.
+    @State private var carteBase: CGFloat = 0
+    /// La prise en main : l'haptique une fois, et le geste qui vit.
+    @State private var carteSaisie = false
+    /// LA CARTE EN COURSE — vrai du premier point du doigt jusqu'à la fin
+    /// du ressort. Tout ce qui coûte cher et ne se voit pas en mouvement
+    /// s'efface tant qu'il est vrai : la parure du bijou, la cadence de
+    /// ses bruits, les écritures d'état par image. C'est LA réponse au
+    /// « pas hyper fluide » — un mouvement n'a pas besoin de détail, il a
+    /// besoin d'images.
+    @State private var carteBouge = false
+    /// Le jeton du retour au calme : seule la dernière course éteint la
+    /// lumière (deux gestes rapprochés ne se coupent pas l'herbe sous le
+    /// pied).
+    @State private var carteBougeJeton = 0
     /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
     /// la loi du zoom interne en a besoin, jamais pendant le scroll.
     @State private var heroAspect: CGFloat = 0.8
-    /// La main de l'aimant : commande les retours aux ancres.
-    @State private var headerScrollPos = ScrollPosition()
     /// La photo au repos : 225 (« réduis encore les images », 13 août) —
     /// c'était 285.
     private static let heroCap: CGFloat = 225
-    /// La course du rétrécissement, en points de scroll.
-    private static let collapseSpan: CGFloat = 140
+    /// La course du geste, en points de scroll. 140 au temps de la
+    /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
+    /// plus long — la croissance se savoure sous le doigt.
+    private static let collapseSpan: CGFloat = 220
+    /// La hauteur du bijou fermé — mesurée au premier layout (la valeur
+    /// de départ n'est qu'une estimation raisonnable) : c'est la base du
+    /// lerp de croissance de la carte.
+    @State private var carteFermeeH: CGFloat = 89
     /// La place réservée en tête du scroll (photo + titre étendus) : FIXE.
     /// Le header se dessine en OVERLAY au-dessus — un inset qui changerait
     /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
@@ -121,8 +139,8 @@ struct ExerciseDetailView: View {
     /// 118 : le bloc titre en consomme ~96 — le reste est l'air entre le
     /// sous-titre et la flamme (« espace plus », 14 août).
     private static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
-    /// `-headerFreeze <y>` : fige l'offset vu par le header (le simulateur
-    /// ne scrolle pas) — les poses du morphing se capturent.
+    /// `-headerFreeze <y>` : fige la course vue par le header (le
+    /// simulateur ne drague pas) — les poses du dépliement se capturent.
     private static let headerFreeze: CGFloat? = {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "-headerFreeze"),
@@ -130,7 +148,12 @@ struct ExerciseDetailView: View {
               let v = Double(args[i + 1]) else { return nil }
         return CGFloat(v)
     }()
-    private var headerY: CGFloat { Self.headerFreeze ?? scrollY }
+    /// La course en points — la partition du header et de la carte n'a pas
+    /// changé de langue : elle lit toujours des points, le curseur les lui
+    /// fournit.
+    private var headerY: CGFloat {
+        Self.headerFreeze ?? carteP * Self.collapseSpan
+    }
 
     private static func lp(_ a: CGFloat, _ b: CGFloat,
                            _ u: Double) -> CGFloat {
@@ -215,6 +238,36 @@ struct ExerciseDetailView: View {
     /// jamais déclencher ; `-aubeFire` joue UNE traversée complète (aube →
     /// pose de la lentille → retour à la nuit) ; `-aubeFreeze <u>` fige la
     /// course à u ∈ [0,1] pour les captures. Sans argument : inertes.
+    /// `-carteAuto` rejoue la course de la carte EN BOUCLE, exactement
+    /// comme un doigt : `carteP` écrit à chaque image, sans animation —
+    /// c'est le seul régime où le corps de la page se réévalue à chaque
+    /// frame (un `withAnimation`, lui, ne l'évalue qu'UNE fois et anime
+    /// le rendu : il ne mesure rien). La cadence se compte au film.
+    private static let carteAuto = CommandLine.arguments.contains("-carteAuto")
+    /// `-carteLourd` : la course SANS les allègements (parure et cadence
+    /// pleines) — le témoin de l'A/B, la seule façon de prouver que les
+    /// allègements servent à quelque chose sur une machine chargée.
+    private static let carteLourd =
+        CommandLine.arguments.contains("-carteLourd")
+
+    private func runCarteBench() async {
+        guard Self.carteAuto else { return }
+        try? await Task.sleep(for: .seconds(2))
+        carteBouge = true
+        let t0 = Date()
+        while !Task.isCancelled {
+            let ph = Date().timeIntervalSince(t0)
+                .truncatingRemainder(dividingBy: 3.6)
+            let u: Double
+            if ph < 1.5 { u = ph / 1.5 }
+            else if ph < 1.9 { u = 1 }
+            else if ph < 3.4 { u = 1 - (ph - 1.9) / 1.5 }
+            else { u = 0 }
+            carteP = CGFloat(u * u * (3 - 2 * u))
+            try? await Task.sleep(for: .milliseconds(8))
+        }
+    }
+
     private static let aubeAuto = CommandLine.arguments.contains("-aubeAuto")
     private static let aubeFire = CommandLine.arguments.contains("-aubeFire")
     private static let aubeFreeze: Double? = {
@@ -397,11 +450,11 @@ struct ExerciseDetailView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
             }
-            // LA CARTE-NOTIFICATION + sa vignette — AU-DESSUS de la
-            // lumière : le verre reste intact (le sandwich de la maison :
-            // glow < carte de verre), et la vignette recadrée y est nette.
-            .overlay(alignment: .top) {
-                if isStrength { collapsingHeaderFront }
+            // LA CARTE DES SÉRIES — AU-DESSUS de la lumière (le sandwich
+            // de la maison : glow < carte), sourde au doigt : le scroll
+            // du dessous est le geste, le tap vit dans le flux.
+            .overlay(alignment: .topLeading) {
+                if isStrength { carteSeries }
             }
             // La taille pour le banc — JAMAIS une géométrie d'avant le
             // premier layout (le zéro faisait le NaN ci-dessus).
@@ -450,7 +503,7 @@ struct ExerciseDetailView: View {
                         // Le lecteur (`WorkoutPill`) est retiré du décor
                         // pour l'instant — il reviendra, décision à venir.
                         LaunchPebble(
-                            label: "Glisser pour démarrer",
+                            label: "Lancer l'exercice",
                             flood: $flood,
                             asleep: running != nil,
                             onDrive: { p, vy in driveMoved(p, vy) },
@@ -471,6 +524,7 @@ struct ExerciseDetailView: View {
         // zoomé, nets pendant que la page plonge.
         .scaleEffect(dive, anchor: UnitPoint(x: 0.5, y: 0.84))
         .task { await runAubeBench() }
+        .task { await runCarteBench() }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.
         .navigationBarBackButtonHidden(true)
@@ -626,118 +680,113 @@ struct ExerciseDetailView: View {
 
     // MARK: Les deux corps de page
 
-    /// LA MUSCULATION DÉFILE DÉSORMAIS — et son header SE RÉTRÉCIT. La
-    /// photo et le titre ne vivent plus dans le flux : ils sont dessinés
-    /// par `collapsingHeader` en overlay, au-dessus du scroll, et le flux
-    /// ne fait que leur RÉSERVER une place fixe en tête. Au scroll, la
-    /// photo se réduit en vignette dans une petite carte de verre
-    /// (« notification »), le titre s'y condense, et l'historique des
-    /// séries monte dessous. Le galet, lui, ne bouge pas du bas.
+    /// LA MUSCULATION NE DÉFILE PLUS — et c'est la réponse au « ça tient
+    /// toujours pas ». Le ScrollView ne servait qu'à piloter la carte (son
+    /// flux est vide : l'historique vit DANS la carte) et c'est lui qui la
+    /// reprenait sans cesse — élastique, inertie, aimant d'ancres. La page
+    /// est désormais POSÉE, et la carte a son geste à elle, celui de la
+    /// bannière du profil : prise directe, butée douce, aimant au lâcher.
+    /// Rien ne peut plus la déloger.
+    ///
+    /// La photo, le titre et la carte sont dessinés en OVERLAY au-dessus
+    /// (tout est fonction pure de `carteP`) ; ici ne vit que la surface du
+    /// geste et le relais du tap.
     private var strengthPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // La place du header étendu — FIXE : le header se dessine
-                // au-dessus et se rétrécit sans que rien ne re-layoute.
-                // Coupée en deux pour porter LES ANCRES de l'aimant : le
-                // scrollTo par ancre est sourd aux insets — aucun repère
-                // à convertir, le système aligne l'ancre sous les chips.
-                Color.clear.frame(height: Self.collapseSpan)
-                    .id(Self.snapOpenID)
-                Color.clear.frame(height: Self.expandedHeader
-                                          - Self.collapseSpan)
-                    .id(Self.snapCollapsedID)
-                // LA FLAMME-JAUGE (le composant de la session parallèle,
-                // commité d75cf88) tient désormais la place de l'ancienne
-                // carte Séries — même verre, même rôle, sa vie à elle.
-                FlammeJauge(done: sets.filter(\.isDone).count)
-                    .padding(.horizontal, 20)
-                    // La cible des pièces : la carte se déclare en global,
-                    // la volée sait où se poser — même en plein scroll.
-                    .background {
-                        GeometryReader { p in
-                            Color.clear
-                                .onAppear {
-                                    seriesCardFrame = p.frame(in: .global)
-                                }
-                                .onChange(of: p.frame(in: .global)) { _, f in
-                                    seriesCardFrame = f
-                                }
-                        }
-                    }
-                    .padding(.top, 4)
-                historySection
-                Color.clear.frame(height: 30)
-            }
-            // LA COURSE GARANTIE : le repos à 140 doit être une position
-            // LÉGITIME du scroll — sinon, avec une série ou deux, le
-            // contenu ne dépasse la fenêtre que de quelques points et le
-            // ressort du système rembobine tout le morphing au relâcher.
-            .frame(minHeight: viewportH > 0
-                       ? viewportH + Self.collapseSpan : nil,
-                   alignment: .top)
-        }
-        .scrollIndicators(.hidden)
-        .scrollPosition($headerScrollPos)
-        // UNE SEULE sonde pour l'offset ET la fenêtre — la leçon payée :
-        // une sonde séparée qui renvoie une CONSTANTE (la fenêtre) ne
-        // change jamais, donc ne rappelle jamais — viewportH restait à 0
-        // et la course garantie n'existait pas (« toujours pas », 14-08).
-        // Ici l'offset change à chaque frame et emporte la fenêtre.
-        .onScrollGeometryChange(for: ScrollProbe.self) { geo in
-            ScrollProbe(
-                y: geo.contentOffset.y + geo.contentInsets.top,
-                vh: geo.containerSize.height - geo.contentInsets.top
-                    - geo.contentInsets.bottom)
-        } action: { _, p in
-            scrollY = max(0, p.y)
-            if abs(viewportH - p.vh) > 0.5 { viewportH = p.vh }
-        }
-        // L'AIMANT : jamais de repos à mi-morphing. Au premier repos
-        // naturel dans la zone, on rejoint l'ancre la plus proche — par
-        // ANCRE, pas par offset : aucun repère d'inset à deviner.
-        .onScrollPhaseChange { _, phase in
-            guard phase == .idle,
-                  scrollY > 2, scrollY < Self.collapseSpan - 2
-            else { return }
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
-                headerScrollPos.scrollTo(
-                    id: scrollY > Self.collapseSpan * 0.5
-                        ? Self.snapCollapsedID : Self.snapOpenID,
-                    anchor: .top)
-            }
+        ZStack(alignment: .top) {
+            // LA SURFACE DU GESTE — TOUT L'ÉCRAN, zone sûre comprise.
+            // PIÈGE PAYÉ : posée dans la zone sûre, elle laissait une
+            // BANDE MORTE de ~100 pt sous la barre de statut — or la
+            // carte ouverte, elle, monte jusqu'au châssis : on posait le
+            // doigt sur sa tête (l'endroit même où l'on attrape une
+            // bannière pour la refermer) et rien ne se passait. Les chips
+            // et le galet sont dessinés PAR-DESSUS (ce sont des
+            // `safeAreaInset`) : leurs touchers gagnent, et le galet
+            // garde son drag de lancement intact.
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(carteDrag)
+                .ignoresSafeArea()
+            // Le RELAIS DU TAP, à la place fermée de la carte :
+            // « Touchez pour voir le détail » ouvre — le même chemin
+            // que le doigt.
+            Color.clear
+                .frame(height: carteFermeeH + 8)
+                .contentShape(Rectangle())
+                .offset(y: Self.expandedHeader + 4)
+                .onTapGesture { dock(true) }
+                .allowsHitTesting(carteP <= 0.02)
         }
     }
 
-    /// La sonde du scroll — les deux nombres dans UNE valeur : l'offset
-    /// (la partition du header) et la fenêtre visible (la course
-    /// garantie).
-    private struct ScrollProbe: Equatable {
-        var y: CGFloat
-        var vh: CGFloat
-    }
-    private static let snapOpenID = "headerSnapOpen"
-    private static let snapCollapsedID = "headerSnapClosed"
-
-    /// L'HISTORIQUE DES SÉRIES — les lignes de la story 2, adoptées par la
-    /// fiche : faites en or et pièces, à venir en encre éteinte.
-    private var historySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // (Le libellé « HISTORIQUE DES SÉRIES » est mort — « enlève »,
-            // 14 août : les lignes se présentent seules.)
-            Color.clear.frame(height: 16)
-            ForEach(Array(sets.enumerated()), id: \.element.id) { i, s in
-                SetHistoryRow(rank: i + 1,
-                              reps: s.reps,
-                              kilos: s.weight,
-                              seconds: s.isDone ? s.durationSeconds
-                                                : restSeconds,
-                              done: s.isDone)
+    /// LE GESTE DE LA CARTE — la grammaire de la bannière du profil,
+    /// retournée (ici on TIRE VERS LE HAUT pour ouvrir) : la course en
+    /// prise directe 1:1, la butée douce au-delà de l'ouvert, et l'aimant
+    /// au lâcher sur l'intention prédite. L'haptique : prise medium au
+    /// décollage, coup FERME au dock ouvert, medium au retour.
+    private var carteDrag: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { v in
+                if !carteSaisie {
+                    // Un geste LATÉRAL n'est pas le nôtre : sans ce
+                    // filtre d'axe, un balayage horizontal (le réflexe du
+                    // retour par le bord) armait la carte et rendait deux
+                    // coups d'haptique pour rien.
+                    if abs(v.translation.height)
+                        <= abs(v.translation.width) { return }
+                    // Un geste qui DESCEND sur la carte fermée n'a rien à
+                    // ouvrir : il meurt (rien à tirer vers le bas ici).
+                    if carteP < 0.5, v.translation.height > 0 { return }
+                    carteSaisie = true
+                    carteBase = carteP
+                    // La course s'ouvre AVANT le premier déplacement : les
+                    // lignes se montent ici, sur une carte immobile — le
+                    // hoquet d'un montage en plein vol est évité.
+                    carteBouge = true
+                    carteBougeJeton += 1
+                    UIImpactFeedbackGenerator(style: .medium)
+                        .impactOccurred(intensity: 0.8)
+                }
+                // Vers le HAUT = ouvrir : la translation est négative.
+                let brut = carteBase - v.translation.height
+                    / Self.collapseSpan
+                carteP = brut <= 1 ? max(0, brut)
+                                   : 1 + (brut - 1) * 0.12
             }
-            // (L'état vide ne dit plus rien — l'invite, c'est le galet
-            // et ses chevrons, pas une phrase.)
-        }
-        .padding(.horizontal, 20)
+            .onEnded { v in
+                guard carteSaisie else { return }
+                carteSaisie = false
+                let pred = carteBase - v.predictedEndTranslation.height
+                    / Self.collapseSpan
+                // GÉNÉREUX à l'ouverture (un élan suffit), FRANC à la
+                // fermeture (la carte ne se referme pas par accident) —
+                // la loi exacte du dépliement profil.
+                dock(carteBase < 0.5 ? pred > 0.28 : pred > 0.55)
+            }
     }
+
+    /// LE DOCK : la carte s'installe, ouverte ou fermée. Les deux chemins
+    /// (le drag, le tap) y passent — une seule loi d'installation, et une
+    /// seule chose à écrire : le curseur. Il n'y a plus rien d'autre à
+    /// tenir.
+    private func dock(_ ouvre: Bool) {
+        UIImpactFeedbackGenerator(style: ouvre ? .heavy : .medium)
+            .impactOccurred(intensity: ouvre ? 0.9 : 0.75)
+        // Le ressort fait encore partie de la COURSE : la parure ne
+        // revient qu'une fois la carte posée (sinon le détail se rallume
+        // en plein vol — le pire moment).
+        carteBouge = true
+        carteBougeJeton += 1
+        let jeton = carteBougeJeton
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
+            carteP = ouvre ? 1 : 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+            if carteBougeJeton == jeton, !carteSaisie { carteBouge = false }
+        }
+    }
+
+    // (L'historique du flux est mort le 15-08 : les lignes vivent
+    // désormais DANS la carte des séries — voir `listeSeries`.)
 
     /// Le cardio garde sa page qui défile et ses blocs sombres : le dôme blanc
     /// est le système de la musculation — il rejoindra le reste quand le
@@ -765,29 +814,21 @@ struct ExerciseDetailView: View {
 
     // MARK: Le header qui se rétrécit
 
-    /// La ligne specs de la carte-notification : « 24 kg • 12 reps ».
-    private var headerSpecs: String {
-        let reps = sets.first?.reps ?? 12
-        let kg = sets.first?.weight ?? 20
-        let kgText = kg == kg.rounded()
-            ? String(Int(kg)) : String(format: "%.1f", kg)
-        return "\(kgText) kg • \(reps) reps"
-    }
-
-    /// LE HEADER QUI SE RÉTRÉCIT — en DEUX couches, et c'est structurel :
-    /// la photo entière et le grand titre vivent SOUS la lumière additive
-    /// (le fond noir opaque de la photo doit recevoir la lumière, pas la
-    /// poinçonner) ; la carte-notification et sa vignette recadrée vivent
-    /// AU-DESSUS (le verre reste intact). Le fondu croisé fit→fills fait
-    /// le pont entre les deux couches sans que l'œil le voie.
+    /// LE HEADER AU SCROLL — depuis le 15-08 : la photo et le grand titre
+    /// vivent SOUS la lumière additive (le fond noir opaque de la photo
+    /// doit recevoir la lumière, pas la poinçonner) et S'ÉTEIGNENT pendant
+    /// que la carte des séries, AU-DESSUS de la lumière, prend l'écran.
+    /// (La vignette-notification et son morphing fit→fills sont morts —
+    /// « la vignette meurt » ; git les garde, cfe08e1/db029cd.)
     ///
     /// Tout est fonction pure de `headerY` — remonter rembobine pixel pour
     /// pixel, aucun withAnimation. La grammaire est celle de StoryPortal :
     /// UN scalaire interpole position, taille ET rayon. (Jamais de
     /// matchedGeometryEffect — la maison anime à la main.)
 
-    /// Les nombres partagés de la partition — UNE seule loi pour les deux
-    /// couches (l'obligation des lois accordées, l'école ExercisesView).
+    /// Les nombres de la pose de la photo — la partition ne sert plus que
+    /// le REPOS (y = 0) : le pipeline .fill au zoom fitZ, l'école « le
+    /// fond de la photo est le noir de la page ».
     private struct HeaderPose {
         let u: Double
         let pw: CGFloat, ph: CGFloat, px: CGFloat, rad: CGFloat
@@ -867,88 +908,153 @@ struct ExerciseDetailView: View {
     /// La couche ARRIÈRE : photo + grand titre, sous la lumière. TOUT
     /// reste monté en permanence — l'opacité seule joue (un montage à
     /// mi-course décode l'image sous le doigt : la saccade payée).
+    ///
+    /// LA VIGNETTE EST MORTE (verdict du 15-08 : « la vignette meurt ») :
+    /// la photo ne morphe plus vers la carte-notification — elle garde sa
+    /// pose du repos (`HeaderPose` à y = 0) et S'ÉTEINT tôt pendant que la
+    /// carte des séries monte la recouvrir. Remonter la rallume, pixel
+    /// pour pixel.
     private var collapsingHeaderBack: some View {
         GeometryReader { g in
-            let p = HeaderPose(W: g.size.width, y: headerY,
-                               aspect: heroAspect)
+            let u = Self.sstep(0, Double(Self.collapseSpan),
+                               Double(headerY))
+            let p = HeaderPose(W: g.size.width, y: 0, aspect: heroAspect)
             ZStack(alignment: .topLeading) {
+                // Le titre meurt le premier : la carte passe sur sa zone
+                // dès le début de la course.
                 titleBlock(big: true)
                     .padding(.horizontal, 20)
                     .offset(y: Self.lp(12 + Self.heroCap + 8,
-                                       12 + Self.heroCap - 18, p.u))
-                    .opacity(p.bigOut)
+                                       12 + Self.heroCap - 22, u))
+                    .opacity(1 - Self.sstep(0.03, 0.32, u))
+                // La photo s'éteint en dérivant à peine vers le haut —
+                // une sortie, pas un morphing.
                 morphPhoto(p)
-                    .offset(x: p.px, y: 12)
-                    .opacity(1 - p.swap)
+                    .offset(x: p.px, y: Self.lp(12, -8, u))
+                    .opacity(1 - Self.sstep(0.06, 0.46, u))
             }
         }
         .allowsHitTesting(false)
     }
 
-    /// La couche AVANT : la carte-notification et sa vignette, sur la
-    /// lumière — le verre exact de la maison.
-    private var collapsingHeaderFront: some View {
-        GeometryReader { g in
-            let W = g.size.width
-            let p = HeaderPose(W: W, y: headerY, aspect: heroAspect)
-            ZStack(alignment: .topLeading) {
-                HStack(spacing: 12) {
-                    // La place de la vignette : la photo la survole.
-                    Color.clear.frame(width: 54, height: 54)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(exercise.name)
-                            .font(.inter(16, .semibold))
-                            .foregroundStyle(Color.inkPrimary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        Text(headerSpecs)
-                            .font(.inter(12))
-                            .foregroundStyle(Color.inkMuted)
-                    }
-                    Spacer(minLength: 8)
-                    let earned = sets.filter(\.isDone).count
-                        * CoffreFortPurse.perSeries
-                    if earned > 0 {
-                        HStack(spacing: 5) {
-                            Text("+\(earned)")
-                                .font(.inter(14, .semibold))
-                                .foregroundStyle(Color.woopGold.opacity(0.92))
-                                .monospacedDigit()
-                            // La pièce GELÉE de la maison — la recette de
-                            // la story, au néon baissé.
-                            MoonCoinView(coinR: 13, draggable: false,
-                                         yawOverride: 0.34, idleLife: 0,
-                                         fps: 6, reveal: 0.34, matte: 1)
-                                .frame(width: 13 * MoonCoinView.hostScale,
-                                       height: 13 * MoonCoinView.hostScale)
-                                .frame(width: 28, height: 28)
-                        }
-                    }
-                }
-                .padding(.leading, 8)
-                .padding(.trailing, 14)
-                .frame(width: W - 40, height: 66)
-                .background {
-                    Color.clear.glassEffect(
-                        .regular.tint(Color.black.opacity(0.5)),
-                        in: RoundedRectangle(cornerRadius: 22,
-                                             style: .continuous))
-                }
-                .overlay(RoundedRectangle(cornerRadius: 22,
-                                          style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
-                .opacity(p.cardIn)
-                .offset(x: 20, y: 6)
+    // MARK: La carte des séries qui prend l'écran
 
-                // La MÊME photo que la couche arrière, pixel pour pixel —
-                // montée en permanence : le passage de couche est un pur
-                // fondu d'opacité entre deux rendus identiques.
-                morphPhoto(p)
-                    .offset(x: p.px, y: 12)
-                    .opacity(p.swap)
+    /// LA CARTE DES SÉRIES (le geste du 15-08) : le scroll vers le haut la
+    /// fait GROSSIR depuis sa place de bijou jusqu'à presque tout l'écran
+    /// — bord haut juste sous le chevron (elle s'incruste dans la zone du
+    /// header, dont la photo s'est éteinte), bord bas juste au-dessus du
+    /// galet. Dedans : le médaillon s'ouvre en grossissant, et la liste
+    /// des séries naît sous l'en-tête. Fonction pure de `headerY` — le
+    /// scroll vers le bas rembobine tout, et l'aimant par ancres (déjà là)
+    /// garantit tout ouvert ou tout fermé, jamais entre les deux.
+    ///
+    /// Sourde au doigt : le geste appartient au ScrollView du dessous, le
+    /// tap au relais du flux — une carte qui prendrait le toucher tuerait
+    /// le scroll qui la referme.
+    private var carteSeries: some View {
+        GeometryReader { g in
+            let u = Self.sstep(0, Double(Self.collapseSpan),
+                               Double(headerY))
+            // La distance au bord PHYSIQUE de l'écran (l'overlay naît
+            // sous les chips) — mesurée, jamais devinée.
+            let cime = g.frame(in: .global).minY
+            // Fermée : la place du bijou dans le flux (padding 20, sous
+            // la réserve du header). Ouverte : la carte EMBARQUE le
+            // header — bord physique moins le liseré de nuit de 5 pt (la
+            // grammaire de la bannière profil), le chevron reste posé
+            // dessus ; le bas s'arrête au-dessus du galet.
+            let x = Self.lp(20, 5, u)
+            let y = Self.lp(Self.expandedHeader + 4, 5 - cime, u)
+            let h = Self.lp(carteFermeeH,
+                            g.size.height - 15 + cime, u)
+            FlammeJauge(done: sets.filter(\.isDone).count,
+                        ouverture: CGFloat(u),
+                        // La GARDE : dans la carte ouverte, l'en-tête se
+                        // pose JUSTE SOUS la ligne du chevron, jamais
+                        // dessous elle.
+                        garde: CGFloat(u) * max(0, cime - 16),
+                        // EN COURSE : le bijou allège sa parure (voir
+                        // FlammeJauge) — la fluidité prime sur des
+                        // détails que l'œil ne voit pas en mouvement.
+                        bouge: carteBouge && !Self.carteLourd) {
+                // Les lignes sont posées à la largeur de la carte
+                // OUVERTE, une fois pour toutes : sinon les cinq lignes
+                // (et leurs textes) se REMESURENT à chaque image pendant
+                // que la carte s'élargit — c'est la moitié du coût.
+                listeSeries(u: u, largeur: g.size.width - 40)
             }
+            // Au repos, la hauteur reste NATURELLE (le bijou au pixel
+            // d'avant) et se MESURE — c'est la base du lerp ; imposée au
+            // repos, la mesure se mordrait la queue.
+            .frame(width: g.size.width - 2 * x,
+                   height: u > 0.0005 ? h : nil)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height }
+                action: { nh in
+                    if !carteBouge, headerY < 0.5,
+                       abs(nh - carteFermeeH) > 0.5 {
+                        carteFermeeH = nh
+                    }
+                }
+            // La cible des pièces : la carte se déclare en global, la
+            // volée sait où se poser — ouverte comme fermée. JAMAIS
+            // pendant la course : une écriture d'état par image
+            // rejouerait tout le corps de la page une SECONDE fois par
+            // frame (le double coût, invisible mais mortel).
+            .background {
+                GeometryReader { p in
+                    Color.clear
+                        .onAppear {
+                            seriesCardFrame = p.frame(in: .global)
+                        }
+                        .onChange(of: p.frame(in: .global)) { _, f in
+                            if !carteBouge { seriesCardFrame = f }
+                        }
+                }
+            }
+            .offset(x: x, y: y)
         }
         .allowsHitTesting(false)
+    }
+
+    /// La liste des séries, née DANS la carte ouverte : les faites en or
+    /// et pièces, les cinq places restantes en encre éteinte (« à
+    /// venir ») — les lignes de la story, celles de l'ancien historique.
+    private func listeSeries(u: Double, largeur: CGFloat) -> some View {
+        // La naissance : les lignes n'existent que dans la carte déjà
+        // grande — elles montent d'un souffle en s'allumant.
+        let naissance = Self.sstep(0.45, 0.92, u)
+        // AU REPOS, LES LIGNES N'EXISTENT PAS : cinq lignes montées sous
+        // une carte fermée coûtent leur mise en page à chaque image. Elles
+        // naissent à la PRISE du doigt — avant le moindre mouvement, donc
+        // sans le hoquet d'un montage en plein geste (la leçon payée).
+        return VStack(spacing: 10) {
+            if carteBouge || u > 0.001 {
+                ForEach(0..<max(sets.count, 5), id: \.self) { i in
+                    if i < sets.count {
+                        SetHistoryRow(rank: i + 1,
+                                      reps: sets[i].reps,
+                                      kilos: sets[i].weight,
+                                      seconds: sets[i].isDone
+                                          ? sets[i].durationSeconds
+                                          : restSeconds,
+                                      done: sets[i].isDone)
+                    } else {
+                        SetHistoryRow(rank: i + 1,
+                                      reps: sets.last?.reps ?? 12,
+                                      kilos: sets.last?.weight ?? 20,
+                                      seconds: restSeconds,
+                                      done: false)
+                    }
+                }
+            }
+        }
+        // La largeur de la carte OUVERTE, gelée : les lignes ne se
+        // remesurent plus pendant que la coque s'élargit (les 16 pt
+        // rognés à droite en début de course sont sous l'opacité).
+        .frame(width: largeur, alignment: .topLeading)
+        .padding(.top, 18)
+        .opacity(naissance)
+        .offset(y: 14 * (1 - naissance))
     }
 
     // MARK: En-tête
@@ -1109,7 +1215,25 @@ struct ExerciseDetailView: View {
     /// Le geste de lancement. La page part de zéro série : la première naît
     /// ici, et chaque relance en crée une nouvelle quand les précédentes sont
     /// faites — on ne règle plus AVANT, on fait, et la carte compte.
+    /// LA CARTE SE RANGE — et c'est vital : ouverte, elle couvre l'écran,
+    /// et rien ne la refermait quand une série partait. La plongée, la
+    /// lentille et la page BRAVO se seraient jouées DERRIÈRE elle. Tout
+    /// départ de série passe donc ici d'abord.
+    private func rangeCarte() {
+        carteSaisie = false
+        carteBougeJeton += 1
+        guard carteP > 0.001 else { carteBouge = false; return }
+        let jeton = carteBougeJeton
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) {
+            carteP = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.54) {
+            if carteBougeJeton == jeton { carteBouge = false }
+        }
+    }
+
     private func launch() {
+        rangeCarte()
         let index: Int
         let appended: Bool
         if let pending = sets.firstIndex(where: { !$0.isDone }) {
@@ -1325,6 +1449,7 @@ struct ExerciseDetailView: View {
     /// s'éclaire en fondu, et c'est LUI qui compte 3-2-1 avant de lancer
     /// le temps (l'allumage du repos, rebranché sur l'effort).
     private func launchPosed() {
+        rangeCarte()
         let index: Int
         let appended: Bool
         if let pending = sets.firstIndex(where: { !$0.isDone }) {
