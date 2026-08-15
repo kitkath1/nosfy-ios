@@ -656,7 +656,10 @@ final class BoosterScene {
 
         scene.lightingEnvironment.contents = Self.hdrStudio ?? Self.studioEnvironment()
         scene.lightingEnvironment.intensity = 1.0
-        scene.background.contents = UIColor.black
+        // Fond TRANSPARENT (15-08, page profil : le sachet flotte nu sur
+        // la page — l'éclairage vient de lightingEnvironment, pas d'ici ;
+        // les bancs posent leur propre noir derrière).
+        scene.background.contents = UIColor.clear
         print("[booster-bench] lune: geo=\(moonGlowNode.geometry != nil) op=\(moonGlowNode.opacity)")
         print("[booster-bench] scène : mylar=\(mylar) env=\(Self.hdrStudio?.lastPathComponent ?? "FALLBACK 8 bits") emission=\(bodyNode.geometry?.firstMaterial?.emission.intensity ?? -1)")
 

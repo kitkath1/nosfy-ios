@@ -493,11 +493,21 @@ struct BoosterLab: View {
         .string(forKey: "boosterYaw").flatMap(Float.init)
     private static let open = CommandLine.arguments.contains("-boosterOpen")
     private static let cine = CommandLine.arguments.contains("-boosterCine")
+    /// `-boosterEnvol` : la carte s'envole seule après le registre — le
+    /// balayage est le seul geste qu'un film au simulateur ne sait pas
+    /// jouer, et sans lui la chaîne s'arrête juste avant l'accueil.
+    private static let envolAuto = CommandLine.arguments
+        .contains("-boosterEnvol")
 
     /// LE MODE APP : le Sacre monté au-dessus du profil — galerie
     /// forcée, pas de bouton rejouer, et l'envol REND la carte à l'hôte
     /// (le raccord d'accueil : auto-scroll, descente, fumée).
     var appMode = false
+    /// LE CHEVRON DE SORTIE — il rend la main à la HOME depuis les deux
+    /// escales où l'on a le droit de partir : le MANÈGE (avant
+    /// l'engagement) et le RÉSULTAT (la carte posée). Jamais pendant la
+    /// cérémonie : une fois l'ouverture lancée, la séquence va au bout.
+    var onRetourHome: (() -> Void)? = nil
     /// La rareté de la carte au moment où elle s'est envolée.
     var onCarteEnvolee: ((String) -> Void)? = nil
 
@@ -779,6 +789,26 @@ struct BoosterLab: View {
             }
             .padding(.trailing, 6)
             }
+
+            // LE CHEVRON DE SORTIE — le composant de la maison, à sa
+            // place canonique : `RangeeChips` le pose exactement où il
+            // vit sur la fiche d'exercice et sur la page profil, et il
+            // ne bouge JAMAIS d'une page à l'autre.
+            //
+            // Il n'existe qu'aux DEUX escales où l'on a le droit de
+            // partir — le MANÈGE qui tourne encore, et le RÉSULTAT posé.
+            // Pendant la cérémonie il n'est même pas dans l'arbre : rien
+            // à interrompre, et pas un chip de verre à échantillonner
+            // au-dessus de la scène pendant la découpe.
+            if let onRetourHome, handle.auManege || handle.revealed {
+                VStack(spacing: 0) {
+                    RangeeChips(retour: onRetourHome) { EmptyView() }
+                    Spacer(minLength: 0)
+                }
+                .opacity(chevronVisible ? 1 : 0)
+                .allowsHitTesting(chevronVisible)
+                .animation(.easeInOut(duration: 0.28), value: chevronVisible)
+            }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -799,6 +829,29 @@ struct BoosterLab: View {
                     .nouvelle
             }
         }
+        // LE BANC DE LA CHAÎNE ENTIÈRE (`-boosterEnvol`) : le balayage
+        // est le seul geste que le film ne peut pas jouer tout seul. Ici
+        // la carte part d'elle-même une fois le registre écrit — de la
+        // pop-up à la carte posée dans la collection, sans un doigt.
+        .onChange(of: handle.revealed) { _, ouvert in
+            guard ouvert, Self.envolAuto, envolStart == nil else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+                guard handle.revealed, !handle.flown,
+                      envolStart == nil else { return }
+                envoler()
+            }
+        }
+    }
+
+    /// La sortie est-elle offerte ? Au manège tant qu'aucun sachet n'est
+    /// engagé ; au résultat tant que la carte n'est ni en plongée (elle
+    /// règne seule), ni tirée, ni en vol.
+    private var chevronVisible: Bool {
+        if handle.revealed {
+            return !handle.flown && !carteEnPlongee
+                && envolStart == nil && envolY <= 0
+        }
+        return handle.auManege
     }
 
     /// L'ENVOL-AVION : la carte part SEULE (le registre s'est déjà
@@ -827,6 +880,10 @@ struct BoosterLab: View {
 /// scène une fois l'overlay opaque.
 final class BoosterHandle: ObservableObject {
     @Published var revealed = false
+    /// LE MANÈGE TOURNE ENCORE : le sachet n'est pas engagé, donc le
+    /// chevron de sortie a le droit d'exister. Il meurt à l'engagement
+    /// (`commitGallery`) et renaît au retour à l'anneau (`backOutGallery`).
+    @Published var auManege = false
     /// L'ENVOL accompli : la carte est partie vers la collection —
     /// l'écran noir tient, et attend le raccord (la page profil, l'autre
     /// chantier).
@@ -1121,7 +1178,9 @@ struct BoosterStage: UIViewRepresentable {
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
-        view.backgroundColor = .black
+        // Transparent (15-08) : le sachet vit aussi hors des bancs — sur
+        // la page profil, il émerge du sol sans boîte noire.
+        view.backgroundColor = .clear
         view.antialiasingMode = .multisampling4X
         view.preferredFramesPerSecond = 60
         view.isPlaying = true
@@ -1131,6 +1190,9 @@ struct BoosterStage: UIViewRepresentable {
                                    gallery: gallery)
         context.coordinator.handle = handle
         handle?.coordinator = context.coordinator
+        // La poignée arrive APRÈS `attach` : le `didSet` du mode a déjà
+        // parlé dans le vide, on lui redonne l'état de départ à la main.
+        context.coordinator.publishManege()
         if cine {
             context.coordinator.autoCeremony(after: 1.4)
         }
@@ -1182,7 +1244,17 @@ struct BoosterStage: UIViewRepresentable {
             case placing, galleryIdle, galleryScrub, galleryFly, ringSpin
             case committing, maybeBack, backingOut
         }
-        private var mode: Mode = .idle
+        private var mode: Mode = .idle {
+            didSet {
+                // LE CHEVRON DE SORTIE N'EXISTE QU'AU MANÈGE. Il meurt à
+                // l'engagement du sachet — une fois l'ouverture lancée, la
+                // séquence va au bout : on n'interrompt pas un sacre — et
+                // il renaît si la main ressort à l'anneau.
+                let au = mode == .galleryIdle || mode == .galleryScrub
+                    || mode == .galleryFly || mode == .ringSpin
+                if handle?.auManege != au { handle?.auManege = au }
+            }
+        }
         /// Les mains et l'oreille du manège.
         private let haptics = BoosterHaptics()
         private var ambience: BoosterAmbience?
@@ -1437,6 +1509,15 @@ struct BoosterStage: UIViewRepresentable {
                 mode = .idle
                 if !still { startInvite() }
             }
+        }
+
+        /// Republie l'état « au manège » vers la poignée — elle est
+        /// branchée APRÈS `attach`, donc le premier `didSet` du mode
+        /// a parlé dans le vide.
+        func publishManege() {
+            let au = mode == .galleryIdle || mode == .galleryScrub
+                || mode == .galleryFly || mode == .ringSpin
+            handle?.auManege = au
         }
 
         private func startGalleryGyro() {

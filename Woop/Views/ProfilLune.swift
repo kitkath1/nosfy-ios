@@ -66,8 +66,6 @@ struct ProfilLuneView: View {
     // ---- L'ACCUEIL DU SACRE (le raccord de la collection) ----
     /// Le store v1 mémoire — Supabase se branchera AVEC Kathryn.
     @StateObject private var collection = CollectionLune.shared
-    /// Le Sacre monté au-dessus de la page (notification du sheet).
-    @State private var sacreOuvert = false
     /// L'arrivée : en attente (l'auto-scroll roule), puis en vol.
     @State private var arriveeEnAttente: ArriveeCarte?
     @State private var arriveeEnVol: ArriveeCarte?
@@ -261,6 +259,16 @@ struct ProfilLuneView: View {
         }
         .onAppear {
             if Self.reglagesNow { showReglages = true }
+            // LE FILET DE L'ONGLET PARESSEUX : quand l'envol bascule sur
+            // le profil, la page n'existe pas encore — la demande a donc
+            // été posée avant que quiconque écoute. On la relit à la
+            // naissance, et on laisse la page se poser avant l'accueil.
+            if let r = SacreEtat.shared.arriveeDemandee {
+                SacreEtat.shared.arriveeDemandee = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    lancerAccueil(rarete: r)
+                }
+            }
         }
         // ---- L'ACCUEIL DU SACRE ----
         // La couche d'accueil (voile, descente, bouffée) lit les ancres
@@ -268,41 +276,29 @@ struct ProfilLuneView: View {
         .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
             accueilCouche(anchors)
         }
-        // Le sheet du booster géant publie l'ouverture ; le Sacre monte
-        // au-dessus de la page, en fondu.
-        .onReceive(NotificationCenter.default.publisher(
-            for: .init("woop.ouvrirCarrouselBoosters"))) { _ in
-            withAnimation(.easeInOut(duration: 0.35)) { sacreOuvert = true }
-        }
-        .overlay {
-            if sacreOuvert {
-                BoosterLab(appMode: true, onCarteEnvolee: { rarete in
-                    // L'envol accompli : le noir du Sacre FOND vers la
-                    // page, puis la carte redescend chez elle.
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        sacreOuvert = false
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        lancerAccueil(rarete: rarete)
-                    }
-                })
-                .transition(.opacity)
-            }
+        // LE SACRE A DÉMÉNAGÉ À LA RACINE (`WoopApp.mainBody`). Monté
+        // ici, il vivait SOUS la barre bijou — on pouvait changer
+        // d'onglet en pleine cérémonie — et il n'existait qu'une fois la
+        // page profil construite : le premier « Ouvrir un Booster »
+        // depuis la home ne faisait rien. La page ne garde que
+        // l'ACCUEIL : elle écoute la rareté que l'envol lui adresse.
+        .onChange(of: SacreEtat.shared.arriveeDemandee) { _, r in
+            guard let r else { return }
+            SacreEtat.shared.arriveeDemandee = nil
+            lancerAccueil(rarete: r)
         }
         // Les bancs de l'accueil :
         //   `-profilAccueil <rarete>` joue l'ARRIVÉE seule (boucle
         //     courte : descente, fumée, éclat, compteur) ;
-        //   `-profilSacre` ouvre LE FLOW COMPLET — le Sacre monte
-        //     au-dessus du profil comme si le sheet l'avait publié
-        //     (avec `-boosterCine`, la cérémonie se joue seule jusqu'à
-        //     l'étage d'enregistrement ; il ne reste qu'à balayer vers
-        //     le haut pour voir l'envol et l'accueil).
+        //   `-profilSacre` ouvre LE FLOW COMPLET — le Sacre monte à la
+        //     RACINE comme si la pop-up l'avait demandé (avec
+        //     `-boosterCine`, la cérémonie se joue seule jusqu'à l'étage
+        //     d'enregistrement ; il ne reste qu'à balayer vers le haut
+        //     pour voir l'envol et l'accueil).
         .task {
             if CommandLine.arguments.contains("-profilSacre") {
                 try? await Task.sleep(nanoseconds: 700_000_000)
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    sacreOuvert = true
-                }
+                SacreEtat.shared.ouvrirManege()
             }
             if let r = UserDefaults.standard.string(forKey: "profilAccueil") {
                 try? await Task.sleep(nanoseconds: 1_400_000_000)
@@ -436,10 +432,27 @@ struct ProfilLuneView: View {
                     .allowsHitTesting(false))
             .overlay(coque
                 .strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
+            // LES DEUX PASTILLES, CÔTE À CÔTE : les pièces et — quand il
+            // y en a — les boosters qui attendent. La pill booster est LA
+            // RÉCUPÉRATION du parcours : dire « Plus tard » à la pop-up
+            // ne perd jamais un sachet, on revient le chercher ici, et
+            // elle ouvre le Manège DIRECTEMENT (pas de détour).
             .overlay(alignment: .bottomTrailing) {
-                pastillePieces
-                    .padding(.trailing, 14)
-                    .padding(.bottom, 14)
+                HStack(spacing: 8) {
+                    if SacreEtat.shared.boostersEnAttente > 0 {
+                        PillBooster(
+                            nombre: SacreEtat.shared.boostersEnAttente) {
+                            SacreEtat.shared.ouvrirManege()
+                        }
+                        .transition(.scale(scale: 0.7)
+                            .combined(with: .opacity))
+                    }
+                    pastillePieces
+                }
+                .animation(.spring(response: 0.42, dampingFraction: 0.8),
+                           value: SacreEtat.shared.boostersEnAttente)
+                .padding(.trailing, 14)
+                .padding(.bottom, 14)
             }
             // L'identité au centre de la carte ouverte — le SLOT du
             // futur contenu vivra dessous (« plus tard on mettra des
@@ -754,9 +767,8 @@ struct ProfilLuneView: View {
 /// TIRE vers le haut : passé le seuil — ou d'un geste vif — le sheet de
 /// verre s'ouvre et le sachet SAUTE dans son en-tête (UNE seule vue qui
 /// voyage, la leçon morphPhoto). « Utiliser 20 pièces pour ouvrir un
-/// booster ? » — Oui part vers le carrousel (la session booster écoute
-/// la notification `woop.ouvrirCarrouselBoosters`) ; sinon l'overlay
-/// descend et le sachet RESAUTILLE à sa place (ressort + haptique).
+/// booster ? » — Oui ouvre le Manège à la racine (`SacreEtat`) ; sinon
+/// l'overlay descend et le sachet RESAUTILLE (ressort + haptique).
 /// `-profilTirage` ouvre le sheet au lancement (captures).
 struct TirageBooster: View {
     var pieces: Int
@@ -1078,11 +1090,10 @@ struct TirageBooster: View {
                 // maison en secondaire.
                 DiamondPrimaryButton(title: "OUVRIR",
                                      smokeWarmth: 0.6) {
-                    // Le carrousel appartient à la session booster : elle
-                    // écoute cette notification et prend la main.
-                    NotificationCenter.default.post(
-                        name: .init("woop.ouvrirCarrouselBoosters"),
-                        object: nil)
+                    // Le Manège se monte à la RACINE : on pose l'état
+                    // partagé, personne n'a besoin d'écouter (la leçon
+                    // de l'onglet paresseux — cf. `BoosterPopup.swift`).
+                    SacreEtat.shared.ouvrirManege()
                     fermer()
                 }
                 .disabled(manque > 0)

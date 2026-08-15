@@ -248,6 +248,30 @@ struct HomeAuroraView: View {
 
             Spacer(minLength: 8)
 
+            // LE BOUTON D'ESSAI DU PARCOURS BOOSTER — temporaire, et
+            // assumé. La pop-up viendra de la FIN DE SÉANCE (le
+            // « Terminer » d'`ActiveWorkoutView`), mais ce flow-là n'est
+            // pas validé : on teste la chaîne bouton par bouton (home →
+            // pop-up → manège → cérémonie → profil). À retirer au
+            // branchement. Le parcours : `tools/sacre/PARCOURS-BOOSTER.md`.
+            Button { SacreEtat.shared.proposer() } label: {
+                SachetVignette(largeur: 16, hauteur: 28)
+                    .frame(width: 44, height: 44)
+                    .background {
+                        Color.clear.glassEffect(
+                            .regular.tint(Color.black.opacity(0.5))
+                                .interactive(),
+                            in: RoundedRectangle(cornerRadius: 15,
+                                                 style: .continuous))
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 15,
+                                              style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.08),
+                                      lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Essai : proposer un booster")
+
             CoffreFortCoinButton(onPress: chestTouched, action: openCoffreFort)
         }
         .padding(.top, 14)

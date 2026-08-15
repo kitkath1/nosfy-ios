@@ -189,6 +189,11 @@ struct RootView: View {
         return WoopTab(rawValue: raw) ?? .home
     }()
 
+    /// LE PARCOURS BOOSTER — l'état partagé, lu ici parce que le Manège
+    /// se monte à la racine (voir `BoosterPopup.swift` : un onglet
+    /// construit paresseusement n'entend aucune notification).
+    private let sacre = SacreEtat.shared
+
     /// L'entraînement ouvert, s'il y en a un.
     @Query(filter: #Predicate<Workout> { $0.endedAt == nil },
            sort: \Workout.startedAt, order: .reverse)
@@ -558,6 +563,57 @@ struct RootView: View {
             }
             }
 
+            // ---- LE PARCOURS BOOSTER, MONTÉ À LA RACINE ----
+            // La pop-up et le Manège vivent AU-DESSUS du TabView et de la
+            // barre bijou : on ouvre un booster depuis la home SANS passer
+            // par l'onglet profil (le flow reste celui d'où on vient), et
+            // la barre ne peut plus voler un onglet en pleine cérémonie.
+            // Le pourquoi de l'état partagé plutôt que d'une notification
+            // est écrit en tête de `BoosterPopup.swift` : un onglet non
+            // encore construit n'écoute personne.
+            if sacre.popupOuverte {
+                BoosterPopup(onOuvrir: { sacre.ouvrirManege() },
+                             onFermer: {
+                                 withAnimation(.easeOut(duration: 0.24)) {
+                                     sacre.popupOuverte = false
+                                 }
+                             })
+                    .transition(.opacity)
+                    .zIndex(6)
+            }
+            if sacre.manegeOuvert {
+                BoosterLab(appMode: true,
+                           // Le chevron de la maison, aux deux escales du
+                           // Sacre (le manège, le résultat) : il rend la
+                           // main à la HOME, jamais à la page d'où l'on
+                           // vient — c'est la sortie du parcours.
+                           onRetourHome: {
+                               sacre.fermerManege()
+                               withAnimation(.easeOut(duration: 0.3)) {
+                                   selection = .home
+                               }
+                           },
+                           onCarteEnvolee: { rarete in
+                               // L'envol accompli : le noir du Sacre
+                               // s'efface, l'onglet profil prend la main,
+                               // PUIS la carte redescend chez elle — la
+                               // page doit exister pour entendre l'arrivée
+                               // (et son `onAppear` la relit en filet).
+                               withAnimation(.easeOut(duration: 0.4)) {
+                                   sacre.manegeOuvert = false
+                               }
+                               sacre.boostersEnAttente =
+                                   max(0, sacre.boostersEnAttente - 1)
+                               selection = .profile
+                               DispatchQueue.main.asyncAfter(
+                                   deadline: .now() + 0.45) {
+                                   sacre.arriveeDemandee = rarete
+                               }
+                           })
+                    .transition(.opacity)
+                    .zIndex(7)
+            }
+
             if showAuth {
                 // Le socle noir reste en place pendant tout le tuilage
                 // splash → auth : jamais un pixel de la home ne transparaît.
@@ -610,6 +666,24 @@ struct RootView: View {
                 }
                 .transition(.opacity)
                 .zIndex(10)
+            }
+        }
+        // Les bancs du parcours booster :
+        //   `-boosterPopup` propose la pop-up au lancement (elle se juge
+        //     seule, sans traverser l'app) ;
+        //   `-boosterManege` ouvre directement le Manège à la racine.
+        // La chaîne réelle se teste, elle, bouton par bouton depuis la
+        // home (`tools/sacre/PARCOURS-BOOSTER.md`).
+        // `id:` et non un `.task` nu : au premier passage le splash tient
+        // encore l'écran — sans la clé, le banc ne se rejouerait jamais.
+        .task(id: showSplash || showAuth) {
+            guard !showSplash, !showAuth else { return }
+            if CommandLine.arguments.contains("-boosterPopup") {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                sacre.proposer()
+            } else if CommandLine.arguments.contains("-boosterManege") {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                sacre.ouvrirManege()
             }
         }
         // Live Activity : une séance restée ouverte retrouve son île au
