@@ -167,6 +167,92 @@ final class BoosterHaptics {
             try? player.start(atTime: CHHapticTimeImmediate)
         }
     }
+
+    /// LE DOUBLE COUP DE LA RUPTURE : l'impact GRAVE dans l'os (le
+    /// RRRIP), un grondement bref, et le claquement SEC 40 ms derrière
+    /// — la bande qui cède en deux temps, calée sur le clac cuit dans
+    /// `dechirure-finale`.
+    func ripThunk() {
+        guard let engine else {
+            fallbackHeavy.impactOccurred()
+            return
+        }
+        revive()
+        let deep = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            .init(parameterID: .hapticIntensity, value: 1.0),
+            .init(parameterID: .hapticSharpness, value: 0.12),
+        ], relativeTime: 0)
+        let rumble = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            .init(parameterID: .hapticIntensity, value: 0.8),
+            .init(parameterID: .hapticSharpness, value: 0.15),
+        ], relativeTime: 0.005, duration: 0.16)
+        let clac = CHHapticEvent(eventType: .hapticTransient, parameters: [
+            .init(parameterID: .hapticIntensity, value: 1.0),
+            .init(parameterID: .hapticSharpness, value: 1.0),
+        ], relativeTime: 0.04)
+        let dying = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [.init(relativeTime: 0, value: 1.0),
+                            .init(relativeTime: 0.16, value: 0.0)],
+            relativeTime: 0)
+        if let p = try? CHHapticPattern(events: [deep, rumble, clac],
+                                        parameterCurves: [dying]),
+           let player = try? engine.makePlayer(with: p) {
+            try? player.start(atTime: CHHapticTimeImmediate)
+        }
+    }
+
+    /// Le RAIDISSEMENT avant qu'un pop ne cède : 70 ms de tension
+    /// sourde — la main sent que ça va lâcher AVANT que ça lâche.
+    func stiffen() {
+        guard let engine else { return }
+        revive()
+        let ev = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            .init(parameterID: .hapticIntensity, value: 0.32),
+            .init(parameterID: .hapticSharpness, value: 0.18),
+        ], relativeTime: 0, duration: 0.07)
+        if let p = try? CHHapticPattern(events: [ev], parameters: []),
+           let player = try? engine.makePlayer(with: p) {
+            try? player.start(atTime: CHHapticTimeImmediate)
+        }
+    }
+
+    /// LE CLIC DE SERTISSAGE : la carte qui se clipse dans son cadre —
+    /// un seul tap ferme et MAT (netteté basse : le feutre, pas le
+    /// verre).
+    func seatClick() {
+        if engine != nil { transient(0.8, 0.28) }
+        else { fallback.impactOccurred(intensity: 0.8) }
+    }
+
+    /// Le DÉCALAGE de netteté du lit (additif, −1…1) : le souffle qui
+    /// s'assombrit vers le grave pendant la chute du sachet.
+    func bedSharpness(_ shift: Float) {
+        try? bed?.sendParameters([
+            .init(parameterID: .hapticSharpnessControl,
+                  value: min(max(shift, -1), 1), relativeTime: 0),
+        ], atTime: CHHapticTimeImmediate)
+    }
+
+    /// LE SOUPIR du sachet relâché sans déchirure : une détente douce
+    /// qui retombe — l'anticipation rendue, pas punie.
+    func exhale() {
+        guard let engine else { return }
+        revive()
+        let ev = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            .init(parameterID: .hapticIntensity, value: 0.3),
+            .init(parameterID: .hapticSharpness, value: 0.08),
+        ], relativeTime: 0, duration: 0.5)
+        let fall = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: [.init(relativeTime: 0, value: 1.0),
+                            .init(relativeTime: 0.5, value: 0.0)],
+            relativeTime: 0)
+        if let p = try? CHHapticPattern(events: [ev], parameterCurves: [fall]),
+           let player = try? engine.makePlayer(with: p) {
+            try? player.start(atTime: CHHapticTimeImmediate)
+        }
+    }
 }
 
 // MARK: - L'oreille du flux booster
