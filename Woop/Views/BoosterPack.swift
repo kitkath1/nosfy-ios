@@ -296,6 +296,9 @@ enum BoosterShader {
 final class BoosterScene {
     let scene = SCNScene()
     let packNode = SCNNode()
+    /// Le tell des rares (`-boosterShiny`) — la cérémonie sait qu'une
+    /// carte rare dort dedans avant même le premier geste.
+    static let shinyTell = CommandLine.arguments.contains("-boosterShiny")
     /// LE BERCEAU : le nœud qui porte TOUTE la respiration (bob, sway,
     /// tremblement de découpe), PRÈS DE L'IDENTITÉ. Jamais d'animation
     /// ni d'écriture d'euler sur le pack au lacet π : à lacet π la
@@ -398,6 +401,23 @@ final class BoosterScene {
         capNode = SCNNode(geometry: mesh.geometry.copy() as? SCNGeometry)
         capNode.geometry?.materials = [material(modifier: BoosterShader.cap,
                                                 geometry: BoosterShader.capGeometry)]
+        // LE TELL DES CARTES RARES (`-boosterShiny`, en attendant la
+        // rareté servie par la forge) : avant même le doigt, la fente
+        // FUIT de la lumière — le fil d'or de la lèvre pulse lentement.
+        // Le joueur SAIT qu'il se passe quelque chose, sans un mot d'UI.
+        if Self.shinyTell {
+            for node in [bodyNode, capNode] {
+                guard let m = node.geometry?.firstMaterial else { continue }
+                let leak = CABasicAnimation(keyPath: "lipGlow")
+                leak.fromValue = 0.10
+                leak.toValue = 0.52
+                leak.duration = 2.2
+                leak.autoreverses = true
+                leak.repeatCount = .infinity
+                leak.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                m.addAnimation(leak, forKey: "shinyLeak")
+            }
+        }
         // Les réglages du rouleau (banc : -boosterCurlR / -boosterCurlK /
         // -boosterFlutter / -boosterFlutterW / -boosterCurlDir).
         // curlDir −1 = vers la caméra (à trancher à la capture — le piège
@@ -473,6 +493,9 @@ final class BoosterScene {
         accents = Self.makeSmokeVeil()
         sparkNode.addParticleSystem(sparks)
         sparkNode.addParticleSystem(accents)
+        // Le tell des rares, troisième voix : quelques poussières de
+        // diamant s'échappent de la fente close — ça fuit.
+        if Self.shinyTell { sparks.birthRate = 1.2 }
         sparkNode.position = SCNVector3(0, yTear + 0.01, -0.07)
         // LA PERLE DE DÉCOUPE : la bille incandescente qui suit le doigt
         // — c'est ELLE qui coupe. Billboard additif, pulsation rapide,
@@ -653,17 +676,20 @@ final class BoosterScene {
         // Sur le BERCEAU, jamais sur le pack : autour de l'identité la
         // décomposition d'euler est stable, l'animation de composante et
         // son blend-out sont sains.
+        // Le tell des rares : la respiration s'amplifie (×1,5) — le
+        // sachet est habité, la main le sent avant l'œil.
+        let amp: Double = Self.shinyTell ? 1.5 : 1.0
         let bob = CABasicAnimation(keyPath: "position.y")
-        bob.fromValue = -0.012
-        bob.toValue = 0.012
+        bob.fromValue = -0.012 * amp
+        bob.toValue = 0.012 * amp
         bob.duration = 2.8
         bob.autoreverses = true
         bob.repeatCount = .infinity
         bob.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         swayNode.addAnimation(bob, forKey: "bob")
         let sway = CABasicAnimation(keyPath: "eulerAngles.z")
-        sway.fromValue = -0.022
-        sway.toValue = 0.022
+        sway.fromValue = -0.022 * amp
+        sway.toValue = 0.022 * amp
         sway.duration = 3.7
         sway.autoreverses = true
         sway.repeatCount = .infinity
