@@ -1453,7 +1453,8 @@ struct DosVide: View {
         // MINIATURE une fois pour toutes : 25 dos qui compressent chacun
         // le PNG de 1024×1536 à 80 pt à chaque composition, c'était le
         // scroll qui rame — on rend à 2× la taille d'affichage, fini.
-        let taille = CGSize(width: 160, height: 160 * 1672.0 / 941.0)
+        let taille = CGSize(width: GabaritCarte.largeur * 2,
+                            height: GabaritCarte.hauteur * 2)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 2
         let mini = UIGraphicsImageRenderer(size: taille, format: format)
@@ -1478,33 +1479,34 @@ struct DosVide: View {
             ZStack {
                 Self.dos
                     .resizable()
-                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .aspectRatio(GabaritCarte.ratio, contentMode: .fill)
                     .saturation(0.05)
                     .brightness(-0.015)
                 Self.dos
                     .resizable()
-                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .aspectRatio(GabaritCarte.ratio, contentMode: .fill)
                     .opacity(allume)
                 Self.dos
                     .resizable()
-                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .aspectRatio(GabaritCarte.ratio, contentMode: .fill)
                     .blendMode(.screen)
                     .opacity(0.55 * allume)
                 Self.dos
                     .resizable()
-                    .aspectRatio(941.0 / 1672.0, contentMode: .fit)
+                    .aspectRatio(GabaritCarte.ratio, contentMode: .fill)
                     .blur(radius: 5)
                     .blendMode(.screen)
                     .opacity(0.5 * allume)
             }
-            // Le dos RESPIRE dans son gabarit (2,5 pt d'air) : la petite
-            // lune du coin gauche ne touche plus le rayon — elle était
-            // coupée (verdict).
-            .padding(2.5)
-            // Gabarit explicite (quatre dos par rangée) + le rayon de
-            // 8 pt demandé. (Plus de lunes sous les dos.)
-            .frame(width: 80, height: 80 * 1672.0 / 941.0)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            // LE GABARIT PARTAGÉ : un dos vide et une carte posée sont
+            // le même objet à l'écran — même largeur, même hauteur, même
+            // rayon, même place. (Le padding d'air a été retiré : le PNG
+            // a des coins carrés, c'est le clip qui fait l'arrondi — en
+            // rétrécissant l'image il tuait les coins ET faisait dépasser
+            // les cartes posées.)
+            .frame(width: GabaritCarte.largeur, height: GabaritCarte.hauteur)
+            .clipShape(RoundedRectangle(cornerRadius: GabaritCarte.rayon,
+                                        style: .continuous))
             .scaleEffect(1 + 0.035 * pulse)
         }
         .buttonStyle(.plain)

@@ -12,6 +12,37 @@ import SwiftUI
 // V1 MÉMOIRE : le store vit le temps du process. Supabase (user_cards)
 // se branchera ENSEMBLE avec Kathryn — jamais sans elle (la règle).
 
+// MARK: LE GABARIT D'UN EMPLACEMENT (la source unique de vérité)
+
+/// Un dos vide et une carte posée sont LE MÊME OBJET à l'écran : même
+/// largeur, même hauteur, même rayon, même place dans la rangée. Ce
+/// gabarit est donc partagé par les trois vues (DosVide,
+/// CarteCollectionnee, DescenteCarte) — plus jamais deux tailles.
+///
+/// Le ratio 0,648 est celui du LISERÉ des cartes, mesuré : la carte
+/// forgée (1086×1448, liseré à 0,6479) et le dos vide (recadré sur son
+/// liseré, 922×1423 → 0,6479) partagent exactement la même silhouette.
+/// Les PNG portaient simplement des marges noires différentes.
+enum GabaritCarte {
+    static let largeur: CGFloat = 80
+    static let ratio: CGFloat = 0.6479
+    static var hauteur: CGFloat { largeur / ratio }
+    static let rayon: CGFloat = 7
+
+    /// L'art de la forge recadré sur son liseré : la vignette prend la
+    /// silhouette exacte de l'emplacement (l'armature de la forge est
+    /// constante, ces fractions valent pour toutes les cartes).
+    static func vignette(_ art: UIImage) -> UIImage {
+        guard let cg = art.cgImage else { return art }
+        let W = CGFloat(cg.width), H = CGFloat(cg.height)
+        let rect = CGRect(x: W * 0.0888, y: H * 0.0405,
+                          width: W * 0.8214, height: H * 0.9486)
+        guard let coupe = cg.cropping(to: rect) else { return art }
+        return UIImage(cgImage: coupe, scale: art.scale,
+                       orientation: art.imageOrientation)
+    }
+}
+
 // MARK: Le store de collection (v1 mémoire)
 
 final class CollectionLune: ObservableObject {
@@ -73,8 +104,11 @@ enum ArtDuSacre {
     static let famillePlaceholder = "carte-lune-1"
     static let art: UIImage? = {
         guard let p = Bundle.main.path(forResource: "carte-lune-1",
-                                       ofType: "png") else { return nil }
-        return UIImage(contentsOfFile: p)
+                                       ofType: "png"),
+              let ui = UIImage(contentsOfFile: p) else { return nil }
+        // Recadrée au gabarit dès le départ : la carte qui descend et la
+        // vignette qui se pose sont la MÊME image, la même silhouette.
+        return GabaritCarte.vignette(ui)
     }()
 }
 
@@ -107,10 +141,9 @@ struct CarteCollectionnee: View {
                     Color.black
                 }
             }
-            .frame(width: 80, height: 80 * 1672.0 / 941.0)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.white.opacity(0.14), lineWidth: 0.8))
+            .frame(width: GabaritCarte.largeur, height: GabaritCarte.hauteur)
+            .clipShape(RoundedRectangle(cornerRadius: GabaritCarte.rayon,
+                                        style: .continuous))
             if obtenue.count > 1 {
                 Text("×\(obtenue.count)")
                     .font(.system(size: 10, weight: .semibold))
@@ -156,7 +189,7 @@ struct DescenteCarte: View {
             // L'échelle : elle arrive « de loin » (petite), gonfle au
             // plus près de l'œil, puis se pose à la taille du slot.
             let w = 66 + 74 * sin(.pi * min(p * 1.12, 1))
-                + (cible.width - 66) * sstepD(0.55, 1.0, p)
+                + (Double(GabaritCarte.largeur) - 66) * sstepD(0.55, 1.0, p)
             // L'assiette : inclinée en entrée, droite à la pose.
             let pitch = -14 * (1 - e)
             ZStack {
@@ -190,9 +223,11 @@ struct DescenteCarte: View {
                         Color.black
                     }
                 }
-                .frame(width: w, height: w * 1672.0 / 941.0)
+                .frame(width: w, height: w / Double(GabaritCarte.ratio))
                 .clipShape(RoundedRectangle(
-                    cornerRadius: 8 * w / 80, style: .continuous))
+                    cornerRadius: Double(GabaritCarte.rayon) * w
+                        / Double(GabaritCarte.largeur),
+                    style: .continuous))
                 .rotation3DEffect(.degrees(pitch), axis: (x: 1, y: 0, z: 0),
                                   perspective: 0.4)
                 .position(x: x, y: y)
