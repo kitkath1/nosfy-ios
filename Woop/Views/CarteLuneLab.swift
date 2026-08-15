@@ -493,11 +493,15 @@ struct CarteVivante: View {
                 dragging = false
             })
         // L'appui long ouvre la PLONGÉE — le geste des cartes immersives.
+        // Et LE SACRE SONNE (verdict Kathryn : « ça fait majestueux ») :
+        // les cordes s'élèvent quand on passe la vitre, s'éteignent au
+        // retour — partout où la carte vit, manège ou page profil.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.6)
             .onEnded { _ in
                 guard !reduceMotion, diveAge(at: .now) == nil else { return }
                 diveStart = .now
                 LuneBreath.shared.dive()
+                LuneSacre.shared.dive()
             })
         .onAppear {
             mountAt = Date()

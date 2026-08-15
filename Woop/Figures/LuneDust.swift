@@ -134,3 +134,42 @@ final class LuneBreath {
         }
     }
 }
+
+/// LA MUSIQUE DU SACRE À LA PLONGÉE : l'appui fort qui fait ENTRER dans
+/// la carte mérite ses cordes — `sacre-lune` (le pad Em9→Cmaj7→Am7→B,
+/// clochettes mineures, réverbe 3,4 s). Fondu d'entrée 1,2 s, tenue le
+/// temps du voyage, fondu de sortie calé sur le RETOUR de la plongée
+/// (8,4 s). Doctrine maison : `.ambient` + `mixWithOthers`, se tait si
+/// une musique joue déjà — et s'efface devant BoosterAmbience (le
+/// manège a ses trois actes : JAMAIS deux sacres superposés).
+@MainActor
+final class LuneSacre {
+    static let shared = LuneSacre()
+    private var player: AVAudioPlayer?
+    /// Le compteur de génération : une re-plongée remplace le fondu de
+    /// sortie programmé de la précédente (jamais un fondu fantôme qui
+    /// éteint la nouvelle).
+    private var generation = 0
+    private init() {}
+
+    func dive() {
+        guard !AVAudioSession.sharedInstance().isOtherAudioPlaying,
+              !BoosterAmbience.sounding,
+              let url = Bundle.main.url(forResource: "sacre-lune",
+                                        withExtension: "caf") else { return }
+        try? AVAudioSession.sharedInstance()
+            .setCategory(.ambient, options: [.mixWithOthers])
+        player?.stop()
+        guard let p = try? AVAudioPlayer(contentsOf: url) else { return }
+        player = p
+        generation += 1
+        let gen = generation
+        p.volume = 0
+        p.play()
+        p.setVolume(0.30, fadeDuration: 1.2)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.4) { [weak self] in
+            guard let self, self.generation == gen else { return }
+            self.player?.setVolume(0, fadeDuration: 2.0)
+        }
+    }
+}

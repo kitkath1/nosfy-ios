@@ -324,7 +324,13 @@ final class BoosterAmbience {
     }
 
     /// L'acte demandé monte, les autres s'effacent.
+    /// Le témoin de présence : LuneSacre (la plongée de la carte)
+    /// s'efface quand le manège chante déjà — JAMAIS deux sacres
+    /// superposés.
+    static var sounding = false
+
     func act(_ name: String, over seconds: Double) {
+        if !players.isEmpty { Self.sounding = true }
         for key in players.keys {
             fade(key, to: key == name ? (Self.levels[name] ?? 0.25) : 0,
                  over: seconds)
@@ -333,10 +339,12 @@ final class BoosterAmbience {
 
     /// Tout s'éteint.
     func silence(over seconds: Double) {
+        Self.sounding = false
         for key in players.keys { fade(key, to: 0, over: seconds) }
     }
 
     deinit {
+        Self.sounding = false
         for timer in fadeTimers.values { timer.invalidate() }
         if ready { engine.stop() }
     }
