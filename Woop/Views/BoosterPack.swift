@@ -87,6 +87,7 @@ enum BoosterShader {
     float inviteGlow;
     float moonCharge;
     float deathGold;
+    float lipGlow;
     float skewU;
     float cornerU;
     #pragma body
@@ -111,6 +112,10 @@ enum BoosterShader {
     float invBand = exp(-pow((bv - 0.8896) / 0.010, 2.0));
     float invFront = exp(-pow((bu - inviteU) / 0.035, 2.0));
     _surface.emission.rgb += ember * invBand * invFront * inviteGlow * 1.6;
+    // La fente qui FUIT DE LA LUMIÈRE : le fil d'or CONTINU de la
+    // lèvre — la charge au maintien et le tell des cartes rares
+    // l'allument (l'invite, elle, reste un front qui balaie).
+    _surface.emission.rgb += float3(1.0, 0.72, 0.30) * invBand * lipGlow * 1.5;
     // La CHARGE de la lune : les traits du croissant et de son étoile
     // vivent dans la DIFFUSE (elle, elle est chargée à cet étage —
     // l'émission est vide et les textures KVC ne se lient pas, pièges
@@ -380,6 +385,7 @@ final class BoosterScene {
             m.setValue(0.0 as CGFloat, forKey: "inviteGlow")
             m.setValue(0.0 as CGFloat, forKey: "moonCharge")
             m.setValue(0.0 as CGFloat, forKey: "deathGold")
+            m.setValue(0.0 as CGFloat, forKey: "lipGlow")
             m.setValue(Self.benchValue("boosterSkew", 0.012), forKey: "skewU")
             m.setValue(Self.benchValue("boosterCorner", 0.022), forKey: "cornerU")
             m.setValue(Self.benchValue("boosterBreath", still ? 0 : 0.008),
@@ -706,6 +712,23 @@ final class BoosterScene {
 
     // MARK: réglages vivants
 
+    /// Le plancher de CHARGE hérité du maintien : quand la déchirure
+    /// prend le relais d'un doigt qui a chargé, la lune ne retombe pas.
+    var holdChargeFloor: CGFloat = 0
+
+    /// LA CHARGE AU MAINTIEN : le doigt posé sans déchirer — la lune
+    /// monte en incandescence, la fente s'éclaire (fil d'or continu),
+    /// la braise de scène enfle. c = 0…1 ; le relâcher est le soupir
+    /// (la rampe redescend), la déchirure hérite via holdChargeFloor.
+    func setHoldCharge(_ c: CGFloat) {
+        for node in [bodyNode, capNode] {
+            let m = node.geometry?.firstMaterial
+            m?.setValue(0.55 * c, forKey: "moonCharge")
+            m?.setValue(0.8 * c, forKey: "lipGlow")
+        }
+        setEmberLights(0.633 + 0.367 * c)
+    }
+
     /// Pose le front de déchirure (monotone) et nourrit les étincelles.
     func setTear(_ progress: Float, sparking: Bool) {
         tearProgress = max(tearProgress, min(progress, 1))
@@ -722,7 +745,8 @@ final class BoosterScene {
         // qui se répand.
         for node in [bodyNode, capNode] {
             node.geometry?.firstMaterial?
-                .setValue(CGFloat(tearProgress), forKey: "moonCharge")
+                .setValue(max(CGFloat(tearProgress), holdChargeFloor),
+                          forKey: "moonCharge")
         }
         // Le front allumé sous le doigt, une braise résiduelle sinon.
         tearLightSource?.intensity = sparking
