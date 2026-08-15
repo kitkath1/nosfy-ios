@@ -95,7 +95,30 @@ auto-jugé ~9,5, recalé à 2/10. Les fautes mesurées ensuite :
   Le test qui tranche : la carte numérique par cases de 2 pt — un
   dessus plat s'y voit au premier coup d'œil.
 
-## 7. Les échecs d'outillage
+## 7. LA BRAISE DU BAS (17-08) — quatre leçons de plus
+- **Une lumière trop HAUTE se lit « nappe », la même couchée se lit
+  « fil ».** J'ai donné 19 pt de portée verticale à une braise qui en a
+  6 : même énergie, verdict « beaucoup trop gros ». La portée verticale
+  se mesure par COUPE VERTICALE (le max à hauteur fixe ne la voit pas).
+- **La fausse diagonale.** En cherchant le maximum à hauteur fixe, j'ai
+  relié le filament (x=72 %) au lait du coin bas-droit (x>80 %) et
+  conclu à une dérive vers la droite. Deux objets sans rapport, une
+  géométrie inventée. La coupe verticale a tranché : la crête est à
+  0,00 pt à tous les x. (Le vrai rayon incliné existe, mais à 41° et il
+  se voit en CHROMIE, pas en luminance.)
+- **Chercher la trace d'un rayon jusqu'au bord, c'est attraper le
+  coin** : le lait du coin bas-droit gagne toujours, la sonde annonçait
+  un « rayon à 94,8 % ». Borner la recherche à x=88 %.
+- **Deux sources de référence ne donnent PAS les mêmes valeurs au
+  bord.** `reference-card.png` (1,35 px/pt) sous-estime l'arête — sa
+  dernière ligne est un pixel de bord à couverture partielle — là où sa
+  capture d'écran (1,62 px/pt) la résout (0,86 contre 0,46 au même
+  point). Pour un événement DE BORD, prendre la source la mieux
+  résolue ; pour l'intérieur, le crop propre. Et une sonde qui cherche
+  une crête SOUS l'arête dans un crop sans air bute sur la dernière
+  ligne : elle rend alors une « épaisseur » égale à toute sa fenêtre.
+
+## 8. Les échecs d'outillage
 - `xcodebuild | grep` masque le code de sortie (payé encore) : toujours
   `> log 2>&1; EXIT=$?` + `stat` du metallib AVANT toute capture.
 - Un tour de jury a jugé des captures effacées : vérifier l'existence des

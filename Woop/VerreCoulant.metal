@@ -330,6 +330,63 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // Phase 3 : le lait BR à sa cible (médiane 0,252) — et il ne
         // déborde plus sur la zone droite (portée 34, plus 48).
         E += (0.30 * exp(-dBR / 32.0)) * vgCreme;
+        // LA BRAISE DU BAS (17-08) — « il manque un halo orangé en bas
+        // de carte, elle doit être plus en avant que les autres ». Deux
+        // sources croisées (le crop de référence pour le dedans, sa
+        // capture du Bureau pour l'air). Son maximum DÉRIVE VERS LA
+        // DROITE en montant : x=72 % à 1 pt, 74 % à 4 pt, 78 % à 8 pt,
+        // 80 % à 14 pt — 2,2 pt vers la droite par point de montée.
+        // Cibles : 0,55 / 0,41 / 0,36 / 0,29 de luminance, chromie
+        // +0,50 → +0,25. C'est l'événement le PLUS FORT de son bas
+        // (0,55 contre 0,28 au doré de x=30 %) ; chez moi c'était
+        // l'inverse. Large et douce (σ 30 pt) : un halo, pas un trait.
+        // ================= LE BAS : TROIS OBJETS =================
+        // 17-08. Elle décrit « un petit halo ET un petit trait légèrement
+        // en diagonal arrondi » ; la carte de CHROMIE de sa photo montre
+        // en fait TROIS choses distinctes, que ma nappe unique écrasait :
+        //
+        //   1. LE CHEVEU EN ARC, couché sur l'arête basse. Épaisseur
+        //      1,0-1,3 pt — le calibre exact du trait blanc du coin. Sa
+        //      crête est à 0,00 pt sur toute sa longueur (il ne penche
+        //      pas) ; c'est sa LUMIÈRE qui monte et retombe en arc :
+        //      0,39 (x=52 %) / 0,54 (58) / 0,67 (61) / 0,86 (64) /
+        //      0,70 (67) / 0,54 (70) / 0,46 (73). Son cœur est si chargé
+        //      qu'il vire au blanc chaud (chromie +0,24 au sommet contre
+        //      +0,33 sur les flancs) : c'est la saturation qui le blanchit,
+        //      pas une couleur blanche.
+        //   2. LE RAYON À 41°, qui part de x=75 % sur l'arête et monte
+        //      vers la droite : sa trace mesurée passe par 72,8 % à 3 pt,
+        //      78 % à 6 pt, 79,2 % à 12 pt, 81,2 % à 15 pt, 83,2 % à
+        //      18-22 pt — soit +1,16 pt vers la droite par pt de hauteur.
+        //      Large de 22 à 30 pt, il meurt vers 25 pt. C'est LUI le
+        //      « fameux trait incliné ».
+        //   3. LE HALO, dessous, dans l'air (plus bas).
+        //
+        // La nappe large ne disparaît pas mais elle RECULE (0,82 → 0,32) :
+        // son rôle n'était pas de porter la lumière, seulement de poser le
+        // fond sur lequel les deux autres se détachent. Une nappe qui
+        // porte tout, c'est le « beaucoup trop gros » de son verdict.
+        float dxB = q.x - 0.72 * W;
+        float sxB = (dxB < 0.0) ? 40.0 : 24.0;
+        float braise = exp(-dxB * dxB / (2.0 * sxB * sxB))
+                     * exp(-tB / 6.0)
+                     * (1.0 - smoothstep(0.86, 0.99, q.x / W));
+        E += (0.32 * braise) * float3(1.0, 0.52, 0.16);
+
+        // 1. LE CHEVEU EN ARC — son noyau est celui du trait du coin
+        // (σ 0,50), pas celui des tranches : c'est un cheveu, pas un fil.
+        float dxArc = q.x - 0.64 * W;
+        float arcBas = exp(-dxArc * dxArc / (2.0 * 12.0 * 12.0));
+        float gBas = exp(-d * d / (2.0 * 0.50 * 0.50));
+        E += (3.50 * arcBas * gBas * wB) * float3(1.0, 0.60, 0.28);
+
+        // 2. LE RAYON À 41°.
+        float xr = 0.75 * W + 1.15 * tB;
+        float dxr = (q.x - xr) * 0.656;          // distance PERPENDICULAIRE
+        float rayon = exp(-dxr * dxr / (2.0 * 7.2 * 7.2))
+                    * exp(-tB / 16.0)
+                    * smoothstep(0.0, 2.5, tB);
+        E += (0.55 * rayon) * float3(1.0, 0.55, 0.22);
         // La nappe douce DANS l'arc du coin haut-gauche (ses crops du
         // 16-08) : un patch court et rond juste derrière le biseau —
         // plus le long lobe diagonal d'avant.
@@ -398,14 +455,24 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // x=31-33 % (0,87-0,94 — le liseré qui touche la tranche sous le
         // point de jauge). ASYMÉTRIQUE, comme la mesure : montée lente
         // depuis 16 %, chute rapide après 36 %.
+        // 17-08, son verdict : « la bordure du bas est TROP DORÉE, elle
+        // doit être plus foncée — sauf la partie éclairée par le halo ».
+        // Mesuré sur son fil (0 pt), de x=20 à 50 % : elle tient
+        // 0,25 / 0,29 / 0,36 / 0,30 / 0,24 / 0,26 — je tenais
+        // 0,57 / 0,74 / 0,83 / 0,71 / 0,50 / 0,47. Mon hotspot doré de
+        // x=32 % faisait plus du DOUBLE du sien (0,83 contre 0,36) : ce
+        // n'est pas un hotspot chez elle, c'est une bosse de rien.
+        // La seule partie claire de son bas, c'est là où la braise la
+        // touche (0,45-0,51 de x=62 à 74 %) — et c'est la braise qui la
+        // porte, pas le fil.
         float dxG = fx - 0.325;
-        float envB = 1.10 + 2.80 * exp(-dxG * dxG
+        float envB = 0.42 + 0.30 * exp(-dxG * dxG
                                        / (dxG < 0.0 ? 0.0085 : 0.0045));
         // LES DEUX ACCIDENTS GOLD (mesurés à (74, 96) et (78, 92),
         // chromie 0,33-0,36, quelques pixels, asymétriques — le point 20
         // du brief) : posés à leurs coordonnées, jamais centrés.
-        envB += 0.85 * exp(-(fx - 0.74) * (fx - 0.74) / 0.00025)
-              + 0.65 * exp(-(fx - 0.785) * (fx - 0.785) / 0.00018);
+        envB += 0.25 * exp(-(fx - 0.74) * (fx - 0.74) / 0.00025)
+              + 0.20 * exp(-(fx - 0.785) * (fx - 0.785) / 0.00018);
         float3 cBas = mix(vgSepia, float3(1.0, 0.72, 0.35),
                           smoothstep(0.18, 0.32, fx)
                           * (1.0 - smoothstep(0.36, 0.52, fx)));
@@ -550,6 +617,14 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ---- 7b. Les FLAQUES des coins bas — PHASE 2 : ras, fines,
         // locales (l'air de la référence est NOIR à 0,08-0,15 ; seuls
         // les hotspots des coins débordent, et de quelques points).
+        // LE SOUFFLE DE LA BRAISE : sous l'arête, cœur à x=69 %,
+        // mesuré dans sa capture 0,18 à 2 pt, 0,11 à 4, 0,07 à 6,
+        // 0,05 à 8 — éteint vers 10. Le seuil anti-cellule (2 %
+        // d'énergie) et la borne de 16 pt le tiennent : rien ne fuit.
+        float dxAir = q.x - 0.64 * W;
+        Eo += (0.42 * exp(-tOut / 4.5) * wB
+               * exp(-dxAir * dxAir / (2.0 * 30.0 * 30.0)))
+              * float3(1.0, 0.52, 0.16);
         Eo += (0.28 * exp(-dBL / 16.0)) * float3(1.0, 0.55, 0.25);
         Eo += (0.35 * exp(-dBR / 16.0)) * vgCreme;
 
