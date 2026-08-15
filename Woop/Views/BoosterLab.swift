@@ -482,6 +482,11 @@ struct BoosterLab: View {
     private static let dos = CommandLine.arguments.contains("-boosterDos")
     private static let mylar = CommandLine.arguments.contains("-boosterMylar")
     private static let gallery = CommandLine.arguments.contains("-boosterGallery")
+    /// L'invite au-dessus de la carte : chevron de poussière par défaut,
+    /// `-boosterInvite feux` pour les feux de piste (les deux candidates
+    /// au banc, verdict Kathryn à l'écran).
+    private static let inviteFeux = UserDefaults.standard
+        .string(forKey: "boosterInvite") == "feux"
     private static let tear: Float? = UserDefaults.standard
         .string(forKey: "boosterTear").flatMap(Float.init)
     private static let yawDeg: Float? = UserDefaults.standard
@@ -644,6 +649,27 @@ struct BoosterLab: View {
                                            height: cardH + 170)
                                     .offset(y: -0.01322 * H)
                                     .opacity(carteEnPlongee ? 0 : 1)
+                                // L'INVITE au-dessus de la carte : l'air
+                                // qui montre le ciel. Meurt au premier
+                                // contact, se tait en plongée et en vol.
+                                if !inviteKilled {
+                                    Group {
+                                        if Self.inviteFeux {
+                                            FeuxDePiste(date: tl.date,
+                                                        born: registreBorn)
+                                        } else {
+                                            ChevronDePoussiere(
+                                                date: tl.date,
+                                                born: registreBorn)
+                                        }
+                                    }
+                                    .frame(width: 160, height: 120)
+                                    .offset(y: -0.01322 * H - cardH / 2 - 62)
+                                    .opacity(carteEnPlongee
+                                        || envolStart != nil ? 0 : 1)
+                                    .animation(.easeInOut(duration: 0.3),
+                                               value: carteEnPlongee)
+                                }
                                 // LE REGISTRE : les lunes + « Nouveau ».
                                 // Il ne suit pas la carte (elle part
                                 // SEULE), et il se tait pendant la
@@ -905,6 +931,94 @@ struct NouveauMot: View {
 private func sstepD(_ a: Double, _ b: Double, _ x: Double) -> Double {
     let k = min(max((x - a) / (b - a), 0), 1)
     return k * k * (3 - 2 * k)
+}
+
+/// LE CHEVRON DE POUSSIÈRE (candidate n°1 de l'invite) : l'air se
+/// discipline un instant — les poussières CONVERGENT en chevron (la
+/// forme des flèches : la lisibilité), le chevron MONTE en
+/// s'éclaircissant, puis les particules se libèrent et redeviennent de
+/// l'air (la matière de la maison : le wahou discret). Deux vagues en
+/// canon, cycle ~3,4 s, meurt au premier contact.
+struct ChevronDePoussiere: View {
+    var date: Date
+    var born: Date
+
+    private func fract(_ x: Double) -> Double { x - x.rounded(.down) }
+    private func r(_ i: Int, _ s: Double) -> Double {
+        fract(sin(Double(i) * 127.1 + s * 311.7) * 43758.5453)
+    }
+
+    var body: some View {
+        Canvas { ctx, size in
+            let t = date.timeIntervalSince(born)
+            guard t > 0.8 else { return }
+            let u0 = (t - 0.8).truncatingRemainder(dividingBy: 3.4)
+            for wave in 0 ..< 2 {
+                let u = u0 - Double(wave) * 0.35
+                guard u > 0, u < 2.0 else { continue }
+                let gather = sstepD(0, 0.55, u)
+                let ride = sstepD(0.55, 1.30, u)
+                let free = sstepD(1.30, 1.90, u)
+                let n = 16
+                for i in 0 ..< n {
+                    let side: Double = i % 2 == 0 ? -1 : 1
+                    let f = Double(i / 2) / Double(n / 2 - 1)
+                    // Le slot du chevron : pointe en haut, ailes en bas.
+                    let sx = side * f * 24
+                    let sy = f * 15
+                    // Naissance éparse (l'air), libération aérienne.
+                    let seed = i + wave * 40
+                    let bx = sx + (r(seed, 1) - 0.5) * 70
+                    let by = sy + 26 + r(seed, 2) * 30
+                    let fx = sx + (r(seed, 3) - 0.5) * 40
+                    let fy = sy - 30 - r(seed, 4) * 24
+                    let x = bx + (sx - bx) * gather + (fx - sx) * free
+                    let y = by + (sy - by) * gather + (fy - sy) * free
+                        - 24 * ride + Double(wave) * 20
+                    let op = (0.16 + 0.44 * gather) * (1 - free)
+                    let sz = 1.1 + 1.1 * r(i, 5)
+                    let rect = CGRect(x: size.width / 2 + x - sz / 2,
+                                      y: size.height / 2 + y - sz / 2,
+                                      width: sz, height: sz)
+                    ctx.opacity = op
+                    ctx.fill(Ellipse().path(in: rect), with: .color(.white))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// LES FEUX DE PISTE (candidate n°2 de l'invite) : trois lumières
+/// empilées au-dessus de la carte qui s'allument de BAS en HAUT puis
+/// s'éteignent — une piste d'envol qui défile, la direction dite sans
+/// une flèche. Cohérente avec l'envol-avion.
+struct FeuxDePiste: View {
+    var date: Date
+    var born: Date
+
+    var body: some View {
+        Canvas { ctx, size in
+            let t = date.timeIntervalSince(born)
+            guard t > 0.8 else { return }
+            let u = (t - 0.8).truncatingRemainder(dividingBy: 2.7)
+            for i in 0 ..< 3 {
+                let on = u - Double(i) * 0.22
+                let env = sstepD(0, 0.18, on) * (1 - sstepD(0.5, 1.0, on))
+                guard env > 0 else { continue }
+                let y = size.height / 2 + 22 - Double(i) * 22
+                let halo = CGRect(x: size.width / 2 - 7, y: y - 7,
+                                  width: 14, height: 14)
+                let core = CGRect(x: size.width / 2 - 1.6, y: y - 1.6,
+                                  width: 3.2, height: 3.2)
+                ctx.opacity = 0.16 * env
+                ctx.fill(Ellipse().path(in: halo), with: .color(.white))
+                ctx.opacity = 0.75 * env
+                ctx.fill(Ellipse().path(in: core), with: .color(.white))
+            }
+        }
+        .allowsHitTesting(false)
+    }
 }
 
 /// LE COURANT ASCENDANT : l'air lui-même monte autour de la carte — de
@@ -1701,6 +1815,13 @@ struct BoosterStage: UIViewRepresentable {
             stage.cardNode.scale = SCNVector3(1.05, 1.05, 1.05)
             stage.packNode.position.y = -1.7
             mode = .revealed
+            // Le raccourci atterrit sur le VRAI état final : l'overlay
+            // (CarteVivante + registre + invite) se monte comme après
+            // une cérémonie complète — sinon le banc -boosterOpen ne
+            // montre qu'une carte scène nue.
+            DispatchQueue.main.async { [weak self] in
+                self?.handle?.revealed = true
+            }
         }
 
         /// `-boosterCine` : la cérémonie se joue TOUTE SEULE (le banc de
