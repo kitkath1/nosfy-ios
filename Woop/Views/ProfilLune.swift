@@ -488,26 +488,15 @@ struct TirageBooster: View {
                             .transition(.move(edge: .bottom)
                                 .combined(with: .opacity))
 
-                        // LE CHEVRON DE BRAISE, gravé sur la crête du
+                        // LES FLÈCHES D'INVITE, posées sur la crête du
                         // sachet (dans SES pixels — plus jamais un texte
-                        // qui flotte sur les cartes). Il respire, et
-                        // s'embrase pendant la remontée d'invitation.
+                        // qui flotte sur les cartes) : les deux chevrons
+                        // en dégradé de blanc, l'onde qui remonte.
                         if fondu > 0.1 {
-                            TimelineView(.animation(
-                                minimumInterval: 1.0 / 20.0)) { tl in
-                                let t = tl.date.timeIntervalSinceReferenceDate
-                                Image(systemName: "chevron.up")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundStyle(Color.profilBraise)
-                                    .neonGlow(.profilBraise, radius: 8,
-                                              opacity: 0.6)
-                                    .opacity(0.45
-                                        + 0.30 * sin(t * 2 * .pi / 2.4)
-                                        + 0.35 * Double(invite / 9))
-                            }
-                            .offset(x: 0,
-                                    y: -152 + enfoui + pousse - tire - invite)
-                            .allowsHitTesting(false)
+                            FlechesInvite(taille: 15)
+                                .offset(x: 0,
+                                        y: -152 + enfoui + pousse
+                                            - tire - invite)
 
                             // La zone de traction : TIRER ouvre, POUSSER
                             // enterre — le geste miroir. Un tap ouvre
@@ -550,22 +539,42 @@ struct TirageBooster: View {
                                     })
                         }
                     } else if fondu > 0.1 {
-                        // LA POIGNÉE DE BRAISE : le croissant du logo qui
-                        // dépasse du sol — la braise sous la cendre. Un
-                        // tap (ou un petit tirage) et le géant rejaillit.
-                        TimelineView(.animation(
-                            minimumInterval: 1.0 / 20.0)) { tl in
-                            let t = tl.date.timeIntervalSinceReferenceDate
-                            GlypheLune()
-                                .fill(Color.profilBraise)
-                                .frame(width: 30, height: 30)
-                                .neonGlow(.profilBraise, radius: 9,
-                                          opacity: 0.55)
-                                .opacity(0.55
-                                    + 0.25 * sin(t * 2 * .pi / 3.1))
+                        // LA POIGNÉE : le croissant du logo en NÉON —
+                        // le tube du splash : cœur crème incandescent,
+                        // double halo de braise qui respire. Les flèches
+                        // blanches l'invitent. Un tap (ou un tirage) et
+                        // le géant rejaillit.
+                        VStack(spacing: 7) {
+                            FlechesInvite(taille: 12)
+                            TimelineView(.animation(
+                                minimumInterval: 1.0 / 20.0)) { tl in
+                                let t = tl.date.timeIntervalSinceReferenceDate
+                                let vie = 0.75
+                                    + 0.25 * sin(t * 2 * .pi / 3.1)
+                                ZStack {
+                                    // Le halo large — l'air embrasé.
+                                    GlypheLune()
+                                        .fill(Color.profilBraise)
+                                        .frame(width: 34, height: 34)
+                                        .blur(radius: 9)
+                                        .opacity(0.75 * vie)
+                                    // Le halo serré — le verre du tube.
+                                    GlypheLune()
+                                        .fill(Color.profilBraise)
+                                        .frame(width: 34, height: 34)
+                                        .blur(radius: 2.5)
+                                        .opacity(0.95 * vie)
+                                    // Le cœur crème — le gaz incandescent.
+                                    GlypheLune()
+                                        .fill(Color(red: 1.0, green: 0.93,
+                                                    blue: 0.80))
+                                        .frame(width: 30, height: 30)
+                                }
+                            }
+                            .frame(width: 40, height: 40)
                         }
-                        .offset(y: 12)
-                        .padding(20)
+                        .offset(y: 6)
+                        .padding(18)
                         .contentShape(Rectangle())
                         .onTapGesture { deterrer() }
                         .gesture(DragGesture(minimumDistance: 6)
@@ -1166,6 +1175,36 @@ struct DosVide: View {
 extension Color {
     /// La braise du profil — l'orange sombre de l'univers des cartes.
     static let profilBraise = Color(red: 1.0, green: 0.55, blue: 0.18)
+}
+
+// MARK: - Les flèches d'invite
+
+/// LES DEUX FLÈCHES minimales en dégradé de blanc — l'invite « tire vers
+/// le haut », élégante : une onde d'opacité remonte de l'une à l'autre,
+/// jamais un clignotement.
+struct FlechesInvite: View {
+    var taille: CGFloat = 15
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { tl in
+            let t = tl.date.timeIntervalSinceReferenceDate
+            VStack(spacing: -taille * 0.34) {
+                ForEach(0..<2, id: \.self) { i in
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: taille, weight: .medium))
+                        .foregroundStyle(LinearGradient(
+                            colors: [.white.opacity(0.95),
+                                     .white.opacity(0.35)],
+                            startPoint: .top, endPoint: .bottom))
+                        .opacity(0.30 + 0.55 * max(0,
+                            sin(t * 2 * .pi / 1.7
+                                + Double(1 - i) * 0.9)))
+                }
+            }
+            .shadow(color: .black.opacity(0.5), radius: 3)
+        }
+        .allowsHitTesting(false)
+    }
 }
 
 // MARK: - Le glyphe du logo
