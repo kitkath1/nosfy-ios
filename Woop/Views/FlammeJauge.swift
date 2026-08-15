@@ -618,12 +618,32 @@ struct FlammeMedaillon: View {
                         // est plus CHAUDE et plus claire (sa zone gauche
                         // mesure 0,204 de médiane — la mienne stagnait à
                         // 0,115, tout le déficit vivait ici).
-                        .init(color: Color(red: 0.225, green: 0.170, blue: 0.140), location: 0.0),
-                        .init(color: Color(red: 0.150, green: 0.118, blue: 0.105), location: 0.62),
-                        .init(color: Color(red: 0.085, green: 0.068, blue: 0.070), location: 1.0),
+                        // 17-08, ATLAS DU MÉDAILLON (tools/verre/MEDAILLON.md).
+                        // Trois défauts mesurés dans ces quatre lignes :
+                        //  · LE VOILE GRIS : à r/R ≥ 0,72 je portais +0,040
+                        //    sur les TROIS canaux (écart entre canaux 0,005) —
+                        //    littéralement « le fond noir qui manque ».
+                        //    Sa paroi tient 0,106 de luma, la mienne 0,150.
+                        //  · LA CHUTE TROP MOLLE : elle tombe de 2,37× entre
+                        //    r/R 0,45 et 0,85, moi de 1,42 — d'où la nappe
+                        //    large au lieu d'un bol. endRadius 34 sur un
+                        //    rayon de 29 pt portait la lumière à 1,17 R.
+                        //  · LE BLEU : B/R valait 0,57 à mi-rayon contre 0,38
+                        //    chez elle — un bol gris, pas cuivré. La chaleur
+                        //    doit MONTER quand la lumière baisse (X/L 0,89 au
+                        //    centre, 0,62 au bord).
+                        .init(color: Color(red: 0.350, green: 0.231, blue: 0.120), location: 0.00),
+                        .init(color: Color(red: 0.258, green: 0.177, blue: 0.099), location: 0.42),
+                        .init(color: Color(red: 0.152, green: 0.113, blue: 0.075), location: 0.72),
+                        .init(color: Color(red: 0.108, green: 0.079, blue: 0.058), location: 0.88),
+                        .init(color: Color(red: 0.090, green: 0.066, blue: 0.050), location: 1.00),
                     ],
-                    center: UnitPoint(x: 0.5, y: 0.44),
-                    startRadius: 0, endRadius: 34))
+                    // LA PHASE ÉTAIT RETOURNÉE DE 209° : son bol s'éclaircit
+                    // vers 71° (le BAS-droite, la flamme l'éclaire par en
+                    // dessous), le mien vers 280° (le haut). Le centre du
+                    // dégradé doit donc être SOUS le milieu, pas au-dessus.
+                    center: UnitPoint(x: 0.516, y: 0.585),
+                    startRadius: 0, endRadius: 29))
                 .opacity(1 - essor)
             // L'ANNEAU (la référence du 15-08) : un cercle d'or net,
             // VIF SUR L'ARC BAS — la flamme l'éclaire par en dessous,
@@ -632,19 +652,38 @@ struct FlammeMedaillon: View {
             Circle()
                 .strokeBorder(AngularGradient(
                     stops: [
-                        .init(color: FlammePalette.or.opacity(0.14), location: 0.00),
-                        .init(color: FlammePalette.or.opacity(0.48), location: 0.18),
-                        .init(color: FlammePalette.flamme.opacity(0.88), location: 0.32),
-                        .init(color: FlammePalette.or.opacity(0.50), location: 0.44),
-                        .init(color: FlammePalette.or.opacity(0.13), location: 0.60),
-                        .init(color: FlammePalette.or.opacity(0.10), location: 0.82),
-                        .init(color: FlammePalette.or.opacity(0.14), location: 1.00),
+                        // L'ARC ORANGE DU BAS venait d'ICI : un stop
+                        // `flamme.opacity(0.88)` à la location 0,32 = 115°.
+                        // Mesuré : chromie +0,694 à 115° quand sa photo ne
+                        // dépasse JAMAIS +0,181 sur tout le tour. Son liseré
+                        // est NEUTRE (chromie médiane +0,10) et fait QUATRE
+                        // événements séparés, pas un arc continu :
+                        //   18-52°  (bas-droite) pic 0,52, cheveu de 1,05 pt
+                        //   303-332° (haut-droite) pic 0,53, cheveu de 1,18
+                        //   130-178° (bas-gauche) pic 0,74 — le disque
+                        //            découpé dans la clarté de la carte
+                        //   190-228° (haut-gauche) pic 0,94 — la BAGUE
+                        // Entre les deux cheveux, à 0° pile, elle RETOMBE à
+                        // 0,15 : les deux cheveux ENCADRENT l'est.
+                        // (locations : 0,00 = 0° = droite, 0,25 = 90° = bas.)
+                        .init(color: Color.white.opacity(0.10), location: 0.000),
+                        .init(color: Color.white.opacity(0.46), location: 0.098),
+                        .init(color: Color.white.opacity(0.14), location: 0.180),
+                        .init(color: Color.white.opacity(0.10), location: 0.280),
+                        .init(color: Color.white.opacity(0.62), location: 0.430),
+                        .init(color: Color.white.opacity(0.30), location: 0.500),
+                        .init(color: Color.white.opacity(0.86), location: 0.580),
+                        .init(color: Color.white.opacity(0.20), location: 0.660),
+                        .init(color: Color.white.opacity(0.10), location: 0.790),
+                        .init(color: Color.white.opacity(0.44), location: 0.882),
+                        .init(color: Color.white.opacity(0.10), location: 0.960),
+                        .init(color: Color.white.opacity(0.10), location: 1.000),
                     ],
                     center: .center,
                     // 0 = à droite ; l'arc vif (0,32) tombe au SUD-OUEST,
                     // comme la référence — la flamme éclaire l'anneau en
                     // contre-plongée gauche.
-                    angle: .zero), lineWidth: 1.4)
+                    angle: .zero), lineWidth: 0.9)
                 .opacity((1 - essor) * (0.75 + 0.25 * souffle))
 
             // L'ambiance qui respire — et qui prend sa grande inspiration
@@ -654,8 +693,11 @@ struct FlammeMedaillon: View {
             Circle()
                 .fill(RadialGradient(
                     stops: [
-                        .init(color: FlammePalette.flamme.opacity(0.18 + 0.09 * souffle + 0.22 * b), location: 0.0),
-                        .init(color: FlammePalette.or.opacity(0.06 + 0.04 * souffle), location: 0.55),
+                        // Divisée par trois : elle rallumait tout le bol en
+                        // `plusLighter` et tuait la chute radiale (1,42×
+                        // mesuré contre 2,37× chez elle).
+                        .init(color: FlammePalette.flamme.opacity(0.06 + 0.03 * souffle + 0.08 * b), location: 0.0),
+                        .init(color: FlammePalette.or.opacity(0.02 + 0.015 * souffle), location: 0.55),
                         .init(color: .clear, location: 1.0),
                     ],
                     center: .center, startRadius: 0, endRadius: 29))
@@ -702,6 +744,61 @@ struct FlammeMedaillon: View {
             }
         }
         .frame(width: 58, height: 58)
+        // LA FLAQUE (atlas, système F) — le CREUX circulaire accroché au
+        // disque : sans lui le médaillon est POSÉ sur le verre, avec lui il y
+        // est SERTI. Mesuré chez elle : L(d=6 pt)/L(d=3 pt) = 0,90 dans quatre
+        // secteurs sur cinq, fond de cuvette à 0,20 R au-delà de la crête et
+        // 23 % sous le plateau ; chez moi le verre MONTAIT (1,01 à 1,21).
+        // EN `background` ET PAS DANS LE ZSTACK : un enfant de 98 pt dans un
+        // hôte de 58 gonfle l'hôte — payé ici même, le `multiply` a noirci
+        // toute la zone et le médaillon a changé de taille. `background` et
+        // `overlay` ne pèsent RIEN dans la mesure.
+        .background {
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        // Le disque fait 29 pt de rayon, le dégradé porte à
+                        // 49 : rien ne doit vivre avant 29/49 = 0,592, sinon
+                        // la flaque mange le liseré.
+                        .init(color: .black.opacity(0.00), location: 0.000),
+                        .init(color: .black.opacity(0.00), location: 0.592),
+                        .init(color: .black.opacity(0.46), location: 0.714),
+                        .init(color: .black.opacity(0.26), location: 0.830),
+                        .init(color: .black.opacity(0.00), location: 0.950),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 49))
+                .frame(width: 98, height: 98)
+                .blendMode(.multiply)
+                .allowsHitTesting(false)
+        }
+        // LA BAGUE (atlas, système E) — le flare NEUTRE du haut-gauche, le
+        // défaut n° 1 du diagnostic : sa masse vaut 0,93, la mienne valait
+        // 0,014 — 67 fois trop faible. Sommet à 209°, largeur à mi-hauteur
+        // 25°, pied de 193 à 228°, crête au-dessus de 0,90 de luma et chromie
+        // ≤ 0,020 : du blanc PUR, pas de l'or. Trois preuves la disent
+        // attachée au disque (sa crête épouse le cercle à ±0,2 pt sur 40°
+        // d'arc) mais pilotée par la lumière de la carte — elle n'existe que
+        // du côté allumé. `stroke` et non `strokeBorder` : le trait est
+        // CENTRÉ sur le cercle, il déborde donc dehors (de 0,99 à 1,15 R)
+        // au lieu de rentrer dans le disque.
+        // (locations : 0 = 0° = droite, sens horaire ; 209° → 0,581)
+        .overlay {
+            Circle()
+                .stroke(AngularGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.00), location: 0.000),
+                        .init(color: .white.opacity(0.00), location: 0.500),
+                        .init(color: .white.opacity(0.18), location: 0.536),
+                        .init(color: .white.opacity(0.92), location: 0.581),
+                        .init(color: .white.opacity(0.30), location: 0.625),
+                        .init(color: .white.opacity(0.00), location: 0.660),
+                        .init(color: .white.opacity(0.00), location: 1.000),
+                    ], center: .center, angle: .zero), lineWidth: 4.5)
+                .frame(width: 62, height: 62)
+                .blur(radius: 1.5)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+        }
         .compositingGroup()
     }
 
