@@ -83,7 +83,13 @@ struct CarteLuneLab: View {
                          glow: Self.glow, diveAuto: Self.diveAuto,
                          diveFreeze: Self.diveFreeze,
                          art: carte.map { Image(uiImage: $0.art) },
-                         depth: carte.map { Image(uiImage: $0.depth) })
+                         depth: carte.map { Image(uiImage: $0.depth) },
+                         // La musique du sacre suit la carte forgée ;
+                         // `-luneRarete <r>` force une typologie au banc
+                         // (l'écoute des quatre pistes sans forger).
+                         rarete: UserDefaults.standard
+                             .string(forKey: "luneRarete")
+                             ?? carte?.famille.rarete)
             VStack(spacing: 10) {
                 Spacer()
                 if let note = forgeNote {
@@ -221,6 +227,10 @@ struct CarteVivante: View {
     /// La carte FORGÉE du moment (art + depth) — nil : carte-lune-1.
     var art: Image? = nil
     var depth: Image? = nil
+    /// La TYPOLOGIE de la carte (common/rare/epic/legendary — les 4
+    /// lunes de la forge) : elle choisit la musique du sacre à la
+    /// plongée. nil : les cordes de sacre-lune.
+    var rarete: String? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -501,7 +511,7 @@ struct CarteVivante: View {
                 guard !reduceMotion, diveAge(at: .now) == nil else { return }
                 diveStart = .now
                 LuneBreath.shared.dive()
-                LuneSacre.shared.dive()
+                LuneSacre.shared.dive(rarete: rarete)
             })
         .onAppear {
             mountAt = Date()

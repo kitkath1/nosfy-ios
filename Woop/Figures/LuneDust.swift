@@ -152,10 +152,23 @@ final class LuneSacre {
     private var generation = 0
     private init() {}
 
-    func dive() {
+    /// La piste par TYPOLOGIE (les 4 lunes de la forge). Loi Kathryn :
+    /// zéro carillon, zéro église, zéro gong — cordes, cuivres sombres,
+    /// chœur, timbales. Sommets composés TÔT (4-8 s : la fenêtre de la
+    /// plongée n'entend que ~10 s).
+    private static func piste(_ rarete: String?) -> String {
+        switch rarete {
+        case "common": return "sacre-commune"        // la tendresse noble
+        case "epic": return "sacre-epique"           // la houle dramatique
+        case "legendary": return "sacre-legendaire"  // le grandiose pur
+        default: return "sacre-lune"                 // rare — les cordes
+        }
+    }
+
+    func dive(rarete: String? = nil) {
         guard !AVAudioSession.sharedInstance().isOtherAudioPlaying,
               !BoosterAmbience.sounding,
-              let url = Bundle.main.url(forResource: "sacre-lune",
+              let url = Bundle.main.url(forResource: Self.piste(rarete),
                                         withExtension: "caf") else { return }
         try? AVAudioSession.sharedInstance()
             .setCategory(.ambient, options: [.mixWithOthers])
