@@ -442,6 +442,19 @@ final class BoosterSFX {
 /// le doigt (le geste de Pokémon Pocket), la bande tombe, la carte sort du
 /// sachet et vient se présenter.
 ///
+/// ════════════════════════ « LE SACRE » ════════════════════════
+/// LE NOM DU FLOW COMPLET (acté par Kathryn, 15-08-2026) : du cercle
+/// des boosters à la carte de fin — manège → engagement → charge au
+/// maintien → découpe de braise → sortie sans un tour → LE SACRE de
+/// la carte vivante. On le lance ENTIER avec
+/// `-boosterLab -boosterGallery` ; dans l'app, c'est le trio
+/// `BoosterStage(gallery: true)` + `BoosterHandle` + overlay
+/// `CarteVivante` (l'assemblage du raccord vit dans ce fichier).
+/// Variantes : `-boosterShiny` (le tell des rares), `-boosterCine`
+/// (il se joue seul, pour filmer), `-boosterHoldDemo` (la boucle
+/// charge/soupir/relais sans main).
+/// ═══════════════════════════════════════════════════════════════
+///
 /// `-boosterGallery` ouvre sur la GALERIE : l'anneau de cinq sachets mirés
 /// dans le sol d'encre, à l'objectif long. Un swipe = un cran, aimanté ;
 /// tap sur un flanc = il vient au centre ; tap au centre = l'engagement
