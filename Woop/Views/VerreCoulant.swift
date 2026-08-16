@@ -55,6 +55,11 @@ struct VerreGonfle: View {
                     .float(Float(Self.pad)),
                     .float(Float(rayonHaut)), .float(Float(rayonBas)),
                     .float(Float(mode)),
+                    // 16-08 : le drapeau devient RÉEL. Piège de la maison —
+                    // changer l'arité d'un stitchable sans que l'appel Swift
+                    // suive rend la page BLANCHE, sans une seule erreur de
+                    // compilation. Les deux changent dans le même commit.
+                    .float(allege ? 1 : 0),
                     .image(Self.mapImage))))
                 .offset(x: -Self.pad, y: -Self.pad)
         }

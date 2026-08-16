@@ -82,13 +82,19 @@ struct SetHistoryRow: View {
     }
 
     /// La lune noire de la maison — le halo ne brûle que pour le vécu.
+    /// Le souffle du petit néon — une seule animation par ligne, lancée à
+    /// l'apparition et décalée par le rang.
+    @State private var neon = false
+
     private var moon: some View {
         ZStack {
+            // 16-08 : « les petites lunes doivent être blanches, dégradé
+            // subtil ». Le halo orange de la série faite devient une lueur
+            // NEUTRE — sinon la lune reste chaude quoi qu'on fasse au trait.
             if done {
                 Circle()
                     .fill(RadialGradient(
-                        colors: [Color(red: 1.0, green: 0.46, blue: 0.09)
-                            .opacity(0.15), .clear],
+                        colors: [Color.white.opacity(0.10), .clear],
                         center: .center, startRadius: 5, endRadius: 15))
             }
             MoonShape()
@@ -97,13 +103,44 @@ struct SetHistoryRow: View {
                              Color(red: 0.022, green: 0.021, blue: 0.020)],
                     startPoint: .top, endPoint: .bottom))
                 .overlay {
+                    // Le contour passe de l'ORANGE (1,0 · 0,56 · 0,18) au
+                    // BLANC, avec un dégradé haut → bas d'environ 1,5× :
+                    // assez pour donner du relief, pas assez pour faire
+                    // motif. C'est le « dégradé subtil » demandé.
                     MoonShape()
-                        .stroke(Color(red: 1.0, green: 0.56, blue: 0.18)
-                            .opacity(done ? 0.40 : 0.16), lineWidth: 0.6)
+                        .stroke(LinearGradient(
+                            colors: [Color.white.opacity(done ? 0.62 : 0.26),
+                                     Color.white.opacity(done ? 0.40 : 0.17)],
+                            startPoint: .top, endPoint: .bottom),
+                            lineWidth: 0.6)
+                }
+                .overlay {
+                    // LE PETIT NÉON (16-08) : « une légère animation comme
+                    // un petit néon magique de blanc très très fin ». Un
+                    // second trait, deux fois plus fin que le premier
+                    // (0,3 pt), dont la brillance respire — et DÉCALÉE
+                    // d'une lune à l'autre (0,31 s par rang) : cinq lunes
+                    // qui pulsent en chœur feraient un clignotant, cinq
+                    // qui se répondent font une matière vivante.
+                    // Une seule animation par ligne, pas de TimelineView :
+                    // la cadence de la fiche est déjà le sujet du moment.
+                    MoonShape()
+                        .stroke(LinearGradient(
+                            colors: [Color.white.opacity(neon ? 0.55 : 0.16),
+                                     Color.white.opacity(neon ? 0.20 : 0.05)],
+                            startPoint: .topTrailing,
+                            endPoint: .bottomLeading),
+                            lineWidth: 0.3)
+                        .blur(radius: 0.4)
                 }
                 .frame(width: 15, height: 15)
         }
         .frame(width: 32, height: 32)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.6)
+                .repeatForever(autoreverses: true)
+                .delay(Double(rank) * 0.31)) { neon = true }
+        }
     }
 
     /// Le gain — la pièce GELÉE de la maison (draggable: false obligatoire,

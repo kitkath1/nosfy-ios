@@ -1099,6 +1099,11 @@ struct ExerciseDetailView: View {
                 bottomTrailingRadius: rB, topTrailingRadius: rH,
                 style: .continuous)
             FlammeJauge(done: sets.filter(\.isDone).count,
+                        // LA LIGNE DE CONTRAT (16-08) : « 5 séries ·
+                        // 12 reps · 20 kg ». Vraie à tout instant, sans
+                        // calcul d'état — et l'hôte est le seul à
+                        // connaître répétitions et charges.
+                        contrat: contratSeance,
                         ouverture: CGFloat(u),
                         // La garde est MORTE : c'est la bande d'aurora
                         // qui écarte désormais l'en-tête du chevron.
@@ -1256,6 +1261,25 @@ struct ExerciseDetailView: View {
     /// La liste des séries, née DANS la carte ouverte : les faites en or
     /// et pièces, les cinq places restantes en encre éteinte (« à
     /// venir ») — les lignes de la story, celles de l'ancien historique.
+    /// « 5 séries · 12 reps · 20 kg » — le contrat de la séance, tel
+    /// qu'il s'affiche sous le compte. On prend les valeurs de la
+    /// première série : elles sont les mêmes pour toutes tant que
+    /// l'utilisateur n'a rien modifié, et le pluriel suit le nombre.
+    private var contratSeance: String {
+        // MÊMES VALEURS DE REPLI QUE LA LISTE (12 reps, 20 kg, 5 séries) :
+        // au banc et sur un exercice neuf, `sets` est vide — la liste
+        // affiche déjà ses valeurs par défaut, la ligne de contrat doit
+        // dire la même chose qu'elle. Payé : sans ce repli, la ligne
+        // sortait VIDE et le sous-titre disparaissait de la carte.
+        // 16-08 : « enlève le nombre de séries, on l'a au-dessus — laisse
+        // le nombre de reps et les kilos, basta ».
+        let reps = sets.last?.reps ?? 12
+        let kg = sets.last?.weight ?? 20
+        let kgText = kg == kg.rounded()
+            ? String(format: "%.0f", kg) : String(format: "%.1f", kg)
+        return "\(reps) reps · \(kgText) kg"
+    }
+
     private func listeSeries(u: Double, largeur: CGFloat) -> some View {
         // La naissance : les lignes n'existent que dans la carte déjà
         // grande — elles montent d'un souffle en s'allumant.

@@ -118,7 +118,60 @@ auto-jugé ~9,5, recalé à 2/10. Les fautes mesurées ensuite :
   une crête SOUS l'arête dans un crop sans air bute sur la dernière
   ligne : elle rend alors une « épaisseur » égale à toute sa fenêtre.
 
-## 8. Les échecs d'outillage
+## 8. LA CARTE DÉPLIÉE ET LA CADENCE (16-08) — six leçons
+
+### Les unités
+- **Deux unités de mesure ne peuvent pas cohabiter.** Certaines lois
+  étaient en FRACTION de hauteur, d'autres en POINTS. À 125 pt les deux
+  donnent le même résultat ; dépliée à 480, tout ce qui est en fraction
+  enfle de 3,8×. Le « gros halo blanc » de l'ouvert était une bande dont
+  le ventre était en fraction et le front en points : son centre glissait
+  de y=27 à y=104 et sa largeur de 5,5 à 44 pt. **Un DÉTAIL (cheveu,
+  bande, segment) s'écrit en points absolus ancrés à une arête ; seul un
+  CHAMP (le bol, un dégradé général) a le droit d'être en fraction.**
+- **Le même y absolu ne tombe pas au même endroit de l'arc selon le
+  rayon.** L'allumage du fil droit, ancré au haut de la carte, s'allumait
+  à 30° sur la grande carte et restait mort sur la petite. Ce qui touche
+  un coin s'ancre au POINT DE TANGENCE, pas au bord de la carte.
+- **Le repère du shader et celui de la capture ne coïncident pas sur la
+  carte dépliée** : les cloches tombaient 38 pt trop bas. On cale sur ce
+  qui SE VOIT, pas sur ce que le code raconte.
+
+### La géométrie, encore
+- **Le rayon des coins déduit du code au lieu d'être mesuré.** Le code
+  dit `26 → 55` à l'ouverture ; le rayon réel de la capture vaut **20 pt**.
+  Deux tours de mesures d'arc à jeter, et un correctif posé sur un arc
+  qui n'existe pas. La règle est pourtant écrite plus haut dans ce
+  fichier. **La géométrie se mesure à CHAQUE état, jamais ne se déduit.**
+
+### La cadence
+- **Mesurer le BASELINE avant d'attribuer un coût à un mouvement.** On a
+  optimisé le dépliement (chemin court dans le shader : ControlMap, grain
+  et accidents fins coupés en course) et gagné 30 → 34 images distinctes
+  par seconde… pour découvrir ensuite que la carte IMMOBILE en produit
+  31,8 quand l'enregistrement en capte 57. Le plafond est PERMANENT, il
+  n'a rien à voir avec la course. Une heure de travail sur le mauvais
+  poste, faute d'avoir mesuré le repos d'abord.
+- **Un drapeau qu'on ne mesure pas est un drapeau qui n'existe pas.**
+  `allege` était passé au verre depuis des semaines sans y rien faire —
+  et le fichier le documentait lui-même (« sans effet tant que le shader
+  est figé »). Personne ne l'avait vérifié au film.
+
+### SwiftUI
+- **Un enfant plus grand que son hôte GONFLE l'hôte** (déjà payé avec la
+  fente `detail`, repayé avec un cercle de flaque de 98 pt dans un
+  médaillon de 58 : le `multiply` a noirci un quart de la carte et le
+  médaillon a changé de taille). `background` et `overlay` ne pèsent
+  RIEN dans la mesure : c'est là que vivent les lumières débordantes.
+- **`minimumScaleFactor` fait sauter la taille du texte entre deux
+  états** : la place disponible change au dépliement, donc SwiftUI
+  rétrécit le texte dans la carte fermée et le rend plein dans l'ouverte.
+- **Une ligne composée depuis `sets` sort VIDE au banc** : `sets` y est
+  vide et la liste, elle, affiche des valeurs de repli. Toute donnée
+  affichée doit partager les replis de sa voisine, sinon elle disparaît
+  là où l'autre s'affiche.
+
+## 9. Les échecs d'outillage
 - `xcodebuild | grep` masque le code de sortie (payé encore) : toujours
   `> log 2>&1; EXIT=$?` + `stat` du metallib AVANT toute capture.
 - Un tour de jury a jugé des captures effacées : vérifier l'existence des

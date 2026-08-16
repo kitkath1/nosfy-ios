@@ -87,7 +87,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
 [[ stitchable ]] half4 verreGonfle(float2 position, half4 color,
                                    float2 size, float t,
                                    float pad, float rHaut, float rBas,
-                                   float mode,
+                                   float mode, float allege,
                                    texture2d<half, access::sample> map) {
     float2 center = size * 0.5;
     float2 p = position - center;
@@ -119,6 +119,17 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
     float swell = 1.0 + 0.050 * sin(t * 6.2832 / 8.7)
                       + 0.030 * sin(t * 6.2832 / 13.1 + 2.0);
 
+    // ===== LE CHEMIN COURT (16-08) =====
+    // `allege` vaut 1 pendant la course (dépliement sous le doigt ou
+    // ressort). Mesuré au film AVANT de toucher quoi que ce soit : la
+    // course tenait 30 images distinctes par seconde, et le témoin SANS
+    // allègements en faisait 34,7 — la preuve que le drapeau était passé
+    // au verre sans y rien faire (le fichier le disait lui-même).
+    // Ce qui tombe pendant la course : les accidents FINS, la ControlMap
+    // et le grain. Ce qui reste : la géométrie, les grands champs et les
+    // fils — tout ce qui porte la LECTURE d'un objet en mouvement.
+    // Au repos, `allege` vaut 0 et l'image est au pixel près la même.
+    float fin = 1.0 - allege;    // 1 au repos, 0 en course
     float3 E = float3(0.0);      // l'énergie lumineuse, par canal
     float3 rgbIn = float3(0.0);  // la matière intérieure (avant clip)
     float3 air = float3(0.0);    // la lumière d'air (hors carte)
@@ -459,7 +470,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // au pied, éteint en haut.
         float cheveuV = exp(-dSeg * dSeg / (2.0 * 0.34 * 0.34))
                       * (1.0 - 0.80 * tSeg * tSeg);
-        E += (1.05 * cheveuV) * float3(1.0, 0.64, 0.28);
+        E += (fin * 1.05 * cheveuV) * float3(1.0, 0.64, 0.28);
 
         // 1. LE CHEVEU EN ARC — son noyau est celui du trait du coin
         // (σ 0,50), pas celui des tranches : c'est un cheveu, pas un fil.
@@ -704,7 +715,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float ptsL = exp(-(q.y - 128.0) * (q.y - 128.0) / (2.0 * 2.4 * 2.4))
                    + exp(-(q.y - 298.0) * (q.y - 298.0) / (2.0 * 1.9 * 1.9))
                    + exp(-(q.y - 352.0) * (q.y - 352.0) / (2.0 * 2.2 * 2.2));
-        E += (0.38 * ouvert * fenL * ptsL * wL
+        E += (fin * 0.38 * ouvert * fenL * ptsL * wL
               * exp(-dfg * dfg / (2.0 * 0.45 * 0.45))) * float3(1.0, 0.98, 0.95);
         // 2. L'ARC INTÉRIEUR. Dans sa photo, un fuseau vit à 4 pt DEDANS,
         //    jamais sur l'arête : il monte de 0,35 à 0,68 entre y=28 et
@@ -714,7 +725,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float tLg = max(q.x, 0.0);
         float arcL = exp(-(tLg - 5.5) * (tLg - 5.5) / (2.0 * 3.4 * 3.4))
                    * exp(-(q.y - 165.0) * (q.y - 165.0) / (2.0 * 95.0 * 95.0));
-        E += (0.34 * ouvert * fenL * arcL) * float3(1.0, 0.88, 0.72);
+        E += (fin * 0.34 * ouvert * fenL * arcL) * float3(1.0, 0.88, 0.72);
         // 3. LE CHEVEU COURT sur l'arête — l'accident bref, le pendant
         //    gauche du petit trait oblique du bas : chez elle la crête
         //    remonte de 0,67 à 0,77 en SIX points quand tout le reste
@@ -722,7 +733,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float cheveuLc = exp(-(q.y - 305.0) * (q.y - 305.0)
                              / (2.0 * 13.0 * 13.0))
                        * exp(-dfg * dfg / (2.0 * 0.55 * 0.55));
-        E += (0.55 * ouvert * fenL * cheveuLc * wL) * float3(1.0, 0.975, 0.945);
+        E += (fin * 0.55 * ouvert * fenL * cheveuLc * wL) * float3(1.0, 0.975, 0.945);
         // Les coins : haut-droit blanc, bas-droit crème (le plus chaud),
         // bas-gauche orange, haut-gauche discret.
         // PHASE 4 : les coins sont des HOTSPOTS (mesurés : ils meurent
@@ -809,16 +820,22 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ambre (B) — dont la chaîne de y=74 % — et la rugosité (A) qui
         // nourrit le grain. Trois fréquences : nappes et taches par la
         // map, grain fin procédural.
-        constexpr sampler smp(address::clamp_to_edge, filter::linear);
-        half4 cm = map.sample(smp, float2(q.x / W, q.y / H));
-        E += (0.32 * float(cm.r)) * vgNeutre;
-        E += (0.95 * float(cm.g)) * vgBlancChaud;
-        E += (0.40 * float(cm.b)) * vgSepia;
+        // LA CONTROLMAP ET LE GRAIN NE SURVIVENT PAS À LA COURSE : un
+        // échantillonnage de texture et un hash par pixel, pour des
+        // accidents que l'œil ne peut pas lire sur une carte qui bouge.
+        half4 cm = half4(0.0);
+        if (fin > 0.5) {
+            constexpr sampler smp(address::clamp_to_edge, filter::linear);
+            cm = map.sample(smp, float2(q.x / W, q.y / H));
+            E += (0.32 * float(cm.r)) * vgNeutre;
+            E += (0.95 * float(cm.g)) * vgBlancChaud;
+            E += (0.40 * float(cm.b)) * vgSepia;
+        }
 
         // ---- 8. LE GRAIN DE FILM — par canal, faible, il vit dans la
         // matière (la photo en a partout) ; la rugosité de la map le
         // densifie localement.
-        float grain = (vgHash(position * 0.91) - 0.5)
+        float grain = fin * (vgHash(position * 0.91) - 0.5)
                     * (0.012 + 0.030 * float(cm.a));
 
         rgbIn = base + (1.0 - exp(-E)) + grain;

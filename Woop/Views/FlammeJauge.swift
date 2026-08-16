@@ -23,6 +23,12 @@ struct FlammeJauge<Detail: View>: View {
     /// suivent tous cette seule valeur.
     var done: Int
 
+    /// LA LIGNE DE CONTRAT sous le compte — « 5 séries · 12 reps · 20 kg ».
+    /// Elle remplace « Touchez pour voir le détail » (16-08) et reste
+    /// visible carte dépliée. L'hôte la compose : lui seul connaît les
+    /// répétitions et les charges.
+    var contrat: String = ""
+
     /// Le dépliement [0,1] — piloté par le scroll de la fiche exo. La
     /// coque est une fonction pure de lui : remonter rembobine.
     var ouverture: CGFloat = 0
@@ -119,7 +125,9 @@ struct FlammeJauge<Detail: View>: View {
         // trait s'affine, la niche s'efface, la danse s'amplifie — tout
         // vit dans le médaillon, porté par `essor`.
         let essor = Self.sstep(0.06, 0.92, o)
-        let taille = 1 + 0.25 * CGFloat(essor)
+        // La taille ne grossit plus à l'ouverture : le bijou est le
+        // MÊME dans les deux états, c'est sa demande.
+        let taille: CGFloat = 1
         // Les coins : bijou 26 fermé → la coque du profil ouverte (55 en
         // haut, concentrique au châssis derrière le liseré de 5 pt ; 44
         // en bas). Dans l'écrin, on rentre d'un liseré en bas (la
@@ -231,13 +239,26 @@ struct FlammeJauge<Detail: View>: View {
                             // L'invite meurt avec l'ouverture : le détail
                             // est LÀ — et l'espace pris par le médaillon
                             // la tronquerait de toute façon.
-                            Text("Touchez pour voir le détail")
+                            // 16-08 : « le texte "Touchez pour voir le
+                            // détail" est nul, mets un truc en rapport
+                            // avec les séries, et garde-le quand c'est
+                            // déplié ». Le contrat de la séance, vrai à
+                            // tout instant et sans calcul d'état — et il
+                            // ne s'efface PLUS à l'ouverture.
+                            // TAILLE FIXE (16-08) : « la taille du texte
+                            // bouge quand on passe de la mini carte à la
+                            // grande ». C'était `minimumScaleFactor` —
+                            // la place disponible change au dépliement,
+                            // donc SwiftUI rétrécissait le texte dans la
+                            // carte fermée puis le rendait à sa taille
+                            // pleine dans l'ouverte. La ligne est courte,
+                            // elle tient dans les deux : plus de mise à
+                            // l'échelle, plus de resserrement.
+                            Text(contrat)
                                 .font(.inter(12, .regular))
                                 .foregroundStyle(Color.white.opacity(0.48))
                                 .lineLimit(1)
-                                .allowsTightening(true)
-                                .minimumScaleFactor(0.85)
-                                .opacity(1 - min(1, essor * 2.2))
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         Spacer(minLength: 6)
                         // Les cinq flammes vivent ICI, dans la dalle
@@ -248,6 +269,18 @@ struct FlammeJauge<Detail: View>: View {
                     }
                     JaugeBraise(done: done, total: total, t: t, date: date,
                                 surgeAt: surgeAt, surgeFrom: surgeFrom)
+                        // 16-08 : « rajoute un espace de 7 px entre la
+                        // barre de progression et le bas, sans toucher au
+                        // design ». Il vit ICI, sous la jauge, et non dans
+                        // le `padV` de la dalle : le padV s'applique aussi
+                        // EN HAUT et déplacerait tout le contenu.
+                        // Conséquence assumée : la carte fermée passe de
+                        // 125 à 132 pt de haut. Les lumières ancrées au
+                        // BAS (la braise, son cheveu oblique) suivent
+                        // l'arête et ne bougent pas ; celles ancrées au
+                        // HAUT non plus. C'est la comparaison à la photo
+                        // de référence (125 pt) qui se décale de 7 pt.
+                        .padding(.bottom, 7)
                 }
             }
             // Le contenu de la carte ouverte, sous l'en-tête — clippé par
@@ -644,7 +677,12 @@ struct FlammeMedaillon: View {
                     // dégradé doit donc être SOUS le milieu, pas au-dessus.
                     center: UnitPoint(x: 0.516, y: 0.585),
                     startRadius: 0, endRadius: 29))
-                .opacity(1 - essor)
+                // 16-08 : « mets le même médaillon dans la grande carte
+                // que dans la mini ». La niche s'effaçait à l'ouverture
+                // (`opacity(1 - essor)`), l'anneau aussi, et la taille
+                // grossissait de 25 % — le médaillon déplié n'était donc
+                // ni le même bijou, ni de la même taille. Mesuré : médiane
+                // de l'anneau 0,129 contre 0,613 sur la mini carte.
             // L'ANNEAU (la référence du 15-08) : un cercle d'or net,
             // VIF SUR L'ARC BAS — la flamme l'éclaire par en dessous,
             // comme un chaton de bague pris à contre-jour. Il meurt avec
@@ -684,7 +722,7 @@ struct FlammeMedaillon: View {
                     // comme la référence — la flamme éclaire l'anneau en
                     // contre-plongée gauche.
                     angle: .zero), lineWidth: 0.9)
-                .opacity((1 - essor) * (0.75 + 0.25 * souffle))
+                .opacity(0.75 + 0.25 * souffle)
 
             // L'ambiance qui respire — et qui prend sa grande inspiration
             // quand une série se valide.
