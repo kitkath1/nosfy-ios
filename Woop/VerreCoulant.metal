@@ -294,8 +294,17 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // LE COIN LUI-MÊME EST QUASI ÉTEINT (son verdict du 16-08 :
         // « très très minimal dans le coin gauche ») — l'apex meurt,
         // seule la descente du flanc et l'approche survivent.
-        float apexMort = 1.0 - 0.80 * exp(-dTL / 12.0);
-        E += (1.30 * (0.15 + 0.85 * wL) * (coeurC + haloC)
+        // 16-08, sa marque verte sur le coin haut-gauche : « enlève le
+        // blanc trop fort dans le coin gauche — idéalement il ressemble au
+        // coin droit ». Mesuré arc par arc, et elle a raison au chiffre :
+        // ses DEUX coins du haut sont JUMEAUX (0,83/0,76 · 0,67/0,64 ·
+        // 0,59/0,56 · 0,41/0,46 · 0,37/0,35 à 0-15-30-45-90°), quand mon
+        // gauche écrasait mon droit de +0,37 à la diagonale (0,78 contre
+        // 0,41). Le coupable est CE terme : sa portée de 53 pt à 45° le
+        // fait culminer pile sur la diagonale, là où sa photo est au plus
+        // bas. On le divise, et l'apex meurt plus large.
+        float apexMort = 1.0 - 0.88 * exp(-dTL / 18.0);
+        E += (0.26 * (0.15 + 0.85 * wL) * (coeurC + haloC)
               * exp(-dTL / porteeC) * apexMort) * float3(1.0, 0.96, 0.92);
         // LA BARRE-BIJOU « juste avant le coin gauche » (sa flèche,
         // 16-08) : le segment de la tranche haute x 12-22 % — un cœur
@@ -319,7 +328,10 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float3 cBain = mix(float3(1.0, 0.95, 0.90),
                            float3(1.0, 0.86, 0.68),
                            smoothstep(0.10, 0.45, q.y / H));
-        E += (0.12 * bainW) * cBain;
+        // Divisé par deux (16-08) : c'est lui qui tenait encore le coin
+        // haut-gauche à +0,13 sur la diagonale et +0,10 sur la tranche
+        // haute après que le fil et la traînée aient été dégonflés.
+        E += (0.09 * bainW) * cBain;
 
         // ---- 5 + 6. LA BRUME CHAUDE — le voile sépia du bas (portée
         // 14 pt, renforcé vers les deux coins) et la flaque du quart
@@ -487,12 +499,22 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // La seule partie claire de son bas, c'est là où la braise la
         // touche (0,45-0,51 de x=62 à 74 %) — et c'est la braise qui la
         // porte, pas le fil.
+        // LE CREUX DU MILIEU (16-08, sa remarque) : « la bordure du bas au
+        // milieu est plus foncée ». Mesuré sur son fil : 0,36 à x=32 %,
+        // 0,24 à 44 %, 0,26 à 50 %, puis 0,37 à 56 % — un vrai creux entre
+        // deux bosses, rapport bosse/creux 1,50. Le mien : 0,38 / 0,30 /
+        // 0,30 / 0,36, rapport 1,27 — le creux existe mais il est deux fois
+        // moins profond. On le CREUSE sans toucher aux deux bosses, qui
+        // sont déjà justes.
+        float creuxMil = 1.0 - 0.26 * exp(-(fx - 0.465) * (fx - 0.465)
+                                          / 0.0060);
         float dxG = fx - 0.325;
         float envB = 0.42 + 0.30 * exp(-dxG * dxG
                                        / (dxG < 0.0 ? 0.0085 : 0.0045));
         // LES DEUX ACCIDENTS GOLD (mesurés à (74, 96) et (78, 92),
         // chromie 0,33-0,36, quelques pixels, asymétriques — le point 20
         // du brief) : posés à leurs coordonnées, jamais centrés.
+        envB *= creuxMil;
         envB += 0.25 * exp(-(fx - 0.74) * (fx - 0.74) / 0.00025)
               + 0.20 * exp(-(fx - 0.785) * (fx - 0.785) / 0.00018);
         float3 cBas = mix(vgSepia, float3(1.0, 0.72, 0.35),
@@ -527,11 +549,29 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // 0,9 pt DEDANS — un pic posé sur d=0 perd la moitié de sa
         // lumière dans la couverture alpha de l'arête (payé : −0,19 sur
         // le pic de y=25 % avec un fil pourtant assez énergique).
+        // LE TRAIT LUMINEUX DE LA BORDURE GAUCHE (16-08, sa marque rouge).
+        // Elle l'a placé au pixel : de y=19 % à y=40 % de la hauteur,
+        // 27 pt de long, posé juste à l'extérieur du bord — « un trait très
+        // lumineux blanc qui dépasse légèrement, comme celui de la partie
+        // orange ». C'est SA façon de rendre la bordure imparfaite : une
+        // seule portion reste lumineuse, le reste s'éteint.
+        float segL = smoothstep(0.170, 0.212, fy)
+                   * (1.0 - smoothstep(0.378, 0.425, fy));
+        float dcL2 = d + 0.7;
+        E += (1.50 * segL * wL
+              * exp(-dcL2 * dcL2 / (2.0 * 0.55 * 0.55)))
+             * float3(1.0, 0.985, 0.965);
         float dfg = d + 0.9;
         // Au passage du MINI-COIN gauche, le fil devient un CHEVEU de
         // ~0,4 px (son verdict) : l'amplitude chute à 30 % sous 8 pt du
         // coin — seul le centre antialiasé survit.
-        float cheveuTL = mix(0.30, 1.0, smoothstep(8.0, 22.0, dTL));
+        // ... et il s'éteint PLUS TÔT et PLUS BAS en approchant l'angle :
+        // à la diagonale du coin (dTL ≈ 11 pt) sa photo est à 0,41 quand je
+        // tenais 0,62 — le reste de l'excès venait de ce fil-là, qui
+        // gardait encore 40 % de sa force là où il doit avoir presque
+        // disparu. (Sans effet sur la bordure plus bas : à mi-hauteur,
+        // dTL dépasse 60 pt et le facteur vaut 1.)
+        float cheveuTL = mix(0.12, 1.0, smoothstep(10.0, 30.0, dTL));
         E += (envL * wL * cheveuTL
               * exp(-dfg * dfg / (2.0 * 0.6 * 0.6))) * cFilG;
         // Les coins : haut-droit blanc, bas-droit crème (le plus chaud),
@@ -628,6 +668,14 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
                        * (0.40 + 0.60 * exp(-(q.y - 0.55 * H) * (q.y - 0.55 * H)
                                             / (0.35 * H * 0.35 * H)));
         Eo += (0.22 * exp(-tOut / 2.5) * wL * profAirL) * float3(1.0, 0.80, 0.62);
+        // ... et LE DÉBORDEMENT du trait de sa marque rouge : il « dépasse
+        // légèrement », donc une portée courte (1,6 pt) et blanche, bornée
+        // à la même tranche de hauteur que le cœur.
+        float fyA = q.y / H;
+        float segLA = smoothstep(0.170, 0.212, fyA)
+                    * (1.0 - smoothstep(0.378, 0.425, fyA));
+        Eo += (0.60 * segLA * wL * exp(-tOut / 1.6))
+              * float3(1.0, 0.98, 0.96);
         // Le souffle blanc du flanc droit — PRESQUE RIEN (mesuré sur la
         // référence : l'air à droite reste à 35/255, la lumière flaque
         // DEDANS, jamais dehors).
