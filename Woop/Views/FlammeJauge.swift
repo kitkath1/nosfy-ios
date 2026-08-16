@@ -19,6 +19,10 @@ import SwiftUI
 /// `detail` (la liste des séries, chez la fiche exo) sous l'en-tête, dans
 /// la même coque. À 0, rien ne change : le bijou du banc est intact.
 struct FlammeJauge<Detail: View>: View {
+    /// Le défilement de la liste des séries — il ne sert qu'à faire venir
+    /// la matière sous l'en-tête quand on descend.
+    @State private var defile: CGFloat = 0
+
     /// Séries validées (1…5). La jauge, le compte et les petites flammes
     /// suivent tous cette seule valeur.
     var done: Int
@@ -300,7 +304,84 @@ struct FlammeJauge<Detail: View>: View {
             Color.clear
                 .frame(maxWidth: .infinity)
                 .frame(height: o > 0.001 ? nil : 0, alignment: .top)
-                .overlay(alignment: .topLeading) { detail() }
+                .overlay(alignment: .topLeading) {
+                    // LE SCROLL DES SÉRIES (16-08) : « si on fait plus de
+                    // 10 séries il faut pouvoir scroller dans la grande
+                    // carte ». Jusqu'ici la liste était posée à hauteur
+                    // fixe : au-delà de ce que la carte affiche, les
+                    // lignes débordaient sans être atteignables.
+                    // L'en-tête (médaillon, compte, contrat, flammes,
+                    // jauge) est DÉJÀ hors du scroll — il est collant
+                    // gratuitement. Ce qui manquait, c'est le scroll et
+                    // la jonction entre les deux.
+                    ScrollView(.vertical, showsIndicators: false) {
+                        detail()
+                            .padding(.top, 4)
+                            .padding(.bottom, 24)
+                    }
+                    // LA HAUTEUR DISPONIBLE, ET PAS PLUS : sans cette
+                    // borne, la liste prend la hauteur de son CONTENU, le
+                    // surplus est simplement rogné par l'écrin, et il n'y
+                    // a rien à faire défiler — c'est ce qui donnait « je
+                    // vois 7 séries et je n'arrive pas à scroller ».
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    // `-scrollBas` (banc) : la liste s'ouvre ancrée en BAS.
+                    // C'est le test qui prouve qu'elle DÉFILE — si la
+                    // dernière série s'affiche, c'est que le contenu est
+                    // plus haut que le cadre. Impossible de piloter un
+                    // vrai glissement depuis le simulateur en ligne de
+                    // commande, donc on prouve autrement.
+                    .defaultScrollAnchor(
+                        CommandLine.arguments.contains("-scrollBas")
+                            ? .bottom : .top)
+                    // PAS DE SCROLL PENDANT LA COURSE : la carte s'ouvre
+                    // avec son propre geste, et « un scroll ne peut pas
+                    // TENIR une carte » (la leçon de la carte des séries).
+                    // Tant qu'elle n'est pas posée, le doigt appartient
+                    // au dépliement.
+                    // Seuil ASSOUPLI : la carte s'ouvre à la main et son
+                    // ressort ne se pose pas toujours pile à 1,000 — à
+                    // 0,995 le scroll restait mort. Et `bouge` est retiré
+                    // de la condition : son extinction dépend d'un jeton
+                    // qui peut survivre au geste, ce qui gelait le scroll
+                    // pour de bon.
+                    .scrollDisabled(o < 0.90)
+                    // LE FONDU DU HAUT : les lignes ne se coupent pas net
+                    // sous l'en-tête, elles s'y effacent sur 16 pt.
+                    .mask {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: .white, location: 0.035),
+                                .init(color: .white, location: 1.0),
+                            ],
+                            startPoint: .top, endPoint: .bottom)
+                    }
+                    // LA MATIÈRE, sous l'en-tête : invisible en haut de
+                    // liste, elle vient au fur et à mesure du défilement
+                    // (pleine force à 20 pt). Deux flous empilés coûtent
+                    // cher — celui-ci n'existe donc QUE quand il sert.
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .frame(height: 14)
+                            .mask {
+                                LinearGradient(
+                                    colors: [.white, .clear],
+                                    startPoint: .top, endPoint: .bottom)
+                            }
+                            .opacity(bouge ? 0 : min(1, max(0, defile / 20)))
+                            .allowsHitTesting(false)
+                    }
+                    .onScrollGeometryChange(for: CGFloat.self) {
+                        $0.contentOffset.y
+                    } action: { _, v in
+                        // UNE SEULE sonde par scroll, et sur un champ
+                        // VIVANT : une sonde qui renvoie une constante
+                        // n'est jamais rappelée (leçon payée ailleurs).
+                        if abs(v - defile) > 0.5 { defile = v }
+                    }
+                }
         }
         .padding(.leading, padG)
         .padding(.trailing, padD)

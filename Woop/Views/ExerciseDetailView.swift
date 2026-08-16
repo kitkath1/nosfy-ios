@@ -340,6 +340,20 @@ struct ExerciseDetailView: View {
         // (le simulateur ne revient pas de BRAVO au doigt) ;
         // `-restartAuto` le referme à 3 s (la volée de pièces se filme) ;
         // `-restartLaunch` appuie sur « Lancer » à 3 s (la porte posée).
+        // `-series10` (banc, 16-08) : dix séries d'un coup, pour voir le
+        // scroll de la carte dépliée avec une liste qui déborde vraiment.
+        // La carte reste FERMÉE — c'est elle qui l'ouvre au doigt.
+        if let i = CommandLine.arguments.firstIndex(of: "-series"),
+           i + 1 < CommandLine.arguments.count,
+           let n = Int(CommandLine.arguments[i + 1]), n > 0 {
+            try? await Task.sleep(for: .seconds(0.4))
+            if sets.isEmpty {
+                for k in 0..<n {
+                    sets.append(DraftSet(reps: 12, weight: 20,
+                                         isDone: k < 3))
+                }
+            }
+        }
         if CommandLine.arguments.contains("-restartFire") {
             try? await Task.sleep(for: .seconds(1.4))
             if sets.isEmpty {

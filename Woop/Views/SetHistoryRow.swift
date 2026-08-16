@@ -99,20 +99,35 @@ struct SetHistoryRow: View {
             }
             MoonShape()
                 .fill(LinearGradient(
-                    colors: [Color(red: 0.085, green: 0.078, blue: 0.072),
-                             Color(red: 0.022, green: 0.021, blue: 0.020)],
+                    // Le remplissage s'éclaircit un peu lui aussi : à 0,022
+                    // la lune était un trou noir dans lequel le liseré se
+                    // noyait.
+                    colors: [Color(red: 0.200, green: 0.196, blue: 0.190),
+                             Color(red: 0.062, green: 0.060, blue: 0.058)],
                     startPoint: .top, endPoint: .bottom))
                 .overlay {
                     // Le contour passe de l'ORANGE (1,0 · 0,56 · 0,18) au
                     // BLANC, avec un dégradé haut → bas d'environ 1,5× :
                     // assez pour donner du relief, pas assez pour faire
                     // motif. C'est le « dégradé subtil » demandé.
+                    // 16-08 : « je ne vois pas le blanc des petites lunes,
+                    // c'est noir ». Mesuré dans la carte dépliée : le
+                    // maximum de la zone plafonnait à 0,10-0,13 — un blanc
+                    // à 0,26 d'opacité sur un trait de 0,6 pt, posé sur un
+                    // remplissage à 0,022, ne survit pas à l'antialiasing.
+                    // Le trait passe à 1,0 pt et l'encre monte : cible
+                    // 0,45 au minimum pour une série à venir.
                     MoonShape()
                         .stroke(LinearGradient(
-                            colors: [Color.white.opacity(done ? 0.62 : 0.26),
-                                     Color.white.opacity(done ? 0.40 : 0.17)],
+                            // 16-08, second tour : « plus blanc, dégradé ».
+                            // Le haut monte au blanc franc et le bas
+                            // descend plus bas : le rapport haut/bas passe
+                            // de 1,6× à 2,6×, donc le dégradé se LIT au
+                            // lieu de se deviner.
+                            colors: [Color.white.opacity(done ? 1.00 : 0.92),
+                                     Color.white.opacity(done ? 0.52 : 0.35)],
                             startPoint: .top, endPoint: .bottom),
-                            lineWidth: 0.6)
+                            lineWidth: 1.0)
                 }
                 .overlay {
                     // LE PETIT NÉON (16-08) : « une légère animation comme
@@ -126,12 +141,12 @@ struct SetHistoryRow: View {
                     // la cadence de la fiche est déjà le sujet du moment.
                     MoonShape()
                         .stroke(LinearGradient(
-                            colors: [Color.white.opacity(neon ? 0.55 : 0.16),
-                                     Color.white.opacity(neon ? 0.20 : 0.05)],
+                            colors: [Color.white.opacity(neon ? 0.85 : 0.22),
+                                     Color.white.opacity(neon ? 0.32 : 0.07)],
                             startPoint: .topTrailing,
                             endPoint: .bottomLeading),
-                            lineWidth: 0.3)
-                        .blur(radius: 0.4)
+                            lineWidth: 0.5)
+                        .blur(radius: 0.5)
                 }
                 .frame(width: 15, height: 15)
         }
