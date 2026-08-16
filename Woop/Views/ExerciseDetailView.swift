@@ -1113,6 +1113,13 @@ struct ExerciseDetailView: View {
                 bottomTrailingRadius: rB, topTrailingRadius: rH,
                 style: .continuous)
             FlammeJauge(done: sets.filter(\.isDone).count,
+                        // Le total réel : la rangée de flammes plafonne à
+                        // cinq fentes et remplace la dernière par « +N »
+                        // au-delà — encore faut-il qu'elle connaisse N.
+                        // (Sa place dans l'appel suit l'ordre des
+                        // propriétés de la struct : l'init mémoire n'est
+                        // pas nommée au hasard.)
+                        total: max(sets.count, 5),
                         // LA LIGNE DE CONTRAT (16-08) : « 5 séries ·
                         // 12 reps · 20 kg ». Vraie à tout instant, sans
                         // calcul d'état — et l'hôte est le seul à
@@ -1305,21 +1312,42 @@ struct ExerciseDetailView: View {
         return VStack(spacing: 10) {
             if carteBouge || u > 0.001 {
                 ForEach(0..<max(sets.count, 5), id: \.self) { i in
-                    if i < sets.count {
-                        SetHistoryRow(rank: i + 1,
-                                      reps: sets[i].reps,
-                                      kilos: sets[i].weight,
-                                      seconds: sets[i].isDone
-                                          ? sets[i].durationSeconds
-                                          : restSeconds,
-                                      done: sets[i].isDone)
-                    } else {
-                        SetHistoryRow(rank: i + 1,
-                                      reps: sets.last?.reps ?? 12,
-                                      kilos: sets.last?.weight ?? 20,
-                                      seconds: restSeconds,
-                                      done: false)
+                    // L'APPARITION EN CASCADE (16-08) : « une animation
+                    // plus belle quand les séries apparaissent au drag,
+                    // très premium ». Chaque ligne a SON seuil, décalé de
+                    // 3,5 % d'ouverture — elles ne naissent donc pas en
+                    // chœur mais l'une après l'autre, du haut vers le bas,
+                    // et la cascade suit LE DOIGT : si on tire lentement,
+                    // elle se déroule lentement ; si on lâche, le ressort
+                    // l'emporte. C'est la même loi que la carte elle-même
+                    // (un curseur, pas une animation qui vit sa vie).
+                    // Elles montent de 22 pt, s'ouvrent de 96 % à 100 %
+                    // et arrivent légèrement en retard sur leur opacité —
+                    // ce décalage est ce qui fait « posé » plutôt que
+                    // « collé ».
+                    let seuil = 0.30 + Double(i) * 0.035
+                    let p = Self.sstep(seuil, min(seuil + 0.30, 0.995), u)
+                    let q = Self.sstep(seuil, min(seuil + 0.42, 0.999), u)
+                    Group {
+                        if i < sets.count {
+                            SetHistoryRow(rank: i + 1,
+                                          reps: sets[i].reps,
+                                          kilos: sets[i].weight,
+                                          seconds: sets[i].isDone
+                                              ? sets[i].durationSeconds
+                                              : restSeconds,
+                                          done: sets[i].isDone)
+                        } else {
+                            SetHistoryRow(rank: i + 1,
+                                          reps: sets.last?.reps ?? 12,
+                                          kilos: sets.last?.weight ?? 20,
+                                          seconds: restSeconds,
+                                          done: false)
+                        }
                     }
+                    .opacity(p)
+                    .offset(y: 22 * (1 - q))
+                    .scaleEffect(0.96 + 0.04 * q, anchor: .leading)
                 }
             }
         }
@@ -1328,8 +1356,10 @@ struct ExerciseDetailView: View {
         // rognés à droite en début de course sont sous l'opacité).
         .frame(width: largeur, alignment: .topLeading)
         .padding(.top, 18)
-        .opacity(naissance)
-        .offset(y: 14 * (1 - naissance))
+        // Le bloc entier n'a plus besoin de son propre fondu : chaque
+        // ligne porte le sien, et deux fondus superposés écrasaient la
+        // cascade (tout arrivait ensemble à travers l'opacité globale).
+        .opacity(Self.sstep(0.16, 0.34, u))
     }
 
     // MARK: En-tête
