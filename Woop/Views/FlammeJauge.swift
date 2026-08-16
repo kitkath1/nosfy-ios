@@ -23,9 +23,15 @@ struct FlammeJauge<Detail: View>: View {
     /// la matière sous l'en-tête quand on descend.
     @State private var defile: CGFloat = 0
 
-    /// Séries validées (1…5). La jauge, le compte et les petites flammes
+    /// Séries validées. La jauge, le compte et les petites flammes
     /// suivent tous cette seule valeur.
     var done: Int
+
+    /// LE TOTAL RÉEL des séries (16-08). Il valait 5 en dur : la carte ne
+    /// pouvait donc pas savoir qu'il y en avait dix, et la rangée
+    /// affichait cinq flammes quoi qu'il arrive. L'hôte le passe
+    /// désormais ; 5 reste le repli du banc.
+    var total: Int = 5
 
     /// LA LIGNE DE CONTRAT sous le compte — « 5 séries · 12 reps · 20 kg ».
     /// Elle remplace « Touchez pour voir le détail » (16-08) et reste
@@ -71,7 +77,6 @@ struct FlammeJauge<Detail: View>: View {
     @ViewBuilder var detail: () -> Detail
 
     /// Cinq séries, gravées dans le marbre.
-    private let total = 5
 
     /// LA PARTITION. Une série validée n'est pas un changement d'état, c'est
     /// un accord : le trait part tout de suite (t0), la flamme naît et le
@@ -362,16 +367,41 @@ struct FlammeJauge<Detail: View>: View {
                     // (pleine force à 20 pt). Deux flous empilés coûtent
                     // cher — celui-ci n'existe donc QUE quand il sert.
                     .overlay(alignment: .top) {
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .frame(height: 14)
-                            .mask {
-                                LinearGradient(
-                                    colors: [.white, .clear],
-                                    startPoint: .top, endPoint: .bottom)
-                            }
-                            .opacity(bouge ? 0 : min(1, max(0, defile / 20)))
-                            .allowsHitTesting(false)
+                        // 16-08 : « il y a une sorte de trait gris qui est
+                        // apparu quand j'ai scrollé ». C'était CETTE bande.
+                        // Un `ultraThinMaterial` sur un fond noir ne floute
+                        // pas : il POSE UN VOILE GRIS, et sur une carte
+                        // aussi sombre le voile est plus visible que ce
+                        // qu'il cache. La matière reste — pour le verre —
+                        // mais au tiers de sa force, et c'est un dégradé
+                        // NOIR qui fait le travail d'effacement : il rend
+                        // la carte à sa propre couleur au lieu de la
+                        // grisailler. Hauteur portée de 14 à 26 pt pour que
+                        // la transition n'ait aucun bord.
+                        ZStack(alignment: .top) {
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                                .opacity(0.32)
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black.opacity(0.55), location: 0.0),
+                                    .init(color: .black.opacity(0.30), location: 0.45),
+                                    .init(color: .clear, location: 1.0),
+                                ],
+                                startPoint: .top, endPoint: .bottom)
+                        }
+                        .frame(height: 26)
+                        .mask {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white, location: 0.0),
+                                    .init(color: .white.opacity(0.55), location: 0.5),
+                                    .init(color: .clear, location: 1.0),
+                                ],
+                                startPoint: .top, endPoint: .bottom)
+                        }
+                        .opacity(bouge ? 0 : min(1, max(0, defile / 24)))
+                        .allowsHitTesting(false)
                     }
                     .onScrollGeometryChange(for: CGFloat.self) {
                         $0.contentOffset.y
@@ -413,12 +443,11 @@ struct FlammeJauge<Detail: View>: View {
         HStack(alignment: .firstTextBaseline, spacing: 5) {
             Text("Séries")
                 .font(.inter(18, .semibold))
+            // 16-08 : « on ne met pas 3/5, on met juste 3, que ce soit 3
+            // ou 10 ». Le total vit déjà dans la rangée de flammes.
             Text("\(shownDone)")
                 .font(.inter(19, .bold))
                 .contentTransition(.numericText(value: Double(shownDone)))
-            Text("/ \(total)")
-                .font(.inter(14, .semibold))
-                .foregroundStyle(Color.white.opacity(0.40))
         }
         .foregroundStyle(FlammePalette.encreTitre)
         .lineLimit(1)
@@ -1114,12 +1143,34 @@ struct FlammesRow: View {
     let date: Date
     let igniteAt: Date?
 
+    /// CINQ FENTES, jamais plus (16-08). Au-delà, la dernière flamme cède
+    /// sa place à un petit « +N » : la rangée garde sa longueur quel que
+    /// soit le nombre de séries, et l'œil lit d'un coup « il y en a
+    /// d'autres ». N compte ce qui n'est PAS représenté par une flamme,
+    /// c'est-à-dire tout ce qui dépasse les quatre montrées.
+    private var fentes: Int { min(total, 5) }
+    private var reste: Int { total > 5 ? total - 4 : 0 }
+
     var body: some View {
         HStack(spacing: 5) {
-            ForEach(0..<total, id: \.self) { i in
-                PetiteFlamme(lit: i < done, t: t, phase: Float(i) * 4.7,
-                             date: date,
-                             igniteAt: i == done - 1 ? igniteAt : nil)
+            ForEach(0..<fentes, id: \.self) { i in
+                if reste > 0 && i == fentes - 1 {
+                    // Le chiffre, à la taille de la flamme, en dégradé
+                    // blanc — la même encre que le cheveu de la garde.
+                    Text("+\(reste)")
+                        .font(.inter(11, .semibold))
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color.white.opacity(0.92),
+                                     Color.white.opacity(0.38)],
+                            startPoint: .top, endPoint: .bottom))
+                        .lineLimit(1)
+                        .fixedSize()
+                        .frame(minWidth: 14)
+                } else {
+                    PetiteFlamme(lit: i < done, t: t, phase: Float(i) * 4.7,
+                                 date: date,
+                                 igniteAt: i == done - 1 ? igniteAt : nil)
+                }
             }
         }
     }
@@ -1241,7 +1292,11 @@ struct JaugeBraise: View {
     let surgeAt: Date?
     let surgeFrom: Int
 
-    private let hauteur: CGFloat = 8
+    // 16-08 : « la progress bar est trop épaisse, je la veux plus fine,
+    // avec plus de nuances de jaune pour rappeler la flamme et du blanc
+    // pour rappeler le contour de la garde en liquid glass (les cheveux) ».
+    // 8 → 5 pt : à 5 pt le tube reste lisible mais cesse d'être une barre.
+    private let hauteur: CGFloat = 5
 
     var body: some View {
         GeometryReader { geo in
@@ -1278,10 +1333,17 @@ struct JaugeBraise: View {
         return Capsule()
             .fill(LinearGradient(
                 stops: [
+                    // LA RAMPE GAGNE SES JAUNES : braise au pied, cœur,
+                    // flamme, puis DEUX ors et un jaune franc en tête —
+                    // c'est l'anatomie de la flamme du médaillon (jaune à
+                    // la pointe, or au corps, orange au pied), transposée
+                    // à l'horizontale.
                     .init(color: FlammePalette.braise, location: 0.0),
-                    .init(color: FlammePalette.coeur, location: 0.16),
-                    .init(color: FlammePalette.flamme, location: 0.58),
-                    .init(color: FlammePalette.or, location: 1.0),
+                    .init(color: FlammePalette.coeur, location: 0.14),
+                    .init(color: FlammePalette.flamme, location: 0.42),
+                    .init(color: FlammePalette.or, location: 0.68),
+                    .init(color: FlammePalette.or, location: 0.86),
+                    .init(color: FlammePalette.jaune, location: 1.0),
                 ],
                 startPoint: .leading, endPoint: .trailing))
             .overlay {
@@ -1295,7 +1357,7 @@ struct JaugeBraise: View {
                             .init(color: FlammePalette.blanc.opacity(0.92), location: 1.0),
                         ],
                         startPoint: .leading, endPoint: .trailing))
-                    .frame(height: hauteur * 0.38)
+                    .frame(height: hauteur * 0.34)
                     .padding(.horizontal, 2.5)
                     .blur(radius: 1.1)
                     .blendMode(.plusLighter)
@@ -1304,17 +1366,23 @@ struct JaugeBraise: View {
                 // LE LISERÉ : le petit border BLANC dégradé de la référence —
                 // brillant en tête, presque rien au pied. C'est le bord de
                 // verre du tube.
+                // LE CHEVEU BLANC — le liseré de la garde en verre,
+                // transposé au tube : un trait de 0,5 pt (au lieu de 1,0)
+                // très clair EN HAUT et quasi éteint en bas, exactement
+                // comme la tranche haute de la carte. C'est lui que
+                // Kathryn appelle « les cheveux ».
                 Capsule()
                     .strokeBorder(LinearGradient(
                         stops: [
-                            .init(color: Color.white.opacity(0.95), location: 0.0),
-                            .init(color: Color.white.opacity(0.45), location: 0.55),
-                            .init(color: Color.white.opacity(0.25), location: 1.0),
+                            .init(color: Color.white.opacity(1.00), location: 0.0),
+                            .init(color: Color.white.opacity(0.62), location: 0.28),
+                            .init(color: Color.white.opacity(0.16), location: 0.72),
+                            .init(color: Color.white.opacity(0.10), location: 1.0),
                         ],
                         startPoint: .top, endPoint: .bottom),
-                        lineWidth: 1.0)
+                        lineWidth: 0.5)
                     .blendMode(.plusLighter)
-                    .opacity(0.85 + 0.15 * vif)
+                    .opacity(0.90 + 0.10 * vif)
             }
             .overlay {
                 // LA POUSSIÈRE DE DIAMANTS — le balayage est mort.
