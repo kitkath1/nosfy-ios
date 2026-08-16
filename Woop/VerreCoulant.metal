@@ -224,8 +224,16 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // (y=26-30 % : 9,5 pt), éteinte à 40 %.
         // ASYMÉTRIQUE : elle monte doucement depuis y=16 % et TOMBE vite
         // après le ventre (à y=34 % la photo est déjà revenue à 0,46).
-        float dfyD = fy - 0.216;
-        float bellD = exp(-dfyD * dfyD / (dfyD < 0.0 ? 0.00135 : 0.0077));
+        // ANCRÉE EN POINTS, PAS EN FRACTION (16-08). C'est LA cause du
+        // « gros halo blanc une fois déplié » : ce ventre était écrit en
+        // fraction de hauteur (fy) alors que son front est en points. La
+        // carte passant de 125 à 480 pt, son centre glissait de y=27 à
+        // y=104 pt et son front de 5,5 à 44 pt — elle enflait huit fois.
+        // La conversion est EXACTE à 125 pt : 0,216·125 = 27 pt,
+        // 0,00135·125² = 21,1 et 0,0077·125² = 120,3 — la carte repliée ne
+        // bouge donc pas d'un centième, par construction.
+        float dyD = q.y - 27.0;
+        float bellD = exp(-dyD * dyD / (dyD < 0.0 ? 21.1 : 120.3));
         // LA DEUXIÈME TACHE, tuée le 17-08 : je l'avais construite en
         // DALLE — smoothstep d'entrée à 2,6 pt, plateau, puis falaise à
         // 9,6. Mesuré à y=26 % (2 / 5 / 9 / 14 pt) : elle fait
@@ -555,8 +563,11 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // lumineux blanc qui dépasse légèrement, comme celui de la partie
         // orange ». C'est SA façon de rendre la bordure imparfaite : une
         // seule portion reste lumineuse, le reste s'éteint.
-        float segL = smoothstep(0.170, 0.212, fy)
-                   * (1.0 - smoothstep(0.378, 0.425, fy));
+        // ANCRÉ EN POINTS lui aussi : en fraction, ses 27 pt devenaient
+        // 96 pt une fois la carte dépliée. (0,170·125 = 21,3 ·
+        // 0,212·125 = 26,5 · 0,378·125 = 47,3 · 0,425·125 = 53,1.)
+        float segL = smoothstep(21.3, 26.5, q.y)
+                   * (1.0 - smoothstep(47.3, 53.1, q.y));
         float dcL2 = d + 0.7;
         E += (1.50 * segL * wL
               * exp(-dcL2 * dcL2 / (2.0 * 0.55 * 0.55)))
@@ -671,9 +682,8 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ... et LE DÉBORDEMENT du trait de sa marque rouge : il « dépasse
         // légèrement », donc une portée courte (1,6 pt) et blanche, bornée
         // à la même tranche de hauteur que le cœur.
-        float fyA = q.y / H;
-        float segLA = smoothstep(0.170, 0.212, fyA)
-                    * (1.0 - smoothstep(0.378, 0.425, fyA));
+        float segLA = smoothstep(21.3, 26.5, q.y)
+                    * (1.0 - smoothstep(47.3, 53.1, q.y));
         Eo += (0.60 * segLA * wL * exp(-tOut / 1.6))
               * float3(1.0, 0.98, 0.96);
         // Le souffle blanc du flanc droit — PRESQUE RIEN (mesuré sur la
