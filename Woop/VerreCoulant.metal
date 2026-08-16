@@ -135,6 +135,42 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
                           float3(0.041, 0.037, 0.034),
                           smoothstep(0.0, H, q.y));
 
+        // ===== LE FACTEUR D'OUVERTURE (16-08) =====
+        // Sa loi : « ne touche JAMAIS à la mini card, que la grande ».
+        // `ouvert` vaut EXACTEMENT 0 tant que la carte fait sa taille
+        // repliée (125 pt) : la petite est protégée par CONSTRUCTION.
+        // Tout ce qui ne concerne que la carte dépliée passe par lui.
+        float ouvert = smoothstep(200.0, 320.0, H);
+        // ===== SES DEUX FENÊTRES (16-08) =====
+        // Ses carrés verts, convertis au pixel : y 121-204 pt et
+        // y 329-412 pt, deux fenêtres de 83 pt séparées par 125 pt de
+        // vide. Sa loi : « pas de halo bizarre SAUF aux endroits où j'ai
+        // mis les carrés verts ; pour le reste, juste le trait fin comme
+        // la mini card ». Tout ce qui est halo, épaule ou accident sur le
+        // flanc gauche de la GRANDE carte ne vit donc plus que là-dedans.
+        // EN CLOCHES, PAS EN CRÉNEAUX (16-08) : « atténue et dégrade, ça
+        // fait trop posé à l'arrache ». Un créneau à bords raides se lit
+        // comme un autocollant ; une cloche se lit comme de la lumière.
+        // Centres des fenêtres : 162 et 370 pt, sigma 34 — elles montent
+        // et redescendent sur toute leur longueur au lieu de s'allumer
+        // d'un coup.
+        // Recalées de −38 pt : mesuré à l'écran, la première cloche
+        // culminait à y≈200 au lieu de 162. Le repère du shader et
+        // celui de la capture ne coïncident pas sur la carte dépliée
+        // (son haut déborde de la zone visible) : on cale sur ce qui
+        // se VOIT, pas sur ce que je crois.
+        float f1 = q.y - 124.0, f2 = q.y - 332.0;
+        float fenL = exp(-f1 * f1 / (2.0 * 34.0 * 34.0))
+                   + exp(-f2 * f2 / (2.0 * 34.0 * 34.0));
+        fenL = clamp(fenL, 0.0, 1.0);
+        // L'extinction du flanc gauche emporte AUSSI l'épaule intérieure :
+        // sinon le fil s'éteint mais le verre reste clair derrière lui, et
+        // l'œil ne voit aucun trou (« je vois pas ce que tu as fait »).
+        // (Les deux extinctions de l'ancienne conception sont retirées :
+        // elles se battaient avec les fenêtres — la seconde tombait pile
+        // sur la fenêtre basse et l'éteignait.)
+        float creuxOuvert = 1.0;
+
         // ---- 1. L'ÉPAULE GAUCHE — deux facettes. Profil mesuré : montée
         // au ras du trait, CREUX à ~2,3 pt, rebond de seconde facette à
         // ~3,6 pt, décroissance lente (portée 8,5 pt) éteinte vers 16 pt.
@@ -150,11 +186,20 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // haut (y<20 %) ni en bas (y>70 %), sillon profond en haut
         // (0,23) et doux au milieu (0,47), bande courte en haut (10 pt),
         // pleine au milieu (13 pt), morte dès 6 pt en bas.
-        float fyG = q.y / H;
-        float facetteH = smoothstep(0.20, 0.34, fyG)
-                       * (1.0 - smoothstep(0.62, 0.78, fyG));
-        float larg = mix(mix(10.0, 13.0, smoothstep(0.10, 0.35, fyG)),
-                         6.0, smoothstep(0.60, 0.80, fyG));
+        // EN POINTS ABSOLUS (16-08) — la cause du « pâté » de la carte
+        // dépliée. Ces trois lois étaient en fraction de hauteur : le
+        // régime ÉPAULE LARGE (10 à 13 pt) est défini de 10 à 35 % de la
+        // hauteur, ce qui fait 32 pt sur la mini carte mais **120 pt** sur
+        // la dépliée. Le haut du flanc y vivait donc en régime épais sur
+        // toute sa longueur visible. Ce n'était pas un trait plus gros,
+        // c'était le régime épais qui durait quatre fois trop longtemps.
+        // Conversion exacte à 125 pt (0,20·125 = 25 · 0,34·125 = 42,5 ·
+        // 0,62·125 = 77,5 · 0,78·125 = 97,5 · 0,10·125 = 12,5 ·
+        // 0,35·125 = 43,75 · 0,60·125 = 75 · 0,80·125 = 100).
+        float facetteH = smoothstep(25.0, 42.5, q.y)
+                       * (1.0 - smoothstep(77.5, 97.5, q.y));
+        float larg = mix(mix(10.0, 13.0, smoothstep(12.5, 43.75, q.y)),
+                         6.0, smoothstep(75.0, 100.0, q.y));
         float corps = smoothstep(0.3, 1.3, te)
                     * exp(-max(te - 1.3, 0.0) / 6.5) * 0.40
                     * smoothstep(larg + 3.0, larg - 3.0, te);
@@ -162,14 +207,15 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
                        * facetteH;
         // LE SILLON — multiplicatif : c'est LUI le « double trait » du
         // biseau. Profond au coin, doux à mi-hauteur.
-        float sillonP = mix(0.78, 0.38, smoothstep(0.15, 0.40, fyG));
+        float sillonP = mix(0.78, 0.38, smoothstep(18.75, 50.0, q.y));
         float sillon = 1.0 - sillonP * exp(-(te - 1.9) * (te - 1.9) / 0.55);
         float profil = max((corps + facette2) * sillon, 0.0);
         // Les débords de coins TUÉS (ils faisaient le double-pic du
         // coin : 0,69 à 6 pt PUIS 0,69 à 10 pt — un artefact).
         float wEp = pow(wL, 0.55)
                   + 0.06 * exp(-dTL / 40.0) + 0.06 * exp(-dBL / 40.0);
-        E += (0.95 * profil * min(wEp, 1.1)) * vgNeutre;
+        E += (0.95 * profil * min(wEp, 1.1) * creuxOuvert
+              * mix(1.0, fenL, ouvert)) * vgNeutre;
 
         // ---- 2. LA FLAQUE DU FLANC DROIT — la lumière du fil blanc qui
         // se reflète DANS le côté : exponentielle depuis l'arête droite,
@@ -298,7 +344,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float coeurC = exp(-dcC * dcC / (2.0 * 1.2 * 1.2));
         float dhC = d + 2.0;
         float haloC = 0.25 * exp(-dhC * dhC / (2.0 * 5.5 * 5.5));
-        float porteeC = mix(26.0, 65.0, wL);
+        float porteeC = mix(1.00 * rH, 2.50 * rH, wL);
         // LE COIN LUI-MÊME EST QUASI ÉTEINT (son verdict du 16-08 :
         // « très très minimal dans le coin gauche ») — l'apex meurt,
         // seule la descente du flanc et l'approche survivent.
@@ -311,7 +357,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // 0,41). Le coupable est CE terme : sa portée de 53 pt à 45° le
         // fait culminer pile sur la diagonale, là où sa photo est au plus
         // bas. On le divise, et l'apex meurt plus large.
-        float apexMort = 1.0 - 0.88 * exp(-dTL / 18.0);
+        float apexMort = 1.0 - 0.88 * exp(-dTL / (0.69 * rH));
         E += (0.26 * (0.15 + 0.85 * wL) * (coeurC + haloC)
               * exp(-dTL / porteeC) * apexMort) * float3(1.0, 0.96, 0.92);
         // LA BARRE-BIJOU « juste avant le coin gauche » (sa flèche,
@@ -464,8 +510,22 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // 89 % : il ne touche jamais le coin bas-droit. Fini la
         // gaussienne unique « trop propre ».
         float gT = exp(-d * d / (2.0 * 0.75 * 0.75));
-        float envR = (0.22 * smoothstep(0.13, 0.19, fy)
-                      + 0.12 * exp(-(fy - 0.195) * (fy - 0.195) / 0.0009)
+        // L'ALLUMAGE EN POINTS ABSOLUS (16-08). Il était en fraction de
+        // hauteur : au coin de la grande carte (y = rayon = 55 pt), fy vaut
+        // 0,115 et le fil était donc ÉTEINT — mesuré 0,07 contre 0,75 sur
+        // la mini carte. C'est ça, « le petit trait blanc est quasi
+        // effacé ». Conversion exacte à 125 pt : 0,13·125 = 16,3 ·
+        // 0,19·125 = 23,8 · 0,195·125 = 24,4 · 0,0009·125² = 14,1.
+        // ... et ancré au POINT DE TANGENCE du coin, pas au haut de la
+        // carte : le même y absolu ne tombe pas au même endroit de l'arc
+        // selon le rayon. Avec l'ancrage au haut, le fil s'allumait à 30°
+        // sur la grande carte (y=27,5 pt) alors qu'il y est mort sur la
+        // petite (y=13 pt) — d'où le +0,37 mesuré à 30°. `yFil` compte
+        // les points SOUS la tangente du coin : identique dans les deux
+        // états (16,3 − 26 = −9,7 et 23,8 − 26 = −2,2).
+        float yFil = q.y - rH;
+        float envR = (0.22 * smoothstep(-9.7, -2.2, yFil)
+                      + 0.12 * exp(-(yFil + 1.6) * (yFil + 1.6) / 14.1)
                       + 0.66 * smoothstep(0.33, 0.53, fy))
                    * (1.0 - 0.97 * smoothstep(0.825, 0.870, fy));
         // Le fil GAUCHE s'ORE en descendant (la référence : gris-chaud en
@@ -538,6 +598,37 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // laissaient des creux de −0,42 entre eux.
         float envL = 0.90
                    + 0.50 * exp(-(fy - 0.23) * (fy - 0.23) / 0.0035);
+        // ===== L'IMPERFECTION DE LA GRANDE CARTE (16-08) =====
+        // Sa loi : « ne touche jamais à la mini card, QUE la grande ».
+        // `ouvert` vaut EXACTEMENT 0 tant que la carte fait sa taille
+        // repliée (125 pt) et ne monte qu'au dépliement : la petite est
+        // protégée par CONSTRUCTION, pas par un réglage qu'on pourrait
+        // rater. Tout ce qui suit est multiplié par lui.
+        // 1. LES VAGUES. Son flanc gauche n'est pas moins accidenté que le
+        //    mien : il a une LONGUEUR D'ONDE. Mesuré sur sa photo, sa
+        //    crête fait trois inflexions espacées de 15 à 25 pt (0,87 puis
+        //    creux 0,67 puis remontée 0,77), quand mes variations à moi
+        //    n'ont aucune période — du bruit, pas des vagues. Sur la
+        //    grande carte, la même structure à son échelle : deux
+        //    extinctions et un rebond entre elles.
+        // EN POINTS ABSOLUS, sur SES repères (elle a marqué deux zones au
+        // rectangle vert sur la carte dépliée : y 60-156 pt en haut,
+        // y 380-474 pt en bas). En fraction de hauteur, mes vagues
+        // tombaient ailleurs que là où elle regarde.
+        //   · vif      autour de y = 110 pt  (sa marque haute)
+        //   · éteint   autour de y = 240 pt
+        //   · éteint   autour de y = 425 pt  (sa marque basse)
+        // ATTENTION À LA SATURATION : le fil est porté par 1-exp(-E) avec
+        // un E déjà grand — moduler l'énergie de ±30 % ne déplace la
+        // luminance que de 0,05, ce qui se mesure mais NE SE VOIT PAS
+        // (« je vois pas ce que tu as fait le long de la bordure »). Pour
+        // qu'une extinction se lise, il faut couper les DEUX TIERS de
+        // l'énergie, pas un tiers.
+        // Hors fenêtres : un fil FIN et discret, comme la mini carte.
+        // Dedans : le trait très lumineux calé sur son carré violet
+        // (luminance 0,94 pour 6,8 pt d'épaisseur — brillant ET net).
+        float vagueL = mix(1.0, 0.66 + 0.62 * fenL, ouvert);
+        envL *= max(vagueL, 0.12);
         // LA TRANCHE FINE (17-08) : le fil droit de la photo est un
         // CHEVEU RAIDE — 0,92 au bord, 0,66 à 0,7 pt, 0,42 à 1,4 pt.
         // Le mien avait un DOS PLAT (0,62 / 0,67 / 0,40) : trop large
@@ -566,12 +657,33 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ANCRÉ EN POINTS lui aussi : en fraction, ses 27 pt devenaient
         // 96 pt une fois la carte dépliée. (0,170·125 = 21,3 ·
         // 0,212·125 = 26,5 · 0,378·125 = 47,3 · 0,425·125 = 53,1.)
-        float segL = smoothstep(21.3, 26.5, q.y)
-                   * (1.0 - smoothstep(47.3, 53.1, q.y));
+        // EN CLOCHE, PAS EN CRÉNEAU (16-08) : « le petit trait, fais le
+        // dégradé, on dirait qu'il est posé comme ça ». Mesuré, il avait
+        // les deux défauts qui font « collé » — une entrée BRUTALE (il
+        // montait de 0,17 à 0,55 en deux points, la marche la plus raide
+        // de toute la bordure) et un DESSUS PLAT (saturé à 1,00 de y=24
+        // à 50 pt). Sa référence n'a jamais de palier : son fil descend
+        // continûment. Donc un sommet unique à y=32 pt, une montée de
+        // 8 pt et une descente plus longue de 12 pt.
+        float dyL = q.y - 32.0;
+        float sL = (dyL < 0.0) ? 5.0 : 7.5;
+        float segL = exp(-dyL * dyL / (2.0 * sL * sL));
         float dcL2 = d + 0.7;
-        E += (1.50 * segL * wL
+        E += (1.15 * segL * wL
               * exp(-dcL2 * dcL2 / (2.0 * 0.55 * 0.55)))
              * float3(1.0, 0.985, 0.965);
+        // ===== GESTE 3 : LA NATURE DU FIL, PAS SEULEMENT SA FORCE =====
+        // Son verdict : « des halos pas de la même taille, des cheveux
+        // fins et d'autres points fins, des liserés blancs et d'autres
+        // moins blancs ». Mesuré, mon fil déplié gardait une épaisseur
+        // quasi constante (médiane 5,4 pt, écart-type 2,26, avec 80 pt
+        // d'affilée strictement identiques) : je faisais varier
+        // l'INTENSITÉ, jamais la FORME. Trois régimes alternent
+        // maintenant — cheveu (0,55), épaule (1,6), halo large (3,0) —
+        // à des hauteurs choisies, jamais périodiques.
+        // 6,8 pt à mi-hauteur = sigma 2,9 ; hors fenêtre, le cheveu de
+        // la mini carte (0,50).
+        float sFil = mix(0.60, 0.50 + 1.75 * fenL, ouvert);
         float dfg = d + 0.9;
         // Au passage du MINI-COIN gauche, le fil devient un CHEVEU de
         // ~0,4 px (son verdict) : l'amplitude chute à 30 % sous 8 pt du
@@ -582,9 +694,35 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // gardait encore 40 % de sa force là où il doit avoir presque
         // disparu. (Sans effet sur la bordure plus bas : à mi-hauteur,
         // dTL dépasse 60 pt et le facteur vaut 1.)
-        float cheveuTL = mix(0.12, 1.0, smoothstep(10.0, 30.0, dTL));
+        float cheveuTL = mix(0.12, 1.0, smoothstep(0.38 * rH, 1.15 * rH, dTL));
         E += (envL * wL * cheveuTL
-              * exp(-dfg * dfg / (2.0 * 0.6 * 0.6))) * cFilG;
+              * exp(-dfg * dfg / (2.0 * sFil * sFil))) * cFilG;
+        // ===== GESTE 4 : LES POINTS FINS =====
+        // Trois accidents ponctuels de 4 à 6 pt, plus brillants que leur
+        // entourage, posés là où le fil est en régime CHEVEU — jamais
+        // dans les halos, où ils se noieraient.
+        float ptsL = exp(-(q.y - 128.0) * (q.y - 128.0) / (2.0 * 2.4 * 2.4))
+                   + exp(-(q.y - 298.0) * (q.y - 298.0) / (2.0 * 1.9 * 1.9))
+                   + exp(-(q.y - 352.0) * (q.y - 352.0) / (2.0 * 2.2 * 2.2));
+        E += (0.38 * ouvert * fenL * ptsL * wL
+              * exp(-dfg * dfg / (2.0 * 0.45 * 0.45))) * float3(1.0, 0.98, 0.95);
+        // 2. L'ARC INTÉRIEUR. Dans sa photo, un fuseau vit à 4 pt DEDANS,
+        //    jamais sur l'arête : il monte de 0,35 à 0,68 entre y=28 et
+        //    50 pt, tient jusqu'à 62, retombe à 0,26 vers 95 — et il se
+        //    réchauffe au ventre (chromie +0,12 contre +0,01 en haut).
+        //    Doré, donc, pas blanc : c'est ce que dit la mesure.
+        float tLg = max(q.x, 0.0);
+        float arcL = exp(-(tLg - 5.5) * (tLg - 5.5) / (2.0 * 3.4 * 3.4))
+                   * exp(-(q.y - 165.0) * (q.y - 165.0) / (2.0 * 95.0 * 95.0));
+        E += (0.34 * ouvert * fenL * arcL) * float3(1.0, 0.88, 0.72);
+        // 3. LE CHEVEU COURT sur l'arête — l'accident bref, le pendant
+        //    gauche du petit trait oblique du bas : chez elle la crête
+        //    remonte de 0,67 à 0,77 en SIX points quand tout le reste
+        //    évolue sur vingt.
+        float cheveuLc = exp(-(q.y - 305.0) * (q.y - 305.0)
+                             / (2.0 * 13.0 * 13.0))
+                       * exp(-dfg * dfg / (2.0 * 0.55 * 0.55));
+        E += (0.55 * ouvert * fenL * cheveuLc * wL) * float3(1.0, 0.975, 0.945);
         // Les coins : haut-droit blanc, bas-droit crème (le plus chaud),
         // bas-gauche orange, haut-gauche discret.
         // PHASE 4 : les coins sont des HOTSPOTS (mesurés : ils meurent
@@ -602,8 +740,11 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // Le gate s'ouvre TARD côté flanc : à θ<10° c'est le fil du
         // flanc qui porte la lumière, pas le coin (sinon les deux
         // s'additionnent et le bout du coin crame, +0,16 mesuré).
-        float gateTR = smoothstep(-3.0, 3.0, vTR.x)
-                     * smoothstep(0.0, 6.0, vTR.y);
+        // ... et le gate suit le RAYON : 6 pt sur un arc de 26 font 13°,
+        // mais seulement 6° sur un arc de 55 — le trait se décalait le long
+        // de l'arc au lieu de rester à sa place.
+        float gateTR = smoothstep(-0.115 * rH, 0.115 * rH, vTR.x)
+                     * smoothstep(0.0, 0.23 * rH, vTR.y);
         // LE GARDE (payé cash) : `atan2(0,0)` est indéfini, et partout à
         // gauche/sous le coin les deux max() valaient 0 → NaN. Or
         // **NaN × 0 = NaN** : `gateTR` à zéro ne protège de RIEN, le NaN
@@ -641,6 +782,23 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float dcTR = d + 0.9;
         float gCoin = exp(-dcTR * dcTR / (2.0 * 0.42 * 0.42));
         E += (arcTR * gateTR * gCoin) * vgBlancChaud;
+        // ===== LE COIN DROIT DE LA GRANDE CARTE (16-08) =====
+        // Sur un arc de 55 pt, aucun ancrage simple ne reproduit le profil
+        // d'un arc de 26 : les termes qui le composent sont ancrés les uns
+        // au haut de la carte, les autres à la largeur, les autres à
+        // l'arête — et le même angle ne tombe pas au même endroit dans
+        // chacun. Plutôt que de tordre cinq lois, on POSE le manque, mesuré
+        // angle par angle contre la mini carte (déficit de luminance
+        // converti en énergie) : 0,79 à 0° · 0,27 à 10° · 0,15 à 20-30° ·
+        // 0,41 à 40° · 0,75 à 60° · 0,32 à 90°. Deux bosses, une à
+        // l'entrée du coin et une à 60°, plus un socle.
+        float dth0 = thTR;
+        float dth60 = thTR - 1.047;
+        float manqueTR = 0.15
+                       + 0.75 * exp(-dth0 * dth0 / (2.0 * 0.209 * 0.209))
+                       + 0.70 * exp(-dth60 * dth60 / (2.0 * 0.314 * 0.314));
+        float gTRc = smoothstep(1.6 * rH, 0.6 * rH, dTR);
+        E += (ouvert * manqueTR * gTRc * gCoin) * vgBlancChaud;
         eRim += (2.20 * exp(-dBR / 13.0)) * vgCreme
               + (1.65 * exp(-dBL / 20.0)) * float3(1.0, 0.58, 0.26)
               + (0.18 * exp(-dTL / 8.0)) * float3(1.0, 0.97, 0.94);
@@ -682,8 +840,9 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // ... et LE DÉBORDEMENT du trait de sa marque rouge : il « dépasse
         // légèrement », donc une portée courte (1,6 pt) et blanche, bornée
         // à la même tranche de hauteur que le cœur.
-        float segLA = smoothstep(21.3, 26.5, q.y)
-                    * (1.0 - smoothstep(47.3, 53.1, q.y));
+        float dyLA = q.y - 32.0;
+        float sLA = (dyLA < 0.0) ? 5.0 : 7.5;
+        float segLA = exp(-dyLA * dyLA / (2.0 * sLA * sLA));
         Eo += (0.60 * segLA * wL * exp(-tOut / 1.6))
               * float3(1.0, 0.98, 0.96);
         // Le souffle blanc du flanc droit — PRESQUE RIEN (mesuré sur la
