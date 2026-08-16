@@ -67,24 +67,26 @@ def detecte(img, s, boite, nom):
     ys, xs = np.mgrid[0:Z.shape[0], 0:Z.shape[1]]
     cx = (xs[m].mean() + xa) / s; cy = (ys[m].mean() + ya) / s
     R = 29.0
+    # FENÊTRE SERRÉE : depuis que le verre de la carte porte une nappe claire
+    # autour du disque (le « lit »), une recherche large fusionne le bord du
+    # médaillon avec cette nappe et la sonde rend un rayon 10 % trop grand —
+    # ce qui INVERSE le test de sertissage (dehors et dedans changent de
+    # côté). On borne donc la recherche à ±4 pt autour du rayon courant.
     for _ in range(6):
         pts = []
         for th in np.linspace(0, 2*np.pi, 180, endpoint=False):
-            rs, p = rayon_profil(img, s, cx, cy, th, R-8, R+8)
-            # LE BORD SE DÉTECTE AU GRADIENT, PAS À LA BRILLANCE.
-            # Piège payé : chercher « le maximum » dans une fenêtre attrape
-            # l'INTÉRIEUR du bol dès que le bol est trop clair (mon cas) —
-            # la sonde rendait alors un rayon 13 % trop petit, vérifié faux
-            # à l'œil sur un calque. La chute externe, elle, existe toujours.
-            g = np.gradient(p)
-            k = int(len(rs) * 0.25)
-            i = k + int(np.argmin(g[k:]))              # la descente la plus raide
-            haut = np.median(p[max(i-int(1.5/0.05), 0):i])
-            dehors = np.median(p[i+int(2.0/0.05):])
-            seuil = (haut + dehors) / 2
-            j = i
-            while j > 0 and p[j] < seuil: j -= 1
-            while j < len(p)-1 and p[j] > seuil: j += 1
+            rs, p = rayon_profil(img, s, cx, cy, th, R-3.5, R+3.5)
+            # LE RAYON CANONIQUE = LA CRÊTE DU FIL, cherchée dans une fenêtre
+            # SERRÉE. Deux méthodes ont échoué avant celle-ci :
+            #  · le maximum dans une fenêtre large attrapait l'intérieur du
+            #    bol quand le bol était trop clair (rayon 13 % trop petit) ;
+            #  · la chute externe a cessé d'exister le jour où le verre de la
+            #    carte a reçu sa nappe claire autour du disque — le bord du
+            #    médaillon fusionne avec elle et le rayon partait 10 % trop
+            #    grand, ce qui INVERSAIT le test de sertissage.
+            # La crête du fil, elle, survit aux deux : c'est un maximum LOCAL
+            # entre un bol sombre et un dehors plus sombre ou plus clair.
+            j = int(np.argmax(p))
             pts.append((th, rs[j]))                    # R50 de cet angle
         th = np.array([q[0] for q in pts]); rr = np.array([q[1] for q in pts])
         med = np.median(rr); bon = np.abs(rr - med) < 2.5

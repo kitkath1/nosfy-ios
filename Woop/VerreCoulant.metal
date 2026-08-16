@@ -373,6 +373,28 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
                      * (1.0 - smoothstep(0.86, 0.99, q.x / W));
         E += (0.32 * braise) * float3(1.0, 0.52, 0.16);
 
+        // LE CHEVEU DU TRAIT VERT (16-08). Après trois tentatives à côté,
+        // elle a tranché en DESSINANT un trait vert sur sa capture : « je
+        // veux que tu poses un cheveu orange dégradé à la place du trait
+        // vert, très très fin ». Mesuré dans son image (pixels verts purs,
+        // carte recalée à 1,641 px/pt) : de (74,9 % ; 0,61 pt au-dessus de
+        // l'arête) à (79,1 % ; 9,75 pt) — 17,8 pt de long, incliné à 31°.
+        // Ce n'était donc NI le cheveu horizontal que j'avais posé sur toute
+        // la braise, NI un événement sur l'arête : c'est un court trait
+        // OBLIQUE qui monte du bas vers la droite. La leçon : quand trois
+        // lectures échouent, demander le trait au lieu de re-mesurer.
+        float2 vA = float2(0.749 * W, H - 0.61);
+        float2 vB = float2(0.791 * W, H - 9.75);
+        float2 vAB = vB - vA;
+        float tSeg = clamp(dot(q - vA, vAB) / dot(vAB, vAB), 0.0, 1.0);
+        float dSeg = length(q - (vA + tSeg * vAB));
+        // TRÈS TRÈS FIN (sa loi) : sigma 0,34 pt, soit 0,8 pt de large à
+        // mi-hauteur — le calibre du trait blanc du coin. Et DÉGRADÉ : vif
+        // au pied, éteint en haut.
+        float cheveuV = exp(-dSeg * dSeg / (2.0 * 0.34 * 0.34))
+                      * (1.0 - 0.80 * tSeg * tSeg);
+        E += (1.05 * cheveuV) * float3(1.0, 0.64, 0.28);
+
         // 1. LE CHEVEU EN ARC — son noyau est celui du trait du coin
         // (σ 0,50), pas celui des tranches : c'est un cheveu, pas un fil.
         float dxArc = q.x - 0.64 * W;
