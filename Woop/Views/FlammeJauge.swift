@@ -235,6 +235,15 @@ struct FlammeJauge<Detail: View>: View {
             HStack(spacing: 14 + 8 * CGFloat(essor)) {
                 FlammeMedaillon(t: t, date: date, celebrateAt: celebrateAt,
                                 essor: essor, calme: bouge)
+                    // L'INSPIRATION DU DÉPLIEMENT (16-08) : le bijou prend
+                    // son souffle pendant la course — il enfle de 6 % et
+                    // son aura monte, puis tout retombe. `sin(essor·π)`
+                    // vaut ZÉRO aux deux bouts : le médaillon au repos est
+                    // au pixel le même, fermé comme ouvert (sa loi).
+                    .scaleEffect(1 + 0.06 * sin(min(max(essor, 0), 1) * .pi))
+                    .shadow(color: FlammePalette.coeur
+                                .opacity(0.55 * sin(min(max(essor, 0), 1) * .pi)),
+                            radius: 14)
                     // Le scale rend TOUT plus grand (lueurs et ombres
                     // comprises) ; le frame donne la place — la ligne
                     // s'écarte, rien ne se chevauche.
@@ -277,7 +286,8 @@ struct FlammeJauge<Detail: View>: View {
                                    date: date, igniteAt: igniteAt)
                     }
                     JaugeBraise(done: done, total: total, t: t, date: date,
-                                surgeAt: surgeAt, surgeFrom: surgeFrom)
+                                surgeAt: surgeAt, surgeFrom: surgeFrom,
+                                essor: essor)
                         // 16-08 : « rajoute un espace de 7 px entre la
                         // barre de progression et le bas, sans toucher au
                         // design ». Il vit ICI, sous la jauge, et non dans
@@ -1291,6 +1301,11 @@ struct JaugeBraise: View {
     let date: Date
     let surgeAt: Date?
     let surgeFrom: Int
+    /// L'OUVERTURE DE LA CARTE [0,1] — un éclat spéculaire parcourt le
+    /// tube pendant le dépliement, comme une lumière qui glisse sur du
+    /// verre qu'on incline. Il naît et meurt avec la course : à 0 et à 1
+    /// il n'existe pas, la barre au repos est exactement celle d'avant.
+    var essor: Double = 0
 
     // 16-08 : « la progress bar est trop épaisse, je la veux plus fine,
     // avec plus de nuances de jaune pour rappeler la flamme et du blanc
@@ -1388,6 +1403,31 @@ struct JaugeBraise: View {
                 // LA POUSSIÈRE DE DIAMANTS — le balayage est mort.
                 PoussiereDiamants(t: t)
                     .clipShape(Capsule())
+            }
+            .overlay {
+                // L'ÉCLAT DU DÉPLIEMENT : une bande claire, étroite et
+                // penchée, qui traverse le tube d'un bout à l'autre
+                // pendant que la carte s'ouvre. Sa position SUIT
+                // l'ouverture (pas d'animation qui vit sa vie), et son
+                // intensité naît puis meurt avec la course — au repos,
+                // dans les deux états, elle n'existe pas.
+                GeometryReader { g in
+                    let vie = sin(min(max(essor, 0), 1) * .pi)
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.0), location: 0.0),
+                            .init(color: .white.opacity(0.85), location: 0.5),
+                            .init(color: .white.opacity(0.0), location: 1.0),
+                        ],
+                        startPoint: .topLeading, endPoint: .bottomTrailing)
+                        .frame(width: 26)
+                        .rotationEffect(.degrees(18))
+                        .offset(x: (g.size.width + 40) * essor - 20)
+                        .opacity(vie)
+                        .blendMode(.plusLighter)
+                }
+                .clipShape(Capsule())
+                .allowsHitTesting(false)
             }
             .overlay {
                 // Le métal chaud qui refroidit : le segment fraîchement gagné

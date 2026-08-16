@@ -1325,9 +1325,15 @@ struct ExerciseDetailView: View {
                     // et arrivent légèrement en retard sur leur opacité —
                     // ce décalage est ce qui fait « posé » plutôt que
                     // « collé ».
-                    let seuil = 0.30 + Double(i) * 0.035
-                    let p = Self.sstep(seuil, min(seuil + 0.30, 0.995), u)
-                    let q = Self.sstep(seuil, min(seuil + 0.42, 0.999), u)
+                    // AMPLIFIÉE (16-08, « je ne vois pas la différence ») :
+                    // le décalage entre lignes passe de 3,5 à 6 % et la
+                    // course de chaque ligne de 22 à 40 pt, avec une
+                    // dérive LATÉRALE de 18 pt — une ligne qui monte tout
+                    // droit se lit comme un défilement ; une ligne qui
+                    // arrive de biais se lit comme une carte qu'on pose.
+                    let seuil = 0.26 + Double(i) * 0.060
+                    let p = Self.sstep(seuil, min(seuil + 0.26, 0.995), u)
+                    let q = Self.sstep(seuil, min(seuil + 0.40, 0.999), u)
                     Group {
                         if i < sets.count {
                             SetHistoryRow(rank: i + 1,
@@ -1346,8 +1352,14 @@ struct ExerciseDetailView: View {
                         }
                     }
                     .opacity(p)
-                    .offset(y: 22 * (1 - q))
-                    .scaleEffect(0.96 + 0.04 * q, anchor: .leading)
+                    .offset(x: -18 * (1 - q), y: 40 * (1 - q))
+                    .scaleEffect(0.93 + 0.07 * q, anchor: .leading)
+                    // Et elle finit d'ARRIVER : une inclinaison de 6°
+                    // qui se redresse, prise sur l'axe horizontal — le
+                    // geste d'une carte qu'on rabat à plat.
+                    .rotation3DEffect(.degrees(6 * (1 - q)),
+                                      axis: (x: 1, y: 0, z: 0),
+                                      anchor: .top, perspective: 0.35)
                 }
             }
         }
