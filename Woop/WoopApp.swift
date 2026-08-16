@@ -126,6 +126,11 @@ struct RootView: View {
     /// Banc de la fiche d'exercice : `-exoLab` ouvre la fiche du premier
     /// exercice du catalogue (+ `-activeWorkout` pour la pastille incrustée).
     private static let exoLab = CommandLine.arguments.contains("-exoLab")
+    /// Banc du galet d'aube SEUL : `-galetLab` — la nuit, le dôme nacre au
+    /// bord bas, rien d'autre (ni photo, ni titre, ni carte, ni flamme).
+    /// `-galetFlood <u>` fige la course, `-galetT <s>` fige la respiration,
+    /// `-galetMire` pose les graduations.
+    private static let galetLab = CommandLine.arguments.contains("-galetLab")
     /// Banc de la lentille liquide : `-lensLab` — page papier, bulle de
     /// verre au bord bas, drag jusqu'à la cérémonie blanc → noir du cadran.
     /// `-lensFreeze <p>` fige la progression du drag (captures).
@@ -335,6 +340,8 @@ struct RootView: View {
             HomeAuroraLab()
         } else if Self.bgLab {
             AuroraBgLab()
+        } else if Self.galetLab {
+            GaletLab()
         } else if Self.exoLab {
             NavigationStack {
                 ExerciseDetailView(exercise: ExerciseCatalog.all[0])

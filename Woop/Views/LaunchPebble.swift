@@ -63,6 +63,73 @@ struct LaunchPebble: View {
     /// Le papier de la maison — celui du voile, celui de la lentille.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
 
+    /// BANC SEULEMENT — `-galetT <s>` fige l'horloge de la respiration.
+    /// Sans elle, le dôme respire de ±6,5 pt de rayon et la crête de
+    /// ±6 pt : deux captures ne tombent jamais sur la même géométrie, et
+    /// toute mesure au dixième de point est un mensonge. En production
+    /// la prise est nil : rien ne change.
+    static let tFreeze: Double? = Self.arg("-galetT")
+
+    // MARK: Le liseré — le deuxième trait, à l'INTÉRIEUR du dôme
+
+    /// Δ : de combien de points le liseré est rentré sous le bord. C'est
+    /// le seul nombre que la maquette ne donne pas — il se choisit à la
+    /// planche-contact. Plafond dur à 34 : au-delà de ~40 pt le liseré
+    /// entre dans la portée du limbe de la calotte (1,32 Rg = 182,7 pt du
+    /// centre) et se fait étaler en bandes.
+    /// **14 pt, choisi à la planche-contact** : à 10 le liseré se lit
+    /// encore accroché au dégradé chaud du bord, à 20 il descend trop
+    /// profond dans le dôme sur les flancs. À 6 il est carrément
+    /// contaminé par la lèvre sombre du bord (base mesurée à 130 L au
+    /// lieu de 209, largeur 12 pt : ce n'est plus un liseré).
+    /// Le plafond de 22 est une affaire de verre, et il se calcule SOUS LE
+    /// DOIGT, pas au repos : la calotte grossit avec la chaleur
+    /// (Rg = D·(0,62 + 0,06·heat) = 163,7) et son limbe échantillonne
+    /// jusqu'à 1,32 Rg, soit 200 pt au-dessus du centre. Le liseré est à
+    /// b − Δ = 223,3 − Δ. Au repos on aurait droit à 40 pt ; à pleine
+    /// chaleur la marge tombe à 23,3. Mesuré : à Δ=14 le liseré est
+    /// strictement identique posé et dans la couche, aux deux régimes —
+    /// il ne touche jamais le verre.
+    static let lisereDelta = min(max(Self.arg("-galetLisere") ?? 14, 0), 22)
+    /// σ de la cloche. **0,60 pt → FWHM 1,41 pt, soit 4,2 px à 3×** : le
+    /// cœur reste sous le pixel, l'antialiasing fait le reste.
+    static let lisereSigma = Self.arg("-galetLisereW") ?? 0.60
+    /// k : la couverture au pic. **1,00 → pic L ≈ 248 sur la nacre, soit
+    /// +37 L, R−B +8** : un vrai filet blanc, la valeur de son verdict.
+    /// 0,70 en ferait une suggestion ; 0 l'éteint (le témoin de l'A/B).
+    static let lisereK = Self.arg("-galetLisereK") ?? 1.00
+    /// LE SOUFFLE — σ et amplitude de la seconde cloche, très large et
+    /// très faible, qui entoure le cœur. C'est le SEUL levier qui reste
+    /// pour « renforcer » : à k = 1 le cœur est déjà blanc plein, il n'y
+    /// a plus rien à monter. Le halo est ce qui sépare une lumière d'un
+    /// trait blanc — un trait n'a pas de halo.
+    static let lisereHalo = Self.arg("-galetLisereHalo") ?? 3.4
+    static let lisereHaloA = Self.arg("-galetLisereHaloA") ?? 0.16
+    /// LE DÉGRADÉ DES DEUX BOUTS, en degrés depuis le sommet : pleine
+    /// intensité jusqu'à `lisereFull`, éteint à `lisereEnd`. Le contour
+    /// sort de l'écran à 56,44° — le fondu doit donc se terminer un peu
+    /// après, sinon le liseré est GUILLOTINÉ par le bord de l'écran, et
+    /// un trait qui s'arrête net se lit comme un trait tracé.
+    static let lisereFull = Self.arg("-galetLisereFull") ?? 34
+    static let lisereEnd = Self.arg("-galetLisereEnd") ?? 58
+    /// LA POUDRE DE DIAMANT semée sur le liseré. « Quasi invisible » est
+    /// une DENSITÉ (un grain sur ~50 allumé à un instant donné), pas une
+    /// opacité : diviser l'alpha ferait disparaître les grains au lieu de
+    /// les affiner — la leçon payée sur la poudre du galet.
+    static let lisereDust = Self.arg("-galetLisereDust") ?? 0.55
+    /// `-galetLisereIn` : le liseré DANS la couche (réfracté par le verre,
+    /// il vit dans la matière) au lieu de POSÉ au-dessus (la place validée
+    /// par le jury pour le fil et l'encre). Les deux sont légales tant que
+    /// Δ reste hors de portée du limbe — c'est l'œil qui tranche.
+    static let lisereIn = CommandLine.arguments.contains("-galetLisereIn")
+
+    private static func arg(_ flag: String) -> Double? {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: flag), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return nil }
+        return v
+    }
+
     /// Ce que le geste a soulevé : le galet monte AVEC le doigt — suivi
     /// direct sur 60 pt (toute la montée nocturne se VOIT sur la page),
     /// puis la résistance s'épaissit, et de toute façon l'aube arrive.
@@ -74,8 +141,9 @@ struct LaunchPebble: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
                                 paused: asleep)) { tl in
             let now = tl.date
-            canvas(t: now.timeIntervalSinceReferenceDate
-                       .truncatingRemainder(dividingBy: 900),
+            canvas(t: Self.tFreeze
+                       ?? now.timeIntervalSinceReferenceDate
+                              .truncatingRemainder(dividingBy: 900),
                    wake: wakeLevel(at: now))
         }
         .frame(height: Self.height)
@@ -169,6 +237,38 @@ struct LaunchPebble: View {
             let squashV = Float(squash), shadeV = Float(0.12)
             let tS = Float(t)
             let zero = Float(0)
+            // — LE LISERÉ : la deuxième courbe, rentrée de Δ sous le bord.
+            //   Il respire avec le corps (même horloge 0,63, mais d'un
+            //   souffle : ±6 %, pas ±12 — un liseré qui pulse se voit) et
+            //   il cède au voile comme tout le reste : quand la page se
+            //   remplit de jour, il n'a plus rien à border.
+            let lisSouffle: Double = 0.96 + 0.04 * sin(t * 0.63)
+            let lisLive: Double = 1 - 0.90 * fv
+            let lisGain = Float(Self.lisereK * lisSouffle * lisLive)
+            let lisCX = Float(W2 / 2)
+            let lisD = Float(D), lisSq = Float(squash)
+            let lisDelta = Float(Self.lisereDelta)
+            let lisSigma = Float(Self.lisereSigma)
+            let lisHalo = Float(Self.lisereHalo)
+            let lisHaloA = Float(Self.lisereHaloA)
+            // Le fondu travaille en cosinus (il décroît quand on descend
+            // vers les flancs) : symétrique gauche/droite sans un seul
+            // test de signe.
+            let lisFull = Float(cos(Self.lisereFull * .pi / 180))
+            let lisEnd = Float(cos(Self.lisereEnd * .pi / 180))
+            // La poudre cède au voile comme le reste, et redouble sous le
+            // doigt — le liseré scintille davantage quand il chauffe.
+            let lisDustA = Float(Self.lisereDust * (1 + 0.8 * heat) * lisLive)
+            let lisT = Float(t)
+            let lisereShader = ShaderLibrary.galetLisere(
+                .float2(lisCX, cY),
+                .float2(lisD, lisSq),
+                .float2(lisDelta, lisSigma),
+                .float2(lisHalo, lisHaloA),
+                .float2(lisFull, lisEnd),
+                .float2(lisDustA, lisT),
+                .float(lisGain))
+
             let lensShader = ShaderLibrary.liquidLens(
                 .float2(sizeW, sizeH), .float2(cX, cY), .float(radV),
                 .float(f0V), .float(dispV), .float(emberV),
@@ -265,8 +365,7 @@ struct LaunchPebble: View {
             }
             .frame(width: W2, height: H)
             .compositingGroup()
-            .layerEffect(lensShader,
-                         maxSampleOffset: CGSize(width: 110, height: 110))
+            .lisereEtVerre(lisere: lisereShader, verre: lensShader)
             // AU-DESSUS du verre — jamais réfractés (jury : « l'encre est
             // POSÉE sur le dôme, elle n'est pas dedans ») : le fil blanc
             // de crête, son bloom chaud, et l'encre droite.
@@ -501,6 +600,8 @@ struct LaunchPebble: View {
     /// Le galet ne juge plus la course : il monte sous le doigt et
     /// rapporte chaque position (espace .global = l'espace de la
     /// lentille) — la fiche décide du voile, du montage et du relais.
+    fileprivate static let maxSample = CGSize(width: 110, height: 110)
+
     private var lifter: some Gesture {
         DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { v in
@@ -519,5 +620,26 @@ struct LaunchPebble: View {
                     pull = 0
                 }
             }
+    }
+}
+
+// MARK: - Les deux places légales du liseré
+
+/// POSÉ (défaut) : le liseré est peint APRÈS le verre — il ne se déforme
+/// pas quand la matière se liquéfie sous le doigt, mais c'est la place que
+/// le jury a validée pour le fil et l'encre, et rien ne peut l'y salir.
+/// DEDANS (`-galetLisereIn`) : il entre dans la couche, le verre le
+/// réfracte et le magnifie — il vit dans la matière. Légal seulement parce
+/// que Δ le tient hors de portée du limbe ; c'est l'œil qui tranche.
+private extension View {
+    @ViewBuilder
+    func lisereEtVerre(lisere: Shader, verre: Shader) -> some View {
+        if LaunchPebble.lisereIn {
+            self.colorEffect(lisere)
+                .layerEffect(verre, maxSampleOffset: LaunchPebble.maxSample)
+        } else {
+            self.layerEffect(verre, maxSampleOffset: LaunchPebble.maxSample)
+                .colorEffect(lisere)
+        }
     }
 }
