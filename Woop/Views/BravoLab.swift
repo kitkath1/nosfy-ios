@@ -304,8 +304,14 @@ struct BravoView: View {
             // Le créneau colle à l'image : elle touche ses bords, donc le
             // fondu a de la matière à éteindre (la leçon du trésor).
             let slotRest = imgH
+            // L'horloge se rendort une fois la page posée (voir `settled`) —
+            // MAIS PAS SOUS LE DOIGT. Figée, `tl.date` ne bouge plus : la
+            // gerbe du toucher sortait sur son `guard age > 0` et le souffle
+            // de la pastille sur le sien, si bien que taper la page posée ne
+            // donnait plus que la fumée — seule à porter sa propre horloge.
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion || settled)) { tl in
+                                    paused: reduceMotion
+                                        || (settled && tapAt == nil))) { tl in
                 let e = clock(tl.date)
                 let z = BravoCine.zoom(e)
                 let slot = H + (slotRest - H) * CGFloat(BravoCine.pull(e))
@@ -371,7 +377,16 @@ struct BravoView: View {
                         CoinSmoke(center: CGPoint(
                                     x: anchor.x + (W / 2 - anchor.x) * cam,
                                     y: aY),
-                                  radius: 54 * cam * 0.34,
+                                  // LA POSITION suit la caméra en plein, la
+                                  // PORTÉE est plafonnée. L'hôte de la fumée
+                                  // vaut `rayon × 2 + 132` et son shader tire
+                                  // trois fBm à quatre octaves PAR PIXEL : à
+                                  // `cam` 5,20 le rayon montait à 95 pt, donc
+                                  // un hôte de 323 pt de côté — une falaise de
+                                  // surface qui tombe pile sur la fenêtre la
+                                  // plus chargée de la page. Au-delà de 2, la
+                                  // fumée d'un doigt n'a plus rien à gagner.
+                                  radius: 54 * min(cam, 2.0) * 0.34,
                                   start: tapAt, end: tapEnd, palette: .dark)
                             .allowsHitTesting(false)
                     }
@@ -396,6 +411,14 @@ struct BravoView: View {
                         Spacer(minLength: 0)
                         footerLink
                             .opacity(rise(0.47, e))
+                            // UNE OPACITÉ NULLE N'EST PAS SOURDE AU DOIGT.
+                            // Ce lien est le dernier enfant du ZStack, donc
+                            // AU-DESSUS de la vidéo — et la vidéo est en
+                            // `allowsHitTesting(false)`, elle laisse tout
+                            // passer. Une bande invisible de 44 pt vivait
+                            // donc sous l'image pendant toute la cérémonie,
+                            // et son action DÉMONTE la page.
+                            .allowsHitTesting(rise(0.47, e) > 0.5)
                         // LE SOL, tout en bas. Il naît en dernier, après les
                         // chiffres et l'échappée : la page se referme dessus.
                         floorVideo(W: W)
@@ -778,15 +801,47 @@ struct BravoView: View {
     /// La première image d'un fichier, à tolérance NULLE : on veut CETTE
     /// image-là, pas sa voisine — c'est le filet qui bouche le trou du
     /// bouclage, il doit porter exactement ce qu'on devait voir.
-    private func grabFirstFrame(url: URL,
+    ///
+    /// ET IL DOIT ABOUTIR — C'ÉTAIT ÇA, LES VOILES NOIRS. Cette extraction est
+    /// lancée DEUX FOIS dans le même tour de boucle que le master 3532×2160
+    /// joué à 2,5× : jusqu'à cinq clients de décodage réclamés au même
+    /// instant. Sous cette bousculade, le générateur rend `nil` — et le
+    /// `guard let image else { return }` nu qui vivait ici l'avalait en
+    /// silence. Le filet restait alors nil POUR TOUTE LA VIE DE LA PAGE, et
+    /// chaque changement d'item redevenait ce qu'il était avant qu'on pose le
+    /// filet : le noir de la page à la place de l'image, toutes les 4,8 s en
+    /// haut et 12,9 s en bas. Adouci par le fondu de bords, ça ne se lit pas
+    /// comme une arête mais comme un VOILE.
+    ///
+    /// Et c'est ce qui explique « des fois » : cette course est le SEUL
+    /// événement non déterministe de la page — tout le reste (l'horloge, le
+    /// zoom, la caméra, le flou) est une fonction pure du temps mural. Deux
+    /// ouvertures du même build ne donnent donc pas le même résultat.
+    ///
+    /// Le filet n'a pas de date limite serrée : il doit seulement être posé
+    /// avant le PREMIER bouclage. On laisse donc passer la bousculade et on
+    /// redemande, plutôt que d'abandonner à la première rebuffade.
+    private func grabFirstFrame(url: URL, tries: Int = 3,
                                 _ done: @escaping (UIImage) -> Void) {
         let gen = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         gen.appliesPreferredTrackTransform = true
         gen.requestedTimeToleranceBefore = .zero
         gen.requestedTimeToleranceAfter = .zero
         gen.generateCGImagesAsynchronously(
-            forTimes: [NSValue(time: .zero)]) { _, image, _, _, _ in
-            guard let image else { return }
+            forTimes: [NSValue(time: .zero)]) { _, image, _, _, error in
+            guard let image else {
+                guard tries > 1 else {
+                    // On ne meurt plus muet : si le filet est vraiment perdu,
+                    // la console le dit, et les voiles ont un nom.
+                    print("[BRAVO] filet PERDU — \(url.lastPathComponent) : "
+                          + String(describing: error))
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    grabFirstFrame(url: url, tries: tries - 1, done)
+                }
+                return
+            }
             let ui = UIImage(cgImage: image)
             DispatchQueue.main.async { done(ui) }
         }

@@ -589,7 +589,21 @@ struct ExerciseDetailView: View {
                             LaunchPebble(
                                 label: "Lancer l'exercice",
                                 flood: $flood,
-                                asleep: running != nil,
+                                // BRAVO L'ENDORT AUSSI. Le sommeil du galet
+                                // ne connaissait que `running` — or
+                                // `startBravo` met justement `running` à nil
+                                // en montant BRAVO : le galet se RÉVEILLAIT à
+                                // l'instant exact où la page lance ses trois
+                                // lecteurs, et rejouait ses 4 s de renaissance
+                                // (quatre passes hors écran sur 2,23 Mpx à
+                                // 30 Hz) sous un plein écran NOIR OPAQUE. Du
+                                // remplissage strictement invisible, pendant
+                                // les 4 secondes les plus chargées de l'app.
+                                // La leçon est déjà écrite dans la maison :
+                                // le ciel de la home tournait derrière le
+                                // splash, et le remède fut de ne pas monter,
+                                // jamais de masquer.
+                                asleep: running != nil || finished != nil,
                                 onDrive: { p, vy in driveMoved(p, vy) },
                                 onRelease: { p, vy in driveEnded(p, vy) },
                                 onLaunch: launch

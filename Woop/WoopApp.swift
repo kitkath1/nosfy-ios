@@ -49,6 +49,12 @@ struct WoopApp: App {
         // est donc chauffée à chaque lancement, et non plus seulement pour le
         // banc du monolithe. C'est la toute première chose que l'app dessine.
         MoonSDF.warmUp()
+        // La fumée de la pièce : le SEUL pipeline encore froid du parcours
+        // d'une séance — il n'existe que si un doigt se pose. Sur la page
+        // BRAVO, dont toute la cérémonie est une fonction du temps mural, une
+        // cuisson au premier tap ne fait pas saccader : elle fait SAUTER le
+        // plan. Elle se cuit donc ici, comme la SDF du croissant.
+        CoinSmokeWarm.warmUp()
     }
 
     var body: some Scene {

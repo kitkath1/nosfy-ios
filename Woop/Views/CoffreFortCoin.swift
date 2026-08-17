@@ -61,6 +61,39 @@ struct CoffreFortCoinButton: View {
 
 // MARK: - La fumée
 
+/// LA CUISSON DU SHADER DE FUMÉE, hors du chemin d'affichage.
+///
+/// SwiftUI compile un shader PARESSEUSEMENT, à son premier usage, et cette
+/// compilation-là tombe sur le fil principal — la leçon est déjà écrite dans
+/// `MoonSDF` (« C'était le "ça bugue au début" »). Or `coinSmoke` était le
+/// seul pipeline encore FROID du parcours d'une séance : `moonCoin` est
+/// chauffé bien avant par les pièces de l'historique de la fiche, mais la
+/// fumée, elle, n'existe que si un doigt se pose. Le premier tap de la page
+/// BRAVO payait donc la cuisson entière.
+///
+/// Et sur BRAVO ça ne coûte pas qu'un à-coup : toute la cérémonie est une
+/// FONCTION DU TEMPS MURAL. Une image qui n'est pas présentée n'est pas
+/// retardée, elle est DÉTRUITE — la caméra repart là où le temps est arrivé.
+/// Un blocage au premier tap ne fait donc pas « saccader » la vidéo : il fait
+/// SAUTER le plan, exactement comme le splash le faisait avant sa garde.
+enum CoinSmokeWarm {
+    /// Un exemplaire aux arguments inertes, uniquement pour forcer la
+    /// compilation. La signature est recopiée à l'identique de l'appel réel
+    /// ci-dessous : se tromper d'arité chaufferait une AUTRE variante et ne
+    /// servirait à rien (le piège du stitchable, payé ailleurs).
+    private static var probe: Shader {
+        ShaderLibrary.coinSmoke(.float2(100, 100), .float(0),
+                                .float3(50, 50, 20), .float(0), .float(0),
+                                .float3(0, 0, 0), .float(0))
+    }
+
+    static func warmUp() {
+        Task.detached(priority: .utility) {
+            try? await probe.compile(as: .colorEffect)
+        }
+    }
+}
+
 /// La fumée de la pièce, en deux teintes.
 ///
 /// UNE FUMÉE SE LIT PAR CONTRASTE AVEC CE QU'IL Y A DERRIÈRE, et le derrière
