@@ -646,6 +646,47 @@ enum FlammePalette {
         startPoint: .top, endPoint: .bottom)
 }
 
+// MARK: - Le liseré du médaillon
+
+/// LE LISERÉ BLANC DE LA MAISON — celui des boutons play/pause du player,
+/// désormais partagé au lieu d'être recopié : les mêmes crans, les mêmes
+/// angles, la même bague. Deux tables de valeurs qui divergent d'un pouième
+/// donnent deux matières différentes à l'œil, et c'est exactement ce que
+/// Kathryn attrape (« le même liseré blanc joli et l'ombre »).
+///
+/// Les deux tables sont des `AngularGradient` : elles valent pour un
+/// `Circle` comme pour une `Capsule` — l'angle 0 est à 3 h, il tourne dans
+/// le sens des aiguilles.
+enum LisereMedaillon {
+    /// Les CRANS : l'arc vif au sud-ouest, le flare du nord-ouest, les
+    /// éteintes entre — jamais un périmètre iso-brillant.
+    static let crans: [Gradient.Stop] = [
+        .init(color: Color.white.opacity(0.10), location: 0.000),
+        .init(color: Color.white.opacity(0.46), location: 0.098),
+        .init(color: Color.white.opacity(0.14), location: 0.180),
+        .init(color: Color.white.opacity(0.10), location: 0.280),
+        .init(color: Color.white.opacity(0.62), location: 0.430),
+        .init(color: Color.white.opacity(0.30), location: 0.500),
+        .init(color: Color.white.opacity(0.86), location: 0.580),
+        .init(color: Color.white.opacity(0.20), location: 0.660),
+        .init(color: Color.white.opacity(0.10), location: 0.790),
+        .init(color: Color.white.opacity(0.44), location: 0.882),
+        .init(color: Color.white.opacity(0.10), location: 0.960),
+        .init(color: Color.white.opacity(0.10), location: 1.000),
+    ]
+    /// La BAGUE : le flare blanc pur du haut-gauche (209°), tracé DEHORS du
+    /// bord et flouté — c'est elle, l'« ombre » qui décolle la pièce.
+    static let bague: [Gradient.Stop] = [
+        .init(color: .white.opacity(0.00), location: 0.000),
+        .init(color: .white.opacity(0.00), location: 0.500),
+        .init(color: .white.opacity(0.18), location: 0.536),
+        .init(color: .white.opacity(0.92), location: 0.581),
+        .init(color: .white.opacity(0.30), location: 0.625),
+        .init(color: .white.opacity(0.00), location: 0.660),
+        .init(color: .white.opacity(0.00), location: 1.000),
+    ]
+}
+
 // MARK: - Le vent
 
 /// Le souffle de la carte, calculé UNE fois par frame côté CPU — le même

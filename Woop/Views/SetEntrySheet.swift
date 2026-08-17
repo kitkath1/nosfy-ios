@@ -92,7 +92,14 @@ struct SetEntrySheet: View {
                 // l'emboîtement, plus par la marge.
                 .padding(.horizontal, 20)
                 .padding(.bottom, 38)
-                .padding(.top, 18)
+                // 40 ET NON 18 (« trop collé », verdict Kathryn) : la marge
+                // se mesure depuis la PILULE, mais l'œil, lui, mesure depuis
+                // l'ANNEAU du médaillon — il monte 7 pt au-dessus d'elle et
+                // son halo une dizaine encore. À 18, il ne restait que ~5 pt
+                // d'air sous les pastilles. Le panneau grandit d'autant
+                // (0,62 → 0,67 dans LiquidLensLab) : sans ça la colonne
+                // déborde et la VStack reprend l'air qu'on vient de donner.
+                .padding(.top, 40)
         }
         // LE VERRE EST LE VRAI — dans l'arbre du cadran, il échantillonne
         // l'auréole et les chiffres POUR DE VRAI. Le sheet système est mort :
@@ -260,30 +267,69 @@ struct SetEntrySheet: View {
             // la feuille, et son chiffre le plus blanc.
             Text(Self.restLabel(seconds))
                 .font(.inter(12.5, on ? .semibold : .regular))
-                .foregroundStyle(on ? Color.white : Color.white.opacity(0.58))
-                .shadow(color: on ? Color(red: 1.0, green: 0.86, blue: 0.66)
-                    .opacity(0.55) : .clear, radius: on ? 7 : 0)
-                .shadow(color: on ? Color.white.opacity(0.35) : .clear,
+                .foregroundStyle(on ? FlammePalette.blanc
+                                    : Color.white.opacity(0.58))
+                .shadow(color: on ? FlammePalette.blanc.opacity(0.40)
+                                  : .clear, radius: on ? 6 : 0)
+                .shadow(color: on ? Color.white.opacity(0.30) : .clear,
                         radius: on ? 2 : 0)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
                 .background {
                     if on {
-                        // Le noir mat. Un chip noir sur un verre sombre n'a
-                        // plus de contour pour exister : c'est le liseré
-                        // chaud, très fin, qui le tient — sans lui il
-                        // disparaîtrait dans la feuille.
+                        // LE MÉDAILLON DU PLAYER, EN PASTILLE (verdict
+                        // Kathryn : « le même liseré blanc joli et l'ombre
+                        // que les boutons play et pause »). Le disque laqué
+                        // devient une capsule laquée, les crans du liseré
+                        // sont les MÊMES valeurs (LisereMedaillon), et la
+                        // bague blanche du nord-ouest déborde dehors : c'est
+                        // elle qui décolle la pièce de la feuille.
+                        //
+                        // JAMAIS de plusLighter ici : dans la couche du
+                        // verre du panneau, un blend mode fait apparaître le
+                        // CALQUE — un rectangle clair aux bords de son hôte
+                        // (payé sur la scène du slider, juste dessous). Sur
+                        // une laque quasi noire, le simple par-dessus rend
+                        // la même lumière.
                         Capsule(style: .continuous)
-                            .fill(Color(red: 0.035, green: 0.033, blue: 0.036))
+                            .fill(RadialGradient(
+                                colors: [Color(white: 0.105),
+                                         Color(white: 0.035)],
+                                center: UnitPoint(x: 0.30, y: 0.24),
+                                startRadius: 2, endRadius: 46))
+                            // Le halo chaud en sourdine — l'ambiance du
+                            // médaillon, celle qui empêche le noir d'être
+                            // un trou.
                             .overlay {
                                 Capsule(style: .continuous)
-                                    .strokeBorder(LinearGradient(
-                                        colors: [Color(red: 1.0, green: 0.78,
-                                                       blue: 0.48).opacity(0.55),
-                                                 Color(red: 1.0, green: 0.55,
-                                                       blue: 0.20).opacity(0.12)],
-                                        startPoint: .top, endPoint: .bottom),
-                                        lineWidth: 1)
+                                    .fill(RadialGradient(
+                                        stops: [
+                                            .init(color: FlammePalette.flamme
+                                                .opacity(0.07), location: 0),
+                                            .init(color: FlammePalette.or
+                                                .opacity(0.02), location: 0.55),
+                                            .init(color: .clear, location: 1),
+                                        ], center: .center,
+                                        startRadius: 0, endRadius: 30))
+                            }
+                            // Le liseré premium, aux crans du médaillon.
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .stroke(AngularGradient(
+                                        stops: LisereMedaillon.crans,
+                                        center: .center, angle: .zero),
+                                        lineWidth: 0.8)
+                            }
+                            // La bague : tracée DEHORS du bord, floutée.
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .inset(by: -1.25)
+                                    .stroke(AngularGradient(
+                                        stops: LisereMedaillon.bague,
+                                        center: .center, angle: .zero),
+                                        lineWidth: 2.4)
+                                    .blur(radius: 1.0)
+                                    .opacity(0.85)
                             }
                     } else {
                         Color.clear.glassEffect(

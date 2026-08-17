@@ -271,34 +271,10 @@ struct WorkoutPill: View {
         .padding(.bottom, 7)
     }
 
-    /// Le liseré angulaire du médaillon à flamme — SES crans exacts (la
-    /// carte Séries est la référence : « exactement l'effet comme le
-    /// médaillon »), l'arc vif au sud-ouest, la bague encadrée.
-    private static let lisereMedaillon: [Gradient.Stop] = [
-        .init(color: Color.white.opacity(0.10), location: 0.000),
-        .init(color: Color.white.opacity(0.46), location: 0.098),
-        .init(color: Color.white.opacity(0.14), location: 0.180),
-        .init(color: Color.white.opacity(0.10), location: 0.280),
-        .init(color: Color.white.opacity(0.62), location: 0.430),
-        .init(color: Color.white.opacity(0.30), location: 0.500),
-        .init(color: Color.white.opacity(0.86), location: 0.580),
-        .init(color: Color.white.opacity(0.20), location: 0.660),
-        .init(color: Color.white.opacity(0.10), location: 0.790),
-        .init(color: Color.white.opacity(0.44), location: 0.882),
-        .init(color: Color.white.opacity(0.10), location: 0.960),
-        .init(color: Color.white.opacity(0.10), location: 1.000),
-    ]
-    /// La BAGUE du médaillon : le flare blanc pur du haut-gauche (209°),
-    /// attaché au disque, débordant dehors.
-    private static let bagueMedaillon: [Gradient.Stop] = [
-        .init(color: .white.opacity(0.00), location: 0.000),
-        .init(color: .white.opacity(0.00), location: 0.500),
-        .init(color: .white.opacity(0.18), location: 0.536),
-        .init(color: .white.opacity(0.92), location: 0.581),
-        .init(color: .white.opacity(0.30), location: 0.625),
-        .init(color: .white.opacity(0.00), location: 0.660),
-        .init(color: .white.opacity(0.00), location: 1.000),
-    ]
+    // Le liseré angulaire du médaillon à flamme et sa bague vivent dans
+    // `LisereMedaillon` (FlammeJauge.swift) : les pastilles de repos du
+    // sheet de saisie portent EXACTEMENT le même — deux tables recopiées
+    // auraient fini par diverger d'un pouième, et l'œil l'attrape.
 
     /// LE BOUTON-MÉDAILLON : l'effet du médaillon à flamme de la carte,
     /// à l'échelle du player — le disque laqué, le liseré angulaire
@@ -345,7 +321,7 @@ struct WorkoutPill: View {
             // Le liseré premium, aux crans du médaillon.
             .overlay {
                 Circle()
-                    .stroke(AngularGradient(stops: Self.lisereMedaillon,
+                    .stroke(AngularGradient(stops: LisereMedaillon.crans,
                                             center: .center, angle: .zero),
                             lineWidth: 0.8)
                     .opacity(lueur ? 1.0 : 0.78)
@@ -353,7 +329,7 @@ struct WorkoutPill: View {
             // La bague : `stroke` centré, elle déborde DEHORS du disque.
             .overlay {
                 Circle()
-                    .stroke(AngularGradient(stops: Self.bagueMedaillon,
+                    .stroke(AngularGradient(stops: LisereMedaillon.bague,
                                             center: .center, angle: .zero),
                             lineWidth: 2.4)
                     .frame(width: 36.5, height: 36.5)

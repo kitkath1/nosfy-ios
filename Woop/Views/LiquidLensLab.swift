@@ -166,6 +166,15 @@ struct LiquidLensLab: View {
     /// cadran VIVANT et ses halos (on ne juge un verre que sur ce qui vit
     /// dessous, jamais sur du noir).
     private static let sheetFire = CommandLine.arguments.contains("-sheetFire")
+    /// `-restPick <s>` : la feuille du banc s'ouvre avec un repos DÉJÀ
+    /// choisi. Le simulateur ne tape pas : c'est la seule façon de voir la
+    /// pastille à l'état sélectionné (son liseré de médaillon) en capture.
+    private static let restPick: Int? = {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-restPick"), i + 1 < args.count,
+              let v = Int(args[i + 1]) else { return nil }
+        return v
+    }()
 
     /// Le papier de la maison — le crème de la dalle d'exercice.
     private static let paper = Color(red: 0.956, green: 0.952, blue: 0.942)
@@ -329,7 +338,12 @@ struct LiquidLensLab: View {
                             restStart = .now
                             entering = false
                         }
-                        .frame(height: g.size.height * 0.62)
+                        // 0,67 ET NON 0,62 : la colonne (header + deux
+                        // molettes + pastilles + slider) mesure ~516 pt et
+                        // DÉBORDAIT — la VStack rognait alors l'air rendu
+                        // aux pastilles (« trop collé »). Le panneau monte
+                        // juste assez pour que rien ne se compresse.
+                        .frame(height: g.size.height * 0.67)
                         .transition(.move(edge: .bottom))
                     }
                 }
@@ -782,7 +796,7 @@ struct LiquidLensLab: View {
         if Self.sheetFire, !entering, restStart == nil, let s = summitAt,
            d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
                + SummitCine.descend + 7.2 {
-            draftRest = nil
+            draftRest = Self.restPick
             entering = true
         }
         guard let rs = restStart else { return }

@@ -172,6 +172,39 @@ struct GaletSlide: View {
     private static let silver = Color(red: 0.43, green: 0.39, blue: 0.35)
     /// L'or du fil extérieur — mesuré aux bouts de la réf : (132,109,90).
     private static let gold = Color(red: 1.0, green: 0.72, blue: 0.38)
+    /// L'or sourd des DEUX BOUTS, plus terreux que le fil du pouce.
+    private static let bout = Color(red: 0.86, green: 0.51, blue: 0.20)
+
+    /// LA LUMIÈRE D'UN BOUT — un dégradé radial, la seule douceur qui ne
+    /// coûte ni flou (LE CALQUE) ni bord franc (les ANNEAUX). Posée à cheval
+    /// sur la calotte, elle en éclaire la courbe et déborde dehors.
+    private static var boutGlow: some View {
+        Ellipse()
+            .fill(RadialGradient(
+                colors: [bout.opacity(0.40), bout.opacity(0.13), .clear],
+                center: .center, startRadius: 5, endRadius: 54))
+            .frame(width: 108, height: 108)
+            .allowsHitTesting(false)
+    }
+
+    /// UNE ÉCHELLE DE LISERÉS — LA DOUCEUR SANS FLOU. `.blur` est interdit
+    /// dans cette pile : il laisse un voile clair uniforme sur tout le
+    /// rectangle de son hôte (LE CALQUE, mesuré à la sonde). On empile donc
+    /// des bordures de plus en plus larges et de plus en plus pâles : à
+    /// l'œil c'est la même retombée de lumière, et rien n'est rasterisé.
+    /// `steps` = (encart, largeur, opacité), du cœur vers le dehors.
+    private static func softRim<S: ShapeStyle>(
+        _ shading: S,
+        steps: [(CGFloat, CGFloat, Double)]) -> some View {
+        ZStack {
+            ForEach(steps.indices, id: \.self) { i in
+                Capsule(style: .continuous)
+                    .inset(by: steps[i].0)
+                    .strokeBorder(shading, lineWidth: steps[i].1)
+                    .opacity(steps[i].2)
+            }
+        }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -194,10 +227,18 @@ struct GaletSlide: View {
                         // peser dans le layout (un hôte plus haut dans la
                         // pile poussait tout le slider de 50 pt vers le bas,
                         // coupé par le bas d'écran — payé au round 6).
+                        // PAS DE BLEND MODE ICI — c'était LE CALQUE
+                        // (« on voit un calque derrière le slider ») : un
+                        // `plusLighter` posé dans la couche du Liquid Glass
+                        // du panneau force un groupe de composition, et le
+                        // verre se redessine SUR le rectangle de l'hôte —
+                        // mesuré au pixel : une dalle claire de 362 × 70 pt
+                        // aux coins CARRÉS autour de la pilule. Sur une
+                        // piste quasi noire, le simple par-dessus rend la
+                        // même lumière (le shader sort déjà prémultiplié).
                         .background {
                             stage(t: now, p: p, ax: ax, W: W, flash: flash)
                                 .frame(width: W, height: 170)
-                                .blendMode(.plusLighter)
                                 .allowsHitTesting(false)
                         }
                         // La poussière déborde elle aussi la piste (170 pt)
@@ -380,40 +421,37 @@ struct GaletSlide: View {
                         endRadius: 100 + 55 * p)
                 }
                 .opacity(0.55 + 0.45 * Double(p))
-            // LES DEUX BOUTS : le fil d'or extérieur s'élargit et se floute
-            // en enveloppant les courbes, l'argent reste fin dessous.
-            Capsule(style: .continuous)
-                .inset(by: -2)
-                .strokeBorder(Color(red: 0.86, green: 0.51, blue: 0.20),
-                              lineWidth: 3)
-                .blur(radius: 9)
-                .mask {
-                    HStack {
-                        LinearGradient(colors: [.white, .white.opacity(0)],
-                                       startPoint: .leading,
-                                       endPoint: .trailing)
-                            .frame(width: 64)
-                        Spacer(minLength: 0)
-                        LinearGradient(colors: [.white.opacity(0), .white],
-                                       startPoint: .leading,
-                                       endPoint: .trailing)
-                            .frame(width: 64)
-                    }
-                }
-                .opacity(0.55)
+            // LES DEUX BOUTS : deux LUMIÈRES posées sur les extrémités, qui
+            // enveloppent les courbes et débordent un peu dehors.
+            //
+            // PLUS UN SEUL `.blur` ICI — C'ÉTAIT LE CALQUE, isolé à la
+            // sonde : un flou SwiftUI laisse un voile clair UNIFORME sur
+            // tout le rectangle de son hôte (mesuré +5 sur un fond de 14,
+            // bords CARRÉS, 362 × 70 pt). C'est la composante continue de
+            // son pyramidal qui fuit : ni le masque ni le blend mode n'y
+            // changent rien — retirer le masque n'en enlevait que la
+            // moitié. Et l'échelle de liserés qui a suivi faisait des
+            // ANNEAUX (chaque trait a un bord franc dehors). Un dégradé
+            // radial, lui, n'a AUCUN bord : c'est la seule douceur gratuite.
+            // Elles DÉBORDENT, et c'est fait exprès (verdict Kathryn) : le
+            // débord du bijou hors de la piste est la loi de la réf.
+            Self.boutGlow.offset(x: -24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Self.boutGlow.offset(x: 24)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             // LE FIL D'OR EXTÉRIEUR au pouce — le halo du bijou, hors du
-            // bord, qui suit le doigt.
-            Capsule(style: .continuous)
-                .inset(by: -4)
-                .strokeBorder(refused ? Self.garnet : Self.gold,
-                              lineWidth: 1.6)
-                .blur(radius: 3)
-                .mask {
-                    RadialGradient(colors: [.white, .white.opacity(0)],
-                                   center: axU,
-                                   startRadius: 16,
-                                   endRadius: 130 + 80 * p)
-                }
+            // bord, qui suit le doigt. La gaussienne du masque est devenue
+            // la TEINTE du trait : même loi (plein jusqu'à 16 pt du pouce,
+            // éteinte à 130 + 80 p). Deux passes serrées seulement : au-delà,
+            // les bords francs se comptent à l'œil.
+            Self.softRim(
+                RadialGradient(
+                    colors: [refused ? Self.garnet : Self.gold,
+                             (refused ? Self.garnet : Self.gold).opacity(0)],
+                    center: axU,
+                    startRadius: 16,
+                    endRadius: 130 + 80 * p),
+                steps: [(-4, 1.8, 0.70), (-6.0, 3.6, 0.20)])
                 .opacity((0.14 + 0.86 * Double(p)) * (refused ? 0.9 : 1)
                          + flash * 0.6)
             // Le bain du refus : bref, entier — un ÉVÉNEMENT, pas un état.
@@ -511,23 +549,35 @@ struct GaletSlide: View {
                 let fade = (1 - u) * (1 - u)
                 let tw = 0.55 + 0.45 * sin(age * d.freq + d.phase)
                 // La profondeur par la taille : les plus petits grains sont
-                // les plus lointains — plus sourds, jamais flous.
-                let a = fade * tw * (0.55 + 0.45 * Double(min(d.size / 1.6, 1)))
+                // les plus lointains — plus sourds, jamais flous. Le barème
+                // suit la nouvelle échelle (max 1 pt), sinon la poudre fine
+                // sortait toute au plancher.
+                let a = fade * tw * (0.52 + 0.48 * Double(min(d.size, 1)))
                 let x = d.x + d.vx * CGFloat(1 - exp(-age * 3)) * 18
                 let y = d.y - d.rise * CGFloat(u) * 14
                 let r = d.size * (0.8 + 0.5 * CGFloat(u))
                 let core = d.gold
                     ? Color(red: 1.0, green: 0.88, blue: 0.70)
                     : Color.white
-                ctx.fill(
-                    Path(ellipseIn: CGRect(x: x - r, y: y - r,
-                                           width: r * 2, height: r * 2)),
-                    with: .radialGradient(
-                        Gradient(colors: [core.opacity(a * 0.95),
-                                          core.opacity(a * 0.30),
-                                          .clear]),
-                        center: CGPoint(x: x, y: y),
-                        startRadius: 0, endRadius: r * 2.2))
+                let box = CGRect(x: x - r, y: y - r,
+                                 width: r * 2, height: r * 2)
+                if r < 0.75 {
+                    // LE GRAIN À PLAT : sous 0,75 pt (deux pixels), un
+                    // dégradé radial ne dessine plus rien qu'un point — et
+                    // cent cinquante dégradés par image, si. Le point plat
+                    // est le prix de la densité.
+                    ctx.fill(Path(ellipseIn: box),
+                             with: .color(core.opacity(a * 0.90)))
+                } else {
+                    ctx.fill(
+                        Path(ellipseIn: box),
+                        with: .radialGradient(
+                            Gradient(colors: [core.opacity(a * 0.95),
+                                              core.opacity(a * 0.30),
+                                              .clear]),
+                            center: CGPoint(x: x, y: y),
+                            startRadius: 0, endRadius: r * 2.2))
+                }
             }
             // LES PIERRES — des croix taillées, pas des ronds : deux
             // losanges effilés croisés et un cœur vif. Leur scintillement
@@ -567,7 +617,8 @@ struct GaletSlide: View {
                     with: .color(Color.white.opacity(a * 0.95)))
             }
         }
-        .blendMode(.plusLighter)
+        // Le blend mode est mort ici aussi (le CALQUE, cf. la scène) : les
+        // grains sont blancs sur du noir, le par-dessus les rend pareil.
         .allowsHitTesting(false)
         .frame(height: 170)
     }
@@ -581,39 +632,45 @@ struct GaletSlide: View {
         }
         lastSoundX = x
         // À LA DISTANCE, jamais au temps : un doigt arrêté ne sème rien.
-        if let last = lastDustX, abs(x - last) < 5 { return }
+        // Le pas passe de 5 à 3 pt (verdict Kathryn : « plus nombreuses et
+        // plus fines ») — la traînée devient continue au lieu d'être
+        // pointillée.
+        if let last = lastDustX, abs(x - last) < 3 { return }
         lastDustX = x
-        // Des grains FINS (verdict Kathryn : « trop grosses ») — plus
-        // nombreux, plus petits : une poudre, pas des confettis.
-        let n = Int.random(in: 1...3)
+        // DE LA POUDRE, PAS DES CONFETTIS : trois à six grains par pas, de
+        // 0,3 à 1 pt — deux fois plus nombreux et deux fois plus fins
+        // qu'avant. Les plus petits sont peints à plat (voir le Canvas) :
+        // c'est ce qui rend le nuage gratuit à cette densité.
+        let n = Int.random(in: 3...6)
         for _ in 0..<n {
             dusts.append(Dust(
                 born: .now,
-                x: x - CGFloat.random(in: 6...30),
-                y: height / 2 + CGFloat.random(in: -14...14),
-                vx: -max(vx, 0) / 900 - CGFloat.random(in: 0.2...0.9),
-                rise: CGFloat.random(in: 0.4...1.2),
-                size: CGFloat.random(in: 0.6...1.6),
-                freq: Double.random(in: 9...22),
+                x: x - CGFloat.random(in: 4...34),
+                y: height / 2 + CGFloat.random(in: -16...16),
+                vx: -max(vx, 0) / 900 - CGFloat.random(in: 0.2...1.0),
+                rise: CGFloat.random(in: 0.4...1.3),
+                size: CGFloat.random(in: 0.30...1.00),
+                freq: Double.random(in: 9...24),
                 phase: Double.random(in: 0...(2 * .pi)),
-                gold: Int.random(in: 0..<4) == 0))
+                gold: Int.random(in: 0..<5) == 0))
         }
-        if dusts.count > 60 { dusts.removeFirst(dusts.count - 60) }
-        // Les pierres : une par ~12 pt de course — plus rares que la
-        // poussière, sinon elles ne sont plus des pierres.
-        if lastGemX.map({ abs(x - $0) >= 12 }) ?? true {
+        if dusts.count > 150 { dusts.removeFirst(dusts.count - 150) }
+        // Les pierres : une par ~9 pt de course — plus rares que la
+        // poussière, sinon elles ne sont plus des pierres. Elles maigrissent
+        // avec elle (1,4-2,6 pt) : une taille fine scintille mieux.
+        if lastGemX.map({ abs(x - $0) >= 9 }) ?? true {
             lastGemX = x
             gems.append(Diamond(
                 born: .now,
-                x: x - CGFloat.random(in: 4...26),
-                y: height / 2 + CGFloat.random(in: -16...16),
+                x: x - CGFloat.random(in: 4...28),
+                y: height / 2 + CGFloat.random(in: -17...17),
                 vx: -CGFloat.random(in: 0.2...0.7),
                 rise: CGFloat.random(in: 0.5...1.1),
-                ray: CGFloat.random(in: 1.8...3.2),
+                ray: CGFloat.random(in: 1.4...2.6),
                 freq: Double.random(in: 14...30),
                 phase: Double.random(in: 0...(2 * .pi)),
                 tilt: Double.random(in: -0.5...0.5)))
-            if gems.count > 20 { gems.removeFirst(gems.count - 20) }
+            if gems.count > 28 { gems.removeFirst(gems.count - 28) }
         }
         // Le sol s'écrit : une braise par ~9 pt, large et sourde.
         if lastEmberX.map({ abs(x - $0) >= 9 }) ?? true {
