@@ -124,6 +124,11 @@ struct LaunchPebble: View {
     /// 30 pt. `-galetOmbre 0` l'éteint (le témoin de l'A/B).
     static let ombre = Self.arg("-galetOmbre") ?? 0.46
     static let ombreTau = Self.arg("-galetOmbreTau") ?? 14
+    /// L'AMPLITUDE DE LA RESPIRATION, en multiple. 1,0 = le réglage posé
+    /// (±6,2 pt de rayon, ±5,9 pt de crête, soit 11,8 pt de course à la
+    /// crête). `-galetSouffle 0.6` la calme, `1.4` l'exagère — le seul
+    /// juge est l'œil, et ça se règle sans recompiler.
+    static let souffleAmp = Self.arg("-galetSouffle") ?? 1.0
     private static func arg(_ flag: String) -> Double? {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: flag), i + 1 < a.count,
@@ -198,13 +203,27 @@ struct LaunchPebble: View {
             //   calotte grandit vers la crête et sa braise fait son
             //   crescendo : le repos est la maquette, le geste réveille
             //   le verre de feu de la lentille.
-            // La respiration ×2,5 (« elle peut le faire davantage ») —
-            // mêmes horloges que la bulle de la lentille, amplitude d'un
-            // être qui dort.
-            let D = w * 0.60 + 6.5 * sin(t * 0.63) * calm
+            // LA RESPIRATION, RELEVÉE (« anime-la un peu plus, pour
+            // inciter à la toucher »). Trois choses changent, la période
+            // n'en fait pas partie :
+            //  — la FORME : plus un sinus, un souffle asymétrique (voir
+            //    `breath`). C'est ça qui sépare « ça oscille » de « ça
+            //    respire », et c'est ce qu'on a envie de toucher.
+            //  — l'AMPLITUDE : ±6,2 pt de rayon, ±5,9 pt de crête, et le
+            //    dôme GONFLE VERS LE HAUT (le rayon monte, la crête
+            //    s'élève) au lieu que les deux dérivent sur des horloges
+            //    séparées, en se contredisant la moitié du temps. On
+            //    était monté à ±9,5 / ±9 : trop, « on dirait un bug » —
+            //    mais le vrai coupable n'était pas là (voir `dress`).
+            //  — le REPORT : la crête suit le corps d'un demi-temps.
+            //    C'est le vieux principe du dessin animé — un corps
+            //    souple ne bouge pas d'un bloc — et il coûte un `lag`.
+            let amp = Self.souffleAmp
+            let gonfle = Self.swell(t) * calm * amp
+            let suit = Self.swell(t, lag: 0.55) * calm * amp
+            let D = w * 0.60 + 6.2 * gonfle
             let squash = 1.08
-            let crestY = Self.padTop + 20 - lift
-                         + 6.0 * sin(t * 0.80) * calm
+            let crestY = Self.padTop + 20 - lift - 5.9 * suit
             let cyD = crestY + D / squash
             // La calotte n'approche JAMAIS son limbe du bord : à 1,03 D
             // son échantillonnage sortait de la nacre et peignait les
@@ -243,7 +262,14 @@ struct LaunchPebble: View {
             //   souffle : ±6 %, pas ±12 — un liseré qui pulse se voit) et
             //   il cède au voile comme tout le reste : quand la page se
             //   remplit de jour, il n'a plus rien à border.
-            let lisSouffle: Double = 0.96 + 0.04 * sin(t * 0.63)
+            // Le cœur du liseré est déjà blanc plein : le faire pulser
+            // ne ferait que le faire CLIGNOTER. C'est son HALO qui
+            // respire — et il ANTICIPE le mouvement d'un quart de temps.
+            // La lumière se lève juste avant que le corps ne monte :
+            // c'est l'anticipation, et c'est ce qui fait qu'un objet a
+            // l'air de vouloir quelque chose.
+            let brAvance = Self.breath(t, lag: -0.32)
+            let lisSouffle: Double = 0.97 + 0.03 * brAvance
             let lisLive: Double = 1 - 0.90 * fv
             let lisGain = Float(Self.lisereK * lisSouffle * lisLive)
             let lisCX = Float(W2 / 2)
@@ -251,7 +277,7 @@ struct LaunchPebble: View {
             let lisDelta = Float(Self.lisereDelta)
             let lisSigma = Float(Self.lisereSigma)
             let lisHalo = Float(Self.lisereHalo)
-            let lisHaloA = Float(Self.lisereHaloA)
+            let lisHaloA = Float(Self.lisereHaloA * (0.62 + 0.76 * brAvance))
             // Le fondu travaille en cosinus (il décroît quand on descend
             // vers les flancs) : symétrique gauche/droite sans un seul
             // test de signe.
@@ -378,7 +404,7 @@ struct LaunchPebble: View {
             .overlay {
                 dress(w: w, H: H, D: D, squash: squash, cyD: cyD,
                       crestY: crestY, heat: heat, fv: fv,
-                      inkFade: inkFade, t: t)
+                      inkFade: inkFade, suit: suit, t: t)
             }
             // LE BORD (ombre + liseré) EST PEINT EN DERNIER, après
             // l'habillage. Ce n'est pas un détail d'ordre : le bloom du
@@ -402,11 +428,31 @@ struct LaunchPebble: View {
     /// droite, nette, posée SUR le dôme.
     private func dress(w: CGFloat, H: CGFloat, D: CGFloat, squash: CGFloat,
                        cyD: CGFloat, crestY: CGFloat, heat: Double,
-                       fv: Double, inkFade: Double,
+                       fv: Double, inkFade: Double, suit: Double,
                        t: Double) -> some View {
-        // L'ancre de l'écriture : la crête SANS son souffle — elle suit
-        // le doigt (lift), jamais la respiration.
-        let inkY = Self.padTop + 20 - lift
+        // L'ANCRE DE L'ÉCRITURE — elle suit le doigt (lift) ET, depuis la
+        // respiration relevée, le souffle du dôme.
+        //
+        // Elle ne le suivait pas : l'invite restait fixe pendant que le
+        // galet montait de 17 pt sous elle. Verdict de Kathryn, et il est
+        // juste : « ça fait sensation de bug ». Le mécanisme, mesuré —
+        // l'écart crête → texte passait de 48 à 66 pt, ±16 %. L'œil
+        // s'accroche à ce qui est NET : un texte immobile et lisible
+        // devient malgré lui le repère fixe de la scène, et ce n'est plus
+        // le dôme qu'on voit respirer, c'est le dôme qu'on voit GLISSER
+        // derrière lui. Une grande forme molle qui coulisse sous un
+        // élément net ne se lit jamais comme de la vie : elle se lit
+        // comme un calque qui n'a pas suivi. (La preuve était déjà là :
+        // sous le doigt, `lift` emporte tout et rien ne cloche.)
+        //
+        // MAIS PAS À 1:1. Le texte est 57 pt sous la crête, où la surface
+        // se déplace moins que le sommet — et surtout un bord net bouge
+        // dix fois plus visiblement qu'un bord flou : 12 pt de typo qui
+        // monte et descend, c'est trop. À 0,70, l'écart ne varie plus que
+        // de 3,5 pt, et ce reliquat ne se lit pas comme un décalage : il
+        // se lit comme de la profondeur — le texte imprimé légèrement
+        // SOUS la surface au lieu d'être un autocollant posé dessus.
+        let inkY = Self.padTop + 20 - lift - 5.9 * suit * 0.70
         // La palette du contre-jury : bloom AMBRE saturé (R/G ≥ 1,8 — le
         // beige est la dérive marron), un « baiser » orange vif contre le
         // fil pour que la lumière PRENNE sur la crête, et l'arête des
@@ -421,10 +467,11 @@ struct LaunchPebble: View {
         let bloomC = Color(red: 1.00, green: 0.55, blue: 0.18)
         let flancC = Color(red: 0.42, green: 0.22, blue: 0.075)
         let live = (1 - 0.90 * fv)
-        // La couronne respire avec le corps — même horloge 0,63.
-        let breathe = 0.5 + 0.5 * sin(t * 0.63)
-        let filA = (0.88 + 0.12 * breathe) * live
-        let bloomA = (0.55 + 0.9 * heat) * (0.78 + 0.30 * breathe) * live
+        // La couronne respire avec le corps — le MÊME souffle, pas une
+        // horloge parallèle, et elle l'anticipe comme le halo du liseré.
+        let breathe = Self.breath(t, lag: -0.32)
+        let filA = (0.84 + 0.16 * breathe) * live
+        let bloomA = (0.55 + 0.9 * heat) * (0.68 + 0.48 * breathe) * live
         // Décroissance dès la crête : à l'aplomb des flancs le fil est
         // déjà éteint, l'ambre prend le relais.
         let c0 = min((crestY + D * 0.02) / H, 1)
@@ -538,7 +585,11 @@ struct LaunchPebble: View {
     private func dust(w: CGFloat, H: CGFloat, D: CGFloat, squash: CGFloat,
                       cyD: CGFloat, t: Double, heat: Double,
                       live: Double) -> some View {
-        let breathe = 0.5 + 0.5 * sin(t * 0.63)
+        // La poudre part sur l'EXPIRATION — le galet souffle sa brume en
+        // se relâchant, pas en gonflant. Avec le souffle asymétrique, la
+        // détente dure 62 % du cycle : la traîne est plus longue et plus
+        // lisible qu'avec le sinus.
+        let breathe = Self.breath(t, lag: 0.9)
         let emission = Float((0.35 + 0.65 * breathe * breathe)
                              * (1 + 1.2 * heat) * live)
         let cx = Float(w / 2), cy = Float(cyD)
@@ -604,6 +655,33 @@ struct LaunchPebble: View {
         let age = date.timeIntervalSince(wakeAt)
         guard age >= 0, age < 4 else { return 0 }
         return Float((1.0 - exp(-age / 0.12)) * exp(-age / 0.9))
+    }
+
+    /// LA RESPIRATION — une seule horloge pour tout l'objet.
+    ///
+    /// La PÉRIODE ne bouge pas : 0,63 rad/s, celle de la bulle de la
+    /// lentille, pour que le galet garde le même pouls dans les deux
+    /// mondes. Ce qui change, c'est la FORME. Un souffle n'est pas un
+    /// sinus : il gonfle vite, marque le haut, et se relâche plus
+    /// lentement. Cette asymétrie-là est ce qui fait la différence entre
+    /// un objet qui oscille et un objet qui respire — et un objet qui
+    /// respire, on a envie d'y poser le doigt.
+    ///
+    /// `lag` en secondes : positif = en retard (le report du geste, la
+    /// crête qui suit le corps), négatif = en avance (l'anticipation, la
+    /// lumière qui se lève juste avant le mouvement).
+    static func breath(_ t: Double, lag: Double = 0) -> Double {
+        let period = 2 * Double.pi / 0.63
+        var p = ((t - lag) / period).truncatingRemainder(dividingBy: 1)
+        if p < 0 { p += 1 }
+        let rise = 0.38
+        let tri = p < rise ? p / rise : 1 - (p - rise) / (1 - rise)
+        return tri * tri * (3 - 2 * tri)
+    }
+
+    /// Le souffle centré : −1 au creux, +1 au sommet de l'inspiration.
+    static func swell(_ t: Double, lag: Double = 0) -> Double {
+        breath(t, lag: lag) * 2 - 1
     }
 
     private func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
