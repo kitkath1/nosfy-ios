@@ -66,6 +66,21 @@ struct ExercisesView: View {
         return (left, right)
     }
 
+    /// `-exosVoile <p>` fige l'apparition du voile du haut (captures) — le
+    /// simulateur ne se fait pas défiler en ligne de commande. Même usage que
+    /// `-profilPli`, qui fige le fondu du profil.
+    private static let voileFreeze: Double? = UserDefaults.standard
+        .string(forKey: "exosVoile").flatMap { Double($0) }
+
+    /// La naissance du voile du haut, la loi du profil : la rampe courte de
+    /// 26 pt, adoucie en smoothstep — le voile n'apparaît pas d'un trait, il
+    /// monte avec le premier pouce de scroll.
+    private var topVeil: Double {
+        if let f = Self.voileFreeze { return min(max(f, 0), 1) }
+        let t = min(max(Double(scrollOffset) / 26, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+
     /// La prise du voile pour la carte d'indice `i` : 0 = nette, 1 = fondue
     /// au bord bas. Même loi que le `visualEffect` des cartes — les deux
     /// DOIVENT rester accordées, c'est elle qui décide du geste au tap.
@@ -126,34 +141,36 @@ struct ExercisesView: View {
 
     /// Chevron + « Exercices » : le header maison a remplacé la barre système
     /// ET la barre bijou — la sortie de la page, c'est lui.
+    ///
+    /// La rangée est celle de la MAISON (`RangeeChips`, cotes 20 / 4 / 8) :
+    /// le chevron seul sur sa ligne, exactement où il vit sur la fiche
+    /// d'exercice et sur le profil. Le titre descend SOUS lui — porté par la
+    /// même rangée, il flottait 20 pt plus bas que partout ailleurs, et la
+    /// position du chevron ne bouge JAMAIS d'une page à l'autre.
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 12) {
-                // Le composant unique de la maison (verdict 14-08 : le
-                // même chevron sur toutes les pages) — l'ancien rond de
-                // 34 pt teinté à 0,35 était la variante divergente.
-                ChipVerre(symbole: "chevron.left",
-                          label: "Retour à l'accueil") {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        selection = .home
-                    }
+        VStack(alignment: .leading, spacing: 0) {
+            RangeeChips(retour: {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    selection = .home
                 }
+            }) { EmptyView() }
 
+            VStack(alignment: .leading, spacing: 5) {
                 Text("Exercices")
                     .font(.inter(32, .bold))
                     .tracking(-0.3)
                     .foregroundStyle(WoopGradient.titleFade)
+                Text("Construis tes séances à partir de ta bibliothèque.")
+                    .font(.inter(13))
+                    .foregroundStyle(Color.inkSecondary)
             }
-            Text("Construis tes séances à partir de ta bibliothèque.")
-                .font(.inter(13))
-                .foregroundStyle(Color.inkSecondary)
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
     }
 
-    /// Le Pinterest : deux colonnes décalées à gauche de la couronne. Tout
-    /// est net — seul le bord bas fond les cartes dans le voile.
+    /// Le Pinterest : deux colonnes décalées à gauche de la couronne. Au
+    /// repos tout est net ; les DEUX bords fondent — le bas dans le voile de
+    /// chaque carte, le haut dans le fondu noir qui naît au scroll.
     private var grid: some View {
         ScrollView {
             HStack(alignment: .top, spacing: Self.gutter) {
@@ -164,7 +181,7 @@ struct ExercisesView: View {
             .scrollTargetLayout()
             .padding(.top, Self.topPad)
             .padding(.leading, 20)
-            .padding(.trailing, 112)
+            .padding(.trailing, ArcDial.touchCorridor)
             .padding(.bottom, 60)
             .animation(.easeOut(duration: 0.28), value: filter)
         }
@@ -178,6 +195,40 @@ struct ExercisesView: View {
             viewportH = new
         }
         .scrollIndicators(.hidden)
+        // LE FONDU DU HAUT — la recette du profil (« pas de blur dégueu avec
+        // trait » : un DÉGRADÉ NOIR pur, aucune arête), né au scroll, sur la
+        // même rampe courte de 26 pt : dès que le contenu passe dessous, le
+        // voile est là. Sans lui, les cartes se COUPENT net au bord haut.
+        //
+        // Une différence avec le profil, et elle est structurelle : là-bas le
+        // voile est collé au bord de l'écran, il n'a donc pas de bord haut.
+        // Ici il naît au bord haut de la GRILLE, avec le halo qui vit
+        // au-dessus — il doit donc se dissoudre des DEUX côtés, sinon son
+        // propre bord tracerait une ligne noire en travers de la braise.
+        //
+        // Posé APRÈS les sondes de scroll : un overlay glissé avant elles
+        // marche, mais il met une vue entre la sonde et son ScrollView pour
+        // rien — et cette page a déjà payé le prix des sondes fragiles.
+        .overlay(alignment: .top) {
+            LinearGradient(stops: [
+                .init(color: .black.opacity(0.0), location: 0.0),
+                .init(color: .black, location: 0.34),
+                .init(color: .black.opacity(0.62), location: 0.52),
+                .init(color: .black.opacity(0.0), location: 1.0),
+            ], startPoint: .top, endPoint: .bottom)
+            // Le noir plein tombe EXACTEMENT sur le bord haut de la grille
+            // (0,34 × 64 = 21,8, la remontée) : c'est là que la coupe a lieu.
+            //
+            // Et il ne descend que 42 pt plus bas. À 76 pt, le voile n'était
+            // plus un traitement de bord mais un RIDEAU : il éteignait la
+            // moitié de la photo de la première rangée — et d'abord celle de
+            // GAUCHE, qui démarre 30 pt plus haut que la droite (le décalage
+            // Pinterest la pousse d'autant plus loin dans le noir).
+            .frame(height: 64)
+            .offset(y: -22)
+            .opacity(topVeil)
+            .allowsHitTesting(false)
+        }
     }
 
     private func cardColumn(_ indices: [Int]) -> some View {
@@ -309,6 +360,11 @@ private struct ArcDial: View {
     /// sous la couronne, dans le couloir de nuit, jamais sur les cartes.
     private let knobR: CGFloat = 44
     private let ringR: CGFloat = 72
+
+    /// La largeur du couloir de nuit : la SEULE bande où la molette prend le
+    /// doigt. La grille s'en sert pour son encart droit — les deux DOIVENT
+    /// rester accordées, sans quoi la molette mange les cartes ou l'inverse.
+    static let touchCorridor: CGFloat = 112
     private let tickPitch: Double = .pi / 36
     private let labelSpacing: Double = 0.52
 
@@ -324,8 +380,18 @@ private struct ArcDial: View {
                 labels(kx: kx, ky: ky)
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            .contentShape(Rectangle())
-            .gesture(drag)
+            // La molette DESSINE sur toute sa largeur (l'éventail des labels
+            // déborde sur les cartes, c'est le spectacle) mais ne REÇOIT le
+            // doigt que sur le couloir de nuit — sinon sa zone tactile de
+            // 240 pt avale la colonne droite du Pinterest (qui s'arrête à
+            // 112 pt du bord) et taper une carte engage le tambour.
+            .allowsHitTesting(false)
+            .overlay(alignment: .trailing) {
+                Color.clear
+                    .frame(width: Self.touchCorridor)
+                    .contentShape(Rectangle())
+                    .gesture(drag)
+            }
         }
         .sensoryFeedback(.selection, trigger: detent)
         .animation(.spring(response: 0.38, dampingFraction: 0.82), value: engaged)
