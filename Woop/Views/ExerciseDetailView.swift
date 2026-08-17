@@ -113,6 +113,13 @@ struct ExerciseDetailView: View {
     /// ses bruits, les écritures d'état par image. C'est LA réponse au
     /// « pas hyper fluide » — un mouvement n'a pas besoin de détail, il a
     /// besoin d'images.
+    /// L'OUVERTURE RETARDÉE (17-08) — la parallaxe du verre. Elle suit
+    /// `carteP` avec un ressort mou : pendant la course elle est EN RETARD
+    /// sur la carte, et c'est cet écart qui décale les lumières
+    /// intérieures. À l'arrêt les deux se rejoignent, l'écart tombe à zéro
+    /// et l'image au repos est exactement celle d'avant.
+    @State private var carteLag: CGFloat = 0
+
     @State private var carteBouge = false
     /// Le jeton du retour au calme : seule la dernière course éteint la
     /// lumière (deux gestes rapprochés ne se coupent pas l'herbe sous le
@@ -322,6 +329,7 @@ struct ExerciseDetailView: View {
             else if ph < 3.4 { u = 1 - (ph - 1.9) / 1.5 }
             else { u = 0 }
             carteP = CGFloat(u * u * (3 - 2 * u))
+            suivreLeRetard(carteP)
             try? await Task.sleep(for: .milliseconds(8))
         }
     }
@@ -828,6 +836,7 @@ struct ExerciseDetailView: View {
                 // Vers le HAUT = ouvrir : la translation est négative.
                 let brut = carteBase - v.translation.height
                     / Self.collapseSpan
+                defer { suivreLeRetard(carteP) }
                 carteP = brut <= 1 ? max(0, brut)
                                    : 1 + (brut - 1) * 0.12
                 grainDuGeste()
@@ -901,6 +910,7 @@ struct ExerciseDetailView: View {
         let jeton = carteBougeJeton
         withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
             carteP = ouvre ? 1 : 0
+            suivreLeRetard(carteP)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
             if carteBougeJeton == jeton, !carteSaisie { carteBouge = false }
@@ -1198,6 +1208,7 @@ struct ExerciseDetailView: View {
             .background {
                 VerreGonfle(rayonHaut: rH, rayonBas: rB,
                             allege: carteBouge && !Self.carteLourd,
+                            essor: u, essorLag: Double(carteLag),
                             mode: Self.verreLab ? verreMode : 0)
             }
             .frame(width: g.size.width - 2 * x)
@@ -1286,6 +1297,14 @@ struct ExerciseDetailView: View {
     /// qu'il s'affiche sous le compte. On prend les valeurs de la
     /// première série : elles sont les mêmes pour toutes tant que
     /// l'utilisateur n'a rien modifié, et le pluriel suit le nombre.
+    /// LE RESSORT MOU DU RETARD : une seule écriture, branchée sur le
+    /// curseur de la carte. `carteLag` court après `carteP` sans jamais le
+    /// rattraper tant que le doigt bouge — l'écart entre les deux EST la
+    /// parallaxe.
+    private func suivreLeRetard(_ v: CGFloat) {
+        withAnimation(.easeOut(duration: 0.34)) { carteLag = v }
+    }
+
     private var contratSeance: String {
         // MÊMES VALEURS DE REPLI QUE LA LISTE (12 reps, 20 kg, 5 séries) :
         // au banc et sur un exercice neuf, `sets` est vide — la liste

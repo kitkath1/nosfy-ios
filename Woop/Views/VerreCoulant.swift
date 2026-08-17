@@ -19,6 +19,14 @@ struct VerreGonfle: View {
     /// Conservé pour l'appelant (la loi de fluidité reprendra au dé-gel) —
     /// sans effet tant que le shader est figé.
     var allege: Bool
+    /// L'OUVERTURE DE LA CARTE [0,1] — le verre s'en sert pour faire
+    /// courir une lame de lumière pendant la course, à l'aller comme au
+    /// retour. À 0 comme à 1, elle n'existe pas.
+    var essor: Double = 0
+    /// La copie RETARDÉE de l'ouverture. `essor - essorLag` est nul au
+    /// repos et grandit avec la vitesse du doigt : c'est lui qui décale
+    /// les lumières intérieures (la parallaxe du verre épais).
+    var essorLag: Double = 0
     var mode: Int = 0
 
     /// La marge de débordement — Phase 2 : le bloom est borné à ~16 pt
@@ -60,6 +68,8 @@ struct VerreGonfle: View {
                     // suive rend la page BLANCHE, sans une seule erreur de
                     // compilation. Les deux changent dans le même commit.
                     .float(allege ? 1 : 0),
+                    .float(Float(essor)),
+                    .float(Float(essor - essorLag)),
                     .image(Self.mapImage))))
                 .offset(x: -Self.pad, y: -Self.pad)
         }

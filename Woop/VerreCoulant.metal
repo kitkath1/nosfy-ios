@@ -87,7 +87,8 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
 [[ stitchable ]] half4 verreGonfle(float2 position, half4 color,
                                    float2 size, float t,
                                    float pad, float rHaut, float rBas,
-                                   float mode, float allege,
+                                   float mode, float allege, float essor,
+                                   float glisse,
                                    texture2d<half, access::sample> map) {
     float2 center = size * 0.5;
     float2 p = position - center;
@@ -130,6 +131,20 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
     // fils — tout ce qui porte la LECTURE d'un objet en mouvement.
     // Au repos, `allege` vaut 0 et l'image est au pixel près la même.
     float fin = 1.0 - allege;    // 1 au repos, 0 en course
+    // ===== LA PARALLAXE DU VERRE (17-08) =====
+    // LE BALAYAGE A ÉTÉ REFUSÉ avant elle (« je n'aime pas du tout ») :
+    // une lame qui traverse toute la carte l'APLATIT — elle éclaire d'un
+    // coup ce que le verre construit par accidents locaux, et la clarté
+    // moyenne passait de 0,10 à 0,32. Ce n'est plus du verre, c'est un
+    // flash. La leçon : un effet de course doit rester LOCAL.
+    // Ce qui la remplace ne s'ajoute pas, il DÉCALE : les lumières
+    // INTÉRIEURES prennent du retard sur le cadre pendant la course, ce
+    // que fait un verre épais — ce qui est dedans traîne sur ce qui est
+    // dessus. `glisse` = ouverture − ouverture retardée : nul à l'arrêt
+    // (l'image au repos est au pixel la même), maximal quand le doigt va
+    // vite. 26 pt de décalage au plus fort.
+    float retard = clamp(glisse, -1.0, 1.0) * 26.0;
+    float2 qPar = q - float2(0.0, retard);
     float3 E = float3(0.0);      // l'énergie lumineuse, par canal
     float3 rgbIn = float3(0.0);  // la matière intérieure (avant clip)
     float3 air = float3(0.0);    // la lumière d'air (hors carte)
@@ -289,7 +304,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // La conversion est EXACTE à 125 pt : 0,216·125 = 27 pt,
         // 0,00135·125² = 21,1 et 0,0077·125² = 120,3 — la carte repliée ne
         // bouge donc pas d'un centième, par construction.
-        float dyD = q.y - 27.0;
+        float dyD = qPar.y - 27.0;
         float bellD = exp(-dyD * dyD / (dyD < 0.0 ? 21.1 : 120.3));
         // LA DEUXIÈME TACHE, tuée le 17-08 : je l'avais construite en
         // DALLE — smoothstep d'entrée à 2,6 pt, plateau, puis falaise à
@@ -308,7 +323,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // être qu'une bande parallèle au bord. Ce n'est pas une bande :
         // c'est un COIN de lumière qui entre par l'angle et s'ouvre en
         // descendant (5 pt de large à y=26, 11 pt à y=40).
-        float frontD = 2.0 + 0.50 * (q.y - 20.0);
+        float frontD = 2.0 + 0.50 * (qPar.y - 20.0);
         float bandeD = smoothstep(0.8, 2.4, tR)
                      * (1.0 - smoothstep(frontD - 2.0, frontD + 2.0, tR))
                      * bellD;
@@ -448,7 +463,12 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float braise = exp(-dxB * dxB / (2.0 * sxB * sxB))
                      * exp(-tB / 6.0)
                      * (1.0 - smoothstep(0.86, 0.99, q.x / W));
-        E += (0.32 * braise) * float3(1.0, 0.52, 0.16);
+        // ... ET ELLE PREND pendant la course (17-08) : le feu du bas
+        // monte quand on ouvre la carte et retombe quand on la referme.
+        // `sin(essor·π)` — nul aux deux bouts, donc les deux états au
+        // repos sont intacts.
+        float feu = 1.0 + 0.85 * sin(clamp(essor, 0.0, 1.0) * 3.14159);
+        E += (0.32 * braise * feu) * float3(1.0, 0.52, 0.16);
 
         // LE CHEVEU DU TRAIT VERT (16-08). Après trois tentatives à côté,
         // elle a tranché en DESSINANT un trait vert sur sa capture : « je
@@ -470,11 +490,11 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // au pied, éteint en haut.
         float cheveuV = exp(-dSeg * dSeg / (2.0 * 0.34 * 0.34))
                       * (1.0 - 0.80 * tSeg * tSeg);
-        E += (fin * 1.05 * cheveuV) * float3(1.0, 0.64, 0.28);
+        E += (fin * 1.05 * cheveuV * feu) * float3(1.0, 0.64, 0.28);
 
         // 1. LE CHEVEU EN ARC — son noyau est celui du trait du coin
         // (σ 0,50), pas celui des tranches : c'est un cheveu, pas un fil.
-        float dxArc = q.x - 0.64 * W;
+        float dxArc = qPar.x - 0.64 * W;
         float arcBas = exp(-dxArc * dxArc / (2.0 * 12.0 * 12.0));
         float gBas = exp(-d * d / (2.0 * 0.50 * 0.50));
         E += (3.50 * arcBas * gBas * wB) * float3(1.0, 0.60, 0.28);

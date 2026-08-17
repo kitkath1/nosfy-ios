@@ -951,7 +951,16 @@ struct FlammeMedaillon: View {
                         .init(color: .white.opacity(0.30), location: 0.625),
                         .init(color: .white.opacity(0.00), location: 0.660),
                         .init(color: .white.opacity(0.00), location: 1.000),
-                    ], center: .center, angle: .zero), lineWidth: 4.5)
+                    // LE TOUR DE BAGUE (17-08) : pendant la course, le
+                    // reflet blanc FAIT LE TOUR du disque — un éclat qui
+                    // glisse sur une pierre qu'on tourne. Un tour complet
+                    // exactement : à 0 comme à 1 il retrouve sa place
+                    // mesurée (209°), donc les deux états au repos sont
+                    // intacts. C'est l'effet le plus LOCAL de la carte, et
+                    // c'est voulu — le balayage plein cadre a été refusé.
+                    ], center: .center,
+                       angle: .degrees(360 * min(max(essor, 0), 1))),
+                    lineWidth: 4.5)
                 .frame(width: 62, height: 62)
                 .blur(radius: 1.5)
                 .blendMode(.plusLighter)
