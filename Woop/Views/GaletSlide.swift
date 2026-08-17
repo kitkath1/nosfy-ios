@@ -178,33 +178,11 @@ struct GaletSlide: View {
     /// LA LUMIÈRE D'UN BOUT — un dégradé radial, la seule douceur qui ne
     /// coûte ni flou (LE CALQUE) ni bord franc (les ANNEAUX). Posée à cheval
     /// sur la calotte, elle en éclaire la courbe et déborde dehors.
-    private static var boutGlow: some View {
-        Ellipse()
-            .fill(RadialGradient(
-                colors: [bout.opacity(0.40), bout.opacity(0.13), .clear],
-                center: .center, startRadius: 5, endRadius: 54))
-            .frame(width: 108, height: 108)
-            .allowsHitTesting(false)
-    }
-
-    /// UNE ÉCHELLE DE LISERÉS — LA DOUCEUR SANS FLOU. `.blur` est interdit
-    /// dans cette pile : il laisse un voile clair uniforme sur tout le
-    /// rectangle de son hôte (LE CALQUE, mesuré à la sonde). On empile donc
-    /// des bordures de plus en plus larges et de plus en plus pâles : à
-    /// l'œil c'est la même retombée de lumière, et rien n'est rasterisé.
-    /// `steps` = (encart, largeur, opacité), du cœur vers le dehors.
-    private static func softRim<S: ShapeStyle>(
-        _ shading: S,
-        steps: [(CGFloat, CGFloat, Double)]) -> some View {
-        ZStack {
-            ForEach(steps.indices, id: \.self) { i in
-                Capsule(style: .continuous)
-                    .inset(by: steps[i].0)
-                    .strokeBorder(shading, lineWidth: steps[i].1)
-                    .opacity(steps[i].2)
-            }
-        }
-    }
+    // LES HALOS DE LA PISTE SONT DES LISERÉS, PAS DES FLOUS ni des lueurs
+    // rondes : `.blur` peint LE CALQUE (voile uniforme sur tout le rectangle
+    // de l'hôte), une échelle de liserés fait des ANNEAUX, et une lueur
+    // radiale posée dans le corps fait GROSSIR la pilule. Ce qui reste — un
+    // trait dont la teinte s'éteint — est ce qui tient les trois verdicts.
 
     var body: some View {
         GeometryReader { geo in
@@ -433,25 +411,41 @@ struct GaletSlide: View {
             // moitié. Et l'échelle de liserés qui a suivi faisait des
             // ANNEAUX (chaque trait a un bord franc dehors). Un dégradé
             // radial, lui, n'a AUCUN bord : c'est la seule douceur gratuite.
-            // Elles DÉBORDENT, et c'est fait exprès (verdict Kathryn) : le
-            // débord du bijou hors de la piste est la loi de la réf.
-            Self.boutGlow.offset(x: -24)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Self.boutGlow.offset(x: 24)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            // Elles vivent SUR LE CONTOUR, pas dans le corps — la réf de
+            // Kathryn (« c'était comme ça avant, c'était bien ») montre un
+            // fil qui se réchauffe aux deux bouts, jamais une lueur ronde
+            // posée dans la piste : celle-là faisait grossir la pilule.
+            // L'extinction vit dans la TEINTE (le dégradé meurt à 18 % de
+            // chaque bord), plus dans un masque — et sans flou : masque et
+            // flou étaient LE CALQUE. Emprise dehors : 3,5 pt, moins que
+            // les ~15 du flou d'origine.
+            Capsule(style: .continuous)
+                .inset(by: -2)
+                .strokeBorder(LinearGradient(
+                    stops: [
+                        .init(color: Self.bout, location: 0),
+                        .init(color: Self.bout.opacity(0), location: 0.177),
+                        .init(color: Self.bout.opacity(0), location: 0.823),
+                        .init(color: Self.bout, location: 1)
+                    ],
+                    startPoint: .leading, endPoint: .trailing),
+                    lineWidth: 3)
+                .opacity(0.55)
             // LE FIL D'OR EXTÉRIEUR au pouce — le halo du bijou, hors du
             // bord, qui suit le doigt. La gaussienne du masque est devenue
             // la TEINTE du trait : même loi (plein jusqu'à 16 pt du pouce,
-            // éteinte à 130 + 80 p). Deux passes serrées seulement : au-delà,
-            // les bords francs se comptent à l'œil.
-            Self.softRim(
-                RadialGradient(
+            // éteinte à 130 + 80 p). UNE SEULE PASSE, à l'encart d'origine :
+            // la deuxième, plus large, dessinait un second contour et
+            // c'était ça, la pilule « grossie ».
+            Capsule(style: .continuous)
+                .inset(by: -4)
+                .strokeBorder(RadialGradient(
                     colors: [refused ? Self.garnet : Self.gold,
                              (refused ? Self.garnet : Self.gold).opacity(0)],
                     center: axU,
                     startRadius: 16,
                     endRadius: 130 + 80 * p),
-                steps: [(-4, 1.8, 0.70), (-6.0, 3.6, 0.20)])
+                    lineWidth: 1.6)
                 .opacity((0.14 + 0.86 * Double(p)) * (refused ? 0.9 : 1)
                          + flash * 0.6)
             // Le bain du refus : bref, entier — un ÉVÉNEMENT, pas un état.
