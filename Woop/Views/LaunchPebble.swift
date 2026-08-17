@@ -117,12 +117,13 @@ struct LaunchPebble: View {
     /// opacité : diviser l'alpha ferait disparaître les grains au lieu de
     /// les affiner — la leçon payée sur la poudre du galet.
     static let lisereDust = Self.arg("-galetLisereDust") ?? 0.55
-    /// `-galetLisereIn` : le liseré DANS la couche (réfracté par le verre,
-    /// il vit dans la matière) au lieu de POSÉ au-dessus (la place validée
-    /// par le jury pour le fil et l'encre). Les deux sont légales tant que
-    /// Δ reste hors de portée du limbe — c'est l'œil qui tranche.
-    static let lisereIn = CommandLine.arguments.contains("-galetLisereIn")
-
+    /// L'OMBRE DU BORD — la profondeur maximale du creux (fraction
+    /// retirée à la matière, atteinte à 4 pt sous le contour sur les
+    /// flancs) et sa longueur de remontée τ. Cible mesurée sur la
+    /// maquette : ×0,54 au fond du creux, retour aux neuf dixièmes vers
+    /// 30 pt. `-galetOmbre 0` l'éteint (le témoin de l'A/B).
+    static let ombre = Self.arg("-galetOmbre") ?? 0.46
+    static let ombreTau = Self.arg("-galetOmbreTau") ?? 14
     private static func arg(_ flag: String) -> Double? {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: flag), i + 1 < a.count,
@@ -260,6 +261,10 @@ struct LaunchPebble: View {
             // doigt — le liseré scintille davantage quand il chauffe.
             let lisDustA = Float(Self.lisereDust * (1 + 0.8 * heat) * lisLive)
             let lisT = Float(t)
+            // L'ombre cède au voile comme tout le reste : quand la page se
+            // remplit de jour, un creux sombre serait une tache.
+            let lisOmbre = Float(Self.ombre * lisLive)
+            let lisTau = Float(Self.ombreTau)
             let lisereShader = ShaderLibrary.galetLisere(
                 .float2(lisCX, cY),
                 .float2(lisD, lisSq),
@@ -267,6 +272,7 @@ struct LaunchPebble: View {
                 .float2(lisHalo, lisHaloA),
                 .float2(lisFull, lisEnd),
                 .float2(lisDustA, lisT),
+                .float2(lisOmbre, lisTau),
                 .float(lisGain))
 
             let lensShader = ShaderLibrary.liquidLens(
@@ -365,7 +371,7 @@ struct LaunchPebble: View {
             }
             .frame(width: W2, height: H)
             .compositingGroup()
-            .lisereEtVerre(lisere: lisereShader, verre: lensShader)
+            .layerEffect(lensShader, maxSampleOffset: Self.maxSample)
             // AU-DESSUS du verre — jamais réfractés (jury : « l'encre est
             // POSÉE sur le dôme, elle n'est pas dedans ») : le fil blanc
             // de crête, son bloom chaud, et l'encre droite.
@@ -374,6 +380,16 @@ struct LaunchPebble: View {
                       crestY: crestY, heat: heat, fv: fv,
                       inkFade: inkFade, t: t)
             }
+            // LE BORD (ombre + liseré) EST PEINT EN DERNIER, après
+            // l'habillage. Ce n'est pas un détail d'ordre : le bloom du
+            // `dress` est un stroke de 8 pt flouté de 6, posé à D+4 —
+            // il bave donc jusqu'à ~6 pt DANS la matière et rallumait
+            // exactement la zone qu'on cherche à creuser. Mesuré : le
+            // creux ne rendait que la moitié de la profondeur commandée.
+            // Le bloom garde sa part DEHORS (l'ombre ne travaille que
+            // pour dist < 0), il perd seulement son débordement dedans.
+            .compositingGroup()
+            .colorEffect(lisereShader)
             .offset(x: -Self.padSide, y: -Self.padTop)
             .allowsHitTesting(false)
         }
@@ -623,23 +639,9 @@ struct LaunchPebble: View {
     }
 }
 
-// MARK: - Les deux places légales du liseré
-
-/// POSÉ (défaut) : le liseré est peint APRÈS le verre — il ne se déforme
-/// pas quand la matière se liquéfie sous le doigt, mais c'est la place que
-/// le jury a validée pour le fil et l'encre, et rien ne peut l'y salir.
-/// DEDANS (`-galetLisereIn`) : il entre dans la couche, le verre le
-/// réfracte et le magnifie — il vit dans la matière. Légal seulement parce
-/// que Δ le tient hors de portée du limbe ; c'est l'œil qui tranche.
-private extension View {
-    @ViewBuilder
-    func lisereEtVerre(lisere: Shader, verre: Shader) -> some View {
-        if LaunchPebble.lisereIn {
-            self.colorEffect(lisere)
-                .layerEffect(verre, maxSampleOffset: LaunchPebble.maxSample)
-        } else {
-            self.layerEffect(verre, maxSampleOffset: LaunchPebble.maxSample)
-                .colorEffect(lisere)
-        }
-    }
-}
+// (Ici vivait la prise `-galetLisereIn`, qui glissait le liseré DANS la
+// couche pour que le verre le réfracte. Mesuré : à Δ = 14 le liseré est
+// entièrement hors de portée du limbe, et les deux places rendaient le
+// même pixel — au repos comme sous le doigt. Un non-sujet ne mérite pas
+// une branche. Et depuis que le bord porte aussi son OMBRE, la place
+// n'est plus libre : il doit passer après l'habillage.)

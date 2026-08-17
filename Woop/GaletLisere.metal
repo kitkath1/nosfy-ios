@@ -74,11 +74,14 @@ static inline float3 lisHash3(float n) {
                                  float2 souffle,  // σ du halo, amplitude
                                  float2 fondu,    // cos θ plein, cos θ fin
                                  float2 poudre,   // amplitude, temps
+                                 float2 ombre,    // profondeur max × voile, τ
                                  float gain)      // k × voile × respiration
 {
     const float delta = ligne.x;
     const float sigma = max(ligne.y, 0.05);
-    if (gain <= 0.002) return color;
+    // Les deux témoins de l'A/B sont indépendants : éteindre le liseré ne
+    // doit pas éteindre l'ombre, et réciproquement.
+    if (gain <= 0.002 && ombre.x <= 0.002) return color;
 
     const float D = max(domeRS.x, 1.0);
     const float b = D / max(domeRS.y, 0.01);
@@ -90,14 +93,16 @@ static inline float3 lisHash3(float n) {
     // fonction implicite en distance métrique près de la courbe.
     const float gl = max(length(float2(2.0 * ex / D, 2.0 * ey / b)), 1e-6);
     const float dist = q / gl;          // pt, négatif dedans
+    const float dedans = -dist;         // pt, positif dans la matière
 
     // u = 0 sur la courbe du liseré.
     const float u = dist + delta;
     const float sHalo = max(souffle.x, 0.2);
-    // La fenêtre de travail : la plus large des trois cloches. Au-delà de
-    // 3,2 σ le halo vaut 0,6 % — le reste du calque sort ici.
+    // La fenêtre de travail : la plus large des trois cloches, PLUS la
+    // portée de l'ombre du bord (qui rentre loin dans la matière).
     const float port = max(max(5.0 * sigma, 3.2 * sHalo), 3.6);
-    if (fabs(u) > port) return color;
+    const float portOmbre = (ombre.x > 0.002) ? (4.2 + 3.2 * ombre.y) : 0.0;
+    if (dist > port || dedans > max(port, portOmbre)) return color;
 
     // — LE DÉGRADÉ DES DEUX EXTRÉMITÉS. Sans lui le liseré est GUILLOTINÉ
     //   par le bord de l'écran : il s'arrête net, à pleine intensité, et
@@ -109,7 +114,57 @@ static inline float3 lisHash3(float n) {
     const float rn = max(sqrt(ex * ex + ey * ey), 1e-5);
     const float c  = -ey / rn;                       // cos θ, + vers le haut
     const float bout = smoothstep(fondu.y, fondu.x, c);
+
+    // ================= L'OMBRE DU BORD =================
+    // Le plus gros écart à la maquette, mesuré par trois chemins
+    // indépendants. À hauteur d'écran égale (y = 120 pt), en partant du
+    // bord vers l'intérieur (0, 1, 2, 3, 4, 6, 9, 12, 20, 30 pt) :
+    //   maquette : 102  169  150  113  107  132  144  157  172  199
+    //   nous     : 103  161  173  186  197  209  212  211  216  213
+    // Sa matière PLONGE de 60 L juste derrière son bord et met 25 pt à
+    // remonter ; la nôtre monte tout droit et ne redescend jamais. Le
+    // trait clair, nous l'avions déjà (169 contre 161 à 1 pt) — ce qui
+    // manquait, c'est le noir contre lequel il brille.
+    //
+    // ATTENTION, CECI EST UNE DÉROGATION ASSUMÉE. La règle de la maison
+    // (« sur toute coupe, la dérivée ne change de signe qu'une fois »)
+    // est née du rejet de l'« épaule » : un creux étroit coincé entre
+    // deux clairs se lit comme un contour DESSINÉ. Ce creux-ci est
+    // l'inverse d'une rainure : large de 25 pt, il n'a pas de bord, et
+    // c'est le modelé d'un dôme éclairé par le haut, pas un trait.
+    //
+    // Il s'ouvre en θ : presque rien au sommet (la lumière y tombe
+    // d'aplomb), pleine profondeur passé 38° sur les flancs. Mesuré chez
+    // elle : −20 L au sommet, −90 L à 40°.
+    if (ombre.x > 0.002 && dedans > 0.0) {
+        // Au SOMMET la maquette n'a pas d'ombre du tout : sur l'axe, elle
+        // et nous lisons 205 / 205 / 211 / 220 à 2, 3, 4 et 6 pt sous la
+        // crête — identiques. La lumière y tombe d'aplomb, il n'y a pas de
+        // limbe à ombrer. Le creux ne s'ouvre qu'en descendant.
+        const float flanc = 1.0 - smoothstep(0.788, 0.9962, c);  // 0 au sommet
+        const float amp = ombre.x * (0.05 + 0.95 * flanc);
+        // La FORME, relevée sur la maquette (profondeur normalisée à
+        // y = 120 pt) : 0 à 1 pt, 0,29 à 2, 0,86 à 3, 1,00 à 4, puis
+        // 0,81 à 6, 0,70 à 9, 0,56 à 12, 0,45 à 20, 0,14 à 30. Donc une
+        // ouverture BRUTALE entre 1,4 et 3,7 pt — elle épargne le premier
+        // point, sans quoi le liseré de bord n'aurait plus sur quoi se
+        // poser — puis une remontée en exponentielle de τ ≈ 14, et une
+        // extinction franche vers 30 pt pour que la matière retrouve
+        // vraiment son niveau au lieu de traîner un voile gris.
+        // PIÈGE PAYÉ : les profondeurs de la maquette sont relevées depuis
+        // le seuil L=100, pas depuis le contour géométrique. Chez nous ces
+        // deux repères sont distants de 2,3 pt (notre bloom atteint L=100
+        // à 2,3 pt DEHORS), chez elle d'à peine 1 : commander le creux à
+        // 3,7 pt le posait mesuré à 6. Il vit donc à 2,5 pt du contour.
+        const float creux = smoothstep(0.2, 2.5, dedans)
+                            * exp(-max(dedans - 2.5, 0.0) / max(ombre.y, 1.0))
+                            * (1.0 - smoothstep(22.0, 36.0, dedans));
+        const float f = clamp(1.0 - amp * creux, 0.0, 1.0);
+        color = half4(color.rgb * half(f), color.a);
+    }
+
     if (bout < 0.004) return color;
+    if (fabs(u) > port) return color;
 
     // — LE CŒUR : la cloche fine, sous le pixel.
     const float coeur = exp(-0.5 * (u * u) / (sigma * sigma));
