@@ -1320,15 +1320,26 @@ struct JaugeBraise: View {
     // avec plus de nuances de jaune pour rappeler la flamme et du blanc
     // pour rappeler le contour de la garde en liquid glass (les cheveux) ».
     // 8 → 5 pt : à 5 pt le tube reste lisible mais cesse d'être une barre.
-    private let hauteur: CGFloat = 5
+    private let hauteur: CGFloat = 4
 
     var body: some View {
         GeometryReader { geo in
             let frac = CGFloat(done) / CGFloat(total)
-            let largeur = max(hauteur, geo.size.width * frac)
+            // 17-08 : « à côté du halo il y a le début, un petit bout de
+            // la progress bar — enlève-le ». C'était ce `max(hauteur, …)` :
+            // à zéro série il forçait une capsule de la hauteur du tube,
+            // soit un moignon orange collé au point. À zéro, le tube n'a
+            // plus AUCUNE largeur — il ne reste que la pierre, posée au
+            // départ du rail.
+            let largeur = frac > 0 ? max(hauteur, geo.size.width * frac) : 0
             let vieille = geo.size.width * CGFloat(surgeFrom) / CGFloat(total)
             ZStack(alignment: .leading) {
                 // Le rail : creusé, plus sombre en haut — une rainure.
+                // LE RAIL ANNONCE L'OR À VENIR (17-08) : au lieu d'un tube
+                // gris uniforme, il se réchauffe vers la droite — la
+                // partie vide dit déjà de quelle couleur sera le plein.
+                // Mesuré sur sa référence : le rail tient 0,24 de luma,
+                // le mien 0,06 et sans bord net.
                 Capsule()
                     .fill(LinearGradient(
                         stops: [
@@ -1336,6 +1347,16 @@ struct JaugeBraise: View {
                             .init(color: Color.white.opacity(0.06), location: 1.0),
                         ],
                         startPoint: .top, endPoint: .bottom))
+                    .overlay {
+                        Capsule()
+                            .fill(LinearGradient(
+                                stops: [
+                                    .init(color: Color.white.opacity(0.10), location: 0.0),
+                                    .init(color: FlammePalette.or.opacity(0.13), location: 0.62),
+                                    .init(color: FlammePalette.flamme.opacity(0.20), location: 1.0),
+                                ],
+                                startPoint: .leading, endPoint: .trailing))
+                    }
                     .overlay {
                         Capsule().strokeBorder(Color.white.opacity(0.07), lineWidth: 0.7)
                     }
@@ -1455,7 +1476,39 @@ struct JaugeBraise: View {
                 }
             }
             .overlay(alignment: .trailing) {
-                capGemme(pulse: pulse, vif: vif)
+                // LA TRAÎNÉE : quand le point vient d'avancer, une comète
+                // courte le suit et s'efface en un demi-tour. Elle ne vit
+                // que dans la seconde qui suit la validation — un bijou
+                // qui bouge laisse un sillage, un bijou posé n'en a pas.
+                if eS < 0.9 {
+                    let f = 1 - eS / 0.9
+                    LinearGradient(
+                        colors: [FlammePalette.or.opacity(0.0),
+                                 FlammePalette.or.opacity(0.55 * f)],
+                        startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 34 * f, height: hauteur * 0.8)
+                        .clipShape(Capsule())
+                        .blendMode(.plusLighter)
+                        .offset(x: -3)
+                        .allowsHitTesting(false)
+                }
+                capGemme(pulse: pulse, vif: vif, souffle: souffle)
+            }
+            .overlay(alignment: .trailing) {
+                // L'ONDE DE VALIDATION : un anneau qui naît au point et
+                // s'ouvre en 0,7 s, comme une goutte dans l'eau. Il grandit
+                // ET s'efface — jamais l'un sans l'autre, sinon c'est un
+                // cercle qui traîne.
+                if eS < 0.7 {
+                    let w = eS / 0.7
+                    Circle()
+                        .stroke(FlammePalette.blanc.opacity(0.45 * (1 - w)),
+                                lineWidth: 1.2 * (1 - w) + 0.3)
+                        .frame(width: 8 + 34 * w, height: 8 + 34 * w)
+                        .blendMode(.plusLighter)
+                        .offset(x: 2)
+                        .allowsHitTesting(false)
+                }
             }
             .frame(width: largeur)
             // Le halo du néon : serré et saturé d'abord, large et braise
@@ -1468,28 +1521,69 @@ struct JaugeBraise: View {
 
     /// Le cap-gemme : le point le plus lumineux de la carte — un cœur blanc
     /// serti d'un anneau d'or, avec son micro-reflet haut-gauche.
-    private func capGemme(pulse: Double, vif: Double) -> some View {
-        ZStack {
+    /// LE CAP-GEMME — refait le 17-08 sur sa capture de référence. Le
+    /// diagnostic était clair : « ton point est un bijou, le mien est une
+    /// lampe ». Mesuré au même endroit sur les deux images, mon halo était
+    /// un PLATEAU SATURÉ qui tombait d'une falaise — plat à 0,99 jusqu'à
+    /// 10 px puis effondré à 0,047 en six pixels — quand le sien descend
+    /// doucement de 1,00 à 0,10 sur 34 px. Un bijou n'est pas un point
+    /// plus brillant : c'est un point qui RAYONNE LOIN ET FAIBLEMENT.
+    /// Cibles prises sur sa capture (en pixels à 3x depuis le centre) :
+    /// 0,92 à 6 · 0,67 à 10 · 0,33 à 16 · 0,20 à 24 · 0,10 à 34.
+    private func capGemme(pulse: Double, vif: Double,
+                          souffle: Double) -> some View {
+        // LA RESPIRATION SE FAIT SUR LA PORTÉE, JAMAIS SUR L'AMPLITUDE :
+        // moduler l'amplitude clignote, moduler l'étendue respire — la loi
+        // de la maison, la même que pour le verre.
+        let portee = 1.0 + 0.10 * souffle
+        return ZStack {
+            // 3. LE HALO LONG, et DORÉ en s'éloignant : blanc au cœur, or
+            //    à mi-portée, braise en périphérie — l'anatomie du petit
+            //    trait oblique du bas de la carte, transposée en rond.
+            //    C'est lui qui relie les deux bijoux de la carte.
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        // Doublé après mesure (17-08) : à 10 px du centre
+                        // elle tient 0,67 et je tenais 0,28. Un halo de
+                        // bijou n'est pas discret, il est LONG — c'est sa
+                        // portée qui fait la pierre, pas son cœur.
+                        // RESSERRÉ (17-08, tour suivant) : portée 12 → 7,5 pt.
+                        // Au tour d'avant j'avais DOUBLÉ la densité sans
+                        // toucher à la portée : le halo s'est étalé au lieu
+                        // de se concentrer, et il tenait encore 0,41 à 34 px
+                        // quand elle est à 0,09 — une grosse boule orange au
+                        // lieu d'une pierre. Sa courbe descend VITE (0,77 à
+                        // 2 pt, 0,30 à 5,3, 0,09 à 11,3) : c'est une chute,
+                        // pas une nappe.
+                        .init(color: FlammePalette.blanc.opacity(0.98), location: 0.00),
+                        .init(color: FlammePalette.or.opacity(0.72), location: 0.26),
+                        .init(color: FlammePalette.flamme.opacity(0.22), location: 0.52),
+                        .init(color: FlammePalette.braise.opacity(0.07), location: 0.78),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 7.5 * portee))
+                .frame(width: 15 * portee, height: 15 * portee)
+            // 2. LE FEU serré : la couronne dorée qui donne la matière.
             Circle()
                 .fill(RadialGradient(
                     stops: [
                         .init(color: FlammePalette.blanc.opacity(0.95), location: 0.0),
-                        .init(color: FlammePalette.or.opacity(0.55), location: 0.55),
-                        .init(color: .clear, location: 1.0),
+                        .init(color: FlammePalette.or.opacity(0.62), location: 0.52),
+                        .init(color: FlammePalette.flamme.opacity(0.20), location: 1.0),
                     ],
-                    center: .center, startRadius: 0, endRadius: 7))
-                .frame(width: 14, height: 14)
-                .opacity(0.80 + 0.20 * vif)
-            Circle()
-                .strokeBorder(FlammePalette.or.opacity(0.85), lineWidth: 0.7)
-                .frame(width: 7.6, height: 7.6)
+                    center: .center, startRadius: 0, endRadius: 5.1))
+                .frame(width: 10.2, height: 10.2)
+                .opacity(0.85 + 0.15 * vif)
+            // 1. LE CŒUR, petit et franc — c'est la pierre elle-même.
             Circle()
                 .fill(Color.white)
-                .frame(width: 3.4, height: 3.4)
+                .frame(width: 2.6, height: 2.6)
+            // Le micro-reflet haut-gauche : ce qui fait « taillé ».
             Circle()
                 .fill(Color.white.opacity(0.9))
-                .frame(width: 1.3, height: 1.3)
-                .offset(x: -1.4, y: -1.6)
+                .frame(width: 1.0, height: 1.0)
+                .offset(x: -1.1, y: -1.2)
         }
         .compositingGroup()
         .blendMode(.plusLighter)
