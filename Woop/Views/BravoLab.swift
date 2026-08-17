@@ -239,6 +239,20 @@ struct BravoView: View {
     @State private var loop: AVQueuePlayer?
     @State private var looper: AVPlayerLooper?
     @State private var onLoop = false
+    /// LE RELAIS N'A LIEU QU'UNE FOIS. Il a maintenant DEUX déclencheurs — la
+    /// borne de l'image 120 et le lien « Passer l'animation » — et rien
+    /// d'autre ne dit qu'il a eu lieu : `onLoop` n'arrive que 50 ms plus tard
+    /// et porte un sens GRAPHIQUE (quelle couche est visible), `cine` n'est
+    /// rendu qu'à +0,6 s. Il dit aussi « le débit du master ne m'appartient
+    /// plus » : c'est lui qui empêche le palier mural de le remettre en
+    /// marche après un saut précoce.
+    @State private var relayed = false
+    /// LE SAUT EST EN COURS. Entre le forçage du relais et la pose, il y a
+    /// jusqu'à 0,3 s où la partition n'a pas encore bougé — donc où le
+    /// garde-fou « jamais à reculons » ne mord pas encore. Un deuxième doigt
+    /// y relancerait la boucle (une écriture de `rate` = une discontinuité du
+    /// CMTimebase) et poserait la page deux fois.
+    @State private var skipping = false
     @State private var visible = false
     @State private var startedAt = Date()
     @State private var handoffObserver: Any?
@@ -419,6 +433,46 @@ struct BravoView: View {
                             // donc sous l'image pendant toute la cérémonie,
                             // et son action DÉMONTE la page.
                             .allowsHitTesting(rise(0.47, e) > 0.5)
+                            // PASSER L'ANIMATION. La cérémonie est belle et
+                            // on n'y touche pas — mais en séance, l'attendre
+                            // après chaque série est une punition. Le lien
+                            // n'abrège rien : il AVANCE L'HORLOGE (voir
+                            // `skipBravo`). Frère de celui de la cinématique
+                            // de lancement et de « Passer le repos ».
+                            //
+                            // IL PARTAGE LA BANDE DE 44 pt DU FOOTER, en
+                            // overlay : zéro point de mise en page en plus.
+                            // Une rangée de plus dans le VStack POUSSERAIT la
+                            // page — le `Spacer(minLength: 0)` n'a qu'une
+                            // soixantaine de points à donner, et un VStack qui
+                            // déborde garde sa hauteur idéale : le sol
+                            // sortirait par le bas.
+                            //
+                            // ET IL EST ATTEIGNABLE PAR PROFONDEUR, PAS PAR
+                            // EXCLUSION : la pastille accroche son tap sur
+                            // TOUT l'écran. Ce qui sauve ce lien est qu'il vit
+                            // dans le DERNIER enfant du ZStack.
+                            .overlay {
+                                let skipIn = skipFade(e)
+                                if skipIn > 0.001 {
+                                    Button(action: skipBravo) {
+                                        Text("Passer l'animation")
+                                            .font(.inter(15, .medium))
+                                            .foregroundStyle(Color.inkSecondary)
+                                            .frame(maxWidth: .infinity,
+                                                   minHeight: 44)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .opacity(skipIn)
+                                    // Le tapable est un sous-ensemble STRICT
+                                    // du visible — la même leçon qu'à la ligne
+                                    // au-dessus. Et les deux fenêtres sont
+                                    // DISJOINTES : jamais deux sorties
+                                    // vivantes au même pixel.
+                                    .allowsHitTesting(skipIn > 0.5)
+                                }
+                            }
                         // LE SOL, tout en bas. Il naît en dernier, après les
                         // chiffres et l'échappée : la page se referme dessus.
                         floorVideo(W: W)
@@ -693,7 +747,29 @@ struct BravoView: View {
             // appelable qu'une fois l'item `.readyToPlay` — d'où l'observation.
             loopReady = q.observe(\.status, options: [.initial, .new]) { p, _ in
                 guard p.status == .readyToPlay else { return }
-                p.preroll(atRate: BravoCine.rateSlow) { _ in }
+                // La KVO n'est pas garantie sur le fil principal, et ce bloc
+                // lit maintenant des `@State`.
+                DispatchQueue.main.async {
+                    // ON NE RESSUSCITE PAS UN LECTEUR DÉMONTÉ : `teardown`
+                    // invalide l'observation mais ne peut pas annuler un bloc
+                    // déjà en file, et il vient de mettre celui-ci en pause.
+                    guard loop === p else { return }
+                    // LA BOUCLE PEUT AVOIR ÉTÉ RÉCLAMÉE AVANT D'ÊTRE PRÊTE :
+                    // « Passer l'animation » tapé dans la première seconde
+                    // pose `play()` puis `rate` sur un lecteur dont l'item
+                    // n'est pas encore jouable, et un débit posé là ne survit
+                    // pas toujours. La page se poserait alors sur une lune QUI
+                    // NE RESPIRE PAS — le filet, image fixe, pour toute la vie
+                    // de la page. On repose donc le débit à la première
+                    // occasion. Jamais de `preroll` sur un lecteur réclamé :
+                    // il exige un rate nul.
+                    guard !relayed else {
+                        p.play()
+                        p.rate = BravoCine.rateSlow
+                        return
+                    }
+                    p.preroll(atRate: BravoCine.rateSlow) { _ in }
+                }
             }
             loop = q
         }
@@ -736,6 +812,14 @@ struct BravoView: View {
             forTimes: [NSValue(time: CMTime(value: BravoCine.handoffFrame,
                                             timescale: 24))],
             queue: .main) { [weak p] in
+                // LE PREMIER ARRIVÉ FERME. `removeTimeObserver` ne garantit
+                // pas qu'un bloc déjà dépêché ne s'exécutera pas : si le doigt
+                // et la borne se croisent, ce garde-fou évite un deuxième
+                // `play()` sur une boucle qui tourne (1,25 → 1,0 → 1,25, la
+                // discontinuité que la loi des débits interdit) et un deuxième
+                // démontage du master.
+                guard !relayed else { return }
+                relayed = true
                 loop?.play()
                 loop?.rate = BravoCine.rateSlow
                 // ÉCHANGE SEC, JAMAIS UN FONDU. Le fondu croisé de 0,30 s
@@ -788,7 +872,137 @@ struct BravoView: View {
         // instant, donc la loi « jamais un scale qui claque » est tenue par
         // la physique de l'image et non par une courbe.
         DispatchQueue.main.asyncAfter(deadline: .now() + BravoCine.fallScreen) {
+            // ET IL SE TAIT SI L'ON A SAUTÉ. Cette attente n'est pas
+            // annulable, et le lien peut être tapé avant elle (1,16 s) : le
+            // saut met le master EN PAUSE et ne le démonte que 0,6 s plus
+            // tard. Écrire un `rate` entre les deux le remettrait EN MARCHE —
+            // un décodeur 2160p qui repart sous une couche à opacité nulle.
+            // Sur le chemin naturel ce garde-fou ne peut PAS mordre, et ce
+            // n'est pas de la chance : le relais est l'image 120, soit 5,00 s
+            // de source, et à 2,5× on n'en a lu que 2,90 à cet instant.
+            guard !relayed else { return }
             cine?.rate = BravoCine.rateSlow
+        }
+    }
+
+    /// LA VIE DU LIEN « Passer l'animation ». Il naît AVEC LA NUIT, pas avec
+    /// la chute : `Color.black` est le premier enfant du ZStack et `visible`
+    /// ne gate QUE le film — la page noire est là dès `e = 0`. La rampe
+    /// 0,12 → 0,52 le pose donc au rythme exact du fondu de 0,40 s de
+    /// l'image, et pas quand la pièce touche : on n'échappe pas à une attente
+    /// une fois qu'elle est finie (le verdict de la cinématique de lancement).
+    ///
+    /// ET IL MEURT SUR L'ARRIVÉE DU CONTENU — `rise(0, e)`, la rampe du titre.
+    /// Le modèle fait mourir son lien sur la rampe de l'objet qui le remplace ;
+    /// ici cet objet est son SOSIE (même fonte, même encre, même pixel), et
+    /// deux phrases centrées qui se croisent à mi-opacité au même endroit ne
+    /// se lisent pas comme une passation mais comme un calque mal empilé. On
+    /// garde donc la loi — mourir sur une rampe de la page, jamais sur une
+    /// horloge à soi — en prenant celle qui la rend lisible : à la seconde où
+    /// « Bravo » s'écrit, il n'y a plus rien à passer.
+    ///
+    /// En `-bravoFreeze` et en mouvement réduit, `clock` rend 99 : `rise` vaut
+    /// 1, le produit vaut 0, le lien est mort-né. Aucune garde à écrire.
+    private func skipFade(_ e: Double) -> Double {
+        BravoCine.sstep(0.12, 0.52, e) * (1 - rise(0, e))
+    }
+
+    /// PASSER L'ANIMATION — on n'abrège pas la cérémonie, on AVANCE SON
+    /// HORLOGE. Tout ce que la page dessine est fonction pure de `startedAt` :
+    /// reculer cette date pose la partition à l'instant voulu sans qu'une
+    /// seule courbe, un seul uniform, une seule constante ne change.
+    ///
+    /// LA CIBLE EST `contentAt`, ET C'EST LA SEULE JUSTE : c'est l'instant où
+    /// TOUTES les rampes du contenu valent exactement ZÉRO, où le compte est
+    /// déjà plein, et où la dernière pièce de la gerbe vient de sortir du
+    /// champ. La page s'écrit ensuite toute seule, ligne par ligne, par SES
+    /// rampes. Viser la fin — là où tout est PLEIN — ferait POPPER d'un bloc
+    /// le titre, les trois chiffres, le gain, le lien et le sol : un calque
+    /// qu'on déplace au lieu d'une page qui s'écrit.
+    ///
+    /// MAIS ICI LA PARTITION RECADRE UN FILM, et c'est tout ce qui la sépare
+    /// de la cinématique de lancement : `slot`, `zoom`, `blur`, `cam` sont le
+    /// CADRAGE de la vidéo, et le relais vit sur l'horloge du LECTEUR
+    /// (l'image 120). Reculer la date SEULE poserait le créneau de repos
+    /// par-dessus une pièce encore en chute, pendant deux secondes et demie.
+    /// Le lien emmène donc le film avec lui.
+    private func skipBravo() {
+        let target = BravoCine.contentAt
+        // On n'avance jamais à reculons — et ce seul garde-fou couvre aussi
+        // `-bravoFreeze` et le mouvement réduit, où `clock` rend 99.
+        guard !skipping, clock(.now) < target else { return }
+        skipping = true
+        // LE RELAIS COMMANDE LE TEMPO. S'il a déjà eu lieu, le cadrage recadre
+        // encore — mais il recadre une BOUCLE, dont l'image ne dépend d'aucune
+        // date. Rien ne peut dériver derrière elle : on pose, point.
+        guard !relayed else { pose(target); return }
+        relayed = true
+        // La borne n'a plus rien à annoncer.
+        if let ho = handoffObserver {
+            cine?.removeTimeObserver(ho)
+            handoffObserver = nil
+        }
+        // `play()` d'abord, le débit ENSUITE : `play()` est littéralement
+        // `rate = 1.0` et écraserait le 1,25.
+        loop?.play()
+        loop?.rate = BravoCine.rateSlow
+        handoffNow(target)
+    }
+
+    /// L'ÉCHANGE FORCÉ, ET LA PARTITION AVEC LUI.
+    ///
+    /// ON ATTEND D'AVOIR QUELQUE CHOSE À MONTRER. Au relais naturel la
+    /// question ne se pose pas : la boucle a préchargé pendant 2,8 s et le
+    /// filet est acquis depuis longtemps. Tapé dans la première seconde, le
+    /// lien arrive AVANT eux — et le filet est le seul événement non
+    /// déterministe de la page. On ne conditionne pas le LIEN (un lien qui
+    /// « des fois » n'existe pas est le reproche qu'on répare), on conditionne
+    /// LA BASCULE : tant qu'il n'y a rien à montrer, le master reste à l'écran
+    /// et la cérémonie continue — à son propre cadrage, puisque la partition
+    /// n'a PAS encore bougé. Plafonné à 0,24 s : passé ça on bascule quand
+    /// même, le lien n'est jamais inopérant.
+    ///
+    /// ET LA PARTITION SAUTE DANS LE MÊME BLOC QUE LA COUCHE. C'est la clé :
+    /// `onLoop` et le recul de `startedAt` sont posés dans la même passe
+    /// SwiftUI, donc l'image et le cadrage basculent ENSEMBLE. Il n'existe pas
+    /// une frame où le créneau de repos rogne une pièce en chute.
+    private func handoffNow(_ target: Double, _ hold: Int = 0) {
+        if loopFirstFrame == nil, loop?.status != .readyToPlay, hold < 4 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                handoffNow(target, hold + 1)
+            }
+            return
+        }
+        // Les 50 ms du vrai relais, et pour la même raison : `preroll` amorce
+        // le DÉCODEUR, pas le renderer — la couche entrante peut n'avoir rien
+        // à présenter. Le master couvre l'échange, comme toujours.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            onLoop = true
+            cine?.pause()
+            pose(target)
+        }
+        // ET ON LE DÉMONTE, comme le relais : un décodeur 2160p HEVC vivant
+        // sous la page à côté des deux boucles, pour une couche invisible.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            cine?.replaceCurrentItem(with: nil)
+            cine = nil
+        }
+    }
+
+    /// POSER LA PAGE À `target` — et RÉARMER LE SOMMEIL DE L'HORLOGE sur la
+    /// nouvelle origine. Le rendez-vous de `start()` est MURAL : il ne
+    /// tomberait qu'à 9,13 s réelles, laissant la page recalculer masque,
+    /// rognage et flou à 60 Hz par-dessus trois lecteurs pendant tout le temps
+    /// qu'on vient de sauter — c'est-à-dire perdre exactement ce que `settled`
+    /// existe pour gagner. Le délai reconstruit tombe sur le MÊME instant de
+    /// PARTITION, donc bien après la naissance du dernier élément : la pause
+    /// ne peut jamais surprendre une rampe en cours. Le rendez-vous d'origine
+    /// survit et repose la même valeur — idempotent, rien à annuler.
+    private func pose(_ target: Double) {
+        startedAt = .now.addingTimeInterval(-target)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + max(BravoCine.contentAt + 2.6 - target, 0)) {
+            settled = true
         }
     }
 
