@@ -89,6 +89,14 @@ struct LiquidLensLab: View {
     /// rien : tout départ au geste passe toujours par le sommet.
     var posedStart: Bool = false
 
+    /// LA HUITIÈME PRISE : le SOL DU GESTE. Le dock du player remonte le
+    /// galet de la fiche de Δ points — l'origine de la règle de montée
+    /// se décale d'autant (le sommet, lui, ne bouge pas), sinon le
+    /// relais recevrait un doigt mesuré avec une autre règle et la bulle
+    /// SAUTERAIT à l'instant du handoff. `0`, le défaut, laisse le banc
+    /// et le parcours d'hier identiques au pixel.
+    var groundLift: CGFloat = 0
+
     /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
     private var isJourney: Bool { onFinish != nil }
 
@@ -469,8 +477,11 @@ struct LiquidLensLab: View {
     }
 
     /// La montée depuis la hauteur du doigt : 0 au bord bas, 1 en haut.
+    /// Le sol se décale de `groundLift` (le dock du player) — LE MÊME
+    /// barème que `climbGlobal` de la fiche, toujours.
     private func climbOf(y: CGFloat, h: CGFloat) -> Double {
-        min(max(Double((h * 0.90 - y) / (h * 0.72)), 0), 1.06)
+        min(max(Double((h * 0.90 - groundLift - y)
+                       / max(h * 0.72 - groundLift, 1)), 0), 1.06)
     }
 
     private func drive(now: Date, t: Double,
@@ -797,17 +808,6 @@ struct LiquidLensLab: View {
         EnvolHaptic.play(liftAt: Self.envolShudder)
     }
 
-    // MARK: L'univers noir — la renaissance et la descente
-
-    /// La géométrie de la descente : la pastille perce le bord haut un
-    /// souffle après la coupe, tombe avec grâce (étirée par sa vitesse),
-    /// se pose au centre avec un tremblement amorti. Fonction pure de `ne`.
-    private func nightLens(w: CGFloat, h: CGFloat, t: Double,
-                           ne: Double, ax: CGFloat,
-                           dateNow: Date = .distantPast,
-                           envol ev: Double = -1) -> Lens {
-        let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
-        let e2 = u * u * (3 - 2 * u)
     /// PASSER L'ANIMATION — on n'abrège pas la chorégraphie, on AVANCE SON
     /// HORLOGE. Toute la nuit est fonction pure de `summitAt` (la loi écrite
     /// en tête de fichier) : reculer cette date pose la partition à l'instant
@@ -844,6 +844,17 @@ struct LiquidLensLab: View {
         summitAt = now.addingTimeInterval(-target)
     }
 
+    // MARK: L'univers noir — la renaissance et la descente
+
+    /// La géométrie de la descente : la pastille perce le bord haut un
+    /// souffle après la coupe, tombe avec grâce (étirée par sa vitesse),
+    /// se pose au centre avec un tremblement amorti. Fonction pure de `ne`.
+    private func nightLens(w: CGFloat, h: CGFloat, t: Double,
+                           ne: Double, ax: CGFloat,
+                           dateNow: Date = .distantPast,
+                           envol ev: Double = -1) -> Lens {
+        let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
+        let e2 = u * u * (3 - 2 * u)
         // PETITE à la renaissance — elle grossit surtout en arrivant.
         let radius = w * 0.115 + w * 0.185 * CGFloat(sstep(0.35, 1.0, u))
         let cyStart = -radius - 60
@@ -1222,17 +1233,6 @@ struct LiquidLensLab: View {
                          * (1 - sstep(0, 0.18, max(ev, 0))))
                 .allowsHitTesting(resting && envolAt == nil)
                 .position(x: w / 2, y: h - 72)
-            } else if !Self.cycling {
-                Button {
-                    summitAt = nil
-                    summitFx = nil
-                    fingerLoc = nil
-                    release = nil
-                    dragPath = []
-                    flareAt = nil
-                    RocketHaptics.shared.dragEnd()
-                    LensTheme.shared.stop()
-                } label: {
                 // PASSER L'ANIMATION. La cérémonie est belle et on n'y touche
                 // pas — mais en séance, l'attendre avant chaque série est une
                 // punition. Le lien ne coupe rien : il AVANCE L'HORLOGE (voir
@@ -1283,6 +1283,17 @@ struct LiquidLensLab: View {
                     .allowsHitTesting(skipIn > 0.6)
                     .position(x: w / 2, y: h - 72)
                 }
+            } else if !Self.cycling {
+                Button {
+                    summitAt = nil
+                    summitFx = nil
+                    fingerLoc = nil
+                    release = nil
+                    dragPath = []
+                    flareAt = nil
+                    RocketHaptics.shared.dragEnd()
+                    LensTheme.shared.stop()
+                } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11, weight: .semibold))

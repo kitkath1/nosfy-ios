@@ -60,6 +60,18 @@ struct ExerciseDetailView: View {
     /// synthétiques parlent l'espace de la lentille).
     @State private var pageFull = CGSize(width: 402, height: 874)
 
+    /// LE DOCK DU PLAYER : la hauteur que la dalle ajoute SOUS le galet
+    /// — 76 de pierre (l'air du trait-poignée compris) − 34 de zone
+    /// sûre, car la dalle est INCRUSTÉE au bord physique (verdicts :
+    /// « il doit toucher le bottom », « il doit s'incruster dans les
+    /// bords »), pleine largeur, l'indicateur home passe dessus. Le sol
+    /// du geste remonte d'autant : l'ORIGINE de la règle se décale, le
+    /// SOMMET ne bouge pas. Sans ce décalage, le toucher sur la crête
+    /// remontée gagnerait ~0,07 de climb gratuit. Le même Δ part à la
+    /// lentille (`groundLift`) — les deux mondes gardent la même règle.
+    /// (Écran sans indicateur : dérive +0,06, non-cible.)
+    private static var playerLift: CGFloat { verreLab ? 0 : 42 }
+
     /// La montée de la lentille (0 bord bas → 1 sommet) depuis un y plein
     /// écran — LE MÊME barème que `climbOf` du lab : les deux mondes
     /// mesurent le doigt avec la même règle. PIÈGE PAYÉ : h = 0 (une
@@ -67,7 +79,8 @@ struct ExerciseDetailView: View {
     /// qui empoisonnait `flood`, l'opacité du voile ET tous les uniforms
     /// du shader — le galet mourait pour toujours, sans un cri.
     private static func climbGlobal(y: CGFloat, h: CGFloat) -> Double {
-        min(max(Double((h * 0.90 - y) / max(h * 0.72, 1)), 0), 1.06)
+        min(max(Double((h * 0.90 - playerLift - y)
+                       / max(h * 0.72 - playerLift, 1)), 0), 1.06)
     }
 
     /// LES TROIS TEMPS du geste (verdict : « on doit voir le galet de la
@@ -134,9 +147,11 @@ struct ExerciseDetailView: View {
     /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
     /// la loi du zoom interne en a besoin, jamais pendant le scroll.
     @State private var heroAspect: CGFloat = 0.8
-    /// La photo au repos : 225 (« réduis encore les images », 13 août) —
-    /// c'était 285.
-    private static let heroCap: CGFloat = 225
+    /// La photo au repos : 190 (« il faut réduire la taille de l'image…
+    /// pour que la page respire », 17 août, l'arrivée du dock) — c'était
+    /// 285, puis 225. Tout le haut de page en dérive : le titre et la
+    /// carte remontent de 35 pt d'un seul geste.
+    private static let heroCap: CGFloat = 190
     /// La course du geste, en points de scroll. 140 au temps de la
     /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
     /// plus long — la croissance se savoure sous le doigt.
@@ -202,8 +217,10 @@ struct ExerciseDetailView: View {
     /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
     /// maison : on anime en offset, jamais la place réservée).
     /// 118 : le bloc titre en consomme ~96 — le reste est l'air entre le
-    /// sous-titre et la flamme (« espace plus », 14 août).
-    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
+    /// sous-titre et la flamme (« espace plus », 14 août). Dérivé de
+    /// `heroCap` : la constante dupliquée en dur avait failli désynchroniser
+    /// le header à la réduction du 17 août.
+    private static let expandedHeader: CGFloat = 12 + heroCap + 8 + 118
     /// `-headerFreeze <y>` : fige la course vue par le header (le
     /// simulateur ne drague pas) — les poses du dépliement se capturent.
     private static let headerFreeze: CGFloat? = {
@@ -293,6 +310,11 @@ struct ExerciseDetailView: View {
     /// Le prochain montage du cadran naît POSÉ (le bouton du panneau) —
     /// pas de plongée, un 3-2-1 à la place.
     @State private var posedLaunch = false
+    /// L'ARDOISE EST EN MAIN : le drag plein écran de la carte des séries
+    /// se désarme (le même pattern que `lensShown` pour le drag de
+    /// retour) — sans ça, un doigt qui échappe à la dalle fait respirer
+    /// toute la page.
+    @State private var slateBusy = false
 
     private var active: Workout? { workouts.first { $0.isActive } }
     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
@@ -387,8 +409,9 @@ struct ExerciseDetailView: View {
         func point(at climb: Double) -> CGPoint {
             CGPoint(x: pageFull.width / 2
                         + 18 * sin(climb * 7.0),
-                    y: pageFull.height * 0.90
-                        - climb * pageFull.height * 0.72)
+                    y: pageFull.height * 0.90 - Self.playerLift
+                        - climb * (pageFull.height * 0.72
+                                   - Self.playerLift))
         }
         if Self.aubeFire {
             // LE GESTE UNIQUE, sans doigt : la montée traverse la nuit,
@@ -579,8 +602,6 @@ struct ExerciseDetailView: View {
                         // VRAI (le shader de la lentille, appelé avec les
                         // nombres de son repos). Bord à bord, elle déborde
                         // jusqu'au bord physique de l'écran.
-                        // Le lecteur (`WorkoutPill`) est retiré du décor
-                        // pour l'instant — il reviendra, décision à venir.
                         // Au banc du verre : le galet dort — sa lumière
                         // crème inonderait les modes OUTSIDE et ×16.
                         if Self.verreLab {
@@ -608,12 +629,27 @@ struct ExerciseDetailView: View {
                                 onRelease: { p, vy in driveEnded(p, vy) },
                                 onLaunch: launch
                             )
+                            // LA PLACE DE LA DALLE. Le player vit dans
+                            // l'ARDOISE (le panneau semi-sorti, en
+                            // overlay) — l'inset ne garde que sa réserve
+                            // nette (64 − zone sûre = `playerLift`) :
+                            // la carte, la règle du geste et le layout
+                            // ne bougent pas d'un point quand l'ardoise
+                            // s'ouvre.
+                            Color.clear.frame(height: Self.playerLift)
                         }
                     }
                 } else {
                     primaryAction
                 }
             }
+            // (L'ardoise vivait ICI, en overlay au milieu de la chaîne —
+            // MONTAGE VICIÉ, payé cher : le dessin tombait juste mais
+            // l'écoute restait décalée d'une zone sûre — le doigt sur la
+            // dalle partait au galet ou à la carte. Elle vit désormais
+            // au sommet de la chaîne, à la grammaire du panneau
+            // Recommencer — le seul montage de panneau bas que la maison
+            // ait éprouvé sous le doigt.)
         }
         // LA PLONGÉE DANS LE GALET — la troisième caméra de la maison
         // (connexion → la lune ; sommet → la pastille ; ici → le galet).
@@ -641,6 +677,21 @@ struct ExerciseDetailView: View {
         // qui continue.
         .overlay {
             ZStack {
+                // L'ARDOISE — le panneau semi-sorti du player, montée à
+                // la grammaire du panneau Recommencer (le SEUL montage de
+                // panneau bas que la maison ait éprouvé sous le doigt) :
+                // dessin ET écoute sur la même géométrie pleine. PREMIÈRE
+                // du ZStack : sous le voile de l'aube, la lentille, BRAVO
+                // et le panneau — exactement la place qu'avait la dalle.
+                if isStrength, !Self.verreLab {
+                    SessionSlate(exercise: exercise,
+                                 progress: doneFraction,
+                                 startedAt: active?.startedAt,
+                                 drafts: sets,
+                                 restSeconds: restSeconds,
+                                 workout: active,
+                                 busy: $slateBusy)
+                }
                 if flood > 0.001 {
                     Self.paper
                         .opacity(floodVeil)
@@ -685,7 +736,8 @@ struct ExerciseDetailView: View {
                         },
                         handoff: lensHandoff,
                         onSummit: { summited = true },
-                        posedStart: posedLaunch
+                        posedStart: posedLaunch,
+                        groundLift: Self.playerLift
                     )
                     .opacity(lensShown
                              ? 1
@@ -825,6 +877,9 @@ struct ExerciseDetailView: View {
     private var carteDrag: some Gesture {
         DragGesture(minimumDistance: 12)
             .onChanged { v in
+                // L'ardoise est en main : la carte n'écoute plus — un
+                // doigt qui lui échapperait ferait respirer la page.
+                guard !slateBusy else { return }
                 if !carteSaisie {
                     // Un geste LATÉRAL n'est pas le nôtre : sans ce
                     // filtre d'axe, un balayage horizontal (le réflexe du

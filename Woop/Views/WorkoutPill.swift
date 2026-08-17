@@ -2,77 +2,380 @@ import SwiftUI
 
 // MARK: - La pastille de séance en cours
 
-/// La pastille noire incrustée sous la carte blanche de la fiche — l'UI du
-/// mini-player de la référence, reprise TELLE QUELLE même si elle parle
-/// musique : vignette, titre, sous-titre, pause, cœur, filet de progression.
-/// Le composant sera retravaillé plus tard pour parler entraînement ; ici on
-/// copie la référence, on n'interprète pas.
+/// La pastille de séance — le mini-player de la maison, revenu du décor :
+/// la pierre obsidienne posée en dock SOUS le galet d'aube, façon lecteur
+/// au bas de page. Vignette, titre, sous-titre, pause, STOP, filet de
+/// progression : elle parle désormais entraînement, plus musique.
 ///
-/// Sur la page noire, la pastille n'existe que par deux choses : l'échancrure
-/// de la carte blanche qui la dessine en négatif, et le soulèvement obsidienne
-/// — un noir à peine remonté sous un cheveu de lumière. Sans lui, dès que
-/// l'œil quitte le blanc, la pierre disparaît dans la page.
+/// La pierre ne vit que par le noir remonté sous un cheveu de lumière :
+/// jadis dans l'échancrure de la carte blanche, aujourd'hui sur la nacre
+/// du galet — elle se lit CONTRE le clair, jamais sur la nuit nue.
+///
+/// v1 DESIGN : la pause reste un placeholder visuel et le stop est posé
+/// mais INERTE — son panneau « Terminer la séance ? » est le prochain
+/// chantier. Le filet et le chrono, eux, sont vrais.
 struct WorkoutPill: View {
     let exercise: Exercise
     /// Fraction de la séance accomplie, pour le filet de progression.
     var progress: Double = 0
+    /// Le départ de la séance : le sous-titre devient chrono. `nil`,
+    /// l'attente — le libellé seul.
+    var startedAt: Date? = nil
+    /// LA DALLE : `true`, la pierre s'INCRUSTE dans les bords de l'écran
+    /// (verdict : « posée » ne suffit pas) — pleine largeur, coins bas
+    /// morts au ras du bord physique, liseré qui meurt avant le bord
+    /// (la loi du CADRE FANTÔME). `false`, la pierre flottante d'origine
+    /// (l'échancrure de la carte blanche).
+    var docked: Bool = false
 
-    /// Pause et cœur : des PLACEHOLDERS assumés — l'état est purement visuel,
-    /// le composant sera rebranché quand il sera retravaillé.
+    /// Pause : PLACEHOLDER assumé — l'état est purement visuel, le
+    /// branchement viendra avec le vrai flux de séance.
     @State private var paused = false
-    @State private var loved = false
+    /// La bouffée de fumée du tap — née au toucher, morte 1,6 s après.
+    @State private var smokeAt: Date?
 
     private let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+    private let dockShape = UnevenRoundedRectangle(
+        topLeadingRadius: 22, bottomLeadingRadius: 0,
+        bottomTrailingRadius: 0, topTrailingRadius: 22, style: .continuous)
 
     var body: some View {
         HStack(spacing: 12) {
-            ExercisePhoto(exercise: exercise)
-                .frame(width: 42, height: 42)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
-                )
+            // LA VIGNETTE : en dock, le player parle de TOUTE la séance —
+            // le glyphe de la maison remplace la photo d'exercice
+            // (verdict 17-08 : « c'est toute la session »).
+            if docked {
+                sessionMoon
+            } else {
+                ExercisePhoto(exercise: exercise)
+                    .frame(width: 42, height: 42)
+                    .clipShape(RoundedRectangle(cornerRadius: 12,
+                                                style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.08),
+                                          lineWidth: 1)
+                    )
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name)
+                // En dock, le player parle de la SÉANCE : « Session du
+                // 17 août », jamais le nom d'un exercice (verdict 17-08).
+                Text(docked
+                     ? "Session du \((startedAt ?? .now).formatted(.dateTime.day().month(.wide)))"
+                     : exercise.name)
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.inkPrimary)
                     .lineLimit(1)
-                Text("Entraînement en cours")
-                    .font(.inter(11))
-                    .foregroundStyle(Color.inkMuted)
+                subtitle
             }
 
             Spacer(minLength: 8)
 
-            roundButton(paused ? "play.fill" : "pause.fill") { paused.toggle() }
-            roundButton(loved ? "heart.fill" : "heart") { loved.toggle() }
-        }
-        .padding(.leading, 11)
-        .padding(.trailing, 12)
-        .frame(maxWidth: .infinity)
-        .frame(height: 64)
-        .background(shape.fill(Color(white: 0.045)))
-        .overlay(shape.strokeBorder(Color.white.opacity(0.07), lineWidth: 1))
-        // Le filet de progression, posé sur le bord bas comme dans la
-        // référence : un cheveu, pas une barre.
-        .overlay(alignment: .bottom) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.14))
-                    Capsule().fill(Color.white.opacity(0.85))
-                        .frame(width: geo.size.width
-                               * min(max(progress, 0.04), 1))
+            if docked {
+                // Les boutons-médaillons : play/stop en crème, PAUSE en
+                // néon orange sobre — et au tap, la bouffée de fumée.
+                medallionButton(paused ? "play.fill" : "pause.fill",
+                                neon: !paused) {
+                    paused.toggle()
+                    souffleTap()
                 }
+                // Le stop : INERTE pour l'instant — le panneau
+                // « Terminer la séance ? » viendra s'y brancher.
+                medallionButton("stop.fill") {}
+            } else {
+                roundButton(paused ? "play.fill" : "pause.fill") {
+                    paused.toggle()
+                }
+                roundButton("stop.fill") {}
             }
-            .frame(height: 2.5)
-            .padding(.horizontal, 14)
-            .padding(.bottom, 7)
         }
-        .contentShape(shape)
+        .padding(.leading, docked ? 20 : 11)
+        .padding(.trailing, docked ? 16 : 12)
+        // En dock, la dalle grandit (64 → 76) et le contenu descend :
+        // l'air vit ENTRE le trait-poignée et la ligne (« c'est trop
+        // collé »), pas sous elle — le filet et l'indicateur gardent
+        // leur bas.
+        .padding(.top, docked ? 10 : 0)
+        .frame(maxWidth: .infinity)
+        .frame(height: docked ? 76 : 64)
+        .background {
+            if docked { dockShape.fill(Color(white: 0.045)) }
+            else { shape.fill(Color(white: 0.045)) }
+        }
+        .overlay {
+            if docked {
+                // Le liseré d'une dalle incrustée n'a pas de bas : il
+                // meurt aux deux tiers — un trait au ras du bord physique
+                // serait le CADRE FANTÔME.
+                dockShape.strokeBorder(
+                    LinearGradient(stops: [
+                        .init(color: .white.opacity(0.10), location: 0),
+                        .init(color: .white.opacity(0.03), location: 0.4),
+                        .init(color: .clear, location: 0.65),
+                    ], startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1)
+            } else {
+                shape.strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+            }
+        }
+        // Le filet de progression, posé sur le bord bas comme dans la
+        // référence : un cheveu, pas une barre. En dock : LA VEINE D'OR.
+        .overlay(alignment: .bottom) {
+            if docked {
+                veine
+            } else {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.14))
+                        Capsule().fill(Color.white.opacity(0.85))
+                            .frame(width: geo.size.width
+                                   * min(max(progress, 0.04), 1))
+                    }
+                }
+                .frame(height: 2.5)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 7)
+            }
+        }
+        // LA BOUFFÉE : la fumée du coffre, palette de nuit, née au tap du
+        // pause et morte 1,6 s plus tard — au-dessus de tout, sourde.
+        .overlay {
+            if let s = smokeAt {
+                GeometryReader { g in
+                    CoinSmoke(center: CGPoint(
+                                  x: g.size.width - 16 - 34 - 12 - 17,
+                                  y: g.size.height / 2 + (docked ? 5 : 0)),
+                              radius: 15,
+                              start: s,
+                              end: s.addingTimeInterval(0.28),
+                              palette: .dark)
+                }
+                .allowsHitTesting(false)
+            }
+        }
+        .contentShape(docked ? AnyShape(dockShape) : AnyShape(shape))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Entraînement en cours — \(exercise.name)")
+    }
+
+    /// LE SOUFFLE du halo de la lune — la grammaire du petit néon des
+    /// lignes d'historique : UNE animation `repeatForever`, jamais une
+    /// TimelineView de plus (le chrono en tient déjà une).
+    @State private var lueur = false
+
+    /// LA LUNE DE LA SÉANCE : le glyphe de la maison (« il n'y a qu'UNE
+    /// lune dans cette app ») sur son double halo — l'orange derrière,
+    /// le blanc plus serré devant — qui PULSENT ensemble. La lueur reste
+    /// une lueur : elle commence après le croissant et meurt avant le
+    /// bord, jamais un fond (la leçon de la lune de la story).
+    private var sessionMoon: some View {
+        ZStack {
+            // Léger veut dire léger : à 0,30 sur un grand rayon, le halo
+            // remplissait le slot et virait au DISQUE BRUN sur
+            // l'obsidienne — la lueur commence après le croissant et
+            // meurt avant le bord.
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color(red: 1.0, green: 0.46, blue: 0.09)
+                        .opacity(lueur ? 0.22 : 0.08), .clear],
+                    center: .center, startRadius: 6, endRadius: 18))
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color.white.opacity(lueur ? 0.15 : 0.05),
+                             .clear],
+                    center: .center, startRadius: 2, endRadius: 12))
+            MoonShape()
+                .fill(LinearGradient(
+                    colors: [Color(red: 0.200, green: 0.196, blue: 0.190),
+                             Color(red: 0.062, green: 0.060, blue: 0.058)],
+                    startPoint: .top, endPoint: .bottom))
+                .overlay {
+                    MoonShape()
+                        .stroke(LinearGradient(
+                            colors: [Color.white.opacity(lueur ? 1.00 : 0.78),
+                                     Color.white.opacity(lueur ? 0.55 : 0.32)],
+                            startPoint: .top, endPoint: .bottom),
+                            lineWidth: 1.0)
+                }
+                .frame(width: 20, height: 20)
+        }
+        .frame(width: 42, height: 42)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.6)
+                .repeatForever(autoreverses: true)) { lueur = true }
+        }
+    }
+
+    /// Le sous-titre : l'état d'attente, ou le temps de séance en
+    /// MINUTES (verdict : un player n'est pas un chronomètre — la
+    /// seconde par seconde était un tic).
+    @ViewBuilder private var subtitle: some View {
+        if let startedAt {
+            TimelineView(.periodic(from: startedAt, by: 60)) { tl in
+                Text("En séance · \(Self.duree(tl.date.timeIntervalSince(startedAt)))")
+                    .font(.inter(11).monospacedDigit())
+                    .foregroundStyle(Color.inkMuted)
+            }
+        } else {
+            Text("Entraînement en cours")
+                .font(.inter(11))
+                .foregroundStyle(Color.inkMuted)
+        }
+    }
+
+    private static func duree(_ s: TimeInterval) -> String {
+        let m = max(0, Int(s) / 60)
+        // Au-delà de l'heure, on parle en heures — une séance orpheline
+        // de onze jours affichait « 16770:57 ».
+        guard m >= 60 else { return "\(m) min" }
+        return "\(m / 60) h \(String(format: "%02d", m % 60))"
+    }
+
+    /// LA VEINE D'OR (« oui la veine d'or ») : le filet devient une veine
+    /// dégradée qui s'allume vers sa tête — et la tête est une perle de
+    /// braise qui respire, sur le souffle déjà en place (`lueur`, aucune
+    /// horloge de plus). Plancher 4 % conservé : la perle vit dès zéro.
+    private var veine: some View {
+        GeometryReader { geo in
+            let w = geo.size.width * min(max(progress, 0.04), 1)
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.10))
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [FlammePalette.or.opacity(0.10),
+                                 FlammePalette.or.opacity(0.75),
+                                 FlammePalette.blanc],
+                        startPoint: .leading, endPoint: .trailing))
+                    .frame(width: w)
+                // La perle de braise — jamais un point : une lumière.
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [FlammePalette.blanc,
+                                 FlammePalette.braise.opacity(0.85),
+                                 FlammePalette.coeur.opacity(0)],
+                        center: .center, startRadius: 0, endRadius: 5))
+                    .frame(width: 10, height: 10)
+                    .blur(radius: 1.2)
+                    .blendMode(.plusLighter)
+                    .opacity(lueur ? 1.0 : 0.62)
+                    .position(x: w, y: geo.size.height / 2)
+                Circle()
+                    .fill(FlammePalette.blanc)
+                    .frame(width: 2.6, height: 2.6)
+                    .position(x: w, y: geo.size.height / 2)
+            }
+        }
+        .frame(height: 2.5)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 7)
+    }
+
+    /// Le liseré angulaire du médaillon à flamme — SES crans exacts (la
+    /// carte Séries est la référence : « exactement l'effet comme le
+    /// médaillon »), l'arc vif au sud-ouest, la bague encadrée.
+    private static let lisereMedaillon: [Gradient.Stop] = [
+        .init(color: Color.white.opacity(0.10), location: 0.000),
+        .init(color: Color.white.opacity(0.46), location: 0.098),
+        .init(color: Color.white.opacity(0.14), location: 0.180),
+        .init(color: Color.white.opacity(0.10), location: 0.280),
+        .init(color: Color.white.opacity(0.62), location: 0.430),
+        .init(color: Color.white.opacity(0.30), location: 0.500),
+        .init(color: Color.white.opacity(0.86), location: 0.580),
+        .init(color: Color.white.opacity(0.20), location: 0.660),
+        .init(color: Color.white.opacity(0.10), location: 0.790),
+        .init(color: Color.white.opacity(0.44), location: 0.882),
+        .init(color: Color.white.opacity(0.10), location: 0.960),
+        .init(color: Color.white.opacity(0.10), location: 1.000),
+    ]
+    /// La BAGUE du médaillon : le flare blanc pur du haut-gauche (209°),
+    /// attaché au disque, débordant dehors.
+    private static let bagueMedaillon: [Gradient.Stop] = [
+        .init(color: .white.opacity(0.00), location: 0.000),
+        .init(color: .white.opacity(0.00), location: 0.500),
+        .init(color: .white.opacity(0.18), location: 0.536),
+        .init(color: .white.opacity(0.92), location: 0.581),
+        .init(color: .white.opacity(0.30), location: 0.625),
+        .init(color: .white.opacity(0.00), location: 0.660),
+        .init(color: .white.opacity(0.00), location: 1.000),
+    ]
+
+    /// LE BOUTON-MÉDAILLON : l'effet du médaillon à flamme de la carte,
+    /// à l'échelle du player — le disque laqué, le liseré angulaire
+    /// premium, la bague blanche, et le petit halo chaud qui respire sur
+    /// le souffle de la lune. Play et stop en crème ; le pause en néon
+    /// orange SOBRE (verdict : « orange plus sobre néon » — une seule
+    /// ombre douce, plus les grandes lueurs).
+    private func medallionButton(_ symbol: String, neon: Bool = false,
+                                 action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ZStack {
+                // Le disque laqué — la lumière prend en haut-gauche.
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [Color(white: 0.105), Color(white: 0.035)],
+                        center: UnitPoint(x: 0.38, y: 0.30),
+                        startRadius: 2, endRadius: 24))
+                // Le petit halo chaud — l'ambiance du médaillon, en
+                // sourdine, qui respire.
+                Circle()
+                    .fill(RadialGradient(
+                        stops: [
+                            .init(color: FlammePalette.flamme
+                                .opacity(neon ? 0.11 : 0.06), location: 0),
+                            .init(color: FlammePalette.or.opacity(0.025),
+                                  location: 0.55),
+                            .init(color: .clear, location: 1),
+                        ], center: .center, startRadius: 0, endRadius: 20))
+                    .blendMode(.plusLighter)
+                    .opacity(lueur ? 1.0 : 0.62)
+                if neon {
+                    Image(systemName: symbol)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(FlammePalette.neon)
+                        .shadow(color: FlammePalette.coeur.opacity(0.45),
+                                radius: 3)
+                } else {
+                    Image(systemName: symbol)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(FlammePalette.blanc.opacity(0.92))
+                }
+            }
+            .frame(width: 34, height: 34)
+            // Le liseré premium, aux crans du médaillon.
+            .overlay {
+                Circle()
+                    .stroke(AngularGradient(stops: Self.lisereMedaillon,
+                                            center: .center, angle: .zero),
+                            lineWidth: 0.8)
+                    .opacity(lueur ? 1.0 : 0.78)
+            }
+            // La bague : `stroke` centré, elle déborde DEHORS du disque.
+            .overlay {
+                Circle()
+                    .stroke(AngularGradient(stops: Self.bagueMedaillon,
+                                            center: .center, angle: .zero),
+                            lineWidth: 2.4)
+                    .frame(width: 36.5, height: 36.5)
+                    .blur(radius: 1.0)
+                    .blendMode(.plusLighter)
+                    .opacity(0.85)
+            }
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Au tap du pause : la fumée s'échappe — puis tout se range, une
+    /// bouffée n'est pas un état.
+    private func souffleTap() {
+        smokeAt = .now
+        Task {
+            try? await Task.sleep(for: .seconds(1.6))
+            if let s = smokeAt, Date().timeIntervalSince(s) > 1.4 {
+                smokeAt = nil
+            }
+        }
     }
 
     private func roundButton(_ symbol: String,
