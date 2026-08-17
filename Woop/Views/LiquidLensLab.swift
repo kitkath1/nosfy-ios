@@ -808,6 +808,42 @@ struct LiquidLensLab: View {
                            envol ev: Double = -1) -> Lens {
         let u = min(max((ne - SummitCine.enter) / SummitCine.descend, 0), 1)
         let e2 = u * u * (3 - 2 * u)
+    /// PASSER L'ANIMATION — on n'abrège pas la chorégraphie, on AVANCE SON
+    /// HORLOGE. Toute la nuit est fonction pure de `summitAt` (la loi écrite
+    /// en tête de fichier) : reculer cette date pose la partition à l'instant
+    /// voulu sans qu'une seule courbe, un seul uniform, une seule constante
+    /// de `SummitCine` ne change.
+    ///
+    /// LA CIBLE EST `landed = 5,6`, ET C'EST LA SEULE JUSTE : c'est l'origine
+    /// du chrono ET celle du pouls. On arrive donc à 0:00 pile, sur le
+    /// PLANCHER du battement (`landed > 5.6` est encore faux : pas un éclat
+    /// de lumière sans cause), et la première bascule de seconde retombe
+    /// exactement sur le premier battement de la pastille, comme la partition
+    /// l'a écrit. Le « Terminer la série » monte ensuite tout seul, par SA
+    /// rampe : on ne lui vole pas son entrée, et le chrono ne ment pas d'une
+    /// seconde. Viser 6,8 — là où le bouton est plein — le ferait POPPER et
+    /// démarrerait la série à 1 s.
+    private func skipCine(_ now: Date) {
+        guard let s = summitAt, restStart == nil, envolAt == nil,
+              effortIgnite == nil else { return }
+        let posed = SummitCine.cutAt + SummitCine.enter + SummitCine.descend
+        let target = posed + 5.6
+        let e = now.timeIntervalSince(s)
+        // On n'avance jamais à reculons.
+        guard e < target else { return }
+        // CE QUI VIT SUR LE MUR NE SAUTE PAS AVEC L'IMAGE. Le thème et le
+        // motif de la fusée tiennent leur PROPRE horloge : sans ces deux
+        // coupes, le battement haptique de l'annonce frapperait au milieu de
+        // la série, sous une musique de descente.
+        RocketHaptics.shared.stop()
+        LensTheme.shared.stop()
+        // L'annonce des chiffres est posée en attente. Si elle n'a pas encore
+        // sonné, elle sonne MAINTENANT — avec les chiffres, qui viennent
+        // d'arriver. Son jeton annule celle qui patientait.
+        if e < posed + 4.5 { Paillettes.shared.announce(after: 0) }
+        summitAt = now.addingTimeInterval(-target)
+    }
+
         // PETITE à la renaissance — elle grossit surtout en arrivant.
         let radius = w * 0.115 + w * 0.185 * CGFloat(sstep(0.35, 1.0, u))
         let cyStart = -radius - 60
@@ -1197,6 +1233,56 @@ struct LiquidLensLab: View {
                     RocketHaptics.shared.dragEnd()
                     LensTheme.shared.stop()
                 } label: {
+                // PASSER L'ANIMATION. La cérémonie est belle et on n'y touche
+                // pas — mais en séance, l'attendre avant chaque série est une
+                // punition. Le lien ne coupe rien : il AVANCE L'HORLOGE (voir
+                // `skipCine`). Frère de « Passer le repos » — même fonte,
+                // même encre, même gabarit, même place : ils ne peuvent pas
+                // se croiser (l'autre n'existe qu'en repos) et le CTA ne naît
+                // qu'à 6,3, bien après la mort de celui-ci.
+                //
+                // IL S'ALLUME AVEC LA NUIT, pas avec la pose (verdict de
+                // Kathryn) : la page noire naît à `ne = 0`, donc à
+                // `landed = -(enter + descend) = -2,52`. L'attendre après la
+                // pose, c'était offrir la sortie deux secondes et demie trop
+                // tard — on n'échappe pas à une attente une fois qu'elle est
+                // finie.
+                //
+                // Sauter depuis la CHUTE est sans danger, et c'est vérifié :
+                // rien n'accumule ici. `nightTrail` reconstruit ses trente
+                // points à chaque appel depuis le seul `ne`, et `dry` est un
+                // `sstep` de `landed` — un saut rend donc exactement l'image
+                // qu'on aurait eue en attendant, jamais un état resté à
+                // mi-chemin. Ce qu'on paie, c'est une coupe FRANCHE : la
+                // pastille tombe, et à l'image suivante elle est posée,
+                // cadran formé. C'est le sens du mot « passer ».
+                //
+                // ET IL MEURT SUR `chipInS`, PAS SUR UNE HORLOGE À LUI : le
+                // lien tient toute la traversée, puis se fait REMPLACER par
+                // le primaire « Terminer la série » — une passation, pas une
+                // disparition suivie d'un trou. Les deux partagent la même
+                // rampe, donc l'un s'éteint exactement à la mesure où l'autre
+                // s'allume, et il ne reste jamais un instant sans sortie.
+                // (Passé la pose, `chipInS` vaut 1 pour toujours : le lien ne
+                // peut plus revenir, ni croiser « Passer le repos ».)
+                let skipIn = Self.cycling ? 0
+                    : sstep(-2.4, -2.0, landed) * (1 - chipInS)
+                if skipIn > 0.001 {
+                    Button { skipCine(now) } label: {
+                        Text("Passer l'animation")
+                            .font(.inter(15, .medium))
+                            .foregroundStyle(Color.white.opacity(0.55))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(skipIn)
+                    // Le tapable est un sous-ensemble STRICT du visible — la
+                    // leçon du bouton invisible, payée deux fois aujourd'hui :
+                    // une opacité nulle n'est pas sourde au doigt.
+                    .allowsHitTesting(skipIn > 0.6)
+                    .position(x: w / 2, y: h - 72)
+                }
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11, weight: .semibold))
