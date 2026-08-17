@@ -910,7 +910,7 @@ struct ExerciseDetailView: View {
         let jeton = carteBougeJeton
         withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
             carteP = ouvre ? 1 : 0
-            suivreLeRetard(carteP)
+            poserLeRetard(carteP)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
             if carteBougeJeton == jeton, !carteSaisie { carteBouge = false }
@@ -1302,7 +1302,31 @@ struct ExerciseDetailView: View {
     /// rattraper tant que le doigt bouge — l'écart entre les deux EST la
     /// parallaxe.
     private func suivreLeRetard(_ v: CGFloat) {
-        withAnimation(.easeOut(duration: 0.34)) { carteLag = v }
+        // FILTRE, PAS ANIMATION (17-08). Première version : un
+        // `withAnimation` à chaque appel — or cette fonction est appelée
+        // À CHAQUE IMAGE pendant que le doigt bouge, et chaque appel
+        // RELANCE l'animation depuis la valeur courante. La copie
+        // « retardée » rattrapait donc la vraie presque instantanément,
+        // l'écart tombait à zéro, et la parallaxe n'existait plus —
+        // elle ne survivait que sur le ressort de fin de geste.
+        // Un passe-bas manuel, lui, garde son retard tant que la source
+        // bouge : chaque image ne comble qu'un quart de l'écart.
+        let k: CGFloat = 0.22
+        let neuf = carteLag + (v - carteLag) * k
+        // On ne réécrit pas pour rien : sous le millième, l'écart est
+        // invisible et une écriture d'état par image coûte cher.
+        if abs(neuf - carteLag) > 0.001 { carteLag = neuf }
+        else if carteLag != v { carteLag = v }
+    }
+
+    /// LE RETOUR AU CALME — appelé au RELÂCHÉ, une seule fois. Sans lui,
+    /// le filtre ne comblerait que 22 % de l'écart au dernier appel et le
+    /// retard resterait FIGÉ : les lumières intérieures seraient restées
+    /// décalées au repos, ce qui viole la règle qui protège les deux
+    /// états validés (l'effet doit valoir zéro à l'arrêt). Ici un
+    /// `withAnimation` est légitime : il n'est pas rappelé à chaque image.
+    private func poserLeRetard(_ v: CGFloat) {
+        withAnimation(.easeOut(duration: 0.30)) { carteLag = v }
     }
 
     private var contratSeance: String {
