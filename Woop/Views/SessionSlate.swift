@@ -276,7 +276,11 @@ struct SlateGroupe: Identifiable {
 ///
 /// Équatable sur les clés des groupes : pendant le tirage, ce corps
 /// n'est JAMAIS réévalué.
-private struct SlateListe: View, Equatable {
+///
+/// PARTAGÉE (18-08) : la story 2 pose la même partition sur sa vidéo —
+/// un seul composant pour l'ardoise et la story, jamais deux copies qui
+/// divergent d'un pouième.
+struct SlateListe: View, Equatable {
     let groupes: [SlateGroupe]
     /// L'id du groupe déplié à la naissance (l'exercice courant).
     let courant: String
@@ -295,24 +299,13 @@ private struct SlateListe: View, Equatable {
     var body: some View {
         ScrollView {
             VStack(spacing: 4) {
+                // Le dépliage voyage EN VALEUR (`depliee`) dans une
+                // vue-enfant — JAMAIS un `if deplies.contains(…)` écrit
+                // dans la closure : voir `SlateRang`.
                 ForEach(groupes) { g in
-                    rangee(g)
-                    if deplies.contains(g.id) {
-                        // Les lignes FONDENT en place, d'un seul bloc :
-                        // sans transition, l'animation de layout
-                        // PROJETAIT les glyphes à travers l'écran — les
-                        // « petites pièces qui sortent » du verdict.
-                        VStack(spacing: 4) {
-                            ForEach(g.rows.indices, id: \.self) { i in
-                                SetHistoryRow(rank: i + 1,
-                                              reps: g.rows[i].reps,
-                                              kilos: g.rows[i].kilos,
-                                              seconds: g.rows[i].seconds,
-                                              done: g.rows[i].done)
-                            }
-                        }
-                        .transition(.opacity)
-                    }
+                    SlateRang(groupe: g,
+                              depliee: deplies.contains(g.id),
+                              onTap: { bascule(g.id) })
                 }
             }
             .padding(.horizontal, 16)
@@ -321,51 +314,91 @@ private struct SlateListe: View, Equatable {
         }
         .scrollIndicators(.hidden)
         .onAppear {
+            print("SONDE liste: apparue, seme=\(seme) deplies=\(deplies)")
             if !seme { seme = true; deplies = [courant] }
+        }
+        .onDisappear {
+            print("SONDE liste: disparue, deplies=\(deplies)")
         }
     }
 
-    /// La rangée compacte : le tap déplie/replie.
-    private func rangee(_ g: SlateGroupe) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.38,
-                                  dampingFraction: 0.85)) {
-                if deplies.contains(g.id) { deplies.remove(g.id) }
-                else { deplies.insert(g.id) }
-            }
-        } label: {
-            HStack(spacing: 10) {
-                ExercisePhoto(exercise: g.exercise)
-                    .frame(width: 30, height: 30)
-                    .clipShape(RoundedRectangle(cornerRadius: 9,
-                                                style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 9,
-                                         style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.08),
-                                          lineWidth: 1)
-                    )
-                Text(g.exercise.name)
-                    .font(.inter(14, .semibold))
-                    .foregroundStyle(Color.white.opacity(0.92))
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                // Les flammes GELÉES : la pose de t = 0, pas d'horloge —
-                // cinq exercices n'allument pas vingt-cinq animations.
-                FlammesRow(done: g.done, total: g.rows.count,
-                           t: 0, date: .distantPast, igniteAt: nil)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.30))
-                    .rotationEffect(.degrees(
-                        deplies.contains(g.id) ? 0 : -90))
-            }
-            .padding(.leading, 4)
-            .padding(.trailing, 6)
-            .padding(.top, 14)
-            .padding(.bottom, 6)
-            .contentShape(Rectangle())
+    private func bascule(_ id: String) {
+        print("SONDE bascule: \(id), avant=\(deplies)")
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.85)) {
+            if deplies.contains(id) { deplies.remove(id) }
+            else { deplies.insert(id) }
         }
-        .buttonStyle(.plain)
+        print("SONDE bascule: après=\(deplies)")
+    }
+
+}
+
+// MARK: - Une rangée de la partition
+
+/// UNE rangée + ses lignes dépliées — VUE-ENFANT, et c'est STRUCTUREL :
+/// le dépliage arrive en VALEUR (`depliee`), que le diffing voit changer.
+/// La leçon payée dix tours (18-08, au sondage) : un ForEach ne rejoue
+/// ses rangées que quand SES DONNÉES changent — un `if` sur un @State
+/// capturé dans sa closure est INVISIBLE au diffing, et les rangées
+/// restent gelées à vie sur leur image de naissance.
+///
+/// Le tap est un `onTapGesture` d'ENFANT, pas un Button — sondé aussi :
+/// sous le chef d'orchestre de la story (DragGesture simultané à
+/// distance nulle, par-dessus le ScrollView), le press d'un Button est
+/// affamé puis annulé ; le tap d'enfant, lui, gagne — dans la story
+/// comme dans l'ardoise.
+private struct SlateRang: View {
+    let groupe: SlateGroupe
+    let depliee: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ExercisePhoto(exercise: groupe.exercise)
+                .frame(width: 30, height: 30)
+                .clipShape(RoundedRectangle(cornerRadius: 9,
+                                            style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9,
+                                     style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.08),
+                                      lineWidth: 1)
+                )
+            Text(groupe.exercise.name)
+                .font(.inter(14, .semibold))
+                .foregroundStyle(Color.white.opacity(0.92))
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            // Les flammes GELÉES : la pose de t = 0, pas d'horloge —
+            // cinq exercices n'allument pas vingt-cinq animations.
+            FlammesRow(done: groupe.done, total: groupe.rows.count,
+                       t: 0, date: .distantPast, igniteAt: nil)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.30))
+                .rotationEffect(.degrees(depliee ? 0 : -90))
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 6)
+        .padding(.top, 14)
+        .padding(.bottom, 6)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
+
+        if depliee {
+            // Les lignes FONDENT en place, d'un seul bloc : sans
+            // transition, l'animation de layout PROJETAIT les glyphes à
+            // travers l'écran — les « petites pièces qui sortent ».
+            VStack(spacing: 4) {
+                ForEach(groupe.rows.indices, id: \.self) { i in
+                    SetHistoryRow(rank: i + 1,
+                                  reps: groupe.rows[i].reps,
+                                  kilos: groupe.rows[i].kilos,
+                                  seconds: groupe.rows[i].seconds,
+                                  done: groupe.rows[i].done)
+                }
+            }
+            .transition(.opacity)
+        }
     }
 }

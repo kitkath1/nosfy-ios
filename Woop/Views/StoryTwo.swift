@@ -14,6 +14,9 @@ struct StoryTwo: View {
     let now: Date
     let size: CGSize
     var paused: Bool = false
+    /// Le cadre de la partition, remonté au flux (repère « storyFlow ») :
+    /// le chef d'orchestre y renonce à son verdict de tap.
+    var onPartitionRect: (CGRect) -> Void = { _ in }
 
     var body: some View {
         // Le remplissage : la vidéo est plus large que l'écran à hauteur
@@ -53,17 +56,41 @@ struct StoryTwo: View {
                     .opacity(StoryCine.sstep(0.18, 0.70, t))
                     .offset(y: (1 - CGFloat(StoryCine.sstep(0.18, 0.70, t))) * 10)
 
-                VStack(spacing: 7) {
-                    ForEach(Array(session.sets.enumerated()),
-                            id: \.element.id) { i, s in
-                        let a = 0.40 + Double(i) * 0.075
-                        StorySetRow(serie: s, now: now)
-                            .opacity(StoryCine.sstep(a, a + 0.42, t))
-                            .offset(y: (1 - CGFloat(
-                                StoryCine.sstep(a, a + 0.50, t))) * 14)
+                if !session.groupes.isEmpty {
+                    // LA PARTITION DE L'ARDOISE (18-08) : la liste
+                    // dépliable par exercice — vignette, nom, petites
+                    // flammes gelées — le même composant que le player.
+                    // Le tap sur une rangée DÉPLIE (le geste de l'enfant
+                    // gagne) ; le tap à côté passe à la story 3 (le chef
+                    // d'orchestre du flux le ramasse).
+                    SlateListe(groupes: session.groupes,
+                               courant: session.groupes.first?.id ?? "",
+                               basAir: 24)
+                        .equatable()
+                        .frame(height: size.height * 0.52)
+                        .opacity(StoryCine.sstep(0.40, 0.95, t))
+                        .offset(y: (1 - CGFloat(
+                            StoryCine.sstep(0.40, 1.0, t))) * 14)
+                        .padding(.top, 14)
+                        .onGeometryChange(for: CGRect.self) {
+                            $0.frame(in: .named("storyFlow"))
+                        } action: {
+                            print("SONDE rect: partition=\($0)")
+                            onPartitionRect($0)
+                        }
+                } else {
+                    VStack(spacing: 7) {
+                        ForEach(Array(session.sets.enumerated()),
+                                id: \.element.id) { i, s in
+                            let a = 0.40 + Double(i) * 0.075
+                            StorySetRow(serie: s, now: now)
+                                .opacity(StoryCine.sstep(a, a + 0.42, t))
+                                .offset(y: (1 - CGFloat(
+                                    StoryCine.sstep(a, a + 0.50, t))) * 14)
+                        }
                     }
+                    .padding(.top, 22)
                 }
-                .padding(.top, 22)
 
                 Spacer(minLength: 0)
             }

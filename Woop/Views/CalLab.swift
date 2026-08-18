@@ -60,6 +60,16 @@ struct CalendarStickersPage: View {
     @State private var scrollY: CGFloat?
     @State private var scrollPos = ScrollPosition()
 
+    // La story : le rect tapé devient l'écran (le portail de la home).
+    @State private var story: CalStoryLaunch?
+    /// La case/row qui s'illumine au tap, l'instant avant le portail.
+    @State private var flashDay: Date?
+    @State private var flashRow: Date?
+    /// L'ardoise est en main : le drag de la carte se désarme (la loi
+    /// payée sur la fiche exo — un doigt qui échappe fait respirer la
+    /// page).
+    @State private var slateBusy = false
+
     // La console du verre — double-tap pour l'afficher/cacher, valeurs
     // persistées entre relances.
     @State private var showTune = CommandLine.arguments.contains("-calTune")
@@ -117,18 +127,19 @@ struct CalendarStickersPage: View {
                 // SCÈNE : demandés pour eux-mêmes, ils vivent toujours.
                 CoinHalosDroit()
                     .frame(height: 320)
-                // La dalle EN ENFANT du ZStack plein cadre : ancrée au
-                // bord PHYSIQUE — en overlay, elle se posait sur la zone
-                // sûre et la liste réapparaissait dessous.
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    WorkoutPill(exercise: ExerciseCatalog.all[0],
-                                progress: 0.4,
-                                startedAt: Self.demoStart,
-                                docked: true)
-                }
                 card(geo: geo, slots: slots, rowCount: rowCount,
                      p: p, course: course, inset: inset)
+                // L'ARDOISE de la fiche exo, entière : la dalle fondue au
+                // bord physique, qu'on tire vers le haut pour la
+                // partition de la séance.
+                SessionSlate(exercise: ExerciseCatalog.all[0],
+                             progress: 0.4,
+                             startedAt: Self.demoStart,
+                             drafts: Self.demoDrafts,
+                             restSeconds: 60,
+                             workout: nil,
+                             safeBottom: host.safeAreaInsets.bottom,
+                             busy: $slateBusy)
                 if showTune { tunePanel }
             }
             .ignoresSafeArea()
@@ -138,8 +149,50 @@ struct CalendarStickersPage: View {
                 }
             }
             .task { await autoScroll(inset: inset, course: course) }
+            // La story couvre tout — la grammaire exacte de la home.
+            .fullScreenCover(item: $story) { launch in
+                let _ = print("SONDE cover: présentation id=\(launch.id)")
+                StoryPortal(from: launch.rect, session: launch.session) {
+                    var tx = Transaction()
+                    tx.disablesAnimations = true
+                    withTransaction(tx) { story = nil }
+                }
+            }
         }
         .preferredColorScheme(.dark)
+    }
+
+    /// Démo de l'ardoise : trois séries faites, deux à venir.
+    private static let demoDrafts: [DraftSet] = [
+        DraftSet(reps: 12, weight: 20, isDone: true, durationSeconds: 64),
+        DraftSet(reps: 12, weight: 22, isDone: true, durationSeconds: 71),
+        DraftSet(reps: 10, weight: 24, isDone: true, durationSeconds: 58),
+        DraftSet(reps: 10, weight: 24),
+        DraftSet(reps: 8, weight: 26),
+    ]
+
+    // MARK: Le départ de la story
+
+    /// La case s'illumine, puis le rect tapé devient l'écran.
+    private func openStory(day: Date, rect: CGRect) {
+        guard let s = DemoSession.at(day, calendar: calendar) else { return }
+        flashDay = day
+        launchStory(session: s.storySession, rect: rect) { flashDay = nil }
+    }
+
+    private func openStory(row: DemoSession, rect: CGRect) {
+        flashRow = row.date
+        launchStory(session: row.storySession, rect: rect) { flashRow = nil }
+    }
+
+    private func launchStory(session: StorySession, rect: CGRect,
+                             clear: @escaping () -> Void) {
+        Task {
+            try? await Task.sleep(for: .milliseconds(140))
+            story = CalStoryLaunch(rect: rect, session: session)
+            try? await Task.sleep(for: .milliseconds(500))
+            withAnimation(.easeOut(duration: 0.4)) { clear() }
+        }
     }
 
     /// La résistance hors bornes — la traction au-delà du haut étire un
@@ -170,12 +223,15 @@ struct CalendarStickersPage: View {
                   pushEdge: pushEdge,
                   onBack: onBack,
                   onMonthStep: monthStep,
-                  tuning: tuning)
+                  tuning: tuning,
+                  flashDay: flashDay,
+                  onDayTap: openStory)
             // BORD À BORD : la moindre incrustation laisse la braise
             // passer sur les flancs et trahit le bord de la carte
             // (verdict du 18-08, réf. mini-player Apple Music).
             .contentShape(Rectangle())
-            .gesture(cardGesture(course: course, inset: inset))
+            .gesture(cardGesture(course: course, inset: inset),
+                     isEnabled: !slateBusy)
     }
 
     private func monthStep(_ dir: Int) {
@@ -227,7 +283,9 @@ struct CalendarStickersPage: View {
                     .padding(.leading, 6)
                     .padding(.bottom, 2)
                 ForEach(DemoSession.recent(calendar: calendar)) { s in
-                    SessionRow(session: s)
+                    SessionRow(session: s,
+                               flashing: flashRow == s.date,
+                               onTap: { rect in openStory(row: s, rect: rect) })
                 }
             }
             .padding(.horizontal, 14)
@@ -314,6 +372,16 @@ struct CalendarStickersPage: View {
             }
         }
     }
+}
+
+// MARK: - Le départ d'une story
+
+/// Ce qu'il faut pour ouvrir la story depuis la page : le récit, et le
+/// rectangle écran d'où le portail s'ouvre.
+private struct CalStoryLaunch: Identifiable {
+    let id = UUID()
+    let rect: CGRect
+    let session: StorySession
 }
 
 // MARK: - Les petits halos du coin droit
@@ -509,6 +577,9 @@ private struct CardMorph: View, Animatable {
     /// Les molettes de la console (`tunePanel`) : variante de verre,
     /// teinte, liseré, rayon — réglées au doigt, gravées ensuite.
     var tuning: GlassTuning
+    /// La case qui s'illumine (l'instant avant la story), et le tap.
+    var flashDay: Date?
+    var onDayTap: (Date, CGRect) -> Void
 
     var animatableData: CGFloat {
         get { p }
@@ -565,8 +636,21 @@ private struct CardMorph: View, Animatable {
         .frame(width: geo.width, height: full, alignment: .top)
         .frame(height: h, alignment: .top)
         .clipShape(shape)
+        // LE LISERÉ SANS HAUT : la carte est bord à bord, un trait qui
+        // traverse le sommet de l'écran se lit comme un artefact
+        // (verdict 18-08) — la grammaire de la dalle du player (liseré
+        // sans bas), inversée.
         .overlay(shape.strokeBorder(
-            Color.white.opacity(tuning.edgeAlpha), lineWidth: 1))
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0.0),
+                .init(color: Color.white.opacity(tuning.edgeAlpha * 0.6),
+                      location: 0.22),
+                .init(color: Color.white.opacity(tuning.edgeAlpha),
+                      location: 0.6),
+                .init(color: Color.white.opacity(tuning.edgeAlpha),
+                      location: 1.0),
+            ], startPoint: .top, endPoint: .bottom),
+            lineWidth: 1))
         .overlay(alignment: .bottom) {
             Capsule()
                 .fill(Color.white.opacity(0.32))
@@ -682,9 +766,15 @@ private struct CardMorph: View, Animatable {
         return ZStack(alignment: .topLeading) {
             ForEach(slots) { slot in
                 let pivot = anchorIsCurrent && slot.row == weekRow
+                let entraine = WoopSticker.demoCategory(
+                    for: slot.day, calendar: calendar) != nil
                 StickerDayCell(day: slot.day, size: s,
                                isToday: calendar.isDateInToday(slot.day),
-                               calendar: calendar)
+                               calendar: calendar,
+                               flashing: flashDay == slot.day,
+                               onTap: entraine
+                                   ? { r in onDayTap(slot.day, r) }
+                                   : nil)
                     .position(x: geo.colCenter(slot.col, p),
                               y: geo.rowCenterY(slot.row,
                                                 weekRow: weekRow, p))
@@ -708,6 +798,11 @@ private struct StickerDayCell: View {
     var size: CGFloat
     var isToday: Bool
     var calendar: Calendar
+    /// Le flash au tap — la case s'illumine l'instant avant la story.
+    var flashing = false
+    /// Le tap (jours entraînés seulement) : rend le rect ÉCRAN de la
+    /// case, le portail de la story s'ouvre depuis lui.
+    var onTap: ((CGRect) -> Void)? = nil
 
     var body: some View {
         let s = size
@@ -763,6 +858,33 @@ private struct StickerDayCell: View {
                     .opacity(0.8)
             }
         }
+        .overlay {
+            // LE FLASH : la case s'illumine — liseré plein + cœur chaud,
+            // le langage du jour actif poussé une seconde.
+            if flashing {
+                forme.fill(RadialGradient(
+                    colors: [FlammePalette.or.opacity(0.30),
+                             FlammePalette.flamme.opacity(0.10),
+                             .clear],
+                    center: .center, startRadius: 2, endRadius: s * 0.7))
+                    .blendMode(.plusLighter)
+                forme.strokeBorder(
+                    AngularGradient(stops: LisereMedaillon.crans,
+                                    center: .center, angle: .zero),
+                    lineWidth: 1.4)
+                    .blendMode(.plusLighter)
+                .transition(.opacity)
+            }
+        }
+        .overlay {
+            if onTap != nil {
+                GeometryReader { g in
+                    Color.clear
+                        .contentShape(forme)
+                        .onTapGesture { onTap?(g.frame(in: .global)) }
+                }
+            }
+        }
     }
 }
 
@@ -773,6 +895,10 @@ private struct StickerDayCell: View {
 /// cardio), et les pièces gagnées à droite (20 par série faite).
 private struct SessionRow: View {
     let session: DemoSession
+    /// Le flash au tap — la row s'illumine l'instant avant la story.
+    var flashing = false
+    /// Le tap : rend le rect ÉCRAN de la row pour le portail.
+    var onTap: ((CGRect) -> Void)? = nil
 
     private let forme = RoundedRectangle(cornerRadius: 22, style: .continuous)
 
@@ -820,6 +946,26 @@ private struct SessionRow: View {
                 .init(color: .white.opacity(0.01), location: 1),
             ], startPoint: .top, endPoint: .bottom),
             lineWidth: 1))
+        .overlay {
+            // LE FLASH : la row s'illumine avant que son rect ne
+            // devienne l'écran.
+            if flashing {
+                forme.strokeBorder(Color.white.opacity(0.55), lineWidth: 1)
+                    .blendMode(.plusLighter)
+                forme.fill(Color.white.opacity(0.06))
+                    .blendMode(.plusLighter)
+                .transition(.opacity)
+            }
+        }
+        .overlay {
+            if onTap != nil {
+                GeometryReader { g in
+                    Color.clear
+                        .contentShape(forme)
+                        .onTapGesture { onTap?(g.frame(in: .global)) }
+                }
+            }
+        }
     }
 
     /// Le badge-date : LA matière de la carte Séries, réutilisée — le
@@ -918,24 +1064,66 @@ struct DemoSession: Identifiable {
         "Session du \(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))"
     }
 
+    /// La session d'un jour donné — nil si le jour n'est pas entraîné.
+    static func at(_ day: Date, calendar: Calendar) -> DemoSession? {
+        guard let cat = WoopSticker.demoCategory(for: day,
+                                                 calendar: calendar)
+        else { return nil }
+        let n = calendar.component(.day, from: day)
+        let series = 3 + n % 3
+        let label = day.formatted(.dateTime.weekday(.abbreviated))
+            .replacingOccurrences(of: ".", with: "")
+            .prefix(3).uppercased()
+        return DemoSession(date: day, cat: cat, series: series,
+                           reps: series * (8 + n % 5),
+                           weekdayLabel: String(label),
+                           dayNumber: n)
+    }
+
     static func recent(calendar: Calendar, days: Int = 90) -> [DemoSession] {
         let today = calendar.startOfDay(for: Date())
         return (0..<days).compactMap { back in
-            guard let d = calendar.date(byAdding: .day, value: -back,
-                                        to: today),
-                  let cat = WoopSticker.demoCategory(for: d,
-                                                     calendar: calendar)
-            else { return nil }
-            let n = calendar.component(.day, from: d)
-            let series = 3 + n % 3
-            let label = d.formatted(.dateTime.weekday(.abbreviated))
-                .replacingOccurrences(of: ".", with: "")
-                .prefix(3).uppercased()
-            return DemoSession(date: d, cat: cat, series: series,
-                               reps: series * (8 + n % 5),
-                               weekdayLabel: String(label),
-                               dayNumber: n)
+            calendar.date(byAdding: .day, value: -back, to: today)
+                .flatMap { at($0, calendar: calendar) }
         }
+    }
+
+    /// La partition de démonstration : deux-trois exercices du catalogue,
+    /// leurs séries faites — la matière de la story 2 et de l'ardoise.
+    var groupes: [SlateGroupe] {
+        let n = dayNumber
+        let all = ExerciseCatalog.all
+        return (0..<(2 + n % 2)).map { i in
+            let exo = all[(n * 3 + i * 5) % all.count]
+            let rows = (0..<(2 + (n + i) % 3)).map { r in
+                SlateLigne(reps: 8 + (n + r) % 6,
+                           kilos: Double(16 + ((n + i + r) % 5) * 4),
+                           seconds: 45 + (n + r) % 40,
+                           done: true)
+            }
+            return SlateGroupe(id: "\(i)-\(exo.id)", exercise: exo,
+                               rows: rows)
+        }
+    }
+
+    /// Le récit que la story raconte, fabriqué depuis la démo.
+    var storySession: StorySession {
+        let g = groupes
+        let toutes = g.flatMap(\.rows)
+        var s = StorySession(
+            title: name,
+            dateLabel: name.replacingOccurrences(of: "Session",
+                                                 with: "Séance"),
+            minutes: max(1, toutes.count * 4),
+            exos: g.count,
+            series: toutes.count,
+            kcal: toutes.count * 28,
+            sets: toutes.prefix(5).enumerated().map { i, l in
+                StorySet(rank: i + 1, reps: l.reps, kilos: l.kilos,
+                         coins: 20)
+            })
+        s.groupes = g
+        return s
     }
 }
 

@@ -26,19 +26,37 @@ struct StorySession {
     var series: Int
     var kcal: Int
     var sets: [StorySet]
+    /// La partition par exercice (la grammaire de l'ardoise) : quand elle
+    /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
+    /// petites flammes — à la place des cinq lignes plates.
+    var groupes: [SlateGroupe] = []
 
-    /// Les valeurs de la maquette.
-    static let demo = StorySession(
-        title: "Haut du corps",
-        dateLabel: "Séance du 12 janvier",
-        minutes: 42, exos: 7, series: 18, kcal: 310,
-        sets: [
-            StorySet(rank: 1, reps: 12, kilos: 20, coins: 20),
-            StorySet(rank: 2, reps: 12, kilos: 24, coins: 15),
-            StorySet(rank: 3, reps: 15, kilos: 18, coins: 12),
-            StorySet(rank: 4, reps: 10, kilos: 30, coins: 18),
-            StorySet(rank: 5, reps: 8, kilos: 35, coins: 18)
-        ])
+    /// Les valeurs de la maquette — partition comprise, pour que le banc
+    /// `-storyLab` montre la liste dépliable de la story 2.
+    static let demo: StorySession = {
+        var s = StorySession(
+            title: "Haut du corps",
+            dateLabel: "Séance du 12 janvier",
+            minutes: 42, exos: 7, series: 18, kcal: 310,
+            sets: [
+                StorySet(rank: 1, reps: 12, kilos: 20, coins: 20),
+                StorySet(rank: 2, reps: 12, kilos: 24, coins: 15),
+                StorySet(rank: 3, reps: 15, kilos: 18, coins: 12),
+                StorySet(rank: 4, reps: 10, kilos: 30, coins: 18),
+                StorySet(rank: 5, reps: 8, kilos: 35, coins: 18)
+            ])
+        let all = ExerciseCatalog.all
+        s.groupes = (0..<3).map { i in
+            let exo = all[(i * 5) % all.count]
+            return SlateGroupe(
+                id: "\(i)-\(exo.id)", exercise: exo,
+                rows: (0..<(3 + i % 2)).map { r in
+                    SlateLigne(reps: 12 - r, kilos: 20 + Double(r) * 2,
+                               seconds: 52 + r * 9, done: true)
+                })
+        }
+        return s
+    }()
 
     /// La lecture d'une vraie séance. Les cinq séries montrées sont les cinq
     /// premières de la séance, tous exercices confondus.
@@ -62,6 +80,20 @@ struct StorySession {
                      coins: purse[i % purse.count])
         }
         if sets.isEmpty { sets = StorySession.demo.sets }
+        // La partition : les mêmes groupes que l'ardoise (le barème de
+        // `SessionSlate.buildGroupes`, côté séance persistée).
+        groupes = workout.orderedExercises.compactMap { le in
+            guard let exo = le.exercise, !le.orderedSets.isEmpty
+            else { return nil }
+            return SlateGroupe(
+                id: le.exerciseID, exercise: exo,
+                rows: le.orderedSets.map {
+                    SlateLigne(reps: $0.reps, kilos: $0.weight,
+                               seconds: $0.isDone ? $0.durationSeconds
+                                                  : le.restSeconds,
+                               done: $0.isDone)
+                })
+        }
     }
 
     init(title: String, dateLabel: String, minutes: Int, exos: Int,
@@ -178,6 +210,11 @@ struct StoryFlow: View {
     @State private var pressToken = 0
     @State private var moved = false
     @State private var tapBeat = 0
+    /// Le cadre de la partition de la story 2, dans le repère du flux :
+    /// un tap né dedans appartient à la liste (il déplie), le chef ne
+    /// rend aucun verdict de page. Mesuré par StoryTwo, remis à zéro à
+    /// chaque changement de page.
+    @State private var partitionRect: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var paused: Bool { pausedAt != nil }
@@ -197,7 +234,10 @@ struct StoryFlow: View {
                             case 0: StoryOne(session: session, t: t, now: now,
                                              size: geo.size, paused: paused)
                             case 1: StoryTwo(session: session, t: t, now: now,
-                                             size: geo.size, paused: paused)
+                                             size: geo.size, paused: paused,
+                                             onPartitionRect: {
+                                                 partitionRect = $0
+                                             })
                             default: StoryThree(size: geo.size, paused: paused)
                             }
                         }
@@ -226,12 +266,24 @@ struct StoryFlow: View {
                                         style: .continuous))
             .offset(y: fall)
             .contentShape(Rectangle())
-            .gesture(conductor(size: geo.size))
+            // LE REPÈRE COMMUN : la partition se mesure et le chef écoute
+            // dans le même espace nommé — on ne compare jamais deux
+            // repères sans les aligner.
+            .coordinateSpace(name: "storyFlow")
+            // SIMULTANÉ, pas exclusif : un DragGesture à distance NULLE
+            // posé en `.gesture` prend le doigt au contact et ANNULE les
+            // Buttons enfants — les rangées de la partition ne se
+            // dépliaient jamais. Le chef observe tout, décide au lâcher,
+            // et renonce dans la zone de la partition.
+            .simultaneousGesture(conductor(size: geo.size))
         }
         .background(Color.black)
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
+        .onAppear {
+            print("SONDE flux: apparu page=\(page) beat=\(beat) rect=\(partitionRect)")
+        }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
                          trigger: tapBeat)
         .task(id: beat) { await conduct() }
@@ -270,6 +322,9 @@ struct StoryFlow: View {
         tapBeat += 1
         pageStart = .now
         pausedAt = nil
+        // Le rect de la partition meurt avec sa page — la story 2 le
+        // remesurera si elle revient.
+        partitionRect = .zero
         // Jamais de coupe franche entre deux plans : un fondu court, et
         // l'identité change DANS l'animation pour que la transition existe.
         withAnimation(.easeInOut(duration: 0.30)) {
@@ -285,7 +340,8 @@ struct StoryFlow: View {
     /// tap, soit la fermeture. Ici tout est décidé au lâcher, sur la distance
     /// et la durée.
     private func conductor(size: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+        DragGesture(minimumDistance: 0,
+                    coordinateSpace: .named("storyFlow"))
             .onChanged { v in
                 if pressStart == nil {
                     pressStart = .now
@@ -304,9 +360,15 @@ struct StoryFlow: View {
                 if abs(v.translation.height) > 8
                     || abs(v.translation.width) > 8 { moved = true }
                 // La descente ne prend QUE vers le bas, et avec de
-                // l'élastique : suivi franc sur 90 pt, puis 28 %.
-                let d = v.translation.height
-                fall = d > 0 ? min(d, 90) + max(d - 90, 0) * 0.28 : 0
+                // l'élastique : suivi franc sur 90 pt, puis 28 %. JAMAIS
+                // depuis la partition : en simultané, tirer la liste des
+                // séries vers le bas emporterait toute la story.
+                if page == 1, partitionRect.contains(v.startLocation) {
+                    fall = 0
+                } else {
+                    let d = v.translation.height
+                    fall = d > 0 ? min(d, 90) + max(d - 90, 0) * 0.28 : 0
+                }
             }
             .onEnded { v in
                 pressToken += 1
@@ -334,6 +396,22 @@ struct StoryFlow: View {
 
                 // LE TAP : court, sans déplacement, et sans pause en cours.
                 guard !moved, held < 0.5, !wasPaused else { return }
+                // LA ZONE DE LA PARTITION (story 2) : un tap né dans la
+                // liste appartient à la liste — il déplie une rangée, le
+                // chef ne rend AUCUN verdict de page. Mais il REMET
+                // l'horloge : tant qu'on explore, la story attend.
+                // (Sans ça : la vignette d'un exercice vit dans le tiers
+                // gauche → « je reviens à la première ».)
+                if page == 1, partitionRect.contains(v.startLocation) {
+                    // L'horloge se PROLONGE sans rejouer l'entrée : recalée
+                    // à 1,2 s (toutes les rampes d'entrée sont finies à
+                    // 1,0), jamais à zéro — un reset nu faisait replonger
+                    // la partition à opacité 0 et tout « clignotait ».
+                    pageStart = Date.now.addingTimeInterval(-1.2)
+                    print("SONDE chef: tap EN ZONE start=\(v.startLocation)")
+                    return
+                }
+                print("SONDE chef: tap HORS zone start=\(v.startLocation) rect=\(partitionRect) page=\(page)")
                 // Le tiers gauche revient en arrière — la grammaire du genre.
                 if v.location.x < size.width / 3 {
                     page == 0 ? go(to: 0) : go(to: page - 1)
