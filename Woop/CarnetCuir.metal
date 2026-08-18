@@ -18,10 +18,17 @@ using namespace metal;
 //    reste sous ~1 niveau sur 255 — une animation qu'on VOIT est un
 //    effet, pas une matière.
 //
-// Le nom porte V1 exprès (piège de l'arité) : une metallib périmée tombe
-// sur RIEN — page rouge du banc — plutôt que sur une vieille signature.
-[[ stitchable ]] half4 carnetCuirV1(float2 position, half4 color,
-                                    float2 size, float t) {
+// 3. LA LUMIÈRE FIXE AU MONDE — le tilt (doigt au banc, gyroscope en
+//    main) tourne le LIVRE, pas la lampe : le reflet glisse à contresens
+//    de la rotation, et la tranche d'or s'embrase quand son flanc regarde
+//    la source. C'est ça qui sépare un objet d'un PNG (la leçon du
+//    coffre-tresor, mort de ne répondre à rien).
+//
+// Le nom porte V2 exprès (piège de l'arité : le tilt est entré dans la
+// signature) : une metallib périmée tombe sur RIEN — page rouge du banc —
+// plutôt que sur une vieille signature.
+[[ stitchable ]] half4 carnetCuirV2(float2 position, half4 color,
+                                    float2 size, float t, float2 tilt) {
     // L'hôte est l'image de la plaque elle-même : color EST le cuir.
     float2 uv = position / max(size, float2(1.0, 1.0));
 
@@ -33,15 +40,17 @@ using namespace metal;
     float band = (uv.x + 0.55 * uv.y) / 1.55;
     float sweep = fract(t / 31.0);
     // La course déborde de part et d'autre : la bande entre et sort, elle
-    // ne « rebondit » pas dans le cadre.
-    float centre = mix(-0.35, 1.35, sweep);
+    // ne « rebondit » pas dans le cadre. Le tilt la fait GLISSER : la
+    // lampe ne bouge pas, c'est le livre qui tourne dessous.
+    float centre = mix(-0.35, 1.35, sweep) - tilt.x * 0.30;
     float d = (band - centre) / 0.22;
     float voile = exp(-d * d);
     // Multiplicatif, et gaté par la luminance locale : le reflet n'existe
     // que là où la plaque a de la matière à montrer. Le plafond (0,30)
-    // garde le cuir cuir — un cuir qui flashe est un vinyle.
+    // garde le cuir cuir — un cuir qui flashe est un vinyle. Sous le
+    // tilt, la face inclinée vers la lumière en attrape un peu plus.
     float grain = smoothstep(0.015, 0.10, lum);
-    float reflet = 1.0 + voile * 0.30 * grain;
+    float reflet = 1.0 + voile * (0.30 + 0.10 * max(tilt.x, 0.0)) * grain;
 
     // ---- 2. La respiration de la tranche.
     // L'or se reconnaît à sa chaleur : R franchement au-dessus de B, et
@@ -50,7 +59,12 @@ using namespace metal;
     float or_ = smoothstep(0.06, 0.30, chaleur) * smoothstep(0.05, 0.25, lum);
     float souffle = 0.03 * sin(t * 2.0 * M_PI_F / 7.3)
                   + 0.014 * sin(t * 2.0 * M_PI_F / 3.1);
-    float braise = 1.0 + or_ * souffle;
+    // L'embrasement du flanc : la tranche vit à DROITE du carnet — le
+    // tilt positif la présente à la source et elle prend feu doucement ;
+    // négatif, elle s'éteint d'un souffle (jamais à zéro : l'or garde sa
+    // braise, la loi du néon qui ne clignote pas).
+    float embrase = clamp(0.34 * tilt.x, -0.12, 0.34);
+    float braise = 1.0 + or_ * (souffle + embrase);
 
     half3 rgb = color.rgb * half(reflet * braise);
     return half4(rgb, color.a);

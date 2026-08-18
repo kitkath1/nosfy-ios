@@ -49,6 +49,20 @@ struct CarnetLab: View {
     /// largeur du fermé — la courbure des pages mange le reste des 2×.
     private static let margeOuvert: CGFloat = 36
 
+    /// L'inclinaison sous le doigt (±1 par axe). Au banc c'est le drag qui
+    /// incline (le simulateur n'a pas de gyroscope) ; dans l'app ce sera
+    /// SkyMotion. `-carnetTilt <tx,ty>` la fige pour les captures (le
+    /// pattern `-luneTilt`).
+    @State private var tilt: CGSize = CarnetLab.tiltFige ?? .zero
+
+    private static let tiltFige: CGSize? = {
+        guard let raw = UserDefaults.standard.string(forKey: "carnetTilt")
+        else { return nil }
+        let parts = raw.split(separator: ",").compactMap { Double($0) }
+        guard parts.count == 2 else { return nil }
+        return CGSize(width: parts[0], height: parts[1])
+    }()
+
     var body: some View {
         GeometryReader { geo in
             let spread = geo.size.width - Self.margeOuvert * 2
@@ -58,8 +72,9 @@ struct CarnetLab: View {
             let plaque = index == 1 ? PlaqueCarnet.ouvert : PlaqueCarnet.ferme
             ZStack {
                 Color.black
-                VuePlaque(plaque: plaque)
-                    .frame(width: plaque.largeurCadre(pourHauteurObjet: hauteur))
+                CarnetVivant(plaque: plaque,
+                             largeur: plaque.largeurCadre(pourHauteurObjet: hauteur),
+                             tilt: tilt)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -71,6 +86,49 @@ struct CarnetLab: View {
         .onTapGesture {
             index = (index + 1) % Self.plaques.count
         }
+        // Le drag incline, le tap feuillette : le tap ne bouge pas de
+        // 6 pt, les deux gestes cohabitent sans se voler.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 6)
+                .onChanged { v in
+                    guard Self.tiltFige == nil else { return }
+                    tilt = CGSize(
+                        width: max(-1, min(1, v.translation.width / 130)),
+                        height: max(-1, min(1, v.translation.height / 130)))
+                }
+                .onEnded { _ in
+                    guard Self.tiltFige == nil else { return }
+                    withAnimation(.spring(response: 0.42,
+                                          dampingFraction: 0.86)) {
+                        tilt = .zero
+                    }
+                })
+    }
+}
+
+/// Le carnet qui répond : l'inclinaison tourne l'OBJET (rotations 3D à
+/// perspective courte — c'est elle qui donne l'épaisseur, la grammaire de
+/// la pile swap) pendant que le shader garde la lumière fixe au monde.
+/// `Animatable` sur le tilt : sans lui, le ressort du retour au repos
+/// n'animerait que les transforms et le shader SAUTERAIT à zéro (le piège
+/// des rampes sous withAnimation, payé sur les fondus échelonnés).
+struct CarnetVivant: View, Animatable {
+    let plaque: PlaqueCarnet
+    var largeur: CGFloat
+    var tilt: CGSize
+
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(tilt.width, tilt.height) }
+        set { tilt = CGSize(width: newValue.first, height: newValue.second) }
+    }
+
+    var body: some View {
+        VuePlaque(plaque: plaque, tilt: tilt)
+            .frame(width: largeur)
+            .rotation3DEffect(.degrees(Double(tilt.width) * 7),
+                              axis: (x: 0, y: 1, z: 0), perspective: 0.62)
+            .rotation3DEffect(.degrees(-Double(tilt.height) * 5),
+                              axis: (x: 1, y: 0, z: 0), perspective: 0.62)
     }
 }
 
@@ -111,6 +169,7 @@ struct PlaqueCarnet {
 /// tranche (30 Hz, horloge mod 900 comme toute la maison).
 struct VuePlaque: View {
     let plaque: PlaqueCarnet
+    var tilt: CGSize = .zero
 
     var body: some View {
         if let image = Self.charge(plaque) {
@@ -121,9 +180,10 @@ struct VuePlaque: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
-                        .colorEffect(ShaderLibrary.carnetCuirV1(
+                        .colorEffect(ShaderLibrary.carnetCuirV2(
                             .float2(geo.size.width, geo.size.height),
-                            .float(t)))
+                            .float(t),
+                            .float2(Float(tilt.width), Float(tilt.height))))
                 }
             }
             .aspectRatio(plaque.crop.width / plaque.crop.height,
