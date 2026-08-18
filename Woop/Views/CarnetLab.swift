@@ -106,15 +106,28 @@ struct PlaqueCarnet {
 
 /// L'hôte d'une plaque : chargée du bundle (Woop/Media, ressource nue —
 /// le pattern des cartes-lune : par chemin, jamais par le catalogue),
-/// découpée à son cadre.
+/// découpée à son cadre, et VIVANTE — le shader `carnetCuirV1` fait
+/// traverser un reflet dans le grain du cuir et respirer l'or de la
+/// tranche (30 Hz, horloge mod 900 comme toute la maison).
 struct VuePlaque: View {
     let plaque: PlaqueCarnet
 
     var body: some View {
         if let image = Self.charge(plaque) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
+            GeometryReader { geo in
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    let t = Float(tl.date.timeIntervalSinceReferenceDate
+                        .truncatingRemainder(dividingBy: 900))
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .colorEffect(ShaderLibrary.carnetCuirV1(
+                            .float2(geo.size.width, geo.size.height),
+                            .float(t)))
+                }
+            }
+            .aspectRatio(plaque.crop.width / plaque.crop.height,
+                         contentMode: .fit)
         } else {
             // Une plaque manquante se VOIT : un carré rouge est un cri,
             // un écran noir est un mensonge.
