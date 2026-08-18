@@ -96,7 +96,14 @@ struct SessionSlate: View {
             WorkoutPill(exercise: exercise,
                         progress: progress,
                         startedAt: startedAt,
-                        docked: true)
+                        docked: true,
+                        // Le bilan pour le panneau du stop : les
+                        // brouillons faits + l'exercice courant et ceux
+                        // de la séance persistée.
+                        doneSeries: drafts.filter(\.isDone).count,
+                        exoCount: 1 + (workout?.orderedExercises
+                            .filter { $0.exerciseID != exercise.id }
+                            .count ?? 0))
                 // LE TRAIT : la poignée de la maison, posée sur la dalle —
                 // l'invitation au tirage, présente aux deux états.
                 .overlay(alignment: .top) {

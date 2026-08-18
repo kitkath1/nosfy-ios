@@ -27,12 +27,22 @@ struct WorkoutPill: View {
     /// (la loi du CADRE FANTÔME). `false`, la pierre flottante d'origine
     /// (l'échancrure de la carte blanche).
     var docked: Bool = false
+    /// Le bilan pour le panneau du stop — séries validées et exercices
+    /// de la séance (l'hôte les connaît ; la vraie séance les nourrira).
+    var doneSeries: Int = 0
+    var exoCount: Int = 0
 
     /// Pause : PLACEHOLDER assumé — l'état est purement visuel, le
     /// branchement viendra avec le vrai flux de séance.
     @State private var paused = false
     /// La bouffée de fumée du tap — née au toucher, morte 1,6 s après.
     @State private var smokeAt: Date?
+    /// LE STOP POSE LA QUESTION (18-08) : le panneau « Terminer la
+    /// session ? » vit DANS la dalle — un seul câblage, tous les hôtes
+    /// (fiche exo, calendrier, page exercice) l'ont d'un coup.
+    /// `-stopSheet` l'ouvre à la naissance (captures).
+    @State private var stopAsk =
+        CommandLine.arguments.contains("-stopSheet")
 
     private let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
     private let dockShape = UnevenRoundedRectangle(
@@ -80,14 +90,12 @@ struct WorkoutPill: View {
                     paused.toggle()
                     souffleTap()
                 }
-                // Le stop : INERTE pour l'instant — le panneau
-                // « Terminer la séance ? » viendra s'y brancher.
-                medallionButton("stop.fill") {}
+                medallionButton("stop.fill") { stopAsk = true }
             } else {
                 roundButton(paused ? "play.fill" : "pause.fill") {
                     paused.toggle()
                 }
-                roundButton("stop.fill") {}
+                roundButton("stop.fill") { stopAsk = true }
             }
         }
         .padding(.leading, docked ? 20 : 11)
@@ -157,6 +165,33 @@ struct WorkoutPill: View {
         .contentShape(docked ? AnyShape(dockShape) : AnyShape(shape))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Entraînement en cours — \(exercise.name)")
+        // LE PANNEAU DU STOP : un cover à fond CLAIR (jamais un sheet
+        // système — il recule la fenêtre, payé deux fois) ; l'entrée et
+        // la sortie sont jouées PAR le panneau, le cover reste muet.
+        .fullScreenCover(isPresented: $stopAsk) {
+            StopSessionSheet(
+                onEnd: {
+                    // La vraie fin de séance (save, BRAVO…) viendra se
+                    // brancher ici — le trou save() est un jalon connu.
+                    fermerStop()
+                },
+                onContinue: { fermerStop() },
+                series: doneSeries,
+                exos: exoCount,
+                startedAt: startedAt)
+                .presentationBackground(.clear)
+        }
+        .transaction { t in
+            if stopAsk { t.disablesAnimations = true }
+        }
+    }
+
+    /// La fermeture du cover, sans l'animation système — le panneau a
+    /// déjà joué sa descente.
+    private func fermerStop() {
+        var tx = Transaction()
+        tx.disablesAnimations = true
+        withTransaction(tx) { stopAsk = false }
     }
 
     /// LE SOUFFLE du halo de la lune — la grammaire du petit néon des
