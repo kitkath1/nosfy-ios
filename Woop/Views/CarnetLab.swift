@@ -174,27 +174,58 @@ struct CarnetObjet: View, Animatable {
                     }
                     .offset(x: -course * (1 - p))
 
+                // LES FEUILLES — un carnet ne s'ouvre pas d'un bloc
+                // (« et pour les feuilles ?? », verdict 19-08) : trois
+                // pages libres suivent la couverture en cascade, chacune
+                // avec son retard, et se posent sous la page de gauche.
+                // À la pose elles ont toutes disparu dessous.
+                ForEach([3, 2, 1], id: \.self) { i in
+                    let retard = 0.09 * CGFloat(i)
+                    let q = max(0, min(1, (p - retard) / (1 - retard)))
+                    let wFeuille = cadreO / 2 - 4 * CGFloat(i)
+                    FeuilleLibre(teinte: 0.052 - 0.009 * Double(i))
+                        .frame(width: wFeuille,
+                               height: hauteur - 8 - 3 * CGFloat(i))
+                        .overlay {
+                            Color.black.opacity(
+                                (1 - abs(cos(Double(q) * .pi))) * 0.30)
+                                .allowsHitTesting(false)
+                        }
+                        .rotation3DEffect(.degrees(-180 * Double(q)),
+                                          axis: (x: 0, y: 1, z: 0),
+                                          anchor: .leading,
+                                          perspective: 0.5)
+                        .offset(x: wFeuille / 2 - course * (1 - p))
+                }
+
                 // La couverture qui pivote autour du dos. Avant 90° : le
-                // fermé. Après : son verso, la page de gauche.
+                // fermé. Après : son verso — la page de gauche à
+                // l'ÉCHELLE VRAIE de la plaque ouverte. Le « resize des
+                // côtés » à la pose (verdict 19-08) venait d'un verso
+                // étiré au format couverture : la FENÊTRE du panneau fond
+                // plutôt de la largeur couverture à la largeur page entre
+                // 90° et 180° — 6 % avalés en plein vol, invisibles — et
+                // à 180° le panneau EST la moitié gauche de la plaque :
+                // la bascule finale ne bouge plus un pixel.
+                let fenetre = p <= 0.5 ? cadreF
+                    : cadreF + (cadreO / 2 - cadreF)
+                        * min(1, (p - 0.5) / 0.42)
                 Group {
                     if p <= 0.5 {
                         VuePlaque(plaque: ferme, tilt: tilt, detoure: true)
                             .frame(width: cadreF)
                     } else {
-                        ZStack(alignment: .leading) {
-                            VuePlaque(plaque: ouvert, tilt: tilt,
-                                      detoure: true)
-                                .frame(width: cadreO)
-                                .scaleEffect(x: (cadreF * 2) / cadreO, y: 1,
-                                             anchor: .leading)
-                        }
-                        .frame(width: cadreF, alignment: .leading)
-                        .clipped()
-                        // Le pré-miroir : la rotation à 180° remettra la
-                        // page à l'endroit.
-                        .scaleEffect(x: -1)
+                        // Le pré-miroir du CONTENU (la rotation à 180° le
+                        // remettra à l'endroit), gouttière calée sur la
+                        // charnière.
+                        VuePlaque(plaque: ouvert, tilt: tilt, detoure: true)
+                            .frame(width: cadreO)
+                            .scaleEffect(x: -1)
+                            .offset(x: -cadreO / 2)
                     }
                 }
+                .frame(width: fenetre, alignment: .leading)
+                .clipped()
                 // Le clair-obscur du vol : la couverture s'assombrit vue
                 // par la tranche, comme tout objet qui quitte la lumière.
                 .overlay {
@@ -204,7 +235,7 @@ struct CarnetObjet: View, Animatable {
                 .rotation3DEffect(.degrees(-180 * Double(p)),
                                   axis: (x: 0, y: 1, z: 0),
                                   anchor: .leading, perspective: 0.5)
-                .offset(x: course * p)
+                .offset(x: fenetre / 2 - course * (1 - p))
             }
         }
         .frame(width: wS)
@@ -217,12 +248,40 @@ struct CarnetObjet: View, Animatable {
     }
 }
 
-/// La courbe de l'ouverture : franche au départ, posée à l'arrivée — une
-/// couverture a du poids, elle ne rebondit pas (le papier claque, il ne
-/// ressort pas).
+/// Une page libre du carnet : papier noir, tranche au cheveu de braise —
+/// elle n'existe que pour la cascade de l'ouverture.
+struct FeuilleLibre: View {
+    var teinte: Double
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .fill(LinearGradient(
+                colors: [Color(white: teinte + 0.014),
+                         Color(white: teinte)],
+                startPoint: .top, endPoint: .bottom))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.045), lineWidth: 0.7)
+            }
+            .overlay(alignment: .trailing) {
+                // La tranche de la feuille : l'or de la famille, en
+                // murmure.
+                Capsule()
+                    .fill(Color(red: 1.0, green: 0.62, blue: 0.25)
+                        .opacity(0.30))
+                    .frame(width: 0.8)
+                    .padding(.vertical, 5)
+                    .padding(.trailing, 0.5)
+            }
+    }
+}
+
+/// La courbe de l'ouverture : un ressort discret — la couverture se POSE
+/// (léger amorti, jamais de rebond : le papier claque, il ne ressort
+/// pas), et le retard en cascade des feuilles fait le reste du naturel.
 extension Animation {
-    static let carnetOuverture = Animation.timingCurve(
-        0.30, 0, 0.22, 1, duration: 0.58)
+    static let carnetOuverture = Animation.spring(
+        response: 0.60, dampingFraction: 0.88)
 }
 
 /// Une plaque MESURÉE : le cadre utile découpé dans l'image source, et les
@@ -357,14 +416,34 @@ struct VuePlaque: View {
         }
     }
 
+    /// LE CACHE — la cause du « pas assez fluide » (verdict 19-08) :
+    /// `UIImage(contentsOfFile:)` ne cache RIEN, et le body d'une vue
+    /// Animatable tourne à chaque image — le PNG de 1,3 Mo se redécodait
+    /// 60 fois par seconde en plein vol. La plaque se décode UNE fois,
+    /// recadrée et pré-réduite en miniature (~2× l'affichage — la leçon
+    /// des dos du booster : les sources font 4× la résolution utile).
+    private static var cache: [String: UIImage] = [:]
+
     private static func charge(_ plaque: PlaqueCarnet) -> UIImage? {
+        if let faite = cache[plaque.nom] { return faite }
         guard let chemin = Bundle.main.path(forResource: plaque.nom,
                                             ofType: "png"),
-              let image = UIImage(contentsOfFile: chemin) else { return nil }
-        guard let cg = image.cgImage?.cropping(to: plaque.crop) else {
-            return image
-        }
-        return UIImage(cgImage: cg)
+              let brute = UIImage(contentsOfFile: chemin),
+              let cg = brute.cgImage?.cropping(to: plaque.crop)
+        else { return nil }
+        let cible: CGFloat = 900
+        let k = min(1, cible / plaque.crop.height)
+        let taille = CGSize(width: (plaque.crop.width * k).rounded(),
+                            height: (plaque.crop.height * k).rounded())
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let mini = UIGraphicsImageRenderer(size: taille, format: format)
+            .image { _ in
+                UIImage(cgImage: cg).draw(in: CGRect(origin: .zero,
+                                                     size: taille))
+            }
+        cache[plaque.nom] = mini
+        return mini
     }
 }
 
