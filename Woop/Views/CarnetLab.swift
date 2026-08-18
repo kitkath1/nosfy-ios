@@ -162,7 +162,8 @@ struct PlaqueCarnet {
     static let ouvert = PlaqueCarnet(
         nom: "carnet-ouvert",
         crop: CGRect(x: 146, y: 90, width: 1166, height: 881),
-        objetW: 1150, objetH: 865)
+        objetW: 1150, objetH: 865,
+        rayonG: 26, rayonD: 26)
 
     /// La largeur d'affichage du CADRE pour que l'OBJET ait cette hauteur
     /// à l'écran — c'est par elle que les deux états tiennent le même
@@ -191,9 +192,11 @@ struct CarnetHome: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { _ in
             let g = SkyMotion.shared.tilt
-            // Plus doux que le doigt du banc : le gyroscope est un
-            // balancement de fond, pas un geste.
-            let tilt = CGSize(width: g.dx * 0.55, height: g.dy * 0.40)
+            // Presque l'amplitude du doigt : à 0,55 l'effet passait sous
+            // le seuil du regard (« je vois pas d'effet », verdict
+            // téléphone 19-08) — un objet qui répond timidement répond
+            // pas.
+            let tilt = CGSize(width: g.dx * 0.90, height: g.dy * 0.65)
             CarnetVivant(
                 plaque: .ferme,
                 largeur: PlaqueCarnet.ferme

@@ -916,6 +916,9 @@ struct SwapBurstLayer: View {
 /// déménagées dans le noir du BAS : là où le halo vit, elles seraient
 /// invisibles ; c'est la nuit qui a besoin d'elles.
 struct AuroraHomeBackground: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         ZStack {
             Color.black
@@ -938,6 +941,19 @@ struct AuroraHomeBackground: View {
         .clipped()
         .ignoresSafeArea()
         .allowsHitTesting(false)
+        // LE GYROSCOPE S'AMORCE ICI — le bug du 19-08 : SkyMotion n'était
+        // démarré que par l'ancien ciel (WoopDemonSky), l'auth et le banc
+        // logo. Sur la home aurora, personne ne l'appelait : la parallaxe
+        // des étoiles ET l'inclinaison du carnet lisaient des zéros sur
+        // téléphone. La scène est l'endroit juste : tout ce qui vit dessus
+        // en profite. Le retour d'arrière-plan relance (le système coupe
+        // les updates, la leçon de WoopDemonSky).
+        .onAppear { SkyMotion.shared.start(reduceMotion: reduceMotion) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                SkyMotion.shared.start(reduceMotion: reduceMotion)
+            }
+        }
     }
 }
 
