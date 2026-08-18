@@ -121,6 +121,10 @@ struct RootView: View {
     private static let jaugeLab = CommandLine.arguments.contains("-jaugeLab")
     /// Banc d'essai du monolithe logo : `-logoLab`, page noire nue.
     private static let logoLab = CommandLine.arguments.contains("-logoLab")
+    /// Banc du calendrier à stickers : `-calLab` — la carte de verre qui
+    /// se replie au scroll de la liste des sessions. `-calAuto` : boucle
+    /// vidéo ; `-calTune` (ou double-tap) : la console du verre.
+    private static let calLab = CommandLine.arguments.contains("-calLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
     /// toucher pour cacher le panneau de fouettage.
     private static let navLab = CommandLine.arguments.contains("-navLab")
@@ -374,6 +378,8 @@ struct RootView: View {
             LogoLab()
         } else if Self.navLab {
             NavLab()
+        } else if Self.calLab {
+            CalLab()
         } else {
             mainBody
         }
