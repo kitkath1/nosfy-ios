@@ -23,18 +23,21 @@ import SwiftUI
 /// 1122 × 1402 (ratio 0,677), or de tranche RGB(184, 127, 35) sur le flanc
 /// droit ; ouvert — objet 1155 × 882 px dans 1467 × 1072 (ratio 1,310).
 struct CarnetLab: View {
-    private static let ouvert = CommandLine.arguments.contains("-carnetOuvert")
+    private static let ouvertFlag = CommandLine.arguments.contains("-carnetOuvert")
 
-    /// Les DEUX états du carnet — fermé face à soi, ouvert en double page.
-    /// Le trois-quarts a été retiré du cycle (verdict 19-08 : « une étape
-    /// en trop ») : c'était une plaque de référence pour la forge, pas un
-    /// état de l'expérience ; elle vit dans ~/Downloads/woop-carnet/refs.
-    /// Les flags restent la voie des captures (un banc se lance dans un
-    /// état connu) ; le tap est la voie du doigt — `simctl launch` sur une
-    /// app déjà ouverte ne relit PAS ses arguments.
-    private static let plaques = ["carnet-ferme", "carnet-ouvert"]
+    /// Le tap OUVRE et FERME le carnet (jalon 3) — plus un cycle d'images,
+    /// un objet. `-carnetOuvert` démarre posé sur la double page (les
+    /// captures ont besoin d'états connus ; `simctl launch` sur une app
+    /// déjà ouverte ne relit pas ses arguments).
+    @State private var ouvert = CarnetLab.ouvertFlag
 
-    @State private var index = Self.ouvert ? 1 : 0
+    /// `-carnetP <p>` fige l'ouverture en plein vol (captures du jalon 3) —
+    /// le simulateur n'a pas de doigt, le pattern `-lensFreeze`.
+    private static let pFige: CGFloat? = {
+        guard let raw = UserDefaults.standard.string(forKey: "carnetP"),
+              let v = Double(raw) else { return nil }
+        return CGFloat(v)
+    }()
 
     /// LA seule molette de taille : la marge latérale de la DOUBLE PAGE.
     /// Tout le reste s'en déduit par l'INVARIANT PHYSIQUE — la hauteur de
@@ -69,12 +72,10 @@ struct CarnetLab: View {
             // L'invariant : la hauteur de l'objet, tirée du spread validé.
             let hauteur = spread * PlaqueCarnet.ouvert.objetH
                 / PlaqueCarnet.ouvert.objetW
-            let plaque = index == 1 ? PlaqueCarnet.ouvert : PlaqueCarnet.ferme
             ZStack {
                 Color.black
-                CarnetVivant(plaque: plaque,
-                             largeur: plaque.largeurCadre(pourHauteurObjet: hauteur),
-                             tilt: tilt)
+                CarnetObjet(p: Self.pFige ?? (ouvert ? 1 : 0), tilt: tilt,
+                            hauteur: hauteur)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -84,7 +85,8 @@ struct CarnetLab: View {
         .persistentSystemOverlays(.hidden)
         .contentShape(Rectangle())
         .onTapGesture {
-            index = (index + 1) % Self.plaques.count
+            SwapFeedback.shared.tap()
+            withAnimation(.carnetOuverture) { ouvert.toggle() }
         }
         // Le drag incline, le tap feuillette : le tap ne bouge pas de
         // 6 pt, les deux gestes cohabitent sans se voler.
@@ -106,31 +108,121 @@ struct CarnetLab: View {
     }
 }
 
-/// Le carnet qui répond : l'inclinaison tourne l'OBJET (rotations 3D à
-/// perspective courte — c'est elle qui donne l'épaisseur, la grammaire de
-/// la pile swap) pendant que le shader garde la lumière fixe au monde.
-/// `Animatable` sur le tilt : sans lui, le ressort du retour au repos
-/// n'animerait que les transforms et le shader SAUTERAIT à zéro (le piège
-/// des rampes sous withAnimation, payé sur les fondus échelonnés).
-struct CarnetVivant: View, Animatable {
-    let plaque: PlaqueCarnet
-    var largeur: CGFloat
-    var tilt: CGSize
-    var detoure = false
+/// LE LIVRE — un seul objet à deux états : `p` va de 0 (fermé) à 1
+/// (ouvert en double page). L'ANATOMIE DE L'OUVERTURE : le dos voyage du
+/// flanc gauche au centre pendant que la couverture pivote de 180° autour
+/// de lui ; sous elle, la plaque ouverte n'expose que sa moitié droite
+/// (le dos est SON centre : le masque ne bouge jamais dans son repère) ;
+/// passé 90°, le verso de la couverture EST la page de gauche — la moitié
+/// gauche de la plaque ouverte, étirée de 6 % au format de la couverture
+/// (le débord mesuré au jalon 1) et PRÉ-MIROITÉE pour que le miroir de la
+/// rotation la remette à l'endroit. La bascule du contenu se fait PILE à
+/// 90°, quand la couverture est vue par la tranche (largeur projetée
+/// nulle) : le raccord est invisible par construction. Et grâce à
+/// l'invariant de hauteur payé au jalon 1, RIEN ne se remet à l'échelle.
+///
+/// `Animatable` sur p ET le tilt (paire imbriquée) : la courbe
+/// d'ouverture et le ressort du retour jouent aussi dans les shaders (le
+/// piège des rampes sous withAnimation, payé sur les fondus échelonnés).
+struct CarnetObjet: View, Animatable {
+    var p: CGFloat
+    var tilt: CGSize = .zero
+    let hauteur: CGFloat
 
-    var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get { AnimatablePair(tilt.width, tilt.height) }
-        set { tilt = CGSize(width: newValue.first, height: newValue.second) }
+    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>> {
+        get { AnimatablePair(p, AnimatablePair(tilt.width, tilt.height)) }
+        set {
+            p = newValue.first
+            tilt = CGSize(width: newValue.second.first,
+                          height: newValue.second.second)
+        }
     }
 
     var body: some View {
-        VuePlaque(plaque: plaque, tilt: tilt, detoure: detoure)
-            .frame(width: largeur)
-            .rotation3DEffect(.degrees(Double(tilt.width) * 7),
-                              axis: (x: 0, y: 1, z: 0), perspective: 0.62)
-            .rotation3DEffect(.degrees(-Double(tilt.height) * 5),
-                              axis: (x: 1, y: 0, z: 0), perspective: 0.62)
+        let ferme = PlaqueCarnet.ferme
+        let ouvert = PlaqueCarnet.ouvert
+        let wF = hauteur * ferme.objetW / ferme.objetH
+        let wS = hauteur * ouvert.objetW / ouvert.objetH
+        let cadreF = ferme.largeurCadre(pourHauteurObjet: hauteur)
+        let cadreO = ouvert.largeurCadre(pourHauteurObjet: hauteur)
+        // Le voyage du dos : du flanc gauche du fermé (centre − wF/2)
+        // jusqu'au centre de la double page.
+        let course = wF / 2
+        let theta = Double(p) * .pi
+
+        ZStack {
+            if p >= 1 {
+                // Posé : la plaque ouverte entière, seule et vivante.
+                VuePlaque(plaque: ouvert, tilt: tilt, detoure: true)
+                    .frame(width: cadreO)
+            } else {
+                // Le corps du livre : la moitié droite de la plaque
+                // ouverte, qui suit le dos. L'ombre de gouttière naît et
+                // meurt avec le vol (sin πp) : posée, la plaque porte déjà
+                // la sienne.
+                VuePlaque(plaque: ouvert, tilt: tilt, detoure: true)
+                    .frame(width: cadreO)
+                    .mask { Rectangle().padding(.leading, cadreO / 2) }
+                    .overlay(alignment: .leading) {
+                        LinearGradient(
+                            colors: [.black.opacity(0.55), .clear],
+                            startPoint: .leading, endPoint: .trailing)
+                            .frame(width: 54)
+                            .padding(.leading, cadreO / 2)
+                            .opacity(sin(Double(p) * .pi))
+                            .allowsHitTesting(false)
+                    }
+                    .offset(x: -course * (1 - p))
+
+                // La couverture qui pivote autour du dos. Avant 90° : le
+                // fermé. Après : son verso, la page de gauche.
+                Group {
+                    if p <= 0.5 {
+                        VuePlaque(plaque: ferme, tilt: tilt, detoure: true)
+                            .frame(width: cadreF)
+                    } else {
+                        ZStack(alignment: .leading) {
+                            VuePlaque(plaque: ouvert, tilt: tilt,
+                                      detoure: true)
+                                .frame(width: cadreO)
+                                .scaleEffect(x: (cadreF * 2) / cadreO, y: 1,
+                                             anchor: .leading)
+                        }
+                        .frame(width: cadreF, alignment: .leading)
+                        .clipped()
+                        // Le pré-miroir : la rotation à 180° remettra la
+                        // page à l'endroit.
+                        .scaleEffect(x: -1)
+                    }
+                }
+                // Le clair-obscur du vol : la couverture s'assombrit vue
+                // par la tranche, comme tout objet qui quitte la lumière.
+                .overlay {
+                    Color.black.opacity((1 - abs(cos(theta))) * 0.38)
+                        .allowsHitTesting(false)
+                }
+                .rotation3DEffect(.degrees(-180 * Double(p)),
+                                  axis: (x: 0, y: 1, z: 0),
+                                  anchor: .leading, perspective: 0.5)
+                .offset(x: course * p)
+            }
+        }
+        .frame(width: wS)
+        // L'inclinaison de l'objet entier : perspective courte, la
+        // grammaire de la pile swap — c'est elle qui donne l'épaisseur.
+        .rotation3DEffect(.degrees(Double(tilt.width) * 7),
+                          axis: (x: 0, y: 1, z: 0), perspective: 0.62)
+        .rotation3DEffect(.degrees(-Double(tilt.height) * 5),
+                          axis: (x: 1, y: 0, z: 0), perspective: 0.62)
     }
+}
+
+/// La courbe de l'ouverture : franche au départ, posée à l'arrivée — une
+/// couverture a du poids, elle ne rebondit pas (le papier claque, il ne
+/// ressort pas).
+extension Animation {
+    static let carnetOuverture = Animation.timingCurve(
+        0.30, 0, 0.22, 1, duration: 0.58)
 }
 
 /// Une plaque MESURÉE : le cadre utile découpé dans l'image source, et les
@@ -182,12 +274,15 @@ struct PlaqueCarnet {
 /// rectangle mort. Le gyroscope (SkyMotion, lissé) l'incline comme la main
 /// du banc — au simulateur il reste droit, le capteur est muet.
 ///
-/// L'ouverture est le jalon 3 : le tap ne fait pour l'instant qu'un
-/// souffle haptique — le carnet accuse réception, il ne promet rien.
+/// Le tap OUVRE le carnet en place (jalon 3) : la couverture pivote, la
+/// double page prend la section. Le second tap le referme. Les pages de
+/// séances (jalon 4) viendront habiter la double page.
 struct CarnetHome: View {
     /// La hauteur de couverture sur la home — l'étalon validé au banc
-    /// (l'invariant : elle ne changera pas à l'ouverture).
+    /// (l'invariant : elle ne change pas à l'ouverture).
     static let hauteur: CGFloat = 248
+
+    @State private var ouvert = false
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { _ in
@@ -197,11 +292,13 @@ struct CarnetHome: View {
             // téléphone 19-08) — un objet qui répond timidement répond
             // pas.
             let tilt = CGSize(width: g.dx * 0.90, height: g.dy * 0.65)
-            CarnetVivant(
-                plaque: .ferme,
-                largeur: PlaqueCarnet.ferme
-                    .largeurCadre(pourHauteurObjet: Self.hauteur),
-                tilt: tilt, detoure: true)
+            CarnetObjet(p: ouvert ? 1 : 0, tilt: tilt,
+                        hauteur: Self.hauteur)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            SwapFeedback.shared.tap()
+            withAnimation(.carnetOuverture) { ouvert.toggle() }
         }
     }
 }

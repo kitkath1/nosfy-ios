@@ -441,13 +441,11 @@ struct HomeAuroraView: View {
                 // LE CARNET DE CUIR (chantier 18-08) : la collection est
                 // un carnet relié — la pile swap a cédé sa place mais vit
                 // toujours au design system (SwapDeck, banc -deckLab).
-                // L'ouverture en double page est le jalon 3 ; le tap ne
-                // fait pour l'instant qu'accuser réception.
+                // Le tap l'ouvre en double page, EN PLACE dans la section
+                // (jalon 3) ; les pages de séances sont le jalon 4.
                 CarnetHome()
                     .frame(maxWidth: .infinity)
                     .frame(height: SwapDeck.deckHeight)
-                    .contentShape(Rectangle())
-                    .onTapGesture { SwapFeedback.shared.tap() }
                     .padding(.top, 16)
             }
         }
