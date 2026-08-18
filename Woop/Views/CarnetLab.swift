@@ -24,25 +24,47 @@ import SwiftUI
 /// droit ; ouvert — objet 1155 × 882 px dans 1467 × 1072 (ratio 1,310).
 struct CarnetLab: View {
     private static let ouvert = CommandLine.arguments.contains("-carnetOuvert")
-    private static let cote = CommandLine.arguments.contains("-carnetCote")
 
-    /// Les trois plaques, dans l'ordre du feuilletage au tap. Les flags
-    /// restent la voie des captures (un banc se lance dans un état connu) ;
-    /// le tap est la voie du doigt — `simctl launch` sur une app déjà
-    /// ouverte ne relit PAS ses arguments, et jongler avec `terminate`
-    /// n'est pas un geste de fouettage.
-    private static let plaques = ["carnet-ferme", "carnet-ferme-cote",
-                                  "carnet-ouvert"]
+    /// Les DEUX états du carnet — fermé face à soi, ouvert en double page.
+    /// Le trois-quarts a été retiré du cycle (verdict 19-08 : « une étape
+    /// en trop ») : c'était une plaque de référence pour la forge, pas un
+    /// état de l'expérience ; elle vit dans ~/Downloads/woop-carnet/refs.
+    /// Les flags restent la voie des captures (un banc se lance dans un
+    /// état connu) ; le tap est la voie du doigt — `simctl launch` sur une
+    /// app déjà ouverte ne relit PAS ses arguments.
+    private static let plaques = ["carnet-ferme", "carnet-ouvert"]
 
-    @State private var index =
-        Self.ouvert ? 2 : (Self.cote ? 1 : 0)
+    @State private var index = Self.ouvert ? 1 : 0
+
+    /// LA seule molette de taille : la marge latérale de la DOUBLE PAGE.
+    /// Tout le reste s'en déduit par l'INVARIANT PHYSIQUE — la hauteur de
+    /// la couverture, identique fermé/ouvert (verdicts 19-08 : « pas la
+    /// même taille, ça devrait pour l'animation », puis « c'est fake,
+    /// refais l'analyse »). La sonde mesure_plaques.py (arêtes dures au
+    /// gradient, jamais un seuil de luminance : il attrape le reflet au
+    /// sol du fermé et la lueur de tranche de l'ouvert, et les échelles
+    /// divergent) a montré que les deux plaques sont deux RENDUS
+    /// indépendants : hauteur ouvert/fermé 0,806, spread/fermé 1,50.
+    /// À hauteur de couverture égale, le spread mesuré fait 1,86× la
+    /// largeur du fermé — la courbure des pages mange le reste des 2×.
+    private static let margeOuvert: CGFloat = 36
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            CarnetPlaque(nom: Self.plaques[index])
-                .padding(.horizontal, index == 2 ? 6 : 40)
+        GeometryReader { geo in
+            let spread = geo.size.width - Self.margeOuvert * 2
+            // L'invariant : la hauteur de l'objet, tirée du spread validé.
+            let hauteur = spread * PlaqueCarnet.ouvert.objetH
+                / PlaqueCarnet.ouvert.objetW
+            let plaque = index == 1 ? PlaqueCarnet.ouvert : PlaqueCarnet.ferme
+            ZStack {
+                Color.black
+                VuePlaque(plaque: plaque)
+                    .frame(width: plaque.largeurCadre(pourHauteurObjet: hauteur))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Color.black)
+        .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .contentShape(Rectangle())
@@ -52,25 +74,44 @@ struct CarnetLab: View {
     }
 }
 
-/// Une plaque du carnet, chargée du bundle (Woop/Media, ressource nue —
-/// le pattern des cartes-lune : par chemin, jamais par le catalogue) et
-/// RECADRÉE sur l'objet : les plaques forgées portent de larges marges
-/// noires, et « scaledToFit » sur la plaque entière rendait le carnet
-/// petit dans son propre cadre (verdict 19-08 : « un peu plus gros »).
-/// Les cadres viennent de la mesure python (seuil de luminance 8/255,
-/// +12 px de respiration pour la lueur de tranche).
-struct CarnetPlaque: View {
+/// Une plaque MESURÉE : le cadre utile découpé dans l'image source, et les
+/// dimensions de l'objet aux arêtes DURES dedans. Les marges du cadre sont
+/// SYMÉTRIQUES (8 px de chaque côté) : le centre du cadre EST le centre de
+/// l'objet — une marge inégale décentre le carnet et l'œil le voit.
+/// Mesures : ~/Downloads/woop-carnet/sondes/mesure_plaques.py.
+struct PlaqueCarnet {
     let nom: String
+    /// Le cadre découpé dans la plaque source, en pixels.
+    let crop: CGRect
+    /// L'objet aux arêtes dures, en pixels (centré dans le cadre).
+    let objetW: CGFloat
+    let objetH: CGFloat
 
-    /// Le cadre utile de chaque plaque, en pixels de l'image source.
-    private static let cadres: [String: CGRect] = [
-        "carnet-ferme": CGRect(x: 166, y: 138, width: 797, height: 1165),
-        "carnet-ferme-cote": CGRect(x: 246, y: 166, width: 665, height: 1175),
-        "carnet-ouvert": CGRect(x: 142, y: 86, width: 1179, height: 906),
-    ]
+    static let ferme = PlaqueCarnet(
+        nom: "carnet-ferme",
+        crop: CGRect(x: 170, y: 143, width: 783, height: 1089),
+        objetW: 767, objetH: 1073)
+    static let ouvert = PlaqueCarnet(
+        nom: "carnet-ouvert",
+        crop: CGRect(x: 146, y: 90, width: 1166, height: 881),
+        objetW: 1150, objetH: 865)
+
+    /// La largeur d'affichage du CADRE pour que l'OBJET ait cette hauteur
+    /// à l'écran — c'est par elle que les deux états tiennent le même
+    /// livre en main.
+    func largeurCadre(pourHauteurObjet h: CGFloat) -> CGFloat {
+        h * (objetW / objetH) * (crop.width / objetW)
+    }
+}
+
+/// L'hôte d'une plaque : chargée du bundle (Woop/Media, ressource nue —
+/// le pattern des cartes-lune : par chemin, jamais par le catalogue),
+/// découpée à son cadre.
+struct VuePlaque: View {
+    let plaque: PlaqueCarnet
 
     var body: some View {
-        if let image = Self.charge(nom) {
+        if let image = Self.charge(plaque) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
@@ -81,11 +122,13 @@ struct CarnetPlaque: View {
         }
     }
 
-    private static func charge(_ nom: String) -> UIImage? {
-        guard let chemin = Bundle.main.path(forResource: nom, ofType: "png"),
+    private static func charge(_ plaque: PlaqueCarnet) -> UIImage? {
+        guard let chemin = Bundle.main.path(forResource: plaque.nom,
+                                            ofType: "png"),
               let image = UIImage(contentsOfFile: chemin) else { return nil }
-        guard let cadre = cadres[nom],
-              let cg = image.cgImage?.cropping(to: cadre) else { return image }
+        guard let cg = image.cgImage?.cropping(to: plaque.crop) else {
+            return image
+        }
         return UIImage(cgImage: cg)
     }
 }
