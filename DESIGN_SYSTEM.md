@@ -447,6 +447,58 @@ Ils sont le fruit de plusieurs allers-retours sur simulateur et ne doivent pas
   retouché — il passe aujourd'hui DANS la zone chaude, et la grille de points
   mord sur les deux derniers trophées.
 
+## La famille « swap » (les cartes néon de la home aurora)
+
+LA carte de séance de la home : noir mat brossé à reflets chauds, tube de
+néon qui ne vit que du geste, reflet posé sur un sol poli. Extraite en
+composants design-system le 2026-08-18 (chantier carnet de cuir) :
+[SwapCardSurface.swift](Woop/Views/SwapCardSurface.swift) — l'écrin
+(`SwapCardSurface`), l'en-tête (`SwapCardHeading`), le cartouche
+(`SwapCardStat`). Le shader : `swapCard` dans
+[AuroraHome.metal](Woop/AuroraHome.metal). La mise en scène (pile,
+éventail, reflet, gerbe, gestes, haptiques) reste à `SwapDeck` dans
+[HomeAuroraView.swift](Woop/Views/HomeAuroraView.swift). Bancs :
+`-homeLab` (la home), `-deckLab` (la pile seule), `-deckSwiped` (geste
+figé), `-deckBurst` (la gerbe en boucle).
+
+- **Gabarit** : 220 × 282 pt, rayon 24 continu, contenu paddé 30 (le texte
+  se tient à l'écart du tube à 14 pt du bord et de sa nappe). Marge shader
+  54 pt + fondu d'hôte — le halo du geste déborde loin.
+- **L'écrin, une seule passe** (couches dans l'ordre) : anthracite mat
+  brossé (poudre 2 octaves + brossage anisotrope horizontal) · sheen
+  d'incidence ~34 s + fresnel du bord (l'épaisseur de la dalle, jamais un
+  trait) · hairline MORTE au repos (« on dirait un bug » sinon — elle ne
+  naît que du geste) · foyer directionnel qui tourne seul (~8 s, décalé par
+  `seed`) et se DÉVIE vers le doigt avec la charge · tube de néon
+  iso-distance −14 pt (cœur blanc cramé, gaine orange brûlé, 35 % de la
+  nappe franchit le bord et éclaire l'aurore) · glow extérieur · pointes-
+  bijou du repos · poinçon du croissant révélé sous le geste. Composition
+  émissive prémultipliée, dither 2/255, horloge 30 Hz mod 900.
+- **Deux régimes de tube** (`SwapCardSurface.Lit`) : `.geste(tapAt:)` —
+  éteint au repos, bouffée du toucher 0,10 s / 0,45 s ; `.respiration` —
+  l'état vide, 0,30-0,56 en ~5,5 s. L'AMPLITUDE est le sujet : à 0,52-0,82
+  permanent le tube devient une corde orange (grammaire refusée huit fois
+  sur la fente), et il ne descend jamais à zéro (un néon qui s'éteint
+  clignote, et un clignotement dit « erreur », pas « viens »).
+- **Le reflet** (dans `SwapDeck`) : la carte du dessus rendue une seconde
+  fois, retournée, masque en bande de CONTACT ~26 pt (jamais de traîne :
+  les blocs de texte faisaient des plaques fantômes), blur 3, opacité 0,60,
+  `plusLighter` — la carte est noire, seule sa LUMIÈRE se reflète. Il suit
+  le geste (rotation −dx/30, offset dx).
+- **Le geste** : un SEUL reconnaisseur, axe verrouillé aux dix premiers
+  points (latéral = swap, haut = story, jamais rediscuté). Swap : seuil
+  96 pt ou vélocité prédite 220. Story : montée 110 pt (résistance 25 %
+  après 60 pt) ou vélocité −260. La charge embrase l'écrin et dévie le
+  foyer vers le doigt.
+- **Cartouche** : étiquette 8,5 medium tracking 1,3 / valeur 12,5, opacités
+  0,46/0,88 — l'état vide parle PLUS BAS (0,34/0,72, resserré à 5 pt) :
+  une carte sans contenu n'a rien à affirmer.
+- **Extraction vérifiée au pixel** (18-08) : A/B aux simulateurs jumeaux
+  capturés au même instant mural (l'horloge des shaders est absolue) —
+  trois scènes (repos, geste figé, home entière), écarts au niveau du bruit
+  de scintillement inter-frame (0,03 % de pixels > 4/255, éparpillés), soit
+  mille fois sous le plancher de bruit temporel d'une seule frame.
+
 ## Les photos d'exercice
 
 Le catalogue est illustré par des **photographies**, plus par des figures

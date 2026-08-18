@@ -14,10 +14,6 @@ import SwiftUI
 /// chevrons descendent en cascade vers le galet de la barre, en boucle. Une
 /// flèche qui bouge vaut mieux qu'une phrase qui explique.
 struct SwapEmptyCard: View {
-    /// La marge du shader : le halo du tube allumé déborde loin, et un shader
-    /// ne peint que dans son rectangle hôte.
-    private static let pad: CGFloat = 54
-
     var body: some View {
         VStack(spacing: 0) {
             card
@@ -35,86 +31,29 @@ struct SwapEmptyCard: View {
 
     private var card: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Ta première séance")
-                .font(.inter(19, .medium))
-                .foregroundStyle(Color.white.opacity(0.95))
-                .padding(.top, 8)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-            Text("Rien ici pour l'instant")
-                .font(.inter(11))
-                .foregroundStyle(Color.white.opacity(0.46))
-                .padding(.top, 5)
-                .lineLimit(1)
+            SwapCardHeading(title: "Ta première séance",
+                            subtitle: "Rien ici pour l'instant")
 
             Spacer(minLength: 20)
 
             // Le cartouche bas garde le rythme typographique des vraies
-            // cartes : une étiquette qui murmure, une valeur qui se pose.
-            VStack(alignment: .leading, spacing: 5) {
-                Text("POUR COMMENCER")
-                    .font(.inter(8.5, .medium))
-                    .tracking(1.3)
-                    .foregroundStyle(Color.white.opacity(0.34))
-                Text("le galet, en bas")
-                    .font(.inter(12.5))
-                    .foregroundStyle(Color.white.opacity(0.72))
-            }
+            // cartes — mais il parle PLUS BAS (opacités 0,34/0,72, resserré
+            // à 5 pt) : une carte sans contenu n'a rien à affirmer.
+            SwapCardStat(label: "POUR COMMENCER", value: "le galet, en bas",
+                         labelOpacity: 0.34, valueOpacity: 0.72, spacing: 5)
         }
         .padding(30)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background { ecrin }
+        // La matière vit dans le design system (SwapCardSurface.swift) —
+        // ici le tube ne vient pas d'un geste : il RESPIRE (`.respiration`,
+        // et l'amplitude de la respiration est documentée là-bas). Le pull
+        // vertical est le neutre historique de cette carte.
+        .background {
+            SwapCardSurface(pull: CGSize(width: 0, height: 1),
+                            lit: .respiration)
+        }
         // La carte n'est pas un bouton : c'est le galet qu'il faut toucher,
         // et une carte qui répondrait au doigt enverrait le message inverse.
-        .allowsHitTesting(false)
-    }
-
-    /// La matière, à l'identique de `SwapWorkoutCard` — mais `lit` ne vient
-    /// plus d'un geste : il RESPIRE. Une respiration lente et jamais éteinte
-    /// (0,52 au creux) : un néon qui descend à zéro clignote, et un
-    /// clignotement dit « erreur », pas « viens ».
-    private var ecrin: some View {
-        GeometryReader { geo in
-            let pad: CGFloat = Self.pad
-            let w: CGFloat = geo.size.width + pad * 2
-            let h: CGFloat = geo.size.height + pad * 2
-            let wf: Float = Float(w)
-            let hf: Float = Float(h)
-            let padf: Float = Float(pad)
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                let t: Float = Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
-                // L'AMPLITUDE EST LE SUJET. À 0,52-0,82 le tube devient une
-                // CORDE orange fermée d'épaisseur égale autour d'un aplat
-                // noir — la grammaire refusée huit fois sur la fente. Sur les
-                // vraies cartes ce niveau n'existe qu'une fraction de seconde,
-                // sous le doigt ; ici il serait permanent. À 0,30-0,56 la
-                // carte est vivante et invite, sans se transformer en enseigne.
-                let breath: Float = 0.30 + 0.26 * (0.5 + 0.5 * sin(t * 1.15))
-                Rectangle()
-                    .fill(.white)
-                    .frame(width: w, height: h)
-                    .colorEffect(ShaderLibrary.swapCard(
-                        .float2(wf, hf), .float(t),
-                        .float(padf), .float(24), .float(0),
-                        // `charge` 0 : aucun geste ne la tire.
-                        .float(0),
-                        .float2(0, 1),
-                        // `lit` : le tube, allumé et vivant.
-                        .float(breath),
-                        // `noir` 0 : l'obsidienne de la home, comme ses sœurs.
-                        .float(0),
-                        // `enterre` : le neutre vaut -4000, PAS zéro — zéro
-                        // dirait que le pied de la carte touche la ligne de
-                        // coupe d'une fente, et tuerait tube et fresnel.
-                        .float(-4000),
-                        // `nu` 0 : ici l'arête et le tube naissent ensemble,
-                        // c'est la loi de la home.
-                        .float(0)))
-            }
-            .offset(x: -pad, y: -pad)
-        }
         .allowsHitTesting(false)
     }
 

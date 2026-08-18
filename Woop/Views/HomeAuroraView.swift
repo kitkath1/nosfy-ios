@@ -1026,31 +1026,13 @@ struct SwapWorkoutCard: View {
     /// masse à mesure que la charge monte.
     var pull: CGSize = CGSize(width: 1, height: 0)
 
-    /// Marge du shader : au repos le souffle doré de l'arête tient en
-    /// quelques points, mais sous le geste le halo déborde loin — un shader
-    /// ne peint que dans son rectangle hôte.
-    private static let pad: CGFloat = 54
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // En tête, à gauche : le nom seul. Rien d'autre — la carte est
             // d'abord du vide (la référence : un mot en haut, deux mesures
             // en bas, et beaucoup de noir entre les deux).
-            // Le titre descend et respire : le tube est à 14 pt du bord et
-            // sa nappe porte loin — collé en haut, le texte baignait dedans.
-            Text(title)
-                .font(.inter(19, .medium))
-                .foregroundStyle(Color.white.opacity(0.95))
-                .padding(.top, 8)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-            Text(workout.relativeDateLabel)
-                .font(.inter(11))
-                .foregroundStyle(Color.white.opacity(0.46))
-                .padding(.top, 5)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            SwapCardHeading(title: title,
+                            subtitle: workout.relativeDateLabel)
 
             Spacer(minLength: 20)
 
@@ -1064,64 +1046,20 @@ struct SwapWorkoutCard: View {
         // 30 pt : le texte se tient à l'écart du tube (14 pt) et de sa nappe.
         .padding(30)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background { ecrin }
+        // L'écrin vit dans le design system (SwapCardSurface.swift) depuis
+        // le 2026-08-18 : même hôte, même shader, rien n'a bougé.
+        .background {
+            SwapCardSurface(seed: seed, charge: charge, pull: pull,
+                            lit: .geste(tapAt: tapAt))
+        }
     }
 
     private var title: String {
         workout.categories.first?.rawValue ?? "Séance"
     }
 
-    /// Une mesure du cartouche bas : l'étiquette murmure en capitales
-    /// espacées, la valeur se pose dessous.
     private func stat(_ label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            // Relevées : à 30 % de blanc, la nappe d'or du tube les mangeait.
-            Text(label)
-                .font(.inter(8.5, .medium))
-                .tracking(1.3)
-                .foregroundStyle(Color.white.opacity(0.46))
-            Text(value)
-                .font(.inter(12.5))
-                .foregroundStyle(Color.white.opacity(0.88))
-        }
-        // Un chiffre ne se plie jamais : « 52 min » est un bloc.
-        .lineLimit(1)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var ecrin: some View {
-        GeometryReader { geo in
-            let w = geo.size.width + Self.pad * 2
-            let h = geo.size.height + Self.pad * 2
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                let t = Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
-                // Le tube est ÉTEINT au repos : il ne vit que du geste et du
-                // toucher. Le tap y souffle une bouffée qui retombe seule.
-                let since = tl.date.timeIntervalSince(tapAt)
-                let pulse = since < 0 ? 0
-                    : Float(min(since / 0.10, 1) * exp(-max(since - 0.10, 0) / 0.45))
-                let neon = max(charge, min(pulse, 1))
-                Rectangle()
-                    .fill(.white)
-                    .frame(width: w, height: h)
-                    .colorEffect(ShaderLibrary.swapCard(
-                        .float2(w, h), .float(t),
-                        .float(Float(Self.pad)), .float(24), .float(seed),
-                        .float(charge),
-                        .float2(Float(pull.width), Float(pull.height)),
-                        // `noir` 0 : la home garde son obsidienne.
-                        // `enterre` très négatif : rien n'est enfoncé dans
-                        // quoi que ce soit ici. Le neutre de ce paramètre
-                        // n'est PAS zéro — zéro voudrait dire « le bord bas
-                        // touche la ligne de coupe d'une fente ».
-                        // `nu` 0 : ici l'arête et le tube naissent ensemble du
-                        // geste, c'est la loi de la home.
-                        .float(neon), .float(0), .float(-4000), .float(0)))
-            }
-            .offset(x: -Self.pad, y: -Self.pad)
-        }
-        .allowsHitTesting(false)
+        SwapCardStat(label: label, value: value)
     }
 }
 
