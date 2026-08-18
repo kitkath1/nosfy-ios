@@ -68,21 +68,10 @@ struct AuroraLoginView: View {
             // se termine. Il occupe tout l'écran en rendu (son halo et sa
             // flaque en ont besoin) mais ne capte le doigt que dans son
             // voisinage : la caresse continue de vivre sur toute la page.
-            // Pendant l'aspiration, il INSPIRE : seul objet qui grossit
-            // pendant que tout le reste s'éteint — l'œil est déjà sur lui
-            // quand la caméra part.
-            LandedMonolithView()
+            // En cérémonie, c'est SA caméra qui plonge (CineMonolith) : le
+            // tube grossit vectoriel, net — jamais un scaleEffect rastérisé.
+            CineMonolith(start: cineStart)
                 .allowsHitTesting(true)
-                .scaleEffect(leaving ? 1.06 : 1.0,
-                             anchor: UnitPoint(x: 0.315, y: 0.335))
-                .animation(.easeInOut(duration: ConnexionCine.aspiration),
-                           value: leaving)
-
-            // La surge : le halo d'or qui enfle sur la lune pendant que la
-            // page se vide.
-            if let cineStart {
-                MoonSurge(start: cineStart)
-            }
 
             // La page se déshabille : le contenu fond en glissant d'un cheveu
             // vers le bas — elle s'incline pour le départ. À la fin de
@@ -254,6 +243,13 @@ struct AuroraLoginBackground: View {
                         .float2(Float(cine), Float(xLune)),
                         .floatArray(trailArray(at: tl.date, size: geo.size,
                                                fastForward: cine * 1.4))))
+                    // Pendant l'approche, l'aurore s'éteint au VRAI noir :
+                    // plus un pixel d'orange sombre à l'écran quand la
+                    // dissolution commence — le marron n'a nulle part où
+                    // naître.
+                    .opacity(cineStart.map {
+                        ConnexionCine.bgAlpha(tl.date.timeIntervalSince($0))
+                    } ?? 1)
                     .onChange(of: flashing) { _, on in
                         if on { SparkleChime.shared.play() }
                     }

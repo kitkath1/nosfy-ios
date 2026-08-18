@@ -49,12 +49,7 @@ struct LaunchPebble: View {
     /// en bas jusqu'au bord physique de l'écran, sous la zone sûre.
     static let height: CGFloat = 160
     private static let padTop: CGFloat = 120
-    /// 112 depuis le dock du player : le bas du frame du galet est à
-    /// 76 pt du bord physique (la dalle incrustée, trait aéré) et la
-    /// nacre doit CONTINUER de couler derrière la pierre jusqu'au bord —
-    /// à 60 le raster s'arrêtait net, une tranche de dôme coupée au
-    /// cutter dans la bande de la pastille.
-    private static let padBottom: CGFloat = 112
+    private static let padBottom: CGFloat = 60
     /// La marge LATÉRALE du raster — LE CARRÉ BLANC DU TÉLÉPHONE. Le dôme
     /// déborde de ~40 pt de chaque côté de l'écran et le limbe de la
     /// calotte échantillonne jusqu'à 1,32 R : sans marge, la couche

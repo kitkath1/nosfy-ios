@@ -68,7 +68,7 @@ final class SacreEtat {
     }
 }
 
-// MARK: - La boucle vidéo du header
+// MARK: - La boucle vidéo de l'overlay
 
 /// L'hôte : un `AVPlayerLayer` nu — `VideoPlayer` (AVKit) apporterait ses
 /// commandes et son fond, dont une pop-up n'a que faire.
@@ -101,21 +101,31 @@ final class BoosterLoopLayerView: UIView {
 /// fondu : 6,25 contre 6,97 hors fondu — il ne reste que la fumée qui se
 /// mélange, et c'est exactement ce qu'on veut d'elle.
 ///
-/// Sur cette base — plan fixe, exposition plate — le reste tient :
-/// - fondu croisé de 26 images (1,08 s) de la queue sur la tête ;
-/// - cadrage CENTRÉ sur les sachets (le cœur lumineux tombe à 49,7 % de
-///   la largeur) et élargi : la fumée blanche de gauche et le reflet au
-///   sol, hors champ dans la première coupe, sont dans le plan ;
-/// - boucle RALENTIE à 0,85× (3,46 s) : la fumée dérive plus lentement,
-///   l'œil n'accroche plus la période.
+/// ET LE RACCORD LUI-MÊME A DISPARU : la boucle est un **PING-PONG** —
+/// aller puis retour, sans redoubler les deux extrêmes. C'est la
+/// technique de l'overlay flamme du panneau « Recommencer », et elle est
+/// imbattable : il n'y a plus de raccord à cacher, puisqu'il n'y en a
+/// plus. La couture tombe à ZÉRO — pas « petite », nulle : la dernière
+/// image EST la voisine de la première. Plus de fondu croisé, donc plus
+/// une once du dédoublement qu'il coûtait. Le plan dure deux fois plus
+/// longtemps (9,4 s au lieu de 3,5), ce qui éloigne d'autant la période.
 ///
-/// L'autre chose qui disait « une vidéo », c'était le RECTANGLE : des
-/// bords qui coupent la fumée net. D'où le masque sur les côtés ET le
-/// pied, côté vue.
+/// Sur cette base — plan fixe, exposition plate, aller-retour — reste le
+/// cadrage : CENTRÉ sur les sachets (le cœur lumineux tombe à 49,7 % de
+/// la largeur) et élargi, la fumée blanche de gauche et le reflet au sol
+/// (hors champ dans la première coupe) sont dans le plan.
+///
+/// L'autre chose qui disait « une vidéo », c'était le RECTANGLE. Il n'y
+/// en a plus du tout : le plan n'est plus un bandeau bord à bord masqué
+/// sur ses flancs, c'est un OBJET DE LUMIÈRE posé au milieu de la nuit du
+/// panneau, en additif — l'école de l'overlay flamme. Le noir de la
+/// source disparaît sans détourage (mesuré : 89 % des pixels sous
+/// 12/255, et le fond est à 0,00 exactement), il ne reste que les
+/// sachets et leur fumée.
 struct BoosterLoopVideo: UIViewRepresentable {
     final class Coordinator {
         var player: AVQueuePlayer?
-        // Relâché, la boucle s'arrête au premier tour et le header se fige.
+        // Relâché, la boucle s'arrête au premier tour et le plan se fige.
         var looper: AVPlayerLooper?
     }
 
@@ -125,8 +135,8 @@ struct BoosterLoopVideo: UIViewRepresentable {
         let v = BoosterLoopLayerView()
         v.backgroundColor = .clear
         v.isUserInteractionEnabled = false
-        // Le header est taillé au ratio EXACT du fichier (1,6) : rien
-        // n'est recadré, toute la scène recuisinée est à l'écran.
+        // Le cadre qu'on lui donne est au ratio EXACT du fichier (1,45) :
+        // rien n'est recadré, toute la scène recuisinée est à l'écran.
         v.playerLayer.videoGravity = .resizeAspectFill
         guard let url = Bundle.main.url(forResource: "booster-loop",
                                         withExtension: "mp4") else {
@@ -168,11 +178,15 @@ struct BoosterPopup: View {
     var onFermer: () -> Void = {}
 
     @State private var born = false
+    /// L'horloge de la caméra du plan — la pose d'entrée et le souffle
+    /// s'écrivent dessus (fonction pure du temps, rien à semer).
+    @State private var naissance = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let forme = RoundedRectangle(cornerRadius: 34,
                                                 style: .continuous)
-    /// Le ratio du fichier recuit — le header est taillé dessus pour que
-    /// rien ne soit recadré.
+    /// Le ratio du fichier recuit — l'emplacement est taillé dessus pour
+    /// que rien ne soit recadré.
     private static let ratioVideo: CGFloat = 1.45
 
     var body: some View {
@@ -186,9 +200,9 @@ struct BoosterPopup: View {
 
             GeometryReader { g in
                 let W = min(g.size.width - 14, 420)
-                // Le header est au RATIO EXACT du fichier recuit (1,6) :
+                // L'emplacement est au RATIO EXACT du fichier recuit :
                 // aucune marge de recadrage, la scène entière est là.
-                panneau(W: W, headerH: W / Self.ratioVideo)
+                panneau(W: W, slotH: W / Self.ratioVideo)
                     .frame(width: W)
                     .scaleEffect(born ? 1 : 0.92)
                     .opacity(born ? 1 : 0)
@@ -202,12 +216,12 @@ struct BoosterPopup: View {
         }
     }
 
-    private func panneau(W: CGFloat, headerH: CGFloat) -> some View {
+    private func panneau(W: CGFloat, slotH: CGFloat) -> some View {
         VStack(spacing: 0) {
             // La réserve du header, plus 34 pt d'AIR FRANC : la scène a
             // fini de s'éteindre bien avant le titre (le masque la fond
             // dès 46 % de sa hauteur), le texte ne lui marche pas dessus.
-            Color.clear.frame(height: headerH + 34)
+            Color.clear.frame(height: slotH + 34)
 
             Text("Un booster t'attend")
                 .font(.inter(20, .semibold))
@@ -250,14 +264,14 @@ struct BoosterPopup: View {
         // pied) alors que la vidéo, elle, finissait à 57 % : mesuré, il
         // restait **69 % de noir** à sa base — le vrai verre n'avait
         // aucune chance de se voir, et le fondu ne devenait rien. Les
-        // paliers se calculent donc sur `headerH / hauteur du panneau` :
+        // paliers se calculent donc sur `slotH / hauteur du panneau` :
         // noir plein sous l'image (elle a besoin de son fond), chute
         // franche dans les 34 pt qui suivent, puis le verre règne — le
         // titre, le sous-titre et le diamant vivent dessus.
         .background {
             GeometryReader { p in
                 let H = max(p.size.height, 1)
-                let pied = min(headerH / H, 0.9)
+                let pied = min(slotH / H, 0.9)
                 ZStack {
                     // Jamais `.interactive()` sur un grand verre : il vole
                     // les gestes de ce qui vit dessus.
@@ -279,32 +293,56 @@ struct BoosterPopup: View {
                 }
             }
         }
-        // La vidéo file bord à bord : c'est le panneau qui porte les coins.
-        // `plusLighter` parce que le noir d'un H.264 n'est pas pur — en
-        // composition normale, un rectangle gris se devine sur le verre.
+        // L'OVERLAY, À L'ÉCOLE DE LA FLAMME du panneau « Recommencer ».
+        // Ce n'est plus un bandeau vidéo posé en haut du panneau : c'est
+        // un OBJET DE LUMIÈRE au milieu de la nuit. Il est dimensionné
+        // par la HAUTEUR de son emplacement, centré, et composé en
+        // ADDITIF — le noir de la source disparaît sans détourage (89 %
+        // des pixels sous 12/255, fond mesuré à 0,00), il ne reste que
+        // les sachets et leur fumée. Plus de masques de flancs à
+        // entretenir : le plan DÉBORDE le panneau, et c'est la forme du
+        // panneau qui porte les coins.
         .overlay(alignment: .top) {
-            BoosterLoopVideo()
-                .frame(width: W, height: headerH)
-                // LE PIED : la scène s'éteint bien avant le titre.
-                .mask(LinearGradient(stops: [
-                    .init(color: .white, location: 0),
-                    .init(color: .white, location: 0.46),
-                    .init(color: .white.opacity(0.34), location: 0.76),
-                    .init(color: .clear, location: 1.0)
-                ], startPoint: .top, endPoint: .bottom))
-                // LES FLANCS — c'est EUX qui disaient « vidéo » : un bord
-                // net qui tranche la fumée se lit comme un clip collé sur
-                // la page. Fondus, la fumée naît et meurt dans le noir du
-                // panneau, et il n'y a plus de rectangle nulle part. Les
-                // sachets vivent entre 26 % et 76 % : ils n'y touchent pas.
-                .mask(LinearGradient(stops: [
-                    .init(color: .clear, location: 0.0),
-                    .init(color: .white, location: 0.08),
-                    .init(color: .white, location: 0.92),
-                    .init(color: .clear, location: 1.0)
-                ], startPoint: .leading, endPoint: .trailing))
-                .blendMode(.plusLighter)
-                .allowsHitTesting(false)
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                    paused: reduceMotion)) { tl in
+                let e = tl.date.timeIntervalSince(naissance)
+                // LA POSE : le plan arrive d'un cheveu trop près et se
+                // pose en ~1,8 s, la pente meurt — une présence, pas un
+                // travelling.
+                let pose: CGFloat = reduceMotion
+                    ? 1 : 1 + 0.10 * CGFloat(exp(-e * 1.9))
+                // LE SOUFFLE : ±2 % sur 23 s. La période est PREMIÈRE
+                // vis-à-vis des 9,4 s de l'aller-retour — le cadrage
+                // n'est jamais deux fois le même au même endroit de la
+                // boucle, donc l'œil ne peut plus verrouiller le cycle.
+                let souffle: CGFloat = reduceMotion
+                    ? 1 : 1 + 0.020 * CGFloat(sin(e * 2 * .pi / 23.0))
+                let k = pose * souffle
+                // LA CAMÉRA ENTRE PAR LA GÉOMÉTRIE DU CADRE — le lecteur
+                // redécode aux nouvelles bornes. Un `scaleEffect`
+                // rastériserait le plan puis l'étirerait : c'est la loi
+                // de la maison, et elle a déjà été payée ailleurs.
+                BoosterLoopVideo()
+                    .frame(width: slotH * Self.ratioVideo * k,
+                           height: slotH * k)
+                    // Le pied fond dans le panneau : le reflet au sol
+                    // court sur toute la largeur du plan, lui seul aurait
+                    // posé une arête. Le masque suit le plan, donc il
+                    // respire avec lui.
+                    .mask(LinearGradient(stops: [
+                        .init(color: .white, location: 0),
+                        .init(color: .white, location: 0.60),
+                        .init(color: .white.opacity(0.40), location: 0.84),
+                        .init(color: .clear, location: 1.0)
+                    ], startPoint: .top, endPoint: .bottom))
+                    .blendMode(.plusLighter)
+                    // La boîte d'ancrage : le plan déborde et reste
+                    // CENTRÉ — un `frame` ne rogne pas, c'est le panneau
+                    // qui le fait, avec ses coins.
+                    .frame(width: W, height: slotH)
+            }
+            .frame(width: W, height: slotH)
+            .allowsHitTesting(false)
         }
         .clipShape(Self.forme)
         // Le fil du bord — seulement là où la feuille se détache du fond.
