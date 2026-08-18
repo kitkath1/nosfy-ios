@@ -70,8 +70,10 @@ struct CalendarStickersPage: View {
     /// page).
     @State private var slateBusy = false
 
-    // La console du verre — double-tap pour l'afficher/cacher, valeurs
-    // persistées entre relances.
+    // La console du verre — RÉSERVÉE au banc `-calTune` (double-tap
+    // pour l'afficher/cacher là-bas), valeurs persistées entre relances.
+    private static let tuneEnabled =
+        CommandLine.arguments.contains("-calTune")
     @State private var showTune = CommandLine.arguments.contains("-calTune")
     @AppStorage("calClear") private var tClear = false
     @AppStorage("calTintW") private var tTintW = 0.0
@@ -143,15 +145,19 @@ struct CalendarStickersPage: View {
                 if showTune { tunePanel }
             }
             .ignoresSafeArea()
-            .onTapGesture(count: 2) {
+            // La console ne s'ouvre QUE sur le banc `-calTune` : le
+            // double-tap global VOLAIT le deuxième tap des séquences
+            // rapides (le dépliage de l'ardoise mourait après une
+            // bascule) et faisait surgir le panneau — dont les molettes
+            // AppStorage se dérèglent durablement au moindre drag.
+            .gesture(TapGesture(count: 2).onEnded {
                 withAnimation(.easeOut(duration: 0.2)) {
                     showTune.toggle()
                 }
-            }
+            }, isEnabled: Self.tuneEnabled)
             .task { await autoScroll(inset: inset, course: course) }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
-                let _ = print("SONDE cover: présentation id=\(launch.id)")
                 StoryPortal(from: launch.rect, session: launch.session) {
                     var tx = Transaction()
                     tx.disablesAnimations = true
@@ -618,8 +624,14 @@ private struct CardMorph: View, Animatable {
             // (le blur plat) et n'en revient pas — le bug « ça a marché
             // puis c'est redevenu blur ». Seule la FENÊTRE de clip
             // s'anime.
+            // ET LE BORD HAUT VIT HORS ÉCRAN : le rim spéculaire du
+            // verre système ne s'éteint par aucune API — on pousse le
+            // haut de la forme au-dessus du bord physique (coins
+            // compris), le clip coupe net : le liseré sans haut.
             Color.clear
+                .frame(height: full + corner + 24)
                 .glassEffect(tuning.verre, in: shape)
+                .offset(y: -(corner + 24))
             // Les couches en `plusLighter` vivent dans LEUR groupe : un
             // blend qui remonte jusqu'au frère verre le force hors-écran
             // et le tue. Le chevron (son propre verre) reste DEHORS.

@@ -285,6 +285,10 @@ struct SlateListe: View, Equatable {
     /// L'id du groupe déplié à la naissance (l'exercice courant).
     let courant: String
     let basAir: CGFloat
+    /// La hauteur RÉELLE du contenu, remontée à l'hôte : la story 2 y
+    /// colle sa frame (et donc le rect d'exclusion du chef) — une frame
+    /// fixe fabriquait des zones mortes qui avalaient les taps.
+    var onContentHeight: (CGFloat) -> Void = { _ in }
 
     /// Les groupes dépliés — l'état vit ICI : le parent peut se
     /// réévaluer cent fois, le dépliement ne bronche pas.
@@ -296,44 +300,62 @@ struct SlateListe: View, Equatable {
             && l.groupes.map(\.cle) == r.groupes.map(\.cle)
     }
 
+    /// LE DÉPLIAGE VOYAGE DANS LES DONNÉES DU FOREACH — la leçon payée
+    /// deux fois le 18-08 : un ForEach ne rejoue ses rangées que quand
+    /// SES DONNÉES changent. Le passage « en valeur de vue » (SlateRang
+    /// seul) tenait pour les taps mais PAS pour l'ensemencement de
+    /// naissance de l'ardoise (rangées matérialisées avant le semis,
+    /// figées repliées). Ici la donnée elle-même porte `depliee` : tout
+    /// changement de dépliage EST un changement de données.
+    private var rangs: [RangDonnee] {
+        groupes.map { RangDonnee(groupe: $0,
+                                 depliee: deplies.contains($0.id)) }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 4) {
-                // Le dépliage voyage EN VALEUR (`depliee`) dans une
-                // vue-enfant — JAMAIS un `if deplies.contains(…)` écrit
-                // dans la closure : voir `SlateRang`.
-                ForEach(groupes) { g in
-                    SlateRang(groupe: g,
-                              depliee: deplies.contains(g.id),
-                              onTap: { bascule(g.id) })
+                ForEach(rangs) { r in
+                    SlateRang(groupe: r.groupe,
+                              depliee: r.depliee,
+                              onTap: { bascule(r.groupe.id) })
                 }
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, basAir)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height }
+                action: { onContentHeight($0) }
         }
         .scrollIndicators(.hidden)
         .onAppear {
-            print("SONDE liste: apparue, seme=\(seme) deplies=\(deplies)")
             if !seme { seme = true; deplies = [courant] }
-        }
-        .onDisappear {
-            print("SONDE liste: disparue, deplies=\(deplies)")
         }
     }
 
     private func bascule(_ id: String) {
-        print("SONDE bascule: \(id), avant=\(deplies)")
         withAnimation(.spring(response: 0.38, dampingFraction: 0.85)) {
             if deplies.contains(id) { deplies.remove(id) }
             else { deplies.insert(id) }
         }
-        print("SONDE bascule: après=\(deplies)")
     }
 
 }
 
 // MARK: - Une rangée de la partition
+
+/// La DONNÉE d'une rangée : le groupe ET son dépliage — pour que le
+/// ForEach voie chaque bascule comme un changement de données.
+private struct RangDonnee: Identifiable, Equatable {
+    let groupe: SlateGroupe
+    let depliee: Bool
+    var id: String { groupe.id }
+
+    static func == (l: Self, r: Self) -> Bool {
+        l.id == r.id && l.depliee == r.depliee
+            && l.groupe.cle == r.groupe.cle
+    }
+}
 
 /// UNE rangée + ses lignes dépliées — VUE-ENFANT, et c'est STRUCTUREL :
 /// le dépliage arrive en VALEUR (`depliee`), que le diffing voit changer.
@@ -399,6 +421,10 @@ private struct SlateRang: View {
                 }
             }
             .transition(.opacity)
+            // Le détail se tape aussi : replier — sans ça, les lignes
+            // dépliées étaient une zone morte (l'audit du 18-08).
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
         }
     }
 }

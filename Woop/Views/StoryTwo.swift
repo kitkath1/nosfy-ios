@@ -18,6 +18,10 @@ struct StoryTwo: View {
     /// le chef d'orchestre y renonce à son verdict de tap.
     var onPartitionRect: (CGRect) -> Void = { _ in }
 
+    /// La hauteur réelle du contenu de la partition — la frame lui
+    /// colle (plafonnée), plus de zone morte sous la dernière ligne.
+    @State private var contentH: CGFloat = 0
+
     var body: some View {
         // Le remplissage : la vidéo est plus large que l'écran à hauteur
         // égale, donc c'est la HAUTEUR qui commande et les flancs sortent.
@@ -65,19 +69,19 @@ struct StoryTwo: View {
                     // d'orchestre du flux le ramasse).
                     SlateListe(groupes: session.groupes,
                                courant: session.groupes.first?.id ?? "",
-                               basAir: 24)
+                               basAir: 24,
+                               onContentHeight: { contentH = $0 })
                         .equatable()
-                        .frame(height: size.height * 0.52)
+                        .frame(height: min(size.height * 0.52,
+                                           contentH > 0 ? contentH
+                                               : size.height * 0.52))
                         .opacity(StoryCine.sstep(0.40, 0.95, t))
                         .offset(y: (1 - CGFloat(
                             StoryCine.sstep(0.40, 1.0, t))) * 14)
                         .padding(.top, 14)
                         .onGeometryChange(for: CGRect.self) {
                             $0.frame(in: .named("storyFlow"))
-                        } action: {
-                            print("SONDE rect: partition=\($0)")
-                            onPartitionRect($0)
-                        }
+                        } action: { onPartitionRect($0) }
                 } else {
                     VStack(spacing: 7) {
                         ForEach(Array(session.sets.enumerated()),

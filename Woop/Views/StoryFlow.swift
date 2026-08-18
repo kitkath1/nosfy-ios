@@ -281,9 +281,6 @@ struct StoryFlow: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
-        .onAppear {
-            print("SONDE flux: apparu page=\(page) beat=\(beat) rect=\(partitionRect)")
-        }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
                          trigger: tapBeat)
         .task(id: beat) { await conduct() }
@@ -402,16 +399,17 @@ struct StoryFlow: View {
                 // l'horloge : tant qu'on explore, la story attend.
                 // (Sans ça : la vignette d'un exercice vit dans le tiers
                 // gauche → « je reviens à la première ».)
-                if page == 1, partitionRect.contains(v.startLocation) {
+                // `clock > 0,95` : la partition ne FOND qu'à ~1 s — son
+                // rect ne compte pas tant qu'elle est invisible.
+                if page == 1, clock(Date.now) > 0.95,
+                   partitionRect.contains(v.startLocation) {
                     // L'horloge se PROLONGE sans rejouer l'entrée : recalée
                     // à 1,2 s (toutes les rampes d'entrée sont finies à
                     // 1,0), jamais à zéro — un reset nu faisait replonger
                     // la partition à opacité 0 et tout « clignotait ».
                     pageStart = Date.now.addingTimeInterval(-1.2)
-                    print("SONDE chef: tap EN ZONE start=\(v.startLocation)")
                     return
                 }
-                print("SONDE chef: tap HORS zone start=\(v.startLocation) rect=\(partitionRect) page=\(page)")
                 // Le tiers gauche revient en arrière — la grammaire du genre.
                 if v.location.x < size.width / 3 {
                     page == 0 ? go(to: 0) : go(to: page - 1)
