@@ -31,11 +31,12 @@ enum CoffreFortCine {
     /// lisible. À 1,0 il est entier mais l'image tombe à 26 % de l'écran et
     /// flotte dans sa place.
     ///
-    /// 1,25 est le compromis MESURÉ : l'image occupe 31 % de la hauteur, il
-    /// reste 50 pt de rogne de chaque côté — et ces 50 pt-là ne contiennent
-    /// que le bokeh sombre du fond, jamais le coffre. Surtout, le fondu du
-    /// masque est calé sur l'IMAGE : il grandit avec elle, donc les bords
-    /// haut et bas — les seuls dont la coupe se voyait — restent éteints.
+    /// 1,25 — et le détour par 1,50 aura servi à mesurer pourquoi. La
+    /// nouvelle source (`coffre-beau`) cadre le coffre BEAUCOUP plus près que
+    /// l'ancienne : à échelle égale l'objet est déjà plus gros, si bien que
+    /// « en plus gros » l'a rendu ÉNORME dans le bandeau une fois posé
+    /// (verdict Kathryn). L'échelle de repos revient donc à sa cote d'origine,
+    /// et c'est le cadrage du film qui donne la taille.
     static let restScale: CGFloat = 1.25
     /// La part d'écran réservée au bloc vidéo.
     static let slotRatio: CGFloat = 0.40
@@ -47,13 +48,24 @@ enum CoffreFortCine {
     /// La vidéo apparaît en fondu : la feuille monte sur du NOIR, et c'est
     /// la lumière qui la révèle — jamais l'inverse.
     static let fadeIn: Double = 0.55
-    /// La descente vers la place de repos commence — le coffre est ouvert,
-    /// la plaque va glisser.
-    static let settleAt: Double = 5.60
+    /// LA PARTITION EST RECALÉE SUR `coffre-beau` (18-08). Mesuré sur le
+    /// fichier, image par image : l'ancienne source était PLATE (luminance
+    /// 15 → 19 sur neuf secondes, rien ne s'y passait — c'est pour ça que la
+    /// page s'était fabriqué sa propre caméra). La nouvelle a SA
+    /// dramaturgie : noire jusqu'à 1,33 s, ouverture, montée continue, pic à
+    /// 5,42 s, puis un RECUL de caméra jusqu'à la fin.
+    ///
+    /// La seconde noire du début a donc été coupée au montage (le fichier
+    /// livré commence 1,00 s après la source) et tous les temps ont reculé
+    /// d'autant. Le recul de la page (settle) tombe alors exactement sur le
+    /// recul propre de la vidéo : les deux s'ADDITIONNENT — c'est voulu
+    /// (verdict Kathryn), le zoom d'ouverture reste à 2,15.
+    static let settleAt: Double = 4.60
     static let settleFor: Double = 2.40
     /// Le contenu naît APRÈS que la vidéo se soit posée : un souffle après
-    /// l'image, jamais avant elle.
-    static let contentAt: Double = 7.85
+    /// l'image, jamais avant elle. La vidéo finit à 7,04 s — elle se fige
+    /// sur son plan moyen, qui est l'image de repos.
+    static let contentAt: Double = 6.85
 }
 
 // MARK: - Le lecteur
@@ -108,7 +120,15 @@ struct CinematicPlayer: UIViewRepresentable {
 /// poser en haut, puis le titre, la pièce et le compte.
 struct CoffreFortView: View {
     let coins: Int
+    /// L'encoche de l'écran, mesurée par le parcours (la page, elle, ignore
+    /// la zone sûre : sa vidéo doit toucher le bord). C'est ce qui permet de
+    /// poser le chevron À SA PLACE, celle qu'il occupe sur toutes les autres
+    /// pages, au lieu de le coller au bord physique.
+    var safeTop: CGFloat = 0
     var onClose: () -> Void = {}
+    /// TAPER LA VIDÉO, C'EST ALLER PLUS VITE : la cérémonie se pose d'un coup
+    /// et le parcours descend sur la page suivante.
+    var onSkip: () -> Void = {}
 
     @State private var player: AVPlayer?
     @State private var visible = false
@@ -116,6 +136,9 @@ struct CoffreFortView: View {
     @State private var settled = false
     /// Le contenu sous la vidéo est né.
     @State private var born = false
+    /// On est passé devant : les minuteries en vol ne doivent plus rien
+    /// rejouer par-dessus (elles ne s'annulent pas, elles se vérifient).
+    @State private var skipped = false
     /// L'horloge de la fumée de la pièce, ou `nil` si personne n'y touche.
     @State private var smokeStart: Date?
     @State private var smokeEnd: Date?
@@ -145,6 +168,20 @@ struct CoffreFortView: View {
                 // l'œil place le centre optique plus haut que le centre
                 // géométrique.
                 .padding(.bottom, H * 0.14)
+                // LE RACCOURCI : la place de la vidéo est tapable de bout en
+                // bout. La vidéo elle-même reste hors du toucher (elle a des
+                // couches, un masque, une échelle : lui accrocher un geste,
+                // c'est le perdre au premier changement de cadrage) — c'est
+                // une surface claire posée sur sa PLACE qui l'écoute. Un tap
+                // ne dispute rien au glissement du parcours.
+                .overlay(alignment: .top) {
+                    Color.clear
+                        .frame(height: H * CoffreFortCine.slotRatio)
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: skip)
+                        .accessibilityLabel("Voir le détail")
+                        .accessibilityAddTraits(.isButton)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.black)
@@ -339,7 +376,14 @@ struct CoffreFortView: View {
             // trop loin : le gouffre entre les deux cassait le groupe au lieu
             // de l'aérer. À 6 pt elle respire encore — le reflet de la pièce
             // meurt avant elle — sans se décrocher du compte qu'elle porte.
-            CoffreFortBadgeView(count: coins)
+            //
+            // ET C'EST LA PASTILLE DE BRAVO (verdict Kathryn : « la plaque
+            // jaune est moche, mets celle de bravo »). La plaque d'or et son
+            // nombre brun sont morts : à leur place, la capsule de nuit
+            // cerclée d'un fil d'or, sa pièce en anthracite mat et son
+            // compte en Inter-Light. Elle vient avec SA réponse au toucher —
+            // le souffle court, la fumée sombre, le tintement, la vibration.
+            TresorPastille(count: coins)
                 .padding(.top, 6)
         }
         .frame(maxWidth: .infinity)
@@ -354,10 +398,15 @@ struct CoffreFortView: View {
             // LE CHEVRON DE LA MAISON — le composant unique (ChipVerre,
             // la recette de la fiche d'exercice extraite le 14-08 :
             // « le même composant sur toutes les pages »).
+            // ET À SA PLACE : la page ignore la zone sûre (sa vidéo touche le
+            // bord), si bien qu'un `padding(.top, 16)` le posait à 17 pt du
+            // bord PHYSIQUE — en pleine bande de l'îlot, 46 pt plus haut que
+            // sur toutes les autres pages. La cote de la maison est celle de
+            // `RangeeChips` : 20 sur le flanc, 4 sous l'encoche.
             ChipVerre(symbole: "chevron.left", label: "Fermer",
                       action: onClose)
                 .padding(.leading, 20)
-                .padding(.top, 16)
+                .padding(.top, safeTop + 4)
                 .transition(.opacity)
         }
     }
@@ -398,11 +447,40 @@ struct CoffreFortView: View {
         }
     }
 
+    // MARK: Passer devant
+
+    /// LE RACCOURCI. On ne peut pas « avancer l'horloge » ici comme sur le
+    /// sommet de la lentille : cette partition n'est pas une fonction du
+    /// temps, ce sont deux minuteries. Passer devant, c'est donc POSER la
+    /// cérémonie à son état final — et amener le lecteur sur son image de
+    /// repos, sinon on remonterait plus tard sur une page figée en pleine
+    /// plongée. Les minuteries en vol, elles, se tairont d'elles-mêmes.
+    /// `-coffreSkip` : le raccourci se déclenche tout seul à 3 s — le
+    /// simulateur ne tape pas, c'est la seule façon de voir la cérémonie se
+    /// poser et le parcours descendre sur la page démon.
+    private static let skipFire = CommandLine.arguments.contains("-coffreSkip")
+
+    private func skip() {
+        if !born {
+            skipped = true
+            if let item = player?.currentItem, item.duration.isNumeric {
+                player?.seek(to: item.duration,
+                             toleranceBefore: .zero, toleranceAfter: .zero)
+            }
+            player?.pause()
+            withAnimation(.easeOut(duration: 0.28)) {
+                settled = true
+                born = true
+            }
+        }
+        onSkip()
+    }
+
     // MARK: La mise en route
 
     private func start() {
         guard player == nil else { return }
-        guard let url = Bundle.main.url(forResource: "coffre-salut",
+        guard let url = Bundle.main.url(forResource: "coffre-beau",
                                         withExtension: "mp4") else {
             // Sans le fichier, la page reste noire et le contenu naît tout
             // de suite : on ne bloque jamais l'utilisatrice sur une absence.
@@ -411,9 +489,17 @@ struct CoffreFortView: View {
         }
         let item = AVPlayerItem(url: url)
         let p = AVPlayer(playerItem: item)
-        // La piste audio a été retirée à l'encodage ; le muet est une
-        // ceinture — une cinématique ne coupe pas la musique de personne.
-        p.isMuted = true
+        // LA MUSIQUE DU COFFRE (verdict Kathryn : « il manque la musique ») —
+        // la piste du film, jouée sous la règle de la maison, celle du sacre :
+        // catégorie `ambient` + `mixWithOthers`, et MUETTE si quelqu'un écoute
+        // déjà quelque chose. Une cinématique ne coupe la musique de personne :
+        // elle se tait, elle ne s'impose pas.
+        let libre = !AVAudioSession.sharedInstance().isOtherAudioPlaying
+        if libre {
+            try? AVAudioSession.sharedInstance()
+                .setCategory(.ambient, options: [.mixWithOthers])
+        }
+        p.isMuted = !libre
         // Une cinématique ne se met pas en pause pour attendre le réseau :
         // le fichier est dans le paquet, il n'y a rien à mettre en tampon.
         p.automaticallyWaitsToMinimizeStalling = false
@@ -421,6 +507,10 @@ struct CoffreFortView: View {
 
         withAnimation(.easeOut(duration: CoffreFortCine.fadeIn)) { visible = true }
         p.play()
+
+        if Self.skipFire {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { skip() }
+        }
 
         guard !reduceMotion else {
             // Ni cadrage ni descente : la vidéo joue à sa place, et le
@@ -431,11 +521,13 @@ struct CoffreFortView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + CoffreFortCine.settleAt) {
+            guard !skipped else { return }
             withAnimation(.easeInOut(duration: CoffreFortCine.settleFor)) {
                 settled = true
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + CoffreFortCine.contentAt) {
+            guard !skipped else { return }
             withAnimation(.easeOut(duration: 0.65)) { born = true }
         }
     }
@@ -468,22 +560,137 @@ struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
 
+    /// La position du défilement — écrite par le doigt ET par le code : c'est
+    /// elle qui permet au tap sur la vidéo de DESCENDRE d'une page sans rien
+    /// casser du geste.
+    ///
+    /// PAR LE BORD, ET SURTOUT PAS PAR UN `id` : le `LazyVStack` ne construit
+    /// la page démon qu'en l'approchant, et un `scrollPosition(id:)` ne sait
+    /// pas viser une page qui n'existe pas encore — mesuré, le tap posait la
+    /// cérémonie et ne bougeait pas d'un pixel. Le bas, lui, est connu de
+    /// tout temps.
+    @State private var pos = ScrollPosition(edge: .top)
+
     var body: some View {
-        ScrollView(.vertical) {
-            LazyVStack(spacing: 0) {
-                CoffreFortView(coins: coins, onClose: onClose)
-                    .containerRelativeFrame(.vertical)
-                HaloDawnLab()
-                    .containerRelativeFrame(.vertical)
+        // LE PROXY EST DEHORS, et lui ne fuit pas la zone sûre : c'est la
+        // seule façon de connaître l'encoche pour poser le chevron à sa
+        // place, alors que la page, elle, doit toucher les bords.
+        GeometryReader { g in
+            let safeTop = g.safeAreaInsets.top
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 0) {
+                    CoffreFortView(coins: coins, safeTop: safeTop,
+                                   onClose: onClose,
+                                   onSkip: {
+                                       withAnimation(.easeInOut(
+                                           duration: 0.55)) {
+                                           pos.scrollTo(edge: .bottom)
+                                       }
+                                   })
+                        .containerRelativeFrame(.vertical)
+                    HaloDawnLab()
+                        .containerRelativeFrame(.vertical)
+                }
+                .scrollTargetLayout()
             }
-            .scrollTargetLayout()
+            .scrollTargetBehavior(.paging)
+            .scrollPosition($pos)
+            .scrollIndicators(.hidden)
+            .background(Color.black)
+            // SEUL LE DÉFILEMENT FUIT LA ZONE SÛRE — pas le proxy. Un
+            // `ignoresSafeArea` posé sur le GeometryReader lui fait rendre
+            // une encoche de ZÉRO (payé une capture : le chevron restait
+            // collé au bord physique alors que le calcul était juste).
+            .ignoresSafeArea()
         }
-        .scrollTargetBehavior(.paging)
-        .scrollIndicators(.hidden)
-        .background(Color.black)
-        .ignoresSafeArea()
+        .background(Color.black.ignoresSafeArea())
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+    }
+}
+
+// MARK: - La pastille du trésor
+
+/// LA PASTILLE DE BRAVO, POSÉE SOUS LA PIÈCE. Le composant est le même
+/// (`BravoPillView` + `bravoPill.metal`) : capsule de nuit, fil d'or de
+/// 0,7 pt, la pièce en anthracite mat et le compte. Ici la caméra vaut 1 et
+/// le jaillissement n'existe pas — il ne reste que la respiration du néon,
+/// et LA RÉPONSE AU TOUCHER, qu'on garde telle quelle : le souffle court
+/// (la même enveloppe que le jaillissement de BRAVO, en plus bref), la
+/// fumée sombre, le tintement de pièce et la vibration souple.
+///
+/// LE TOUCHER EST BORNÉ À LA PASTILLE. Sur BRAVO elle accroche son tap sur
+/// tout l'écran (elle y est le dernier enfant du ZStack, rien ne la
+/// dispute) ; ici, la vidéo écoute déjà le sien et le parcours attend son
+/// glissement — le geste ne peut donc vivre que dans son propre cadre.
+private struct TresorPastille: View {
+    let count: Int
+
+    @State private var tapAt: Date?
+    @State private var tapEnd: Date?
+    @State private var tapTick = 0
+
+    private static let height: CGFloat = 54
+    /// Le débord : le bloom du fil d'or et la fumée du toucher sortent de la
+    /// capsule — l'hôte du shader doit leur laisser de la place.
+    private static let pad: CGFloat = 30
+
+    var body: some View {
+        let w = Self.height * BravoPillView.ratio
+        let hostW = w + Self.pad * 2
+        let hostH = Self.height + Self.pad * 2
+        let c = CGPoint(x: hostW / 2, y: hostH / 2)
+        // L'horloge ne tourne QUE pendant la réponse au toucher : au repos
+        // la pastille a déjà la sienne, à 12 Hz, dans son propre corps.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: tapAt == nil)) { tl in
+            BravoPillView(center: c,
+                          height: Self.height,
+                          amount: 1,
+                          count: count,
+                          cam: 1,
+                          neonBoost: 0,
+                          flare: tapFlare(tl.date),
+                          pulse: 0)
+                .overlay {
+                    if let tapAt {
+                        CoinSmoke(center: c,
+                                  radius: Self.height * 0.34,
+                                  start: tapAt, end: tapEnd, palette: .dark)
+                            .allowsHitTesting(false)
+                    }
+                }
+        }
+        .frame(width: hostW, height: hostH)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: fireTap)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7),
+                         trigger: tapTick)
+        .accessibilityElement()
+        .accessibilityLabel("\(count) pièces")
+    }
+
+    /// Le souffle du toucher — l'enveloppe de BRAVO, à l'identique.
+    private func tapFlare(_ now: Date) -> Double {
+        guard let tapAt else { return 0 }
+        let x = now.timeIntervalSince(tapAt)
+        guard x > 0 else { return 0 }
+        return min(x / 0.07, 1) * exp(-max(x - 0.07, 0) / 0.34) * 0.72
+    }
+
+    /// Un tintement MINIMAL et une fumée qui se démonte une fois éteinte —
+    /// une bouffée n'est pas un état, et un TimelineView qui reste monté
+    /// coûte ses images pour rien.
+    private func fireTap() {
+        tapAt = .now
+        tapEnd = nil
+        tapTick += 1
+        CoinChime.shared.chink()
+        let mark = Date.now.addingTimeInterval(0.16)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { tapEnd = mark }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            if tapEnd == mark { tapAt = nil; tapEnd = nil }
+        }
     }
 }
 
@@ -515,59 +722,5 @@ struct CoffreFortLab: View {
             .padding(.trailing, 18)
             .padding(.bottom, 40)
         }
-    }
-}
-
-// MARK: - Le badge
-
-/// Une plaque d'or en capsule, le nombre posé dessus, et la poussière qui la
-/// nimbe. La plaque, son liseré, son balayage et la poudre vivent dans UN
-/// shader (`treasureBadge`) ; le texte, lui, reste du texte — il doit rester
-/// lisible, sélectionnable par l'accessibilité, et net à toutes les tailles.
-struct CoffreFortBadgeView: View {
-    let count: Int
-
-    private static let plateHeight: CGFloat = 54
-    /// Le débord de l'hôte : la poussière monte à ~46 pt de la plaque, et le
-    /// fondu d'hôte du shader en mange 10 de plus.
-    private static let pad: CGFloat = 34
-
-    /// La largeur ne dépend que du NOMBRE de chiffres — le badge ne change
-    /// pas de taille entre 111 et 999.
-    private var plateWidth: CGFloat {
-        CGFloat(String(max(count, 0)).count) * 25 + 56
-    }
-
-    var body: some View {
-        let w = plateWidth
-        let h = Self.plateHeight
-        let hostW = w + Self.pad * 2
-        let hostH = h + Self.pad * 2
-
-        ZStack {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-                let t = Float(timeline.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
-                Rectangle()
-                    .fill(.white)
-                    .frame(width: hostW, height: hostH)
-                    .colorEffect(ShaderLibrary.treasureBadge(
-                        .float2(Float(hostW), Float(hostH)),
-                        .float4(Float(hostW / 2), Float(hostH / 2),
-                                Float(w), Float(h)),
-                        .float(t),
-                        .float(1.0)
-                    ))
-            }
-            // L'encre : un brun profond, pas du noir — sur l'or, le noir pur
-            // fait un trou, le brun fait une gravure.
-            Text("\(count)")
-                .font(.inter(38, .semibold))
-                .foregroundStyle(Color(red: 0.204, green: 0.114, blue: 0.020))
-        }
-        .frame(width: hostW, height: hostH)
-        .allowsHitTesting(false)
-        .accessibilityElement()
-        .accessibilityLabel("\(count) pièces")
     }
 }
