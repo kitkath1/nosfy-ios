@@ -604,16 +604,21 @@ struct RootView: View {
             // Le pourquoi de l'état partagé plutôt que d'une notification
             // est écrit en tête de `BoosterPopup.swift` : un onglet non
             // encore construit n'écoute personne.
-            if sacre.popupOuverte {
-                BoosterPopup(onOuvrir: { sacre.ouvrirManege() },
-                             onFermer: {
-                                 withAnimation(.easeOut(duration: 0.24)) {
-                                     sacre.popupOuverte = false
-                                 }
-                             })
-                    .transition(.opacity)
-                    .zIndex(6)
-            }
+            // Le conteneur du panneau reste MONTÉ (transparent, sourd au
+            // doigt quand il est vide) : c'est lui qui joue la montée et
+            // la descente — l'école du « Recommencer » de la fiche
+            // d'exercice. Inséré et retiré d'un coup, le panneau
+            // n'aurait jamais de sortie vers le bas.
+            BoosterPopupHote(
+                ouverte: sacre.popupOuverte,
+                onOuvrir: { sacre.ouvrirManege() },
+                onFermer: {
+                    withAnimation(.spring(response: 0.45,
+                                          dampingFraction: 0.86)) {
+                        sacre.popupOuverte = false
+                    }
+                })
+                .zIndex(6)
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
                            // Le chevron de la maison, aux deux escales du

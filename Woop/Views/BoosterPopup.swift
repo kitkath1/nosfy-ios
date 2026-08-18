@@ -166,54 +166,106 @@ struct BoosterLoopVideo: UIViewRepresentable {
     }
 }
 
-// MARK: - LA POP-UP BOOSTER
+// MARK: - LE PANNEAU BOOSTER
 
-/// La proposition, AU MILIEU DE L'ÉCRAN. C'est la grammaire du panneau
-/// « Recommencer » de la fiche d'exercice — même verre, même nuit qui
-/// fond, même primaire, même échappée en encre nue — mais les QUATRE
-/// coins sont arrondis : ce panneau-ci ne touche aucun bord, et un cadre
-/// fantôme au ras d'un écran est une faute déjà payée.
-struct BoosterPopup: View {
+/// L'HÔTE. Le conteneur reste monté (transparent, sourd au doigt quand il
+/// est vide) : c'est LUI qui joue l'entrée et la sortie du panneau —
+/// l'école du « Recommencer » de la fiche d'exercice, à la lettre. Sans
+/// ce conteneur, le panneau serait inséré et retiré d'un coup, et sa
+/// descente n'aurait jamais lieu.
+struct BoosterPopupHote: View {
+    var ouverte: Bool
     var onOuvrir: () -> Void = {}
     var onFermer: () -> Void = {}
 
-    @State private var born = false
-    /// L'horloge de la caméra du plan — la pose d'entrée et le souffle
+    var body: some View {
+        GeometryReader { g in
+            ZStack(alignment: .bottom) {
+                Color.clear
+                if ouverte {
+                    // Le voile : assez pour détacher le panneau, assez
+                    // peu pour que le verre ait encore une page à
+                    // échantillonner.
+                    Color.black.opacity(0.12)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture { onFermer() }
+                        .transition(.opacity)
+                    // La largeur descend d'ICI : le panneau doit connaître
+                    // sa taille AVANT d'entrer — un panneau qui monte du
+                    // bas ne peut pas se mesurer en chemin.
+                    BoosterPopup(W: g.size.width,
+                                 onOuvrir: onOuvrir, onFermer: onFermer)
+                        .transition(.move(edge: .bottom))
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(ouverte)
+        .animation(.spring(response: 0.45, dampingFraction: 0.86),
+                   value: ouverte)
+    }
+}
+
+/// LA PROPOSITION, MONTÉE DU BAS. Le jumeau du panneau « Recommencer » :
+/// même verre, même nuit qui fond, même primaire, même échappée en encre
+/// nue — et la même sortie, on le TIRE VERS LE BAS pour dire non. Les
+/// coins HAUTS seuls sont arrondis : le bas appartient à l'écran (le
+/// CADRE FANTÔME au ras d'un bord est une faute déjà payée).
+struct BoosterPopup: View {
+    var W: CGFloat
+    var onOuvrir: () -> Void = {}
+    var onFermer: () -> Void = {}
+
+    /// Le drag de rangement — sur TOUTE la surface : le geste SIMULTANÉ
+    /// laisse les deux boutons garder leurs taps (12 pt de course avant
+    /// que le drag n'existe).
+    @State private var pull: CGFloat = 0
+    /// L'horloge de la caméra du plan — la pose, les retours et la poudre
     /// s'écrivent dessus (fonction pure du temps, rien à semer).
     @State private var naissance = Date()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let forme = RoundedRectangle(cornerRadius: 34,
-                                                style: .continuous)
+    /// Coins HAUTS seuls — le bas appartient à l'écran.
+    private static let forme = UnevenRoundedRectangle(
+        cornerRadii: .init(topLeading: 34, bottomLeading: 0,
+                           bottomTrailing: 0, topTrailing: 34),
+        style: .continuous)
     /// Le ratio du fichier recuit — l'emplacement est taillé dessus pour
     /// que rien ne soit recadré.
     private static let ratioVideo: CGFloat = 1.45
 
-    var body: some View {
-        ZStack {
-            // Le voile : assez pour détacher le panneau, assez peu pour
-            // que le verre ait encore une page à échantillonner.
-            Color.black.opacity(0.12)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { onFermer() }
+    /// L'emplacement du plan, au ratio exact du fichier.
+    private var slotH: CGFloat { W / Self.ratioVideo }
 
-            GeometryReader { g in
-                let W = min(g.size.width - 14, 420)
-                // L'emplacement est au RATIO EXACT du fichier recuit :
-                // aucune marge de recadrage, la scène entière est là.
-                panneau(W: W, slotH: W / Self.ratioVideo)
-                    .frame(width: W)
-                    .scaleEffect(born ? 1 : 0.92)
-                    .opacity(born ? 1 : 0)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    var body: some View {
+        panneau(W: W, slotH: slotH)
+            .frame(width: W, height: hauteur)
+            .offset(y: pull)
+        // TOUTE la surface attrape le drag (la leçon « j'arrive pas à
+        // drag » : une zone rendue transparente au toucher).
+        .contentShape(Self.forme)
+        .simultaneousGesture(dismissDrag)
+    }
+
+    /// La hauteur du panneau : l'emplacement du plan, plus la somme
+    /// EXACTE de ce qui s'écrit dessous. Calculée plutôt que laissée au
+    /// contenu — un panneau qui monte du bas doit connaître sa taille
+    /// AVANT d'entrer — et calculée JUSTE, sinon tout le mou tombe dans
+    /// le même trou entre le sous-titre et le diamant.
+    private var hauteur: CGFloat { slotH + 246 }
+
+    private var dismissDrag: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { v in pull = max(0, v.translation.height) }
+            .onEnded { _ in
+                if pull > 90 {
+                    onFermer()
+                } else {
+                    withAnimation(.spring(response: 0.34,
+                                          dampingFraction: 0.82)) { pull = 0 }
+                }
             }
-        }
-        .onAppear {
-            withAnimation(.spring(response: 0.46, dampingFraction: 0.84)) {
-                born = true
-            }
-        }
     }
 
     private func panneau(W: CGFloat, slotH: CGFloat) -> some View {
@@ -223,7 +275,7 @@ struct BoosterPopup: View {
             // dès 46 % de sa hauteur), le texte ne lui marche pas dessus.
             Color.clear.frame(height: slotH + 34)
 
-            Text("Un booster t'attend")
+            Text("Un booster t'attend !")
                 .font(.inter(20, .semibold))
                 .foregroundStyle(Color.inkPrimary)
                 .multilineTextAlignment(.center)
@@ -235,6 +287,10 @@ struct BoosterPopup: View {
                 .multilineTextAlignment(.center)
                 .padding(.top, 7)
                 .padding(.horizontal, 30)
+
+            // Le mou du panneau se prend ICI : l'emplacement du plan est
+            // ancré en haut, il ne doit jamais bouger d'un pixel.
+            Spacer(minLength: 0)
 
             DiamondPrimaryButton(title: "Ouvrir un Booster",
                                  smokeWarmth: 0.55) {
@@ -254,8 +310,10 @@ struct BoosterPopup: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 10)
-            .padding(.bottom, 30)
+            // Le pied appartient à l'écran : la marge dégage l'indicateur.
+            .padding(.bottom, 34)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         // LE VERRE EST LE VRAI (il échantillonne la page vivante), et
         // par-dessus LA NUIT QUI FOND.
         //
@@ -303,44 +361,76 @@ struct BoosterPopup: View {
         // entretenir : le plan DÉBORDE le panneau, et c'est la forme du
         // panneau qui porte les coins.
         .overlay(alignment: .top) {
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion)) { tl in
-                let e = tl.date.timeIntervalSince(naissance)
-                // LA POSE : le plan arrive d'un cheveu trop près et se
-                // pose en ~1,8 s, la pente meurt — une présence, pas un
-                // travelling.
-                let pose: CGFloat = reduceMotion
-                    ? 1 : 1 + 0.10 * CGFloat(exp(-e * 1.9))
-                // LE SOUFFLE : ±2 % sur 23 s. La période est PREMIÈRE
-                // vis-à-vis des 9,4 s de l'aller-retour — le cadrage
-                // n'est jamais deux fois le même au même endroit de la
-                // boucle, donc l'œil ne peut plus verrouiller le cycle.
-                let souffle: CGFloat = reduceMotion
-                    ? 1 : 1 + 0.020 * CGFloat(sin(e * 2 * .pi / 23.0))
-                let k = pose * souffle
-                // LA CAMÉRA ENTRE PAR LA GÉOMÉTRIE DU CADRE — le lecteur
-                // redécode aux nouvelles bornes. Un `scaleEffect`
-                // rastériserait le plan puis l'étirerait : c'est la loi
-                // de la maison, et elle a déjà été payée ailleurs.
-                BoosterLoopVideo()
-                    .frame(width: slotH * Self.ratioVideo * k,
-                           height: slotH * k)
-                    // Le pied fond dans le panneau : le reflet au sol
-                    // court sur toute la largeur du plan, lui seul aurait
-                    // posé une arête. Le masque suit le plan, donc il
-                    // respire avec lui.
-                    .mask(LinearGradient(stops: [
-                        .init(color: .white, location: 0),
-                        .init(color: .white, location: 0.60),
-                        .init(color: .white.opacity(0.40), location: 0.84),
-                        .init(color: .clear, location: 1.0)
-                    ], startPoint: .top, endPoint: .bottom))
-                    .blendMode(.plusLighter)
-                    // La boîte d'ancrage : le plan déborde et reste
-                    // CENTRÉ — un `frame` ne rogne pas, c'est le panneau
-                    // qui le fait, avec ses coins.
-                    .frame(width: W, height: slotH)
+            ZStack {
+                // LA CAMÉRA PORTE LA VIE, PAS LE FICHIER. Le plan est
+                // volontairement TRÈS lent (0,45×, 17,7 s) : à cette
+                // vitesse la fumée ne monte plus, elle DÉRIVE — et une
+                // dérive n'a pas de sens, donc l'aller-retour cesse de se
+                // voir. C'était le dernier aveu du ping-pong : une fumée
+                // qui remonte à l'envers, l'œil le sait ; une flamme peut
+                // faire l'aller-retour, une fumée non.
+                //
+                // Ce qui bouge vraiment, c'est la caméra : la POSE
+                // d'entrée, puis deux respirations et une dérive, toutes
+                // sur des périodes PREMIÈRES entre elles et avec les
+                // 17,7 s du plan. Rien ne retombe jamais en phase : il
+                // n'existe aucun instant où l'image est deux fois la
+                // même, donc aucun cycle à repérer.
+                //
+                // ET LA CAMÉRA PASSE PAR UNE TRANSFORMATION, PAS PAR LA
+                // FRAME — c'est la leçon du « ça lag beaucoup ».
+                // Redimensionner un `AVPlayerLayer` soixante fois par
+                // seconde le fait relayouter ET re-rendre à chaque image :
+                // le panneau saccadait. La règle maison (« le zoom par la
+                // géométrie, jamais par scaleEffect ») a été écrite pour
+                // des vues RENDUES — qu'on rastérise puis qu'on étire. Une
+                // couche vidéo, elle, est une texture : le GPU
+                // l'échantillonne pour rien, et ±7 % sur une source de
+                // 1160 px ne se voit pas. Cadence 30 Hz : le plan lui-même
+                // n'affiche que 10,7 images par seconde.
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                        paused: reduceMotion)) { tl in
+                    let e = tl.date.timeIntervalSince(naissance)
+                    let pose: CGFloat = reduceMotion
+                        ? 1 : 1 + 0.10 * CGFloat(exp(-e * 1.9))
+                    let respire: CGFloat = reduceMotion ? 1
+                        : 1 + 0.050 * CGFloat(sin(e * 2 * .pi / 37.0))
+                            + 0.024 * CGFloat(sin(e * 2 * .pi / 23.0 + 1.7))
+                    let dx: CGFloat = reduceMotion ? 0
+                        : 7 * CGFloat(sin(e * 2 * .pi / 41.0 + 0.6))
+                    let dy: CGFloat = reduceMotion ? 0
+                        : 5 * CGFloat(sin(e * 2 * .pi / 29.0))
+                    BoosterLoopVideo()
+                        // POSÉE UNE FOIS. Elle ne bouge plus jamais.
+                        .frame(width: slotH * Self.ratioVideo,
+                               height: slotH)
+                        // Le pied fond dans le panneau : le reflet au sol
+                        // court sur toute la largeur du plan, lui seul
+                        // aurait posé une arête.
+                        .mask(LinearGradient(stops: [
+                            .init(color: .white, location: 0),
+                            .init(color: .white, location: 0.60),
+                            .init(color: .white.opacity(0.40),
+                                  location: 0.84),
+                            .init(color: .clear, location: 1.0)
+                        ], startPoint: .top, endPoint: .bottom))
+                        .blendMode(.plusLighter)
+                        .scaleEffect(pose * respire)
+                        .offset(x: dx, y: dy)
+                }
+                // LA POUDRE DE DIAMANT — dessinée par l'app, pas par le
+                // fichier, et sur SA propre horloge (le plan n'a pas à se
+                // ré-évaluer au rythme des paillettes). C'est ELLE qui
+                // tranche la question du « on voit que c'est une vidéo » :
+                // des grains qui vivent chacun sur son cycle ne bouclent
+                // JAMAIS ensemble, donc plus rien à l'écran ne peut se
+                // répéter. La recette de la poussière de rubis de
+                // l'overlay flamme, en blanc et or.
+                PoudreBooster(W: W, slotH: slotH, naissance: naissance)
             }
+            // La boîte d'ancrage : le plan déborde et reste CENTRÉ — un
+            // `frame` ne rogne pas, c'est le panneau qui le fait, avec
+            // ses coins.
             .frame(width: W, height: slotH)
             .allowsHitTesting(false)
         }
@@ -355,6 +445,105 @@ struct BoosterPopup: View {
                 ], startPoint: .top, endPoint: .bottom), lineWidth: 1)
                 .allowsHitTesting(false)
         }
+        // La poignée du panneau — elle dit « tire-moi vers le bas ».
+        .overlay(alignment: .top) {
+            Capsule()
+                .fill(Color.white.opacity(0.28))
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
+                .allowsHitTesting(false)
+        }
+    }
+
+}
+
+// MARK: - La poudre de diamant
+
+/// LES PAILLETTES. Très très fines : des croix taillées de 0,6 à 2,0 pt
+/// qui montent en dérivant autour des sachets, chacune sur SON cycle,
+/// chacune son scintillement. Fonction pure du temps — aucun état, rien à
+/// semer, et surtout aucune période commune : c'est ce qui rend la scène
+/// définitivement inépuisable, et c'est ce qui achève de tuer le « on
+/// voit que c'est une vidéo ».
+///
+/// Blanc et or, jamais de rose : l'or appartient aux sachets, le blanc à
+/// la lune. La recette de la poussière de rubis de l'overlay flamme.
+///
+/// Vue à part, avec SA propre horloge à 30 Hz : le plan vidéo n'a aucune
+/// raison de se ré-évaluer au rythme des paillettes (et il saccadait
+/// quand il le faisait).
+struct PoudreBooster: View {
+    var W: CGFloat
+    var slotH: CGFloat
+    var naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Assez pour que ça brille partout, assez peu pour que le Canvas
+    /// reste une broutille : 52 grains à 30 Hz coûtent moins que 26 à 60.
+    private static let grains = 52
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            Canvas { ctx, _ in
+                for i in 0 ..< Self.grains {
+                    let vie = 3.0 + 3.4 * Self.hash(i, 2)
+                    let cyc = (t / vie + Self.hash(i, 5))
+                        .truncatingRemainder(dividingBy: 1)
+                    // Naît sur la table, autour des sachets, et monte d'un
+                    // souffle en dérivant.
+                    let cx = W / 2 + (Self.hash(i, 1) - 0.5) * W * 0.80
+                    let cy = slotH * (0.34 + 0.52 * Self.hash(i, 3))
+                    let x = cx + sin(t * (0.35 + 0.5 * Self.hash(i, 8))
+                                     + Self.hash(i, 9) * 6.28) * 9
+                    let y = cy - CGFloat(cyc) * slotH * 0.42
+                    // Le voile de vie : entre en douceur, meurt en montant
+                    // — et scintille TRANCHÉ (le cube), comme les pierres
+                    // du slider.
+                    let s = sin(.pi * cyc)
+                    let tw = 0.5 + 0.5 * sin(t * (7 + 12 * Self.hash(i, 4))
+                                             + Self.hash(i, 6) * 6.28)
+                    let a = s * s * (0.20 + 0.80 * tw * tw * tw)
+                    guard a > 0.02 else { continue }
+                    let r = CGFloat(0.6 + 1.4 * Self.hash(i, 7))
+                    // Deux tempéraments : la braise dorée des sachets et
+                    // le blanc lunaire — deux tiers d'or, un tiers de lune.
+                    let c = Self.hash(i, 10) < 0.34
+                        ? Color(red: 0.96, green: 0.97, blue: 1.00)
+                        : Color(red: 1.00, green: 0.62, blue: 0.26)
+                    var etoile = Path()
+                    etoile.move(to: CGPoint(x: -r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: -r * 0.22))
+                    etoile.addLine(to: CGPoint(x: r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r * 0.22))
+                    etoile.closeSubpath()
+                    etoile.move(to: CGPoint(x: 0, y: -r))
+                    etoile.addLine(to: CGPoint(x: r * 0.22, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r))
+                    etoile.addLine(to: CGPoint(x: -r * 0.22, y: 0))
+                    etoile.closeSubpath()
+                    ctx.fill(etoile.applying(
+                        CGAffineTransform(translationX: x, y: y)
+                            .rotated(by: (Self.hash(i, 11) - 0.5) * 0.9)),
+                             with: .color(c.opacity(a * 0.85)))
+                    // Le cœur vif — c'est lui la facette.
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: x - 0.45, y: y - 0.45,
+                                               width: 0.9, height: 0.9)),
+                        with: .color(Color.white.opacity(a * 0.9)))
+                }
+            }
+        }
+        .blendMode(.plusLighter)
+        .allowsHitTesting(false)
+        .frame(width: W, height: slotH)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
     }
 }
 
