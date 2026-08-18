@@ -69,3 +69,107 @@ using namespace metal;
     half3 rgb = color.rgb * half(reflet * braise);
     return half4(rgb, color.a);
 }
+
+// LA TOURNE DE PAGE, DEUXIÈME FORME — le moteur du feuilletage. La V1
+// (cylindre-tapis-roulant) a été autopsiée et exécutée le 19-08 : la page
+// filait HORS du livre (A négatif sans jamais pivoter au dos), le verso
+// était le miroir lisible du recto, et l'éclairage multiplicatif sur une
+// base noire avait 4 niveaux d'amplitude — invisible par construction.
+//
+// V2 : LE PLI RECULANT. La page est un segment épinglé à la reliure ; le
+// pli recule vers la reliure (A = wp·(1−q)) pendant que la partie libre
+// pivote de α = π·q autour de lui. À q=1, le pli est à la reliure, l'angle
+// à π : l'atterrissage est le miroir exact (x = −s) — la page ne quitte
+// JAMAIS le livre. L'inverse est trivial (x linéaire en s), il n'y a que
+// deux nappes (le plat, la levée), et la nappe levée choisit sa face au
+// signe de cos α.
+//
+// Le LAYER porte deux faces : moitié droite = le recto (papier + contenu),
+// moitié gauche = le VERSO pré-composé à sa position d'atterrissage — le
+// dos d'une feuille n'est jamais le miroir de sa face.
+//
+// Les ombres sortent en ALPHA (half4(0,0,0,a)) dans les zones désertées :
+// c'est la plaque SOUS le layer qui les reçoit — la pénombre précède la
+// feuille qui avance.
+[[ stitchable ]] half4 tournePageV2(float2 position, SwiftUI::Layer layer,
+                                    float2 size, float q) {
+    float wp = size.x * 0.5;      // la largeur de page ; la reliure au
+    float x0 = wp;                // centre du layer
+    float xr = position.x - x0;
+    float y = position.y;
+    float qq = clamp(q, 0.0, 1.0);
+    float vol = sin(M_PI_F * qq);
+
+    float A = wp * (1.0 - qq);    // le pli, qui recule vers la reliure
+    float alpha = M_PI_F * qq;    // l'angle de la partie levée
+    float ca = cos(alpha);
+    float sa = sin(alpha);
+
+    half4 out = half4(0.0);
+    float zTop = -1.0;
+    float sGagnant = -1.0;
+
+    // 1. Le plat : le recto encore posé, l'ombre du pli qui se dresse.
+    if (xr >= 0.0 && xr <= A) {
+        out = layer.sample(float2(x0 + xr, y));
+        float portee = max(26.0 * sa, 3.0);
+        float ombre = 0.32 * vol * exp(-(A - xr) / portee);
+        out.rgb *= half(1.0 - ombre);
+        zTop = 0.0; sGagnant = xr;
+    }
+
+    // 2. La nappe levée : le segment [A, wp] pivoté de α autour du pli.
+    //    Recto tant que la face regarde le lecteur (cos α > 0), verso
+    //    ensuite — échantillonné dans la moitié gauche du layer.
+    if (fabs(ca) > 0.02) {
+        float s = A + (xr - A) / ca;
+        if (s >= A - 0.5 && s <= wp) {
+            float z = (s - A) * sa;
+            if (z >= zTop) {
+                float u = (s - A) / max(wp - A, 1.0);
+                half4 c;
+                float l;
+                if (ca > 0.0) {
+                    c = layer.sample(float2(x0 + s, y));
+                    // La courbure par la LUMIÈRE : la crête prend le jour,
+                    // le pied reste au sol — c'est elle qui dit « papier »
+                    // (l'amplitude est calibrée pour une base ~35/255 :
+                    // la crête peut monter vers 60-90, la loi de
+                    // l'obsidienne ne vaut pas pour le papier).
+                    l = 0.92 + 0.55 * sa * (0.35 + 0.65 * u)
+                      + 0.22 * pow(sa, 3.0) * sin(u * M_PI_F);
+                } else {
+                    c = layer.sample(float2(x0 - s, y));
+                    // Le verso naît dans l'ombre et vient à la lumière en
+                    // se posant — avec le MODELÉ de la courbure (payé :
+                    // sans le sinus, une bande morte uniforme).
+                    l = 0.72 + 0.42 * (1.0 - sa)
+                      + 0.18 * sa * sin(u * M_PI_F)
+                      + 0.08 * sa * u;
+                }
+                c.rgb *= half(l);
+                out = c; zTop = z; sGagnant = s;
+            }
+        }
+    }
+
+    // 3. La pénombre : devant le bord libre, une ombre en alpha se pose
+    //    sur ce qui vit sous le layer.
+    if (zTop < 0.0) {
+        float xFree = A + (wp - A) * ca;
+        float d = (ca >= 0.0) ? (xr - xFree) : (xFree - xr);
+        if (d >= 0.0) {
+            float a = 0.30 * vol * exp(-d / 7.0);
+            out = half4(0.0, 0.0, 0.0, half(a));
+        }
+    }
+
+    // La tranche du bord libre : un cheveu de braise, jamais un néon.
+    if (sGagnant > wp - 1.7 && out.a > half(0.01)) {
+        half3 braiseC = half3(1.0, 0.62, 0.25);
+        out.rgb = mix(out.rgb, braiseC * max(out.r, half(0.20)),
+                      half(0.5));
+    }
+
+    return out;
+}

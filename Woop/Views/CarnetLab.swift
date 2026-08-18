@@ -39,6 +39,19 @@ struct CarnetLab: View {
         return CGFloat(v)
     }()
 
+    /// `-carnetFeuille` : le banc du MOTEUR DE TOURNE (tournePageV1) — la
+    /// double page posée, une page mock premium dans la fenêtre droite,
+    /// le drag horizontal l'enroule. `-carnetQ <q>` fige la tourne.
+    private static let feuilleLab = CommandLine.arguments
+        .contains("-carnetFeuille")
+    private static let qFige: CGFloat? = {
+        guard let raw = UserDefaults.standard.string(forKey: "carnetQ"),
+              let v = Double(raw) else { return nil }
+        return CGFloat(v)
+    }()
+    /// La tourne en cours au banc feuille.
+    @State private var q: CGFloat = CarnetLab.qFige ?? 0
+
     /// LA seule molette de taille : la marge latérale de la DOUBLE PAGE.
     /// Tout le reste s'en déduit par l'INVARIANT PHYSIQUE — la hauteur de
     /// la couverture, identique fermé/ouvert (verdicts 19-08 : « pas la
@@ -74,8 +87,12 @@ struct CarnetLab: View {
                 / PlaqueCarnet.ouvert.objetW
             ZStack {
                 Color.black
-                CarnetObjet(p: Self.pFige ?? (ouvert ? 1 : 0), tilt: tilt,
-                            hauteur: hauteur)
+                if Self.feuilleLab {
+                    bancFeuille(spread: spread, hauteur: hauteur)
+                } else {
+                    CarnetObjet(p: Self.pFige ?? (ouvert ? 1 : 0),
+                                tilt: tilt, hauteur: hauteur)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -85,26 +102,205 @@ struct CarnetLab: View {
         .persistentSystemOverlays(.hidden)
         .contentShape(Rectangle())
         .onTapGesture {
+            guard !Self.feuilleLab else { return }
             SwapFeedback.shared.tap()
             withAnimation(.carnetOuverture) { ouvert.toggle() }
         }
-        // Le drag incline, le tap feuillette : le tap ne bouge pas de
-        // 6 pt, les deux gestes cohabitent sans se voler.
+        // Le drag incline (banc objet) ou tourne la page (banc feuille) ;
+        // le tap ne bouge pas de 6 pt, les deux gestes cohabitent.
         .simultaneousGesture(
             DragGesture(minimumDistance: 6)
                 .onChanged { v in
-                    guard Self.tiltFige == nil else { return }
-                    tilt = CGSize(
-                        width: max(-1, min(1, v.translation.width / 130)),
-                        height: max(-1, min(1, v.translation.height / 130)))
+                    if Self.feuilleLab {
+                        guard Self.qFige == nil else { return }
+                        q = max(0, min(1, -v.translation.width / 240))
+                    } else {
+                        guard Self.tiltFige == nil else { return }
+                        tilt = CGSize(
+                            width: max(-1, min(1, v.translation.width / 130)),
+                            height: max(-1, min(1, v.translation.height / 130)))
+                    }
                 }
-                .onEnded { _ in
-                    guard Self.tiltFige == nil else { return }
-                    withAnimation(.spring(response: 0.42,
-                                          dampingFraction: 0.86)) {
-                        tilt = .zero
+                .onEnded { v in
+                    if Self.feuilleLab {
+                        guard Self.qFige == nil else { return }
+                        // L'aimant : la tourne finit toujours posée — sur
+                        // l'élan prédit, jamais sur la position seule.
+                        let fin = -v.predictedEndTranslation.width / 240
+                        withAnimation(.spring(response: 0.5,
+                                              dampingFraction: 0.86)) {
+                            q = fin > 0.5 ? 1 : 0
+                        }
+                    } else {
+                        guard Self.tiltFige == nil else { return }
+                        withAnimation(.spring(response: 0.42,
+                                              dampingFraction: 0.86)) {
+                            tilt = .zero
+                        }
                     }
                 })
+    }
+
+    /// Le banc du moteur : la double page posée, la session suivante nue
+    /// sur le papier de la plaque (c'est elle que la tourne révèle), la
+    /// page courante en vol par-dessus.
+    @ViewBuilder
+    private func bancFeuille(spread: CGFloat, hauteur: CGFloat) -> some View {
+        let fen = FenetrePage.droite(hauteur: hauteur)
+        ZStack {
+            VuePlaque(plaque: .ouvert, detoure: true)
+                .frame(width: PlaqueCarnet.ouvert
+                    .largeurCadre(pourHauteurObjet: hauteur))
+            PageSession(date: "16. Août", mesures: "4 séries · 48 reps",
+                        sticker: "sticker-bras", pieces: 80)
+                .frame(width: fen.width, height: fen.height)
+                .offset(x: fen.midX, y: fen.midY)
+            PageEnVol(q: q, fenetre: fen)
+        }
+    }
+}
+
+/// LA FENÊTRE PAPIER — le rectangle réel du papier dans la plaque ouverte,
+/// MESURÉ par la sonde mesure_fenetres.py (arêtes au gradient, coins par
+/// cercles ajustés) : jamais des insets devinés — c'est l'inset deviné qui
+/// faisait la page-widget posée sur le livre. Coordonnées depuis le CENTRE
+/// de l'objet, pour une hauteur d'objet étalon de 248 pt.
+struct FenetrePage {
+    /// La page droite : papier x [+1,40 … +151,53], y [−123,29 … +123,52],
+    /// gouttière à +1,40 du centre, coins extérieurs ~10 / 8,9 pt.
+    static func droite(hauteur h: CGFloat) -> CGRect {
+        let k = h / 248.0
+        return CGRect(x: 1.40 * k, y: -123.29 * k,
+                      width: 150.14 * k, height: 246.81 * k)
+    }
+}
+
+/// La page en vol : un layer à DEUX faces — moitié droite le recto (papier
+/// synthétique raccordé à la plaque + contenu), moitié gauche le VERSO nu
+/// pré-composé à sa position d'atterrissage — remappé par `tournePageV2`.
+/// Les zones désertées sortent en ombre-alpha ou transparentes : la page
+/// de dessous apparaît toute seule. `Animatable` sur q — le ressort de
+/// l'aimant joue dans le shader.
+struct PageEnVol: View, Animatable {
+    var q: CGFloat
+    let fenetre: CGRect
+    var contenu = PageSession()
+
+    var animatableData: CGFloat {
+        get { q } set { q = newValue }
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            PapierPage(gouttiereADroite: true)
+                .frame(width: fenetre.width)
+            ZStack {
+                PapierPage(gouttiereADroite: false)
+                contenu
+            }
+            .frame(width: fenetre.width)
+        }
+        .frame(width: fenetre.width * 2, height: fenetre.height)
+        .compositingGroup()
+        .layerEffect(ShaderLibrary.tournePageV2(
+            .float2(fenetre.width * 2, fenetre.height),
+            .float(Float(q))),
+            maxSampleOffset: CGSize(width: fenetre.width * 2, height: 0))
+        .allowsHitTesting(false)
+        // Le centre du layer EST la gouttière : la feuille est épinglée là.
+        .offset(x: fenetre.minX, y: fenetre.midY)
+    }
+}
+
+/// LE PAPIER SYNTHÉTIQUE de la feuille en vol — calé sur les MESURES du
+/// papier de la plaque (neutre, L 40→24/255 vertical, puits de gouttière
+/// ~22 pt, grain 0,05) : le raccord posé ↔ vol se joue à moins de 2/255,
+/// sinon on voit le swap au départ de la tourne. Coins mesurés 10/8,9 pt
+/// côté tranche, vifs côté reliure.
+struct PapierPage: View {
+    /// Le verso posé porte sa reliure à DROITE (il a été retourné).
+    var gouttiereADroite = false
+
+    var body: some View {
+        let forme = UnevenRoundedRectangle(
+            topLeadingRadius: gouttiereADroite ? 10 : 0,
+            bottomLeadingRadius: gouttiereADroite ? 9 : 0,
+            bottomTrailingRadius: gouttiereADroite ? 0 : 9,
+            topTrailingRadius: gouttiereADroite ? 0 : 10,
+            style: .continuous)
+        ZStack {
+            LinearGradient(colors: [Color(white: 0.157),
+                                    Color(white: 0.094)],
+                           startPoint: .top, endPoint: .bottom)
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05)
+                .blendMode(.overlay)
+        }
+        .overlay(alignment: gouttiereADroite ? .trailing : .leading) {
+            LinearGradient(
+                colors: gouttiereADroite
+                    ? [.clear, .black.opacity(0.50)]
+                    : [.black.opacity(0.50), .clear],
+                startPoint: .leading, endPoint: .trailing)
+                .frame(width: 22)
+        }
+        .clipShape(forme)
+    }
+}
+
+/// LA PAGE DE SESSION — le contenu NU posé sur le papier (la partition du
+/// 19-08) : AUCUN fond, aucun coin, aucune bordure — le papier de la
+/// plaque EST le sol, la hiérarchie vit par la lumière (la loi du bac à
+/// vinyles). La date est le titre ET le folio ; le sticker vit en BAS,
+/// artwork, jamais mascotte centrée ; l'or reste l'or.
+struct PageSession: View {
+    var date = "18. Août"
+    var mesures = "5 séries · 60 reps"
+    var sticker = "sticker-flamme"
+    var pieces = 100
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(date)
+                .font(.inter(16, .semibold))
+                .tracking(0.2)
+                .foregroundStyle(Color.inkPrimary)
+            Text(mesures)
+                .font(.inter(11))
+                .foregroundStyle(Color.inkMuted)
+                .padding(.top, 3)
+
+            Spacer(minLength: 0)
+
+            HStack(alignment: .bottom, spacing: 0) {
+                Image(sticker)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 54, height: 54)
+                    // La seule licence matière : l'ombre de contact — le
+                    // papier est à 32/255, pas à 0 : elle « colle »
+                    // l'autocollant. Pas plus fort, sinon cartoon.
+                    .shadow(color: .black.opacity(0.35), radius: 2.5, y: 1)
+                Spacer(minLength: 6)
+                // Un chiffre ne se plie JAMAIS (payé : « +100 » wrappé en
+                // colonne — la rangée dépassait la fenêtre de 20 pt).
+                HStack(spacing: 4) {
+                    Text("+\(pieces)")
+                        .font(.inter(12.5, .semibold))
+                        .foregroundStyle(Color.woopGold)
+                        .lineLimit(1)
+                        .fixedSize()
+                    Image("piece-woop")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                }
+            }
+        }
+        // La reliure est à GAUCHE : le texte sort de la pénombre de
+        // gouttière (leading 24) et respire moins côté tranche (16).
+        .padding(EdgeInsets(top: 22, leading: 24, bottom: 20, trailing: 16))
     }
 }
 
