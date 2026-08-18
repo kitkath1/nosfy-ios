@@ -191,6 +191,10 @@ struct RootView: View {
     /// `-boosterStill` fige le flottement, `-boosterTear <s>` fige une
     /// découpe entamée, `-boosterOpen` démarre carte présentée.
     private static let boosterLab = CommandLine.arguments.contains("-boosterLab")
+    /// Banc du carnet de cuir : `-carnetLab` — le carnet relié de la
+    /// collection d'entraînements (chantier 18-08). `-carnetOuvert` montre
+    /// la double page, `-carnetCote` le trois-quarts.
+    private static let carnetLab = CommandLine.arguments.contains("-carnetLab")
     @State private var showSplash = true
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
@@ -332,6 +336,8 @@ struct RootView: View {
             ProfilLab()
         } else if Self.boosterLab {
             BoosterLab()
+        } else if Self.carnetLab {
+            CarnetLab()
         } else if Self.buttonLab {
             ConnexionButtonLab()
         } else if Self.cardLab {
