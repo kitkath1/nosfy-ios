@@ -26,7 +26,10 @@ struct StopSessionSheet: View {
     @State private var pull: CGFloat = 0
     /// L'entrée : le panneau naît sous le bord et monte en ressort.
     @State private var posee = false
-    @State private var born: Date = .now
+    /// La petite caméra du header, posée en one-shot — AUCUNE horloge :
+    /// une TimelineView 60 Hz re-cadrait la couche vidéo à chaque frame
+    /// pour une pose finie en 2 s (le lag payé au premier montage).
+    @State private var camPosee = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Coins hauts seuls — le bas appartient à l'écran (le CADRE
@@ -142,41 +145,40 @@ struct StopSessionSheet: View {
 
     // MARK: La vidéo pause et sa petite caméra
 
-    /// La caméra entre par la GÉOMÉTRIE du cadre (l'école BravoCine),
-    /// posée en ~1,8 s — une présence, pas un plan. La source est sur du
-    /// noir : en ADDITIF le noir disparaît, il ne reste que la lumière
-    /// sur la nuit du panneau.
+    /// La caméra entre par la GÉOMÉTRIE, en ONE-SHOT : un scale qui se
+    /// pose (traîne longue) et un fondu court — deux animations, zéro
+    /// horloge. La source est sur du noir : en ADDITIF le noir
+    /// disparaît, il ne reste que la lumière sur la nuit du panneau.
     private func pauseHeader(W: CGFloat, slotH: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                paused: reduceMotion)) { tl in
-            let e = tl.date.timeIntervalSince(born)
-            let z: CGFloat = reduceMotion ? 1 : 1 + 0.12 * exp(-e * 1.9)
-            let fadeIn = min(1, max(e, 0) / 0.45)
-            PauseLoopVideo()
-                // La source est large (16:9) : la hauteur commande.
-                // 1,32 : « grossis un peu plus » (verdict 18-08).
-                .frame(width: slotH * (16.0 / 9.0) * 1.32 * z,
-                       height: slotH * 1.32 * z)
-                // LE FONDU DE BORD : la nébuleuse est éclairée jusqu'aux
-                // bords — l'additif n'efface que le noir, le rectangle
-                // se voyait. Le centre reste, les bords fondent.
-                .mask {
-                    EllipticalGradient(
-                        stops: [
-                            .init(color: .white, location: 0.36),
-                            .init(color: .clear, location: 0.88),
-                        ],
-                        center: .center,
-                        startRadiusFraction: 0,
-                        endRadiusFraction: 0.72)
-                }
-                .blendMode(.plusLighter)
-                .offset(y: 8)
-                .frame(width: W, height: slotH)
-                .clipped()
-                .opacity(fadeIn)
-        }
-        .frame(height: slotH)
+        PauseLoopVideo()
+            // La source est large (16:9) : la hauteur commande.
+            // 1,32 : « grossis un peu plus » (verdict 18-08).
+            .frame(width: slotH * (16.0 / 9.0) * 1.32,
+                   height: slotH * 1.32)
+            // LE FONDU DE BORD : la nébuleuse est éclairée jusqu'aux
+            // bords — l'additif n'efface que le noir, le rectangle
+            // se voyait. Le centre reste, les bords fondent.
+            .mask {
+                EllipticalGradient(
+                    stops: [
+                        .init(color: .white, location: 0.36),
+                        .init(color: .clear, location: 0.88),
+                    ],
+                    center: .center,
+                    startRadiusFraction: 0,
+                    endRadiusFraction: 0.72)
+            }
+            .blendMode(.plusLighter)
+            .scaleEffect((camPosee || reduceMotion) ? 1.0 : 1.12)
+            .animation(.timingCurve(0.16, 0.6, 0.3, 1, duration: 1.8),
+                       value: camPosee)
+            .opacity(camPosee ? 1 : 0)
+            .animation(.easeOut(duration: 0.45), value: camPosee)
+            .offset(y: 8)
+            .frame(width: W, height: slotH)
+            .clipped()
+            .onAppear { camPosee = true }
+            .frame(height: slotH)
     }
 
     /// « Déjà 3 séries validées · 2 exercices · 23 min — tout est

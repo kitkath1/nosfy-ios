@@ -32,11 +32,6 @@ struct WorkoutPill: View {
     var doneSeries: Int = 0
     var exoCount: Int = 0
 
-    /// Pause : PLACEHOLDER assumé — l'état est purement visuel, le
-    /// branchement viendra avec le vrai flux de séance.
-    @State private var paused = false
-    /// La bouffée de fumée du tap — née au toucher, morte 1,6 s après.
-    @State private var smokeAt: Date?
     /// LE STOP POSE LA QUESTION (18-08) : le panneau « Terminer la
     /// session ? » vit DANS la dalle — un seul câblage, tous les hôtes
     /// (fiche exo, calendrier, page exercice) l'ont d'un coup.
@@ -82,19 +77,11 @@ struct WorkoutPill: View {
 
             Spacer(minLength: 8)
 
+            // UN SEUL bouton, le stop (verdict 18-08 : « finalement il
+            // n'y a que le stop ») — la pause-placeholder est morte.
             if docked {
-                // Les boutons-médaillons : play/stop en crème, PAUSE en
-                // néon orange sobre — et au tap, la bouffée de fumée.
-                medallionButton(paused ? "play.fill" : "pause.fill",
-                                neon: !paused) {
-                    paused.toggle()
-                    souffleTap()
-                }
                 medallionButton("stop.fill") { stopAsk = true }
             } else {
-                roundButton(paused ? "play.fill" : "pause.fill") {
-                    paused.toggle()
-                }
                 roundButton("stop.fill") { stopAsk = true }
             }
         }
@@ -144,22 +131,6 @@ struct WorkoutPill: View {
                 .frame(height: 2.5)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 7)
-            }
-        }
-        // LA BOUFFÉE : la fumée du coffre, palette de nuit, née au tap du
-        // pause et morte 1,6 s plus tard — au-dessus de tout, sourde.
-        .overlay {
-            if let s = smokeAt {
-                GeometryReader { g in
-                    CoinSmoke(center: CGPoint(
-                                  x: g.size.width - 16 - 34 - 12 - 17,
-                                  y: g.size.height / 2 + (docked ? 5 : 0)),
-                              radius: 15,
-                              start: s,
-                              end: s.addingTimeInterval(0.28),
-                              palette: .dark)
-                }
-                .allowsHitTesting(false)
             }
         }
         .contentShape(docked ? AnyShape(dockShape) : AnyShape(shape))
@@ -375,18 +346,6 @@ struct WorkoutPill: View {
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-    }
-
-    /// Au tap du pause : la fumée s'échappe — puis tout se range, une
-    /// bouffée n'est pas un état.
-    private func souffleTap() {
-        smokeAt = .now
-        Task {
-            try? await Task.sleep(for: .seconds(1.6))
-            if let s = smokeAt, Date().timeIntervalSince(s) > 1.4 {
-                smokeAt = nil
-            }
-        }
     }
 
     private func roundButton(_ symbol: String,
