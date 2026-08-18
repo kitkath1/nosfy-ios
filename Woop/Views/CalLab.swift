@@ -29,6 +29,12 @@ private struct GlassTuning {
     var edgeAlpha: Double
     var glowOpacity: Double
     var corner: Double
+    /// Le DÉBORD du rim : 0 = le bourrelet de réfraction vit au bord
+    /// haut (la signature « liquid »), 64 = poussé hors écran.
+    var rim: Double
+    /// Le voile noir sur la vidéo d'ambiance — le verre ne vit que de
+    /// ce qu'il réfracte, la scène se dose.
+    var veil: Double
 
     var teinte: Color { Color(white: tintWhite).opacity(tintAlpha) }
     var verre: Glass {
@@ -53,11 +59,15 @@ struct CalendarStickersPage: View {
     @State private var pushEdge: Edge = .trailing
     /// Le tirage direct sur la carte, en points (0 hors geste).
     @State private var cardDrag: CGFloat = 0
-    /// LE REPOS EST REPLIÉ (verdict 18-08) : on arrive sur la semaine
-    /// compacte + les 2 cartes KPI ; le tirage de la carte déplie le
-    /// mois qui prend PHYSIQUEMENT la place des KPI. Le curseur est le
-    /// drag de la carte — le scroll redevient un simple scroll.
-    @State private var deployed = false
+    /// LE SCROLL EST LE CURSEUR, deux courses (refonte bac, 18-08) :
+    /// repos = calendrier DÉPLIÉ ; course 1 = le morph grand → mini ;
+    /// course 2 = la mini-barre s'efface, le titre « Calendrier » prend
+    /// la page, le bac règne. L'offset vit dans le repère de
+    /// l'ESPACEUR : repos = 0 (la leçon payée des marges).
+    @State private var scrollPos = ScrollPosition()
+    @State private var scrollY: CGFloat?
+    /// La pochette au centre — l'haptique du feuilletage.
+    @State private var centre = 0
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -82,11 +92,14 @@ struct CalendarStickersPage: View {
     @AppStorage("calEdge") private var tEdge = 0.06
     @AppStorage("calGlow") private var tGlow = 1.0
     @AppStorage("calCorner") private var tCorner = 40.0
+    @AppStorage("calRim") private var tRim = 0.0
+    @AppStorage("calVeil") private var tVeil = 0.52
 
     private var tuning: GlassTuning {
         GlassTuning(clearGlass: tClear, tintWhite: tTintW,
                     tintAlpha: tTintA, interactive: tInter,
-                    edgeAlpha: tEdge, glowOpacity: tGlow, corner: tCorner)
+                    edgeAlpha: tEdge, glowOpacity: tGlow, corner: tCorner,
+                    rim: tRim, veil: tVeil)
     }
 
     /// Démo du player : la séance a commencé il y a 23 minutes.
@@ -109,28 +122,43 @@ struct CalendarStickersPage: View {
             let slots = CalSlot.month(of: monthAnchor, calendar: calendar)
             let rowCount = (slots.last?.row ?? 4) + 1
             let expandedH = geo.expandedH(rows: rowCount)
-            let course = max(1, expandedH - geo.collapsedH)
-            let p = rubber((deployed ? 1 : 0) + cardDrag / course)
+            let course1 = max(1, expandedH - geo.collapsedH)
+            let course2: CGFloat = 96
+            let rel = scrollY ?? 0
+            let p = rubber(max(0, 1 - rel / course1) + cardDrag / course1)
+            let p2 = min(1, max(0, (rel - course1) / course2))
 
             ZStack(alignment: .top) {
                 Color.black
                 // LA VIDÉO D'AMBIANCE : le palindrome pré-encodé (aller +
                 // retour dans le fichier — la couture n'existe pas), en
-                // boucle muette sous un voile qui garde les textes
-                // lisibles. Le verre de la carte y gagne une scène.
+                // boucle muette sous un voile réglable. Le verre de la
+                // carte y gagne une scène.
                 FondCalendrier()
                     .allowsHitTesting(false)
-                Color.black.opacity(0.52)
+                Color.black.opacity(tuning.veil)
                     .allowsHitTesting(false)
-                sessionList(geo: geo, expandedH: expandedH, p: p)
+                bac(geo: geo, inset: expandedH + 14,
+                    course1: course1, course2: course2,
+                    H: host.size.height,
+                    // LE WIPE : le blur culmine à mi-course de la
+                    // disparition et meurt aux deux poses.
+                    wipe: CGFloat(sin(.pi * Double(p2))))
                 // LA SCÈNE : la source braise hors cadre du header exo,
-                // DERRIÈRE le verre — sans lumière à réfracter, le liquid
-                // glass n'est qu'une plaque grise. Posée au-dessus de la
-                // liste : les cards s'éclairent en passant dessous.
+                // DERRIÈRE le verre.
                 ExoHeaderGlow(height: 380)
                     .opacity(tuning.glowOpacity)
+                    .allowsHitTesting(false)
+                // ÉTAT BAC : le grand titre prend la relève de la carte —
+                // le chevron de sortie ne meurt jamais.
+                enTeteBac(safeTop: geo.safeTop, p2: p2)
                 card(geo: geo, slots: slots, rowCount: rowCount,
-                     p: p, course: course)
+                     p: p, course: course1)
+                    .opacity(1 - Double(min(1, p2 * 1.3)))
+                    // La carte S'ENFUIT dans le flou du wipe.
+                    .blur(radius: CGFloat(sin(.pi * Double(p2))) * 10)
+                    .offset(y: -22 * p2)
+                    .allowsHitTesting(p2 < 0.4)
                 // L'ARDOISE de la fiche exo, entière : la dalle fondue au
                 // bord physique, qu'on tire vers le haut pour la
                 // partition de la séance.
@@ -155,7 +183,18 @@ struct CalendarStickersPage: View {
                     showTune.toggle()
                 }
             }, isEnabled: Self.tuneEnabled)
-            .task { await autoDeploy() }
+            // LE DEBUG DU VERRE revient partout, par un geste qui ne
+            // peut voler AUCUN tap (la leçon du double-tap payée) :
+            // l'appui long ouvre la console.
+            .onLongPressGesture(minimumDuration: 0.6) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showTune.toggle()
+                }
+            }
+            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5),
+                             trigger: centre)
+            .task { await autoParcours(course1: course1,
+                                       course2: course2) }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
                 StoryPortal(from: launch.rect, session: launch.session) {
@@ -246,146 +285,170 @@ struct CalendarStickersPage: View {
         }
     }
 
-    /// Le drag direct sur la carte EST le curseur : tirée, elle se
-    /// déplie ; relâchée, l'aimant tranche (jamais à mi-course).
+    /// Le drag direct sur la carte nourrit le même curseur que le
+    /// scroll : la fin de geste se règle en `scrollTo` (même repère,
+    /// l'espaceur), l'aimant tranche.
     private func cardGesture(course: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { v in
-                // Un repli qui part d'un autre mois se recale sur le mois
-                // courant : la rangée mini montre TOUJOURS la semaine
-                // d'aujourd'hui.
-                if cardDrag == 0, deployed, !anchorIsCurrent {
+                // Un repli qui part d'un autre mois se recale sur le
+                // mois courant : la rangée mini montre TOUJOURS la
+                // semaine d'aujourd'hui.
+                if cardDrag == 0, (scrollY ?? 0) > course * 0.5,
+                   !anchorIsCurrent {
                     monthAnchor = Date()
                 }
                 cardDrag = v.translation.height
             }
             .onEnded { v in
-                let base: CGFloat = deployed ? 1 : 0
+                let base = max(0, 1 - (scrollY ?? 0) / course)
                 let projected = base
                     + v.predictedEndTranslation.height / course
-                let target = projected > 0.5
-                if !target, !anchorIsCurrent { monthAnchor = Date() }
+                let deploy = projected > 0.5
+                if !deploy, !anchorIsCurrent { monthAnchor = Date() }
+                cardDrag = 0
                 withAnimation(.spring(response: 0.46,
                                       dampingFraction: 0.85)) {
-                    deployed = target
-                    cardDrag = 0
+                    scrollPos.scrollTo(y: deploy ? 0 : course)
                 }
             }
     }
 
-    // MARK: La liste des sessions
+    // MARK: Le bac à pochettes
 
-    /// Repliée : les 2 cartes KPI puis toutes les sessions. Dépliée :
-    /// les KPI ont FONDU pendant le tirage (opacité + léger scale), le
-    /// mois a pris physiquement leur place, et la liste ne montre plus
-    /// que les sessions du mois affiché.
-    private func sessionList(geo: CalGeo, expandedH: CGFloat,
-                             p: CGFloat) -> some View {
-        let fade = min(1, max(0, p * 1.6))
-        // La place que le mois réclame sous les KPI : à p=1, le haut de
-        // la liste vit exactement sous la carte dépliée. (Les écarts
-        // respirent depuis le 18-08 : +16 sous la barre, +18 avant la
-        // liste — la constante suit.)
-        let kpiZone: CGFloat = 158
-        let push = max(0, (expandedH - geo.collapsedH - kpiZone) * p)
-        let sessions = deployed
-            ? DemoSession.recent(calendar: calendar).filter {
-                calendar.isDate($0.date, equalTo: monthAnchor,
-                                toGranularity: .month)
-            }
-            : DemoSession.recent(calendar: calendar)
+    /// LA PILE (réf. Analytics, verdict 18-08) : les pochettes se
+    /// CHEVAUCHENT — celles qui sont passées s'empilent en BANDEAUX
+    /// au-dessus de la ligne de front (tirées vers elle, inclinées en
+    /// avant, chacune ne montrant que sa date), la pochette de front
+    /// est PLEIN FACE, entière. Le blur ne vit QUE dans le wipe de
+    /// transition (fonction de p2 en vol : il culmine à mi-course et
+    /// meurt à la pose — l'aimant interdit le repos entre deux états).
+    private func bac(geo: CalGeo, inset: CGFloat,
+                     course1: CGFloat, course2: CGFloat,
+                     H: CGFloat, wipe: CGFloat) -> some View {
+        let sessions = DemoSession.recent(calendar: calendar)
+        let cardH: CGFloat = 470
+        let pas: CGFloat = 482 // la pochette + son souffle
+        let bandeau: CGFloat = 64 // ce qu'une pochette passée laisse voir
+        let focus = H * 0.50
         return ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10) {
-                Color.clear.frame(height: geo.collapsedH + 16)
-                kpiRow
-                    .opacity(1 - Double(fade))
-                    .scaleEffect(1 - 0.04 * fade)
-                Color.clear.frame(height: 8 + push)
-                Text("SESSIONS D'ENTRAÎNEMENT")
-                    .font(.inter(11, .semibold)).tracking(1.6)
-                    .foregroundStyle(Color.inkSecondary)
-                    .padding(.leading, 6)
-                    .padding(.bottom, 2)
+            LazyVStack(spacing: 12) {
+                // L'ESPACEUR, pas une marge : repos = offset 0, le
+                // repère que scrollTo et l'aimant partagent (leçon payée).
+                Color.clear.frame(height: inset - 12)
                 ForEach(sessions) { s in
-                    SessionRow(session: s,
-                               flashing: flashRow == s.date,
-                               onTap: { rect in openStory(row: s, rect: rect) })
+                    SessionVinyle(session: s,
+                                  flashing: flashRow == s.date,
+                                  onTap: { r in openStory(row: s, rect: r) })
+                        .frame(height: cardH)
+                        .visualEffect { content, proxy in
+                            let f = proxy.frame(
+                                in: .scrollView(axis: .vertical))
+                            // d en unités de pochette : 0 = au front,
+                            // négatif = déjà passée (elle s'empile).
+                            let d = (f.midY - focus) / pas
+                            // Les deux régimes ne diffèrent que par
+                            // leurs PARAMÈTRES — une seule chaîne de
+                            // retour, sinon le type-checker s'enlise.
+                            let tilt: Double
+                            let tire: CGFloat
+                            let taille: CGFloat
+                            let flou: CGFloat
+                            let alpha: Double
+                            if d >= 0 {
+                                // En approche : légère inclinaison qui
+                                // meurt au front — la pochette se
+                                // REDRESSE en arrivant.
+                                let c: CGFloat = min(d, 1.4)
+                                tilt = Double(c) * 9
+                                tire = 0
+                                taille = 1 - min(c, 1) * 0.03
+                                flou = wipe * 14
+                                alpha = 1
+                            } else {
+                                // Passée : TIRÉE vers l'étagère du haut,
+                                // il ne reste que son bandeau — la pile
+                                // de la référence. L'étagère a un
+                                // PLAFOND : au-delà d'un bandeau la pile
+                                // se compresse (pas de 10 pt) et
+                                // s'éteint vite — sinon elle grimpe
+                                // dans le titre. Et tout est CONTINU en
+                                // n = 0 : pas de claquement au
+                                // franchissement du front.
+                                let n: CGFloat = -d
+                                let prof: CGFloat = min(n, 4.0)
+                                let surplus: CGFloat = max(0.0, n - 1.3)
+                                let etage: CGFloat = min(n, 1.3)
+                                let shelf: CGFloat =
+                                    bandeau * etage + surplus * 10.0
+                                let entree: Double = Double(min(n * 3.0, 1.0))
+                                tilt = -14.0 * entree - Double(prof) * 2.0
+                                tire = n * pas - shelf
+                                taille = 1.0 - prof * 0.035
+                                flou = wipe * 14.0 + prof * 0.4
+                                let fondu: CGFloat = max(0.0, n - 0.5)
+                                let vie: CGFloat =
+                                    1.0 - fondu * 0.11 - surplus * 0.5
+                                alpha = Double(max(0.0, vie))
+                            }
+                            return content
+                                .offset(y: tire)
+                                .rotation3DEffect(
+                                    .degrees(tilt),
+                                    axis: (x: 1, y: 0, z: 0),
+                                    perspective: 0.55)
+                                .scaleEffect(taille)
+                                .blur(radius: flou)
+                                .opacity(alpha)
+                        }
                 }
             }
-            .padding(.horizontal, 14)
+            .scrollTargetLayout()
+            .padding(.horizontal, 16)
         }
         .scrollIndicators(.hidden)
-        // L'air du bas : la dalle-player (76) + la zone sûre + du souffle.
-        .contentMargins(.bottom, 134, for: .scrollContent)
-    }
-
-    // MARK: Les cartes KPI
-
-    /// Deux tuiles noir pur, quasi widget — le pouls immédiat, sans
-    /// gadget (les stickers animés = « cheap », retirés le 18-08).
-    private var kpiRow: some View {
-        HStack(spacing: 10) {
-            KPICard(titre: "CETTE SEMAINE",
-                    valeur: "\(kpiSemaine) / 6",
-                    sous: "Séances réalisées",
-                    delta: kpiDeltaSemaine)
-            KPICard(titre: "CE MOIS-CI",
-                    valeur: "\(kpiMois)",
-                    sous: "Entraînements",
-                    delta: kpiDeltaMois)
+        .contentMargins(.bottom, 140, for: .scrollContent)
+        // LE FONDU DU HAUT : la pile ne perce jamais la barre d'état.
+        .mask {
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0.0),
+                .init(color: .black, location: 0.055),
+                .init(color: .black, location: 1.0),
+            ], startPoint: .top, endPoint: .bottom)
+            .ignoresSafeArea()
         }
-        .frame(height: 116)
-    }
-
-    /// Les chiffres de démo, dérivés du MÊME hash que les stickers de
-    /// la grille — tout reste cohérent avec le calendrier.
-    private var kpiSemaine: Int {
-        let start = calendar.dateInterval(of: .weekOfYear,
-                                          for: Date())?.start ?? Date()
-        return joursEntraines(depuis: start, jours: 7)
-    }
-
-    private var kpiDeltaSemaine: String {
-        let start = calendar.dateInterval(of: .weekOfYear,
-                                          for: Date())?.start ?? Date()
-        guard let avant = calendar.date(byAdding: .day, value: -7,
-                                        to: start) else { return "" }
-        let d = kpiSemaine - joursEntraines(depuis: avant, jours: 7)
-        return d == 0 ? "= vs sem. dernière"
-            : String(format: "%+d vs sem. dernière", d)
-    }
-
-    private var kpiMois: Int {
-        guard let interval = calendar.dateInterval(of: .month, for: Date())
-        else { return 0 }
-        let n = calendar.range(of: .day, in: .month, for: Date())?.count ?? 30
-        return joursEntraines(depuis: interval.start, jours: n)
-    }
-
-    private var kpiDeltaMois: String {
-        guard let moisAvant = calendar.date(byAdding: .month, value: -1,
-                                            to: Date()),
-              let interval = calendar.dateInterval(of: .month,
-                                                   for: moisAvant)
-        else { return "" }
-        let n = calendar.range(of: .day, in: .month,
-                               for: moisAvant)?.count ?? 30
-        let avant = joursEntraines(depuis: interval.start, jours: n)
-        guard avant > 0 else { return "" }
-        let pct = Int((Double(kpiMois - avant) / Double(avant) * 100)
-            .rounded())
-        return pct == 0 ? "= vs mois dernier"
-            : String(format: "%+d %% vs mois dernier", pct)
-    }
-
-    private func joursEntraines(depuis start: Date, jours: Int) -> Int {
-        (0..<jours).reduce(0) { acc, off in
-            guard let d = calendar.date(byAdding: .day, value: off,
-                                        to: start) else { return acc }
-            return acc + (WoopSticker.demoCategory(for: d,
-                                                   calendar: calendar) != nil
-                ? 1 : 0)
+        .scrollPosition($scrollPos)
+        // UNE sonde — l'offset brut EST le curseur ; elle nourrit aussi
+        // l'haptique du feuilletage.
+        .onScrollGeometryChange(for: CGFloat.self,
+                                of: { $0.contentOffset.y }) { _, y in
+            scrollY = y
+            let idx = max(0, Int(((y - course1 - course2) / pas)
+                .rounded()))
+            if idx != centre { centre = idx }
         }
+        .scrollTargetBehavior(BacAimant(course1: course1,
+                                        course2: course2, pas: pas))
+    }
+
+    /// L'en-tête de l'état BAC : le titre « Calendrier » et le chevron
+    /// de sortie — il ne meurt jamais. Le titre S'AFFÛTE en arrivant :
+    /// flou pendant le wipe, net à la pose.
+    private func enTeteBac(safeTop: CGFloat, p2: CGFloat) -> some View {
+        HStack(spacing: 14) {
+            ChipVerre(symbole: "chevron.left", label: "Retour",
+                      action: onBack)
+            Text("Calendrier")
+                .font(.inter(30, .bold)).tracking(-0.4)
+                .foregroundStyle(WoopGradient.titleFade)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, safeTop + 6)
+        .opacity(Double(p2))
+        .blur(radius: (1 - p2) * 6)
+        .offset(y: (1 - p2) * 12)
+        .allowsHitTesting(p2 > 0.6)
     }
 
     // MARK: La console du verre
@@ -404,6 +467,8 @@ struct CalendarStickersPage: View {
             tuneRow("LISERÉ", $tEdge, 0...0.3)
             tuneRow("SCÈNE", $tGlow, 0...1.5)
             tuneRow("RAYON", $tCorner, 12...64, fmt: "%.0f")
+            tuneRow("RIM (débord)", $tRim, 0...64, fmt: "%.0f")
+            tuneRow("VOILE VIDÉO", $tVeil, 0.2...0.9)
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -445,13 +510,23 @@ struct CalendarStickersPage: View {
 
     // MARK: La boucle vidéo
 
-    private func autoDeploy() async {
+    private func autoParcours(course1: CGFloat,
+                              course2: CGFloat) async {
         guard autoLoop else { return }
+        // Les arrêts du bac se posent sur de VRAIES poses de l'aimant
+        // (multiples du pas de pochette) : entre deux poses la carte de
+        // front est translucide et penchée — c'est un état de VOL,
+        // jamais un repos.
+        let arrets: [CGFloat] = [0, course1,
+                                 course1 + course2 + 482,
+                                 course1 + course2 + 964,
+                                 course1, 0]
+        var i = 0
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 2_200_000_000)
-            if deployed, !anchorIsCurrent { monthAnchor = Date() }
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) {
-                deployed.toggle()
+            try? await Task.sleep(nanoseconds: 2_400_000_000)
+            i = (i + 1) % arrets.count
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.9)) {
+                scrollPos.scrollTo(y: arrets[i])
             }
         }
     }
@@ -467,55 +542,6 @@ private struct CalStoryLaunch: Identifiable {
     let session: StorySession
 }
 
-
-// MARK: - La tuile KPI
-
-/// Une tuile très noire, quasi widget : le titre en capitales, le grand
-/// chiffre, le sous-texte, la progression — et le sticker VIVANT posé
-/// dans le coin (la flamme respire, le bras se balance : deux
-/// `repeatForever`, la grammaire de la lueur du player, aucune horloge).
-private struct KPICard: View {
-    let titre: String
-    let valeur: String
-    let sous: String
-    let delta: String
-
-    private let forme = RoundedRectangle(cornerRadius: 20, style: .continuous)
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(titre)
-                .font(.inter(10, .semibold)).tracking(1.4)
-                .foregroundStyle(Color.inkSecondary)
-            Spacer(minLength: 0)
-            Text(valeur)
-                .font(.inter(25, .bold)).tracking(-0.4)
-                .foregroundStyle(Color.inkPrimary)
-            Text(sous)
-                .font(.inter(11))
-                .foregroundStyle(Color.inkMuted)
-            Text(delta)
-                .font(.inter(11, .medium))
-                .foregroundStyle(Color.woopGold.opacity(0.9))
-                .padding(.top, 1)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity,
-               alignment: .leading)
-        // NOIR PUR (verdict 18-08) : sur la vidéo d'ambiance, les tuiles
-        // sont des fenêtres de nuit découpées — la loi de la famille
-        // diamant.
-        .background(forme.fill(Color.black))
-        // Le liseré qui meurt vers le bas — la grammaire des rows.
-        .overlay(forme.strokeBorder(
-            LinearGradient(stops: [
-                .init(color: .white.opacity(0.09), location: 0),
-                .init(color: .white.opacity(0.03), location: 0.5),
-                .init(color: .white.opacity(0.01), location: 1),
-            ], startPoint: .top, endPoint: .bottom),
-            lineWidth: 1))
-    }
-}
 
 // MARK: - Le fond vidéo
 
@@ -714,14 +740,16 @@ private struct CardMorph: View, Animatable {
             // (le blur plat) et n'en revient pas — le bug « ça a marché
             // puis c'est redevenu blur ». Seule la FENÊTRE de clip
             // s'anime.
-            // ET LE BORD HAUT VIT HORS ÉCRAN : le rim spéculaire du
-            // verre système ne s'éteint par aucune API — on pousse le
-            // haut de la forme au-dessus du bord physique (coins
-            // compris), le clip coupe net : le liseré sans haut.
+            // ET LE DÉBORD DU BORD HAUT SE DOSE : le rim spéculaire du
+            // verre système ne s'éteint par aucune API — mais ce
+            // bourrelet EST la signature « liquid » (verdict 18-08 : le
+            // pousser entièrement hors écran tue le verre). La molette
+            // RIM règle le débord : 0 = bourrelet au bord, 64 = l'ancien
+            // hors-écran intégral (coins compris), le clip coupe net.
             Color.clear
-                .frame(height: full + corner + 24)
+                .frame(height: full + CGFloat(tuning.rim))
                 .glassEffect(tuning.verre, in: shape)
-                .offset(y: -(corner + 24))
+                .offset(y: -CGFloat(tuning.rim))
             // Les couches en `plusLighter` vivent dans LEUR groupe : un
             // blend qui remonte jusqu'au frère verre le force hors-écran
             // et le tue. Le chevron (son propre verre) reste DEHORS.
@@ -990,73 +1018,99 @@ private struct StickerDayCell: View {
     }
 }
 
-// MARK: - La carte d'une session
+// MARK: - L'aimant du bac
 
-/// La rangée de la liste — l'obsidienne de la dalle : le badge-date de
-/// verre au liseré premium, le nom, séries · reps (+ mini basket si
-/// cardio), et les pièces gagnées à droite (20 par série faite).
-private struct SessionRow: View {
+/// Trois bandes : le morph grand→mini (0 / course1), l'effacement
+/// mini→titre (course1 / course1+course2), puis le bac — la pochette
+/// s'aligne à son pas. Jamais un repos à mi-course.
+private struct BacAimant: ScrollTargetBehavior {
+    var course1: CGFloat
+    var course2: CGFloat
+    var pas: CGFloat
+
+    func updateTarget(_ target: inout ScrollTarget,
+                      context: TargetContext) {
+        let rel = target.rect.origin.y
+        if rel <= 0 { return }
+        if rel < course1 {
+            target.rect.origin.y = rel < course1 / 2 ? 0 : course1
+        } else if rel < course1 + course2 {
+            target.rect.origin.y = rel < course1 + course2 / 2
+                ? course1 : course1 + course2
+        } else {
+            let base = rel - course1 - course2
+            target.rect.origin.y = course1 + course2
+                + (base / pas).rounded() * pas
+        }
+    }
+}
+
+// MARK: - La pochette vinyle
+
+/// UNE SESSION = UNE POCHETTE. Noir vinyle plein écran, ZÉRO bordure
+/// (la hiérarchie par la lumière, pas par un trait) : la date
+/// typographiée « 18. Août » en haut-gauche, séries · reps dessous, le
+/// STICKER en artwork au bas, les pièces en face. Le grain fait la
+/// matière, un sheen discret fait le sillon. Tap = la story.
+private struct SessionVinyle: View {
     let session: DemoSession
-    /// Le flash au tap — la row s'illumine l'instant avant la story.
     var flashing = false
-    /// Le tap : rend le rect ÉCRAN de la row pour le portail.
     var onTap: ((CGRect) -> Void)? = nil
 
-    private let forme = RoundedRectangle(cornerRadius: 22, style: .continuous)
+    private let forme = RoundedRectangle(cornerRadius: 26,
+                                         style: .continuous)
 
     var body: some View {
-        HStack(spacing: 14) {
-            dateBadge
-            VStack(alignment: .leading, spacing: 3) {
-                Text(session.name)
-                    .font(.inter(14, .semibold))
+        ZStack(alignment: .topLeading) {
+            forme.fill(Color.black)
+            // Le grain : sans lui, l'aplat se lit « rendu logiciel ».
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05)
+                .blendMode(.overlay)
+                .clipShape(forme)
+            // Le sheen du sillon — une lueur d'angle, jamais un trait.
+            forme.fill(EllipticalGradient(
+                stops: [
+                    .init(color: .white.opacity(0.06), location: 0.0),
+                    .init(color: .white.opacity(0.015), location: 0.5),
+                    .init(color: .clear, location: 1.0),
+                ],
+                center: UnitPoint(x: 0.18, y: 0.06),
+                startRadiusFraction: 0, endRadiusFraction: 1.1))
+                .blendMode(.plusLighter)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.dateVinyle)
+                    .font(.inter(17, .semibold)).tracking(0.2)
                     .foregroundStyle(Color.inkPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                HStack(spacing: 5) {
-                    Text("\(session.series) séries · \(session.reps) reps")
-                        .font(.inter(11.5))
-                        .foregroundStyle(Color.inkMuted)
-                    if session.cardio {
-                        Image(WoopSticker.basket.asset)
+                Text("\(session.series) séries · \(session.reps) reps")
+                    .font(.inter(12))
+                    .foregroundStyle(Color.inkMuted)
+                Spacer(minLength: 0)
+                HStack(alignment: .bottom) {
+                    Image(session.cat.asset)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 148, height: 148)
+                    Spacer(minLength: 8)
+                    HStack(spacing: 6) {
+                        Text("+\(session.coins)")
+                            .font(.inter(14, .semibold))
+                            .foregroundStyle(Color.woopGold)
+                        Image("piece-woop")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 13, height: 13)
+                            .frame(width: 22, height: 22)
                     }
                 }
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 6) {
-                Text("+\(session.coins)")
-                    .font(.inter(14, .semibold))
-                    .foregroundStyle(Color.woopGold)
-                Image("piece-woop")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 22, height: 22)
-            }
+            .padding(24)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 78)
-        .background(forme.fill(Color(white: 0.045)))
-        // Le liseré qui meurt vers le bas — la lumière vient d'en haut,
-        // le bas de la carte reste dans la nuit (réf. Work session).
-        .overlay(forme.strokeBorder(
-            LinearGradient(stops: [
-                .init(color: .white.opacity(0.10), location: 0),
-                .init(color: .white.opacity(0.04), location: 0.5),
-                .init(color: .white.opacity(0.01), location: 1),
-            ], startPoint: .top, endPoint: .bottom),
-            lineWidth: 1))
         .overlay {
-            // LE FLASH : la row s'illumine avant que son rect ne
-            // devienne l'écran.
             if flashing {
-                forme.strokeBorder(Color.white.opacity(0.55), lineWidth: 1)
+                forme.strokeBorder(Color.white.opacity(0.5), lineWidth: 1)
                     .blendMode(.plusLighter)
-                forme.fill(Color.white.opacity(0.06))
-                    .blendMode(.plusLighter)
-                .transition(.opacity)
+                    .transition(.opacity)
             }
         }
         .overlay {
@@ -1067,79 +1121,6 @@ private struct SessionRow: View {
                         .onTapGesture { onTap?(g.frame(in: .global)) }
                 }
             }
-        }
-    }
-
-    /// Le badge-date : LA matière de la carte Séries, réutilisée — le
-    /// verre gonflé (`VerreGonfle`, la photographie d'éclairage calibrée
-    /// au pixel) fait la surface ET la tranche, la nappe de braise se
-    /// couche dessus, et les CHEVEUX (0,5 pt, brillants en haut, éteints
-    /// en bas) signent le bord de verre. On ne réécrit pas une matière
-    /// validée, on la réutilise.
-    private var dateBadge: some View {
-        let tuile = RoundedRectangle(cornerRadius: 15, style: .continuous)
-        return VStack(spacing: 1) {
-            Text(session.weekdayLabel)
-                .font(.inter(9.5, .semibold)).tracking(1.3)
-                .foregroundStyle(Color.white.opacity(0.62))
-            Text("\(session.dayNumber)")
-                .font(.inter(21, .bold)).tracking(-0.3)
-                .foregroundStyle(Color.inkPrimary)
-        }
-        .frame(width: 54, height: 54)
-        .background {
-            // La nappe chaude sur la surface du verre — la lumière
-            // vient du bas-gauche, l'azimut de la maison.
-            EllipticalGradient(
-                stops: [
-                    .init(color: FlammePalette.coeur.opacity(0.11),
-                          location: 0.0),
-                    .init(color: FlammePalette.braise.opacity(0.045),
-                          location: 0.5),
-                    .init(color: .clear, location: 1.0),
-                ],
-                center: UnitPoint(x: 0.25, y: 0.82),
-                startRadiusFraction: 0, endRadiusFraction: 0.9)
-                .blendMode(.plusLighter)
-                .clipShape(tuile)
-        }
-        .background {
-            // LE VERRE GONFLÉ : surface, épaule, blooms — la lumière
-            // déborde de la tuile (pad 28), c'est voulu : de la lumière,
-            // pas une boîte. La version CLAIRE, tranchée le 18-08 : le
-            // verre garde ses brumes laiteuses, pas de cœur sombre
-            // (« là c'est trop noir »).
-            VerreGonfle(rayonHaut: 15, rayonBas: 15, allege: false)
-        }
-        .overlay {
-            // LES CHEVEUX : le liseré de la garde en verre — 0,5 pt,
-            // blanc plein en haut, quasi rien en bas (la recette exacte
-            // du tube de la jauge).
-            tuile.strokeBorder(LinearGradient(
-                stops: [
-                    .init(color: Color.white.opacity(1.00), location: 0.0),
-                    .init(color: Color.white.opacity(0.62), location: 0.28),
-                    .init(color: Color.white.opacity(0.16), location: 0.72),
-                    .init(color: Color.white.opacity(0.10), location: 1.0),
-                ], startPoint: .top, endPoint: .bottom),
-                lineWidth: 0.5)
-                .blendMode(.plusLighter)
-                .opacity(0.9)
-        }
-        .overlay {
-            // Le cheveu d'or : un court filament sur la tranche est.
-            tuile.strokeBorder(
-                AngularGradient(stops: [
-                    .init(color: FlammePalette.or.opacity(0.55),
-                          location: 0.0),
-                    .init(color: .clear, location: 0.055),
-                    .init(color: .clear, location: 0.945),
-                    .init(color: FlammePalette.or.opacity(0.55),
-                          location: 1.0),
-                ], center: .center, angle: .zero),
-                lineWidth: 1)
-                .blur(radius: 0.6)
-                .blendMode(.plusLighter)
         }
     }
 }
@@ -1158,6 +1139,12 @@ struct DemoSession: Identifiable {
     let dayNumber: Int
 
     var coins: Int { series * 20 }
+    /// « 18. Août » — le label de la pochette.
+    var dateVinyle: String {
+        let mois = date.formatted(.dateTime.month(.abbreviated))
+            .replacingOccurrences(of: ".", with: "").capitalized
+        return "\(dayNumber). \(mois)"
+    }
     var cardio: Bool { cat == .basket }
     var id: Date { date }
 
