@@ -116,6 +116,7 @@ struct CarnetVivant: View, Animatable {
     let plaque: PlaqueCarnet
     var largeur: CGFloat
     var tilt: CGSize
+    var detoure = false
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
         get { AnimatablePair(tilt.width, tilt.height) }
@@ -123,7 +124,7 @@ struct CarnetVivant: View, Animatable {
     }
 
     var body: some View {
-        VuePlaque(plaque: plaque, tilt: tilt)
+        VuePlaque(plaque: plaque, tilt: tilt, detoure: detoure)
             .frame(width: largeur)
             .rotation3DEffect(.degrees(Double(tilt.width) * 7),
                               axis: (x: 0, y: 1, z: 0), perspective: 0.62)
@@ -145,10 +146,19 @@ struct PlaqueCarnet {
     let objetW: CGFloat
     let objetH: CGFloat
 
+    /// Les rayons de coin de l'objet, en pixels source — mesurés au
+    /// gradient : le dos (gauche) est presque vif, la couverture (droite)
+    /// s'arrondit. La sonde a aussi montré que la lueur de tranche vit
+    /// ENTIÈREMENT à l'intérieur des arêtes dures (luminance 0 au-delà) :
+    /// le détourage n'ampute aucune lumière.
+    var rayonG: CGFloat = 0
+    var rayonD: CGFloat = 0
+
     static let ferme = PlaqueCarnet(
         nom: "carnet-ferme",
         crop: CGRect(x: 170, y: 143, width: 783, height: 1089),
-        objetW: 767, objetH: 1073)
+        objetW: 767, objetH: 1073,
+        rayonG: 8, rayonD: 36)
     static let ouvert = PlaqueCarnet(
         nom: "carnet-ouvert",
         crop: CGRect(x: 146, y: 90, width: 1166, height: 881),
@@ -162,6 +172,37 @@ struct PlaqueCarnet {
     }
 }
 
+// MARK: - Le carnet de la home
+
+/// LE CARNET FERMÉ DE LA HOME — il remplace la pile swap sous « Derniers
+/// entraînements » (tranché 18-08 ; la pile vit toujours au design system,
+/// banc `-deckLab`). Détouré aux arêtes dures, il est un objet DANS la
+/// scène aurora : les étoiles vivent autour de lui, jamais derrière un
+/// rectangle mort. Le gyroscope (SkyMotion, lissé) l'incline comme la main
+/// du banc — au simulateur il reste droit, le capteur est muet.
+///
+/// L'ouverture est le jalon 3 : le tap ne fait pour l'instant qu'un
+/// souffle haptique — le carnet accuse réception, il ne promet rien.
+struct CarnetHome: View {
+    /// La hauteur de couverture sur la home — l'étalon validé au banc
+    /// (l'invariant : elle ne changera pas à l'ouverture).
+    static let hauteur: CGFloat = 248
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { _ in
+            let g = SkyMotion.shared.tilt
+            // Plus doux que le doigt du banc : le gyroscope est un
+            // balancement de fond, pas un geste.
+            let tilt = CGSize(width: g.dx * 0.55, height: g.dy * 0.40)
+            CarnetVivant(
+                plaque: .ferme,
+                largeur: PlaqueCarnet.ferme
+                    .largeurCadre(pourHauteurObjet: Self.hauteur),
+                tilt: tilt, detoure: true)
+        }
+    }
+}
+
 /// L'hôte d'une plaque : chargée du bundle (Woop/Media, ressource nue —
 /// le pattern des cartes-lune : par chemin, jamais par le catalogue),
 /// découpée à son cadre, et VIVANTE — le shader `carnetCuirV1` fait
@@ -170,10 +211,15 @@ struct PlaqueCarnet {
 struct VuePlaque: View {
     let plaque: PlaqueCarnet
     var tilt: CGSize = .zero
+    /// Détouré aux arêtes dures : sur la home, le carnet est un OBJET posé
+    /// dans la scène — sans détourage, le rectangle noir de la plaque
+    /// éteindrait les étoiles autour de lui.
+    var detoure = false
 
     var body: some View {
         if let image = Self.charge(plaque) {
             GeometryReader { geo in
+                let s = geo.size.width / plaque.crop.width
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                     let t = Float(tl.date.timeIntervalSinceReferenceDate
                         .truncatingRemainder(dividingBy: 900))
@@ -184,6 +230,22 @@ struct VuePlaque: View {
                             .float2(geo.size.width, geo.size.height),
                             .float(t),
                             .float2(Float(tilt.width), Float(tilt.height))))
+                        .mask {
+                            if detoure {
+                                // La silhouette mesurée : dos presque vif
+                                // à gauche, couverture arrondie à droite,
+                                // marges symétriques du cadre (8 px).
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: plaque.rayonG * s,
+                                    bottomLeadingRadius: plaque.rayonG * s,
+                                    bottomTrailingRadius: plaque.rayonD * s,
+                                    topTrailingRadius: plaque.rayonD * s,
+                                    style: .continuous)
+                                    .padding(8 * s)
+                            } else {
+                                Rectangle()
+                            }
+                        }
                 }
             }
             .aspectRatio(plaque.crop.width / plaque.crop.height,

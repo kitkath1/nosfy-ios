@@ -438,23 +438,16 @@ struct HomeAuroraView: View {
                 SwapEmptyCard()
                     .padding(.top, 16)
             } else {
-                // Les points de position ont été RETIRÉS (verdict du
-                // 2026-08-04) : l'éventail montre déjà qu'il y a d'autres
-                // cartes — un compteur dessous ne faisait que le redire.
-                SwapDeck(workouts: swapped, topCard: $topCard,
-                         onOpen: { opened = $0 },
-                         onStory: { workout, rect in
-                             // SANS ANIMATION DE PRÉSENTATION. Le portail est
-                             // la seule chose qui doit bouger ; la montée
-                             // système d'un `fullScreenCover` par-dessus
-                             // ferait deux mouvements contradictoires.
-                             var tx = Transaction()
-                             tx.disablesAnimations = true
-                             withTransaction(tx) {
-                                 story = StoryLaunch(workout: workout,
-                                                     rect: rect)
-                             }
-                         })
+                // LE CARNET DE CUIR (chantier 18-08) : la collection est
+                // un carnet relié — la pile swap a cédé sa place mais vit
+                // toujours au design system (SwapDeck, banc -deckLab).
+                // L'ouverture en double page est le jalon 3 ; le tap ne
+                // fait pour l'instant qu'accuser réception.
+                CarnetHome()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: SwapDeck.deckHeight)
+                    .contentShape(Rectangle())
+                    .onTapGesture { SwapFeedback.shared.tap() }
                     .padding(.top, 16)
             }
         }
