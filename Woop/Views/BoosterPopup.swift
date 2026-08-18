@@ -235,6 +235,36 @@ struct BoosterPopup: View {
     /// que rien ne soit recadré.
     private static let ratioVideo: CGFloat = 1.45
 
+    // LES INTERRUPTEURS DE LA BISSECTION. « On dirait que ça lag » ne se
+    // répare pas au jugé : on éteint une pièce à la fois et on lit la
+    // sonde (`-fps`). Ils restent — le prochain doute se tranchera en
+    // quatre lancements au lieu de quatre suppositions.
+    //
+    // MESURÉ AU SIMULATEUR (18-08), panneau ouvert sur la home :
+    //
+    //     home seule .......... 19 à 31 img/s   (trous 50-88 ms)
+    //     tout ................ 10,2 img/s      (pire trou 245 ms)
+    //     sans la POUDRE ...... 14,6            → elle coûte le plus
+    //     sans le VERRE ....... 13,2            → puis lui
+    //     sans la CAMÉRA ...... 10,9            → presque rien
+    //     sans le PLAN ........ 10,2            → RIEN DU TOUT
+    //
+    // La vidéo, qu'on soupçonnait depuis le début, ne coûte pas une
+    // image : une couche `AVPlayerLayer` est décodée par le matériel et
+    // composée par le GPU. Ce qui coûte, c'est ce que le FIL PRINCIPAL
+    // redessine — le Canvas des paillettes — et ce que le compositeur
+    // doit rééchantillonner — le verre posé sur une home qui bouge.
+    //
+    // Note d'honnêteté : le simulateur rend en logiciel, et la home
+    // elle-même n'y tient que 19 à 31 img/s. Ces chiffres classent les
+    // coupables, ils ne prédisent pas le téléphone.
+    private static let sansVerre = CommandLine.arguments.contains("-noGlass")
+    private static let sansPlan = CommandLine.arguments.contains("-noVideo")
+    private static let sansPoudre = CommandLine.arguments
+        .contains("-noPoudre")
+    private static let sansCamera = CommandLine.arguments
+        .contains("-noCamera")
+
     /// L'emplacement du plan, au ratio exact du fichier.
     private var slotH: CGFloat { W / Self.ratioVideo }
 
@@ -333,9 +363,11 @@ struct BoosterPopup: View {
                 ZStack {
                     // Jamais `.interactive()` sur un grand verre : il vole
                     // les gestes de ce qui vit dessus.
-                    Color.clear.glassEffect(
-                        .regular.tint(Color.black.opacity(0.30)),
-                        in: Self.forme)
+                    if !Self.sansVerre {
+                        Color.clear.glassEffect(
+                            .regular.tint(Color.black.opacity(0.30)),
+                            in: Self.forme)
+                    }
                     Self.forme
                         .fill(LinearGradient(stops: [
                             .init(color: .black.opacity(0.95), location: 0),
@@ -389,34 +421,35 @@ struct BoosterPopup: View {
                 // 1160 px ne se voit pas. Cadence 30 Hz : le plan lui-même
                 // n'affiche que 10,7 images par seconde.
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                        paused: reduceMotion)) { tl in
+                                        paused: reduceMotion
+                                            || Self.sansCamera)) { tl in
                     let e = tl.date.timeIntervalSince(naissance)
-                    let pose: CGFloat = reduceMotion
+                    let fige = reduceMotion || Self.sansCamera
+                    let pose: CGFloat = fige
                         ? 1 : 1 + 0.10 * CGFloat(exp(-e * 1.9))
-                    let respire: CGFloat = reduceMotion ? 1
+                    let respire: CGFloat = fige ? 1
                         : 1 + 0.050 * CGFloat(sin(e * 2 * .pi / 37.0))
                             + 0.024 * CGFloat(sin(e * 2 * .pi / 23.0 + 1.7))
-                    let dx: CGFloat = reduceMotion ? 0
+                    let dx: CGFloat = fige ? 0
                         : 7 * CGFloat(sin(e * 2 * .pi / 41.0 + 0.6))
-                    let dy: CGFloat = reduceMotion ? 0
+                    let dy: CGFloat = fige ? 0
                         : 5 * CGFloat(sin(e * 2 * .pi / 29.0))
+                    if !Self.sansPlan {
                     BoosterLoopVideo()
                         // POSÉE UNE FOIS. Elle ne bouge plus jamais.
                         .frame(width: slotH * Self.ratioVideo,
                                height: slotH)
-                        // Le pied fond dans le panneau : le reflet au sol
-                        // court sur toute la largeur du plan, lui seul
-                        // aurait posé une arête.
-                        .mask(LinearGradient(stops: [
-                            .init(color: .white, location: 0),
-                            .init(color: .white, location: 0.60),
-                            .init(color: .white.opacity(0.40),
-                                  location: 0.84),
-                            .init(color: .clear, location: 1.0)
-                        ], startPoint: .top, endPoint: .bottom))
+                        // LE FONDU DE PIED EST CUIT DANS LE FICHIER, plus
+                        // dans un `.mask` : un masque sur une couche vidéo
+                        // force un rendu HORS ÉCRAN de tout le plan à
+                        // chaque image, et il ne servait qu'à multiplier
+                        // par une rampe verticale — ce qu'un encodeur fait
+                        // une fois pour toutes. Mêmes paliers (plein
+                        // jusqu'à 60 %, 0,40 à 84 %, nul au bord).
                         .blendMode(.plusLighter)
                         .scaleEffect(pose * respire)
                         .offset(x: dx, y: dy)
+                    }
                 }
                 // LA POUDRE DE DIAMANT — dessinée par l'app, pas par le
                 // fichier, et sur SA propre horloge (le plan n'a pas à se
@@ -426,7 +459,9 @@ struct BoosterPopup: View {
                 // JAMAIS ensemble, donc plus rien à l'écran ne peut se
                 // répéter. La recette de la poussière de rubis de
                 // l'overlay flamme, en blanc et or.
-                PoudreBooster(W: W, slotH: slotH, naissance: naissance)
+                if !Self.sansPoudre {
+                    PoudreBooster(W: W, slotH: slotH, naissance: naissance)
+                }
             }
             // La boîte d'ancrage : le plan déborde et reste CENTRÉ — un
             // `frame` ne rogne pas, c'est le panneau qui le fait, avec
@@ -488,6 +523,11 @@ struct PoudreBooster: View {
                                 paused: reduceMotion)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             Canvas { ctx, _ in
+                // L'ADDITIF SE DEMANDE AU CONTEXTE, pas à la vue : un
+                // `.blendMode` posé sur le Canvas force un rendu HORS
+                // ÉCRAN de tout l'emplacement à chaque image, alors
+                // qu'ici il ne concerne que des grains d'un pixel.
+                ctx.blendMode = .plusLighter
                 for i in 0 ..< Self.grains {
                     let vie = 3.0 + 3.4 * Self.hash(i, 2)
                     let cyc = (t / vie + Self.hash(i, 5))
@@ -536,7 +576,6 @@ struct PoudreBooster: View {
                 }
             }
         }
-        .blendMode(.plusLighter)
         .allowsHitTesting(false)
         .frame(width: W, height: slotH)
     }

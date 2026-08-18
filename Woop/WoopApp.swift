@@ -619,6 +619,9 @@ struct RootView: View {
                     }
                 })
                 .zIndex(6)
+                // La sonde de cadence (`-fps`) : elle dit l'état RÉEL de
+                // l'écran, panneau ouvert comme fermé.
+                .sondeCadence(sacre.popupOuverte ? "panneau" : "home")
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
                            // Le chevron de la maison, aux deux escales du
