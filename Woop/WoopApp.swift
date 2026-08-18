@@ -506,8 +506,16 @@ struct RootView: View {
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
-                    ProgressionView()
-                        .toolbarVisibility(.hidden, for: .tabBar)
+                    // LE CALENDRIER À STICKERS a pris la place de
+                    // Progression (18-08) : page immersive — la barre
+                    // bijou se retire, le chevron ramène à la home (la
+                    // grammaire d'Exercices et du Profil).
+                    CalendarStickersPage(onBack: {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            selection = .home
+                        }
+                    })
+                    .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     // La maison des cartes : le halo versé de la droite, le
@@ -533,7 +541,8 @@ struct RootView: View {
                 // est une maison de cartes : la barre lui mangeait le bas
                 // de sa collection pour une navigation que son chevron
                 // assure déjà.
-                if selection != .exercises && selection != .profile {
+                if selection != .exercises && selection != .profile
+                    && selection != .progress {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
                                 onPlay: { startWorkout() },

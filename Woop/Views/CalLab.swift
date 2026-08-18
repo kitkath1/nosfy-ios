@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 // MARK: - Banc du calendrier à stickers (`-calLab`)
 
@@ -52,13 +53,11 @@ struct CalendarStickersPage: View {
     @State private var pushEdge: Edge = .trailing
     /// Le tirage direct sur la carte, en points (0 hors geste).
     @State private var cardDrag: CGFloat = 0
-    /// L'offset brut de la sonde. Le repos vaut EXACTEMENT `-inset`
-    /// (l'inset, c'est nous qui le fixons) : rel = offset + inset. PIÈGE
-    /// payé : capturer un « offset de repos » au premier passage de la
-    /// sonde — il précède la négociation des marges et empoisonne le
-    /// curseur (p ≈ 1,2 au repos, carte distendue en permanence).
-    @State private var scrollY: CGFloat?
-    @State private var scrollPos = ScrollPosition()
+    /// LE REPOS EST REPLIÉ (verdict 18-08) : on arrive sur la semaine
+    /// compacte + les 2 cartes KPI ; le tirage de la carte déplie le
+    /// mois qui prend PHYSIQUEMENT la place des KPI. Le curseur est le
+    /// drag de la carte — le scroll redevient un simple scroll.
+    @State private var deployed = false
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -69,6 +68,7 @@ struct CalendarStickersPage: View {
     /// payée sur la fiche exo — un doigt qui échappe fait respirer la
     /// page).
     @State private var slateBusy = false
+
 
     // La console du verre — RÉSERVÉE au banc `-calTune` (double-tap
     // pour l'afficher/cacher là-bas), valeurs persistées entre relances.
@@ -110,27 +110,27 @@ struct CalendarStickersPage: View {
             let rowCount = (slots.last?.row ?? 4) + 1
             let expandedH = geo.expandedH(rows: rowCount)
             let course = max(1, expandedH - geo.collapsedH)
-            let inset = expandedH + 14
-            let rel = scrollY ?? 0
-            let p = rubber(max(0, 1 - rel / course) + cardDrag / course)
+            let p = rubber((deployed ? 1 : 0) + cardDrag / course)
 
             ZStack(alignment: .top) {
                 Color.black
-                sessionList(inset: inset, course: course)
+                // LA VIDÉO D'AMBIANCE : le palindrome pré-encodé (aller +
+                // retour dans le fichier — la couture n'existe pas), en
+                // boucle muette sous un voile qui garde les textes
+                // lisibles. Le verre de la carte y gagne une scène.
+                FondCalendrier()
+                    .allowsHitTesting(false)
+                Color.black.opacity(0.52)
+                    .allowsHitTesting(false)
+                sessionList(geo: geo, expandedH: expandedH, p: p)
                 // LA SCÈNE : la source braise hors cadre du header exo,
                 // DERRIÈRE le verre — sans lumière à réfracter, le liquid
                 // glass n'est qu'une plaque grise. Posée au-dessus de la
                 // liste : les cards s'éclairent en passant dessous.
                 ExoHeaderGlow(height: 380)
                     .opacity(tuning.glowOpacity)
-                // Les petits halos du coin droit — la respiration du
-                // fond de la home, à l'échelle d'un coin, derrière le
-                // verre qui les réfracte. PAS asservis à la molette
-                // SCÈNE : demandés pour eux-mêmes, ils vivent toujours.
-                CoinHalosDroit()
-                    .frame(height: 320)
                 card(geo: geo, slots: slots, rowCount: rowCount,
-                     p: p, course: course, inset: inset)
+                     p: p, course: course)
                 // L'ARDOISE de la fiche exo, entière : la dalle fondue au
                 // bord physique, qu'on tire vers le haut pour la
                 // partition de la séance.
@@ -155,7 +155,7 @@ struct CalendarStickersPage: View {
                     showTune.toggle()
                 }
             }, isEnabled: Self.tuneEnabled)
-            .task { await autoScroll(inset: inset, course: course) }
+            .task { await autoDeploy() }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
                 StoryPortal(from: launch.rect, session: launch.session) {
@@ -212,8 +212,7 @@ struct CalendarStickersPage: View {
     // MARK: La carte
 
     private func card(geo: CalGeo, slots: [CalSlot], rowCount: Int,
-                      p: CGFloat, course: CGFloat,
-                      inset: CGFloat) -> some View {
+                      p: CGFloat, course: CGFloat) -> some View {
         CardMorph(p: p,
                   geo: geo,
                   slots: slots,
@@ -236,8 +235,7 @@ struct CalendarStickersPage: View {
             // passer sur les flancs et trahit le bord de la carte
             // (verdict du 18-08, réf. mini-player Apple Music).
             .contentShape(Rectangle())
-            .gesture(cardGesture(course: course, inset: inset),
-                     isEnabled: !slateBusy)
+            .gesture(cardGesture(course: course), isEnabled: !slateBusy)
     }
 
     private func monthStep(_ dir: Int) {
@@ -248,47 +246,67 @@ struct CalendarStickersPage: View {
         }
     }
 
-    /// Le drag direct sur la carte : il nourrit le même curseur, et la
-    /// fin de geste se règle en scrollant la liste — la sonde re-synce
-    /// tout, pas de guerre d'états.
-    private func cardGesture(course: CGFloat, inset: CGFloat) -> some Gesture {
+    /// Le drag direct sur la carte EST le curseur : tirée, elle se
+    /// déplie ; relâchée, l'aimant tranche (jamais à mi-course).
+    private func cardGesture(course: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { v in
                 // Un repli qui part d'un autre mois se recale sur le mois
                 // courant : la rangée mini montre TOUJOURS la semaine
                 // d'aujourd'hui.
-                if cardDrag == 0, !anchorIsCurrent { monthAnchor = Date() }
+                if cardDrag == 0, deployed, !anchorIsCurrent {
+                    monthAnchor = Date()
+                }
                 cardDrag = v.translation.height
             }
             .onEnded { v in
-                let base = max(0, 1 - (scrollY ?? 0) / course)
+                let base: CGFloat = deployed ? 1 : 0
                 let projected = base
                     + v.predictedEndTranslation.height / course
-                let deploy = projected > 0.5
-                cardDrag = 0
+                let target = projected > 0.5
+                if !target, !anchorIsCurrent { monthAnchor = Date() }
                 withAnimation(.spring(response: 0.46,
                                       dampingFraction: 0.85)) {
-                    scrollPos.scrollTo(y: deploy ? 0 : course)
+                    deployed = target
+                    cardDrag = 0
                 }
             }
     }
 
     // MARK: La liste des sessions
 
-    private func sessionList(inset: CGFloat, course: CGFloat) -> some View {
-        ScrollView {
+    /// Repliée : les 2 cartes KPI puis toutes les sessions. Dépliée :
+    /// les KPI ont FONDU pendant le tirage (opacité + léger scale), le
+    /// mois a pris physiquement leur place, et la liste ne montre plus
+    /// que les sessions du mois affiché.
+    private func sessionList(geo: CalGeo, expandedH: CGFloat,
+                             p: CGFloat) -> some View {
+        let fade = min(1, max(0, p * 1.6))
+        // La place que le mois réclame sous les KPI : à p=1, le haut de
+        // la liste vit exactement sous la carte dépliée. (Les écarts
+        // respirent depuis le 18-08 : +16 sous la barre, +18 avant la
+        // liste — la constante suit.)
+        let kpiZone: CGFloat = 158
+        let push = max(0, (expandedH - geo.collapsedH - kpiZone) * p)
+        let sessions = deployed
+            ? DemoSession.recent(calendar: calendar).filter {
+                calendar.isDate($0.date, equalTo: monthAnchor,
+                                toGranularity: .month)
+            }
+            : DemoSession.recent(calendar: calendar)
+        return ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
-                // L'ESPACEUR, pas une marge : le repos vaut offset 0 et
-                // `scrollTo(y:)` parle le même repère que la sonde —
-                // avec `contentMargins`, cible et mesure divergeaient et
-                // le repli ne se jouait jamais.
-                Color.clear.frame(height: inset - 10)
+                Color.clear.frame(height: geo.collapsedH + 16)
+                kpiRow
+                    .opacity(1 - Double(fade))
+                    .scaleEffect(1 - 0.04 * fade)
+                Color.clear.frame(height: 8 + push)
                 Text("SESSIONS D'ENTRAÎNEMENT")
                     .font(.inter(11, .semibold)).tracking(1.6)
                     .foregroundStyle(Color.inkSecondary)
                     .padding(.leading, 6)
                     .padding(.bottom, 2)
-                ForEach(DemoSession.recent(calendar: calendar)) { s in
+                ForEach(sessions) { s in
                     SessionRow(session: s,
                                flashing: flashRow == s.date,
                                onTap: { rect in openStory(row: s, rect: rect) })
@@ -299,14 +317,75 @@ struct CalendarStickersPage: View {
         .scrollIndicators(.hidden)
         // L'air du bas : la dalle-player (76) + la zone sûre + du souffle.
         .contentMargins(.bottom, 134, for: .scrollContent)
-        .scrollPosition($scrollPos)
-        // UNE sonde, un champ vivant — l'offset brut EST le curseur.
-        .onScrollGeometryChange(for: CGFloat.self,
-                                of: { $0.contentOffset.y }) { _, y in
-            scrollY = y
+    }
+
+    // MARK: Les cartes KPI
+
+    /// Deux tuiles noir pur, quasi widget — le pouls immédiat, sans
+    /// gadget (les stickers animés = « cheap », retirés le 18-08).
+    private var kpiRow: some View {
+        HStack(spacing: 10) {
+            KPICard(titre: "CETTE SEMAINE",
+                    valeur: "\(kpiSemaine) / 6",
+                    sous: "Séances réalisées",
+                    delta: kpiDeltaSemaine)
+            KPICard(titre: "CE MOIS-CI",
+                    valeur: "\(kpiMois)",
+                    sous: "Entraînements",
+                    delta: kpiDeltaMois)
         }
-        // L'aimant : jamais un calendrier à moitié plié au repos.
-        .scrollTargetBehavior(CalAimant(course: course))
+        .frame(height: 116)
+    }
+
+    /// Les chiffres de démo, dérivés du MÊME hash que les stickers de
+    /// la grille — tout reste cohérent avec le calendrier.
+    private var kpiSemaine: Int {
+        let start = calendar.dateInterval(of: .weekOfYear,
+                                          for: Date())?.start ?? Date()
+        return joursEntraines(depuis: start, jours: 7)
+    }
+
+    private var kpiDeltaSemaine: String {
+        let start = calendar.dateInterval(of: .weekOfYear,
+                                          for: Date())?.start ?? Date()
+        guard let avant = calendar.date(byAdding: .day, value: -7,
+                                        to: start) else { return "" }
+        let d = kpiSemaine - joursEntraines(depuis: avant, jours: 7)
+        return d == 0 ? "= vs sem. dernière"
+            : String(format: "%+d vs sem. dernière", d)
+    }
+
+    private var kpiMois: Int {
+        guard let interval = calendar.dateInterval(of: .month, for: Date())
+        else { return 0 }
+        let n = calendar.range(of: .day, in: .month, for: Date())?.count ?? 30
+        return joursEntraines(depuis: interval.start, jours: n)
+    }
+
+    private var kpiDeltaMois: String {
+        guard let moisAvant = calendar.date(byAdding: .month, value: -1,
+                                            to: Date()),
+              let interval = calendar.dateInterval(of: .month,
+                                                   for: moisAvant)
+        else { return "" }
+        let n = calendar.range(of: .day, in: .month,
+                               for: moisAvant)?.count ?? 30
+        let avant = joursEntraines(depuis: interval.start, jours: n)
+        guard avant > 0 else { return "" }
+        let pct = Int((Double(kpiMois - avant) / Double(avant) * 100)
+            .rounded())
+        return pct == 0 ? "= vs mois dernier"
+            : String(format: "%+d %% vs mois dernier", pct)
+    }
+
+    private func joursEntraines(depuis start: Date, jours: Int) -> Int {
+        (0..<jours).reduce(0) { acc, off in
+            guard let d = calendar.date(byAdding: .day, value: off,
+                                        to: start) else { return acc }
+            return acc + (WoopSticker.demoCategory(for: d,
+                                                   calendar: calendar) != nil
+                ? 1 : 0)
+        }
     }
 
     // MARK: La console du verre
@@ -366,15 +445,13 @@ struct CalendarStickersPage: View {
 
     // MARK: La boucle vidéo
 
-    private func autoScroll(inset: CGFloat, course: CGFloat) async {
+    private func autoDeploy() async {
         guard autoLoop else { return }
-        var folded = false
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 2_200_000_000)
-            folded.toggle()
-            if !folded, !anchorIsCurrent { monthAnchor = Date() }
+            if deployed, !anchorIsCurrent { monthAnchor = Date() }
             withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) {
-                scrollPos.scrollTo(y: folded ? course + 180 : 0)
+                deployed.toggle()
             }
         }
     }
@@ -390,83 +467,96 @@ private struct CalStoryLaunch: Identifiable {
     let session: StorySession
 }
 
-// MARK: - Les petits halos du coin droit
 
-/// Trois lueurs qui dérivent dans le coin haut-droit — l'esprit du fond
-/// animé de la home, à l'échelle d'un coin : des sinus mêlés à
-/// fréquences étrangères (jamais un métronome), la palette braise,
-/// en `plusLighter` — c'est de la lumière, pas un fond.
-private struct CoinHalosDroit: View {
-    private struct Halo {
-        var ax: CGFloat      // ancre x, fraction de largeur
-        var ay: CGFloat      // ancre y, points
-        var dx: CGFloat      // amplitudes de dérive
-        var dy: CGFloat
-        var vx: Double       // vitesses (rad/s), étrangères entre elles
-        var vy: Double
-        var vo: Double       // le souffle d'opacité
-        var r: CGFloat       // rayon
-        var c: Color
-        var o: Double        // opacité de crête
-        var phase: Double
-    }
+// MARK: - La tuile KPI
 
-    private static let halos: [Halo] = [
-        Halo(ax: 0.88, ay: 92, dx: 16, dy: 11, vx: 0.093, vy: 0.117,
-             vo: 0.151, r: 96, c: FlammePalette.or, o: 0.18, phase: 0.0),
-        Halo(ax: 0.73, ay: 168, dx: 24, dy: 15, vx: 0.127, vy: 0.083,
-             vo: 0.109, r: 60, c: FlammePalette.flamme, o: 0.21,
-             phase: 2.1),
-        Halo(ax: 0.94, ay: 214, dx: 12, dy: 19, vx: 0.071, vy: 0.139,
-             vo: 0.187, r: 38, c: FlammePalette.jaune, o: 0.24,
-             phase: 4.4),
-    ]
+/// Une tuile très noire, quasi widget : le titre en capitales, le grand
+/// chiffre, le sous-texte, la progression — et le sticker VIVANT posé
+/// dans le coin (la flamme respire, le bras se balance : deux
+/// `repeatForever`, la grammaire de la lueur du player, aucune horloge).
+private struct KPICard: View {
+    let titre: String
+    let valeur: String
+    let sous: String
+    let delta: String
+
+    private let forme = RoundedRectangle(cornerRadius: 20, style: .continuous)
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-                .truncatingRemainder(dividingBy: 4096)
-            Canvas { ctx, size in
-                for h in Self.halos {
-                    let x = size.width * h.ax
-                        + h.dx * CGFloat(sin(t * h.vx + h.phase))
-                    let y = h.ay
-                        + h.dy * CGFloat(sin(t * h.vy + h.phase * 1.7))
-                    let souffle = 0.68
-                        + 0.32 * sin(t * h.vo + h.phase * 2.3)
-                    let center = CGPoint(x: x, y: y)
-                    let rect = CGRect(x: x - h.r, y: y - h.r,
-                                      width: h.r * 2, height: h.r * 2)
-                    ctx.fill(Path(ellipseIn: rect), with: .radialGradient(
-                        Gradient(stops: [
-                            .init(color: h.c.opacity(h.o * souffle),
-                                  location: 0),
-                            .init(color: h.c.opacity(0), location: 1),
-                        ]),
-                        center: center, startRadius: 0, endRadius: h.r))
-                }
-            }
+        VStack(alignment: .leading, spacing: 3) {
+            Text(titre)
+                .font(.inter(10, .semibold)).tracking(1.4)
+                .foregroundStyle(Color.inkSecondary)
+            Spacer(minLength: 0)
+            Text(valeur)
+                .font(.inter(25, .bold)).tracking(-0.4)
+                .foregroundStyle(Color.inkPrimary)
+            Text(sous)
+                .font(.inter(11))
+                .foregroundStyle(Color.inkMuted)
+            Text(delta)
+                .font(.inter(11, .medium))
+                .foregroundStyle(Color.woopGold.opacity(0.9))
+                .padding(.top, 1)
         }
-        .blendMode(.plusLighter)
-        .allowsHitTesting(false)
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity,
+               alignment: .leading)
+        // NOIR PUR (verdict 18-08) : sur la vidéo d'ambiance, les tuiles
+        // sont des fenêtres de nuit découpées — la loi de la famille
+        // diamant.
+        .background(forme.fill(Color.black))
+        // Le liseré qui meurt vers le bas — la grammaire des rows.
+        .overlay(forme.strokeBorder(
+            LinearGradient(stops: [
+                .init(color: .white.opacity(0.09), location: 0),
+                .init(color: .white.opacity(0.03), location: 0.5),
+                .init(color: .white.opacity(0.01), location: 1),
+            ], startPoint: .top, endPoint: .bottom),
+            lineWidth: 1))
     }
 }
 
-// MARK: - L'aimant du scroll
+// MARK: - Le fond vidéo
 
-/// La fin de geste ne laisse jamais la carte à mi-course : dans la bande
-/// du morph, la cible file au haut (dépliée) ou juste après la course
-/// (mini) — au-delà, la liste scrolle libre sous la mini sticky.
-private struct CalAimant: ScrollTargetBehavior {
-    var course: CGFloat
-
-    func updateTarget(_ target: inout ScrollTarget,
-                      context: TargetContext) {
-        let rel = target.rect.origin.y
-        guard rel > 0, rel < course else { return }
-        target.rect.origin.y = rel < course / 2 ? 0 : course
+/// Le palindrome d'ambiance : AVPlayerLooper sur le fichier aller +
+/// retour de `Woop/Media` — ressource NUE du paquet (jamais le
+/// catalogue), muette, plein cadre.
+///
+/// LE PLAYER NAÎT DANS LE REPRESENTABLE, et c'est une LOI : une couche
+/// plateforme montée EN RETARD (un `if let player` rempli par un
+/// `onAppear`) s'insère dans une transaction ultérieure et atterrit
+/// parfois AU-DESSUS des frères SwiftUI — la page entière disparaissait
+/// derrière la vidéo, une fois sur deux. Présente au premier commit,
+/// la couche garde sa place pour toujours.
+private struct FondCalendrier: UIViewRepresentable {
+    final class Couche: UIView {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+        var player: AVQueuePlayer?
+        var looper: AVPlayerLooper?
     }
+
+    func makeUIView(context: Context) -> Couche {
+        let v = Couche()
+        let l = v.layer as! AVPlayerLayer
+        l.videoGravity = .resizeAspectFill
+        if let url = Bundle.main.url(
+            forResource: "background-calendar-loop",
+            withExtension: "mp4") {
+            let p = AVQueuePlayer()
+            p.isMuted = true
+            v.looper = AVPlayerLooper(player: p,
+                                      templateItem: AVPlayerItem(url: url))
+            l.player = p
+            p.play()
+            v.player = p
+        }
+        return v
+    }
+
+    func updateUIView(_ v: Couche, context: Context) {}
 }
+
 
 // MARK: - Les cotes de la carte
 

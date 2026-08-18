@@ -416,7 +416,14 @@ struct HomeAuroraView: View {
     private var swapSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             SectionHeader(title: "Derniers entraînements",
-                          action: finished.isEmpty ? nil : { showAllWorkouts = true })
+                          // « Tout voir » ouvre le CALENDRIER (l'onglet
+                          // Progrès depuis le 18-08) — l'animation de
+                          // bascule de la maison, le chevron y ramène.
+                          action: {
+                              withAnimation(.easeOut(duration: 0.3)) {
+                                  selection = .progress
+                              }
+                          })
                 .padding(.horizontal, 20)
 
             Text("Ta collection d'entraînements")
