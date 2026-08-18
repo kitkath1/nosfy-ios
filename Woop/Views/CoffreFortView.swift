@@ -126,9 +126,6 @@ struct CoffreFortView: View {
     /// pages, au lieu de le coller au bord physique.
     var safeTop: CGFloat = 0
     var onClose: () -> Void = {}
-    /// TAPER LA VIDÉO, C'EST ALLER PLUS VITE : la cérémonie se pose d'un coup
-    /// et le parcours descend sur la page suivante.
-    var onSkip: () -> Void = {}
 
     @State private var player: AVPlayer?
     @State private var visible = false
@@ -449,15 +446,21 @@ struct CoffreFortView: View {
 
     // MARK: Passer devant
 
-    /// LE RACCOURCI. On ne peut pas « avancer l'horloge » ici comme sur le
-    /// sommet de la lentille : cette partition n'est pas une fonction du
-    /// temps, ce sont deux minuteries. Passer devant, c'est donc POSER la
-    /// cérémonie à son état final — et amener le lecteur sur son image de
-    /// repos, sinon on remonterait plus tard sur une page figée en pleine
-    /// plongée. Les minuteries en vol, elles, se tairont d'elles-mêmes.
+    /// LE RACCOURCI — ET IL RESTE SUR CETTE PAGE. Taper la vidéo, c'est
+    /// arriver TOUT DE SUITE sur le trésor fini (verdict Kathryn, dit et
+    /// redit) : la cérémonie se pose, on ne saute nulle part. Un essai qui
+    /// enchaînait sur la page démon a été retiré — le raccourci sert à
+    /// abréger l'attente, pas à changer de lieu.
+    ///
+    /// On ne peut pas « avancer l'horloge » ici comme sur le sommet de la
+    /// lentille : cette partition n'est pas une fonction du temps, ce sont
+    /// deux minuteries. Passer devant, c'est donc POSER la cérémonie à son
+    /// état final — et amener le lecteur sur son image de repos, sinon la
+    /// vidéo continuerait de jouer derrière un contenu déjà né. Les
+    /// minuteries en vol, elles, se taisent d'elles-mêmes.
     /// `-coffreSkip` : le raccourci se déclenche tout seul à 3 s — le
     /// simulateur ne tape pas, c'est la seule façon de voir la cérémonie se
-    /// poser et le parcours descendre sur la page démon.
+    /// poser d'un coup.
     private static let skipFire = CommandLine.arguments.contains("-coffreSkip")
 
     private func skip() {
@@ -473,7 +476,6 @@ struct CoffreFortView: View {
                 born = true
             }
         }
-        onSkip()
     }
 
     // MARK: La mise en route
@@ -560,17 +562,6 @@ struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
 
-    /// La position du défilement — écrite par le doigt ET par le code : c'est
-    /// elle qui permet au tap sur la vidéo de DESCENDRE d'une page sans rien
-    /// casser du geste.
-    ///
-    /// PAR LE BORD, ET SURTOUT PAS PAR UN `id` : le `LazyVStack` ne construit
-    /// la page démon qu'en l'approchant, et un `scrollPosition(id:)` ne sait
-    /// pas viser une page qui n'existe pas encore — mesuré, le tap posait la
-    /// cérémonie et ne bougeait pas d'un pixel. Le bas, lui, est connu de
-    /// tout temps.
-    @State private var pos = ScrollPosition(edge: .top)
-
     var body: some View {
         // LE PROXY EST DEHORS, et lui ne fuit pas la zone sûre : c'est la
         // seule façon de connaître l'encoche pour poser le chevron à sa
@@ -580,13 +571,7 @@ struct CoffreFortFlow: View {
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
                     CoffreFortView(coins: coins, safeTop: safeTop,
-                                   onClose: onClose,
-                                   onSkip: {
-                                       withAnimation(.easeInOut(
-                                           duration: 0.55)) {
-                                           pos.scrollTo(edge: .bottom)
-                                       }
-                                   })
+                                   onClose: onClose)
                         .containerRelativeFrame(.vertical)
                     HaloDawnLab()
                         .containerRelativeFrame(.vertical)
@@ -594,7 +579,6 @@ struct CoffreFortFlow: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.paging)
-            .scrollPosition($pos)
             .scrollIndicators(.hidden)
             .background(Color.black)
             // SEUL LE DÉFILEMENT FUIT LA ZONE SÛRE — pas le proxy. Un
