@@ -27,7 +27,6 @@ private struct GlassTuning {
     var tintAlpha: Double
     var interactive: Bool
     var edgeAlpha: Double
-    var glowOpacity: Double
     var corner: Double
     /// Le DÉBORD du rim : 0 = le bourrelet de réfraction vit au bord
     /// haut (la signature « liquid »), 64 = poussé hors écran.
@@ -90,7 +89,6 @@ struct CalendarStickersPage: View {
     @AppStorage("calTintA") private var tTintA = 0.5
     @AppStorage("calInter") private var tInter = false
     @AppStorage("calEdge") private var tEdge = 0.06
-    @AppStorage("calGlow") private var tGlow = 1.0
     @AppStorage("calCorner") private var tCorner = 40.0
     @AppStorage("calRim") private var tRim = 0.0
     @AppStorage("calVeil") private var tVeil = 0.52
@@ -98,7 +96,7 @@ struct CalendarStickersPage: View {
     private var tuning: GlassTuning {
         GlassTuning(clearGlass: tClear, tintWhite: tTintW,
                     tintAlpha: tTintA, interactive: tInter,
-                    edgeAlpha: tEdge, glowOpacity: tGlow, corner: tCorner,
+                    edgeAlpha: tEdge, corner: tCorner,
                     rim: tRim, veil: tVeil)
     }
 
@@ -144,11 +142,6 @@ struct CalendarStickersPage: View {
                     // LE WIPE : le blur culmine à mi-course de la
                     // disparition et meurt aux deux poses.
                     wipe: CGFloat(sin(.pi * Double(p2))))
-                // LA SCÈNE : la source braise hors cadre du header exo,
-                // DERRIÈRE le verre.
-                ExoHeaderGlow(height: 380)
-                    .opacity(tuning.glowOpacity)
-                    .allowsHitTesting(false)
                 // ÉTAT BAC : le grand titre prend la relève de la carte —
                 // le chevron de sortie ne meurt jamais.
                 enTeteBac(safeTop: geo.safeTop, p2: p2)
@@ -327,8 +320,8 @@ struct CalendarStickersPage: View {
                      course1: CGFloat, course2: CGFloat,
                      H: CGFloat, wipe: CGFloat) -> some View {
         let sessions = DemoSession.recent(calendar: calendar)
-        let cardH: CGFloat = 470
-        let pas: CGFloat = 482 // la pochette + son souffle
+        let cardH: CGFloat = 360
+        let pas: CGFloat = 372 // la pochette + son souffle
         let bandeau: CGFloat = 64 // ce qu'une pochette passée laisse voir
         let focus = H * 0.50
         return ScrollView {
@@ -465,7 +458,6 @@ struct CalendarStickersPage: View {
             tuneRow("TEINTE BLANC", $tTintW, 0...1)
             tuneRow("TEINTE ALPHA", $tTintA, 0...1)
             tuneRow("LISERÉ", $tEdge, 0...0.3)
-            tuneRow("SCÈNE", $tGlow, 0...1.5)
             tuneRow("RAYON", $tCorner, 12...64, fmt: "%.0f")
             tuneRow("RIM (débord)", $tRim, 0...64, fmt: "%.0f")
             tuneRow("VOILE VIDÉO", $tVeil, 0.2...0.9)
@@ -518,8 +510,8 @@ struct CalendarStickersPage: View {
         // front est translucide et penchée — c'est un état de VOL,
         // jamais un repos.
         let arrets: [CGFloat] = [0, course1,
-                                 course1 + course2 + 482,
-                                 course1 + course2 + 964,
+                                 course1 + course2 + 372,
+                                 course1 + course2 + 744,
                                  course1, 0]
         var i = 0
         while !Task.isCancelled {
@@ -1062,7 +1054,12 @@ private struct SessionVinyle: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            forme.fill(Color.black)
+            // JAMAIS noir pur sur le fond noir : la pochette est une
+            // SURFACE élevée (la grammaire Apple du mode sombre) — un
+            // gris d'ardoise en dégradé, la lumière fait la hiérarchie.
+            forme.fill(LinearGradient(
+                colors: [Color(white: 0.11), Color(white: 0.055)],
+                startPoint: .top, endPoint: .bottom))
             // Le grain : sans lui, l'aplat se lit « rendu logiciel ».
             GrainTexture.tuile
                 .resizable(resizingMode: .tile)
@@ -1091,7 +1088,7 @@ private struct SessionVinyle: View {
                     Image(session.cat.asset)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 148, height: 148)
+                        .frame(width: 116, height: 116)
                     Spacer(minLength: 8)
                     HStack(spacing: 6) {
                         Text("+\(session.coins)")
