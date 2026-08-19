@@ -51,6 +51,27 @@ jamais de bordure — la hiérarchie par la lumière.)
    côte à côte ; le scroll donne alors une vue globale de toutes les
    sessions du mois.
 
+## L'OUVERTURE — la cinématique d'entrée (arbitrée le 19-08, AVANT le jalon 2)
+
+Réf. : les paragraphes marketing Apple (capture iPhone 17 Pro fournie —
+gris + gras blanc + le sticker chocolat plaqué sur le texte).
+
+- **Porte unique** : la cinématique ne joue que via « Tout voir » de la
+  home (la demande `CalCine.demande` est consommée à l'apparition) —
+  jamais sur un simple passage d'onglet.
+- **La phrase** : bilan SEMAINE + MOIS, deux lignes, sobre (« Cette
+  semaine, **3 séances** 〔flamme plaquée〕 / et déjà **6** en août. ») —
+  gris Apple #86868B, chiffres blancs bold, sticker PNG qui se plaque en
+  chevauchant le mot (ressort + rotation).
+- **L'écriture** : mot à mot (flou+transparence → net, cascade ~70 ms),
+  JAMAIS une machine à écrire ; le tout sur UN progrès Animatable (la
+  loi des rampes). Ticks d'haptique quand les chiffres claquent.
+- **L'arrivée** : le texte s'enfuit dans le flou, le voile noir se lève,
+  la page (réelle dessous) arrive DU flou — la grammaire du wipe.
+- **Garde-fous** : tap partout = skip (sortie pressée), ~3 s max,
+  Reduce Motion = apparition simple, zéro TimelineView.
+- **Banc** : `-cineLab` (boucle la cinématique pour fouetter le tempo).
+
 ## Découpage pressenti (à valider à l'ouverture du chantier)
 
 - **Jalon 1** : les cards mensuelles dans le bac (éventail de

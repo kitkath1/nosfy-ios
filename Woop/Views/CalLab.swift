@@ -89,6 +89,12 @@ struct CalendarStickersPage: View {
     /// Le gyroscope (bande morte : poignet immobile = zéro rendu).
     @ObservedObject private var motion = BacMotion.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// L'OUVERTURE (la cinématique Apple) : active quand on arrive par
+    /// « Tout voir » (la demande est consommée à l'apparition) ou sur
+    /// le banc `-cineLab`. `cineSortie` 0→1 = le voile se lève et la
+    /// page arrive DU flou.
+    @State private var cineActive = false
+    @State private var cineSortie: CGFloat = 1
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -187,6 +193,26 @@ struct CalendarStickersPage: View {
                              busy: $slateBusy)
                 if showTune { tunePanel }
             }
+            // L'ARRIVÉE DU FLOU : pendant l'ouverture, la page vit
+            // derrière le voile et s'affûte quand il se lève — en
+            // ZOOM d'arrivée (la caméra se pose).
+            .blur(radius: cineActive ? (1 - cineSortie) * 10 : 0)
+            .scaleEffect(cineActive ? 1 + (1 - cineSortie) * 0.05 : 1)
+            .overlay {
+                if cineActive {
+                    CineBilan(calendar: calendar, sortie: $cineSortie) {
+                        cineActive = false
+                        // Le banc boucle pour fouetter le tempo.
+                        if CalCine.banc {
+                            Task {
+                                try? await Task.sleep(for: .seconds(1.2))
+                                cineSortie = 0
+                                cineActive = true
+                            }
+                        }
+                    }
+                }
+            }
             .ignoresSafeArea()
             // La console ne s'ouvre QUE sur le banc `-calTune` : le
             // double-tap global VOLAIT le deuxième tap des séquences
@@ -213,7 +239,16 @@ struct CalendarStickersPage: View {
             // Le gyroscope vit avec la page — et MEURT avec elle (le
             // silence du poignet, payé au Manège : CoreMotion réveille
             // le fil 30×/s pour une scène que personne ne regarde).
-            .onAppear { BacMotion.shared.start() }
+            .onAppear {
+                BacMotion.shared.start()
+                // La demande d'ouverture (posée par « Tout voir ») se
+                // CONSOMME — un passage d'onglet nu n'ouvre rien.
+                if CalCine.demande || CalCine.banc {
+                    CalCine.demande = false
+                    cineSortie = 0
+                    cineActive = true
+                }
+            }
             .onDisappear { BacMotion.shared.stop() }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
@@ -1282,6 +1317,366 @@ private struct SessionVinyle: View {
                         .onTapGesture { onTap?(g.frame(in: .global)) }
                 }
             }
+        }
+    }
+}
+
+// MARK: - L'ouverture (la cinématique Apple)
+
+/// La demande d'ouverture : posée par « Tout voir » sur la home,
+/// consommée à l'apparition de la page — un simple passage d'onglet
+/// n'ouvre rien (arbitrage 19-08). `-cineLab` : le banc boucle.
+enum CalCine {
+    static var demande = false
+    static let banc = CommandLine.arguments.contains("-cineLab")
+}
+
+/// Un mot de l'écriture : gris Apple ou BLANC (les chiffres), et
+/// l'éventuel sticker qui se PLAQUE dessus (le chocolat sur le
+/// paragraphe de la réf iPhone 17 Pro).
+private struct MotCine: Identifiable {
+    let id: Int
+    let texte: String
+    var blanc = false
+    var sticker: WoopSticker?
+}
+
+/// UN ACTE de l'ouverture : le titre-choc et ses lignes.
+private struct ActeCine {
+    let titre: String
+    let lignes: [[MotCine]]
+    var total: Int { lignes.reduce(0) { $0 + $1.count } }
+    var aSticker: Bool {
+        lignes.contains { $0.contains { $0.sticker != nil } }
+    }
+}
+
+/// LE RENDU D'UN ACTE — luxury Apple (19-08, v3). Le titre naît
+/// immense et flou (zoom-travelling, ancré haut-gauche). Le paragraphe
+/// est LÀ dès le départ, entier, en gris-nuit à peine lisible — et
+/// L'ILLUMINATION le traverse : chaque mot s'allume dans l'ordre, les
+/// chiffres finissent BLANCS. Rien ne vole, rien ne floute : la
+/// lumière seule écrit (l'effet exact des pages produit Apple). Le
+/// sticker est une PIÈCE : il se pose avec du poids, lévite à peine
+/// (glaciale, ±2 pt), son ombre respire dessous, et sa seule brillance
+/// répond au POIGNET (gyroscope) — le balayage de lumière est MORT,
+/// deux fois jugé cheap. Tout vit sur UN progrès Animatable par acte
+/// (la loi des rampes) ; la fuite vers le haut est le second canal.
+private struct ActeVue: View, Animatable {
+    var p: CGFloat
+    var fuite: CGFloat
+    let acte: ActeCine
+    let grand: CGFloat
+    var pench: CGSize = .zero
+
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(p, fuite) }
+        set {
+            p = newValue.first
+            fuite = newValue.second
+        }
+    }
+
+    private let gris = Color(red: 0.525, green: 0.525, blue: 0.545)
+    private let nuit = Color(white: 0.17)
+
+    var body: some View {
+        let tw: CGFloat = max(0.0, min(1.0, p / 0.40))
+        // ALIGNÉ HAUT-GAUCHE : la mise en page éditoriale Apple.
+        VStack(alignment: .leading, spacing: 22) {
+            Text(acte.titre)
+                .font(.inter(44, .bold)).tracking(-0.8)
+                .foregroundStyle(Color.white)
+                .opacity(Double(tw))
+                .blur(radius: (1.0 - tw) * 18.0)
+                .scaleEffect(1.6 - 0.6 * tw, anchor: .topLeading)
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(0 ..< acte.lignes.count, id: \.self) { l in
+                    HStack(spacing: 6) {
+                        ForEach(acte.lignes[l]) { mot in
+                            rendu(mot)
+                        }
+                    }
+                }
+            }
+        }
+        // LA FUITE : l'acte s'enfuit vers le HAUT dans le flou.
+        .opacity(Double(1.0 - fuite))
+        .blur(radius: fuite * 10.0)
+        .offset(y: -fuite * 60.0)
+    }
+
+    /// La fenêtre du mot i : la vague de lumière, calée après le titre.
+    private func fenetre(_ i: Int) -> CGFloat {
+        let part = CGFloat(i) / CGFloat(max(1, acte.total))
+        let debut = 0.34 + part * 0.50
+        return max(0.0, min(1.0, (p - debut) / 0.12))
+    }
+
+    /// L'ILLUMINATION : le mot en gris-nuit, et sa version allumée qui
+    /// monte dessus — aucune géométrie ne bouge.
+    private func rendu(_ mot: MotCine) -> some View {
+        let w = fenetre(mot.id)
+        let fonte: Font = .inter(24, mot.blanc ? .bold : .semibold)
+        return ZStack {
+            Text(mot.texte).font(fonte).tracking(-0.2)
+                .foregroundStyle(nuit)
+            Text(mot.texte).font(fonte).tracking(-0.2)
+                .foregroundStyle(mot.blanc ? Color.white : gris)
+                .opacity(Double(w))
+        }
+        .overlay {
+            if let st = mot.sticker {
+                piece(st)
+            }
+        }
+    }
+
+    // MARK: La pièce
+
+    /// La pose : du poids, UN rebond doux — jamais un cirque.
+    private func poseEchelle(_ sw: CGFloat) -> CGFloat {
+        if sw < 0.75 { return 1.12 - 0.18 * sw }
+        return 0.985 + 0.015 * ((sw - 0.75) / 0.25)
+    }
+
+    private func piece(_ st: WoopSticker) -> some View {
+        let sw: CGFloat = max(0.0, min(1.0, (p - 0.82) / 0.14))
+        return ZStack {
+            if p >= 0.999, fuite == 0 {
+                // LA LÉVITATION GLACIALE : ±2 pt sur ~4 s, l'ombre
+                // respire dessous — l'objet plane au-dessus du
+                // paragraphe. L'horloge meurt avec l'acte.
+                TimelineView(.animation(
+                    minimumInterval: 1.0 / 30.0)) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    let lev = CGFloat(sin(t * 1.57)) * 2.0
+                    ZStack {
+                        ombre(portee: lev)
+                        corps(st).offset(y: -lev)
+                    }
+                }
+            } else {
+                ZStack {
+                    ombre(portee: 0).opacity(Double(sw))
+                    corps(st)
+                        .scaleEffect(poseEchelle(sw))
+                        .opacity(Double(min(1.0, sw * 2.5)))
+                }
+            }
+        }
+        .rotationEffect(.degrees(8))
+        // LA LUMIÈRE N'APPARTIENT QU'AU POIGNET : le vernis accroche
+        // quand TOI tu bouges — jamais tout seul.
+        .rotation3DEffect(.degrees(Double(pench.width) * 3.0),
+                          axis: (x: 0, y: 1, z: 0))
+        .rotation3DEffect(.degrees(Double(-pench.height) * 3.0),
+                          axis: (x: 1, y: 0, z: 0))
+        // Posé sur le texte, vers le BAS — jamais vers le titre (payé
+        // deux fois : la flamme mangeait « semaine »).
+        .offset(x: grand * 0.40, y: grand * 0.05)
+        .allowsHitTesting(false)
+    }
+
+    /// L'ombre vraie : elle ne se lit que là où la pièce survole le
+    /// texte — exactement là où la profondeur compte.
+    private func ombre(portee: CGFloat) -> some View {
+        Ellipse()
+            .fill(Color.black.opacity(0.55 - Double(portee) * 0.05))
+            .frame(width: grand * 0.5 + portee * 4.0,
+                   height: grand * 0.13)
+            .blur(radius: 9)
+            .offset(y: grand * 0.30)
+    }
+
+    private func corps(_ st: WoopSticker) -> some View {
+        Image(st.asset)
+            .resizable()
+            .scaledToFit()
+            .frame(width: grand, height: grand)
+    }
+}
+
+/// L'OUVERTURE — la séquence en TROIS ACTES (hardcore Apple, 19-08) :
+/// « Ta semaine. » en zoom-travelling + le bilan + la flamme-bijou qui
+/// slam et brille ; « Août. » + le bilan du mois + le second bijou ;
+/// « Ton calendrier. » — puis la sortie caméra : le voile se lève et
+/// la page arrive du flou en zoom. Tap n'importe où = skip. ~7 s.
+private struct CineBilan: View {
+    let calendar: Calendar
+    @Binding var sortie: CGFloat
+    var onFin: () -> Void
+
+    @State private var actes: [ActeCine] = []
+    @State private var acte = 0
+    @State private var p: CGFloat = 0
+    @State private var fuiteActe: CGFloat = 0
+    @State private var fuite: CGFloat = 0
+    @State private var fini = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Le poignet : la seule brillance de la pièce.
+    @ObservedObject private var motion = BacMotion.shared
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(Double(1 - sortie))
+            if !actes.isEmpty, acte < actes.count {
+                // 120 : le PNG des stickers porte de larges marges
+                // transparentes — le glyphe visible fait ~45 % du
+                // canevas (170 écrasait le texte, verdict).
+                ActeVue(p: p, fuite: fuiteActe, acte: actes[acte],
+                        grand: 120, pench: motion.pench)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity,
+                           alignment: .topLeading)
+                    .padding(.leading, 30)
+                    .padding(.top, 140)
+                    .opacity(Double(1 - fuite))
+                    .blur(radius: fuite * 12)
+                    .scaleEffect(1 + fuite * 0.05)
+                    // Chaque acte REPART À NEUF (états, horloge de vie).
+                    .id(acte)
+            }
+        }
+        .ignoresSafeArea()
+        .contentShape(Rectangle())
+        .onTapGesture { finir(vite: true) }
+        .task { await jouer() }
+    }
+
+    /// Le bilan, fabriqué UNE fois (le recalcul par frame pendant les
+    /// animations serait un gâchis — DemoMonth balaie 90 jours).
+    private func fabrique() -> [ActeCine] {
+        var semaine = 0
+        if let sem = calendar.dateInterval(of: .weekOfYear,
+                                           for: Date()) {
+            var d = sem.start
+            while d < sem.end {
+                if DemoSession.at(d, calendar: calendar) != nil {
+                    semaine += 1
+                }
+                d = calendar.date(byAdding: .day, value: 1, to: d)
+                    ?? sem.end
+            }
+        }
+        let moisCourant = DemoMonth.recent(calendar: calendar).first
+        let mois = moisCourant?.count ?? 0
+        let series = moisCourant?.sessions
+            .reduce(0) { $0 + $1.series } ?? 0
+        let pieces = moisCourant?.sessions
+            .reduce(0) { $0 + $1.coins } ?? 0
+        let nomMois = Date().formatted(.dateTime.month(.wide))
+            .capitalized
+        let sSem = semaine == 1 ? "séance." : "séances."
+
+        var mots: [MotCine] = []
+        var i = 0
+        func gris(_ t: String) {
+            mots.append(MotCine(id: i, texte: t)); i += 1
+        }
+        func blanc(_ t: String, _ st: WoopSticker? = nil) {
+            mots.append(MotCine(id: i, texte: t, blanc: true,
+                                sticker: st)); i += 1
+        }
+        func ligne() -> [MotCine] {
+            let l = mots
+            mots = []
+            return l
+        }
+
+        // ACTE 1 — la semaine : un vrai paragraphe.
+        gris("Cette"); gris("semaine,"); gris("tu"); gris("as")
+        let a1l1 = ligne()
+        gris("enchaîné"); blanc("\(semaine)"); blanc(sSem, .flamme)
+        let a1l2 = ligne()
+        gris("La"); gris("flamme"); gris("ne"); gris("s'est")
+        gris("pas")
+        let a1l3 = ligne()
+        gris("éteinte"); gris("une"); gris("seule"); gris("fois —")
+        let a1l4 = ligne()
+        gris("et"); gris("ça"); gris("se"); gris("voit.")
+        let acte1 = ActeCine(titre: "Ta semaine.",
+                             lignes: [a1l1, a1l2, a1l3, a1l4, ligne()])
+
+        // ACTE 2 — le mois : les trois chiffres, sommés des données.
+        i = 0
+        gris("\(nomMois),"); gris("c'est"); gris("déjà")
+        let a2l1 = ligne()
+        blanc("\(mois)"); blanc("séances,")
+        blanc("\(series)"); blanc("séries,")
+        let a2l2 = ligne()
+        gris("et"); blanc("+\(pieces)"); blanc("pièces")
+        let a2l3 = ligne()
+        gris("dans"); gris("le")
+        gris("coffre.")
+        mots[mots.count - 1] = MotCine(
+            id: mots[mots.count - 1].id, texte: "coffre.",
+            sticker: moisCourant?.sessions.first?.cat)
+        let a2l4 = ligne()
+        gris("La"); gris("régularité"); gris("paie.")
+        let acte2 = ActeCine(titre: "\(nomMois).",
+                             lignes: [a2l1, a2l2, a2l3, a2l4, ligne()])
+
+        // ACTE 3 — l'annonce, seule.
+        i = 0
+        gris("Ton"); gris("calendrier"); gris("t'attend.")
+        let acte3 = ActeCine(titre: "Ton calendrier.",
+                             lignes: [ligne()])
+        return [acte1, acte2, acte3]
+    }
+
+    private func jouer() async {
+        if actes.isEmpty { actes = fabrique() }
+        // Le temps de LIRE — une vraie page produit.
+        let durees: [Double] = [3.2, 3.6, 1.4]
+        let anims: [Double] = [2.6, 2.9, 1.0]
+        for a in 0 ..< actes.count {
+            guard !fini else { return }
+            acte = a
+            fuiteActe = 0
+            p = 0
+            withAnimation(reduceMotion
+                ? .easeOut(duration: 0.5)
+                : .easeOut(duration: anims[a])) { p = 1 }
+            // L'haptique LOURDE du slam, calée sur sa fenêtre (0,80 de
+            // l'easeOut ≈ 0,62 du temps).
+            if !reduceMotion, actes[a].aSticker {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(
+                        Int(anims[a] * 620)))
+                    guard !fini else { return }
+                    UIImpactFeedbackGenerator(style: .heavy)
+                        .impactOccurred(intensity: 1.0)
+                }
+            }
+            try? await Task.sleep(for: .seconds(
+                reduceMotion ? 1.0 : durees[a]))
+            guard !fini else { return }
+            if a < actes.count - 1 {
+                // La fuite vers le haut + le souffle de transition.
+                withAnimation(.easeIn(duration: 0.4)) { fuiteActe = 1 }
+                if !reduceMotion {
+                    UIImpactFeedbackGenerator(style: .soft)
+                        .impactOccurred(intensity: 0.5)
+                }
+                try? await Task.sleep(for: .milliseconds(420))
+            }
+        }
+        finir(vite: false)
+    }
+
+    /// La sortie caméra : le texte s'enfuit, le voile se lève, la page
+    /// dessous arrive du flou en zoom. Le skip = la même sortie,
+    /// pressée.
+    private func finir(vite: Bool) {
+        guard !fini else { return }
+        fini = true
+        withAnimation(.easeInOut(duration: vite ? 0.32 : 0.55)) {
+            fuite = 1
+            sortie = 1
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(vite ? 380 : 620))
+            onFin()
         }
     }
 }

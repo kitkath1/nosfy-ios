@@ -419,7 +419,11 @@ struct HomeAuroraView: View {
                           // « Tout voir » ouvre le CALENDRIER (l'onglet
                           // Progrès depuis le 18-08) — l'animation de
                           // bascule de la maison, le chevron y ramène.
+                          // Et il POSE la demande d'OUVERTURE : la
+                          // cinématique-bilan ne joue que par cette
+                          // porte (arbitrage 19-08).
                           action: {
+                              CalCine.demande = true
                               withAnimation(.easeOut(duration: 0.3)) {
                                   selection = .progress
                               }
