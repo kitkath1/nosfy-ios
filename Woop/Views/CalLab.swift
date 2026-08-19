@@ -95,6 +95,11 @@ struct CalendarStickersPage: View {
     /// page arrive DU flou.
     @State private var cineActive = false
     @State private var cineSortie: CGFloat = 1
+    /// LA PAGE DU MOIS (l'iPod) : ouverte par le tap d'une card de
+    /// front. `-ipodLab` : ouverte d'office sur le premier mois.
+    @State private var moisOuvert: DemoMonth?
+    private static let ipodBanc =
+        CommandLine.arguments.contains("-ipodLab")
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -248,8 +253,19 @@ struct CalendarStickersPage: View {
                     cineSortie = 0
                     cineActive = true
                 }
+                // Le banc de l'iPod : direct dans la page du mois.
+                if Self.ipodBanc, moisOuvert == nil {
+                    moisOuvert = DemoMonth
+                        .recent(calendar: calendar).first
+                }
             }
             .onDisappear { BacMotion.shared.stop() }
+            // LA PAGE DU MOIS — l'iPod de verre.
+            .fullScreenCover(item: $moisOuvert) { m in
+                MoisIpod(month: m, calendar: calendar) {
+                    moisOuvert = nil
+                }
+            }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
                 StoryPortal(from: launch.rect, session: launch.session) {
@@ -280,13 +296,14 @@ struct CalendarStickersPage: View {
         launchStory(session: s.storySession, rect: rect) { flashDay = nil }
     }
 
-    /// Le tap sur une card mensuelle : le flash, et c'est tout pour
-    /// l'instant. TODO jalon 2 : la page du mois s'ouvre d'ici (le rect
-    /// tapé = le portail) — ne PAS brancher la story par réflexe.
+    /// Le tap sur une card mensuelle : le flash, puis LA PAGE DU MOIS
+    /// (l'iPod). Le portail par expansion depuis le rect viendra au
+    /// fouettage — l'entrée est un cover simple pour l'instant.
     private func monthTapped(_ m: DemoMonth, rect: CGRect) {
         flashRow = m.start
         Task {
-            try? await Task.sleep(for: .milliseconds(350))
+            try? await Task.sleep(for: .milliseconds(260))
+            moisOuvert = m
             withAnimation(.easeOut(duration: 0.3)) { flashRow = nil }
         }
     }
@@ -1677,6 +1694,1225 @@ private struct CineBilan: View {
         Task {
             try? await Task.sleep(for: .milliseconds(vite ? 380 : 620))
             onFin()
+        }
+    }
+}
+
+// MARK: - L'onde d'allumage (l'iPod)
+
+/// L'arc qui naît sous le doigt et court des deux côtés jusqu'à se
+/// rejoindre à l'opposé — UN progrès Animatable (la loi des rampes).
+/// À la relâche, le même arc SE RETIRE vers le point de contact.
+private struct OndeAllumage: View, Animatable {
+    var p: CGFloat
+    var a0: CGFloat
+    let diametre: CGFloat
+
+    var animatableData: CGFloat {
+        get { p }
+        set { p = newValue }
+    }
+
+    var body: some View {
+        Circle()
+            .trim(from: 0.5 - Double(p) * 0.5,
+                  to: 0.5 + Double(p) * 0.5)
+            .stroke(Color(red: 1.00, green: 0.62, blue: 0.26)
+                .opacity(0.5),
+                style: StrokeStyle(lineWidth: 20, lineCap: .round))
+            .frame(width: diametre - 24, height: diametre - 24)
+            .rotationEffect(.radians(Double(a0) + .pi))
+            .blur(radius: 14)
+    }
+}
+
+/// Une salve de poudre au cran : née au point du doigt, éjectée en
+/// tangente (jalon 14 — la recette PoudreBac).
+private struct SalveCran: Identifiable, Equatable {
+    let id = UUID()
+    let t0: Date
+    let a0: CGFloat
+    let dir: CGFloat
+    let graine: Int
+}
+
+/// La gerbe : 16 grains par salve, tangente amortie, gravité, étoile-
+/// facette verbatim. L'horloge DORT quand `salves` est vide.
+private struct PoudreCran: View {
+    let salves: [SalveCran]
+    let centre: CGFloat
+
+    private static let t0 = Date()
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: salves.isEmpty
+                                    || reduceMotion)) { tl in
+            Canvas { ctx, _ in
+                ctx.blendMode = .plusLighter
+                for salve in salves {
+                    dessiner(salve, ctx: &ctx, quand: tl.date)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func dessiner(_ s: SalveCran, ctx: inout GraphicsContext,
+                          quand: Date) {
+        let age = quand.timeIntervalSince(s.t0)
+        for i in 0 ..< 16 {
+            let g = s.graine &+ i
+            let vie: Double = 0.45 + 0.4 * Self.hachis(g, 2)
+            let cyc: Double = age / vie
+            guard cyc > 0, cyc < 1 else { continue }
+            let r0: CGFloat = 104.0
+                + 12.0 * CGFloat(Self.hachis(g, 1) - 0.5)
+            let x0: CGFloat = centre + cos(s.a0) * r0
+            let y0: CGFloat = centre + sin(s.a0) * r0
+            // La tangente amortie + la dérive radiale + la gravité.
+            let vT: CGFloat = s.dir
+                * (60.0 + 70.0 * CGFloat(Self.hachis(g, 3)))
+                * (1.0 - 0.5 * CGFloat(cyc))
+            let vR: CGFloat = 8.0 + 26.0 * CGFloat(Self.hachis(g, 4))
+            let tx: CGFloat = -sin(s.a0)
+            let ty: CGFloat = cos(s.a0)
+            let t = CGFloat(age)
+            let x: CGFloat = x0 + tx * vT * t
+                + cos(s.a0) * vR * t
+            let y: CGFloat = y0 + ty * vT * t
+                + sin(s.a0) * vR * t + 130.0 * t * t
+            let tw: Double = 0.5 + 0.5
+                * sin(age * (7.0 + 12.0 * Self.hachis(g, 5))
+                      + Self.hachis(g, 6) * 6.28)
+            let a: Double = sin(.pi * cyc) * sin(.pi * cyc)
+                * (0.25 + 0.75 * tw * tw * tw)
+            guard a > 0.02 else { continue }
+            let r: CGFloat = CGFloat(0.8 + 1.4 * Self.hachis(g, 7))
+            let c: Color = Self.hachis(g, 8) < 0.34
+                ? Color(red: 0.96, green: 0.97, blue: 1.00)
+                : Color(red: 1.00, green: 0.62, blue: 0.26)
+            var etoile = Path()
+            etoile.move(to: CGPoint(x: -r, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: -r * 0.22))
+            etoile.addLine(to: CGPoint(x: r, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: r * 0.22))
+            etoile.closeSubpath()
+            etoile.move(to: CGPoint(x: 0, y: -r))
+            etoile.addLine(to: CGPoint(x: r * 0.22, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: r))
+            etoile.addLine(to: CGPoint(x: -r * 0.22, y: 0))
+            etoile.closeSubpath()
+            ctx.fill(etoile.applying(CGAffineTransform(
+                translationX: x, y: y)),
+                with: .color(c.opacity(a * 0.85)))
+            ctx.fill(Path(ellipseIn: CGRect(
+                x: x - 0.45, y: y - 0.45, width: 0.9, height: 0.9)),
+                with: .color(Color.white.opacity(a * 0.9)))
+        }
+    }
+
+    private static func hachis(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233)
+            * 43758.5453
+        return s - floor(s)
+    }
+}
+
+// MARK: - La page du mois (l'iPod)
+
+/// LA PAGE DU MOIS : l'écran feuillette les sessions (les grandes
+/// `SessionVinyle` — elles ont survécu pour ça), et dessous LA MOLETTE
+/// DE VERRE : un iPod classic dont le corps est en Liquid Glass posé
+/// sur la scène vidéo (le contour = le bourrelet de réfraction, la
+/// signature liquide — jamais un trait). LE GESTE : le doigt tourne
+/// sur la molette, chaque cran (~40°) passe une session avec le CLIC
+/// du vrai iPod ; ⏮ ⏭ tapent aussi. Le bouton central : la story de
+/// la session (plus tard).
+private struct MoisIpod: View {
+    let month: DemoMonth
+    let calendar: Calendar
+    var onClose: () -> Void
+
+    @State private var index = 0
+    /// Le sens du dernier pas (±1) — l'écran glisse du bon côté.
+    @State private var sens: CGFloat = 1
+    /// L'angle du doigt au dernier évènement, et le cumul du cran.
+    @State private var angleDoigt: CGFloat?
+    @State private var cran: CGFloat = 0
+    /// L'appui du bouton central — le puits s'enfonce.
+    @State private var puitsAppui = false
+    /// Le flash d'un glyphe tapé (2 = ⏮, 3 = ⏭).
+    @State private var glypheFlash: Int?
+    /// LA LAMPE DU DOIGT (jalon 8) : son angle (le dernier connu — la
+    /// lueur s'éteint sur place), son allumage, et la vitesse angulaire
+    /// lissée (elle force l'intensité).
+    @State private var angleLampe: CGFloat = 0
+    @State private var lampeVive: Double = 0
+    @State private var omega: CGFloat = 0
+    @State private var tempsDoigt: Date?
+    /// LA BRAISE DU CRAN (jalon 9) : l'éclat événementiel posé à
+    /// l'angle du pas, et le BLOOM de l'écran qui l'accompagne.
+    @State private var braiseCran: CGFloat = 0
+    @State private var braiseAngle: CGFloat = 0
+    @State private var lume: CGFloat = 0
+    /// La BORNE refusée : la vignette de l'écran se creuse.
+    @State private var refus: CGFloat = 0
+    /// LE TOUCHER (jalons 12-13-15-17-18) : la rotation cumulée (le
+    /// grain qui tourne), le clic PRÉPARÉ (la latence tue le
+    /// crantage), le plancher entre deux clics, les crans du geste en
+    /// cours, la butée toquée une seule fois, la roue libre.
+    @State private var angleCumul: CGFloat = 0
+    @State private var clic = UIImpactFeedbackGenerator(style: .rigid)
+    @State private var dernierClic: Date?
+    @State private var cransFaits = 0
+    @State private var borneToquee = false
+    @State private var inertie: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var motion = BacMotion.shared
+
+    /// La braise maison (la couleur de la poudre), et la lune.
+    private let braise = Color(red: 1.00, green: 0.62, blue: 0.26)
+    private let lune = Color(red: 0.96, green: 0.97, blue: 1.00)
+    /// Le cran : ~40° de molette par session.
+    private let pasCran = CGFloat.pi / 4.5
+
+    // LA LUMIÈRE (plan v2 + les quinze touches du peintre) :
+    /// Le foyer — l'anneau d'or sous le rim : couve 0,10, s'embrase à
+    /// la saisie, respire avec la vitesse, se rendort à la relâche.
+    @State private var foyer: Double = 0
+    /// L'onde d'allumage : l'arc qui naît sous le doigt et se referme
+    /// à l'opposé (Animatable, ancré à l'angle de saisie).
+    @State private var onde: CGFloat = 0
+    @State private var ondeAngle: CGFloat = 0
+    /// La soudure : l'éclat bref au point de jonction des deux fronts.
+    @State private var soudure: CGFloat = 0
+    /// Le verre qui se réveille : sa teinte s'éclaircit au drag.
+    @State private var verreTint: Double = 0.12
+    /// La rosée du premier contact (Ø 40, absorbée par l'onde).
+    @State private var rosee: CGFloat = 0
+    /// La lampe refroidit à la butée (braise → lune) : la lumière dit
+    /// non.
+    @State private var lampeFroide = false
+    /// Le glyphe que la lampe frôle (le pop) et la vrille du shuffle.
+    @State private var glypheChaud: Int?
+    @State private var vrille: Double = 0
+    /// Le « presque » : la pochette tremble à un cheveu du cran.
+    @State private var tremble: Double = 0
+    @State private var presqueArme = false
+    /// Les salves de poudre du cran (cap 3 — l'horloge dort à vide).
+    @State private var salves: [SalveCran] = []
+    /// L'allumage de la page : le rétroéclairage puis le foyer.
+    @State private var allume: CGFloat = 0
+
+    // LES COTES MAÎTRESSES (jalon 1) — dérivation, gabarit 393×852 :
+    // plaque = W − 32 ; donut = 0,676·plaque ; puits = 0,410·donut
+    // (le ratio du vrai iPod 6G, 15,9/38,4) ; glyphes à r 86.
+    private let plaqueL: CGFloat = 361
+    private let ecranH: CGFloat = 392
+    private let moletteH: CGFloat = 280
+    private let donut: CGFloat = 244
+    private let puits: CGFloat = 100
+    private let rGlyphes: CGFloat = 86
+
+    private let formePlaque = RoundedRectangle(cornerRadius: 26,
+                                               style: .continuous)
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.ignoresSafeArea()
+            // La scène : le verre de la molette n'existe que par ce
+            // qu'il réfracte.
+            FondCalendrier()
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+            // LA FENÊTRE DE LUMIÈRE (jalon 6) : le voile s'OUVRE sous
+            // la molette — STATIQUE, jamais animé (constant ≠ uniforme).
+            Rectangle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.22), location: 0.0),
+                        .init(color: .black.opacity(0.36), location: 0.5),
+                        .init(color: .black.opacity(0.52), location: 1.0),
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.76),
+                    startRadius: 60, endRadius: 460))
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+            VStack(spacing: 0) {
+                enTete
+                plaqueEcran
+                    .padding(.top, 6)
+                // L'ENTREFER : 14 pt de noir nu entre les deux plaques
+                // — aucune ombre n'a le droit d'y mordre.
+                Color.clear.frame(height: 14)
+                plaqueMolette
+                Spacer(minLength: 0)
+            }
+        }
+        .preferredColorScheme(.dark)
+        // L'ALLUMAGE (touche 15) : le rétroéclairage de l'écran
+        // d'abord, le foyer qui prend 200 ms après — l'iPod démarre.
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5)) { allume = 1 }
+            Task {
+                try? await Task.sleep(for: .milliseconds(200))
+                withAnimation(.easeOut(duration: 0.4)) { foyer = 0.10 }
+            }
+        }
+        .onDisappear { inertie?.cancel() }
+    }
+
+    private var enTete: some View {
+        HStack(spacing: 14) {
+            ChipVerre(symbole: "chevron.left", label: "Retour",
+                      action: onClose)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(month.titre(calendar: calendar))
+                    .font(.inter(24, .bold)).tracking(-0.4)
+                    .foregroundStyle(WoopGradient.titleFade)
+                Text(month.sousTitre)
+                    .font(.inter(12, .medium))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+
+    // MARK: La plaque écran (jalon 2)
+
+    /// Le panneau sombre de la réf : il vit par un DÔME de lumière,
+    /// jamais un aplat ni un trait. La tourne se tranche à SON bord.
+    private var plaqueEcran: some View {
+        // L'ÉCRAN QUI PENCHE (jalon 12) : la tension du cran se lit
+        // AVANT de claquer — tanh borne la fuite aux butées.
+        let f: CGFloat = cran / pasCran
+        let penche: CGFloat = CGFloat(tanh(Double(f)))
+        return ZStack {
+            fondEcran
+            VStack(spacing: 10) {
+                SessionVinyle(session: month.sessions[index])
+                    .frame(height: 330)
+                    .padding(.horizontal, 16)
+                    .shadow(color: .black.opacity(0.5),
+                            radius: 14, y: 6)
+                    .offset(x: -penche * 22.0)
+                    .rotation3DEffect(
+                        .degrees(Double(-penche) * 3.0),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: 0.6)
+                    // Le presque (tremble) + l'appui long du puits qui
+                    // SOULÈVE la pochette (touche 7) + le
+                    // rétroéclairage de l'allumage (touche 15).
+                    .rotationEffect(.degrees(tremble))
+                    .offset(y: puitsAppui ? -2.0 : 0.0)
+                    .brightness(-0.25 * (1.0 - Double(allume)))
+                    .animation(.spring(response: 0.3,
+                                       dampingFraction: 0.7),
+                               value: puitsAppui)
+                    .id(index)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: sens > 0
+                            ? .trailing : .leading)
+                            .combined(with: .opacity),
+                        removal: .move(edge: sens > 0
+                            ? .leading : .trailing)
+                            .combined(with: .opacity)))
+                Text("\(index + 1) / \(month.sessions.count)")
+                    .font(.inter(12, .medium)).tracking(0.6)
+                    .foregroundStyle(Color.inkMuted)
+            }
+            .padding(.vertical, 18)
+            .animation(.spring(response: 0.4, dampingFraction: 0.85),
+                       value: index)
+        }
+        .frame(width: plaqueL, height: ecranH)
+        .clipShape(formePlaque)
+        .shadow(color: .black.opacity(0.50), radius: 18, y: 8)
+    }
+
+    /// Les couches de la plaque écran — chacune sa variable (la loi du
+    /// type-checker), les plusLighter dans LEUR groupe.
+    @ViewBuilder private var fondEcran: some View {
+        // Le dôme s'embrase au cran (le bloom, jalon 9) ; la vignette
+        // se creuse quand la borne REFUSE.
+        let dome: Double = 0.07 + 0.06 * Double(lume)
+        let creux: Double = 0.10 + 0.08 * Double(refus)
+        formePlaque.fill(LinearGradient(
+            colors: [Color(white: 0.085), Color(white: 0.04)],
+            startPoint: .top, endPoint: .bottom))
+        formePlaque.fill(EllipticalGradient(
+            stops: [
+                .init(color: .white.opacity(dome), location: 0.0),
+                .init(color: .white.opacity(0.02), location: 0.45),
+                .init(color: .clear, location: 1.0),
+            ],
+            center: UnitPoint(x: 0.5, y: -0.18),
+            startRadiusFraction: 0, endRadiusFraction: 1.05))
+            .blendMode(.plusLighter)
+            .compositingGroup()
+        formePlaque.fill(RadialGradient(
+            stops: [
+                .init(color: .clear, location: 0.72),
+                .init(color: .black.opacity(creux), location: 1.0),
+            ],
+            center: .center, startRadius: 0, endRadius: 265))
+        GrainTexture.tuile
+            .resizable(resizingMode: .tile)
+            .opacity(0.05)
+            .blendMode(.overlay)
+            .clipShape(formePlaque)
+        // LE REFLET MONTE (touche 13) : l'embrasement de la molette
+        // rebondit sur le bord bas de l'écran — la cohérence spatiale.
+        formePlaque.fill(LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0.74),
+                .init(color: braise.opacity(0.14), location: 1.0),
+            ],
+            startPoint: .top, endPoint: .bottom))
+            .opacity(min(0.5, foyer) * 1.4)
+            .blendMode(.plusLighter)
+            .compositingGroup()
+    }
+
+    // MARK: La plaque molette (jalon 3)
+
+    /// Même famille de gris — le dôme mangé par l'objet — et l'ASSISE
+    /// du donut : l'ombre portée + le rebond de lumière. L'objet est
+    /// posé, plus flottant.
+    private var plaqueMolette: some View {
+        ZStack {
+            ZStack {
+                fondMolette
+                assiseDonut
+            }
+            .compositingGroup()
+            // Le VERRE vit HORS de tout groupe (la loi CardMorph).
+            // TOUTE la lumière vit DANS la molette (le verdict de la
+            // zone verte) — rien n'est dessiné sur la plaque.
+            moletteCorps
+        }
+        .frame(width: plaqueL, height: moletteH)
+        .clipShape(formePlaque)
+        .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
+    }
+
+    /// LE CHAMP DE LA SCÈNE (le verdict de la zone verte + son
+    /// screenshot des pastilles) : la fumée lumineuse qui vit SOUS le
+    /// verre, DANS l'empreinte de la molette — le blob de braise suit
+    /// le doigt, la lune répond à l'opposé, la nappe de veille dort au
+    /// centre. Le masque tue tout avant le bord : rien ne déborde de
+    /// l'objet, jamais.
+    private var champScene: some View {
+        let xB: CGFloat = 122.0 + cos(angleLampe) * 58.0
+        let yB: CGFloat = 122.0 + sin(angleLampe) * 58.0
+        let xF: CGFloat = 122.0 - cos(angleLampe) * 52.0
+        let yF: CGFloat = 122.0 - sin(angleLampe) * 52.0
+        return ZStack {
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: braise.opacity(0.12),
+                              location: 0.0),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 110))
+                .frame(width: 220, height: 220)
+                .offset(x: motion.pench.width * 6,
+                        y: motion.pench.height * 6)
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: braise.opacity(0.55),
+                              location: 0.0),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 70))
+                .frame(width: 140, height: 140)
+                .blur(radius: 18)
+                .position(x: xB, y: yB)
+                .opacity(foyer * 2.2)
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: lune.opacity(0.35),
+                              location: 0.0),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 60))
+                .frame(width: 120, height: 120)
+                .blur(radius: 22)
+                .position(x: xF, y: yF)
+                .opacity(foyer * 1.3)
+        }
+        .frame(width: donut, height: donut)
+        .mask(Circle().frame(width: 230, height: 230))
+        .blendMode(.plusLighter)
+        .compositingGroup()
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder private var fondMolette: some View {
+        formePlaque.fill(LinearGradient(
+            colors: [Color(white: 0.085), Color(white: 0.04)],
+            startPoint: .top, endPoint: .bottom))
+        formePlaque.fill(EllipticalGradient(
+            stops: [
+                .init(color: .white.opacity(0.05), location: 0.0),
+                .init(color: .clear, location: 0.9),
+            ],
+            center: UnitPoint(x: 0.5, y: -0.25),
+            startRadiusFraction: 0, endRadiusFraction: 1.0))
+            .blendMode(.plusLighter)
+            .compositingGroup()
+        GrainTexture.tuile
+            .resizable(resizingMode: .tile)
+            .opacity(0.05)
+            .blendMode(.overlay)
+            .clipShape(formePlaque)
+    }
+
+    /// L'assise : l'ombre sous le donut, et le liseré de lumière que
+    /// l'objet renvoie sur sa plaque (masqué au tiers bas).
+    private var assiseDonut: some View {
+        ZStack {
+            Circle()
+                .fill(Color.black)
+                .frame(width: donut, height: donut)
+                .blur(radius: 18)
+                .offset(y: 8)
+                .opacity(0.45)
+            Circle()
+                .stroke(Color.white.opacity(0.05), lineWidth: 10)
+                .frame(width: donut + 8, height: donut + 8)
+                .blur(radius: 12)
+                .mask(LinearGradient(
+                    stops: [
+                        .init(color: .black, location: 0.0),
+                        .init(color: .black, location: 0.7),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+                .blendMode(.plusLighter)
+                .compositingGroup()
+        }
+    }
+
+    // MARK: La molette (jalons 4-5-6)
+
+    /// Le corps : l'anatomie MATE sous le VERRE — l'anneau gagne son
+    /// volume par les dégradés, le verre rajoute sa profondeur et son
+    /// rim (le SEUL contour), le puits est creusé par-dessus.
+    private var moletteCorps: some View {
+        ZStack {
+            donutAnatomie
+            // LE CHAMP : la scène lumineuse de l'objet, sous tout.
+            champScene
+            // LE GRAIN QUI TOURNE (jalon 15) : le Canvas est STATIQUE,
+            // c'est LE CALQUE qui tourne avec le doigt — la matière
+            // suit le geste. Et l'anisotropie à mi-vitesse, modulée par
+            // le poignet — JAMAIS un terme temporel (le glint est mort
+            // deux fois).
+            grainTournant
+            anisotropie
+            // L'OMBRE DE LA MAIN (touche 2) : elle orbite à l'OPPOSÉ
+            // de la lampe — la main bloque le foyer. Blend NORMAL.
+            ombreMain
+            // L'ONDE D'ALLUMAGE (plan v2) : l'arc naît sous le doigt
+            // et se referme à l'opposé — un allumage, pas un variateur.
+            ZStack {
+                OndeAllumage(p: onde, a0: ondeAngle, diametre: donut)
+                soudureVue
+                roseeVue
+            }
+            .blendMode(.plusLighter)
+            .compositingGroup()
+            .allowsHitTesting(false)
+            // LA LAMPE DU DOIGT + LA BRAISE DU CRAN (jalons 8-9) :
+            // SOUS le verre — le rim s'allume localement, la vraie
+            // signature liquide.
+            lampesVivantes
+            // LES FLÈCHES VIVENT DANS LE VERRE (le verdict) : sous la
+            // vitre, réfractées avec la scène.
+            glyphes
+            // LE VERRE QUI SE RÉVEILLE : .clear (la recette prouvée au
+            // banc -calBg), la teinte s'éclaircit au drag. Bounds 244
+            // CONSTANTS, gravés à jamais.
+            Circle()
+                .fill(Color.clear)
+                .glassEffect(Glass.clear
+                    .tint(Color.black.opacity(verreTint)).interactive(),
+                    in: Circle())
+            puitsVue
+            // LA GERBE DU CRAN (touche 12) : au-dessus du verre, dans
+            // son groupe — l'horloge dort quand il n'y a pas de salve.
+            PoudreCran(salves: salves, centre: 122.0)
+                .frame(width: donut + 80, height: donut + 80)
+                .compositingGroup()
+        }
+        .frame(width: donut, height: donut)
+        .contentShape(Circle())
+        // LE GESTE DE L'iPOD : le doigt TOURNE, chaque cran clique —
+        // et à la relâche, la ROUE LIBRE continue l'élan.
+        .gesture(DragGesture(minimumDistance: 2)
+            .onChanged { v in doigtBouge(v) }
+            .onEnded { _ in doigtLache() })
+        .overlay {
+            // Les zones de tap : PETITES, sur les glyphes seuls — une
+            // grande zone volait le départ du drag (le cousin du
+            // voleur, soupçonné dans le « ça marche quasiment pas »).
+            ZStack {
+                Color.clear.frame(width: 56, height: 56)
+                    .contentShape(Circle())
+                    .onTapGesture { flanc(2, d: -1) }
+                    .offset(x: -rGlyphes)
+                Color.clear.frame(width: 56, height: 56)
+                    .contentShape(Circle())
+                    .onTapGesture { flanc(3, d: 1) }
+                    .offset(x: rGlyphes)
+                Color.clear.frame(width: 56, height: 56)
+                    .contentShape(Circle())
+                    .onTapGesture { melanger() }
+                    .offset(y: -rGlyphes)
+            }
+        }
+    }
+
+    /// L'anatomie mate (jalon 4) : alphas ×0,6 — le verre rajoute le
+    /// reste. Les plusLighter dans LEUR groupe.
+    private var donutAnatomie: some View {
+        ZStack {
+            Circle().fill(LinearGradient(
+                colors: [Color(white: 0.06), Color(white: 0.032)],
+                startPoint: .top, endPoint: .bottom))
+            Circle().fill(RadialGradient(
+                stops: [
+                    .init(color: .clear, location: 0.86),
+                    .init(color: .black.opacity(0.11), location: 1.0),
+                ],
+                center: .center, startRadius: 0, endRadius: 122))
+            // Le tombant vers le puits (Ø 100 = location 0,41).
+            Circle().fill(RadialGradient(
+                stops: [
+                    .init(color: .black.opacity(0.13), location: 0.40),
+                    .init(color: .black.opacity(0.03), location: 0.47),
+                    .init(color: .clear, location: 0.56),
+                ],
+                center: .center, startRadius: 0, endRadius: 122))
+            Circle()
+                .stroke(Color.white.opacity(0.09), lineWidth: 1.5)
+                .blur(radius: 1.2)
+                .mask(LinearGradient(
+                    stops: [
+                        .init(color: .black, location: 0.0),
+                        .init(color: .clear, location: 0.55),
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+                .blendMode(.plusLighter)
+        }
+        .frame(width: donut, height: donut)
+        .compositingGroup()
+    }
+
+    /// LES LAMPES VIVANTES : la lueur qui orbite avec le doigt (r 104)
+    /// et la braise brève posée à l'angle du cran — chacune dans SON
+    /// groupe, sous le verre.
+    private var lampesVivantes: some View {
+        let force: Double = 0.12 + Double(min(0.10, abs(omega) * 0.03))
+        let xL: CGFloat = 122.0 + cos(angleLampe) * 104.0
+        let yL: CGFloat = 122.0 + sin(angleLampe) * 104.0
+        let xB: CGFloat = 122.0 + cos(braiseAngle) * 104.0
+        let yB: CGFloat = 122.0 + sin(braiseAngle) * 104.0
+        // Le froid des bornes (touche 9) et l'évaporation (touche 14) :
+        // la couleur dit non, la mort s'élargit au lieu de s'éteindre.
+        let teinteLampe: Color = lampeFroide ? lune : braise
+        let evapore: CGFloat = 1.0 + (1.0 - CGFloat(lampeVive)) * 0.27
+        return ZStack {
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: teinteLampe.opacity(0.18),
+                              location: 0.0),
+                        .init(color: teinteLampe.opacity(0.05),
+                              location: 0.45),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 75))
+                .frame(width: 150, height: 150)
+                .scaleEffect(evapore)
+                .position(x: xL, y: yL)
+                .opacity(lampeVive * force / 0.12)
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: braise.opacity(0.16),
+                              location: 0.0),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .center, startRadius: 0, endRadius: 55))
+                .frame(width: 110, height: 110)
+                .position(x: xB, y: yB)
+                .opacity(Double(braiseCran))
+        }
+        .frame(width: donut, height: donut)
+        .blendMode(.plusLighter)
+        .compositingGroup()
+        .allowsHitTesting(false)
+    }
+
+    /// L'ombre de la main : la physique inverse — imperceptible, lue.
+    private var ombreMain: some View {
+        let xO: CGFloat = 122.0 - cos(angleLampe) * 104.0
+        let yO: CGFloat = 122.0 - sin(angleLampe) * 104.0
+        return Circle()
+            .fill(Color.black.opacity(0.10))
+            .frame(width: 150, height: 150)
+            .blur(radius: 30)
+            .position(x: xO, y: yO)
+            .opacity(lampeVive)
+            .frame(width: donut, height: donut)
+            .allowsHitTesting(false)
+    }
+
+    /// La soudure : les deux fronts se rejoignent — un éclat, 80 ms.
+    private var soudureVue: some View {
+        let xS: CGFloat = 122.0 + cos(ondeAngle + .pi) * 110.0
+        let yS: CGFloat = 122.0 + sin(ondeAngle + .pi) * 110.0
+        return Circle()
+            .fill(Color.white.opacity(0.5))
+            .frame(width: 26, height: 26)
+            .blur(radius: 8)
+            .position(x: xS, y: yS)
+            .opacity(Double(soudure))
+            .frame(width: donut, height: donut)
+    }
+
+    /// La rosée du contact : le verre sent le doigt avant le geste.
+    private var roseeVue: some View {
+        let xR: CGFloat = 122.0 + cos(angleLampe) * 104.0
+        let yR: CGFloat = 122.0 + sin(angleLampe) * 104.0
+        return Circle()
+            .fill(Color.white.opacity(0.28))
+            .frame(width: 40, height: 40)
+            .blur(radius: 10)
+            .position(x: xR, y: yR)
+            .opacity(Double(rosee))
+            .frame(width: donut, height: donut)
+    }
+
+    /// Le grain : 90 points gravés une fois — le calque porte la
+    /// rotation, le Canvas ne se redessine jamais.
+    private var grainTournant: some View {
+        Canvas { ctx, _ in
+            for i in 0 ..< 90 {
+                let rho: CGFloat = 52.0
+                    + 66.0 * CGFloat(Self.hachis(i, 1))
+                let th: CGFloat = CGFloat(Self.hachis(i, 2))
+                    * 2.0 * .pi
+                let x: CGFloat = 122.0 + rho * cos(th)
+                let y: CGFloat = 122.0 + rho * sin(th)
+                let r: CGFloat = 0.7 + 0.7 * CGFloat(Self.hachis(i, 3))
+                let a: Double = 0.025 + 0.045 * Self.hachis(i, 4)
+                ctx.fill(Path(ellipseIn: CGRect(
+                    x: x - r, y: y - r,
+                    width: r * 2.0, height: r * 2.0)),
+                    with: .color(.white.opacity(a)))
+            }
+        }
+        .frame(width: donut, height: donut)
+        .rotationEffect(.radians(Double(angleCumul)))
+        .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
+            .frame(width: donut, height: donut))
+        .allowsHitTesting(false)
+    }
+
+    /// L'anisotropie : deux lobes doux qui tournent à MI-vitesse du
+    /// doigt (le brossage circulaire) + le poignet — zéro horloge.
+    private var anisotropie: some View {
+        AngularGradient(
+            stops: [
+                .init(color: .clear, location: 0.0),
+                .init(color: .white.opacity(0.035), location: 0.20),
+                .init(color: .clear, location: 0.28),
+                .init(color: .white.opacity(0.028), location: 0.70),
+                .init(color: .clear, location: 0.78),
+                .init(color: .clear, location: 1.0),
+            ],
+            center: .center)
+            .frame(width: donut, height: donut)
+            .blur(radius: 7)
+            .rotationEffect(.radians(Double(angleCumul) * 0.5
+                + Double(motion.pench.width) * 0.35))
+            .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
+                .frame(width: donut, height: donut))
+            .blendMode(.plusLighter)
+            .compositingGroup()
+            .allowsHitTesting(false)
+    }
+
+    private static func hachis(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233)
+            * 43758.5453
+        return s - floor(s)
+    }
+
+    /// La proximité de la lampe : le glyphe frôlé s'allume (32°).
+    private func proxGlyphe(_ angle: CGFloat) -> Double {
+        let seuil = cos(CGFloat.pi * 32.0 / 180.0)
+        let c = cos(angleLampe - angle)
+        guard c > seuil else { return 0 }
+        return Double((c - seuil) / (1.0 - seuil)) * lampeVive
+    }
+
+    /// La sérigraphie (jalon 6) : white 0,38 mesuré sur la réf — fixe
+    /// hors évènements ; le flash répond au tap, la lampe du doigt
+    /// allume les glyphes qu'elle frôle.
+    private var glyphes: some View {
+        let oS: Double = 0.38 + 0.62 * proxGlyphe(-.pi / 2.0)
+        let oB: Double = min(1.0, 0.38 + 0.62 * proxGlyphe(.pi)
+            + (glypheFlash == 2 ? 0.32 : 0.0))
+        let oF: Double = min(1.0, 0.38 + 0.62 * proxGlyphe(0)
+            + (glypheFlash == 3 ? 0.32 : 0.0))
+        let oP: Double = 0.38 + 0.62 * proxGlyphe(.pi / 2.0)
+        // LE HALO BLANC (le verdict) : le glyphe traversé s'illumine
+        // franc — blanc plein + halo qui bloom, pas un +30 % timide.
+        let hS: Double = proxGlyphe(-.pi / 2.0)
+        let hB: Double = proxGlyphe(.pi)
+        let hF: Double = proxGlyphe(0)
+        let hP: Double = proxGlyphe(.pi / 2.0)
+        return Group {
+            // Le shuffle : la seule vrille autorisée — un ÉVÉNEMENT au
+            // tap (touche 8), jamais un décor.
+            Image(systemName: "shuffle")
+                .rotationEffect(.degrees(vrille))
+                .scaleEffect(glypheChaud == 1 ? 1.12 : 1.0)
+                .offset(y: -rGlyphes)
+                .foregroundStyle(Color.white.opacity(oS))
+                .shadow(color: .white.opacity(hS * 0.9),
+                        radius: 9)
+            Image(systemName: "backward.fill")
+                .scaleEffect(glypheChaud == 2 ? 1.12 : 1.0)
+                .offset(x: -rGlyphes, y: 0.5)
+                .foregroundStyle(Color.white.opacity(oB))
+                .shadow(color: .white.opacity(hB * 0.9),
+                        radius: 9)
+            Image(systemName: "forward.fill")
+                .scaleEffect(glypheChaud == 3 ? 1.12 : 1.0)
+                .offset(x: rGlyphes, y: 0.5)
+                .foregroundStyle(Color.white.opacity(oF))
+                .shadow(color: .white.opacity(hF * 0.9),
+                        radius: 9)
+            Image(systemName: "playpause.fill")
+                .scaleEffect(glypheChaud == 4 ? 1.12 : 1.0)
+                .offset(y: rGlyphes)
+                .foregroundStyle(Color.white.opacity(oP))
+                .shadow(color: .white.opacity(hP * 0.9),
+                        radius: 9)
+        }
+        .font(.system(size: 13, weight: .semibold))
+        .animation(.spring(response: 0.22, dampingFraction: 0.55),
+                   value: glypheChaud)
+    }
+
+    /// Le passage de la lampe SUR un glyphe : le pop + le tick — on
+    /// roule sur les boutons (touche 4).
+    private func passeGlyphes() {
+        let angles: [(Int, CGFloat)] = [
+            (1, -.pi / 2.0), (2, .pi), (3, 0.0), (4, .pi / 2.0),
+        ]
+        var chaud: Int?
+        for (id, a) in angles where cos(angleLampe - a) > 0.92 {
+            chaud = id
+        }
+        if chaud != glypheChaud {
+            glypheChaud = chaud
+            if chaud != nil, lampeVive > 0.5 {
+                UIImpactFeedbackGenerator(style: .light)
+                    .impactOccurred(intensity: 0.3)
+            }
+        }
+    }
+
+    /// Le shuffle : session au hasard, la vrille du glyphe, deux temps
+    /// d'haptique.
+    private func melanger() {
+        guard month.sessions.count > 1 else { return }
+        var cible = index
+        while cible == index {
+            cible = Int.random(in: 0 ..< month.sessions.count)
+        }
+        withAnimation(.spring(response: 0.35,
+                              dampingFraction: 0.7)) {
+            vrille += 180
+        }
+        sens = cible > index ? 1 : -1
+        withAnimation(.spring(response: 0.4,
+                              dampingFraction: 0.85)) {
+            index = cible
+        }
+        UIImpactFeedbackGenerator(style: .rigid)
+            .impactOccurred(intensity: 0.6)
+        Task {
+            try? await Task.sleep(for: .milliseconds(90))
+            UIImpactFeedbackGenerator(style: .light)
+                .impactOccurred(intensity: 0.4)
+        }
+    }
+
+    /// Le double-tap du puits : retour à la plus récente, en cascade
+    /// accélérée (3 intermédiaires max) — touche 6.
+    private func retourRecent() {
+        guard index > 0 else { return }
+        UIImpactFeedbackGenerator(style: .rigid)
+            .impactOccurred(intensity: 0.6)
+        Task { @MainActor in
+            var pas = 0
+            while index > 0, pas < 3 {
+                avancer(-1)
+                pas += 1
+                try? await Task.sleep(for: .milliseconds(90))
+            }
+            if index > 0 {
+                sens = -1
+                withAnimation(.spring(response: 0.4,
+                                      dampingFraction: 0.85)) {
+                    index = 0
+                }
+            }
+        }
+    }
+
+    /// LE PUITS CREUSÉ (jalon 5) : le gradient INVERSÉ (le bas
+    /// s'allume dans un creux — le signe de la concavité), le croissant
+    /// d'ombre en haut, la lumière en bas. L'appui l'ENFONCE.
+    private var puitsVue: some View {
+        ZStack {
+            Circle().fill(LinearGradient(
+                colors: [Color(white: puitsAppui ? 0.008 : 0.012),
+                         Color(white: puitsAppui ? 0.06 : 0.05)],
+                startPoint: .top, endPoint: .bottom))
+            Circle()
+                .stroke(Color.black.opacity(0.55),
+                        lineWidth: puitsAppui ? 8 : 6)
+                .blur(radius: 5)
+                .offset(y: 4)
+                .mask(Circle())
+            // Le puits BOIT la lumière du foyer (touche 5).
+            Circle()
+                .stroke(Color.white.opacity(0.07 + 0.10 * foyer),
+                        lineWidth: 3)
+                .blur(radius: 3)
+                .offset(y: -2)
+                .blendMode(.plusLighter)
+                .compositingGroup()
+            Ellipse()
+                .fill(Color.white.opacity(0.03))
+                .frame(width: 46, height: 18)
+                .blur(radius: 6)
+                .offset(y: 22)
+        }
+        .frame(width: puits, height: puits)
+        .contentShape(Circle())
+        // Le double-tap : retour à la plus récente (touche 6) — posé
+        // AVANT l'appui pour ne pas se faire voler.
+        .onTapGesture(count: 2) { retourRecent() }
+        .onLongPressGesture(minimumDuration: 0.01, maximumDistance: 40,
+                            perform: {}) { on in
+            withAnimation(on
+                ? .easeOut(duration: 0.09)
+                : .spring(response: 0.25, dampingFraction: 0.7)) {
+                puitsAppui = on
+            }
+            // Le bouton a un POIDS : sourd à l'appui, net au retour.
+            if on {
+                UIImpactFeedbackGenerator(style: .soft)
+                    .impactOccurred(intensity: 0.8)
+            } else {
+                UIImpactFeedbackGenerator(style: .rigid)
+                    .impactOccurred(intensity: 0.5)
+            }
+        }
+    }
+
+    // MARK: Le toucher (jalons 12-13-17-18)
+
+    /// Le doigt bouge : déroulé ±π, cran, vitesse lissée, grain qui
+    /// tourne (et qui PATINE à la butée — l'embrayage glisse : le
+    /// doigt tourne 4× plus vite que la matière).
+    private func doigtBouge(_ v: DragGesture.Value) {
+        // Rattraper la roue libre : capture nette.
+        if inertie != nil {
+            inertie?.cancel()
+            inertie = nil
+            UIImpactFeedbackGenerator(style: .soft)
+                .impactOccurred(intensity: 0.30)
+        }
+        let dx = v.location.x - 122.0
+        let dy = v.location.y - 122.0
+        let a = atan2(dy, dx)
+        if let dernier = angleDoigt {
+            var d = a - dernier
+            if d > .pi { d -= 2.0 * .pi }
+            if d < -.pi { d += 2.0 * .pi }
+            let dehors = (d > 0 && index >= month.sessions.count - 1)
+                || (d < 0 && index <= 0)
+            cran += d
+            angleCumul += dehors ? d * 0.25 : d
+            let dt = max(
+                v.time.timeIntervalSince(tempsDoigt ?? v.time), 0.008)
+            omega += (d / CGFloat(dt) - omega) * 0.3
+            consommerCrans()
+        } else {
+            saisie()
+        }
+        // ASSIGNATION DIRECTE : le doigt EST l'animation.
+        angleLampe = a
+        angleDoigt = a
+        tempsDoigt = v.time
+        // On roule sur les boutons (touche 4).
+        passeGlyphes()
+    }
+
+    /// Les crans se consomment TANT QUE la borne le permet — sinon le
+    /// cran s'accumule (borné) et la butée TOQUE une seule fois.
+    private func consommerCrans() {
+        while cran > pasCran, index < month.sessions.count - 1 {
+            cran -= pasCran
+            avancer(1)
+            borneToquee = false
+        }
+        while cran < -pasCran, index > 0 {
+            cran += pasCran
+            avancer(-1)
+            borneToquee = false
+        }
+        if abs(cran) > pasCran {
+            cran = max(-pasCran * 2.2, min(pasCran * 2.2, cran))
+            if !borneToquee {
+                borneToquee = true
+                toqueBorne()
+            }
+            // La lampe REFROIDIT tant qu'on force (touche 9).
+            if !lampeFroide {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    lampeFroide = true
+                }
+            }
+        }
+        if abs(cran) < 0.3 * pasCran {
+            borneToquee = false
+            if lampeFroide {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    lampeFroide = false
+                }
+            }
+        }
+        // LE PRESQUE (touche 11) : à un cheveu du cran sans franchir,
+        // la pochette tremble d'un demi-degré.
+        let f = abs(cran) / pasCran
+        if f > 0.85, f < 1.0, !presqueArme {
+            presqueArme = true
+            withAnimation(.spring(response: 0.15,
+                                  dampingFraction: 0.4)) {
+                tremble = 0.5
+            }
+            Task {
+                try? await Task.sleep(for: .milliseconds(90))
+                withAnimation(.spring(response: 0.25,
+                                      dampingFraction: 0.5)) {
+                    tremble = 0
+                }
+            }
+        }
+        if f < 0.6 { presqueArme = false }
+    }
+
+    /// La saisie : le générateur se PRÉPARE, la rosée perle, l'ONDE
+    /// court des deux côtés, le foyer S'EMBRASE, le verre se réveille.
+    private func saisie() {
+        clic.prepare()
+        cransFaits = 0
+        UIImpactFeedbackGenerator(style: .soft)
+            .impactOccurred(intensity: 0.35)
+        withAnimation(.easeOut(duration: 0.12)) { lampeVive = 1 }
+        // La rosée (touche 1) — absorbée par l'onde.
+        rosee = 1
+        withAnimation(.easeOut(duration: 0.25)) { rosee = 0 }
+        // L'onde d'allumage, ancrée sous le doigt.
+        ondeAngle = angleLampe
+        onde = 0
+        withAnimation(.easeOut(duration: 0.32)) { onde = 1 }
+        // L'embrasement + le réveil du verre.
+        withAnimation(.easeOut(duration: 0.25)) { foyer = 0.30 }
+        withAnimation(.easeOut(duration: 0.2)) { verreTint = 0.07 }
+        // La soudure (touche 3), au moment où les fronts se rejoignent.
+        Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard angleDoigt != nil else { return }
+            soudure = 1
+            withAnimation(.easeOut(duration: 0.18)) { soudure = 0 }
+        }
+    }
+
+    /// La relâche : la lampe s'éteint sur place, le soft de dépose si
+    /// le geste a servi — et si l'élan est là, LA ROUE LIBRE.
+    private func doigtLache() {
+        angleDoigt = nil
+        tempsDoigt = nil
+        if cransFaits >= 1 {
+            UIImpactFeedbackGenerator(style: .soft)
+                .impactOccurred(intensity: 0.25)
+        }
+        // La lumière se retire VERS le dernier point de contact, le
+        // foyer se rendort en dernier, le verre se rendort aussi.
+        withAnimation(.easeIn(duration: 0.5)) { onde = 0 }
+        withAnimation(.easeOut(duration: 0.6)) { foyer = 0.10 }
+        withAnimation(.easeOut(duration: 0.4)) { verreTint = 0.12 }
+        withAnimation(.easeOut(duration: 0.2)) { lampeFroide = false }
+        if abs(omega) > 3.0, !reduceMotion {
+            // La lampe FANTÔME (touche 10) : la roue libre se voit.
+            withAnimation(.easeOut(duration: 0.2)) { lampeVive = 0.5 }
+            rouleLibre()
+        } else {
+            omega = 0
+            withAnimation(.easeOut(duration: 0.35)) { lampeVive = 0 }
+            withAnimation(.spring(response: 0.32,
+                                  dampingFraction: 0.7)) { cran = 0 }
+        }
+    }
+
+    /// LA ROUE LIBRE (jalon 17) : l'élan s'égrène — la matière tourne,
+    /// les crans passent (4 max, jamais un carrousel), l'arrêt est
+    /// net à la borne. La tâche meurt au rattrapage et au démontage.
+    private func rouleLibre() {
+        var crans = 0
+        inertie = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(16))
+                if Task.isCancelled { return }
+                omega *= CGFloat(exp(-0.016 / 0.38))
+                let delta = omega * 0.016
+                cran += delta
+                angleCumul += delta
+                // La lampe fantôme SUIT la rotation.
+                angleLampe += delta
+                while cran > pasCran,
+                      index < month.sessions.count - 1, crans < 4 {
+                    cran -= pasCran
+                    crans += 1
+                    avancer(1)
+                }
+                while cran < -pasCran, index > 0, crans < 4 {
+                    cran += pasCran
+                    crans += 1
+                    avancer(-1)
+                }
+                let borne = (omega > 0
+                    && index >= month.sessions.count - 1)
+                    || (omega < 0 && index <= 0)
+                if abs(omega) < 0.9 || crans >= 4 || borne {
+                    omega = 0
+                    withAnimation(.spring(response: 0.32,
+                                          dampingFraction: 0.7)) {
+                        cran = 0
+                    }
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        lampeVive = 0
+                    }
+                    inertie = nil
+                    return
+                }
+            }
+        }
+    }
+
+    /// La butée : le double coup (toc… toc), l'écran qui refuse.
+    private func toqueBorne() {
+        UIImpactFeedbackGenerator(style: .soft)
+            .impactOccurred(intensity: 0.5)
+        withAnimation(.easeOut(duration: 0.18)) { refus = 1 }
+        Task {
+            try? await Task.sleep(for: .milliseconds(70))
+            UIImpactFeedbackGenerator(style: .soft)
+                .impactOccurred(intensity: 0.3)
+            try? await Task.sleep(for: .milliseconds(110))
+            withAnimation(.easeOut(duration: 0.3)) { refus = 0 }
+        }
+    }
+
+    /// Le tap d'un flanc : le glyphe flash (120 ms), et le cran.
+    private func flanc(_ glyphe: Int, d: Int) {
+        withAnimation(.easeOut(duration: 0.12)) { glypheFlash = glyphe }
+        avancer(d)
+        Task {
+            try? await Task.sleep(for: .milliseconds(120))
+            withAnimation(.easeOut(duration: 0.3)) { glypheFlash = nil }
+        }
+    }
+
+    /// Un cran : le CLIC de l'iPod, la BRAISE à l'angle du pas, le
+    /// BLOOM de l'écran, le flash du glyphe du sens. À la borne :
+    /// l'écran REFUSE (la vignette se creuse), le coup est sourd.
+    private func avancer(_ d: Int) {
+        let cible = index + d
+        guard cible >= 0, cible < month.sessions.count else {
+            UIImpactFeedbackGenerator(style: .soft)
+                .impactOccurred(intensity: 0.4)
+            withAnimation(.easeOut(duration: 0.18)) { refus = 1 }
+            Task {
+                try? await Task.sleep(for: .milliseconds(180))
+                withAnimation(.easeOut(duration: 0.3)) { refus = 0 }
+            }
+            return
+        }
+        sens = CGFloat(d)
+        withAnimation(.spring(response: 0.4,
+                              dampingFraction: 0.85)) {
+            index = cible
+        }
+        // LE CLIC PRÉPARÉ (jalon 13) : l'intensité force avec la
+        // vitesse, plancher 40 ms — on saute des CLICS, jamais des
+        // crans.
+        let maintenant = Date()
+        let assezVieux = dernierClic
+            .map { maintenant.timeIntervalSince($0) >= 0.04 } ?? true
+        if assezVieux {
+            clic.impactOccurred(intensity: 0.45
+                + min(0.4, Double(abs(omega)) * 0.10))
+            dernierClic = maintenant
+        }
+        cransFaits += 1
+        // LA BRAISE, posée là où le doigt a franchi le cran ; le
+        // BLOOM du dôme de l'écran ; le glyphe du sens qui flash —
+        // toujours deux temps + Task (jamais une rampe échelonnée).
+        braiseAngle = angleLampe
+        withAnimation(.easeOut(duration: 0.06)) {
+            braiseCran = 1
+            lume = 1
+        }
+        glypheFlash = d > 0 ? 3 : 2
+        // LA GERBE (touche 12) : née au point du doigt, tangente au
+        // sens — cap 3 salves, chaque salve retire la sienne (salves
+        // VIDE rend la pause à l'horloge).
+        if !reduceMotion, salves.count < 3 {
+            let salve = SalveCran(t0: Date(), a0: angleLampe,
+                                  dir: CGFloat(d),
+                                  graine: Int.random(in: 0 ... 9999))
+            salves.append(salve)
+            Task {
+                try? await Task.sleep(for: .milliseconds(950))
+                salves.removeAll { $0.id == salve.id }
+            }
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(70))
+            withAnimation(.easeOut(duration: 0.24)) { braiseCran = 0 }
+            withAnimation(.easeOut(duration: 0.42)) { lume = 0 }
+            withAnimation(.easeOut(duration: 0.22)) { glypheFlash = nil }
         }
     }
 }
