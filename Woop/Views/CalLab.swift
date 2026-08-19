@@ -67,6 +67,20 @@ struct CalendarStickersPage: View {
     @State private var scrollY: CGFloat?
     /// La pochette au centre — l'haptique du feuilletage.
     @State private var centre = 0
+    /// La vitesse du scroll (pt/évènement, bornée) : elle SECOUE les
+    /// minis dans les cards et nourrit la poudre — morte à l'arrêt.
+    @State private var remous: CGFloat = 0
+    /// La SALVE d'atterrissage : l'instant où le scroll se pose sur un
+    /// mois — gerbe de poudre pleine puissance (~0,8 s) et rebond
+    /// marqué des minis. Remise à nil par sa propre tâche (l'horloge de
+    /// la poudre doit pouvoir se remettre en PAUSE).
+    @State private var salve: Date?
+    /// La génération du remous : chaque évènement de sonde la bump et
+    /// arme une remise à zéro à 260 ms — qui n'agit que si RIEN ne l'a
+    /// supplantée. Sans elle, un tressaillement d'insets au lancement
+    /// laisse `remous` coincé non-nul (aucun évènement de phase ne
+    /// suit) et l'horloge de la poudre tourne au repos — vu au banc.
+    @State private var remousGen = 0
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -326,6 +340,10 @@ struct CalendarStickersPage: View {
                      course1: CGFloat, course2: CGFloat,
                      H: CGFloat, wipe: CGFloat) -> some View {
         let mois = DemoMonth.recent(calendar: calendar)
+        // 360 : la taille AÉRÉE (verdict 19-08 : le 272 « ratio réf »
+        // était trop court — l'air autour de l'éventail fait la
+        // beauté, et les minis coupées en bas sont un choix, pas un
+        // défaut).
         let cardH: CGFloat = 360
         let pas: CGFloat = 372 // la pochette + son souffle
         let bandeau: CGFloat = 64 // ce qu'une pochette passée laisse voir
@@ -333,10 +351,14 @@ struct CalendarStickersPage: View {
         return ScrollView {
             LazyVStack(spacing: 12) {
                 // L'ESPACEUR, pas une marge : repos = offset 0, le
-                // repère que scrollTo et l'aimant partagent (leçon payée).
-                Color.clear.frame(height: inset - 12)
+                // repère que scrollTo et l'aimant partagent (leçon
+                // payée). Le −16 : ~30 pt d'air sous le calendrier, et
+                // la card 272 tient ENTIÈRE au-dessus du dock, éventail
+                // compris — mesuré au pixel le 19-08.
+                Color.clear.frame(height: inset - 16)
                 ForEach(mois) { m in
                     MonthVinyle(month: m, calendar: calendar,
+                                remous: remous, salve: salve,
                                 flashing: flashRow == m.start,
                                 onTap: { r in monthTapped(m, rect: r) })
                         .frame(height: cardH)
@@ -355,6 +377,7 @@ struct CalendarStickersPage: View {
                             let taille: CGFloat
                             let flou: CGFloat
                             let alpha: Double
+                            let nuit: Double
                             if d >= 0 {
                                 // En approche : légère inclinaison qui
                                 // meurt au front — la pochette se
@@ -366,6 +389,7 @@ struct CalendarStickersPage: View {
                                 taille = 1 - min(c, 1) * 0.03
                                 flou = wipe * 14
                                 alpha = 1
+                                nuit = 0
                             } else {
                                 // Passée : TIRÉE vers l'étagère du haut,
                                 // il ne reste que son bandeau — la pile
@@ -391,17 +415,25 @@ struct CalendarStickersPage: View {
                                 // plonge un peu, une bouffée de flou.
                                 let vol: Double =
                                     sin(Double.pi * Double(min(n, 1.0)))
-                                tilt = -14.0 * entree
+                                // LE RANGEMENT EN PERSPECTIVE (verdict
+                                // « trop fake ») : la card se COUCHE
+                                // (−26° posée, ~−50° en vol), RECULE
+                                // (échelle) et S'ASSOMBRIT — c'est la
+                                // profondeur qui range, plus la
+                                // transparence qui efface.
+                                tilt = -26.0 * entree
                                     - Double(prof) * 2.0 - 24.0 * vol
                                 tire = n * pas - shelf
                                 glisse = CGFloat(vol) * -16.0
-                                taille = 1.0 - prof * 0.035
-                                    - CGFloat(vol) * 0.05
+                                taille = 1.0 - prof * 0.05
+                                    - CGFloat(vol) * 0.04
                                 flou = wipe * 14.0 + prof * 0.4
                                     + CGFloat(vol) * 3.0
+                                nuit = -0.15 * entree
+                                    - 0.04 * Double(prof)
                                 let fondu: CGFloat = max(0.0, n - 0.5)
                                 let vie: CGFloat =
-                                    1.0 - fondu * 0.11 - surplus * 0.5
+                                    1.0 - fondu * 0.06 - surplus * 0.5
                                 alpha = Double(max(0.0, vie))
                             }
                             return content
@@ -411,6 +443,7 @@ struct CalendarStickersPage: View {
                                     axis: (x: 1, y: 0, z: 0),
                                     perspective: 0.55)
                                 .scaleEffect(taille)
+                                .brightness(nuit)
                                 .blur(radius: flou)
                                 .opacity(alpha)
                         }
@@ -434,8 +467,23 @@ struct CalendarStickersPage: View {
         // UNE sonde — l'offset brut EST le curseur ; elle nourrit aussi
         // l'haptique du feuilletage.
         .onScrollGeometryChange(for: CGFloat.self,
-                                of: { $0.contentOffset.y }) { _, y in
+                                of: { $0.contentOffset.y }) { vieux, y in
             scrollY = y
+            // La vitesse vient GRATUITEMENT de la sonde (l'ancienne
+            // valeur) — une seule sonde (la loi). GAIN ×3 : les deltas
+            // font 3-12 pt par évènement, nus ils donnaient ~1° de
+            // secousse — physiquement invisible (payé au banc).
+            remous = max(-40, min(40, (y - vieux) * 3))
+            remousGen += 1
+            let gen = remousGen
+            Task {
+                try? await Task.sleep(for: .milliseconds(260))
+                guard remousGen == gen, remous != 0 else { return }
+                withAnimation(.spring(response: 0.5,
+                                      dampingFraction: 0.5)) {
+                    remous = 0
+                }
+            }
             let idx = max(0, Int(((y - course1 - course2) / pas)
                 .rounded()))
             if idx != centre { centre = idx }
@@ -448,7 +496,28 @@ struct CalendarStickersPage: View {
         // poses (la card en plein vol, floue, vue au banc). À l'arrêt,
         // si le bac est hors-pose, on re-snappe à la plus proche.
         .onScrollPhaseChange { _, phase in
-            guard phase == .idle, let y = scrollY,
+            guard phase == .idle else { return }
+            // L'ATTERRISSAGE (dans le bac seulement) : un coup de
+            // secousse instantané que le ressort rattrape — le tas
+            // encaisse la pose — et la salve de poudre.
+            if let y = scrollY, y > course1 + course2 - 20 {
+                let coup: CGFloat = remous >= 0 ? 26 : -26
+                remous = coup
+                let s = Date()
+                salve = s
+                Task {
+                    try? await Task.sleep(for: .seconds(1))
+                    if salve == s { salve = nil }
+                }
+            }
+            // Le remous meurt à l'arrêt : les minis se reposent EN
+            // CASCADE (chacune son retard, son sens — le ressort
+            // rebondit), la poudre s'éteint (et son horloge se met en
+            // PAUSE — jamais de 30 Hz pour du statique).
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.38)) {
+                remous = 0
+            }
+            guard let y = scrollY,
                   y > course1 + course2 + 2 else { return }
             let base = y - course1 - course2
             let cible = course1 + course2 + (base / pas).rounded() * pas
@@ -1274,6 +1343,11 @@ private struct FanSlot {
 private struct MonthVinyle: View {
     let month: DemoMonth
     let calendar: Calendar
+    /// La vitesse du scroll : elle secoue l'éventail et fait pleuvoir
+    /// la poudre.
+    var remous: CGFloat = 0
+    /// L'instant d'atterrissage : la gerbe de poudre pleine puissance.
+    var salve: Date? = nil
     var flashing = false
     var onTap: ((CGRect) -> Void)? = nil
 
@@ -1336,6 +1410,11 @@ private struct MonthVinyle: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 18)
             eventail
+            // LA POUDRE : les micro-paillettes du booster (la recette
+            // de PoudreBooster), déversées depuis l'éventail pendant
+            // le scroll — et la GERBE d'atterrissage à la pose. Mortes
+            // (et l'horloge en pause) au repos.
+            PoudreBac(force: min(1, abs(remous) / 8), salve: salve)
         }
         // Les plusLighter (sheen + micro-sheens des minis) vivent dans
         // LEUR groupe ; le clip racine tranche le débord bas des minis.
@@ -1359,12 +1438,17 @@ private struct MonthVinyle: View {
         return ZStack {
             Color.clear.frame(width: 132, height: 132)
             ForEach(Array(fan.enumerated()), id: \.element.id) { i, s in
-                MiniJouet(session: s, slot: slots[i], z: Double(i))
+                MiniJouet(session: s, slot: slots[i], z: Double(i),
+                          remous: remous)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity,
                alignment: .bottom)
-        .offset(y: 10)
+        // AU FOND de la card : les minis MORDENT le bord bas et se font
+        // trancher net par le coin arrondi (le clip racine) — la coupe
+        // à la Apple, tranchée le 19-08. Au repos, le bas glisse sous
+        // le dock : la « petite partie cachée » est un choix.
+        .offset(y: 4)
     }
 }
 
@@ -1379,6 +1463,9 @@ private struct MiniJouet: View {
     let session: DemoSession
     let slot: FanSlot
     let z: Double
+    /// Le remous du scroll : chaque mini l'encaisse avec SON retard et
+    /// SON sens (parité) — le tas se secoue, jamais à l'unisson.
+    var remous: CGFloat = 0
 
     @State private var tirage: CGSize = .zero
     @State private var enMain = false
@@ -1388,6 +1475,10 @@ private struct MiniJouet: View {
         // on la tire, jamais en toupie.
         let devers: Double = max(-14.0,
             min(14.0, Double(tirage.width) * 0.12))
+        let sens: Double = Int(z) % 2 == 0 ? 1.0 : -1.0
+        let secousseR: Double = Double(remous) * 0.22 * sens
+        let secousseY: CGFloat = remous * (0.70 - 0.09 * CGFloat(z))
+        let secousseX: CGFloat = remous * 0.10 * CGFloat(sens)
         MiniSeanceCard(session: session)
             // LA LEVÉE : saisie = la carte se soulève (échelle) et son
             // ombre se creuse — elle quitte physiquement le tas.
@@ -1395,10 +1486,14 @@ private struct MiniJouet: View {
             .shadow(color: .black.opacity(enMain ? 0.65 : 0.5),
                     radius: enMain ? 22 : 10,
                     y: enMain ? 16 : 4)
-            .rotationEffect(.degrees(slot.angle + devers))
-            .offset(x: slot.dx + tirage.width,
-                    y: slot.dy + tirage.height)
+            .rotationEffect(.degrees(slot.angle + devers + secousseR))
+            .offset(x: slot.dx + tirage.width + secousseX,
+                    y: slot.dy + tirage.height + secousseY)
             .zIndex(enMain ? 100 : z)
+            // Le ressort du secouement : le remous change à chaque
+            // évènement de scroll, la mini le rattrape en rebondissant.
+            .animation(.spring(response: 0.42, dampingFraction: 0.42),
+                       value: remous)
             .gesture(DragGesture(minimumDistance: 10)
                 .onChanged { v in
                     // La levée s'anime ; le suivi du doigt, JAMAIS
@@ -1435,6 +1530,98 @@ private struct MiniJouet: View {
                              trigger: enMain) { _, new in new }
             .sensoryFeedback(.impact(weight: .light, intensity: 0.6),
                              trigger: enMain) { _, new in !new }
+    }
+}
+
+// MARK: - La poudre du bac
+
+/// Les micro-paillettes de la cérémonie booster (la recette de
+/// `PoudreBooster` : étoile-facette à cœur blanc, deux tiers de braise
+/// dorée, un tiers de lune, additif demandé AU CONTEXTE du Canvas —
+/// jamais à la vue, le piège payé), DÉVERSÉES vers le bas depuis
+/// l'éventail pendant le scroll. `force` (0-1) suit la vitesse : à
+/// l'arrêt les grains meurent ET l'horloge se met en PAUSE — jamais de
+/// 30 Hz pour du statique.
+private struct PoudreBac: View {
+    var force: CGFloat
+    /// L'instant d'atterrissage : pendant ~0,8 s la gerbe joue à pleine
+    /// puissance, quelle que soit la vitesse. La page remet `salve` à
+    /// nil après coup — c'est CE nil qui rend la pause à l'horloge.
+    var salve: Date? = nil
+
+    /// L'origine du temps, UNE pour le process : la vue se ré-init à
+    /// chaque rendu, le temps des grains doit rester continu.
+    private static let t0 = Date()
+    private static let grains = 56
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: (force < 0.03 && salve == nil)
+                                    || reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(Self.t0)
+            let age: Double = salve
+                .map { tl.date.timeIntervalSince($0) } ?? 99.0
+            let gerbe: Double = max(0.0, 1.0 - age / 0.8)
+            let f = max(Double(min(1.0, force)), gerbe)
+            Canvas { ctx, size in
+                ctx.blendMode = .plusLighter
+                let W = size.width
+                let H = size.height
+                for i in 0 ..< Self.grains {
+                    let vie: Double = 1.5 + 1.8 * Self.hash(i, 2)
+                    let cyc: Double = (t / vie + Self.hash(i, 5))
+                        .truncatingRemainder(dividingBy: 1)
+                    // Naît dans la bande de l'éventail, PLEUT en
+                    // dérivant — le déversement, pas l'envol.
+                    let cx: CGFloat = W * 0.5
+                        + CGFloat(Self.hash(i, 1) - 0.5) * W * 0.74
+                    let cy: CGFloat = H * (0.50 + 0.28
+                        * CGFloat(Self.hash(i, 3)))
+                    let x: CGFloat = cx + CGFloat(
+                        sin(t * (0.4 + 0.5 * Self.hash(i, 8))
+                            + Self.hash(i, 9) * 6.28)) * 7.0
+                    let y: CGFloat = cy + CGFloat(cyc) * 52.0
+                    let s: Double = sin(.pi * cyc)
+                    let tw: Double = 0.5 + 0.5
+                        * sin(t * (7.0 + 12.0 * Self.hash(i, 4))
+                              + Self.hash(i, 6) * 6.28)
+                    let a: Double = s * s
+                        * (0.20 + 0.80 * tw * tw * tw) * f
+                    guard a > 0.02 else { continue }
+                    let r: CGFloat = CGFloat(0.8 + 1.6 * Self.hash(i, 7))
+                    let c: Color = Self.hash(i, 10) < 0.34
+                        ? Color(red: 0.96, green: 0.97, blue: 1.00)
+                        : Color(red: 1.00, green: 0.62, blue: 0.26)
+                    var etoile = Path()
+                    etoile.move(to: CGPoint(x: -r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: -r * 0.22))
+                    etoile.addLine(to: CGPoint(x: r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r * 0.22))
+                    etoile.closeSubpath()
+                    etoile.move(to: CGPoint(x: 0, y: -r))
+                    etoile.addLine(to: CGPoint(x: r * 0.22, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r))
+                    etoile.addLine(to: CGPoint(x: -r * 0.22, y: 0))
+                    etoile.closeSubpath()
+                    ctx.fill(etoile.applying(
+                        CGAffineTransform(translationX: x, y: y)
+                            .rotated(by: (Self.hash(i, 11) - 0.5) * 0.9)),
+                             with: .color(c.opacity(a * 0.85)))
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: x - 0.45, y: y - 0.45,
+                                               width: 0.9, height: 0.9)),
+                        with: .color(Color.white.opacity(a * 0.9)))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
     }
 }
 
@@ -1494,7 +1681,7 @@ private struct MiniSeanceCard: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 52, height: 52)
-                .position(x: 40, y: 92)
+                .position(x: 40, y: 78)
         }
         .frame(width: 132, height: 132)
     }
