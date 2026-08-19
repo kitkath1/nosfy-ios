@@ -373,30 +373,17 @@ struct CarnetObjet: View, Animatable {
                 // LES FEUILLES — un carnet ne s'ouvre pas d'un bloc
                 // (« et pour les feuilles ?? », verdict 19-08) : trois
                 // pages libres suivent la couverture en cascade, chacune
-                // avec son retard, et se posent sous la page de gauche.
-                // À la pose elles ont toutes disparu dessous.
+                // avec son retard. Depuis le moteur V2, ce sont de VRAIES
+                // tournes (le pli reculant, l'éclairage de courbure, les
+                // ombres en alpha sur la plaque) — plus jamais des
+                // rectangles pivotés (« trop fake », payé).
                 ForEach([3, 2, 1], id: \.self) { i in
                     let retard = 0.09 * CGFloat(i)
-                    let q = max(0, min(1, (p - retard) / (1 - retard)))
-                    let wFeuille = cadreO / 2 - 4 * CGFloat(i)
-                    // Le papier PLOIE en plein vol (sin πq) et se tend aux
-                    // poses ; chaque feuille un peu plus que la précédente.
-                    let flexion = CGFloat(sin(Double(q) * .pi))
-                        * (9 + 3 * CGFloat(i))
-                    FeuilleLibre(teinte: 0.052 - 0.009 * Double(i),
-                                 bow: flexion)
-                        .frame(width: wFeuille,
-                               height: hauteur - 8 - 3 * CGFloat(i))
-                        .overlay {
-                            Color.black.opacity(
-                                (1 - abs(cos(Double(q) * .pi))) * 0.30)
-                                .allowsHitTesting(false)
-                        }
-                        .rotation3DEffect(.degrees(-180 * Double(q)),
-                                          axis: (x: 0, y: 1, z: 0),
-                                          anchor: .leading,
-                                          perspective: 0.5)
-                        .offset(x: wFeuille / 2 - course * (1 - p))
+                    let qi = max(0, min(1, (p - retard) / (1 - retard)))
+                    FeuilleMoteur(q: qi,
+                                  largeur: cadreO / 2 - 4 * CGFloat(i),
+                                  hauteur: hauteur - 8 - 3 * CGFloat(i))
+                        .offset(x: -course * (1 - p))
                 }
 
                 // La couverture qui pivote autour du dos. Avant 90° : le
@@ -449,68 +436,33 @@ struct CarnetObjet: View, Animatable {
     }
 }
 
-/// Une page libre du carnet : papier noir SOUPLE — son bord libre PLOIE
-/// en vol (la couverture est rigide, le papier ne l'est pas : c'est ce
-/// contraste qui fait le vivant, un rectangle raide qui tourne fait une
-/// carte à jouer). La tranche suit la courbure, en cheveu de braise.
-struct FeuilleLibre: View {
-    var teinte: Double
-    /// La flexion du bord libre, en points (0 = feuille posée).
-    var bow: CGFloat = 0
+/// Une feuille nue montée sur le moteur de tourne : deux faces de papier
+/// synthétique, le pli reculant, les ombres en alpha — la même machine
+/// que le feuilletage des sessions, sans contenu. C'est elle qui vole
+/// pendant l'ouverture.
+struct FeuilleMoteur: View, Animatable {
+    var q: CGFloat
+    let largeur: CGFloat
+    let hauteur: CGFloat
+
+    var animatableData: CGFloat {
+        get { q } set { q = newValue }
+    }
 
     var body: some View {
-        FormeFeuille(bow: bow)
-            .fill(LinearGradient(
-                colors: [Color(white: teinte + 0.014),
-                         Color(white: teinte)],
-                startPoint: .top, endPoint: .bottom))
-            .overlay {
-                FormeFeuille(bow: bow)
-                    .stroke(Color.white.opacity(0.045), lineWidth: 0.7)
-            }
-            .overlay {
-                TrancheFeuille(bow: bow)
-                    .stroke(Color(red: 1.0, green: 0.62, blue: 0.25)
-                        .opacity(0.28), lineWidth: 0.8)
-            }
-    }
-}
-
-/// La silhouette d'une feuille qui ploie : le bord libre (droit) est une
-/// courbe tirée vers la reliure, les autres bords restent tenus.
-struct FormeFeuille: Shape {
-    var bow: CGFloat
-    var animatableData: CGFloat {
-        get { bow } set { bow = newValue }
-    }
-
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        let c: CGFloat = 7
-        p.move(to: CGPoint(x: r.minX, y: r.minY + 2))
-        p.addLine(to: CGPoint(x: r.maxX - c, y: r.minY))
-        p.addQuadCurve(to: CGPoint(x: r.maxX - c, y: r.maxY),
-                       control: CGPoint(x: r.maxX - c - bow, y: r.midY))
-        p.addLine(to: CGPoint(x: r.minX, y: r.maxY - 2))
-        p.closeSubpath()
-        return p
-    }
-}
-
-/// Le bord libre seul — pour que la tranche de braise suive la flexion.
-struct TrancheFeuille: Shape {
-    var bow: CGFloat
-    var animatableData: CGFloat {
-        get { bow } set { bow = newValue }
-    }
-
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        let c: CGFloat = 7
-        p.move(to: CGPoint(x: r.maxX - c, y: r.minY + 4))
-        p.addQuadCurve(to: CGPoint(x: r.maxX - c, y: r.maxY - 4),
-                       control: CGPoint(x: r.maxX - c - bow, y: r.midY))
-        return p
+        HStack(spacing: 0) {
+            PapierPage(gouttiereADroite: true)
+                .frame(width: largeur)
+            PapierPage(gouttiereADroite: false)
+                .frame(width: largeur)
+        }
+        .frame(width: largeur * 2, height: hauteur)
+        .compositingGroup()
+        .layerEffect(ShaderLibrary.tournePageV2(
+            .float2(largeur * 2, hauteur),
+            .float(Float(q))),
+            maxSampleOffset: CGSize(width: largeur * 2, height: 0))
+        .allowsHitTesting(false)
     }
 }
 
