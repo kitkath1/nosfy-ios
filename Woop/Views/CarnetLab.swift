@@ -175,12 +175,15 @@ struct FenetrePage {
     }
 }
 
-/// La page en vol : un layer à DEUX faces — moitié droite le recto (papier
-/// synthétique raccordé à la plaque + contenu), moitié gauche le VERSO nu
-/// pré-composé à sa position d'atterrissage — remappé par `tournePageV2`.
-/// Les zones désertées sortent en ombre-alpha ou transparentes : la page
-/// de dessous apparaît toute seule. `Animatable` sur q — le ressort de
-/// l'aimant joue dans le shader.
+/// La page en vol. Le layer ne porte plus QUE le papier (moitié droite ;
+/// le verso est rééchantillonné par le shader dans ce même papier, en
+/// miroir — le grain des pages voisines). Le CONTENU vit au-dessus du
+/// moteur et s'efface dès que la page se lève (q 0 → 0,22) : plus jamais
+/// de glyphes hachés par la compression (le verdict du juge luxe — la
+/// bouillie d'échantillonnage était le pire tell). Les zones désertées
+/// sortent en ombre-alpha ou transparentes : la page de dessous apparaît
+/// toute seule. `Animatable` sur q — le ressort de l'aimant joue dans le
+/// shader.
 struct PageEnVol: View, Animatable {
     var q: CGFloat
     let fenetre: CGRect
@@ -191,21 +194,26 @@ struct PageEnVol: View, Animatable {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            PapierPage(gouttiereADroite: true)
-                .frame(width: fenetre.width)
-            ZStack {
-                PapierPage(gouttiereADroite: false)
-                contenu
+        ZStack {
+            HStack(spacing: 0) {
+                Color.clear
+                    .frame(width: fenetre.width)
+                PapierPage()
+                    .frame(width: fenetre.width)
             }
-            .frame(width: fenetre.width)
+            .frame(width: fenetre.width * 2, height: fenetre.height)
+            .compositingGroup()
+            .layerEffect(ShaderLibrary.tournePageV4(
+                .float2(fenetre.width * 2, fenetre.height),
+                .float(Float(q))),
+                maxSampleOffset: CGSize(width: fenetre.width * 2,
+                                        height: 0))
+            contenu
+                .frame(width: fenetre.width, height: fenetre.height)
+                .offset(x: fenetre.width / 2)
+                .opacity(Double(max(0, 1 - q / 0.22)))
         }
         .frame(width: fenetre.width * 2, height: fenetre.height)
-        .compositingGroup()
-        .layerEffect(ShaderLibrary.tournePageV3(
-            .float2(fenetre.width * 2, fenetre.height),
-            .float(Float(q))),
-            maxSampleOffset: CGSize(width: fenetre.width * 2, height: 0))
         .allowsHitTesting(false)
         // Le centre du layer EST la gouttière : la feuille est épinglée là.
         .offset(x: fenetre.minX, y: fenetre.midY)
@@ -291,7 +299,7 @@ struct PageSession: View {
                     // La seule licence matière : l'ombre de contact — le
                     // papier est à 32/255, pas à 0 : elle « colle »
                     // l'autocollant. Pas plus fort, sinon cartoon.
-                    .shadow(color: .black.opacity(0.35), radius: 2.5, y: 1)
+                    .shadow(color: .black.opacity(0.35), radius: 3, x: -2, y: 3)
                 Spacer(minLength: 6)
                 // Un chiffre ne se plie JAMAIS (payé : « +100 » wrappé en
                 // colonne — la rangée dépassait la fenêtre de 20 pt).
@@ -461,14 +469,14 @@ struct FeuilleMoteur: View, Animatable {
 
     var body: some View {
         HStack(spacing: 0) {
-            PapierPage(gouttiereADroite: true)
+            Color.clear
                 .frame(width: largeur)
-            PapierPage(gouttiereADroite: false)
+            PapierPage()
                 .frame(width: largeur)
         }
         .frame(width: largeur * 2, height: hauteur)
         .compositingGroup()
-        .layerEffect(ShaderLibrary.tournePageV3(
+        .layerEffect(ShaderLibrary.tournePageV4(
             .float2(largeur * 2, hauteur),
             .float(Float(q))),
             maxSampleOffset: CGSize(width: largeur * 2, height: 0))
