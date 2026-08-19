@@ -68,47 +68,112 @@ enum CarnetScene3D {
     /// (skewK), le bas mène, ancré à la reliure. Normales ET tangentes
     /// tournées à la main — sans elles, l'éclairage reste plat (le piège
     /// payé du booster).
+    /// V3 — LE PAPIER VIVANT, aux formules PROUVÉES du physicien
+    /// (wf_578b2998 : isométrie 0,0000 %, C1 exact aux coutures, garde-fous
+    /// d'angle contre le passage sous le lit) et aux verdicts du jury :
+    /// — le CÔNE RAMPE : k(q) = skewK2·(1−q)^1,5 + skewK1, le coin mène
+    ///   au départ, le pli se redresse à la pose ;
+    /// — l'ARC AÉRIEN : le segment libre est un arc de courbure λ =
+    ///   sin α·(ventre statique − traîne·qVel) + torsion différentielle
+    ///   (le bas précède, le coin haut retombe en dernier) — C1 avec le
+    ///   congé pour tout λ, limite λ→0 d'ordre 2 stable ;
+    /// — le FLUTTER : fenêtré sin²α (meurt C1 aux poses) × smoothstep
+    ///   charnière, porté LE LONG de la normale tournée ;
+    /// — la GOUTTIÈRE : bombé quartique 16s²(1−s)² (valeur ET pente
+    ///   nulles aux deux bouts — le sin(πx/A) cassait le C1 à la
+    ///   couture), normales nourries sinon le bombé n'existe pas ;
+    /// — les DEUX FAUTES du physicien corrigées : l'écart des peaux
+    ///   tourne AVEC la surface (sinon recto/verso s'inversent passé
+    ///   90°), et la normale du cône porte sa composante y (l'erreur
+    ///   des 4,6° au relight rasant) ;
+    /// — le VENTRE TRANSVERSE : tranché GADGET (courbure de Gauss non
+    ///   nulle = caoutchouc), jamais implémenté.
+    /// `qVel` arrive LISSÉ du CPU (EMA 60 ms — le brut tremblote au
+    /// settle du ressort, interdit).
     static let geometryModifier = """
     #pragma arguments
     float qTurn;
+    float qVel;
     float curlR0;
     float sheetWu;
-    float skewK;
+    float skewK1;
+    float skewK2;
+    float torsK;
+    float aerialBelly;
+    float aerialVel;
+    float flutAmp;
+    float flutKy;
+    float flutWt;
+    float gutterAmp;
+    float gutterW;
     #pragma body
     float q = clamp(qTurn, 0.0, 1.0);
+    float qv = clamp(qVel, -10.0, 10.0);
     float x = _geometry.position.x;
     float yn = _geometry.position.y;
     float alpha = 3.14159265 * q;
-    float A = max(sheetWu * (1.0 - q) + skewK * yn * sin(alpha), 0.0);
-    float r = max(curlR0 * sin(alpha), 0.0025);
+    float sa = sin(alpha);
+    float skewK = skewK1 + skewK2 * pow(1.0 - q, 1.5);
+    float A = max(sheetWu * (1.0 - q) + skewK * yn * sa, 0.0);
+    float r = max(curlR0 * sa, 0.0025);
     float dm = x - A;
     if (dm > 0.0) {
-        float arc = r * alpha;
+        float arcLen = r * alpha;
+        float Lfree = max(sheetWu - A - arcLen, 1e-3);
+        float lam = sa * (aerialBelly * sa - aerialVel * qv)
+            + 3.14159265 * torsK * (-yn / 0.4865) * sa / Lfree;
+        lam = clamp(lam, min(0.02 - alpha, 0.0) / Lfree,
+                    max(3.1116 - alpha, 0.0) / Lfree);
         float phi;
         float px;
         float pz;
-        if (dm <= arc) {
+        if (dm <= arcLen) {
             phi = dm / r;
             px = A + r * sin(phi);
             pz = r * (1.0 - cos(phi));
         } else {
-            phi = alpha;
-            float t = dm - arc;
-            px = A + r * sin(alpha) + t * cos(alpha);
-            pz = r * (1.0 - cos(alpha)) + t * sin(alpha);
+            float t = dm - arcLen;
+            float P0x = A + r * sa;
+            float P0z = r * (1.0 - cos(alpha));
+            phi = alpha + lam * t;
+            if (fabs(lam) > 1e-4) {
+                px = P0x + (sin(phi) - sa) / lam;
+                pz = P0z + (cos(alpha) - cos(phi)) / lam;
+            } else {
+                px = P0x + t * cos(alpha) - 0.5 * lam * t * t * sa;
+                pz = P0z + t * sin(alpha) + 0.5 * lam * t * t * cos(alpha);
+            }
+            float wPose = sa * sa;
+            float wHinge = smoothstep(0.0, 0.18, dm);
+            float aF = flutAmp * min(fabs(qv) * 0.25, 1.5) * wPose * wHinge;
+            float rip = sin(yn * flutKy + dm * 6.0 + scn_frame.time * flutWt);
+            px += aF * rip * (-sin(phi));
+            pz += aF * rip * cos(phi);
         }
-        _geometry.position.x = px;
-        _geometry.position.z += pz;
+        float z0 = _geometry.position.z;
+        _geometry.position.x = px - z0 * sin(phi);
+        _geometry.position.z = pz + z0 * cos(phi);
+        float side = (_geometry.normal.z >= 0.0) ? 1.0 : -1.0;
+        _geometry.normal = normalize(float3(-sin(phi),
+                                            skewK * sa * sin(phi),
+                                            cos(phi))) * side;
         float c = cos(phi);
         float s = sin(phi);
-        float nx = _geometry.normal.x;
-        float nz = _geometry.normal.z;
-        _geometry.normal.x = nx * c - nz * s;
-        _geometry.normal.z = nx * s + nz * c;
         float tx = _geometry.tangent.x;
         float tz = _geometry.tangent.z;
         _geometry.tangent.x = tx * c - tz * s;
         _geometry.tangent.z = tx * s + tz * c;
+    } else {
+        float g0 = min(gutterW, A);
+        if (g0 > 1e-3 && x < g0) {
+            float sg = x / g0;
+            float bump = 16.0 * sg * sg * (1.0 - sg) * (1.0 - sg);
+            float gA = gutterAmp * sa * min(g0 / gutterW, 1.0);
+            _geometry.position.z += gA * bump;
+            float dzdx = gA * 32.0 * sg * (1.0 - sg) * (1.0 - 2.0 * sg) / g0;
+            float sideG = (_geometry.normal.z >= 0.0) ? 1.0 : -1.0;
+            _geometry.normal = normalize(float3(-dzdx, 0.0, 1.0)) * sideG;
+        }
     }
     """
 
@@ -116,10 +181,19 @@ enum CarnetScene3D {
     /// permanent au bord libre de la feuille, qui FLARE au rasant (quand
     /// la tranche passe face caméra). En émission : il vit au-dessus du
     /// lambert, insensible à l'ombre — l'or fuit de la lumière.
+    /// V2 — l'or du bord libre, plus LE SATIN DE COURBURE : un spéculaire
+    /// doux de papier noir, GATÉ PAR LA FLEXION (nul quand la normale
+    /// regarde la caméra — les poses restent la photo nue) et porté par
+    /// la diffuse (il vit sous la lumière, donc il meurt dans l'ombre —
+    /// un satin en émission brillerait dans le noir, mensonge).
     static let surfaceModifier = """
     #pragma arguments
     float goldGlow;
     float goldEdgeU;
+    float sheenGain;
+    float keyLx;
+    float keyLy;
+    float keyLz;
     #pragma body
     float du = abs(_surface.diffuseTexcoord.x - goldEdgeU);
     float band = exp(-pow(du / 0.005, 2.0));
@@ -128,6 +202,11 @@ enum CarnetScene3D {
     float graze = pow(1.0 - abs(dot(gN, gV)), 2.0);
     _surface.emission.rgb += float3(1.0, 0.72, 0.30) * band * goldGlow
         * (0.20 + 1.6 * graze);
+    float3 kL = normalize(float3(keyLx, keyLy, keyLz));
+    float3 kH = normalize(kL + gV);
+    float bend = clamp((1.0 - abs(dot(gN, gV))) * 2.2, 0.0, 1.0);
+    _surface.diffuse.rgb += float3(0.96, 0.97, 1.0)
+        * pow(clamp(dot(gN, kH), 0.0, 1.0), 48.0) * sheenGain * bend;
     """
 
     // MARK: le maillage de la feuille — deux peaux, comme le sachet
@@ -335,13 +414,40 @@ final class CarnetSceneMoteur {
             mat.shaderModifiers = [.geometry: m.geometryModifier,
                                    .surface: m.surfaceModifier]
             mat.setValue(0.0 as CGFloat, forKey: "qTurn")
+            mat.setValue(0.0 as CGFloat, forKey: "qVel")
             mat.setValue(CGFloat(m.molette("carnetCurlR", 0.16)),
                          forKey: "curlR0")
             mat.setValue(CGFloat(m.sheetW), forKey: "sheetWu")
-            mat.setValue(CGFloat(m.molette("carnetSkew", 0.08)),
-                         forKey: "skewK")
+            // Les défauts du physicien (wf_578b2998) — chaque clé répond
+            // EXACTEMENT au #pragma arguments (un nom qui boite = zéro
+            // silencieux, le piège payé du booster).
+            mat.setValue(CGFloat(m.molette("carnetSkew1", 0.06)),
+                         forKey: "skewK1")
+            mat.setValue(CGFloat(m.molette("carnetSkew2", 0.26)),
+                         forKey: "skewK2")
+            mat.setValue(CGFloat(m.molette("carnetTors", 0.035)),
+                         forKey: "torsK")
+            mat.setValue(CGFloat(m.molette("carnetBelly", 0.5)),
+                         forKey: "aerialBelly")
+            mat.setValue(CGFloat(m.molette("carnetAir", 0.22)),
+                         forKey: "aerialVel")
+            mat.setValue(CGFloat(m.molette("carnetFlutter", 0.004)),
+                         forKey: "flutAmp")
+            mat.setValue(CGFloat(m.molette("carnetFlutKy", 12)),
+                         forKey: "flutKy")
+            mat.setValue(CGFloat(m.molette("carnetFlutWt", 50)),
+                         forKey: "flutWt")
+            mat.setValue(CGFloat(m.molette("carnetGutter", 0.012)),
+                         forKey: "gutterAmp")
+            mat.setValue(CGFloat(m.molette("carnetGutterW", 0.12)),
+                         forKey: "gutterW")
             mat.setValue(CGFloat(m.molette("carnetGold", 0.8)),
                          forKey: "goldGlow")
+            mat.setValue(CGFloat(m.molette("carnetSheen", 0.55)),
+                         forKey: "sheenGain")
+            mat.setValue(CGFloat(m.keyDir.x), forKey: "keyLx")
+            mat.setValue(CGFloat(m.keyDir.y), forKey: "keyLy")
+            mat.setValue(CGFloat(m.keyDir.z), forKey: "keyLz")
             // Le bord libre : u=1 au recto, u=0 au verso (uv en miroir).
             mat.setValue(CGFloat(verso ? 0.0 : 1.0), forKey: "goldEdgeU")
             let node = SCNNode(geometry: m.sheetMesh(verso: verso))
@@ -376,29 +482,69 @@ final class CarnetSceneMoteur {
         scene.background.contents = UIColor.clear
     }
 
-    /// La tourne, posée d'un coup (drag en cours, ou pose figée).
-    func setQ(_ v: Float) {
+    /// L'état de la tourne, servi chaque frame par l'intégrateur du banc
+    /// (position ET vitesse — c'est la vitesse qui fait vivre le papier :
+    /// arc aérien, flutter, claquement d'atterrissage).
+    func setDyn(q: Float, v: Float) {
         for mat in feuilleMats {
-            mat.removeAnimation(forKey: "tourne")
-            mat.setValue(CGFloat(v), forKey: "qTurn")
+            mat.setValue(CGFloat(q), forKey: "qTurn")
+            mat.setValue(CGFloat(v), forKey: "qVel")
         }
     }
 
-    /// L'aimant : la tourne finit toujours posée, au ressort du banc
-    /// feuille (response 0,5, damping 0,86) — via CASpringAnimation sur
-    /// l'uniforme (le précédent payé : lipGlow du booster).
-    func springQ(from current: Float, to target: Float) {
-        for mat in feuilleMats {
-            mat.setValue(CGFloat(target), forKey: "qTurn")
-            let a = CASpringAnimation(keyPath: "qTurn")
-            a.fromValue = current
-            a.toValue = target
-            a.stiffness = 158
-            a.damping = 21.6
-            a.mass = 1
-            a.duration = a.settlingDuration
-            mat.addAnimation(a, forKey: "tourne")
-        }
+    /// Pose figée (captures `-carnetQ`) : vitesse nulle, la photo est
+    /// reine.
+    func setQ(_ v: Float) { setDyn(q: v, v: 0) }
+}
+
+// MARK: - L'intégrateur du papier
+
+/// LE RESSORT ANALYTIQUE — la mécanique de la page, résolue en forme
+/// close à chaque frame (inconditionnellement stable : à 18 img/s au
+/// simulateur comme à 120 Hz au téléphone, la même trajectoire). Deux
+/// régimes : le SUIVI (la page chasse le doigt avec un retard massique —
+/// le papier a une masse, il ne se téléporte pas sous la main) et la
+/// POSE (l'aimant, qui HÉRITE de la vitesse du doigt : l'élan se
+/// conserve, jamais un redémarrage à zéro — le feel d'Apple Books).
+struct RessortPapier {
+    var q: Float = 0
+    var v: Float = 0
+    var cible: Float = 0
+    /// ω du régime courant (rad/s) et son amortissement ζ.
+    var omega: Float = 12.0
+    var zeta: Float = 0.92
+
+    /// Le suivi du doigt : réponse ~0,11 s, quasi critique.
+    mutating func suivre(_ t: Float) {
+        cible = t
+        omega = 56.0
+        zeta = 0.995
+    }
+
+    /// L'aimant vers la pose : response 0,46 s, un souffle d'overshoot
+    /// (le papier claque puis s'éteint — l'arc aérien fait le reste).
+    mutating func poser(vers t: Float) {
+        cible = t
+        omega = 2 * .pi / 0.46
+        zeta = 0.90
+    }
+
+    /// Un pas exact d'oscillateur amorti (forme close sous-amortie).
+    mutating func pas(dt rawDt: Float) {
+        let dt = min(max(rawDt, 1.0 / 240.0), 1.0 / 12.0)
+        let z = min(zeta, 0.9995)
+        let wd = omega * sqrt(1 - z * z)
+        let e = exp(-z * omega * dt)
+        let c = cos(wd * dt)
+        let s = sin(wd * dt)
+        let dx = q - cible
+        let b = (v + z * omega * dx) / wd
+        q = cible + e * (dx * c + b * s)
+        v = e * (v * c - (dx * omega * omega + z * omega * v) / wd * s)
+    }
+
+    var posee: Bool {
+        abs(q - cible) < 0.0004 && abs(v) < 0.004
     }
 }
 
@@ -425,8 +571,7 @@ struct CarnetSceneStage: UIViewRepresentable {
         if let raw = UserDefaults.standard.string(forKey: "carnetQ"),
            let v = Double(raw) {
             moteur.setQ(Float(v))
-            context.coordinator.q = Float(v)
-            context.coordinator.fige = true
+            context.coordinator.figer(a: Float(v))
         } else if CommandLine.arguments.contains("-carnetSceneAuto") {
             // La tourne en boucle, mains libres — LE FILM est le juge
             // (la leçon du jury V4 : il n'avait vu que des poses).
@@ -446,52 +591,118 @@ struct CarnetSceneStage: UIViewRepresentable {
 
     func updateUIView(_ uiView: SCNView, context: Context) {}
 
+    /// LE DÉMONTAGE (la leçon du manège du booster) : un CADisplayLink
+    /// retient sa cible — sans invalidation, le coordinateur survivrait
+    /// à son écran et son intégrateur chanterait dans le vide.
+    static func dismantleUIView(_ uiView: SCNView,
+                                coordinator: Coordinator) {
+        coordinator.teardown()
+    }
+
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     final class Coordinator: NSObject {
         var moteur: CarnetSceneMoteur?
-        var q: Float = 0
         var fige = false
+        /// q public pour la boucle auto et le tap (l'état vrai vit dans
+        /// le ressort).
+        var q: Float { ressort.q }
+
+        private var ressort = RessortPapier()
+        /// qVel LISSÉ (EMA 60 ms) — le brut tremblote au settle du
+        /// ressort et ferait frissonner l'arc aérien (loi du physicien).
+        private var qvLisse: Float = 0
+        private var link: CADisplayLink?
+        private var derniereFrame: CFTimeInterval = 0
         private var baseQ: Float = 0
+        private var autoTimer: Timer?
+
+        /// La course du doigt pour une tourne complète, en points.
+        private let course: Float = 240
+
+        private func reveille() {
+            guard link == nil else { return }
+            derniereFrame = CACurrentMediaTime()
+            let l = CADisplayLink(target: self, selector: #selector(tick))
+            l.add(to: .main, forMode: .common)
+            link = l
+        }
+
+        @objc private func tick() {
+            guard let moteur else { return }
+            let now = CACurrentMediaTime()
+            let dt = Float(now - derniereFrame)
+            derniereFrame = now
+            ressort.pas(dt: dt)
+            qvLisse += (ressort.v - qvLisse) * (1 - exp(-dt / 0.06))
+            moteur.setDyn(q: ressort.q, v: qvLisse)
+            // Posée ET plus personne sous le doigt : le lien s'endort
+            // (l'état final est écrit, vitesse nulle — la photo reprend).
+            if ressort.posee, !doigtDessus {
+                ressort.q = ressort.cible
+                ressort.v = 0
+                moteur.setDyn(q: ressort.q, v: 0)
+                link?.invalidate()
+                link = nil
+            }
+        }
+
+        private var doigtDessus = false
 
         @objc func pan(_ g: UIPanGestureRecognizer) {
-            guard let moteur, !fige else { return }
+            guard moteur != nil, !fige else { return }
             switch g.state {
             case .began:
-                baseQ = q
+                doigtDessus = true
+                baseQ = ressort.q
+                reveille()
             case .changed:
                 let t = Float(g.translation(in: g.view).x)
-                q = max(0, min(1, baseQ - t / 240))
-                moteur.setQ(q)
+                ressort.suivre(max(0, min(1, baseQ - t / course)))
             case .ended, .cancelled:
-                // L'aimant sur l'élan PRÉDIT, jamais la position seule.
+                doigtDessus = false
+                // L'aimant sur l'élan PRÉDIT — et le ressort HÉRITE de la
+                // vitesse déjà acquise par le suivi : l'élan se conserve.
                 let vx = Float(g.velocity(in: g.view).x)
-                let fin = q - vx * 0.12 / 240
-                let cible: Float = fin > 0.5 ? 1 : 0
-                moteur.springQ(from: q, to: cible)
-                q = cible
+                let fin = ressort.q - vx * 0.16 / course
+                ressort.poser(vers: fin > 0.5 ? 1 : 0)
+                reveille()
             default:
                 break
             }
         }
 
         @objc func tap(_ g: UITapGestureRecognizer) {
-            guard let moteur, !fige else { return }
+            guard moteur != nil, !fige else { return }
             SwapFeedback.shared.tap()
-            let cible: Float = q > 0.5 ? 0 : 1
-            moteur.springQ(from: q, to: cible)
-            q = cible
+            ressort.poser(vers: ressort.q > 0.5 ? 0 : 1)
+            reveille()
         }
 
-        /// Aller-retour perpétuel au ressort du banc, 2,4 s par temps.
+        /// Pose figée `-carnetQ` : l'état du ressort s'aligne, rien ne
+        /// bouge plus.
+        func figer(a v: Float) {
+            ressort.q = v
+            ressort.cible = v
+            ressort.v = 0
+            fige = true
+        }
+
+        /// Aller-retour perpétuel (le banc à filmer), 2,4 s par temps.
         func autoTourne() {
-            Timer.scheduledTimer(withTimeInterval: 2.4,
-                                 repeats: true) { [weak self] _ in
-                guard let self, let moteur = self.moteur else { return }
-                let cible: Float = self.q > 0.5 ? 0 : 1
-                moteur.springQ(from: self.q, to: cible)
-                self.q = cible
+            autoTimer = Timer.scheduledTimer(withTimeInterval: 2.4,
+                                             repeats: true) { [weak self] _ in
+                guard let self else { return }
+                self.ressort.poser(vers: self.ressort.q > 0.5 ? 0 : 1)
+                self.reveille()
             }
+        }
+
+        func teardown() {
+            link?.invalidate()
+            link = nil
+            autoTimer?.invalidate()
+            autoTimer = nil
         }
     }
 }

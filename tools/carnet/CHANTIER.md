@@ -89,6 +89,68 @@ kat-carnet-b), captures `~/Downloads/woop-carnet/ab/`, commits toujours
 PAR CHEMINS. `$SECONDS` ne se réutilise pas dans un même shell
 (START=$SECONDS). `simctl launch` sur app ouverte ne relit pas les args.
 
+## LA 3D — état au 19-08 soir (session interrompue, reprendre ICI)
+
+FAIT (commits ea92b68 puis le moteur v3) : `CarnetScene.swift`, banc
+`-carnetLab -carnetScene` (drag = tourne, tap = aller-retour, `-carnetQ`
+fige, `-carnetSceneAuto` boucle à filmer). Lit = plaque photo lambert
+calibré (raccord MESURÉ 987/988 px, camD 3,43) ; feuille deux peaux ;
+GEOMETRY MODIFIER V3 aux formules PROUVÉES du physicien (jury
+wf_578b2998) : cône rampant k(q)=0,26·(1−q)^1,5+0,06, arc aérien
+(ventre 0,5 + traîne 0,22·qVel, garde-fous d'angle), torsion ±0,035,
+flutter fenêtré sin²α, gouttière quartique C1, écart des peaux tourné
+avec la surface, normale du cône exacte (les 2 fautes corrigées) ;
+intégrateur CADisplayLink (ressort analytique, élan conservé, EMA 60 ms
+sur qVel, teardown booster). Vraie ombre SceneKit, or du bord libre,
+satin v1, clé rasante. NON VU À L'ÉCRAN depuis le passage v3 du
+modifier : builder + capturer AVANT tout verdict.
+
+## CE QU'IL MANQUE (les retouches chiffrées du jury, PAS appliquées)
+
+Jury 4 lentilles (physique 5 · lumière 5,5 · matière 7 · geste 5,5),
+verdicts complets dans le run wf_578b2998 ; l'essentiel à porter :
+
+1. **Ressorts du geste (Coordinator.poser, un seul régime aujourd'hui)** :
+   flick |v|>1,2 → response 0,38/ζ0,80 ; lâcher mou → 0,55/0,95 ;
+   annulation (q<0,1 vers 0) → 0,30/ζ1,0 (0,25 si repoussé v<−0,5).
+   Suivi du doigt : ω 56 → ~28 (τ≈40 ms, « la page chasse le doigt »).
+2. **Mapping du drag** : course 240 → 300 pt, q = acos(1−2s)/π (le bord
+   reste sous le doigt, mort de la zone morte) ; aimant à HYSTÉRÉSIS sur
+   l'élan projeté q+0,18·v (commit>0,42 en avant, retour<0,58 en
+   arrière ; pichenette ≥900 pt/s ⇒ commit dès q≥0,12).
+3. **Rebond lumineux de la feuille** (le verso est une dalle éteinte,
+   « tue-le-realisme ») : DANS le surface modifier, émission +=
+   diffuse·fillGain·saturate(dot(N, normalize(−0,35,−0,15,0,55)))·gate
+   de flexion — la photo ré-émise, jamais un gris plat ; fillGain ~0,35.
+   ET ambiant 0,30 → 0,20 (les noirs remontés = plastique, juge matière).
+4. **Ombre qui pince** : rampe pilotée par q depuis le tick (propriétés
+   de keyLight) — mi-vol R20/A0,72 ; q<0,12 et q>0,72 → lerp vers
+   R~7/A~0,80. Clé couchée (0,60, 0,24, 0,52) pour l'ombre longue.
+5. **Or vivant** : base 0,20→0,14, flare pow2×1,6→pow4×2,2, STRATES
+   procédurales le long de y (0,6–1,4 — le trait uniforme lit stroke
+   CSS) ; tranches HAUT/BAS à 0,4× (largeur 0,003 uv, mortes à 8 % côté
+   reliure) — tue la coupe rasoir noire du bord bas.
+6. **Vallée d'occlusion sur le LIT** : surface modifier du lit, bande
+   ×(1−0,20·exp(−((u−u_pli)·bedW/0,06)²)·sin πq) au pied du congé
+   (u_pli = 0,5 + (sheetX + A)/bedW), qTurn à pousser aussi au bedMat.
+7. **Satin** : gain 0,55 → 0,12, exposant 48 → 28 (jury : au-delà ça
+   brille plastique).
+8. **Haptique d'atterrissage** : UIImpactFeedbackGenerator .rigid 0,5
+   quand q franchit 0,985 avec v>0,8 (une fois par pose) ; le flap du
+   claquement sort déjà tout seul de l'arc aérien (élan résiduel).
+9. **Chorégraphie des pièces** (polish, plutôt jalon 4) : le +80 de la
+   page dessous n'apparaît qu'à q≥0,72 (l'instant deux-pièces-jumelles
+   de q0,5) — à régler quand le contenu passera en SwiftUI vivant.
+10. **Ombre de contact analytique** aux extrêmes (q<0,12 / q>0,88,
+    alpha 0,30, ~26 pt) si la rampe (4) ne pince pas assez — reporté.
+11. **INTERDIT confirmé** : ventre transverse en y (courbure de Gauss
+    = caoutchouc) — ne jamais l'implémenter.
+
+Après application : captures aux poses + film -carnetSceneAuto (frames
+SERRÉES, mod 2 — le film sous-échantillonné a menti une fois), raccord
+sonde, verdicts Kathryn sur B, PUIS la fluidité au téléphone. Ensuite
+seulement : l'ouverture en 3D (couvertures SCNBox — étape 1 du plan).
+
 ## Restes hors 3D
 
 Son + haptiques du papier (« pas de bruit » — à faire), respiration
