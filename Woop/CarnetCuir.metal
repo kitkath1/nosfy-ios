@@ -122,10 +122,10 @@ using namespace metal;
     float vol = sin(M_PI_F * qq);
     float papier = 35.0 / 255.0;
 
-    float lead = 0.55 * vol * (1.0 - 0.55 * qq);
+    float lead = 0.12 * vol;
     float A = wp * pow(1.0 - qq, 1.6)
-            - lead * wp * pow(yn + 0.5, 2.2)
-            + 0.05 * wp * vol * sin(M_PI_F * (yn + 0.5));
+            - lead * wp * pow(yn + 0.5, 1.5)
+            + 0.012 * wp * vol * sin(M_PI_F * (yn + 0.5));
     A = clamp(A, 0.0, wp);
 
     float alpha = M_PI_F * qq;
@@ -152,7 +152,7 @@ using namespace metal;
         float s = A + (xr - A) / ca;
         if (s >= A - 0.5 && s <= wp) {
             float u = (s - A) / max(wp - A, 1.0);
-            float v = 1.0 - 0.18 * sa * u;
+            float v = 1.0 - 0.05 * sa * u;
             float ySrc = yc + (y - yc) / max(v, 0.5);
             if (ySrc >= 0.0 && ySrc <= h) {
                 float z = (s - A) * sa;

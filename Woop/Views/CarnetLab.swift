@@ -44,6 +44,12 @@ struct CarnetLab: View {
     /// le drag horizontal l'enroule. `-carnetQ <q>` fige la tourne.
     private static let feuilleLab = CommandLine.arguments
         .contains("-carnetFeuille")
+    /// `-carnetApple` : LE TEST DÉCISIF (verdict 0/10 sur le moteur
+    /// maison) — la tourne de page d'APPLE (UIPageViewController
+    /// .pageCurl, celle de Books) avec nos pages dedans. Si SA physique
+    /// passe, on la garde et on l'habille.
+    private static let appleLab = CommandLine.arguments
+        .contains("-carnetApple")
     private static let qFige: CGFloat? = {
         guard let raw = UserDefaults.standard.string(forKey: "carnetQ"),
               let v = Double(raw) else { return nil }
@@ -112,7 +118,7 @@ struct CarnetLab: View {
             DragGesture(minimumDistance: 6)
                 .onChanged { v in
                     if Self.feuilleLab {
-                        guard Self.qFige == nil else { return }
+                        guard !Self.appleLab, Self.qFige == nil else { return }
                         q = max(0, min(1, -v.translation.width / 240))
                     } else {
                         guard Self.tiltFige == nil else { return }
@@ -123,7 +129,7 @@ struct CarnetLab: View {
                 }
                 .onEnded { v in
                     if Self.feuilleLab {
-                        guard Self.qFige == nil else { return }
+                        guard !Self.appleLab, Self.qFige == nil else { return }
                         // L'aimant : la tourne finit toujours posée — sur
                         // l'élan prédit, jamais sur la position seule.
                         let fin = -v.predictedEndTranslation.width / 240
@@ -151,11 +157,18 @@ struct CarnetLab: View {
             VuePlaque(plaque: .ouvert, detoure: true)
                 .frame(width: PlaqueCarnet.ouvert
                     .largeurCadre(pourHauteurObjet: hauteur))
-            PageSession(date: "16. Août", mesures: "4 séries · 48 reps",
-                        sticker: "sticker-bras", pieces: 80)
-                .frame(width: fen.width, height: fen.height)
-                .offset(x: fen.midX, y: fen.midY)
-            PageEnVol(q: q, fenetre: fen)
+            if Self.appleLab {
+                FeuilletageApple()
+                    .frame(width: fen.width, height: fen.height)
+                    .offset(x: fen.midX, y: fen.midY)
+            } else {
+                PageSession(date: "16. Août",
+                            mesures: "4 séries · 48 reps",
+                            sticker: "sticker-bras", pieces: 80)
+                    .frame(width: fen.width, height: fen.height)
+                    .offset(x: fen.midX, y: fen.midY)
+                PageEnVol(q: q, fenetre: fen)
+            }
         }
     }
 }
@@ -656,3 +669,58 @@ struct VuePlaque: View {
 }
 
 #Preview { CarnetLab() }
+
+
+// MARK: - Le feuilletage d'Apple (banc `-carnetApple`)
+
+/// La tourne de page d'Apple (UIPageViewController .pageCurl — celle de
+/// Books), nos pages de session dedans, posée sur la fenêtre papier de la
+/// plaque. Le moteur maison (tournePageV4) reste au banc `-carnetFeuille`
+/// pour comparaison — c'est le doigt de Kathryn qui tranche.
+struct FeuilletageApple: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIPageViewController {
+        let pvc = UIPageViewController(transitionStyle: .pageCurl,
+                                       navigationOrientation: .horizontal)
+        pvc.dataSource = context.coordinator
+        pvc.setViewControllers([context.coordinator.page(0)],
+                               direction: .forward, animated: false)
+        pvc.view.backgroundColor = .clear
+        return pvc
+    }
+
+    func updateUIViewController(_ vc: UIPageViewController,
+                                context: Context) {}
+
+    func makeCoordinator() -> Coord { Coord() }
+
+    final class Coord: NSObject, UIPageViewControllerDataSource {
+        private let sessions: [(String, String, String, Int)] = [
+            ("18. Août", "5 séries · 60 reps", "sticker-flamme", 100),
+            ("16. Août", "4 séries · 48 reps", "sticker-bras", 80),
+            ("14. Août", "5 séries · 52 reps", "sticker-abricot", 100),
+            ("12. Août", "3 séries · 36 reps", "sticker-basket", 60),
+        ]
+
+        func page(_ i: Int) -> UIViewController {
+            let n = sessions.count
+            let s = sessions[((i % n) + n) % n]
+            let vc = UIHostingController(rootView: AnyView(
+                ZStack {
+                    PapierPage()
+                    PageSession(date: s.0, mesures: s.1,
+                                sticker: s.2, pieces: s.3)
+                }))
+            vc.view.backgroundColor = .clear
+            vc.view.tag = i
+            return vc
+        }
+
+        func pageViewController(_ p: UIPageViewController,
+                                viewControllerBefore vc: UIViewController)
+            -> UIViewController? { page(vc.view.tag - 1) }
+
+        func pageViewController(_ p: UIPageViewController,
+                                viewControllerAfter vc: UIViewController)
+            -> UIViewController? { page(vc.view.tag + 1) }
+    }
+}
