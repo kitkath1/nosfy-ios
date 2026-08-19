@@ -91,16 +91,32 @@ using namespace metal;
 // Les ombres sortent en ALPHA (half4(0,0,0,a)) dans les zones désertées :
 // c'est la plaque SOUS le layer qui les reçoit — la pénombre précède la
 // feuille qui avance.
-[[ stitchable ]] half4 tournePageV2(float2 position, SwiftUI::Layer layer,
+// V3 (19-08 soir, « trop cheap, pas d'ombre, pas vivante ») — ce qui
+// sépare le luxe du mécanique :
+// - LE COIN MÈNE : le pli n'est pas vertical, il penche — une main tourne
+//   une page par le coin, jamais par la tranche entière ; la pente meurt
+//   à la pose (le pli redevient droit pour l'atterrissage miroir).
+// - L'OMBRE PORTÉE VIVANTE : la lumière vient du haut-droit ; l'ombre de
+//   la nappe se décale de son pied, pénombre large quand la feuille est
+//   haute, collée-contact quand elle se pose. En alpha : le livre dessous
+//   la reçoit, plat compris.
+// - L'ÉCLAT DE LA TRANCHE : l'or du bord libre FLARE quand la feuille
+//   passe la verticale — le bijou du geste, une fraction de seconde.
+// - La gorge de reliure se creuse pendant le vol.
+[[ stitchable ]] half4 tournePageV3(float2 position, SwiftUI::Layer layer,
                                     float2 size, float q) {
     float wp = size.x * 0.5;      // la largeur de page ; la reliure au
     float x0 = wp;                // centre du layer
     float xr = position.x - x0;
     float y = position.y;
+    float yn = y / max(size.y, 1.0) - 0.5;
     float qq = clamp(q, 0.0, 1.0);
     float vol = sin(M_PI_F * qq);
 
-    float A = wp * (1.0 - qq);    // le pli, qui recule vers la reliure
+    // Le pli diagonal : le bas (le coin) part en premier.
+    float lead = 0.30 * vol * (1.0 - 0.55 * qq);
+    float A = clamp(wp * (1.0 - qq) - lead * wp * (yn + 0.5), 0.0, wp);
+
     float alpha = M_PI_F * qq;    // l'angle de la partie levée
     float ca = cos(alpha);
     float sa = sin(alpha);
@@ -108,19 +124,19 @@ using namespace metal;
     half4 out = half4(0.0);
     float zTop = -1.0;
     float sGagnant = -1.0;
+    bool nappe = false;
 
-    // 1. Le plat : le recto encore posé, l'ombre du pli qui se dresse.
+    // 1. Le plat : le recto posé, l'ombre du pli, la gorge de reliure.
     if (xr >= 0.0 && xr <= A) {
         out = layer.sample(float2(x0 + xr, y));
         float portee = max(26.0 * sa, 3.0);
-        float ombre = 0.32 * vol * exp(-(A - xr) / portee);
-        out.rgb *= half(1.0 - ombre);
+        float ombre = 0.30 * vol * exp(-(A - xr) / portee);
+        float gorge = 0.12 * vol * exp(-xr / 14.0);
+        out.rgb *= half(max(1.0 - ombre - gorge, 0.0));
         zTop = 0.0; sGagnant = xr;
     }
 
     // 2. La nappe levée : le segment [A, wp] pivoté de α autour du pli.
-    //    Recto tant que la face regarde le lecteur (cos α > 0), verso
-    //    ensuite — échantillonné dans la moitié gauche du layer.
     if (fabs(ca) > 0.02) {
         float s = A + (xr - A) / ca;
         if (s >= A - 0.5 && s <= wp) {
@@ -131,44 +147,61 @@ using namespace metal;
                 float l;
                 if (ca > 0.0) {
                     c = layer.sample(float2(x0 + s, y));
-                    // La courbure par la LUMIÈRE : la crête prend le jour,
-                    // le pied reste au sol — c'est elle qui dit « papier »
-                    // (l'amplitude est calibrée pour une base ~35/255 :
-                    // la crête peut monter vers 60-90, la loi de
-                    // l'obsidienne ne vaut pas pour le papier).
-                    l = 0.92 + 0.55 * sa * (0.35 + 0.65 * u)
-                      + 0.22 * pow(sa, 3.0) * sin(u * M_PI_F);
+                    // La courbure par la LUMIÈRE (base papier ~35/255 :
+                    // la crête monte vers 60-90) + le fil de la pliure.
+                    l = 0.90 + 0.55 * sa * (0.35 + 0.65 * u)
+                      + 0.22 * pow(sa, 3.0) * sin(u * M_PI_F)
+                      + 0.12 * sa * exp(-fabs(xr - A) / 6.0);
                 } else {
                     c = layer.sample(float2(x0 - s, y));
                     // Le verso naît dans l'ombre et vient à la lumière en
-                    // se posant — avec le MODELÉ de la courbure (payé :
-                    // sans le sinus, une bande morte uniforme).
+                    // se posant, avec le modelé de la courbure.
                     l = 0.72 + 0.42 * (1.0 - sa)
                       + 0.18 * sa * sin(u * M_PI_F)
                       + 0.08 * sa * u;
                 }
                 c.rgb *= half(l);
-                out = c; zTop = z; sGagnant = s;
+                out = c; zTop = z; sGagnant = s; nappe = true;
             }
         }
     }
 
-    // 3. La pénombre : devant le bord libre, une ombre en alpha se pose
-    //    sur ce qui vit sous le layer.
-    if (zTop < 0.0) {
-        float xFree = A + (wp - A) * ca;
-        float d = (ca >= 0.0) ? (xr - xFree) : (xFree - xr);
-        if (d >= 0.0) {
-            float a = 0.30 * vol * exp(-d / 7.0);
-            out = half4(0.0, 0.0, 0.0, half(a));
+    // 3. L'OMBRE PORTÉE de la nappe (lumière haut-droit : l'ombre au sol
+    //    est la nappe décalée de 0,55×sa hauteur). Pénombre large en
+    //    l'air, contact net à la pose. Elle mord le plat, et sort en
+    //    ALPHA sur les zones nues — le livre dessous la reçoit.
+    if (!nappe) {
+        float den = ca - 0.55 * sa;
+        float aSh = 0.0;
+        if (fabs(den) > 0.05) {
+            float sSh = A + (xr - A) / den;
+            if (sSh >= A && sSh <= wp) {
+                float zSh = (sSh - A) * sa;
+                float bord = min(sSh - A, wp - sSh);
+                float doux = 2.0 + zSh * 0.22;
+                aSh = 0.36 * vol * smoothstep(0.0, doux, bord)
+                    * exp(-zSh / (0.85 * wp));
+            }
+        } else {
+            // La feuille à ~60° : son ombre est partout, grande et douce.
+            aSh = 0.20 * vol;
+        }
+        if (zTop < 0.0) {
+            out = half4(0.0, 0.0, 0.0, half(aSh));
+        } else if (aSh > 0.0) {
+            out.rgb *= half(1.0 - aSh * 0.6);
         }
     }
 
-    // La tranche du bord libre : un cheveu de braise, jamais un néon.
+    // 4. La tranche d'or du bord libre — et son ÉCLAT au passage de la
+    //    verticale : la braise se dore de blanc une fraction de seconde.
     if (sGagnant > wp - 1.7 && out.a > half(0.01)) {
-        half3 braiseC = half3(1.0, 0.62, 0.25);
+        float flare = pow(sa, 6.0);
+        half3 braiseC = mix(half3(1.0, 0.62, 0.25),
+                            half3(1.0, 0.88, 0.62), half(flare));
+        float force = clamp(0.5 + 1.4 * flare, 0.0, 0.9);
         out.rgb = mix(out.rgb, braiseC * max(out.r, half(0.20)),
-                      half(0.5));
+                      half(force));
     }
 
     return out;

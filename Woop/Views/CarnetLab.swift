@@ -202,7 +202,7 @@ struct PageEnVol: View, Animatable {
         }
         .frame(width: fenetre.width * 2, height: fenetre.height)
         .compositingGroup()
-        .layerEffect(ShaderLibrary.tournePageV2(
+        .layerEffect(ShaderLibrary.tournePageV3(
             .float2(fenetre.width * 2, fenetre.height),
             .float(Float(q))),
             maxSampleOffset: CGSize(width: fenetre.width * 2, height: 0))
@@ -212,14 +212,30 @@ struct PageEnVol: View, Animatable {
     }
 }
 
-/// LE PAPIER SYNTHÉTIQUE de la feuille en vol — calé sur les MESURES du
-/// papier de la plaque (neutre, L 40→24/255 vertical, puits de gouttière
-/// ~22 pt, grain 0,05) : le raccord posé ↔ vol se joue à moins de 2/255,
-/// sinon on voit le swap au départ de la tourne. Coins mesurés 10/8,9 pt
-/// côté tranche, vifs côté reliure.
+/// LE PAPIER DE LA FEUILLE = LE PAPIER DU LIVRE, littéralement — la
+/// fenêtre papier de la plaque photo, découpée une fois et portée comme
+/// matière de la page en vol (verdict 19-08 : « la matière change quand
+/// on feuillette » — un gradient synthétique n'imitera jamais une photo ;
+/// on ne l'imite plus, on la PORTE). Le raccord posé ↔ vol est parfait
+/// par construction : ce sont les mêmes pixels. Le verso est la même
+/// texture en miroir — son puits de gouttière tombe du bon côté tout
+/// seul, et un grain de papier n'a pas de sens de lecture.
 struct PapierPage: View {
     /// Le verso posé porte sa reliure à DROITE (il a été retourné).
     var gouttiereADroite = false
+
+    /// La texture, découpée une fois dans la plaque (px : de la gouttière
+    /// 736 au seuil des tranches dorées 1255, y 102…959 — les mesures de
+    /// la sonde mesure_fenetres.py).
+    private static let texture: UIImage? = {
+        guard let chemin = Bundle.main.path(forResource: "carnet-ouvert",
+                                            ofType: "png"),
+              let brute = UIImage(contentsOfFile: chemin),
+              let cg = brute.cgImage?.cropping(
+                  to: CGRect(x: 736, y: 102, width: 519, height: 857))
+        else { return nil }
+        return UIImage(cgImage: cg)
+    }()
 
     var body: some View {
         let forme = UnevenRoundedRectangle(
@@ -228,22 +244,16 @@ struct PapierPage: View {
             bottomTrailingRadius: gouttiereADroite ? 0 : 9,
             topTrailingRadius: gouttiereADroite ? 0 : 10,
             style: .continuous)
-        ZStack {
-            LinearGradient(colors: [Color(white: 0.157),
-                                    Color(white: 0.094)],
-                           startPoint: .top, endPoint: .bottom)
-            GrainTexture.tuile
-                .resizable(resizingMode: .tile)
-                .opacity(0.05)
-                .blendMode(.overlay)
-        }
-        .overlay(alignment: gouttiereADroite ? .trailing : .leading) {
-            LinearGradient(
-                colors: gouttiereADroite
-                    ? [.clear, .black.opacity(0.50)]
-                    : [.black.opacity(0.50), .clear],
-                startPoint: .leading, endPoint: .trailing)
-                .frame(width: 22)
+        Group {
+            if let t = Self.texture {
+                Image(uiImage: t)
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(x: gouttiereADroite ? -1 : 1, y: 1)
+            } else {
+                // Le papier manquant se VOIT (jamais un noir menteur).
+                Color.red
+            }
         }
         .clipShape(forme)
     }
@@ -458,7 +468,7 @@ struct FeuilleMoteur: View, Animatable {
         }
         .frame(width: largeur * 2, height: hauteur)
         .compositingGroup()
-        .layerEffect(ShaderLibrary.tournePageV2(
+        .layerEffect(ShaderLibrary.tournePageV3(
             .float2(largeur * 2, hauteur),
             .float(Float(q))),
             maxSampleOffset: CGSize(width: largeur * 2, height: 0))
