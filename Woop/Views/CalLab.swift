@@ -184,7 +184,7 @@ struct CalendarStickersPage: View {
                     showTune.toggle()
                 }
             }
-            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5),
+            .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.8),
                              trigger: centre)
             .task { await autoParcours(course1: course1,
                                        course2: course2) }
@@ -218,9 +218,15 @@ struct CalendarStickersPage: View {
         launchStory(session: s.storySession, rect: rect) { flashDay = nil }
     }
 
-    private func openStory(row: DemoSession, rect: CGRect) {
-        flashRow = row.date
-        launchStory(session: row.storySession, rect: rect) { flashRow = nil }
+    /// Le tap sur une card mensuelle : le flash, et c'est tout pour
+    /// l'instant. TODO jalon 2 : la page du mois s'ouvre d'ici (le rect
+    /// tapé = le portail) — ne PAS brancher la story par réflexe.
+    private func monthTapped(_ m: DemoMonth, rect: CGRect) {
+        flashRow = m.start
+        Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            withAnimation(.easeOut(duration: 0.3)) { flashRow = nil }
+        }
     }
 
     private func launchStory(session: StorySession, rect: CGRect,
@@ -319,7 +325,7 @@ struct CalendarStickersPage: View {
     private func bac(geo: CalGeo, inset: CGFloat,
                      course1: CGFloat, course2: CGFloat,
                      H: CGFloat, wipe: CGFloat) -> some View {
-        let sessions = DemoSession.recent(calendar: calendar)
+        let mois = DemoMonth.recent(calendar: calendar)
         let cardH: CGFloat = 360
         let pas: CGFloat = 372 // la pochette + son souffle
         let bandeau: CGFloat = 64 // ce qu'une pochette passée laisse voir
@@ -329,10 +335,10 @@ struct CalendarStickersPage: View {
                 // L'ESPACEUR, pas une marge : repos = offset 0, le
                 // repère que scrollTo et l'aimant partagent (leçon payée).
                 Color.clear.frame(height: inset - 12)
-                ForEach(sessions) { s in
-                    SessionVinyle(session: s,
-                                  flashing: flashRow == s.date,
-                                  onTap: { r in openStory(row: s, rect: r) })
+                ForEach(mois) { m in
+                    MonthVinyle(month: m, calendar: calendar,
+                                flashing: flashRow == m.start,
+                                onTap: { r in monthTapped(m, rect: r) })
                         .frame(height: cardH)
                         .visualEffect { content, proxy in
                             let f = proxy.frame(
@@ -345,6 +351,7 @@ struct CalendarStickersPage: View {
                             // retour, sinon le type-checker s'enlise.
                             let tilt: Double
                             let tire: CGFloat
+                            let glisse: CGFloat
                             let taille: CGFloat
                             let flou: CGFloat
                             let alpha: Double
@@ -355,6 +362,7 @@ struct CalendarStickersPage: View {
                                 let c: CGFloat = min(d, 1.4)
                                 tilt = Double(c) * 9
                                 tire = 0
+                                glisse = 0
                                 taille = 1 - min(c, 1) * 0.03
                                 flou = wipe * 14
                                 alpha = 1
@@ -375,17 +383,29 @@ struct CalendarStickersPage: View {
                                 let shelf: CGFloat =
                                     bandeau * etage + surplus * 10.0
                                 let entree: Double = Double(min(n * 3.0, 1.0))
-                                tilt = -14.0 * entree - Double(prof) * 2.0
+                                // LE SWING DE CLASSEMENT : sin(π·n) —
+                                // nul au front, nul à l'étagère, il ne
+                                // vit qu'EN VOL (les poses ne bougent
+                                // pas, la continuité reste la loi) : la
+                                // card bascule fort, glisse de côté,
+                                // plonge un peu, une bouffée de flou.
+                                let vol: Double =
+                                    sin(Double.pi * Double(min(n, 1.0)))
+                                tilt = -14.0 * entree
+                                    - Double(prof) * 2.0 - 24.0 * vol
                                 tire = n * pas - shelf
+                                glisse = CGFloat(vol) * -16.0
                                 taille = 1.0 - prof * 0.035
+                                    - CGFloat(vol) * 0.05
                                 flou = wipe * 14.0 + prof * 0.4
+                                    + CGFloat(vol) * 3.0
                                 let fondu: CGFloat = max(0.0, n - 0.5)
                                 let vie: CGFloat =
                                     1.0 - fondu * 0.11 - surplus * 0.5
                                 alpha = Double(max(0.0, vie))
                             }
                             return content
-                                .offset(y: tire)
+                                .offset(x: glisse, y: tire)
                                 .rotation3DEffect(
                                     .degrees(tilt),
                                     axis: (x: 1, y: 0, z: 0),
@@ -421,7 +441,23 @@ struct CalendarStickersPage: View {
             if idx != centre { centre = idx }
         }
         .scrollTargetBehavior(BacAimant(course1: course1,
-                                        course2: course2, pas: pas))
+                                        course2: course2, pas: pas,
+                                        depart: { scrollY }))
+        // LE RATTRAPAGE : un doigt qui arrête l'élan en touchant une
+        // mini vole le toucher au scroll — la page se fige ENTRE deux
+        // poses (la card en plein vol, floue, vue au banc). À l'arrêt,
+        // si le bac est hors-pose, on re-snappe à la plus proche.
+        .onScrollPhaseChange { _, phase in
+            guard phase == .idle, let y = scrollY,
+                  y > course1 + course2 + 2 else { return }
+            let base = y - course1 - course2
+            let cible = course1 + course2 + (base / pas).rounded() * pas
+            guard abs(cible - y) > 2 else { return }
+            withAnimation(.spring(response: 0.42,
+                                  dampingFraction: 0.86)) {
+                scrollPos.scrollTo(y: cible)
+            }
+        }
     }
 
     /// L'en-tête de l'état BAC : le titre « Calendrier » et le chevron
@@ -1014,11 +1050,17 @@ private struct StickerDayCell: View {
 
 /// Trois bandes : le morph grand→mini (0 / course1), l'effacement
 /// mini→titre (course1 / course1+course2), puis le bac — la pochette
-/// s'aligne à son pas. Jamais un repos à mi-course.
+/// s'aligne à son pas. Jamais un repos à mi-course. Et dans le bac,
+/// UNE PAGE PAR GESTE (verdict 19-08) : l'élan ne traverse jamais deux
+/// mois — le bloc s'arrête à chaque mois, on peut jouer avec les minis
+/// ou taper sans courir après le scroll. `depart` lit l'offset au
+/// moment du geste (la sonde de la page) — le contexte de l'aimant ne
+/// connaît que la cible, pas l'origine.
 private struct BacAimant: ScrollTargetBehavior {
     var course1: CGFloat
     var course2: CGFloat
     var pas: CGFloat
+    var depart: () -> CGFloat?
 
     func updateTarget(_ target: inout ScrollTarget,
                       context: TargetContext) {
@@ -1031,8 +1073,20 @@ private struct BacAimant: ScrollTargetBehavior {
                 ? course1 : course1 + course2
         } else {
             let base = rel - course1 - course2
+            var page = (base / pas).rounded()
+            let y = depart() ?? rel
+            if y >= course1 + course2 - 1 {
+                // Le geste part du bac : ±1 page, pas plus.
+                let pageDepart =
+                    ((y - course1 - course2) / pas).rounded()
+                page = pageDepart
+                    + max(-1.0, min(1.0, page - pageDepart))
+            } else {
+                // On ENTRE dans le bac : toujours sur la première pose.
+                page = 0
+            }
             target.rect.origin.y = course1 + course2
-                + (base / pas).rounded() * pas
+                + max(0.0, page) * pas
         }
     }
 }
@@ -1119,6 +1173,330 @@ private struct SessionVinyle: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Un mois du bac
+
+/// UN MOIS = UNE POCHETTE. Regroupe les DemoSession du hash démo par
+/// mois calendaire, mois courant d'abord — DemoSession.recent sort du
+/// plus récent au plus ancien, l'ordre d'apparition des mois EST le
+/// bon ordre (et l'éventail SUPPOSE cet ordre : si .recent changeait
+/// de tri, la plus récente ne serait plus devant, EN SILENCE). `id`
+/// stable (1er du mois) : ForEach ne rejoue une row que si SES données
+/// changent.
+private struct DemoMonth: Identifiable {
+    /// Le 1er jour du mois — l'identité de la card (et du flash au tap).
+    let start: Date
+    /// Les séances du mois, récentes → anciennes (l'ordre de .recent).
+    let sessions: [DemoSession]
+
+    var id: Date { start }
+    var count: Int { sessions.count }
+
+    /// « Août » — « Décembre 2025 » si l'année n'est pas la courante.
+    func titre(calendar: Calendar) -> String {
+        let mois = start.formatted(.dateTime.month(.wide)).capitalized
+        let annee = calendar.component(.year, from: start)
+        guard annee != calendar.component(.year, from: Date())
+        else { return mois }
+        return "\(mois) \(annee)"
+    }
+
+    /// « 9 séances » — le sous-titre porte le compte exact (pas de +N :
+    /// l'éventail est une évocation, l'inventaire = la page du mois).
+    var sousTitre: String {
+        count == 1 ? "1 séance" : "\(count) séances"
+    }
+
+    /// L'éventail : les 5 dernières séances du mois, la plus ANCIENNE
+    /// à gauche (au fond), la plus RÉCENTE à droite (devant).
+    var eventail: [DemoSession] { Array(sessions.prefix(5)).reversed() }
+
+    /// Le regroupement — mêmes données, même hash, juste plié par mois.
+    static func recent(calendar: Calendar,
+                       days: Int = 90) -> [DemoMonth] {
+        let all = DemoSession.recent(calendar: calendar, days: days)
+        var ordre: [Date] = []
+        var parMois: [Date: [DemoSession]] = [:]
+        for s in all {
+            guard let m = calendar.dateInterval(of: .month,
+                                                for: s.date)?.start
+            else { continue }
+            if parMois[m] == nil { ordre.append(m) }
+            parMois[m, default: []].append(s)
+        }
+        return ordre.map { DemoMonth(start: $0, sessions: parMois[$0]!) }
+    }
+}
+
+// MARK: - Les slots de l'éventail
+
+/// La géométrie d'un slot — des CHIFFRES gravés, pas de calcul au
+/// runtime. zIndex = l'index (la droite DEVANT). L'éventail vit en
+/// transforms de RENDU (rotationEffect + offset) dans un conteneur de
+/// layout FIXE 132×132 — JAMAIS un HStack : une boîte tournée de 132 pt
+/// à 18° fait 166 pt, un layout horizontal gonflerait et CENTRERAIT la
+/// card hôte (le piège payé des encarts symétriques invisibles).
+private struct FanSlot {
+    let angle: Double   // degrés
+    let dx: CGFloat     // depuis le centre de base de l'éventail
+    let dy: CGFloat
+    static let cinq: [FanSlot] = [
+        FanSlot(angle: -18, dx: -92, dy: -26),
+        FanSlot(angle: -10, dx: -46, dy: -18),
+        FanSlot(angle: -2, dx: 0, dy: -10),
+        FanSlot(angle: 6, dx: 46, dy: -2),
+        FanSlot(angle: 14, dx: 92, dy: 6),
+    ]
+    /// n < 5 : les n DERNIERS slots (la plus récente garde +14°,
+    /// devant), recentrés en x ; n == 1 : une mini seule, +8° au centre.
+    static func pour(_ n: Int) -> [FanSlot] {
+        guard n < 5 else { return cinq }
+        guard n > 1 else { return [FanSlot(angle: 8, dx: 0, dy: -10)] }
+        let derniers = Array(cinq.suffix(n))
+        let moyenne = derniers.map(\.dx).reduce(0, +) / CGFloat(n)
+        return derniers.map {
+            FanSlot(angle: $0.angle,
+                    dx: ($0.dx - moyenne).rounded(), dy: $0.dy)
+        }
+    }
+}
+
+// MARK: - La pochette mensuelle
+
+/// UNE POCHETTE = UN MOIS (la référence Apple Music) : le nom du mois
+/// et le compte centrés dans le bandeau 64 pt — EXACTEMENT ce que la
+/// pile laisse voir d'un mois passé —, et l'ÉVENTAIL des 5 dernières
+/// séances qui se chevauchent, tranchées net par le bord bas. ZÉRO
+/// bordure : la hiérarchie par la lumière (le puits d'ombre creuse la
+/// zone de l'éventail, les minis plus claires s'en détachent).
+private struct MonthVinyle: View {
+    let month: DemoMonth
+    let calendar: Calendar
+    var flashing = false
+    var onTap: ((CGRect) -> Void)? = nil
+
+    private let forme = RoundedRectangle(cornerRadius: 26,
+                                         style: .continuous)
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            // L'ardoise élevée validée sur les pochettes-sessions.
+            forme.fill(LinearGradient(
+                colors: [Color(white: 0.11), Color(white: 0.055)],
+                startPoint: .top, endPoint: .bottom))
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05)
+                .blendMode(.overlay)
+                .clipShape(forme)
+            forme.fill(EllipticalGradient(
+                stops: [
+                    .init(color: .white.opacity(0.06), location: 0.0),
+                    .init(color: .white.opacity(0.015), location: 0.5),
+                    .init(color: .clear, location: 1.0),
+                ],
+                center: UnitPoint(x: 0.18, y: 0.06),
+                startRadiusFraction: 0, endRadiusFraction: 1.1))
+                .blendMode(.plusLighter)
+            // LE PUITS : le halo noir qui creuse le bas — blend normal,
+            // jamais un trait.
+            forme.fill(EllipticalGradient(
+                stops: [
+                    .init(color: .black.opacity(0.32), location: 0.0),
+                    .init(color: .black.opacity(0.10), location: 0.55),
+                    .init(color: .clear, location: 1.0),
+                ],
+                center: UnitPoint(x: 0.5, y: 1.08),
+                startRadiusFraction: 0.05, endRadiusFraction: 0.85))
+            // LE TAP DE LA CARD vit SOUS l'éventail : l'éventail est
+            // une zone de JEU (les minis se saisissent au doigt), le
+            // reste de la card ouvre le mois. En overlay au-dessus, il
+            // volerait tous les touchers des minis (la couche du haut
+            // mange tout — le cousin du double-tap voleur).
+            if onTap != nil {
+                GeometryReader { g in
+                    Color.clear
+                        .contentShape(forme)
+                        .onTapGesture { onTap?(g.frame(in: .global)) }
+                }
+            }
+            // Le bloc titre : 18 + 27 + 3 + 16 = 64 pt = le bandeau de
+            // la pile, EXACT — le grossir décapite le sous-titre à la
+            // coupe (remonter `bandeau` avec, le couple est la loi).
+            VStack(spacing: 3) {
+                Text(month.titre(calendar: calendar))
+                    .font(.inter(22, .bold)).tracking(-0.3)
+                    .foregroundStyle(Color.inkPrimary)
+                Text(month.sousTitre)
+                    .font(.inter(12.5, .medium)).tracking(0.2)
+                    .foregroundStyle(Color.inkMuted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 18)
+            eventail
+        }
+        // Les plusLighter (sheen + micro-sheens des minis) vivent dans
+        // LEUR groupe ; le clip racine tranche le débord bas des minis.
+        .compositingGroup()
+        .clipShape(forme)
+        .overlay {
+            if flashing {
+                forme.strokeBorder(Color.white.opacity(0.5), lineWidth: 1)
+                    .blendMode(.plusLighter)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    /// L'éventail : conteneur de layout FIXE 132×132 (le layout ne voit
+    /// JAMAIS la largeur déployée — le remède au piège gonflement),
+    /// minis en transforms de rendu, ancré bas, mordant le bord.
+    private var eventail: some View {
+        let fan = month.eventail
+        let slots = FanSlot.pour(fan.count)
+        return ZStack {
+            Color.clear.frame(width: 132, height: 132)
+            ForEach(Array(fan.enumerated()), id: \.element.id) { i, s in
+                MiniJouet(session: s, slot: slots[i], z: Double(i))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity,
+               alignment: .bottom)
+        .offset(y: 10)
+    }
+}
+
+// MARK: - La mini en main (le jouet)
+
+/// La mini se SAISIT : elle suit le doigt (translation + un soupçon de
+/// rotation portée par le geste), passe DEVANT tant qu'elle est tenue,
+/// et revient claquer dans son slot au ressort. Pur jeu, zéro état qui
+/// survive au lâcher. Le drag a un seuil (10 pt) : le scroll vertical
+/// de la page garde sa priorité naturelle.
+private struct MiniJouet: View {
+    let session: DemoSession
+    let slot: FanSlot
+    let z: Double
+
+    @State private var tirage: CGSize = .zero
+    @State private var enMain = false
+
+    var body: some View {
+        // Le dévers suit le geste, borné — la carte penche du côté où
+        // on la tire, jamais en toupie.
+        let devers: Double = max(-14.0,
+            min(14.0, Double(tirage.width) * 0.12))
+        MiniSeanceCard(session: session)
+            // LA LEVÉE : saisie = la carte se soulève (échelle) et son
+            // ombre se creuse — elle quitte physiquement le tas.
+            .scaleEffect(enMain ? 1.12 : 1.0)
+            .shadow(color: .black.opacity(enMain ? 0.65 : 0.5),
+                    radius: enMain ? 22 : 10,
+                    y: enMain ? 16 : 4)
+            .rotationEffect(.degrees(slot.angle + devers))
+            .offset(x: slot.dx + tirage.width,
+                    y: slot.dy + tirage.height)
+            .zIndex(enMain ? 100 : z)
+            .gesture(DragGesture(minimumDistance: 10)
+                .onChanged { v in
+                    // La levée s'anime ; le suivi du doigt, JAMAIS
+                    // (il colle, c'est sa loi).
+                    if !enMain {
+                        withAnimation(.spring(response: 0.3,
+                                              dampingFraction: 0.6)) {
+                            enMain = true
+                        }
+                    }
+                    tirage = v.translation
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.5,
+                                          dampingFraction: 0.5)) {
+                        tirage = .zero
+                    }
+                    // Elle reste devant et soulevée le temps de rentrer
+                    // au slot — sinon elle plonge derrière ses voisines
+                    // en plein vol de retour ; la repose (échelle,
+                    // ombre) s'anime au moment où l'haptique
+                    // d'atterrissage claque.
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(420))
+                        withAnimation(.spring(response: 0.35,
+                                              dampingFraction: 0.7)) {
+                            enMain = false
+                        }
+                    }
+                })
+            // L'haptique : un coup franc à la SAISIE, un petit claque
+            // à l'ATTERRISSAGE (le retour au tas).
+            .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                             trigger: enMain) { _, new in new }
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.6),
+                             trigger: enMain) { _, new in !new }
+    }
+}
+
+// MARK: - La mini-card de séance (l'éventail)
+
+/// 132×132, un cran plus claire que l'ardoise (le détachement par la
+/// lumière, aidé par le puits). Le contenu vit sur la BANDE VISIBLE :
+/// la date deux étages en haut-gauche (le voisin de droite couvre le
+/// reste), le sticker décalé bas-droit — ENTIER sur la mini de front,
+/// DEVINÉ sur les couvertes : l'effet pochette de la référence.
+private struct MiniSeanceCard: View {
+    let session: DemoSession
+
+    private let forme = RoundedRectangle(cornerRadius: 18,
+                                         style: .continuous)
+
+    /// « AOÛT » — le mois court de la pochette, sans le jour.
+    private var moisCourt: String {
+        session.dateVinyle
+            .split(separator: " ").dropFirst().joined(separator: " ")
+            .uppercased()
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            forme.fill(LinearGradient(
+                colors: [Color(white: 0.15), Color(white: 0.085)],
+                startPoint: .top, endPoint: .bottom))
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05)
+                .blendMode(.overlay)
+                .clipShape(forme)
+            forme.fill(EllipticalGradient(
+                stops: [
+                    .init(color: .white.opacity(0.07), location: 0.0),
+                    .init(color: .clear, location: 1.0),
+                ],
+                center: UnitPoint(x: 0.25, y: 0.08),
+                startRadiusFraction: 0, endRadiusFraction: 1.0))
+                .blendMode(.plusLighter)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(session.dayNumber).")
+                    .font(.inter(19, .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                Text(moisCourt)
+                    .font(.inter(10, .semibold)).tracking(0.8)
+                    .foregroundStyle(Color(white: 1).opacity(0.45))
+            }
+            .padding(12)
+            // Bas-GAUCHE : la bande que la voisine de droite ne couvre
+            // jamais — le sticker se DEVINE sur les minis couvertes,
+            // entier sur celle de front (l'effet pochette). Petit :
+            // deux stickers voisins peuvent se chevaucher dans
+            // l'éventail, la retenue évite la bouillie.
+            Image(session.cat.asset)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 52, height: 52)
+                .position(x: 40, y: 92)
+        }
+        .frame(width: 132, height: 132)
     }
 }
 
