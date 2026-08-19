@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import CoreMotion
 
 // MARK: - Banc du calendrier à stickers (`-calLab`)
 
@@ -81,6 +82,13 @@ struct CalendarStickersPage: View {
     /// laisse `remous` coincé non-nul (aucun évènement de phase ne
     /// suit) et l'horloge de la poudre tourne au repos — vu au banc.
     @State private var remousGen = 0
+    /// L'étirement au-delà du dernier mois (le rebond du bas) : il
+    /// OUVRE l'éventail de la card de front — l'overscroll devient un
+    /// jouet, plus un vide.
+    @State private var etire: CGFloat = 0
+    /// Le gyroscope (bande morte : poignet immobile = zéro rendu).
+    @ObservedObject private var motion = BacMotion.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // La story : le rect tapé devient l'écran (le portail de la home).
     @State private var story: CalStoryLaunch?
@@ -202,6 +210,11 @@ struct CalendarStickersPage: View {
                              trigger: centre)
             .task { await autoParcours(course1: course1,
                                        course2: course2) }
+            // Le gyroscope vit avec la page — et MEURT avec elle (le
+            // silence du poignet, payé au Manège : CoreMotion réveille
+            // le fil 30×/s pour une scène que personne ne regarde).
+            .onAppear { BacMotion.shared.start() }
+            .onDisappear { BacMotion.shared.stop() }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
                 StoryPortal(from: launch.rect, session: launch.session) {
@@ -356,9 +369,14 @@ struct CalendarStickersPage: View {
                 // la card 272 tient ENTIÈRE au-dessus du dock, éventail
                 // compris — mesuré au pixel le 19-08.
                 Color.clear.frame(height: inset - 16)
-                ForEach(mois) { m in
+                ForEach(Array(mois.enumerated()),
+                        id: \.element.id) { i, m in
                     MonthVinyle(month: m, calendar: calendar,
                                 remous: remous, salve: salve,
+                                devant: i == centre,
+                                ecart: i == centre
+                                    ? min(1, etire / 120) : 0,
+                                pench: motion.pench,
                                 flashing: flashRow == m.start,
                                 onTap: { r in monthTapped(m, rect: r) })
                         .frame(height: cardH)
@@ -466,14 +484,21 @@ struct CalendarStickersPage: View {
         .scrollPosition($scrollPos)
         // UNE sonde — l'offset brut EST le curseur ; elle nourrit aussi
         // l'haptique du feuilletage.
-        .onScrollGeometryChange(for: CGFloat.self,
-                                of: { $0.contentOffset.y }) { vieux, y in
+        // UNE sonde, un champ COMPOSÉ (le champ vivant emporte les
+        // stables — jamais une deuxième sonde, la loi payée).
+        .onScrollGeometryChange(for: SondeBac.self, of: {
+            SondeBac(y: $0.contentOffset.y,
+                     fin: $0.contentSize.height - $0.containerSize.height)
+        }) { vieux, s in
+            let y = s.y
             scrollY = y
+            // Le rebond du bas ouvre l'éventail (jouet d'overscroll).
+            etire = max(0, y - max(0, s.fin))
             // La vitesse vient GRATUITEMENT de la sonde (l'ancienne
             // valeur) — une seule sonde (la loi). GAIN ×3 : les deltas
             // font 3-12 pt par évènement, nus ils donnaient ~1° de
             // secousse — physiquement invisible (payé au banc).
-            remous = max(-40, min(40, (y - vieux) * 3))
+            remous = max(-40, min(40, (y - vieux.y) * 3))
             remousGen += 1
             let gen = remousGen
             Task {
@@ -501,13 +526,29 @@ struct CalendarStickersPage: View {
             // secousse instantané que le ressort rattrape — le tas
             // encaisse la pose — et la salve de poudre.
             if let y = scrollY, y > course1 + course2 - 20 {
-                let coup: CGFloat = remous >= 0 ? 26 : -26
-                remous = coup
+                if !reduceMotion {
+                    let coup: CGFloat = remous >= 0 ? 26 : -26
+                    remous = coup
+                }
                 let s = Date()
                 salve = s
                 Task {
                     try? await Task.sleep(for: .seconds(1))
                     if salve == s { salve = nil }
+                }
+                // L'HAPTIQUE COMPOSÉE : le « toc » de la card qui se
+                // pose, puis deux micro-ticks quand les minis
+                // retombent — la main et l'œil racontent la même
+                // histoire.
+                UIImpactFeedbackGenerator(style: .medium)
+                    .impactOccurred(intensity: 0.9)
+                Task {
+                    try? await Task.sleep(for: .milliseconds(110))
+                    UIImpactFeedbackGenerator(style: .light)
+                        .impactOccurred(intensity: 0.55)
+                    try? await Task.sleep(for: .milliseconds(100))
+                    UIImpactFeedbackGenerator(style: .light)
+                        .impactOccurred(intensity: 0.4)
                 }
             }
             // Le remous meurt à l'arrêt : les minis se reposent EN
@@ -1245,6 +1286,64 @@ private struct SessionVinyle: View {
     }
 }
 
+// MARK: - La sonde composée du bac
+
+/// Le champ vivant (l'offset) emporte les stables (la fin de course) —
+/// UNE sonde, jamais deux (la loi de la sonde constante).
+private struct SondeBac: Equatable {
+    var y: CGFloat
+    var fin: CGFloat
+}
+
+// MARK: - Le poignet du bac
+
+/// Le gyroscope de l'éventail — l'école LuneMotion (neutre capturé à la
+/// prise en main, filtre doux), plus une BANDE MORTE : poignet immobile
+/// = zéro publication = zéro rendu (jamais d'horloge pour du statique,
+/// même déguisée en capteur). Au simulateur, aucun échantillon : le
+/// banc reste inerte. Et LE SILENCE DU POIGNET : stop() au démontage —
+/// payé au Manège, où CoreMotion réveillait le fil pour une scène morte.
+final class BacMotion: ObservableObject {
+    static let shared = BacMotion()
+    private let mgr = CMMotionManager()
+    private var pitchRef: Double?
+    private var rollRef: Double?
+    private var lisse = CGSize.zero
+    @Published private(set) var pench = CGSize.zero
+
+    func start() {
+        guard mgr.isDeviceMotionAvailable, !mgr.isDeviceMotionActive
+        else { return }
+        pitchRef = nil
+        rollRef = nil
+        mgr.deviceMotionUpdateInterval = 1.0 / 30.0
+        mgr.startDeviceMotionUpdates(using: .xArbitraryZVertical,
+                                     to: .main) { [weak self] m, _ in
+            guard let self, let m else { return }
+            if pitchRef == nil { pitchRef = m.attitude.pitch }
+            if rollRef == nil { rollRef = m.attitude.roll }
+            let cx = max(-1.0, min(1.0,
+                (m.attitude.roll - (rollRef ?? 0)) * 1.6))
+            let cy = max(-1.0, min(1.0,
+                (m.attitude.pitch - (pitchRef ?? 0)) * 1.6))
+            lisse.width += (CGFloat(cx) - lisse.width) * 0.18
+            lisse.height += (CGFloat(cy) - lisse.height) * 0.18
+            // LA BANDE MORTE.
+            if abs(lisse.width - pench.width) > 0.02
+                || abs(lisse.height - pench.height) > 0.02 {
+                pench = lisse
+            }
+        }
+    }
+
+    func stop() {
+        guard mgr.isDeviceMotionActive else { return }
+        mgr.stopDeviceMotionUpdates()
+        pench = .zero
+        lisse = .zero
+    }
+}
+
 // MARK: - Un mois du bac
 
 /// UN MOIS = UNE POCHETTE. Regroupe les DemoSession du hash démo par
@@ -1348,11 +1447,31 @@ private struct MonthVinyle: View {
     var remous: CGFloat = 0
     /// L'instant d'atterrissage : la gerbe de poudre pleine puissance.
     var salve: Date? = nil
+    /// La card au front du bac : elle seule salue à l'arrivée, ouvre
+    /// son éventail à l'overscroll, et son tap ouvre le mois — les
+    /// rangées font le COUCOU à la place.
+    var devant = false
+    /// L'ouverture de l'éventail au rebond du bas (0-1).
+    var ecart: CGFloat = 0
+    /// La pente du poignet (gyroscope, ±1) — l'éventail pivote à peine.
+    var pench: CGSize = .zero
     var flashing = false
     var onTap: ((CGRect) -> Void)? = nil
 
+    /// Le SALUT d'arrivée : la card dépasse sa pose d'un degré et demi
+    /// puis se redresse — l'objet a du poids.
+    @State private var salut: Double = 0
+    /// Le COUCOU d'un mois rangé : tapé dans la pile, il s'avance et se
+    /// rallume un instant avant de se ranger.
+    @State private var coucou: CGFloat = 0
+
     private let forme = RoundedRectangle(cornerRadius: 26,
                                          style: .continuous)
+
+    /// Le fond du puits qui respire avec l'agitation du tas.
+    private var puitsFond: Double {
+        0.32 + Double(min(abs(remous), 40)) * 0.002
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -1375,10 +1494,12 @@ private struct MonthVinyle: View {
                 startRadiusFraction: 0, endRadiusFraction: 1.1))
                 .blendMode(.plusLighter)
             // LE PUITS : le halo noir qui creuse le bas — blend normal,
-            // jamais un trait.
+            // jamais un trait. Il RESPIRE avec le remous : l'ombre se
+            // creuse quand le tas s'agite (la parallaxe de scène).
             forme.fill(EllipticalGradient(
                 stops: [
-                    .init(color: .black.opacity(0.32), location: 0.0),
+                    .init(color: .black.opacity(puitsFond),
+                          location: 0.0),
                     .init(color: .black.opacity(0.10), location: 0.55),
                     .init(color: .clear, location: 1.0),
                 ],
@@ -1393,7 +1514,16 @@ private struct MonthVinyle: View {
                 GeometryReader { g in
                     Color.clear
                         .contentShape(forme)
-                        .onTapGesture { onTap?(g.frame(in: .global)) }
+                        .onTapGesture {
+                            // Au front : le mois s'ouvre. Rangée dans
+                            // la pile : le COUCOU — elle s'avance et
+                            // se rallume un instant.
+                            if devant {
+                                onTap?(g.frame(in: .global))
+                            } else {
+                                faireCoucou()
+                            }
+                        }
                 }
             }
             // Le bloc titre : 18 + 27 + 3 + 16 = 64 pt = le bandeau de
@@ -1406,6 +1536,10 @@ private struct MonthVinyle: View {
                 Text(month.sousTitre)
                     .font(.inter(12.5, .medium)).tracking(0.2)
                     .foregroundStyle(Color.inkMuted)
+                    // Le chiffre ROULE quand le compte change (fin de
+                    // séance, vraies données) — le micro-détail 5.
+                    .contentTransition(.numericText(
+                        value: Double(month.count)))
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 18)
@@ -1413,8 +1547,10 @@ private struct MonthVinyle: View {
             // LA POUDRE : les micro-paillettes du booster (la recette
             // de PoudreBooster), déversées depuis l'éventail pendant
             // le scroll — et la GERBE d'atterrissage à la pose. Mortes
-            // (et l'horloge en pause) au repos.
-            PoudreBac(force: min(1, abs(remous) / 8), salve: salve)
+            // (et l'horloge en pause) au repos. Le VENT : les grains
+            // traînent derrière le geste.
+            PoudreBac(force: min(1, abs(remous) / 8), salve: salve,
+                      vent: remous)
         }
         // Les plusLighter (sheen + micro-sheens des minis) vivent dans
         // LEUR groupe ; le clip racine tranche le débord bas des minis.
@@ -1425,6 +1561,43 @@ private struct MonthVinyle: View {
                 forme.strokeBorder(Color.white.opacity(0.5), lineWidth: 1)
                     .blendMode(.plusLighter)
                     .transition(.opacity)
+            }
+        }
+        // Le COUCOU rallume la card le temps de son avancée.
+        .overlay(forme.fill(
+            Color.white.opacity(Double(coucou) * 0.006))
+            .allowsHitTesting(false))
+        // LE SALUT d'arrivée (front seul) + l'avancée du coucou.
+        .rotationEffect(.degrees(salut))
+        .offset(y: coucou)
+        .onChange(of: salve) { _, s in
+            guard devant, s != nil else { return }
+            withAnimation(.spring(response: 0.28,
+                                  dampingFraction: 0.55)) {
+                salut = 1.5
+            }
+            Task {
+                try? await Task.sleep(for: .milliseconds(140))
+                withAnimation(.spring(response: 0.4,
+                                      dampingFraction: 0.6)) {
+                    salut = 0
+                }
+            }
+        }
+    }
+
+    /// Le coucou : 10 pt d'avancée + un souffle de lumière, puis la
+    /// card se range — l'invitation discrète (le tap-portail du mois
+    /// viendra au jalon 2).
+    private func faireCoucou() {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.6)) {
+            coucou = 10
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(420))
+            withAnimation(.spring(response: 0.45,
+                                  dampingFraction: 0.7)) {
+                coucou = 0
             }
         }
     }
@@ -1439,9 +1612,15 @@ private struct MonthVinyle: View {
             Color.clear.frame(width: 132, height: 132)
             ForEach(Array(fan.enumerated()), id: \.element.id) { i, s in
                 MiniJouet(session: s, slot: slots[i], z: Double(i),
-                          remous: remous)
+                          remous: remous, ecart: ecart, salve: salve,
+                          sauteur: devant && i == fan.count - 1)
             }
         }
+        // LE POIGNET : pencher le téléphone fait à peine pivoter
+        // l'éventail (la grammaire de la caresse foil du booster) —
+        // bande morte dans BacMotion, zéro rendu poignet immobile.
+        .rotationEffect(.degrees(Double(pench.width) * 2.4))
+        .offset(x: pench.width * 3, y: pench.height * 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity,
                alignment: .bottom)
         // AU FOND de la card : les minis MORDENT le bord bas et se font
@@ -1466,9 +1645,17 @@ private struct MiniJouet: View {
     /// Le remous du scroll : chaque mini l'encaisse avec SON retard et
     /// SON sens (parité) — le tas se secoue, jamais à l'unisson.
     var remous: CGFloat = 0
+    /// L'ouverture au rebond du bas (0-1) : l'éventail s'écarte.
+    var ecart: CGFloat = 0
+    /// L'instant d'atterrissage — le sticker de la mini SAUTEUSE
+    /// tressaute 80 ms après sa card (l'objet posé dessus).
+    var salve: Date? = nil
+    var sauteur = false
 
     @State private var tirage: CGSize = .zero
     @State private var enMain = false
+    @State private var saut: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         // Le dévers suit le geste, borné — la carte penche du côté où
@@ -1476,20 +1663,48 @@ private struct MiniJouet: View {
         let devers: Double = max(-14.0,
             min(14.0, Double(tirage.width) * 0.12))
         let sens: Double = Int(z) % 2 == 0 ? 1.0 : -1.0
-        let secousseR: Double = Double(remous) * 0.22 * sens
-        let secousseY: CGFloat = remous * (0.70 - 0.09 * CGFloat(z))
-        let secousseX: CGFloat = remous * 0.10 * CGFloat(sens)
-        MiniSeanceCard(session: session)
+        // Reduce Motion : les secousses se taisent (la poudre le fait
+        // déjà) — le détail invisible très Apple.
+        let calme: CGFloat = reduceMotion ? 0.0 : 1.0
+        let secousseR: Double = Double(remous * calme) * 0.22 * sens
+        let secousseY: CGFloat =
+            remous * calme * (0.70 - 0.09 * CGFloat(z))
+        let secousseX: CGFloat = remous * calme * 0.10 * CGFloat(sens)
+        // L'OUVERTURE d'overscroll : l'éventail s'écarte en bout de
+        // bac — le vide devient un jouet.
+        let ouvre: Double = 1.0 + Double(ecart) * 0.35
+        let ouvreX: CGFloat = 1.0 + ecart * 0.28
+        // LES OMBRES VIVANTES : l'ombre s'étire quand la mini vole,
+        // pince quand elle se pose — la lumière raconte le poids.
+        let poids: CGFloat = min(14.0, abs(secousseY) * 0.5)
+        MiniSeanceCard(session: session, saut: saut)
             // LA LEVÉE : saisie = la carte se soulève (échelle) et son
             // ombre se creuse — elle quitte physiquement le tas.
             .scaleEffect(enMain ? 1.12 : 1.0)
-            .shadow(color: .black.opacity(enMain ? 0.65 : 0.5),
-                    radius: enMain ? 22 : 10,
-                    y: enMain ? 16 : 4)
-            .rotationEffect(.degrees(slot.angle + devers + secousseR))
-            .offset(x: slot.dx + tirage.width + secousseX,
+            .shadow(color: .black.opacity(enMain
+                        ? 0.65 : 0.5 - Double(poids) * 0.008),
+                    radius: enMain ? 22 : 10 + poids,
+                    y: enMain ? 16 : 4 + poids * 0.7)
+            .rotationEffect(.degrees(
+                slot.angle * ouvre + devers + secousseR))
+            .offset(x: slot.dx * ouvreX + tirage.width + secousseX,
                     y: slot.dy + tirage.height + secousseY)
             .zIndex(enMain ? 100 : z)
+            .onChange(of: salve) { _, s in
+                guard sauteur, s != nil, !reduceMotion else { return }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(80))
+                    withAnimation(.spring(response: 0.25,
+                                          dampingFraction: 0.5)) {
+                        saut = -3
+                    }
+                    try? await Task.sleep(for: .milliseconds(130))
+                    withAnimation(.spring(response: 0.35,
+                                          dampingFraction: 0.6)) {
+                        saut = 0
+                    }
+                }
+            }
             // Le ressort du secouement : le remous change à chaque
             // évènement de scroll, la mini le rattrape en rebondissant.
             .animation(.spring(response: 0.42, dampingFraction: 0.42),
@@ -1548,6 +1763,9 @@ private struct PoudreBac: View {
     /// puissance, quelle que soit la vitesse. La page remet `salve` à
     /// nil après coup — c'est CE nil qui rend la pause à l'horloge.
     var salve: Date? = nil
+    /// Le VENT du geste : les grains traînent derrière le mouvement,
+    /// comme de la vraie poussière.
+    var vent: CGFloat = 0
 
     /// L'origine du temps, UNE pour le process : la vue se ré-init à
     /// chaque rendu, le temps des grains doit rester continu.
@@ -1582,7 +1800,9 @@ private struct PoudreBac: View {
                     let x: CGFloat = cx + CGFloat(
                         sin(t * (0.4 + 0.5 * Self.hash(i, 8))
                             + Self.hash(i, 9) * 6.28)) * 7.0
-                    let y: CGFloat = cy + CGFloat(cyc) * 52.0
+                    let derive: CGFloat =
+                        -vent * 0.45 * CGFloat(cyc)
+                    let y: CGFloat = cy + CGFloat(cyc) * 52.0 + derive
                     let s: Double = sin(.pi * cyc)
                     let tw: Double = 0.5 + 0.5
                         * sin(t * (7.0 + 12.0 * Self.hash(i, 4))
@@ -1634,6 +1854,8 @@ private struct PoudreBac: View {
 /// DEVINÉ sur les couvertes : l'effet pochette de la référence.
 private struct MiniSeanceCard: View {
     let session: DemoSession
+    /// Le tressaut du sticker à l'atterrissage (mini de front seule).
+    var saut: CGFloat = 0
 
     private let forme = RoundedRectangle(cornerRadius: 18,
                                          style: .continuous)
@@ -1682,6 +1904,8 @@ private struct MiniSeanceCard: View {
                 .scaledToFit()
                 .frame(width: 52, height: 52)
                 .position(x: 40, y: 78)
+                // L'objet POSÉ sur la card : il tressaute après elle.
+                .offset(y: saut)
         }
         .frame(width: 132, height: 132)
     }
