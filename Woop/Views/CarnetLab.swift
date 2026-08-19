@@ -50,6 +50,11 @@ struct CarnetLab: View {
     /// passe, on la garde et on l'habille.
     private static let appleLab = CommandLine.arguments
         .contains("-carnetApple")
+    /// `-carnetScene` : LE PLAN ACTÉ — la tourne en VRAIE 3D SceneKit
+    /// (CarnetScene.swift), le métier du booster. Les gestes vivent DANS
+    /// la SCNView (UIPan/UITap) : les gestes SwiftUI du banc se taisent.
+    private static let sceneLab = CommandLine.arguments
+        .contains("-carnetScene")
     private static let qFige: CGFloat? = {
         guard let raw = UserDefaults.standard.string(forKey: "carnetQ"),
               let v = Double(raw) else { return nil }
@@ -93,7 +98,9 @@ struct CarnetLab: View {
                 / PlaqueCarnet.ouvert.objetW
             ZStack {
                 Color.black
-                if Self.feuilleLab {
+                if Self.sceneLab {
+                    CarnetSceneBanc()
+                } else if Self.feuilleLab {
                     bancFeuille(spread: spread, hauteur: hauteur)
                 } else {
                     CarnetObjet(p: Self.pFige ?? (ouvert ? 1 : 0),
@@ -108,7 +115,7 @@ struct CarnetLab: View {
         .persistentSystemOverlays(.hidden)
         .contentShape(Rectangle())
         .onTapGesture {
-            guard !Self.feuilleLab else { return }
+            guard !Self.feuilleLab, !Self.sceneLab else { return }
             SwapFeedback.shared.tap()
             withAnimation(.carnetOuverture) { ouvert.toggle() }
         }
@@ -117,6 +124,7 @@ struct CarnetLab: View {
         .simultaneousGesture(
             DragGesture(minimumDistance: 6)
                 .onChanged { v in
+                    guard !Self.sceneLab else { return }
                     if Self.feuilleLab {
                         guard !Self.appleLab, Self.qFige == nil else { return }
                         q = max(0, min(1, -v.translation.width / 240))
@@ -128,6 +136,7 @@ struct CarnetLab: View {
                     }
                 }
                 .onEnded { v in
+                    guard !Self.sceneLab else { return }
                     if Self.feuilleLab {
                         guard !Self.appleLab, Self.qFige == nil else { return }
                         // L'aimant : la tourne finit toujours posée — sur
