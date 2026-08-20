@@ -52,7 +52,13 @@ final class CollectionLune: ObservableObject {
         let id = UUID()
         let famille: String
         var count: Int
+        /// La vignette au gabarit (la grille, la descente).
         let art: UIImage?
+        /// Le canvas COMPLET de la forge (1086×1448, cadre posé) et sa
+        /// depth — l'état résultat (la carte qui s'ouvre) vit dessus.
+        /// nil = le repli carte-lune-1.
+        let artPlein: UIImage?
+        let depth: UIImage?
     }
 
     /// Les quatre registres, clés = la rareté de la forge.
@@ -71,20 +77,62 @@ final class CollectionLune: ObservableObject {
 
     /// La pose (à l'atterrissage) : la rangée se met à jour SOUS la
     /// bouffée de fumée.
-    func poser(rarete: String, famille: String, art: UIImage?) {
+    func poser(rarete: String, famille: String, art: UIImage?,
+               artPlein: UIImage? = nil, depth: UIImage? = nil) {
         var liste = registres[rarete] ?? []
         if let i = liste.firstIndex(where: { $0.famille == famille }) {
             liste[i].count += 1
         } else {
-            liste.append(Obtenue(famille: famille, count: 1, art: art))
+            liste.append(Obtenue(famille: famille, count: 1, art: art,
+                                 artPlein: artPlein, depth: depth))
         }
         registres[rarete] = liste
     }
 
     func collectees(_ rarete: String) -> [Obtenue] { registres[rarete] ?? [] }
+
+    /// LA RÉPARATION D'UN PLACEHOLDER : une forge qui répond APRÈS
+    /// l'envol (carte neuve, 60-90 s) a laissé partir carte-lune-1 vers
+    /// la collection alors que le serveur a consommé le tirage. On
+    /// retire UNE occurrence du placeholder (la plus récente) et on
+    /// pose la carte réellement tirée — rien n'est jamais perdu.
+    func reparerPlaceholder(avec carte: LuneForge.Carte) {
+        for (cle, liste) in registres {
+            var l = liste
+            guard let i = l.lastIndex(where: {
+                $0.famille == ArtDuSacre.famillePlaceholder }) else { continue }
+            if l[i].count > 1 {
+                l[i].count -= 1
+            } else {
+                l.remove(at: i)
+            }
+            registres[cle] = l
+            break
+        }
+        poser(rarete: carte.famille.rarete, famille: carte.famille.nom,
+              art: GabaritCarte.vignette(carte.art),
+              artPlein: carte.art, depth: carte.depth)
+    }
 }
 
 // MARK: L'ordre d'arrivée (du Sacre vers le profil)
+
+/// Ce que l'ENVOL adresse au profil : la carte vraie (famille + rareté)
+/// et sa vignette au gabarit — l'accueil pose ce que la cérémonie a
+/// montré, jamais un placeholder si la forge a répondu.
+struct CarteEnvolee: Equatable {
+    let rarete: String
+    let famille: String
+    /// La vignette au gabarit (la descente, la grille).
+    let art: UIImage?
+    /// Le canvas complet + depth pour l'état résultat de la collection.
+    var artPlein: UIImage? = nil
+    var depth: UIImage? = nil
+
+    static func == (a: CarteEnvolee, b: CarteEnvolee) -> Bool {
+        a.rarete == b.rarete && a.famille == b.famille
+    }
+}
 
 struct ArriveeCarte: Equatable {
     let rarete: String

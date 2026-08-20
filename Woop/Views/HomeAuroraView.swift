@@ -195,7 +195,13 @@ struct HomeAuroraView: View {
             .navigationBarHidden(true)
             .onAppear {
                 fireSmokeBenchIfAsked()
-                guard HomeWelcome.start != nil else { return }
+                // L'aube n'appartient qu'à la CONNEXION : passé son
+                // heure, ce onAppear rejouait 0,75 s d'écran vide à
+                // CHAQUE retour d'onglet (et à chaque remontage
+                // post-éclipse du Sacre) — `start` n'était jamais
+                // périmé.
+                guard let s = HomeWelcome.start,
+                      Date().timeIntervalSince(s) < 3 else { return }
                 contentBorn = false
                 // La lumière d'abord (l'aube part 0,45 s après la coupe), le
                 // contenu un souffle plus tard — c'est elle qui le révèle.

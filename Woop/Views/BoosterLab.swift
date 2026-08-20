@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreHaptics
+import os
 import SceneKit
 import SwiftUI
 
@@ -508,8 +509,9 @@ struct BoosterLab: View {
     /// l'engagement) et le RÉSULTAT (la carte posée). Jamais pendant la
     /// cérémonie : une fois l'ouverture lancée, la séquence va au bout.
     var onRetourHome: (() -> Void)? = nil
-    /// La rareté de la carte au moment où elle s'est envolée.
-    var onCarteEnvolee: ((String) -> Void)? = nil
+    /// La carte au moment où elle s'est envolée — la vraie famille et
+    /// son art (le placeholder n'est plus qu'un repli de forge).
+    var onCarteEnvolee: ((CarteEnvolee) -> Void)? = nil
 
     @StateObject private var handle = BoosterHandle()
     @State private var carteOpacity: Double = 0
@@ -545,7 +547,8 @@ struct BoosterLab: View {
                                  gallery: (Self.gallery || appMode)
                                      && !Self.cine,
                                  cine: Self.cine,
-                                 handle: handle)
+                                 handle: handle,
+                                 forge: appMode)
                         .ignoresSafeArea()
                         // Recognizers désactivés ≠ hit-test désactivé :
                         // sans ça le SCNView avale les touches destinées
@@ -616,6 +619,11 @@ struct BoosterLab: View {
                                            height: cardH + 170)
                                     .offset(y: -0.01322 * H)
                                     .opacity(carteEnPlongee ? 0 : 1)
+                                    // Jamais un pop AU-DESSUS du noir
+                                    // de sortie : le courant revient en
+                                    // fondu avec la levée du battement.
+                                    .animation(.easeInOut(duration: 0.35),
+                                               value: carteEnPlongee)
                                 // LA FUMÉE D'ENVOL : le sillage de
                                 // l'avion — des volutes très fines qui
                                 // naissent derrière la carte le long de
@@ -653,8 +661,13 @@ struct BoosterLab: View {
                                     .offset(y: -0.01322 * H)
                                     .allowsHitTesting(false)
                                 }
-                                CarteVivante(rarete: handle.rarete,
-                                             onDive: { carteEnPlongee = $0 })
+                                CarteVivante(art: handle.carteArt
+                                                 .map(Image.init(uiImage:)),
+                                             depth: handle.carteDepth
+                                                 .map(Image.init(uiImage:)),
+                                             rarete: handle.rarete,
+                                             onDive: { carteEnPlongee = $0 },
+                                             diveOnTap: true)
                                     .frame(width: cardW)
                                     .rotation3DEffect(
                                         .degrees(pitch),
@@ -674,6 +687,11 @@ struct BoosterLab: View {
                                            height: cardH + 170)
                                     .offset(y: -0.01322 * H)
                                     .opacity(carteEnPlongee ? 0 : 1)
+                                    // Jamais un pop AU-DESSUS du noir
+                                    // de sortie : le courant revient en
+                                    // fondu avec la levée du battement.
+                                    .animation(.easeInOut(duration: 0.35),
+                                               value: carteEnPlongee)
                                 // L'INVITE au-dessus de la carte : l'air
                                 // qui montre le ciel. Meurt au premier
                                 // contact, se tait en plongée et en vol.
@@ -802,7 +820,26 @@ struct BoosterLab: View {
             // au-dessus de la scène pendant la découpe.
             if let onRetourHome, handle.auManege || handle.revealed {
                 VStack(spacing: 0) {
-                    RangeeChips(retour: onRetourHome) { EmptyView() }
+                    RangeeChips(retour: {
+                        // Sortir à l'escale RÉSULTAT ne jette pas le
+                        // tirage : la carte se pose DIRECTEMENT dans la
+                        // collection (le même payload que l'envol, la
+                        // forge tardive prime) — sans cérémonie.
+                        if appMode, handle.revealed, !handle.flown {
+                            let tardive = handle.forgeTardive
+                            let artPlein = tardive?.art ?? handle.carteArt
+                            CollectionLune.shared.poser(
+                                rarete: tardive?.famille.rarete
+                                    ?? handle.rarete,
+                                famille: tardive?.famille.nom
+                                    ?? handle.famille,
+                                art: artPlein.map(GabaritCarte.vignette)
+                                    ?? ArtDuSacre.art,
+                                artPlein: artPlein,
+                                depth: tardive?.depth ?? handle.carteDepth)
+                        }
+                        onRetourHome()
+                    }) { EmptyView() }
                     Spacer(minLength: 0)
                 }
                 .opacity(chevronVisible ? 1 : 0)
@@ -870,7 +907,16 @@ struct BoosterLab: View {
             envolY = 0
             envolArmed = false
             // Le mode app rend la carte à l'hôte : l'accueil commence.
-            onCarteEnvolee?(handle.rarete)
+            // Une forge TARDIVE prime — la collection reçoit la carte
+            // réellement tirée, jamais le placeholder de cérémonie.
+            let tardive = handle.forgeTardive
+            let artPlein = tardive?.art ?? handle.carteArt
+            onCarteEnvolee?(CarteEnvolee(
+                rarete: tardive?.famille.rarete ?? handle.rarete,
+                famille: tardive?.famille.nom ?? handle.famille,
+                art: artPlein.map(GabaritCarte.vignette) ?? ArtDuSacre.art,
+                artPlein: artPlein,
+                depth: tardive?.depth ?? handle.carteDepth))
         }
     }
 }
@@ -892,6 +938,17 @@ final class BoosterHandle: ObservableObject {
     /// les 4 lunes) et sa NOUVEAUTÉ dans la collection.
     var rarete: String = "rare"
     var nouvelle: Bool = false
+    /// LA CARTE FORGÉE (remplie par le tirage lancé à l'engagement) :
+    /// la famille réelle, l'art habillé et sa depth. Publiés : une
+    /// forge qui arrive après le dévoilement habille la CarteVivante
+    /// déjà montée. nil = le repli carte-lune-1.
+    @Published var carteArt: UIImage?
+    @Published var carteDepth: UIImage?
+    var famille: String = ArtDuSacre.famillePlaceholder
+    /// La forge arrivée APRÈS le dévoilement : le visuel de la
+    /// cérémonie reste gelé, mais l'envol emporte CETTE carte à la
+    /// collection (le serveur a consommé le tirage — on ne jette pas).
+    var forgeTardive: LuneForge.Carte?
     weak var coordinator: BoosterStage.Coordinator?
 
     /// Les lunes de la typologie : le registre du sacre les pose une à une.
@@ -1175,16 +1232,30 @@ struct BoosterStage: UIViewRepresentable {
     var gallery: Bool = false
     var cine: Bool = false
     var handle: BoosterHandle? = nil
+    /// Le FLOW APP : l'engagement tire la vraie carte au serveur.
+    var forge: Bool = false
+    /// LA PAUSE PILOTÉE : un SCNView effacé par l'opacité REND QUAND
+    /// MÊME à 60 fps — le géant du profil scrollé hors de vue coûtait
+    /// 560×700 en continu sous toute la page.
+    var paused: Bool = false
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
         // Transparent (15-08) : le sachet vit aussi hors des bancs — sur
         // la page profil, il émerge du sol sans boîte noire.
         view.backgroundColor = .clear
+        // 2X SUR TÉLÉPHONE (le levier fluidité documenté — HDR + bloom
+        // + particules + découpe au même budget GPU) ; le simulateur
+        // garde 4X pour les films de banc.
+        #if targetEnvironment(simulator)
         view.antialiasingMode = .multisampling4X
+        #else
+        view.antialiasingMode = .multisampling2X
+        #endif
         view.preferredFramesPerSecond = 60
         view.isPlaying = true
         view.rendersContinuously = true
+        context.coordinator.forgeActive = forge
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
                                    gallery: gallery)
@@ -1216,13 +1287,39 @@ struct BoosterStage: UIViewRepresentable {
         hold.minimumPressDuration = 0.18
         hold.cancelsTouchesInView = false
         view.addGestureRecognizer(hold)
+        // SANS delegate, UIKit interdit pan et long-press ENSEMBLE : le
+        // doigt posé 0,18 s (la charge — le geste appris) empêchait le
+        // pan de naître pour tout le reste du toucher, et la découpe ne
+        // pouvait JAMAIS prendre le relais du maintien. Le relais
+        // `adoptHoldIntoTear` suppose cette simultanéité.
+        pan.delegate = context.coordinator
+        hold.delegate = context.coordinator
+        // L'HORLOGE DE LA MISE EN PLACE ATTEND LES PIXELS : le delegate
+        // de rendu dit quand la scène a VRAIMENT dessiné (sur téléphone,
+        // Metal compile les pipelines à la première frame — le
+        // CADisplayLink tiquait pendant ce temps et la roue se
+        // dévissait sur une vue NOIRE : « il manque l'arrivée »).
+        view.delegate = context.coordinator
+        context.coordinator.panRecognizer = pan
+        context.coordinator.holdRecognizer = hold
         if CommandLine.arguments.contains("-boosterHoldDemo") {
             context.coordinator.holdDemo()
         }
         return view
     }
 
-    func updateUIView(_ uiView: SCNView, context: Context) {}
+    func updateUIView(_ uiView: SCNView, context: Context) {
+        // La pause du rendu suit l'hôte (le scroll, la planque) — le
+        // teardown, lui, reste le seul démontage. JAMAIS réveiller une
+        // vue GELÉE par le raccord (extinguishForHandoff) : sa dernière
+        // frame doit dormir sous la CarteVivante — un updateUIView de
+        // scroll la relançait.
+        guard !context.coordinator.frozen else { return }
+        if uiView.isPlaying == paused {
+            uiView.isPlaying = !paused
+            uiView.rendersContinuously = !paused
+        }
+    }
 
     /// LE MANÈGE NE DOIT PAS SURVIVRE À SON ÉCRAN. Sans ce démontage, sa
     /// nappe continuait de chanter par-dessus la home après le chevron :
@@ -1237,16 +1334,59 @@ struct BoosterStage: UIViewRepresentable {
 
     // MARK: le chef d'orchestre
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate,
+                             SCNSceneRendererDelegate {
         private weak var view: SCNView?
+        /// La scène a mis de VRAIS pixels à l'écran — flag + IDENTITÉ
+        /// de scène lus/écrits ENSEMBLE sous verrou (fil de rendu ↔
+        /// main). L'identité protège le replay : une frame de
+        /// l'ANCIENNE scène qui se complète après le re-gate ne doit
+        /// pas ouvrir la porte.
+        private let renderGate = OSAllocatedUnfairLock<
+            (rendered: Bool, scene: ObjectIdentifier?)>(
+            initialState: (false, nil))
+
+        var sceneDidRender: Bool {
+            renderGate.withLock { $0.rendered }
+        }
+
+        // Fil de rendu SceneKit : ne toucher NI SceneKit NI UIKit ici.
+        func renderer(_ renderer: SCNSceneRenderer,
+                      didRenderScene scene: SCNScene,
+                      atTime time: TimeInterval) {
+            renderGate.withLock {
+                if $0.scene == ObjectIdentifier(scene) {
+                    $0.rendered = true
+                }
+            }
+        }
         private var stage: BoosterScene?
         /// La poignée du raccord CarteVivante (nil hors handoff).
         weak var handle: BoosterHandle?
+        /// La paire pan/hold — la SEULE autorisée à se reconnaître
+        /// ensemble (le tap reste exclusif).
+        weak var panRecognizer: UIPanGestureRecognizer?
+        weak var holdRecognizer: UILongPressGestureRecognizer?
+        /// GELÉE par le raccord CarteVivante : la pause pilotée
+        /// (updateUIView) n'a plus le droit de la réveiller.
+        var frozen = false
+
+        func gestureRecognizer(
+            _ g: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer)
+            -> Bool {
+            (g === panRecognizer && other === holdRecognizer)
+                || (g === holdRecognizer && other === panRecognizer)
+        }
         private var still = false
         private var dos = false
         private var mylar = false
         private var yawDeg: Float?
         private var galleryOn = false
+        /// La forge serveur ne tire que dans le FLOW APP (les bancs
+        /// rejouent la cérémonie à volonté — pas un tirage par replay).
+        var forgeActive = false
+        private var forgeLancee = false
 
         private enum Mode {
             case idle, spinning, tearing, opening, revealed
@@ -1262,6 +1402,19 @@ struct BoosterStage: UIViewRepresentable {
                 let au = mode == .galleryIdle || mode == .galleryScrub
                     || mode == .galleryFly || mode == .ringSpin
                 if handle?.auManege != au { handle?.auManege = au }
+                // LE FILET DE LA VIE (galerie) : chaque retour à .idle
+                // DEPUIS UN ÉTAT DE GESTE s'assure que le sachet posé
+                // respire et que l'invite veille — les deux appels sont
+                // idempotents (bob déjà posé = no-op ; timer vivant =
+                // pas de re-timer). Jamais depuis les cinématiques :
+                // un .idle né de .opening/.placing serait un bug, pas
+                // une occasion d'armer des animations dessus.
+                if mode == .idle, galleryOn,
+                   oldValue == .tearing || oldValue == .spinning
+                       || oldValue == .maybeBack || oldValue == .committing {
+                    stage?.beginIdleBreath()
+                    if inviteTimer == nil { startInvite() }
+                }
             }
         }
         /// Les mains et l'oreille du manège.
@@ -1284,9 +1437,17 @@ struct BoosterStage: UIViewRepresentable {
             inviteTimer?.invalidate()
             let timer = Timer(fire: Date().addingTimeInterval(1.4),
                               interval: 4.2, repeats: true) { [weak self] _ in
-                guard let self, self.mode == .idle,
-                      let stage = self.stage,
-                      stage.tearProgress == 0, self.restingFront else { return }
+                guard let self, let stage = self.stage else { return }
+                guard self.mode == .idle, stage.tearProgress == 0,
+                      self.restingFront else {
+                    // SENTINELLE : un sweep sauté pour cause de
+                    // non-recto était invisible — c'est ce silence qui
+                    // a rendu « impossible de déchirer » indéchiffrable.
+                    if self.mode == .idle, stage.tearProgress == 0 {
+                        print("[booster] sweep sauté : non-recto yaw=\(self.yaw)")
+                    }
+                    return
+                }
                 stage.inviteSweep()
             }
             RunLoop.main.add(timer, forMode: .common)
@@ -1327,6 +1488,9 @@ struct BoosterStage: UIViewRepresentable {
         func startHold() {
             guard holdLink == nil else { return }
             stopInvite()
+            // Le pulse du tell rendrait folles les écritures `lipGlow`
+            // de la charge — il se tait sous le doigt.
+            stage?.retirerShinyLeak()
             holdReleasing = false
             holdLast = CACurrentMediaTime()
             haptics.bedStart()
@@ -1358,8 +1522,11 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         func beginHoldRelease() {
-            guard holdLink != nil, mode == .idle, !holdReleasing
-            else { return }
+            // Le soupir est TOUJOURS légitime au lever : gardé sur
+            // `mode == .idle`, un doigt parti en rotation laissait la
+            // charge orpheline — vibration perpétuelle, lune
+            // incandescente figée.
+            guard holdLink != nil, !holdReleasing else { return }
             holdReleasing = true
             haptics.exhale()
         }
@@ -1373,6 +1540,8 @@ struct BoosterStage: UIViewRepresentable {
             haptics.bedIntensity(0)
             haptics.bedStop()
             if mode == .idle { startInvite() }
+            // Le soupir rend son tell au sachet intact.
+            if stage?.tearProgress == 0 { stage?.poserShinyLeak() }
         }
 
         /// La découpe prend le relais du maintien : le plancher de
@@ -1451,7 +1620,11 @@ struct BoosterStage: UIViewRepresentable {
 
         // ---- la mise en place cinématique ----
         private var placingLink: CADisplayLink?
-        private var placingStart: CFTimeInterval = 0
+        /// L'horloge de la mise en place, en PAS BORNÉS (négative
+        /// pendant le rideau) — jamais murale : un gel ne saute plus la
+        /// roue.
+        private var placingT: Float = -0.42
+        private var placingLast: CFTimeInterval = 0
 
         // ---- le spin du sachet central DANS l'anneau ----
         /// Lacet propre du clone centré (0 = face à la caméra), son élan,
@@ -1488,6 +1661,13 @@ struct BoosterStage: UIViewRepresentable {
             guard let stage = BoosterScene(still: still, mylar: mylar,
                                            gallery: gallery) else { return }
             self.stage = stage
+            // Le re-gate AVANT la pose de la scène (chaque scène neuve
+            // attend SA première frame rendue), et le delegate ici —
+            // attach est le chemin commun makeUIView + replay.
+            renderGate.withLock {
+                $0 = (false, ObjectIdentifier(stage.scene))
+            }
+            view.delegate = self
             view.scene = stage.scene
             view.pointOfView = stage.cameraNode
             yaw = yawDeg.map { $0 * .pi / 180 } ?? (dos ? 0 : .pi)
@@ -1539,9 +1719,23 @@ struct BoosterStage: UIViewRepresentable {
             stopPlacing()
             stopRingSpin()
             stopGalleryGyro()
-            stopInvite()
+            // stopHold AVANT stopInvite : stopHold relance l'invite
+            // quand mode == .idle — dans l'autre ordre, un Timer 4,2 s
+            // ressuscité survivait au démontage pour toujours.
             stopHold()
-            LuneMotion.shared.stop()
+            stopInvite()
+            // On ne rend QUE le crédit qu'on a pris : le teardown du
+            // géant du profil (gallery: false, jamais client) tuait le
+            // poignet de TOUTE l'app — manège compris, en plein vol.
+            if motionClient {
+                motionClient = false
+                LuneMotion.shared.stop()
+            }
+            // SCNView.delegate est `unowned(unsafe)` (assign ObjC, pas
+            // weak-zeroing) : une frame en vol sur le fil de rendu peut
+            // appeler un coordinateur MORT si la SCNView survit à la
+            // transition de démontage.
+            view?.delegate = nil
             // La musique de la carte s'en va aussi : on peut quitter le
             // Sacre depuis l'étage de résultat, en pleine plongée.
             // (Le démontage n'est pas isolé au fil principal, elle si.)
@@ -1570,9 +1764,18 @@ struct BoosterStage: UIViewRepresentable {
             handle?.auManege = au
         }
 
+        /// CE coordinateur est-il client du poignet ? UN seul crédit
+        /// LuneMotion par coordinateur, rendu au teardown — le géant et
+        /// le trône (gallery: false) n'en prennent jamais : leur
+        /// démontage ne doit plus tuer le gyro du manège en plein vol.
+        private var motionClient = false
+
         private func startGalleryGyro() {
-            LuneMotion.shared.start()
             guard gyroLink == nil else { return }
+            if !motionClient {
+                motionClient = true
+                LuneMotion.shared.start()
+            }
             let link = CADisplayLink(target: self,
                                      selector: #selector(gyroStep(_:)))
             link.add(to: .main, forMode: .common)
@@ -1584,13 +1787,22 @@ struct BoosterStage: UIViewRepresentable {
             gyroLink = nil
         }
 
+        /// Le dernier biais gyro écrit — la BANDE MORTE (école du
+        /// calendrier) : poignet immobile = zéro écriture de scène.
+        private var gyroLastBias: Float = .greatestFiniteMagnitude
+
         @objc private func gyroStep(_ link: CADisplayLink) {
             // Au repos SEULEMENT : un seul écrivain par pose d'anneau.
             guard let stage, mode == .galleryIdle,
                   scrollLink == nil, ringSpinLink == nil,
                   LuneMotion.shared.live else { return }
             let bias = 0.045 * LuneMotion.shared.tilt.x
-            stage.applyGallery(offset: offset + bias)
+            guard abs(bias - gyroLastBias) > 0.0005 else { return }
+            gyroLastBias = bias
+            // `centerSpin` : la pichenette posée du sachet central
+            // survit au poignet — sans elle, la frame gyro qui suit un
+            // settle dos faisait CLAQUER le sachet face caméra.
+            stage.applyGallery(offset: offset + bias, centerSpin: cloneYaw)
         }
 
         /// Le sachet est-il posé recto face caméra ? (La découpe ne s'arme
@@ -1636,11 +1848,18 @@ struct BoosterStage: UIViewRepresentable {
             for i in 0 ..< BoosterScene.ringCount { stage.galleryLight[i] = 0 }
             offset = -1.45
             stage.applyGallery(offset: offset)
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.4
-            stage.floorNode.opacity = 1
-            SCNTransaction.commit()
-            placingStart = CACurrentMediaTime()
+            // L'HORLOGE EN PAS BORNÉS, jamais murale (deux pièges
+            // payés) : (1) murale posée à l'attach, 72 % du dévissage
+            // brûlait sous le fondu d'entrée ; (2) même paresseuse, la
+            // PREMIÈRE ouverture du process compile les shaders Metal
+            // PENDANT la roue — les frames gelées sautaient la
+            // cinématique (« il manque le zoom », téléphone). Chaque
+            // frame avance d'un pas plafonné : un gel RALENTIT la roue
+            // d'un souffle, il ne peut plus la sauter. Le rideau
+            // (t < 0) laisse le fondu se poser, sol qui s'allume, PUIS
+            // la roue.
+            placingT = -0.42
+            placingLast = 0
             let link = CADisplayLink(target: self,
                                      selector: #selector(placingStep(_:)))
             link.add(to: .main, forMode: .common)
@@ -1653,11 +1872,34 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         @objc private func placingStep(_ link: CADisplayLink) {
-            guard view?.window != nil, let stage else {
+            guard let stage else {
                 stopPlacing()
                 return
             }
-            let t = Float(CACurrentMediaTime() - placingStart)
+            // Fenêtre pas encore là (montage en transaction lourde) : on
+            // SAUTE la frame, le lien vit — le tuer figeait le manège à
+            // jamais, feux éteints, sans un mot.
+            guard view?.window != nil else { return }
+            // LES PIXELS D'ABORD : tant que la scène n'a pas rendu sa
+            // première vraie frame (compilation Metal en cours), le
+            // rideau ne se lève pas — la roue ne se dévisse JAMAIS sur
+            // une vue noire.
+            guard sceneDidRender else { return }
+            if placingLast == 0 {
+                // Le premier tick en fenêtre : le rideau se lève — le
+                // sol s'allume pendant que le fondu d'entrée se pose.
+                placingLast = link.timestamp
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.4
+                stage.floorNode.opacity = 1
+                SCNTransaction.commit()
+                return
+            }
+            let dt = Float(min(link.timestamp - placingLast, 1.0 / 30))
+            placingLast = link.timestamp
+            placingT += dt
+            let t = placingT
+            guard t >= 0 else { return }
             // La roue freine : décélération cubique sur 1,1 s.
             let u = min(t / 1.1, 1)
             offset = -1.45 * powf(1 - u, 3)
@@ -1703,7 +1945,9 @@ struct BoosterStage: UIViewRepresentable {
             let clone = stage.galleryPacks[centerIndex(offset)]
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0
-            clone.eulerAngles.y = .pi + cloneYaw
+            // TRIPLET ENTIER — la composante seule relit l'euler
+            // décomposé (forme alternative à lacet π : clone couché).
+            clone.eulerAngles = SCNVector3(0, .pi + cloneYaw, 0)
             SCNTransaction.commit()
         }
 
@@ -1755,12 +1999,13 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         /// La détente quand le sachet du centre change — le clic de
-        /// barillet, à chaque cran.
+        /// barillet, à chaque cran. La poudre souffle AVEC l'haptique.
         private func tickIfCenterChanged() {
             let center = Int(offset.rounded())
             if center != lastCenterSlot {
                 lastCenterSlot = center
                 haptics.detent()
+                stage?.galleryDustPuff()
             }
         }
 
@@ -1783,9 +2028,16 @@ struct BoosterStage: UIViewRepresentable {
                 stopScroll()
                 haptics.brake()
                 mode = .galleryIdle
+                // La roue posée : la poudre revient au voile de repos
+                // (le drive du dernier flick restait écrit — tempête).
+                stage.setGalleryDustDrive(0)
             }
             stage.applyGallery(offset: offset)
             tickIfCenterChanged()
+            // La poudre suit le vol : elle vit avec l'élan, meurt avec.
+            if scrollLink != nil {
+                stage.setGalleryDustDrive(min(abs(scrollVel) * 0.35, 1))
+            }
         }
 
         /// L'index du clone de galerie sous un nœud touché, s'il y en a un.
@@ -1805,6 +2057,95 @@ struct BoosterStage: UIViewRepresentable {
             return hits.compactMap { galleryIndex(of: $0.node) }.first
         }
 
+        /// LE TIRAGE DE LA VRAIE CARTE — lancé à l'engagement pour que
+        /// la latence du serveur vive DERRIÈRE la cérémonie (pool ~1 s :
+        /// prêt bien avant le dévoilement ; neuve 60-90 s : la carte
+        /// prend son art en retard, la collection reçoit le vrai).
+        /// Jamais d'échec visible : sans réseau ou sans session, le
+        /// repli est carte-lune-1 — la cérémonie ne casse pas.
+        private func lancerForge() {
+            guard forgeActive, !forgeLancee else { return }
+            forgeLancee = true
+            Task { @MainActor [weak self] in
+                do {
+                    // La session du compte si elle existe ; sinon le
+                    // user de TEST du banc (dev — les vrais comptes
+                    // arriveront avec « Connexion avec Apple »).
+                    let jwt: String
+                    if let t = try? await SupabaseSession.shared.token() {
+                        jwt = t
+                    } else {
+                        jwt = try await ForgeServeur.jwtBanc()
+                    }
+                    let carte = try await ForgeServeur.tirer(jwt: jwt)
+                    guard let self, let handle = self.handle,
+                          !handle.flown else {
+                        // Le Sacre est déjà démonté (envol accompli,
+                        // coordinateur mort) : le tirage n'est PAS
+                        // jeté — la collection répare son placeholder.
+                        CollectionLune.shared.reparerPlaceholder(avec: carte)
+                        return
+                    }
+                    if !handle.revealed {
+                        // Rien n'est encore montré : TOUT s'habille —
+                        // la poignée, la carte SCÈNE (le swap visible
+                        // venait d'elle : carte-lune-1 montait du
+                        // sachet puis la CarteVivante arrivait avec le
+                        // vrai art), et le tell.
+                        handle.famille = carte.famille.nom
+                        handle.rarete = carte.famille.rarete
+                        handle.nouvelle = CollectionLune.shared
+                            .destination(rarete: carte.famille.rarete,
+                                         famille: carte.famille.nom)
+                            .nouvelle
+                        handle.carteDepth = carte.depth
+                        handle.carteArt = carte.art
+                        self.stage?.habillerCarte(carte.art)
+                        // LE TELL : la rareté SERVIE — jamais
+                        // handle.rarete (contaminé par le défaut de
+                        // banc "rare"). Discret si le doigt est déjà
+                        // au travail.
+                        if ["epic", "legendary"]
+                            .contains(carte.famille.rarete) {
+                            let calme = self.mode == .idle
+                                && self.holdLink == nil
+                                && (self.stage?.tearProgress ?? 1) == 0
+                            self.stage?.setTell(discret: !calme)
+                            // La respiration ×1,5 du tell ne peut PAS
+                            // s'appliquer à une respiration déjà en
+                            // cycle (l'idempotence l'ignore) : retrait
+                            // en fondu, re-pose amplifiée un souffle
+                            // plus tard — seulement au calme.
+                            if calme, let stage = self.stage,
+                               stage.swayNode.animationKeys
+                                   .contains("bob") {
+                                stage.swayNode.removeAnimation(
+                                    forKey: "bob", blendOutDuration: 0.3)
+                                stage.swayNode.removeAnimation(
+                                    forKey: "sway", blendOutDuration: 0.3)
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.32) { [weak self] in
+                                    guard let self, self.mode == .idle
+                                    else { return }
+                                    self.stage?.beginIdleBreath()
+                                }
+                            }
+                        }
+                    } else {
+                        // DÉVOILÉ : le visuel est GELÉ (jamais de
+                        // transformation sous les yeux) — mais la carte
+                        // tirée n'est PAS jetée : le serveur a consommé
+                        // le tirage, l'envol l'emportera à la
+                        // collection.
+                        handle.forgeTardive = carte
+                    }
+                } catch {
+                    print("forge indisponible, repli placeholder :",
+                          error.localizedDescription)
+                }
+            }
+        }
+
         /// L'engagement : les voisins filent chacun dans leur direction en
         /// accélérant, le sol s'éteint, et la caméra fait son dolly-zoom
         /// (z ET champ ensemble : une pure approche) vers le cadrage
@@ -1818,6 +2159,10 @@ struct BoosterStage: UIViewRepresentable {
             stopScroll()
             stopRingSpin()
             stopGalleryGyro()
+            // L'éclatement radial emporte le voile : la poudre du
+            // manège se tait pour la cérémonie (sinon des grains dorés
+            // en plein cadre pendant toute la découpe).
+            stage.setGalleryDustOn(false)
             // Le coup sourd du mécanisme qui s'enclenche — et la musique
             // change d'acte : la boîte à musique s'efface, la veillée
             // sombre s'installe sous la découpe.
@@ -1825,13 +2170,39 @@ struct BoosterStage: UIViewRepresentable {
             ambience?.act(BoosterAmbience.veille, over: 1.4)
 
             // Le vrai sachet prend l'orientation où la main a laissé le
-            // clone — engagé dos visible, il arrive dos visible.
+            // clone… puis SE PRÉSENTE RECTO pendant le dolly : engagé
+            // dos, la découpe ne pouvait plus JAMAIS s'armer
+            // (`restingFront` faux en permanence, l'invite éteinte, pas
+            // un mot) — et sur téléphone le gyro remettait de toute
+            // façon le clone de face : l'« arrivée dos » était déjà un
+            // claquement, pas un choix tenu.
             yaw = .pi + cloneYaw
             pitch = 0
             applyPose()
             stage.packNode.position = SCNVector3(0, -0.02, 0)
             stage.galleryPacks[slot].isHidden = true
             stage.packNode.isHidden = false
+            if abs(atan2f(sinf(yaw - .pi), cosf(yaw - .pi))) > 0.01 {
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.62
+                SCNTransaction.animationTimingFunction =
+                    CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
+                stage.packNode.eulerAngles = SCNVector3(0, Float.pi, 0)
+                SCNTransaction.commit()
+                yaw = .pi
+            }
+            cloneYaw = 0
+            cloneVel = 0
+            // LE SACHET ARRIVE VIVANT AU DOLLY : la respiration s'arme
+            // ICI, synchrone — le bloc +0,9 s n'est plus le seul
+            // écrivain de la vie (s'il rate, le sachet restait une
+            // statue). Idempotent : le +0,9 s peut le rappeler sans
+            // saut. Berceau et demi-tour vivent sur des nœuds disjoints.
+            stage.beginIdleBreath()
+            // LA FORGE PART À L'ENGAGEMENT : le tirage (pool ~1 s, carte
+            // neuve 60-90 s) se cache derrière la cérémonie — au
+            // dévoilement, la poignée porte la vraie carte, ou le repli.
+            lancerForge()
 
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.32
@@ -1877,6 +2248,13 @@ struct BoosterStage: UIViewRepresentable {
                       let stage = self.stage else { return }
                 stage.floorNode.isHidden = true
                 stage.beginIdleBreath()
+                // SENTINELLE (jamais un écrasement de pose — le recto
+                // est garanti par le demi-tour d'engagement) : un
+                // engagement non-recto rendrait la découpe inarmable en
+                // silence — c'est ce silence qui a coûté.
+                if !self.restingFront {
+                    print("[booster] engagement non-recto : yaw=\(self.yaw)")
+                }
                 self.mode = .idle
                 self.startInvite()
             }
@@ -1910,6 +2288,12 @@ struct BoosterStage: UIViewRepresentable {
             stage.floorNode.opacity = 1
             stage.applyGallery(offset: offset)
             SCNTransaction.commit()
+
+            // L'anneau retrouve TOUTE sa vie : le voile de poudre se
+            // rallume, et la parallaxe du poignet renaît (stoppée à
+            // l'engagement, elle ne revenait jamais).
+            stage.setGalleryDustOn(true)
+            startGalleryGyro()
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.47) { [weak self] in
                 guard let self, self.mode == .backingOut else { return }
@@ -2049,6 +2433,12 @@ struct BoosterStage: UIViewRepresentable {
                    ringSpinLink == nil {
                     commitGallery(slot: idx)
                 } else {
+                    // L'anneau repart : la pichenette du centre meurt
+                    // AVEC son centre — un settle encore en vol écrirait
+                    // sur le clone du NOUVEAU cran (yaws parasites).
+                    stopRingSpin()
+                    cloneYaw = 0
+                    cloneVel = 0
                     let n = BoosterScene.ringCount
                     var delta = ((idx - centerIndex(offset)) % n + n) % n
                     if delta > n / 2 { delta -= n }
@@ -2080,6 +2470,11 @@ struct BoosterStage: UIViewRepresentable {
                         return
                     }
                     stopScroll()
+                    // Même loi qu'au tap-vol : le scrub déplace le
+                    // centre, la pichenette posée meurt avec lui.
+                    stopRingSpin()
+                    cloneYaw = 0
+                    cloneVel = 0
                     grabOffset = offset
                     lastScrubOffset = offset
                     haptics.bedStart()
@@ -2101,6 +2496,7 @@ struct BoosterStage: UIViewRepresentable {
                     // Le doigt qui a CHARGÉ mord maintenant : la
                     // découpe hérite du plancher de la lune.
                     adoptHoldIntoTear()
+                    stage.retirerShinyLeak()
                     mode = .tearing
                     // La course écran de la découpe : la largeur projetée du
                     // sachet à hauteur de la ligne — convertie DEPUIS le
@@ -2125,7 +2521,10 @@ struct BoosterStage: UIViewRepresentable {
                     tick.prepare()
                 } else if packHit != nil {
                     // Attraper le sachet — y compris en plein vol : la main
-                    // vole l'élan, le tour reprend sous le doigt.
+                    // vole l'élan, le tour reprend sous le doigt. La
+                    // charge en cours meurt AVEC le changement
+                    // d'intention (sinon holdLink orphelin).
+                    stopHold()
                     mode = .spinning
                     stopSpin()
                     grabYaw = yaw
@@ -2177,10 +2576,12 @@ struct BoosterStage: UIViewRepresentable {
                     stage.applyGallery(offset: offset)
                     tickIfCenterChanged()
                     // Le roulement du manège sous le doigt : le lit suit
-                    // la vitesse de la roue.
+                    // la vitesse de la roue — et la poudre aussi (la
+                    // traîne du geste).
                     let speed = abs(offset - lastScrubOffset)
                     lastScrubOffset = offset
                     haptics.bedIntensity(0.12 + min(speed * 22, 0.35))
+                    stage.setGalleryDustDrive(min(speed * 26, 1))
                 case .ringSpin:
                     cloneYaw = cloneGrab
                         + Float(g.translation(in: view).x) * Self.radPerPoint
@@ -2235,7 +2636,13 @@ struct BoosterStage: UIViewRepresentable {
                 case .maybeBack:
                     mode = .idle
                 default:
-                    mode = mode == .revealed ? .revealed : .idle
+                    // JAMAIS d'écriture de mode au lever du doigt hors
+                    // des états tenus par la main : le `default` qui
+                    // forçait .idle BRIQUAIT le retour à l'anneau
+                    // (.backingOut clobbé) et réarmait les gestes en
+                    // pleine cérémonie (.opening/.committing → double
+                    // finishTear, deux pilotes sur la carte).
+                    break
                 }
             default:
                 break
@@ -2594,6 +3001,7 @@ struct BoosterStage: UIViewRepresentable {
         /// recognizers désarmés).
         func replay() {
             guard let view else { return }
+            frozen = false
             view.isHidden = false
             view.isPlaying = true
             view.rendersContinuously = true
@@ -2612,6 +3020,7 @@ struct BoosterStage: UIViewRepresentable {
         /// SCNView rend le GPU. CarteVivante règne seule.
         func extinguishForHandoff() {
             guard let stage, let view else { return }
+            frozen = true
             stage.cardNode.isHidden = true
             stage.cameraNode.camera?.wantsHDR = false
             view.gestureRecognizers?.forEach { $0.isEnabled = false }

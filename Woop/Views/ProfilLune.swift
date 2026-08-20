@@ -70,6 +70,22 @@ struct ProfilLuneView: View {
     @State private var arriveeEnAttente: ArriveeCarte?
     @State private var arriveeEnVol: ArriveeCarte?
     @State private var arriveeBegan = Date()
+    /// L'art de la carte en approche (vignette gabarit) — la descente et
+    /// la pose montrent CE QUE la cérémonie a montré.
+    @State private var arriveeArt: UIImage?
+    /// Le canvas complet + depth de la carte en approche — la collection
+    /// les garde pour l'état résultat (la carte qui s'ouvre au tap).
+    @State private var arriveePlein: UIImage?
+    @State private var arriveeDepth: UIImage?
+    /// LA CARTE OUVERTE (l'état résultat) : tap sur une collectée →
+    /// CarteVivante plein écran, chevron maison pour revenir.
+    @State private var carteOuverte: CollectionLune.Obtenue?
+    @State private var carteOuverteRarete = "rare"
+    /// La plongée en cours dans la carte ouverte (le chevron s'efface).
+    @State private var carteOuvertePlongee = false
+    /// Le slot que la rangée horizontale doit amener au viewport avant
+    /// la descente (« rarete-slot »).
+    @State private var slotCible: String?
     @State private var fumeeBegan: Date?
     @State private var fumeeCentre: CGPoint = .zero
     /// L'éclat de lumière qui salue la pose.
@@ -149,6 +165,12 @@ struct ProfilLuneView: View {
                         deroulez.scrollTo("registre-\(a.rarete)",
                                           anchor: .center)
                     }
+                    // Le slot visé peut vivre HORS du viewport de sa
+                    // rangée horizontale (5e carte et au-delà) : la
+                    // rangée défile AUSSI, sinon la descente vole vers
+                    // une ancre invisible et la pose se joue hors
+                    // écran.
+                    slotCible = "\(a.rarete)-\(a.slot)"
                     withAnimation(.easeOut(duration: 0.35).delay(0.5)) {
                         rangeeAvancee = a.rarete
                     }
@@ -263,10 +285,10 @@ struct ProfilLuneView: View {
             // le profil, la page n'existe pas encore — la demande a donc
             // été posée avant que quiconque écoute. On la relit à la
             // naissance, et on laisse la page se poser avant l'accueil.
-            if let r = SacreEtat.shared.arriveeDemandee {
+            if let c = SacreEtat.shared.arriveeDemandee {
                 SacreEtat.shared.arriveeDemandee = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    lancerAccueil(rarete: r)
+                    lancerAccueil(carte: c)
                 }
             }
         }
@@ -276,16 +298,18 @@ struct ProfilLuneView: View {
         .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
             accueilCouche(anchors)
         }
+        // L'ÉTAT RÉSULTAT d'une carte collectée (tap dans la grille).
+        .overlay { resultatCouche() }
         // LE SACRE A DÉMÉNAGÉ À LA RACINE (`WoopApp.mainBody`). Monté
         // ici, il vivait SOUS la barre bijou — on pouvait changer
         // d'onglet en pleine cérémonie — et il n'existait qu'une fois la
         // page profil construite : le premier « Ouvrir un Booster »
         // depuis la home ne faisait rien. La page ne garde que
         // l'ACCUEIL : elle écoute la rareté que l'envol lui adresse.
-        .onChange(of: SacreEtat.shared.arriveeDemandee) { _, r in
-            guard let r else { return }
+        .onChange(of: SacreEtat.shared.arriveeDemandee) { _, c in
+            guard let c else { return }
             SacreEtat.shared.arriveeDemandee = nil
-            lancerAccueil(rarete: r)
+            lancerAccueil(carte: c)
         }
         // Les bancs de l'accueil :
         //   `-profilAccueil <rarete>` joue l'ARRIVÉE seule (boucle
@@ -307,15 +331,81 @@ struct ProfilLuneView: View {
         }
     }
 
-    /// L'accueil commandé (par l'envol du Sacre, ou le banc).
-    private func lancerAccueil(rarete: String) {
-        let d = collection.destination(rarete: rarete,
-                                       famille: ArtDuSacre.famillePlaceholder)
+    /// L'accueil commandé par l'envol du Sacre : la VRAIE carte (la
+    /// forge a parlé pendant la cérémonie), son art au gabarit.
+    private func lancerAccueil(carte: CarteEnvolee) {
+        let d = collection.destination(rarete: carte.rarete,
+                                       famille: carte.famille)
+        arriveeArt = carte.art
+        arriveePlein = carte.artPlein
+        arriveeDepth = carte.depth
         withAnimation(.easeInOut(duration: 0.3)) {
             arriveeEnAttente = ArriveeCarte(
-                rarete: rarete, famille: ArtDuSacre.famillePlaceholder,
+                rarete: carte.rarete, famille: carte.famille,
                 slot: d.slot, doublon: d.doublon, nouvelle: d.nouvelle)
         }
+    }
+
+    /// Le banc (`-profilAccueil <rarete>`) : l'arrivée seule, placeholder.
+    private func lancerAccueil(rarete: String) {
+        lancerAccueil(carte: CarteEnvolee(
+            rarete: rarete, famille: ArtDuSacre.famillePlaceholder,
+            art: ArtDuSacre.art))
+    }
+
+    /// L'ÉTAT RÉSULTAT d'une carte collectée : la CarteVivante règne
+    /// sur le noir — le tilt au doigt (droite/gauche), la caresse du
+    /// foil, et l'appui long = LA PLONGÉE (« rejouer le film »). Le
+    /// chevron maison rend la page profil.
+    @ViewBuilder
+    private func resultatCouche() -> some View {
+        if let o = carteOuverte {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                    .transition(.opacity)
+                // LA MÊME SCÈNE que la sortie du booster : la carte
+                // vivante règne PLEIN ÉCRAN (les cotes de son banc) —
+                // le voyage de la plongée a l'écran entier, le cadre ne
+                // flotte plus dans un gabarit de 270 pt (le « niveau de
+                // zoom bizarre » : la carte ne sortait jamais son cadre
+                // de l'écran, la loi du cadre fantôme violée).
+                CarteVivante(art: o.artPlein.map(Image.init(uiImage:)),
+                             depth: o.depth.map(Image.init(uiImage:)),
+                             rarete: carteOuverteRarete,
+                             onDive: { v in
+                                 withAnimation(.easeInOut(duration: 0.28)) {
+                                     carteOuvertePlongee = v
+                                 }
+                             },
+                             diveOnTap: true)
+                    .ignoresSafeArea()
+                    .transition(.scale(scale: 0.94)
+                        .combined(with: .opacity))
+                // Le chevron s'efface pendant le voyage — la plongée
+                // règne seule (la loi de la cérémonie).
+                if !carteOuvertePlongee {
+                    VStack(spacing: 0) {
+                        RangeeChips(retour: fermerCarteOuverte) {
+                            EmptyView()
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .zIndex(40)
+        }
+    }
+
+    /// La sortie de l'état résultat : rien ne survit — la musique du
+    /// sacre s'éteint, le poignet se tait (sinon le sacre chantait
+    /// ~10 s sur le profil et le gyro tournait pour toujours).
+    private func fermerCarteOuverte() {
+        LuneSacre.shared.sortir()
+        // Le poignet, lui, se rend au `.onDisappear` de CarteVivante
+        // (refcount) — un stop manuel ici décompterait DEUX fois.
+        carteOuvertePlongee = false
+        withAnimation(.easeInOut(duration: 0.26)) { carteOuverte = nil }
     }
 
     /// La couche d'accueil : le voile, la DESCENTE (l'avion qui
@@ -333,7 +423,8 @@ struct ProfilLuneView: View {
                 if let a = arriveeEnVol,
                    let anchor = anchors["\(a.rarete)-\(a.slot)"] {
                     let cible = g[anchor]
-                    DescenteCarte(art: ArtDuSacre.art, cible: cible,
+                    DescenteCarte(art: arriveeArt ?? ArtDuSacre.art,
+                                  cible: cible,
                                   began: arriveeBegan) {
                         // L'ATTERRISSAGE : la rangée se met à jour SOUS
                         // la bouffée, le sertissage dans la paume, le
@@ -341,7 +432,9 @@ struct ProfilLuneView: View {
                         withAnimation(.easeOut(duration: 0.25)) {
                             collection.poser(rarete: a.rarete,
                                              famille: a.famille,
-                                             art: ArtDuSacre.art)
+                                             art: arriveeArt ?? ArtDuSacre.art,
+                                             artPlein: arriveePlein,
+                                             depth: arriveeDepth)
                         }
                         fumeeCentre = CGPoint(x: cible.midX, y: cible.midY)
                         fumeeBegan = Date()
@@ -722,28 +815,57 @@ struct ProfilLuneView: View {
                     // pastille ×N pour les doublons), puis les dos vides
                     // qui attendent. Chaque slot pose son ANCRE : la
                     // descente d'accueil vise ces rectangles.
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(collectees.enumerated()),
-                                    id: \.element.id) { i, o in
-                                CarteCollectionnee(obtenue: o)
-                                    .anchorPreference(
-                                        key: SlotAnchorKey.self,
-                                        value: .bounds) {
-                                        ["\(reg.cle)-\(i)": $0]
-                                    }
+                    ScrollViewReader { rangee in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(Array(collectees.enumerated()),
+                                        id: \.element.id) { i, o in
+                                    // TAP = L'ÉTAT RÉSULTAT : la carte
+                                    // s'ouvre plein écran (tilt, foil,
+                                    // plongée — « rejouer le film »),
+                                    // chevron maison pour revenir.
+                                    CarteCollectionnee(obtenue: o)
+                                        .id("slot-\(reg.cle)-\(i)")
+                                        .anchorPreference(
+                                            key: SlotAnchorKey.self,
+                                            value: .bounds) {
+                                            ["\(reg.cle)-\(i)": $0]
+                                        }
+                                        .onTapGesture {
+                                            UIImpactFeedbackGenerator(
+                                                style: .light).impactOccurred()
+                                            carteOuverteRarete = reg.cle
+                                            withAnimation(.spring(
+                                                response: 0.42,
+                                                dampingFraction: 0.86)) {
+                                                carteOuverte = o
+                                            }
+                                        }
+                                }
+                                ForEach(collectees.count ..< reg.total,
+                                        id: \.self) { i in
+                                    DosVide(pips: reg.pips)
+                                        .id("slot-\(reg.cle)-\(i)")
+                                        .anchorPreference(
+                                            key: SlotAnchorKey.self,
+                                            value: .bounds) {
+                                            ["\(reg.cle)-\(i)": $0]
+                                        }
+                                }
                             }
-                            ForEach(collectees.count ..< reg.total,
-                                    id: \.self) { i in
-                                DosVide(pips: reg.pips)
-                                    .anchorPreference(
-                                        key: SlotAnchorKey.self,
-                                        value: .bounds) {
-                                        ["\(reg.cle)-\(i)": $0]
-                                    }
+                            .padding(.horizontal, 20)
+                        }
+                        // L'accueil amène le slot visé DANS le viewport
+                        // avant la descente (les ancres se re-résolvent
+                        // pendant le défilement — la cible reste juste).
+                        .onChange(of: slotCible) { _, sc in
+                            guard let sc, sc.hasPrefix("\(reg.cle)-")
+                            else { return }
+                            withAnimation(.easeInOut(duration: 0.45)) {
+                                rangee.scrollTo("slot-\(sc)",
+                                                anchor: .center)
                             }
                         }
-                        .padding(.horizontal, 20)
                     }
                 }
                 .id("registre-\(reg.cle)")
@@ -828,17 +950,31 @@ struct TirageBooster: View {
                 // rejaillit dans le sheet — « bim il arrive dans
                 // l'overlay ».
                 if !ouvert {
-                    // Le fondu de nuit : visible en haut de course,
-                    // effacé dès ~90 pt de scroll.
-                    let fondu = 1 - min(max(scrollY / 90, 0), 1)
+                    // Le fondu de nuit : PLEIN jusqu'à 40 pt (la ZONE
+                    // MORTE — le tressaillement d'insets au montage et
+                    // l'auto-scroll d'accueil laissaient un scroll
+                    // résiduel qui rendait le géant MI-FANTÔME au
+                    // repos : « le booster est transparent »), effacé
+                    // à ~110 pt.
+                    let fondu = 1 - min(max((scrollY - 40) / 70, 0), 1)
 
                     if !enterre && !planque {
                         // LE GÉANT NU : la lune à moitié visible, coupe
                         // nette au bord (le fondu du bas était moins
                         // bien — verdict). `invite` = la remontée
                         // périodique qui dit « tire-moi » sans un mot.
+                        // TRANSITION LÉGÈRE (l'opacité seule) : le
+                        // `.move` rejouait une entrée théâtrale à chaque
+                        // remontage/planque — l'offset porte déjà toute
+                        // la géographie du géant.
                         BoosterStage(still: false, frozenTear: nil,
-                                     startOpen: false)
+                                     startOpen: false,
+                                     // Effacé par le scroll ou sous le
+                                     // manège : le rendu se SUSPEND
+                                     // (l'opacité seule ne suspend pas
+                                     // un SCNView — 60 fps pour rien).
+                                     paused: fondu < 0.02
+                                         || SacreEtat.shared.manegeOuvert)
                             .frame(width: 560, height: 700)
                             .rotationEffect(.degrees(-8))
                             .allowsHitTesting(false)
@@ -846,26 +982,34 @@ struct TirageBooster: View {
                                     y: 385 + enfoui + pousse - tire - invite)
                             .opacity(fondu)
                             .ignoresSafeArea(edges: .bottom)
-                            .transition(.move(edge: .bottom)
-                                .combined(with: .opacity))
+                            .transition(.opacity)
 
                         // LES FLÈCHES D'INVITE, posées sur la crête du
                         // sachet (dans SES pixels — plus jamais un texte
                         // qui flotte sur les cartes) : les deux chevrons
                         // en dégradé de blanc, l'onde qui remonte.
-                        if fondu > 0.1 {
-                            FlechesInvite(taille: 15)
-                                .offset(x: 0,
-                                        y: -152 + enfoui + pousse
-                                            - tire - invite)
+                        // TOUJOURS MONTÉES, effacées par l'opacité — le
+                        // `if fondu > 0.1` structurel insérait/retirait
+                        // ce sous-arbre à CHAQUE frame de scroll autour
+                        // du seuil : le « beug sévère » des réapparitions.
+                        FlechesInvite(taille: 15)
+                            .offset(x: 0,
+                                    y: -152 + enfoui + pousse
+                                        - tire - invite)
+                            .opacity(Double(fondu))
 
-                            // La zone de traction : TIRER ouvre, POUSSER
-                            // enterre — le geste miroir. Un tap ouvre
-                            // aussi (l'affordance des pressés).
-                            Color.clear
-                                .frame(width: 300, height: 200)
-                                .contentShape(Rectangle())
-                                .onTapGesture { ouvrir() }
+                        // La zone de traction : TIRER ouvre, POUSSER
+                        // enterre — le geste miroir. Un tap ouvre
+                        // aussi (l'affordance des pressés). RÉDUITE À
+                        // LA CRÊTE du sachet et sourde dès que le
+                        // scroll l'efface : à 300×200 dès fondu 0,1
+                        // elle VOLAIT les scrolls et les taps de la
+                        // grille des cartes au bas du premier écran.
+                        Color.clear
+                            .frame(width: 300, height: 180)
+                            .contentShape(Rectangle())
+                            .allowsHitTesting(fondu > 0.6)
+                            .onTapGesture { ouvrir() }
                                 .gesture(DragGesture(minimumDistance: 4)
                                     .onChanged { v in
                                         if !enMain {
@@ -898,8 +1042,7 @@ struct TirageBooster: View {
                                             }
                                         }
                                     })
-                        }
-                    } else if fondu > 0.1 {
+                    } else {
                         // LA POIGNÉE : le croissant du logo en NÉON —
                         // le tube du splash : cœur crème incandescent,
                         // double halo de braise qui respire. Les flèches
@@ -946,8 +1089,11 @@ struct TirageBooster: View {
                             })
                         // Sous la carte dépliée, la poignée VEILLE mais
                         // ne répond pas — on ne déterre rien tant que la
-                        // carte possède l'écran.
-                        .allowsHitTesting(!planque)
+                        // carte possède l'écran. Effacée par le scroll,
+                        // elle devient sourde aussi (plus de branche
+                        // structurelle sur `fondu` : le sous-arbre est
+                        // STABLE, l'opacité fait tout).
+                        .allowsHitTesting(!planque && fondu > 0.1)
                         .opacity(Double(fondu))
                         .transition(.opacity)
                     }
@@ -1096,8 +1242,10 @@ struct TirageBooster: View {
                     SacreEtat.shared.ouvrirManege()
                     fermer()
                 }
-                .disabled(manque > 0)
-                .opacity(manque > 0 ? 0.4 : 1)
+                // DÉMO : le verrou des pièces NE FERME JAMAIS la porte
+                // (ses vraies données sont sous le prix — « je peux pas
+                // relancer le manège »). L'économie verrouillera pour de
+                // vrai avec Supabase (`user_boosters`/`coin_ledger`).
                 .padding(.horizontal, 24)
                 // Le retour en LIEN nu — pas de fond (verdict).
                 Button(action: fermer) {

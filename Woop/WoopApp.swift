@@ -212,6 +212,14 @@ struct RootView: View {
     /// se monte à la racine (voir `BoosterPopup.swift` : un onglet
     /// construit paresseusement n'entend aucune notification).
     private let sacre = SacreEtat.shared
+    /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
+    /// dans la même transaction que le manège faisait tomber la
+    /// désallocation de toute la home (~+0,7 s) EN PLEIN MILIEU de la
+    /// cinématique de mise en place. L'éclipse attend que la roue soit
+    /// posée (+2 s, sous le noir opaque) ; le remontage, lui, est
+    /// SYNCHRONE à la fermeture — le profil doit exister avant l'arrivée
+    /// de la carte (+0,45 s).
+    @State private var homeEclipsee = false
 
     /// L'entraînement ouvert, s'il y en a un.
     @Query(filter: #Predicate<Workout> { $0.endedAt == nil },
@@ -497,7 +505,16 @@ struct RootView: View {
             // ci-dessous prouvait déjà qu'aucun de ces pixels n'était visible.
             // Les `onAppear`/`task` du cycle de vie sont accrochés au ZStack,
             // pas au TabView : ils gardent leurs horaires.
-            if !showSplash && !showAuth {
+            // MÊME LOI SOUS LE MANÈGE : le Sacre est un écran noir plein
+            // cadre — la home qui continuait de rendre derrière (nébuleuse,
+            // étoiles, shaders) volait le fil principal et le GPU du
+            // carrousel, une contention que les bancs (montés seuls) ne
+            // voyaient jamais. L'éclipse est DIFFÉRÉE (+2 s, cf.
+            // `homeEclipsee`) pour laisser la cinématique de mise en
+            // place se jouer sans la désallocation de la home dans les
+            // pattes ; le remontage est SYNCHRONE à la fermeture : le
+            // profil existe avant que l'arrivée (+0,45 s) soit posée.
+            if !showSplash && !showAuth && !homeEclipsee {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     HomeAuroraView(selection: $selection)
@@ -640,7 +657,7 @@ struct RootView: View {
                                    selection = .home
                                }
                            },
-                           onCarteEnvolee: { rarete in
+                           onCarteEnvolee: { carte in
                                // L'envol accompli : le noir du Sacre
                                // s'efface, l'onglet profil prend la main,
                                // PUIS la carte redescend chez elle — la
@@ -649,12 +666,16 @@ struct RootView: View {
                                withAnimation(.easeOut(duration: 0.4)) {
                                    sacre.manegeOuvert = false
                                }
+                               // DÉMO : jamais à sec — la boucle doit
+                               // pouvoir se rejouer à l'infini (pop-up,
+                               // pill, tirage du géant). `user_boosters`
+                               // portera le vrai compte.
                                sacre.boostersEnAttente =
-                                   max(0, sacre.boostersEnAttente - 1)
+                                   max(1, sacre.boostersEnAttente - 1)
                                selection = .profile
                                DispatchQueue.main.asyncAfter(
                                    deadline: .now() + 0.45) {
-                                   sacre.arriveeDemandee = rarete
+                                   sacre.arriveeDemandee = carte
                                }
                            })
                     .transition(.opacity)
@@ -741,6 +762,23 @@ struct RootView: View {
                 }
             }
         }
+        // L'ÉCLIPSE DIFFÉRÉE de la home sous le Sacre (cf. `homeEclipsee`) :
+        // l'entrée du manège se joue AVEC la home encore montée (aucune
+        // désallocation pendant la cinématique), puis la home s'éteint
+        // sous le noir opaque ; à la fermeture elle revient DANS LA MÊME
+        // transaction que la sortie du manège.
+        .onChange(of: sacre.manegeOuvert) { _, ouvert in
+            if ouvert {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    guard sacre.manegeOuvert else { return }
+                    var tx = Transaction()
+                    tx.disablesAnimations = true
+                    withTransaction(tx) { homeEclipsee = true }
+                }
+            } else {
+                homeEclipsee = false
+            }
+        }
         // Live Activity : une séance restée ouverte retrouve son île au
         // lancement ; démarrage/fin ailleurs suivent le cycle réel.
         .onAppear { WorkoutActivityController.ensure(active) }
@@ -754,6 +792,14 @@ struct RootView: View {
             // (captures d'écran automatisées uniquement).
             if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
                 sheetWorkout = active
+            }
+            // La cuisson du studio HDR du booster (1024×512 pixel par
+            // pixel, CPU + écriture disque) se paie ICI, en fond de cale —
+            // jamais sur le fil principal à l'instant où le manège se
+            // monte (`static let` = dispatch_once : le premier toucheur
+            // paie, les suivants lisent).
+            DispatchQueue.global(qos: .utility).async {
+                _ = BoosterScene.hdrStudio
             }
             // Rattrapage : toutes les séances terminées repartent à chaque
             // lancement. Une séance finie hors ligne (salle en mode avion)

@@ -174,7 +174,14 @@ final class LuneMotion {
         rollRef = nil
     }
 
+    /// LE COMPTEUR DE CLIENTS : le manège, chaque CarteVivante, le banc
+    /// — plusieurs scènes écoutent le même poignet. Le moteur ne meurt
+    /// que quand le DERNIER raccroche (le démontage du géant du profil
+    /// tuait le gyro du manège en plein vol — payé).
+    private var clients = 0
+
     func start() {
+        clients += 1
         guard mgr.isDeviceMotionAvailable, !mgr.isDeviceMotionActive
         else { return }
         mgr.deviceMotionUpdateInterval = 1.0 / 60.0
@@ -199,7 +206,8 @@ final class LuneMotion {
     /// personne ne regarde plus — payé au démontage du Manège, où le
     /// gyro survivait au chevron.
     func stop() {
-        guard mgr.isDeviceMotionActive else { return }
+        clients = max(0, clients - 1)
+        guard clients == 0, mgr.isDeviceMotionActive else { return }
         mgr.stopDeviceMotionUpdates()
         live = false
         tilt = .zero
@@ -245,6 +253,10 @@ struct CarteVivante: View {
     /// Le témoin de PLONGÉE pour l'hôte (l'étage d'enregistrement cache
     /// son registre et son courant pendant le voyage dans la carte).
     var onDive: ((Bool) -> Void)? = nil
+    /// LE TAP OUVRE AUSSI LA PLONGÉE (les états résultat : cérémonie,
+    /// collection) — « au clic on doit voyager dans la carte ». L'appui
+    /// long reste le geste des connaisseurs.
+    var diveOnTap = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -268,17 +280,72 @@ struct CarteVivante: View {
     @State private var tapAt: Date = .distantPast
     /// La plongée en cours, s'il y en a une.
     @State private var diveStart: Date?
+    /// La génération de plongée (les asyncAfter périmés se taisent).
+    @State private var diveGeneration = 0
+    /// La taille de la scène (le gabarit du tap-plongée).
+    @State private var sceneSize: CGSize = .zero
+    /// LA SORTIE DU VOYAGE (re-tap pendant la plongée) : un battement
+    /// de noir — le noir se pose (0,22 s), la plongée est COUPÉE sous
+    /// lui (aucune couture), le noir se lève (0,35 s) sur la carte
+    /// reposée. nil = pas de sortie en cours.
+    @State private var sortieAt: Date?
+    /// La naissance du toucher courant — la sortie du voyage n'écoute
+    /// que les touchers nés APRÈS le départ de la plongée.
+    @State private var touchBeganAt: Date = .distantPast
 
     /// La partition de la plongée : 1,4 s de traversée, un LONG voyage, et
     /// le retour amorcé à 8,4 s — dix secondes en tout (« trop timide » à
     /// huit : l'immersion se compte en temps passé dedans autant qu'en
     /// profondeur).
-    private static let diveTotal: Float = 10.0
+    private static let diveTotal: Float = 14.0
     private static let epoch = Date()
 
     private static func sstep(_ a: Float, _ b: Float, _ v: Float) -> Float {
         let t = max(0, min(1, (v - a) / (b - a)))
         return t * t * (3 - 2 * t)
+    }
+
+    /// LE CHEMIN DE CAMÉRA DU VOYAGE — la plongée ne fonce plus tout
+    /// droit : elle VISITE la carte (verdict « on doit voyager dans la
+    /// carte, ça ne bouge pas assez à différents endroits »). La
+    /// traversée monte vers la lune, dérive à gauche, redescend dans la
+    /// vallée, glisse dans les pins, remonte. Fractions de la carte
+    /// (y+ vers le bas) ; multipliées par l'enveloppe, le départ et le
+    /// retour au centre sont garantis. Les amplitudes sont bornées pour
+    /// que le cadre ne rentre JAMAIS dans l'écran au zoom plein.
+    /// LA PARTITION À TROIS VOIX (position x/y ET profondeur z) : la
+    /// caméra PIQUE sur ce qu'elle regarde et SE RETIRE pour voyager —
+    /// jamais deux étapes à la même altitude (verdict « tu navigues au
+    /// même niveau de zoom »). Les excursions profondes (×4,2-4,8) ont
+    /// la marge pour errer loin ; le retrait (×2,5) revient au centre
+    /// exact — le cadre ne rentre jamais dans l'écran.
+    private static let voyagePts: [(t: Float, x: Float, y: Float,
+                                    z: Float)] = [
+        (0.0, 0.00, 0.00, 1.0),   // la vitre
+        (2.2, 0.00, -0.08, 2.8),  // la traversée monte vers la lune
+        (4.5, -0.08, -0.12, 3.2), // la lune, tenue dans les nuages
+        (6.0, 0.00, 0.00, 2.5),   // LE RETRAIT — la caméra respire
+        (9.0, 0.07, 0.04, 4.2),   // la piquée : la vallée, la rivière
+        (11.5, -0.05, 0.14, 4.8), // les pins au ras du sol
+        (14.0, 0.00, 0.00, 1.0),  // la remontée — la nuit reprend
+    ]
+
+    /// Interpolation au smootherstep (6t⁵−15t⁴+10t³) : la caméra
+    /// ralentit aux étapes, accélère doucement entre — jamais de
+    /// métronome.
+    private static func voyage(age: Float)
+        -> (pos: SIMD2<Float>, zoom: Float) {
+        let pts = voyagePts
+        guard age > 0 else { return (.zero, 1) }
+        for i in 0 ..< pts.count - 1 where age < pts[i + 1].t {
+            let a = pts[i], b = pts[i + 1]
+            let u = (age - a.t) / (b.t - a.t)
+            let s = u * u * u * (u * (u * 6 - 15) + 10)
+            return (SIMD2(a.x + (b.x - a.x) * s,
+                          a.y + (b.y - a.y) * s),
+                    a.z + (b.z - a.z) * s)
+        }
+        return (.zero, 1)
     }
 
     /// L'âge de la plongée, ou nil hors plongée. `-luneDiveAt` prime,
@@ -287,7 +354,7 @@ struct CarteVivante: View {
         if let f = diveFreeze { return f }
         if diveAuto {
             let a = Float(date.timeIntervalSince(Self.epoch)
-                .truncatingRemainder(dividingBy: 13.5))
+                .truncatingRemainder(dividingBy: Double(Self.diveTotal) + 3.5))
             return a < Self.diveTotal ? a : nil
         }
         guard let s = diveStart else { return nil }
@@ -298,7 +365,8 @@ struct CarteVivante: View {
     /// L'enveloppe 0 → 1 → 0 de la plongée — fonction pure.
     private func diveEnv(at date: Date) -> Float {
         guard let a = diveAge(at: date) else { return 0 }
-        return Self.sstep(0, 1.4, a) * (1 - Self.sstep(8.4, 10.0, a))
+        return Self.sstep(0, 1.4, a)
+            * (1 - Self.sstep(Self.diveTotal - 1.8, Self.diveTotal, a))
     }
 
     /// ~1 de course sur 150 pt de glissement.
@@ -445,9 +513,39 @@ struct CarteVivante: View {
                     // cadre de l'écran DANS LES DEUX AXES (en hauteur il ne
                     // sort qu'à ×2,33 — payé au banc), puis le dolly
                     // continue de POUSSER doucement pendant tout le
-                    // voyage : la caméra ne s'arrête jamais.
-                    .scaleEffect(1.0 + 1.90 * CGFloat(dEnv)
-                                 + 0.35 * CGFloat(dolly))
+                    // voyage : la caméra ne s'arrête jamais. Et elle
+                    // VOYAGE : le chemin de caméra visite la carte
+                    // (lune → vallée → pins → remontée), une micro-
+                    // dérive continue l'empêche de jamais se poser, un
+                    // souffle de roulis vend la main tenue.
+                    // LE ZOOM EST LA TROISIÈME VOIX : chaque étape porte
+                    // sa profondeur (la piquée ×4,2, les pins ×4,8, le
+                    // retrait ×2,5) — l'enveloppe ne garantit que les
+                    // bords (entrée/retour à zéro). Le dolly ne pousse
+                    // plus l'échelle : il reste la voix du zoom
+                    // DIFFÉRENTIEL par profondeur, dans le shader.
+                    .scaleEffect({
+                        let v = Self.voyage(age: dAge)
+                        return 1.0 + CGFloat(v.zoom - 1) * CGFloat(dEnv)
+                    }())
+                    .offset({
+                        let v = Self.voyage(age: dAge)
+                        let s = 1.0 + CGFloat(v.zoom - 1) * CGFloat(dEnv)
+                        // La micro-dérive n'existe qu'où le zoom laisse
+                        // de la marge (au retrait la carte couvre
+                        // l'écran de justesse — elle se tait).
+                        let wAmp = 0.008
+                            * min(max((v.zoom - 2.6) / 1.0, 0), 1)
+                        let wx = wAmp * sin(dAge * 0.9)
+                        let wy = wAmp * cos(dAge * 0.7)
+                        return CGSize(
+                            width: CGFloat(v.pos.x + Float(wx)) * cs.width
+                                * s * CGFloat(dEnv),
+                            height: CGFloat(v.pos.y + Float(wy)) * cs.height
+                                * s * CGFloat(dEnv))
+                    }())
+                    .rotationEffect(.degrees(
+                        Double(dEnv) * 1.6 * Double(sin(dAge * 0.5))))
                     // L'aura NE TOURNE PAS avec la carte (la loi de la
                     // révélation) — et elle passe DEVANT : la marge noire de
                     // l'image est opaque, derrière elle serait mangée. Elle
@@ -456,9 +554,38 @@ struct CarteVivante: View {
                     CarteLuneAura(cardSize: cs, t: t,
                                   age: auraAge(at: tl.date), glow: glow)
                         .opacity(Double(1 - dEnv))
+                    // LE BATTEMENT DE NOIR de la sortie du voyage —
+                    // par-dessus tout : la coupe de la plongée se joue
+                    // SOUS lui, invisible (les hôtes sont noirs, la
+                    // colonne suffit).
+                    if let s = sortieAt {
+                        let age = Float(tl.date.timeIntervalSince(s))
+                        // Montée 0,22 s → PLATEAU plein jusqu'à 0,30 s
+                        // (la coupe à 0,24 s se joue sous un noir
+                        // GARANTI plein, gigue d'asyncAfter comprise)
+                        // → descente 0,35 s.
+                        let op: Double = age < 0.22
+                            ? Double(age / 0.22)
+                            : age < 0.30 ? 1
+                            : Double(max(0, 1 - (age - 0.30) / 0.35))
+                        // TAILLÉ À L'ÉCRAN (×2,4) : la colonne de
+                        // CarteVivante est plus étroite que l'écran
+                        // chez ses hôtes — un noir-colonne laissait
+                        // l'art zoomé déborder des deux flancs.
+                        Rectangle()
+                            .fill(Color.black)
+                            .frame(width: UIScreen.main.bounds.width * 2.4,
+                                   height: UIScreen.main.bounds.height * 2.4)
+                            .opacity(op)
+                            .allowsHitTesting(false)
+                    }
                 }
                 .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
+            // La taille de scène, mémorisée pour le tap-plongée : le
+            // geste vit HORS du GeometryReader, il ne connaît pas geo.
+            .onAppear { sceneSize = geo.size }
+            .onChange(of: geo.size) { _, s in sceneSize = s }
         }
         .contentShape(Rectangle())
         // Glisser = incliner ; un relâcher quasi immobile = un tap, la
@@ -467,6 +594,7 @@ struct CarteVivante: View {
             .onChanged { v in
                 if !began {
                     began = true
+                    touchBeganAt = .now
                     tiltAtGrab = tilt(at: .now)
                 }
                 let travel = abs(v.translation.width) + abs(v.translation.height)
@@ -499,19 +627,46 @@ struct CarteVivante: View {
                     polishTickArmed = true
                 }
             }
-            .onEnded { _ in
+            .onEnded { v in
                 if dragging {
                     releaseTilt = tiltLive
                     releaseAt = .now
+                } else if let ds = diveStart, diveAge(at: .now) != nil,
+                          touchBeganAt > ds, sortieAt == nil {
+                    // RE-TAP PENDANT LE VOYAGE = LA SORTIE (n'importe
+                    // où — on ne cherche pas la carte quand on veut
+                    // partir). `touchBeganAt > ds` : seul un toucher NÉ
+                    // APRÈS le départ compte — sans lui, le relâcher du
+                    // long-press qui a LANCÉ la plongée sortait
+                    // aussitôt. `diveStart` (pas diveAge) : le banc
+                    // -luneDive en boucle reste hors du geste.
+                    sortirDuVoyage()
                 } else if diveAge(at: .now) == nil {
-                    // Un tap : le contour expire — où qu'on touche, c'est
-                    // l'objet entier qui répond (le geste des démons).
-                    // Le doigt sent l'air partir, la poussière tinte à
-                    // peine. (Dans le monde, pas d'expiration : il n'y a
-                    // plus de contour.)
-                    tapAt = .now
-                    LuneBreath.shared.exhale()
-                    DustChime.shared.puff()
+                    // Le voyage ne part que d'un tap SUR LA CARTE — le
+                    // GeometryReader est une colonne plein écran : sans
+                    // ce gabarit, taper le registre ou le noir plongeait.
+                    let cs = Self.cardSize(in: sceneSize)
+                    let cardRect = CGRect(
+                        x: (sceneSize.width - cs.width) / 2,
+                        y: (sceneSize.height - cs.height) / 2,
+                        width: cs.width, height: cs.height)
+                        .insetBy(dx: -16, dy: -16)
+                    if diveOnTap, !reduceMotion, sceneSize != .zero,
+                       cardRect.contains(v.location) {
+                        // L'état résultat : le tap EST le voyage.
+                        // (Reduce Motion : le repli est l'expiration —
+                        // la carte ne doit jamais être muette au tap.)
+                        plonger()
+                    } else {
+                        // Un tap : le contour expire — où qu'on touche,
+                        // c'est l'objet entier qui répond (le geste des
+                        // démons). Le doigt sent l'air partir, la
+                        // poussière tinte à peine. (Dans le monde, pas
+                        // d'expiration : il n'y a plus de contour.)
+                        tapAt = .now
+                        LuneBreath.shared.exhale()
+                        DustChime.shared.puff()
+                    }
                 }
                 began = false
                 dragging = false
@@ -521,19 +676,7 @@ struct CarteVivante: View {
         // les cordes s'élèvent quand on passe la vitre, s'éteignent au
         // retour — partout où la carte vit, manège ou page profil.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.6)
-            .onEnded { _ in
-                guard !reduceMotion, diveAge(at: .now) == nil else { return }
-                diveStart = .now
-                LuneBreath.shared.dive()
-                LuneSacre.shared.dive(rarete: rarete)
-                // L'hôte est prévenu : la plongée commence, et se
-                // terminera à la fin de la partition (retour compris).
-                onDive?(true)
-                DispatchQueue.main.asyncAfter(
-                    deadline: .now() + Double(Self.diveTotal) + 0.5) {
-                    onDive?(false)
-                }
-            })
+            .onEnded { _ in plonger() })
         .onAppear {
             mountAt = Date()
             // Le neutre gyro = la pose de tenue de CET écran.
@@ -541,6 +684,61 @@ struct CarteVivante: View {
             LuneMotion.shared.start()
             LuneBreath.shared.prepare()
             DustChime.shared.prepare()
+        }
+        // Le crédit du poignet se rend au démontage (refcount) — hors
+        // du flow manège il n'y avait AUCUN teardown : le gyro tournait
+        // à 60 Hz pour toujours après une carte ouverte au profil.
+        .onDisappear {
+            LuneMotion.shared.stop()
+        }
+    }
+
+    /// LA PLONGÉE — le voyage dans la carte : la traversée de la vitre,
+    /// le dolly qui pousse pendant 10 s, les braises, le sacre qui
+    /// sonne. Un seul départ à la fois.
+    /// LA SORTIE DU VOYAGE : le noir se pose, la plongée est coupée
+    /// sous lui, la musique s'éteint, le noir se lève sur la carte
+    /// reposée. L'hôte est prévenu à la coupe (chevron/registre
+    /// reviennent pendant que le noir se lève — les hôtes sont noirs).
+    private func sortirDuVoyage() {
+        guard sortieAt == nil else { return }
+        sortieAt = .now
+        diveGeneration += 1
+        let gen = diveGeneration
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        LuneSacre.shared.sortir(over: 0.7)
+        // La coupe à 0,24 s : sous le PLATEAU de noir plein
+        // (0,22-0,30 s) — la gigue d'asyncAfter ne peut pas la faire
+        // affleurer. L'hôte est prévenu à la coupe : chevron/registre
+        // reviennent sous le noir et pendant sa levée.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            guard gen == diveGeneration else { return }
+            diveStart = nil
+            onDive?(false)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
+            guard gen == diveGeneration else { return }
+            sortieAt = nil
+        }
+    }
+
+    private func plonger() {
+        guard !reduceMotion, diveAge(at: .now) == nil,
+              sortieAt == nil else { return }
+        diveGeneration += 1
+        let gen = diveGeneration
+        diveStart = .now
+        LuneBreath.shared.dive()
+        LuneSacre.shared.dive(rarete: rarete)
+        // L'hôte est prévenu : la plongée commence, et se
+        // terminera à la fin de la partition (retour compris).
+        // Générationnel : le `false` PÉRIMÉ d'une plongée ne doit
+        // jamais éteindre la suivante (re-tap dans la fenêtre de fin).
+        onDive?(true)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Double(Self.diveTotal) + 0.5) {
+            guard gen == diveGeneration else { return }
+            onDive?(false)
         }
     }
 }

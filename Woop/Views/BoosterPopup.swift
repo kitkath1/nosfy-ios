@@ -29,10 +29,10 @@ final class SacreEtat {
     var popupOuverte = false
     /// Le Manège — le carrousel des sachets, monté à la racine.
     var manegeOuvert = false
-    /// La rareté que la page profil doit ACCUEILLIR (l'envol accompli).
+    /// La carte que la page profil doit ACCUEILLIR (l'envol accompli).
     /// Elle est posée APRÈS la bascule d'onglet : la page doit exister
     /// pour l'entendre — et son `onAppear` la relit en filet de sécurité.
-    var arriveeDemandee: String?
+    var arriveeDemandee: CarteEnvolee?
 
     /// Le compteur des sachets non ouverts — la pill du profil et le
     /// nombre de tours du manège.
@@ -54,10 +54,30 @@ final class SacreEtat {
 
     /// L'ouverture du Manège — depuis la pop-up comme depuis la pill du
     /// profil. On reste dans le flow où on est.
+    ///
+    /// SÉQUENCER, jamais superposer : monté à l'instant du tap, le
+    /// manège payait son warm-up SceneKit PENDANT la sortie du panneau
+    /// (vidéo + verre + poudre encore vivants) — le carrousel naissait
+    /// en saccades. Le panneau sort d'abord, la scène se monte ensuite.
     func ouvrirManege() {
+        guard !manegeOuvert else { return }
+        let panneauSort = popupOuverte
         withAnimation(.easeOut(duration: 0.22)) { popupOuverte = false }
-        withAnimation(.easeInOut(duration: 0.38).delay(0.06)) {
-            manegeOuvert = true
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + (panneauSort ? 0.32 : 0.06)) {
+            // Un re-tap du bouton démo pendant la fenêtre a pu ROUVRIR
+            // la pop-up (proposer ne garde que !manegeOuvert) : on la
+            // referme AVANT tout — sinon elle vivait sous le Sacre et
+            // réapparaissait à l'arrivée profil.
+            if self.popupOuverte {
+                withAnimation(.easeOut(duration: 0.22)) {
+                    self.popupOuverte = false
+                }
+            }
+            guard !self.manegeOuvert else { return }
+            withAnimation(.easeInOut(duration: 0.38)) {
+                self.manegeOuvert = true
+            }
         }
     }
 

@@ -536,16 +536,16 @@ final class BoosterScene {
         let tearLightNode = SCNNode()
         tearLightNode.light = tearLight
         tearLightNode.position = SCNVector3(0, 0, -0.03)
-        // PIÈGE SIMULATEUR : le GPU paravirtualisé rend le volume de
-        // clustering de cette omni en CUBE NOIR collé au front (une
-        // bissection entière pour le coincer — ni particules, ni carte,
-        // ni surcouche : la LUMIÈRE). Sur iPhone elle est saine ; au
-        // banc simulé, la lèvre de braise du shader porte seule la lueur.
-        #if !targetEnvironment(simulator)
-        if !CommandLine.arguments.contains("-boosterNoTearLight") {
+        // LE CUBE NOIR N'ÉPARGNE PAS L'IPHONE : le volume de clustering
+        // de cette omni est ressorti en CARRÉ NOIR au front de découpe
+        // SUR TÉLÉPHONE aussi (screenshot 20-08, en plein arrachage —
+        // « sur iPhone elle est saine » était faux). La lèvre de braise
+        // du shader porte seule la lueur, partout ; l'omni ne revient
+        // qu'au banc, sur demande explicite (`-boosterTearLight`), pour
+        // les A/B.
+        if CommandLine.arguments.contains("-boosterTearLight") {
             sparkNode.addChildNode(tearLightNode)
         }
-        #endif
 
         bodyNode.name = "corps"
         capNode.name = "bande"
@@ -667,21 +667,87 @@ final class BoosterScene {
             packNode.isHidden = true
             floorNode.isHidden = false
             for p in galleryPacks { p.isHidden = false }
+            armGalleryDust()
         } else if !still {
             beginIdleBreath()
         }
     }
 
+    // MARK: le tell servi par la forge
+
+    /// LA SCÈNE APPREND LA RARETÉ (epic/legendary) à l'engagement — la
+    /// fente FUIT de la lumière, quelques poussières s'échappent.
+    /// Débranché du flag de banc `-boosterShiny` (qui reste l'override
+    /// d'atelier). Un seul armement par cérémonie.
+    private(set) var tellArme = false
+
+    /// `discret: true` = la scène APPREND la rareté (l'amplitude de la
+    /// respiration, le soupir qui re-posera la fuite) mais ne touche à
+    /// RIEN maintenant — une réponse forge qui atterrit pendant la
+    /// charge ou la découpe ne doit pas écraser les écritures `lipGlow`
+    /// du doigt ni relancer des poussières en plein geste.
+    func setTell(discret: Bool = false) {
+        guard !tellArme else { return }
+        tellArme = true
+        guard !discret else { return }
+        poserShinyLeak()
+        sparks.birthRate = 1.2
+    }
+
+    /// LA VRAIE CARTE DANS LA SCÈNE : la forge habille la carte
+    /// SceneKit AVANT qu'elle soit montrée — sinon l'utilisatrice
+    /// regardait carte-lune-1 monter du sachet puis la CarteVivante se
+    /// monter avec l'art réel : le swap visible que le gel de la
+    /// poignée ne couvrait pas. Jamais après coup : carte visible =
+    /// texture figée.
+    func habillerCarte(_ art: UIImage) {
+        guard cardNode.isHidden else { return }
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0
+        cardNode.geometry?.firstMaterial?.diffuse.contents = art
+        SCNTransaction.commit()
+    }
+
+    /// Le fil d'or de la lèvre qui pulse — posé à l'armement, RETIRÉ
+    /// pendant la charge et la découpe (le pulse masquerait les
+    /// écritures `lipGlow` du doigt), re-posé au soupir si rien n'est
+    /// entamé. Idempotent.
+    func poserShinyLeak() {
+        guard tellArme || Self.shinyTell else { return }
+        for node in [bodyNode, capNode] {
+            guard let m = node.geometry?.firstMaterial,
+                  !m.animationKeys.contains("shinyLeak") else { continue }
+            let leak = CABasicAnimation(keyPath: "lipGlow")
+            leak.fromValue = 0.10
+            leak.toValue = 0.52
+            leak.duration = 2.2
+            leak.autoreverses = true
+            leak.repeatCount = .infinity
+            leak.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            m.addAnimation(leak, forKey: "shinyLeak")
+        }
+    }
+
+    func retirerShinyLeak() {
+        for node in [bodyNode, capNode] {
+            node.geometry?.firstMaterial?
+                .removeAnimation(forKey: "shinyLeak")
+        }
+    }
+
     /// Le flottement au repos : une respiration, pas un manège. Appelé à
     /// l'init hors galerie, et à l'arrivée du dolly d'engagement.
+    /// IDEMPOTENT : re-poser bob/sway en cours de cycle les ferait
+    /// REPARTIR de `fromValue` — un micro-saut à chaque filet.
     func beginIdleBreath() {
         guard !still else { return }
+        guard !swayNode.animationKeys.contains("bob") else { return }
         // Sur le BERCEAU, jamais sur le pack : autour de l'identité la
         // décomposition d'euler est stable, l'animation de composante et
         // son blend-out sont sains.
         // Le tell des rares : la respiration s'amplifie (×1,5) — le
         // sachet est habité, la main le sent avant l'œil.
-        let amp: Double = Self.shinyTell ? 1.5 : 1.0
+        let amp: Double = (Self.shinyTell || tellArme) ? 1.5 : 1.0
         let bob = CABasicAnimation(keyPath: "position.y")
         bob.fromValue = -0.012 * amp
         bob.toValue = 0.012 * amp
@@ -698,6 +764,100 @@ final class BoosterScene {
         sway.repeatCount = .infinity
         sway.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         swayNode.addAnimation(sway, forKey: "sway")
+    }
+
+    // MARK: la poudre du manège
+
+    /// LA POUDRE DU MANÈGE — les grains très fins de la vidéo de
+    /// l'overlay, portés en scène : un voile qui monte du sol miroir
+    /// autour de l'anneau, qui S'ANIME avec la rotation (la traîne du
+    /// geste) et souffle une bouffée au cran. GPU pur
+    /// (SCNParticleSystem) ; grains émissifs SEULS, jamais une lumière
+    /// ajoutée (le cube noir des omni au simulateur).
+    private let galleryDust = SCNParticleSystem()
+    /// UN POOL de bouffées en rotation : retirer un système d'un nœud
+    /// détruit ses particules VIVANTES — avec un système unique, chaque
+    /// cran tuait la bouffée du cran précédent, et un scrub normal
+    /// (plusieurs crans/s) ne montrait JAMAIS rien.
+    private let cranPuffs = (0 ..< 3).map { _ in SCNParticleSystem() }
+    private var puffIndex = 0
+    private let galleryDustNode = SCNNode()
+    private let galleryPuffNode = SCNNode()
+
+    private func armGalleryDust() {
+        guard !CommandLine.arguments.contains("-boosterNoDust") else { return }
+        let dust = galleryDust
+        dust.particleImage = Self.pearlDot()
+        dust.birthRate = 9
+        dust.birthLocation = .volume
+        dust.emitterShape = SCNTube(innerRadius: 0.85, outerRadius: 1.65,
+                                    height: 0.06)
+        dust.particleLifeSpan = 5.5
+        dust.particleLifeSpanVariation = 2.0
+        dust.particleVelocity = 0.045
+        dust.particleVelocityVariation = 0.03
+        dust.emittingDirection = SCNVector3(0, 1, 0)
+        dust.spreadingAngle = 16
+        dust.particleSize = 0.006
+        dust.particleSizeVariation = 0.0035
+        dust.particleColor = UIColor(red: 1.0, green: 0.92, blue: 0.78,
+                                     alpha: 0.28)
+        dust.particleColorVariation = SCNVector4(0, 0.03, 0.05, 0.08)
+        dust.blendMode = .additive
+        dust.isLightingEnabled = false
+        galleryDustNode.position = SCNVector3(0, -0.5, -Self.ringRadius)
+        galleryDustNode.addParticleSystem(dust)
+        scene.rootNode.addChildNode(galleryDustNode)
+
+        // Les bouffées du cran (le pool) — réarmées à la volée par le
+        // coordinateur, calées sur l'haptique de détente. VISIBLES :
+        // la poudre de la vidéo de l'overlay, pas un soupçon.
+        for puff in cranPuffs {
+            puff.particleImage = Self.pearlDot()
+            puff.birthRate = 420
+            puff.emissionDuration = 0.12
+            puff.loops = false
+            puff.birthLocation = .volume
+            puff.emitterShape = SCNBox(width: 0.55, height: 0.06,
+                                       length: 0.16, chamferRadius: 0)
+            puff.particleLifeSpan = 1.3
+            puff.particleLifeSpanVariation = 0.45
+            puff.particleVelocity = 0.2
+            puff.particleVelocityVariation = 0.1
+            puff.emittingDirection = SCNVector3(0, 1, 0)
+            puff.spreadingAngle = 40
+            puff.particleSize = 0.0075
+            puff.particleSizeVariation = 0.0035
+            puff.particleColor = UIColor(red: 1.0, green: 0.9, blue: 0.72,
+                                         alpha: 0.42)
+            puff.blendMode = .additive
+            puff.isLightingEnabled = false
+        }
+        galleryPuffNode.position = SCNVector3(0, -0.5, 0.08)
+        scene.rootNode.addChildNode(galleryPuffNode)
+    }
+
+    /// 0 = repos (le voile), 1 = rotation pleine — la poudre suit la roue.
+    func setGalleryDustDrive(_ v: Float) {
+        let k = CGFloat(min(max(v, 0), 1))
+        galleryDust.birthRate = 9 + 66 * k
+        galleryDust.speedFactor = 1 + 1.4 * k
+    }
+
+    /// L'extinction à l'engagement (l'éclatement radial emporte le
+    /// voile) ; le retour à l'anneau le rallume.
+    func setGalleryDustOn(_ on: Bool) {
+        galleryDust.birthRate = on ? 9 : 0
+        galleryDust.speedFactor = 1
+    }
+
+    /// La bouffée du cran qui claque — le pool tourne : on ne réarme
+    /// que le plus ancien, dont les grains sont déjà morts.
+    func galleryDustPuff() {
+        let puff = cranPuffs[puffIndex]
+        puffIndex = (puffIndex + 1) % cranPuffs.count
+        galleryPuffNode.removeParticleSystem(puff)
+        galleryPuffNode.addParticleSystem(puff)
     }
 
     // MARK: la galerie
@@ -719,15 +879,24 @@ final class BoosterScene {
     var galleryLight = [Float](repeating: 1, count: BoosterScene.ringCount)
 
     /// Pose tout l'anneau pour une rotation donnée (cran flottant, sans
-    /// butées — un cercle n'en a pas).
-    func applyGallery(offset: Float) {
+    /// butées — un cercle n'en a pas). `centerSpin` : le lacet propre du
+    /// sachet central (la pichenette posée) — la pose de l'anneau le
+    /// PORTE au lieu de l'écraser : un seul écrivain par pose.
+    func applyGallery(offset: Float, centerSpin: Float = 0) {
         let n = Float(Self.ringCount)
+        let centre = ((Int(offset.rounded()) % Self.ringCount)
+            + Self.ringCount) % Self.ringCount
         for (i, pack) in galleryPacks.enumerated() {
             let theta = (Float(i) - offset) * (2 * .pi / n)
             pack.position = SCNVector3(
                 sinf(theta) * Self.ringRadius, -0.02,
                 -Self.ringRadius + cosf(theta) * Self.ringRadius)
-            pack.eulerAngles.y = .pi + theta
+            // LE TRIPLET ENTIER, jamais une composante : à lacet π (le
+            // clone centré), le getter décompose le quaternion sur sa
+            // forme alternative au bruit près — 60 écritures/s (gyro) =
+            // sachets qui culbutent. Le piège d'e6c0857, porté ici.
+            let spin = (i == centre) ? centerSpin : 0
+            pack.eulerAngles = SCNVector3(0, .pi + theta + spin, 0)
             // Le feu appartient au sachet qui se présente ; les dos du
             // fond restent lisibles mais éteints.
             let facing = max(cosf(theta), 0)
@@ -831,13 +1000,17 @@ final class BoosterScene {
     }
 
     /// Allume ou éteint le front : la poudre de diamant (BEAUCOUP), et
-    /// le voile de fumée qui monte du sillage. Interrupteurs de bissection
-    /// au banc : `-boosterNoDust` / `-boosterNoSmoke`.
+    /// le voile de fumée qui monte du sillage. LE VOILE EST COUPÉ PAR
+    /// DÉFAUT (bissection du carré noir, 20-08 : ses quads sombres
+    /// alpha 0,10±0,04 unité ont exactement le gabarit du carré vu au
+    /// front — si la texture ne module pas sur le GPU du téléphone, le
+    /// quad sort en rectangle plein) — `-boosterSmoke` le rallume au
+    /// banc pour l'A/B. Bissection poudre : `-boosterNoDust`.
     func setSparking(_ on: Bool) {
         let noDust = CommandLine.arguments.contains("-boosterNoDust")
-        let noSmoke = CommandLine.arguments.contains("-boosterNoSmoke")
+        let smoke = CommandLine.arguments.contains("-boosterSmoke")
         sparks.birthRate = (on && !noDust) ? 4200 : 0
-        accents.birthRate = (on && !noSmoke) ? 26 : 0
+        accents.birthRate = (on && smoke) ? 26 : 0
         perleNode.isHidden = !on
     }
 
