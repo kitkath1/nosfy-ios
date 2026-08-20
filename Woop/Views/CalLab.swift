@@ -3465,14 +3465,14 @@ private struct MoisIpod: View {
                 .frame(width: 46, height: 18)
                 .blur(radius: 6)
                 .offset(y: 22)
-            // LE LOGO LUNE NÉON (la demande) : il n'existe QUE sous
-            // l'appui — l'ambre du logo (la recette NeonPrimaryButton :
-            // cœur blanc-chaud, tube ambre, halo braise), jamais au
-            // repos.
-            Image(systemName: "moon.fill")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(
-                    Color(red: 1.00, green: 0.72, blue: 0.42))
+            // LE LOGO LUNE NÉON (la demande) : LE croissant de la
+            // marque (GlypheLune — les 18 cubiques du splash), qui
+            // n'existe QUE sous l'appui — l'ambre du logo (la recette
+            // NeonPrimaryButton : cœur blanc-chaud, tube ambre, halo
+            // braise), jamais au repos.
+            GlypheLune()
+                .fill(Color(red: 1.00, green: 0.72, blue: 0.42))
+                .frame(width: 32, height: 32)
                 .shadow(color: Color(red: 1.00, green: 0.965,
                                      blue: 0.90).opacity(0.9),
                         radius: 2)
