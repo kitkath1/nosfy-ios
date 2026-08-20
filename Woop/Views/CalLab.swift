@@ -97,7 +97,7 @@ struct CalendarStickersPage: View {
     @State private var cineSortie: CGFloat = 1
     /// LA PAGE DU MOIS (l'iPod) : ouverte par le tap d'une card de
     /// front. `-ipodLab` : ouverte d'office sur le premier mois.
-    @State private var moisOuvert: DemoMonth?
+    @State private var moisOuvert: MoisLaunch?
     private static let ipodBanc =
         CommandLine.arguments.contains("-ipodLab")
 
@@ -253,18 +253,40 @@ struct CalendarStickersPage: View {
                     cineSortie = 0
                     cineActive = true
                 }
-                // Le banc de l'iPod : direct dans la page du mois.
+                // Le banc de l'iPod : direct dans la page du mois —
+                // avec le mois précédent pour la phrase.
                 if Self.ipodBanc, moisOuvert == nil {
-                    moisOuvert = DemoMonth
-                        .recent(calendar: calendar).first
+                    let liste = DemoMonth.recent(calendar: calendar)
+                    if let premier = liste.first {
+                        let nom = liste.count > 1
+                            ? liste[1].titre(calendar: calendar)
+                                .lowercased() : nil
+                        let compte = liste.count > 1
+                            ? liste[1].sessions.count : nil
+                        let reps = liste.count > 1
+                            ? liste[1].sessions
+                                .reduce(0) { $0 + $1.reps } : nil
+                        moisOuvert = MoisLaunch(
+                            month: premier, rect: .zero,
+                            precedentNom: nom,
+                            precedentCompte: compte,
+                            precedentReps: reps)
+                    }
                 }
             }
             .onDisappear { BacMotion.shared.stop() }
-            // LA PAGE DU MOIS — l'iPod de verre.
+            // LA PAGE DU MOIS — l'iPod de verre, né du rect de la
+            // card (le fond du cover reste CLAIR : le bac vit derrière
+            // pendant le portail).
             .fullScreenCover(item: $moisOuvert) { m in
-                MoisIpod(month: m, calendar: calendar) {
+                MoisIpod(month: m.month, calendar: calendar,
+                         depuis: m.rect,
+                         precedentNom: m.precedentNom,
+                         precedentCompte: m.precedentCompte,
+                         precedentReps: m.precedentReps) {
                     moisOuvert = nil
                 }
+                .presentationBackground(.clear)
             }
             // La story couvre tout — la grammaire exacte de la home.
             .fullScreenCover(item: $story) { launch in
@@ -296,14 +318,33 @@ struct CalendarStickersPage: View {
         launchStory(session: s.storySession, rect: rect) { flashDay = nil }
     }
 
-    /// Le tap sur une card mensuelle : le flash, puis LA PAGE DU MOIS
-    /// (l'iPod). Le portail par expansion depuis le rect viendra au
-    /// fouettage — l'entrée est un cover simple pour l'instant.
+    /// Le tap sur une card mensuelle : le flash, puis LE PORTAIL — la
+    /// page naît du RECT de la card (transaction sans animation : la
+    /// cérémonie appartient à MoisIpod, jamais au système).
     private func monthTapped(_ m: DemoMonth, rect: CGRect) {
         flashRow = m.start
+        // Le mois PRÉCÉDENT (la liste est du plus récent au plus
+        // vieux : le suivant dans la liste) — pour la comparaison.
+        let liste = DemoMonth.recent(calendar: calendar)
+        var nom: String?
+        var compte: Int?
+        var reps: Int?
+        if let i = liste.firstIndex(where: { $0.id == m.id }),
+           i + 1 < liste.count {
+            nom = liste[i + 1].titre(calendar: calendar).lowercased()
+            compte = liste[i + 1].sessions.count
+            reps = liste[i + 1].sessions.reduce(0) { $0 + $1.reps }
+        }
         Task {
             try? await Task.sleep(for: .milliseconds(260))
-            moisOuvert = m
+            var tx = Transaction()
+            tx.disablesAnimations = true
+            withTransaction(tx) {
+                moisOuvert = MoisLaunch(month: m, rect: rect,
+                                        precedentNom: nom,
+                                        precedentCompte: compte,
+                                        precedentReps: reps)
+            }
             withAnimation(.easeOut(duration: 0.3)) { flashRow = nil }
         }
     }
@@ -720,6 +761,20 @@ struct CalendarStickersPage: View {
             }
         }
     }
+}
+
+// MARK: - Le départ de la page du mois
+
+/// Ce qu'il faut pour ouvrir l'iPod : le mois, le rectangle écran de
+/// la card d'où le portail s'ouvre (.zero = banc, sans portail), et
+/// le mois PRÉCÉDENT (nom + compte) pour la phrase de comparaison.
+private struct MoisLaunch: Identifiable {
+    let month: DemoMonth
+    let rect: CGRect
+    var precedentNom: String?
+    var precedentCompte: Int?
+    var precedentReps: Int?
+    var id: Date { month.id }
 }
 
 // MARK: - Le départ d'une story
@@ -1698,31 +1753,58 @@ private struct CineBilan: View {
     }
 }
 
-// MARK: - L'onde d'allumage (l'iPod)
+// MARK: - La vitre vivante (l'iPod)
 
-/// L'arc qui naît sous le doigt et court des deux côtés jusqu'à se
-/// rejoindre à l'opposé — UN progrès Animatable (la loi des rampes).
-/// À la relâche, le même arc SE RETIRE vers le point de contact.
-private struct OndeAllumage: View, Animatable {
-    var p: CGFloat
-    var a0: CGFloat
-    let diametre: CGFloat
+// MARK: - Le liquide de la molette (l'iPod)
+
+/// LE LAIT NOIR ET BLANC (le verdict) : des MÉTABALLES sous le verre
+/// natif — des gouttes qui dérivent, se soudent et suivent le doigt,
+/// jamais de la brume. Animatable sur `vie` (la loi des rampes : un
+/// uniforme nu popperait sec) ; le doigt et le remous en assignation
+/// directe — le doigt EST l'animation. L'horloge tourne tant que la
+/// page vit (le fluide EST le sujet), et dort sous Reduce Motion :
+/// l'état sans le voyage.
+private struct LiquideVue: View, Animatable {
+    var vie: CGFloat
+    var doigtX: CGFloat
+    var doigtY: CGFloat
+    var remous: CGFloat
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    /// Les prises de la console : le rayon des gouttes, leur vitesse
+    /// de dérive, leur nombre — et LA RÈGLE (veille franche au repos,
+    /// éveil plein sous le doigt).
+    let goutte: CGFloat
+    let vitesse: CGFloat
+    let nombre: CGFloat
+    let veille: CGFloat
+    let eveil: CGFloat
+
+    private static let t0 = Date()
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var animatableData: CGFloat {
-        get { p }
-        set { p = newValue }
+        get { vie }
+        set { vie = newValue }
     }
 
     var body: some View {
-        Circle()
-            .trim(from: 0.5 - Double(p) * 0.5,
-                  to: 0.5 + Double(p) * 0.5)
-            .stroke(Color(red: 1.00, green: 0.62, blue: 0.26)
-                .opacity(0.5),
-                style: StrokeStyle(lineWidth: 20, lineCap: .round))
-            .frame(width: diametre - 24, height: diametre - 24)
-            .rotationEffect(.radians(Double(a0) + .pi))
-            .blur(radius: 14)
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(Self.t0)
+            Rectangle()
+                .fill(Color.white)
+                .colorEffect(ShaderLibrary.liquideMolette(
+                    .float2(Float(largeur), Float(hauteur)),
+                    .float2(Float(doigtX), Float(doigtY)),
+                    .float2(Float(vie), Float(t)),
+                    .float2(Float(goutte), Float(vitesse)),
+                    .float2(Float(veille), Float(eveil)),
+                    .float2(Float(nombre), Float(remous))))
+        }
+        .frame(width: largeur, height: hauteur)
+        .allowsHitTesting(false)
     }
 }
 
@@ -1791,9 +1873,11 @@ private struct PoudreCran: View {
                 * (0.25 + 0.75 * tw * tw * tw)
             guard a > 0.02 else { continue }
             let r: CGFloat = CGFloat(0.8 + 1.4 * Self.hachis(g, 7))
+            // Noir et blanc (le verdict) : blanc pur minoritaire, lune
+            // majoritaire — plus une étincelle orange.
             let c: Color = Self.hachis(g, 8) < 0.34
-                ? Color(red: 0.96, green: 0.97, blue: 1.00)
-                : Color(red: 1.00, green: 0.62, blue: 0.26)
+                ? Color.white
+                : Color(red: 0.96, green: 0.97, blue: 1.00)
             var etoile = Path()
             etoile.move(to: CGPoint(x: -r, y: 0))
             etoile.addLine(to: CGPoint(x: 0, y: -r * 0.22))
@@ -1825,6 +1909,247 @@ private struct PoudreCran: View {
 
 /// LA PAGE DU MOIS : l'écran feuillette les sessions (les grandes
 /// `SessionVinyle` — elles ont survécu pour ça), et dessous LA MOLETTE
+// MARK: - La cinématique de l'écran (l'iPod)
+
+/// LA PHRASE DU MOIS (l'école « Tout voir ») : le gris-nuit traversé
+/// par l'ILLUMINATION, mot après mot — rien ne vole, rien ne floute,
+/// la lumière seule écrit. UN progrès Animatable (la loi des rampes).
+/// Les stickers du mois se posent en dernier.
+private struct CineEcran: View, Animatable {
+    var p: CGFloat
+    let ligne1: [String]
+    let ligne2: [String]
+    let ligne3: [String]
+    let stickers: [String]
+
+    var animatableData: CGFloat {
+        get { p }
+        set { p = newValue }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ligneVue(ligne1, debut: 0.04, fin: 0.42,
+                     police: .inter(23, .bold), track: -0.4)
+            if !ligne2.isEmpty {
+                ligneVue(ligne2, debut: 0.40, fin: 0.64,
+                         police: .inter(16, .medium), track: -0.2)
+            }
+            if !ligne3.isEmpty {
+                ligneVue(ligne3, debut: 0.62, fin: 0.84,
+                         police: .inter(16, .medium), track: -0.2)
+            }
+            HStack(spacing: 10) {
+                ForEach(stickers, id: \.self) { a in
+                    Image(a)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 34, height: 34)
+                }
+            }
+            .padding(.top, 8)
+            .opacity(Double(fenetre(0.82, 0.96)))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity,
+               alignment: .topLeading)
+        .padding(.horizontal, 26)
+        .padding(.top, 36)
+    }
+
+    private func fenetre(_ a: CGFloat, _ b: CGFloat) -> CGFloat {
+        let t = (p - a) / max(b - a, 0.001)
+        let c = min(max(t, 0), 1)
+        return c * c * (3.0 - 2.0 * c)
+    }
+
+    /// Une ligne : chaque mot a sa fenêtre d'illumination — le gris
+    /// 0,17 dessous, le blanc qui monte dessus, rien ne bouge.
+    private func ligneVue(_ mots: [String], debut: CGFloat,
+                          fin: CGFloat, police: Font,
+                          track: CGFloat) -> some View {
+        let n = max(mots.count, 1)
+        let pas = (fin - debut) / CGFloat(n)
+        return HStack(spacing: 5) {
+            ForEach(Array(mots.enumerated()), id: \.offset) { i, mot in
+                let a = debut + CGFloat(i) * pas
+                let w = Double(fenetre(a, a + pas * 1.6))
+                ZStack {
+                    Text(mot).font(police).tracking(track)
+                        .foregroundStyle(Color.white.opacity(0.17))
+                    Text(mot).font(police).tracking(track)
+                        .foregroundStyle(.white)
+                        .opacity(w)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Le manège des séances (le vrai écran)
+
+/// LE MANÈGE ROND (le verdict : « au scroll elles défilent en rond ») :
+/// les pochettes mini sur un anneau en perspective, COUPLÉ à la
+/// molette — p est la position continue (index + cran/pas), Animatable
+/// pour que l'aimant du relâcher et les taps voyagent en ressort. La
+/// profondeur se dit par la LUMIÈRE (nuit + alpha), jamais par le
+/// flou. Sous la sélection : l'éditorial qui se réécrit.
+private struct ManegeVue: View, Animatable {
+    var p: CGFloat
+    let sessions: [DemoSession]
+    var zoom: CGFloat = 0
+    var penchX: CGFloat = 0
+    var onTap: (() -> Void)?
+
+    var animatableData: CGFloat {
+        get { p }
+        set { p = newValue }
+    }
+
+    var body: some View {
+        let n = max(sessions.count, 1)
+        let borne = min(max(p, 0), CGFloat(n - 1))
+        let sel = Int(borne.rounded())
+        ZStack {
+            // Le sol : l'ellipse de lumière sous la pochette de front
+            // — l'assise, jamais un trait.
+            Ellipse()
+                .fill(Color.white.opacity(0.05))
+                .frame(width: 186, height: 30)
+                .blur(radius: 13)
+                .offset(y: 88)
+            anneau
+                .offset(y: -18)
+            editorial(sel, n: n)
+            // Le tap de la FRONT : jouer la séance posée devant.
+            Color.clear
+                .frame(width: 156, height: 156)
+                .contentShape(Rectangle())
+                .onTapGesture { onTap?() }
+                .offset(y: -18)
+        }
+        .frame(width: 351, height: 318)
+        .scaleEffect(1.0 + 0.35 * zoom)
+        .opacity(Double(max(0, 1.0 - zoom * 1.15)))
+        .clipped()
+    }
+
+    /// L'anneau : chaque pochette à son angle relatif — devant à
+    /// θ = 0, les autres qui reculent et s'assombrissent.
+    private var anneau: some View {
+        let n = max(sessions.count, 1)
+        let pasA: CGFloat = 2.0 * .pi / CGFloat(max(n, 8))
+        return ZStack {
+            ForEach(Array(sessions.enumerated()),
+                    id: \.element.id) { i, s in
+                place(s, theta: (CGFloat(i) - p) * pasA)
+            }
+        }
+    }
+
+    /// Une pochette sur l'anneau : position, échelle, nuit, TILT 3D
+    /// (la signature Cover Flow : les flancs tournent leur face vers
+    /// le centre) et la RÉFLEXION-SOL à 8 % — le tout en transforms de
+    /// rendu (le conteneur ne gonfle jamais).
+    private func place(_ s: DemoSession,
+                       theta: CGFloat) -> some View {
+        let z = cos(theta)
+        let prof = (z + 1.0) / 2.0
+        // Le rayon se RESSERRE avec la profondeur : sin 60° = sin 120°
+        // — à rayon constant, les pochettes ±1 et ±2 s'empilent au
+        // même x (payé au premier tir). Le fond se range DEDANS.
+        let x = sin(theta) * (96.0 + 66.0 * prof) + penchX * 4.0
+        let y = -12.0 * (1.0 - prof)
+        let echelle = 0.72 + 0.38 * prof
+        // La profondeur par la NUIT seule — JAMAIS l'alpha (le verdict
+        // « des fois transparentes » : on voyait à travers).
+        let nuit = -0.40 * Double(1.0 - prof)
+        let tilt = max(-38.0, min(38.0,
+            -Double(sin(theta)) * 34.0))
+        return ZStack {
+            MiniSeanceCard(session: s)
+                .scaleEffect(echelle)
+            MiniSeanceCard(session: s)
+                .scaleEffect(x: echelle, y: -echelle)
+                .offset(y: 132.0 * echelle + 2.0)
+                .opacity(0.08)
+                .mask(LinearGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.7),
+                              location: 0.52),
+                        .init(color: .clear, location: 0.72),
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+        }
+        .rotation3DEffect(.degrees(tilt), axis: (x: 0, y: 1, z: 0),
+                          perspective: 0.55)
+        .brightness(nuit)
+        .offset(x: x, y: y)
+        .zIndex(Double(z))
+        .allowsHitTesting(false)
+    }
+
+    /// L'éditorial de la sélection + les POINTS-PAGINATION iPod : la
+    /// date en blanc, les chiffres en nuit, le point du front allumé.
+    private func editorial(_ sel: Int, n: Int) -> some View {
+        let s = sessions[sel]
+        return VStack(spacing: 3) {
+            Spacer(minLength: 0)
+            Text(s.dateVinyle)
+                .font(.inter(15, .semibold)).tracking(-0.2)
+                .foregroundStyle(.white.opacity(0.94))
+            Text("\(s.series) s\u{00E9}ries \u{00B7} \(s.reps) reps")
+                .font(.inter(11, .medium))
+                .foregroundStyle(Color.inkMuted)
+            HStack(spacing: 5) {
+                ForEach(0 ..< n, id: \.self) { i in
+                    Circle()
+                        .fill(Color.white
+                            .opacity(i == sel ? 0.85 : 0.22))
+                        .frame(width: 3.5, height: 3.5)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(.bottom, 12)
+        .id(sel)
+        .animation(.easeOut(duration: 0.18), value: sel)
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - L'onde noire du bouton central (l'iPod)
+
+/// LE NOIR DU PUITS (la demande : « un effet noir à la tap ») :
+/// l'inverse exact de toute la lumière de la page — une vague
+/// d'OBSCURITÉ qui naît au bouton, traverse l'anneau et s'évanouit.
+/// UN progrès Animatable (la loi des rampes).
+private struct OndeNoire: View, Animatable {
+    var p: CGFloat
+
+    var animatableData: CGFloat {
+        get { p }
+        set { p = newValue }
+    }
+
+    var body: some View {
+        let borne = min(max(Double(p), 0.0), 1.0)
+        let souffle = sin(.pi * borne)
+        ZStack {
+            // Le verre s'assombrit d'un souffle…
+            Circle()
+                .fill(Color.black.opacity(souffle * 0.26))
+                .frame(width: 244, height: 244)
+            // …et la vague noire court du puits au bord.
+            Circle()
+                .stroke(Color.black.opacity((1.0 - borne) * 0.55),
+                        lineWidth: 30)
+                .frame(width: 92 + p * 190, height: 92 + p * 190)
+                .blur(radius: 10)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 /// DE VERRE : un iPod classic dont le corps est en Liquid Glass posé
 /// sur la scène vidéo (le contour = le bourrelet de réfraction, la
 /// signature liquide — jamais un trait). LE GESTE : le doigt tourne
@@ -1834,7 +2159,36 @@ private struct PoudreCran: View {
 private struct MoisIpod: View {
     let month: DemoMonth
     let calendar: Calendar
+    /// Le rect de la card d'où la page NAÎT (.zero = pas de portail).
+    var depuis: CGRect = .zero
+    /// Le mois précédent (la phrase de comparaison de la cinématique).
+    var precedentNom: String?
+    var precedentCompte: Int?
+    var precedentReps: Int?
     var onClose: () -> Void
+
+    // L'ARRIVÉE (le wahou) : le portail, la pose de la pochette, le
+    // header qui fond en dernier.
+    @State private var entree: CGFloat = 0
+    @State private var poseP: CGFloat = 0
+    @State private var headerA: Double = 0
+    // LA VRAIE STORY (le verdict) : au play, le portail de StoryFlow
+    // (les 3 stories de la home) s'ouvre DEPUIS le rect du LCD — plus
+    // rien de coupé, par construction. La pill ✕ vit sur la story.
+    @State private var storyIpod: CalStoryLaunch?
+    @State private var lcdRect: CGRect = .zero
+    @State private var zoomAvant: CGFloat = 0
+    /// Le souffle du play : l'écran s'agrandit d'un cran, la molette
+    /// se retire — le temps que le portail prenne l'écran.
+    @State private var grandEcran: CGFloat = 0
+    // LA CINÉMATIQUE D'ARRIVÉE (l'école « Tout voir ») : la phrase du
+    // mois écrite par ILLUMINATION avant le carrousel. Tap = skip.
+    @State private var cineEcranP: CGFloat = 0
+    @State private var montrerCine = true
+    // LE SCROLL DANS L'ÉCRAN : le drag horizontal nourrit les crans —
+    // même physique que la molette (clics, aimant, roue libre).
+    @State private var dragEcranX: CGFloat?
+    @State private var tempsEcran: Date?
 
     @State private var index = 0
     /// Le sens du dernier pas (±1) — l'écran glisse du bon côté.
@@ -1853,10 +2207,7 @@ private struct MoisIpod: View {
     @State private var lampeVive: Double = 0
     @State private var omega: CGFloat = 0
     @State private var tempsDoigt: Date?
-    /// LA BRAISE DU CRAN (jalon 9) : l'éclat événementiel posé à
-    /// l'angle du pas, et le BLOOM de l'écran qui l'accompagne.
-    @State private var braiseCran: CGFloat = 0
-    @State private var braiseAngle: CGFloat = 0
+    /// Le BLOOM de l'écran au cran (jalon 9).
     @State private var lume: CGFloat = 0
     /// La BORNE refusée : la vignette de l'écran se creuse.
     @State private var refus: CGFloat = 0
@@ -1873,8 +2224,8 @@ private struct MoisIpod: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var motion = BacMotion.shared
 
-    /// La braise maison (la couleur de la poudre), et la lune.
-    private let braise = Color(red: 1.00, green: 0.62, blue: 0.26)
+    /// La lune maison — la SEULE couleur de la molette (le verdict :
+    /// du liquid noir et blanc, zéro orange).
     private let lune = Color(red: 0.96, green: 0.97, blue: 1.00)
     /// Le cran : ~40° de molette par session.
     private let pasCran = CGFloat.pi / 4.5
@@ -1883,19 +2234,11 @@ private struct MoisIpod: View {
     /// Le foyer — l'anneau d'or sous le rim : couve 0,10, s'embrase à
     /// la saisie, respire avec la vitesse, se rendort à la relâche.
     @State private var foyer: Double = 0
-    /// L'onde d'allumage : l'arc qui naît sous le doigt et se referme
-    /// à l'opposé (Animatable, ancré à l'angle de saisie).
-    @State private var onde: CGFloat = 0
-    @State private var ondeAngle: CGFloat = 0
-    /// La soudure : l'éclat bref au point de jonction des deux fronts.
-    @State private var soudure: CGFloat = 0
-    /// Le verre qui se réveille : sa teinte s'éclaircit au drag.
-    @State private var verreTint: Double = 0.12
-    /// La rosée du premier contact (Ø 40, absorbée par l'onde).
+    /// La chaleur de la vitre : 0 = verre au repos (bourrelet seul),
+    /// 1 = liquide sous le doigt (f0 qui plonge).
+    @State private var vitreChaleur: CGFloat = 0
+    /// La rosée du premier contact (Ø 40).
     @State private var rosee: CGFloat = 0
-    /// La lampe refroidit à la butée (braise → lune) : la lumière dit
-    /// non.
-    @State private var lampeFroide = false
     /// Le glyphe que la lampe frôle (le pop) et la vrille du shuffle.
     @State private var glypheChaud: Int?
     @State private var vrille: Double = 0
@@ -1906,6 +2249,30 @@ private struct MoisIpod: View {
     @State private var salves: [SalveCran] = []
     /// L'allumage de la page : le rétroéclairage puis le foyer.
     @State private var allume: CGFloat = 0
+    /// LE COUP LOURD (bouton central, play, butée) — préparé.
+    @State private var lourd = UIImpactFeedbackGenerator(style: .heavy)
+    /// La pulsation NOIRE du bouton central.
+    @State private var nuitPuits: CGFloat = 0
+
+    // LA CONSOLE D'AJUSTAGE (la demande) : six curseurs vivants —
+    // Kathryn trouve le beau, dicte les chiffres, on les grave en dur.
+    /// La veille : le lait visible au repos (la règle).
+    @State private var regVeille: Double = 0.55
+    /// L'éveil : le lait sous le doigt.
+    @State private var regEveil: Double = 0.95
+    /// Le nombre de halos.
+    @State private var regGouttes: Double = 4
+    /// Le rayon des halos (px).
+    @State private var regTaille: Double = 48
+    /// La vitesse de dérive.
+    @State private var regVitesse: Double = 0.35
+    /// La clarté du verre (face + brillance). 0 = AUCUN voile (le
+    /// témoin-carte a montré que la brillance noyait le verre natif).
+    @State private var regClarte: Double = 0.15
+    /// LE TÉMOIN DU VERRE (la demande : « une image de card random
+    /// pour voir comment ça réfracte ») : la console pose une carte
+    /// sous la dalle à la place des halos — le juge de paix.
+    @State private var fondCarte = true
 
     // LES COTES MAÎTRESSES (jalon 1) — dérivation, gabarit 393×852 :
     // plaque = W − 32 ; donut = 0,676·plaque ; puits = 0,410·donut
@@ -1916,11 +2283,71 @@ private struct MoisIpod: View {
     private let donut: CGFloat = 244
     private let puits: CGFloat = 100
     private let rGlyphes: CGFloat = 86
-
     private let formePlaque = RoundedRectangle(cornerRadius: 26,
                                                style: .continuous)
 
     var body: some View {
+        // LE PORTAIL : la page entière naît du rect de la card — un
+        // zoom ancré au point de la card (l'école StoryPortal), le
+        // bac visible derrière qui s'éteint pendant la montée.
+        GeometryReader { geo in
+            let g = geo.frame(in: .global)
+            let W = max(geo.size.width, 1)
+            let H = max(geo.size.height, 1)
+            let portail = depuis != .zero
+            let s0: CGFloat = portail ? depuis.width / W : 1
+            let s: CGFloat = s0 + (1 - s0) * entree
+            let ax: CGFloat = portail
+                ? (depuis.midX - g.minX) / W : 0.5
+            let ay: CGFloat = portail
+                ? (depuis.midY - g.minY) / H : 0.5
+            ZStack {
+                Color.black
+                    .opacity(0.85 * Double(entree))
+                    .ignoresSafeArea()
+                pageContenu
+                    .scaleEffect(s, anchor: UnitPoint(x: ax, y: ay))
+                    .opacity(Double(min(1.0, 0.15 + entree * 1.7)))
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear { arrivee() }
+        .onDisappear { inertie?.cancel() }
+        // LA VRAIE STORY : le portail de la home, ouvert DEPUIS le
+        // LCD — la pill ✕ de verre posée dessus.
+        // La grammaire EXACTE du cover story de la home (fond opaque :
+        // le .clear décalait la story sous l'île — le titre de la
+        // story 2 coupé, payé).
+        .fullScreenCover(item: $storyIpod) { launch in
+            StoryPortal(from: launch.rect,
+                        session: launch.session) {
+                fermerStory()
+            }
+            .overlay(alignment: .bottom) { pillStory }
+        }
+    }
+
+    /// La pill de verre sur la story : ✕ seul — la story garde ses
+    /// gestes natifs (tap = passer), la pill n'est que la sortie.
+    private var pillStory: some View {
+        Image(systemName: "xmark")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(width: 92, height: 46)
+            .contentShape(Capsule())
+            .onTapGesture { fermerStory() }
+            .background {
+                Capsule().fill(Color.clear)
+                    .glassEffect(.clear, in: Capsule())
+            }
+            .overlay {
+                Capsule().strokeBorder(Color.white.opacity(0.10),
+                                       lineWidth: 1)
+            }
+            .padding(.bottom, 24)
+    }
+
+    private var pageContenu: some View {
         ZStack(alignment: .top) {
             Color.black.ignoresSafeArea()
             // La scène : le verre de la molette n'existe que par ce
@@ -1943,26 +2370,128 @@ private struct MoisIpod: View {
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 enTete
-                plaqueEcran
-                    .padding(.top, 6)
-                // L'ENTREFER : 14 pt de noir nu entre les deux plaques
-                // — aucune ombre n'a le droit d'y mordre.
-                Color.clear.frame(height: 14)
+                    .opacity(headerA)
+                // LE VRAI ÉCRAN (le verdict : « un vrai écran d'iPod »)
+                // — la dalle 4:3 posée dans le corps, le manège des
+                // séances dedans. La console -liquideLab garde sa
+                // place.
+                if CommandLine.arguments.contains("-liquideLab") {
+                    consoleLiquide
+                        .padding(.top, 10)
+                } else {
+                    ecranIpod
+                        .padding(.top, 18 - 8 * grandEcran)
+                }
+                Color.clear.frame(height: 20 - 8 * grandEcran)
+                // Au play, la molette SE RETIRE d'un souffle — le
+                // portail de la story prend l'écran par-dessus.
                 plaqueMolette
+                    .scaleEffect(1.0 - 0.12 * grandEcran,
+                                 anchor: .top)
+                    .opacity(Double(max(0,
+                        1.0 - grandEcran * 0.65)))
+                    .allowsHitTesting(grandEcran < 0.3)
                 Spacer(minLength: 0)
             }
         }
-        .preferredColorScheme(.dark)
-        // L'ALLUMAGE (touche 15) : le rétroéclairage de l'écran
-        // d'abord, le foyer qui prend 200 ms après — l'iPod démarre.
-        .onAppear {
+    }
+
+    /// L'ARRIVÉE (le wahou) : le portail (la card devient la page) →
+    /// le rétroéclairage → la pochette qui SE POSE (toc + poudre) →
+    /// le header qui fond → LE TOUR DE RÉVEIL. Reduce Motion : l'état
+    /// sans le voyage. Le banc (.zero) garde une arrivée courte.
+    private func arrivee() {
+        clic.prepare()
+        lourd.prepare()
+        if reduceMotion {
+            entree = 1
+            poseP = 1
+            headerA = 1
+            allume = 1
+            foyer = 0.10
+            montrerCine = false
+            cineEcranP = 1
+        } else if depuis == .zero {
+            entree = 1
+            poseP = 1
+            headerA = 1
             withAnimation(.easeOut(duration: 0.5)) { allume = 1 }
             Task {
                 try? await Task.sleep(for: .milliseconds(200))
                 withAnimation(.easeOut(duration: 0.4)) { foyer = 0.10 }
+                lancerCine()
+            }
+        } else {
+            UIImpactFeedbackGenerator(style: .soft)
+                .impactOccurred(intensity: 0.4)
+            withAnimation(.spring(response: 0.55,
+                                  dampingFraction: 0.86)) {
+                entree = 1
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(280))
+                withAnimation(.easeOut(duration: 0.45)) { allume = 1 }
+                try? await Task.sleep(for: .milliseconds(170))
+                // La pochette SE POSE — le poids se sent.
+                lourd.impactOccurred(intensity: 0.8)
+                withAnimation(.spring(response: 0.38,
+                                      dampingFraction: 0.66)) {
+                    poseP = 1
+                }
+                if salves.count < 3 {
+                    let salve = SalveCran(
+                        t0: Date(), a0: -.pi / 2.0, dir: 1,
+                        graine: Int.random(in: 0 ... 9999))
+                    salves.append(salve)
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(950))
+                        salves.removeAll { $0.id == salve.id }
+                    }
+                }
+                try? await Task.sleep(for: .milliseconds(120))
+                withAnimation(.easeOut(duration: 0.35)) { headerA = 1 }
+                withAnimation(.easeOut(duration: 0.4)) { foyer = 0.10 }
+                lancerCine()
             }
         }
-        .onDisappear { inertie?.cancel() }
+        // Le banc de la chaleur : c = 1 FIGÉ, liquide ÉVEILLÉ — la
+        // prise pixel (les volutes doivent transparaître tordues).
+        if CommandLine.arguments.contains("-calVitreHeat") {
+            vitreChaleur = 1
+            foyer = 0.30
+            lampeVive = 1
+            montrerCine = false
+            cineEcranP = 1
+        }
+    }
+
+    /// LE TOUR DE RÉVEIL : un doigt FANTÔME fait un tour complet de
+    /// l'anneau — la lampe voyage DANS le liquide (le halo du doigt du
+    /// shader, jamais un balayage dessiné), les glyphes traversés
+    /// s'illuminent avec leur micro-tick (passeGlyphes joue gratis),
+    /// puis la lumière se fond dans la veille.
+    private func tourDeReveil() {
+        guard !reduceMotion,
+              !CommandLine.arguments.contains("-calVitreHeat")
+        else { return }
+        withAnimation(.easeIn(duration: 0.12)) { lampeVive = 0.85 }
+        Task { @MainActor in
+            let duree = 0.72
+            let depart: CGFloat = -.pi / 2.0
+            let t0 = Date()
+            while angleDoigt == nil {
+                let dt = Date().timeIntervalSince(t0)
+                let p = min(1.0, dt / duree)
+                let e = 0.5 - 0.5 * cos(.pi * p)
+                angleLampe = depart + CGFloat(e) * 2.0 * .pi
+                passeGlyphes()
+                if p >= 1.0 { break }
+                try? await Task.sleep(for: .milliseconds(16))
+            }
+            guard angleDoigt == nil else { return }
+            glypheChaud = nil
+            withAnimation(.easeOut(duration: 0.55)) { lampeVive = 0 }
+        }
     }
 
     private var enTete: some View {
@@ -1983,100 +2512,461 @@ private struct MoisIpod: View {
         .padding(.top, 8)
     }
 
-    // MARK: La plaque écran (jalon 2)
+    // MARK: Le vrai écran (l'anatomie)
 
-    /// Le panneau sombre de la réf : il vit par un DÔME de lumière,
-    /// jamais un aplat ni un trait. La tourne se tranche à SON bord.
-    private var plaqueEcran: some View {
-        // L'ÉCRAN QUI PENCHE (jalon 12) : la tension du cran se lit
-        // AVANT de claquer — tanh borne la fuite aux butées.
-        let f: CGFloat = cran / pasCran
-        let penche: CGFloat = CGFloat(tanh(Double(f)))
+    /// LE VRAI ÉCRAN D'iPOD, anatomie complète : le PUITS
+    /// d'encastrement (ombre + rebond + chanfrein), la BEZEL noire
+    /// laquée, le LCD allumé (backlight bas, BLEED des coins, grain),
+    /// l'OMBRE DU LIMBE double (la vitre a une épaisseur), la VITRE au
+    /// reflet-fenêtre gyro. `grandEcran` interpole l'iPod → le cinéma.
+    private var ecranIpod: some View {
+        let g: CGFloat = grandEcran
+        let L: CGFloat = 377.0 + 8.0 * g
+        let H: CGFloat = 372.0 + 20.0 * g
+        let lcdL: CGFloat = L - 22.0
+        let lcdH: CGFloat = H - 22.0
+        let formeLCD = RoundedRectangle(cornerRadius: 3,
+                                        style: .continuous)
         return ZStack {
-            fondEcran
-            VStack(spacing: 10) {
-                SessionVinyle(session: month.sessions[index])
-                    .frame(height: 330)
-                    .padding(.horizontal, 16)
-                    .shadow(color: .black.opacity(0.5),
-                            radius: 14, y: 6)
-                    .offset(x: -penche * 22.0)
-                    .rotation3DEffect(
-                        .degrees(Double(-penche) * 3.0),
-                        axis: (x: 0, y: 1, z: 0),
-                        perspective: 0.6)
-                    // Le presque (tremble) + l'appui long du puits qui
-                    // SOULÈVE la pochette (touche 7) + le
-                    // rétroéclairage de l'allumage (touche 15).
-                    .rotationEffect(.degrees(tremble))
-                    .offset(y: puitsAppui ? -2.0 : 0.0)
-                    .brightness(-0.25 * (1.0 - Double(allume)))
-                    .animation(.spring(response: 0.3,
-                                       dampingFraction: 0.7),
-                               value: puitsAppui)
-                    .id(index)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: sens > 0
-                            ? .trailing : .leading)
-                            .combined(with: .opacity),
-                        removal: .move(edge: sens > 0
-                            ? .leading : .trailing)
-                            .combined(with: .opacity)))
-                Text("\(index + 1) / \(month.sessions.count)")
-                    .font(.inter(12, .medium)).tracking(0.6)
-                    .foregroundStyle(Color.inkMuted)
+            puitsEcran
+            bezelEcran
+            ZStack {
+                lcdFond(lcdL: lcdL, lcdH: lcdH)
+                VStack(spacing: 0) {
+                    statutIpod
+                    ZStack {
+                        if montrerCine {
+                            CineEcran(p: cineEcranP,
+                                      ligne1: cineLigne1,
+                                      ligne2: cineLigne2,
+                                      ligne3: cineLigne3,
+                                      stickers: cineStickers)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    finirCine(vite: true)
+                                }
+                                .transition(.opacity)
+                        } else {
+                            ManegeVue(p: posManege,
+                                      sessions: month.sessions,
+                                      zoom: zoomAvant,
+                                      penchX: motion.pench.width,
+                                      onTap: { jouer() })
+                                .transition(.opacity)
+                                .gesture(dragEcran)
+                        }
+                    }
+                    .frame(maxHeight: .infinity)
+                    .animation(.easeOut(duration: 0.45),
+                               value: montrerCine)
+                }
+                .rotationEffect(.degrees(tremble))
+                .offset(y: puitsAppui ? -1.5 : 0.0)
+                .brightness(-0.25 * (1.0 - Double(allume)))
+                .animation(.spring(response: 0.3,
+                                   dampingFraction: 0.7),
+                           value: puitsAppui)
+                limbeLCD
             }
-            .padding(.vertical, 18)
-            .animation(.spring(response: 0.4, dampingFraction: 0.85),
-                       value: index)
+            .frame(width: lcdL, height: lcdH)
+            .clipShape(formeLCD)
+            // Le RECT du LCD : le portail de la story s'ouvre d'ici.
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .global)
+            } action: { lcdRect = $0 }
+            vitreEcran
         }
-        .frame(width: plaqueL, height: ecranH)
-        .clipShape(formePlaque)
-        .shadow(color: .black.opacity(0.50), radius: 18, y: 8)
+        .frame(width: L, height: H)
+        .scaleEffect(1.05 - 0.05 * poseP)
+        .shadow(color: .black.opacity(0.55), radius: 16, y: 7)
     }
 
-    /// Les couches de la plaque écran — chacune sa variable (la loi du
-    /// type-checker), les plusLighter dans LEUR groupe.
-    @ViewBuilder private var fondEcran: some View {
-        // Le dôme s'embrase au cran (le bloom, jalon 9) ; la vignette
-        // se creuse quand la borne REFUSE.
-        let dome: Double = 0.07 + 0.06 * Double(lume)
-        let creux: Double = 0.10 + 0.08 * Double(refus)
-        formePlaque.fill(LinearGradient(
-            colors: [Color(white: 0.085), Color(white: 0.04)],
-            startPoint: .top, endPoint: .bottom))
-        formePlaque.fill(EllipticalGradient(
-            stops: [
-                .init(color: .white.opacity(dome), location: 0.0),
-                .init(color: .white.opacity(0.02), location: 0.45),
-                .init(color: .clear, location: 1.0),
-            ],
-            center: UnitPoint(x: 0.5, y: -0.18),
-            startRadiusFraction: 0, endRadiusFraction: 1.05))
-            .blendMode(.plusLighter)
-            .compositingGroup()
-        formePlaque.fill(RadialGradient(
-            stops: [
-                .init(color: .clear, location: 0.72),
-                .init(color: .black.opacity(creux), location: 1.0),
-            ],
-            center: .center, startRadius: 0, endRadius: 265))
-        GrainTexture.tuile
-            .resizable(resizingMode: .tile)
-            .opacity(0.05)
-            .blendMode(.overlay)
-            .clipShape(formePlaque)
-        // LE REFLET MONTE (touche 13) : l'embrasement de la molette
-        // rebondit sur le bord bas de l'écran — la cohérence spatiale.
-        formePlaque.fill(LinearGradient(
-            stops: [
-                .init(color: .clear, location: 0.74),
-                .init(color: braise.opacity(0.14), location: 1.0),
-            ],
-            startPoint: .top, endPoint: .bottom))
-            .opacity(min(0.5, foyer) * 1.4)
-            .blendMode(.plusLighter)
-            .compositingGroup()
+    // MARK: La cinématique de l'écran
+
+    /// « 6 séances en août. » — les mots de la ligne 1.
+    private var cineLigne1: [String] {
+        let n = month.sessions.count
+        let mois = month.titre(calendar: calendar).lowercased()
+        return "\(n) s\u{00E9}ances en \(mois)."
+            .split(separator: " ").map(String.init)
+    }
+
+    /// La comparaison au mois précédent — vide si pas de voisin.
+    private var cineLigne2: [String] {
+        guard let nom = precedentNom,
+              let c = precedentCompte else { return [] }
+        let d = month.sessions.count - c
+        let texte: String
+        if d > 0 {
+            texte = "\(d) de plus qu'en \(nom)."
+        } else if d < 0 {
+            texte = "\(-d) de moins qu'en \(nom)."
+        } else {
+            texte = "Autant qu'en \(nom)."
+        }
+        return texte.split(separator: " ").map(String.init)
+    }
+
+    /// L'AMÉLIORATION (la demande) : le point qui monte — les reps du
+    /// mois contre le précédent, seulement s'il y a du mieux.
+    private var cineLigne3: [String] {
+        guard let r = precedentReps else { return [] }
+        let d = month.sessions.reduce(0) { $0 + $1.reps } - r
+        guard d > 0 else { return [] }
+        return "+\(d) reps au total."
+            .split(separator: " ").map(String.init)
+    }
+
+    /// Les stickers du mois (uniques, 4 max), posés sous la phrase.
+    private var cineStickers: [String] {
+        var vus = Set<String>()
+        let tous = month.sessions.compactMap { s in
+            vus.insert(s.cat.asset).inserted ? s.cat.asset : nil
+        }
+        return Array(tous.prefix(4))
+    }
+
+    /// La cinématique se lance après l'allumage ; elle vit ~3 s puis
+    /// cède au carrousel (tap = skip).
+    private func lancerCine() {
+        guard montrerCine else { return }
+        withAnimation(.easeInOut(duration: 2.6)) { cineEcranP = 1 }
+        Task {
+            try? await Task.sleep(for: .milliseconds(3050))
+            finirCine(vite: false)
+        }
+    }
+
+    /// La sortie de la cinématique : le carrousel fond en place, puis
+    /// le tour de réveil lance la machine.
+    private func finirCine(vite: Bool) {
+        guard montrerCine else { return }
+        if vite {
+            withAnimation(.easeOut(duration: 0.2)) { cineEcranP = 1 }
+        }
+        withAnimation(.easeOut(duration: 0.45)) { montrerCine = false }
+        tourDeReveil()
+    }
+
+    /// LE SCROLL DANS L'ÉCRAN (la demande) : le drag horizontal
+    /// alimente la MÊME mécanique de crans que la molette — vers la
+    /// gauche = la suivante, l'aimant au relâcher, la roue libre à
+    /// l'élan. Deux instruments, une seule physique.
+    private var dragEcran: some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { v in
+                if inertie != nil {
+                    inertie?.cancel()
+                    inertie = nil
+                }
+                let x = v.translation.width
+                if let dernier = dragEcranX {
+                    let d = -(x - dernier) / 92.0 * pasCran
+                    let dt = max(v.time.timeIntervalSince(
+                        tempsEcran ?? v.time), 0.008)
+                    cran += d
+                    angleCumul += d * 0.5
+                    omega += (d / CGFloat(dt) - omega) * 0.3
+                    consommerCrans()
+                } else {
+                    saisie()
+                }
+                dragEcranX = x
+                tempsEcran = v.time
+            }
+            .onEnded { _ in
+                dragEcranX = nil
+                tempsEcran = nil
+                doigtLache()
+            }
+    }
+
+    /// LA BARRE DE STATUT iPOD (le marqueur n°1 du vrai 6G) : ▶ à
+    /// gauche, le mois au centre, les séances + la lune à droite —
+    /// une fine bande plus claire, un cheveu de séparation.
+    private var statutIpod: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.45))
+            Spacer(minLength: 0)
+            Text(month.titre(calendar: calendar))
+                .font(.inter(12, .semibold)).tracking(0.4)
+                .foregroundStyle(.white.opacity(0.82))
+            Spacer(minLength: 0)
+            HStack(spacing: 4) {
+                Text("\(month.sessions.count)")
+                    .font(.inter(11, .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
+                Image("piece-woop")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12, height: 12)
+                    .opacity(0.8)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 26)
+        .background(Color.white.opacity(0.045))
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.7)
+        }
+    }
+
+    /// LE PUITS : l'écran est CREUSÉ dans la face — l'ombre
+    /// d'encastrement en haut (la lumière vient d'en haut), le rebond
+    /// sur la lèvre basse, et le CHANFREIN : le fil d'un pixel qui dit
+    /// « métal usiné », jamais une bordure dessinée.
+    private var puitsEcran: some View {
+        let forme = RoundedRectangle(cornerRadius: 14,
+                                     style: .continuous)
+        return ZStack {
+            forme.fill(Color(white: 0.012))
+            forme.fill(LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.55), location: 0.0),
+                    .init(color: .clear, location: 0.06),
+                    .init(color: .clear, location: 0.95),
+                    .init(color: .white.opacity(0.05), location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom))
+        }
+    }
+
+    /// LA BEZEL : la bande noire LAQUÉE entre le puits et le LCD — le
+    /// dégradé vertical à peine perceptible fait la laque.
+    private var bezelEcran: some View {
+        RoundedRectangle(cornerRadius: 11, style: .continuous)
+            .fill(LinearGradient(
+                colors: [Color(white: 0.035), Color(white: 0.015)],
+                startPoint: .top, endPoint: .bottom))
+            .padding(5)
+    }
+
+    /// LE LCD : le backlight qui vit EN BAS (la nappe LED), le BLEED
+    /// des quatre coins (l'imperfection qui fait le vrai), la
+    /// vignette, le grain de dalle. L'allumage porte sa luminance.
+    private func lcdFond(lcdL: CGFloat, lcdH: CGFloat) -> some View {
+        ZStack {
+            Rectangle().fill(LinearGradient(
+                stops: [
+                    .init(color: Color(white: 0.068), location: 0.0),
+                    .init(color: Color(white: 0.080), location: 0.55),
+                    .init(color: Color(white: 0.104), location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom))
+            bleedCoins(lcdL: lcdL, lcdH: lcdH)
+            // La vignette se CREUSE quand la borne refuse (jalon 9).
+            Rectangle().fill(RadialGradient(
+                stops: [
+                    .init(color: .clear, location: 0.70),
+                    .init(color: .black.opacity(0.16
+                        + 0.10 * Double(refus)), location: 1.0),
+                ],
+                center: .center, startRadius: 0,
+                endRadius: max(lcdL, lcdH) * 0.62))
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05)
+                .blendMode(.overlay)
+        }
+        // L'allumage porte la luminance ; le cran fait BLOOMER le
+        // backlight d'un souffle (lume).
+        .opacity(0.35 + 0.65 * Double(allume))
+        .brightness(0.05 * Double(lume))
+    }
+
+    private func bleedCoins(lcdL: CGFloat, lcdH: CGFloat) -> some View {
+        let dx: CGFloat = lcdL / 2.0 - 10.0
+        let dy: CGFloat = lcdH / 2.0 - 8.0
+        return ZStack {
+            bleedUn.offset(x: -dx, y: -dy)
+            bleedUn.offset(x: dx, y: -dy)
+            bleedUn.offset(x: -dx, y: dy)
+            bleedUn.offset(x: dx, y: dy)
+        }
+        .blendMode(.plusLighter)
+        .compositingGroup()
+    }
+
+    private var bleedUn: some View {
+        Circle()
+            .fill(RadialGradient(
+                stops: [
+                    .init(color: .white.opacity(0.06), location: 0.0),
+                    .init(color: .clear, location: 1.0),
+                ],
+                center: .center, startRadius: 0, endRadius: 30))
+            .frame(width: 60, height: 60)
+    }
+
+    /// L'OMBRE DU LIMBE, DOUBLE : la bezel porte son ombre sur le haut
+    /// du LCD (4 pt), et la VITRE en décale l'écho d'un pixel — c'est
+    /// l'épaisseur du verre que montrent toutes les photos du vrai.
+    private var limbeLCD: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.42), location: 0.0),
+                    .init(color: .clear, location: 1.0),
+                ],
+                startPoint: .top, endPoint: .bottom)
+                .frame(height: 5)
+            Rectangle().fill(Color.black.opacity(0.16))
+                .frame(height: 1)
+            Spacer(minLength: 0)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// LA VITRE : le reflet-fenêtre STATIQUE en diagonale haute (celui
+    /// de la réf — FIGÉ, l'interdit du balayage tient) qui glisse d'un
+    /// souffle au POIGNET, et le fil d'arête du verre.
+    private var vitreEcran: some View {
+        let forme = RoundedRectangle(cornerRadius: 11,
+                                     style: .continuous)
+        return ZStack {
+            Rectangle()
+                .fill(LinearGradient(
+                    colors: [Color.white.opacity(0.045), .clear],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(width: 270, height: 150)
+                .rotationEffect(.degrees(-18))
+                .offset(x: 76.0 + motion.pench.width * 7.0,
+                        y: -92.0 + motion.pench.height * 5.0)
+                .blendMode(.plusLighter)
+        }
+        .clipShape(forme)
+        .padding(5)
+        .allowsHitTesting(false)
+    }
+
+    /// LE COUPLAGE MÉCANIQUE : la position continue du manège —
+    /// l'index + le cran en cours (la continuité par construction :
+    /// quand un cran se consomme, index saute et cran retombe du même
+    /// pas). Aux bornes, le débord se fait élastique.
+    private var posManege: CGFloat {
+        var f: CGFloat = cran / pasCran
+        let borneHaute = index >= month.sessions.count - 1 && f > 0
+        let borneBasse = index <= 0 && f < 0
+        if borneHaute || borneBasse { f *= 0.30 }
+        return CGFloat(index) + f
+    }
+
+    /// La position et la borne que la molette pilote.
+    private var posLecture: Int { index }
+    private var maxLecture: Int { month.sessions.count - 1 }
+
+    /// LA CONSOLE D'AJUSTAGE (la demande : « une console de debug
+    /// POUR AJUSTER ») : le matériau complet — noir + lait + vitre +
+    /// brillance — plein cadre, ET les six curseurs posés dessus. Un
+    /// curseur bouge → la console ET la molette changent en direct ;
+    /// Kathryn dicte les chiffres gagnants, on les grave en dur.
+    private var consoleLiquide: some View {
+        ZStack(alignment: .bottom) {
+            Color.clear
+                .frame(width: plaqueL, height: ecranH)
+                .overlay {
+                    ZStack {
+                        if fondCarte {
+                            // LA CARTE-TÉMOIN : du contenu riche sous
+                            // la dalle — on VOIT si le verre réfracte.
+                            SessionVinyle(
+                                session: month.sessions[index])
+                                .frame(width: 330, height: 330)
+                                .scaleEffect(1.19)
+                        } else {
+                            Rectangle().fill(LinearGradient(
+                                colors: [
+                                    Color(white: 0.05
+                                        + 0.09 * regClarte),
+                                    Color(white: 0.028
+                                        + 0.045 * regClarte),
+                                ],
+                                startPoint: .top, endPoint: .bottom))
+                            LiquideVue(
+                                vie: max(CGFloat(lampeVive), 0.6),
+                                doigtX: 196.0
+                                    + cos(angleLampe) * 150.0,
+                                doigtY: 196.0
+                                    + sin(angleLampe) * 150.0,
+                                remous: min(1.0, abs(omega) * 0.12),
+                                largeur: 392, hauteur: 392,
+                                goutte: CGFloat(regTaille) * 1.5,
+                                vitesse: CGFloat(regVitesse),
+                                nombre: CGFloat(regGouttes),
+                                veille: CGFloat(regVeille),
+                                eveil: CGFloat(regEveil))
+                                .blendMode(.plusLighter)
+                                .compositingGroup()
+                        }
+                    }
+                    .frame(width: 392, height: 392)
+                }
+                .clipShape(formePlaque)
+                // LE VERRE NATIF plein cadre — la dalle .clear du
+                // profil, posée en couvercle sur le lait.
+                .overlay {
+                    formePlaque
+                        .fill(Color.clear)
+                        .glassEffect(.clear, in: formePlaque)
+                        .allowsHitTesting(false)
+                }
+                .overlay {
+                    brillanceVerre
+                        .opacity(regClarte)
+                        .allowsHitTesting(false)
+                }
+                .allowsHitTesting(false)
+            panneauReglages
+        }
+        .frame(width: plaqueL, height: ecranH)
+    }
+
+    /// Les six curseurs — un banc, pas un produit : Slider système,
+    /// mono, valeurs chiffrées à dicter.
+    private var panneauReglages: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 8) {
+                Text("fond")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 66, alignment: .leading)
+                Picker("fond", selection: $fondCarte) {
+                    Text("halos").tag(false)
+                    Text("carte").tag(true)
+                }
+                .pickerStyle(.segmented)
+            }
+            regRow("veille", $regVeille, 0 ... 1)
+            regRow("éveil", $regEveil, 0 ... 1.4)
+            regRow("halos", $regGouttes, 1 ... 14)
+            regRow("taille", $regTaille, 20 ... 140)
+            regRow("vitesse", $regVitesse, 0 ... 1)
+            regRow("clarté", $regClarte, 0 ... 1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.black.opacity(0.55),
+                    in: RoundedRectangle(cornerRadius: 14))
+        .padding(10)
+    }
+
+    private func regRow(_ nom: String, _ v: Binding<Double>,
+                        _ borne: ClosedRange<Double>) -> some View {
+        HStack(spacing: 8) {
+            Text(nom)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.7))
+                .frame(width: 66, alignment: .leading)
+            Slider(value: v, in: borne)
+            Text(String(format: "%.2f", v.wrappedValue))
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.white)
+                .frame(width: 48, alignment: .trailing)
+        }
     }
 
     // MARK: La plaque molette (jalon 3)
@@ -2086,14 +2976,14 @@ private struct MoisIpod: View {
     /// posé, plus flottant.
     private var plaqueMolette: some View {
         ZStack {
-            ZStack {
-                fondMolette
-                assiseDonut
-            }
-            .compositingGroup()
-            // Le VERRE vit HORS de tout groupe (la loi CardMorph).
-            // TOUTE la lumière vit DANS la molette (le verdict de la
-            // zone verte) — rien n'est dessiné sur la plaque.
+            // LA COUCHE (jalon 1 du plan vitre) : TOUT le visuel de la
+            // molette vit dans UN raster 384×384 débordant — c'est lui
+            // que la calotte liquidLens lira (portée miroir 1,46·132 ≈
+            // 193 → demi-192 minimum). Le clip du parent tranche le
+            // débord APRÈS : le shader lit le raster entier.
+            moletteScene
+            // LA COQUILLE : le geste et ce qui reste AU-DESSUS de la
+            // vitre (puits opaque, gerbe, taps).
             moletteCorps
         }
         .frame(width: plaqueL, height: moletteH)
@@ -2101,59 +2991,115 @@ private struct MoisIpod: View {
         .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
     }
 
-    /// LE CHAMP DE LA SCÈNE (le verdict de la zone verte + son
-    /// screenshot des pastilles) : la fumée lumineuse qui vit SOUS le
-    /// verre, DANS l'empreinte de la molette — le blob de braise suit
-    /// le doigt, la lune répond à l'opposé, la nappe de veille dort au
-    /// centre. Le masque tue tout avant le bord : rien ne déborde de
-    /// l'objet, jamais.
-    private var champScene: some View {
-        let xB: CGFloat = 122.0 + cos(angleLampe) * 58.0
-        let yB: CGFloat = 122.0 + sin(angleLampe) * 58.0
-        let xF: CGFloat = 122.0 - cos(angleLampe) * 52.0
-        let yF: CGFloat = 122.0 - sin(angleLampe) * 52.0
-        return ZStack {
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: braise.opacity(0.12),
-                              location: 0.0),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .center, startRadius: 0, endRadius: 110))
-                .frame(width: 220, height: 220)
-                .offset(x: motion.pench.width * 6,
-                        y: motion.pench.height * 6)
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: braise.opacity(0.55),
-                              location: 0.0),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .center, startRadius: 0, endRadius: 70))
-                .frame(width: 140, height: 140)
-                .blur(radius: 18)
-                .position(x: xB, y: yB)
-                .opacity(foyer * 2.2)
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: lune.opacity(0.35),
-                              location: 0.0),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .center, startRadius: 0, endRadius: 60))
-                .frame(width: 120, height: 120)
-                .blur(radius: 22)
-                .position(x: xF, y: yF)
-                .opacity(foyer * 1.3)
+    /// La couche sous vitre : l'overlay-sur-Color.clear est la SEULE
+    /// forme qui ne gonfle pas l'hôte (le piège detail-gonfle). Le
+    /// centre du donut (180,5 ; 140) EST le centre de la plaque : le
+    /// carré 384 centré est bon par construction.
+    private var moletteScene: some View {
+        Color.clear
+            .frame(width: plaqueL, height: moletteH)
+            .overlay {
+                ZStack {
+                    // La BANDE : le dégradé de la plaque prolongé sur
+                    // 384 (pente (0,085−0,04)/280 tenue — raccord au
+                    // pixel) : rien de dur à portée du limbe.
+                    Rectangle().fill(LinearGradient(
+                        colors: [Color(white: 0.0934),
+                                 Color(white: 0.0316)],
+                        startPoint: .top, endPoint: .bottom))
+                    // Le fond EXACT de la plaque par-dessus (parité).
+                    ZStack {
+                        fondMolette
+                        assiseDonut
+                    }
+                    .compositingGroup()
+                    .frame(width: plaqueL, height: moletteH)
+                    // Le corps visuel de la molette, centré.
+                    moletteVisuel
+                    // LE VERRE NATIF (la réponse de ProfilLune:524 —
+                    // « c'est quand même le composant Apple natif » :
+                    // OUI) : la variante .clear — la dalle transparente
+                    // du profil, réfraction temps réel et arêtes
+                    // spéculaires natives. Le .regular givré reste
+                    // INTERDIT. Taille CONSTANTE (le piège des bounds
+                    // vivants : redimensionné = blur plat définitif).
+                    Circle()
+                        .fill(Color.clear)
+                        .glassEffect(.clear, in: Circle())
+                        .frame(width: donut, height: donut)
+                        .allowsHitTesting(false)
+                    // LA BRILLANCE : le reflet de la SURFACE — au
+                    // POIGNET seulement (l'école du sticker — jamais
+                    // un balayage), affirmé à la chaleur (la règle du
+                    // clic).
+                    brillanceVerre
+                        .mask(Circle()
+                            .frame(width: donut, height: donut))
+                        .opacity((0.45 + 0.55 * Double(vitreChaleur))
+                            * regClarte * 1.2)
+                        .allowsHitTesting(false)
+                    // LES GLYPHES AU-DESSUS DU VERRE — comme KD et la
+                    // pastille vivent au-dessus de la dalle du profil.
+                    ZStack { glyphes }
+                        .frame(width: donut, height: donut)
+                }
+                .frame(width: 384, height: 384)
+            }
+            .allowsHitTesting(false)
+    }
+
+    /// Le ciel doux que le verre reflète : une nappe elliptique large,
+    /// blendée en plusLighter — la position suit le gyro (BacMotion,
+    /// bande morte incluse), statique au simulateur.
+    private var brillanceVerre: some View {
+        EllipticalGradient(
+            stops: [
+                .init(color: .white.opacity(0.11), location: 0.0),
+                .init(color: .white.opacity(0.04), location: 0.45),
+                .init(color: .clear, location: 1.0),
+            ],
+            center: UnitPoint(x: 0.5 + motion.pench.width * 0.10,
+                              y: 0.14 + motion.pench.height * 0.08),
+            startRadiusFraction: 0, endRadiusFraction: 0.85)
+            .blendMode(.plusLighter)
+            .compositingGroup()
+    }
+
+    /// Le visuel du donut — le CONTENU sous le verre natif (les
+    /// glyphes, eux, vivent AU-DESSUS de la dalle, comme au profil).
+    private var moletteVisuel: some View {
+        ZStack {
+            donutAnatomie
+            liquideDonut
+            grainTournant
+            anisotropie
+            roseeVue
+                .blendMode(.plusLighter)
+                .compositingGroup()
+                .allowsHitTesting(false)
         }
         .frame(width: donut, height: donut)
-        .mask(Circle().frame(width: 230, height: 230))
-        .blendMode(.plusLighter)
-        .compositingGroup()
-        .allowsHitTesting(false)
+    }
+
+    /// LE LAIT DANS L'EMPREINTE : les gouttes noir et blanc SOUS le
+    /// verre — la seule lumière de la molette. Le doigt (r 96, dans
+    /// l'anneau) aspire les gouttes ; le remous force le tirage. Le
+    /// masque tue tout au bord : rien ne déborde de l'objet, jamais.
+    private var liquideDonut: some View {
+        LiquideVue(vie: CGFloat(lampeVive),
+                   doigtX: 122.0 + cos(angleLampe) * 96.0,
+                   doigtY: 122.0 + sin(angleLampe) * 96.0,
+                   remous: min(1.0, abs(omega) * 0.12),
+                   largeur: donut, hauteur: donut,
+                   goutte: CGFloat(regTaille),
+                   vitesse: CGFloat(regVitesse),
+                   nombre: CGFloat(regGouttes),
+                   veille: CGFloat(regVeille),
+                   eveil: CGFloat(regEveil))
+            .mask(Circle().frame(width: donut, height: donut))
+            .blendMode(.plusLighter)
+            .compositingGroup()
+            .allowsHitTesting(false)
     }
 
     @ViewBuilder private var fondMolette: some View {
@@ -2209,44 +3155,9 @@ private struct MoisIpod: View {
     /// rim (le SEUL contour), le puits est creusé par-dessus.
     private var moletteCorps: some View {
         ZStack {
-            donutAnatomie
-            // LE CHAMP : la scène lumineuse de l'objet, sous tout.
-            champScene
-            // LE GRAIN QUI TOURNE (jalon 15) : le Canvas est STATIQUE,
-            // c'est LE CALQUE qui tourne avec le doigt — la matière
-            // suit le geste. Et l'anisotropie à mi-vitesse, modulée par
-            // le poignet — JAMAIS un terme temporel (le glint est mort
-            // deux fois).
-            grainTournant
-            anisotropie
-            // L'OMBRE DE LA MAIN (touche 2) : elle orbite à l'OPPOSÉ
-            // de la lampe — la main bloque le foyer. Blend NORMAL.
-            ombreMain
-            // L'ONDE D'ALLUMAGE (plan v2) : l'arc naît sous le doigt
-            // et se referme à l'opposé — un allumage, pas un variateur.
-            ZStack {
-                OndeAllumage(p: onde, a0: ondeAngle, diametre: donut)
-                soudureVue
-                roseeVue
-            }
-            .blendMode(.plusLighter)
-            .compositingGroup()
-            .allowsHitTesting(false)
-            // LA LAMPE DU DOIGT + LA BRAISE DU CRAN (jalons 8-9) :
-            // SOUS le verre — le rim s'allume localement, la vraie
-            // signature liquide.
-            lampesVivantes
-            // LES FLÈCHES VIVENT DANS LE VERRE (le verdict) : sous la
-            // vitre, réfractées avec la scène.
-            glyphes
-            // LE VERRE QUI SE RÉVEILLE : .clear (la recette prouvée au
-            // banc -calBg), la teinte s'éclaircit au drag. Bounds 244
-            // CONSTANTS, gravés à jamais.
-            Circle()
-                .fill(Color.clear)
-                .glassEffect(Glass.clear
-                    .tint(Color.black.opacity(verreTint)).interactive(),
-                    in: Circle())
+            // LA NUIT DU BOUTON : la vague d'obscurité du press — sous
+            // le puits (le bouton reste net), au-dessus du verre.
+            OndeNoire(p: nuitPuits)
             puitsVue
             // LA GERBE DU CRAN (touche 12) : au-dessus du verre, dans
             // son groupe — l'horloge dort quand il n'y a pas de salve.
@@ -2278,16 +3189,28 @@ private struct MoisIpod: View {
                     .contentShape(Circle())
                     .onTapGesture { melanger() }
                     .offset(y: -rGlyphes)
+                // ▶︎⏸ : il LANCE la story de la séance posée devant.
+                Color.clear.frame(width: 56, height: 56)
+                    .contentShape(Circle())
+                    .onTapGesture { jouer() }
+                    .offset(y: rGlyphes)
             }
         }
     }
 
-    /// L'anatomie mate (jalon 4) : alphas ×0,6 — le verre rajoute le
-    /// reste. Les plusLighter dans LEUR groupe.
+    /// L'anatomie du donut — la face de VERRE : un cran plus claire
+    /// que la nuit (un verre accroche l'ambiance, le mat l'avale), et
+    /// LA RÈGLE DU CLIC : au toucher le verre S'ÉCLAIRCIT d'un cran —
+    /// les liquides se lisent pleinement. Les plusLighter dans LEUR
+    /// groupe.
     private var donutAnatomie: some View {
-        ZStack {
+        let haut: Double = 0.05 + 0.09 * regClarte
+            + 0.05 * Double(vitreChaleur)
+        let bas: Double = 0.028 + 0.045 * regClarte
+            + 0.03 * Double(vitreChaleur)
+        return ZStack {
             Circle().fill(LinearGradient(
-                colors: [Color(white: 0.06), Color(white: 0.032)],
+                colors: [Color(white: haut), Color(white: bas)],
                 startPoint: .top, endPoint: .bottom))
             Circle().fill(RadialGradient(
                 stops: [
@@ -2318,79 +3241,6 @@ private struct MoisIpod: View {
         .compositingGroup()
     }
 
-    /// LES LAMPES VIVANTES : la lueur qui orbite avec le doigt (r 104)
-    /// et la braise brève posée à l'angle du cran — chacune dans SON
-    /// groupe, sous le verre.
-    private var lampesVivantes: some View {
-        let force: Double = 0.12 + Double(min(0.10, abs(omega) * 0.03))
-        let xL: CGFloat = 122.0 + cos(angleLampe) * 104.0
-        let yL: CGFloat = 122.0 + sin(angleLampe) * 104.0
-        let xB: CGFloat = 122.0 + cos(braiseAngle) * 104.0
-        let yB: CGFloat = 122.0 + sin(braiseAngle) * 104.0
-        // Le froid des bornes (touche 9) et l'évaporation (touche 14) :
-        // la couleur dit non, la mort s'élargit au lieu de s'éteindre.
-        let teinteLampe: Color = lampeFroide ? lune : braise
-        let evapore: CGFloat = 1.0 + (1.0 - CGFloat(lampeVive)) * 0.27
-        return ZStack {
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: teinteLampe.opacity(0.18),
-                              location: 0.0),
-                        .init(color: teinteLampe.opacity(0.05),
-                              location: 0.45),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .center, startRadius: 0, endRadius: 75))
-                .frame(width: 150, height: 150)
-                .scaleEffect(evapore)
-                .position(x: xL, y: yL)
-                .opacity(lampeVive * force / 0.12)
-            Circle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: braise.opacity(0.16),
-                              location: 0.0),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .center, startRadius: 0, endRadius: 55))
-                .frame(width: 110, height: 110)
-                .position(x: xB, y: yB)
-                .opacity(Double(braiseCran))
-        }
-        .frame(width: donut, height: donut)
-        .blendMode(.plusLighter)
-        .compositingGroup()
-        .allowsHitTesting(false)
-    }
-
-    /// L'ombre de la main : la physique inverse — imperceptible, lue.
-    private var ombreMain: some View {
-        let xO: CGFloat = 122.0 - cos(angleLampe) * 104.0
-        let yO: CGFloat = 122.0 - sin(angleLampe) * 104.0
-        return Circle()
-            .fill(Color.black.opacity(0.10))
-            .frame(width: 150, height: 150)
-            .blur(radius: 30)
-            .position(x: xO, y: yO)
-            .opacity(lampeVive)
-            .frame(width: donut, height: donut)
-            .allowsHitTesting(false)
-    }
-
-    /// La soudure : les deux fronts se rejoignent — un éclat, 80 ms.
-    private var soudureVue: some View {
-        let xS: CGFloat = 122.0 + cos(ondeAngle + .pi) * 110.0
-        let yS: CGFloat = 122.0 + sin(ondeAngle + .pi) * 110.0
-        return Circle()
-            .fill(Color.white.opacity(0.5))
-            .frame(width: 26, height: 26)
-            .blur(radius: 8)
-            .position(x: xS, y: yS)
-            .opacity(Double(soudure))
-            .frame(width: donut, height: donut)
-    }
-
     /// La rosée du contact : le verre sent le doigt avant le geste.
     private var roseeVue: some View {
         let xR: CGFloat = 122.0 + cos(angleLampe) * 104.0
@@ -2408,7 +3258,7 @@ private struct MoisIpod: View {
     /// rotation, le Canvas ne se redessine jamais.
     private var grainTournant: some View {
         Canvas { ctx, _ in
-            for i in 0 ..< 90 {
+            for i in 0 ..< 120 {
                 let rho: CGFloat = 52.0
                     + 66.0 * CGFloat(Self.hachis(i, 1))
                 let th: CGFloat = CGFloat(Self.hachis(i, 2))
@@ -2416,7 +3266,7 @@ private struct MoisIpod: View {
                 let x: CGFloat = 122.0 + rho * cos(th)
                 let y: CGFloat = 122.0 + rho * sin(th)
                 let r: CGFloat = 0.7 + 0.7 * CGFloat(Self.hachis(i, 3))
-                let a: Double = 0.025 + 0.045 * Self.hachis(i, 4)
+                let a: Double = 0.04 + 0.06 * Self.hachis(i, 4)
                 ctx.fill(Path(ellipseIn: CGRect(
                     x: x - r, y: y - r,
                     width: r * 2.0, height: r * 2.0)),
@@ -2477,7 +3327,8 @@ private struct MoisIpod: View {
             + (glypheFlash == 2 ? 0.32 : 0.0))
         let oF: Double = min(1.0, 0.38 + 0.62 * proxGlyphe(0)
             + (glypheFlash == 3 ? 0.32 : 0.0))
-        let oP: Double = 0.38 + 0.62 * proxGlyphe(.pi / 2.0)
+        let oP: Double = min(1.0, 0.38 + 0.62 * proxGlyphe(.pi / 2.0)
+            + (glypheFlash == 4 ? 0.32 : 0.0))
         // LE HALO BLANC (le verdict) : le glyphe traversé s'illumine
         // franc — blanc plein + halo qui bloom, pas un +30 % timide.
         let hS: Double = proxGlyphe(-.pi / 2.0)
@@ -2540,7 +3391,7 @@ private struct MoisIpod: View {
     /// Le shuffle : session au hasard, la vrille du glyphe, deux temps
     /// d'haptique.
     private func melanger() {
-        guard month.sessions.count > 1 else { return }
+        guard storyIpod == nil, month.sessions.count > 1 else { return }
         var cible = index
         while cible == index {
             cible = Int.random(in: 0 ..< month.sessions.count)
@@ -2614,12 +3465,38 @@ private struct MoisIpod: View {
                 .frame(width: 46, height: 18)
                 .blur(radius: 6)
                 .offset(y: 22)
+            // LE LOGO LUNE NÉON (la demande) : il n'existe QUE sous
+            // l'appui — l'ambre du logo (la recette NeonPrimaryButton :
+            // cœur blanc-chaud, tube ambre, halo braise), jamais au
+            // repos.
+            Image(systemName: "moon.fill")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(
+                    Color(red: 1.00, green: 0.72, blue: 0.42))
+                .shadow(color: Color(red: 1.00, green: 0.965,
+                                     blue: 0.90).opacity(0.9),
+                        radius: 2)
+                .shadow(color: Color(red: 1.00, green: 0.42,
+                                     blue: 0.13).opacity(0.85),
+                        radius: 14)
+                .shadow(color: Color(red: 1.00, green: 0.42,
+                                     blue: 0.13).opacity(0.5),
+                        radius: 26)
+                .opacity(puitsAppui ? 1 : 0)
+                .scaleEffect(puitsAppui ? 1.0 : 0.55)
+                .animation(.spring(response: 0.26,
+                                   dampingFraction: 0.6),
+                           value: puitsAppui)
+                .allowsHitTesting(false)
         }
         .frame(width: puits, height: puits)
         .contentShape(Circle())
         // Le double-tap : retour à la plus récente (touche 6) — posé
         // AVANT l'appui pour ne pas se faire voler.
         .onTapGesture(count: 2) { retourRecent() }
+        // LE CLIC : la story — la carte s'éteint en télé et le récit
+        // s'ouvre de son rect (le simple attend l'échec du double).
+        .onTapGesture { jouer() }
         .onLongPressGesture(minimumDuration: 0.01, maximumDistance: 40,
                             perform: {}) { on in
             withAnimation(on
@@ -2627,10 +3504,11 @@ private struct MoisIpod: View {
                 : .spring(response: 0.25, dampingFraction: 0.7)) {
                 puitsAppui = on
             }
-            // Le bouton a un POIDS : sourd à l'appui, net au retour.
+            // Le bouton a un POIDS (la demande : « un effet noir à la
+            // tap et gros haptique ») : le coup LOURD + la vague noire
+            // à l'appui, net au retour.
             if on {
-                UIImpactFeedbackGenerator(style: .soft)
-                    .impactOccurred(intensity: 0.8)
+                pulseNoir()
             } else {
                 UIImpactFeedbackGenerator(style: .rigid)
                     .impactOccurred(intensity: 0.5)
@@ -2658,8 +3536,8 @@ private struct MoisIpod: View {
             var d = a - dernier
             if d > .pi { d -= 2.0 * .pi }
             if d < -.pi { d += 2.0 * .pi }
-            let dehors = (d > 0 && index >= month.sessions.count - 1)
-                || (d < 0 && index <= 0)
+            let dehors = (d > 0 && posLecture >= maxLecture)
+                || (d < 0 && posLecture <= 0)
             cran += d
             angleCumul += dehors ? d * 0.25 : d
             let dt = max(
@@ -2680,12 +3558,12 @@ private struct MoisIpod: View {
     /// Les crans se consomment TANT QUE la borne le permet — sinon le
     /// cran s'accumule (borné) et la butée TOQUE une seule fois.
     private func consommerCrans() {
-        while cran > pasCran, index < month.sessions.count - 1 {
+        while cran > pasCran, posLecture < maxLecture {
             cran -= pasCran
             avancer(1)
             borneToquee = false
         }
-        while cran < -pasCran, index > 0 {
+        while cran < -pasCran, posLecture > 0 {
             cran += pasCran
             avancer(-1)
             borneToquee = false
@@ -2696,20 +3574,9 @@ private struct MoisIpod: View {
                 borneToquee = true
                 toqueBorne()
             }
-            // La lampe REFROIDIT tant qu'on force (touche 9).
-            if !lampeFroide {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    lampeFroide = true
-                }
-            }
         }
         if abs(cran) < 0.3 * pasCran {
             borneToquee = false
-            if lampeFroide {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    lampeFroide = false
-                }
-            }
         }
         // LE PRESQUE (touche 11) : à un cheveu du cran sans franchir,
         // la pochette tremble d'un demi-degré.
@@ -2731,30 +3598,25 @@ private struct MoisIpod: View {
         if f < 0.6 { presqueArme = false }
     }
 
-    /// La saisie : le générateur se PRÉPARE, la rosée perle, l'ONDE
-    /// court des deux côtés, le foyer S'EMBRASE, le verre se réveille.
+    /// La saisie : le générateur se PRÉPARE, la rosée perle, le
+    /// liquide S'ÉVEILLE (lampeVive → vie, en rampe Animatable), le
+    /// verre se liquéfie.
     private func saisie() {
         clic.prepare()
         cransFaits = 0
         UIImpactFeedbackGenerator(style: .soft)
             .impactOccurred(intensity: 0.35)
-        withAnimation(.easeOut(duration: 0.12)) { lampeVive = 1 }
-        // La rosée (touche 1) — absorbée par l'onde.
+        withAnimation(.easeOut(duration: 0.25)) { lampeVive = 1 }
+        // La rosée (touche 1) — bue par le liquide qui monte.
         rosee = 1
         withAnimation(.easeOut(duration: 0.25)) { rosee = 0 }
-        // L'onde d'allumage, ancrée sous le doigt.
-        ondeAngle = angleLampe
-        onde = 0
-        withAnimation(.easeOut(duration: 0.32)) { onde = 1 }
-        // L'embrasement + le réveil du verre.
+        // La vitre qui se fait LIQUIDE (Reduce Motion : l'état sans le
+        // voyage).
         withAnimation(.easeOut(duration: 0.25)) { foyer = 0.30 }
-        withAnimation(.easeOut(duration: 0.2)) { verreTint = 0.07 }
-        // La soudure (touche 3), au moment où les fronts se rejoignent.
-        Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard angleDoigt != nil else { return }
-            soudure = 1
-            withAnimation(.easeOut(duration: 0.18)) { soudure = 0 }
+        if reduceMotion {
+            vitreChaleur = 1
+        } else {
+            withAnimation(.easeOut(duration: 0.22)) { vitreChaleur = 1 }
         }
     }
 
@@ -2767,12 +3629,14 @@ private struct MoisIpod: View {
             UIImpactFeedbackGenerator(style: .soft)
                 .impactOccurred(intensity: 0.25)
         }
-        // La lumière se retire VERS le dernier point de contact, le
-        // foyer se rendort en dernier, le verre se rendort aussi.
-        withAnimation(.easeIn(duration: 0.5)) { onde = 0 }
+        // Le liquide se rendort sur place, la vitre REFROIDIT — écrit
+        // ICI, hors de toute branche : jamais un gel à chaud.
         withAnimation(.easeOut(duration: 0.6)) { foyer = 0.10 }
-        withAnimation(.easeOut(duration: 0.4)) { verreTint = 0.12 }
-        withAnimation(.easeOut(duration: 0.2)) { lampeFroide = false }
+        if reduceMotion {
+            vitreChaleur = 0
+        } else {
+            withAnimation(.easeOut(duration: 0.45)) { vitreChaleur = 0 }
+        }
         if abs(omega) > 3.0, !reduceMotion {
             // La lampe FANTÔME (touche 10) : la roue libre se voit.
             withAnimation(.easeOut(duration: 0.2)) { lampeVive = 0.5 }
@@ -2801,19 +3665,18 @@ private struct MoisIpod: View {
                 // La lampe fantôme SUIT la rotation.
                 angleLampe += delta
                 while cran > pasCran,
-                      index < month.sessions.count - 1, crans < 4 {
+                      posLecture < maxLecture, crans < 4 {
                     cran -= pasCran
                     crans += 1
                     avancer(1)
                 }
-                while cran < -pasCran, index > 0, crans < 4 {
+                while cran < -pasCran, posLecture > 0, crans < 4 {
                     cran += pasCran
                     crans += 1
                     avancer(-1)
                 }
-                let borne = (omega > 0
-                    && index >= month.sessions.count - 1)
-                    || (omega < 0 && index <= 0)
+                let borne = (omega > 0 && posLecture >= maxLecture)
+                    || (omega < 0 && posLecture <= 0)
                 if abs(omega) < 0.9 || crans >= 4 || borne {
                     omega = 0
                     withAnimation(.spring(response: 0.32,
@@ -2830,15 +3693,72 @@ private struct MoisIpod: View {
         }
     }
 
-    /// La butée : le double coup (toc… toc), l'écran qui refuse.
+    /// LE PLAY : l'écran souffle un cran, la molette se retire, et LE
+    /// PORTAIL DE LA VRAIE STORY (StoryFlow — les 3 stories de la
+    /// home) s'ouvre DEPUIS le rect du LCD. La pill ✕ vit sur la
+    /// story ; sa fin (ou ✕) referme le portail sur l'écran et le
+    /// manège rattrape en morphisme.
+    private func jouer() {
+        guard storyIpod == nil else { return }
+        lourd.impactOccurred(intensity: 0.85)
+        let recit = month.sessions[index].storySession
+        if reduceMotion {
+            grandEcran = 1
+        } else {
+            withAnimation(.spring(response: 0.45,
+                                  dampingFraction: 0.82)) {
+                grandEcran = 1
+                zoomAvant = 0.35
+            }
+        }
+        var tx = Transaction()
+        tx.disablesAnimations = true
+        withTransaction(tx) {
+            storyIpod = CalStoryLaunch(rect: lcdRect, session: recit)
+        }
+    }
+
+    /// La fermeture : le portail se replie sur le LCD (StoryPortal
+    /// fait son morph), l'écran et la molette reviennent au repos.
+    private func fermerStory() {
+        var tx = Transaction()
+        tx.disablesAnimations = true
+        withTransaction(tx) { storyIpod = nil }
+        lourd.impactOccurred(intensity: 0.6)
+        if reduceMotion {
+            grandEcran = 0
+            zoomAvant = 0
+        } else {
+            withAnimation(.spring(response: 0.5,
+                                  dampingFraction: 0.82)) {
+                grandEcran = 0
+                zoomAvant = 0
+            }
+        }
+    }
+
+    /// LE NOIR DU PUITS : le coup lourd + la vague d'obscurité qui
+    /// traverse l'anneau (Reduce Motion : le coup sans la vague).
+    private func pulseNoir() {
+        lourd.impactOccurred(intensity: 1.0)
+        guard !reduceMotion else { return }
+        nuitPuits = 0
+        withAnimation(.easeOut(duration: 0.42)) { nuitPuits = 1 }
+        Task {
+            try? await Task.sleep(for: .milliseconds(460))
+            nuitPuits = 0
+        }
+    }
+
+    /// La butée : le double coup (TOC… toc) — lourd puis sourd (la
+    /// demande : haptique FORT), l'écran qui refuse.
     private func toqueBorne() {
-        UIImpactFeedbackGenerator(style: .soft)
-            .impactOccurred(intensity: 0.5)
+        lourd.impactOccurred(intensity: 0.9)
         withAnimation(.easeOut(duration: 0.18)) { refus = 1 }
         Task {
             try? await Task.sleep(for: .milliseconds(70))
             UIImpactFeedbackGenerator(style: .soft)
-                .impactOccurred(intensity: 0.3)
+                .impactOccurred(intensity: 0.5)
             try? await Task.sleep(for: .milliseconds(110))
             withAnimation(.easeOut(duration: 0.3)) { refus = 0 }
         }
@@ -2854,9 +3774,9 @@ private struct MoisIpod: View {
         }
     }
 
-    /// Un cran : le CLIC de l'iPod, la BRAISE à l'angle du pas, le
-    /// BLOOM de l'écran, le flash du glyphe du sens. À la borne :
-    /// l'écran REFUSE (la vignette se creuse), le coup est sourd.
+    /// Un cran : le CLIC de l'iPod, le BLOOM de l'écran, le flash du
+    /// glyphe du sens, la gerbe. À la borne : l'écran REFUSE (la
+    /// vignette se creuse), le coup est sourd.
     private func avancer(_ d: Int) {
         let cible = index + d
         guard cible >= 0, cible < month.sessions.count else {
@@ -2870,28 +3790,33 @@ private struct MoisIpod: View {
             return
         }
         sens = CGFloat(d)
-        withAnimation(.spring(response: 0.4,
-                              dampingFraction: 0.85)) {
+        // LE COUPLAGE : sous le doigt (ou en roue libre), index saute
+        // SEC — la continuité du manège vient de cran qui retombe du
+        // même pas. Au tap (flancs, shuffle), le ressort porte le
+        // voyage (le manège est Animatable sur p).
+        if angleDoigt == nil, dragEcranX == nil, inertie == nil {
+            withAnimation(.spring(response: 0.4,
+                                  dampingFraction: 0.85)) {
+                index = cible
+            }
+        } else {
             index = cible
         }
-        // LE CLIC PRÉPARÉ (jalon 13) : l'intensité force avec la
-        // vitesse, plancher 40 ms — on saute des CLICS, jamais des
-        // crans.
+        // LE CLIC PRÉPARÉ (jalon 13) : FORT (la demande) — base 0,75,
+        // la vitesse pousse au plafond, plancher 40 ms — on saute des
+        // CLICS, jamais des crans.
         let maintenant = Date()
         let assezVieux = dernierClic
             .map { maintenant.timeIntervalSince($0) >= 0.04 } ?? true
         if assezVieux {
-            clic.impactOccurred(intensity: 0.45
-                + min(0.4, Double(abs(omega)) * 0.10))
+            clic.impactOccurred(intensity: 0.75
+                + min(0.20, Double(abs(omega)) * 0.06))
             dernierClic = maintenant
         }
         cransFaits += 1
-        // LA BRAISE, posée là où le doigt a franchi le cran ; le
-        // BLOOM du dôme de l'écran ; le glyphe du sens qui flash —
+        // Le BLOOM du dôme de l'écran ; le glyphe du sens qui flash —
         // toujours deux temps + Task (jamais une rampe échelonnée).
-        braiseAngle = angleLampe
         withAnimation(.easeOut(duration: 0.06)) {
-            braiseCran = 1
             lume = 1
         }
         glypheFlash = d > 0 ? 3 : 2
@@ -2910,7 +3835,6 @@ private struct MoisIpod: View {
         }
         Task {
             try? await Task.sleep(for: .milliseconds(70))
-            withAnimation(.easeOut(duration: 0.24)) { braiseCran = 0 }
             withAnimation(.easeOut(duration: 0.42)) { lume = 0 }
             withAnimation(.easeOut(duration: 0.22)) { glypheFlash = nil }
         }
