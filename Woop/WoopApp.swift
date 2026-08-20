@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import CoreText
+import SceneKit
 
 @main
 struct WoopApp: App {
@@ -762,15 +763,30 @@ struct RootView: View {
                 }
             }
         }
-        // L'ÉCLIPSE DIFFÉRÉE de la home sous le Sacre (cf. `homeEclipsee`) :
-        // l'entrée du manège se joue AVEC la home encore montée (aucune
-        // désallocation pendant la cinématique), puis la home s'éteint
-        // sous le noir opaque ; à la fermeture elle revient DANS LA MÊME
+        // L'ÉCLIPSE DE LA HOME SOUS LE SACRE (cf. `homeEclipsee`) : elle
+        // attend LA ROUE POSÉE (le signal du coordinateur — jamais un
+        // minuteur fixe : sur téléphone la compilation Metal décale la
+        // roue et un « +2 s » faisait tomber la désallocation de la home
+        // EN PLEIN dévissage). Un souffle après la pose, sous le noir
+        // opaque ; à la fermeture la home revient DANS LA MÊME
         // transaction que la sortie du manège.
+        .onChange(of: sacre.manegePose) { _, pose in
+            guard pose else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                guard sacre.manegeOuvert, sacre.manegePose else { return }
+                var tx = Transaction()
+                tx.disablesAnimations = true
+                withTransaction(tx) { homeEclipsee = true }
+            }
+        }
         .onChange(of: sacre.manegeOuvert) { _, ouvert in
             if ouvert {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    guard sacre.manegeOuvert else { return }
+                // Le FILET : si la mise en place ne publie jamais sa
+                // pose (banc -boosterCine sans galerie, chemin
+                // imprévu), la home s'éclipse quand même — tard, mais
+                // jamais pendant la roue.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+                    guard sacre.manegeOuvert, !homeEclipsee else { return }
                     var tx = Transaction()
                     tx.disablesAnimations = true
                     withTransaction(tx) { homeEclipsee = true }
@@ -800,6 +816,33 @@ struct RootView: View {
             // paie, les suivants lisent).
             DispatchQueue.global(qos: .utility).async {
                 _ = BoosterScene.hdrStudio
+            }
+            // LE FOUR : les pipelines Metal du manège se compilent
+            // PENDANT le splash — une scène jetable rendue quelques
+            // frames au fond de la fenêtre, invisible. Sans lui, la
+            // première ouverture payait ~1,5 s de NOIR entre le tap et
+            // le rideau (la porte de rendu tenait l'horloge, mais
+            // l'attaque de l'entrée était morte).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                guard let stage = BoosterScene(still: true, mylar: false,
+                                               gallery: true),
+                      let fenetre = UIApplication.shared.connectedScenes
+                          .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
+                          .first else { return }
+                let four = SCNView(frame: CGRect(x: 0, y: 0,
+                                                 width: 2, height: 2))
+                four.alpha = 0.001
+                four.isUserInteractionEnabled = false
+                four.scene = stage.scene
+                four.pointOfView = stage.cameraNode
+                four.isPlaying = true
+                four.rendersContinuously = true
+                fenetre.insertSubview(four, at: 0)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                    four.isPlaying = false
+                    four.rendersContinuously = false
+                    four.removeFromSuperview()
+                }
             }
             // Rattrapage : toutes les séances terminées repartent à chaque
             // lancement. Une séance finie hors ligne (salle en mode avion)

@@ -1620,11 +1620,23 @@ struct BoosterStage: UIViewRepresentable {
 
         // ---- la mise en place cinématique ----
         private var placingLink: CADisplayLink?
-        /// L'horloge de la mise en place, en PAS BORNÉS (négative
-        /// pendant le rideau) — jamais murale : un gel ne saute plus la
-        /// roue.
-        private var placingT: Float = -0.42
+        /// L'horloge de la mise en place, en PAS BORNÉS — jamais
+        /// murale : un gel RALENTIT le vol, il ne le saute plus.
+        /// L'ARRIVÉE ROYALE : t = 0 À LA PREMIÈRE IMAGE (le rideau est
+        /// porté par la porte-nappe + les départs des beats). Vol
+        /// caméra 0,6→2,6 vers un z ENFONCÉ (3,96) puis l'assise
+        /// 2,6→2,9 vers 4,0 — l'école du dolly d'engagement (2,02→2,05).
+        private var placingT: Float = 0
         private var placingLast: CFTimeInterval = 0
+        private static let placingZOver: Float = 3.96
+        private static let placingRoll: Float = -4 * .pi / 180
+        private static let placingFlightEnd: Float = 2.6
+        private static let placingPose: Float = 2.9
+        /// Le départ de la nappe (horloge MURALE légitime : on
+        /// synchronise l'AUDIO, qui court en temps mural).
+        private var nappeT0: CFTimeInterval = 0
+        /// L'atterrissage n'a droit qu'à UN verrou + UNE bouffée.
+        private var landed = false
 
         // ---- le spin du sachet central DANS l'anneau ----
         /// Lacet propre du clone centré (0 = face à la caméra), son élan,
@@ -1689,9 +1701,15 @@ struct BoosterStage: UIViewRepresentable {
                     stage.applyGallery(offset: offset)
                     mode = .galleryIdle
                 } else {
-                    beginPlacing()
+                    // BEAT 0 — L'OREILLE ARRIVE AVANT L'ŒIL : la nappe
+                    // part ICI, elle n'attend jamais les pixels (la
+                    // porte-nappe de placingStep retient l'IMAGE 0,25 s).
+                    // Attaque 0,9 s — à 2,4 s elle était inaudible au
+                    // lever de rideau (fondu linéaire).
                     ambience = BoosterAmbience()
-                    ambience?.act(BoosterAmbience.manege, over: 2.4)
+                    ambience?.act(BoosterAmbience.manege, over: 0.9)
+                    nappeT0 = CACurrentMediaTime()
+                    beginPlacing()
                 }
                 startGalleryGyro()
             } else {
@@ -1844,8 +1862,22 @@ struct BoosterStage: UIViewRepresentable {
             guard let stage else { return }
             mode = .placing
             stage.floorNode.opacity = 0
-            stage.cameraNode.position.z = 3.4
+            stage.floorGlowNode.opacity = 0
+            // L'ARRIVÉE ROYALE : la caméra part TRÈS LOIN et HAUTE,
+            // penchée sur l'anneau, au télé serré, LE ROULIS DÉJÀ DANS
+            // LA POSE D'ATTENTE (sinon il claque au premier tick) —
+            // toujours le TRIPLET entier.
+            stage.cameraNode.position = SCNVector3(0, 1.6, 7.5)
+            stage.cameraNode.eulerAngles = SCNVector3(-0.34, 0,
+                                                      Self.placingRoll)
+            stage.cameraNode.camera?.fieldOfView = 34
             for i in 0 ..< BoosterScene.ringCount { stage.galleryLight[i] = 0 }
+            for i in 0 ..< BoosterScene.ringCount { stage.moonLight[i] = 0 }
+            // LE VRAI NOIR de la constellation : le studio s'éteint
+            // (key/embers/IBL peignent les corps physicallyBased sans
+            // une émission), le rim est scalé par galleryLight dans
+            // applyGallery.
+            stage.setGalleryStudio(0)
             offset = -1.45
             stage.applyGallery(offset: offset)
             // L'HORLOGE EN PAS BORNÉS, jamais murale (deux pièges
@@ -1853,13 +1885,12 @@ struct BoosterStage: UIViewRepresentable {
             // brûlait sous le fondu d'entrée ; (2) même paresseuse, la
             // PREMIÈRE ouverture du process compile les shaders Metal
             // PENDANT la roue — les frames gelées sautaient la
-            // cinématique (« il manque le zoom », téléphone). Chaque
-            // frame avance d'un pas plafonné : un gel RALENTIT la roue
-            // d'un souffle, il ne peut plus la sauter. Le rideau
-            // (t < 0) laisse le fondu se poser, sol qui s'allume, PUIS
-            // la roue.
-            placingT = -0.42
+            // cinématique. Chaque frame avance d'un pas plafonné : un
+            // gel RALENTIT l'arrivée d'un souffle, il ne peut plus la
+            // sauter. t = 0 à la première image.
+            placingT = 0
             placingLast = 0
+            landed = false
             let link = CADisplayLink(target: self,
                                      selector: #selector(placingStep(_:)))
             link.add(to: .main, forMode: .common)
@@ -1885,9 +1916,13 @@ struct BoosterStage: UIViewRepresentable {
             // rideau ne se lève pas — la roue ne se dévisse JAMAIS sur
             // une vue noire.
             guard sceneDidRender else { return }
+            // La nappe chante 0,25 s DANS LE NOIR avant le rideau —
+            // partie à l'attach, elle n'attend pas les pixels ; ici
+            // seule l'IMAGE attend (horloge murale LÉGITIME : c'est
+            // l'audio qu'on synchronise, pas la scène).
+            guard CACurrentMediaTime() - nappeT0 >= 0.25 else { return }
             if placingLast == 0 {
-                // Le premier tick en fenêtre : le rideau se lève — le
-                // sol s'allume pendant que le fondu d'entrée se pose.
+                // Le rideau : le sol s'allume pendant le fondu d'entrée.
                 placingLast = link.timestamp
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.4
@@ -1899,29 +1934,97 @@ struct BoosterStage: UIViewRepresentable {
             placingLast = link.timestamp
             placingT += dt
             let t = placingT
-            guard t >= 0 else { return }
-            // La roue freine : décélération cubique sur 1,1 s.
-            let u = min(t / 1.1, 1)
-            offset = -1.45 * powf(1 - u, 3)
-            // La caméra recule, douce.
-            let c = min(t / 1.3, 1)
-            stage.cameraNode.position.z = 3.4 + 0.6 * (c * c * (3 - 2 * c))
-            // Les feux en cascade, du fond vers le devant.
             let n = BoosterScene.ringCount
+
+            // BEAT 1 — la lueur du CENTRE : monte 0→0,5, RETOMBE
+            // 1,4→2,6 (l'état posé = aujourd'hui, nappe éteinte). Sur
+            // l'horloge bornée — une SCNTransaction murale se ferait
+            // manger par un gel Metal.
+            let gRise = min(max(t / 0.5, 0), 1)
+            let gFall = min(max((t - 1.4) / 1.2, 0), 1)
+            stage.floorGlowNode.opacity = CGFloat(gRise * (1 - gFall))
+            let gs = 0.55 + 0.45 * gRise
+            stage.floorGlowNode.scale = SCNVector3(gs, gs, gs)
+
+            // BEAT 2 — LA CONSTELLATION : les lunes une à une dans le
+            // noir, 0,3→1,35 fond→devant (les DOS aux croissants
+            // ouvrent le bal) ; puis elle FOND dans les corps allumés
+            // (2,15→2,6).
+            let melt = min(max((t - 2.15) / 0.45, 0), 1)
             for i in 0 ..< n {
                 let raw = Float(i) * 2 * .pi / Float(n)
                 let theta = abs(atan2f(sinf(raw), cosf(raw)))
-                let start = 0.25 + 0.75 * (1 - theta / .pi)
-                stage.galleryLight[i] = min(max((t - start) / 0.3, 0), 1)
+                let ordre = 1 - theta / .pi     // 0 = fond, 1 = devant
+                let mRise = min(max((t - (0.3 + 0.8 * ordre)) / 0.25, 0), 1)
+                stage.moonLight[i] = mRise * (1 - melt * melt)
+                // BEAT 3b — LES CORPS pendant la plongée, 0,6→2,6
+                // fond→devant (le devant finit À l'atterrissage).
+                stage.galleryLight[i] =
+                    min(max((t - (0.6 + 1.7 * ordre)) / 0.30, 0), 1)
             }
+            // Le studio remonte AVEC les corps, smoothstep 0,6→2,6.
+            let lk = min(max((t - 0.6) / 2.0, 0), 1)
+            stage.setGalleryStudio(lk * lk * (3 - 2 * lk))
+
+            // BEAT 3 — LA PLONGÉE 0,6→2,6 + roulis −4°→0 : smootherstep
+            // vers un z ENFONCÉ (3,96 — l'overshoot est DANS le vol),
+            // puis l'assise easeOut 2,6→2,9 vers 4,0 (l'école
+            // 2,02→2,05 du dolly d'engagement).
+            let c = min(max((t - 0.6) / 2.0, 0), 1)
+            let s = c * c * c * (c * (c * 6 - 15) + 10)
+            var z = 7.5 + (Self.placingZOver - 7.5) * s
+            if t > Self.placingFlightEnd {
+                let a = min((t - Self.placingFlightEnd)
+                    / (Self.placingPose - Self.placingFlightEnd), 1)
+                let e = 1 - (1 - a) * (1 - a)
+                z = Self.placingZOver + (4.0 - Self.placingZOver) * e
+            }
+            stage.cameraNode.position = SCNVector3(0, 1.6 * (1 - s), z)
+            // TRIPLET ENTIER, jamais une composante (le piège euler).
+            stage.cameraNode.eulerAngles =
+                SCNVector3(-0.34 * (1 - s), 0, Self.placingRoll * (1 - s))
+            stage.cameraNode.camera?.fieldOfView = 34 + 8 * CGFloat(s)
+
+            // BEAT 4 — LA ROUE se dévisse dès 0,8, décélération
+            // cubique, calée pour FINIR AVEC l'atterrissage (dérivée
+            // des constantes, jamais un magique).
+            let u = min(max((t - 0.8) / (Self.placingFlightEnd - 0.8), 0), 1)
+            offset = -1.45 * powf(1 - u, 3)
             stage.applyGallery(offset: offset)
-            if t >= 1.45 {
-                offset = 0
-                for i in 0 ..< n { stage.galleryLight[i] = 1 }
-                stage.applyGallery(offset: 0)
-                stopPlacing()
+
+            // BEAT 5 — L'ATTERRISSAGE (2,6, z au point bas) : le verrou
+            // se SENT, la poudre souffle, le sachet central INSPIRE —
+            // une seule fois.
+            if !landed, t >= Self.placingFlightEnd {
+                landed = true
                 haptics.lock()
+                stage.galleryDustPuff()
+                stage.centerBreathIn()
+            }
+
+            // LA POSE (2,9) : les finals EXACTS écrits en dur
+            // (l'horloge flottante ne les garantit pas).
+            if t >= Self.placingPose {
+                offset = 0
+                for i in 0 ..< n {
+                    stage.galleryLight[i] = 1
+                    stage.moonLight[i] = 0
+                }
+                stage.setGalleryStudio(1)
+                stage.floorGlowNode.opacity = 0
+                stage.applyGallery(offset: 0)
+                stage.cameraNode.position = SCNVector3(0, 0, 4.0)
+                stage.cameraNode.eulerAngles = SCNVector3(0, 0, 0)
+                stage.cameraNode.camera?.fieldOfView = 42
+                stopPlacing()
+                haptics.brake()
                 mode = .galleryIdle
+                // LA ROUE EST POSÉE — l'app peut éclipser la home
+                // derrière le noir : la désallocation ne tombera plus
+                // jamais en plein dévissage.
+                if SacreEtat.shared.manegeOuvert {
+                    SacreEtat.shared.manegePose = true
+                }
             }
         }
 

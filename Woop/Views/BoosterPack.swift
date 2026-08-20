@@ -324,6 +324,10 @@ final class BoosterScene {
     /// du clone centré à l'engagement — identiques, l'échange est invisible.
     let galleryPacks: [SCNNode]
     let floorNode: SCNNode
+    /// LA NAPPE D'ALLUMAGE du sol (l'arrivée royale) : la lueur qui
+    /// monte du CENTRE de l'anneau — un plan émissif additif (le sol
+    /// .constant ignore les lumières, et une omni = le cube noir).
+    let floorGlowNode = SCNNode()
     private let still: Bool
     private let keyLight = SCNLight()
     private let embers = SCNLight()
@@ -582,6 +586,11 @@ final class BoosterScene {
                 let child = SCNNode()
                 if let g = src.geometry?.copy() as? SCNGeometry,
                    let m = g.firstMaterial?.copy() as? SCNMaterial {
+                    // Les uniformes du clone, SEMÉS (jamais parier sur
+                    // ce que copy() emporte des valeurs KVC) : la lune
+                    // éteinte, le rim à sa valeur de croisière.
+                    m.setValue(0.0 as CGFloat, forKey: "moonCharge")
+                    m.setValue(0.55 as CGFloat, forKey: "rimGain")
                     g.materials = [m]
                     child.geometry = g
                 }
@@ -611,6 +620,23 @@ final class BoosterScene {
         floorNode.position = SCNVector3(0, -0.52, 0)
         floorNode.isHidden = true
         scene.rootNode.addChildNode(floorNode)
+        // La nappe d'allumage (l'arrivée royale) : enfant du sol —
+        // l'opacity/isHidden de l'engagement l'emportent gratuitement.
+        // PILOTÉE PAR placingStep (horloge bornée) et RETOMBE À ZÉRO
+        // avant la pose : le manège posé garde son look d'aujourd'hui.
+        let glowPlane = SCNPlane(width: 5.2, height: 5.2)
+        let gm = SCNMaterial()
+        gm.lightingModel = .constant
+        gm.diffuse.contents = UIColor.black
+        gm.emission.contents = Self.pearlDot()
+        gm.blendMode = .add
+        gm.writesToDepthBuffer = false
+        glowPlane.materials = [gm]
+        floorGlowNode.geometry = glowPlane
+        floorGlowNode.eulerAngles.x = -.pi / 2
+        floorGlowNode.position = SCNVector3(0, 0.005, -Self.ringRadius)
+        floorGlowNode.opacity = 0
+        floorNode.addChildNode(floorGlowNode)
 
         // ---- caméra + studio ----
         // La galerie regarde à l'OBJECTIF LONG (champ 42°, caméra reculée,
@@ -789,6 +815,9 @@ final class BoosterScene {
         let dust = galleryDust
         dust.particleImage = Self.pearlDot()
         dust.birthRate = 9
+        // Le voile est DÉJÀ là à la première image de l'arrivée (les
+        // grains attrapent la première lumière) — jamais un plateau vide.
+        dust.warmupDuration = 4.0
         dust.birthLocation = .volume
         dust.emitterShape = SCNTube(innerRadius: 0.85, outerRadius: 1.65,
                                     height: 0.06)
@@ -851,6 +880,31 @@ final class BoosterScene {
         galleryDust.speedFactor = 1
     }
 
+    /// LE STUDIO DE LA GALERIE : 0 = noir de constellation (seules les
+    /// émissions de shader vivent), 1 = les valeurs commitées de l'init
+    /// (key 260, embers 38, IBL 1,0) — dim()/celebrate() supposent cet
+    /// état EXACT. Piloté par la mise en place, jamais pendant la découpe.
+    func setGalleryStudio(_ k: Float) {
+        let c = CGFloat(min(max(k, 0), 1))
+        keyLight.intensity = 260 * c
+        embers.intensity = 38 * c
+        scene.lightingEnvironment.intensity = 1.0 * c
+    }
+
+    /// L'inspiration de la pose : UNE respiration ample du clone centré.
+    /// Échelle ABSOLUE autour de la base 0,75/1/0,45 (le pincement) ;
+    /// aucun autre écrivain de scale sur les clones — et une échelle n'a
+    /// pas de forme alternative : le piège du lacet π ne s'applique pas.
+    func centerBreathIn() {
+        let breath = CABasicAnimation(keyPath: "scale")
+        breath.fromValue = SCNVector3(0.75, 1.0, 0.45)
+        breath.toValue = SCNVector3(0.7725, 1.035, 0.4635)
+        breath.duration = 0.55
+        breath.autoreverses = true
+        breath.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        galleryPacks[0].addAnimation(breath, forKey: "poseBreath")
+    }
+
     /// La bouffée du cran qui claque — le pool tourne : on ne réarme
     /// que le plus ancien, dont les grains sont déjà morts.
     func galleryDustPuff() {
@@ -878,6 +932,17 @@ final class BoosterScene {
     /// multiplié à l'émission de l'anneau (1 = plein feu).
     var galleryLight = [Float](repeating: 1, count: BoosterScene.ringCount)
 
+    /// LA CONSTELLATION : la charge de lune par clone, canal shader
+    /// moonCharge — les += du modifier ignorent emission.intensity.
+    /// 0 = l'état de la galerie posée (aujourd'hui).
+    var moonLight = [Float](repeating: 0, count: BoosterScene.ringCount)
+    /// Le lit des écritures KVC (gyro 60 Hz × 20 matériaux) : on n'écrit
+    /// que le changement. Semé sur les valeurs des clones à la création.
+    private var appliedMoon = [CGFloat](repeating: 0,
+                                        count: BoosterScene.ringCount)
+    private var appliedRim = [CGFloat](repeating: 0.55,
+                                       count: BoosterScene.ringCount)
+
     /// Pose tout l'anneau pour une rotation donnée (cran flottant, sans
     /// butées — un cercle n'en a pas). `centerSpin` : le lacet propre du
     /// sachet central (la pichenette posée) — la pose de l'anneau le
@@ -901,10 +966,22 @@ final class BoosterScene {
             // fond restent lisibles mais éteints.
             let facing = max(cosf(theta), 0)
             pack.opacity = 1
+            let moon = CGFloat(moonLight[i])
+            let rim = CGFloat(0.55 * galleryLight[i])
+            let dirty = moon != appliedMoon[i] || rim != appliedRim[i]
             for child in pack.childNodes {
-                child.geometry?.firstMaterial?.emission.intensity =
+                let m = child.geometry?.firstMaterial
+                m?.emission.intensity =
                     CGFloat((0.08 + 0.52 * facing * facing) * galleryLight[i])
+                if dirty {
+                    // La lune vit sur son propre canal shader ; le rim
+                    // Fresnel est une émission de SHADER hors intensity
+                    // (la fuite du vrai noir) — scalé par galleryLight.
+                    m?.setValue(moon, forKey: "moonCharge")
+                    m?.setValue(rim, forKey: "rimGain")
+                }
             }
+            if dirty { appliedMoon[i] = moon; appliedRim[i] = rim }
         }
     }
 

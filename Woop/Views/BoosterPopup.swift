@@ -29,6 +29,12 @@ final class SacreEtat {
     var popupOuverte = false
     /// Le Manège — le carrousel des sachets, monté à la racine.
     var manegeOuvert = false
+    /// LA ROUE EST POSÉE : la mise en place cinématique est finie — le
+    /// coordinateur du manège le publie. C'est CE signal (jamais un
+    /// minuteur fixe) qui autorise l'éclipse de la home : sur téléphone,
+    /// la compilation Metal décale la roue, et un « +2 s » fixe faisait
+    /// tomber la désallocation de la home EN PLEIN dévissage.
+    var manegePose = false
     /// La carte que la page profil doit ACCUEILLIR (l'envol accompli).
     /// Elle est posée APRÈS la bascule d'onglet : la page doit exister
     /// pour l'entendre — et son `onAppear` la relit en filet de sécurité.
@@ -61,6 +67,7 @@ final class SacreEtat {
     /// en saccades. Le panneau sort d'abord, la scène se monte ensuite.
     func ouvrirManege() {
         guard !manegeOuvert else { return }
+        manegePose = false
         let panneauSort = popupOuverte
         withAnimation(.easeOut(duration: 0.22)) { popupOuverte = false }
         DispatchQueue.main.asyncAfter(
@@ -84,6 +91,7 @@ final class SacreEtat {
     /// Le chevron des deux écrans du Sacre : on rend la main à la home.
     func fermerManege() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        manegePose = false
         withAnimation(.easeInOut(duration: 0.32)) { manegeOuvert = false }
     }
 }
