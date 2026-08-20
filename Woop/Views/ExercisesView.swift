@@ -44,6 +44,17 @@ struct ExercisesView: View {
     /// L'horodatage du dernier choix de section : le halo pulse en réponse.
     @State private var haloPulseAt: Date?
 
+    /// LE TUTO À PROJECTEURS (armé par « Commencer » du panneau de
+    /// départ, la première fois seulement) : la nuit tombe sur toute la
+    /// page SAUF deux fenêtres — la première card et la couronne. Les
+    /// taps DANS les fenêtres passent aux vraies vues (le geste réel EST
+    /// l'apprentissage) ; n'importe quel tap éteint le tuto.
+    @State private var tutoActif = false
+    /// La naissance du tuto — LA CASCADE s'écrit dessus : le voile
+    /// tombe, PUIS la fenêtre de la card s'ouvre, PUIS la molette
+    /// (jamais tout d'un coup — la loi de la maison).
+    @State private var tutoNe = Date()
+
     /// La géométrie de la grille, en constantes : hauteur de carte, gouttière,
     /// décalage Pinterest de la seconde colonne, marge haute du contenu.
     private static let cardHeight: CGFloat = 200
@@ -117,6 +128,26 @@ struct ExercisesView: View {
             .overlay(alignment: .trailing) {
                 ArcDial(selection: $filter, engaged: $dialEngaged)
                     .frame(width: 240, height: 520)
+                    .anchorPreference(key: SlotAnchorKey.self,
+                                      value: .bounds) {
+                        ["tuto-dial": $0]
+                    }
+            }
+            // LE TUTO À PROJECTEURS — au-dessus de tout (couronne
+            // comprise : elle reste visible et interactive dans SA
+            // fenêtre, les taps des fenêtres passent au travers).
+            .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
+                tutoCouche(anchors)
+            }
+            // N'importe quel tap éteint le tuto — dans une fenêtre il
+            // fait AUSSI l'action réelle (la card s'ouvre, la couronne
+            // s'engage) : le geste appris est le geste fait.
+            .simultaneousGesture(TapGesture().onEnded {
+                if tutoActif { eteindreTuto() }
+            })
+            .onAppear { armerTutoSiDemande() }
+            .onChange(of: DepartEtat.shared.tutoDemande) { _, d in
+                if d { armerTutoSiDemande() }
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $deepLinked) { ExerciseDetailView(exercise: $0) }
@@ -231,6 +262,141 @@ struct ExercisesView: View {
         }
     }
 
+    // MARK: le tuto à projecteurs
+
+    /// L'armement : demandé par « Commencer » (DepartEtat), servi UNE
+    /// fois (UserDefaults) — `-tutoExos` le rejoue au banc à volonté.
+    private func armerTutoSiDemande() {
+        let banc = CommandLine.arguments.contains("-tutoExos")
+        guard DepartEtat.shared.tutoDemande || banc else { return }
+        DepartEtat.shared.tutoDemande = false
+        let deja = UserDefaults.standard.bool(forKey: "tutoExosVu")
+        guard !deja || banc else { return }
+        UserDefaults.standard.set(true, forKey: "tutoExosVu")
+        // La page se pose d'abord, le voile tombe ensuite — et la
+        // CASCADE (voile → card → molette) s'écrit sur tutoNe.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            tutoNe = Date()
+            withAnimation(.easeInOut(duration: 0.3)) { tutoActif = true }
+        }
+    }
+
+    private func eteindreTuto() {
+        guard tutoActif else { return }
+        withAnimation(.easeOut(duration: 0.3)) { tutoActif = false }
+    }
+
+    /// Le voile percé : la nuit sur toute la page, DEUX fenêtres de
+    /// lumière (la card, la couronne) aux liserés de braise qui
+    /// respirent. Les taps des fenêtres passent au travers
+    /// (`contentShape` evenOdd) — le voile absorbe le reste.
+    @ViewBuilder
+    private func tutoCouche(_ anchors: [String: Anchor<CGRect>])
+        -> some View {
+        if tutoActif {
+            GeometryReader { g in
+                let cardRect = anchors["tuto-card"]
+                    .map { g[$0].insetBy(dx: -8, dy: -8) }
+                // La fenêtre SERRE la couronne (l'arc du bord droit) —
+                // le cadre de l'ArcDial fait 240×520 et avalerait la
+                // moitié de la grille ; elle déborde l'écran à droite,
+                // la découpe s'ouvre vers le bord.
+                let dialRect = anchors["tuto-dial"].map { a -> CGRect in
+                    let r = g[a]
+                    return CGRect(x: r.maxX - 104, y: r.midY - 135,
+                                  width: 132, height: 270)
+                }
+                let braise = Color(red: 1.0, green: 0.56, blue: 0.2)
+                // LA CASCADE — jamais tout d'un coup : le voile tombe
+                // (0 → 0,4), la fenêtre de la card S'OUVRE (0,45 →
+                // 0,85), puis celle de la molette (1,05 → 1,45). Les
+                // fenêtres s'ouvrent en grandissant depuis leur centre,
+                // les mots naissent avec elles.
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    let age = tl.date.timeIntervalSince(tutoNe)
+                    let sstep: (Double, Double) -> Double = { a, b in
+                        let u = min(max((age - a) / (b - a), 0), 1)
+                        return u * u * (3 - 2 * u)
+                    }
+                    let k1 = sstep(0.45, 0.85)
+                    let k2 = sstep(1.05, 1.45)
+                    let trous = [
+                        cardRect.flatMap { r in k1 > 0.01
+                            ? r.insetBy(dx: r.width / 2 * (1 - k1),
+                                        dy: r.height / 2 * (1 - k1)) : nil },
+                        dialRect.flatMap { r in k2 > 0.01
+                            ? r.insetBy(dx: r.width / 2 * (1 - k2),
+                                        dy: r.height / 2 * (1 - k2)) : nil },
+                    ].compactMap { $0 }
+                    let vie = 0.55 + 0.35 * sin(age * 2 * .pi / 2.6)
+                    ZStack {
+                        // LE FLOU DEMANDÉ : le voile est une MATIÈRE —
+                        // le reste de la page se floute sous elle, les
+                        // fenêtres restent nettes (le trou evenOdd ne
+                        // floute rien). La nuit par-dessus, plus légère
+                        // qu'avant : le flou porte déjà la mise à
+                        // l'écart.
+                        VoileTuto(trous: trous)
+                            .fill(.ultraThinMaterial,
+                                  style: FillStyle(eoFill: true))
+                            .opacity(sstep(0, 0.4))
+                            .ignoresSafeArea()
+                        VoileTuto(trous: trous)
+                            .fill(Color.black.opacity(0.5 * sstep(0, 0.4)),
+                                  style: FillStyle(eoFill: true))
+                            .ignoresSafeArea()
+                        ForEach(Array(trous.enumerated()),
+                                id: \.offset) { _, r in
+                            RoundedRectangle(cornerRadius: 20,
+                                             style: .continuous)
+                                .stroke(braise, lineWidth: 1.4)
+                                .frame(width: r.width, height: r.height)
+                                .position(x: r.midX, y: r.midY)
+                                .opacity(0.95 * vie)
+                                .allowsHitTesting(false)
+                            RoundedRectangle(cornerRadius: 20,
+                                             style: .continuous)
+                                .stroke(braise, lineWidth: 5)
+                                .blur(radius: 7)
+                                .frame(width: r.width, height: r.height)
+                                .position(x: r.midX, y: r.midY)
+                                .opacity(0.55 * vie)
+                                .blendMode(.screen)
+                                .allowsHitTesting(false)
+                        }
+                        if let c = cardRect {
+                            Text("Choisis ton premier exercice")
+                                .font(.inter(13, .medium))
+                                .foregroundStyle(Color.white.opacity(0.85))
+                                .position(x: max(c.midX, 110),
+                                          y: c.maxY + 24)
+                                .opacity(k1)
+                                .allowsHitTesting(false)
+                        }
+                        if let d = dialRect {
+                            Text("La molette filtre")
+                                .font(.inter(12, .medium))
+                                .foregroundStyle(Color.white.opacity(0.7))
+                                .position(x: d.minX - 8, y: d.minY - 18)
+                                .opacity(k2)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
+                // Le hit-test sur les fenêtres PLEINES (pas celles en
+                // cours d'ouverture) : les taps y passent dès le début —
+                // un tuto n'est jamais un mur.
+                .contentShape(.interaction,
+                              VoileTuto(trous: [cardRect, dialRect]
+                                  .compactMap { $0 }),
+                              eoFill: true)
+                .onTapGesture { eteindreTuto() }
+            }
+            .ignoresSafeArea()
+            .transition(.opacity)
+        }
+    }
+
     private func cardColumn(_ indices: [Int]) -> some View {
         let list = shown
         return LazyVStack(spacing: Self.gutter) {
@@ -254,6 +420,12 @@ struct ExercisesView: View {
                 }
                 .buttonStyle(CardPressStyle())
                 .id(exercise.id)
+                // L'ancre du tuto : la PREMIÈRE card publie son rect —
+                // le projecteur se découpe dessus (l'école SlotAnchorKey).
+                .anchorPreference(key: SlotAnchorKey.self,
+                                  value: .bounds) {
+                    i == 0 ? ["tuto-card": $0] : [:]
+                }
                 // La cascade du changement de section : chaque carte arrive
                 // en montant, avec un léger retard par rangée — on
                 // redistribue les cartes, on ne les téléporte pas.
@@ -279,6 +451,21 @@ struct ExercisesView: View {
                 }
             }
         }
+    }
+}
+
+/// Le voile du tuto : la page entière MOINS les fenêtres (evenOdd).
+private struct VoileTuto: Shape {
+    var trous: [CGRect]
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addRect(rect)
+        for t in trous {
+            p.addRoundedRect(in: t,
+                             cornerSize: CGSize(width: 20, height: 20),
+                             style: .continuous)
+        }
+        return p
     }
 }
 

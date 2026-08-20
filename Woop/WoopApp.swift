@@ -213,6 +213,8 @@ struct RootView: View {
     /// se monte à la racine (voir `BoosterPopup.swift` : un onglet
     /// construit paresseusement n'entend aucune notification).
     private let sacre = SacreEtat.shared
+    /// LE DÉPART DE SÉANCE — le panneau du galet play (même école).
+    private let depart = DepartEtat.shared
     /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
     /// dans la même transaction que le manège faisait tomber la
     /// désallocation de toute la home (~+0,7 s) EN PLEIN MILIEU de la
@@ -569,7 +571,16 @@ struct RootView: View {
                     && selection != .progress {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
-                                onPlay: { startWorkout() },
+                                onPlay: {
+                                    // Séance déjà ouverte : le galet la
+                                    // RAMÈNE (jamais deux séances) ;
+                                    // sinon le panneau du départ.
+                                    if let a = active {
+                                        sheetWorkout = a
+                                    } else {
+                                        DepartEtat.shared.proposer()
+                                    }
+                                },
                                 invitePulse: invitePulseAt,
                                 // Une séance ouverte : le triangle du galet se
                                 // referme en cercle de néon. Le même bouton la
@@ -633,6 +644,19 @@ struct RootView: View {
             // la descente — l'école du « Recommencer » de la fiche
             // d'exercice. Inséré et retiré d'un coup, le panneau
             // n'aurait jamais de sortie vers le bas.
+            // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
+            // racine (l'école du parcours booster : l'état partagé, pas
+            // une notification). « Commencer » = la séance du galet
+            // d'avant + la bascule exercices + le tuto armé.
+            DepartPanneauHote(
+                ouverte: depart.panneauOuvert,
+                onCommencer: {
+                    depart.fermer()
+                    depart.tutoDemande = true
+                    startWorkout()
+                },
+                onFermer: { depart.fermer() })
+                .zIndex(5)
             BoosterPopupHote(
                 ouverte: sacre.popupOuverte,
                 onOuvrir: { sacre.ouvrirManege() },
@@ -747,7 +771,12 @@ struct RootView: View {
         // encore l'écran — sans la clé, le banc ne se rejouerait jamais.
         .task(id: showSplash || showAuth) {
             guard !showSplash, !showAuth else { return }
-            if CommandLine.arguments.contains("-boosterPopup") {
+            if CommandLine.arguments.contains("-departPanneau") {
+                // Le banc du panneau de départ (le galet ne se tape pas
+                // en ligne de commande).
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                depart.proposer()
+            } else if CommandLine.arguments.contains("-boosterPopup") {
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 sacre.proposer()
             } else if CommandLine.arguments.contains("-boosterManege") {
@@ -849,6 +878,29 @@ struct RootView: View {
             // monte donc au premier lancement avec du réseau — l'upsert
             // merge-duplicates rend l'envoi répété inoffensif.
             let workouts = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
+            // LES SÉANCES FANTÔMES : une séance restée OUVERTE tient le
+            // galet en « en cours » pour toujours (le play rouvrait un
+            // vieux écran au lieu du panneau de départ). Meurt au
+            // lancement : ouverte depuis 12 h (personne ne s'entraîne
+            // une nuit entière), ou VIDE et vieille de 30 min (le tap
+            // abandonné). SUPPRIMÉE, jamais terminée — pas une ligne
+            // d'historique ni une célébration pour un fantôme. Une
+            // vraie séance en cours, elle, survit au relancement.
+            // `-fermeSeances` (dev) : TOUTES les séances ouvertes
+            // meurent — le remède des états de test qui tiennent le
+            // galet en « en cours » (une séance testée AVEC séries
+            // échappe à la règle des fantômes, par design).
+            let purgeTout = CommandLine.arguments.contains("-fermeSeances")
+            let fantomes = workouts.filter {
+                $0.endedAt == nil && (purgeTout
+                    || $0.startedAt < Date.now.addingTimeInterval(-12 * 3600)
+                    || ($0.setCount == 0 && $0.startedAt
+                        < Date.now.addingTimeInterval(-30 * 60)))
+            }
+            if !fantomes.isEmpty {
+                fantomes.forEach { modelContext.delete($0) }
+                try? modelContext.save()
+            }
             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
             Task.detached { await SupabaseSync.shared.push(snapshots) }
             // `-cineTest` : la cinématique de connexion se déclenche seule,
