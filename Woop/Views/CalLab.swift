@@ -2044,6 +2044,7 @@ private struct ManegeVue: View, Animatable {
                 place(s, theta: (CGFloat(i) - p) * pasA)
             }
         }
+        .drawingGroup()
     }
 
     /// Une pochette sur l'anneau : position, échelle, nuit, TILT 3D
@@ -2065,27 +2066,15 @@ private struct ManegeVue: View, Animatable {
         let nuit = -0.40 * Double(1.0 - prof)
         let tilt = max(-38.0, min(38.0,
             -Double(sin(theta)) * 34.0))
-        return ZStack {
-            MiniSeanceCard(session: s)
-                .scaleEffect(echelle)
-            MiniSeanceCard(session: s)
-                .scaleEffect(x: echelle, y: -echelle)
-                .offset(y: 132.0 * echelle + 2.0)
-                .opacity(0.08)
-                .mask(LinearGradient(
-                    stops: [
-                        .init(color: .black.opacity(0.7),
-                              location: 0.52),
-                        .init(color: .clear, location: 0.72),
-                    ],
-                    startPoint: .top, endPoint: .bottom))
-        }
-        .rotation3DEffect(.degrees(tilt), axis: (x: 0, y: 1, z: 0),
-                          perspective: 0.55)
-        .brightness(nuit)
-        .offset(x: x, y: y)
-        .zIndex(Double(z))
-        .allowsHitTesting(false)
+        return MiniSeanceCard(session: s)
+            .scaleEffect(echelle)
+            .rotation3DEffect(.degrees(tilt),
+                              axis: (x: 0, y: 1, z: 0),
+                              perspective: 0.55)
+            .brightness(nuit)
+            .offset(x: x, y: y)
+            .zIndex(Double(z))
+            .allowsHitTesting(false)
     }
 
     /// L'éditorial de la sélection + les POINTS-PAGINATION iPod : la
@@ -2308,23 +2297,24 @@ private struct MoisIpod: View {
                 pageContenu
                     .scaleEffect(s, anchor: UnitPoint(x: ax, y: ay))
                     .opacity(Double(min(1.0, 0.15 + entree * 1.7)))
+                // LA VRAIE STORY, DANS L'ARBRE (le verdict : le cover
+                // imbriqué ouvrait « une ancienne fenêtre en plus » et
+                // décalait la story sous l'île — le titre de la
+                // story 2 coupé). Ici : même géométrie que la page,
+                // aucune fenêtre système, le portail s'ouvre du LCD.
+                if let launch = storyIpod {
+                    StoryPortal(from: launch.rect,
+                                session: launch.session) {
+                        fermerStory()
+                    }
+                    .overlay(alignment: .bottom) { pillStory }
+                    .zIndex(10)
+                }
             }
         }
         .preferredColorScheme(.dark)
         .onAppear { arrivee() }
         .onDisappear { inertie?.cancel() }
-        // LA VRAIE STORY : le portail de la home, ouvert DEPUIS le
-        // LCD — la pill ✕ de verre posée dessus.
-        // La grammaire EXACTE du cover story de la home (fond opaque :
-        // le .clear décalait la story sous l'île — le titre de la
-        // story 2 coupé, payé).
-        .fullScreenCover(item: $storyIpod) { launch in
-            StoryPortal(from: launch.rect,
-                        session: launch.session) {
-                fermerStory()
-            }
-            .overlay(alignment: .bottom) { pillStory }
-        }
     }
 
     /// La pill de verre sur la story : ✕ seul — la story garde ses
@@ -2454,6 +2444,17 @@ private struct MoisIpod: View {
                 lancerCine()
             }
         }
+        // Le banc de la story : la preuve en capture — la story
+        // s'ouvre toute seule (le titre de la story 2 se vérifie
+        // AUX YEUX, plus jamais sur parole).
+        if CommandLine.arguments.contains("-ipodStory") {
+            montrerCine = false
+            cineEcranP = 1
+            Task {
+                try? await Task.sleep(for: .milliseconds(1000))
+                jouer()
+            }
+        }
         // Le banc de la chaleur : c = 1 FIGÉ, liquide ÉVEILLÉ — la
         // prise pixel (les volutes doivent transparaître tordues).
         if CommandLine.arguments.contains("-calVitreHeat") {
@@ -2574,7 +2575,6 @@ private struct MoisIpod: View {
             .onGeometryChange(for: CGRect.self) { proxy in
                 proxy.frame(in: .global)
             } action: { lcdRect = $0 }
-            vitreEcran
         }
         .frame(width: L, height: H)
         .scaleEffect(1.05 - 0.05 * poseP)
@@ -2772,10 +2772,7 @@ private struct MoisIpod: View {
                 .opacity(0.05)
                 .blendMode(.overlay)
         }
-        // L'allumage porte la luminance ; le cran fait BLOOMER le
-        // backlight d'un souffle (lume).
         .opacity(0.35 + 0.65 * Double(allume))
-        .brightness(0.05 * Double(lume))
     }
 
     private func bleedCoins(lcdL: CGFloat, lcdH: CGFloat) -> some View {
@@ -2818,28 +2815,6 @@ private struct MoisIpod: View {
                 .frame(height: 1)
             Spacer(minLength: 0)
         }
-        .allowsHitTesting(false)
-    }
-
-    /// LA VITRE : le reflet-fenêtre STATIQUE en diagonale haute (celui
-    /// de la réf — FIGÉ, l'interdit du balayage tient) qui glisse d'un
-    /// souffle au POIGNET, et le fil d'arête du verre.
-    private var vitreEcran: some View {
-        let forme = RoundedRectangle(cornerRadius: 11,
-                                     style: .continuous)
-        return ZStack {
-            Rectangle()
-                .fill(LinearGradient(
-                    colors: [Color.white.opacity(0.045), .clear],
-                    startPoint: .top, endPoint: .bottom))
-                .frame(width: 270, height: 150)
-                .rotationEffect(.degrees(-18))
-                .offset(x: 76.0 + motion.pench.width * 7.0,
-                        y: -92.0 + motion.pench.height * 5.0)
-                .blendMode(.plusLighter)
-        }
-        .clipShape(forme)
-        .padding(5)
         .allowsHitTesting(false)
     }
 
@@ -3295,6 +3270,7 @@ private struct MoisIpod: View {
             center: .center)
             .frame(width: donut, height: donut)
             .blur(radius: 7)
+            .drawingGroup()
             .rotationEffect(.radians(Double(angleCumul) * 0.5
                 + Double(motion.pench.width) * 0.35))
             .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
@@ -3711,19 +3687,13 @@ private struct MoisIpod: View {
                 zoomAvant = 0.35
             }
         }
-        var tx = Transaction()
-        tx.disablesAnimations = true
-        withTransaction(tx) {
-            storyIpod = CalStoryLaunch(rect: lcdRect, session: recit)
-        }
+        storyIpod = CalStoryLaunch(rect: lcdRect, session: recit)
     }
 
     /// La fermeture : le portail se replie sur le LCD (StoryPortal
     /// fait son morph), l'écran et la molette reviennent au repos.
     private func fermerStory() {
-        var tx = Transaction()
-        tx.disablesAnimations = true
-        withTransaction(tx) { storyIpod = nil }
+        storyIpod = nil
         lourd.impactOccurred(intensity: 0.6)
         if reduceMotion {
             grandEcran = 0
