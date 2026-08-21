@@ -100,8 +100,77 @@ struct GaletMaison: View {
     /// 0 = maison, 1 = chevron.
     var morph: Double = 0
     var appui: Bool = false
+    /// LE FEU QUI SURVIT AU DOIGT. Le néon monte à la pose (`appui`), mais il
+    /// doit rester allumé PENDANT LA CHUTE : au milieu de l'écran, le verre
+    /// natif n'a rien à réfracter (la loi du verre à jeun, p95 = 23) et le
+    /// galet s'efface littéralement — vérifié à la capture. C'est son néon,
+    /// et lui seul, qui le porte de la main jusqu'au sol.
+    var feuSup: Double = 0
+    /// RANGÉ SUR LE FLANC. Le galet quitte le rond pour une NAVETTE
+    /// allongée, dont la moitié sort de l'écran : il ne reste qu'un bout de
+    /// verre sur le bord, et c'est par ce bout qu'on le retire.
+    var range: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Le nom du verre pour le MORPHISME natif : c'est `glassEffectID` qui
+    /// autorise ici un changement de bounds. Sans lui, la loi tient — un
+    /// `glassEffect` redimensionné reste flou plat pour toujours.
+    @Namespace private var verre
+
+    private var largeur: CGFloat { range ? 26 : taille }
+    private var hauteur: CGFloat { range ? 84 : taille }
+
+    /// LA NAVETTE RANGÉE — et deux verdicts dedans (« c'est trop noir » +
+    /// « il faut un petit signal trait blanc léger, on peut tirer dessus »).
+    ///
+    /// Elle était un TROU : `.clear` posé sur la partie sombre de la page n'a
+    /// rien à réfracter (la loi du verre à jeun, p95 = 23) et ne rend donc
+    /// qu'un creux noir. Trois pièces la rendent, et aucune n'est un « lait » —
+    /// un voile blanc uniforme est la signature d'un frost, pas d'un verre :
+    ///
+    ///   • **L'ARÊTE.** Le Liquid Glass se lit par ses BORDS : un cheveu
+    ///     spéculaire sur le contour, vif au milieu et mort aux deux pointes.
+    ///     C'est lui, et lui seul, qui dit « verre » plutôt que « trou ».
+    ///   • **LE SOUFFLE DE CLARTÉ**, très bas (7 %), plus clair en haut :
+    ///     assez pour que la navette ne soit plus un manque, trop peu pour
+    ///     blanchir.
+    ///   • **LA POIGNÉE.** Un trait blanc de 2,5 × 20, posé dans la MOITIÉ
+    ///     VISIBLE (la navette est centrée sur l'arête de l'écran : seule sa
+    ///     droite existe). C'est l'invite — la grammaire de la barre d'accueil
+    ///     d'iOS, verticale. Elle respire avec le galet, elle ne clignote pas.
+    ///
+    /// ⚠️ Tout ceci vit AU-DESSUS du conteneur de verre : dedans, ce serait
+    /// lentillé (le chiffre-trou-dans-du-métal du galet de l'objectif).
+    @ViewBuilder
+    private var navette: some View {
+        ZStack {
+            Capsule()
+                .fill(LinearGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.105), location: 0.00),
+                        .init(color: .white.opacity(0.045), location: 0.45),
+                        .init(color: .white.opacity(0.075), location: 1.00),
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+            Capsule()
+                .stroke(LinearGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.00), location: 0.00),
+                        .init(color: .white.opacity(0.40), location: 0.26),
+                        .init(color: .white.opacity(0.62), location: 0.55),
+                        .init(color: .white.opacity(0.28), location: 0.80),
+                        .init(color: .white.opacity(0.00), location: 1.00),
+                    ],
+                    startPoint: .top, endPoint: .bottom),
+                    lineWidth: 0.9)
+            Capsule()
+                .fill(Color.white.opacity(0.74))
+                .frame(width: 2.5, height: 20)
+                .offset(x: 6)
+                .shadow(color: .white.opacity(0.45), radius: 2.5)
+        }
+        .frame(width: largeur, height: hauteur)
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
@@ -114,15 +183,26 @@ struct GaletMaison: View {
                 // exactement ce qui sonnait cheap. Chez Apple un bouton ne
                 // PROJETTE rien : il se comprime, et c'est LA SCÈNE qui
                 // répond (ici l'allumage directionnel des halos).
-                // LE VERRE, seul dans son conteneur.
+                // LE VERRE, seul dans son conteneur. Rond quand il est de
+                // service, NAVETTE quand il est rangé — et c'est le même
+                // verre qui se déforme, pas deux objets qui se remplacent.
                 GlassEffectContainer(spacing: 0) {
                     Color.clear
-                        .frame(width: taille, height: taille)
-                        .glassEffect(.clear.interactive(), in: .circle)
+                        .frame(width: largeur, height: hauteur)
+                        .glassEffect(.clear.interactive(),
+                                     in: range ? AnyShape(Capsule())
+                                               : AnyShape(Circle()))
+                        .glassEffectID("galet", in: verre)
                 }
-                // L'ENCRE, au-dessus du conteneur.
-                NeonMaison(taille: taille * 0.40, morph: morph,
-                           feu: appui ? 1 : 0)
+                // L'ENCRE, au-dessus du conteneur. ⚠️ Le verre natif IGNORE
+                // `.opacity` — mais l'encre, elle, se DÉMONTE : rangé, le
+                // galet n'est plus un bouton, c'est une poignée.
+                if range {
+                    navette
+                } else {
+                    NeonMaison(taille: taille * 0.40, morph: morph,
+                               feu: max(appui ? 1 : 0, feuSup))
+                }
             }
             .scaleEffect((appui ? 0.94 : 1) * souffle)
             // Un amortissement BAS : la compression est franche, et le
@@ -257,6 +337,88 @@ struct MenuHalos: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - La pastille KD
+
+/// LE ROND KD DU PROFIL — le médaillon de la page exo, en NOIR.
+///
+/// La recette du liseré vient de `FlammeJauge` (l'anneau du médaillon, calé au
+/// pixel sur la référence en août) et sa loi est contre-intuitive :
+///
+/// > **UN LISERÉ N'EST PAS UN ARC CONTINU.** Sur la référence, la chromie
+/// > médiane du tour vaut +0,10 — il est NEUTRE — et il fait QUATRE événements
+/// > séparés (bas-droite, haut-droite, bas-gauche, et la « bague » en
+/// > haut-gauche, la plus vive). Un anneau d'intensité constante lit
+/// > « bordure » ; quatre éclats séparés lisent « métal poli ».
+///
+/// Le bol est noir mais PAS plat : il s'éclaircit à peine sous le milieu (la
+/// lumière de la page vient d'en bas, comme la nappe de flamme de la vidéo), et
+/// l'ombre portée le DÉCOLLE — sans elle, un rond noir sur du noir n'existe pas.
+struct PastilleKD: View {
+    var taille: CGFloat = 34
+
+    var body: some View {
+        ZStack {
+            // LE BOL. Un noir qui monte à peine vers le bas-droite : un aplat
+            // parfait est un trou, un bol est un objet.
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        // Mesuré à la capture : à 0,130 au cœur le bol tirait
+                        // vers le GRIS sur la nappe de flamme. Il faut un noir
+                        // qui ne s'éclaire qu'à peine — c'est le liseré qui
+                        // porte la lumière, jamais le fond.
+                        .init(color: Color(white: 0.098), location: 0.00),
+                        .init(color: Color(white: 0.068), location: 0.42),
+                        .init(color: Color(white: 0.034), location: 0.74),
+                        .init(color: Color(white: 0.016), location: 1.00),
+                    ],
+                    center: UnitPoint(x: 0.516, y: 0.585),
+                    startRadius: 0, endRadius: taille * 0.85))
+
+            // LE LISERÉ — quatre éclats, neutres, sur un cheveu de 0,9 pt à
+            // 34 pt de diamètre (il suit la taille pour rester un CHEVEU).
+            Circle()
+                .strokeBorder(AngularGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.10), location: 0.000),
+                        .init(color: .white.opacity(0.46), location: 0.098),
+                        .init(color: .white.opacity(0.14), location: 0.180),
+                        .init(color: .white.opacity(0.10), location: 0.280),
+                        .init(color: .white.opacity(0.62), location: 0.430),
+                        .init(color: .white.opacity(0.30), location: 0.500),
+                        .init(color: .white.opacity(0.86), location: 0.580),
+                        .init(color: .white.opacity(0.20), location: 0.660),
+                        .init(color: .white.opacity(0.10), location: 0.790),
+                        .init(color: .white.opacity(0.44), location: 0.882),
+                        .init(color: .white.opacity(0.10), location: 0.960),
+                        .init(color: .white.opacity(0.10), location: 1.000),
+                    ],
+                    center: .center, angle: .zero),
+                    lineWidth: max(taille / 38, 0.8))
+
+            // L'ENCRE : blanc en tête, gris au pied. Une lettre pleinement
+            // blanche est PLATE ; une lettre qui s'éteint vers le bas a du
+            // relief (l'école du titre de la home).
+            Text("KD")
+                .font(.inter(taille * 0.375, .semibold))
+                .tracking(taille * 0.012)
+                .foregroundStyle(LinearGradient(
+                    stops: [
+                        .init(color: .white, location: 0.00),
+                        .init(color: .white.opacity(0.97), location: 0.42),
+                        .init(color: Color(white: 0.62), location: 1.00),
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+        }
+        .frame(width: taille, height: taille)
+        // L'OMBRE QUI DÉCOLLE : deux étages, l'un serré pour le contact,
+        // l'autre large pour la profondeur. Un rond noir sans ombre, sur une
+        // page noire, n'a pas de bord — donc pas d'existence.
+        .shadow(color: .black.opacity(0.55), radius: taille * 0.10, y: 1)
+        .shadow(color: .black.opacity(0.35), radius: taille * 0.32, y: 4)
     }
 }
 
@@ -397,19 +559,39 @@ struct MenuItems: View {
     @ViewBuilder
     private func titre(_ i: Int) -> some View {
         let m = mesures(i)
-        ZStack(alignment: .leading) {
-            Text(Self.titres[i])
-                .font(.inter(Self.corps, .regular))
-                .opacity(1 - m.sous)
-            Text(Self.titres[i])
-                .font(.inter(Self.corps, .medium))
-                .opacity(m.sous)
+        HStack(spacing: 12) {
+            // LE PROFIL PORTE SON VISAGE. C'est la grammaire des Réglages
+            // d'Apple : la ligne du compte porte l'avatar au fer. La pastille
+            // vit DANS la ligne — elle arrive, floute et recule avec elle,
+            // sinon on aurait deux objets au lieu d'une rangée.
+            //
+            // ⚠️ ET LE CRÉNEAU EXISTE SUR LES QUATRE LIGNES, même vides. Sans
+            // lui, « Profil » partait 46 pt plus à droite que les trois autres
+            // et la colonne devenait BOITEUSE (mesuré à la capture : 78 pt
+            // contre 32). Un menu se lit au fer ; c'est l'icône qui s'aligne
+            // sur les mots, jamais l'inverse.
+            ZStack {
+                if i == 0 { PastilleKD(taille: 34) }
+            }
+            .frame(width: 34, height: 34)
+            ZStack(alignment: .leading) {
+                // ⚠️ DEUX TEXTES CROISÉS : SwiftUI ne sait pas interpoler une
+                // GRAISSE. La graisse de repos est montée d'un cran (Regular →
+                // Medium) et celle du survol aussi (Medium → Semibold) :
+                // « un peu plus grasse » sans toucher au corps.
+                Text(Self.titres[i])
+                    .font(.inter(Self.corps, .medium))
+                    .opacity(1 - m.sous)
+                Text(Self.titres[i])
+                    .font(.inter(Self.corps, .semibold))
+                    .opacity(m.sous)
+            }
+            .tracking(m.track)
+            .foregroundStyle(LinearGradient(
+                colors: [Color(white: 1.00), Color(white: m.bas)],
+                startPoint: UnitPoint(x: 0.10 + 0.55 * m.sous, y: 0),
+                endPoint: UnitPoint(x: 0.75 + 0.35 * m.sous, y: 1)))
         }
-        .tracking(m.track)
-        .foregroundStyle(LinearGradient(
-            colors: [Color(white: 1.00), Color(white: m.bas)],
-            startPoint: UnitPoint(x: 0.10 + 0.55 * m.sous, y: 0),
-            endPoint: UnitPoint(x: 0.75 + 0.35 * m.sous, y: 1)))
         .blur(radius: m.flou)
         .opacity(m.alpha)
         .scaleEffect(m.ech, anchor: .leading)
@@ -460,6 +642,12 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     var onChoix: (Int) -> Void = { _ in }
     /// LE FOND — la vidéo. **Il ne recule PAS** : une couche UIKit ne sait
     /// pas s'échelonner dans une transaction SwiftUI, elle saute.
+    /// LA COURONNE au lieu de la colonne : le menu éclôt AUTOUR du galet, là
+    /// où il se trouve. Les deux formes cohabitent le temps de l'A/B — la
+    /// colonne est validée, on ne la jette pas sur une intuition.
+    /// (Déclarée AVANT les `@ViewBuilder` : l'init membre à membre suit
+    /// l'ordre des propriétés, et les closures doivent rester en dernier.)
+    var couronne: Bool = false
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -471,6 +659,91 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     @State private var survol: Int?
     @State private var loupe: Double = 0
     @State private var doigt: CGPoint?
+    /// LE GALET DANS LA MAIN — son écart à sa place, en points. Il repart
+    /// toujours de zéro : le galet a UNE place, on ne fait que l'en éloigner.
+    @State private var porte: CGSize = .zero
+    /// Le doigt l'a vraiment emmené (au-delà de 12 pt) — sinon c'est un tap.
+    @State private var enMain = false
+    /// RANGÉ sur le flanc gauche.
+    @State private var range = false
+    /// L'écart au DÉBUT du geste : sans lui, reprendre un galet déjà déplacé
+    /// le ferait sauter à l'origine du doigt.
+    @State private var depart: CGSize = .zero
+    /// L'écart BRUT, non borné : c'est lui qui dit si le doigt a poussé le
+    /// galet DANS le mur — le geste qui le range.
+    @State private var brut: CGSize = .zero
+    /// Le jeton de la POSE : il déclenche la piste de keyframes de
+    /// l'écrasement. Un compteur, pas un booléen — deux chutes de suite
+    /// doivent rejouer.
+    @State private var pose = 0
+    /// Le néon reste armé pendant toute la chute, et ne retombe qu'une fois
+    /// posé — sinon le galet traverse le noir du milieu d'écran en fantôme.
+    @State private var feuChute: Double = 0
+    /// Le retard de l'ouverture sur le lâcher : au tap elle part tout de
+    /// suite, à la chute elle part juste avant le contact.
+    @State private var retard: Double = 0
+
+    // LA COURONNE — tout à l'horloge : la charge et l'éclosion sont lues dans
+    // un `body`, or un `withAnimation` n'interpole QUE les `animatableData`
+    // des modificateurs (une valeur lue dans un body saute à sa cible).
+    @State private var chargeAt: Date?
+    /// L'instant du dernier MOUVEMENT du doigt. C'est lui qui
+    /// commande la charge : ce n'est pas la POSE qui arme, c'est
+    /// l'IMMOBILITÉ. On peut donc porter le galet n'importe où, s'y
+    /// arrêter sans lâcher, et la couronne éclôt à cet endroit.
+    @State private var mouvementAt: Date = .distantPast
+    @State private var chargeJeton = 0
+    @State private var pouls: Timer?
+    @State private var cOuverte = false
+    @State private var cAt: Date = .distantPast
+    @State private var cDepart: Double = 0
+    @State private var cSens: Double = 0
+    @State private var cSurvol: Int?
+    @State private var cChoisi: Int?
+    @State private var cChoixAt: Date = .distantPast
+    @State private var cSurvolAt: Date = .distantPast
+    /// LE RECUL DU MOBILIER quand la couronne éclôt. Il nourrit des
+    /// MODIFICATEURS (échelle, opacité) — c'est le seul cas où `withAnimation`
+    /// interpole vraiment, donc le seul qui a le droit de ne pas être à
+    /// l'horloge. Et il est OBLIGATOIRE : `.clear` GIVRE ce qui est net, donc
+    /// l'encre de la phrase doit s'être effacée avant que le disque n'arrive.
+    @State private var recul: Double = 0
+
+    /// 0,55 s. L'appui long d'Apple vaut 0,4-0,5 s ; au-delà de ~0,8 s on croit
+    /// à un bug avant de croire à une cérémonie. Ce qui rend l'attente
+    /// supportable n'est pas sa durée, c'est que la jauge soit VISIBLE.
+    private static var tCharge: Double { 0.55 }
+    private static var tEclosion: Double { 0.62 }
+    private static var tRepli: Double { 0.34 }
+    private static var espace: String { "menu" }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// LA CHUTE. 0,30 s, et l'ouverture démarre à 0,26 — 40 ms AVANT le
+    /// contact. C'est la loi de la maison (« la lumière passe avant la
+    /// géométrie », « l'oreille arrive avant l'œil ») : le sol s'allume pour
+    /// RECEVOIR le galet, on ne voit pas une lampe s'allumer après un choc.
+    /// ⚠️ Calculées, pas stockées : un type GÉNÉRIQUE ne peut pas porter de
+    /// propriété statique stockée.
+    private static var chute: Double { 0.30 }
+    private static var avance: Double { 0.04 }
+    private static var rayon: CGFloat { 31 }
+    /// L'abscisse du CENTRE du galet à sa place (marge 24 + demi-galet).
+    private static var centre: CGFloat { 55 }
+    /// L'écart auquel le galet BUTE contre le bord gauche — la position la
+    /// plus à gauche que `borne` autorise. Tout le rangement se mesure par
+    /// rapport à elle, jamais par rapport à l'écran.
+    private static var mur: CGFloat { 8 + rayon - centre }
+    /// LA NAVETTE EST COUPÉE PAR LE BORD, et c'est tout le dessin : son centre
+    /// tombe SUR l'arête de l'écran, donc sa moitié gauche n'existe pas. Une
+    /// pilule entière posée à côté du bord est un widget égaré ; une forme
+    /// tranchée par le cadre est une POIGNÉE de tiroir.
+    ///
+    /// ⚠️ Elle avait été sortie à 20 pt pour qu'on puisse l'attraper — c'était
+    /// traiter le symptôme : ce qui rend l'objet saisissable n'est pas sa
+    /// visibilité, c'est sa PRISE (invisible, 30 pt vers la droite et 34 en
+    /// haut et en bas). Le dessin peut donc redevenir juste.
+    private static var saillie: CGFloat { 0 }
 
     private func fen(_ a: Double, _ b: Double) -> Double {
         min(max((p - a) / (b - a), 0), 1)
@@ -487,10 +760,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 fond()
 
                 contenu()
-                    .scaleEffect(1 - 0.026 * montee, anchor: .center)
-                    .opacity(1 - 0.34 * montee)
+                    .scaleEffect(1 - 0.026 * max(montee, recul), anchor: .center)
+                    .opacity(1 - 0.34 * max(montee, recul))
 
-                Color.black.opacity(0.20 * montee)
+                Color.black.opacity(0.20 * max(montee, recul))
                     .ignoresSafeArea()
                     .allowsHitTesting(ouvert)
                     .onTapGesture { fermer(nil) }
@@ -498,42 +771,592 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 MenuHalos(p: montee, doigt: doigt)
                     .opacity(lumiere)
 
-                MenuItems(p: items, choisi: choisi, survol: survol,
-                          loupe: loupe,
-                          onChoix: { i in fermer(i) },
-                          onSurvol: { i in poserDoigt(i, g.size) })
-                    .padding(.bottom, g.size.height * 0.155)
-                    .allowsHitTesting(ouvert)
+                if !couronne {
+                    MenuItems(p: items, choisi: choisi, survol: survol,
+                              loupe: loupe,
+                              onChoix: { i in fermer(i) },
+                              onSurvol: { i in poserDoigt(i, g.size) })
+                        .padding(.bottom, g.size.height * 0.155)
+                        .allowsHitTesting(ouvert)
+                }
 
-                GaletMaison(morph: morph, appui: appui)
+                // LA COURONNE. Sa couche de sélection n'existe QUE lorsqu'elle
+                // est ouverte, et elle est posée SOUS le galet : pendant
+                // l'appui tenu, c'est le geste du galet qui nourrit la
+                // sélection — un seul doigt, du premier contact au choix.
+                if couronne {
+                    TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
+                        let now = ctx.date
+                        let b = bloom(now)
+                        let geo = CouronneGeo.calcule(
+                            centre: galetPos(g.size), taille: g.size)
+                        ZStack {
+                            // ⚠️ LA COUCHE DE SORTIE, et elle est posée en
+                            // PREMIER : c'est elle qui ferme. Le verdict « ça
+                            // a ouvert et là c'est bloqué » venait de là — un
+                            // `Color.clear` seul dans une `TimelineView` dont
+                            // les autres enfants sont tous en `.position()`
+                            // n'a aucune taille INTRINSÈQUE : la couche
+                            // apparaissait à l'instant même où la pile
+                            // changeait de gabarit, et le geste ne s'y
+                            // accrochait pas. Le cadre est donc FORCÉ, ouvert
+                            // ou fermé, et il ne bouge plus jamais.
+                            if cOuverte {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .gesture(gesteCouronne(geo))
+                                // Filet de sécurité : un simple tap ferme,
+                                // même si le drag ne s'accroche pas.
+                                    .onTapGesture { fermerC() }
+                            }
+                            CouronneVue(p: b, geo: geo, survol: cSurvol,
+                                        choisi: cChoisi,
+                                        effacement: effacementC(now),
+                                        arrivee: arriveeMot(now),
+                                        taille: g.size)
+                            AnneauCharge(charge: charge(now), bloom: b,
+                                         centre: geo.centre,
+                                         rayonFinal: geo.rayon + 44)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+
+                GaletMaison(morph: morph, appui: appui, feuSup: feuChute,
+                            range: range)
+                    // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
+                    // **DEUX `withAnimation` SUR LA MÊME VALEUR DANS LE MÊME
+                    // TOUR NE JOUENT RIEN.** Écrire 0 → 1 puis 1 → 0 dans le
+                    // même bloc laisse SwiftUI diffuser 0 → 0 : il ne voit
+                    // aucun changement, et l'aller-retour n'existe tout
+                    // simplement pas. Un écrasement est un ALLER-RETOUR : sa
+                    // forme juste est une piste de keyframes, dont le premier
+                    // palier porte le vol. (Et il est posé AVANT les marges,
+                    // sinon son ancre basse tombe 24 pt plus bas et l'objet
+                    // glisse au lieu de s'aplatir.)
+                    .keyframeAnimator(initialValue: 0.0, trigger: pose) {
+                        vue, v in
+                        vue.scaleEffect(x: 1 + 0.15 * v, y: 1 - 0.15 * v,
+                                        anchor: .bottom)
+                    } keyframes: { _ in
+                        KeyframeTrack {
+                            LinearKeyframe(0.0, duration: Self.chute)
+                            SpringKeyframe(1.0, duration: 0.06,
+                                           spring: .snappy)
+                            SpringKeyframe(0.0, duration: 0.40,
+                                           spring: Spring(response: 0.36,
+                                                          dampingRatio: 0.48))
+                        }
+                    }
                     .padding(.leading, 24)
                     .padding(.bottom, 24)
-                    .contentShape(Circle())
+                    // ⚠️ LA PRISE DE LA NAVETTE — « parfois je suis bloquée,
+                    // j'arrive plus à la tirer ». Deux causes, mesurables :
+                    //  · la navette fait 84 pt de haut, le cadre du galet 62 :
+                    //    **ses 11 pt du haut et du bas débordaient hors de la
+                    //    zone sensible**. Doigt posé sur la pointe = rien ;
+                    //  · il n'en reste que 13 pt à l'écran, collés à l'arête —
+                    //    et le système se réserve cette bande pour ses propres
+                    //    gestes de bord.
+                    // Le remède est le même pour les deux : une prise LARGE
+                    // qui déborde vers la droite, pour qu'on puisse commencer
+                    // le geste LOIN du bord. Le pad vertical est symétrique
+                    // mais le ZStack aligne en bas — d'où la compensation
+                    // d'offset, sinon le galet remonterait de 26 pt.
+                    .padding(.vertical, range ? 34 : 0)
+                    .padding(.trailing, range ? 30 : 0)
+                    .offset(x: porte.width,
+                            y: porte.height + (range ? 34 : 0))
+                    .contentShape(range ? AnyShape(Rectangle())
+                                        : AnyShape(Circle()))
                     // ⚠️ UN SEUL GESTE. Un `onLongPressGesture` même à
                     // 0,01 s VOLE le tap qui le suit (le piège déjà payé sur
                     // le puits de l'iPod, où le tap simple devait être posé
                     // AVANT l'appui). Un `DragGesture(minimumDistance: 0)`
-                    // donne les deux d'un coup : l'état « doigt posé » à
-                    // `onChanged`, et le tap à `onEnded` si le doigt n'a pas
-                    // fui.
+                    // donne les TROIS d'un coup : l'état « doigt posé » à
+                    // `onChanged`, le PORT si le doigt l'emmène, et le tap à
+                    // `onEnded` s'il n'a pas fui.
                     .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                guard !appui else { return }
-                                appui = true
-                                UIImpactFeedbackGenerator(style: .soft)
-                                    .impactOccurred()
+                        DragGesture(minimumDistance: 0,
+                                    coordinateSpace: .named(Self.espace))
+                            .onChanged { v in
+                                if !appui {
+                                    appui = true
+                                    depart = porte
+                                    // Jamais de `brut` périmé d'un geste
+                                    // précédent : il décide du rangement.
+                                    brut = porte
+                                    UIImpactFeedbackGenerator(style: .soft)
+                                        .impactOccurred()
+                                    // L'APPUI TENU part ICI, du même geste :
+                                    // un `onLongPressGesture`, même à 0,01 s,
+                                    // VOLERAIT le tap qui le suit.
+                                    if couronne, !range, !cOuverte {
+                                        mouvementAt = Date()
+                                        armer()
+                                    }
+                                }
+                                // Couronne ouverte : le MÊME doigt continue
+                                // dans la sélection. On ne relâche pas pour
+                                // choisir — c'est la grammaire des menus
+                                // contextuels d'iOS.
+                                if cOuverte {
+                                    viserC(v.location, g.size)
+                                    return
+                                }
+                                let d = hypot(v.translation.width,
+                                              v.translation.height)
+                                if d > 12, !enMain {
+                                    enMain = true
+                                    // ON LE TIRE : dès qu'il quitte le mur,
+                                    // la navette redevient galet. Un seul
+                                    // geste, aucune poignée à viser.
+                                    if range {
+                                        // ⚠️ PLUS DE REBASAGE. Recaler l'écart
+                                        // sur le mur faisait SAUTER la navette
+                                        // de 20 pt vers la droite dès qu'on la
+                                        // touchait — donc elle résistait quand
+                                        // on voulait la pousser, et le geste
+                                        // partait de travers quand on voulait
+                                        // la sortir. Elle DÉCOLLE simplement :
+                                        // le ressort la décolle du mur, et
+                                        // l'écart continue de compter depuis
+                                        // là où elle était.
+                                        withAnimation(.spring(
+                                            response: 0.26,
+                                            dampingFraction: 0.70)) {
+                                                range = false
+                                            }
+                                        return
+                                    }
+                                }
+                                // Le galet reste attrapable MENU OUVERT : il
+                                // n'y a pas deux modes, il y a un objet.
+                                guard enMain else { return }
+                                brut = CGSize(
+                                    width: depart.width + v.translation.width,
+                                    height: depart.height + v.translation.height)
+                                // Il suit le doigt au point près — aucune
+                                // animation ici : une transaction entre le
+                                // doigt et l'objet, c'est du retard qu'on sent.
+                                porte = borne(brut, g.size)
+                                // Le doigt bouge : la charge repart de zéro.
+                                // C'est l'ARRÊT qui ouvre, pas la pose.
+                                mouvementAt = Date()
                             }
-                            .onEnded { g in
+                            .onEnded { v in
                                 appui = false
-                                let d = hypot(g.translation.width,
-                                              g.translation.height)
+                                let tenu = enMain
+                                enMain = false
+                                desarmer()
+                                // La couronne était déjà ouverte : ce doigt-là
+                                // ne fait plus qu'une chose, choisir.
+                                if cOuverte {
+                                    choisirC(v.location, g.size)
+                                    return
+                                }
+                                if tenu {
+                                    // POUSSÉ DANS LE MUR : il se range sur le
+                                    // flanc. Sinon il RETOMBE, et c'est sa
+                                    // chute qui ouvre le menu.
+                                    //
+                                    // ⚠️ LE SEUIL EST UNE POSITION VISÉE, pas
+                                    // un écart : « le centre que le doigt
+                                    // demande est-il à moins de 18 pt du bord
+                                    // gauche ». C'est continu, ça se lit à
+                                    // l'œil pendant le geste, et surtout ça ne
+                                    // dépend plus d'aucune base — les deux
+                                    // versions par écart se sont contredites
+                                    // (l'une recollait la navette au mur,
+                                    // l'autre rendait le rangement
+                                    // inatteignable).
+                                    if Self.centre + brut.width < 18 {
+                                        ranger(g.size)
+                                        // LE MENU PART AVEC SON BOUTON. On
+                                        // range l'objet, pas seulement sa
+                                        // forme : laisser quatre mots ouverts
+                                        // sous une poignée encastrée serait un
+                                        // état sans propriétaire.
+                                        if ouvert {
+                                            retard = 0
+                                            ouvert = false
+                                        }
+                                        fermerC()
+                                    } else {
+                                        lacher()
+                                    }
+                                    return
+                                }
+                                let d = hypot(v.translation.width,
+                                              v.translation.height)
                                 guard d < 40 else { return }
+                                // Tapé alors qu'il est rangé : il sort du mur
+                                // ET ouvre — le même geste rend les deux.
+                                if range {
+                                    withAnimation(.spring(response: 0.30,
+                                                          dampingFraction: 0.7)) {
+                                        range = false
+                                    }
+                                    lacher()
+                                    return
+                                }
+                                // LE CHEMIN RAPIDE : relâché avant la fin de
+                                // la charge, ça OUVRE quand même. La charge
+                                // n'est pas un seuil à franchir, c'est une
+                                // cérémonie offerte à qui prend le temps.
+                                if couronne {
+                                    ouvrirC()
+                                    return
+                                }
+                                retard = 0
                                 ouvert.toggle()
                             }
                     )
             }
+            .coordinateSpace(.named(Self.espace))
             .onChange(of: ouvert) { _, v in jouer(v) }
+            .onAppear { bancChute(g.size) }
+        }
+    }
+
+    // MARK: - La couronne
+
+    /// Le centre du galet dans le repère de la page — c'est là que la couronne
+    /// éclôt, et c'est ce qui rend enfin le transport UTILE : le menu naît là
+    /// où l'objet se trouve, il n'a plus besoin de rentrer d'abord.
+    private func galetPos(_ taille: CGSize) -> CGPoint {
+        CGPoint(x: Self.centre + porte.width,
+                y: taille.height - Self.centre + porte.height)
+    }
+
+    private func charge(_ now: Date) -> Double {
+        guard chargeAt != nil, !range, !cOuverte else { return 0 }
+        let t = now.timeIntervalSince(mouvementAt)
+        return min(max(t / Self.tCharge, 0), 1)
+    }
+
+    private func bloom(_ now: Date) -> Double {
+        guard cSens != 0 else { return cDepart }
+        let duree = cSens > 0 ? Self.tEclosion : Self.tRepli
+        let x = min(max(now.timeIntervalSince(cAt) / duree, 0), 1)
+        // La courbe des feuilles d'Apple, à la main : elle part vite et se
+        // POSE longuement — c'est ce dernier tiers qui fait le luxe.
+        let e = cSens > 0 ? 1 - pow(1 - x, 2.2) : x
+        return min(max(cDepart + cSens * e, 0), 1)
+    }
+
+    private func effacementC(_ now: Date) -> Double {
+        guard cChoisi != nil else { return 0 }
+        return min(max(now.timeIntervalSince(cChoixAt) / 0.09, 0), 1)
+    }
+
+    /// L'arrivée du mot, remise à zéro à CHAQUE changement de survol : le mot
+    /// se refait la mise au point d'une section à l'autre, il ne commute pas.
+    private func arriveeMot(_ now: Date) -> Double {
+        min(max(now.timeIntervalSince(cSurvolAt) / 0.19, 0), 1)
+    }
+
+    /// LA CHARGE S'ARME. Le grondement haptique double la jauge exactement :
+    /// `dragLevel` tient une vibration continue et sait la faire enfler — un
+    /// `UIImpactFeedbackGenerator` ne sait faire que des chocs.
+    private func armer() {
+        chargeAt = Date()
+        chargeJeton &+= 1
+        let tok = chargeJeton
+        RocketHaptics.shared.prepare()
+        pouls?.invalidate()
+        // ⚠️ L'ÉCHÉANCE SE DÉCALE à chaque mouvement, donc elle ne peut pas
+        // être un `asyncAfter` posé une fois pour toutes : c'est le pouls qui
+        // la surveille, et lui seul.
+        pouls = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: true) { t in
+            guard tok == chargeJeton, chargeAt != nil else {
+                t.invalidate(); return
+            }
+            guard !range, !cOuverte else { return }
+            let x = min(Date().timeIntervalSince(mouvementAt) / Self.tCharge, 1)
+            RocketHaptics.shared.dragLevel(x * 0.55)
+            if x >= 1 { ouvrirC() }
+        }
+    }
+
+    private func desarmer() {
+        chargeJeton &+= 1
+        chargeAt = nil
+        pouls?.invalidate()
+        pouls = nil
+        RocketHaptics.shared.dragEnd()
+    }
+
+    private func ouvrirC() {
+        desarmer()
+        guard !cOuverte else { return }
+        cOuverte = true
+        cChoisi = nil
+        cSurvol = nil
+        cDepart = bloom(Date())
+        cSens = 1
+        cAt = Date()
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.50)) {
+            recul = 1
+        }
+    }
+
+    private func fermerC() {
+        guard cOuverte else { return }
+        cOuverte = false
+        // LE GALET RENTRE APRÈS LE TRAVAIL. Ouvert en plein écran, il reste où
+        // le doigt le tenait ; le menu refermé, il regagne son coin. C'est ce
+        // qui réconcilie « ouvrir n'importe où » et « retour systématique au
+        // coin gauche » : les deux sont vrais, mais pas au même moment.
+        if !range, porte != .zero {
+            withAnimation(.timingCurve(0.55, 0.0, 1.0, 0.45,
+                                       duration: Self.chute)) {
+                porte = .zero
+            }
+            pose &+= 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.chute) {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            }
+        }
+        cDepart = bloom(Date())
+        cSens = -1
+        cAt = Date()
+        cSurvol = nil
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.40)) {
+            recul = 0
+        }
+        // RIEN à la fermeture : un geste qui se termine dans le silence se
+        // sent plus cher qu'un geste qui claque deux fois.
+    }
+
+    /// LA SÉLECTION SE FAIT PAR L'ANGLE, jamais sur une cible : le pouce part
+    /// vers un médaillon et il est choisi. C'est l'ergonomie à une main — et ça
+    /// supprime d'un coup toute la classe de bugs de zone sensible.
+    private func vise(_ pt: CGPoint, _ geo: CouronneGeo) -> Int? {
+        let dx = pt.x - geo.centre.x, dy = pt.y - geo.centre.y
+        let d = hypot(dx, dy)
+        // Le cœur est la zone d'ANNULATION : on revient au centre et on lâche.
+        // ⚠️ ET IL FAUT AUSSI UNE BORNE EXTÉRIEURE, qui manquait : sans elle,
+        // un tap à l'autre bout de l'écran restait « aligné » avec un
+        // médaillon et le CHOISISSAIT au lieu de fermer. Tout ce qui tombe
+        // hors de la bague ferme.
+        guard d > 42, d < geo.rayon + 54 else { return nil }
+        let a = atan2(dy, dx)
+        var best: Int?
+        var meilleur = 0.62
+        for (i, ang) in geo.angles.enumerated() {
+            var e = abs(a - ang).truncatingRemainder(dividingBy: 2 * .pi)
+            if e > .pi { e = 2 * .pi - e }
+            if e < meilleur { meilleur = e; best = i }
+        }
+        return best
+    }
+
+    private func viserC(_ pt: CGPoint, _ taille: CGSize) {
+        let geo = CouronneGeo.calcule(centre: galetPos(taille), taille: taille)
+        let i = vise(pt, geo)
+        guard i != cSurvol else { return }
+        cSurvol = i
+        cSurvolAt = Date()
+        if i != nil { UISelectionFeedbackGenerator().selectionChanged() }
+    }
+
+    private func choisirC(_ pt: CGPoint, _ taille: CGSize) {
+        let geo = CouronneGeo.calcule(centre: galetPos(taille), taille: taille)
+        if let i = vise(pt, geo) {
+            cChoisi = i
+            cChoixAt = Date()
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) {
+                fermerC()
+                onChoix(i)
+            }
+        } else {
+            fermerC()
+        }
+    }
+
+    private func gesteCouronne(_ geo: CouronneGeo) -> some Gesture {
+        DragGesture(minimumDistance: 0,
+                    coordinateSpace: .named(Self.espace))
+            .onChanged { v in
+                let i = vise(v.location, geo)
+                guard i != cSurvol else { return }
+                cSurvol = i
+                cSurvolAt = Date()
+                if i != nil { UISelectionFeedbackGenerator().selectionChanged() }
+            }
+            .onEnded { v in
+                if let i = vise(v.location, geo) {
+                    cChoisi = i
+                    cChoixAt = Date()
+                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.13) {
+                        fermerC()
+                        onChoix(i)
+                    }
+                } else {
+                    fermerC()
+                }
+            }
+    }
+
+    /// Le galet ne sort jamais de l'écran : 8 pt de garde tout autour.
+    private func borne(_ t: CGSize, _ s: CGSize) -> CGSize {
+        let r = Self.rayon, m: CGFloat = 8
+        let cx = 24 + r, cy = s.height - 24 - r
+        return CGSize(
+            width: min(max(t.width, m + r - cx), s.width - m - r - cx),
+            height: min(max(t.height, m + r - cy), s.height - m - r - cy))
+    }
+
+    /// LE LÂCHER — **le galet RENTRE TOUJOURS AU COIN GAUCHE.** Verdict du
+    /// 21-08 : *« il doit se remettre au coin gauche systématiquement »*. Le
+    /// laisser où le doigt l'abandonne (essayé, refusé le même jour) en fait un
+    /// widget qui traîne ; un objet qui retrouve sa place est un bijou — et la
+    /// page garde une composition stable au lieu d'un bouton qui erre.
+    ///
+    /// La seule exception est le RANGEMENT : poussé dans le mur, il y reste.
+    ///
+    /// Trois temps qui ne se chevauchent pas :
+    ///
+    ///   1. **LA CHUTE.** Une courbe qui ACCÉLÈRE jusqu'au sol
+    ///      (`timingCurve(0.55, 0, 1, 0.45)` ≈ une gravité constante) : un
+    ///      objet qui revient en `easeOut` ne tombe pas, il est RANGÉ. C'est
+    ///      toute la différence entre un widget et une masse.
+    ///   2. **LE CONTACT.** 60 ms d'écrasement sur sa base, puis un ressort mal
+    ///      amorti qui le rend à sa forme — plus un choc LOURD à la main.
+    ///   3. **L'OUVERTURE**, partie 40 ms plus tôt : le sol est déjà allumé
+    ///      quand il touche.
+    private func lacher() {
+        let doux = reduceMotion
+        let duree = doux ? 0.22 : Self.chute
+        withAnimation(.timingCurve(0.55, 0.0, 1.0, 0.45, duration: duree)) {
+            porte = .zero
+        }
+        // Le néon reste plein jusqu'au contact, puis s'éteint en se posant.
+        // ⚠️ Le retour à zéro doit vivre dans un AUTRE tour de boucle : écrit
+        // ici, il annulerait l'allumage (même piège que l'écrasement).
+        feuChute = 1
+        DispatchQueue.main.async {
+            withAnimation(.easeOut(duration: 0.34).delay(duree)) {
+                feuChute = 0
+            }
+        }
+        if !doux {
+            pose &+= 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + duree) {
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            }
+        }
+        retard = max(duree - Self.avance, 0)
+        // LA COURONNE ÉCLÔT AU CONTACT — 40 ms avant, comme la colonne : le
+        // sol s'allume pour recevoir le galet, on ne voit pas une lampe
+        // s'allumer après un choc.
+        if couronne {
+            let r = retard
+            DispatchQueue.main.asyncAfter(deadline: .now() + r) { ouvrirC() }
+            return
+        }
+        guard !ouvert else { return }
+        ouvert = true
+    }
+
+    /// LE RANGEMENT. Poussé dans le bord gauche, le galet s'y ENCASTRE : il
+    /// devient une navette dont le centre tombe pile SUR l'arête, donc dont la
+    /// moitié sort de l'écran. Il ne reste qu'un bout de verre — assez pour le
+    /// voir, trop peu pour qu'il occupe la page.
+    ///
+    /// Sa hauteur, elle, ne change pas : on le range à l'endroit où on l'a
+    /// poussé, pas à une place imposée.
+    private func ranger(_ taille: CGSize) {
+        // La navette fait 84 de haut : son centre doit rester à 52 pt des deux
+        // bords. Les bornes sont exprimées en ÉCART à la place de repos, qui
+        // est à 55 pt du bas.
+        let y = min(max(brut.height, 107 - taille.height), 3)
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
+            range = true
+            porte = CGSize(width: -Self.centre + Self.saillie, height: y)
+        }
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+    }
+
+    /// `-menuChute` : le simulateur ne sait pas poser un doigt, donc le banc
+    /// porte le galet lui-même, le tient, le lâche, referme — en boucle. Sans
+    /// lui, la chute ne se juge pas.
+    private func bancChute(_ taille: CGSize) {
+        // `-couronneGrille` (jalon C2) : le galet fait le tour des six places
+        // et la couronne s'ouvre à chacune. C'est la PREUVE que les quatre
+        // médaillons tiennent partout — la garantie ne vaut rien tant qu'on ne
+        // l'a pas vue aux six coins.
+        if CommandLine.arguments.contains("-couronneGrille") {
+            let places: [CGSize] = [
+                .zero,
+                CGSize(width: taille.width - 110, height: 0),
+                CGSize(width: 0, height: -(taille.height - 110)),
+                CGSize(width: taille.width - 110,
+                       height: -(taille.height - 110)),
+                CGSize(width: taille.width / 2 - 55,
+                       height: -(taille.height / 2 - 55)),
+                CGSize(width: taille.width - 110,
+                       height: -(taille.height / 2 - 55)),
+            ]
+            var k = 0
+            Timer.scheduledTimer(withTimeInterval: 2.6, repeats: true) { _ in
+                fermerC()
+                porte = places[k % places.count]
+                k += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    ouvrirC()
+                }
+            }
+            return
+        }
+        // `-couronneRejoue` : le simulateur ne sait pas poser un doigt, donc
+        // la couronne s'ouvre et se referme seule — c'est le seul moyen de
+        // juger l'éclosion image par image.
+        if CommandLine.arguments.contains("-couronneRejoue") {
+            Timer.scheduledTimer(withTimeInterval: 4.4, repeats: true) { _ in
+                if cOuverte { fermerC() } else { ouvrirC() }
+            }
+            return
+        }
+        // `-menuRange` : le galet se pousse tout seul dans le mur, s'y range,
+        // et se fait tirer — pour juger la navette sans doigt.
+        if CommandLine.arguments.contains("-menuRange") {
+            Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
+                brut = CGSize(width: -120, height: -260)
+                ranger(taille)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation(.spring(response: 0.34,
+                                          dampingFraction: 0.72)) {
+                        range = false
+                    }
+                    lacher()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.2) {
+                    retard = 0
+                    ouvert = false
+                }
+            }
+            return
+        }
+        guard CommandLine.arguments.contains("-menuChute") else { return }
+        Timer.scheduledTimer(withTimeInterval: 5.2, repeats: true) { _ in
+            appui = true
+            withAnimation(.easeInOut(duration: 0.55)) {
+                porte = borne(CGSize(width: 250, height: -600), taille)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                appui = false
+                lacher()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.9) {
+                retard = 0
+                ouvert = false
+                fermerC()
+            }
         }
     }
 
@@ -542,8 +1365,12 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// — c'est ce dernier tiers qui fait le luxe.
     private func jouer(_ v: Bool) {
         if v { choisi = nil }
+        // Le seul retard admis, et il n'est pas une marche : il décale le
+        // DÉPART de l'unique animation, il ne la découpe pas.
+        let r = v ? retard : 0
+        retard = 0
         withAnimation(.timingCurve(0.22, 1, 0.36, 1,
-                                   duration: v ? 0.78 : 0.52)) {
+                                   duration: v ? 0.78 : 0.52).delay(r)) {
             p = v ? 1 : 0
         }
         guard !v else { return }
@@ -601,13 +1428,23 @@ struct MenuHote<Fond: View, Contenu: View>: View {
 /// `-menuLab` : le menu sur la vraie card vidéo (pour que le galet ait de
 /// quoi réfracter) avec un mobilier témoin qui RECULE — sans lui, on ne
 /// juge pas la profondeur. `-menuRejoue` l'ouvre et le referme tout seul.
+///
+/// `-couronneLab` joue la MÊME page avec la couronne au lieu de la colonne :
+/// c'est l'A/B, et les deux formes cohabitent tant que le verdict n'est pas
+/// rendu — la colonne est validée, on ne la jette pas sur une intuition.
 struct MenuLab: View {
     @State private var ouvert = false
+
+    private var couronne: Bool {
+        CommandLine.arguments.contains("-couronneLab")
+            || CommandLine.arguments.contains("-couronneRejoue")
+            || CommandLine.arguments.contains("-couronneGrille")
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            MenuHote(ouvert: $ouvert) {
+            MenuHote(ouvert: $ouvert, couronne: couronne) {
                 GrandeCardVideo(naissance: 1)
             } contenu: {
                 VStack(alignment: .leading, spacing: 2) {

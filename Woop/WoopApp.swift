@@ -380,7 +380,10 @@ struct RootView: View {
         } else if Self.authNebula {
             AuthView { _ in }
         } else if CommandLine.arguments.contains("-menuLab")
-                    || CommandLine.arguments.contains("-menuRejoue") {
+                    || CommandLine.arguments.contains("-menuRejoue")
+                    || CommandLine.arguments.contains("-couronneLab")
+                    || CommandLine.arguments.contains("-couronneRejoue")
+                    || CommandLine.arguments.contains("-couronneGrille") {
             MenuLab()
         } else if CommandLine.arguments.contains("-cardsLab") {
             CardsLab()
