@@ -145,7 +145,7 @@ struct RootView: View {
                                  "-galetFantome", "-galetNourri",
                                  "-galetCuisson", "-fondRasant",
                                  "-semaineMaterialise", "-semaineFaits",
-                                 "-tirageFige"]
+                                 "-tirageFige", "-cardsLab"]
         .contains { CommandLine.arguments.contains($0) }
     /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
     private static let bgLab = CommandLine.arguments.contains("-bgLab")
@@ -378,6 +378,8 @@ struct RootView: View {
             AuroraLoginView()
         } else if Self.authNebula {
             AuthView { _ in }
+        } else if CommandLine.arguments.contains("-cardsLab") {
+            CardsLab()
         } else if Self.homeV2 {
             HomeNuitLab()
         } else if Self.homeLab {
