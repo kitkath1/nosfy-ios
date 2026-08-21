@@ -648,6 +648,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// (Déclarée AVANT les `@ViewBuilder` : l'init membre à membre suit
     /// l'ordre des propriétés, et les closures doivent rester en dernier.)
     var couronne: Bool = false
+    /// LA PAGE DOIT SAVOIR QUE LE GALET EST RANGÉ : quand il s'encastre dans
+    /// le mur, le slider de la rangée reprend la largeur qu'il libère.
+    var onRange: (Bool) -> Void = { _ in }
+    /// LA PAGE RANGE LE GALET. Au départ d'une séance, la rangée du bas
+    /// appartient au player : le galet s'encastre dans le mur tout seul,
+    /// et il en ressort quand la séance s'achève.
+    var rangerDemande: Bool = false
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -672,6 +679,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// L'écart BRUT, non borné : c'est lui qui dit si le doigt a poussé le
     /// galet DANS le mur — le geste qui le range.
     @State private var brut: CGSize = .zero
+    /// CE GESTE A SORTI LE GALET DU MUR. ⚠️ Sans ce verrou, une traction
+    /// COURTE (12 à 17 pt) laissait le centre visé sous le seuil de
+    /// rangement et la navette SE RECOLLAIT au lâcher — « je galère à la
+    /// récupérer ». On ne peut pas ranger et déranger dans le même geste.
+    @State private var sortiDuMur = false
     /// Le jeton de la POSE : il déclenche la piste de keyframes de
     /// l'écrasement. Un compteur, pas un booléen — deux chutes de suite
     /// doivent rejouer.
@@ -744,6 +756,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// visibilité, c'est sa PRISE (invisible, 30 pt vers la droite et 34 en
     /// haut et en bas). Le dessin peut donc redevenir juste.
     private static var saillie: CGFloat { 0 }
+    /// LA HAUTEUR OÙ LA PAGE RANGE LE GALET. Au ras du bas (le défaut), la
+    /// languette tombait juste à côté du slider puis du player — deux objets
+    /// qui se disputent le même coin. Elle se pose à mi-hauteur : loin de la
+    /// rangée, loin de la phrase, et sous le pouce.
+    private static func hauteurRange(_ s: CGSize) -> CGFloat {
+        max(s.height * 0.42, 0)
+    }
 
     private func fen(_ a: Double, _ b: Double) -> Double {
         min(max((p - a) / (b - a), 0), 1)
@@ -886,6 +905,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                     // Jamais de `brut` périmé d'un geste
                                     // précédent : il décide du rangement.
                                     brut = porte
+                                    sortiDuMur = false
                                     UIImpactFeedbackGenerator(style: .soft)
                                         .impactOccurred()
                                     // L'APPUI TENU part ICI, du même geste :
@@ -927,6 +947,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                             dampingFraction: 0.70)) {
                                                 range = false
                                             }
+                                        sortiDuMur = true
+                                        onRange(false)
                                         return
                                     }
                                 }
@@ -970,7 +992,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                     // (l'une recollait la navette au mur,
                                     // l'autre rendait le rangement
                                     // inatteignable).
-                                    if Self.centre + brut.width < 18 {
+                                    if !sortiDuMur,
+                                       Self.centre + brut.width < 18 {
                                         ranger(g.size)
                                         // LE MENU PART AVEC SON BOUTON. On
                                         // range l'objet, pas seulement sa
@@ -997,6 +1020,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                                           dampingFraction: 0.7)) {
                                         range = false
                                     }
+                                    onRange(false)
                                     lacher()
                                     return
                                 }
@@ -1015,7 +1039,30 @@ struct MenuHote<Fond: View, Contenu: View>: View {
             }
             .coordinateSpace(.named(Self.espace))
             .onChange(of: ouvert) { _, v in jouer(v) }
-            .onAppear { bancChute(g.size) }
+            .onChange(of: rangerDemande) { _, v in
+                if v, !range {
+                    brut = CGSize(width: 0, height: -Self.hauteurRange(g.size))
+                    ranger(g.size)
+                } else if !v, range {
+                    withAnimation(.spring(response: 0.36,
+                                          dampingFraction: 0.76)) {
+                        range = false
+                        porte = .zero
+                    }
+                    onRange(false)
+                }
+            }
+            .onAppear {
+                // ⚠️ L'ÉTAT INITIAL N'EST PAS UN CHANGEMENT : une page qui
+                // s'ouvre DÉJÀ en séance n'a jamais fait basculer
+                // `rangerDemande`, donc le `onChange` ne parle pas. Le galet
+                // restait posé sur le player.
+                if rangerDemande, !range {
+                    brut = CGSize(width: 0, height: -Self.hauteurRange(g.size))
+                    ranger(g.size)
+                }
+                bancChute(g.size)
+            }
         }
     }
 
@@ -1279,6 +1326,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
             range = true
             porte = CGSize(width: -Self.centre + Self.saillie, height: y)
         }
+        onRange(true)
         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
     }
 
