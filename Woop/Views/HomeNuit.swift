@@ -917,6 +917,16 @@ struct GrandeCardVideo: View {
     /// (écran ≈ 55 pt sur les iPhone récents, moins la marge).
     var marge: CGFloat = 10
     var rayon: CGFloat = 45
+    /// LE RAYON DE L'ÉCRAN — celui que prend le bas de la card, puisqu'il
+    /// touche le bord physique.
+    var rayonEcran: CGFloat = 55
+    /// LA LEVÉE DU TIROIR. ⚠️ La card ne MONTE pas, elle se RACCOURCIT par le
+    /// bas : son contenu est repoussé d'autant qu'elle s'est déplacée, donc
+    /// son bord haut ne bouge pas d'un pixel. Translater toute la page faisait
+    /// remonter la phrase de 96 pt — mesuré à 21 pt du haut au lieu de 117,
+    /// « Bonjour » à cheval sur l'heure. Un tiroir qui s'ouvre ne déménage pas
+    /// la pièce.
+    var levee: CGFloat = 0
 
     var body: some View {
         Color.black
@@ -932,13 +942,41 @@ struct GrandeCardVideo: View {
                         .aspectRatio(contentMode: .fill)
                     HomeFondVideo()
                 }
-                .clipShape(RoundedRectangle(cornerRadius: rayon,
-                                            style: .continuous))
-                .padding(marge)
+                // ⚠️ LA CARD DESCEND JUSQU'AU BORD PHYSIQUE. La marge de
+                // nuit était appliquée aux QUATRE côtés : mesuré à la
+                // capture, 30 px = 10,0 pt de bande noire sous la card,
+                // au centre comme aux deux quarts. Verdict : « la card ne
+                // descend pas jusqu'au bout du téléphone ».
+                //
+                // Et le rayon SUIT la loi concentrique au lieu de la
+                // casser : une forme qui touche le bord de l'écran prend
+                // le rayon DE L'ÉCRAN (55), pas celui d'une forme posée à
+                // 10 pt de lui (45). Un seul rayon partout aurait fait
+                // rentrer le bas — c'est ce décrochage qui trahit une
+                // marge oubliée.
+                //
+                // Le vide du bas n'est donc plus une marge : c'est la
+                // bande que le TIRAGE découvre, et elle n'existe que
+                // quand on soulève la card.
+                .clipShape(UnevenRoundedRectangle(
+                    topLeadingRadius: rayon,
+                    bottomLeadingRadius: rayonEcran,
+                    bottomTrailingRadius: rayonEcran,
+                    topTrailingRadius: rayon,
+                    style: .continuous))
+                .padding(.top, marge)
+                .padding(.horizontal, marge)
                 .opacity(naissance)
                 .scaleEffect(1.015 - 0.015 * naissance)
             )
             .ignoresSafeArea()
+            // ⚠️ LA LEVÉE SE RETIRE EN BAS, ET DU NOIR AUSSI. Deux pièges
+            // enfilés ici : posée en haut, elle raccourcissait la card par le
+            // HAUT (0 pt découvert, mesuré) ; et posée sur le seul contenu,
+            // elle laissait le FOND NOIR de la card couvrir toute la page —
+            // la bande s'ouvrait vraiment, mais derrière un rideau noir.
+            // C'est la card ENTIÈRE qui s'arrête plus haut.
+            .padding(.bottom, levee)
     }
 }
 
@@ -1252,26 +1290,165 @@ struct HomeNuitPage: View {
     /// par découverte, pas à chaque image passée au-dessus du seuil.
     @State private var luneSentie = false
 
+    // MARK: - LE FLOW DE LA SÉANCE (22-08)
+
+    /// Le galet est rangé au mur : le slider reprend la largeur libérée.
+    @State private var galetRange = false
+    @State private var menuOuvert = false
+    /// LA SÉANCE TOURNE. Tant qu'elle tourne, la card reste SOULEVÉE et
+    /// refuse de se refermer : le player n'est pas un tiroir qu'on range,
+    /// c'est l'état de la page.
+    @State private var enSeance = CommandLine.arguments.contains("-homeSeance")
+    @State private var debutSeance: Date?
+
+    /// LE TIROIR EST VERROUILLÉ OUVERT. ⚠️ C'est le PRÉREQUIS du départ au
+    /// tirage : sans lui on tire, le slider paraît, on lâche pour attraper le
+    /// pouce — et tout retombe. C'est ce cran, et lui seul, qui sépare un
+    /// tiroir d'un jouet.
+    @State private var tiroirOuvert = false
+    /// L'AXE DU GESTE, verrouillé au premier mouvement franc. ⚠️ Sans lui, un
+    /// glissement HORIZONTAL (le pouce du slider) nourrissait aussi le tirage
+    /// de la page : le moindre soupçon de vertical refermait le tiroir, et le
+    /// galet rentrait au coin en plein milieu du geste. Un axe se décide UNE
+    /// fois — le tester à chaque image le ferait osciller.
+    @State private var axeVertical: Bool?
+
+    /// La hauteur à laquelle la card se tient pendant la séance — assez pour
+    /// découvrir le player en entier, jamais plus.
+    private static var leveeSeance: CGFloat { 106 }
+    /// La levée du tiroir hors séance : le slider fait 62, plus l'air.
+    private static var leveeTiroir: CGFloat { 116 }
+    /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué) : au-delà
+    /// il reste ouvert, en deçà il revient. Le plan le fixe à 90.
+    private static var seuilCran: CGFloat { 90 }
+    /// LE REPOS DE LA CARD : zéro hors séance, la levée pendant. Tout le
+    /// tirage se mesure PAR RAPPORT À LUI — sinon la card retomberait sur
+    /// le player à chaque lâcher.
+    private var reposCard: CGFloat {
+        if enSeance { return -Self.leveeSeance }
+        return tiroirOuvert ? -Self.leveeTiroir : 0
+    }
+
     /// La découverte du secret : la card se SOULÈVE (tirage NÉGATIF), et la
     /// lune se lève dans la bande du bas. Elle ne commence qu'après 70 pt
     /// (un secret se mérite) et culmine à 130 — dans l'élastique, jamais à
     /// sa butée.
     private var luneP: Double {
-        min(max((-Double(tirage) - 70) / 60, 0), 1)
+        guard !enSeance else { return 0 }
+        return min(max((-Double(tirage) - 70) / 60, 0), 1)
+    }
+
+    /// LE PLAYER SE MONTRE À 55 % DE LA COURSE, pas à l'ouverture : on le voit
+    /// VENIR, on ne le découvre pas.
+    private var playerP: Double {
+        guard enSeance else { return 0 }
+        return min(max(-Double(tirage) / (Double(Self.leveeSeance) * 0.55),
+                       0), 1)
     }
 
     var body: some View {
         GeometryReader { geo in
-            ZStack(alignment: .topLeading) {
+            // ⚠️ TOUTE LA PAGE VIT DANS `MenuHote` : c'est lui qui porte le
+            // galet, la couronne et le recul du mobilier. Le FOND (la vidéo)
+            // ne recule jamais — une couche UIKit ne sait pas s'échelonner
+            // dans une transaction SwiftUI, elle SAUTE. Le mobilier, lui,
+            // s'éloigne : sans quoi le disque `.clear` de la couronne
+            // GIVRERAIT l'encre nette de la phrase.
+            MenuHote(ouvert: $menuOuvert, couronne: true,
+                     onRange: { galetRange = $0 },
+                     // LE GALET S'EFFACE DÈS QUE LA BANDE PARLE. Tiroir
+                     // ouvert, la rangée du bas appartient au slider puis au
+                     // player : le galet s'encastre dans le mur, sinon il se
+                     // pose littéralement DESSUS (vu en capture).
+                     rangerDemande: enSeance || tiroirOuvert) {
+                fondPage
+            } contenu: {
+                mobilier(geo)
+            }
+            .overlay {
+                // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
+                // se charge). Le slider l'ouvre, « Commencer » le referme et
+                // lance la séance.
+                DepartPanneauHote(
+                    ouverte: DepartEtat.shared.panneauOuvert,
+                    onCommencer: { commencer() },
+                    onFermer: { DepartEtat.shared.fermer() })
+            }
+        }
+        .onAppear {
+            guard !deja else { return }
+            deja = true
+            // La séance tournait déjà au lancement : la card est LEVÉE dès la
+            // première image, sans animation — on ne rejoue pas une
+            // cinématique pour un état qu'on ne fait que retrouver.
+            if enSeance { tirage = reposCard }
+            // `-tiroirOuvert` : le tiroir déjà tiré, pour juger le slider
+            // dans la bande sans doigt.
+            if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
+                tiroirOuvert = true
+                tirage = reposCard
+            }
+            jouerArrivee()
+            jouerGaletBanc()
+            jouerSemaineBanc()
+        }
+    }
+
+    /// LE FOND : la bande révélée tout au fond, la card par-dessus, et le
+    /// geste du tirage — il couvre toute la page, et les gestes des enfants
+    /// (le slider, le galet) gagnent sur lui.
+    private var fondPage: some View {
+        ZStack(alignment: .topLeading) {
                 // LE SECRET, tout au fond : la card le couvre au repos, et
                 // le tirage vers le bas le découvre.
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    LuneSecrete(p: luneP)
+                    if enSeance {
+                        // LE PLAYER — la dalle de la maison, déjà écrite
+                        // (`WorkoutPill(docked:)`). Un seul geste, une seule
+                        // bande : hors séance le secret, en séance le player.
+                        WorkoutPill(exercise: ExerciseCatalog.all[0],
+                                    startedAt: debutSeance,
+                                    docked: true,
+                                    lisere: false)
+                            .opacity(playerP)
+                            .offset(y: 16 * (1 - playerP))
+                    } else {
+                        ZStack {
+                            // LA LUNE — le secret d'aujourd'hui, intact
+                            // pendant toute la montée. Elle s'efface quand la
+                            // piste arrive : le secret DEVIENT la clé.
+                            LuneSecrete(p: luneP)
+                                .opacity(tiroirOuvert ? 0 : 1)
+                            // LE SLIDER, dans la bande. La piste se DÉROULE
+                            // depuis la gauche au lieu de paraître : une
+                            // barre qui apparaît d'un bloc est une image,
+                            // une barre qui se déroule est un objet.
+                            SliderObsidienne(label: "Démarrer",
+                                             height: 62,
+                                             onConfirm: { demarrer() })
+                                .padding(.horizontal, 24)
+                                // 28 pt d'air sous l'arête de la card : à 46
+                                // le slider passait DERRIÈRE elle de 12 pt et
+                                // se lisait comme collé.
+                                .padding(.bottom, 26)
+                                .opacity(tiroirOuvert ? 1 : 0)
+                                .scaleEffect(x: tiroirOuvert ? 1 : 0.30,
+                                             anchor: .leading)
+                                .allowsHitTesting(tiroirOuvert)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity,
                        alignment: .center)
-                .padding(.bottom, 46)
+                // ⚠️ Les 46 pt appartiennent à la LUNE, pas à la bande : le
+                // slider les ajoutait aux siens (46 + 26 = 72) et passait
+                // 18 pt DERRIÈRE la card, donc invisible.
+                // ⚠️ Le player ne touche PAS le bord : à ras, son bouton
+                // stop et le départ de la veine se collaient à l'arête
+                // physique. 14 pt le décollent, et la levée grandit d'autant
+                // pour garder l'air sous la card.
+                .padding(.bottom, enSeance ? 14 : (tiroirOuvert ? 0 : 46))
                 .ignoresSafeArea(edges: .bottom)
 
                 // TOUTE LA HOME EST UNE CARD, ET ELLE SE TIENT : le drag la
@@ -1284,9 +1461,24 @@ struct HomeNuitPage: View {
                     if FondBanc.rasant {
                         HomeNuitFond(p: rasantNe)
                     } else {
-                        GrandeCardVideo(naissance: naissance)
+                        GrandeCardVideo(naissance: naissance,
+                                        levee: max(-tirage, 0))
                     }
+                }
+                // Le tirage vers le BAS déplace toujours toute la home (« je
+                // dois pouvoir drag toute la home », validé). Le tirage vers
+                // le HAUT, lui, ne déplace plus rien : il raccourcit.
+                .offset(y: max(tirage, 0))
+        }
+        .contentShape(Rectangle())
+        .gesture(tirageGeste)
+    }
 
+    /// LE MOBILIER : ce qui recule quand la couronne éclôt.
+    @ViewBuilder
+    private func mobilier(_ geo: GeometryProxy) -> some View {
+        ZStack(alignment: .topLeading) {
+                Group {
                     PhraseVue(p: arrivee, params: phrase, rasant: rasant,
                               fragments: PhraseTexte.fragments(
                                 faits: faits, prevus: prevus),
@@ -1327,27 +1519,55 @@ struct HomeNuitPage: View {
                         .padding(.top, geo.size.height * 0.620)
                         .allowsHitTesting(false)
                         .opacity(RasantHorloge.iso ? 0 : 1)
+
+                    // LA RANGÉE DU BAS — le slider de départ, à la place que
+                    // le galet du menu lui laisse. Les cotes sont celles de
+                    // `MenuNappe` : marge 24, galet 62, écart 12.
+                    //
+                    // ⚠️ QUAND LE GALET EST RANGÉ AU MUR, LE SLIDER PREND SA
+                    // PLACE. Sans ça la rangée garderait un trou de 74 pt
+                    // devant un objet qui n'est plus là — et une mise en page
+                    // qui garde la place d'un absent se lit comme un bug.
+                    // ⚠️ CENTRÉE SUR LA CARD, pas sur ce que le galet lui
+                    // laisse : l'invite parle du geste de TOUTE la page, un
+                    // libellé décentré de 36 pt se lit comme une erreur. Elle
+                    // n'a aucune surface, le galet peut donc la chevaucher
+                    // sans dommage — et il gagne le doigt, il est au-dessus.
+                    InviteTirage(actif: !tiroirOuvert)
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: .bottom)
+                        .opacity(enSeance || tiroirOuvert ? 0 : arrivee)
+                        .allowsHitTesting(!enSeance && !tiroirOuvert)
+                        .onTapGesture {
+                            // L'INVITE EST TAPABLE : sans ça le départ passe
+                            // derrière un geste, et on ajoute une étape au
+                            // flow. Un tap lève la card tout seule — le geste
+                            // reste pour qui préfère tirer.
+                            withAnimation(.spring(response: 0.50,
+                                                  dampingFraction: 0.84)) {
+                                tiroirOuvert = true
+                                tirage = -Self.leveeTiroir
+                            }
+                            UIImpactFeedbackGenerator(style: .rigid)
+                                .impactOccurred()
+                        }
+                        .animation(.spring(response: 0.42,
+                                           dampingFraction: 0.84),
+                                   value: galetRange)
                 }
-                .offset(y: tirage)
-            }
-            .contentShape(Rectangle())
-            // Le rattrapeur : un tap hors du panneau du galet le referme
-            // (les taps des enfants gagnent — le panneau garde les siens).
-            .onTapGesture {
-                guard reglageOuvert else { return }
-                withAnimation(.spring(response: 0.40,
-                                      dampingFraction: 0.84)) {
-                    reglageOuvert = false
-                }
-            }
-            .gesture(tirageGeste)
+                .offset(y: max(tirage, 0))
         }
-        .onAppear {
-            guard !deja else { return }
-            deja = true
-            jouerArrivee()
-            jouerGaletBanc()
-            jouerSemaineBanc()
+        // Le rattrapeur : un tap hors du panneau du galet le referme
+        // (les taps des enfants gagnent — le panneau garde les siens).
+        .onTapGesture {
+            guard reglageOuvert else { return }
+            withAnimation(.spring(response: 0.40,
+                                  dampingFraction: 0.84)) {
+                reglageOuvert = false
+            }
         }
     }
 
@@ -1360,8 +1580,21 @@ struct HomeNuitPage: View {
     private var tirageGeste: some Gesture {
         DragGesture(minimumDistance: 14)
             .onChanged { g in
-                let t = g.translation.height
-                tirage = 150 * CGFloat(tanh(Double(t) / 190))
+                // LE VERROU D'AXE, avant tout le reste.
+                if axeVertical == nil {
+                    let dx = abs(g.translation.width)
+                    let dy = abs(g.translation.height)
+                    guard max(dx, dy) > 8 else { return }
+                    axeVertical = dy > dx
+                }
+                guard axeVertical == true else { return }
+                var t = g.translation.height
+                // EN SÉANCE, LA CARD NE SE REFERME PAS. Elle résiste au
+                // doigt qui la pousse vers le bas (course divisée par 4,
+                // jamais bloquée net : un objet qui ne bouge PAS DU TOUT se
+                // lit comme une panne, pas comme un refus).
+                if enSeance, t > 0 { t *= 0.25 }
+                tirage = reposCard + 150 * CGFloat(tanh(Double(t) / 190))
                 // `-phraseScroll <pt>` FIGE la course : une dissolution ne
                 // se juge pas sans la voir à mi-chemin.
                 if PhraseHorloge.forceScroll == nil {
@@ -1385,12 +1618,58 @@ struct HomeNuitPage: View {
             }
             .onEnded { _ in
                 luneSentie = false
+                let vertical = axeVertical == true
+                axeVertical = nil
+                // Un geste horizontal n'a jamais touché au tiroir : il n'a
+                // rien à décider en partant.
+                guard vertical else { return }
+                // LE CRAN. Hors séance, c'est ici que le tiroir décide de
+                // rester ouvert — au-delà de 90 pt il s'aimante, en deçà de
+                // 40 il se referme. Entre les deux, il garde son état :
+                // une hystérésis, sinon il claque au moindre frémissement.
+                if !enSeance {
+                    withAnimation(.spring(response: 0.46,
+                                          dampingFraction: 0.82)) {
+                        if tirage < -Self.seuilCran { tiroirOuvert = true }
+                        else if tirage > -40 { tiroirOuvert = false }
+                    }
+                }
                 withAnimation(.spring(response: 0.50,
                                       dampingFraction: 0.86)) {
-                    tirage = 0
+                    tirage = reposCard
                     if PhraseHorloge.forceScroll == nil { scroll = 0 }
                 }
+                if tiroirOuvert || enSeance {
+                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                }
             }
+    }
+
+    // MARK: - Le flow du départ
+
+    /// LE SLIDER PROPOSE, IL NE DÉCIDE PAS. Sa course validée ouvre l'overlay
+    /// (la vidéo de la lune qui se charge) — c'est là qu'on confirme.
+    private func demarrer() {
+        DepartEtat.shared.proposer()
+    }
+
+    /// « COMMENCER » — et la card SE LÈVE TOUTE SEULE pour présenter le
+    /// player. On ne bascule PAS vers les exercices (arbitrage du 22-08) :
+    /// la séance s'annonce là où on l'a lancée.
+    ///
+    /// ⚠️ La levée part 0,12 s APRÈS la fermeture du panneau : deux
+    /// mouvements simultanés se dévorent, et c'est le panneau qui doit
+    /// libérer la scène avant que la card ne bouge.
+    private func commencer() {
+        DepartEtat.shared.fermer()
+        debutSeance = Date()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            enSeance = true
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
+                tirage = reposCard
+            }
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        }
     }
 
     /// Le banc de la matérialisation : 2,5 s après l'arrivée, le premier
@@ -1796,5 +2075,81 @@ struct GaletCuisson: View {
                 .offset(x: -cote * 0.22, y: -cote * 0.21)
         }
         .blur(radius: 0.6)
+    }
+}
+
+// MARK: - L'invite du tirage
+
+/// DEUX CHEVRONS ET UN MOT — l'invite qui apprend le geste.
+///
+/// Elle remplace le slider dans la rangée du bas : le départ vit désormais
+/// DANS le tiroir, et l'action principale de l'app passe donc derrière un
+/// geste. L'invite doit être **permanente** — jamais un indice qui s'efface
+/// après le premier lancement — sinon on cache le départ.
+///
+/// TROIS LOIS :
+///   • **C'est une LUMIÈRE, pas un bouton.** Aucune surface derrière : Apple
+///     n'entoure jamais un élément actif, il le rend plus présent. Un chip
+///     sous deux chevrons serait la grammaire d'Android.
+///   • **Les deux chevrons ne respirent pas ensemble.** Le haut part le
+///     premier, le bas le suit de 0,18 s — c'est ce décalage qui fait
+///     « ça monte » plutôt que « ça clignote ».
+///   • **L'anglais** : les micro-libellés de la home sont déjà en anglais
+///     (« sessions this week », « weekly volume »). Le français est réservé
+///     aux actions.
+struct InviteTirage: View {
+    /// L'invite respire tant qu'on n'a pas compris. Une fois le tiroir
+    /// ouvert, elle se tait : une invite qui continue après coup est du bruit.
+    var actif: Bool = true
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            VStack(spacing: 3) {
+                chevron(souffle(t, 0))
+                chevron(souffle(t, 0.18))
+                Text("pull to start")
+                    .font(.inter(11, .medium))
+                    .tracking(1.6)
+                    .foregroundStyle(.white.opacity(0.46))
+                    .padding(.top, 5)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 62)
+            .contentShape(Rectangle())
+        }
+    }
+
+    /// La respiration d'un chevron : 0 au repos, 1 au sommet de l'appel.
+    private func souffle(_ t: Double, _ retard: Double) -> Double {
+        guard actif, !reduceMotion else { return 0 }
+        let p = 2.6
+        let x = ((t - retard).truncatingRemainder(dividingBy: p)) / p
+        // Un appel bref, puis un long silence : une invite qui bat sans
+        // arrêt devient un stroboscope.
+        return x < 0.34 ? sin(x / 0.34 * .pi) : 0
+    }
+
+    @ViewBuilder
+    private func chevron(_ v: Double) -> some View {
+        Chevron()
+            .stroke(Color.white.opacity(0.34 + 0.46 * v),
+                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round,
+                                       lineJoin: .round))
+            .frame(width: 17, height: 6)
+            .offset(y: CGFloat(-2 * v))
+    }
+}
+
+/// Le chevron nu — deux segments, rien d'autre.
+struct Chevron: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        return p
     }
 }
