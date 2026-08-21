@@ -191,7 +191,10 @@ struct HomeNuitFond: View {
         // Le gyroscope s'amorce ICI : la scène est l'endroit juste, tout ce
         // qui vit dessus en profite (la leçon du 19-08 — sur la home aurora
         // personne ne l'appelait et la parallaxe lisait des zéros).
-        .onAppear { SkyMotion.shared.start(reduceMotion: reduceMotion) }
+        .onAppear {
+            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            Paillettes.shared.prepare()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 SkyMotion.shared.start(reduceMotion: reduceMotion)
@@ -1055,6 +1058,19 @@ struct SemaineStrip: View {
     /// Les fantômes matérialisés EN PLUS des faites (le banc aujourd'hui, la
     /// vraie fin de séance au jalon du flow).
     var materialises: Int = 0
+    /// Le tap d'une mini — la story de la séance viendra s'y brancher.
+    var onTap: (Int) -> Void = { _ in }
+
+    /// La mini sous le doigt. Une seule à la fois : on ne presse pas deux
+    /// cartes.
+    @State private var presse: Int?
+    /// L'écart de la mini portée au doigt. Une seule à la fois.
+    @State private var porte: CGSize = .zero
+    /// Les salves de poudre fine : elles partent à la PRISE et à la POSE, et
+    /// s'effacent d'elles-mêmes au bout de 0,95 s.
+    @State private var poudres: [SalveMini] = []
+    @State private var derniere: CGPoint = .zero
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var n: Int { max(prevus, 1) }
     private var solides: Int { min(faits + materialises, n) }
@@ -1065,7 +1081,10 @@ struct SemaineStrip: View {
     private let L: CGFloat = 354
     private let H: CGFloat = 128
     private let miniL: CGFloat = 70
-    private let miniH: CGFloat = 88
+    // ⚠️ PLUS CARRÉE (verdict 22-08) : 70 × 88 tirait au portrait.
+    // 70 × 78 la rapproche du carré sans lui rendre sa hauteur de
+    // pochette — le bord bas de l'ardoise la tranche toujours.
+    private let miniH: CGFloat = 78
     private static let stickers = ["sticker-bras", "sticker-flamme",
                                    "sticker-basket", "sticker-abricot",
                                    "sticker-chocolat"]
@@ -1125,21 +1144,14 @@ struct SemaineStrip: View {
                 startRadiusFraction: 0, endRadiusFraction: 1.1))
                 .blendMode(.plusLighter)
 
-            // LE VERRE des emplacements — dans le conteneur, bounds
-            // constants, tous toujours montés (les faites dorment sous
-            // leur plaque : le prix des bounds constants, et il est nul).
-            GlassEffectContainer(spacing: 1) {
-                ZStack {
-                    ForEach(0..<n, id: \.self) { i in
-                        Color.clear.frame(width: miniL, height: miniH)
-                            .glassEffect(.clear, in: formeMini)
-                            .rotationEffect(.degrees(angle(i)))
-                            .position(x: slotX(i), y: slotY(i))
-                            .zIndex(Double(i))
-                    }
-                }
-                .frame(width: L, height: H)
-            }
+            // ⚠️ LES FANTÔMES DE VERRE SONT MORTS (verdict 22-08 : « enlève
+            // les carrés bizarres gris clair »). C'était un `glassEffect`
+            // `.clear` monté sur CHAQUE emplacement, y compris les séances
+            // pas encore faites — et c'est encore la loi du VERRE À JEUN :
+            // posé sur l'ardoise sombre, il n'a presque rien à réfracter et
+            // ne rend qu'un rectangle gris. Il était censé laisser passer la
+            // nappe de flamme de la vidéo ; l'ardoise, elle, l'en empêche.
+            // Une semaine se lit à ce qui est FAIT, pas aux cases vides.
 
             // L'ENCRE, au-dessus du conteneur : le titre et les faites.
             // Titre mesuré sur le wireframe : 147 pt de large (le mien en
@@ -1151,17 +1163,163 @@ struct SemaineStrip: View {
             ZStack {
                 ForEach(0..<n, id: \.self) { i in
                     mini(i)
-                        .rotationEffect(.degrees(angle(i)))
+                        // L'APPUI A DU POIDS, et il REDRESSE la carte :
+                        // l'école des pochettes du calendrier. Une carte
+                        // qu'on presse se met droite sous le doigt, elle ne
+                        // fait pas que rétrécir.
+                        .rotationEffect(.degrees(angle(i)
+                                                 * (presse == i ? 0.35 : 1)
+                                                 + secousse(i).1))
+                        // PORTÉE, elle GRANDIT au lieu de rétrécir : on la
+                        // tient au-dessus du tas. Pressée sans bouger, elle
+                        // s'enfonce. Deux gestes, deux réponses opposées.
+                        .scaleEffect(porteLoin && presse == i ? 1.07
+                                     : (presse == i ? 0.94 : 1))
+                        .shadow(color: .black.opacity(
+                            porteLoin && presse == i ? 0.55 : 0),
+                                radius: 14, y: 8)
+                        .offset(x: secousse(i).0.width
+                                    + (presse == i ? porte.width : 0),
+                                y: secousse(i).0.height
+                                    + (presse == i ? porte.height : 0)
+                                    + (presse == i && !porteLoin ? -4 : 0))
+                        .animation(.spring(response: 0.28,
+                                           dampingFraction: 0.62),
+                                   value: presse)
                         .position(x: slotX(i), y: slotY(i))
-                        .zIndex(Double(i))
+                        // La portée passe DEVANT tout le monde — une carte
+                        // qu'on soulève et qui reste sous les autres n'est
+                        // pas soulevée.
+                        .zIndex(presse == i ? 100 : Double(i))
+                        .allowsHitTesting(i < solides)
+                        // ⚠️ UN SEUL GESTE pour l'appui ET le tap : un
+                        // `onLongPressGesture`, même à 0,01 s, VOLE le tap
+                        // qui le suit (la loi payée sur le puits de l'iPod
+                        // et sur le galet du menu).
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { v in
+                                    if presse != i {
+                                        presse = i
+                                        derniere = v.location
+                                        semer(i)
+                                        UIImpactFeedbackGenerator(style: .soft)
+                                            .impactOccurred()
+                                    }
+                                    porte = borneMini(v.translation, i)
+                                    // LA POUDRE SE SÈME À LA DISTANCE, jamais
+                                    // au temps : un doigt qui s'arrête se
+                                    // tait. C'est ça qui fait croire à la
+                                    // matière.
+                                    Paillettes.shared.travel(
+                                        hypot(v.location.x - derniere.x,
+                                              v.location.y - derniere.y),
+                                        level: 0.45)
+                                    derniere = v.location
+                                }
+                                .onEnded { v in
+                                    let d = hypot(v.translation.width,
+                                                  v.translation.height)
+                                    Paillettes.shared.end()
+                                    // ELLE SE REPLACE TOUTE SEULE — l'aimant
+                                    // de son emplacement. Un ressort peu
+                                    // amorti : elle revient et se pose en
+                                    // dépassant à peine.
+                                    withAnimation(.spring(response: 0.44,
+                                                          dampingFraction: 0.70)) {
+                                        porte = .zero
+                                    }
+                                    presse = nil
+                                    if d > 24 {
+                                        semer(i)
+                                        UIImpactFeedbackGenerator(style: .soft)
+                                            .impactOccurred()
+                                    } else {
+                                        onTap(i)
+                                    }
+                                }
+                        )
                 }
             }
             .frame(width: L, height: H)
+
+            // LA POUDRE FINE — celle du calendrier, pas la grosse gerbe
+            // (verdict 22-08 : « pas les grosses paillettes, les MINI
+            // paillettes comme dans la card du mois »). Seize grains par
+            // salve, l'étoile-facette de la maison, la gravité, et
+            // l'horloge qui DORT quand il n'y a rien à semer.
+            PoudreMini(salves: poudres)
+                .frame(width: L, height: H)
         }
         .frame(width: L, height: H)
         .clipShape(forme)
         .opacity(pose)
         .offset(y: 14 * (1 - pose))
+        .onAppear {
+            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            Paillettes.shared.prepare()
+        }
+    }
+
+    /// Une salve de poudre au-dessus de la mini `i`, qui s'oublie toute seule.
+    private func semer(_ i: Int) {
+        guard !reduceMotion else { return }
+        let s = SalveMini(t0: Date(),
+                          x: slotX(i) + porte.width,
+                          y: slotY(i) + porte.height,
+                          graine: Int.random(in: 0 ... 9999))
+        poudres.append(s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.95) {
+            poudres.removeAll { $0.id == s.id }
+        }
+    }
+
+    /// Portée assez loin pour qu'elle quitte son emplacement : au-delà de
+    /// 6 pt, ce n'est plus un appui, c'est un transport.
+    private var porteLoin: Bool {
+        hypot(porte.width, porte.height) > 6
+    }
+
+    /// LA MINI RESTE DANS L'ARDOISE. Elle est déjà clippée par la forme, mais
+    /// un objet qu'on pousse hors du cadre et qui disparaît sous le doigt se
+    /// lit comme un bug : on le retient AVANT le bord.
+    private func borneMini(_ t: CGSize, _ i: Int) -> CGSize {
+        let x = slotX(i), y = slotY(i)
+        let mx = miniL / 2 + 4, my = miniH / 2 - 14
+        return CGSize(
+            width: min(max(t.width, mx - x), L - mx - x),
+            height: min(max(t.height, my - y), H - my - y + 18))
+    }
+
+    /// LA SECOUSSE DU TÉLÉPHONE (verdict 22-08 : « quand je secoue le tél même
+    /// légèrement elles se secouent »). `SkyMotion` rend une inclinaison déjà
+    /// LISSÉE et RECENTRÉE lentement — c'est l'écart à la tenue habituelle qui
+    /// compte, jamais l'angle absolu : un téléphone tenu penché dans un canapé
+    /// revient au neutre au lieu de rester décalé.
+    ///
+    /// Chaque carte répond DIFFÉREMMENT — celles de devant (z le plus grand,
+    /// la droite) bougent le plus. Un éventail qui se décale d'un bloc est un
+    /// calque ; un éventail dont chaque carte a sa propre inertie est une pile
+    /// d'objets posés.
+    ///
+    /// ⚠️ Le simulateur n'a pas de gyroscope : l'inclinaison y reste à zéro et
+    /// les cartes sont simplement immobiles. Cela ne se juge qu'au téléphone.
+    private func secousse(_ i: Int) -> (CGSize, Double) {
+        guard !reduceMotion else { return (.zero, 0) }
+        let m = SkyMotion.shared
+        let t = m.tilt, k2 = m.shake
+        // De 0,45 pour celle du fond à 1,0 pour celle de devant.
+        let profondeur = 0.45 + 0.55 * Double(i) / Double(max(n - 1, 1))
+        // DEUX RÉPONSES, ET IL FAUT LES DEUX : l'INCLINAISON déplace le tas
+        // doucement quand on penche le téléphone (une position), la SECOUSSE
+        // le fait sursauter quand on le remue (une impulsion). Le lissage de
+        // l'inclinaison est trop lent pour rendre un coup sec — c'est pour ça
+        // qu'« elles se secouent » demandait une seconde grandeur.
+        let dx = t.dx * 7.0 * profondeur + k2.dx * 13.0 * profondeur
+        let dy = t.dy * 3.8 * profondeur + k2.dy * 9.0 * profondeur
+        return (CGSize(width: dx, height: dy),
+                Double(t.dx) * 1.6 * profondeur
+                    + Double(k2.dx) * 3.4 * profondeur)
     }
 
     /// La pose : la semaine n'arrive que dans le dernier tiers de la course
@@ -1520,7 +1678,6 @@ struct HomeNuitPage: View {
                                  materialises: materialises)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.620)
-                        .allowsHitTesting(false)
                         .opacity(RasantHorloge.iso ? 0 : 1)
 
                     // LA RANGÉE DU BAS — le slider de départ, à la place que
@@ -2154,5 +2311,95 @@ struct Chevron: Shape {
         p.addLine(to: CGPoint(x: r.midX, y: r.minY))
         p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
         return p
+    }
+}
+
+// MARK: - La poudre fine des minis
+
+/// Une salve : un point de départ et une graine.
+struct SalveMini: Identifiable, Equatable {
+    let id = UUID()
+    let t0: Date
+    let x: CGFloat
+    let y: CGFloat
+    let graine: Int
+}
+
+/// LA POUDRE FINE — la recette EXACTE du calendrier (`PoudreCran`), portée du
+/// cadran à une carte qu'on soulève.
+///
+/// TROIS LOIS, toutes payées là-bas :
+///   • **SEIZE grains, pas plus.** Entre quinze et quatre-vingts on tombe dans
+///     la neige de télévision ; ce qui fait la poudre, c'est que chaque grain
+///     est MENU et FAIBLE — c'est la masse qui brille, jamais l'individu.
+///   • **L'ÉTOILE-FACETTE**, jamais un point rond : deux losanges croisés et
+///     un cœur blanc. C'est la croix, pas la tache, qui dit « pierre ».
+///   • **L'HORLOGE DORT** quand il n'y a rien à semer. Hors salve, cette vue
+///     ne coûte pas une image.
+struct PoudreMini: View {
+    let salves: [SalveMini]
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: salves.isEmpty || reduceMotion)) { tl in
+            Canvas { ctx, _ in
+                ctx.blendMode = .plusLighter
+                for s in salves { dessiner(s, ctx: &ctx, quand: tl.date) }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func dessiner(_ s: SalveMini, ctx: inout GraphicsContext,
+                          quand: Date) {
+        let age = quand.timeIntervalSince(s.t0)
+        for i in 0 ..< 16 {
+            let g = s.graine &+ i
+            let vie: Double = 0.42 + 0.38 * Self.hachis(g, 2)
+            let cyc: Double = age / vie
+            guard cyc > 0, cyc < 1 else { continue }
+            // Elles s'écartent en gerbe vers le haut, puis la gravité les
+            // rattrape : un nuage isotrope ne serait que du bruit de capteur.
+            let ang: Double = -.pi / 2
+                + (Self.hachis(g, 1) - 0.5) * 2.1
+            let v: CGFloat = 26.0 + 52.0 * CGFloat(Self.hachis(g, 3))
+            let t = CGFloat(age)
+            let x: CGFloat = s.x + CGFloat(cos(ang)) * v * t
+            let y: CGFloat = s.y + CGFloat(sin(ang)) * v * t + 150.0 * t * t
+            let tw: Double = 0.5 + 0.5
+                * sin(age * (7.0 + 12.0 * Self.hachis(g, 5))
+                      + Self.hachis(g, 6) * 6.28)
+            let a: Double = sin(.pi * cyc) * sin(.pi * cyc)
+                * (0.25 + 0.75 * tw * tw * tw)
+            guard a > 0.02 else { continue }
+            let r: CGFloat = CGFloat(0.7 + 1.2 * Self.hachis(g, 7))
+            let c: Color = Self.hachis(g, 8) < 0.34
+                ? Color.white
+                : Color(red: 0.96, green: 0.97, blue: 1.00)
+            var etoile = Path()
+            etoile.move(to: CGPoint(x: -r, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: -r * 0.22))
+            etoile.addLine(to: CGPoint(x: r, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: r * 0.22))
+            etoile.closeSubpath()
+            etoile.move(to: CGPoint(x: 0, y: -r))
+            etoile.addLine(to: CGPoint(x: r * 0.22, y: 0))
+            etoile.addLine(to: CGPoint(x: 0, y: r))
+            etoile.addLine(to: CGPoint(x: -r * 0.22, y: 0))
+            etoile.closeSubpath()
+            ctx.fill(etoile.applying(CGAffineTransform(
+                translationX: x, y: y)),
+                with: .color(c.opacity(a * 0.85)))
+            ctx.fill(Path(ellipseIn: CGRect(
+                x: x - 0.4, y: y - 0.4, width: 0.8, height: 0.8)),
+                with: .color(Color.white.opacity(a * 0.9)))
+        }
+    }
+
+    private static func hachis(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
     }
 }
