@@ -8,7 +8,18 @@ struct ConnexionButtonLab: View {
     @State private var emptyText = ""
     @State private var filledText = "kathryn@gmail.com"
 
+    /// DÉTOUR PROVISOIRE — le banc du slider obsidienne se prend ici, en
+    /// `-buttonLab -sliderLab`, parce que `WoopApp.swift` (le vrai routeur)
+    /// était en cours d'édition par une autre session le 21-08. Dès qu'il
+    /// refroidit, `-sliderLab` doit devenir une route racine comme les
+    /// trente-cinq autres, et ces quatre lignes disparaissent.
+    private static let sliderLab = CommandLine.arguments.contains("-sliderLab")
+
     var body: some View {
+        if Self.sliderLab { SliderLab() } else { corps }
+    }
+
+    private var corps: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             VStack(spacing: 18) {

@@ -545,3 +545,252 @@ static float nburn(float c, float tint) {
     a *= host;
     return half4(half3(min(rgb, float3(a))), half(a));      // prémultiplié
 }
+
+// MARK: - LE SLIDER OBSIDIENNE — la capsule longue et son pouce de chrome
+//
+// Même fichier que la barre, EXPRÈS : les huit helpers du dessus sont `static`
+// (linkage interne, ils ne traversent pas les fichiers). Un `.metal` neuf les
+// obligerait à être dupliqués, et deux tables qui divergent d'un pouième
+// donnent deux matières différentes à l'œil. La parenté avec la nav bar est
+// ici une propriété du code, pas une intention.
+//
+// Le pouce est le bloc `navMonolith:188-272` REPRIS TEL QUEL — c'est « le
+// shader liquid glass de la navbar » : les trois canaux échantillonnent la
+// même dent de scie à trois décalages minuscules, et les franges orange
+// bordées de bleu tombent toutes seules sur deux arcs opposés. Un seul
+// réglage change : l'or passe à zéro. La référence montre du CHROME.
+//
+// La piste, elle, est mesurée au pixel sur la référence de Kathryn
+// (~/Downloads/woop-slider/ref.png, relevé complet dans SPEC-REF.md). Trois
+// faits, et ils font toute la matière :
+//
+//   1. LE FOND est un voile blanc de 9,4 % en haut qui MEURT à 60 % de la
+//      hauteur. La moitié basse est du noir ABSOLU — plus noir que la page.
+//      C'est ce noir-là qui fait la profondeur, pas un dégradé qui traverse.
+//   2. LE BORD est un anneau d'obsidienne pure de 5 % de la hauteur. Il ne se
+//      voit qu'en HAUT (en bas le fond est déjà noir, il n'a rien à trancher)
+//      — d'où la lecture « border très sombre » qui semble n'être qu'en haut.
+//   3. LA LUMIÈRE DES FLANCS est un lobe étroit qui culmine à 30° AU-DESSUS
+//      de l'horizontale, symétrique gauche/droite, éteint avant le sommet.
+//      Elle vit DANS l'anneau, par-dessus : c'est elle qui le ronge par
+//      l'intérieur sur les calottes et le laisse entier sur l'arête haute.
+//      Un liseré d'égale intensité tout autour ferait un contour vectoriel.
+//
+// `pill`   = (centre x dans le repère PISTE, demi-largeur, demi-hauteur, press)
+// `mtl`    = (repetition, angle en radians, softness, contour)
+// `mtl2`   = (distortion, speed, shiftRed, shiftBlue)
+// `look`   = (influence du bord en pt, dose d'or, demi-largeur du fil, buée)
+// `floorLvl` = plancher du métal, appliqué AVANT la teinte
+// `piste`  = (voile du haut, fin du voile en fraction de hauteur,
+//             épaisseur de l'anneau noir en pt, pic du liseré de flanc)
+// `piste2` = (profondeur du liseré en pt, sa demi-largeur en pt,
+//             son centre angulaire en degrés, sa largeur angulaire en degrés)
+// `ombre`  = (dose, étalement en pt, décalage y en pt, —)
+// `fx`     = (braise du déjà-poussé, refus 0→1, flash du commit, —)
+[[ stitchable ]] half4 sliderObsidienne(float2 position, half4 color,
+                                        float2 size, float t, float pad,
+                                        float4 pill, float4 mtl, float4 mtl2,
+                                        float4 look, float floorLvl,
+                                        float4 piste, float4 piste2,
+                                        float4 ombre, float4 fx) {
+    float2 center = size * 0.5;
+    float2 p = position - center;
+    float2 halfB = max(center - pad, float2(1.0));
+    float d = nsdRound(p, halfB, halfB.y);
+    float dep = -d;                          // profondeur DANS la pierre
+    float inside = smoothstep(0.7, -0.7, d);
+    float H = 2.0 * halfB.y;
+    float uy = clamp((p.y + halfB.y) / H, 0.0, 1.0);
+
+    float3 rgb = float3(0.0);
+
+    // ---- L'ANNEAU NOIR --------------------------------------------------
+    // Une bande d'obsidienne pure en dedans de l'arête. `ring` vaut 1 dedans.
+    // Sa sortie est FRANCHE — 0,45 pt de part et d'autre. Relevé sur la
+    // référence : le noir tient jusqu'à 5,0 % de la hauteur et la pierre est
+    // pleine à 6,2 % ; une transition molle rend l'anneau à moitié moins
+    // épais qu'il ne mesure, et la « border très sombre » disparaît.
+    float rz = max(piste.z, 0.5);
+    float ring = 1.0 - smoothstep(rz - 0.45, rz + 0.45, dep);
+
+    // ---- LE FOND ---------------------------------------------------------
+    // Le voile relevé sur la référence suit un smoothstep, pas une droite :
+    // il tient son plateau sur le premier tiers puis lâche d'un coup. Une
+    // rampe linéaire donne un ciel ; celui-ci donne une pierre couchée.
+    float s = clamp(uy / max(piste.y, 0.05), 0.0, 1.0);
+    float veil = piste.x * (1.0 - s * s * (3.0 - 2.0 * s));
+    rgb += veil * (1.0 - ring) * inside;
+
+    // La braise du déjà-poussé : ce qui est DERRIÈRE le pouce s'est réchauffé.
+    // « Extrêmement subtile » est une consigne, pas une figure de style — à
+    // 2 % on la voit déjà, à 5 % la capsule n'est plus noire.
+    if (fx.x > 0.001) {
+        float behind = 1.0 - smoothstep(pill.x - 40.0, pill.x + 8.0,
+                                        p.x + halfB.x);
+        rgb += fx.x * behind * (1.0 - ring) * inside
+               * float3(1.00, 0.42, 0.16);
+    }
+
+    // Le refus : la pierre prend la densité du grenat. Pas une alerte —
+    // l'obsidienne reste de l'obsidienne, elle rougit du dedans.
+    rgb = mix(rgb, mix(rgb, float3(0.62, 0.13, 0.16), 0.20) * inside,
+              clamp(fx.y, 0.0, 1.0));
+
+    // ---- LA LUMIÈRE DES FLANCS -------------------------------------------
+    // La normale de la capsule : on replie p sur son épine dorsale, et ce qui
+    // reste EST la normale. Sur les longues arêtes elle vaut (0, ±1) — le
+    // lobe s'y éteint tout seul, sans masque ni test de côté.
+    float spine = max(halfB.x - halfB.y, 0.0);
+    float2 qn = float2(p.x - clamp(p.x, -spine, spine), p.y);
+    float2 nrm = normalize(qn + float2(0.0, 1e-4));
+    float ang = asin(clamp(-nrm.y, -1.0, 1.0)) * 57.2957795;
+    float sig = max(piste2.w, 1.0);
+    float lobe = exp(-pow((ang - piste2.z) / sig, 2.0));
+    // La coupure haute. Sans elle le lobe remonte sur l'arête et les quatre
+    // coins deviennent les maxima structurels : le procédé se voit.
+    //
+    // Elle est SERRÉE (+12° / +34° autour du centre) alors que le lobe, lui,
+    // est LARGE (sigma 32°). C'est la mesure qui l'impose : la référence tient
+    // 27/255 encore à l'horizontale — un lobe étroit y tombait à 9 — mais
+    // s'éteint net avant 60°. Une gaussienne symétrique ne peut pas faire les
+    // deux ; c'est la coupure qui taille le haut, pas le sigma.
+    lobe *= smoothstep(piste2.z + 34.0, piste2.z + 12.0, ang);
+    float dd = fabs(dep - piste2.x);
+    float lwp = max(piste2.y, 0.3);
+    float bandP = 1.0 - smoothstep(lwp * 0.70, lwp * 1.55, dd);
+    // Au commit, les deux bouts de la capsule s'ALLUMENT. C'est le liseré de
+    // flanc qui porte l'arrivée : la piste ne peut pas devenir blanche (elle
+    // resterait de l'obsidienne éclairée, pas de l'obsidienne allumée) — ce
+    // sont ses arêtes qui prennent la lumière, comme un objet qu'on approche
+    // d'une source.
+    rgb += piste.w * lobe * bandP * (1.0 + 2.10 * clamp(fx.z, 0.0, 1.0))
+           * inside * float3(0.97, 0.98, 1.00);
+
+    // Le cheveu : la crête juste à l'aplomb de l'anneau, un pour cent. C'est
+    // lui qui donne une TRANCHE à la pierre — sans quoi la capsule est une
+    // découpe posée sur la page.
+    float topness = clamp(-p.y / max(halfB.y, 1.0), 0.0, 1.0);
+    float hair = exp(-pow((dep - max(piste.z, 0.5)) / 2.4, 2.0))
+               * (0.004 + 0.011 * pow(topness, 2.2));
+    rgb += hair * float3(0.86, 0.89, 0.95) * inside;
+
+    // ---- L'ONDE DU COMMIT ------------------------------------------------
+    // La lumière part du pouce et court aux DEUX bouts en ~0,20 s. C'est une
+    // onde, pas un fondu : un fondu global dit « la page a changé », une onde
+    // qui part d'un point dit « c'est CE geste-là qui l'a déclenchée ».
+    // Elle continue au-delà des bouts et meurt dehors — un front qui s'arrête
+    // sur l'arête se lit comme un défaut de rendu.
+    if (fx.z > 0.001) {
+        float dxw = fabs((p.x + halfB.x) - pill.x);
+        float front = (1.0 - fx.z) * 2.2 * (2.0 * halfB.x);
+        float onde = exp(-pow((dxw - front) / max(halfB.y * 0.72, 1.0), 2.0));
+        rgb += onde * fx.z * 0.80 * inside;
+        // et la pierre entière prend la lumière, une fois, brièvement.
+        rgb += fx.z * fx.z * 0.11 * (1.0 - ring) * inside;
+    }
+
+    // ---- LE POUCE : LE PUITS ---------------------------------------------
+    float2 q = p - float2(-halfB.x + pill.x, 0.0);
+    float2 pb = max(float2(pill.y, pill.z), float2(1.0));
+    float dp = nsdRound(q, pb, pb.y);
+    float adp = fabs(dp);
+    float press = pill.w;
+
+    // Pas de `* inside` : sous le doigt le pouce GROSSIT jusqu'à déborder de
+    // la capsule, et ce qui dépasse doit exister. Clippé, il se ferait
+    // trancher net à l'arête.
+    // Le puits est PLUS CLAIR que celui de la barre : relevé sur la référence,
+    // le verre ajoute un blanc quasi CONSTANT de 9,6 % à ce qu'il y a derrière
+    // (41 en haut / 25 en bas, sur un fond qui vaut lui 17 puis 0). La barre,
+    // elle, creuse une cuvette dégradée — deux objets, deux lectures.
+    float pin = smoothstep(0.8, -0.8, dp);
+    float wy = clamp((q.y + pb.y) / (2.0 * pb.y), 0.0, 1.0);
+    rgb += pin * (0.115 + 0.020 * (1.0 - wy) + 0.014 * press);
+
+    // ---- LE FIL DE MÉTAL LIQUIDE (le bloc de la nav bar, intact) ---------
+    float W = max(look.x, 0.5);
+    float n = nfbm(q * 0.055 + float2(t * 0.09, -t * 0.07)) - 0.5;
+
+    float edge = 1.0 - smoothstep(0.0, W, adp);
+    edge += (1.0 - edge) * mtl2.x * n;
+    edge = clamp(edge, 0.0, 1.0);
+
+    // La rampe est normalisée par la HAUTEUR du pouce : le pouce du slider est
+    // une capsule couchée (rapport 1,68) là où celui de la barre est un
+    // disque, et c'est justement pour ça qu'on ne normalise pas sur le grand
+    // axe — sinon le fil reçoit moins d'une période et se lit en croissant.
+    float scale = max(pb.y, 1.0);
+    float2 axis = float2(cos(mtl.y), sin(mtl.y));
+    float dir = dot(q / scale, axis) * mtl.x;
+    dir -= t * mtl2.y;
+    dir -= 1.7 * edge * mtl.w;
+    dir -= 2.5 * n * (edge * (1.0 - edge));
+
+    float soft = mtl.z;
+    float3 chrome = float3(nstripe(fract(dir + mtl2.z), soft),
+                           nstripe(fract(dir), soft),
+                           nstripe(fract(dir - mtl2.w), soft));
+
+    float fl = clamp(floorLvl, 0.0, 1.0);
+    chrome = fl + (1.0 - fl) * chrome;
+
+    float3 gold = float3(1.000, 0.780, 0.340);
+    float3 burned = float3(nburn(chrome.r, gold.r),
+                           nburn(chrome.g, gold.g),
+                           nburn(chrome.b, gold.b));
+    chrome = mix(chrome, burned, clamp(look.y, 0.0, 1.0));
+
+    float lw = max(look.z, 0.3);
+    float band = 1.0 - smoothstep(lw * 0.70, lw * 1.55, adp);
+
+    float tq = clamp(-q.y / pb.y, 0.0, 1.0);
+    float lift = 0.26 + 0.62 * pow(tq, 1.15) + 0.30 * pow(1.0 - tq, 2.4);
+    float arc = atan2(q.y, q.x);
+    float breath = 0.82 + 0.18 * sin(t * 0.55 + arc * 2.0);
+
+    // L'amplitude du fil (`fx.w`) : la nav bar sertit un onglet DANS une barre
+    // déjà claire ; ici le fil est seul sur du noir absolu et doit porter la
+    // forme à lui tout seul. Mesuré : à l'amplitude de la barre le liseré
+    // plafonne à 134/255 là où la référence en tient 190.
+    // Le flash du commit : le fil entier prend la lumière, une fois.
+    float amp = fx.w > 0.01 ? fx.w : 1.0;
+    float ringAmt = band * lift * breath * amp * (1.0 + 0.50 * press)
+                  * (1.0 + 1.80 * clamp(fx.z, 0.0, 1.0));
+    rgb += chrome * ringAmt;
+
+    float halo = exp(-max(adp - lw, 0.0) / 2.6) * look.w * lift
+               * (1.0 + 0.6 * press);
+    rgb += chrome * halo * 0.30;
+
+    // ---- L'OMBRE PORTÉE --------------------------------------------------
+    // Relevée sur la référence : sous la capsule le fond passe de 27 à 16
+    // (41 % d'assombrissement), et il est ENCORE à 18 trente points plus bas —
+    // c'est une ombre LARGE et molle, pas un contact. Sur les flancs elle ne
+    // vaut plus que 11 %, au-dessus rien du tout.
+    //
+    // Le poids vertical est un CARRÉ, pas un smoothstep : c'est le seul galbe
+    // qui donne les trois mesures d'un coup (0,04 en haut, 0,23 sur le flanc,
+    // 1,00 dessous). Un smoothstep laissait un quart d'ombre au-dessus de la
+    // capsule — une pièce éclairée par le bas.
+    float vsh = clamp((p.y + halfB.y) / H, 0.0, 1.0);
+    float shadow = ombre.x * exp(-max(d - 1.0, 0.0) / max(ombre.y, 1.0))
+                 * (1.0 - inside) * (0.04 + 0.96 * vsh * vsh);
+
+    // Dither : un demi-niveau. Sans lui, un dégradé de 2 % bande atrocement
+    // sur OLED — et toute cette matière est faite de dégradés de 2 %.
+    rgb += (nhash21(position * 1.113 + fract(t * 0.618) * float2(17.0, 29.0)) - 0.5)
+           * (1.0 / 255.0);
+    rgb = clamp(rgb, 0.0, 1.0);
+
+    float lum = max(max(rgb.r, rgb.g), rgb.b);
+    float a = clamp(max(max(inside, pin), max(lum, shadow)), 0.0, 1.0);
+
+    // ---- LE FONDU D'HÔTE -------------------------------------------------
+    // Toute la lumière et toute l'ombre meurent AVANT le bord du rectangle :
+    // le débord se dissout, il ne se coupe jamais.
+    float2 toEdge = min(position, size - position);
+    float host = smoothstep(0.0, pad * 0.42, min(toEdge.x, toEdge.y));
+    rgb *= host;
+    a *= host;
+    return half4(half3(min(rgb, float3(a))), half(a));      // prémultiplié
+}
