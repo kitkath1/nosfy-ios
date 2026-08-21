@@ -1064,10 +1064,18 @@ struct SemaineStrip: View {
             // elle disparaissait. Elle reste TRANSLUCIDE (opacité 0,90) :
             // les fantômes posés dessus mangent encore la vidéo à travers
             // elle — une ardoise opaque les affamerait.
-            forme.fill(LinearGradient(
-                colors: [Color(white: 0.125).opacity(0.90),
-                         Color(white: 0.100).opacity(0.90)],
-                startPoint: .top, endPoint: .bottom))
+            // LA MÊME MATIÈRE QUE LES DEUX WIDGETS (verdict 21-08) : un
+            // plancher très bas et DEUX lueurs radiales neutres posées sur
+            // l'anti-diagonale — jamais un dégradé linéaire. L'ardoise garde
+            // un souffle d'opacité pour que les fantômes mangent encore la
+            // vidéo.
+            forme.fill(Color(white: 0.016).opacity(0.94))
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.150).opacity(0.94), .clear],
+                center: .topTrailing, startRadius: 0, endRadius: L * 0.95))
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.100).opacity(0.94), .clear],
+                center: .bottomLeading, startRadius: 0, endRadius: L * 0.62))
             GrainTexture.tuile
                 .resizable(resizingMode: .tile)
                 .opacity(0.05).blendMode(.overlay).clipShape(forme)
@@ -1302,13 +1310,21 @@ struct HomeNuitPage: View {
                         .offset(y: -scroll * (1 - phrase.plan))
                         .opacity(RasantHorloge.iso ? 0 : 1)
 
+                    // LES DEUX CARDS (jalon V3) : les séances et le volume.
+                    CardsRangee(faites: faits, prevues: prevus,
+                                arrivee: arrivee)
+                        .padding(.leading, 24)
+                        .padding(.top, geo.size.height * 0.375)
+                        .allowsHitTesting(false)
+                        .opacity(RasantHorloge.iso ? 0 : 1)
+
                     // LA SEMAINE — le mobilier de la page, sourd au doigt
                     // tant que le tap-story n'est pas câblé (jalon flow).
                     SemaineStrip(faits: faits, prevus: prevus,
                                  arrivee: arrivee,
                                  materialises: materialises)
                         .padding(.leading, 24)
-                        .padding(.top, geo.size.height * 0.55)
+                        .padding(.top, geo.size.height * 0.620)
                         .allowsHitTesting(false)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                 }

@@ -1050,3 +1050,797 @@ chevauchent bien plus), tops à **66 / 56** pt sous le haut de l'ardoise (elles
 mien en tenait 115), jour à **10** et mois à **5,5** (ils étaient trop gros
 d'un tiers).
 
+---
+
+## 10. LES CARDS PIXEL (jalon V3) — LE PANNEAU À LED
+
+Commandé le 21-08 sur deux références : une card au **cœur** blanc (« 72 »),
+une card à la **flamme** ambre (« 4/5 »). Consigne : *« travaille
+essentiellement les lignes et les points, pas le background liquid glass pour
+le moment, et le chiffre »* — donc la matière du panneau d'abord, le verre
+après.
+
+### 10.1 Ce que les références disent, mesuré
+
+Sonde numpy sur ses deux images (card de 620 × 614 px) :
+
+| pièce | pas | Ø du point | ratio |
+|---|---|---|---|
+| la grille FINE (glyphe + chiffre) | 11 px | 8,5 px | **0,78** — ils se touchent presque |
+| la RÈGLE (la ligne pointillée) | 28 px | 8 px | **0,29** — elle respire |
+
+Niveaux mesurés : point **allumé** L 254 · point **éteint** L 27 (il EXISTE,
+et c'est lui qui fait « panneau » et pas « dessin ») · règle à gauche du
+glyphe **L 249**, à droite **L 102**.
+
+Ramené à un widget de **148 pt** : grille fine **2,6 pt** (point 2,0), règle
+**6,7 pt** (point 1,9), glyphe **11 cellules** de large (≈ 29 pt), chiffre sur
+**7 rangées** (≈ 18 pt). Vingt-deux points de règle en travers.
+
+### 10.2 Les quatre lois du panneau
+
+1. **LES POINTS ÉTEINTS EXISTENT.** Un glyphe posé sur du vide est un dessin ;
+   posé sur un champ de points sourds, c'est un afficheur. Le champ sourd
+   s'éteint en **radial** autour du glyphe (mesuré sur ses deux images) — il
+   ne couvre pas toute la card.
+2. **LA RÈGLE EST LA JAUGE.** Ce n'est pas un décor : les points à gauche du
+   seuil sont allumés, ceux de droite sourds. À 50 % on retombe exactement
+   sur ses références.
+3. **LA CHALEUR SE CALCULE, ELLE NE SE DESSINE PAS.** La flamme n'est pas
+   peinte cellule par cellule : sa forme est un bitmap, sa **couleur** vient
+   d'un champ de chaleur (1 au cœur du bas, décroissant) — le blanc au pied,
+   l'ambre au ventre, la braise à la pointe. La rampe s'écrit **en canaux**
+   (on éteint le bleu puis le vert quand la chaleur tombe), jamais en `mix`
+   entre deux teintes : le chemin droit passe par le brun (loi payée au J1).
+4. **UN SEUL CANVAS.** Un widget porte ~900 points ; une vue par point serait
+   la mort. Tout est dessiné dans UN `Canvas`, en points, sans image.
+
+### 10.3 Les deux cards
+
+| | glyphe | valeur | la jauge |
+|---|---|---|---|
+| **CŒUR**, blanc pur | 11 × 9 | « 72 » | le pouls moyen de la semaine |
+| **FLAMME**, braise | 11 × 12 | « 8,4 » | les tonnes soulevées |
+
+Les deux valeurs viennent de son brief d'origine (volume soulevé, cardio) et
+ne redisent RIEN de la phrase (loi 4 : chaque chose se dit une fois — le
+compte des séances est déjà dans la phrase ET dans la semaine).
+
+### 10.4 La géométrie de la card
+
+Mesurée sur son wireframe : deux carrés de **148 × 128 pt**, gouttière 24
+(alignée sur la phrase et sur l'ardoise de la semaine), **58 pt** d'écart. La
+règle vit à **45 %** de la hauteur, le chiffre en bas à gauche à 14 pt du
+bord. Fond : pour l'instant l'ardoise de la semaine (verre plus tard, sa
+consigne).
+
+### 10.5 Le banc
+
+`-widgetLab` : les deux cards seules, en grand, avec la jauge qui balaie —
+le seul moyen de juger la règle et le champ sourd sans le reste de la page.
+
+---
+
+## 11. LE PANNEAU, REPRIS À ZÉRO (verdict « beaucoup trop cheap », 21-08)
+
+Verdict sans appel sur le §10 : *« c'est beaucoup trop cheap, je veux des
+petits points très fins, minimal, élégant, et dégradé… beaucoup de dégradé,
+beaucoup de détail et beaucoup de points… je veux comme la photo à 100 %
+sauf les backgrounds »*. La nouvelle référence (deux cards de **530 × 341 px**)
+a été sondée au numpy. Elle dit une chose que je n'avais pas vue : **ce n'est
+pas un glyphe posé sur un fond, c'est une DALLE À LED, et c'est la dalle qui
+est le sujet.**
+
+### 11.1 L'écart, chiffré
+
+| grandeur | SA référence | CE QUE J'AI FAIT | facteur |
+|---|---|---|---|
+| pas de la grille | **1,08 % de la largeur** (5,7 px) | 1,76 % | 1,6× trop gros |
+| cellules par card | **93 × 60** | 57 × 49, et seulement en tache | — |
+| Ø du point **éteint** | **0,17 × le pas** | 0,62 | **3,6× trop gros** |
+| Ø du point **allumé** | **0,70 × le pas** | 0,62 | — |
+| rapport allumé / éteint | **× 4,1** | × 1,0 | **le bloom n'existait pas** |
+| dégradé du panneau | points de **L 10 à L 100** | constant | **rapport 10 perdu** |
+| le cœur | **16 × 13 cellules** | 11 × 9 | 2× moins de définition |
+| la flamme | **18 × 23 cellules** | 11 × 12 | 2× moins |
+| la règle | 34 points, pas **3,67 cellules** | 2,6 cellules | trop serrée |
+
+**Les trois fautes, nommées :**
+1. **Le point éteint doit être un GRAIN, pas une pastille.** À 0,17 du pas il
+   fait une trame de soie ; à 0,62 il fait du gros-plan de Lego. C'est LA
+   faute qui saute aux yeux.
+2. **Un point allumé BLOOME.** Chez elle il est **quatre fois** plus large
+   que ses voisins éteints — c'est ça, une LED qui s'allume. Chez moi tous
+   les points faisaient la même taille : une grille de cases cochées.
+3. **La dalle porte la LUMIÈRE DE LA CARD.** Ses points éteints vont de L 10
+   dans l'ombre à L 100 sous la traînée du verre : la trame RÉVÈLE l'éclairage
+   au lieu de le subir. Chez moi le champ était plat, et cantonné à une tache
+   ronde autour du glyphe au lieu de couvrir toute la card.
+
+### 11.2 La loi qui sort de là
+
+> **LA DALLE EST UN MATÉRIAU, PAS UN AFFICHEUR.** Toute la surface est en
+> points ; ce qui « s'affiche » n'est qu'un endroit où les points sont plus
+> gros et plus chauds. Rien n'est jamais posé SUR la dalle — tout est fait
+> DE la dalle.
+
+Corollaire : **un point n'a pas deux états, il a une intensité.** Son rayon
+ET sa couleur en découlent, continûment. C'est ce qui donne le dégradé
+qu'elle réclame : le bord du cœur n'est pas une frontière, c'est une rangée
+de points à mi-régime.
+
+### 11.3 La route technique : un shader, pas un Canvas
+
+93 × 60 = **5 580 points par card**, 11 160 pour les deux. Un `Canvas` les
+dessine un par un à chaque image : c'est le lag garanti. La maison sait faire
+autrement — **c'est un shader**, comme tout le reste (`nuitRasant`,
+`galetMedaillon`, `LiquideMolette`). Coût en O(pixels) et non en O(points),
+anticrénelage gratuit, et le dégradé par construction.
+
+**La forme retenue — `layerEffect`, la dalle qui MANGE un calque.** Le shader
+ne connaît ni cœur ni flamme : il prend un calque quelconque et le rend « en
+points ». Pour chaque pixel, il trouve sa cellule, échantillonne le calque
+source AU CENTRE de cette cellule, et peint un point dont le **rayon** et la
+**couleur** viennent de ce qu'il y a lu.
+
+Ce que ça donne, et c'est là qu'est l'élégance : **le glyphe redevient un
+dessin normal.** On dessine un vrai cœur (un chemin, pas un bitmap) rempli
+d'un dégradé, avec sa lueur floue dessous ; le shader en fait une constellation
+de points d'intensités continues. Les demi-teintes du dessin deviennent des
+demi-points. Aucun bitmap 16 × 13 à saisir à la main, et le dégradé est
+gratuit.
+
+Le calque source d'une card contient donc, de bas en haut :
+1. **l'éclairage de la dalle** — le dégradé ambiant + la traînée du verre
+   (c'est lui qui fait vivre les points éteints de L 10 à L 100) ;
+2. **la lueur** du glyphe — sa silhouette floutée large, dans sa teinte ;
+3. **le glyphe** — chemin plein, dégradé interne (le cœur : plus clair au
+   centre-gauche ; la flamme : blanc au pied, ambre au ventre, braise à la
+   pointe, en canaux — jamais un `mix` entre deux teintes).
+
+**Au-dessus du shader, deux pièces seulement** — parce que leur grille n'est
+PAS celle de la dalle (mesuré : la règle est à 3,67 cellules, un pas non
+entier) :
+4. **la règle**, ses points à elle, plus gros, allumés à gauche du seuil ;
+5. **le chiffre**, en 7 × 9 sur la grille fine, en points pleins.
+
+### 11.4 Les constantes de départ (mesurées, à fouetter au banc)
+
+pas **1,08 %** de la largeur · point éteint **0,17** du pas · point allumé
+**0,70** · rayon = 0,17 + 0,53 × intensité^0,8 · rapport de niveau du
+panneau **10** entre l'ombre et la traînée · cœur **16 × 13**, flamme
+**18 × 23** · règle : pas **3,67** cellules, point **0,55**.
+
+Format de la card revu sur sa référence : **1,55 de rapport** (530 × 341) et
+non 1,16 — les deux widgets de la home passent donc à **148 × 100**, la dalle
+a besoin de largeur pour que la règle respire.
+
+### 11.5 Le fouettage
+
+Ce jalon se juge à la sonde, pas à l'œil : `tools/home-v2/mesure_dalle.py`
+compare une capture au tableau du § 11.1 (pas, ratio des deux Ø, rapport de
+bloom, amplitude du dégradé, définition du glyphe). Tant qu'une ligne n'est
+pas à sa valeur, ce n'est pas fini. Banc : `-dalleLab`, avec les curseurs du
+pas, des deux rayons, du bloom et du dégradé, et le sélecteur cœur/flamme.
+
+**Hors périmètre pour l'instant** (sa consigne) : le fond en verre de la card.
+La dalle d'abord.
+
+---
+
+## 12. LES CARDS « VOLUME / SÉANCES » (jalon V3, la 3ᵉ direction)
+
+Verdict sur la dalle à LED : *« stop, je veux pas ça en fait »*. Nouvelle
+référence (`mini_widget_noir.png`, deux cards de 607 × 613 px), consigne :
+*« je veux exactement ça à 100 %, tous les détails, tout — fais workflow et
+fouette »*.
+
+### 12.1 L'anatomie, mesurée (workflow à 5 lentilles, 371 mesures)
+
+**LA CARD EST UNE DOUBLE COQUE.** Profil sur le bord gauche, en px :
+`0-2` le liseré de la bezel (crête L 74) · `4-18` la bezel presque noire ·
+`19` la couture · `20-23` le liseré du PANNEAU (crête L 49) · `24+` le
+panneau. Encastrement **3,45 % de la largeur**.
+
+**LE COIN N'EST PAS UNE SQUIRCLE.** Ajustement d'une superellipse sur 200
+points : **n = 2,0**, arc de cercle pur, rayon **14,6 % de la largeur**. Un
+coin `.continuous` d'Apple y met un galbe que la référence n'a pas — et le
+reflet qu'on trace dessus s'en décolle au milieu du virage.
+
+**LE LISERÉ EST UN DÉGRADÉ ANGULAIRE**, et c'est LA découverte. Il fait le
+tour, et son intensité tourne avec l'angle : deux POINTS MORTS aux coins
+haut-gauche (#1B1A1A) et bas-droit (#141414), deux CRÊTES aux coins
+haut-droit (l'or, #FEF6D0 écrêté au blanc, balayage 141°) et bas-gauche
+(le blanc pur, 118°). **Les « traînées » ne sont pas des objets posés à côté
+de la card : c'est ce liseré lui-même, saturé sur un arc.** Mon premier jet
+en faisait deux arcs flottants — d'où le décollement.
+
+Le reste, mesuré : aucune ombre portée, aucun halo ambiant (à 6 px du bord
+on est au fond) · bloom 4-5 px au liseré, 8-12 px aux crêtes · rails
+#333333 → #1C1C1C, liseré 1 px, rayon 25,5 % de leur largeur · segments en
+dégradé **HORIZONTAL** (#EEA557 gauche, #E29B58 milieu, #FFC582 droite —
+un cylindre éclairé par la droite, pas une touche laquée), rayon 12,1 % ·
+base des barres à **63,5 %** de la hauteur (ce que je prenais pour leur pied
+à 69,2 % était la LETTRE du jour) · pied en deux colonnes CENTRÉES (27 % et
+70 %).
+
+### 12.2 L'instrument de fouettage
+
+`tools/home-v2/compare_widget.py` note le rendu contre la référence, région
+par région (en-tête, graphe, pied, les deux arêtes), et sort le triptyque
+`réf | mien | écart`.
+
+⚠️ **L'instrument est très sévère, et il faut le savoir pour lire sa note.**
+Calibré contre la référence elle-même : un décalage de **2 px** coûte
+**1,3 point**, 4 px en coûtent 2,7. Et la référence est un rendu
+photographique (grain, dégradés doux, sa propre fonte) qu'une reconstruction
+vectorielle ne peut pas corréler au-delà de ~0,7. L'alignement résiduel a été
+vérifié par corrélation croisée : **dx = +1 px, dy = +1 px, échelle 1,00** —
+il n'y a plus de décalage systématique à corriger.
+
+### 12.3 L'état
+
+Livré (non commité) : `Woop/Views/WidgetsCards.swift`, banc `-cardsLab`.
+Note de l'instrument : **6,05/10** — c'est-à-dire « tout est placé à 3-5 px
+près », pas « c'est à moitié faux ».
+
+Trois demandes du 21-08, appliquées et qui S'ÉLOIGNENT VOLONTAIREMENT de la
+référence (l'instrument les compte donc en écart, à raison) :
+le « 4 / 5 » aligné sur le « 8.4 » et posé AU-DESSUS de sa légende (il la
+recouvrait), sa fonte réduite, et **la valeur au-dessus de son libellé dans
+la colonne droite du pied** (la référence fait l'inverse).
+
+Reste ouvert : l'unité (« plutôt kilos que tonnes »), le grain
+photographique de la référence, et le câblage aux vraies données.
+
+### 12.4 Ce que le workflow a corrigé de fond (371 mesures, 6 agents)
+
+- **La fonte est SF Pro (système), pas Inter** — vérifié par IoU du masque du
+  « 4 » contre SFNS.ttf (0,88-0,91), pas deviné. Et **tout est `.regular`**
+  sauf les deux gros chiffres (Medium) : le « +12 % » qui semble gras à l'œil
+  est mesuré à 0,119 de rapport trait/capitale, donc Regular.
+- **Les gros chiffres ne sont pas blancs plats** : dégradé vertical
+  métallique #FFFFFF → #DCDCDC (card volume) / → #C9C9C9 (card séances).
+- **Tracking +0,03 em sur les textes moyens, nul sur les petits labels** du
+  pied — une règle, pas un réglage au cas par cas.
+- **Un seul gris #949392** couvre 8 des 12 textes sans qu'on voie la
+  différence.
+- **La matière du corps** : ni aplat ni dégradé linéaire, mais un plancher
+  #030303 et DEUX lueurs radiales sur l'anti-diagonale (pic #282828 au coin
+  haut-droit, #1B1B1B au bas-gauche, aux deux tiers de sa force), strictement
+  NEUTRES — toute la chaleur vient des reflets et du contenu.
+
+**ET UN AVERTISSEMENT QUI VAUT POUR TOUT LE CHANTIER** : la référence n'est
+pas un rendu vectoriel, c'est une image RETOUCHÉE (unsharp mask). Preuve
+dure : une coupe à travers un fût de chiffre donne `196, 237, 91, 0, 5, 8` —
+un pixel à ZÉRO de chaque côté de l'arête, sur un fond qui vaut 5-10. C'est
+du ringing. **La hairline noire autour du corps, du panneau et de chaque
+glyphe est cet artefact — il ne faut PAS le reproduire.** Ses irrégularités
+non plus : le pas des 7 barres dérive de +3,7 % de gauche à droite, celui des
+7 pastilles rétrécit de 4,5 %, les rayons des coins diffèrent de 6 px d'un
+coin à l'autre. On régularise.
+
+C'est aussi pourquoi l'instrument plafonne : une reconstruction vectorielle
+propre ne peut pas corréler au-delà de ~0,7 avec une image sur-nettoyée.
+
+### 12.5 Le tour de verdicts du 21-08 sur les cards
+
+Quatre demandes, appliquées :
+1. **Le gros chiffre était plus lourd à droite qu'à gauche** — même corps
+   (19,3 %H) mais l'un en Medium, l'autre en Regular. Les deux passent en
+   **Regular à 17,5 %H** : même taille, même graisse, et plus discret.
+2. **L'unité devient `kg`** (« ce seront nos vraies données ») — l'en-tête et
+   la moyenne du pied.
+3. Le pied de la card des séances **touchait le bord** : 5,5 %H → **4,3 %H**.
+4. **Les deux cards sont posées sur la home** (`CardsRangee`, 170 × 170,
+   gouttière 24, écart 14). Verticale recalée : les cards à 31,5 % de la
+   hauteur utile, l'ardoise de la semaine repoussée à 56,5 % — elles se
+   chevauchaient de 37 pt.
+
+Restent ouverts : la langue (les cards sont en anglais comme la référence,
+la page est en français), le reflet blanc du bas-gauche qui court encore un
+peu plus loin que celui de la référence, et le câblage aux vraies données.
+
+---
+
+## 13. LES DEUX CHANTIERS SUIVANTS — LE GALET/LA NAPPE, ET LE TIROIR
+
+Commandés le 21-08 : *« le menu pills liquid glass assez noir avec logo home
+néon blanc, et quand on clique, une partie de l'écran du bas devient halo
+fondu avec le titre de nos sections… et après le chantier avec le replay
+(effet comme quand la carte globale de la home est levée). Des transitions
+très Apple like, très luxe. »*
+
+**LA DOCTRINE DES DEUX CHANTIERS, en une phrase :** *rien n'apparaît — tout
+ARRIVE, dans un ordre, et la lumière passe toujours avant la géométrie.*
+C'est la loi maison (« l'oreille arrive 0,25 s avant l'œil ») appliquée à
+deux gestes. Un panneau qui « pop » est un panneau ; un panneau dont la
+lumière s'allume avant qu'il ne bouge est un objet.
+
+---
+
+## CHANTIER A — LE GALET ET LA NAPPE
+
+### A.1 Le galet
+
+Un seul bouton, en bas à gauche, **62 pt**, aligné sur la gouttière de la
+page (x 24).
+
+- **Le corps est NOIR MAT, pas du verre natif.** La loi payée deux fois :
+  le verre natif ne montre que ce qu'il RÉFRACTE, et posé sur le noir de la
+  page il est à jeun (p95 mesuré à 23, verdict « on voit rien, ça fait
+  blur »). Le galet reprend donc la matière du galet de la barre v1
+  (`galetMedaillon` — un shader qui PEINT son cristal au lieu de l'emprunter,
+  et qui brille donc sur n'importe quel fond).
+- **Le glyphe est une MAISON AU NÉON BLANC**, tracée au trait comme
+  `GlypheLune` — jamais un SF Symbol : à cette taille, c'est le tracé qui
+  fait la marque. Recette de `NeonPrimaryButton`, en blanc au lieu d'ambre :
+  cœur blanc pur, tube, halo court (≤ 10 pt, au-delà c'est du néon de bar).
+- Au repos il **respire** (l'invite du galet play, déjà écrite) — et
+  seulement lui : c'est le seul objet vivant de la bande basse.
+
+### A.2 L'ouverture — six gestes, aucun simultané
+
+| t (s) | ce qui bouge |
+|---|---|
+| 0,00 | le galet s'enfonce (échelle 0,94), `impact(.soft)`, son néon monte au blanc pur |
+| **0,04** | **LA NAPPE S'ALLUME AVANT DE MONTER** — opacité 0 → 1 en 0,22 s, immobile. La lumière d'abord. |
+| 0,10 | la nappe MONTE de 40 pt (ressort response 0,52 / damping 0,86) |
+| 0,10 | **la home RECULE** : échelle 1 → 0,974 et un voile noir à 0,22 — elle ne s'en va pas, elle s'ÉLOIGNE |
+| 0,26 | les items arrivent **du bas vers le haut**, 55 ms d'écart, flou 10 → 0 + montée 14 pt |
+| 0,42 | le galet **devient** le chevron (fondu croisé du glyphe, le corps ne bouge pas) |
+
+Total ≈ 0,75 s. C'est lent, et c'est le sujet.
+
+### A.3 La nappe : d'où vient le « halo fondu »
+
+**LA CLÉ, et elle est gratuite : la nappe ne PEINT pas ses halos, elle les
+prend à la vidéo.** Le bas de la grande card est déjà une nappe de braise (la
+flamme, cuite dans `home-fond-loop.mp4`). Un verre `.clear` posé dessus la
+floute et la relève en halos diffus — c'est exactement la loi « le verre
+natif ne montre que ce qu'il réfracte », et ici il a enfin de quoi manger.
+Aucun dégradé de braise à réinventer.
+
+**Trois pièges déjà payés, à honorer :**
+1. **`.blur` pose un voile UNIFORME sur tout le rectangle de son hôte** — il
+   ne sait pas s'affaiblir vers le haut. Le fondu du bord haut de la nappe se
+   fait donc par un **masque en dégradé sur le verre**, jamais par un flou
+   qui diminue.
+2. **Un `glassEffect` aux bounds vivants reste flou plat pour toujours.** La
+   nappe a une **taille constante** ; c'est son masque qui monte.
+3. **L'encre vit au-dessus du CONTENEUR de verre**, pas dedans (sinon elle
+   est lentillée : le chiffre-trou-dans-du-métal du galet de l'objectif).
+
+Géométrie, mesurée sur sa maquette : la nappe prend le **tiers bas** (son
+bord haut à ~66 % de la hauteur), bord haut **fondu sur 60 pt**, aucun
+liseré, aucun coin arrondi visible — c'est une brume qui monte, pas une
+feuille qui se pose.
+
+### A.4 Les items
+
+**Profil · Progression · Collection · Réglages** — quatre, sa DA. 26 pt
+semibold blanc, gouttière 32, 22 pt entre eux. **Pas de card autour de
+chaque option : le verre EST le conteneur.** Le survol au doigt = un grain
+léger ; le choix = le coup lourd (`SwapFeedback.slam()`, déjà écrit).
+
+### A.5 La fermeture
+
+Tap dehors, drag vers le bas > 60 pt, ou choix d'un item.
+**Le choix se voit** : l'item choisi RESTE, les autres s'effacent d'abord
+(60 ms), puis la nappe descend avec lui. On voit partir ce qu'on a choisi —
+c'est ce détail qui fait « luxe » et pas « menu ».
+
+---
+
+## CHANTIER B — LE TIROIR DU BAS
+
+Le geste existe déjà (§ 9.11) : la card se soulève, la bande du bas se
+découvre, la lune secrète s'y allume. Ce chantier lui donne son CONTENU.
+
+### B.1 Un geste, trois contenus
+
+La même bande révélée porte, selon l'état de la séance :
+
+| état | ce qu'on trouve dans le tiroir |
+|---|---|
+| hors séance | **LE SECRET** — la lune néon (déjà livré) |
+| en séance | **LE PLAYER** — « Session du 21 août · En séance · 18 min » + le stop |
+| séance finie | **LE REPLAY** — la carte de la séance, qui ouvre sa story |
+
+Un seul geste, un seul tiroir, trois contenus : c'est ce qui fait qu'on
+l'apprend une fois.
+
+### B.2 La physique du tiroir
+
+Ce qui manque aujourd'hui, et qui sépare un jouet d'un tiroir :
+- la card suit le doigt **1:1 jusqu'à 40 pt** puis se retient (tanh) — en
+  place ;
+- **au-delà d'un SEUIL de 90 pt, elle s'AIMANTE OUVERTE au lâcher** et ne
+  retombe plus. En dessous, elle revient. C'est ce cran qui fait le tiroir ;
+- le contenu arrive à **55 % de la course**, pas à l'ouverture : on le voit
+  VENIR, on ne le découvre pas ;
+- fermeture : drag vers le haut, ou tap sur la card.
+
+### B.3 Le player
+
+À la place du slider quand une séance tourne (§ 9.5, état 2) : la lune du
+mois à gauche, le titre, « En séance · N min » en sourd, et un **stop
+minuscule** à droite. Les fondations existent (le jalon 1 du player, la règle
+`playerLift`). Le compteur des minutes **roule** (`contentTransition
+(.numericText)`), il ne saute pas.
+
+### B.4 Le replay
+
+La carte de la dernière séance, posée dans le tiroir, qui **ouvre sa story**
+depuis son propre rect — le portail `StoryFlow` existe déjà (celui de l'iPod
+du mois). ⚠️ Piège payé : `presentationBackground(.clear)` décale la story
+sous l'île et coupe son titre.
+
+---
+
+## LES ARBITRAGES — RENDUS LE 21-08
+
+1. **« Le replay » = LE PLAYER de la séance en cours.** Le rejeu de la
+   dernière séance viendra après, dans le même tiroir.
+2. **LE GALET EST DU VERRE NATIF NOIR**, pas un galet peint — et sa raison
+   est juste : *« liquid natif qui va se révéler grâce aux flammes du
+   background »*. C'est l'exception à la loi du verre à jeun, et elle est
+   légitime : à cet endroit précis (bas-gauche de la card) la nappe de
+   flamme de la vidéo passe DESSOUS. Le verre a enfin de quoi réfracter.
+   ⚠️ Conséquence : le galet doit être posé **au-dessus de la vidéo et sous
+   l'encre** — le néon vit AU-DESSUS du conteneur, jamais dedans.
+3. **La nappe = LA BRUME QUI MONTE** : pas de coins arrondis, pas de liseré,
+   le tiers bas qui devient du verre et dont le bord haut se fond sur 60 pt.
+4. **Quatre items** : Profil · Progression · Collection · Réglages. Les
+   entraînements restent accessibles par la bande « Cette semaine ».
+
+### 13.1 CHANTIER A — LIVRÉ LE 21-08 (non commité)
+
+`Woop/Views/MenuNappe.swift` : `GlypheMaison` (la maison tracée au trait),
+`NeonMaison` (le néon blanc, recette `NeonPrimaryButton`), `GaletMaison`
+(verre natif + encre au-dessus du conteneur + souffle ±2 % sur 4,3 s),
+`MenuNappe` (la brume), `MenuItems` (`View, Animatable` — les rampes
+échelonnées ne jouent pas sous un `withAnimation` ordinaire), `MenuHote`
+(la chorégraphie), `MenuLab`. Bancs : `-menuLab`, `-menuRejoue`.
+
+**La chorégraphie est pilotée par le BINDING, pas par le tap** — sans ça le
+banc ne peut pas l'ouvrir (le simulateur ne sait pas poser un doigt) et la
+page ne pourra pas l'ouvrir non plus depuis ailleurs.
+
+**Le verre natif fonctionne ICI** : le galet posé au-dessus de la nappe de
+flamme de la vidéo a enfin de quoi réfracter — vérifié à la capture, il
+brille. C'est l'exception à la loi du verre à jeun, et elle tient parce que
+l'endroit est choisi.
+
+**Une correction en route** : le verre `.clear` seul est presque INVISIBLE
+sur un fond déjà doux — il floute sans blanchir, et la nappe ne se lisait
+pas. Il lui faut un **lait très bas** dessous (blanc 0 → 0,085 du haut vers
+le bas) : pas un voile gris, une brume qui monte avec la lumière qu'elle
+recouvre.
+
+### 13.2 LA NAPPE, REPRISE — « pourquoi t'as mis du blur ? c'est pas liquid »
+
+Verdict juste, et la faute est nommable en une phrase :
+
+> **LE LIQUID GLASS SE LIT PAR SES BORDS.** Le corps d'une nappe de verre
+> posée sur du contenu doux ne montre presque rien : ce qui dit « verre »,
+> c'est le LISERÉ SPÉCULAIRE et la LENTILLE au bord. En fondant le bord haut
+> au masque pour faire un « halo fondu », j'ai supprimé **exactement** ce qui
+> faisait le verre. Il ne restait que le flou — donc un frost.
+
+Deux fautes de plus, en cascade :
+1. **Le lait aggravait.** Ajouté pour rendre la nappe visible, il blanchit
+   UNIFORMÉMENT — c'est la signature d'un frost, pas d'un verre. Il traitait
+   le symptôme (« on ne la voit pas ») en renforçant la cause.
+2. **La nappe débordait la card** : elle allait jusqu'au bord de l'ÉCRAN
+   alors que la grande card s'arrête 10 pt avant, avec des coins de 45. Elle
+   passait donc sur le noir de la page → la bande bizarre du bas.
+
+**LE NOUVEAU PLAN, en trois points :**
+
+- **Un bord haut NET, jamais fondu.** C'est ce que montre sa propre
+  maquette : une arête droite, pleine largeur, avec la card visible
+  au-dessus. Cette arête porte le liseré spéculaire du verre natif, et c'est
+  elle qui fait la matière. Le « fondu » ne se joue plus sur le bord mais sur
+  la MONTÉE (l'arête balaie l'écran).
+- **La nappe est CLIPPÉE à la forme de la grande card.** Son bord haut reste
+  droit et pleine largeur ; ses coins bas épousent ceux de la card. Plus
+  aucune bande sur le noir.
+- **Plus de lait.** Le verre `.clear` seul, avec son bord — et si le corps
+  reste discret, tant mieux : c'est le bord qui parle.
+
+Ce qui ne change pas : la lumière avant la géométrie, la cascade des items du
+bas vers le haut, le recul de la page, l'élu qui reste à la fermeture.
+
+### 13.3 LA NAPPE EST MORTE — ce sont des HALOS
+
+Verdict : *« non horrible, ça fait blur… je préfère des halos fondus noirs en
+bas de l'écran et un peu haut »*.
+
+**La faute de fond, et elle est plus grave que les réglages :** je me suis
+entêté à faire une FEUILLE. Or une feuille a des bords — et un bord, ici,
+c'est soit un frost (si on le fond) soit une boîte posée sur l'écran (si on
+le garde net). Sur sa capture, ce qu'on voit est exactement ça : un
+rectangle gris-brun aux trois côtés visibles, flottant sur la page. Il n'y a
+pas de réglage qui sauve une feuille : c'est la FORME qui est fausse.
+
+> **LOI : un halo n'a pas de bord. Une feuille en a forcément un. Si le
+> dessin demande « fondu », alors l'objet ne peut pas être une surface — ce
+> doit être une LUMIÈRE (ici une ombre).**
+
+**Le nouveau plan, et il est plus simple que tout ce que j'ai essayé :**
+
+- **Plus aucun verre dans le fond du menu.** Le `glassEffect` reste là où il
+  a un bord légitime et de quoi réfracter : LE GALET, qu'elle a validé.
+- **Le fond du menu = deux ou trois HALOS NOIRS**, ancrés hors du cadre sous
+  le bas de l'écran, de grand rayon, qui s'éteignent complètement avant
+  d'atteindre leur bord. Aucun rectangle, aucun clip, aucune arête : il n'y a
+  rien à border, donc rien qui puisse se lire comme une boîte.
+- **Plusieurs foyers, pas un dégradé droit** : un grand au centre-bas, deux
+  plus petits aux coins. Un dégradé linéaire se lit comme un calque ; des
+  foyers qui se recouvrent se lisent comme de la lumière.
+- **Ils montent « un peu haut »** — le grand atteint ~62 % de la hauteur,
+  mais son dernier tiers est déjà à zéro : ce qu'on voit finir est bien plus
+  bas que ce qui est dessiné.
+
+Ce qui ne change pas : la lumière avant la géométrie, la cascade des items,
+le recul de la page sans ressort, l'élu qui reste à la fermeture.
+
+### 13.4 LES HALOS SONT LUMINEUX — et la transition tient à UN seul curseur
+
+Verdict : *« je vois pas de halo, que du full noir — je m'attendais à des
+effets de halo, et que le fond commence fondu en noir… et l'animation de
+transition doit être superbe, c'est pas assez fluide »*.
+
+**LA FAUTE DE LECTURE, et elle est bête :** « halo fondu noir » — j'ai fait
+des halos NOIRS. Elle voulait des halos **LUMINEUX** sur un fond qui
+**commence** fondu en noir. Son tout premier brief le disait déjà mot pour
+mot : *« le bas devient un blur gradient de halos jaune / orange / blanc »*.
+Un halo noir n'est pas un halo, c'est une ombre — et une ombre sur du noir ne
+se voit pas. D'où « que du full noir ».
+
+**LE FOND DU MENU, en deux couches et dans cet ordre :**
+
+1. **LA NUIT QUI COMMENCE FONDUE.** Un noir qui naît de rien en haut de la
+   zone et qui se densifie en descendant — c'est lui qui rend les titres
+   lisibles, et son bord haut n'existe pas.
+2. **LES HALOS, PAR-DESSUS, EN LUMIÈRE AJOUTÉE** (`.plusLighter`) : trois ou
+   quatre foyers chauds — ambre `1,00/0,62/0,24`, orange, et un cœur presque
+   blanc — de grand rayon, posés bas, qui RESPIRENT sur des périodes
+   premières entre elles. Ce sont eux qu'on doit voir ; la nuit n'est là que
+   pour les porter.
+
+⚠️ Et la loi de couleur de la maison s'applique : la rampe s'écrit **en
+canaux** (on éteint le bleu puis le vert quand la lumière tombe), jamais en
+interpolation entre deux teintes — le chemin droit passe par le brun.
+
+**LA TRANSITION : UN SEUL CURSEUR, PAS UNE CHAÎNE DE MINUTEURS.**
+
+L'ancienne chorégraphie enchaînait quatre `DispatchQueue.asyncAfter`
+(0,10 · 0,26 · 0,42). Chaque réveil est une MARCHE : quatre animations qui
+démarrent chacune de son côté ne peuvent pas être fluides, et c'est
+exactement ce qu'elle sent.
+
+La forme juste est celle de la phrase de la home (`PhraseVue: View,
+Animatable`) : **une seule grandeur `p` de 0 à 1**, animée UNE fois, dont
+chaque pièce dérive son propre avancement avec son propre retard.
+
+| pièce | fenêtre sur `p` |
+|---|---|
+| la nuit et les halos | 0,00 → 0,34 |
+| la montée | 0,06 → 0,74 |
+| les items (cascade du bas) | 0,30 → 1,00, 0,055 de retard chacun |
+| le glyphe → chevron | 0,46 → 0,86 |
+
+Une seule courbe (`.timingCurve(0.22, 1, 0.36, 1)` — la courbe d'Apple pour
+les feuilles), 0,78 s. Tout est continu par construction, il n'y a plus une
+seule marche.
+
+### 13.5 LE MENU EN « ULTRA PREMIUM » — le plan des micro-interactions
+
+Verdict : *« ça passe, mais comment rendre encore plus premium… quand on
+ferme, il y a une sorte de décalage de tout l'écran… je voudrais des micro-
+interactions, plein de micro-animations… la police en dégradé blanc aussi…
+et quand on passe dessus au drag sur les sections, qu'il se passe quelque
+chose avec du liquid glass… quelque chose de vraiment sublime, même si on
+fait 20 tours »*.
+
+#### A. LE DÉCALAGE — le diagnostic, et il n'est pas dans la courbe
+
+J'ai déjà retiré le ressort ; il reste. La vraie cause est ailleurs :
+
+> **JE FAIS RECULER LA VIDÉO.** `scaleEffect` sur `GrandeCardVideo`, c'est
+> une transformation appliquée à un `AVPlayerLayer` — une couche UIKit qui
+> n'interpole PAS dans la transaction SwiftUI et qui recalcule son cadrage
+> `resizeAspectFill` à chaque changement de bounds. Elle saute au lieu de
+> glisser, et comme elle occupe tout l'écran, c'est TOUT l'écran qui semble
+> se décaler.
+
+**Le remède, et il est plus juste physiquement : le FOND ne recule pas, le
+CONTENU recule.** La vidéo est le monde, elle reste ; ce sont la phrase, les
+cards et la semaine qui s'éloignent (échelle 0,974 + voile). Un monde qui
+bouge quand on ouvre un menu n'a d'ailleurs aucun sens.
+
+#### B. LES MICRO-INTERACTIONS — ce que je propose
+
+**1. LE GALET, quatre états au lieu de deux**
+- doigt POSÉ (avant le tap) : le verre se creuse (`.interactive()` le fait
+  déjà) et le néon monte de 15 % — on sent qu'il a compris avant qu'on lâche ;
+- au tap : **une ONDE part du galet** — un anneau très fin qui s'étale à
+  travers les halos et meurt en 0,5 s. C'est elle qui « allume » la nappe ;
+- maison → chevron : **un MORPHISME, pas un fondu croisé** — le toit se
+  replie et devient le chevron (deux `Path` interpolés) ;
+- haptiques : `.soft` à la pose, `.rigid` à l'ouverture pleine.
+
+**2. LE DRAG SUR LES SECTIONS — la pièce maîtresse**
+
+C'est là qu'elle attend le sublime, et la maison a déjà LA bonne pièce : la
+**loupe du panneau 3-7**, celle qu'elle a validée (« garde le zoom natif »).
+On la remonte ici, verticale :
+
+- **un galet de liquid glass SUIT le doigt** le long de la colonne ;
+- sous lui, le titre est **GROSSI** (zoom ×1,55, gaussienne de portée 34) et
+  monte de quelques points — l'école exacte de la loupe de la barre d'Apple ;
+- il **s'AIMANTE** d'un item à l'autre : jamais posé entre deux, avec un
+  **cran haptique** à chaque passage ;
+- il **s'ÉTIRE** en changeant d'item — une capsule qui se déforme, pas un
+  rectangle qui saute (`glassEffectID` + morphisme natif) ;
+- les voisins **reculent** (0,96) et pâlissent : la loupe creuse un puits ;
+- au lâcher : le galet se **referme** sur l'élu, coup lourd, et la nappe part.
+
+⚠️ Les deux lois du verre s'appliquent : l'encre AU-DESSUS du conteneur (le
+titre grossi ne vit pas dans le verre, sinon il est lentillé), et le galet
+garde une TAILLE de layout constante (c'est son contenu qui change), sinon
+le flou devient plat pour toujours.
+
+**3. LA TYPO EN DÉGRADÉ BLANC** — oui, et deux crans plus loin :
+- au repos, le dégradé vertical des gros chiffres des cards
+  (#FFFFFF → #C9C9C9) ;
+- **sous la loupe, le dégradé se DÉPLACE** : le blanc suit le galet le long
+  du mot. C'est ce glissement qui fait lire « métal poli » et pas « texte
+  gris ».
+
+**4. LES HALOS QUI RÉPONDENT**
+- le foyer le plus proche du doigt gagne 12 % : la lumière suit la main ;
+- au choix d'un item, une **pulse** part de lui et traverse les halos ;
+- **dérive gyro** de ±6 pt (`SkyMotion` existe déjà) : le fond devient une
+  scène et non un calque.
+
+**5. LA FERMETURE QUI RACONTE**
+- l'élu RESTE, les autres s'effacent d'abord (déjà prévu) ;
+- puis l'élu **descend avec la nappe** et s'efface en dernier ;
+- le galet reprend son souffle avec un dépassement discret — il « respire »
+  après l'effort.
+
+**6. REDUCE MOTION** : loupe sans zoom, halos fixes, tout en fondus de 0,25 s.
+
+#### C. L'ORDRE QUE JE PROPOSE
+
+1. le décalage (le fond ne recule plus) — c'est un défaut, pas un ornement ;
+2. la loupe au drag + l'aimant + les crans — la pièce maîtresse ;
+3. la typo en dégradé et son glissement sous la loupe ;
+4. l'onde du galet et le morphisme maison → chevron ;
+5. les halos qui répondent au doigt, puis le gyro.
+
+### 13.6 LES MICRO-INTERACTIONS — LIVRÉES (non commité)
+
+`Woop/Views/MenuNappe.swift`. Bancs `-menuLab` (au doigt) et `-menuRejoue`
+(l'ouverture en boucle).
+
+**Le décalage est mort, et le diagnostic était le bon** : le fond ne recule
+plus. `MenuHote` prend maintenant DEUX contenus — le `fond` (la vidéo, qui
+ne bouge pas) et le `contenu` (le mobilier, qui s'éloigne). Une couche UIKit
+ne sait pas s'échelonner dans une transaction SwiftUI : elle saute.
+
+**Livré aussi** : la LOUPE de verre qui suit le doigt le long des sections,
+aimantée item par item avec un cran haptique à chaque passage, les voisins
+qui reculent et pâlissent ; la TYPO en dégradé blanc dont le blanc GLISSE
+sous la loupe ; l'ONDE qui part du galet au tap ; le MORPHISME maison →
+chevron (le toit se retourne, le corps se rétracte dans la pointe) ; les
+HALOS qui gagnent 12 % près du doigt ; le néon qui monte à la POSE du doigt,
+avant le tap. Tout est coupé sous Reduce Motion.
+
+**⚠️ PIÈGE NEUF, et il vaut pour toute l'app : LE VERRE NATIF IGNORE
+`.opacity`.** La loupe posée à opacité 0 se voyait quand même — elle restait
+accrochée sur « Profil » au repos. Il faut la DÉMONTER (`if loupe > 0.01`).
+Sa taille reste constante tant qu'elle est là, donc la loi des bounds
+vivants est sauve.
+
+### 13.7 LE MENU, PASSE PREMIUM — supprimer deux objets, ajouter dix détails
+
+Verdict : *« la pastille liquid… un peu cheap. Je pense à quelque chose de
+plus premium : la police plus fine de base, au drag elle se grossit un peu et
+le reste devient un peu blur. Et le cercle qui apparaît quand je clique, pas
+fan, trop cheap. Je veux des micro-détails partout. »*
+
+**LES DEUX OBJETS À TUER, et pourquoi ils sonnent cheap — c'est nommable :**
+
+> **1. LA PASTILLE DERRIÈRE LE TITRE.** Un chip posé derrière un mot est la
+> grammaire d'Android et du web, pas celle d'Apple. Apple n'entoure jamais
+> l'élément actif : il le rend **plus présent** et **éloigne les autres**.
+> La sélection doit se dire par la TYPOGRAPHIE et la PROFONDEUR, pas par un
+> contenant.
+>
+> **2. L'ANNEAU QUI S'ÉTALE.** C'est un *ripple* — la signature de Material
+> Design. Apple ne fait jamais partir un cercle d'un bouton. Chez Apple, un
+> bouton ne PROJETTE rien : il se comprime, et **c'est la scène qui répond**.
+
+**CE QUI LES REMPLACE :**
+
+**A. LA MISE AU POINT (au lieu de la pastille)** — son idée, et elle est la
+bonne :
+- au repos, les titres sont **fins** (Regular, tracking +0,02 em) ;
+- sous le doigt : échelle **1,10**, graisse qui monte à **Medium**, blanc
+  pur, et le tracking qui se **resserre** — le mot se densifie ;
+- **les autres se FLOUTENT** (2,5 pt), pâlissent (0,55) et reculent (0,98).
+  C'est le flou des voisins qui fait la profondeur, pas le fond ;
+- au passage d'un item à l'autre, le flou du sortant MONTE pendant que celui
+  de l'entrant TOMBE : un croisement, jamais une commutation.
+
+**B. L'ALLUMAGE DIRECTIONNEL (au lieu de l'anneau)** — le galet ne projette
+rien : il **allume la scène**. Les quatre halos s'allument **dans l'ordre de
+leur distance au galet**, sur 0,25 s. On ne voit pas un cercle partir, on
+voit la lumière se propager depuis la main. C'est la même loi que l'arrivée
+de la home (la pièce s'allume avant que les mots n'existent).
+
+**LES DIX MICRO-DÉTAILS, par ordre de coût :**
+
+| # | où | ce qui se passe |
+|---|---|---|
+| 1 | galet, doigt POSÉ | compression 0,94 + néon +15 % + **le halo le plus proche gagne 8 %** — la lumière anticipe le tap |
+| 2 | galet, relâchement | un dépassement à **1,02** avant de revenir : le « release » d'Apple, jamais un retour sec |
+| 3 | titres, arrivée | le tracking se **resserre** de +0,06 à +0,02 em : le mot se POSE au lieu d'apparaître |
+| 4 | titres, survol | échelle + graisse + tracking, **et rien derrière** |
+| 5 | titres, voisins | flou 2,5 + opacité 0,55 + échelle 0,98, en croisement |
+| 6 | fond, pendant le drag | les halos se **décalent de 6 pt vers le doigt** — parallaxe de la main |
+| 7 | fond, pendant le drag | un **liseré chaud très fin** naît sur le bord gauche, à la hauteur de l'item survolé : le cadre répond |
+| 8 | choix | flash blanc de 0,08 s sur l'élu, puis **pulse des halos depuis sa position** |
+| 9 | fermeture | les halos s'éteignent **dans l'ordre INVERSE** de leur allumage |
+| 10 | partout | dérive **gyro** de ±6 pt sur les halos et sur le reflet du galet |
+
+**LES HAPTIQUES, et le silence en fait partie :** `.soft` à la pose,
+`.selection` à chaque cran de la mise au point, `.rigid` au choix — et
+**rien** à la fermeture. Un geste qui se termine dans le silence se sent
+plus cher qu'un geste qui claque deux fois.
+
+**Reduce Motion** : pas de flou des voisins (juste l'opacité), pas de
+parallaxe, pas de gyro, tout en fondus de 0,25 s.
+
+### 13.8 LA PASSE PREMIUM — LIVRÉE (non commité)
+
+`Woop/Views/MenuNappe.swift`. Bancs `-menuLab` (au doigt) / `-menuRejoue`.
+
+**Les deux objets tués :** la pastille de verre derrière le titre, et
+l'anneau qui partait du galet.
+
+**Ce qui les remplace :**
+- **LA MISE AU POINT.** Les titres sont fins (Regular) et trackés ouvert au
+  repos ; sous le doigt le titre grossit de 10 %, sa graisse monte à Medium
+  (⚠️ **deux textes croisés** — SwiftUI ne sait pas interpoler une graisse),
+  son tracking se RESSERRE (le mot se densifie au lieu de simplement
+  grossir), et son dégradé glisse. Les voisins se floutent à 2,6 pt,
+  pâlissent à 0,55 et reculent. Rien derrière.
+- **L'ALLUMAGE DIRECTIONNEL.** Les quatre halos s'allument dans l'ordre de
+  leur distance au galet (rang × 0,16 de retard sur le curseur) : on voit la
+  lumière se propager depuis la main, pas un cercle partir.
+- **LE DÉPASSEMENT DU GALET** : amortissement 0,55 — la compression est
+  franche, le relâchement dépasse avant de se poser.
+- **LE LISERÉ DU CADRE** : un fil chaud de 2 pt naît sur le bord gauche à la
+  hauteur de l'item survolé.
+- **LA PARALLAXE DE LA MAIN** : les foyers se décalent de 6 pt vers le doigt.
+- **L'ARRIVÉE PROGRESSIVE** : retard porté de 55 à **90 ms** par item — à
+  55 ms les quatre mots arrivaient presque ensemble et la cascade ne se
+  voyait pas.
+
+**⚠️ DEUX PIÈGES SWIFT PAYÉS ICI, et ils reviendront :**
+1. **Un `onLongPressGesture`, même à 0,01 s, VOLE le tap qui le suit.** Le
+   galet ne s'ouvrait plus. Un seul `DragGesture(minimumDistance: 0)` donne
+   les deux : l'état « doigt posé » à `onChanged`, le tap à `onEnded` si le
+   doigt n'a pas fui de plus de 40 pt. (Déjà payé sur le puits de l'iPod, où
+   le tap devait être posé AVANT l'appui.)
+2. **Le vérificateur de types SATURE** sur un titre dont toutes les mesures
+   sont en une expression — et les découper en instructions dans un
+   `@ViewBuilder` donne « type '()' cannot conform to 'View' ». La forme
+   juste est un petit **type de mesures** calculé dehors, que la vue
+   consomme.
+
