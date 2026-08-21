@@ -55,12 +55,17 @@ struct SliderLab: View {
                        auto: false)
                     .padding(.horizontal, 24)
             } else {
-                VStack(spacing: 46) {
-                    ligne("repos", 0, 0)
-                    ligne("mi-course, saisi", 0.5, 1)
-                    ligne("armé", 0.86, 1)
-                    // Le vrai, celui qui se drague au doigt sur le téléphone.
-                    ligne("vivant", nil, nil)
+                // LA MISE EN PAGE DE LA HOME. Le slider n'a pas de longueur à
+                // lui : il prend ce qu'on lui donne. Le régler « plus court »
+                // n'a donc de sens que dans SA rangée — 24 pt de marge, le
+                // galet du menu (62 pt), l'écart, puis le reste. Sur un
+                // iPhone 17 Pro ça lui laisse ~280 pt au lieu des 354 du banc
+                // pleine largeur, et c'est à CETTE longueur qu'il faut le
+                // juger : le pouce y pèse 28 % de la piste au lieu de 23 %.
+                VStack(spacing: 40) {
+                    rangee("hauteur 68 — la cote d'origine", 68)
+                    rangee("hauteur 62 — à fleur du galet", 62)
+                    ligne("vivant, pleine largeur", nil, nil)
                 }
                 .padding(.horizontal, 24)
             }
@@ -77,13 +82,40 @@ struct SliderLab: View {
         }
     }
 
-    private func slider(pose: CGFloat?, grip: CGFloat?,
-                        auto: Bool) -> SliderObsidienne {
-        SliderObsidienne(label: "Commencer",
+    private func slider(pose: CGFloat?, grip: CGFloat?, auto: Bool,
+                        hauteur: CGFloat = 68) -> SliderObsidienne {
+        SliderObsidienne(label: "Start",
+                         height: hauteur,
                          braise: Self.braise ? 0.016 : 0,
                          diamants: !Self.poudreSeule,
                          auto: auto,
                          pose: pose, poseGrip: grip)
+    }
+
+    /// La rangée de la home : le galet du menu, puis le slider dans ce qui
+    /// reste. Le galet est un LEURRE — 62 pt, la cote de `MenuNappe` — il
+    /// n'est là que pour tenir la place et donner l'échelle.
+    @ViewBuilder
+    private func rangee(_ titre: String, _ hauteur: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(titre.uppercased())
+                .font(.system(size: 9, weight: .medium))
+                .tracking(2.2)
+                .foregroundStyle(Color.white.opacity(0.26))
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().fill(Color.white.opacity(0.06))
+                    Circle().strokeBorder(Color.white.opacity(0.16),
+                                          lineWidth: 1)
+                    Image(systemName: "house")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(Color.white.opacity(0.80))
+                }
+                .frame(width: 62, height: 62)
+                slider(pose: nil, grip: nil, auto: true, hauteur: hauteur)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
