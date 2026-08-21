@@ -379,6 +379,8 @@ struct RootView: View {
             AuroraLoginView()
         } else if Self.authNebula {
             AuthView { _ in }
+        } else if CommandLine.arguments.contains("-harmonie") {
+            HarmonieLab()
         } else if CommandLine.arguments.contains("-menuLab")
                     || CommandLine.arguments.contains("-menuRejoue")
                     || CommandLine.arguments.contains("-couronneLab")
