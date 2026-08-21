@@ -143,6 +143,13 @@ struct CardCorps<Contenu: View>: View {
     var rayon: CGFloat = 0.152
     /// L'encastrement du panneau : 3,45 % de la largeur (21 px sur 607).
     var encastre: CGFloat = 0.0345
+    /// LE LISERÉ ANGULAIRE et son bloom. Apple n'en met pas — mais il porte
+    /// ici les deux crêtes de lumière qui font la bezel. À trancher à l'œil.
+    var lisere: Bool = true
+    /// LE FOND EN VERRE NATIF, à l'essai. ⚠️ La loi dit qu'il GIVRE ce qui
+    /// est net, et une card de 170 pt n'est QUE de l'encre nette : on s'attend
+    /// donc à un frost, pas à une lentille. Le banc est là pour le voir.
+    var verre: Bool = false
     @ViewBuilder var contenu: () -> Contenu
 
     var body: some View {
@@ -154,16 +161,27 @@ struct CardCorps<Contenu: View>: View {
             let dedans = RoundedRectangle(cornerRadius: 0.1175 * W,
                                           style: .circular)
             ZStack {
-                // ── 1. LA BEZEL, presque noire
-                dehors.fill(Color(white: 0.014))
+                // ── 1. LA BEZEL. ⚠️ Presque noire en mode plein, mais
+                // ABSENTE en mode verre : un fond opaque derrière un verre,
+                // c'est un verre posé sur un mur — il ne peut rien réfracter.
+                if !verre { dehors.fill(Color(white: 0.014)) }
 
                 // ── 2. LE LISERÉ ANGULAIRE, d'un seul trait : il porte à la
                 // fois le gris des bords ordinaires ET les deux crêtes.
-                dehors.stroke(cardLisereConique, lineWidth: 1.6)
-                // le bloom, court (mesuré : 8-12 px aux crêtes, 4-5 ailleurs)
-                dehors.stroke(cardLisereConique, lineWidth: 4.4)
-                    .blur(radius: 2.4)
-                    .opacity(0.46)
+                if lisere {
+                    dehors.stroke(cardLisereConique, lineWidth: 1.6)
+                    // le bloom, court (8-12 px aux crêtes, 4-5 ailleurs)
+                    dehors.stroke(cardLisereConique, lineWidth: 4.4)
+                        .blur(radius: 2.4)
+                        .opacity(0.46)
+                }
+                if verre {
+                    GlassEffectContainer(spacing: 0) {
+                        Color.clear
+                            .frame(width: W, height: H)
+                            .glassEffect(.clear, in: dehors)
+                    }
+                }
 
                 // ── 3. LE PANNEAU ENCASTRÉ
                 ZStack {
@@ -175,14 +193,20 @@ struct CardCorps<Contenu: View>: View {
                     // |R−B| ≤ 0,7/255 partout, toute la chaleur de la card
                     // vient des reflets et du contenu, jamais du fond.
                     dedans.fill(Color(white: 0.012))
+                        .opacity(verre ? 0 : 1)
+                    // Les deux lueurs de l'anti-diagonale survivent en mode
+                    // verre, mais au TIERS : elles disent la lumière posée
+                    // sans reboucher ce qu'on vient d'ouvrir.
                     dedans.fill(RadialGradient(
                         colors: [Color(white: 0.157), .clear],
                         center: .topTrailing,
                         startRadius: 0, endRadius: W * 1.12))
+                        .opacity(verre ? 0.34 : 1)
                     dedans.fill(RadialGradient(
                         colors: [Color(white: 0.106), .clear],
                         center: .bottomLeading,
                         startRadius: 0, endRadius: W * 0.77))
+                        .opacity(verre ? 0.34 : 1)
                     // son liseré : même loi angulaire, mais il ne SATURE
                     // jamais — il reste du gris, plus clair en haut.
                     dedans.stroke(cardLisereDedans, lineWidth: 1.1)
@@ -374,6 +398,7 @@ private struct CardBoutonHaltere: View {
 // MARK: - LA CARD DU VOLUME
 
 struct CardVolume: View {
+    @Environment(\.harmonieInter) private var interUnifie
     var valeur: String = "8.4"
     var unite: String = "kg"
     var legende: String = "weekly volume"
@@ -384,9 +409,11 @@ struct CardVolume: View {
     var moyenne: String = "1.2 kg"
     /// 0 → 1 : l'arrivée (les barres poussent, l'encre se pose).
     var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
 
     var body: some View {
-        CardCorps {
+        CardCorps(lisere: lisere, verre: verre) {
             GeometryReader { g in
                 let W = g.size.width, H = g.size.height
                 let marge = 0.129 * W
@@ -396,7 +423,10 @@ struct CardVolume: View {
                 // capitale d'Inter vaut 0,715 de son corps.
                 HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
                     Text(valeur)
-                        .font(.system(size: 0.1750 * H, weight: .regular))
+                        .font(interUnifie
+                              ? .inter(0.1750 * H, .semibold)
+                              : .system(size: 0.1750 * H,
+                                        weight: .regular))
                         // pas un blanc plat : un dégradé métallique vertical
                         // (#FFFFFF au sommet, #DCDCDC à la base — mesuré)
                         .foregroundStyle(LinearGradient(
@@ -413,9 +443,6 @@ struct CardVolume: View {
                     .tracking(0.0430 * H * 0.030)
                     .foregroundStyle(CardTon.encreDouce)
                     .modifier(AncrageGauche(x: marge, y: 0.277 * H))
-
-                CardBoutonHaltere(W: W, H: H)
-                    .position(x: 0.848 * W, y: 0.192 * H)
 
                 // ── LE GRAPHE. Base des rails à 63,5 % — et pas 69,2 : ce
                 // que je prenais pour le pied des barres était la LETTRE du
@@ -439,30 +466,24 @@ struct CardVolume: View {
 
                 // ── LE PIED : DEUX COLONNES CENTRÉES (et non alignées à
                 // gauche — mesuré : centres à 27 % et 70 % de la largeur).
+                // Seul au pied, il se CENTRE : une colonne restée à 27 %
+                // laisserait un vide à droite qui se lirait comme un oubli.
                 Text(gain)
                     .font(.system(size: 0.0606 * H, weight: .regular))
                     .foregroundStyle(CardTon.ambreVif)
-                    .position(x: 0.270 * W, y: 0.808 * H)
+                    .position(x: 0.500 * W, y: 0.808 * H)
                 Text(gainLegende)
                     .font(.system(size: 0.0350 * H, weight: .regular))
                     .foregroundStyle(CardTon.encreSourde)
-                    .position(x: 0.270 * W, y: 0.861 * H)
+                    .position(x: 0.500 * W, y: 0.861 * H)
 
-                Rectangle()
-                    .fill(CardTon.filet)
-                    .frame(width: 0.8, height: 0.090 * H)
-                    .position(x: 0.479 * W, y: 0.851 * H)
-
-                // La VALEUR au-dessus de son libellé, comme la colonne de
-                // gauche : les deux colonnes se lisent enfin pareil.
-                Text(moyenne)
-                    .font(.system(size: 0.0606 * H, weight: .regular))
-                    .foregroundStyle(CardTon.encre)
-                    .position(x: 0.700 * W, y: 0.808 * H)
-                Text(moyenneLegende)
-                    .font(.system(size: 0.0350 * H, weight: .regular))
-                    .foregroundStyle(CardTon.encreSourde)
-                    .position(x: 0.700 * W, y: 0.861 * H)
+                // ⚠️ LA DEUXIÈME COLONNE EST MORTE (« 1,2 kg / avg per
+                // session »), et son filet séparateur avec elle. Deux
+                // chiffres au pied d'une card de 170 pt, c'est un tableau de
+                // bord : on lit le premier, on subit le second. Il ne reste
+                // que le gain — la seule ligne qui dise quelque chose.
+                // L'HALTÈRE aussi : un pictogramme dans un rond, c'est un
+                // bouton qui ne fait rien.
             }
         }
     }
@@ -471,15 +492,18 @@ struct CardVolume: View {
 // MARK: - LA CARD DES SÉANCES
 
 struct CardSeances: View {
+    @Environment(\.harmonieInter) private var interUnifie
     var faites: Int = 4
     var prevues: Int = 5
     var legende: String = "sessions this week"
     var jours: [String] = ["M", "T", "W", "T", "F", "S", "S"]
     var pied: String = "1 session left to hit your goal"
     var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
 
     var body: some View {
-        CardCorps {
+        CardCorps(lisere: lisere, verre: verre) {
             GeometryReader { g in
                 let W = g.size.width, H = g.size.height
                 let marge = 0.129 * W
@@ -489,7 +513,10 @@ struct CardSeances: View {
                 // AU-DESSUS de sa légende : il la recouvrait.
                 HStack(alignment: .lastTextBaseline, spacing: 0.024 * W) {
                     Text("\(faites)")
-                        .font(.system(size: 0.1750 * H, weight: .regular))
+                        .font(interUnifie
+                              ? .inter(0.1750 * H, .semibold)
+                              : .system(size: 0.1750 * H,
+                                        weight: .regular))
                         .foregroundStyle(LinearGradient(
                             colors: [Color(white: 1.00), Color(white: 0.788)],
                             startPoint: .top, endPoint: .bottom))
@@ -619,13 +646,17 @@ struct CardsRangee: View {
     var jours: [CardJour] = CardJour.semaineRef
     /// 0 → 1, l'arrivée de la page.
     var arrivee: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
 
     var body: some View {
         HStack(spacing: 14) {
-            CardSeances(faites: faites, prevues: prevues, p: pose)
+            CardSeances(faites: faites, prevues: prevues, p: pose,
+                        lisere: lisere, verre: verre)
                 .frame(width: 170, height: 170)
             CardVolume(valeur: volume, jours: jours, gain: gain,
-                       moyenne: moyenne, p: pose)
+                       moyenne: moyenne, p: pose,
+                       lisere: lisere, verre: verre)
                 .frame(width: 170, height: 170)
         }
         .opacity(pose)

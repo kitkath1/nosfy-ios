@@ -1060,6 +1060,15 @@ struct SemaineStrip: View {
     var materialises: Int = 0
     /// Le tap d'une mini — la story de la séance viendra s'y brancher.
     var onTap: (Int) -> Void = { _ in }
+    /// Un cheveu autour de l'ardoise (les cards en ont un, elle non — c'était
+    /// l'un des trois écarts). En mode verre il devient le liseré ANGULAIRE
+    /// des cards : c'est lui qui fait lire le verre, pas le corps.
+    var lisere: Bool = false
+    /// L'ARDOISE EN VERRE NATIF — la même matière que les cards. Le fond
+    /// vidéo bouge dessous, et c'est ce qu'on veut voir.
+    var verre: Bool = false
+    /// Le sous-titre gris, au registre des légendes des cards.
+    var sousTitre: String = "your last sessions" 
 
     /// La mini sous le doigt. Une seule à la fois : on ne presse pas deux
     /// cartes.
@@ -1126,13 +1135,23 @@ struct SemaineStrip: View {
             // l'anti-diagonale — jamais un dégradé linéaire. L'ardoise garde
             // un souffle d'opacité pour que les fantômes mangent encore la
             // vidéo.
-            forme.fill(Color(white: 0.016).opacity(0.94))
+            if verre {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .frame(width: L, height: H)
+                        .glassEffect(.clear, in: forme)
+                }
+            } else {
+                forme.fill(Color(white: 0.016).opacity(0.94))
+            }
             forme.fill(RadialGradient(
                 colors: [Color(white: 0.150).opacity(0.94), .clear],
                 center: .topTrailing, startRadius: 0, endRadius: L * 0.95))
+                .opacity(verre ? 0.34 : 1)
             forme.fill(RadialGradient(
                 colors: [Color(white: 0.100).opacity(0.94), .clear],
                 center: .bottomLeading, startRadius: 0, endRadius: L * 0.62))
+                .opacity(verre ? 0.34 : 1)
             GrainTexture.tuile
                 .resizable(resizingMode: .tile)
                 .opacity(0.05).blendMode(.overlay).clipShape(forme)
@@ -1143,6 +1162,18 @@ struct SemaineStrip: View {
                 center: UnitPoint(x: 0.18, y: 0.06),
                 startRadiusFraction: 0, endRadiusFraction: 1.1))
                 .blendMode(.plusLighter)
+            // ⚠️ LE MÊME LISERÉ QUE LES CARDS, et pas un cheveu blanc plat :
+            // celui-ci est ANGULAIRE — il meurt dans deux coins et culmine
+            // dans les deux autres (le blanc en bas-gauche, l'or en
+            // haut-droite). Un trait d'intensité constante lit « bordure » ;
+            // deux crêtes lisent « objet éclairé ». C'est la seule façon que
+            // l'ardoise appartienne au même monde que ses voisines.
+            if lisere {
+                forme.stroke(cardLisereConique, lineWidth: 1.6)
+                forme.stroke(cardLisereConique, lineWidth: 4.4)
+                    .blur(radius: 2.4)
+                    .opacity(0.46)
+            }
 
             // ⚠️ LES FANTÔMES DE VERRE SONT MORTS (verdict 22-08 : « enlève
             // les carrés bizarres gris clair »). C'était un `glassEffect`
@@ -1156,10 +1187,20 @@ struct SemaineStrip: View {
             // L'ENCRE, au-dessus du conteneur : le titre et les faites.
             // Titre mesuré sur le wireframe : 147 pt de large (le mien en
             // tenait 115) et son œil est à 20 pt sous le haut de l'ardoise.
-            Text("Cette semaine.")
-                .font(.inter(20, .semibold))
-                .foregroundStyle(.white.opacity(0.94))
-                .padding(.top, 16).padding(.leading, 22)
+            // LE TITRE ET SON SOUS-TITRE — même famille, même corps que les
+            // légendes des cards (0,0430 × 170 = 7,31 pt), même gris sourd :
+            // c'est le seul moyen que les trois objets se lisent comme une
+            // même page et non comme trois widgets voisins.
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Cette semaine.")
+                    .font(.inter(20, .semibold))
+                    .foregroundStyle(.white.opacity(0.94))
+                Text(sousTitre)
+                    .font(.system(size: 7.31, weight: .regular))
+                    .tracking(7.31 * 0.030)
+                    .foregroundStyle(CardTon.encreDouce)
+            }
+            .padding(.top, 16).padding(.leading, 22)
             ZStack {
                 ForEach(0..<n, id: \.self) { i in
                     mini(i)
@@ -1664,8 +1705,16 @@ struct HomeNuitPage: View {
                         .opacity(RasantHorloge.iso ? 0 : 1)
 
                     // LES DEUX CARDS (jalon V3) : les séances et le volume.
+                    // TOUT EN VERRE (verdict 22-08, et il renverse ma
+                    // prudence) : le givre ne vient PAS du verre, il vient de
+                    // l'encre placée SOUS lui. Ici l'encre de chaque card est
+                    // au-dessus de son propre verre — il n'a donc que la vidéo
+                    // à manger, et c'est exactement ce qu'on veut voir bouger
+                    // dessous. Le liseré angulaire reste : c'est par ses
+                    // BORDS qu'un Liquid Glass se lit, jamais par son corps.
                     CardsRangee(faites: faits, prevues: prevus,
-                                arrivee: arrivee)
+                                arrivee: arrivee, lisere: true, verre: true)
+                        .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.375)
                         .allowsHitTesting(false)
@@ -1675,7 +1724,8 @@ struct HomeNuitPage: View {
                     // tant que le tap-story n'est pas câblé (jalon flow).
                     SemaineStrip(faits: faits, prevus: prevus,
                                  arrivee: arrivee,
-                                 materialises: materialises)
+                                 materialises: materialises,
+                                 lisere: true, verre: true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.620)
                         .opacity(RasantHorloge.iso ? 0 : 1)
