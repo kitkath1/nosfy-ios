@@ -21,6 +21,12 @@ final class SkyMotion {
     private let manager = CMMotionManager()
     private var baseline = CGVector.zero
     private(set) var tilt = CGVector.zero      // ±1 par axe, lissé
+    /// LA SECOUSSE — l'accélération PROPRE du téléphone, gravité retirée.
+    /// ⚠️ Elle n'a rien à voir avec `tilt` : une inclinaison est une POSITION
+    /// (lissée fort, recentrée lentement), une secousse est une IMPULSION.
+    /// Filtrée fort mais courte, elle retombe d'elle-même à zéro dès que la
+    /// main s'immobilise — `userAcceleration` vaut 0 sur un téléphone posé.
+    private(set) var shake = CGVector.zero     // ±1 par axe, en g
 
     func start(reduceMotion: Bool) {
         guard !reduceMotion, manager.isDeviceMotionAvailable,
@@ -38,12 +44,20 @@ final class SkyMotion {
             let y = max(-1, min(1, (raw.dy - baseline.dy) / 0.22))
             tilt.dx += (x - tilt.dx) * 0.24
             tilt.dy += (y - tilt.dy) * 0.24
+            // La secousse : attaque rapide (0,55) pour qu'un coup sec se
+            // sente, et aucun recentrage — elle rentre seule.
+            guard let ua = motion?.userAcceleration else { return }
+            let sx = max(-1, min(1, CGFloat(ua.x) * 2.2))
+            let sy = max(-1, min(1, CGFloat(-ua.y) * 2.2))
+            shake.dx += (sx - shake.dx) * 0.55
+            shake.dy += (sy - shake.dy) * 0.55
         }
     }
 
     func stop() {
         manager.stopDeviceMotionUpdates()
         tilt = .zero
+        shake = .zero
     }
 }
 
