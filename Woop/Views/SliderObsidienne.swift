@@ -29,7 +29,7 @@ struct SliderObsidienne: View {
 
     // MARK: Ce que l'appelant règle
 
-    var label: String = "Commencer"
+    var label: String = "Start"
     /// Hauteur de la piste. Toutes les autres cotes en découlent — elles sont
     /// relevées sur la référence en fraction de CETTE hauteur.
     var height: CGFloat = 68
@@ -305,7 +305,7 @@ struct SliderObsidienne: View {
 
     // MARK: Le texte
 
-    /// « COMMENCER » en néon blanc. Trois couches, et chacune répond à un
+    /// « START » en néon blanc. Trois couches, et chacune répond à un
     /// défaut précis :
     ///   — le dégradé vertical : une encre plate se lit imprimée, pas allumée ;
     ///   — LA LAMPE : le pouce éclaire les lettres qu'il approche ;
@@ -330,7 +330,7 @@ struct SliderObsidienne: View {
 
         // LA LARGEUR UTILE : la course LIBRE, pas la piste. Centré sur la
         // piste, le texte a son premier caractère sous le pouce au repos —
-        // on lit « MMENCER LA SESSION » avant d'avoir touché à quoi que ce
+        // on lit son mot amputé de sa première lettre avant d'avoir touché à
         // soit. Il se centre donc entre le bord de fuite du pouce au repos et
         // le bout de la capsule, et il se resserre s'il n'y tient pas.
         let libre = max(W - medalW - 2 * encart - 16, 40)
@@ -491,6 +491,21 @@ struct SliderObsidienne: View {
         // place du glyphe. Une flèche qui disparaît au moment où elle
         // triomphe, c'est le contraire de ce qu'on raconte.
         let lueur = min(0.72, 0.45 * Double(p) * Double(p) + 0.28 * flash)
+        // LE GLYPHE QUI REFROIDIT. Au lâcher il est BLANC CHAUD, puis il
+        // descend l'échelle d'une braise — or, orange, rouge sombre — avant de
+        // revenir au gris de repos. Du métal qui a pris le coup, pas une
+        // couleur qui clignote : la teinte suit la RETOMBÉE du flash, elle ne
+        // peut donc pas se désynchroniser de lui.
+        //
+        // Le POIDS, lui, ne lâche qu'à la toute fin (0,12) : relâché en même
+        // temps que la teinte, le rouge n'a pas le temps d'exister et on ne
+        // voit qu'un blanc qui pâlit. C'est la fin de la rampe qui porte tout
+        // le registre braise de l'app — celui du BRAVO et du booster.
+        let feu = Self.braise(1 - flash)
+        let dose = min(1, flash / 0.12)
+        let couleur = Color(red: 1 - (1 - feu.0) * dose,
+                            green: 1 - (1 - feu.1) * dose,
+                            blue: 1 - (1 - feu.2) * dose)
         let dessin = Path { pth in
             let c = cote / 2
             let tip = CGPoint(x: cote, y: c)
@@ -505,12 +520,12 @@ struct SliderObsidienne: View {
         let style = StrokeStyle(lineWidth: trait,
                                 lineCap: .round, lineJoin: .round)
         return dessin
-            .stroke(Color.white.opacity(min(1, encre)), style: style)
+            .stroke(couleur.opacity(min(1, encre)), style: style)
             // La lueur n'EXISTE PAS au repos : elle naît avec la course. Un
             // halo permanent ferait de la flèche une lampe témoin.
             .background {
                 dessin
-                    .stroke(Color.white, style: style)
+                    .stroke(couleur, style: style)
                     .blur(radius: 5)
                     .opacity(lueur)
                     .blendMode(.plusLighter)
@@ -522,6 +537,25 @@ struct SliderObsidienne: View {
             .scaleEffect(1 + 0.22 * grip)
             .animation(.spring(response: 0.30, dampingFraction: 0.55),
                        value: grip)
+    }
+
+    /// L'ÉCHELLE D'UNE BRAISE, en trois segments : blanc chaud → or → orange →
+    /// rouge sombre. C'est la rampe de `SetEntrySheet.fire`, et elle vaut ici
+    /// pour la même raison : une interpolation directe du blanc au rouge passe
+    /// par du ROSE, qui n'existe nulle part dans un métal qui refroidit.
+    /// Jamais de violet — il n'y en a pas dans l'app.
+    private static func braise(_ u: Double) -> (Double, Double, Double) {
+        let k = min(max(u, 0), 1)
+        if k < 0.34 {
+            let t = k / 0.34
+            return (1.0, 1.0 - 0.14 * t, 1.0 - 0.45 * t)
+        } else if k < 0.68 {
+            let t = (k - 0.34) / 0.34
+            return (1.0, 0.86 - 0.31 * t, 0.55 - 0.35 * t)
+        } else {
+            let t = (k - 0.68) / 0.32
+            return (1.0 - 0.10 * t, 0.55 - 0.33 * t, 0.20 - 0.08 * t)
+        }
     }
 
     // MARK: La rampe de prise

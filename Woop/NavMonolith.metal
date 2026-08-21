@@ -658,13 +658,7 @@ static float nburn(float c, float tint) {
     float dd = fabs(dep - piste2.x);
     float lwp = max(piste2.y, 0.3);
     float bandP = 1.0 - smoothstep(lwp * 0.70, lwp * 1.55, dd);
-    // Au commit, les deux bouts de la capsule s'ALLUMENT. C'est le liseré de
-    // flanc qui porte l'arrivée : la piste ne peut pas devenir blanche (elle
-    // resterait de l'obsidienne éclairée, pas de l'obsidienne allumée) — ce
-    // sont ses arêtes qui prennent la lumière, comme un objet qu'on approche
-    // d'une source.
-    rgb += piste.w * lobe * bandP * (1.0 + 2.10 * clamp(fx.z, 0.0, 1.0))
-           * inside * float3(0.97, 0.98, 1.00);
+    rgb += piste.w * lobe * bandP * inside * float3(0.97, 0.98, 1.00);
 
     // Le cheveu : la crête juste à l'aplomb de l'anneau, un pour cent. C'est
     // lui qui donne une TRANCHE à la pierre — sans quoi la capsule est une
@@ -674,19 +668,67 @@ static float nburn(float c, float tint) {
                * (0.004 + 0.011 * pow(topness, 2.2));
     rgb += hair * float3(0.86, 0.89, 0.95) * inside;
 
-    // ---- L'ONDE DU COMMIT ------------------------------------------------
-    // La lumière part du pouce et court aux DEUX bouts en ~0,20 s. C'est une
-    // onde, pas un fondu : un fondu global dit « la page a changé », une onde
-    // qui part d'un point dit « c'est CE geste-là qui l'a déclenchée ».
-    // Elle continue au-delà des bouts et meurt dehors — un front qui s'arrête
-    // sur l'arête se lit comme un défaut de rendu.
+    // ---- LE COMMIT : LE FILAMENT ET LA PIERRE QUI CHAUFFE ----------------
+    //
+    // L'ONDE EST MORTE (verdict Kathryn : « c'est cheap »). Elle avait le
+    // défaut de tous les shimmers : une bande claire qui TRAVERSE une surface
+    // se lit comme un décalque qui passe DESSUS, jamais comme l'objet qui
+    // réagit. C'est le vocabulaire des écrans de chargement.
+    //
+    // À la place, deux choses, et aucune ne traverse quoi que ce soit :
+    //
+    //   1. LE FILAMENT — ce n'est pas la surface qui s'allume, c'est L'ARÊTE.
+    //      Deux têtes de lumière partent du pouce et courent le long du
+    //      CONTOUR, en sens inverse, et se rejoignent à l'antipode en 0,25 s.
+    //      Elles laissent le liseré allumé derrière elles. Un bord qui se
+    //      dessine tout seul ne ressemble à aucun reflet automatique : il n'y
+    //      a rien à reconnaître, donc rien à trouver cheap.
+    //
+    //   2. LA PIERRE QUI CHAUFFE — le voile du fond enfle par le HAUT, comme
+    //      si on venait d'allumer au-dessus. Aucun front, aucun déplacement :
+    //      l'objet est simplement plus clair, puis il revient. C'est le lit du
+    //      filament, et à lui seul il ne peut pas faire cheap.
+    float derriere = 0.0;
     if (fx.z > 0.001) {
-        float dxw = fabs((p.x + halfB.x) - pill.x);
-        float front = (1.0 - fx.z) * 2.2 * (2.0 * halfB.x);
-        float onde = exp(-pow((dxw - front) / max(halfB.y * 0.72, 1.0), 2.0));
-        rgb += onde * fx.z * 0.80 * inside;
-        // et la pierre entière prend la lumière, une fois, brièvement.
-        rgb += fx.z * fx.z * 0.11 * (1.0 - ring) * inside;
+        // L'abscisse curviligne du contour de la capsule, en partant du coin
+        // haut-gauche et en tournant dans le sens des aiguilles. Le SDF nous
+        // donne déjà la forme ; la longueur d'arc est gratuite avec elle.
+        float S = max(halfB.x - halfB.y, 0.0);
+        float R = max(halfB.y, 1.0);
+        float PI = 3.14159265;
+        float perim = 4.0 * S + 2.0 * PI * R;
+        float s;
+        if (p.x > S) {                       // calotte droite
+            s = 2.0 * S + R * (atan2(p.y, p.x - S) + PI * 0.5);
+        } else if (p.x < -S) {               // calotte gauche
+            s = 4.0 * S + PI * R
+              + R * (atan2(-p.y, -(p.x + S)) + PI * 0.5);
+        } else if (p.y < 0.0) {              // arête haute, gauche → droite
+            s = p.x + S;
+        } else {                             // arête basse, droite → gauche
+            s = 2.0 * S + PI * R + (S - p.x);
+        }
+        // La mise à feu est au POUCE : les deux têtes en partent, donc la
+        // distance se mesure dans les deux sens le long du contour.
+        float s0 = clamp(pill.x - halfB.x, -S, S) + S;
+        float ds = fabs(s - s0);
+        ds = min(ds, perim - ds);
+        // 1,8 : les têtes se rejoignent à l'antipode quand fx.z vaut 0,44,
+        // soit 0,25 s après le lâcher.
+        float tete = (1.0 - fx.z) * 1.8 * (perim * 0.5);
+        float fil = exp(-pow((ds - tete) / max(R * 0.85, 1.0), 2.0));
+        derriere = 1.0 - smoothstep(tete - R * 0.6, tete + R * 0.6, ds);
+
+        // Le filament vit DANS la bande du liseré — jamais sur la surface.
+        rgb += fil * bandP * fx.z * 1.05 * float3(1.00, 0.99, 0.97);
+        // DERRIÈRE les têtes, l'arête reste allumée : sans cette traîne on ne
+        // voit que deux points courir, et deux points qui courent, c'est une
+        // animation de chargement. C'est la trace qui fait le FILAMENT — le
+        // contour existe d'un coup, sur toute la longueur déjà parcourue.
+        rgb += derriere * bandP * fx.z * 0.40 * float3(0.97, 0.98, 1.00);
+        // et la pierre chauffe, par le haut.
+        rgb += pow(fx.z, 1.2) * 0.098 * (1.0 - 0.55 * uy)
+               * (1.0 - ring) * inside;
     }
 
     // ---- LE POUCE : LE PUITS ---------------------------------------------
