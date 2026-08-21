@@ -27,6 +27,11 @@ struct WorkoutPill: View {
     /// (la loi du CADRE FANTÔME). `false`, la pierre flottante d'origine
     /// (l'échancrure de la carte blanche).
     var docked: Bool = false
+    /// LE LISERÉ DE LA DALLE. Sur la home, la bande découverte n'est pas une
+    /// carte posée sur une page : c'est le SOL sous la card. Un trait autour
+    /// d'elle la redécoupe en objet et redonne un bord de plus à une page qui
+    /// en a déjà deux (verdict 22-08 : « enlève tout le border de l'overlay »).
+    var lisere: Bool = true
     /// Le bilan pour le panneau du stop — séries validées et exercices
     /// de la séance (l'hôte les connaît ; la vraie séance les nourrira).
     var doneSeries: Int = 0
@@ -99,7 +104,7 @@ struct WorkoutPill: View {
             else { shape.fill(Color(white: 0.045)) }
         }
         .overlay {
-            if docked {
+            if docked, lisere {
                 // Le liseré d'une dalle incrustée n'a pas de bas : il
                 // meurt aux deux tiers — un trait au ras du bord physique
                 // serait le CADRE FANTÔME.
@@ -110,7 +115,7 @@ struct WorkoutPill: View {
                         .init(color: .clear, location: 0.65),
                     ], startPoint: .top, endPoint: .bottom),
                     lineWidth: 1)
-            } else {
+            } else if !docked, lisere {
                 shape.strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
             }
         }
