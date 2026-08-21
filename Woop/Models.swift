@@ -437,6 +437,20 @@ enum WoopDuration {
 // MARK: - Objectif
 
 enum Goal {
-    /// Objectif d'entraînements par semaine.
+    /// Objectif d'entraînements par semaine. La valeur d'usine — celle que
+    /// lisent encore les pages d'avant la home v2.
     static let weeklyTarget = 5
+
+    /// Depuis la home v2 (20-08) l'objectif est **réglable** : le chiffre de
+    /// la phrase est un galet de verre, et son panneau propose de 3 à 7.
+    /// La clé de stockage, partagée avec l'`@AppStorage` de la page.
+    static let cleHebdo = "objectifHebdo"
+    static let hebdoChoix = [3, 4, 5, 6, 7]
+
+    /// L'objectif effectif. À lire ici, et plus `weeklyTarget`, à mesure que
+    /// les autres pages migrent (carte objectif, calendrier, synthèse).
+    static var hebdo: Int {
+        let v = UserDefaults.standard.integer(forKey: cleHebdo)
+        return hebdoChoix.contains(v) ? v : weeklyTarget
+    }
 }

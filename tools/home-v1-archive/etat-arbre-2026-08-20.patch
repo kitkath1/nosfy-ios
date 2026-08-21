@@ -1,0 +1,2107 @@
+diff --git a/Woop/Assets.xcassets/AuthNight.imageset/Contents.json b/Woop/Assets.xcassets/AuthNight.imageset/Contents.json
+index c0af6d6..7aeca90 100644
+--- a/Woop/Assets.xcassets/AuthNight.imageset/Contents.json
++++ b/Woop/Assets.xcassets/AuthNight.imageset/Contents.json
+@@ -1,9 +1,17 @@
+ {
+   "images" : [
++    {
++      "idiom" : "universal",
++      "scale" : "1x"
++    },
+     {
+       "filename" : "AuthNight.png",
+       "idiom" : "universal",
+       "scale" : "2x"
++    },
++    {
++      "idiom" : "universal",
++      "scale" : "3x"
+     }
+   ],
+   "info" : {
+diff --git a/Woop/Assets.xcassets/AuthNightGlow.imageset/Contents.json b/Woop/Assets.xcassets/AuthNightGlow.imageset/Contents.json
+index 7cbe268..1535c21 100644
+--- a/Woop/Assets.xcassets/AuthNightGlow.imageset/Contents.json
++++ b/Woop/Assets.xcassets/AuthNightGlow.imageset/Contents.json
+@@ -1,9 +1,17 @@
+ {
+   "images" : [
++    {
++      "idiom" : "universal",
++      "scale" : "1x"
++    },
+     {
+       "filename" : "AuthNightGlow.png",
+       "idiom" : "universal",
+       "scale" : "2x"
++    },
++    {
++      "idiom" : "universal",
++      "scale" : "3x"
+     }
+   ],
+   "info" : {
+diff --git a/Woop/LiquideMolette.metal b/Woop/LiquideMolette.metal
+index 5b3bdef..8c7f2c4 100644
+--- a/Woop/LiquideMolette.metal
++++ b/Woop/LiquideMolette.metal
+@@ -38,67 +38,50 @@ static inline float3 lqHash3(float n) {
+                                     float2 taille,  // w, h du rect hôte
+                                     float2 doigt,   // point de contact (px)
+                                     float2 etat,    // vie 0→1, t (s)
+-                                    float2 forme,   // rayon de halo, vitesse
++                                    float2 forme,   // rayon (px), vitesse
+                                     float2 regle,   // veille, éveil
+-                                    float2 corps)   // nombre, remous
++                                    float2 corps)   // nombre (inutile), remous
+ {
++    // UNE SEULE PIÈCE NACRÉE (le verdict : « un truc plus épuré, avec
++    // quelques touches néon blanc et orange » + la réf de la pièce 3D
++    // iridescente) : un objet, pas quatre taches. Grand, mou, il dérive
++    // lentement — et le verre le TORD franchement au bord. Sa couleur
++    // voyage du blanc au bleu froid puis à l'orange : l'iridescence.
+     const float vie = clamp(etat.x, 0.0, 1.0);
+     const float t = etat.y;
+-    const float rH = max(forme.x, 10.0);
+-    // Des tours TRÈS lents : la lumière dérive, elle ne nage pas.
+-    const float vit = (0.04 + 0.16 * clamp(forme.y, 0.0, 1.0))
+-                    * 6.2831853;
+-    const int n = int(clamp(corps.x, 1.0, 14.0));
++    const float R = max(forme.x, 20.0);
++    const float vit = 0.03 + 0.10 * clamp(forme.y, 0.0, 1.0);
+     const float remous = clamp(corps.y, 0.0, 1.0);
+ 
+-    // — LES HALOS : orbites de Lissajous par graine, sommés (le
+-    //   chevauchement ADDITIONNE la lumière — jamais un bord).
+-    float somme = 0.0;
+-    for (int i = 0; i < 14; ++i) {
+-        if (i >= n) break;
+-        const float3 h = lqHash3(float(i) * 1.618 + 7.0);
+-        const float3 h2 = lqHash3(float(i) * 2.113 + 3.0);
+-        const float2 base = float2(0.10 + 0.80 * h.x,
+-                                   0.10 + 0.80 * h.y) * taille;
+-        const float2 amp = float2(0.08 + 0.16 * h.z,
+-                                  0.08 + 0.16 * h2.x) * taille;
+-        const float w1 = (0.5 + 0.9 * h2.y) * vit;
+-        const float w2 = (0.4 + 0.8 * h2.z) * vit;
+-        float2 c = base
+-            + float2(sin(t * w1 + h.z * 6.2831853) * amp.x,
+-                     cos(t * w2 + h.x * 6.2831853) * amp.y);
+-        // — L'ASPIRATION DU DOIGT : les halos proches sont tirés vers
+-        //   le contact, le remous force le tirage.
+-        const float2 vers = doigt - c;
+-        const float att = exp(-dot(vers, vers)
+-                              / (2.0 * 130.0 * 130.0))
+-                        * vie * (0.35 + 0.25 * remous);
+-        c += vers * att;
+-        // Le rayon respire à peine (±8 %, très lent) — vivant, jamais
+-        // un clignotement.
+-        const float resp = 1.0 + 0.08
+-            * sin(t * (0.25 + 0.30 * h.y) + h2.z * 6.2831853);
+-        const float s = rH * (0.65 + 0.55 * h2.x) * resp;
+-        const float2 d = pos - c;
+-        const float force = 0.55 + 0.45 * h.z;
+-        somme += force * exp(-dot(d, d) / (2.0 * s * s));
+-    }
+-    // — LE HALO DU DOIGT : il naît au contact, meurt au lâcher.
+-    if (vie > 0.01) {
+-        const float sD = rH * 0.9;
+-        const float2 dD = pos - doigt;
+-        somme += vie * 0.9 * exp(-dot(dD, dD) / (2.0 * sD * sD));
+-    }
++    // La dérive : deux périodes lentes et premières entre elles.
++    float2 c = taille * 0.5
++        + float2(sin(t * vit * 1.00) * taille.x * 0.17,
++                 cos(t * vit * 0.61) * taille.y * 0.15);
++    // Le doigt TIRE la pièce vers lui (le geste déplace la lumière).
++    const float2 vers = doigt - c;
++    c += vers * (0.34 + 0.22 * remous) * vie;
+ 
+-    // — LA RÈGLE : veille franche → éveil plein. Gain 0,34 (le
+-    //   premier tir à 0,60 CRAMAIT tout : cinq gaussiennes sommées
+-    //   couvrent le disque entier — le noir doit RESTER la phase
+-    //   majoritaire). Cap 0,85 : un halo n'écrête jamais au papier.
+-    const float vieF = regle.x + (regle.y - regle.x) * vie;
+-    const float kk = clamp(somme * 0.34 * vieF, 0.0, 0.85);
+-    if (kk < 0.004) return half4(0.0h);
++    const float2 rel = pos - c;
++    const float d = length(rel) - R * (1.0 + 0.06 * vie);
++    // Bord MOU mais lisible : c'est lui que la lentille plie.
++    float a = smoothstep(16.0, -16.0, d);
++    if (a < 0.004) return half4(0.0h);
++
++    // L'IRIDESCENCE : le blanc au cœur, le bleu froid d'un flanc,
++    // l'orange de l'autre — la nacre de la réf, en trois teintes.
++    const float u = clamp(0.5 + rel.x / (2.2 * R), 0.0, 1.0);
++    const float v = clamp(0.5 + rel.y / (2.2 * R), 0.0, 1.0);
++    const float3 blanc = float3(1.000, 0.995, 0.985);
++    const float3 froid = float3(0.620, 0.740, 1.000);
++    const float3 chaud = float3(1.000, 0.560, 0.190);
++    float3 col = mix(froid, blanc, smoothstep(0.0, 0.62, u));
++    col = mix(col, chaud, smoothstep(0.58, 1.0, u) * (0.35 + 0.5 * v));
++    // Le cœur monte en blanc, les bords gardent leur teinte.
++    const float coeur = smoothstep(0.0, -R * 0.55, d);
++    col = mix(col, blanc, coeur * 0.55);
+ 
+-    // La lune de la maison, en prémultiplié — le parent additionne.
+-    const half kh = half(kk);
+-    return half4(half3(0.965h, 0.975h, 1.0h) * kh, kh);
++    const float vieF = regle.x + (regle.y - regle.x) * vie;
++    const float k = clamp(a * vieF, 0.0, 0.98);
++    const half kh = half(k);
++    return half4(half3(col) * kh, kh);
+ }
+diff --git a/Woop/Views/ActiveWorkoutView.swift b/Woop/Views/ActiveWorkoutView.swift
+index fc82113..a570f08 100644
+--- a/Woop/Views/ActiveWorkoutView.swift
++++ b/Woop/Views/ActiveWorkoutView.swift
+@@ -160,6 +160,10 @@ struct ActiveWorkoutSheet: View {
+     /// « Ajouter un exercice » : fourni par la racine, ferme la feuille et
+     /// ouvre la bibliothèque.
+     var onAddExercise: (() -> Void)? = nil
++    /// LE STOP DU PLAYER passe par LE PANNEAU DE PAUSE de la maison
++    /// (fourni par la racine : elle ferme la feuille et monte le
++    /// panneau). Sans lui, l'alerte système d'origine reste le repli.
++    var onStopViaPause: (() -> Void)? = nil
+ 
+     @Environment(\.modelContext) private var context
+     @Environment(\.dismiss) private var dismiss
+@@ -271,7 +275,13 @@ struct ActiveWorkoutSheet: View {
+             .padding(.horizontal, 6)
+ 
+             FinishWorkoutButton(enabled: !workout.orderedExercises.isEmpty) {
+-                confirmFinish = true
++                // Le panneau de pause de la maison quand la racine le
++                // fournit — l'alerte système n'est plus que le repli.
++                if let stop = onStopViaPause {
++                    stop()
++                } else {
++                    confirmFinish = true
++                }
+             }
+             .padding(.horizontal, 6)
+         }
+diff --git a/Woop/Views/BoosterPopup.swift b/Woop/Views/BoosterPopup.swift
+index 6f1953b..6649495 100644
+--- a/Woop/Views/BoosterPopup.swift
++++ b/Woop/Views/BoosterPopup.swift
+@@ -47,11 +47,20 @@ final class SacreEtat {
+     /// (les lignes à `opened_at is null`) qui donnera ce nombre, et c'est
+     /// la seule façon qu'il survive à la fermeture de l'app.
+     var boostersEnAttente = 1
++    /// Une proposition arrivée pendant un manège ouvert : elle repart
++    /// à la fermeture (jamais perdue).
++    var propositionEnAttente = false
+ 
+     /// La proposition (aujourd'hui le bouton d'essai de la home ; demain
+     /// la fin de séance).
+     func proposer() {
+-        guard !manegeOuvert else { return }
++        // Un manège déjà ouvert : la proposition ATTEND au lieu de se
++        // perdre — elle repart à la fermeture (la pill du profil
++        // n'était qu'un filet, pas une réponse).
++        if manegeOuvert {
++            propositionEnAttente = true
++            return
++        }
+         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+         withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+             popupOuverte = true
+@@ -93,6 +102,13 @@ final class SacreEtat {
+         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+         manegePose = false
+         withAnimation(.easeInOut(duration: 0.32)) { manegeOuvert = false }
++        // La proposition mise en attente reprend la parole.
++        if propositionEnAttente {
++            propositionEnAttente = false
++            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
++                self.proposer()
++            }
++        }
+     }
+ }
+ 
+diff --git a/Woop/Views/BravoLab.swift b/Woop/Views/BravoLab.swift
+index f193c72..5d5e400 100644
+--- a/Woop/Views/BravoLab.swift
++++ b/Woop/Views/BravoLab.swift
+@@ -239,6 +239,20 @@ struct BravoView: View {
+     @State private var loop: AVQueuePlayer?
+     @State private var looper: AVPlayerLooper?
+     @State private var onLoop = false
++    /// LE RELAIS N'A LIEU QU'UNE FOIS. Il a maintenant DEUX déclencheurs — la
++    /// borne de l'image 120 et le lien « Passer l'animation » — et rien
++    /// d'autre ne dit qu'il a eu lieu : `onLoop` n'arrive que 50 ms plus tard
++    /// et porte un sens GRAPHIQUE (quelle couche est visible), `cine` n'est
++    /// rendu qu'à +0,6 s. Il dit aussi « le débit du master ne m'appartient
++    /// plus » : c'est lui qui empêche le palier mural de le remettre en
++    /// marche après un saut précoce.
++    @State private var relayed = false
++    /// LE SAUT EST EN COURS. Entre le forçage du relais et la pose, il y a
++    /// jusqu'à 0,3 s où la partition n'a pas encore bougé — donc où le
++    /// garde-fou « jamais à reculons » ne mord pas encore. Un deuxième doigt
++    /// y relancerait la boucle (une écriture de `rate` = une discontinuité du
++    /// CMTimebase) et poserait la page deux fois.
++    @State private var skipping = false
+     @State private var visible = false
+     @State private var startedAt = Date()
+     @State private var handoffObserver: Any?
+@@ -419,6 +433,46 @@ struct BravoView: View {
+                             // donc sous l'image pendant toute la cérémonie,
+                             // et son action DÉMONTE la page.
+                             .allowsHitTesting(rise(0.47, e) > 0.5)
++                            // PASSER L'ANIMATION. La cérémonie est belle et
++                            // on n'y touche pas — mais en séance, l'attendre
++                            // après chaque série est une punition. Le lien
++                            // n'abrège rien : il AVANCE L'HORLOGE (voir
++                            // `skipBravo`). Frère de celui de la cinématique
++                            // de lancement et de « Passer le repos ».
++                            //
++                            // IL PARTAGE LA BANDE DE 44 pt DU FOOTER, en
++                            // overlay : zéro point de mise en page en plus.
++                            // Une rangée de plus dans le VStack POUSSERAIT la
++                            // page — le `Spacer(minLength: 0)` n'a qu'une
++                            // soixantaine de points à donner, et un VStack qui
++                            // déborde garde sa hauteur idéale : le sol
++                            // sortirait par le bas.
++                            //
++                            // ET IL EST ATTEIGNABLE PAR PROFONDEUR, PAS PAR
++                            // EXCLUSION : la pastille accroche son tap sur
++                            // TOUT l'écran. Ce qui sauve ce lien est qu'il vit
++                            // dans le DERNIER enfant du ZStack.
++                            .overlay {
++                                let skipIn = skipFade(e)
++                                if skipIn > 0.001 {
++                                    Button(action: skipBravo) {
++                                        Text("Passer l'animation")
++                                            .font(.inter(15, .medium))
++                                            .foregroundStyle(Color.inkSecondary)
++                                            .frame(maxWidth: .infinity,
++                                                   minHeight: 44)
++                                            .contentShape(Rectangle())
++                                    }
++                                    .buttonStyle(.plain)
++                                    .opacity(skipIn)
++                                    // Le tapable est un sous-ensemble STRICT
++                                    // du visible — la même leçon qu'à la ligne
++                                    // au-dessus. Et les deux fenêtres sont
++                                    // DISJOINTES : jamais deux sorties
++                                    // vivantes au même pixel.
++                                    .allowsHitTesting(skipIn > 0.5)
++                                }
++                            }
+                         // LE SOL, tout en bas. Il naît en dernier, après les
+                         // chiffres et l'échappée : la page se referme dessus.
+                         floorVideo(W: W)
+@@ -693,7 +747,29 @@ struct BravoView: View {
+             // appelable qu'une fois l'item `.readyToPlay` — d'où l'observation.
+             loopReady = q.observe(\.status, options: [.initial, .new]) { p, _ in
+                 guard p.status == .readyToPlay else { return }
+-                p.preroll(atRate: BravoCine.rateSlow) { _ in }
++                // La KVO n'est pas garantie sur le fil principal, et ce bloc
++                // lit maintenant des `@State`.
++                DispatchQueue.main.async {
++                    // ON NE RESSUSCITE PAS UN LECTEUR DÉMONTÉ : `teardown`
++                    // invalide l'observation mais ne peut pas annuler un bloc
++                    // déjà en file, et il vient de mettre celui-ci en pause.
++                    guard loop === p else { return }
++                    // LA BOUCLE PEUT AVOIR ÉTÉ RÉCLAMÉE AVANT D'ÊTRE PRÊTE :
++                    // « Passer l'animation » tapé dans la première seconde
++                    // pose `play()` puis `rate` sur un lecteur dont l'item
++                    // n'est pas encore jouable, et un débit posé là ne survit
++                    // pas toujours. La page se poserait alors sur une lune QUI
++                    // NE RESPIRE PAS — le filet, image fixe, pour toute la vie
++                    // de la page. On repose donc le débit à la première
++                    // occasion. Jamais de `preroll` sur un lecteur réclamé :
++                    // il exige un rate nul.
++                    guard !relayed else {
++                        p.play()
++                        p.rate = BravoCine.rateSlow
++                        return
++                    }
++                    p.preroll(atRate: BravoCine.rateSlow) { _ in }
++                }
+             }
+             loop = q
+         }
+@@ -736,6 +812,14 @@ struct BravoView: View {
+             forTimes: [NSValue(time: CMTime(value: BravoCine.handoffFrame,
+                                             timescale: 24))],
+             queue: .main) { [weak p] in
++                // LE PREMIER ARRIVÉ FERME. `removeTimeObserver` ne garantit
++                // pas qu'un bloc déjà dépêché ne s'exécutera pas : si le doigt
++                // et la borne se croisent, ce garde-fou évite un deuxième
++                // `play()` sur une boucle qui tourne (1,25 → 1,0 → 1,25, la
++                // discontinuité que la loi des débits interdit) et un deuxième
++                // démontage du master.
++                guard !relayed else { return }
++                relayed = true
+                 loop?.play()
+                 loop?.rate = BravoCine.rateSlow
+                 // ÉCHANGE SEC, JAMAIS UN FONDU. Le fondu croisé de 0,30 s
+@@ -788,10 +872,140 @@ struct BravoView: View {
+         // instant, donc la loi « jamais un scale qui claque » est tenue par
+         // la physique de l'image et non par une courbe.
+         DispatchQueue.main.asyncAfter(deadline: .now() + BravoCine.fallScreen) {
++            // ET IL SE TAIT SI L'ON A SAUTÉ. Cette attente n'est pas
++            // annulable, et le lien peut être tapé avant elle (1,16 s) : le
++            // saut met le master EN PAUSE et ne le démonte que 0,6 s plus
++            // tard. Écrire un `rate` entre les deux le remettrait EN MARCHE —
++            // un décodeur 2160p qui repart sous une couche à opacité nulle.
++            // Sur le chemin naturel ce garde-fou ne peut PAS mordre, et ce
++            // n'est pas de la chance : le relais est l'image 120, soit 5,00 s
++            // de source, et à 2,5× on n'en a lu que 2,90 à cet instant.
++            guard !relayed else { return }
+             cine?.rate = BravoCine.rateSlow
+         }
+     }
+ 
++    /// LA VIE DU LIEN « Passer l'animation ». Il naît AVEC LA NUIT, pas avec
++    /// la chute : `Color.black` est le premier enfant du ZStack et `visible`
++    /// ne gate QUE le film — la page noire est là dès `e = 0`. La rampe
++    /// 0,12 → 0,52 le pose donc au rythme exact du fondu de 0,40 s de
++    /// l'image, et pas quand la pièce touche : on n'échappe pas à une attente
++    /// une fois qu'elle est finie (le verdict de la cinématique de lancement).
++    ///
++    /// ET IL MEURT SUR L'ARRIVÉE DU CONTENU — `rise(0, e)`, la rampe du titre.
++    /// Le modèle fait mourir son lien sur la rampe de l'objet qui le remplace ;
++    /// ici cet objet est son SOSIE (même fonte, même encre, même pixel), et
++    /// deux phrases centrées qui se croisent à mi-opacité au même endroit ne
++    /// se lisent pas comme une passation mais comme un calque mal empilé. On
++    /// garde donc la loi — mourir sur une rampe de la page, jamais sur une
++    /// horloge à soi — en prenant celle qui la rend lisible : à la seconde où
++    /// « Bravo » s'écrit, il n'y a plus rien à passer.
++    ///
++    /// En `-bravoFreeze` et en mouvement réduit, `clock` rend 99 : `rise` vaut
++    /// 1, le produit vaut 0, le lien est mort-né. Aucune garde à écrire.
++    private func skipFade(_ e: Double) -> Double {
++        BravoCine.sstep(0.12, 0.52, e) * (1 - rise(0, e))
++    }
++
++    /// PASSER L'ANIMATION — on n'abrège pas la cérémonie, on AVANCE SON
++    /// HORLOGE. Tout ce que la page dessine est fonction pure de `startedAt` :
++    /// reculer cette date pose la partition à l'instant voulu sans qu'une
++    /// seule courbe, un seul uniform, une seule constante ne change.
++    ///
++    /// LA CIBLE EST `contentAt`, ET C'EST LA SEULE JUSTE : c'est l'instant où
++    /// TOUTES les rampes du contenu valent exactement ZÉRO, où le compte est
++    /// déjà plein, et où la dernière pièce de la gerbe vient de sortir du
++    /// champ. La page s'écrit ensuite toute seule, ligne par ligne, par SES
++    /// rampes. Viser la fin — là où tout est PLEIN — ferait POPPER d'un bloc
++    /// le titre, les trois chiffres, le gain, le lien et le sol : un calque
++    /// qu'on déplace au lieu d'une page qui s'écrit.
++    ///
++    /// MAIS ICI LA PARTITION RECADRE UN FILM, et c'est tout ce qui la sépare
++    /// de la cinématique de lancement : `slot`, `zoom`, `blur`, `cam` sont le
++    /// CADRAGE de la vidéo, et le relais vit sur l'horloge du LECTEUR
++    /// (l'image 120). Reculer la date SEULE poserait le créneau de repos
++    /// par-dessus une pièce encore en chute, pendant deux secondes et demie.
++    /// Le lien emmène donc le film avec lui.
++    private func skipBravo() {
++        let target = BravoCine.contentAt
++        // On n'avance jamais à reculons — et ce seul garde-fou couvre aussi
++        // `-bravoFreeze` et le mouvement réduit, où `clock` rend 99.
++        guard !skipping, clock(.now) < target else { return }
++        skipping = true
++        // LE RELAIS COMMANDE LE TEMPO. S'il a déjà eu lieu, le cadrage recadre
++        // encore — mais il recadre une BOUCLE, dont l'image ne dépend d'aucune
++        // date. Rien ne peut dériver derrière elle : on pose, point.
++        guard !relayed else { pose(target); return }
++        relayed = true
++        // La borne n'a plus rien à annoncer.
++        if let ho = handoffObserver {
++            cine?.removeTimeObserver(ho)
++            handoffObserver = nil
++        }
++        // `play()` d'abord, le débit ENSUITE : `play()` est littéralement
++        // `rate = 1.0` et écraserait le 1,25.
++        loop?.play()
++        loop?.rate = BravoCine.rateSlow
++        handoffNow(target)
++    }
++
++    /// L'ÉCHANGE FORCÉ, ET LA PARTITION AVEC LUI.
++    ///
++    /// ON ATTEND D'AVOIR QUELQUE CHOSE À MONTRER. Au relais naturel la
++    /// question ne se pose pas : la boucle a préchargé pendant 2,8 s et le
++    /// filet est acquis depuis longtemps. Tapé dans la première seconde, le
++    /// lien arrive AVANT eux — et le filet est le seul événement non
++    /// déterministe de la page. On ne conditionne pas le LIEN (un lien qui
++    /// « des fois » n'existe pas est le reproche qu'on répare), on conditionne
++    /// LA BASCULE : tant qu'il n'y a rien à montrer, le master reste à l'écran
++    /// et la cérémonie continue — à son propre cadrage, puisque la partition
++    /// n'a PAS encore bougé. Plafonné à 0,24 s : passé ça on bascule quand
++    /// même, le lien n'est jamais inopérant.
++    ///
++    /// ET LA PARTITION SAUTE DANS LE MÊME BLOC QUE LA COUCHE. C'est la clé :
++    /// `onLoop` et le recul de `startedAt` sont posés dans la même passe
++    /// SwiftUI, donc l'image et le cadrage basculent ENSEMBLE. Il n'existe pas
++    /// une frame où le créneau de repos rogne une pièce en chute.
++    private func handoffNow(_ target: Double, _ hold: Int = 0) {
++        if loopFirstFrame == nil, loop?.status != .readyToPlay, hold < 4 {
++            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
++                handoffNow(target, hold + 1)
++            }
++            return
++        }
++        // Les 50 ms du vrai relais, et pour la même raison : `preroll` amorce
++        // le DÉCODEUR, pas le renderer — la couche entrante peut n'avoir rien
++        // à présenter. Le master couvre l'échange, comme toujours.
++        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
++            onLoop = true
++            cine?.pause()
++            pose(target)
++        }
++        // ET ON LE DÉMONTE, comme le relais : un décodeur 2160p HEVC vivant
++        // sous la page à côté des deux boucles, pour une couche invisible.
++        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
++            cine?.replaceCurrentItem(with: nil)
++            cine = nil
++        }
++    }
++
++    /// POSER LA PAGE À `target` — et RÉARMER LE SOMMEIL DE L'HORLOGE sur la
++    /// nouvelle origine. Le rendez-vous de `start()` est MURAL : il ne
++    /// tomberait qu'à 9,13 s réelles, laissant la page recalculer masque,
++    /// rognage et flou à 60 Hz par-dessus trois lecteurs pendant tout le temps
++    /// qu'on vient de sauter — c'est-à-dire perdre exactement ce que `settled`
++    /// existe pour gagner. Le délai reconstruit tombe sur le MÊME instant de
++    /// PARTITION, donc bien après la naissance du dernier élément : la pause
++    /// ne peut jamais surprendre une rampe en cours. Le rendez-vous d'origine
++    /// survit et repose la même valeur — idempotent, rien à annuler.
++    private func pose(_ target: Double) {
++        startedAt = .now.addingTimeInterval(-target)
++        DispatchQueue.main.asyncAfter(
++            deadline: .now() + max(BravoCine.contentAt + 2.6 - target, 0)) {
++            settled = true
++        }
++    }
++
+     /// La première image du fichier de boucle, extraite une fois, à tolérance
+     /// NULLE : on veut CETTE image-là, pas sa voisine.
+     private func grabLoopFirstFrame(url: URL) {
+diff --git a/Woop/Views/CalLab.swift b/Woop/Views/CalLab.swift
+index 3b425d2..352a9a2 100644
+--- a/Woop/Views/CalLab.swift
++++ b/Woop/Views/CalLab.swift
+@@ -1909,6 +1909,317 @@ private struct PoudreCran: View {
+ 
+ /// LA PAGE DU MOIS : l'écran feuillette les sessions (les grandes
+ /// `SessionVinyle` — elles ont survécu pour ça), et dessous LA MOLETTE
++// MARK: - Le petit écran à points (l'iPod)
++
++/// LA MATRICE DE POINTS (la réf du Camera Control) : un petit panneau
++/// noir encastré où le mois s'écrit en LED ORANGE, police 5×7 dessinée
++/// au point. Les points ÉTEINTS restent visibles à 4 % — c'est la
++/// grille qui fait le vintage ; les allumés portent leur bloom. Aucune
++/// horloge : le texte change au cran, rien ne clignote.
++private struct MatricePoints: View {
++    let texte: String
++    /// La montée à l'allumage (0…1) : les colonnes s'allument de
++    /// gauche à droite.
++    var p: CGFloat = 1
++
++    /// La police 5×7, ligne par ligne.
++    private static let font: [Character: [String]] = [
++        "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
++        "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
++        "C": ["01110", "10001", "10000", "10000", "10000", "10001", "01110"],
++        "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
++        "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
++        "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
++        "G": ["01110", "10001", "10000", "10111", "10001", "10001", "01110"],
++        "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
++        "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
++        "J": ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
++        "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
++        "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
++        "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
++        "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
++        "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
++        "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
++        "Q": ["01110", "10001", "10001", "10001", "10101", "10011", "01101"],
++        "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
++        "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
++        "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
++        "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
++        "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
++        "W": ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
++        "X": ["10001", "01010", "00100", "00100", "00100", "01010", "10001"],
++        "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
++        "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
++        " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
++    ]
++
++    /// Un afficheur LED ne connaît pas les accents.
++    private var lettres: [Character] {
++        var brut = texte.uppercased()
++        let paires: [(String, String)] = [
++            ("\u{00C0}", "A"), ("\u{00C2}", "A"), ("\u{00C9}", "E"),
++            ("\u{00C8}", "E"), ("\u{00CA}", "E"), ("\u{00CE}", "I"),
++            ("\u{00CF}", "I"), ("\u{00D4}", "O"), ("\u{00DB}", "U"),
++            ("\u{00D9}", "U"), ("\u{00C7}", "C"),
++        ]
++        for (a, b) in paires {
++            brut = brut.replacingOccurrences(of: a, with: b)
++        }
++        return Array(brut)
++    }
++
++    private let pas: CGFloat = 3.4
++    private let point: CGFloat = 2.0
++
++    private let allumee = Color(red: 1.00, green: 0.52, blue: 0.10)
++    private let bloom = Color(red: 1.00, green: 0.42, blue: 0.06)
++
++    var body: some View {
++        let cols = max(lettres.count * 6 - 1, 1)
++        let large = CGFloat(cols) * pas + 26
++        let haute = 7 * pas + 16
++        return Canvas { ctx, size in
++            let x0 = (size.width - CGFloat(cols) * pas) / 2
++            let y0 = (size.height - 7 * pas) / 2
++            for (li, ch) in lettres.enumerated() {
++                let motif = Self.font[ch] ?? Self.font[" "]!
++                for ligne in 0 ..< 7 {
++                    let bits = Array(motif[ligne])
++                    for col in 0 ..< 5 {
++                        let ix = li * 6 + col
++                        let cx = x0 + CGFloat(ix) * pas
++                        let cy = y0 + CGFloat(ligne) * pas
++                        let r = CGRect(x: cx, y: cy,
++                                       width: point, height: point)
++                        let seuil = CGFloat(ix) / CGFloat(cols)
++                        let vu = bits[col] == "1" && seuil <= p
++                        if vu {
++                            ctx.fill(Path(ellipseIn:
++                                r.insetBy(dx: -1.7, dy: -1.7)),
++                                with: .color(bloom.opacity(0.26)))
++                            ctx.fill(Path(ellipseIn: r),
++                                     with: .color(allumee))
++                        } else {
++                            ctx.fill(Path(ellipseIn: r),
++                                     with: .color(.white.opacity(0.04)))
++                        }
++                    }
++                }
++            }
++        }
++        .frame(width: large, height: haute)
++        .background {
++            let forme = RoundedRectangle(cornerRadius: 7,
++                                         style: .continuous)
++            ZStack {
++                forme.fill(Color.black)
++                forme.fill(LinearGradient(
++                    stops: [
++                        .init(color: .black.opacity(0.55),
++                              location: 0.0),
++                        .init(color: .clear, location: 0.24),
++                    ],
++                    startPoint: .top, endPoint: .bottom))
++                forme.strokeBorder(Color.white.opacity(0.05),
++                                   lineWidth: 0.7)
++            }
++        }
++        .allowsHitTesting(false)
++    }
++}
++
++// MARK: - La carte de verre de la flamme (l'iPod)
++
++/// LA CARTE DE TA CAPTURE, VERBATIM (le verdict : « cet effet glass,
++/// autour de l'écran et derrière la molette ») : la matière de
++/// `FlammeJauge.carte`, extraite au mot — le corps de verre à trois
++/// arrêts (gris-nuit à peine violet, JAMAIS brun), la nappe chaude qui
++/// respire, le grain, la vignette qui assoit, LE SERTISSAGE (la
++/// tranche qui prend la lumière en haut) et LA VEINE : l'arc d'or qui
++/// court sur l'arête.
++///
++/// UNE SEULE LIBERTÉ, et c'est une loi de la maison : la veine n'a pas
++/// d'horloge — son angle vient du GESTE (la rotation cumulée de la
++/// molette). La lumière tourne avec la main, elle ne défile pas.
++private struct CarteVerreFlamme: View {
++    /// Le rayon des coins de la coque.
++    var coins: CGFloat = 26
++    /// L'angle de la veine (radians) — le geste, jamais une horloge.
++    var veine: CGFloat = 0
++    /// La respiration de la nappe (0…1) — le foyer de la machine.
++    var souffle: Double = 0
++    /// Où la nappe chaude s'ancre (x, y en unités).
++    var foyerX: CGFloat = 0.115
++    var foyerY: CGFloat = 0.5
++
++    /// UNE COUCHE = UNE VARIABLE (la loi du type-checker : la version
++    /// à overlays enchaînés a TUÉ le compilateur, payé une 4e fois).
++    /// Le haut CARRÉ : la carte monte au bord de l'écran, Dynamic
++    /// Island comprise (l'école de la réf : l'artwork touche le bord,
++    /// le titre vit DEDANS) — l'appareil taille les coins hauts.
++    var hautCarre: Bool = false
++
++    /// Le bas CARRÉ : la carte sort par le bas de l'écran.
++    var basCarre: Bool = false
++
++    private var coque: AnyShape {
++        if basCarre {
++            return AnyShape(UnevenRoundedRectangle(
++                cornerRadii: .init(topLeading: coins,
++                                   bottomLeading: 0,
++                                   bottomTrailing: 0,
++                                   topTrailing: coins),
++                style: .continuous))
++        }
++        return hautCarre
++            ? AnyShape(UnevenRoundedRectangle(
++                cornerRadii: .init(topLeading: 0,
++                                   bottomLeading: coins,
++                                   bottomTrailing: coins,
++                                   topTrailing: 0),
++                style: .continuous))
++            : AnyShape(RoundedRectangle(cornerRadius: coins,
++                                        style: .continuous))
++    }
++
++    /// LE VERRE NATIF sous le corps : c'est LUI qui bombe le fond
++    /// (l'aurora est douce — le cas autorisé de la loi du verre). Sans
++    /// réfraction, un rectangle reste plat : c'était le « cheap ».
++    private var verreNatif: some View {
++        coque.fill(Color.clear)
++            .glassEffect(.clear, in: coque)
++    }
++
++    private var corps: some View {
++        coque.fill(LinearGradient(
++            stops: [
++                .init(color: Color(red: 0.055, green: 0.053,
++                                   blue: 0.058), location: 0.0),
++                .init(color: Color(red: 0.032, green: 0.030,
++                                   blue: 0.034), location: 0.55),
++                .init(color: Color(red: 0.018, green: 0.017,
++                                   blue: 0.020), location: 1.0),
++            ],
++            startPoint: .top, endPoint: .bottom))
++    }
++
++    private var nappe: some View {
++        let s: Double = 0.72 + 0.28 * souffle
++        let a1: Double = 0.055 * s
++        let a2: Double = 0.022 * s
++        return EllipticalGradient(
++            stops: [
++                .init(color: FlammePalette.coeur.opacity(a1),
++                      location: 0.0),
++                .init(color: FlammePalette.braise.opacity(a2),
++                      location: 0.45),
++                .init(color: .clear, location: 1.0),
++            ],
++            center: UnitPoint(x: foyerX, y: foyerY),
++            startRadiusFraction: 0, endRadiusFraction: 0.62)
++            .blendMode(.plusLighter)
++    }
++
++    private var grain: some View {
++        GrainTexture.tuile
++            .resizable(resizingMode: .tile)
++            .opacity(0.045)
++            .blendMode(.overlay)
++            .allowsHitTesting(false)
++    }
++
++    private var vignette: some View {
++        EllipticalGradient(
++            stops: [
++                .init(color: .clear, location: 0.60),
++                .init(color: Color.black.opacity(0.15), location: 1.0),
++            ],
++            center: .center,
++            startRadiusFraction: 0, endRadiusFraction: 0.82)
++    }
++
++    /// LE CHANFREIN (le verdict « pas de verre gonflé ») : une bande
++    /// LARGE de lumière qui enveloppe l'arête haute et s'enroule dans
++    /// les coins — un trait de 1 px n'a pas d'épaisseur, c'est ça qui
++    /// rendait plat. Le verre a un bord, et un bord a une largeur.
++    private var chanfrein: some View {
++        coque.stroke(Color.white.opacity(0.30), lineWidth: 9)
++            .blur(radius: 5)
++            .mask(LinearGradient(
++                stops: [
++                    .init(color: .black, location: 0.0),
++                    .init(color: .black.opacity(0.35), location: 0.18),
++                    .init(color: .clear, location: 0.52),
++                ],
++                startPoint: .top, endPoint: .bottom))
++            .blendMode(.plusLighter)
++    }
++
++    /// LE REBOND DU PIED : le bord bas renvoie la lumière — plus fin,
++    /// plus vif, à peine chaud. C'est la deuxième arête du volume.
++    private var rebond: some View {
++        coque.stroke(Color.white.opacity(0.22), lineWidth: 5)
++            .blur(radius: 3)
++            .mask(LinearGradient(
++                stops: [
++                    .init(color: .clear, location: 0.62),
++                    .init(color: .black.opacity(0.5), location: 0.88),
++                    .init(color: .black, location: 1.0),
++                ],
++                startPoint: .top, endPoint: .bottom))
++            .blendMode(.plusLighter)
++    }
++
++    /// Le fil de tranche, gardé SOUS le chanfrein : il ne fait plus le
++    /// volume, il en trace la crête.
++    private var sertissage: some View {
++        coque.stroke(LinearGradient(
++            stops: [
++                .init(color: Color.white.opacity(0.14), location: 0.0),
++                .init(color: Color.white.opacity(0.04), location: 0.4),
++                .init(color: Color.white.opacity(0.02), location: 1.0),
++            ],
++            startPoint: .top, endPoint: .bottom), lineWidth: 1)
++    }
++
++    private var veineVue: some View {
++        let op: Double = 0.30 + 0.18 * souffle
++        return coque.stroke(AngularGradient(
++            stops: [
++                .init(color: .clear, location: 0.0),
++                .init(color: .clear, location: 0.36),
++                .init(color: FlammePalette.or.opacity(0.25),
++                      location: 0.46),
++                .init(color: FlammePalette.blanc.opacity(0.85),
++                      location: 0.50),
++                .init(color: FlammePalette.or.opacity(0.25),
++                      location: 0.54),
++                .init(color: .clear, location: 0.64),
++                .init(color: .clear, location: 1.0),
++            ],
++            center: .center, angle: .radians(Double(veine))),
++            lineWidth: 1)
++            .blendMode(.plusLighter)
++            .opacity(op)
++    }
++
++    var body: some View {
++        ZStack {
++            verreNatif
++            corps.opacity(0.62)
++            nappe
++            grain
++            vignette
++            chanfrein
++            rebond
++            sertissage
++            veineVue
++        }
++        .clipShape(coque)
++        .allowsHitTesting(false)
++    }
++}
++
+ // MARK: - La cinématique de l'écran (l'iPod)
+ 
+ /// LA PHRASE DU MOIS (l'école « Tout voir ») : le gris-nuit traversé
+@@ -2038,12 +2349,17 @@ private struct ManegeVue: View, Animatable {
+     private var anneau: some View {
+         let n = max(sessions.count, 1)
+         let pasA: CGFloat = 2.0 * .pi / CGFloat(max(n, 8))
++        // Le frame EXPLICITE avant drawingGroup : l'offscreen
++        // rasterise dans les bounds de l'hôte — sans lui, les cards
++        // aux offsets sont TRANCHÉES (le piège de la fente dorée,
++        // repayé : « on voit plus les mini cards »).
+         return ZStack {
+             ForEach(Array(sessions.enumerated()),
+                     id: \.element.id) { i, s in
+                 place(s, theta: (CGFloat(i) - p) * pasA)
+             }
+         }
++        .frame(width: 351, height: 240)
+         .drawingGroup()
+     }
+ 
+@@ -2084,20 +2400,23 @@ private struct ManegeVue: View, Animatable {
+         return VStack(spacing: 3) {
+             Spacer(minLength: 0)
+             Text(s.dateVinyle)
+-                .font(.inter(15, .semibold)).tracking(-0.2)
+-                .foregroundStyle(.white.opacity(0.94))
++                .font(.inter(19, .bold)).tracking(-0.4)
++                .foregroundStyle(.white)
+             Text("\(s.series) s\u{00E9}ries \u{00B7} \(s.reps) reps")
+-                .font(.inter(11, .medium))
++                .font(.inter(11, .medium)).tracking(0.6)
+                 .foregroundStyle(Color.inkMuted)
+-            HStack(spacing: 5) {
++                .textCase(.uppercase)
++            HStack(spacing: 4) {
+                 ForEach(0 ..< n, id: \.self) { i in
+-                    Circle()
++                    Capsule()
+                         .fill(Color.white
+-                            .opacity(i == sel ? 0.85 : 0.22))
+-                        .frame(width: 3.5, height: 3.5)
++                            .opacity(i == sel ? 0.90 : 0.18))
++                        .frame(width: i == sel ? 12 : 3, height: 3)
+                 }
+             }
+-            .padding(.top, 4)
++            .animation(.spring(response: 0.35,
++                               dampingFraction: 0.8), value: sel)
++            .padding(.top, 10)
+         }
+         .padding(.bottom, 12)
+         .id(sel)
+@@ -2246,13 +2565,14 @@ private struct MoisIpod: View {
+     // LA CONSOLE D'AJUSTAGE (la demande) : six curseurs vivants —
+     // Kathryn trouve le beau, dicte les chiffres, on les grave en dur.
+     /// La veille : le lait visible au repos (la règle).
+-    @State private var regVeille: Double = 0.55
+-    /// L'éveil : le lait sous le doigt.
+-    @State private var regEveil: Double = 0.95
+-    /// Le nombre de halos.
++    @State private var regVeille: Double = 0.62
++    /// L'éveil sous le doigt : plein blanc.
++    @State private var regEveil: Double = 1.0
++    /// Le nombre de ronds blancs.
+     @State private var regGouttes: Double = 4
+-    /// Le rayon des halos (px).
+-    @State private var regTaille: Double = 48
++    /// Le rayon des ronds blancs (px) — gros, mais DISTINCTS (les 62
++    /// fusionnaient en une seule masse : effet yin-yang).
++    @State private var regTaille: Double = 34
+     /// La vitesse de dérive.
+     @State private var regVitesse: Double = 0.35
+     /// La clarté du verre (face + brillance). 0 = AUCUN voile (le
+@@ -2266,7 +2586,7 @@ private struct MoisIpod: View {
+     // LES COTES MAÎTRESSES (jalon 1) — dérivation, gabarit 393×852 :
+     // plaque = W − 32 ; donut = 0,676·plaque ; puits = 0,410·donut
+     // (le ratio du vrai iPod 6G, 15,9/38,4) ; glyphes à r 86.
+-    private let plaqueL: CGFloat = 361
++    private let plaqueL: CGFloat = 377
+     private let ecranH: CGFloat = 392
+     private let moletteH: CGFloat = 280
+     private let donut: CGFloat = 244
+@@ -2275,6 +2595,23 @@ private struct MoisIpod: View {
+     private let formePlaque = RoundedRectangle(cornerRadius: 26,
+                                                style: .continuous)
+ 
++    /// LES BANCS DE LA PREUVE (« prouve-moi que c'est liquid glass ») :
++    /// `-ipodTemoin` remplace la matière du donut par une GRILLE + une
++    /// photo — une lentille vraie PLIE les droites, un blur ne les plie
++    /// pas. `-ipodSansVerre` éteint la dalle : l'A/B se mesure au pixel.
++    private static let temoin =
++        CommandLine.arguments.contains("-ipodTemoin")
++    private static let sansVerre =
++        CommandLine.arguments.contains("-ipodSansVerre")
++    /// LES VARIANTES DU BLANC (« ce blanc je trouve ça moche ») : le
++    /// givre du verre natif blanchit le disque (luma 57 contre 21 pour
++    /// la plaque). B = le verre sur l'ANNEAU seul ; D = le verre puis
++    /// la NUIT qui le ramène à la valeur de la plaque.
++    private static let molAnneau =
++        CommandLine.arguments.contains("-molAnneau")
++    private static let molNoir =
++        CommandLine.arguments.contains("-molNoir")
++
+     var body: some View {
+         // LE PORTAIL : la page entière naît du rect de la card — un
+         // zoom ancré au point de la card (l'école StoryPortal), le
+@@ -2319,6 +2656,26 @@ private struct MoisIpod: View {
+ 
+     /// La pill de verre sur la story : ✕ seul — la story garde ses
+     /// gestes natifs (tap = passer), la pill n'est que la sortie.
++    /// LE SOCLE DU BAS : la carte de verre bord à bord, coins hauts
++    /// seuls (le bas sort de l'écran), l'arête haute FONDUE dans le
++    /// noir — deux zones, pas trois cartes.
++    private var socleBas: some View {
++        CarteVerreFlamme(coins: 30,
++                         veine: angleCumul * 0.5,
++                         souffle: min(1.0, foyer * 3.0),
++                         foyerX: 0.5, foyerY: 0.5,
++                         basCarre: true)
++            .mask(LinearGradient(
++                stops: [
++                    .init(color: .clear, location: 0.0),
++                    .init(color: .black.opacity(0.6), location: 0.05),
++                    .init(color: .black, location: 0.14),
++                    .init(color: .black, location: 1.0),
++                ],
++                startPoint: .top, endPoint: .bottom))
++            .ignoresSafeArea(edges: .bottom)
++    }
++
+     private var pillStory: some View {
+         Image(systemName: "xmark")
+             .font(.system(size: 15, weight: .semibold))
+@@ -2343,6 +2700,7 @@ private struct MoisIpod: View {
+             // La scène : le verre de la molette n'existe que par ce
+             // qu'il réfracte.
+             FondCalendrier()
++                .opacity(0.30)
+                 .allowsHitTesting(false)
+                 .ignoresSafeArea()
+             // LA FENÊTRE DE LUMIÈRE (jalon 6) : le voile s'OUVRE sous
+@@ -2359,8 +2717,6 @@ private struct MoisIpod: View {
+                 .allowsHitTesting(false)
+                 .ignoresSafeArea()
+             VStack(spacing: 0) {
+-                enTete
+-                    .opacity(headerA)
+                 // LE VRAI ÉCRAN (le verdict : « un vrai écran d'iPod »)
+                 // — la dalle 4:3 posée dans le corps, le manège des
+                 // séances dedans. La console -liquideLab garde sa
+@@ -2370,19 +2726,26 @@ private struct MoisIpod: View {
+                         .padding(.top, 10)
+                 } else {
+                     ecranIpod
+-                        .padding(.top, 18 - 8 * grandEcran)
+                 }
+-                Color.clear.frame(height: 20 - 8 * grandEcran)
+-                // Au play, la molette SE RETIRE d'un souffle — le
+-                // portail de la story prend l'écran par-dessus.
+-                plaqueMolette
+-                    .scaleEffect(1.0 - 0.12 * grandEcran,
+-                                 anchor: .top)
+-                    .opacity(Double(max(0,
+-                        1.0 - grandEcran * 0.65)))
+-                    .allowsHitTesting(grandEcran < 0.3)
+                 Spacer(minLength: 0)
++                // LE BLOC DU BAS PREND TOUT LE BAS (la réf Apple
++                // Music) : bord à bord, coins hauts seuls, fondu dans
++                // le noir — la MATRICE DE POINTS au-dessus de la roue.
++                VStack(spacing: 16) {
++                    MatricePoints(
++                        texte: month.titre(calendar: calendar),
++                        p: CGFloat(headerA))
++                    plaqueMolette
++                }
++                .padding(.top, 22)
++                .padding(.bottom, 26)
++                .frame(maxWidth: .infinity)
++                .background { socleBas }
++                .scaleEffect(1.0 - 0.12 * grandEcran, anchor: .top)
++                .opacity(Double(max(0, 1.0 - grandEcran * 0.65)))
++                .allowsHitTesting(grandEcran < 0.3)
+             }
++            .ignoresSafeArea(edges: .top)
+         }
+     }
+ 
+@@ -2495,24 +2858,6 @@ private struct MoisIpod: View {
+         }
+     }
+ 
+-    private var enTete: some View {
+-        HStack(spacing: 14) {
+-            ChipVerre(symbole: "chevron.left", label: "Retour",
+-                      action: onClose)
+-            VStack(alignment: .leading, spacing: 1) {
+-                Text(month.titre(calendar: calendar))
+-                    .font(.inter(24, .bold)).tracking(-0.4)
+-                    .foregroundStyle(WoopGradient.titleFade)
+-                Text(month.sousTitre)
+-                    .font(.inter(12, .medium))
+-                    .foregroundStyle(Color.inkMuted)
+-            }
+-            Spacer()
+-        }
+-        .padding(.horizontal, 20)
+-        .padding(.top, 8)
+-    }
+-
+     // MARK: Le vrai écran (l'anatomie)
+ 
+     /// LE VRAI ÉCRAN D'iPOD, anatomie complète : le PUITS
+@@ -2522,17 +2867,20 @@ private struct MoisIpod: View {
+     /// reflet-fenêtre gyro. `grandEcran` interpole l'iPod → le cinéma.
+     private var ecranIpod: some View {
+         let g: CGFloat = grandEcran
+-        let L: CGFloat = 377.0 + 8.0 * g
+-        let H: CGFloat = 372.0 + 20.0 * g
+-        let lcdL: CGFloat = L - 22.0
++        let H: CGFloat = 390.0 + 20.0 * g
++        // UNE SEULE FAMILLE DE COINS (le verdict) : la coque en 26,
++        // comme le bloc molette ; le LCD CONCENTRIQUE (26 − 11 = 15).
+         let lcdH: CGFloat = H - 22.0
+-        let formeLCD = RoundedRectangle(cornerRadius: 3,
+-                                        style: .continuous)
+         return ZStack {
+-            puitsEcran
+-            bezelEcran
++            // LA CARTE DE VERRE (ta capture) autour de l'écran — la
++            // matière de la carte flamme : verre, sertissage, veine
++            // qui tourne avec le geste, nappe qui respire au foyer.
++            CarteVerreFlamme(coins: 26,
++                             veine: angleCumul * 0.5,
++                             souffle: min(1.0, foyer * 3.0),
++                             foyerX: 0.5, foyerY: 0.94,
++                             hautCarre: true)
+             ZStack {
+-                lcdFond(lcdL: lcdL, lcdH: lcdH)
+                 VStack(spacing: 0) {
+                     statutIpod
+                     ZStack {
+@@ -2567,16 +2915,15 @@ private struct MoisIpod: View {
+                 .animation(.spring(response: 0.3,
+                                    dampingFraction: 0.7),
+                            value: puitsAppui)
+-                limbeLCD
+             }
+-            .frame(width: lcdL, height: lcdH)
+-            .clipShape(formeLCD)
++            .frame(height: lcdH)
+             // Le RECT du LCD : le portail de la story s'ouvre d'ici.
+             .onGeometryChange(for: CGRect.self) { proxy in
+                 proxy.frame(in: .global)
+             } action: { lcdRect = $0 }
+         }
+-        .frame(width: L, height: H)
++        .frame(height: H)
++        .frame(maxWidth: .infinity)
+         .scaleEffect(1.05 - 0.05 * poseP)
+         .shadow(color: .black.opacity(0.55), radius: 16, y: 7)
+     }
+@@ -2681,122 +3028,30 @@ private struct MoisIpod: View {
+             }
+     }
+ 
+-    /// LA BARRE DE STATUT iPOD (le marqueur n°1 du vrai 6G) : ▶ à
+-    /// gauche, le mois au centre, les séances + la lune à droite —
+-    /// une fine bande plus claire, un cheveu de séparation.
++    /// LE HEADER MODERNE (le verdict : « pas assez moderne ») : la
++    /// bande grise de l'iPod rétro est MORTE — plus de fond, plus de
++    /// séparateur, plus de pictos. De la typo posée sur le verre, de
++    /// l'air, et rien d'autre : le mois en tête, le compte en regard.
+     private var statutIpod: some View {
+-        HStack(spacing: 6) {
+-            Image(systemName: "play.fill")
+-                .font(.system(size: 9, weight: .semibold))
+-                .foregroundStyle(.white.opacity(0.45))
+-            Spacer(minLength: 0)
+-            Text(month.titre(calendar: calendar))
+-                .font(.inter(12, .semibold)).tracking(0.4)
+-                .foregroundStyle(.white.opacity(0.82))
+-            Spacer(minLength: 0)
+-            HStack(spacing: 4) {
+-                Text("\(month.sessions.count)")
+-                    .font(.inter(11, .semibold))
+-                    .foregroundStyle(.white.opacity(0.55))
+-                Image("piece-woop")
+-                    .resizable()
+-                    .scaledToFit()
+-                    .frame(width: 12, height: 12)
+-                    .opacity(0.8)
++        HStack(spacing: 12) {
++            ChipVerre(symbole: "chevron.left", label: "Retour",
++                      action: onClose)
++                .scaleEffect(0.86)
++            VStack(alignment: .leading, spacing: 0) {
++                Text(month.titre(calendar: calendar))
++                    .font(.inter(20, .bold)).tracking(-0.4)
++                    .foregroundStyle(.white)
++                Text("\(month.sessions.count) s\u{00E9}ances")
++                    .font(.inter(11, .medium)).tracking(0.6)
++                    .foregroundStyle(Color.inkMuted)
++                    .textCase(.uppercase)
+             }
++            Spacer(minLength: 0)
+         }
+-        .padding(.horizontal, 12)
+-        .frame(height: 26)
+-        .background(Color.white.opacity(0.045))
+-        .overlay(alignment: .bottom) {
+-            Rectangle()
+-                .fill(Color.white.opacity(0.08))
+-                .frame(height: 0.7)
+-        }
+-    }
+-
+-    /// LE PUITS : l'écran est CREUSÉ dans la face — l'ombre
+-    /// d'encastrement en haut (la lumière vient d'en haut), le rebond
+-    /// sur la lèvre basse, et le CHANFREIN : le fil d'un pixel qui dit
+-    /// « métal usiné », jamais une bordure dessinée.
+-    private var puitsEcran: some View {
+-        let forme = RoundedRectangle(cornerRadius: 14,
+-                                     style: .continuous)
+-        return ZStack {
+-            forme.fill(Color(white: 0.012))
+-            forme.fill(LinearGradient(
+-                stops: [
+-                    .init(color: .black.opacity(0.55), location: 0.0),
+-                    .init(color: .clear, location: 0.06),
+-                    .init(color: .clear, location: 0.95),
+-                    .init(color: .white.opacity(0.05), location: 1.0),
+-                ],
+-                startPoint: .top, endPoint: .bottom))
+-        }
+-    }
+-
+-    /// LA BEZEL : la bande noire LAQUÉE entre le puits et le LCD — le
+-    /// dégradé vertical à peine perceptible fait la laque.
+-    private var bezelEcran: some View {
+-        RoundedRectangle(cornerRadius: 11, style: .continuous)
+-            .fill(LinearGradient(
+-                colors: [Color(white: 0.035), Color(white: 0.015)],
+-                startPoint: .top, endPoint: .bottom))
+-            .padding(5)
+-    }
+-
+-    /// LE LCD : le backlight qui vit EN BAS (la nappe LED), le BLEED
+-    /// des quatre coins (l'imperfection qui fait le vrai), la
+-    /// vignette, le grain de dalle. L'allumage porte sa luminance.
+-    private func lcdFond(lcdL: CGFloat, lcdH: CGFloat) -> some View {
+-        ZStack {
+-            Rectangle().fill(LinearGradient(
+-                stops: [
+-                    .init(color: Color(white: 0.068), location: 0.0),
+-                    .init(color: Color(white: 0.080), location: 0.55),
+-                    .init(color: Color(white: 0.104), location: 1.0),
+-                ],
+-                startPoint: .top, endPoint: .bottom))
+-            bleedCoins(lcdL: lcdL, lcdH: lcdH)
+-            // La vignette se CREUSE quand la borne refuse (jalon 9).
+-            Rectangle().fill(RadialGradient(
+-                stops: [
+-                    .init(color: .clear, location: 0.70),
+-                    .init(color: .black.opacity(0.16
+-                        + 0.10 * Double(refus)), location: 1.0),
+-                ],
+-                center: .center, startRadius: 0,
+-                endRadius: max(lcdL, lcdH) * 0.62))
+-            GrainTexture.tuile
+-                .resizable(resizingMode: .tile)
+-                .opacity(0.05)
+-                .blendMode(.overlay)
+-        }
+-        .opacity(0.35 + 0.65 * Double(allume))
+-    }
+-
+-    private func bleedCoins(lcdL: CGFloat, lcdH: CGFloat) -> some View {
+-        let dx: CGFloat = lcdL / 2.0 - 10.0
+-        let dy: CGFloat = lcdH / 2.0 - 8.0
+-        return ZStack {
+-            bleedUn.offset(x: -dx, y: -dy)
+-            bleedUn.offset(x: dx, y: -dy)
+-            bleedUn.offset(x: -dx, y: dy)
+-            bleedUn.offset(x: dx, y: dy)
+-        }
+-        .blendMode(.plusLighter)
+-        .compositingGroup()
+-    }
+-
+-    private var bleedUn: some View {
+-        Circle()
+-            .fill(RadialGradient(
+-                stops: [
+-                    .init(color: .white.opacity(0.06), location: 0.0),
+-                    .init(color: .clear, location: 1.0),
+-                ],
+-                center: .center, startRadius: 0, endRadius: 30))
+-            .frame(width: 60, height: 60)
++        .padding(.horizontal, 14)
++        .padding(.top, 52)
++        .padding(.bottom, 8)
++        .opacity(headerA)
+     }
+ 
+     /// L'OMBRE DU LIMBE, DOUBLE : la bezel porte son ombre sur le haut
+@@ -2962,8 +3217,6 @@ private struct MoisIpod: View {
+             moletteCorps
+         }
+         .frame(width: plaqueL, height: moletteH)
+-        .clipShape(formePlaque)
+-        .shadow(color: .black.opacity(0.55), radius: 24, y: 10)
+     }
+ 
+     /// La couche sous vitre : l'overlay-sur-Color.clear est la SEULE
+@@ -2975,20 +3228,11 @@ private struct MoisIpod: View {
+             .frame(width: plaqueL, height: moletteH)
+             .overlay {
+                 ZStack {
+-                    // La BANDE : le dégradé de la plaque prolongé sur
+-                    // 384 (pente (0,085−0,04)/280 tenue — raccord au
+-                    // pixel) : rien de dur à portée du limbe.
+-                    Rectangle().fill(LinearGradient(
+-                        colors: [Color(white: 0.0934),
+-                                 Color(white: 0.0316)],
+-                        startPoint: .top, endPoint: .bottom))
+-                    // Le fond EXACT de la plaque par-dessus (parité).
+-                    ZStack {
+-                        fondMolette
+-                        assiseDonut
+-                    }
+-                    .compositingGroup()
+-                    .frame(width: plaqueL, height: moletteH)
++                    // UN SEUL FOND EN BAS : la plaque n'a plus sa
++                    // carte — le SOCLE bord à bord est le seul fond
++                    // (le double fond, reproché en haut, tué en bas).
++                    assiseDonut
++                        .frame(width: plaqueL, height: moletteH)
+                     // Le corps visuel de la molette, centré.
+                     moletteVisuel
+                     // LE VERRE NATIF (la réponse de ProfilLune:524 —
+@@ -2998,11 +3242,9 @@ private struct MoisIpod: View {
+                     // spéculaires natives. Le .regular givré reste
+                     // INTERDIT. Taille CONSTANTE (le piège des bounds
+                     // vivants : redimensionné = blur plat définitif).
+-                    Circle()
+-                        .fill(Color.clear)
+-                        .glassEffect(.clear, in: Circle())
+-                        .frame(width: donut, height: donut)
+-                        .allowsHitTesting(false)
++                    if !Self.sansVerre {
++                        verreDonut
++                    }
+                     // LA BRILLANCE : le reflet de la SURFACE — au
+                     // POIGNET seulement (l'école du sticker — jamais
+                     // un balayage), affirmé à la chaleur (la règle du
+@@ -3023,6 +3265,69 @@ private struct MoisIpod: View {
+             .allowsHitTesting(false)
+     }
+ 
++    /// LE VERRE DU DONUT — la ligne exacte de ProfilLune:524, avec
++    /// les deux remèdes au blanc laiteux : le masque d'ANNEAU (le
++    /// verre ne vit que sur la bande du doigt) et la NUIT posée
++    /// dessus (le givre garde sa texture, perd sa clarté).
++    @ViewBuilder private var verreDonut: some View {
++        let masqueAnneau = Circle()
++            .strokeBorder(Color.white, lineWidth: 72)
++            .frame(width: donut, height: donut)
++        let masquePlein = Circle()
++            .frame(width: donut, height: donut)
++        Circle()
++            .fill(Color.clear)
++            .glassEffect(.clear, in: Circle())
++            .frame(width: donut, height: donut)
++            .mask {
++                if Self.molAnneau { masqueAnneau } else { masquePlein }
++            }
++            .allowsHitTesting(false)
++        if Self.molNoir {
++            Circle()
++                .fill(Color.black.opacity(0.46))
++                .frame(width: donut, height: donut)
++                .allowsHitTesting(false)
++        }
++    }
++
++    /// LE TÉMOIN : une photo et une GRILLE de droites sous la dalle.
++    /// C'est la preuve demandée — si le verre réfracte, les lignes se
++    /// COURBENT au bord du disque ; si ce n'était qu'un flou, elles
++    /// resteraient droites (juste floues).
++    private var temoinVue: some View {
++        ZStack {
++            Image("exo-hip-thrust")
++                .resizable()
++                .scaledToFill()
++                .frame(width: 384, height: 384)
++            Canvas { ctx, size in
++                let pas: CGFloat = 16
++                var x: CGFloat = 0
++                while x <= size.width {
++                    var p = Path()
++                    p.move(to: CGPoint(x: x, y: 0))
++                    p.addLine(to: CGPoint(x: x, y: size.height))
++                    ctx.stroke(p, with: .color(.white.opacity(0.55)),
++                               lineWidth: 1)
++                    x += pas
++                }
++                var y: CGFloat = 0
++                while y <= size.height {
++                    var p = Path()
++                    p.move(to: CGPoint(x: 0, y: y))
++                    p.addLine(to: CGPoint(x: size.width, y: y))
++                    ctx.stroke(p, with: .color(.white.opacity(0.55)),
++                               lineWidth: 1)
++                    y += pas
++                }
++            }
++            .frame(width: 384, height: 384)
++        }
++        .frame(width: 384, height: 384)
++        .allowsHitTesting(false)
++    }
++
+     /// Le ciel doux que le verre reflète : une nappe elliptique large,
+     /// blendée en plusLighter — la position suit le gyro (BacMotion,
+     /// bande morte incluse), statique au simulateur.
+@@ -3044,7 +3349,11 @@ private struct MoisIpod: View {
+     /// glyphes, eux, vivent AU-DESSUS de la dalle, comme au profil).
+     private var moletteVisuel: some View {
+         ZStack {
+-            donutAnatomie
++            if Self.temoin {
++                temoinVue
++            } else {
++                donutAnatomie
++            }
+             liquideDonut
+             grainTournant
+             anisotropie
+@@ -3072,31 +3381,11 @@ private struct MoisIpod: View {
+                    veille: CGFloat(regVeille),
+                    eveil: CGFloat(regEveil))
+             .mask(Circle().frame(width: donut, height: donut))
+-            .blendMode(.plusLighter)
++            .opacity(0.85)
+             .compositingGroup()
+             .allowsHitTesting(false)
+     }
+ 
+-    @ViewBuilder private var fondMolette: some View {
+-        formePlaque.fill(LinearGradient(
+-            colors: [Color(white: 0.085), Color(white: 0.04)],
+-            startPoint: .top, endPoint: .bottom))
+-        formePlaque.fill(EllipticalGradient(
+-            stops: [
+-                .init(color: .white.opacity(0.05), location: 0.0),
+-                .init(color: .clear, location: 0.9),
+-            ],
+-            center: UnitPoint(x: 0.5, y: -0.25),
+-            startRadiusFraction: 0, endRadiusFraction: 1.0))
+-            .blendMode(.plusLighter)
+-            .compositingGroup()
+-        GrainTexture.tuile
+-            .resizable(resizingMode: .tile)
+-            .opacity(0.05)
+-            .blendMode(.overlay)
+-            .clipShape(formePlaque)
+-    }
+-
+     /// L'assise : l'ombre sous le donut, et le liseré de lumière que
+     /// l'objet renvoie sur sa plaque (masqué au tiers bas).
+     private var assiseDonut: some View {
+diff --git a/Woop/Views/DepartSeance.swift b/Woop/Views/DepartSeance.swift
+index 5695a79..47d04ae 100644
+--- a/Woop/Views/DepartSeance.swift
++++ b/Woop/Views/DepartSeance.swift
+@@ -30,6 +30,17 @@ final class DepartEtat {
+     /// Le tuto de la page exercices est demandé (posé par « Commencer »,
+     /// consommé par la page à son apparition).
+     var tutoDemande = false
++    /// LE PANNEAU DE PAUSE (le stop de la page exercices) — voir
++    /// PlayerSeance.swift.
++    var pauseOuverte = false
++    /// LA CLÔTURE DEMANDÉE par le player (le « Terminer » du panneau
++    /// stop de l'ardoise) : la racine l'exécute — elle seule tient la
++    /// séance, la bascule d'onglet et la chaîne de fin.
++    var clotureDemandee = false
++    /// La notif des pièces à l'arrivée home post-clôture : le gain à
++    /// annoncer, nil = rien. La chaîne de fin de séance l'orchestre
++    /// (trophée → pièces → pop-up booster).
++    var notifPieces: Int?
+ 
+     func proposer() {
+         guard !panneauOuvert else { return }
+diff --git a/Woop/Views/ExerciseDetailView.swift b/Woop/Views/ExerciseDetailView.swift
+index bd18211..5344082 100644
+--- a/Woop/Views/ExerciseDetailView.swift
++++ b/Woop/Views/ExerciseDetailView.swift
+@@ -60,6 +60,18 @@ struct ExerciseDetailView: View {
+     /// synthétiques parlent l'espace de la lentille).
+     @State private var pageFull = CGSize(width: 402, height: 874)
+ 
++    /// LE DOCK DU PLAYER : la hauteur que la dalle ajoute SOUS le galet
++    /// — 76 de pierre (l'air du trait-poignée compris) − 34 de zone
++    /// sûre, car la dalle est INCRUSTÉE au bord physique (verdicts :
++    /// « il doit toucher le bottom », « il doit s'incruster dans les
++    /// bords »), pleine largeur, l'indicateur home passe dessus. Le sol
++    /// du geste remonte d'autant : l'ORIGINE de la règle se décale, le
++    /// SOMMET ne bouge pas. Sans ce décalage, le toucher sur la crête
++    /// remontée gagnerait ~0,07 de climb gratuit. Le même Δ part à la
++    /// lentille (`groundLift`) — les deux mondes gardent la même règle.
++    /// (Écran sans indicateur : dérive +0,06, non-cible.)
++    private static var playerLift: CGFloat { verreLab ? 0 : 42 }
++
+     /// La montée de la lentille (0 bord bas → 1 sommet) depuis un y plein
+     /// écran — LE MÊME barème que `climbOf` du lab : les deux mondes
+     /// mesurent le doigt avec la même règle. PIÈGE PAYÉ : h = 0 (une
+@@ -67,7 +79,8 @@ struct ExerciseDetailView: View {
+     /// qui empoisonnait `flood`, l'opacité du voile ET tous les uniforms
+     /// du shader — le galet mourait pour toujours, sans un cri.
+     private static func climbGlobal(y: CGFloat, h: CGFloat) -> Double {
+-        min(max(Double((h * 0.90 - y) / max(h * 0.72, 1)), 0), 1.06)
++        min(max(Double((h * 0.90 - playerLift - y)
++                       / max(h * 0.72 - playerLift, 1)), 0), 1.06)
+     }
+ 
+     /// LES TROIS TEMPS du geste (verdict : « on doit voir le galet de la
+@@ -134,9 +147,11 @@ struct ExerciseDetailView: View {
+     /// Le rapport largeur/hauteur de la photo — lu UNE fois au montage :
+     /// la loi du zoom interne en a besoin, jamais pendant le scroll.
+     @State private var heroAspect: CGFloat = 0.8
+-    /// La photo au repos : 225 (« réduis encore les images », 13 août) —
+-    /// c'était 285.
+-    private static let heroCap: CGFloat = 225
++    /// La photo au repos : 190 (« il faut réduire la taille de l'image…
++    /// pour que la page respire », 17 août, l'arrivée du dock) — c'était
++    /// 285, puis 225. Tout le haut de page en dérive : le titre et la
++    /// carte remontent de 35 pt d'un seul geste.
++    private static let heroCap: CGFloat = 190
+     /// La course du geste, en points de scroll. 140 au temps de la
+     /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
+     /// plus long — la croissance se savoure sous le doigt.
+@@ -202,8 +217,10 @@ struct ExerciseDetailView: View {
+     /// de hauteur re-layouterait le scroll à chaque frame (la loi de la
+     /// maison : on anime en offset, jamais la place réservée).
+     /// 118 : le bloc titre en consomme ~96 — le reste est l'air entre le
+-    /// sous-titre et la flamme (« espace plus », 14 août).
+-    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
++    /// sous-titre et la flamme (« espace plus », 14 août). Dérivé de
++    /// `heroCap` : la constante dupliquée en dur avait failli désynchroniser
++    /// le header à la réduction du 17 août.
++    private static let expandedHeader: CGFloat = 12 + heroCap + 8 + 118
+     /// `-headerFreeze <y>` : fige la course vue par le header (le
+     /// simulateur ne drague pas) — les poses du dépliement se capturent.
+     private static let headerFreeze: CGFloat? = {
+@@ -293,6 +310,11 @@ struct ExerciseDetailView: View {
+     /// Le prochain montage du cadran naît POSÉ (le bouton du panneau) —
+     /// pas de plongée, un 3-2-1 à la place.
+     @State private var posedLaunch = false
++    /// L'ARDOISE EST EN MAIN : le drag plein écran de la carte des séries
++    /// se désarme (le même pattern que `lensShown` pour le drag de
++    /// retour) — sans ça, un doigt qui échappe à la dalle fait respirer
++    /// toute la page.
++    @State private var slateBusy = false
+ 
+     private var active: Workout? { workouts.first { $0.isActive } }
+     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
+@@ -387,8 +409,9 @@ struct ExerciseDetailView: View {
+         func point(at climb: Double) -> CGPoint {
+             CGPoint(x: pageFull.width / 2
+                         + 18 * sin(climb * 7.0),
+-                    y: pageFull.height * 0.90
+-                        - climb * pageFull.height * 0.72)
++                    y: pageFull.height * 0.90 - Self.playerLift
++                        - climb * (pageFull.height * 0.72
++                                   - Self.playerLift))
+         }
+         if Self.aubeFire {
+             // LE GESTE UNIQUE, sans doigt : la montée traverse la nuit,
+@@ -579,8 +602,6 @@ struct ExerciseDetailView: View {
+                         // VRAI (le shader de la lentille, appelé avec les
+                         // nombres de son repos). Bord à bord, elle déborde
+                         // jusqu'au bord physique de l'écran.
+-                        // Le lecteur (`WorkoutPill`) est retiré du décor
+-                        // pour l'instant — il reviendra, décision à venir.
+                         // Au banc du verre : le galet dort — sa lumière
+                         // crème inonderait les modes OUTSIDE et ×16.
+                         if Self.verreLab {
+@@ -608,12 +629,27 @@ struct ExerciseDetailView: View {
+                                 onRelease: { p, vy in driveEnded(p, vy) },
+                                 onLaunch: launch
+                             )
++                            // LA PLACE DE LA DALLE. Le player vit dans
++                            // l'ARDOISE (le panneau semi-sorti, en
++                            // overlay) — l'inset ne garde que sa réserve
++                            // nette (64 − zone sûre = `playerLift`) :
++                            // la carte, la règle du geste et le layout
++                            // ne bougent pas d'un point quand l'ardoise
++                            // s'ouvre.
++                            Color.clear.frame(height: Self.playerLift)
+                         }
+                     }
+                 } else {
+                     primaryAction
+                 }
+             }
++            // (L'ardoise vivait ICI, en overlay au milieu de la chaîne —
++            // MONTAGE VICIÉ, payé cher : le dessin tombait juste mais
++            // l'écoute restait décalée d'une zone sûre — le doigt sur la
++            // dalle partait au galet ou à la carte. Elle vit désormais
++            // au sommet de la chaîne, à la grammaire du panneau
++            // Recommencer — le seul montage de panneau bas que la maison
++            // ait éprouvé sous le doigt.)
+         }
+         // LA PLONGÉE DANS LE GALET — la troisième caméra de la maison
+         // (connexion → la lune ; sommet → la pastille ; ici → le galet).
+@@ -641,6 +677,21 @@ struct ExerciseDetailView: View {
+         // qui continue.
+         .overlay {
+             ZStack {
++                // L'ARDOISE — le panneau semi-sorti du player, montée à
++                // la grammaire du panneau Recommencer (le SEUL montage de
++                // panneau bas que la maison ait éprouvé sous le doigt) :
++                // dessin ET écoute sur la même géométrie pleine. PREMIÈRE
++                // du ZStack : sous le voile de l'aube, la lentille, BRAVO
++                // et le panneau — exactement la place qu'avait la dalle.
++                if isStrength, !Self.verreLab {
++                    SessionSlate(exercise: exercise,
++                                 progress: doneFraction,
++                                 startedAt: active?.startedAt,
++                                 drafts: sets,
++                                 restSeconds: restSeconds,
++                                 workout: active,
++                                 busy: $slateBusy)
++                }
+                 if flood > 0.001 {
+                     Self.paper
+                         .opacity(floodVeil)
+@@ -685,7 +736,8 @@ struct ExerciseDetailView: View {
+                         },
+                         handoff: lensHandoff,
+                         onSummit: { summited = true },
+-                        posedStart: posedLaunch
++                        posedStart: posedLaunch,
++                        groundLift: Self.playerLift
+                     )
+                     .opacity(lensShown
+                              ? 1
+@@ -825,6 +877,9 @@ struct ExerciseDetailView: View {
+     private var carteDrag: some Gesture {
+         DragGesture(minimumDistance: 12)
+             .onChanged { v in
++                // L'ardoise est en main : la carte n'écoute plus — un
++                // doigt qui lui échapperait ferait respirer la page.
++                guard !slateBusy else { return }
+                 if !carteSaisie {
+                     // Un geste LATÉRAL n'est pas le nôtre : sans ce
+                     // filtre d'axe, un balayage horizontal (le réflexe du
+@@ -1796,6 +1851,50 @@ struct ExerciseDetailView: View {
+         } else {
+             write()
+         }
++        // ET LA SÉRIE ENTRE DANS LA SÉANCE. Sans ça, tout ce qu'on fait
++        // ici ne vivait QUE dans l'écran : le replay de la séance
++        // restait vide, l'historique n'en savait rien, et le gain de
++        // fin de séance valait ZÉRO (donc ni trophée, ni pièces, ni
++        // booster). Le trou « save() non atteignable », enfin comblé.
++        inscrireSerie(reps: f.reps, kilos: f.kilos, seconds: f.seconds)
++    }
++
++    /// La séance ouverte, s'il y en a une (le brouillon de la page n'a
++    /// pas à la connaître — seule l'inscription en a besoin).
++    private var seanceOuverte: Workout? {
++        workouts.first { $0.endedAt == nil }
++    }
++
++    /// L'inscription d'une série faite dans la séance en cours :
++    /// l'exercice rejoint la séance s'il n'y est pas encore, la série
++    /// s'ajoute à la suite. Hors séance (bibliothèque consultée pour
++    /// elle-même), rien n'est écrit.
++    private func inscrireSerie(reps: Int, kilos: Double, seconds: Int) {
++        guard let seance = seanceOuverte else {
++            print("[flow] série NON inscrite : aucune séance ouverte")
++            return
++        }
++        let logged: LoggedExercise
++        if let deja = (seance.exercises ?? [])
++            .first(where: { $0.exerciseID == exercise.id }) {
++            logged = deja
++        } else {
++            let neuf = LoggedExercise(exerciseID: exercise.id,
++                                      order: seance.exerciseCount,
++                                      restSeconds: restSeconds)
++            neuf.workout = seance
++            context.insert(neuf)
++            logged = neuf
++        }
++        let serie = StrengthSet(reps: reps, weight: kilos,
++                                order: logged.orderedSets.count,
++                                isDone: true, durationSeconds: seconds)
++        serie.loggedExercise = logged
++        context.insert(serie)
++        try? context.save()
++        print("[flow] série inscrite (\(exercise.id)) — "
++              + "séance : exos=\(seance.exerciseCount) "
++              + "séries=\(seance.setCount)")
+     }
+ 
+     /// LA PORTE POSÉE : le cadran naît directement à demeure — pas de
+diff --git a/Woop/Views/ExercisesView.swift b/Woop/Views/ExercisesView.swift
+index fd11cca..1baa5a6 100644
+--- a/Woop/Views/ExercisesView.swift
++++ b/Woop/Views/ExercisesView.swift
+@@ -1,4 +1,5 @@
+ import SwiftUI
++import SwiftData
+ import AVFoundation
+ 
+ // MARK: - La bibliothèque d'exercices — page NUIT, halo braise, couronne
+@@ -23,6 +24,11 @@ struct ExercisesView: View {
+ 
+     @State private var filter: ExerciseCategory?
+ 
++    /// La séance en cours, s'il y en a une : elle fait naître le chip
++    /// STOP dans la rangée du chevron (le galet n'existe pas ici).
++    @Query(filter: #Predicate<Workout> { $0.endedAt == nil })
++    private var seancesOuvertes: [Workout]
++
+     /// Ouvre une fiche dès le lancement : `-openExercise woop-haute`. Même
+     /// usage que `-openTab` et `-openActiveSheet` (captures d'écran
+     /// automatisées uniquement) — sans ça, la fiche n'est atteignable qu'au
+@@ -180,11 +186,27 @@ struct ExercisesView: View {
+     /// position du chevron ne bouge JAMAIS d'une page à l'autre.
+     private var header: some View {
+         VStack(alignment: .leading, spacing: 0) {
++            // LE STOP DE LA SÉANCE VIT ICI. C'est la page où l'on passe
++            // sa séance — et le galet, lui, n'existe PAS sur les pages
++            // immersives : sans ce chip, terminer exigeait un détour par
++            // la home (le « ça ne marche pas de bout en bout » payé).
++            // Il ouvre LE panneau de la maison, il ne clôt rien lui-même.
+             RangeeChips(retour: {
+                 withAnimation(.easeOut(duration: 0.3)) {
+                     selection = .home
+                 }
+-            }) { EmptyView() }
++            }) {
++                if !seancesOuvertes.isEmpty {
++                    ChipVerre(symbole: "stop.fill", label: "Terminer la séance") {
++                        UIImpactFeedbackGenerator(style: .medium)
++                            .impactOccurred()
++                        withAnimation(.spring(response: 0.42,
++                                              dampingFraction: 0.88)) {
++                            DepartEtat.shared.pauseOuverte = true
++                        }
++                    }
++                }
++            }
+ 
+             VStack(alignment: .leading, spacing: 5) {
+                 Text("Exercices")
+@@ -270,7 +292,14 @@ struct ExercisesView: View {
+         let banc = CommandLine.arguments.contains("-tutoExos")
+         guard DepartEtat.shared.tutoDemande || banc else { return }
+         DepartEtat.shared.tutoDemande = false
++        // EN DEV LE TUTO REJOUE À CHAQUE DÉPART : sans ça, tester le
++        // flow en boucle ne le montre qu'une fois dans une vie
++        // d'installation — le maillon devenait invisible au test.
++        #if DEBUG
++        let deja = false
++        #else
+         let deja = UserDefaults.standard.bool(forKey: "tutoExosVu")
++        #endif
+         guard !deja || banc else { return }
+         UserDefaults.standard.set(true, forKey: "tutoExosVu")
+         // La page se pose d'abord, le voile tombe ensuite — et la
+diff --git a/Woop/Views/HomeAuroraView.swift b/Woop/Views/HomeAuroraView.swift
+index b95fd6c..16e23e1 100644
+--- a/Woop/Views/HomeAuroraView.swift
++++ b/Woop/Views/HomeAuroraView.swift
+@@ -128,6 +128,8 @@ struct HomeAuroraView: View {
+     @State private var story: StoryLaunch?
+     /// L'horloge de la fumée du coffre, ou `nil` si personne n'y touche.
+     @State private var smokeStart: Date?
++    /// Le vol des pièces de fin de séance (vers la petite pièce).
++    @State private var volPiecesNe: Date?
+     /// L'instant où le doigt s'est levé (la fumée retombe à partir de là).
+     @State private var smokeEnd: Date?
+     /// La page du trésor.
+@@ -188,9 +190,30 @@ struct HomeAuroraView: View {
+                                   start: smokeStart, end: smokeEnd,
+                                   palette: .light)
+                     }
++                    // LE VOL DES PIÈCES de la fin de séance : les
++                    // pièces gagnées ARQUENT vers la petite pièce (le
++                    // coffre publie sa place) pendant que la capsule
++                    // du haut annonce le compte — la récolte se VOIT.
++                    if let anchor, let born = volPiecesNe {
++                        let box = proxy[anchor]
++                        VolDePieces(
++                            depart: CGPoint(x: proxy.size.width / 2,
++                                            y: 74),
++                            cible: CGPoint(x: box.midX, y: box.midY),
++                            born: born)
++                    }
+                 }
+                 .allowsHitTesting(false)
+             }
++            // Le déclencheur du vol : la notif des pièces (la racine la
++            // pose à la clôture) — le vol part un souffle après elle.
++            .onChange(of: DepartEtat.shared.notifPieces) { _, gain in
++                guard gain != nil else { return }
++                volPiecesNe = Date()
++                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
++                    volPiecesNe = nil
++                }
++            }
+             .sensoryFeedback(.impact(weight: .light), trigger: smokeStart)
+             .navigationBarHidden(true)
+             .onAppear {
+diff --git a/Woop/Views/JewelTabBar.swift b/Woop/Views/JewelTabBar.swift
+index 4312ead..e5bc767 100644
+--- a/Woop/Views/JewelTabBar.swift
++++ b/Woop/Views/JewelTabBar.swift
+@@ -128,6 +128,9 @@ struct JewelTabBar: View {
+     /// slots égaux — le banc s'en sert pour comparer avant/après.
+     var play: PlayParams?
+     var onPlay: () -> Void = {}
++    /// L'APPUI LONG sur le galet EN SÉANCE : le stop universel — il
++    /// ouvre le panneau « Terminer la séance ? » d'où qu'on soit.
++    var onPlayHold: () -> Void = {}
+     /// Une bouffée d'invite commandée du dehors (l'arrivée de la cinématique
+     /// de connexion) : le halo du galet respire UNE fois — attaque 0,12 s,
+     /// extinction 0,5 s — puis rend la main au réglage de repos.
+@@ -189,6 +192,8 @@ struct JewelTabBar: View {
+     /// Le doigt sur le galet : sa propre rampe, indépendante de la pastille.
+     @State private var playAt: Date = .distantPast
+     @State private var playDown = false
++    /// L'appui tenu a déjà ouvert le panneau : le relâcher se tait.
++    @State private var holdFired = false
+     @State private var playPulse: Date = .distantPast
+     /// Compteur de touchers du galet — c'est lui qui déclenche le retour
+     /// haptique. Un compteur, pas un booléen : deux appuis d'affilée doivent
+@@ -383,6 +388,21 @@ struct JewelTabBar: View {
+                                 .onChanged { _ in
+                                     if !playDown {
+                                         playAt = .now; playDown = true
++                                        holdFired = false
++                                        // LE STOP SE SENT SOUS LE DOIGT :
++                                        // en séance, la tenue de 0,55 s
++                                        // ouvre le panneau À CET
++                                        // INSTANT — pas au relâcher.
++                                        if running {
++                                            let t0 = playAt
++                                            DispatchQueue.main.asyncAfter(
++                                                deadline: .now() + 0.55) {
++                                                guard playDown,
++                                                      playAt == t0 else { return }
++                                                holdFired = true
++                                                onPlayHold()
++                                            }
++                                        }
+                                         // Le son part AVEC la lueur, à l'instant
+                                         // où le doigt se pose. Au relâcher il
+                                         // aurait un temps de retard : on
+@@ -394,8 +414,17 @@ struct JewelTabBar: View {
+                                     playPulse = .now
+                                 }
+                                 .onEnded { _ in
++                                    // L'appui tenu a DÉJÀ parlé pendant
++                                    // la tenue (le doigt le sent au
++                                    // moment où ça se produit — jamais
++                                    // au relâcher) : ici on ne fait que
++                                    // le tap court.
+                                     playAt = .now; playDown = false
+-                                    onPlay()
++                                    if holdFired {
++                                        holdFired = false
++                                    } else {
++                                        onPlay()
++                                    }
+                                 }
+                         )
+                         .accessibilityLabel(running ? "Séance en cours — l'ouvrir"
+diff --git a/Woop/Views/LaunchPebble.swift b/Woop/Views/LaunchPebble.swift
+index cfb196b..608ba9a 100644
+--- a/Woop/Views/LaunchPebble.swift
++++ b/Woop/Views/LaunchPebble.swift
+@@ -49,7 +49,12 @@ struct LaunchPebble: View {
+     /// en bas jusqu'au bord physique de l'écran, sous la zone sûre.
+     static let height: CGFloat = 160
+     private static let padTop: CGFloat = 120
+-    private static let padBottom: CGFloat = 60
++    /// 112 depuis le dock du player : le bas du frame du galet est à
++    /// 76 pt du bord physique (la dalle incrustée, trait aéré) et la
++    /// nacre doit CONTINUER de couler derrière la pierre jusqu'au bord —
++    /// à 60 le raster s'arrêtait net, une tranche de dôme coupée au
++    /// cutter dans la bande de la pastille.
++    private static let padBottom: CGFloat = 112
+     /// La marge LATÉRALE du raster — LE CARRÉ BLANC DU TÉLÉPHONE. Le dôme
+     /// déborde de ~40 pt de chaque côté de l'écran et le limbe de la
+     /// calotte échantillonne jusqu'à 1,32 R : sans marge, la couche
+diff --git a/Woop/Views/SessionSlate.swift b/Woop/Views/SessionSlate.swift
+index e8fbc22..1ede5a1 100644
+--- a/Woop/Views/SessionSlate.swift
++++ b/Woop/Views/SessionSlate.swift
+@@ -180,19 +180,21 @@ struct SessionSlate: View {
+     private func buildGroupes() -> [SlateGroupe] {
+         var out: [SlateGroupe] = []
+         var courant: [SlateLigne] = []
+-        for i in 0..<max(drafts.count, 5) {
+-            if i < drafts.count {
+-                courant.append(SlateLigne(
+-                    reps: drafts[i].reps, kilos: drafts[i].weight,
+-                    seconds: drafts[i].isDone ? drafts[i].durationSeconds
+-                                              : restSeconds,
+-                    done: drafts[i].isDone))
+-            } else {
+-                courant.append(SlateLigne(
+-                    reps: drafts.last?.reps ?? 12,
+-                    kilos: drafts.last?.weight ?? 20,
+-                    seconds: restSeconds, done: false))
+-            }
++        // L'ARDOISE DIT LE VRAI. Elle remplissait jusqu'à CINQ lignes en
++        // inventant les manquantes (les chiffres de la dernière série,
++        // non cochées) : « je vois 5 séries alors que j'en ai fait 2 ».
++        // Un replay ne devine pas — il retrace. Seules les vraies
++        // lignes du brouillon s'écrivent ; s'il n'y en a aucune, une
++        // ligne d'attente unique tient la place.
++        for d in drafts {
++            courant.append(SlateLigne(
++                reps: d.reps, kilos: d.weight,
++                seconds: d.isDone ? d.durationSeconds : restSeconds,
++                done: d.isDone))
++        }
++        if courant.isEmpty {
++            courant.append(SlateLigne(reps: 12, kilos: 20,
++                                      seconds: restSeconds, done: false))
+         }
+         out.append(SlateGroupe(id: "courant", exercise: exercise,
+                                rows: courant))
+diff --git a/Woop/Views/WorkoutPill.swift b/Woop/Views/WorkoutPill.swift
+index 11f322d..c5da7d2 100644
+--- a/Woop/Views/WorkoutPill.swift
++++ b/Woop/Views/WorkoutPill.swift
+@@ -142,9 +142,15 @@ struct WorkoutPill: View {
+         .fullScreenCover(isPresented: $stopAsk) {
+             StopSessionSheet(
+                 onEnd: {
+-                    // La vraie fin de séance (save, BRAVO…) viendra se
+-                    // brancher ici — le trou save() est un jalon connu.
++                    // LA VRAIE FIN DE SÉANCE, ENFIN BRANCHÉE (le trou
++                    // save() est comblé) : le panneau se retire, et la
++                    // racine joue toute la chaîne — clôture, retour
++                    // home, trophée, pièces qui volent, pop-up booster.
++                    print("[flow] stop onEnd → clôture demandée")
+                     fermerStop()
++                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
++                        DepartEtat.shared.clotureDemandee = true
++                    }
+                 },
+                 onContinue: { fermerStop() },
+                 series: doneSeries,
+diff --git a/Woop/WoopApp.swift b/Woop/WoopApp.swift
+index 9945fda..452aa83 100644
+--- a/Woop/WoopApp.swift
++++ b/Woop/WoopApp.swift
+@@ -316,6 +316,63 @@ struct RootView: View {
+     /// sans feuille de confirmation : une cérémonie qui demanderait ensuite
+     /// « es-tu sûre ? » ne serait plus une cérémonie. Le geste reste
+     /// réversible, « Annuler cette séance » vit dans l'overlay.
++    /// La durée de la séance ouverte, en texte de bilan.
++    private var dureeSeanceTexte: String {
++        guard let a = active else { return "" }
++        let m = max(1, Int(Date.now.timeIntervalSince(a.startedAt)) / 60)
++        return "\(m) min"
++    }
++
++    /// LA CLÔTURE — le « Terminer » du panneau de pause. La séance se
++    /// ferme, puis LA CHAÎNE DE FIN : la bascule home + le trophée
++    /// (le onChange existant s'en charge via WoopCelebration), la notif
++    /// des pièces (+20/série), et la pop-up booster qui propose le
++    /// sachet gagné.
++    private func terminerSeance() {
++        guard let a = active else {
++            // Jamais muet : la séance a disparu sous nos pieds (purge,
++            // relance) — on referme ET on rend la home, plutôt qu'un
++            // bouton qui ne fait rien.
++            withAnimation(.easeOut(duration: 0.22)) {
++                depart.pauseOuverte = false
++            }
++            withAnimation(.easeOut(duration: 0.3)) { selection = .home }
++            return
++        }
++        let gain = a.setCount * 20
++        print("[flow] terminerSeance : exos=\(a.exerciseCount) "
++              + "séries=\(a.setCount) gain=\(gain)")
++        withAnimation(.easeOut(duration: 0.22)) {
++            depart.pauseOuverte = false
++        }
++        a.endedAt = .now
++        try? modelContext.save()
++        WorkoutActivityController.end()
++        // LE TROPHÉE ET LE BOOSTER SE MÉRITENT : une séance sans une
++        // seule série ne remplit rien et ne propose rien (l'économie
++        // dit 20 pièces PAR SÉRIE — une séance vide vaut zéro).
++        if gain > 0 { WoopCelebration.shared.workoutFinished() }
++        // LA REDIRECTION EST EXPLICITE — jamais suspendue aux gardes
++        // de la célébration (« il ne se passe rien » payé : Terminer
++        // doit RAMENER À LA HOME, d'où qu'on vienne).
++        withAnimation(.easeOut(duration: 0.3)) { selection = .home }
++        // L'envoi part en fond — jamais le droit de bloquer la chaîne.
++        let snapshot = a.snapshot()
++        Task.detached { await SupabaseSync.shared.push([snapshot]) }
++        if gain > 0 {
++            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
++                withAnimation { depart.notifPieces = gain }
++            }
++            DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) {
++                withAnimation { depart.notifPieces = nil }
++            }
++        }
++        guard gain > 0 else { return }
++        DispatchQueue.main.asyncAfter(deadline: .now() + 5.2) {
++            SacreEtat.shared.proposer()
++        }
++    }
++
+     private func startWorkout() {
+         guard active == nil else {
+             // Une séance est déjà ouverte : le galet la RAMÈNE au lieu d'en
+@@ -572,15 +629,34 @@ struct RootView: View {
+                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
+                                 play: PlayParams(),
+                                 onPlay: {
+-                                    // Séance déjà ouverte : le galet la
+-                                    // RAMÈNE (jamais deux séances) ;
+-                                    // sinon le panneau du départ.
+-                                    if let a = active {
+-                                        sheetWorkout = a
++                                    // Séance déjà ouverte : le galet
++                                    // RAMÈNE À LA SÉANCE — la page
++                                    // exercices, où vit LE player
++                                    // (l'ardoise de la fiche exo).
++                                    // JAMAIS la vieille feuille noire
++                                    // (le sheet à la comète est mort —
++                                    // verdict). Sinon : le panneau du
++                                    // départ.
++                                    if active != nil {
++                                        withAnimation(.easeOut(duration: 0.3)) {
++                                            selection = .exercises
++                                        }
+                                     } else {
+                                         DepartEtat.shared.proposer()
+                                     }
+                                 },
++                                onPlayHold: {
++                                    // Le STOP universel : l'appui tenu
++                                    // sur le galet en séance ouvre
++                                    // « Terminer la séance ? ».
++                                    guard active != nil else { return }
++                                    UIImpactFeedbackGenerator(style: .medium)
++                                        .impactOccurred()
++                                    withAnimation(.spring(response: 0.42,
++                                                          dampingFraction: 0.88)) {
++                                        depart.pauseOuverte = true
++                                    }
++                                },
+                                 invitePulse: invitePulseAt,
+                                 // Une séance ouverte : le triangle du galet se
+                                 // referme en cercle de néon. Le même bouton la
+@@ -621,12 +697,27 @@ struct RootView: View {
+                 // « Annuler cette séance » la supprime pendant que la feuille
+                 // se referme : on ne lit pas un objet déjà sorti de la base.
+                 if !workout.isDeleted {
+-                    ActiveWorkoutSheet(workout: workout) {
+-                        // « Ajouter un exercice » : on referme la feuille et on
+-                        // ouvre la bibliothèque — c'est là qu'on loggue.
+-                        sheetWorkout = nil
+-                        selection = .exercises
+-                    }
++                    ActiveWorkoutSheet(workout: workout,
++                        onAddExercise: {
++                            // « Ajouter un exercice » : on referme la
++                            // feuille et on ouvre la bibliothèque.
++                            sheetWorkout = nil
++                            selection = .exercises
++                        },
++                        onStopViaPause: {
++                            // LE STOP DU PLAYER : la feuille se retire,
++                            // le panneau de pause de la maison monte —
++                            // « Terminer » y déclenche toute la chaîne
++                            // de fin (trophée, pièces, booster).
++                            sheetWorkout = nil
++                            DispatchQueue.main.asyncAfter(
++                                deadline: .now() + 0.4) {
++                                withAnimation(.spring(response: 0.42,
++                                                      dampingFraction: 0.88)) {
++                                    depart.pauseOuverte = true
++                                }
++                            }
++                        })
+                 }
+             }
+             }
+@@ -644,6 +735,39 @@ struct RootView: View {
+             // la descente — l'école du « Recommencer » de la fiche
+             // d'exercice. Inséré et retiré d'un coup, le panneau
+             // n'aurait jamais de sortie vers le bas.
++            // LE PLAYER EST LA FEUILLE DE SÉANCE (le verdict de la
++            // maison : « séance en cours = le galet néon SEUL » — la
++            // carte flottante est morte deux fois, elle ne revient
++            // pas). Le galet ramène la feuille ; son « Terminer
++            // l'entraînement » ouvre le panneau ci-dessous.
++
++            // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
++            // la séance — le trophée, la notif des pièces et la pop-up
++            // booster s'enchaînent derrière (terminerSeance).
++            PausePanneauHote(
++                ouverte: depart.pauseOuverte,
++                duree: dureeSeanceTexte,
++                series: active?.setCount ?? 0,
++                gain: (active?.setCount ?? 0) * 20,
++                onTerminer: { terminerSeance() },
++                onContinuer: {
++                    withAnimation(.easeOut(duration: 0.22)) {
++                        depart.pauseOuverte = false
++                    }
++                })
++                .zIndex(5)
++
++            // LA NOTIF DES PIÈCES — la mini capsule liquid glass qui
++            // descend à l'arrivée home, le compte qui roule.
++            VStack {
++                PiecesNotif(gain: depart.notifPieces ?? 0,
++                            visible: depart.notifPieces != nil)
++                Spacer()
++            }
++            .padding(.top, 8)
++            .zIndex(9)
++            .allowsHitTesting(false)
++
+             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
+             // racine (l'école du parcours booster : l'état partagé, pas
+             // une notification). « Commencer » = la séance du galet
+@@ -771,7 +895,13 @@ struct RootView: View {
+         // encore l'écran — sans la clé, le banc ne se rejouerait jamais.
+         .task(id: showSplash || showAuth) {
+             guard !showSplash, !showAuth else { return }
+-            if CommandLine.arguments.contains("-departPanneau") {
++            if CommandLine.arguments.contains("-clotureTest") {
++                // La chaîne de fin de séance se joue toute seule (dock
++                // visible → clôture → trophée → notif pièces → pop-up
++                // booster) — le stop ne se tape pas en ligne de commande.
++                try? await Task.sleep(nanoseconds: 4_000_000_000)
++                terminerSeance()
++            } else if CommandLine.arguments.contains("-departPanneau") {
+                 // Le banc du panneau de départ (le galet ne se tape pas
+                 // en ligne de commande).
+                 try? await Task.sleep(nanoseconds: 800_000_000)
+@@ -799,6 +929,14 @@ struct RootView: View {
+         // EN PLEIN dévissage). Un souffle après la pose, sous le noir
+         // opaque ; à la fermeture la home revient DANS LA MÊME
+         // transaction que la sortie du manège.
++        // LE PLAYER DEMANDE LA CLÔTURE (son panneau stop a dit oui) :
++        // la racine l'exécute — elle seule tient la séance et la chaîne.
++        .onChange(of: depart.clotureDemandee) { _, demandee in
++            guard demandee else { return }
++            print("[flow] racine : clôture reçue")
++            depart.clotureDemandee = false
++            terminerSeance()
++        }
+         .onChange(of: sacre.manegePose) { _, pose in
+             guard pose else { return }
+             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+@@ -894,13 +1032,29 @@ struct RootView: View {
+             let fantomes = workouts.filter {
+                 $0.endedAt == nil && (purgeTout
+                     || $0.startedAt < Date.now.addingTimeInterval(-12 * 3600)
++                    // 3 h, pas 30 min : un rebuild au milieu d'un test
++                    // effaçait la séance en cours et cassait le flow.
+                     || ($0.setCount == 0 && $0.startedAt
+-                        < Date.now.addingTimeInterval(-30 * 60)))
++                        < Date.now.addingTimeInterval(-3 * 3600)))
+             }
+             if !fantomes.isEmpty {
+                 fantomes.forEach { modelContext.delete($0) }
+                 try? modelContext.save()
+             }
++            // LES ABANDONNÉES : une séance AVEC contenu laissée ouverte
++            // plus de 3 h s'ENREGISTRE en silence (une heure au compteur,
++            // pas de célébration) — elle ne tient plus le galet en
++            // « en cours » au retour du lendemain.
++            let abandonnees = workouts.filter {
++                $0.endedAt == nil && $0.setCount > 0
++                    && $0.startedAt < Date.now.addingTimeInterval(-3 * 3600)
++            }
++            if !abandonnees.isEmpty {
++                abandonnees.forEach {
++                    $0.endedAt = $0.startedAt.addingTimeInterval(3600)
++                }
++                try? modelContext.save()
++            }
+             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
+             Task.detached { await SupabaseSync.shared.push(snapshots) }
+             // `-cineTest` : la cinématique de connexion se déclenche seule,

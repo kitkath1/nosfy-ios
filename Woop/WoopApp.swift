@@ -132,6 +132,21 @@ struct RootView: View {
     /// Banc d'essai de la home aurora : `-homeLab` (+ `-demoData` pour les
     /// cartes). L'ancienne home noire reste la vraie.
     private static let homeLab = CommandLine.arguments.contains("-homeLab")
+    /// Banc de la home v2 « chambre noire » : `-homeV2` — la grande card
+    /// vidéo, la phrase, la semaine (le plan : `tools/home-v2/PLAN-HOME-V2.md`).
+    /// `-rasantLab` ouvre la console, `-fondRasant` rend le rasant archivé du
+    /// jalon 1, `-semaineFaits <n>` et `-semaineMaterialise` jugent la semaine,
+    /// `-tirageFige <pt>` tient la card tirée (le secret sous elle).
+    /// ⚠️ TOUS les drapeaux de ce chantier ouvrent la page. `-phraseLab` seul
+    /// ne le faisait pas : il lançait l'app normale (la home aurora), et on
+    /// croyait le banc cassé alors qu'on regardait l'ancienne page.
+    private static let homeV2 = ["-homeV2", "-rasantLab", "-phraseLab",
+                                 "-isoRasant", "-galetOuvert", "-galetPur",
+                                 "-galetFantome", "-galetNourri",
+                                 "-galetCuisson", "-fondRasant",
+                                 "-semaineMaterialise", "-semaineFaits",
+                                 "-tirageFige"]
+        .contains { CommandLine.arguments.contains($0) }
     /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
     private static let bgLab = CommandLine.arguments.contains("-bgLab")
     /// Banc de la fiche d'exercice : `-exoLab` ouvre la fiche du premier
@@ -363,6 +378,8 @@ struct RootView: View {
             AuroraLoginView()
         } else if Self.authNebula {
             AuthView { _ in }
+        } else if Self.homeV2 {
+            HomeNuitLab()
         } else if Self.homeLab {
             HomeAuroraLab()
         } else if Self.bgLab {
