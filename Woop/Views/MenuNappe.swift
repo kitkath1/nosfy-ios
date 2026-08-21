@@ -655,6 +655,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// appartient au player : le galet s'encastre dans le mur tout seul,
     /// et il en ressort quand la séance s'achève.
     var rangerDemande: Bool = false
+    /// LE GALET EST DU MOBILIER, PAS UN OUTIL. ⚠️ Tiroir ouvert, sa prise
+    /// (généreuse par nécessité) chevauche le pouce du slider pendant toute
+    /// l'animation de rangement — et comme il est au-dessus de tout, c'est LUI
+    /// qui gagnait le doigt : « quand j'ai commencé à slider, la petite pilule
+    /// m'a suivi tout l'écran ». Rangé pour laisser la place, il ne doit plus
+    /// l'attraper.
+    var verrouille: Bool = false
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -779,8 +786,19 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 fond()
 
                 contenu()
+                    // ⚠️ LE MOBILIER DOIT AVOIR DISPARU AVANT QUE LE VERRE
+                    // N'ARRIVE, et pas seulement reculé. `.clear` GIVRE ce
+                    // qui est NET : dans le banc le disque ne couvrait que la
+                    // vidéo — du contenu doux — et il faisait lentille ; dans
+                    // la vraie home il couvre « Cette semaine. », les mini
+                    // cards et le slider, et il redevient un FROST (verdict :
+                    // « le gros rond c'est pas du liquid glass mais du blur »).
+                    // Reculer à 0,66 ne suffit pas : il faut que l'encre soit
+                    // à la fois presque éteinte ET adoucie, pour que le verre
+                    // n'ait plus que du doux à manger.
+                    .blur(radius: 7 * recul)
                     .scaleEffect(1 - 0.026 * max(montee, recul), anchor: .center)
-                    .opacity(1 - 0.34 * max(montee, recul))
+                    .opacity((1 - 0.34 * montee) * (1 - 0.82 * recul))
 
                 Color.black.opacity(0.20 * max(montee, recul))
                     .ignoresSafeArea()
@@ -888,6 +906,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                             y: porte.height + (range ? 34 : 0))
                     .contentShape(range ? AnyShape(Rectangle())
                                         : AnyShape(Circle()))
+                    .allowsHitTesting(!verrouille)
                     // ⚠️ UN SEUL GESTE. Un `onLongPressGesture` même à
                     // 0,01 s VOLE le tap qui le suit (le piège déjà payé sur
                     // le puits de l'iPod, où le tap simple devait être posé

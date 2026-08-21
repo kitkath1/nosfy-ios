@@ -1360,7 +1360,10 @@ struct HomeNuitPage: View {
                      // ouvert, la rangée du bas appartient au slider puis au
                      // player : le galet s'encastre dans le mur, sinon il se
                      // pose littéralement DESSUS (vu en capture).
-                     rangerDemande: enSeance || tiroirOuvert) {
+                     rangerDemande: enSeance || tiroirOuvert,
+                     // Le slider est dans la bande : pendant qu'il est là, le
+                     // galet ne dispute plus le doigt.
+                     verrouille: tiroirOuvert && !enSeance) {
                 fondPage
             } contenu: {
                 mobilier(geo)
