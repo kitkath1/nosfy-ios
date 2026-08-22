@@ -146,7 +146,12 @@ struct RootView: View {
                                  "-galetCuisson", "-fondRasant",
                                  "-semaineMaterialise", "-semaineFaits",
                                  "-tirageFige", "-cardsLab",
-                                 "-menuLab", "-menuRejoue"]
+                                 "-menuLab", "-menuRejoue",
+                                 // le mode édition des widgets (la vitrine)
+                                 "-editWidgets", "-editFige", "-editListe",
+                                 "-editRefus", "-editSupprime",
+                                 "-vitrineLab", "-vitrineAuto",
+                                 "-vitrineChoisit", "-slots"]
         .contains { CommandLine.arguments.contains($0) }
     /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
     private static let bgLab = CommandLine.arguments.contains("-bgLab")
@@ -1084,7 +1089,12 @@ enum DemoData {
             Plan(days: 1,
                  strength: [("woop-haute", [(12, 25), (12, 25), (10, 27.5)]),
                             ("gainage-militaire", [(8, 10), (8, 10)])],
-                 cardio: [])
+                 // Un HIIT DANS LA SEMAINE COURANTE : sans lui le widget
+                 // HIIT Peak n'a rien à montrer en démo. Le cycle est
+                 // l'exemple du brief : sprint 17.0 km/h × 40 s, ×4 tours.
+                 cardio: [("hiit-tapis", [(.acceleration, 30, 13.5),
+                                          (.recuperation, 60, 6),
+                                          (.sprint, 40, 17)])])
         ]
 
         for plan in plans {
@@ -1105,15 +1115,28 @@ enum DemoData {
                 order += 1
             }
 
-            for (exerciseID, cycles) in plan.cardio {
+            for (exerciseID, cycle) in plan.cardio {
                 let logged = LoggedExercise(exerciseID: exerciseID, order: order)
                 logged.workout = workout
                 context.insert(logged)
-                for (i, c) in cycles.enumerated() {
-                    let phase = CardioPhase(kind: c.0, seconds: c.1, speed: c.2,
-                                            cycleIndex: i / 2, order: i % 2)
-                    phase.loggedExercise = logged
-                    context.insert(phase)
+                // LE VRAI FLOW répète un cycle IDENTIQUE N fois
+                // (`ExerciseDetailView` : `Array(repeating:count:)`) — la
+                // démo fait pareil. L'ancien appariement `i/2` fabriquait
+                // des paires arbitraires : les répétitions d'un segment
+                // devenaient introuvables, et le HIIT peak des widgets ne
+                // pouvait pas les inférer. Seuls les exercices à
+                // intervalles se répètent (l'escalier et le tapis restent
+                // un passage unique).
+                let tours = ExerciseCatalog.exercise(id: exerciseID)?
+                    .tracking == .intervals ? 4 : 1
+                for tour in 0..<tours {
+                    for (i, c) in cycle.enumerated() {
+                        let phase = CardioPhase(kind: c.0, seconds: c.1,
+                                                speed: c.2,
+                                                cycleIndex: tour, order: i)
+                        phase.loggedExercise = logged
+                        context.insert(phase)
+                    }
                 }
                 order += 1
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import AVFoundation
 
 // MARK: - LA HOME v2 « CHAMBRE NOIRE » — JALON 1 : LA LUMIÈRE SEULE
@@ -1712,6 +1713,81 @@ struct HomeNuitPage: View {
     /// revenu au repos.
     @State private var verreMonte = true
 
+    // MARK: - LE MODE ÉDITION DES WIDGETS (« la vitrine », 22-08)
+    //
+    // Le plan : `tools/home-v2/PLAN-EDITION-WIDGETS.md`. L'ÉTAT VIT ICI et
+    // pas dans les cards : tout `@State` posé dedans meurt au démontage
+    // `verreMonte` (le film de départ démonte le verre).
+
+    /// LES DEUX SLOTS, persistés — le précédent maison : `Goal.cleHebdo`.
+    /// `"vide"` = le fantôme.
+    @AppStorage("widgetSlot0") private var slot0Brut: String =
+        WidgetKind.regularite.rawValue
+    @AppStorage("widgetSlot1") private var slot1Brut: String =
+        WidgetKind.volume.rawValue
+    /// Le mode édition (respiration + pastilles). `-editFige <p>` le fige.
+    @State private var edition = EditionBanc.fige != nil
+    @State private var editionP: Double = EditionBanc.fige ?? 0
+    /// La drop-list : le slot qui la porte, et son curseur d'ouverture.
+    @State private var listeSlot: Int?
+    @State private var listeP: Double = 0
+    /// Le refus du dernier widget (pop-up flottante, auto-dismiss).
+    @State private var refusP: Double = 0
+    @State private var refusJeton = 0
+    /// LA VITRINE : le slot en cours de changement, et le widget emporté
+    /// (`nil` = slot fantôme, c'est un ajout).
+    @State private var vitrineSlot: Int?
+    @State private var vitrineDepart: WidgetKind?
+    /// Le recul de la home pendant la vitrine — il entre dans le `max` de
+    /// `MenuHote` : le trio du menu (flou 7 + échelle + extinction), sans
+    /// dupliquer la pile. La vidéo, elle, ne recule jamais.
+    @State private var reculVitrine: Double = 0
+    /// La poudre d'une suppression (transitoire, démontée à 1 s).
+    @State private var poudreSlot: Int?
+    @State private var poudreDepuis: Date = .distantPast
+
+    private var slots: [WidgetKind?] {
+        [WidgetKind(rawValue: slot0Brut), WidgetKind(rawValue: slot1Brut)]
+    }
+
+    /// LES STATS RÉELLES — calculées UNE fois à l'apparition (jamais dans
+    /// le body : la page vit sous une TimelineView 60 Hz, le piège de la
+    /// page ré-évaluée par image est déjà payé). `nil` = pas de données
+    /// (le banc nu) : les cards gardent leurs défauts.
+    @Query private var workoutsBruts: [Workout]
+    @State private var stats: SemaineStats?
+
+    /// Le compte affiché : le banc (`-semaineFaits`) prime, puis les vraies
+    /// données, puis le défaut.
+    private var faitsAffiche: Int {
+        if SemaineBanc.faits != nil { return faits }
+        return stats?.faites ?? faits
+    }
+
+    private func ecrireSlot(_ i: Int, _ k: WidgetKind?) {
+        if i == 0 { slot0Brut = k?.rawValue ?? "vide" }
+        else { slot1Brut = k?.rawValue ?? "vide" }
+    }
+
+    /// PAS DE DOUBLON (arbitrage C) : la vitrine n'offre que le possible —
+    /// le widget déjà posé sur l'autre slot n'y apparaît pas.
+    private func choixPour(_ i: Int) -> [WidgetKind] {
+        WidgetKind.allCases.filter { $0 != slots[1 - i] }
+    }
+
+    /// LA FRAME ÉCRAN DU SLOT — le vol de la vitrine part de là et y
+    /// revient. Elle tient compte du zoom arrière du mode édition (0,96
+    /// autour du centre de la rangée, qui est à x = 201) : sans ça la
+    /// prise de relais saute de 4 pt et de 4 %.
+    private func origineSlot(_ i: Int, _ h: CGFloat) -> CGRect {
+        let z = 1 - 0.04 * editionP
+        let cx = 201 + (CGFloat(24 + i * 184 + 85) - 201) * z
+        let cy = h * 0.375 + 85
+        let cote = 170 * z
+        return CGRect(x: cx - cote / 2, y: cy - cote / 2,
+                      width: cote, height: cote)
+    }
+
     /// LA PRISE, 0 → 1, collée au pouce.
     private var g: Double {
         guard !enSeance else { return 0 }
@@ -1859,10 +1935,14 @@ struct HomeNuitPage: View {
                          // ouvert, la rangée du bas appartient au slider puis au
                          // player : le galet s'encastre dans le mur, sinon il se
                          // pose littéralement DESSUS (vu en capture).
-                         rangerDemande: enSeance || tiroirOuvert,
+                         rangerDemande: enSeance || tiroirOuvert
+                             || vitrineSlot != nil,
                          // Le slider est dans la bande : pendant qu'il est là, le
-                         // galet ne dispute plus le doigt.
-                         verrouille: tiroirOuvert && !enSeance) {
+                         // galet ne dispute plus le doigt. Et pendant la
+                         // vitrine, TOUT le bas se tait.
+                         verrouille: (tiroirOuvert && !enSeance)
+                             || vitrineSlot != nil,
+                         reculExterne: reculVitrine) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
@@ -1877,6 +1957,39 @@ struct HomeNuitPage: View {
                         ouverte: DepartEtat.shared.panneauOuvert,
                         onCommencer: { commencer() },
                         onFermer: { DepartEtat.shared.fermer() })
+                }
+                .overlay {
+                    // LA VITRINE — au-dessus de MenuHote (l'école
+                    // DepartPanneauHote) : posée dans `contenu:` elle
+                    // hériterait du flou du retrait et de l'offset du
+                    // tirage. Le widget vole du slot au centre, le carousel
+                    // à crans autour de lui.
+                    if let vs = vitrineSlot {
+                        VitrineHote(slot: vs,
+                                    choix: choixPour(vs),
+                                    depart: vitrineDepart,
+                                    origine: origineSlot(vs, geo.size.height),
+                                    faites: faitsAffiche, prevues: prevus,
+                                    volume: stats?.volumeValeur ?? "8.4",
+                                    volumeUnite: stats?.volumeUnite ?? "kg",
+                                    jours: stats?.jours ?? CardJour.semaineRef,
+                                    gain: stats?.gain ?? "+12%",
+                                    moyenne: stats?.moyenne ?? "1.2 kg",
+                                    piedSeances: stats?.pied
+                                        ?? "1 session left to hit your goal",
+                                    moisFaits: stats?.moisFaits,
+                                    hiit: stats?.hiit ?? HiitPeakInfo(),
+                                    peak: stats?.peak ?? PeakEffortInfo(),
+                                    auto: VitrineBanc.auto,
+                                    onSortie: {
+                                        withAnimation(.timingCurve(
+                                            0.30, 0, 0.20, 1,
+                                            duration: 0.50)) {
+                                            reculVitrine = 0
+                                        }
+                                    },
+                                    onFini: { fermerVitrine($0) })
+                    }
                 }
                 // L'encart bas, LU ici et transmis à la card : c'est lui que la
                 // marche du padding lui faisait perdre.
@@ -1933,6 +2046,13 @@ struct HomeNuitPage: View {
             jouerArrivee()
             jouerGaletBanc()
             jouerSemaineBanc()
+            jouerEditionBanc()
+            // LES VRAIES DONNÉES — une fois, ici. Les widgets neufs (HIIT
+            // Peak, Peak Effort) tombent sur leurs défauts si le calcul ne
+            // trouve rien (base vide, pas de cardio…).
+            if !workoutsBruts.isEmpty {
+                stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
+            }
         }
     }
 
@@ -2173,7 +2293,7 @@ struct HomeNuitPage: View {
                                 + 3.5 * min(g / 0.37, 1),
                               params: phrase, rasant: rasant,
                               fragments: PhraseTexte.fragments(
-                                faits: faits, prevus: prevus),
+                                faits: faitsAffiche, prevus: prevus),
                               ecran: geo.size.width,
                               hautEcran: geo.safeAreaInsets.top + 48,
                               galet: galet,
@@ -2240,8 +2360,25 @@ struct HomeNuitPage: View {
                     // disque par `if p > 0.01`), la leçon n'avait pas été portée
                     // ici.
                     if verreMonte {
-                    CardsRangee(faites: faits, prevues: prevus,
-                                arrivee: arrivee, lisere: true, verre: true)
+                    CardsRangee(faites: faitsAffiche, prevues: prevus,
+                                volume: stats?.volumeValeur ?? "8.4",
+                                volumeUnite: stats?.volumeUnite ?? "kg",
+                                moyenne: stats?.moyenne ?? "1.2 kg",
+                                gain: stats?.gain ?? "+12%",
+                                jours: stats?.jours ?? CardJour.semaineRef,
+                                pied: stats?.pied
+                                    ?? "1 session left to hit your goal",
+                                moisFaits: stats?.moisFaits,
+                                hiit: stats?.hiit ?? HiitPeakInfo(),
+                                peak: stats?.peak ?? PeakEffortInfo(),
+                                arrivee: arrivee, lisere: true, verre: true,
+                                slots: slots,
+                                edition: editionP,
+                                editionActive: edition,
+                                masque: vitrineSlot,
+                                onEdition: { _ in entrerEdition() },
+                                onPastille: { ouvrirListe($0) },
+                                onFantome: { ouvrirVitrine($0) })
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.375)
@@ -2263,7 +2400,7 @@ struct HomeNuitPage: View {
                     // LA SEMAINE — le mobilier de la page, sourd au doigt
                     // tant que le tap-story n'est pas câblé (jalon flow).
                     if verreMonte {
-                    SemaineStrip(faits: faits, prevus: prevus,
+                    SemaineStrip(faits: faitsAffiche, prevus: prevus,
                                  arrivee: arrivee,
                                  materialises: materialises,
                                  lisere: true, verre: true)
@@ -2278,6 +2415,39 @@ struct HomeNuitPage: View {
                         .blur(radius: 6 * net)
                         .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
+                    }
+
+                    // LE MODE ÉDITION — la drop-list pendue à la pastille,
+                    // la poudre d'une suppression, le refus du dernier
+                    // widget. Tous aux coordonnées de la rangée (les mêmes
+                    // ancres : leading 24 + 184 par slot, top 0,375 × h).
+                    if listeSlot != nil || listeP > 0.005 {
+                        let ls = listeSlot ?? 0
+                        Chambre(p: listeP) { lp in
+                            ListeEdition(p: lp,
+                                         onChanger: { ouvrirVitrine(ls) },
+                                         onSupprimer: { supprimerWidget(ls) })
+                        }
+                        // Pendue par son bord DROIT à la pastille (la
+                        // grammaire du panneau de l'objectif), clampée à
+                        // 12 pt du bord de l'écran.
+                        .padding(.leading,
+                                 min(24 + CGFloat(ls) * 184 + 181,
+                                     geo.size.width - 12)
+                                 - ListeEdition.largeur)
+                        .padding(.top, geo.size.height * 0.375 + 14)
+                    }
+                    if let ps = poudreSlot {
+                        PoudreAdieu(depuis: poudreDepuis)
+                            .frame(width: 230, height: 230)
+                            .padding(.leading, 24 + CGFloat(ps) * 184 - 30)
+                            .padding(.top, geo.size.height * 0.375 - 30)
+                    }
+                    if refusP > 0.005 {
+                        Chambre(p: refusP) { rp in RefusPopup(p: rp) }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, geo.size.height * 0.375 - 88)
+                            .allowsHitTesting(false)
                     }
 
                     // LA RANGÉE DU BAS — le slider de départ, à la place que
@@ -2306,7 +2476,8 @@ struct HomeNuitPage: View {
                     // pendant toute la scène de départ et toute la séance, pour
                     // peindre du vide. (C'est exactement la leçon du `rate`
                     // resté à 2,2 et du verre jamais démonté.)
-                    if !enSeance, net < 0.02, arrivee > 0.4 {
+                    if !enSeance, net < 0.02, arrivee > 0.4,
+                       vitrineSlot == nil {
                         FumeeInvite()
                             .frame(maxWidth: .infinity, maxHeight: .infinity,
                                    alignment: .bottom)
@@ -2327,7 +2498,8 @@ struct HomeNuitPage: View {
                             // flow. ⚠️ UN SEUL SITE D'APPEL avec le cran :
                             // c'est ce qui garantit — par construction, pas par
                             // promesse — que le tap donne LA MÊME scène que le
-                            // tirage.
+                            // tirage. (Le film refuse pendant l'édition.)
+                            guard !edition, vitrineSlot == nil else { return }
                             lancer(gDepart: 0)
                         }
                         .animation(.spring(response: 0.42,
@@ -2338,7 +2510,11 @@ struct HomeNuitPage: View {
         }
         // Le rattrapeur : un tap hors du panneau du galet le referme
         // (les taps des enfants gagnent — le panneau garde les siens).
+        // Et c'est aussi LA SORTIE du mode édition : tap n'importe où hors
+        // des widgets — la liste d'abord, le mode ensuite.
         .onTapGesture {
+            if listeSlot != nil { fermerListe(); return }
+            if edition, vitrineSlot == nil { sortirEdition(); return }
             guard reglageOuvert else { return }
             withAnimation(.spring(response: 0.40,
                                   dampingFraction: 0.84)) {
@@ -2356,6 +2532,10 @@ struct HomeNuitPage: View {
     private var tirageGeste: some Gesture {
         DragGesture(minimumDistance: 14)
             .onChanged { g in
+                // LE MODE ÉDITION TIENT LA PAGE : un doigt qui dérive
+                // pendant l'édition (ou la vitrine) ne nourrit pas le
+                // tirage — sinon le wiggle et le film se disputent l'écran.
+                guard !edition, vitrineSlot == nil else { return }
                 // LE VERROU D'AXE, avant tout le reste.
                 if axeVertical == nil {
                     let dx = abs(g.translation.width)
@@ -2444,6 +2624,10 @@ struct HomeNuitPage: View {
                 }
             }
             .onEnded { _ in
+                guard !edition, vitrineSlot == nil else {
+                    axeVertical = nil
+                    return
+                }
                 luneSentie = false
                 cranSenti = false
                 let vertical = axeVertical == true
@@ -2571,6 +2755,133 @@ struct HomeNuitPage: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + duree) {
             guard ferme == mienne else { return }
             ferme = nil
+        }
+    }
+
+    // MARK: - Le flow de l'édition des widgets
+
+    /// L'ENTRÉE EN ÉDITION — haptic sec, zoom arrière, respiration,
+    /// pastilles. Un seul curseur (`editionP`), fenêtres dérivées dans
+    /// `CardsRangee`.
+    private func entrerEdition() {
+        guard !edition, vitrineSlot == nil else { return }
+        withAnimation(.easeOut(duration: 0.20)) { reglageOuvert = false }
+        edition = true
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1,
+                                   duration: reduceMotion ? 0.25 : 0.42)) {
+            editionP = 1
+        }
+    }
+
+    /// La sortie : tap n'importe où hors des widgets. Pas de bouton
+    /// « OK », pas de temporisation — le mode reste tant qu'on ne le
+    /// quitte pas (la grammaire d'iOS). Et le SILENCE : rien dans la main.
+    private func sortirEdition() {
+        guard edition, vitrineSlot == nil else { return }
+        fermerListe()
+        edition = false
+        withAnimation(.timingCurve(0.30, 0, 0.40, 1, duration: 0.34)) {
+            editionP = 0
+        }
+    }
+
+    private func ouvrirListe(_ i: Int) {
+        listeSlot = i
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.34)) {
+            listeP = 1
+        }
+    }
+
+    private func fermerListe() {
+        guard listeSlot != nil else { return }
+        withAnimation(.easeOut(duration: 0.22)) { listeP = 0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
+            if listeP < 0.01 { listeSlot = nil }
+        }
+    }
+
+    /// LA SUPPRESSION — la loi 5 : jamais le dernier widget. Refusée, elle
+    /// s'excuse (RefusalHaptic + pop-up flottante) ; acceptée, la card part
+    /// en PAILLETTES (la loi du swap) et le slot devient un FANTÔME.
+    private func supprimerWidget(_ i: Int) {
+        fermerListe()
+        guard slots[1 - i] != nil else { refuserSuppression(); return }
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        poudreSlot = i
+        poudreDepuis = Date()
+        // La card meurt SOUS la poudre : une image de grains d'abord.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            ecrireSlot(i, nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            poudreSlot = nil
+        }
+    }
+
+    private func refuserSuppression() {
+        RefusalHaptic.play()
+        refusJeton += 1
+        let mien = refusJeton
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.30)) {
+            refusP = 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+            guard refusJeton == mien else { return }
+            withAnimation(.easeIn(duration: 0.35)) { refusP = 0 }
+        }
+    }
+
+    private func ouvrirVitrine(_ i: Int) {
+        guard vitrineSlot == nil else { return }
+        fermerListe()
+        vitrineDepart = slots[i]
+        vitrineSlot = i
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
+            reculVitrine = 1
+        }
+    }
+
+    /// Le verdict de la vitrine. Le recul, lui, s'est déjà relâché pendant
+    /// le vol (`onSortie`) — ceci n'est que l'écriture et le démontage.
+    private func fermerVitrine(_ choisi: WidgetKind?) {
+        if let s = vitrineSlot, let k = choisi { ecrireSlot(s, k) }
+        vitrineSlot = nil
+        vitrineDepart = nil
+        if reculVitrine > 0.01 {
+            withAnimation(.easeOut(duration: 0.25)) { reculVitrine = 0 }
+        }
+    }
+
+    /// Les bancs du mode édition — le sim ne sait ni long-press ni drag.
+    private func jouerEditionBanc() {
+        if let f = SlotsBanc.force {
+            slot0Brut = f.first ?? WidgetKind.regularite.rawValue
+            slot1Brut = f.count > 1 ? f[1] : "vide"
+        }
+        if EditionBanc.ouvre || EditionBanc.liste != nil
+            || EditionBanc.refus || EditionBanc.supprime {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                entrerEdition()
+                if let l = EditionBanc.liste {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                        ouvrirListe(l)
+                    }
+                }
+                if EditionBanc.refus || EditionBanc.supprime {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                        supprimerWidget(0)
+                    }
+                }
+            }
+        }
+        if VitrineBanc.ouvre {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                entrerEdition()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    ouvrirVitrine(0)
+                }
+            }
         }
     }
 

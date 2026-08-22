@@ -162,6 +162,12 @@ struct CardCorps<Contenu: View>: View {
     /// LA PLACE DU DOIGT dans la card, en points. La lumière la suit — la
     /// même loi que les halos du menu, déjà validée : la lumière suit la main.
     var doigt: CGPoint?
+    /// L'INCLINAISON DE LA CARD (le mode édition), en degrés. La crête du
+    /// liseré CONTRE-TOURNE de cet angle : la lampe reste fixe dans la pièce
+    /// pendant que l'objet penche — la loi 1 de la maison appliquée au
+    /// wiggle. Sans elle, la lumière voyagerait avec la card et l'oscillation
+    /// se lirait comme un calque qui tourne, pas comme un objet qui respire.
+    var penche: Double = 0
     @ViewBuilder var contenu: () -> Contenu
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -200,7 +206,7 @@ struct CardCorps<Contenu: View>: View {
                         // un verre ne se prouve pas en bougeant son contenu,
                         // mais en déplaçant la lumière sur sa surface.
                         let gr = cardLisereConique(
-                            .degrees(souffle + 16 * chambre))
+                            .degrees(souffle + 16 * chambre - penche))
                         ZStack {
                             dehors.stroke(gr, lineWidth: 1.6)
                             dehors.stroke(gr, lineWidth: 4.4)
@@ -454,6 +460,162 @@ private struct CardBoutonHaltere: View {
     }
 }
 
+// MARK: - Le geste des cards (les trois grammaires)
+
+/// CE QUE LE DOIGT A LE DROIT DE FAIRE sur une card, selon l'endroit où
+/// elle vit. ⚠️ UN SEUL `DragGesture(minimumDistance: 0)` porte tout — un
+/// `onLongPressGesture`, même à 0,01 s, VOLE le tap qui le suit (loi payée
+/// trois fois : l'iPod, le galet du menu, et ici même).
+enum CardMode {
+    /// Le banc : tap = chambre (elle reste), appui tenu = aperçu refermé
+    /// au relâchement. La grammaire d'origine, intacte.
+    case libre
+    /// LA HOME : tap = chambre ; **0,50 s immobile = le mode édition**.
+    /// L'aperçu d'appui tenu meurt ici (sa fenêtre 0,28 → 0,50 s est trop
+    /// courte pour exister) — il renaît dans la vitrine, où le long press
+    /// n'a plus d'emploi. Arbitrage A du plan édition-widgets.
+    case home(onEdition: () -> Void)
+    /// LA VITRINE : tap = confirmer ; appui 0,18 s = l'aperçu de la
+    /// chambre (ouvert tant que le doigt est posé). Le retard des 0,18 s
+    /// n'est pas un style : sans lui, chaque départ de swipe ferait
+    /// clignoter la chambre du widget central.
+    case vitrine(onTap: () -> Void)
+    /// LE MODE ÉDITION : la card ne répond plus au doigt — seule sa
+    /// pastille parle. (Comme le springboard : une app qui frétille ne se
+    /// lance pas.)
+    case inerte
+}
+
+/// Le geste partagé des quatre cards. Les états du toucher vivent ICI (et
+/// pas dans chaque card) pour que la grammaire soit une seule fois vraie.
+/// La CHAMBRE, elle, reste l'état de la card : le modificateur ne fait que
+/// la piloter à travers un binding.
+struct CardTouche: ViewModifier {
+    var mode: CardMode
+    @Binding var chambre: Double
+    @Binding var doigt: CGPoint?
+
+    @State private var presseAt: Date?
+    @State private var etaitOuverte = false
+    @State private var aBouge = false
+    /// Invalide les rendez-vous (`asyncAfter`) d'une presse déjà finie.
+    @State private var jeton = 0
+    /// Le long press a tiré : le relâchement n'a plus rien à dire.
+    @State private var editionTiree = false
+
+    /// 0,50 s — l'arbitrage F du plan (0,4-0,5 s chez Apple ; la tolérance
+    /// de mouvement est de 10 pt, au-delà c'est un drag, pas un appui).
+    private static let seuilEdition = 0.50
+    private static let seuilApercu = 0.18
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if case .inerte = mode {
+            content
+        } else {
+            content.gesture(geste)
+        }
+    }
+
+    private var geste: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                doigt = v.location
+                if presseAt != nil {
+                    // Le doigt a fui : plus un appui. (10 pt, la tolérance
+                    // du long press d'Apple.)
+                    if max(abs(v.translation.width),
+                           abs(v.translation.height)) > 10 {
+                        aBouge = true
+                    }
+                    return
+                }
+                presseAt = Date()
+                etaitOuverte = chambre > 0.5
+                aBouge = false
+                editionTiree = false
+                jeton += 1
+                let mien = jeton
+                switch mode {
+                case .libre:
+                    guard !etaitOuverte else { return }
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    ouvrir()
+                case .home(let onEdition):
+                    if !etaitOuverte {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        ouvrir()
+                    }
+                    // LE RENDEZ-VOUS DE L'ÉDITION. Un `DragGesture` ne
+                    // rappelle pas un doigt immobile : le seuil se tient à
+                    // l'horloge, et le jeton le tue si la presse finit avant.
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + Self.seuilEdition) {
+                        guard jeton == mien, presseAt != nil, !aBouge
+                        else { return }
+                        editionTiree = true
+                        // La chambre se range : l'édition est un mode de la
+                        // PAGE, pas un état de la card.
+                        withAnimation(.timingCurve(0.30, 0, 0.40, 1,
+                                                   duration: 0.30)) {
+                            chambre = 0
+                        }
+                        onEdition()
+                    }
+                case .vitrine:
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + Self.seuilApercu) {
+                        guard jeton == mien, presseAt != nil, !aBouge
+                        else { return }
+                        ouvrir()
+                    }
+                case .inerte:
+                    break
+                }
+            }
+            .onEnded { _ in
+                let court = Date()
+                    .timeIntervalSince(presseAt ?? Date()) < 0.28
+                let bouge = aBouge
+                let edition = editionTiree
+                presseAt = nil
+                jeton += 1
+                withAnimation(.easeOut(duration: 0.28)) { doigt = nil }
+                switch mode {
+                case .libre:
+                    guard etaitOuverte || !court else { return }
+                    fermer()
+                case .home:
+                    // L'édition a pris la main : le relâchement se tait.
+                    guard !edition else { return }
+                    guard etaitOuverte || !court else { return }
+                    fermer()
+                case .vitrine(let onTap):
+                    // La chambre de la vitrine ne survit JAMAIS au doigt :
+                    // c'est un aperçu, pas un état.
+                    if chambre > 0.01 { fermer() }
+                    if court, !bouge { onTap() }
+                case .inerte:
+                    break
+                }
+            }
+    }
+
+    private func ouvrir() {
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.52)) {
+            chambre = 1
+        }
+    }
+
+    private func fermer() {
+        // RIEN dans la main au relâchement : le silence à la fin se sent
+        // plus cher qu'un second clac.
+        withAnimation(.timingCurve(0.30, 0, 0.40, 1, duration: 0.34)) {
+            chambre = 0
+        }
+    }
+}
+
 // MARK: - LA CARD DU VOLUME
 
 struct CardVolume: View {
@@ -480,18 +642,21 @@ struct CardVolume: View {
     ]
     var totalMois: String = "31.6"
     var record: String = "8.4"
+    /// L'inclinaison du mode édition (degrés) — transmise au liseré, qui
+    /// contre-tourne.
+    var penche: Double = 0
+    /// La grammaire du doigt (banc / home / vitrine / inerte).
+    var interaction: CardMode = .libre
 
     /// `-chambre` fige la chambre OUVERTE : le simulateur ne sait pas
     /// tenir un doigt, et une chambre ne se juge qu'ouverte.
     @State private var chambre: Double =
         CommandLine.arguments.contains("-chambre") ? 1 : 0
-    @State private var presseAt: Date?
-    @State private var etaitOuverte = false
     @State private var doigt: CGPoint?
 
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt) {
+                  doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface
@@ -502,35 +667,14 @@ struct CardVolume: View {
                 }
             }
         }
-        .contentShape(RoundedRectangle(cornerRadius: 26, style: .circular))
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { v in
-                    doigt = v.location
-                    guard presseAt == nil else { return }
-                    presseAt = Date()
-                    etaitOuverte = chambre > 0.5
-                    guard !etaitOuverte else { return }
-                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    withAnimation(.timingCurve(0.22, 1, 0.36, 1,
-                                               duration: 0.52)) { chambre = 1 }
-                }
-                .onEnded { _ in
-                    // DEUX GESTES, UNE SEULE CHAMBRE — la grammaire des menus
-                    // contextuels d'iOS : un TAP la laisse ouverte (on veut
-                    // lire), un APPUI TENU n'est qu'un aperçu et se referme au
-                    // relâchement. Et un tap sur une chambre déjà ouverte la
-                    // referme.
-                    let court = Date()
-                        .timeIntervalSince(presseAt ?? Date()) < 0.28
-                    let ferme = etaitOuverte || !court
-                    presseAt = nil
-                    withAnimation(.easeOut(duration: 0.28)) { doigt = nil }
-                    guard ferme else { return }
-                    withAnimation(.timingCurve(0.30, 0, 0.40, 1,
-                                               duration: 0.34)) { chambre = 0 }
-                }
-        )
+        // ⚠️ Un `Rectangle`, et c'est la CORRECTION : l'ancien rayon 26 était
+        // codé en dur (juste à 170 pt, faux partout ailleurs — au banc 330 le
+        // rayon réel fait 50). Les cards sont posées à 14 pt l'une de
+        // l'autre : les coins d'une prise rectangulaire ne peuvent voler le
+        // doigt à personne.
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
     }
 
     /// L'INTÉRIEUR — QUATRE SEMAINES, QUATRE BARRES, DEUX CHIFFRES.
@@ -722,18 +866,18 @@ struct CardSeances: View {
     /// aux vraies séances vient au jalon du flow ; ici, une trame plausible.
     var moisFaits: Set<Int> = [2, 3, 5, 8, 9, 12, 14, 15, 18, 19, 20, 21]
     var moisJours: Int = 31
+    var penche: Double = 0
+    var interaction: CardMode = .libre
 
     /// `-chambre` fige la chambre OUVERTE : le simulateur ne sait pas
     /// tenir un doigt, et une chambre ne se juge qu'ouverte.
     @State private var chambre: Double =
         CommandLine.arguments.contains("-chambre") ? 1 : 0
-    @State private var presseAt: Date?
-    @State private var etaitOuverte = false
     @State private var doigt: CGPoint?
 
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt) {
+                  doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface
@@ -744,38 +888,12 @@ struct CardSeances: View {
                 }
             }
         }
-        .contentShape(RoundedRectangle(cornerRadius: 26, style: .circular))
+        // ⚠️ Un `Rectangle` — voir CardVolume : l'ancien rayon 26 en dur
+        // mentait à toute autre taille que 170.
+        .contentShape(Rectangle())
         // ⚠️ UN SEUL GESTE : un `onLongPressGesture` volerait le tap.
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { v in
-                    doigt = v.location
-                    guard presseAt == nil else { return }
-                    presseAt = Date()
-                    etaitOuverte = chambre > 0.5
-                    guard !etaitOuverte else { return }
-                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    withAnimation(.timingCurve(0.22, 1, 0.36, 1,
-                                               duration: 0.52)) { chambre = 1 }
-                }
-                .onEnded { _ in
-                    // DEUX GESTES, UNE SEULE CHAMBRE — la grammaire des menus
-                    // contextuels d'iOS : un TAP la laisse ouverte (on veut
-                    // lire), un APPUI TENU n'est qu'un aperçu et se referme au
-                    // relâchement. Et un tap sur une chambre déjà ouverte la
-                    // referme.
-                    let court = Date()
-                        .timeIntervalSince(presseAt ?? Date()) < 0.28
-                    let ferme = etaitOuverte || !court
-                    presseAt = nil
-                    withAnimation(.easeOut(duration: 0.28)) { doigt = nil }
-                    guard ferme else { return }
-                    // RIEN à la main au relâchement : le silence à la fin se
-                    // sent plus cher qu'un second clac.
-                    withAnimation(.timingCurve(0.30, 0, 0.40, 1,
-                                               duration: 0.34)) { chambre = 0 }
-                }
-        )
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
     }
 
     /// L'INTÉRIEUR — LE MOIS. Les sept pastilles de la semaine s'écartent en
@@ -949,6 +1067,642 @@ struct CardSeances: View {
     }
 }
 
+// MARK: - LA CARD HIIT PEAK (widget 03)
+
+/// LE MEILLEUR SEGMENT HAUTE INTENSITÉ DE LA SEMAINE — surtout pas un
+/// graphe cardio. **La ligne de vitesse** : une ligne de minuscules
+/// segments PEINTS (la loi des 9 pt interdit les micro-verres, et N verres
+/// = N passes) dont la meilleure portion devient plus dense et plus
+/// lumineuse. La rampe de chaleur s'écrit EN CANAUX (on allume le vert puis
+/// le bleu quand la chaleur monte) — jamais un `mix` entre deux teintes, le
+/// chemin droit passe par le brun. Et le rail froid ne se MÉLANGE jamais à
+/// l'ambre : un segment est froid OU chaud, c'est la hauteur qui fait la
+/// continuité.
+struct CardHiitPeak: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    var vitesse: String = "17.0"
+    var unite: String = "km/h"
+    var legende: String = "Top interval this week"
+    var repetitions: String = "4 × 40 s"
+    var repsLegende: String = "best segment"
+    /// La position du pic le long de la ligne (0 → 1) et sa largeur.
+    var pic: Double = 0.62
+    var picLargeur: Double = 0.26
+    var chambreLigne: String = "17.0 km/h · 40 s · ×4"
+    var chambreSous: String = "this week's peak"
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    var penche: Double = 0
+    var interaction: CardMode = .libre
+
+    @State private var chambre: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    interieur(ChambreTemps.fond(c))
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
+    }
+
+    /// L'aperçu de la chambre : la ligne du pic, en toutes lettres.
+    @ViewBuilder
+    private func interieur(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                Text(chambreLigne)
+                    .font(.system(size: 0.0560 * H, weight: .regular))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom))
+                    .position(x: 0.500 * W, y: 0.470 * H)
+                Text(chambreSous)
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.500 * W, y: 0.560 * H)
+            }
+            .opacity(f)
+        }
+    }
+
+    private var surface: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let marge = 0.129 * W
+
+            HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                Text(vitesse)
+                    .font(interUnifie
+                          ? .inter(0.1750 * H, .semibold)
+                          : .system(size: 0.1750 * H, weight: .regular))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom))
+                Text(unite)
+                    .font(.system(size: 0.0700 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreDouce)
+            }
+            .modifier(AncrageGauche(x: marge, y: 0.0694 * H))
+
+            Text(legende)
+                .font(.system(size: 0.0500 * H, weight: .regular))
+                .tracking(0.0500 * H * 0.030)
+                .foregroundStyle(CardTon.encreDouce)
+                .modifier(AncrageGauche(x: marge, y: 0.277 * H))
+
+            // ── LA LIGNE DE VITESSE. 25 segments, la même famille laquée
+            // que `CardBarre`, couchée. Le pic est une ENVELOPPE continue
+            // (hauteur) et un matériau discret (froid OU chaud) : la
+            // continuité vient de la géométrie, jamais d'un mélange gris →
+            // ambre qui fabriquerait du brun.
+            let n = 25
+            let y = 0.575 * H
+            ForEach(0..<n, id: \.self) { i in
+                let u = Double(i) / Double(n - 1)
+                let ecart = (u - pic) / (picLargeur * 0.55)
+                let e = exp(-ecart * ecart)
+                let chaud = e > 0.12
+                let t = chaud ? (e - 0.12) / 0.88 : 0
+                let a = min(max((p - 0.4 * u) / 0.6, 0), 1)
+                let h = H * (0.026 + 0.062 * e) * a
+                Capsule()
+                    .fill(chaud
+                          ? Color(red: 1.00,
+                                  green: 0.62 + 0.37 * t,
+                                  blue: 0.28 + 0.68 * t * t)
+                          : Color(white: 0.26))
+                    .frame(width: 0.0135 * W, height: max(h, 1))
+                    .shadow(color: chaud
+                            ? Color(red: 1.00, green: 0.80, blue: 0.50)
+                                .opacity(0.55 * e * a)
+                            : .clear,
+                            radius: 0.020 * W)
+                    .position(x: (0.129 + 0.742 * u) * W, y: y)
+                    .opacity(Double(a) * (chaud ? 1 : 0.85))
+            }
+
+            // ── LE PIED — la colonne centrée des cards voisines.
+            Text(repetitions)
+                .font(.system(size: 0.0606 * H, weight: .regular))
+                .foregroundStyle(CardTon.encre)
+                .position(x: 0.500 * W, y: 0.808 * H)
+            Text(repsLegende)
+                .font(.system(size: 0.0350 * H, weight: .regular))
+                .foregroundStyle(CardTon.encreSourde)
+                .position(x: 0.500 * W, y: 0.861 * H)
+        }
+    }
+}
+
+// MARK: - LA CARD PEAK EFFORT (widget 04)
+
+/// LE MOMENT LE PLUS FORT DE LA SEMAINE, tous types confondus — un
+/// highlight sportif, pas un score. Une seule forme liquide noire au
+/// centre, discrète, qui attrape un REFLET quand un nouveau peak est
+/// détecté (le liseré par événements, la loi du médaillon à flamme). Mais
+/// l'encre garde les données : à côté de deux cards denses, un widget
+/// presque vide se lirait comme un bug.
+struct CardPeakEffort: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var titre: String = "Hip Thrust"
+    var valeur: String = "+10 kg"
+    var contexte: String = "This week's highlight"
+    var chambreHaut: String = "60 kg × 8"
+    var chambreBas: String = "previous best · 55 kg"
+    /// Un nouveau peak vient d'être détecté : la forme attrape le reflet.
+    var nouveau: Bool = true
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    var penche: Double = 0
+    var interaction: CardMode = .libre
+
+    @State private var chambre: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    interieur(ChambreTemps.fond(c))
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
+    }
+
+    @ViewBuilder
+    private func interieur(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                Text(chambreHaut)
+                    .font(.system(size: 0.0700 * H, weight: .regular))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom))
+                    .position(x: 0.500 * W, y: 0.455 * H)
+                Text(chambreBas)
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.500 * W, y: 0.555 * H)
+            }
+            .opacity(f)
+        }
+    }
+
+    private var surface: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let marge = 0.129 * W
+
+            // Le sur-titre : PEAK, tracké large — c'est lui le glyphe.
+            Text("PEAK")
+                .font(.system(size: 0.0560 * H, weight: .regular))
+                .tracking(0.0560 * H * 0.16)
+                .foregroundStyle(CardTon.encreDouce)
+                .modifier(AncrageGauche(x: marge, y: 0.0770 * H))
+
+            // ── LA FORME LIQUIDE NOIRE, et son reflet-événement.
+            forme(W: W, H: H)
+                .opacity(min(max((p - 0.2) / 0.6, 0), 1))
+
+            // ── L'ENCRE, au-dessus de la forme.
+            Text(titre)
+                .font(.system(size: 0.0606 * H, weight: .regular))
+                .foregroundStyle(CardTon.encreDouce)
+                .position(x: 0.500 * W, y: 0.410 * H)
+                .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+            Text(valeur)
+                .font(interUnifie
+                      ? .inter(0.1500 * H, .semibold)
+                      : .system(size: 0.1500 * H, weight: .regular))
+                .foregroundStyle(LinearGradient(
+                    colors: [Color(white: 1.00), Color(white: 0.863)],
+                    startPoint: .top, endPoint: .bottom))
+                .position(x: 0.500 * W, y: 0.560 * H)
+                .opacity(min(max((p - 0.4) / 0.5, 0), 1))
+
+            Text(contexte)
+                .font(.system(size: 0.0350 * H, weight: .regular))
+                .foregroundStyle(CardTon.encreSourde)
+                .position(x: 0.500 * W, y: 0.885 * H)
+                .opacity(min(max((p - 0.5) / 0.5, 0), 1))
+        }
+    }
+
+    /// La forme : un galet organique PEINT (l'école `galetMedaillon` — il
+    /// brille sur tout fond parce qu'il n'emprunte rien), et le balayage
+    /// blanc qui le traverse quand `nouveau`. ⚠️ L'horloge ne tourne que si
+    /// le reflet existe, et dort sous Reduce Motion.
+    @ViewBuilder
+    private func forme(W: CGFloat, H: CGFloat) -> some View {
+        // Plus LARGE et plus BASSE qu'un ovale (0,66 × 0,30) : une flaque,
+        // pas un médaillon. Et PRESQUE invisible : le premier jet à 0,078
+        // de blanc se lisait comme un ovale gris posé — la forme doit se
+        // deviner, c'est le reflet-événement qui la révèle.
+        let fw = 0.66 * W, fh = 0.30 * W
+        ZStack {
+            Ellipse()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: Color(white: 0.050), location: 0.00),
+                        .init(color: Color(white: 0.028), location: 0.55),
+                        .init(color: Color(white: 0.006), location: 1.00),
+                    ],
+                    center: UnitPoint(x: 0.36, y: 0.26),
+                    startRadius: 0, endRadius: fw * 0.72))
+            Ellipse()
+                .strokeBorder(LinearGradient(
+                    colors: [.white.opacity(0.13), .clear, .clear],
+                    startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 0.8)
+            if nouveau, !reduceMotion {
+                TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    // Un passage de 1,2 s toutes les 4,6 s — un événement,
+                    // pas un gyrophare.
+                    let cycle = t.truncatingRemainder(dividingBy: 4.6)
+                    let ph = min(max(cycle / 1.2, 0), 1)
+                    Capsule()
+                        .fill(LinearGradient(
+                            colors: [.clear, .white.opacity(0.50), .clear],
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: fw * 0.22, height: fh * 1.6)
+                        .rotationEffect(.degrees(24))
+                        .offset(x: fw * (ph - 0.5) * 1.4)
+                        .blur(radius: 2.5)
+                        .opacity(ph <= 0 || ph >= 1 ? 0
+                                 : 0.9 * sin(.pi * ph))
+                        .frame(width: fw, height: fh)
+                }
+                .mask(Ellipse())
+            }
+        }
+        .frame(width: fw, height: fh)
+        .rotationEffect(.degrees(-8))
+        .position(x: 0.500 * W, y: 0.520 * H)
+    }
+}
+
+// MARK: - LE FANTÔME DE SLOT
+
+/// UN SLOT VIDE N'EST PAS UN TROU : c'est un fantôme — la grammaire des
+/// mini-cards « à faire » de la semaine (verre `.clear` nu, la vidéo passe
+/// au travers). Il dit « il y a une place ici » sans le crier, et son tap
+/// ouvre la vitrine : c'est LE chemin d'ajout. Bounds constants (170), la
+/// matérialisation d'une card se fait par-dessus, le verre ne se démonte
+/// jamais.
+struct CardFantome: View {
+    /// 0 → 1 : le mode édition (le + s'affirme un peu).
+    var edition: Double = 0
+
+    var body: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let forme = RoundedRectangle(cornerRadius: 0.152 * W,
+                                         style: .circular)
+            ZStack {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .frame(width: W, height: H)
+                        .glassEffect(.clear, in: forme)
+                }
+                forme.strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                ZStack {
+                    Capsule().frame(width: 0.13 * W, height: 1.2)
+                    Capsule().frame(width: 1.2, height: 0.13 * W)
+                }
+                .foregroundStyle(.white.opacity(0.25 + 0.25 * edition))
+            }
+        }
+    }
+}
+
+// MARK: - Les données des widgets
+
+/// Ce que la card HIIT Peak affiche — calculé par `SemaineStats`, ou les
+/// défauts de banc.
+struct HiitPeakInfo {
+    var vitesse = "17.0"
+    var repetitions = "4 × 40 s"
+    var chambreLigne = "17.0 km/h · 40 s · ×4"
+    var pic = 0.62
+    var picLargeur = 0.26
+}
+
+/// Ce que la card Peak Effort affiche.
+struct PeakEffortInfo {
+    var titre = "Hip Thrust"
+    var valeur = "+10 kg"
+    var chambreHaut = "60 kg × 8"
+    var chambreBas = "previous best · 55 kg"
+    var nouveau = true
+}
+
+/// LES CHIFFRES DE LA SEMAINE — calculés UNE fois (à l'apparition de la
+/// page, jamais dans un `body` : la home vit sous une TimelineView 60 Hz,
+/// et le piège de la page ré-évaluée par image a déjà été payé).
+///
+/// Les décisions du plan (arbitrage E) :
+///  · une séance TERMINÉE (`endedAt != nil`) vaut exécution de son plan —
+///    `CardioPhase` n'a aucune notion de réalisé, et `totalVolume` ignore
+///    `isDone` : on ne filtre pas ce que le modèle ne sait pas dire ;
+///  · l'escalier est EXCLU du HIIT peak (son `speed` est un niveau de
+///    machine, pas des km/h) ;
+///  · la semaine commence LUNDI (la convention du calendrier).
+struct SemaineStats {
+    var faites = 0
+    var pied = ""
+    var volumeValeur = "0"
+    var volumeUnite = "kg"
+    var gain = "—"
+    var moyenne = "—"
+    var jours: [CardJour] = CardJour.semaineRef
+    var moisFaits: Set<Int> = []
+    var hiit: HiitPeakInfo?
+    var peak: PeakEffortInfo?
+
+    static func calcule(_ workouts: [Workout], prevues: Int,
+                        maintenant: Date = .now) -> SemaineStats {
+        var cal = Calendar.current
+        cal.firstWeekday = 2
+        guard let semaine = cal.dateInterval(of: .weekOfYear,
+                                             for: maintenant)
+        else { return SemaineStats() }
+        let finies = workouts.filter { !$0.isActive }
+        let cette = finies.filter {
+            $0.startedAt >= semaine.start && $0.startedAt < semaine.end
+        }
+        let avant = finies.filter { $0.startedAt < semaine.start }
+        let precedente = avant.filter {
+            $0.startedAt >= semaine.start.addingTimeInterval(-7 * 86400)
+        }
+
+        var s = SemaineStats()
+        s.faites = cette.count
+        let restent = max(prevues - cette.count, 0)
+        s.pied = restent == 0 ? "goal reached"
+            : "\(restent) session\(restent > 1 ? "s" : "") left to hit your goal"
+
+        // ── LE VOLUME
+        let v = cette.reduce(0) { $0 + $1.totalVolume }
+        let vPrev = precedente.reduce(0) { $0 + $1.totalVolume }
+        (s.volumeValeur, s.volumeUnite) = Self.kg(v)
+        if vPrev > 0 {
+            let d = Int(((v - vPrev) / vPrev * 100).rounded())
+            s.gain = d >= 0 ? "+\(d)%" : "−\(-d)%"
+        } else {
+            s.gain = "new"
+        }
+        if s.faites > 0 {
+            let (mv, mu) = Self.kg(v / Double(s.faites))
+            s.moyenne = "\(mv) \(mu)"
+        }
+
+        // ── LA RÉGULARITÉ : les rails du graphe, jour par jour (lundi en
+        // tête). L'« effort » d'un jour = volume + un proxy pour le cardio
+        // (20 kg-équivalent la minute) — c'est une jauge, pas un bilan.
+        var efforts = [Double](repeating: 0, count: 7)
+        var segments = [Int](repeating: 0, count: 7)
+        for w in cette {
+            let wd = cal.component(.weekday, from: w.startedAt)
+            let i = (wd + 5) % 7
+            efforts[i] += w.totalVolume + 20 * Double(w.cardioMinutes)
+            segments[i] += 1
+        }
+        let maxE = max(efforts.max() ?? 1, 1)
+        let lettres = ["M", "T", "W", "T", "F", "S", "S"]
+        s.jours = (0..<7).map { i in
+            let f = efforts[i] / maxE
+            return CardJour(lettre: lettres[i],
+                            rail: 0.048 + 0.182 * f,
+                            segments: efforts[i] > 0
+                                ? min(max(Int((f * 5).rounded()), 1), 5) : 0)
+        }
+
+        // ── LE MOIS (l'intérieur de la chambre des séances)
+        if let mois = cal.dateInterval(of: .month, for: maintenant) {
+            s.moisFaits = Set(finies
+                .filter { $0.startedAt >= mois.start && $0.startedAt < mois.end }
+                .map { cal.component(.day, from: $0.startedAt) })
+        }
+
+        s.hiit = Self.hiitPeak(cette)
+        s.peak = Self.peakEffort(cette: cette, avant: avant)
+        return s
+    }
+
+    // ── HIIT PEAK : le meilleur segment haute intensité. Les répétitions
+    // s'INFÈRENT en matchant (kind, vitesse, durée) à travers les cycles —
+    // fiable sur le vrai flow (le même cycle répété), et le score est
+    // vitesse × (durée × répétitions), départagé à la vitesse.
+    private static func hiitPeak(_ cette: [Workout]) -> HiitPeakInfo? {
+        var best: (score: Double, v: Double, s: Int, n: Int)?
+        func candidat(_ v: Double, _ sec: Int, _ n: Int) {
+            // LA HAUTE INTENSITÉ D'ABORD. Un score linéaire en durée fait
+            // gagner la MARCHE (mesuré : « 5,5 km/h · 20:00 continuous »
+            // battait les sprints) : la vitesse pèse en puissance 2,2, la
+            // durée en racine — et sous 9,5 km/h ce n'est pas un peak.
+            guard v >= 9.5 else { return }
+            let score = pow(v, 2.2) * pow(Double(sec * n), 0.5)
+            if best == nil || score > best!.score
+                || (score == best!.score && v > best!.v) {
+                best = (score, v, sec, n)
+            }
+        }
+        for w in cette {
+            for ex in w.orderedExercises {
+                guard let e = ex.exercise, e.tracking != .setsRepsWeight,
+                      ex.exerciseID != "escalier" else { continue }
+                if e.tracking == .intervals {
+                    var groupes: [String: (v: Double, s: Int, n: Int)] = [:]
+                    for ph in ex.orderedPhases where ph.isEffort {
+                        let cle = "\(ph.kindRaw)|\(ph.speed)|\(ph.seconds)"
+                        var g = groupes[cle] ?? (ph.speed, ph.seconds, 0)
+                        g.n += 1
+                        groupes[cle] = g
+                    }
+                    for g in groupes.values { candidat(g.v, g.s, g.n) }
+                } else {
+                    // Un steady concourt comme un segment continu ×1 :
+                    // « 15.1 km/h · 5:08 continuous ».
+                    for ph in ex.orderedPhases where ph.seconds >= 120 {
+                        candidat(ph.speed, ph.seconds, 1)
+                    }
+                }
+            }
+        }
+        guard let b = best else { return nil }
+        let v = vitesse(b.v)
+        var info = HiitPeakInfo()
+        info.vitesse = v
+        if b.n > 1 {
+            info.repetitions = "\(b.n) × \(duree(b.s))"
+            info.chambreLigne = "\(v) km/h · \(duree(b.s)) · ×\(b.n)"
+        } else {
+            info.repetitions = "\(duree(b.s)) continuous"
+            info.chambreLigne = "\(v) km/h · \(duree(b.s))"
+        }
+        return info
+    }
+
+    // ── PEAK EFFORT : le moment le plus fort, priorité charge > vitesse >
+    // volume (l'ordre du plan, à fouetter). À défaut de record battu, la
+    // plus grosse charge de la semaine — un widget vide serait un bug.
+    private static func peakEffort(cette: [Workout],
+                                   avant: [Workout]) -> PeakEffortInfo? {
+        var maxAvant: [String: Double] = [:]
+        for w in avant {
+            for ex in w.orderedExercises where ex.maxWeight > 0 {
+                maxAvant[ex.exerciseID] =
+                    max(maxAvant[ex.exerciseID] ?? 0, ex.maxWeight)
+            }
+        }
+        // 1. LA CHARGE — « Hip Thrust · +10 kg ».
+        var charge: (nom: String, delta: Double, poids: Double, reps: Int)?
+        var plusLourd: (nom: String, poids: Double, reps: Int)?
+        for w in cette {
+            for ex in w.orderedExercises where ex.maxWeight > 0 {
+                let reps = ex.orderedSets
+                    .filter { $0.weight == ex.maxWeight }
+                    .map(\.reps).max() ?? 0
+                if plusLourd == nil || ex.maxWeight > plusLourd!.poids {
+                    plusLourd = (ex.name, ex.maxWeight, reps)
+                }
+                guard let prev = maxAvant[ex.exerciseID], prev > 0,
+                      ex.maxWeight > prev else { continue }
+                let delta = ex.maxWeight - prev
+                if charge == nil || delta > charge!.delta {
+                    charge = (ex.name, delta, ex.maxWeight, reps)
+                }
+            }
+        }
+        if let c = charge {
+            return PeakEffortInfo(
+                titre: c.nom,
+                valeur: "+\(poids(c.delta)) kg",
+                chambreHaut: "\(poids(c.poids)) kg × \(c.reps)",
+                chambreBas: "previous best · \(poids(c.poids - c.delta)) kg",
+                nouveau: true)
+        }
+        // 2. LA VITESSE — « HIIT · 17.0 km/h ».
+        var vAvant: Double = 0
+        for w in avant {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                for ph in ex.orderedPhases where ph.isEffort {
+                    vAvant = max(vAvant, ph.speed)
+                }
+            }
+        }
+        var vitesse: (nom: String, v: Double, s: Int, n: Int)?
+        for w in cette {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                for ph in ex.orderedPhases where ph.isEffort {
+                    if ph.speed > vAvant,
+                       vitesse == nil || ph.speed > vitesse!.v {
+                        let n = ex.orderedPhases.filter {
+                            $0.isEffort && $0.speed == ph.speed
+                                && $0.seconds == ph.seconds
+                        }.count
+                        vitesse = (ex.name, ph.speed, ph.seconds, n)
+                    }
+                }
+            }
+        }
+        if let v = vitesse {
+            let vs = Self.vitesse(v.v)
+            return PeakEffortInfo(
+                titre: v.nom,
+                valeur: "\(vs) km/h",
+                chambreHaut: "\(duree(v.s))\(v.n > 1 ? " × \(v.n)" : "")",
+                chambreBas: "fastest ever",
+                nouveau: true)
+        }
+        // 3. À DÉFAUT : la plus grosse charge de la semaine, sans le reflet.
+        if let p = plusLourd {
+            return PeakEffortInfo(
+                titre: p.nom,
+                valeur: "\(poids(p.poids)) kg",
+                chambreHaut: "\(poids(p.poids)) kg × \(p.reps)",
+                chambreBas: "heaviest this week",
+                nouveau: false)
+        }
+        return nil
+    }
+
+    // ── Les formats. ⚠️ TOUJOURS le POINT décimal : les cards parlent
+    // anglais, et `formatted(.number)` suit la locale du téléphone —
+    // mesuré : « 5,5 km/h » sur une card qui dit « continuous ».
+    private static func kg(_ v: Double) -> (String, String) {
+        if v >= 10000 {
+            return (String(format: "%.1f", v / 1000), "t")
+        }
+        if v >= 100 { return ("\(Int(v.rounded()))", "kg") }
+        return (String(format: "%.1f", v), "kg")
+    }
+    private static func poids(_ v: Double) -> String {
+        v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v)
+    }
+    private static func vitesse(_ v: Double) -> String {
+        String(format: "%.1f", v)
+    }
+    private static func duree(_ s: Int) -> String {
+        s < 90 ? "\(s) s" : String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+// MARK: - Le catalogue
+
+/// LES QUATRE WIDGETS de la home. L'ordre est celui de la vitrine.
+enum WidgetKind: String, CaseIterable, Identifiable {
+    case regularite, volume, hiitPeak, peakEffort
+
+    var id: String { rawValue }
+
+    var numero: String {
+        switch self {
+        case .regularite: return "01"
+        case .volume: return "02"
+        case .hiitPeak: return "03"
+        case .peakEffort: return "04"
+        }
+    }
+
+    /// Le nom de la vitrine — la zone widgets parle anglais (arbitrage D).
+    var nom: String {
+        switch self {
+        case .regularite: return "REGULARITY"
+        case .volume: return "VOLUME"
+        case .hiitPeak: return "HIIT PEAK"
+        case .peakEffort: return "PEAK EFFORT"
+        }
+    }
+}
+
 // MARK: - L'ancrage
 
 /// Poser un bloc par son coin HAUT-GAUCHE dans un `GeometryReader` : SwiftUI
@@ -967,23 +1721,33 @@ private struct AncrageGauche: ViewModifier {
 
 // MARK: - Le banc
 
-/// `-cardsLab` : les deux cards en grand (la taille de la référence) et à
-/// leur taille de home, avec l'arrivée qui rejoue en boucle.
+/// `-cardsLab` : une card en grand (la taille de la référence) et les
+/// quatre à leur taille de home, avec l'arrivée qui rejoue en boucle.
+/// `-widgetHiit` / `-widgetPeak` mettent le widget neuf en grand.
 struct CardsLab: View {
     @State private var p: Double = 0
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            VStack(spacing: 26) {
+            VStack(spacing: 22) {
                 Text("LES CARDS")
                     .font(.system(size: 11, weight: .semibold)).tracking(2.4)
                     .foregroundStyle(.white.opacity(0.38))
-                CardVolume(p: p)
-                    .frame(width: 330, height: 333)
+                if CommandLine.arguments.contains("-widgetHiit") {
+                    CardHiitPeak(p: p).frame(width: 330, height: 333)
+                } else if CommandLine.arguments.contains("-widgetPeak") {
+                    CardPeakEffort(p: p).frame(width: 330, height: 333)
+                } else {
+                    CardVolume(p: p).frame(width: 330, height: 333)
+                }
                 HStack(spacing: 16) {
                     CardSeances(p: p).frame(width: 169, height: 171)
                     CardVolume(p: p).frame(width: 169, height: 171)
+                }
+                HStack(spacing: 16) {
+                    CardHiitPeak(p: p).frame(width: 169, height: 171)
+                    CardPeakEffort(p: p).frame(width: 169, height: 171)
                 }
             }
         }
@@ -999,35 +1763,170 @@ struct CardsLab: View {
     }
 }
 
+// MARK: - La respiration du mode édition
+
+/// L'OSCILLATION DU MODE ÉDITION — pas le jiggle d'iOS : ±1,4°, lent, une
+/// période PROPRE à chaque card (2,9 s / 3,7 s, premières entre elles,
+/// sinon elles battent ensemble), en opposition de phase. L'angle est
+/// LIVRÉ au contenu : la card l'applique en `rotationEffect` ET le passe au
+/// liseré qui contre-tourne (la lampe reste fixe).
+///
+/// ⚠️ L'horloge n'existe qu'en mode édition (20 Hz suffisent à 1,4° sur
+/// 3 s) et JAMAIS sous Reduce Motion — hors édition le sous-arbre est le
+/// contenu nu, pas une TimelineView en pause (la page a déjà ses horloges).
+private struct RespireEdition<C: View>: View {
+    var edition: Double
+    var periode: Double
+    var phase: Double
+    @ViewBuilder var contenu: (Double) -> C
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if edition < 0.005 || reduceMotion {
+            contenu(0)
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 20)) { tl in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                contenu(1.4 * edition
+                        * sin(t * 2 * .pi / periode + phase))
+            }
+        }
+    }
+}
+
 // MARK: - La rangée de la home
 
-/// Les deux widgets de la home. Gouttière 24 (celle de la phrase et de
-/// l'ardoise de la semaine), écart 14 : les deux cards remplissent la
+/// Les deux slots de widgets de la home. Gouttière 24 (celle de la phrase
+/// et de l'ardoise de la semaine), écart 14 : les deux cards remplissent la
 /// largeur utile, et elles sont CARRÉES (la référence l'est à 1 %).
+///
+/// LE MODE ÉDITION vit ici : le zoom arrière de la zone, la respiration de
+/// chaque card, les pastilles lune. L'ÉTAT, lui, vit AU-DESSUS (la page) —
+/// tout `@State` posé ici serait perdu au démontage `verreMonte`.
 struct CardsRangee: View {
     var faites: Int = 4
     var prevues: Int = 5
     var volume: String = "8.4"
+    var volumeUnite: String = "kg"
     var moyenne: String = "1.2 kg"
     var gain: String = "+12%"
     var jours: [CardJour] = CardJour.semaineRef
+    var pied: String = "1 session left to hit your goal"
+    var moisFaits: Set<Int>? = nil
+    var hiit: HiitPeakInfo = HiitPeakInfo()
+    var peak: PeakEffortInfo = PeakEffortInfo()
     /// 0 → 1, l'arrivée de la page.
     var arrivee: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
+    /// LES DEUX SLOTS — `nil` = le fantôme. Persistés par la page
+    /// (`widgetSlot0/1` en `@AppStorage`).
+    var slots: [WidgetKind?] = [.regularite, .volume]
+    /// 0 → 1, l'entrée du mode édition (curseur animé par la page, livré
+    /// image par image via `Chambre`).
+    var edition: Double = 0
+    /// Le mode édition est ACTIF : les cards deviennent inertes, seules
+    /// les pastilles parlent.
+    var editionActive: Bool = false
+    /// Le slot dont la card VOLE dans la vitrine : il garde sa place,
+    /// vide (le clone est dans l'overlay).
+    var masque: Int? = nil
+    var onEdition: ((Int) -> Void)? = nil
+    var onPastille: ((Int) -> Void)? = nil
+    var onFantome: ((Int) -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 14) {
-            CardSeances(faites: faites, prevues: prevues, p: pose,
-                        lisere: lisere, verre: verre)
-                .frame(width: 170, height: 170)
-            CardVolume(valeur: volume, jours: jours, gain: gain,
-                       moyenne: moyenne, p: pose,
-                       lisere: lisere, verre: verre)
-                .frame(width: 170, height: 170)
+        Chambre(p: edition) { ed in
+            HStack(spacing: 14) {
+                slotVue(0, ed)
+                slotVue(1, ed)
+            }
+            // LE ZOOM ARRIÈRE de la zone — un transform, jamais un frame :
+            // les bounds du verre ne bougent pas (précédent licite : le
+            // retrait du menu scale déjà le mobilier verre compris).
+            .scaleEffect(1 - 0.04 * ed, anchor: .center)
         }
         .opacity(pose)
         .offset(y: 12 * (1 - pose))
+    }
+
+    @ViewBuilder
+    private func slotVue(_ i: Int, _ ed: Double) -> some View {
+        if masque == i {
+            // La card est partie dans la vitrine : le slot tient sa place.
+            Color.clear.frame(width: 170, height: 170)
+        } else if let kind = slots[i] {
+            RespireEdition(edition: ed,
+                           periode: i == 0 ? 2.9 : 3.7,
+                           phase: i == 0 ? 0 : .pi) { angle in
+                carte(kind, slot: i, penche: angle)
+                    .frame(width: 170, height: 170)
+                    .overlay(alignment: .topTrailing) {
+                        // LA PASTILLE — posée SUR le coin (elle déborde de
+                        // 8 pt), elle suit la respiration de sa card : elle
+                        // est DE la card. 70 ms d'écart entre les deux.
+                        PastilleLune(p: pastilleP(i, ed)) {
+                            onPastille?(i)
+                        }
+                        .offset(x: 8, y: -8)
+                    }
+                    .rotationEffect(.degrees(angle))
+            }
+            .frame(width: 170, height: 170)
+        } else {
+            CardFantome(edition: ed)
+                .frame(width: 170, height: 170)
+                .contentShape(Rectangle())
+                .onTapGesture { onFantome?(i) }
+        }
+    }
+
+    @ViewBuilder
+    private func carte(_ kind: WidgetKind, slot: Int,
+                       penche: Double) -> some View {
+        let mode: CardMode = editionActive
+            ? .inerte
+            : (onEdition.map { f in CardMode.home(onEdition: { f(slot) }) }
+               ?? .libre)
+        switch kind {
+        case .regularite:
+            if let mf = moisFaits {
+                CardSeances(faites: faites, prevues: prevues, pied: pied,
+                            p: pose, lisere: lisere, verre: verre,
+                            moisFaits: mf,
+                            penche: penche, interaction: mode)
+            } else {
+                CardSeances(faites: faites, prevues: prevues, pied: pied,
+                            p: pose, lisere: lisere, verre: verre,
+                            penche: penche, interaction: mode)
+            }
+        case .volume:
+            CardVolume(valeur: volume, unite: volumeUnite, jours: jours,
+                       gain: gain, moyenne: moyenne, p: pose,
+                       lisere: lisere, verre: verre,
+                       penche: penche, interaction: mode)
+        case .hiitPeak:
+            CardHiitPeak(vitesse: hiit.vitesse,
+                         repetitions: hiit.repetitions,
+                         pic: hiit.pic, picLargeur: hiit.picLargeur,
+                         chambreLigne: hiit.chambreLigne,
+                         p: pose, lisere: lisere, verre: verre,
+                         penche: penche, interaction: mode)
+        case .peakEffort:
+            CardPeakEffort(titre: peak.titre, valeur: peak.valeur,
+                           chambreHaut: peak.chambreHaut,
+                           chambreBas: peak.chambreBas,
+                           nouveau: peak.nouveau,
+                           p: pose, lisere: lisere, verre: verre,
+                           penche: penche, interaction: mode)
+        }
+    }
+
+    /// La fenêtre d'arrivée de la pastille du slot `i` : 70 ms d'écart.
+    private func pastilleP(_ i: Int, _ ed: Double) -> Double {
+        let a = 0.55 + 0.165 * Double(i)
+        return min(max((ed - a) / (1 - a), 0), 1)
     }
 
     /// Les cards prennent le courant APRÈS la phrase et AVANT la semaine :

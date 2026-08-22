@@ -964,6 +964,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// m'a suivi tout l'écran ». Rangé pour laisser la place, il ne doit plus
     /// l'attraper.
     var verrouille: Bool = false
+    /// UN RECUL COMMANDÉ PAR LA PAGE, 0 → 1 — la vitrine des widgets s'en
+    /// sert : elle éteint le mobilier avec EXACTEMENT le trio du menu
+    /// (flou 7 + échelle 0,974 + extinction), sans dupliquer la pile.
+    /// `retrait` est déjà un `max` : une entrée de plus, pas un mécanisme.
+    var reculExterne: Double = 0
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -1092,7 +1097,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// « This week. » et les deux cards de verre, encore nettes à 66 %.
     /// C'est aussi ce qui manquait au souvenir « menu liste BLUR halo » : le
     /// blur existait, il était branché sur l'autre menu.
-    private var retrait: Double { max(montee, recul) }
+    private var retrait: Double { max(montee, recul, reculExterne) }
     private var items: Double { fen(0.30, 1.00) }
     private var morph: Double { adouci(fen(0.46, 0.86)) }
 
