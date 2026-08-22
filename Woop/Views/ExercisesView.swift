@@ -53,6 +53,10 @@ enum ExosBanc {
     static let voile: Double? = valeur("-exosVoile")
     static let dial: Int? = valeur("-exosDial").map { Int($0) }
     static let scroll: CGFloat? = valeur("-exosScroll").map { CGFloat($0) }
+    /// `-exosSection <n>` : la section posée SANS engager la molette — le seul
+    /// moyen de juger le titre qui prend le nom de la section (avec
+    /// `-exosDial`, la scène est éteinte et floutée par le théâtre).
+    static let section: Int? = valeur("-exosSection").map { Int($0) }
 
     private static func valeur(_ cle: String) -> Double? {
         let args = CommandLine.arguments
@@ -134,12 +138,21 @@ final class EtatExos {
 
     enum Prise { case aucune, molette, tirage, refus }
 
-    /// LA LEVÉE : ce dont la card se raccourcit par le bas. Le tirage négatif
-    /// et la séance s'y ajoutent — on peut lever la card DAVANTAGE pendant une
-    /// séance, elle ne fait que découvrir plus de bande.
-    var levee: CGFloat {
-        max(0, -tirage) + (enSeance ? ExercisesView.leveeSeance : 0)
-    }
+    /// LA LEVÉE, EN DEUX MORCEAUX — et la distinction est une affaire de
+    /// FLUIDITÉ, pas de comptabilité.
+    ///
+    /// ⚠️ `leveeFixe` ne bouge qu'au début et à la fin d'une séance : elle peut
+    /// donc se payer en TAILLE (un `frame`), et le voile des cartes la suit.
+    /// `leveeDrag`, elle, change à chaque image du doigt : elle ne doit JAMAIS
+    /// toucher à une taille. Un `padding`/`frame` animé par image redimensionne
+    /// l'`AVPlayerLayer` de la vidéo ET re-layoute le ScrollView — donc
+    /// re-calcule le flou de chaque carte visible — soixante fois par seconde.
+    /// C'est ça qui « laggue quand on drag la card ». Elle passe donc par un
+    /// MASQUE (`FormeCardExos`) et des `offset` : aucune de ces deux choses ne
+    /// re-layoute quoi que ce soit.
+    var leveeDrag: CGFloat { max(0, -tirage) }
+    var leveeFixe: CGFloat { enSeance ? ExercisesView.leveeSeance : 0 }
+    var levee: CGFloat { leveeDrag + leveeFixe }
 
     /// LA DÉCOUVERTE DU SECRET : la lune ne commence qu'à 62 pt de levée (elle
     /// est encore derrière la card avant : son sommet vit à 80 pt du bord bas)
@@ -185,15 +198,59 @@ private struct SondeScroll: Equatable {
 
 // MARK: - Les deux modificateurs qui font bouger la card
 
+/// LA FORME DE LA CARD À UNE LEVÉE DONNÉE — un MASQUE, jamais une taille.
+/// `haut` : la bande de nuit du dessus, que la card garde toujours.
+///
+/// ⚠️ `Animatable` sur la levée : sans ça le masque saute au lieu de suivre le
+/// ressort du lâcher (la loi des rampes sous `withAnimation`).
+struct FormeCardExos: Shape {
+    var levee: CGFloat
+    var haut: CGFloat = 0
+
+    var animatableData: CGFloat {
+        get { levee }
+        set { levee = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let r = CGRect(x: rect.minX, y: rect.minY + haut,
+                       width: rect.width,
+                       height: max(0, rect.height - haut - levee))
+        return UnevenRoundedRectangle(
+            topLeadingRadius: GrandeCardExos.rayon,
+            bottomLeadingRadius: GrandeCardExos.rayon,
+            bottomTrailingRadius: GrandeCardExos.rayon,
+            topTrailingRadius: GrandeCardExos.rayon,
+            style: .continuous
+        ).path(in: r)
+    }
+}
+
 /// LE FOND DE LA CARD SUIT LE DOIGT. Un `ViewModifier` et pas un `.offset`
 /// posé dans le corps de la page : `body(content:)` reçoit l'arbre DÉJÀ
 /// construit, donc le relire soixante fois par seconde ne reconstruit rien.
+///
+/// ⚠️ ET IL DÉCOUPE, IL NE RÉDUIT PAS. Un `.padding(.bottom, levee)` animé par
+/// image redimensionnait l'`AVPlayerLayer` à chaque frame — une couche vidéo
+/// qu'on redimensionne soixante fois par seconde est le lag lui-même. Le
+/// masque, lui, ne coûte qu'une passe de composition.
 private struct CarteLevee: ViewModifier {
     let etat: EtatExos
     func body(content: Content) -> some View {
         content
-            .padding(.bottom, etat.levee)
+            .clipShape(FormeCardExos(levee: etat.levee,
+                                     haut: GrandeCardExos.margeHaut))
             .offset(y: max(etat.tirage, 0))
+    }
+}
+
+/// CE QUI REMONTE AVEC LE BORD BAS DE LA CARD — la molette et sa prise. Un
+/// simple `offset`, donc aucune taille ne change : c'est le pendant du masque
+/// ci-dessus.
+private struct MonteAvecLaCard: ViewModifier {
+    let etat: EtatExos
+    func body(content: Content) -> some View {
+        content.offset(y: -etat.leveeDrag)
     }
 }
 
@@ -226,14 +283,20 @@ private struct CadreCarte: ViewModifier {
     let w: CGFloat
 
     func body(content: Content) -> some View {
-        let m = GrandeCardExos.marge
+        let c = GrandeCardExos.margeCote
+        let h = GrandeCardExos.margeHaut
         return content
-            .frame(width: w - 2 * m,
-                   height: hEcran - etat.levee - m,
+            // ⚠️ LA TAILLE NE SUIT QUE LA SÉANCE. Elle change deux fois dans
+            // une vie de page — le voile des cartes peut donc la suivre. La
+            // levée du DOIGT, elle, passe par le masque ci-dessous : sinon
+            // chaque image du tirage re-layoute le ScrollView et recalcule le
+            // flou de toutes les cartes visibles.
+            .frame(width: w - 2 * c,
+                   height: hEcran - etat.leveeFixe - h,
                    alignment: .top)
-            .clipShape(GrandeCardExos.forme)
-            .padding(.top, m)
-            .padding(.leading, m)
+            .clipShape(FormeCardExos(levee: etat.leveeDrag))
+            .padding(.top, h)
+            .padding(.leading, c)
             .offset(y: max(etat.tirage, 0))
     }
 }
@@ -291,10 +354,11 @@ struct ExercisesView: View {
     /// chevron ne bouge JAMAIS d'une page à l'autre — plus 18 d'air avant les
     /// cartes.
     static let hBandeau: CGFloat = 74
-    /// L'encart du contenu DANS la card. La card est déjà rentrée de 10 pt du
-    /// bord de l'écran : 10 de plus, et le chevron retombe exactement à 20 du
-    /// bord physique, comme sur toutes les autres pages.
-    static let encart: CGFloat = 10
+    /// L'encart du contenu DANS la card — il porte à lui seul les 20 pt du
+    /// bord physique depuis que la card touche les flancs. ⚠️ C'est LUI qui
+    /// tient la place du chevron : elle ne bouge JAMAIS d'une page à l'autre,
+    /// donc quand la marge de la card change, l'encart change de l'inverse.
+    static let encart: CGFloat = 20
     /// LA PRISE DE LA MOLETTE : la bande basse où un geste horizontal tourne
     /// le tambour. Elle ne DESSINE rien — la molette a son propre cadre, plus
     /// haut, pour que la fumée ait de l'air.
@@ -320,7 +384,7 @@ struct ExercisesView: View {
                 // LA RÉSERVE DU BANDEAU : la zone sûre (moins la marge que la
                 // card a déjà prise en tête) plus la hauteur du bandeau. La
                 // grille commence là, et les deux voiles se mesurent dessus.
-                let reserve = max(safeT - GrandeCardExos.marge, 0) + Self.hBandeau
+                let reserve = max(safeT - GrandeCardExos.margeHaut, 0) + Self.hBandeau
                 ZStack(alignment: .topLeading) {
                     // LA PAGE EST NOIRE (le halo braise est mort avec la page
                     // nuit : la lumière vient de la vidéo, maintenant).
@@ -423,6 +487,12 @@ struct ExercisesView: View {
                 ordre = OrdreScroll(y: y, jeton: ordre.jeton + 1)
             }
         }
+        if let n = ExosBanc.section {
+            let idx = min(max(n, 0), ArcDial.items.count - 1)
+            etat.pos = Double(idx)
+            etat.detent = idx
+            filter = ArcDial.items[idx].1
+        }
         if let n = ExosBanc.dial {
             let idx = min(max(n, 0), ArcDial.items.count - 1)
             etat.pos = Double(idx)
@@ -445,7 +515,7 @@ struct ExercisesView: View {
     @ViewBuilder
     private func contenuCard(safeT: CGFloat, w: CGFloat,
                              reserve: CGFloat) -> some View {
-        let cardW = w - 2 * GrandeCardExos.marge
+        let cardW = w - 2 * GrandeCardExos.margeCote
         ZStack(alignment: .top) {
             GrilleExos(items: items, reserve: reserve, etat: etat,
                        ordre: ordre, tuto: tutoActif,
@@ -454,6 +524,11 @@ struct ExercisesView: View {
             // DESSOUS, elles ne s'arrêtent pas à son bord. Et c'est LA POIGNÉE
             // de la card.
             BandeauExos(safeT: safeT, etat: etat,
+                        // LE TITRE EST LE NOM DE CE QU'ON REGARDE : la page
+                        // s'appelle « Exercices », mais dès qu'une section est
+                        // choisie au tambour c'est ELLE qu'on lit. Le titre
+                        // n'annonce pas l'écran, il annonce le contenu.
+                        titre: filter?.rawValue ?? "Exercices",
                         retour: {
                             withAnimation(.easeOut(duration: 0.3)) {
                                 selection = .home
@@ -481,6 +556,7 @@ struct ExercisesView: View {
                 .frame(height: Self.prise)
                 .contentShape(Rectangle())
                 .gesture(priseBasse)
+                .modifier(MonteAvecLaCard(etat: etat))
         }
         // LA MOLETTE, couchée au bas de la card. Son cadre est GÉNÉREUX
         // (300 pt) pour que la fumée ait de l'air au-dessus du disque : le
@@ -488,6 +564,7 @@ struct ExercisesView: View {
         .overlay(alignment: .bottom) {
             ArcDial(etat: etat)
                 .frame(width: cardW, height: 300)
+                .modifier(MonteAvecLaCard(etat: etat))
                 .anchorPreference(key: SlotAnchorKey.self, value: .bounds) {
                     ["tuto-dial": $0]
                 }
@@ -797,6 +874,20 @@ enum ExosCatalogue {
 
 // MARK: - La bande découverte
 
+/// LA NAISSANCE DU CROISSANT — la seule chose qui change par image, et elle ne
+/// coûte qu'une composition. Elle ne monte pas : elle S'APPROCHE (le couple
+/// échelle + éclat, jamais un fondu nu — la loi de la mise au point).
+private struct EclatLune: ViewModifier {
+    let etat: EtatExos
+    let haut: Bool
+    func body(content: Content) -> some View {
+        let p = haut ? etat.luneHautP : etat.luneP
+        return content
+            .opacity(p)
+            .scaleEffect(0.82 + 0.18 * p)
+    }
+}
+
 /// Un seul endroit, deux contenus : hors séance le secret de la lune
 /// (`LuneSecrete`, la vue de la home réutilisée telle quelle), en séance le
 /// player (`WorkoutPill(docked:)`). Exactement la home.
@@ -826,13 +917,22 @@ private struct BandeExos: View {
                 // prend en séance), en haut quand on la POUSSE. Un seul secret,
                 // deux nuits possibles : il ne doit pas dépendre du sens qu'on
                 // a deviné.
+                // ⚠️ LE CROISSANT EST CONSTRUIT UNE FOIS, À PLEIN ÉCLAT, et
+                // c'est sa NAISSANCE qu'on module par-dessus. `LuneSecrete`
+                // porte TROIS ombres (cœur blanc, tube braise, halo) : lui
+                // passer un `p` vivant, c'est trois passes hors écran par image
+                // de tirage — pile pendant le geste où Kathryn a vu le lag.
+                // À p = 1 elles sont rendues une fois et mises en cache ; le
+                // modificateur ne fait plus qu'une opacité et une échelle.
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    LuneSecrete(p: etat.luneP)
+                    LuneSecrete(p: 1)
+                        .modifier(EclatLune(etat: etat, haut: false))
                         .padding(.bottom, 46)
                 }
                 VStack(spacing: 0) {
-                    LuneSecrete(p: etat.luneHautP)
+                    LuneSecrete(p: 1)
+                        .modifier(EclatLune(etat: etat, haut: true))
                         .padding(.top, 74)
                     Spacer(minLength: 0)
                 }
@@ -856,6 +956,8 @@ private struct BandeExos: View {
 private struct BandeauExos: View {
     let safeT: CGFloat
     let etat: EtatExos
+    /// « Exercices » au repos, le nom de la SECTION dès qu'on en choisit une.
+    let titre: String
     var retour: () -> Void
     var tirer: (DragGesture.Value) -> Void
     var reposer: () -> Void
@@ -863,7 +965,7 @@ private struct BandeauExos: View {
     var body: some View {
         // Le haut du bandeau colle à la safe area — moins la marge que la card
         // a déjà prise en tête.
-        let haut = max(safeT - GrandeCardExos.marge, 0)
+        let haut = max(safeT - GrandeCardExos.margeHaut, 0)
         ZStack(alignment: .topLeading) {
             VoileTitre(etat: etat, hauteur: haut + ExercisesView.hBandeau + 34)
 
@@ -874,11 +976,19 @@ private struct BandeauExos: View {
                     // maison (20 du bord physique, 4 au-dessus, 8 en dessous).
                     ChipVerre(symbole: "chevron.left", label: "Retour",
                               action: retour)
-                    Text("Exercice")
+                    // Le mot CHANGE avec la section : il ne se remplace pas
+                    // d'un coup, il s'efface et le suivant monte à sa place —
+                    // le `.id` force la transition, la transaction du filtre
+                    // lui donne sa courbe.
+                    Text(titre)
                         .font(.inter(30, .semibold))
                         .tracking(-0.4)
                         .foregroundStyle(WoopGradient.silverText)
                         .fixedSize()
+                        .id(titre)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 10)),
+                            removal: .opacity.combined(with: .offset(y: -8))))
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, ExercisesView.encart)

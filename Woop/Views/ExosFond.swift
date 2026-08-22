@@ -104,17 +104,27 @@ struct GrandeCardExos: View {
     /// La naissance de la page, 0 → 1 : la card s'allume en fondu avec une
     /// approche imperceptible (1,015 → 1). Jamais un bounce (la spec).
     var naissance: Double = 1
-    static let marge: CGFloat = 10
-    static let rayon: CGFloat = 45
-    static let rayonEcran: CGFloat = 55
+    /// LA MARGE DE NUIT — VERTICALE SEULEMENT (verdict 22-08 : « il y a trop
+    /// d'espace, la card doit prendre les côtés droit et gauche »). La card
+    /// touche les deux flancs et ne garde sa bande de nuit qu'EN HAUT : c'est
+    /// elle qui la fait lire « posée », et c'est elle qui s'ouvre quand on
+    /// pousse la page.
+    static let margeHaut: CGFloat = 10
+    static let margeCote: CGFloat = 0
+    /// LE RAYON DE L'ÉCRAN, sur les QUATRE coins. La loi concentrique dit
+    /// qu'une forme prend le rayon de l'écran MOINS sa marge : à 10 pt du bord
+    /// c'était 45, mais la card touche désormais l'arête physique sur ses deux
+    /// flancs — un rayon plus serré y laisserait un croissant de nuit au coin,
+    /// et c'est exactement ce décrochage qui trahit une marge oubliée.
+    static let rayon: CGFloat = 55
 
     /// LA FORME, publiée : le contenu de la page (la grille qui défile) se
     /// découpe DEDANS. Deux formes qui divergeraient d'un point, et les
     /// cartes dépasseraient des coins.
     static var forme: UnevenRoundedRectangle {
         UnevenRoundedRectangle(topLeadingRadius: rayon,
-                               bottomLeadingRadius: rayonEcran,
-                               bottomTrailingRadius: rayonEcran,
+                               bottomLeadingRadius: rayon,
+                               bottomTrailingRadius: rayon,
                                topTrailingRadius: rayon,
                                style: .continuous)
     }
@@ -148,8 +158,8 @@ struct GrandeCardExos: View {
                         }
                     }
                 .clipShape(Self.forme)
-                .padding(.top, Self.marge)
-                .padding(.horizontal, Self.marge)
+                .padding(.top, Self.margeHaut)
+                .padding(.horizontal, Self.margeCote)
                 .opacity(naissance)
                 .scaleEffect(1.015 - 0.015 * naissance)
             )

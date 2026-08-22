@@ -57,7 +57,7 @@ cx, cy = W*0.50, H*0.915
 flaque = 0.44*np.exp(-(((x-cx)/340.0)**2 + ((y-cy)/260.0)**2))
 # Le flanc GAUCHE reste nuit : la colonne gauche du Pinterest y vit, et la
 # lumiere de cette page appartient a la droite (le verre) et au bas (le feu).
-gauche = 0.34*(1-smooth(x,60,430))*smooth(y,520,900)*(1-smooth(y,1500,1900))
+gauche = 0.30*(1-smooth(x,30,300))*smooth(y,520,900)*(1-smooth(y,1500,1900))
 a=np.clip(haut+bas+gauche+flaque,0,0.92)
 # LES RAMPES DE BORD (verdict 22-08 : « on voit sur les cotes comme des
 # traits »). Mesure a la capture : au flanc DROIT, a 8 pt du bord de la card,
@@ -67,9 +67,17 @@ a=np.clip(haut+bas+gauche+flaque,0,0.92)
 # doit pas avoir de bord, il doit FONDRE dans la nuit. Rampes en puissance 1,1
 # (une rampe lineaire laisse une arete visible a son depart), et elles
 # EMPORTENT le reste du scrim (max, pas somme) : au bord, c'est noir, point.
-bordD = 0.98*np.clip(1-(W-1-x)/120.0,0,1)**1.1
-bordG = 0.98*np.clip(1-x/90.0,0,1)**1.1
-bordB = 0.90*np.clip(1-(H-1-y)/44.0,0,1)**1.2
+# ⚠️ LES RAMPES ONT FONDU (22-08 bis). Elles faisaient 120 et 90 px du temps
+# ou la card etait rentree de 10 pt : il fallait que le verre FONDE avant son
+# arete, sinon il y lisait un trait. Depuis que la card prend les deux flancs,
+# son bord EST le bord de l'ecran — une lumiere qui sort de l'ecran est
+# normale, c'est une lumiere qui s'arrete AVANT lui qui se lit comme une
+# bordure noire (verdict : « on voit encore des border noir sur les cotes »,
+# mesure : 14 pt de braise en sourdine). Il ne reste qu'un souffle, juste de
+# quoi qu'aucun pixel vif ne soit tranche net.
+bordD = 0.98*np.clip(1-(W-1-x)/16.0,0,1)**1.1
+bordG = 0.98*np.clip(1-x/16.0,0,1)**1.1
+bordB = 0.90*np.clip(1-(H-1-y)/14.0,0,1)**1.2
 a=np.maximum(np.maximum(a,bordD),np.maximum(bordG,bordB))
 img=np.zeros((H,W,4),dtype=np.uint8); img[...,3]=(a*255).astype(np.uint8)
 Image.fromarray(img).save("scrim-fond-exos.png")

@@ -100,7 +100,20 @@ struct WorkoutPill: View {
         .frame(maxWidth: .infinity)
         .frame(height: docked ? 76 : 64)
         .background {
-            if docked { dockShape.fill(Color(white: 0.045)) }
+            // ⚠️ LA DALLE EST NOIRE, PAS GRISE — et c'est une loi du
+            // composant, pas un réglage de page (verdict 22-08 :
+            // « l'overlay session doit être noir pour se fondre »).
+            //
+            // Le dock n'est pas un objet posé SUR une page : c'est le SOL
+            // que la card découvre en se levant. Un gris, même à 4,5 %,
+            // se détache de la nuit et se lit comme un panneau rapporté ;
+            // le noir FOND, et il ne reste que ce qui doit vivre — le
+            // glyphe de la lune, l'encre, la veine d'or.
+            //
+            // La pilule FLOTTANTE, elle, garde son gris : elle est posée
+            // sur une carte claire et doit exister COMME objet. La même
+            // matière, deux rôles opposés.
+            if docked { dockShape.fill(Color.black) }
             else { shape.fill(Color(white: 0.045)) }
         }
         .overlay {
