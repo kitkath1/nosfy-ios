@@ -292,14 +292,19 @@ struct PhraseFragment: Equatable {
 enum PhraseTexte {
     /// La voix est le **vous** (arbitrage du 20-08). Les retours à la ligne
     /// sont écrits à la main : ils portent le rythme.
+    /// ⚠️ EN ANGLAIS (verdict 22-08). Le reste de la page l'était déjà —
+    /// « Sessions this week », « Weekly volume », « Your last sessions » : la
+    /// phrase d'accueil était la seule pièce en français, et le mélange se
+    /// voyait. L'alternance clair / sourd est conservée à la lettre : c'est elle
+    /// qui donne son rythme au bloc, pas les mots.
     static func fragments(faits: Int, prevus: Int) -> [PhraseFragment] {
-        let mot = faits == 1 ? "entraînement" : "entraînements"
+        let mot = faits == 1 ? "workout" : "workouts"
         return [
-            PhraseFragment("Bonjour Kathryn,", clair: true),
-            PhraseFragment("vous avez fait", clair: false),
+            PhraseFragment("Hello Kathryn,", clair: true),
+            PhraseFragment("you've done", clair: false),
             PhraseFragment("\(faits) \(mot)", clair: true),
-            PhraseFragment("cette semaine", clair: false),
-            PhraseFragment("sur ", objectif: prevus, apres: " prévus.",
+            PhraseFragment("this week", clair: false),
+            PhraseFragment("out of ", objectif: prevus, apres: " planned.",
                            clair: true)
         ]
     }
@@ -385,6 +390,11 @@ enum RasantChamp {
 struct PhraseVue: View, Animatable {
     /// L'avancement de l'arrivée, 0 → 1.
     var p: Double
+    /// LE FLOU DU DÉPART, posé sur les GLYPHES et pas sur le conteneur. Sur une
+    /// boîte, un `.blur` gonfle ses bornes du rayon et floute toute sa surface —
+    /// ici 1,47 Mpix par image à 26 pt de rayon, par-dessus le masque que ce
+    /// bloc pose déjà. Sur des glyphes, il ne floute que l'encre.
+    var flouDepart: CGFloat = 0
     var params = PhraseParams()
     var rasant = RasantParams()
     var fragments: [PhraseFragment] = PhraseTexte.fragments(faits: 4, prevus: 5)
@@ -422,10 +432,19 @@ struct PhraseVue: View, Animatable {
                     ligne(f, index: i)
                 }
             }
+            // LE MASQUE DÉBORDE DU BLOC, sinon il coupe le halo du flou au
+            // carré : un `.mask` est dimensionné sur les bornes de son hôte, et
+            // le flou de départ diffuse l'encre bien au-delà du bloc.
+            // ⚠️ Honnêteté de la mesure : ce n'était PAS la cause du « calque
+            // blanc » (le saut au bord valait 2,1/255 avant comme après — j'ai
+            // pris un tri d'indices pour une preuve). C'est un défaut latent,
+            // réel mais discret, gardé ici parce que la parade ne coûte rien.
+            // La vraie cause était le rayon lui-même : voir `DepartCine.flouMax`.
             .mask {
                 LinearGradient(colors: [.white,
                                         .white.opacity(params.argent + 0.04)],
                                startPoint: .top, endPoint: .bottom)
+                    .padding(-(flouDepart + 6))
             }
 
             if let derniere = fragments.last {
@@ -461,7 +480,7 @@ struct PhraseVue: View, Animatable {
         // plein écran : un `.blur` posé sur une boîte pose un voile uniforme
         // sur tout son rectangle (piège payé). Sur des glyphes, il ne floute
         // que l'encre.
-        .blur(radius: (1 - u) * params.flou)
+        .blur(radius: (1 - u) * params.flou + flouDepart)
         .scaleEffect(1 + (params.zoom - 1) * (1 - u), anchor: .leading)
         .offset(y: (1 - u) * params.montee)
         .opacity(u)
@@ -964,10 +983,22 @@ struct GrandeCardVideo: View {
     /// La naissance de la page, 0 → 1 : la card s'allume en fondu avec une
     /// approche imperceptible (1,015 → 1). Jamais un bounce (la spec).
     var naissance: Double = 1
-    /// La marge de nuit autour de la card, et le rayon concentrique
-    /// (écran ≈ 55 pt sur les iPhone récents, moins la marge).
-    var marge: CGFloat = 10
-    var rayon: CGFloat = 45
+    /// ⚠️ **LA CARD PREND TOUTE LA LARGEUR** (verdict 22-08 : « on voit trop les
+    /// côtés noirs à droite et à gauche, elle doit prendre l'espace »).
+    ///
+    /// Ce n'est PAS un retour en arrière sur « je dois voir la bordure de la
+    /// card » : ce qui donne sa forme à la card, c'est son **arête basse et ses
+    /// coins**, et ils restent — c'est le noir SOUS elle qui la dessine, jamais
+    /// le noir sur ses flancs. Les côtés, eux, ne montraient qu'une bande de
+    /// 10 pt qui coupait la braise en deux.
+    ///
+    /// Bénéfice mesuré : la vidéo fait 1080 × 2348, soit 0,4599 — l'écran fait
+    /// 402 × 874, soit 0,4600. À marge nulle **le cadrage est exact** et on ne
+    /// rogne plus les 7,7 pt latéraux qu'on perdait de chaque côté.
+    var marge: CGFloat = 0
+    /// Les coins du haut suivent alors ceux de l'ÉCRAN, puisque la card les
+    /// touche. Un rayon concentrique n'a de sens que pour une forme encartée.
+    var rayon: CGFloat = 55
     /// LE RAYON DE L'ÉCRAN — celui que prend le bas de la card, puisqu'il
     /// touche le bord physique.
     var rayonEcran: CGFloat = 55
@@ -978,30 +1009,25 @@ struct GrandeCardVideo: View {
     /// « Bonjour » à cheval sur l'heure. Un tiroir qui s'ouvre ne déménage pas
     /// la pièce.
     var levee: CGFloat = 0
-    /// LA SCÈNE DE DÉPART, 0 → 1 : la card se détache, pivote et descend.
-    /// ⚠️ T1 est une MESURE, pas une hypothèse : la loi de la maison dit qu'un
-    /// `scaleEffect` sur un `AVPlayerLayer` SAUTE (couche UIKit, pas
-    /// d'interpolation dans la transaction SwiftUI). Reste à savoir si un
-    /// `rotation3DEffect` se comporte pareil — si oui, il faudra GELER la
-    /// vidéo en image avant de la transformer, et ce gel devient le prérequis
-    /// de toute la cinématique.
-    var scene: Double = 0
+    /// LE TEMPS DE LA SCÈNE DE DÉPART, **en secondes** (0 → `DepartCine.T`).
+    /// Ce n'était pas une durée qui manquait, c'était une horloge : `scene`
+    /// valait `-tirage/150`, donc le film durait ce que durait le geste — 0,2 s.
+    var e: Double = 0
+
+    /// L'encart bas de la safe area, LU et jamais écrit en dur — c'est lui que
+    /// la marche du padding fait perdre (voir plus bas).
+    @Environment(\.encartBas) private var encartBas
 
     var body: some View {
         Color.black
             .overlay(
-                ZStack {
-                    // L'IMAGE DE POSE, dessous : c'est le FILET du fond.
-                    // Le décodage du simulateur est logiciel et rate des
-                    // frames ; sans elle, un raté peint tout l'écran en
-                    // NOIR (« des fois glitch noir »). Avec elle, un raté
-                    // ne fait que figer l'image une frame — invisible.
-                    Image("home-fond-poster")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                    // LE GESTE TIENT LA VIDÉO dès qu'il commence.
-                    HomeFondVideo(scrub: scene > 0.004 ? scene : nil)
-                }
+                // LE FOND EN DEUX PLANS (voir DepartCine.swift et
+                // tools/home-v2/PLAN-SCENE-DEPART.md). La braise est clouée à
+                // l'arête basse et ne bouge JAMAIS ; la pilule descend, roule
+                // et grossit au-dessus d'elle. Les images de pose sont rentrées
+                // DANS chaque calque : posées dehors, en additif, elles
+                // s'ajouteraient et on verrait deux pilules.
+                FondDeuxCalques(e: e)
                 // ⚠️ LA CARD DESCEND JUSQU'AU BORD PHYSIQUE. La marge de
                 // nuit était appliquée aux QUATRE côtés : mesuré à la
                 // capture, 30 px = 10,0 pt de bande noire sous la card,
@@ -1051,13 +1077,10 @@ struct GrandeCardVideo: View {
                 // SCRUB qui porte le mouvement : lui change le CONTENU de
                 // l'image sans toucher au cadrage, donc sans jamais chasser
                 // la braise ni l'arête de la card.
-                .rotation3DEffect(.degrees(10 * scene),
-                                  axis: (x: 1, y: 0, z: 0),
-                                  anchor: .center, perspective: 0.5)
-                .rotation3DEffect(.degrees(-5 * scene),
-                                  axis: (x: 0, y: 1, z: 0),
-                                  anchor: .center, perspective: 0.5)
-                .scaleEffect(1 + 0.15 * scene)
+                // ⚠️ PLUS AUCUNE TRANSFORMATION ICI. Elles vivent maintenant sur
+                // le SEUL calque pilule, dans `FondDeuxCalques`. Posées ici
+                // elles emportaient la braise avec la pilule — c'était
+                // arithmétique, pas un réglage.
                 .clipShape(UnevenRoundedRectangle(
                     topLeadingRadius: rayon,
                     bottomLeadingRadius: rayonEcran,
@@ -1076,7 +1099,40 @@ struct GrandeCardVideo: View {
             // elle laissait le FOND NOIR de la card couvrir toute la page —
             // la bande s'ouvrait vraiment, mais derrière un rideau noir.
             // C'est la card ENTIÈRE qui s'arrête plus haut.
-            .padding(.bottom, levee)
+            //
+            // ⚠️⚠️ **ET UN PADDING SUR UNE VUE EN `ignoresSafeArea()` COÛTE
+            // L'ENCART EN PLUS, D'UN COUP.** Mesuré à trois gels :
+            //   levée   0 → arête 874 → raccourcissement   0
+            //   levée  60 → arête 780 → raccourcissement  94
+            //   levée 156 → arête 684 → raccourcissement 190
+            // Soit `levée + 34` dès que la levée quitte zéro. La cause : à zéro
+            // la card TOUCHE le bord physique, donc `ignoresSafeArea` réclame
+            // les 34 pt de l'encart bas ; au premier point de levée elle ne le
+            // touche plus et les PERD tous d'un coup. Ce n'est pas une rampe,
+            // c'est une MARCHE — et elle a coûté deux verdicts : « la card ne
+            // descend pas assez » (elle montait 50 pt trop haut) et « le texte
+            // dépasse la card » (son calage, écrit pour la cote honnête,
+            // l'amenait à 6 pt de l'arête au lieu de 40).
+            //
+            // On retire donc l'encart de la levée demandée. Il se LIT, il ne
+            // s'écrit pas en dur : 34 est une cote d'iPhone 17 Pro, pas une loi.
+            .padding(.bottom, max(levee - encartBas, 0))
+            // BANC `-cotes` : les cotes VIVANTES, écrites à l'écran. La console
+            // de simctl n'a pas rendu le stdout de l'app, et une géométrie ne se
+            // diagnostique pas par déduction : deux modèles de layout
+            // expliquaient les mêmes pixels, il fallait le chiffre.
+            // ⚠️ En DERNIER : posé avant l'overlay du contenu, il passait
+            // dessous et restait invisible.
+            .overlay(alignment: .topTrailing) {
+                if CommandLine.arguments.contains("-cotes") {
+                    Text("L \(Int(levee)) · e \(String(format: "%.2f", e))")
+                        .font(.system(size: 16, weight: .bold,
+                                      design: .monospaced))
+                        .foregroundStyle(.green)
+                        .padding(.top, 62)
+                        .padding(.trailing, 14)
+                }
+            }
     }
 }
 
@@ -1289,7 +1345,7 @@ struct SemaineStrip: View {
             // c'est le seul moyen que les trois objets se lisent comme une
             // même page et non comme trois widgets voisins.
             VStack(alignment: .leading, spacing: 3) {
-                Text("Cette semaine.")
+                Text("This week.")
                     .font(.inter(20, .semibold))
                     .foregroundStyle(.white.opacity(0.94))
                 Text(sousTitre)
@@ -1579,6 +1635,11 @@ struct HomeNuitPage: View {
     /// v1, payée deux fois).
     @State private var deja = false
 
+    /// ⚠️ Sans lui, `paused: reduceMotion` figerait la page à mi-scène. Le
+    /// chemin court est EXPLICITE : pas d'horloge, pas de rotation, pas de
+    /// rate — l'état final, sans le trajet.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// LE TIRAGE de la card géante (verdict 21-08 : « je dois pouvoir drag
     /// toute la home ») — le déplacement RENDU, déjà élastiqué.
     @State private var tirage: CGFloat = TirageBanc.fige ?? 0
@@ -1608,32 +1669,102 @@ struct HomeNuitPage: View {
     /// galet rentrait au coin en plein milieu du geste. Un axe se décide UNE
     /// fois — le tester à chaque image le ferait osciller.
     @State private var axeVertical: Bool?
-    /// LA SCÈNE DE DÉPART, 0 → 1 — **CALCULÉE, jamais stockée.**
-    ///
-    /// ⚠️ C'est le correctif de fond. Tant que c'était un `@State` que chaque
-    /// geste devait penser à remplir, il suffisait d'un chemin qui l'oubliait
-    /// pour que tout casse : taper « pull to start » ouvrait le tiroir SANS
-    /// jamais toucher la caméra — le slider n'apparaissait pas, le texte ne
-    /// descendait pas, la pilule ne bougeait pas. Dérivée du tirage et du
-    /// cran, elle ne peut plus être désynchronisée par construction, quel que
-    /// soit le geste qui l'a produite.
-    ///
-    /// Elle reste ANIMÉE : `Chambre` est `Animatable`, donc SwiftUI interpole
-    /// sa valeur image par image même si elle est recalculée d'un bloc.
-    private var scene: Double {
-        if enSeance { return 0 }
-        if tiroirOuvert { return 1 }
-        return min(max(Double(-tirage) / 150, 0), 1)
+    // MARK: - LES DEUX CURSEURS (refonte 22-08 : « tu vas trop vite »)
+    //
+    // ⚠️ LE DÉFAUT N'ÉTAIT PAS UNE DURÉE, C'ÉTAIT UNE ARCHITECTURE. `scene`
+    // valait `-tirage/150` : le pouce était le projectionniste, et un pouce
+    // parcourt 150 pt en 0,20 s. Aucune courbe ne répare ça.
+    //
+    // Deux curseurs, qui ne se croisent jamais :
+    //  · `g` — LA PRISE, collée au pouce, réversible, saturante. Elle ne fait
+    //    QUE de la lumière : le net qui décroche, la bande qui s'ouvre. La
+    //    pilule, la braise, le slider et la nouvelle phrase ne bougent pas d'un
+    //    pixel sous le doigt — c'est cette immobilité qui fait exister la chute.
+    //  · `e` — LE TEMPS, en SECONDES, parti au cran, que plus rien n'accélère.
+
+    /// L'instant du cran. `nil` = repos, ou doigt posé.
+    @State private var depart: Date?
+    /// Ce que le doigt avait déjà consommé au cran : toutes les fenêtres du
+    /// mobilier sont écrites en `max(gCran, …)`, donc le TAP produit la même
+    /// scène que le TIRAGE — la partition fait elle-même le travail du doigt.
+    @State private var gCran: Double = 0
+    /// ⚠️ VERROU DU VERRE. Le verre natif ignore `.opacity` : on le DÉMONTE. Mais
+    /// un pouce lent qui traverse le seuil le monterait et le démonterait en
+    /// boucle. Une bascule par cycle, remontage seulement quand le doigt est
+    /// revenu au repos.
+    @State private var verreMonte = true
+
+    /// LA PRISE, 0 → 1, collée au pouce.
+    private var g: Double {
+        guard !enSeance else { return 0 }
+        return min(max(Double(-tirage) / Double(Self.leveeTiroir), 0), 1)
     }
 
-    /// La hauteur à laquelle la card se tient pendant la séance — assez pour
-    /// découvrir le player en entier, jamais plus.
-    private static var leveeSeance: CGFloat { 106 }
-    /// La levée du tiroir hors séance : le slider fait 62, plus l'air.
-    private static var leveeTiroir: CGFloat { 116 }
-    /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué) : au-delà
-    /// il reste ouvert, en deçà il revient. Le plan le fixe à 90.
-    private static var seuilCran: CGFloat { 90 }
+    /// L'instant de la fermeture. Elle a sa propre horloge : rejouer la
+    /// partition à l'envers ferait de chaque sortie un événement.
+    @State private var ferme: Date?
+    /// Le `e` d'où la fermeture est partie — elle ne repart pas toujours de T.
+    @State private var eFerme: Double = DepartCine.T
+    /// ⚠️ **LE GEL, ET C'EST LE CORRECTIF DES ALLER-RETOURS** (verdict 22-08 :
+    /// « la fluidité n'est pas assez fluide si on fait des aller-retours non
+    /// stop »). Ce n'était pas une lenteur, c'était un SAUT : un doigt qui se
+    /// posait en plein film mettait `depart` à nil, et `e` retombait
+    /// instantanément sur l'état posé — de 0,6 à 1,95 en UNE image. Maintenant
+    /// le doigt GÈLE la scène là où elle en est, et la reprise repart de là.
+    @State private var eGele: Double?
+    /// Le verrou de l'armement : le cran ne se sent qu'au franchissement, pas à
+    /// chaque image passée au-delà.
+    @State private var cranSenti = false
+
+    /// LE TEMPS DE LA SCÈNE. Hors horloge il retombe sur l'état posé (0 ou T),
+    /// AU CENTIÈME : aucune image ne change à la bascule.
+    private func eNow(_ now: Date) -> Double {
+        guard !enSeance else { return 0 }
+        if let f = eGele { return f }
+        if let d = depart { return min(now.timeIntervalSince(d), DepartCine.T) }
+        if let f = ferme {
+            // La durée est PROPORTIONNELLE à ce qu'il reste à défaire : fermer
+            // depuis un quart de film ne peut pas prendre le même temps que
+            // fermer depuis la fin, sinon un aller-retour court traîne.
+            let duree = Self.dureeFermeture * max(eFerme / DepartCine.T, 0.30)
+            let p = min(now.timeIntervalSince(f) / duree, 1)
+            return eFerme * (1 - DepartCine.bezier(0.30, 0, 0.12, 1, p))
+        }
+        return tiroirOuvert ? DepartCine.T : 0
+    }
+
+    /// 1,25 s — 64 % de l'aller. À 0,72 s (37 %) la cascade se tassait et on
+    /// ne voyait plus le flou : « il faut que le retour soit aussi fluide ».
+    private static let dureeFermeture: Double = 1.25
+
+    /// ⚠️ **UNE SEULE ARÊTE POUR LES DEUX ÉTATS** (verdict 22-08 : « la card doit
+    /// descendre comme quand on ouvre le player, même niveau, et le slider est
+    /// dans cet espace »). Elle avait raison au point près : mesuré, l'état
+    /// player posait l'arête à **734** et l'état tiroir à **684** — 50 pt
+    /// d'écart, parce que les deux cotes étaient réglées séparément ET que le
+    /// padding mentait de 34 (voir `GrandeCardVideo`).
+    ///
+    /// Un seul endroit, trois contenus : le secret, le slider, le player. C'était
+    /// déjà l'intention écrite dans le code, elle n'était pas tenue.
+    /// 874 − 140 = **734**.
+    private static var leveeSeance: CGFloat { 140 }
+    /// LA LEVÉE DU TIROIR — **la même que celle de la séance**, et c'est la
+    /// consigne : le slider vit dans l'espace que le player ouvrirait.
+    ///
+    /// La bande fait 140 pt et se répartit ainsi, de haut en bas :
+    ///   34 d'air au-dessus du slider · 62 de slider · 10 jusqu'à la safe area ·
+    ///   34 de réserve d'indicateur.
+    ///
+    /// ⚠️ Les 34 du haut sont MESURÉS, pas choisis : la gerbe de poudre du
+    /// commit monte à `64,76 − h/2` = **33,8 pt** au-dessus du cadre du slider.
+    /// En dessous, la poudre blanche se poserait sur l'arête de la card.
+    /// Contrôle : 734 + 34 + 62 + 10 + 34 = 874.
+    private static var leveeTiroir: CGFloat { leveeSeance }
+    /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué). Recalé sur
+    /// le POUCE, pas sur la card : 95 avec l'élastique à 156 demande 133 pt de
+    /// pouce, contre 132 pour l'ancien couple 90/150. L'invariant du geste est
+    /// conservé.
+    private static var seuilCran: CGFloat { 95 }
     /// LE REPOS DE LA CARD : zéro hors séance, la levée pendant. Tout le
     /// tirage se mesure PAR RAPPORT À LUI — sinon la card retomberait sur
     /// le player à chaque lâcher.
@@ -1667,34 +1798,52 @@ struct HomeNuitPage: View {
             // dans une transaction SwiftUI, elle SAUTE. Le mobilier, lui,
             // s'éloigne : sans quoi le disque `.clear` de la couronne
             // GIVRERAIT l'encre nette de la phrase.
-            MenuHote(ouvert: $menuOuvert, couronne: true,
-                     onRange: { galetRange = $0 },
-                     // LE GALET S'EFFACE DÈS QUE LA BANDE PARLE. Tiroir
-                     // ouvert, la rangée du bas appartient au slider puis au
-                     // player : le galet s'encastre dans le mur, sinon il se
-                     // pose littéralement DESSUS (vu en capture).
-                     rangerDemande: enSeance || tiroirOuvert,
-                     // Le slider est dans la bande : pendant qu'il est là, le
-                     // galet ne dispute plus le doigt.
-                     verrouille: tiroirOuvert && !enSeance) {
-                // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
-                // non ! »). J'avais lu « nouvelle scène » comme « autre
-                // écran » — c'est faux : la card CHAUDE reste, c'est elle la
-                // scène. Elle zoome et descend, elle ne s'éteint pas. Une
-                // page qui devient noire perd justement ce qui la rendait
-                // vivante.
-                fondPage
-            } contenu: {
-                mobilier(geo)
-            }
-            .overlay {
-                // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
-                // se charge). Le slider l'ouvre, « Commencer » le referme et
-                // lance la séance.
-                DepartPanneauHote(
-                    ouverte: DepartEtat.shared.panneauOuvert,
-                    onCommencer: { commencer() },
-                    onFermer: { DepartEtat.shared.fermer() })
+            // ⚠️ **UNE SEULE HORLOGE, ET ELLE EST LE PRÉREQUIS DE TOUT.**
+            // `Chambre(p: e)` nourri par une `Date` ne joue RIEN : `Chambre`
+            // est `Animatable`, donc SwiftUI n'interpole que si la valeur
+            // change DANS UNE TRANSACTION. Une horloge murale n'invalide aucun
+            // body — au lâcher, la pilule descendrait seule (elle a sa propre
+            // couche) et TOUT LE RESTE GÈLERAIT.
+            //
+            // Elle est PAUSÉE au repos ET sous le doigt : là, `e` vaut 0 et la
+            // page se réévalue de toute façon parce que `tirage` est un
+            // `@State`. Coût d'horloge au repos : zéro. Elle ne tourne que
+            // pendant les 1,95 s du film.
+            //
+            // 60 Hz et pas 30 : la pointe de la chute est à 452 pt/s, soit
+            // 7,5 pt par image à 60 Hz — 15 à 30 Hz, sur un objet net de 288 pt.
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                    paused: reduceMotion
+                                        || (depart == nil && ferme == nil))) { tl in
+                let e = eNow(tl.date)
+                MenuHote(ouvert: $menuOuvert, couronne: true,
+                         onRange: { galetRange = $0 },
+                         // LE GALET S'EFFACE DÈS QUE LA BANDE PARLE. Tiroir
+                         // ouvert, la rangée du bas appartient au slider puis au
+                         // player : le galet s'encastre dans le mur, sinon il se
+                         // pose littéralement DESSUS (vu en capture).
+                         rangerDemande: enSeance || tiroirOuvert,
+                         // Le slider est dans la bande : pendant qu'il est là, le
+                         // galet ne dispute plus le doigt.
+                         verrouille: tiroirOuvert && !enSeance) {
+                    // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
+                    // non ! »). La card CHAUDE reste, c'est elle la scène.
+                    fondPage(e)
+                } contenu: {
+                    mobilierScene(geo, g, e)
+                }
+                .overlay {
+                    // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
+                    // se charge). Le slider l'ouvre, « Commencer » le referme et
+                    // lance la séance.
+                    DepartPanneauHote(
+                        ouverte: DepartEtat.shared.panneauOuvert,
+                        onCommencer: { commencer() },
+                        onFermer: { DepartEtat.shared.fermer() })
+                }
+                // L'encart bas, LU ici et transmis à la card : c'est lui que la
+                // marche du padding lui faisait perdre.
+                .environment(\.encartBas, geo.safeAreaInsets.bottom)
             }
         }
         .onAppear {
@@ -1709,6 +1858,19 @@ struct HomeNuitPage: View {
             if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
                 tiroirOuvert = true
                 tirage = reposCard
+            }
+            // `-departAuto` : LE FILM REJOUÉ EN BOUCLE. Le simulateur ne sait
+            // pas poser un doigt — et une cinématique de 1,95 s ne se juge pas
+            // sur des images fixes : on ne voit ni le rythme, ni les
+            // atterrissages décalés, ni un palier de décodage. Sans ce banc, on
+            // signe une scène qu'on n'a jamais regardée bouger.
+            // Cycle : 1,2 s de repos · le film · 1,4 s de pose · la fermeture.
+            if CommandLine.arguments.contains("-departAuto") {
+                Timer.scheduledTimer(withTimeInterval: 5.5, repeats: true) { _ in
+                    lancer(gDepart: 0)
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + DepartCine.T + 1.4) { fermer() }
+                }
             }
             if CommandLine.arguments.contains("-camTest") {
                 Timer.scheduledTimer(withTimeInterval: 2.4,
@@ -1729,7 +1891,7 @@ struct HomeNuitPage: View {
     /// LE FOND : la bande révélée tout au fond, la card par-dessus, et le
     /// geste du tirage — il couvre toute la page, et les gestes des enfants
     /// (le slider, le galet) gagnent sur lui.
-    private var fondPage: some View {
+    private func fondPage(_ e: Double) -> some View {
         ZStack(alignment: .topLeading) {
                 // LE SECRET, tout au fond : la card le couvre au repos, et
                 // le tirage vers le bas le découvre.
@@ -1750,8 +1912,14 @@ struct HomeNuitPage: View {
                             // LA LUNE — le secret d'aujourd'hui, intact
                             // pendant toute la montée. Elle s'efface quand la
                             // piste arrive : le secret DEVIENT la clé.
+                            // ⚠️ ELLE SE COUCHE, ELLE NE SE COUPE PLUS. Le
+                            // `tiroirOuvert ? 0 : 1` l'éteignait en UNE image,
+                            // et elle n'était animée que par le ressort du
+                            // lâcher — supprimé. Sa fenêtre comble en plus le
+                            // trou de la bande : elle la tient jusqu'à 0,45 s,
+                            // le slider n'entre qu'à 0,95.
                             LuneSecrete(p: luneP)
-                                .opacity(tiroirOuvert ? 0 : 1)
+                                .opacity(1 - DepartCine.sstep(0, 0.45, e))
                         }
                     }
                 }
@@ -1787,7 +1955,7 @@ struct HomeNuitPage: View {
                         // slider.
                         GrandeCardVideo(naissance: naissance,
                                         levee: max(-tirage, 0),
-                                        scene: scene)
+                                        e: e)
                     }
                 }
                 // Le tirage vers le BAS déplace toujours toute la home (« je
@@ -1799,11 +1967,10 @@ struct HomeNuitPage: View {
         .gesture(tirageGeste)
     }
 
-    /// LE MOBILIER : ce qui recule quand la couronne éclôt.
-    @ViewBuilder
-    private func mobilier(_ geo: GeometryProxy) -> some View {
-        Chambre(p: scene) { s in mobilierScene(geo, s) }
-    }
+    // ⚠️ `mobilier(_:)` et son `Chambre(p: scene)` sont MORTS. `Chambre` est
+    // `Animatable` : elle ne sert qu'à une valeur animée par une TRANSACTION.
+    // Nourrie par une horloge elle ne joue rien — c'est l'unique
+    // `TimelineView` du `body` qui livre `e` image par image, maintenant.
 
     /// LES FENÊTRES DE LA CAMÉRA. L'ordre n'est pas décoratif : **le NET part
     /// avant la géométrie**, et le noir arrive AVANT les mots — la loi de la
@@ -1812,61 +1979,151 @@ struct HomeNuitPage: View {
         min(max((s - a) / (b - a), 0), 1)
     }
 
+    /// LES TROIS LIGNES de la phrase d'arrivée. ⚠️ TROIS, mesuré à la vraie
+    /// fonte (Inter-SemiBold 30 pt sur 330 pt de large : 316 / 313 / 147). Toute
+    /// cote calculée sur deux lignes est fausse de 38 pt.
+    /// ⚠️ EN ANGLAIS, ET EN ALTERNANCE CLAIR / SOURD comme la phrase d'accueil.
+    /// C'est le même bloc qui a voyagé : il doit garder sa voix, son rythme et
+    /// son contraste, pas seulement son corps et sa gouttière.
+    /// Le sourd est plus haut ici (0,62 contre 0,42) : le bloc atterrit sur la
+    /// BRAISE, pas sur la nuit — un gris de nuit s'y ferait manger.
+    /// Seule la PREMIÈRE ligne change ; les deux autres sont la charnière de la
+    /// phrase et ne bougent pas. Tirée dans `lancer()`, jamais dans un `body`.
+    @State private var ligneUne = DepartMots.lignes[0]
+    @State private var libelleSlider = DepartMots.boutons[0]
+    private var motsArrivee: [(String, Bool)] {
+        [(ligneUne, true), ("slide to start", false), ("your session.", true)]
+    }
+
     @ViewBuilder
     private func mobilierScene(_ geo: GeometryProxy,
-                               _ s: Double) -> some View {
-        // 0,00 → 0,30 : les trois objets PERDENT LE NET. Le flou monte AVANT
-        // que l'opacité ne tombe — sinon on lit une disparition, pas une mise
-        // au point, et c'est exactement la différence entre « des éléments
-        // masqués » et « un changement de profondeur de champ ».
-        let net = fenScene(s, 0.00, 0.30)
-        // 0,05 → 0,55 : le texte du haut descend et s'éteint.
-        let haut = fenScene(s, 0.05, 0.55)
-        // 0,55 → 1,00 : le nouveau message s'écrit.
-        let mot = fenScene(s, 0.55, 1.00)
+                               _ g: Double,
+                               _ e: Double) -> some View {
+        // ── CE QUE FAIT LE DOIGT, ET RIEN D'AUTRE ────────────────────────────
+        // Le net décroche sous le pouce, et il finit tout seul au cran (ou fait
+        // tout le chemin au TAP, qui n'a pas de doigt). D'où le `max` : les deux
+        // chemins produisent la MÊME scène, la partition faisant elle-même le
+        // travail que le doigt aurait fait.
+        //
+        // ⚠️ TROIS RAYONS DIFFÉRENTS, PAS UN SEUL. Trois plans au même rayon,
+        // c'est un MASQUE ; trois rayons différents, c'est une PROFONDEUR DE
+        // CHAMP. C'est la définition numérique du verdict « des éléments
+        // masqués ». (Le 6 est un plafond DUR : un blur sur du verre natif
+        // empile deux passes.)
+        let net = max(min(g / 0.45, 1), DepartCine.sstep(0, DepartCine.netFor, e))
+        // ── CE QUE FAIT L'HORLOGE ────────────────────────────────────────────
+        let chute = DepartCine.chuteTexte(e)
+        let flou = DepartCine.sstep(DepartCine.flouAt,
+                                    DepartCine.flouAt + DepartCine.flouFor, e)
+        let mort = DepartCine.sstep(DepartCine.fadeAt,
+                                    DepartCine.fadeAt + DepartCine.fadeFor, e)
+        let slid = DepartCine.slider(e)
+        // ⚠️ **UN SEUL BLOC QUI SE TRANSFORME, PLUS DEUX QUI SE CROISENT**
+        // (verdict 22-08 : « que ça soit bien ce texte qui s'écrit / qui se
+        // transforme du blur, et pas l'autre texte qui vient du bas »).
+        //
+        // Avant : l'ancien mourait en vol et le nouveau NAISSAIT EN BAS en
+        // montant de 90 pt. On voyait donc un départ et une arrivée — deux
+        // objets — au lieu d'une métamorphose.
+        //
+        // Maintenant : les deux textes occupent **le même cadre**, partagent
+        // **le même offset**, et l'échange des mots est CACHÉ AU SOMMET DU FLOU.
+        // C'est la seule façon honnête : on ne voit pas un objet changer de
+        // mots, on le voit sortir du net et revenir au net en disant autre
+        // chose. Et à 26 pt de rayon, la différence de hauteur entre 5 lignes et
+        // 3 est invisible — c'est ce qui permet de changer le nombre de lignes
+        // sans que le bloc saute.
+        let cloche = DepartCine.clocheTexte(e)          // 0 → 26 → 0
+        let bascule = DepartCine.bascule(e)             // le fondu croisé, 0,12 s
         ZStack(alignment: .topLeading) {
-            // LA PHRASE CINÉMATIQUE, à la place du carré vert.
-            // ⚠️ MÊME CORPS, MÊME GRAISSE, MÊME GOUTTIÈRE que la phrase
-            // d'accueil (30 semibold, 24 pt de marge). C'est LE MÊME BLOC qui
-            // a voyagé et changé de mots — à 24 pt, on lisait deux textes
-            // différents au lieu d'une transformation.
-            Text("Allez Kathryn, glissez le slider pour débuter la séance.")
-                .font(.inter(30, .semibold))
-                .foregroundStyle(.white.opacity(0.94))
-                .lineSpacing(4)
+            // LA PHRASE D'ARRIVÉE. ⚠️ MÊME CORPS, MÊME GRAISSE, MÊME GOUTTIÈRE
+            // que la phrase d'accueil (30 semibold, 24 pt de marge) : c'est LE
+            // MÊME BLOC qui a voyagé et changé de mots — maintenant pour de bon.
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(motsArrivee.enumerated()), id: \.offset) { i, m in
+                    // LA POSE, LIGNE PAR LIGNE (verdict 22-08 : « plus
+                    // cinématique douce type Apple quand le texte arrive en
+                    // bas »). Le bloc revenait au net d'un seul coup — trois
+                    // lignes qui redeviennent nettes ENSEMBLE, c'est un
+                    // interrupteur. Décalées de 0,10 s, c'est une vague.
+                    // ⚠️ Le retard ne joue QUE sur la remontée au net : à la
+                    // descente les trois lignes floutent ensemble, sinon le bloc
+                    // se déchire.
+                    let r = Double(i) * 0.10
+                    let net = DepartCine.poseLigne(e, retard: r)
+                    Text(m.0)
+                        .font(.inter(30, .semibold))
+                        .foregroundStyle(.white.opacity(m.1 ? 0.94 : 0.62))
+                        // Le flou vit sur les GLYPHES. Posé sur un conteneur il
+                        // pose un voile clair uniforme aux coins carrés, que ni
+                        // masque ni blend ne rattrapent (piège payé).
+                        .blur(radius: net > 0.995 ? 0
+                              : max(cloche, DepartCine.flouMax * (1 - net)))
+                        .offset(y: 9 * (1 - net))
+                }
+            }
                 .fixedSize(horizontal: false, vertical: true)
-                // ⚠️ IL ATTERRIT EN BAS DE LA CARD, DANS LA BRAISE — pas en
-                // haut. Le texte n'est pas remplacé sur place : le bloc
-                // VOYAGE du haut jusqu'à l'arête basse de la card orange, et
-                // c'est là qu'il devient l'autre phrase. 40 pt au-dessus de
-                // l'arête : la braise l'éclaire, et il reste DANS la card.
+                .opacity(bascule * DepartCine.matiere(e))
+                // ⚠️ ELLE EST ÉPINGLÉE À LA SAFE AREA, PAS À L'ARÊTE. Sa marge
+                // au-dessus de l'arête vaut `encart − levée + padBottom` : la
+                // règle `padBottom = levée + 6` la pose à 40 pt de l'arête, et
+                // elle ne tient QUE depuis que le raccourcissement est linéaire
+                // (avant, la marche des 34 pt la ramenait à 6 pt : « le texte
+                // dépasse la card »).
                 .frame(width: geo.size.width - 72, alignment: .leading)
                 .frame(maxWidth: .infinity, maxHeight: .infinity,
                        alignment: .bottomLeading)
                 .padding(.leading, 24)
-                .padding(.bottom, 122)
-                .blur(radius: 8 * (1 - mot))
-                .opacity(mot)
-                .offset(y: 18 * (1 - mot))
+                .padding(.bottom, Self.leveeTiroir + 6)
+                // ⚠️ LE MÊME BAS QUE LA PHRASE D'ACCUEIL, À CHAQUE IMAGE. Elle
+                // est posée à sa place FINALE, donc on la recule de toute la
+                // course et on la ramène : `chute − course`. L'accueil, lui, est
+                // posé à sa place de DÉPART et avance de `chute`. Leurs bas sont
+                // alors confondus en permanence — c'est ce qui autorise le fondu
+                // croisé à n'importe quel instant sans que la dernière ligne,
+                // celle qu'on lit, ne bouge d'un pixel.
+                .offset(y: chute - DepartCine.courseTexte)
                 .allowsHitTesting(false)
 
             // LE SLIDER VIT DANS L'ESPACE NOIR SOUS LA CARD — celui que la
             // card ouvre en se raccourcissant, jamais une nappe posée sur la
             // page. C'est le MÊME espace que le player en séance : un seul
             // endroit, trois contenus, et la cohérence d'expérience avec lui.
-            SliderObsidienne(label: "Démarrer",
+            SliderObsidienne(label: libelleSlider,
                              height: 62,
                              onConfirm: { demarrer() })
-                .padding(.horizontal, 24)
+                // ⚠️ 12 ET NON 24 (verdict 22-08 : « il doit quasi faire tout
+                // l'écran, s'arrêter aux petites bordures noires »). Contrôle
+                // géométrique : le point le plus à gauche de la capsule est
+                // (12, 799) ; le coin de l'écran a son centre en (55, 819) et
+                // 55 de rayon ; la distance vaut 47,4 < 55 — la capsule reste
+                // DANS l'écran, elle ne mord pas sur l'arrondi.
+                .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity,
                        alignment: .bottom)
-                .padding(.bottom, 26)
-                .opacity(fenScene(s, 0.70, 1.00))
-                .scaleEffect(x: 0.30 + 0.70 * fenScene(s, 0.70, 1.00),
-                             anchor: .leading)
-                .allowsHitTesting(s > 0.9)
+                // 10 pt sous la safe area, et c'est l'air du HAUT qui commande :
+                // la gerbe de poudre du commit monte à 33,8 pt hors cadre, il
+                // lui faut donc 34 entre l'arête de la card (734) et le haut du
+                // slider. 734 + 34 + 62 = 830, et 840 − 830 = 10.
+                // Le slider occupe donc **768..830**.
+                .padding(.bottom, 10)
+                // ⚠️ IL MONTE, IL NE S'ESSUIE PLUS. Le `scaleEffect(x:)` était
+                // un essuie-glace : la capsule est peinte par un SDF, et un
+                // scale en x change le rayon apparent de ses calottes, la
+                // géométrie de son spéculaire et l'étalement de son ombre à
+                // CHAQUE image — on regardait la matière se déformer pendant
+                // 0,6 s. Une échelle UNIFORME de 0,93 dit la même chose en
+                // disant la vérité.
+                .opacity(DepartCine.sstep(DepartCine.slidAt,
+                                          DepartCine.slidAt + 0.53, e))
+                .scaleEffect(0.93 + 0.07 * slid, anchor: .bottom)
+                .offset(y: 30 * (1 - slid))
+                .blur(radius: slid > 0.96 ? 0 : 7 * (1 - slid))
+                .allowsHitTesting(e > 1.88)
                 Group {
-                    PhraseVue(p: arrivee, params: phrase, rasant: rasant,
+                    PhraseVue(p: arrivee, flouDepart: cloche
+                                + 3.5 * min(g / 0.37, 1),
+                              params: phrase, rasant: rasant,
                               fragments: PhraseTexte.fragments(
                                 faits: faits, prevus: prevus),
                               ecran: geo.size.width,
@@ -1880,16 +2137,37 @@ struct HomeNuitPage: View {
                         // déplace) : plus d'`ignoresSafeArea`, le padding
                         // se mesure depuis la safe area — 48 nu.
                         .padding(.top, 48)
-                        // La dissolution : passé 40 pt de tirage vers le
-                        // haut, la phrase s'efface dans la nuit.
-                        .blur(radius: dissolution + 10 * haut)
+                        // ⚠️ LE PREMIER PALIER SE JOUE SOUS LE DOIGT (0 → 3,5 pt)
+                        // et il dit « la pièce change » ; le second (→ 22) dit
+                        // « ce plan est parti ». Le flou vit sur les GLYPHES —
+                        // `PhraseVue` le pose ligne par ligne, jamais sur un
+                        // conteneur.
+                        // Le premier palier se joue SOUS LE DOIGT (0 → 3,5 pt) :
+                        // il dit « la pièce change ». Ensuite c'est LA MÊME
+                        // CLOCHE que la phrase d'arrivée — le même flou, sur ce
+                        // qui est désormais le même bloc.
+                        // ⚠️ **LA CLOCHE EST PARTIE SUR LES GLYPHES** (param
+                        // `flouDepart` de `PhraseVue`), et il ne reste ici que
+                        // la dissolution du scroll. Posée sur le CONTENEUR, elle
+                        // gonflait ses bornes de ±78 px et floutait 1,47 Mpix par
+                        // image, par-dessus la passe de masque que `PhraseVue`
+                        // pose déjà — le piège exact que ce fichier dénonce trois
+                        // lignes plus haut.
+                        .blur(radius: dissolution)
+                        // ⚠️ ELLE NE MEURT PLUS EN VOL : ELLE SE CHANGE. Son
+                        // extinction EST le fondu croisé — 0,12 s au sommet du
+                        // flou — et l'autre bloc prend sa place au même endroit,
+                        // au même instant, avec le même bas. C'était la demande :
+                        // un texte qui se transforme, pas un texte remplacé.
                         .opacity((1 - 0.70 * min(max((scroll - 40) / 120, 0), 1))
-                                 * (1 - haut))
-                        // ELLE FAIT LE MÊME TRAJET : du haut jusqu'en bas de
-                        // la card. Un bloc qui descend de 15 % se contente de
-                        // s'éteindre en glissant ; celui-ci VOYAGE, et c'est
-                        // le voyage qui raconte la transformation.
-                        .offset(y: geo.size.height * 0.560 * haut)
+                                 * (1 - bascule)
+                                 * DepartCine.matiere(e))
+                        // Elle descend de 403 pt : de sa place (bas à 291)
+                        // jusqu'à celle de la phrase d'arrivée (bas à 694). Plus
+                        // loin que la pilule (334) — le plan du devant va plus
+                        // loin que celui du fond, c'est la parallaxe, et elle est
+                        // dans le bon sens.
+                        .offset(y: chute)
                         // Le plan traîne : 14 % de retard sur le tirage —
                         // la parallaxe INTERNE de la card.
                         .offset(y: -scroll * (1 - phrase.plan))
@@ -1903,6 +2181,17 @@ struct HomeNuitPage: View {
                     // à manger, et c'est exactement ce qu'on veut voir bouger
                     // dessous. Le liseré angulaire reste : c'est par ses
                     // BORDS qu'un Liquid Glass se lit, jamais par son corps.
+                    // ⚠️ **LE VERRE EST DÉMONTÉ, PAS ÉTEINT.** `verreAt = 0.26`
+                    // était déclaré et lu NULLE PART : les deux cards gardaient
+                    // leur `glassEffect(.clear)` ET leur gaussienne de 6 pt
+                    // pendant 1,69 s des 1,95 s du film, à opacité ZÉRO. Une
+                    // capture de fond de verre natif force la résolution en
+                    // texture de tout le composite situé dessous — donc de toute
+                    // la chaîne vidéo — deux fois par image, pour peindre du
+                    // vide. Le dépôt le savait déjà (MenuCouronne garde son
+                    // disque par `if p > 0.01`), la leçon n'avait pas été portée
+                    // ici.
+                    if verreMonte {
                     CardsRangee(faites: faits, prevues: prevus,
                                 arrivee: arrivee, lisere: true, verre: true)
                         .environment(\.harmonieInter, true)
@@ -1921,9 +2210,11 @@ struct HomeNuitPage: View {
                         // la chambre noire elles répondent au doigt, et il
                         // n'atteignait tout simplement jamais leur geste.
                         .opacity(RasantHorloge.iso ? 0 : 1)
+                    }
 
                     // LA SEMAINE — le mobilier de la page, sourd au doigt
                     // tant que le tap-story n'est pas câblé (jalon flow).
+                    if verreMonte {
                     SemaineStrip(faits: faits, prevus: prevus,
                                  arrivee: arrivee,
                                  materialises: materialises,
@@ -1939,6 +2230,7 @@ struct HomeNuitPage: View {
                         .blur(radius: 6 * net)
                         .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
+                    }
 
                     // LA RANGÉE DU BAS — le slider de départ, à la place que
                     // le galet du menu lui laisse. Les cotes sont celles de
@@ -1964,15 +2256,11 @@ struct HomeNuitPage: View {
                         .onTapGesture {
                             // L'INVITE EST TAPABLE : sans ça le départ passe
                             // derrière un geste, et on ajoute une étape au
-                            // flow. Un tap lève la card tout seule — le geste
-                            // reste pour qui préfère tirer.
-                            withAnimation(.spring(response: 0.50,
-                                                  dampingFraction: 0.84)) {
-                                tiroirOuvert = true
-                                tirage = -Self.leveeTiroir
-                            }
-                            UIImpactFeedbackGenerator(style: .rigid)
-                                .impactOccurred()
+                            // flow. ⚠️ UN SEUL SITE D'APPEL avec le cran :
+                            // c'est ce qui garantit — par construction, pas par
+                            // promesse — que le tap donne LA MÊME scène que le
+                            // tirage.
+                            lancer(gDepart: 0)
                         }
                         .animation(.spring(response: 0.42,
                                            dampingFraction: 0.84),
@@ -2014,7 +2302,45 @@ struct HomeNuitPage: View {
                 // jamais bloquée net : un objet qui ne bouge PAS DU TOUT se
                 // lit comme une panne, pas comme un refus).
                 if enSeance, t > 0 { t *= 0.25 }
-                tirage = reposCard + 150 * CGFloat(tanh(Double(t) / 190))
+                // ⚠️ UN DOIGT QUI SE POSE PENDANT LE FILM LE COUPE, et la scène
+                // rebrousse vers la prise. Sans ça, la fin de la cinématique
+                // s'exécuterait par-dessus l'état que le doigt vient d'imposer.
+                // (Et c'est LA raison structurelle du curseur linéaire : on ne
+                // peut pas lire la position d'un ressort en vol, donc on ne peut
+                // pas la passer au doigt. Une cinématique en ressort est une
+                // prison, par construction.)
+                // ⚠️ LE DOIGT GÈLE LA SCÈNE, IL NE LA REMET PAS À L'ÉTAT POSÉ.
+                // Sans ce gel, poser le doigt en plein film faisait sauter `e`
+                // de sa valeur courante à 0 ou à T en UNE image — c'était ça, le
+                // « pas fluide en aller-retour ».
+                if depart != nil || ferme != nil {
+                    eGele = eNow(Date())
+                    depart = nil
+                    ferme = nil
+                }
+                // ⚠️ LE SEUIL DU GESTE EST DÉJÀ CONSOMMÉ : le premier événement
+                // porte les 14 pt de `minimumDistance`, donc la prise SAUTAIT
+                // de 14 pt à l'instant du contact.
+                let net14 = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
+                tirage = reposCard
+                    + Self.leveeTiroir * CGFloat(tanh(Double(net14) / 190))
+                // ⚠️ **LE RETOUR SUIT LE DOIGT, IL NE SE CONTENTE PAS DE GELER.**
+                // Geler avait supprimé le saut, mais geler c'est ne rien faire :
+                // on tirait vers le bas et RIEN ne bougeait jusqu'au lâcher.
+                // Tiroir ouvert, un drag descendant pilote la scène en 1:1 — la
+                // pilule remonte sous le pouce, le texte se refloute, le slider
+                // redescend — et on peut changer d'avis à mi-chemin.
+                //
+                // L'ASYMÉTRIE EST VOULUE, et c'est la règle d'Apple : une
+                // PRÉSENTATION se JOUE (l'ouverture reste un film de 1,95 s que
+                // le doigt n'accélère pas), un REJET se MANIPULE. On ne touche
+                // donc pas au pull avant.
+                // ⚠️ `self.g` : la closure du geste s'appelle déjà `g`, et elle
+                // masque le curseur. Et c'est posé APRÈS la mise à jour de
+                // `tirage`, sinon on lirait la valeur de l'image précédente.
+                if tiroirOuvert, t > 0 {
+                    eGele = DepartCine.T * self.g
+                }
                 // `-phraseScroll <pt>` FIGE la course : une dissolution ne
                 // se juge pas sans la voir à mi-chemin.
                 if PhraseHorloge.forceScroll == nil {
@@ -2025,6 +2351,19 @@ struct HomeNuitPage: View {
                 if reglageOuvert, abs(t) > 12 {
                     withAnimation(.easeOut(duration: 0.22)) {
                         reglageOuvert = false
+                    }
+                }
+                // L'ARMEMENT SE SENT SOUS LE DOIGT (verdict 22-08 : « plus
+                // haptique quand on pull »). Franchir le cran dit « tu peux
+                // lâcher » — la grammaire du slider, appliquée à la page. Une
+                // fois par franchissement, et réversible : c'est un armement,
+                // pas un commit.
+                if !enSeance {
+                    let arme = tirage < -Self.seuilCran
+                    if arme != cranSenti {
+                        cranSenti = arme
+                        UIImpactFeedbackGenerator(style: arme ? .rigid : .light)
+                            .impactOccurred(intensity: arme ? 0.55 : 0.30)
                     }
                 }
                 // La braise du secret : une seule fois par découverte.
@@ -2038,31 +2377,133 @@ struct HomeNuitPage: View {
             }
             .onEnded { _ in
                 luneSentie = false
+                cranSenti = false
                 let vertical = axeVertical == true
                 axeVertical = nil
                 // Un geste horizontal n'a jamais touché au tiroir : il n'a
                 // rien à décider en partant.
                 guard vertical else { return }
-                // LE CRAN. Hors séance, c'est ici que le tiroir décide de
-                // rester ouvert — au-delà de 90 pt il s'aimante, en deçà de
-                // 40 il se referme. Entre les deux, il garde son état :
-                // une hystérésis, sinon il claque au moindre frémissement.
-                if !enSeance {
-                    withAnimation(.spring(response: 0.46,
-                                          dampingFraction: 0.82)) {
-                        if tirage < -Self.seuilCran { tiroirOuvert = true }
-                        else if tirage > -40 { tiroirOuvert = false }
+                // LE CRAN. Au-delà de 95 pt il s'aimante, en deçà de 42 il se
+                // referme. Entre les deux il garde son état — une hystérésis,
+                // sinon il claque au moindre frémissement.
+                //
+                // ⚠️ PLUS AUCUN RESSORT SUR CE CHEMIN. Un ressort dépasse et
+                // revient : sur un plan de cette lenteur c'est le seul geste qui
+                // pourrait encore faire cheap. Et surtout, il portait TOUTE la
+                // scène en 0,46 s — c'était ça, « tu vas trop vite ».
+                if enSeance {
+                    withAnimation(.timingCurve(0.30, 0, 0.20, 1, duration: 0.42)) {
+                        tirage = reposCard
+                        if PhraseHorloge.forceScroll == nil { scroll = 0 }
                     }
+                    return
                 }
-                withAnimation(.spring(response: 0.50,
-                                      dampingFraction: 0.86)) {
-                    tirage = reposCard
-                    if PhraseHorloge.forceScroll == nil { scroll = 0 }
-                }
-                if tiroirOuvert || enSeance {
-                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                if tirage < -Self.seuilCran {
+                    lancer(gDepart: g)
+                } else if tirage > -42 || !tiroirOuvert {
+                    fermer()
+                } else {
+                    // Dans l'hystérésis, tiroir déjà ouvert : on REJOUE vers
+                    // l'état conservé au lieu de se figer là où le doigt s'est
+                    // arrêté.
+                    lancer(gDepart: g)
                 }
             }
+    }
+
+    /// LE DÉPART — **un seul site d'appel pour le cran ET pour le tap.** C'est
+    /// ce qui garantit par construction que les deux chemins donnent la même
+    /// scène : `gDepart` vaut 0 au tap, et toutes les fenêtres du mobilier sont
+    /// écrites en `max(gCran, …)`, donc la partition fait elle-même le travail
+    /// que le doigt aurait fait.
+    private func lancer(gDepart: Double) {
+        gCran = gDepart
+        // ⚠️ ON REPREND OÙ LE DOIGT A GELÉ. En reculant la date de naissance de
+        // l'horloge de ce qui est déjà joué, la reprise est CONTINUE : un
+        // aller-retour ne rejoue jamais le début du film.
+        let deja = eGele ?? 0
+        // LE TIRAGE, ICI ET NULLE PART AILLEURS. Dans un `body` il rejouerait
+        // plusieurs fois par image et le texte changerait en plein fondu.
+        // On ne re-tire pas sur une REPRISE (le film n'a pas fini) : la phrase
+        // changerait sous le doigt.
+        if deja < 0.01 {
+            let t = DepartMots.tirer()
+            ligneUne = t.ligne
+            libelleSlider = t.bouton
+        }
+        eGele = nil
+        depart = Date().addingTimeInterval(-deja)
+        tiroirOuvert = true
+        verreMonte = false
+        // LA CARD FINIT DE SE POSER. Le `withAnimation` ne porte plus la scène —
+        // il ne porte que la MÉCANIQUE du tiroir et les booléens qui en
+        // dépendent (le rangement du galet dans `MenuNappe`, la fermeture de la
+        // couronne). Sans lui, le galet se couperait en une image.
+        // La courbe démarre raccordée à la vitesse du doigt : l'élastique `tanh`
+        // a déjà décéléré, donc le raccord est payé par la géométrie du geste et
+        // pas par une rampe.
+        withAnimation(.timingCurve(0.10, 0.55, 0.36, 1,
+                                   duration: gDepart > 0 ? 0.28 : 0.58)) {
+            tirage = -Self.leveeTiroir
+            if PhraseHorloge.forceScroll == nil { scroll = 0 }
+        }
+        // L'ARMEMENT. Le `.rigid` du lâcher ET celui du tap de l'invite ont
+        // disparu : il y en avait TROIS en moins de 0,5 s, dont deux annonçaient
+        // le même événement. Le lâcher se sent par l'arrêt du mouvement.
+        UIImpactFeedbackGenerator(style: gDepart > 0 ? .rigid : .soft)
+            .impactOccurred()
+        // La fin de l'horloge. Un `asyncAfter` qui ne LIVRE aucune valeur est
+        // légal (école `MenuNappe`) ; ce qui est interdit, c'est d'échelonner
+        // des arrivées par des réveils.
+        let mien = depart
+        DispatchQueue.main.asyncAfter(deadline: .now() + DepartCine.T - deja) {
+            guard depart == mien else { return }   // le doigt a repris la main
+            depart = nil                            // `e` retombe sur T, au centième
+        }
+        // LES DEUX SECOUSSES DU FILM (verdict 22-08 : « plus haptique quand on
+        // pull et quand l'animation se fait »). Elles ne livrent AUCUNE valeur —
+        // un `asyncAfter` qui ne fait que sentir est légal, c'est échelonner des
+        // ARRIVÉES par des réveils qui est interdit.
+        // ⚠️ Et jamais depuis la closure du `TimelineView` : une évaluation de
+        // body n'a pas le droit d'avoir d'effet de bord, elle est rejouée plus
+        // d'une fois par image et on vibrerait en rafale.
+        for (quand, style) in [(1.30, UIImpactFeedbackGenerator.FeedbackStyle.soft),
+                               (1.86, .light)] where quand > deja {
+            DispatchQueue.main.asyncAfter(deadline: .now() + quand - deja) {
+                guard depart == mien else { return }
+                UIImpactFeedbackGenerator(style: style).impactOccurred()
+            }
+        }
+    }
+
+    /// LA FERMETURE — 1,25 s, soit 64 % de l'aller. Une fermeture est une
+    /// obéissance, pas une cérémonie : rejouer la partition à l'envers ferait de
+    /// chaque sortie un événement, et un événement subi dix fois par jour
+    /// devient une lenteur.
+    private func fermer() {
+        // Elle part de LÀ OÙ ON EN EST, pas de T : un aller-retour interrompu à
+        // un quart de film ne doit pas défaire une seconde et quart de scène.
+        let depuis = eGele ?? (depart != nil ? DepartCine.T : (tiroirOuvert ? DepartCine.T : 0))
+        depart = nil
+        eGele = nil
+        gCran = 0
+        verreMonte = true
+        guard depuis > 0.001 || tiroirOuvert else { return }
+        eFerme = depuis
+        ferme = Date()
+        let duree = Self.dureeFermeture * max(depuis / DepartCine.T, 0.30)
+        // …pendant que la mécanique du tiroir (et les booléens du galet) rentre
+        // sur la même durée et la même courbe.
+        withAnimation(.timingCurve(0.30, 0, 0.12, 1, duration: duree)) {
+            tiroirOuvert = false
+            tirage = 0
+            if PhraseHorloge.forceScroll == nil { scroll = 0 }
+        }
+        let mienne = ferme
+        DispatchQueue.main.asyncAfter(deadline: .now() + duree) {
+            guard ferme == mienne else { return }
+            ferme = nil
+        }
     }
 
     // MARK: - Le flow du départ
