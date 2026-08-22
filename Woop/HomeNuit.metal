@@ -210,3 +210,67 @@ static float nrfbm(float2 p) {
 
     return half4(half3(c) * color.a, color.a);
 }
+
+// MARK: - LE PANACHE DE L'INVITE
+//
+// La fumée qui monte sous « pull to start », pour dire où tirer sans un mot de
+// plus.
+//
+// ⚠️ CE N'EST PAS `knobSmoke`, ET C'EST TOUT LE SUJET. Le shader de la molette
+// ne peint que pour `r > R` autour d'un disque : il produit STRUCTURELLEMENT un
+// anneau. Sur un bouton c'est juste — le creux est occupé par le bouton. Sous
+// une invite, ça fait un cercle posé autour du chevron, et un cercle n'est pas
+// de la fumée (verdict 22-08 : « fais pas de cercle autour, je trouve ça
+// moche »).
+//
+// Un panache, lui, a une SOURCE et une DIRECTION : il naît en un point, s'évase
+// en montant, et meurt en haut. Aucune symétrie radiale nulle part.
+//
+// `src` : le foyer, en points, dans le repère de l'hôte. `souffle` :
+// l'enveloppe (0 → 1), respirée côté Swift sur deux périodes premières.
+[[ stitchable ]] half4 panacheInvite(float2 position, half4 color,
+                                     float2 size, float t, float2 src,
+                                     float souffle) {
+    if (souffle < 0.004) { return half4(0.0); }
+    float2 p = position - src;
+    // y descend à l'écran : ce qui est AU-DESSUS du foyer a un p.y négatif.
+    float montee = -p.y;
+    if (montee < 0.0) { return half4(0.0); }   // rien ne descend d'un feu
+
+    // LA COLONNE S'ÉVASE en montant, et elle ONDULE. Une colonne droite est un
+    // tuyau ; c'est la dérive latérale qui fait la fumée.
+    float ondule = sin(montee * 0.034 + t * 0.55) * (3.0 + montee * 0.055)
+                 + sin(montee * 0.017 - t * 0.31) * (2.0 + montee * 0.030);
+    float demi = 22.0 + montee * 0.40;
+    float lat = (p.x - ondule) / demi;
+    if (fabs(lat) > 1.6) { return half4(0.0); }
+
+    // LE BRUIT MONTE : on fait descendre l'échantillonnage avec le temps, donc
+    // le motif s'élève. Deux distorsions successives — un fbm simple fait des
+    // nuages, un fbm distordu fait des volutes.
+    float2 sc = float2(p.x, p.y + t * 52.0) * 0.019;
+    float q = nrfbm(sc);
+    float w = nrfbm(sc * 1.83 + 2.1 * q + float2(0.0, t * 0.08));
+    float s = nrfbm(sc * 1.31 + float2(1.9 * q, -1.5 * w));
+    // Exposant franc : des filaments à trous, jamais une nappe.
+    s = pow(clamp(s, 0.0, 1.0), 2.4);
+
+    // TROIS ENVELOPPES. Le pied : la fumée NAÎT, elle n'est pas posée en bloc
+    // sur le chevron. Le sommet : elle se dilue. Les flancs : une gaussienne,
+    // jamais un bord.
+    float pied = smoothstep(0.0, 30.0, montee);
+    float haut = 1.0 - smoothstep(64.0, 186.0, montee);
+    float flanc = exp(-lat * lat * 2.1);
+    float amp = souffle * s * pied * haut * flanc;
+
+    float3 fumee = float3(0.87, 0.89, 0.95) * amp;
+
+    // Émissif prémultiplié + fondu d'hôte : la lumière porte sa couverture, et
+    // rien ne meurt contre le bord du rectangle.
+    float2 toEdge = min(position, size - position);
+    float hostFade = smoothstep(0.0, 14.0, min(toEdge.x, toEdge.y));
+    float a = clamp(max(fumee.r, max(fumee.g, fumee.b)) * 2.4, 0.0, 1.0)
+            * hostFade;
+    float3 c = clamp(fumee, 0.0, 1.0) * hostFade;
+    return half4(half3(min(c, float3(a))), half(a)) * color.a;
+}

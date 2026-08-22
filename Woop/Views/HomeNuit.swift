@@ -2293,6 +2293,26 @@ struct HomeNuitPage: View {
                     // libellé décentré de 36 pt se lit comme une erreur. Elle
                     // n'a aucune surface, le galet peut donc la chevaucher
                     // sans dommage — et il gagne le doigt, il est au-dessus.
+                    // LA FUMÉE D'INVITE — elle dit « c'est ici qu'on tire »
+                    // sans un mot de plus. Même matière que le galet et les
+                    // sections (`knobSmoke`), mais un régime OPPOSÉ : les
+                    // autres sont gestuelles et n'existent que sous le doigt,
+                    // celle-ci est PERMANENTE et respire.
+                    // ⚠️ MONTÉE, PAS SEULEMENT TRANSPARENTE. C'est la seule
+                    // bouffée permanente de l'app : une `TimelineView` à 30 Hz
+                    // et une passe de shader sur 220 × 220 @3x, soit 13 Mpix/s
+                    // de remplissage TANT QU'ELLE EXISTE. Une `.opacity(0)` ne
+                    // l'arrêterait pas — le sous-arbre continuerait de battre
+                    // pendant toute la scène de départ et toute la séance, pour
+                    // peindre du vide. (C'est exactement la leçon du `rate`
+                    // resté à 2,2 et du verre jamais démonté.)
+                    if !enSeance, net < 0.02, arrivee > 0.4 {
+                        FumeeInvite()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity,
+                                   alignment: .bottom)
+                            .opacity(arrivee)
+                            .allowsHitTesting(false)
+                    }
                     InviteTirage(actif: !tiroirOuvert)
                         .padding(.leading, 24)
                         .padding(.trailing, 24)
@@ -3045,6 +3065,69 @@ struct GaletCuisson: View {
 ///   • **L'anglais** : les micro-libellés de la home sont déjà en anglais
 ///     (« sessions this week », « weekly volume »). Le français est réservé
 ///     aux actions.
+/// LA FUMÉE SOUS « PULL TO START » — la seule bouffée PERMANENTE de l'app, et
+/// c'est un choix : les deux autres (le galet, les sections) sont gestuelles et
+/// n'existent que sous le doigt. Celle-ci a un travail à faire — dire où tirer.
+///
+/// ⚠️ ELLE RESPIRE SUR DEUX PÉRIODES INCOMMENSURABLES (7,3 s et 11,7 s). Un
+/// seul sinus se reconnaît en trois cycles et devient un clignotant ; deux
+/// périodes premières entre elles ne repassent jamais par le même état. C'est
+/// la loi déjà payée sur les liserés des cards et sur la caméra du panneau de
+/// départ.
+///
+/// ⚠️ ET SON AMPLITUDE EST BASSE (0,06 → 0,32 de bouffée). Une invite qui se
+/// voit est une alarme. Celle-ci doit se remarquer au bout de deux secondes,
+/// pas à la première image.
+///
+/// ⚠️ L'ÂGE EST FIGÉ À 1,2 s, pas croissant. Il pilote deux choses dans le
+/// shader : la glisse radiale du bruit, et l'onde du toucher qui meurt en
+/// `exp(-age/0,32)`. Figé là, l'onde est éteinte (2 %) — une invite ne « tape »
+/// pas — et la glisse reste constante pendant que la dérive temporelle `t`
+/// fait vivre les volutes. Laissé libre, il grandirait sans borne et les
+/// volutes dégénéreraient en rayons droits.
+private struct FumeeInvite: View {
+    /// La boîte du panache : le foyer est en BAS, la fumée occupe tout le
+    /// dessus. Rien de carré ni de centré — un panache a un pied.
+    private static let larg: CGFloat = 210
+    private static let haut: CGFloat = 200
+    /// Le foyer, dans la boîte : sur le chevron, à 18 pt du bas.
+    private static let foyerY: CGFloat = 182
+    /// De combien la boîte descend sous la ligne du bloc d'invite, pour que le
+    /// pied du panache tombe sur le chevron et pas sur les mots.
+    private static let assise: CGFloat = 96
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if !reduceMotion {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900)
+                // ⚠️ DEUX PÉRIODES INCOMMENSURABLES (7,3 s et 11,7 s). Un seul
+                // sinus se reconnaît en trois cycles et devient un clignotant ;
+                // deux périodes premières entre elles ne repassent jamais par le
+                // même état. La loi des liserés des cards.
+                // ⚠️ Et l'amplitude est HAUTE : cette invite est posée sur la
+                // BRAISE, la zone la plus claire de l'écran. À 0,19 son alpha
+                // tombait à 7 % et la fumée était rigoureusement invisible —
+                // mesuré. Sur du noir la même valeur aurait suffi.
+                let souffle = 0.52 + 0.26 * sin(t * 2 * .pi / 7.3)
+                    + 0.14 * sin(t * 2 * .pi / 11.7 + 1.7)
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.panacheInvite(
+                        .float2(Float(Self.larg), Float(Self.haut)),
+                        .float(t),
+                        .float2(Float(Self.larg / 2), Float(Self.foyerY)),
+                        .float(Float(max(souffle, 0)))
+                    ))
+                    .frame(width: Self.larg, height: Self.haut)
+                    .offset(y: Self.haut - Self.assise)
+            }
+        }
+    }
+}
+
 struct InviteTirage: View {
     /// L'invite respire tant qu'on n'a pas compris. Une fois le tiroir
     /// ouvert, elle se tait : une invite qui continue après coup est du bruit.
