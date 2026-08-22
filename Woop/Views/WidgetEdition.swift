@@ -580,10 +580,12 @@ struct VitrineHote: View {
             CardHiitPeak(vitesse: hiit.vitesse,
                          repetitions: hiit.repetitions,
                          pic: hiit.pic, picLargeur: hiit.picLargeur,
+                         tours: hiit.tours,
                          chambreLigne: hiit.chambreLigne, p: 1,
                          lisere: true, verre: actif, interaction: mode)
         case .peakEffort:
             CardPeakEffort(titre: peak.titre, valeur: peak.valeur,
+                           delta: peak.delta, precedent: peak.precedent,
                            chambreHaut: peak.chambreHaut,
                            chambreBas: peak.chambreBas,
                            nouveau: peak.nouveau, p: 1,

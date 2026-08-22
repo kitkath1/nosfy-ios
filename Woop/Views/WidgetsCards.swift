@@ -46,6 +46,45 @@ enum CardTon {
     static let railHaut = Color(white: 0.200)
     static let railBas = Color(white: 0.110)
     static let filet = Color(white: 0.155)
+
+    // MARK: LA CHALEUR PARTAGÉE (plan §13, verdict « orange très pâle »)
+    //
+    // Rien ne se peint « ambre » : tout se peint « à telle CHALEUR ». La
+    // rampe est CELLE de la flamme (`FlammePalette`, FlammeJauge.swift) —
+    // braise → cœur → flamme → or → blanc chauffé, cinq arrêts qui ne
+    // perdent JAMAIS leur saturation. L'interpolation ne se fait qu'ENTRE
+    // arrêts adjacents de la rampe : un chemin droit vers un gris ou un
+    // crème fabrique du brun (loi payée au J1 de la home).
+    static let rampe: [(Double, Double, Double)] = [
+        (1.00, 0.22, 0.02),   // braise
+        (1.00, 0.40, 0.04),   // cœur
+        (1.00, 0.55, 0.10),   // flamme
+        (1.00, 0.78, 0.38),   // or
+        (1.00, 0.94, 0.80),   // blanc chauffé
+    ]
+
+    /// 0 = braise, 1 = blanc chauffé.
+    static func chaleur(_ t: Double) -> Color {
+        let x = min(max(t, 0), 1) * 4
+        let i = min(Int(x), 3)
+        let f = x - Double(i)
+        let a = rampe[i], b = rampe[i + 1]
+        return Color(red: a.0 + (b.0 - a.0) * f,
+                     green: a.1 + (b.1 - a.1) * f,
+                     blue: a.2 + (b.2 - a.2) * f)
+    }
+
+    /// L'encre CHAUDE des gains et des accents — or en tête, flamme au
+    /// pied (l'école `encreTitre`, en chaleur). Remplace les aplats.
+    static var encreChaude: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: chaleur(0.80), location: 0.00),
+                .init(color: chaleur(0.55), location: 0.62),
+                .init(color: chaleur(0.42), location: 1.00),
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
 }
 
 // MARK: - Les traînées de lumière
@@ -358,6 +397,9 @@ private struct CardBarre: View {
     var H: CGFloat
     /// 0 → 1, la pousse de la barre à l'arrivée.
     var p: Double
+    /// 0 → 1, le BRAISILLEMENT du sommet (la pointe de la mini-flamme
+    /// frémit — piloté par le parent, une phase par pile).
+    var vive: Double = 0
 
     /// Mesurés : barre 5,4 % de la largeur, segment 2,7 % de la hauteur,
     /// écart 0,16 %.
@@ -385,25 +427,33 @@ private struct CardBarre: View {
                 .frame(width: larg, height: hRail)
 
             VStack(spacing: ecart) {
-                ForEach(0..<max(0, n), id: \.self) { _ in
+                ForEach(0..<max(0, n), id: \.self) { i in
+                    // ⚠️ CHAQUE PILE EST UNE MINI-FLAMME (plan §13 — le
+                    // verdict « orange très pâle ») : le segment du PIED en
+                    // blanc chauffé, la montée or → flamme → braise vers le
+                    // sommet — la grammaire exacte de la flamme-jauge
+                    // (blanc au pied, braise à la pointe), en colonne.
+                    // L'ancien dégradé horizontal 3 tons de la référence
+                    // meurt : il vivait hors de la rampe de la maison.
+                    // ⚠️ `i = 0` est le SOMMET du VStack : la fraction
+                    // depuis le pied vaut (n−1−i)/(n−1) — et c'est le PIED
+                    // qui est blanc chauffé, la pointe qui est braise (la
+                    // grammaire de la flamme ; le premier jet l'avait
+                    // inversée : du blanc au sommet = de la crème glacée).
+                    let duPied = Double(n - 1 - i) / Double(max(n - 1, 1))
+                    // La POINTE frémit : la chaleur du sommet monte d'un
+                    // souffle avec `vive` — une braise, pas un clignotant.
+                    let t = (n == 1 ? 0.86 : 0.90 - 0.72 * duPied)
+                        + (i == 0 ? 0.08 * vive : 0)
                     RoundedRectangle(cornerRadius: larg * 0.121,
                                      style: .continuous)
-                        // ⚠️ Le dégradé d'un segment est HORIZONTAL, pas
-                        // vertical : mesuré #EEA557 à gauche, #E29B58 au
-                        // milieu, #FFC582 à droite — un cylindre éclairé
-                        // par la droite, et non une touche laquée.
                         .fill(LinearGradient(
-                            stops: [
-                                .init(color: Color(red: 0.93, green: 0.65,
-                                                   blue: 0.34), location: 0.00),
-                                .init(color: Color(red: 0.89, green: 0.61,
-                                                   blue: 0.35), location: 0.48),
-                                .init(color: Color(red: 1.00, green: 0.77,
-                                                   blue: 0.51), location: 1.00),
-                            ],
-                            startPoint: .leading, endPoint: .trailing))
+                            colors: [CardTon.chaleur(max(t - 0.07, 0)),
+                                     CardTon.chaleur(min(t + 0.07, 1))],
+                            startPoint: .top, endPoint: .bottom))
                         .overlay(alignment: .top) {
-                            Capsule().fill(Color.white.opacity(0.34))
+                            Capsule().fill(Color.white.opacity(
+                                0.34 + (i == 0 ? 0.14 * vive : 0)))
                                 .frame(height: 0.7)
                                 .padding(.horizontal, larg * 0.16)
                                 .padding(.top, 0.7)
@@ -620,6 +670,7 @@ struct CardTouche: ViewModifier {
 
 struct CardVolume: View {
     @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var valeur: String = "8.4"
     var unite: String = "kg"
     var legende: String = "Weekly volume"
@@ -713,19 +764,27 @@ struct CardVolume: View {
                     let h = 0.300 * H * CGFloat(totaux[k] / hautMax)
                     Capsule()
                         .fill(rang == 0
-                              ? CardTon.ambreVif
-                              : Color(white: 0.42 - 0.06 * Double(rang)))
+                              ? LinearGradient(
+                                    colors: [CardTon.chaleur(0.88),
+                                             CardTon.chaleur(0.60),
+                                             CardTon.chaleur(0.34)],
+                                    startPoint: .bottom, endPoint: .top)
+                              : LinearGradient(
+                                    colors: [Color(white: 0.42
+                                                   - 0.06 * Double(rang))],
+                                    startPoint: .top, endPoint: .bottom))
                         .frame(width: 0.095 * W, height: max(h * CGFloat(a), 1))
                         .position(x: x0 + CGFloat(k) * pas,
                                   y: sol - h * CGFloat(a) / 2)
                         .shadow(color: rang == 0
-                                ? CardTon.ambreVif.opacity(0.45 * a) : .clear,
+                                ? CardTon.chaleur(0.45).opacity(0.45 * a)
+                                : .clear,
                                 radius: 0.030 * W)
                 }
 
                 Text("this week")
                     .font(.system(size: 0.0327 * H, weight: .regular))
-                    .foregroundStyle(CardTon.ambreVif.opacity(0.85))
+                    .foregroundStyle(CardTon.encreChaude)
                     .opacity(f)
                     .position(x: x0 + 3 * pas, y: sol + 0.055 * H)
 
@@ -809,15 +868,34 @@ struct CardVolume: View {
                 // ── LE GRAPHE. Base des rails à 63,5 % — et pas 69,2 : ce
                 // que je prenais pour le pied des barres était la LETTRE du
                 // jour, qui vit dessous.
-                ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
-                    let cx = (0.156 + 0.1115 * Double(i)) * W
-                    CardBarre(jour: j, W: W, H: H, p: p)
-                        .position(x: cx,
-                                  y: 0.635 * H - CGFloat(j.rail) * H * p / 2)
-                    Text(j.lettre)
-                        .font(.system(size: 0.0327 * H, weight: .regular))
-                        .foregroundStyle(CardTon.encreJour)
-                        .position(x: cx, y: 0.6857 * H)
+                // ⚠️ LE BRAISILLEMENT : chaque pile a SA période (elles ne
+                // battent jamais ensemble), 12 Hz suffisent, l'horloge dort
+                // sous Reduce Motion — et LE CADRE EST FORCÉ (le piège de
+                // la TimelineView qui se dimensionne sur son contenu).
+                TimelineView(.animation(minimumInterval: 1.0 / 12,
+                                        paused: reduceMotion)) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
+                            let cx = (0.156 + 0.1115 * Double(i)) * W
+                            let per = 3.1 + 1.9
+                                * (Double((i &* 41) % 100) / 100)
+                            let vive = reduceMotion ? 0
+                                : 0.5 + 0.5 * sin(t * 2 * .pi / per
+                                                  + Double(i) * 2.1)
+                            CardBarre(jour: j, W: W, H: H, p: p,
+                                      vive: vive * vive)
+                                .position(x: cx,
+                                          y: 0.635 * H
+                                            - CGFloat(j.rail) * H * p / 2)
+                            Text(j.lettre)
+                                .font(.system(size: 0.0327 * H,
+                                              weight: .regular))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: cx, y: 0.6857 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
                 }
 
                 // ── LE FILET : de 12,4 % à 86,9 %, à 75,3 % de hauteur.
@@ -832,7 +910,7 @@ struct CardVolume: View {
                 // laisserait un vide à droite qui se lirait comme un oubli.
                 Text(gain)
                     .font(.system(size: 0.0606 * H, weight: .regular))
-                    .foregroundStyle(CardTon.ambreVif)
+                    .foregroundStyle(CardTon.encreChaude)
                     .position(x: 0.500 * W, y: 0.808 * H)
                 Text(gainLegende)
                     .font(.system(size: 0.0350 * H, weight: .regular))
@@ -854,6 +932,7 @@ struct CardVolume: View {
 
 struct CardSeances: View {
     @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var faites: Int = 4
     var prevues: Int = 5
     var legende: String = "Sessions this week"
@@ -969,7 +1048,7 @@ struct CardSeances: View {
         let sc = fait ? br * br : 0
         ZStack {
             Circle()
-                .fill(fait ? CardTon.ambreVif : Color(white: 0.26))
+                .fill(fait ? CardTon.chaleur(0.58) : Color(white: 0.26))
             if fait {
                 Circle()
                     .fill(Color.white)
@@ -1018,30 +1097,59 @@ struct CardSeances: View {
                     .foregroundStyle(CardTon.encreDouce)
                     .modifier(AncrageGauche(x: marge, y: 0.277 * H))
 
-                // Les sept pastilles
-                ForEach(0..<jours.count, id: \.self) { i in
-                    let on = Double(i) < Double(faites) * p
-                    Circle()
-                        .fill(on
-                              ? LinearGradient(colors: [CardTon.ambreVif,
-                                                        CardTon.ambre],
-                                               startPoint: .top,
-                                               endPoint: .bottom)
-                              : LinearGradient(colors: [Color(white: 0.20),
-                                                        Color(white: 0.135)],
-                                               startPoint: .top,
-                                               endPoint: .bottom))
-                        .frame(width: 0.052 * W, height: 0.052 * W)
-                        .shadow(color: on ? CardTon.ambre.opacity(0.55)
-                                          : .clear,
-                                radius: 0.030 * W)
-                        .position(x: (0.156 + 0.1115 * Double(i)) * W,
-                                  y: 0.578 * H)
-                    Text(jours[i])
-                        .font(.system(size: 0.046 * H, weight: .medium))
-                        .foregroundStyle(CardTon.encreJour)
-                        .position(x: (0.156 + 0.1115 * Double(i)) * W,
-                                  y: 0.680 * H)
+                // LES SEPT PERLES DE FLAMME (plan §13) : cœur blanc chauffé
+                // décentré haut, corps or → flamme, extinction braise au
+                // bord — et LA DERNIÈRE FAITE RESPIRE (l'école des cinq
+                // points : « la plus récente », pas une décoration).
+                // ⚠️ 12 Hz, l'horloge dort sous Reduce Motion, et LE CADRE
+                // EST FORCÉ (le piège de la TimelineView).
+                TimelineView(.animation(minimumInterval: 1.0 / 12,
+                                        paused: reduceMotion)) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(0..<jours.count, id: \.self) { i in
+                            let on = Double(i) < Double(faites) * p
+                            let derniere = on && i == faites - 1
+                            let s = derniere && !reduceMotion
+                                ? 0.5 + 0.5 * sin(t * 2 * .pi / 4.7) : 0
+                            Circle()
+                                .fill(on
+                                      ? AnyShapeStyle(RadialGradient(
+                                            stops: [
+                                                .init(color: CardTon.chaleur(
+                                                    0.92 + 0.08 * s),
+                                                    location: 0.00),
+                                                .init(color: CardTon.chaleur(0.60),
+                                                    location: 0.55),
+                                                .init(color: CardTon.chaleur(0.26),
+                                                    location: 1.00),
+                                            ],
+                                            center: UnitPoint(x: 0.38, y: 0.30),
+                                            startRadius: 0,
+                                            endRadius: 0.046 * W))
+                                      : AnyShapeStyle(LinearGradient(
+                                            colors: [Color(white: 0.20),
+                                                     Color(white: 0.135)],
+                                            startPoint: .top,
+                                            endPoint: .bottom)))
+                                .frame(width: 0.052 * W, height: 0.052 * W)
+                                .scaleEffect(1 + 0.06 * s)
+                                .shadow(color: on
+                                        ? CardTon.chaleur(0.38)
+                                            .opacity(0.55 + 0.20 * s)
+                                        : .clear,
+                                        radius: 0.030 * W)
+                                .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                                          y: 0.578 * H)
+                            Text(jours[i])
+                                .font(.system(size: 0.046 * H,
+                                              weight: .medium))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                                          y: 0.680 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
                 }
 
                 Rectangle()
@@ -1053,8 +1161,9 @@ struct CardSeances: View {
 
                 HStack(spacing: 0.038 * W) {
                     ZStack {
-                        Circle().strokeBorder(CardTon.ambreVif, lineWidth: 1.2)
-                        Circle().fill(CardTon.ambreVif)
+                        Circle().strokeBorder(CardTon.encreChaude,
+                                              lineWidth: 1.2)
+                        Circle().fill(CardTon.chaleur(0.72))
                             .frame(width: 0.016 * W, height: 0.016 * W)
                     }
                     .frame(width: 0.058 * W, height: 0.058 * W)
@@ -1080,6 +1189,7 @@ struct CardSeances: View {
 /// continuité.
 struct CardHiitPeak: View {
     @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var vitesse: String = "17.0"
     var unite: String = "km/h"
     var legende: String = "Top interval this week"
@@ -1088,6 +1198,8 @@ struct CardHiitPeak: View {
     /// La position du pic le long de la ligne (0 → 1) et sa largeur.
     var pic: Double = 0.62
     var picLargeur: Double = 0.26
+    /// Les tours du segment (le « × 4 ») — la chambre les DESSINE.
+    var tours: Int = 4
     var chambreLigne: String = "17.0 km/h · 40 s · ×4"
     var chambreSous: String = "this week's peak"
     var p: Double = 1
@@ -1118,22 +1230,68 @@ struct CardHiitPeak: View {
                              chambre: $chambre, doigt: $doigt))
     }
 
-    /// L'aperçu de la chambre : la ligne du pic, en toutes lettres.
+    /// LA CHAMBRE-CYCLE (plan §13.4) : le tap ne pose plus une ligne de
+    /// texte — il révèle LE SEGMENT LUI-MÊME. Les tours s'allument en
+    /// cascade : on VOIT « × 4 » au lieu de le lire.
     @ViewBuilder
     private func interieur(_ f: Double) -> some View {
         if f > 0.001 {
             GeometryReader { g in
                 let W = g.size.width, H = g.size.height
-                Text(chambreLigne)
-                    .font(.system(size: 0.0560 * H, weight: .regular))
-                    .foregroundStyle(LinearGradient(
-                        colors: [Color(white: 1.00), Color(white: 0.863)],
-                        startPoint: .top, endPoint: .bottom))
-                    .position(x: 0.500 * W, y: 0.470 * H)
+                // Le héros.
+                HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                    Text(vitesse)
+                        .font(interUnifie
+                              ? .inter(0.1300 * H, .semibold)
+                              : .system(size: 0.1300 * H, weight: .regular))
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color(white: 1.00), Color(white: 0.863)],
+                            startPoint: .top, endPoint: .bottom))
+                    Text(unite)
+                        .font(.system(size: 0.0600 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .position(x: 0.500 * W, y: 0.300 * H)
+                .opacity(min(f * 1.6, 1))
+
+                // LE CYCLE, dessiné : effort en chaleur pleine, récup en
+                // trame froide, `tours` fois — cascade de 120 ms par tour.
+                let bw = 0.640 * W
+                let x0 = 0.500 * W - bw / 2
+                let tourW = bw / CGFloat(max(tours, 1))
+                ForEach(0..<max(tours, 1), id: \.self) { k in
+                    let dep = 0.28 + 0.12 * Double(k)
+                    let ak = min(max((f - dep) / 0.45, 0), 1)
+                    let xk = x0 + CGFloat(k) * tourW
+                    Capsule()
+                        .fill(LinearGradient(
+                            colors: [CardTon.chaleur(0.88),
+                                     CardTon.chaleur(0.48)],
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: tourW * 0.56, height: 0.032 * H)
+                        .shadow(color: CardTon.chaleur(0.35)
+                            .opacity(0.45 * ak), radius: 0.020 * W)
+                        .position(x: xk + tourW * 0.28, y: 0.520 * H)
+                        .opacity(ak)
+                        .offset(y: 4 * (1 - ak))
+                    Capsule()
+                        .fill(Color(white: 0.24))
+                        .frame(width: tourW * 0.26, height: 0.020 * H)
+                        .position(x: xk + tourW * 0.56 + tourW * 0.19,
+                                  y: 0.520 * H)
+                        .opacity(ak * 0.85)
+                }
+
+                Text(repetitions)
+                    .font(.system(size: 0.0500 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encre)
+                    .position(x: 0.500 * W, y: 0.660 * H)
+                    .opacity(min(max((f - 0.45) / 0.55, 0), 1))
                 Text(chambreSous)
                     .font(.system(size: 0.0350 * H, weight: .regular))
                     .foregroundStyle(CardTon.encreSourde)
-                    .position(x: 0.500 * W, y: 0.560 * H)
+                    .position(x: 0.500 * W, y: 0.730 * H)
+                    .opacity(min(max((f - 0.55) / 0.45, 0), 1))
             }
             .opacity(f)
         }
@@ -1164,46 +1322,88 @@ struct CardHiitPeak: View {
                 .foregroundStyle(CardTon.encreDouce)
                 .modifier(AncrageGauche(x: marge, y: 0.277 * H))
 
-            // ── LA LIGNE DE VITESSE. 25 segments, la même famille laquée
-            // que `CardBarre`, couchée. Le pic est une ENVELOPPE continue
-            // (hauteur) et un matériau discret (froid OU chaud) : la
-            // continuité vient de la géométrie, jamais d'un mélange gris →
-            // ambre qui fabriquerait du brun.
-            let n = 25
-            let y = 0.575 * H
-            ForEach(0..<n, id: \.self) { i in
-                let u = Double(i) / Double(n - 1)
-                let ecart = (u - pic) / (picLargeur * 0.55)
-                let e = exp(-ecart * ecart)
-                let chaud = e > 0.12
-                let t = chaud ? (e - 0.12) / 0.88 : 0
-                let a = min(max((p - 0.4 * u) / 0.6, 0), 1)
-                let h = H * (0.026 + 0.062 * e) * a
-                Capsule()
-                    .fill(chaud
-                          ? Color(red: 1.00,
-                                  green: 0.62 + 0.37 * t,
-                                  blue: 0.28 + 0.68 * t * t)
-                          : Color(white: 0.26))
-                    .frame(width: 0.0135 * W, height: max(h, 1))
-                    .shadow(color: chaud
-                            ? Color(red: 1.00, green: 0.80, blue: 0.50)
-                                .opacity(0.55 * e * a)
-                            : .clear,
-                            radius: 0.020 * W)
-                    .position(x: (0.129 + 0.742 * u) * W, y: y)
-                    .opacity(Double(a) * (chaud ? 1 : 0.85))
+            // ── LA LIGNE DE VITESSE, en SOIE : 34 segments fins (1,4 pt) —
+            // une trame, pas des tirets. Le pic prend la rampe ENTIÈRE
+            // (braise aux épaules → flamme → or → pointe blanc chauffé) et
+            // son sommet SCINTILLE (périodes incommensurables, l'école des
+            // points du mois). ⚠️ 12 Hz, l'horloge dort sous Reduce Motion
+            // et quand la chambre couvre ; LE CADRE EST FORCÉ.
+            TimelineView(.animation(minimumInterval: 1.0 / 12,
+                                    paused: reduceMotion || chambre > 0.5)) { tl in
+                let tps = tl.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    // ── LE FOYER (plan §13.4) : sous le pic, une lueur de
+                    // braise très basse qui RESPIRE (9,4 s) — le noir n'est
+                    // plus vide, il PORTE la chaleur. En canaux, ancré au
+                    // pic, jamais un voile.
+                    let souffleFoyer = reduceMotion ? 0.5
+                        : 0.5 + 0.5 * sin(tps * 2 * .pi / 9.4)
+                    Ellipse()
+                        .fill(RadialGradient(
+                            colors: [CardTon.chaleur(0.28)
+                                        .opacity(0.085 + 0.05 * souffleFoyer),
+                                     .clear],
+                            center: .center,
+                            startRadius: 0, endRadius: 0.30 * W))
+                        .frame(width: 0.62 * W, height: 0.36 * W)
+                        .position(x: (0.129 + 0.742 * pic) * W,
+                                  y: 0.590 * H)
+                        .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+
+                    let n = 34
+                    ForEach(0..<n, id: \.self) { i in
+                        let u = Double(i) / Double(n - 1)
+                        let ecart = (u - pic) / (picLargeur * 0.55)
+                        let e = exp(-ecart * ecart)
+                        let chaud = e > 0.10
+                        let per = 2.7 + 1.9 * (Double((i &* 37) % 100) / 100)
+                        let sc = chaud && !reduceMotion
+                            ? 0.5 + 0.5 * sin(tps * 2 * .pi / per
+                                              + Double(i) * 1.6) : 0
+                        let t = chaud
+                            ? (0.12 + 0.86 * (e - 0.10) / 0.90)
+                                + 0.06 * sc * e : 0
+                        let a = min(max((p - 0.4 * u) / 0.6, 0), 1)
+                        let h = H * (0.020 + 0.070 * e) * a
+                        Capsule()
+                            .fill(chaud
+                                  ? AnyShapeStyle(LinearGradient(
+                                        colors: [CardTon.chaleur(
+                                                    min(t + 0.10, 1)),
+                                                 CardTon.chaleur(
+                                                    max(t - 0.14, 0))],
+                                        startPoint: .top,
+                                        endPoint: .bottom))
+                                  : AnyShapeStyle(Color(white: 0.24)))
+                            .frame(width: 0.0082 * W, height: max(h, 1))
+                            .shadow(color: chaud
+                                    ? CardTon.chaleur(0.32)
+                                        .opacity((0.28 + 0.34 * e)
+                                                 * (0.75 + 0.25 * sc) * a)
+                                    : .clear,
+                                    radius: 0.016 * W)
+                            .position(x: (0.129 + 0.742 * u) * W,
+                                      y: 0.575 * H)
+                            .opacity(Double(a) * (chaud ? 1 : 0.80))
+                    }
+                }
+                .frame(width: W, height: H)
             }
 
-            // ── LE PIED — la colonne centrée des cards voisines.
+            // ── LE FILET de la maison, puis le pied en colonne centrée.
+            Rectangle()
+                .fill(Color.white.opacity(0.090))
+                .frame(width: 0.7196 * W, height: 0.0033 * W)
+                .position(x: 0.4964 * W, y: 0.7567 * H)
+
             Text(repetitions)
                 .font(.system(size: 0.0606 * H, weight: .regular))
                 .foregroundStyle(CardTon.encre)
-                .position(x: 0.500 * W, y: 0.808 * H)
+                .position(x: 0.500 * W, y: 0.818 * H)
             Text(repsLegende)
                 .font(.system(size: 0.0350 * H, weight: .regular))
                 .foregroundStyle(CardTon.encreSourde)
-                .position(x: 0.500 * W, y: 0.861 * H)
+                .position(x: 0.500 * W, y: 0.872 * H)
         }
     }
 }
@@ -1220,7 +1420,11 @@ struct CardPeakEffort: View {
     @Environment(\.harmonieInter) private var interUnifie
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var titre: String = "Hip Thrust"
-    var valeur: String = "+10 kg"
+    var valeur: String = "60 kg"
+    /// L'ascension : le delta (« +10 ») et le record précédent (« 55 »).
+    /// `nil` = pas de record cette semaine, pas de marche à dessiner.
+    var delta: String? = "+10"
+    var precedent: String? = "55"
     var contexte: String = "This week's highlight"
     var chambreHaut: String = "60 kg × 8"
     var chambreBas: String = "previous best · 55 kg"
@@ -1254,21 +1458,49 @@ struct CardPeakEffort: View {
                              chambre: $chambre, doigt: $doigt))
     }
 
+    /// LA CHAMBRE-RÉCIT (plan §13.5) : le nouveau chiffre en chaleur,
+    /// l'ancien en sourd — et entre les deux, LA MARCHE FRANCHIE,
+    /// dessinée : un trait gradué braise → blanc qui MONTE.
     @ViewBuilder
     private func interieur(_ f: Double) -> some View {
         if f > 0.001 {
             GeometryReader { g in
                 let W = g.size.width, H = g.size.height
                 Text(chambreHaut)
-                    .font(.system(size: 0.0700 * H, weight: .regular))
-                    .foregroundStyle(LinearGradient(
-                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                    .font(interUnifie
+                          ? .inter(0.0800 * H, .semibold)
+                          : .system(size: 0.0800 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: 0.500 * W, y: 0.330 * H)
+                    .opacity(min(f * 1.7, 1))
+
+                // La marche : elle POUSSE du bas (ancre basse), la tête
+                // blanche arrive en dernier — on voit le record MONTER.
+                let am = min(max((f - 0.28) / 0.55, 0), 1)
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [CardTon.chaleur(0.95),
+                                 CardTon.chaleur(0.55),
+                                 CardTon.chaleur(0.22)],
                         startPoint: .top, endPoint: .bottom))
-                    .position(x: 0.500 * W, y: 0.455 * H)
+                    .frame(width: 2.4, height: 0.130 * H * am)
+                    .position(x: 0.500 * W,
+                              y: 0.560 * H - 0.065 * H * am)
+                    .shadow(color: CardTon.chaleur(0.40).opacity(0.4 * am),
+                            radius: 3)
+                Circle()
+                    .fill(CardTon.chaleur(0.95))
+                    .frame(width: 5, height: 5)
+                    .position(x: 0.500 * W, y: 0.560 * H - 0.130 * H * am)
+                    .shadow(color: CardTon.chaleur(0.60).opacity(0.6),
+                            radius: 4)
+                    .opacity(am > 0.92 ? (am - 0.92) / 0.08 : 0)
+
                 Text(chambreBas)
                     .font(.system(size: 0.0350 * H, weight: .regular))
                     .foregroundStyle(CardTon.encreSourde)
-                    .position(x: 0.500 * W, y: 0.555 * H)
+                    .position(x: 0.500 * W, y: 0.660 * H)
+                    .opacity(min(max((f - 0.45) / 0.55, 0), 1))
             }
             .opacity(f)
         }
@@ -1286,85 +1518,140 @@ struct CardPeakEffort: View {
                 .foregroundStyle(CardTon.encreDouce)
                 .modifier(AncrageGauche(x: marge, y: 0.0770 * H))
 
-            // ── LA FORME LIQUIDE NOIRE, et son reflet-événement.
-            forme(W: W, H: H)
-                .opacity(min(max((p - 0.2) / 0.6, 0), 1))
+            // ── LA BRAISE DE L'ÉVÉNEMENT : quand un record vient de
+            // tomber, le coin bas-droit couve (l'écho du foyer HIIT).
+            if nouveau {
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [CardTon.chaleur(0.25).opacity(0.10),
+                                 .clear],
+                        center: .center,
+                        startRadius: 0, endRadius: 0.30 * W))
+                    .frame(width: 0.60 * W, height: 0.42 * W)
+                    .position(x: 0.840 * W, y: 0.900 * H)
+                    .opacity(min(max((p - 0.4) / 0.5, 0), 1))
+            }
 
-            // ── L'ENCRE, au-dessus de la forme.
-            Text(titre)
-                .font(.system(size: 0.0606 * H, weight: .regular))
-                .foregroundStyle(CardTon.encreDouce)
-                .position(x: 0.500 * W, y: 0.410 * H)
-                .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+            // ── LA VALEUR HÉRO — LE RECORD LUI-MÊME (« 60 kg », plus
+            // jamais un « +10 kg » orphelin qui ne raconte rien) : en
+            // CHALEUR quand c'est un record, en métal sinon.
             Text(valeur)
                 .font(interUnifie
-                      ? .inter(0.1500 * H, .semibold)
-                      : .system(size: 0.1500 * H, weight: .regular))
-                .foregroundStyle(LinearGradient(
-                    colors: [Color(white: 1.00), Color(white: 0.863)],
-                    startPoint: .top, endPoint: .bottom))
-                .position(x: 0.500 * W, y: 0.560 * H)
+                      ? .inter(0.1350 * H, .semibold)
+                      : .system(size: 0.1350 * H, weight: .regular))
+                .foregroundStyle(nouveau
+                    ? AnyShapeStyle(LinearGradient(
+                        stops: [
+                            .init(color: CardTon.chaleur(0.95),
+                                  location: 0.00),
+                            .init(color: CardTon.chaleur(0.72),
+                                  location: 0.55),
+                            .init(color: CardTon.chaleur(0.50),
+                                  location: 1.00),
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                    : AnyShapeStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom)))
+                .position(x: 0.500 * W, y: 0.335 * H)
+                .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+
+            Text(titre)
+                .font(.system(size: 0.0550 * H, weight: .regular))
+                .tracking(0.0550 * H * 0.030)
+                .foregroundStyle(CardTon.encreDouce)
+                .position(x: 0.500 * W, y: 0.448 * H)
                 .opacity(min(max((p - 0.4) / 0.5, 0), 1))
+
+            // ── L'ASCENSION — la marche franchie, DESSINÉE : le trait de
+            // chaleur monte de l'ancien record (sourd) au nouveau (blanc
+            // chauffé). C'est ça que « +10 » veut dire.
+            if delta != nil, precedent != nil {
+                ascension(W: W, H: H)
+            }
 
             Text(contexte)
                 .font(.system(size: 0.0350 * H, weight: .regular))
                 .foregroundStyle(CardTon.encreSourde)
-                .position(x: 0.500 * W, y: 0.885 * H)
+                .position(x: 0.500 * W, y: 0.895 * H)
                 .opacity(min(max((p - 0.5) / 0.5, 0), 1))
         }
     }
 
-    /// La forme : un galet organique PEINT (l'école `galetMedaillon` — il
-    /// brille sur tout fond parce qu'il n'emprunte rien), et le balayage
-    /// blanc qui le traverse quand `nouveau`. ⚠️ L'horloge ne tourne que si
-    /// le reflet existe, et dort sous Reduce Motion.
+    /// L'ASCENSION (v3 — le galet-bowling est mort). Micro-vie : le trait
+    /// POUSSE à l'arrivée, le point du record POP puis RESPIRE (4,7 s), et
+    /// une ÉTINCELLE remonte la pente toutes les 5,3 s — une braise qui
+    /// grimpe, pas un gyrophare. ⚠️ 12 Hz, l'horloge dort sous Reduce
+    /// Motion et sous la chambre ; LE CADRE EST FORCÉ (piège TimelineView).
     @ViewBuilder
-    private func forme(W: CGFloat, H: CGFloat) -> some View {
-        // Plus LARGE et plus BASSE qu'un ovale (0,66 × 0,30) : une flaque,
-        // pas un médaillon. Et PRESQUE invisible : le premier jet à 0,078
-        // de blanc se lisait comme un ovale gris posé — la forme doit se
-        // deviner, c'est le reflet-événement qui la révèle.
-        let fw = 0.66 * W, fh = 0.30 * W
-        ZStack {
-            Ellipse()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: Color(white: 0.050), location: 0.00),
-                        .init(color: Color(white: 0.028), location: 0.55),
-                        .init(color: Color(white: 0.006), location: 1.00),
-                    ],
-                    center: UnitPoint(x: 0.36, y: 0.26),
-                    startRadius: 0, endRadius: fw * 0.72))
-            Ellipse()
-                .strokeBorder(LinearGradient(
-                    colors: [.white.opacity(0.13), .clear, .clear],
-                    startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 0.8)
-            if nouveau, !reduceMotion {
-                TimelineView(.animation(minimumInterval: 1.0 / 30)) { tl in
-                    let t = tl.date.timeIntervalSinceReferenceDate
-                    // Un passage de 1,2 s toutes les 4,6 s — un événement,
-                    // pas un gyrophare.
-                    let cycle = t.truncatingRemainder(dividingBy: 4.6)
-                    let ph = min(max(cycle / 1.2, 0), 1)
-                    Capsule()
-                        .fill(LinearGradient(
-                            colors: [.clear, .white.opacity(0.50), .clear],
-                            startPoint: .leading, endPoint: .trailing))
-                        .frame(width: fw * 0.22, height: fh * 1.6)
-                        .rotationEffect(.degrees(24))
-                        .offset(x: fw * (ph - 0.5) * 1.4)
-                        .blur(radius: 2.5)
-                        .opacity(ph <= 0 || ph >= 1 ? 0
-                                 : 0.9 * sin(.pi * ph))
-                        .frame(width: fw, height: fh)
+    private func ascension(W: CGFloat, H: CGFloat) -> some View {
+        let sx = 0.330 * W, sy = 0.700 * H
+        let ex = 0.670 * W, ey = 0.598 * H
+        let aL = min(max((p - 0.45) / 0.45, 0), 1)
+        TimelineView(.animation(minimumInterval: 1.0 / 12,
+                                paused: reduceMotion || chambre > 0.5)) { tl in
+            let t = tl.date.timeIntervalSinceReferenceDate
+            let souffle = reduceMotion ? 0.0
+                : 0.5 + 0.5 * sin(t * 2 * .pi / 4.7)
+            ZStack {
+                // le trait — braise au départ, blanc chauffé à l'arrivée
+                Path { path in
+                    path.move(to: CGPoint(x: sx, y: sy))
+                    path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                             y: sy + (ey - sy) * aL))
                 }
-                .mask(Ellipse())
+                .stroke(LinearGradient(
+                    colors: [CardTon.chaleur(0.28),
+                             CardTon.chaleur(0.62),
+                             CardTon.chaleur(0.95)],
+                    startPoint: .bottomLeading, endPoint: .topTrailing),
+                    style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                .shadow(color: CardTon.chaleur(0.40).opacity(0.35 * aL),
+                        radius: 3)
+
+                // l'ancien record : un repère sourd, et son chiffre
+                Circle().fill(Color.white.opacity(0.30))
+                    .frame(width: 3, height: 3)
+                    .position(x: sx, y: sy)
+                Text(precedent ?? "")
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: sx, y: sy + 0.052 * H)
+
+                // LE POINT DU RECORD — il pop (dépassement), puis respire
+                let pop = aL > 0.94 ? (aL - 0.94) / 0.06 : 0
+                Circle()
+                    .fill(CardTon.chaleur(0.92 + 0.08 * souffle))
+                    .frame(width: 5.5, height: 5.5)
+                    .scaleEffect((0.4 + 0.6 * pop
+                                  + (pop >= 1 ? 0.10 * souffle : 0)))
+                    .shadow(color: CardTon.chaleur(0.55)
+                        .opacity((0.55 + 0.25 * souffle) * pop),
+                        radius: 0.026 * W)
+                    .position(x: ex, y: ey)
+                    .opacity(pop)
+                Text(delta ?? "")
+                    .font(.system(size: 0.0480 * H, weight: .medium))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: ex, y: ey - 0.058 * H)
+                    .opacity(pop)
+
+                // L'ÉTINCELLE — elle remonte la pente toutes les 5,3 s
+                if !reduceMotion, aL > 0.99 {
+                    let cycle = t.truncatingRemainder(dividingBy: 5.3)
+                    let ph = min(max(cycle / 0.9, 0), 1)
+                    Circle()
+                        .fill(Color.white.opacity(0.85))
+                        .frame(width: 2.6, height: 2.6)
+                        .position(x: sx + (ex - sx) * CGFloat(ph),
+                                  y: sy + (ey - sy) * CGFloat(ph))
+                        .shadow(color: CardTon.chaleur(0.80).opacity(0.7),
+                                radius: 2.5)
+                        .opacity(ph <= 0 || ph >= 1 ? 0 : sin(.pi * ph) * 0.9)
+                }
             }
+            .frame(width: W, height: H)
         }
-        .frame(width: fw, height: fh)
-        .rotationEffect(.degrees(-8))
-        .position(x: 0.500 * W, y: 0.520 * H)
     }
 }
 
@@ -1412,12 +1699,19 @@ struct HiitPeakInfo {
     var chambreLigne = "17.0 km/h · 40 s · ×4"
     var pic = 0.62
     var picLargeur = 0.26
+    /// Les tours du segment — la chambre les dessine.
+    var tours = 4
 }
 
-/// Ce que la card Peak Effort affiche.
+/// Ce que la card Peak Effort affiche. Le héros est LE RECORD LUI-MÊME
+/// (« 60 kg ») — pas le delta seul, qui ne racontait rien (« +10 kg de
+/// quoi ? », verdict du 22-08). Le delta et le précédent nourrissent
+/// L'ASCENSION : le trait qui monte de l'ancien au nouveau.
 struct PeakEffortInfo {
     var titre = "Hip Thrust"
-    var valeur = "+10 kg"
+    var valeur = "60 kg"
+    var delta: String? = "+10"
+    var precedent: String? = "55"
     var chambreHaut = "60 kg × 8"
     var chambreBas = "previous best · 55 kg"
     var nouveau = true
@@ -1560,6 +1854,7 @@ struct SemaineStats {
         let v = vitesse(b.v)
         var info = HiitPeakInfo()
         info.vitesse = v
+        info.tours = max(b.n, 1)
         if b.n > 1 {
             info.repetitions = "\(b.n) × \(duree(b.s))"
             info.chambreLigne = "\(v) km/h · \(duree(b.s)) · ×\(b.n)"
@@ -1604,7 +1899,9 @@ struct SemaineStats {
         if let c = charge {
             return PeakEffortInfo(
                 titre: c.nom,
-                valeur: "+\(poids(c.delta)) kg",
+                valeur: "\(poids(c.poids)) kg",
+                delta: "+\(poids(c.delta))",
+                precedent: poids(c.poids - c.delta),
                 chambreHaut: "\(poids(c.poids)) kg × \(c.reps)",
                 chambreBas: "previous best · \(poids(c.poids - c.delta)) kg",
                 nouveau: true)
@@ -1638,15 +1935,20 @@ struct SemaineStats {
             return PeakEffortInfo(
                 titre: v.nom,
                 valeur: "\(vs) km/h",
+                delta: vAvant > 0 ? "+\(Self.vitesse(v.v - vAvant))" : nil,
+                precedent: vAvant > 0 ? Self.vitesse(vAvant) : nil,
                 chambreHaut: "\(duree(v.s))\(v.n > 1 ? " × \(v.n)" : "")",
                 chambreBas: "fastest ever",
                 nouveau: true)
         }
-        // 3. À DÉFAUT : la plus grosse charge de la semaine, sans le reflet.
+        // 3. À DÉFAUT : la plus grosse charge de la semaine, sans le reflet
+        // ni l'ascension (pas de record = pas de marche à dessiner).
         if let p = plusLourd {
             return PeakEffortInfo(
                 titre: p.nom,
                 valeur: "\(poids(p.poids)) kg",
+                delta: nil,
+                precedent: nil,
                 chambreHaut: "\(poids(p.poids)) kg × \(p.reps)",
                 chambreBas: "heaviest this week",
                 nouveau: false)
@@ -1910,11 +2212,13 @@ struct CardsRangee: View {
             CardHiitPeak(vitesse: hiit.vitesse,
                          repetitions: hiit.repetitions,
                          pic: hiit.pic, picLargeur: hiit.picLargeur,
+                         tours: hiit.tours,
                          chambreLigne: hiit.chambreLigne,
                          p: pose, lisere: lisere, verre: verre,
                          penche: penche, interaction: mode)
         case .peakEffort:
             CardPeakEffort(titre: peak.titre, valeur: peak.valeur,
+                           delta: peak.delta, precedent: peak.precedent,
                            chambreHaut: peak.chambreHaut,
                            chambreBas: peak.chambreBas,
                            nouveau: peak.nouveau,

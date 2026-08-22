@@ -735,7 +735,30 @@ La mesure de H1 : une capture flamme/widgets côte à côte, canaux
 comparés — **R = 1,00 partout sur l'allumé, saturation qui ne descend
 jamais** (la sonde, pas l'œil seul).
 
-### 13.7 Les pièges convoqués
+### 13.7 LIVRÉ LE 22-08 (H1+H2+H3, avec deux pivots de verdict)
+
+- **H1** : `CardTon.chaleur(t)` sur les arrêts EXACTS de `FlammePalette`
+  + `encreChaude` (or → flamme). Perles de flamme (cœur blanc chauffé
+  décentré, la dernière faite RESPIRE sur 4,7 s), piles = mini-flammes
+  (⚠️ payé : le premier jet mettait le blanc AU SOMMET — de la crème
+  glacée ; le blanc vit AU PIED), braisillement des pointes (périodes
+  propres), gains en encre chaude, anneau chaud.
+- **H2** : la soie (34 segments de 1,4 pt), le pic sur la rampe entière,
+  LE FOYER qui respire (9,4 s) DANS l'horloge de la soie, le scintillement
+  du sommet ; la chambre-cycle (les tours dessinés, cascade 120 ms).
+- **H3, deux fois** : le galet d'obsidienne a été construit puis TUÉ au
+  verdict (« ça veut rien dire, boule de bowling ») → **L'ASCENSION** :
+  le héros devient LE RECORD (« 60 kg », en chaleur si `nouveau`), et la
+  marche franchie est DESSINÉE — trait braise → blanc chauffé de l'ancien
+  record (55, sourd) au point du nouveau, qui POP puis RESPIRE, « +10 »
+  posé dessus, et une ÉTINCELLE remonte la pente toutes les 5,3 s.
+  `PeakEffortInfo` gagne `delta`/`precedent` (SemaineStats les calcule) ;
+  sans record : pas d'ascension, héros en métal.
+- Toutes les horloges neuves : 12 Hz, endormies sous Reduce Motion (et
+  sous la chambre pour la soie/l'ascension), CADRE FORCÉ (le piège
+  TimelineView payé trois fois dans ce fichier).
+
+### 13.8 Les pièges convoqués
 
 anti-brun (interpolation entre arrêts adjacents seulement) · halo ≤ 10 pt
 (au-delà, néon de bar) · les scintillements dorment sous Reduce Motion et
