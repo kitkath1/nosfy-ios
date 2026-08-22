@@ -1136,6 +1136,12 @@ struct GrandeCardVideo: View {
     }
 }
 
+/// `fullScreenCover(item:)` réclame un `Identifiable` — l'onglet est déjà sa
+/// propre identité.
+extension WoopTab: Identifiable {
+    public var id: String { rawValue }
+}
+
 // MARK: - LE SECRET SOUS LA CARD (idée du 21-08)
 
 /// Quand la grande card se SOULÈVE (tirage vers le HAUT), la bande du BAS se
@@ -1649,6 +1655,18 @@ struct HomeNuitPage: View {
 
     // MARK: - LE FLOW DE LA SÉANCE (22-08)
 
+    /// OÙ LE MENU ENVOIE. ⚠️ La home v2 vit encore dans son banc — `-homeV2`
+    /// monte `HomeNuitLab()` **à la place de toute l'app**, il n'y a pas de
+    /// `TabView` dedans, et l'onglet Accueil monte toujours `HomeAuroraView`.
+    /// Le routage est donc écrit ici mais n'a de destination QUE ce que
+    /// l'appelant lui donne : le banc présente les vraies pages en plein écran,
+    /// et le jour où la v2 prend l'onglet, le même point d'appel pilotera
+    /// `selection`. On n'invente pas une navigation qui n'existe pas.
+    var onRoute: (WoopTab) -> Void = { _ in }
+
+    /// L'ordre de la colonne — il doit suivre `MenuItems.titres` à la lettre.
+    static let destinations: [WoopTab] = [.profile, .progress, .exercises]
+
     /// Le galet est rangé au mur : le slider reprend la largeur libérée.
     @State private var galetRange = false
     @State private var menuOuvert = false
@@ -1816,7 +1834,26 @@ struct HomeNuitPage: View {
                                     paused: reduceMotion
                                         || (depart == nil && ferme == nil))) { tl in
                 let e = eNow(tl.date)
-                MenuHote(ouvert: $menuOuvert, couronne: true,
+                MenuHote(ouvert: $menuOuvert,
+                         onChoix: { i in
+                             guard Self.destinations.indices.contains(i) else { return }
+                             onRoute(Self.destinations[i])
+                         },
+                         // ⚠️ LA COLONNE, PAS LA COURONNE (verdict 22-08 : « on
+                         // remet le menu liste »). Les deux formes cohabitaient
+                         // le temps de l'A/B et le code le disait déjà : « la
+                         // colonne est validée, on ne la jette pas sur une
+                         // intuition ». La couronne n'est pas supprimée pour
+                         // autant — elle se rejoue à son banc `-couronneLab`.
+                         //
+                         // ⚠️ CE QUI CHANGE DANS LA MAIN, ET C'EST LA SEULE
+                         // CHOSE : l'appui TENU faisait éclore la couronne ; la
+                         // colonne s'ouvre au TAP. L'appui tenu se retrouve donc
+                         // sans emploi — laissé inerte, pas réaffecté au hasard.
+                         // Le port libre, le rangement dans le mur, les bornes,
+                         // la chute et le néon armé ne dépendent pas du drapeau :
+                         // le galet ne sait même pas que le menu a changé.
+                         couronne: false,
                          onRange: { galetRange = $0 },
                          // LE GALET S'EFFACE DÈS QUE LA BANDE PARLE. Tiroir
                          // ouvert, la rangée du bas appartient au slider puis au
@@ -1865,6 +1902,17 @@ struct HomeNuitPage: View {
             // atterrissages décalés, ni un palier de décodage. Sans ce banc, on
             // signe une scène qu'on n'a jamais regardée bouger.
             // Cycle : 1,2 s de repos · le film · 1,4 s de pose · la fermeture.
+            // `-homeMenuAuto` : la colonne s'ouvre et se referme toute seule.
+            // ⚠️ Un nom à elle, pas `-menuRejoue` : celui-là est intercepté plus
+            // haut par `WoopApp` et monte `MenuLab` À LA PLACE de la home.
+            // Le simulateur ne sait pas poser un doigt et `simctl` n'a pas de
+            // commande `tap` — sans ce banc, le menu de la home n'est jugeable
+            // qu'à la main, donc jamais en capture.
+            if CommandLine.arguments.contains("-homeMenuAuto") {
+                Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
+                    menuOuvert.toggle()
+                }
+            }
             if CommandLine.arguments.contains("-departAuto") {
                 Timer.scheduledTimer(withTimeInterval: 5.5, repeats: true) { _ in
                     lancer(gDepart: 0)
@@ -2723,14 +2771,53 @@ struct HomeNuitLab: View {
         }
     }
 
+    /// LA DESTINATION OUVERTE PAR LE MENU. Le banc n'a pas de `TabView` — il
+    /// monte la page seule. Pour que le routage soit JUGEABLE aujourd'hui et pas
+    /// seulement le jour de la promotion, il présente la vraie page en plein
+    /// écran. Le point d'appel est le même que celui qui pilotera `selection`.
+    @State private var route: WoopTab? = {
+        // `-homeRoute <profile|progress|exercises>` : la destination ouverte au
+        // lancement. Le simulateur ne sait pas taper un item de menu, et
+        // `simctl` n'a pas de commande `tap` — sans ce banc, le routage ne se
+        // vérifie qu'à la main.
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-homeRoute"), i + 1 < a.count else { return nil }
+        return WoopTab(rawValue: a[i + 1])
+    }()
+
     private var banc: some View {
         ZStack(alignment: .bottom) {
-            HomeNuitPage(rasant: r, phrase: f, galet: gp)
+            HomeNuitPage(rasant: r, phrase: f, galet: gp,
+                         onRoute: { route = $0 })
 
             if Self.console {
                 reglages
                     .transition(.move(edge: .bottom))
             }
+        }
+        .fullScreenCover(item: $route) { t in
+            Group {
+                switch t {
+                case .profile:   ProfilLuneView(selection: .constant(.profile))
+                case .progress:  CalendarStickersPage(onBack: { route = nil })
+                case .exercises: ExercisesView(selection: .constant(.exercises))
+                default:         Color.black.ignoresSafeArea()
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                // Le banc n'a pas d'onglets : il faut une sortie, sinon la page
+                // est un cul-de-sac.
+                Button { route = nil } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(12)
+                        .background(.black.opacity(0.55), in: Circle())
+                }
+                .padding(.top, 62)
+                .padding(.trailing, 16)
+            }
+            .preferredColorScheme(.dark)
         }
         .preferredColorScheme(.dark)
     }

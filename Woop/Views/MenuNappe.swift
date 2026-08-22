@@ -450,9 +450,27 @@ struct MenuItems: View {
     var onChoix: (Int) -> Void = { _ in }
     var onSurvol: (Int?) -> Void = { _ in }
 
+    /// LES HORODATAGES DE LA FUMÉE DES SECTIONS — le doigt qui glisse sur la
+    /// colonne fume comme le galet et comme la molette des exercices. Trois
+    /// objets qu'on prend au doigt, une seule matière.
+    @State private var touche: Date?
+    @State private var lache: Date?
+    /// LA PLACE DU DOIGT dans la colonne. La fumée le SUIT — centrée sur le
+    /// marqueur (x = 34) elle était à moitié hors écran et cachée derrière la
+    /// vignette : pendant un vrai drag le doigt est sur les MOTS, à 150-300 pt,
+    /// et on ne voyait rien. C'est la leçon de la molette : la fumée naît là où
+    /// la main touche.
+    @State private var main: CGPoint?
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let titres = ["Profil", "Progression", "Collection", "Réglages"]
+    /// ⚠️ TROIS SECTIONS, EN ANGLAIS, DANS CET ORDRE (verdict 22-08). Le
+    /// « Réglages » est retiré — pas supprimé d'une intention, RETIRÉ le temps
+    /// qu'il ait une page. Et « Collection » cède sa place à « Exercises », qui
+    /// a la sienne.
+    /// La page l'est déjà partout ailleurs (« Sessions this week », « Weekly
+    /// volume ») : la colonne était la dernière pièce en français.
+    static let titres = ["Profile", "Progress", "Exercises"]
     static let pas: CGFloat = 56
     static let hauteurItem: CGFloat = 38
     static let corps: CGFloat = 26
@@ -460,6 +478,9 @@ struct MenuItems: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            // LA FUMÉE DES SECTIONS, tout au fond : elle sort DE SOUS le mot,
+            // jamais par-dessus. Posée au-dessus, elle laiterait l'encre.
+            fumee
             // LE LISERÉ DU CADRE : un fil chaud très fin qui naît sur le
             // bord gauche à la hauteur de l'item survolé. Le cadre RÉPOND —
             // c'est un des micro-détails qui font que l'objet est vivant.
@@ -559,6 +580,9 @@ struct MenuItems: View {
     @ViewBuilder
     private func titre(_ i: Int) -> some View {
         let m = mesures(i)
+        // La ligne est-elle sous le doigt ? C'est le MÊME signal que la fumée :
+        // les deux aperçus arrivent avec elle.
+        let vu = (survol == i) || survolBanc == i
         HStack(spacing: 12) {
             // LE PROFIL PORTE SON VISAGE. C'est la grammaire des Réglages
             // d'Apple : la ligne du compte porte l'avatar au fer. La pastille
@@ -571,7 +595,34 @@ struct MenuItems: View {
             // contre 32). Un menu se lit au fer ; c'est l'icône qui s'aligne
             // sur les mots, jamais l'inverse.
             ZStack {
-                if i == 0 { PastilleKD(taille: 34) }
+                // LES TROIS MARQUEURS, TOUS AU MÊME NIVEAU, MAIS PAS AU MÊME
+                // RÉGIME. La pastille KD est une IDENTITÉ : elle est toujours
+                // là. Les deux autres sont des APERÇUS — ils n'existent que
+                // sous le doigt (verdict 22-08 : « uniquement quand je drag la
+                // section, pour pas alourdir »). Trois vignettes permanentes
+                // font une liste de réglages ; une vignette qui vient quand on
+                // la regarde fait un objet vivant.
+                switch i {
+                case 0: PastilleKD(taille: 34)
+                case 1: MiniProgress()
+                        // ⚠️ ELLE ENTRE PAR LA DROITE, de sous le mot. Un
+                        // fondu seul ferait clignoter une image ; c'est le
+                        // déplacement qui dit d'où elle vient. Et elle est
+                        // posée APRÈS la fumée dans la pile — elle arrive
+                        // AVEC elle et AU-DESSUS d'elle.
+                        .opacity(vu ? 1 : 0)
+                        .offset(x: vu ? 0 : 22)
+                        .scaleEffect(vu ? 1 : 0.86)
+                        .animation(.timingCurve(0.22, 1, 0.36, 1,
+                                                duration: 0.34), value: vu)
+                case 2: MiniExercices()
+                        .opacity(vu ? 1 : 0)
+                        .offset(x: vu ? 0 : 22)
+                        .scaleEffect(vu ? 1 : 0.86)
+                        .animation(.timingCurve(0.22, 1, 0.36, 1,
+                                                duration: 0.34), value: vu)
+                default: Color.clear.frame(width: 34, height: 34)
+                }
             }
             .frame(width: 34, height: 34)
             ZStack(alignment: .leading) {
@@ -620,14 +671,222 @@ struct MenuItems: View {
     private var drag: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { g in
+                if touche == nil { touche = Date(); lache = nil }
+                main = g.location
                 let i = min(max(Int(g.location.y / Self.pas), 0), n - 1)
                 if i != survol { onSurvol(i) }
             }
             .onEnded { g in
                 let i = min(max(Int(g.location.y / Self.pas), 0), n - 1)
+                main = g.location
+                lache = Date()
                 onSurvol(nil)
                 onChoix(i)
             }
+    }
+
+    /// LA FUMÉE DE LA SECTION SOUS LE DOIGT. Elle vit sur la ligne survolée et
+    /// la SUIT d'un item à l'autre — c'est la même bouffée qui se déplace, pas
+    /// une par ligne.
+    /// ⚠️ Rayon 20 et pas 31 : une ligne de texte n'est pas un disque de 62 pt,
+    /// et l'enveloppe du shader est proportionnelle au rayon — à 31 la fumée
+    /// débordait sur les voisines et le survol ne se lisait plus.
+    @ViewBuilder
+    private var fumee: some View {
+        if let s = survol ?? survolBanc {
+            // Elle suit le doigt en x, et s'aimante à la LIGNE en y : le doigt
+            // tremble, la ligne non — une fumée qui vibre verticalement entre
+            // deux items se lit comme un défaut.
+            let y = CGFloat(s) * Self.pas + Self.hauteurItem / 2
+            GaletFumee(start: touche, fin: lache,
+                       centre: CGPoint(x: main?.x ?? 120, y: y),
+                       // ⚠️ 16, ET C'EST UN CHOIX DE FORME, pas de goût.
+                       // `knobSmoke` est écrit pour ENTOURER un bouton : il ne
+                       // peint rien sous `r < R`, et son enveloppe est
+                       // proportionnelle à R. Sur le galet ce creux est occupé
+                       // par la pastille ; sur un mot, il est occupé par LE
+                       // DOIGT. À 26 le creux dépassait la pulpe et se voyait
+                       // comme un trou ; à 16 la bouffée fait ~40 pt de rayon
+                       // et le doigt la couvre. (En capture il n'y a pas de
+                       // doigt : le trou s'y voit, et c'est normal.)
+                       rayon: 16)
+        }
+    }
+}
+
+/// LA FUMÉE DU GALET PORTÉ — le jumeau exact de celle de la molette des
+/// exercices (`ArcSmoke`), au même shader `knobSmoke` et à la même enveloppe :
+/// attaque de 0,10 s, extinction exponentielle en 0,45 s au relâcher. Deux
+/// objets ronds qu'on prend au doigt dans la même app doivent fumer pareil.
+///
+/// ⚠️ LE CADRE EST BORNÉ, PAS PLEIN ÉCRAN. L'enveloppe du shader décroît en
+/// `exp(-d / (R × 0,82))` avec R = 31, et l'onde du toucher meurt à
+/// `R + 0,32 × 150 = 79 pt` : tout est éteint à 80 pt du centre. Un cadre de
+/// 240 pt laisse 40 pt de marge et évite de peindre du vide sur tout l'écran à
+/// chaque image.
+///
+/// ⚠️ ET IL SUIT LE GALET. Le centre est passé en coordonnées LOCALES (le
+/// milieu du cadre) et c'est le `.position` qui porte le déplacement : le
+/// shader n'a pas à connaître la page.
+/// `-fumeeBanc` : la bouffée FORCÉE, sans doigt. Le simulateur ne sait pas
+/// draguer et `simctl` n'a pas de commande `tap` — sans ce banc, la fumée n'est
+/// jugeable qu'à la main, donc jamais en capture.
+/// ⚠️ Au niveau du FICHIER : une `static let` dans un type générique
+/// (`MenuHote<Fond, Contenu>`) ne compile pas.
+private let fumeeBanc = CommandLine.arguments.contains("-fumeeBanc")
+
+/// `-menuSurvol <n>` : la section `n` FORCÉE sous le doigt. Le simulateur ne
+/// sait pas survoler et `simctl` n'a pas de commande `tap` — sans ce banc, les
+/// deux aperçus (qui n'existent QUE sous le doigt) ne se capturent jamais.
+private let survolBanc: Int? = {
+    let a = CommandLine.arguments
+    guard let i = a.firstIndex(of: "-menuSurvol"), i + 1 < a.count else { return nil }
+    return Int(a[i + 1])
+}()
+
+/// LES MINI CARDS DU MENU — la même ardoise que les pochettes du widget
+/// « This week. » de la home, réduites à la taille de la pastille KD.
+///
+/// ⚠️ C'est une CITATION, pas un objet neuf : même dégradé (0,060 → 0,030),
+/// même cheveu blanc à 6 %, même lumière posée en haut-gauche, même sticker
+/// tranché par le bord bas. Trois marqueurs de sections doivent appartenir à la
+/// même famille — un badge inventé pour l'occasion se verrait.
+private struct MiniCarteMenu<Contenu: View>: View {
+    var cote: CGFloat = 34
+    @ViewBuilder var contenu: () -> Contenu
+
+    private var forme: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cote * 0.26, style: .continuous)
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            forme.fill(LinearGradient(
+                colors: [Color(white: 0.060), Color(white: 0.030)],
+                startPoint: .top, endPoint: .bottom))
+            forme.strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+            forme.fill(EllipticalGradient(
+                stops: [.init(color: .white.opacity(0.07), location: 0),
+                        .init(color: .clear, location: 1)],
+                center: UnitPoint(x: 0.25, y: 0.08),
+                startRadiusFraction: 0, endRadiusFraction: 1.0))
+                .blendMode(.plusLighter)
+            contenu()
+        }
+        .frame(width: cote, height: cote)
+        .clipShape(forme)
+    }
+}
+
+/// La mini de PROGRESS : la date du jour et un sticker, comme une pochette du
+/// bac. Le sticker est tranché par le bord bas — la coupe est un choix, c'est
+/// la loi de la pochette.
+private struct MiniProgress: View {
+    var cote: CGFloat = 34
+
+    private static let fJour: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "d"; return f
+    }()
+    private static let fMois: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "MMM"
+        return f
+    }()
+
+    var body: some View {
+        MiniCarteMenu(cote: cote) {
+            VStack(alignment: .leading, spacing: -1) {
+                Text(Self.fJour.string(from: Date()) + ".")
+                    .font(.inter(cote * 0.265, .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                Text(Self.fMois.string(from: Date()).uppercased())
+                    .font(.inter(cote * 0.145, .semibold))
+                    .tracking(0.4)
+                    .foregroundStyle(Color(white: 1).opacity(0.45))
+            }
+            .padding(.leading, cote * 0.14)
+            .padding(.top, cote * 0.10)
+            // ⚠️ LE STICKER RESTE DEDANS. Sur la pochette du widget il est
+            // tranché par le bord bas — la coupe y est un choix, l'ardoise fait
+            // 70 pt. À 34 pt la coupe mange la moitié du sticker et on ne
+            // reconnaît plus rien : il est remonté et réduit pour tenir en
+            // entier (bas à 31,6 pour un côté de 34).
+            Image("sticker-flamme")
+                .resizable().scaledToFit()
+                .frame(width: cote * 0.42, height: cote * 0.42)
+                .position(x: cote * 0.60, y: cote * 0.72)
+        }
+    }
+}
+
+/// La mini d'EXERCISES : la photo d'un exercice, sombrée pour rester une
+/// ardoise et pas une vignette de galerie.
+private struct MiniExercices: View {
+    var cote: CGFloat = 34
+
+    var body: some View {
+        MiniCarteMenu(cote: cote) {
+            // ⚠️ `scaledToFit`, PAS `toFill`. En remplissage, un cadre carré
+            // découpé dans une photo verticale ne montrait qu'un morceau de
+            // torse énorme — « l'image est trop grosse ». Ajustée, la
+            // silhouette entière tient, et c'est elle qu'on reconnaît.
+            Image("exo-crunch-machine")
+                .resizable().scaledToFit()
+                .padding(cote * 0.10)
+                .opacity(0.80)
+        }
+    }
+}
+
+private struct GaletFumee: View {
+    let start: Date?
+    let fin: Date?
+    let centre: CGPoint
+
+    /// Le rayon de la source. 31 pour le galet (`MenuHote.centre` vaut
+    /// 24 + 31) ; plus petit pour une ligne de menu, qui n'est pas un disque.
+    var rayon: CGFloat = 31
+    private static let cote: CGFloat = 240
+    private static let origine = Date()
+
+    var body: some View {
+        if let start = fumeeBanc ? (start ?? Self.origine) : start {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let now = tl.date
+                let age = now.timeIntervalSince(start)
+                let attack = min(age / 0.10, 1.0)
+                let release = fumeeBanc ? 0
+                    : (fin.map { now.timeIntervalSince($0) } ?? 0)
+                let puff = attack * exp(-max(release, 0) / 0.45)
+                let t = now.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900)
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.knobSmoke(
+                        .float2(Float(Self.cote), Float(Self.cote)),
+                        .float(t),
+                        .float4(Float(Self.cote / 2), Float(Self.cote / 2),
+                                Float(rayon), Float(rayon)),
+                        .float(puff),
+                        // ⚠️ L'ÂGE EST PLAFONNÉ À 1,2 s, ET C'EST PROPRE À CE
+                        // GALET. Le shader fait glisser le champ de bruit de
+                        // `age × 80` px le long du rayon : sur la molette des
+                        // exercices le toucher dure un instant, mais on PORTE
+                        // le galet plusieurs secondes — à 15 s le bruit est
+                        // échantillonné sur 1 200 px de déplacement radial et
+                        // les volutes dégénèrent en RAYONS DROITS, mesuré au
+                        // banc `-fumeeBanc`. Plafonné, la fumée continue de
+                        // vivre par la dérive temporelle (`t`), sans s'étirer.
+                        // (L'onde du toucher meurt en `exp(-age/0,32)` : elle
+                        // est éteinte bien avant 1,2 s, le plafond ne la touche
+                        // pas.)
+                        .float(min(age, 1.2))
+                    ))
+                    .frame(width: Self.cote, height: Self.cote)
+                    .position(centre)
+            }
+            .allowsHitTesting(false)
+        }
     }
 }
 
@@ -678,6 +937,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     @State private var porte: CGSize = .zero
     /// Le doigt l'a vraiment emmené (au-delà de 12 pt) — sinon c'est un tap.
     @State private var enMain = false
+    /// ⚠️ LES HORODATAGES DE LA FUMÉE, et ils sont accrochés à `enMain`, pas à
+    /// l'appui : un simple TAP ouvre le menu, et il ne doit pas cracher une
+    /// bouffée. La fumée est le signe qu'on PORTE le galet.
+    @State private var porteStart: Date?
+    @State private var porteEnd: Date?
     /// RANGÉ sur le flanc gauche.
     @State private var range = false
     /// L'écart au DÉBUT du geste : sans lui, reprendre un galet déjà déplacé
@@ -777,6 +1041,15 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     private func adouci(_ x: Double) -> Double { 1 - pow(1 - x, 1.8) }
     private var lumiere: Double { fen(0.00, 0.34) }
     private var montee: Double { adouci(fen(0.06, 0.74)) }
+
+    /// ⚠️ **LE RETRAIT DU MOBILIER APPARTIENT AUX DEUX FORMES.** Le flou de 7 pt
+    /// et l'extinction à 18 % étaient pilotés par le SEUL `recul`, que le chemin
+    /// de la couronne met à 1 — la colonne ne les a jamais reçus. Résultat
+    /// mesuré à la capture sur la vraie home : « Profile » se lisait par-dessus
+    /// « This week. » et les deux cards de verre, encore nettes à 66 %.
+    /// C'est aussi ce qui manquait au souvenir « menu liste BLUR halo » : le
+    /// blur existait, il était branché sur l'autre menu.
+    private var retrait: Double { max(montee, recul) }
     private var items: Double { fen(0.30, 1.00) }
     private var morph: Double { adouci(fen(0.46, 0.86)) }
 
@@ -796,11 +1069,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // Reculer à 0,66 ne suffit pas : il faut que l'encre soit
                     // à la fois presque éteinte ET adoucie, pour que le verre
                     // n'ait plus que du doux à manger.
-                    .blur(radius: 7 * recul)
-                    .scaleEffect(1 - 0.026 * max(montee, recul), anchor: .center)
-                    .opacity((1 - 0.34 * montee) * (1 - 0.82 * recul))
+                    .blur(radius: 7 * retrait)
+                    .scaleEffect(1 - 0.026 * retrait, anchor: .center)
+                    .opacity(1 - 0.88 * retrait)
 
-                Color.black.opacity(0.20 * max(montee, recul))
+                Color.black.opacity(0.20 * retrait)
                     .ignoresSafeArea()
                     .allowsHitTesting(ouvert)
                     .onTapGesture { fermer(nil) }
@@ -859,6 +1132,20 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     }
                 }
 
+                // LA FUMÉE DU PORT — la même que la molette de la page
+                // exercices (`knobSmoke`, ExosHalo.metal), pour que deux objets
+                // ronds qu'on prend au doigt dans la même app se comportent
+                // pareil. Elle naît du disque et grimpe le long de son bord.
+                //
+                // ⚠️ ELLE N'EXISTE PAS AU REPOS. Le sous-arbre entier est absent
+                // tant que le galet n'est pas porté : un `colorEffect` est une
+                // passe de shader par image, et la home en a déjà assez.
+                // ⚠️ ET ELLE EST BORNÉE À 240 pt AUTOUR DU GALET, pas plein
+                // écran. L'enveloppe du shader décroît en `exp(-d / (R·0,82))`
+                // avec R = 31 : la fumée est éteinte à 75 pt du centre, une
+                // passe plein écran peindrait du vide sur 90 % de sa surface.
+                GaletFumee(start: porteStart, fin: porteEnd,
+                           centre: galetPos(g.size))
                 GaletMaison(morph: morph, appui: appui, feuSup: feuChute,
                             range: range)
                     // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
@@ -920,6 +1207,16 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                             .onChanged { v in
                                 if !appui {
                                     appui = true
+                                    // ⚠️ LA FUMÉE PART AU CONTACT — au TAP comme
+                                    // au drag (verdict 22-08). Elle était
+                                    // accrochée au seuil de 12 pt pour qu'un tap
+                                    // ne crache pas de bouffée ; c'est
+                                    // l'inverse qui est voulu : on touche le
+                                    // galet, il fume. Jamais par défaut, en
+                                    // revanche — `porteStart` naît nil et
+                                    // meurt au relâcher.
+                                    porteStart = Date()
+                                    porteEnd = nil
                                     depart = porte
                                     // Jamais de `brut` périmé d'un geste
                                     // précédent : il décide du rangement.
@@ -989,6 +1286,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                 appui = false
                                 let tenu = enMain
                                 enMain = false
+                                if porteStart != nil { porteEnd = Date() }
                                 desarmer()
                                 // La couronne était déjà ouverte : ce doigt-là
                                 // ne fait plus qu'une chose, choisir.
