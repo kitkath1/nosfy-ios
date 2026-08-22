@@ -451,7 +451,7 @@ struct FlammeJauge<Detail: View>: View {
     /// deux builds le 15-08.)
     private var titre: some View {
         HStack(alignment: .firstTextBaseline, spacing: 5) {
-            Text("Séries")
+            Text("Sets")
                 .font(.inter(18, .semibold))
             // 16-08 : « on ne met pas 3/5, on met juste 3, que ce soit 3
             // ou 10 ». Le total vit déjà dans la rangée de flammes.

@@ -71,8 +71,14 @@ struct WorkoutPill: View {
             VStack(alignment: .leading, spacing: 2) {
                 // En dock, le player parle de la SÉANCE : « Session du
                 // 17 août », jamais le nom d'un exercice (verdict 17-08).
+                // LA LOCALE EST FORCÉE (22-08). `.formatted` suit celle du
+                // TÉLÉPHONE : sur un appareil français il rendait « 22 août »
+                // au milieu d'une UI passée en anglais — et l'ordre des
+                // termes change aussi de langue (jour-mois vs mois-jour).
+                // Une date n'est pas un libellé qu'on traduit, c'est un
+                // format qu'on impose.
                 Text(docked
-                     ? "Session du \((startedAt ?? .now).formatted(.dateTime.day().month(.wide)))"
+                     ? "Session · \((startedAt ?? .now).formatted(.dateTime.month(.wide).day().locale(Locale(identifier: "en_US"))))"
                      : exercise.name)
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.inkPrimary)
@@ -237,12 +243,12 @@ struct WorkoutPill: View {
     @ViewBuilder private var subtitle: some View {
         if let startedAt {
             TimelineView(.periodic(from: startedAt, by: 60)) { tl in
-                Text("En séance · \(Self.duree(tl.date.timeIntervalSince(startedAt)))")
+                Text("In session · \(Self.duree(tl.date.timeIntervalSince(startedAt)))")
                     .font(.inter(11).monospacedDigit())
                     .foregroundStyle(Color.inkMuted)
             }
         } else {
-            Text("Entraînement en cours")
+            Text("Workout in progress")
                 .font(.inter(11))
                 .foregroundStyle(Color.inkMuted)
         }

@@ -67,9 +67,9 @@ struct SetEntrySheet: View {
                 // 20 d'interligne (et non 14) : « repos est trop collé »
                 // (verdict Kathryn) — les trois blocs respirent.
                 VStack(spacing: 20) {
-                    FluidPicker(title: "RÉPÉTITIONS", unit: "reps",
+                    FluidPicker(title: "REPS", unit: "reps",
                                 value: repsBinding, range: 1...50, step: 1)
-                    FluidPicker(title: "CHARGE", unit: "kg",
+                    FluidPicker(title: "WEIGHT", unit: "kg",
                                 value: $kilos, range: 4...100, step: 1)
                     restRow
                 }
@@ -95,7 +95,7 @@ struct SetEntrySheet: View {
             //     `SetEntrySheet.fire` (c'est écrit dans son en-tête) : les
             //     deux étaient déjà la même famille de couleur.
             // Hauteur 62 — celle de la home, à la lettre (elle était 70).
-            SliderObsidienne(label: "Glisser pour lancer le repos",
+            SliderObsidienne(label: "Slide to start rest",
                              height: 62,
                              validate: {
                                  // Le refus MONTRE sa raison : sans repos
@@ -205,10 +205,10 @@ struct SetEntrySheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("Série \(rank)")
+            Text("Set \(rank)")
                 .font(.inter(20, .semibold))
                 .foregroundStyle(Color.inkPrimary)
-            Text("Note tes perfs avant de lancer le repos.")
+            Text("Log your set before starting the rest.")
                 .font(.inter(12.5))
                 .foregroundStyle(Color.inkMuted)
         }
@@ -225,14 +225,14 @@ struct SetEntrySheet: View {
     private var restRow: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Text("REPOS")
+                Text("REST")
                     .font(.inter(9.5, .medium))
                     .tracking(1.6)
                     .foregroundStyle(Color.white.opacity(0.42))
                 // La seule information manquante possible : on la désigne
                 // en ROUGE, plutôt que d'attendre que le slide la reproche.
                 if rest == nil {
-                    Text("à choisir")
+                    Text("required")
                         .font(.inter(9.5, .medium))
                         .tracking(0.4)
                         .foregroundStyle(Color(red: 1.0, green: 0.40, blue: 0.30)
@@ -378,12 +378,15 @@ struct SetEntrySheet: View {
         .buttonStyle(.plain)
     }
 
+    /// Anglais (22-08) : « 1min30 » n'existe pas en anglais — au-delà de la
+    /// minute on lit une DURÉE (`1:30`), pas une phrase. Sous la minute, les
+    /// secondes gardent leur forme courte.
     static func restLabel(_ s: Int) -> String {
         switch s {
         case ..<60: return "\(s)s"
-        case 60: return "1min"
-        case 90: return "1min30"
-        default: return "\(s / 60)min"
+        case 60: return "1 min"
+        case 90: return "1:30"
+        default: return "\(s / 60) min"
         }
     }
 
@@ -423,7 +426,7 @@ struct SetEntrySheet: View {
 struct SetEntryLab: View {
     var body: some View {
         LiquidLensLab(headline: "Woodchopper\npoulie haute",
-                      faceLabel: "SÉRIE 1",
+                      faceLabel: "SET 1",
                       onFinish: { _ in })
             .preferredColorScheme(.dark)
     }

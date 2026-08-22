@@ -50,7 +50,7 @@ struct GaletLab: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             LaunchPebble(
-                label: "Lancer l'exercice",
+                label: "Start exercise",
                 flood: $flood,
                 asleep: false,
                 onDrive: { _, _ in },

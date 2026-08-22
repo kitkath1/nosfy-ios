@@ -26,7 +26,7 @@ struct SetHistoryRow: View {
         HStack(spacing: 12) {
             moon
 
-            Text("Série \(rank)")
+            Text("Set \(rank)")
                 .font(.inter(15, .medium))
                 .foregroundStyle(Color.white.opacity(done ? 0.94 : 0.55))
                 .lineLimit(1)
@@ -178,7 +178,7 @@ struct SetHistoryRow: View {
                     .frame(width: 28, height: 28)
             }
         } else {
-            Text("À venir")
+            Text("Upcoming")
                 .font(.inter(12))
                 .foregroundStyle(Color.white.opacity(0.35))
                 .frame(height: 28)

@@ -579,15 +579,13 @@ struct ExerciseDetailView: View {
                         // VRAI (le shader de la lentille, appelé avec les
                         // nombres de son repos). Bord à bord, elle déborde
                         // jusqu'au bord physique de l'écran.
-                        // Le lecteur (`WorkoutPill`) est retiré du décor
-                        // pour l'instant — il reviendra, décision à venir.
                         // Au banc du verre : le galet dort — sa lumière
                         // crème inonderait les modes OUTSIDE et ×16.
                         if Self.verreLab {
                             Color.clear.frame(height: 10)
                         } else {
                             LaunchPebble(
-                                label: "Lancer l'exercice",
+                                label: "Start exercise",
                                 flood: $flood,
                                 // BRAVO L'ENDORT AUSSI. Le sommeil du galet
                                 // ne connaissait que `running` — or
@@ -668,7 +666,7 @@ struct ExerciseDetailView: View {
                     // matérialise, déjà à hauteur, déjà sous le doigt.
                     LiquidLensLab(
                         headline: exercise.name,
-                        faceLabel: "SÉRIE \(series.id + 1)",
+                        faceLabel: "SET \(series.id + 1)",
                         seriesNumber: series.id + 1,
                         onFinish: { outcome in
                             startBravo(series.id, outcome)

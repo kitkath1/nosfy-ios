@@ -38,26 +38,26 @@ struct RestartSheet: View {
         GeometryReader { g in
             VStack(spacing: 0) {
                 flameHeader(W: g.size.width, slotH: g.size.height * 0.30)
-                Text("Souhaitez-vous recommencer\ncet exercice ?")
+                Text("Do you want to repeat\nthis exercise?")
                     .font(.inter(20, .semibold))
                     .foregroundStyle(Color.inkPrimary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 18)
                     .padding(.horizontal, 30)
-                Text("La série suivante repart sur un 3, 2, 1.")
+                Text("The next set starts on a 3, 2, 1.")
                     .font(.inter(12.5))
                     .foregroundStyle(Color.inkMuted)
                     .multilineTextAlignment(.center)
                     .padding(.top, 7)
                     .padding(.horizontal, 30)
                 Spacer(minLength: 0)
-                DiamondPrimaryButton(title: "Lancer l'exercice") { onLaunch() }
+                DiamondPrimaryButton(title: "Start exercise") { onLaunch() }
                     .padding(.horizontal, 26)
                 // L'échappée : de l'encre seule — sur la nuit, un cadre
                 // clair se lit comme un bug (l'école du footer de BRAVO).
                 Button { onDismiss() } label: {
-                    Text("Non, c'est terminé")
+                    Text("No, I'm done")
                         .font(.inter(15, .medium))
                         .foregroundStyle(Color.white.opacity(0.55))
                         .frame(maxWidth: .infinity, minHeight: 44)

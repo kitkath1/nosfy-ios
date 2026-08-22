@@ -35,7 +35,7 @@ struct LiquidLensLab: View {
     /// La promesse du monde blanc — le nom de l'exercice, dans le parcours.
     var headline: String = "Une nouvelle ère\nd'entraînement."
     /// Le mot gravé au-dessus du chrono, une fois la nuit posée.
-    var faceLabel: String = "SÉRIE 1"
+    var faceLabel: String = "SET 1"
     /// Le rang de la série — il vient de la FICHE, qui seule sait où elle en
     /// est. Le cadran ne compte plus les séries : un cycle complet (chrono →
     /// saisie → repos → envol) n'en vit qu'UNE, puis rend la main.
@@ -246,7 +246,7 @@ struct LiquidLensLab: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Revenir à l'exercice")
+                        .accessibilityLabel("Back to exercise")
                         .position(x: 42, y: 64)
                     }
                 }
@@ -465,7 +465,7 @@ struct LiquidLensLab: View {
                 .foregroundStyle(Self.ink)
                 .opacity(sstep(0.38, 0.62, climb) * (1 - 0.85 * covered))
                 .position(x: w / 2, y: h * 0.60)
-            Text("Glisse vers le haut")
+            Text("Swipe up")
                 .font(.inter(13, .medium))
                 .foregroundStyle(Color.black.opacity(0.35))
                 .opacity(1 - sstep(0.04, 0.22, climb))
@@ -1137,9 +1137,9 @@ struct LiquidLensLab: View {
         let shown = left ?? elapsed
         let timeStr = countWord ?? String(format: "%d:%02d",
                                           shown / 60, shown % 60)
-        let faceTitle = restCounting ? "REPOS DANS"
-            : (effortCounting ? "\(faceLabel) DANS"
-            : (resting ? "REPOS" : faceLabel))
+        let faceTitle = restCounting ? "REST IN"
+            : (effortCounting ? "\(faceLabel) IN"
+            : (resting ? "REST" : faceLabel))
         // Chaque chiffre TOMBE : il arrive gros, se pose, et s'efface avant le
         // suivant. Un compte à rebours dont les chiffres se remplacent sans
         // bouger n'est pas un compte à rebours, c'est une horloge.
@@ -1249,7 +1249,7 @@ struct LiquidLensLab: View {
                 // (`onConfirm:` NOMMÉ, jamais en closure traînante : la
                 // struct a deux propriétés optionnelles APRÈS lui — la
                 // traînante irait se coller au mauvais paramètre.)
-                SliderObsidienne(label: "Terminer la série",
+                SliderObsidienne(label: "Finish set",
                                  height: 62,
                                  onConfirm: {
                                      effortSeconds = elapsed
@@ -1262,7 +1262,7 @@ struct LiquidLensLab: View {
                                   && effortGate > 0.6)
                 .position(x: w / 2, y: h - 78)
                 Button { startEnvol(now) } label: {
-                    Text("Passer le repos")
+                    Text("Skip rest")
                         .font(.inter(15, .medium))
                         .foregroundStyle(Color.white.opacity(0.55))
                         .frame(maxWidth: .infinity, minHeight: 44)
@@ -1309,7 +1309,7 @@ struct LiquidLensLab: View {
                     : sstep(-2.4, -2.0, landed) * (1 - chipInS)
                 if skipIn > 0.001 {
                     Button { skipCine(now) } label: {
-                        Text("Passer l'animation")
+                        Text("Skip animation")
                             .font(.inter(15, .medium))
                             .foregroundStyle(Color.white.opacity(0.55))
                             .frame(maxWidth: .infinity, minHeight: 44)
@@ -1337,7 +1337,7 @@ struct LiquidLensLab: View {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("REJOUER")
+                        Text("REPLAY")
                             .font(.inter(11, .semibold))
                             .tracking(2.6)
                     }

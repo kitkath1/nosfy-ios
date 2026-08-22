@@ -569,7 +569,7 @@ struct BravoView: View {
                 .opacity(rise(0, e))
                 .offset(y: (1 - rise(0, e)) * 16)
 
-            Text("Votre série est terminée.")
+            Text("Your set is complete.")
                 .font(.inter(14))
                 .foregroundStyle(Color.inkSecondary)
                 .multilineTextAlignment(.center)
@@ -594,7 +594,7 @@ struct BravoView: View {
                     .frame(width: 13 * MoonCoinView.hostScale,
                            height: 13 * MoonCoinView.hostScale)
                     .frame(width: 28, height: 28)
-                Text("pièces gagnées")
+                Text("coins earned")
                     .font(.inter(13))
                     .foregroundStyle(Color.inkSecondary)
             }
@@ -623,7 +623,7 @@ struct BravoView: View {
             kpi("\(repsValue)", "REPS", 0.26, e)
             kpi(kiloText, "KG", 0.33, e)
             kpi(String(format: "%d:%02d", rest / 60, rest % 60),
-                "REPOS", 0.40, e)
+                "REST", 0.40, e)
         }
         .padding(.horizontal, 26)
     }
@@ -653,7 +653,7 @@ struct BravoView: View {
     /// clair se lit comme un bug. C'est l'encre seule qui le dit.
     private var footerLink: some View {
         Button(action: onFinish) {
-            Text("Revenir à l'exercice")
+            Text("Back to exercise")
                 .font(.inter(15, .medium))
                 .foregroundStyle(Color.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: 44)
