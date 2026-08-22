@@ -140,6 +140,9 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     float3 light = float3(0.0);
     float3 rimGlow = float3(0.0);
     float3 backTint = float3(0.0);
+    /// L'énergie de la SEULE voix blanche (#3) — le masque qui servira à
+    /// tirer la teinte vers le blanc après le tone-map.
+    float blancW = 0.0;
     // LE CANON DE LA NAISSANCE suit la matière : l'orange de l'encre
     // d'abord, l'or, le blanc — la bleutée en DERNIER : le froid n'est
     // qu'un refroidissement d'une lumière déjà là, jamais un allumage.
@@ -181,6 +184,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
         light += colv * (g * breath * wv);
         rimGlow  += colv * (pow(facing, kap[i]) * breath * wv);
         backTint += colv * (pow(facing, 2.5) * breath * wv);
+        // LA PART DE LA VOIX BLANCHE, mise de côté. Voir la note du
+        // « blanc qui arrive jaune » juste avant le retour : on ne peut pas
+        // la lire dans `light` après coup (les quatre voix y sont fondues),
+        // il faut la garder pendant qu'on la connaît.
+        if (i == 2) { blancW += g * breath * wv; }
     }
 
     // Le velours du disque (drap vfbm ≡ efbm) + le liseré aux accents —
@@ -208,7 +216,33 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     }
 
     float3 c = light * occ + rim + velvet * insideDisc;
-    return 1.0 - exp(-c * 1.55);
+    float3 outc = 1.0 - exp(-c * 1.55);
+
+    // ========= LE BLANC QUI ARRIVAIT JAUNE (22-08, 3e passe) =========
+    // Mesuré sur l'arc haut-droit du cadran : R=220 G=109 B=29, soit
+    // G/R 0,50 — un OR, pas un blanc. Il ne paraissait blanc que par
+    // contraste simultané avec le rouge autour.
+    //
+    // LA CAUSE EST LE TONE-MAP, pas la palette. `1-exp(-c·1,55)` sature
+    // canal par canal, et sous la voix blanche il y a un lit devenu
+    // franchement rouge : **le canal R est déjà proche de son plafond**.
+    // Une lumière blanche AJOUTÉE là-dessus fait donc monter G et B sur
+    // un R qui ne bouge plus — la teinte glisse vers le jaune avant
+    // d'atteindre le blanc, et il faudrait une énergie déraisonnable pour
+    // finir la course. Monter le poids de la voix (ce qu'on a fait au
+    // tour d'avant) ne fait qu'aggraver : ça allume un or plus fort.
+    //
+    // LE REMÈDE : on ne l'AJOUTE plus, on TIRE VERS lui. Un `mix` impose
+    // la teinte quelle que soit la matière dessous — il est insensible à
+    // la saturation du rouge, par construction. La luminance, elle, est
+    // conservée (on vise le niveau déjà atteint, jamais un blanc plat) :
+    // le lobe garde son modelé, il change seulement de couleur.
+    float mBlanc = clamp(blancW * occ * 1.30, 0.0, 1.0);
+    if (mBlanc > 0.003) {
+        float niveau = max(max(outc.r, outc.g), outc.b);
+        outc = mix(outc, float3(1.00, 0.97, 0.94) * niveau, mBlanc);
+    }
+    return outc;
 }
 
 // MARK: La tache d'encre — L'ENCRE DANS L'EAU
@@ -551,8 +585,19 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         // registre le plus haut du feu : sur un lit rouge, il doit
         // TRANCHER, pas s'harmoniser.
         float tip = pow(max(fl - 0.44, 0.0) / 0.56, 1.6);
-        c += float3(1.00, 0.96, 0.90)
-             * (napp * ig * tip * 2.30 * (1.0 + 2.6 * gust));
+        // MÊME REMÈDE QUE LA VOIX BLANCHE : on TIRE vers le blanc, on ne
+        // l'ajoute pas. Ici `c` porte déjà tout le lit rouge (dont le
+        // canal R est saturé) — une addition y montait en jaune. Le `mix`
+        // impose la teinte, et on garde la luminance de la pointe pour
+        // qu'elle reste une POINTE et non une tache plate. L'amplitude
+        // redescend à 1,55 : elle compensait un blanc qui n'arrivait
+        // jamais, elle n'a plus à le faire.
+        float mTip = clamp(napp * ig * tip * 1.55 * (1.0 + 2.6 * gust),
+                           0.0, 1.0);
+        if (mTip > 0.003) {
+            float niv = max(max(max(c.r, c.g), c.b), 0.55);
+            c = mix(c, float3(1.00, 0.97, 0.93) * niv, mTip);
+        }
         // ET LE HALO ENTIER se soulève avec la rafale — voix comprises,
         // du côté touché : l'effet du tap se voit, pas seulement les
         // langues.
