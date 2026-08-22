@@ -592,6 +592,42 @@ scratchpad de session — flow complet filmé : entrée → vol → roue → con
    0,96 — le clone part à la taille exacte du slot (origine ajustée par
    `origineSlot`) et grandit en volant, sinon la prise de relais saute.
 
+### 12 bis. LA ROUE INVISIBLE (verdict de Kathryn sur la v1, 22-08)
+
+Verdict sur le carousel plat : *« je pensais à un carrousel cercle qui
+prend tout le bas de l'écran comme une molette géante… je parle pas d'avoir
+une roue mais l'effet type Apple très premium, avec plein de
+micro-animations »*. **Livré à la suite** : la scène de la vitrine est
+devenue une ROUE INVISIBLE — rien n'est dessiné (pas de cercle, pas de
+moyeu, pas de rail), seule la LOI DE MOUVEMENT est circulaire, et c'est la
+lumière qui révèle le cercle.
+
+- **La géométrie** : moyeu invisible à (W/2 ; 0,681 h), orbite 0,246 h,
+  **115° par cran** (230 pt de doigt par cran). L'apex trône à ~43 % à sa
+  vraie taille ; les voisins plongent dans les coins bas (~78 %), tranchés
+  par les bords ; le 4ᵉ choix vit SOUS l'écran et en remonte.
+- **Les trois flous** : la profondeur en CARRÉ de l'angle (le plan focal
+  est à l'apex) ; **la mise au point** — la roue tourne floue et s'arrête
+  nette (flou ≤ 2,2 pt + échelle 1,015 → 1,00, pilotés par la distance au
+  cran : une pure fonction de l'offset Animatable, AUCUNE horloge, aucun
+  état) ; et le trio de la home derrière, dont le scrim RESPIRE avec la
+  rotation (+0,05).
+- **Les micro-détails livrés** : le voile des nacelles monte DU PIED
+  (jamais un noir plat) ; les ombres s'allongent et s'adoucissent en
+  descendant l'arc (une seule source, en haut — c'est elle qui vend le
+  cercle) ; le reflet blanc **se verse** (la crête arrive du flanc du
+  mouvement, ±80° × frac, et se cale en haut) ; le nom au MOYEU traîne de
+  18 pt, plonge dans le creux avec 1,5 pt de flou et son tracking se
+  resserre à l'atterrissage ; la naissance remonte TOUT de sous le bord le
+  long de l'arc (excès d'angle 70° résorbé, échelonné par rang — et les
+  fenêtres font repartir les plus lointaines en premier à la sortie) ; la
+  butée est élastique (tanh, ±0,30 cran) ; la dérive orbitale du repos
+  (±0,35° / 7,3 s) fait flotter la roue.
+- **Les gardes anti-kitsch** : nacelles DROITES (micro-inclinaison
+  4°·sin θ max — l'encre ne se couche jamais), inertie bornée ±2 crans,
+  un seul verre (l'apex). Reduce Motion : pas de mise au point, pas de
+  dérive, pas d'excès d'angle — des fondus.
+
 **Restes pour E6 (le verdict téléphone)** :
 - les HAPTIQUES (le sim n'en a aucune) : le sec de l'entrée, les crans de
   la roue, CommitHaptic/RefusalHaptic, et le seuil des 0,50 s au doigt ;

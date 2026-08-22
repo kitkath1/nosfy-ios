@@ -270,6 +270,10 @@ struct PoudreAdieu: View {
 /// crêtes aux mêmes coins), passée toute en blanc, qui respire ±3°.
 struct LisereActif: View {
     var p: Double
+    /// LE REFLET SE VERSE : la crête n'apparaît pas sur place — elle
+    /// arrive du flanc d'où la card vient (±80° × la distance au cran) et
+    /// se cale en haut à l'atterrissage. La lumière suit le mouvement.
+    var verse: Angle = .zero
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -283,8 +287,8 @@ struct LisereActif: View {
                 let forme = RoundedRectangle(cornerRadius: 0.152 * 170,
                                              style: .circular)
                 ZStack {
-                    forme.stroke(Self.blanc(a), lineWidth: 1.4)
-                    forme.stroke(Self.blanc(a), lineWidth: 4.0)
+                    forme.stroke(Self.blanc(a + verse), lineWidth: 1.4)
+                    forme.stroke(Self.blanc(a + verse), lineWidth: 4.0)
                         .blur(radius: 2.6)
                         .opacity(0.50)
                 }
@@ -360,17 +364,34 @@ struct VitrineHote: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let pas: CGFloat = 210
+    /// LA ROUE INVISIBLE : 115° par cran sur l'orbite, 230 pt de doigt par
+    /// cran sous le pouce. Rien n'est dessiné — le moyeu vit dans le tiers
+    /// bas, et c'est la lumière, les ombres et les trois flous qui révèlent
+    /// le cercle.
+    private static let pasAngle: Double = 115
+    private static let pasPt: CGFloat = 230
 
     var body: some View {
         GeometryReader { g in
-            // Deux ponts Animatable emboîtés : `p` (l'entrée/sortie) et
-            // `offset` (la roue) sont chacun livrés image par image — les
-            // fenêtres et le montage du verre se calculent sur la VRAIE
-            // valeur, pas sur la cible d'une transaction.
-            Chambre(p: p) { pv in
-                Chambre(p: offset) { off in
-                    scene(g, pv, off)
+            // LA DÉRIVE ORBITALE DU REPOS : ±0,35° sur 7,3 s (période
+            // première avec les respirations des cards) — la roue flotte,
+            // jamais figée. 12 Hz suffisent, et l'horloge dort sous Reduce
+            // Motion. Elle s'exprime en CRANS (0,35/115) pour entrer dans
+            // le même curseur que tout le reste.
+            TimelineView(.animation(minimumInterval: 1.0 / 12,
+                                    paused: reduceMotion)) { tl in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                let derive = reduceMotion ? 0
+                    : (0.35 / Self.pasAngle) * sin(t * 2 * .pi / 7.3)
+                // Deux ponts Animatable emboîtés : `p` (l'entrée/sortie) et
+                // `offset` (la roue) sont chacun livrés image par image —
+                // les fenêtres, le montage du verre et LA MISE AU POINT se
+                // calculent sur la VRAIE valeur, pas sur la cible d'une
+                // transaction.
+                Chambre(p: p) { pv in
+                    Chambre(p: offset) { off in
+                        scene(g, pv, off + derive)
+                    }
                 }
             }
         }
@@ -396,79 +417,131 @@ struct VitrineHote: View {
         }
     }
 
-    // MARK: la scène
+    // MARK: la scène — LA ROUE INVISIBLE
 
     @ViewBuilder
     private func scene(_ g: GeometryProxy, _ pv: Double,
                        _ off: Double) -> some View {
         let W = g.size.width, H = g.size.height
-        let cible = CGPoint(x: W / 2, y: H * 0.42)
+        // Le moyeu (invisible) au tiers bas, l'orbite au quart de la
+        // hauteur : l'apex trône à ~43 % de l'écran, les voisins à ±115°
+        // plongent dans les coins bas, tranchés par les bords, et le
+        // quatrième choix vit SOUS l'écran — il en remonte quand on tourne.
+        let moyeu = CGPoint(x: W / 2, y: 0.681 * H)
+        let rayon = 0.246 * H
+        // LA MISE AU POINT : la distance signée au cran le plus proche.
+        // Une pure fonction de `off` (livré image par image) — elle pilote
+        // le flou de mouvement de l'apex, le voyage du reflet, le nom qui
+        // traîne et la respiration du scrim. Aucune horloge, aucun état.
+        let fracSigne = off - off.rounded()
         ZStack {
-            // LE SCRIM — la home s'enfonce dans le noir, JAMAIS noir total
-            // (verdict « l'écran noir non ! ») : la vidéo doit continuer de
-            // nourrir le verre du widget central.
-            Color.black.opacity(0.30 * fen(pv, 0, 0.5))
+            // LE SCRIM — jamais noir total (verdict « l'écran noir non ! »),
+            // et il RESPIRE avec la rotation : la pièce s'assombrit quand la
+            // roue tourne, se rouvre au cran.
+            Color.black.opacity((0.30 + 0.05 * min(abs(fracSigne) * 3, 1))
+                                * fen(pv, 0, 0.5))
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture { annuler() }
 
             ForEach(Array(choix.enumerated()), id: \.element) { i, kind in
-                item(kind, i: i, off: off, pv: pv, cible: cible)
+                nacelle(kind, i: i, off: off, pv: pv,
+                        moyeu: moyeu, rayon: rayon, fracSigne: fracSigne)
             }
 
-            nomCentre(off: off, pv: pv, cible: cible)
+            nomMoyeu(off: off, pv: pv, moyeu: moyeu, rayon: rayon,
+                     fracSigne: fracSigne)
         }
         .simultaneousGesture(roueGeste(n: choix.count))
     }
 
+    /// UNE NACELLE — droite, jamais couchée (la micro-inclinaison de ±4°
+    /// max dit l'arc sans coucher l'encre : le point qui sépare la molette
+    /// d'horloger de la roue de casino).
     @ViewBuilder
-    private func item(_ kind: WidgetKind, i: Int, off: Double,
-                      pv: Double, cible: CGPoint) -> some View {
+    private func nacelle(_ kind: WidgetKind, i: Int, off: Double,
+                         pv: Double, moyeu: CGPoint, rayon: CGFloat,
+                         fracSigne: Double) -> some View {
         let d = Double(i) - off
-        let ad = abs(d)
         let volant = kind == (sortie ? elu : depart)
-        let posRoue = CGPoint(x: cible.x + CGFloat(d) * Self.pas, y: cible.y)
-        // LE VOL : du slot au centre (et retour à la sortie) — un seul
-        // curseur, la position est une interpolation de `pv`, jamais deux
-        // `withAnimation` croisés. Reduce Motion : pas de vol, des fondus.
-        let vol = reduceMotion ? 1.0 : adouci(fen(pv, 0.15, 0.85))
-        let entree = fen(pv, 0.55, 1.0)
-        let pos: CGPoint = volant
-            ? CGPoint(x: origine.midX + (posRoue.x - origine.midX) * vol,
-                      y: origine.midY + (posRoue.y - origine.midY) * vol)
-            : CGPoint(x: posRoue.x + (d >= 0 ? 40 : -40) * (1 - entree),
-                      y: posRoue.y)
-        let actif = ad < 0.25 && pv > 0.92 && !sortie
-        let flou = ad < 0.25 ? 0 : 2.6 * min(ad, 1)
-        // Le vol raccorde aussi l'ÉCHELLE : en mode édition la rangée est
-        // zoomée arrière (0,96) — le clone part à la taille exacte du slot
-        // et grandit en volant, sinon la prise de relais saute de 4 %.
-        let zOrigine = Double(origine.width) / 170
-        let zVol = volant ? zOrigine + (1 - zOrigine) * vol : 1
+        // LA NAISSANCE PAR L'ARC : rien n'entre par les flancs — un excès
+        // d'angle qui se résorbe pousse chaque nacelle sous le bord bas,
+        // échelonné par rang (les plus lointaines arrivent en dernier et
+        // repartent en premier, par construction des fenêtres).
+        let rang = min(abs(Int(d.rounded())), 3)
+        let entree = fen(pv, 0.42 + 0.08 * Double(rang), 1.0)
+        let excede = (volant || reduceMotion) ? 0
+            : 70.0 * (1 - adouci(entree))
+        let theta = min(max(d * Self.pasAngle
+                            + (d >= 0 ? excede : -excede), -168), 168)
+        if abs(theta) < 150 || volant {
+            let a = abs(theta) / Self.pasAngle       // 0 à l'apex, 1 au cran
+            let rad = theta * .pi / 180
+            let surArc = CGPoint(x: moyeu.x + rayon * sin(rad),
+                                 y: moyeu.y - rayon * cos(rad))
+            // LE VOL : du slot à l'apex (et retour) — un seul curseur.
+            let vol = (reduceMotion || !volant) ? 1.0
+                : adouci(fen(pv, 0.15, 0.85))
+            let pos = volant
+                ? CGPoint(x: origine.midX + (surArc.x - origine.midX) * vol,
+                          y: origine.midY + (surArc.y - origine.midY) * vol)
+                : surArc
+            let actif = a < 0.22 && pv > 0.92 && !sortie
+            // LES TROIS FLOUS — la profondeur (en CARRÉ de l'angle : le
+            // plan focal est à l'apex), et la mise au point (la roue tourne
+            // floue, s'arrête nette — coupée sous Reduce Motion).
+            let flouProfondeur = 5.5 * pow(min(a, 1.3), 2)
+            let flouApex = reduceMotion ? 0
+                : 2.2 * min(abs(fracSigne) * 4, 1) * (1 - min(a * 3, 1))
+            let am = pow(min(a, 1), 1.4)
+            // Le vol raccorde l'ÉCHELLE (la rangée en édition est zoomée
+            // 0,96) ; et l'apex se REFAIT en échelle avec le point
+            // (1,015 → 1,00) — jamais le flou seul.
+            let zOrigine = Double(origine.width) / 170
+            let zVol = volant ? zOrigine + (1 - zOrigine) * vol : 1
+            let echelle = (1 - 0.42 * min(a, 1.15)) * zVol
+                * (1 + (actif && !reduceMotion
+                        ? 0.015 * min(abs(fracSigne) * 4, 1) : 0))
 
-        carte(kind, actif: actif)
-            .frame(width: 170, height: 170)
-            .overlay {
-                // Le voile des voisins — ils reculent dans la nuit.
-                RoundedRectangle(cornerRadius: 0.152 * 170, style: .circular)
-                    .fill(Color.black.opacity(0.45 * min(ad, 1)))
-                    .allowsHitTesting(false)
-            }
-            .overlay { LisereActif(p: actif ? 1 : 0) }
-            .overlay {
-                // Un voisin se tape : il vient au centre. (Sa card est
-                // inerte — un seul widget est interactif à la fois.)
-                if !actif, pv > 0.9, !sortie {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture { recentrer(i) }
+            carte(kind, actif: actif)
+                .frame(width: 170, height: 170)
+                .overlay {
+                    // LE VOILE MONTE DU PIED : la nuit de la page mange les
+                    // nacelles par le bas — jamais un noir plat.
+                    RoundedRectangle(cornerRadius: 0.152 * 170,
+                                     style: .circular)
+                        .fill(LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0.66 * am),
+                                      location: 0.00),
+                                .init(color: .black.opacity(0.34 * am),
+                                      location: 1.00),
+                            ],
+                            startPoint: .bottom, endPoint: .top))
+                        .allowsHitTesting(false)
                 }
-            }
-            .blur(radius: flou)
-            .scaleEffect((1 - 0.14 * min(ad, 1.3))
-                         * (volant ? zVol : 0.92 + 0.08 * entree))
-            .position(pos)
-            .opacity(volant ? 1 : entree)
+                .overlay { LisereActif(p: actif ? 1 : 0,
+                                       verse: .degrees(-80 * fracSigne)) }
+                .overlay {
+                    // Un voisin se tape : il monte à l'apex.
+                    if !actif, pv > 0.9, !sortie {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { recentrer(i) }
+                    }
+                }
+                .blur(radius: flouProfondeur + flouApex)
+                .rotationEffect(.degrees(4 * sin(rad)))
+                // UNE SEULE SOURCE, EN HAUT : l'ombre s'allonge et
+                // s'adoucit en descendant l'arc — c'est elle qui vend le
+                // cercle sans le dessiner.
+                .shadow(color: .black.opacity(0.28 + 0.24 * min(a, 1)),
+                        radius: 10 + 16 * min(a, 1),
+                        y: 5 + 13 * min(a, 1))
+                .scaleEffect(echelle)
+                .position(pos)
+                .opacity(volant ? 1 : entree)
+        }
     }
 
     /// Le widget de la vitrine. SEUL l'actif a le verre et le doigt : les
@@ -509,38 +582,51 @@ struct VitrineHote: View {
         }
     }
 
-    /// Le nom sous le centre — `01 — REGULARITY`, qui plonge à zéro entre
-    /// deux crans (le texte change caché dans le creux).
+    /// Le nom, AU MOYEU — `01 — REGULARITY`. Il traîne sur la rotation
+    /// (8 % du pas), plonge dans le creux avec un souffle de flou, et son
+    /// tracking se resserre à l'atterrissage : le mot se pose.
     @ViewBuilder
-    private func nomCentre(off: Double, pv: Double,
-                           cible: CGPoint) -> some View {
+    private func nomMoyeu(off: Double, pv: Double, moyeu: CGPoint,
+                          rayon: CGFloat, fracSigne: Double) -> some View {
         let iC = min(max(Int(off.rounded()), 0), choix.count - 1)
-        let dip = 1 - min(abs(off - Double(iC)) * 2, 1)
+        let dip = min(abs(fracSigne) * 2, 1)
         Text("\(choix[iC].numero) — \(choix[iC].nom)")
             .font(.system(size: 11, weight: .semibold))
-            .tracking(2.4)
+            .tracking(2.4 + 1.2 * dip)
             .foregroundStyle(.white.opacity(0.38))
-            .position(x: cible.x, y: cible.y + 85 + 28)
-            .opacity(dip * fen(pv, 0.80, 1) * (sortie ? 0 : 1))
+            .blur(radius: 1.5 * dip)
+            .offset(x: -18 * fracSigne)
+            .position(x: moyeu.x, y: moyeu.y - rayon + 85 + 30)
+            .opacity((1 - dip) * fen(pv, 0.80, 1) * (sortie ? 0 : 1))
             .allowsHitTesting(false)
     }
 
     // MARK: le geste de la roue
+
+    /// LA BUTÉE ÉLASTIQUE : au-delà du premier ou du dernier cran la roue
+    /// se retient en tanh (±0,30 cran max) — un refus doux, jamais un mur.
+    private func borneDouce(_ brut: Double, max borneMax: Double) -> Double {
+        if brut < 0 { return -0.30 * tanh(-brut / 0.45) }
+        if brut > borneMax {
+            return borneMax + 0.30 * tanh((brut - borneMax) / 0.45)
+        }
+        return brut
+    }
 
     private func roueGeste(n: Int) -> some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { v in
                 guard p >= 0.999, !sortie else { return }
                 if grab == nil {
-                    // Le verrou d'axe : la roue est horizontale.
+                    // Le verrou d'axe : la roue se tourne à l'horizontale.
                     guard abs(v.translation.width)
                             > abs(v.translation.height) else { return }
                     grab = offset
                 }
                 guard let g0 = grab else { return }
-                let borne = Double(n - 1)
-                offset = min(max(g0 - Double(v.translation.width)
-                                 / Double(Self.pas), -0.35), borne + 0.35)
+                offset = borneDouce(g0 - Double(v.translation.width)
+                                    / Double(Self.pasPt),
+                                    max: Double(n - 1))
                 let c = min(max(Int(offset.rounded()), 0), n - 1)
                 if c != dernierCentre {
                     dernierCentre = c
@@ -552,9 +638,9 @@ struct VitrineHote: View {
                 grab = nil
                 let borne = Double(n - 1)
                 let vel = min(max(-Double(v.velocity.width)
-                                  / Double(Self.pas), -6), 6)
+                                  / Double(Self.pasPt), -6), 6)
                 // La cible : jamais à plus de deux crans de la main (la loi
-                // du manège), et jamais hors de la roue.
+                // du manège — une molette d'horloger, pas un jackpot).
                 var cibleC = (offset + vel * 0.35).rounded()
                 cibleC = min(max(cibleC, g0.rounded() - 2), g0.rounded() + 2)
                 cibleC = min(max(cibleC, 0), borne)
