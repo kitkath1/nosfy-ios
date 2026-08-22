@@ -78,21 +78,56 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     // TYPE FEU, PLUS ORANGÉ (Kathryn : « les halos plus orangés » —
     // l'or recule). VERROU : les arcs de reflet de liquidLens (rc[])
     // clonent ces valeurs — les changer ENSEMBLE, toujours.
-    const float3 cols[4] = { float3(1.00, 0.78, 0.40),
-                             float3(1.00, 0.54, 0.16),
-                             float3(1.00, 0.92, 0.78),
-                             float3(1.00, 0.64, 0.26) };
+    //
+    // HARMONISATION AVEC LA HOME (22-08). Son verdict : « à la place du
+    // orange et trop de doré, plus de rouge et de orange et de blanc et
+    // orange léger ». Les quatre voix disent désormais exactement ces
+    // quatre mots, dans l'ordre :
+    //   #1 ROUGE       — c'était LE doré (0,78/0,40), le coupable désigné
+    //   #2 ORANGE      — intacte, elle était déjà juste
+    //   #3 BLANC chaud — intacte, c'est le « blanc » demandé
+    //   #4 ORANGE LÉGER — un cran de vert en moins, elle dorait encore
+    // R reste à 1,00 sur les quatre : on désature le vert, on ne noircit
+    // pas le rouge (l'anti-marron de la maison).
+    //
+    // 2e PASSE, même jour, après « c'est trop orange — ALTERNE du rouge du
+    // orange du blanc comme la vidéo flamme ». Les quatre voix ORBITENT
+    // autour du disque : c'est leur rotation qui fait l'alternance, encore
+    // faut-il qu'elles soient assez ÉCARTÉES pour qu'on les distingue. À
+    // 0,36 / 0,54 / 0,92 / 0,56 de G/R, trois d'entre elles étaient le
+    // même orange et on ne lisait qu'un aplat. Elles s'écartent sur la
+    // rampe mesurée dans `home-fond-flamme.mp4` (racines 0,13 → chaud
+    // 0,41), le blanc gardant sa place à part :
+    //     #1 rouge profond · #2 orange franc · #3 BLANC · #4 rouge-orange
+    // Et LE BLEU TOMBE À ZÉRO (0,12-0,20 → 0,02) : la vidéo tient B/R à
+    // 0,01, et c'est ce bleu-là qui délavait le feu en nappe plate.
+    // (#3 passe du crème 0,92/0,78 au BLANC franc 0,96/0,90 — « assez
+    // violent » : un blanc cassé sur du rouge se lit encore comme du jaune.)
+    const float3 cols[4] = { float3(1.00, 0.17, 0.02),
+                             float3(1.00, 0.46, 0.03),
+                             float3(1.00, 0.96, 0.90),
+                             float3(1.00, 0.29, 0.02) };
     const float speed[4] = {  6.2832 / 47.0, -6.2832 / 29.0,
                               6.2832 / 19.0, -6.2832 / 71.0 };
     const float phase[4] = { 0.4, 2.6, 4.4, 5.6 };
     const float rho0[4]  = { 1.02, 0.98, 1.01, 1.14 };
-    const float srs[4]   = { 0.34, 0.19, 0.10, 0.42 };
-    const float sts[4]   = { 0.66, 0.50, 0.34, 0.72 };
+    // LE BLANC MONTE (22-08, « rajoute du blanc assez violent »). La voix
+    // blanche était la plus FAIBLE des quatre (poids 0,45, le plus bas) et
+    // la plus SERRÉE (srs 0,10, sts 0,34, kappa 22) : sur un lit devenu
+    // franchement rouge, elle ne se voyait plus du tout. Elle devient la
+    // voix DOMINANTE — poids 0,45 → 1,05 — et elle s'ÉLARGIT assez pour se
+    // lire comme un lobe et non comme un fil (srs ×1,7, sts ×1,35, kappa
+    // 22 → 11). Les trois autres ne bougent pas d'un cheveu : c'est le
+    // contraste avec elles qui fait l'alternance.
+    // ⚠️ `srs`/`sts`/`wgt` sont CLONÉS dans les reflets (rsr/rst/rwg) —
+    // les trois y changent à l'identique, comme la palette.
+    const float srs[4]   = { 0.34, 0.19, 0.17, 0.42 };
+    const float sts[4]   = { 0.66, 0.50, 0.46, 0.72 };
     const float bper[4]  = { 13.0, 8.1, 5.2, 21.0 };
     const float bbase[4] = { 0.72, 0.62, 0.50, 0.66 };
     const float bamp[4]  = { 0.28, 0.38, 0.50, 0.30 };
-    const float wgt[4]   = { 0.55, 0.85, 0.45, 0.50 };
-    const float kap[4]   = { 5.0, 9.0, 22.0, 3.5 };
+    const float wgt[4]   = { 0.55, 0.85, 1.05, 0.50 };
+    const float kap[4]   = { 5.0, 9.0, 11.0, 3.5 };
 
     float2 n = r > 0.5 ? d / r : float2(0.0, -1.0);
     float insideDisc = 1.0 - smoothstep(R - 1.0, R + 0.5, r);
@@ -136,8 +171,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
         // (orange → or) et GLISSE vers sa couleur — les chaudes restent
         // orange par nature, le blanc et la bleutée sont l'encre qui
         // refroidit. À ig = 1, les voix exactes du cadran.
-        float3 carrier = mix(float3(1.00, 0.60, 0.26),
-                             float3(1.00, 0.76, 0.40), igv);
+        // La porteuse de la NAISSANCE : elle partait de l'encre et glissait
+        // vers l'or. Elle glisse maintenant vers l'orange — l'apparition du
+        // galet ne passe plus par une étape dorée (verdict 22-08).
+        float3 carrier = mix(float3(1.00, 0.24, 0.02),
+                             float3(1.00, 0.40, 0.03), igv);
         float3 colv = mix(carrier, cols[i],
                           igv * igv * (3.0 - 2.0 * igv));
         light += colv * (g * breath * wv);
@@ -323,10 +361,13 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
                         float3(1.00, 0.58, 0.24), night);
     float3 sienna = float3(0.62, 0.28, 0.10);
     float3 bloomC = mix(float3(1.00, 0.72, 0.32),
-                        float3(1.00, 0.90, 0.70), night);
+                        float3(1.00, 0.84, 0.60), night);
     // Le voile porteur de la nuit est une crème DORÉE : du blanc pur à
     // faible alpha sur du noir lit « fumée grise » — une seconde matière.
-    float3 lowC = mix(yellow, float3(1.00, 0.88, 0.64), night);
+    // 22-08 : la crème RESTE (elle est structurelle, sans elle la fumée
+    // devient grise), mais elle se chauffe — crème d'orange, plus crème
+    // d'or. C'est le « blanc et orange léger » du verdict.
+    float3 lowC = mix(yellow, float3(1.00, 0.82, 0.54), night);
     float3 c = mix(lowC, orange, smoothstep(0.10, 0.55, dens));
     c = mix(c, sienna, 0.18 * smoothstep(0.65, 1.70, dens)
                         * (1.0 - night));
@@ -371,7 +412,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     // et aux chiffres. Aucune disparition : une passation.
     float fold = 1.0 - dry;
     if (night > 0.5) {
-        c = mix(c, float3(1.00, 0.86, 0.55),
+        // L'encre chauffe en se condensant — mais vers un BLANC-ORANGE, non
+        // plus vers « l'or-blanc du cadran ». C'était l'or le plus visible
+        // de toute l'apparition : le dernier instant avant que le galet ne
+        // se forme, celui qu'on regarde.
+        c = mix(c, float3(1.00, 0.80, 0.50),
                 0.6 * smoothstep(0.35, 0.90, cond));
         // La passation est LONGUE, et elle ne finit JAMAIS à zéro : le
         // condensat RESTE — un cœur d'encre calme marbre l'intérieur du
@@ -419,12 +464,9 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     // limbe-miroir échantillonne, reste intact.
     napp *= mix(0.30, 1.0, smoothstep(0.72 * R, 1.06 * R, r));
     if (napp > 0.004) {
-        // TYPE FEU : cœur blanc-flamme près de la source, orange vif au
-        // large — plus l'effet miel doré.
-        float3 warm = mix(float3(1.00, 0.52, 0.16),
-                          float3(1.00, 0.76, 0.46), napp);
-        warm = mix(warm, float3(1.00, 0.62, 0.26),
-                   0.25 + 0.25 * sin(t * 0.45));
+        // (LA TEINTE DE LA NAPPE EST DESCENDUE PLUS BAS — elle se construit
+        // désormais APRÈS le champ de flamme, parce qu'elle en DÉPEND. Voir
+        // « LA RAMPE DE LA VIDÉO » quelques lignes plus loin.)
         // LA BRAME DE FLAMME : le lit VIT — des langues qui montent et
         // lèchent autour du verre. Le champ s'ADVECTE vers le large le
         // long de chaque rayon (aucune couture angulaire, aucune
@@ -448,6 +490,40 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         float w0 = 1.0 - fabs(2.0 * ph0 - 1.0);
         float fl = mix(vfbm(q1 * 0.010 + float2(9.4, 2.6)),
                        vfbm(q0 * 0.010 + float2(3.7, 8.1)), w0);
+
+        // ============ LA RAMPE DE LA VIDÉO (22-08) ============
+        // Verdict : « c'est trop orange — il faut alterner du rouge, du
+        // orange, du blanc, comme la vidéo flamme de la home ».
+        //
+        // Je ne l'ai pas devinée : je l'ai MESURÉE dans
+        // `Woop/Media/home-fond-flamme.mp4` (72 frames, 5 millions de
+        // pixels de feu, teinte moyenne par niveau de luminance) :
+        //
+        //     racines   31· 4· 0   G/R 0,13   B/R 0,00
+        //     corps bas 97·22· 1   G/R 0,23   B/R 0,01
+        //     corps    138·47· 2   G/R 0,34   B/R 0,01
+        //     le + chaud 211·87· 7  G/R 0,41   B/R 0,03
+        //
+        // DEUX RÉVÉLATIONS, et c'est la deuxième qui explique l'aplat :
+        //  1. son feu vit entre 0,13 et 0,41 de G/R — je peignais à 0,60 ;
+        //  2. **il n'a AUCUN BLEU.** B/R = 0,010 sur toute la vidéo. Mon
+        //     bleu à 0,16-0,28 lavait la saturation et transformait un feu
+        //     en nappe d'orange plate. Un feu, ça n'a pas de bleu.
+        //
+        // ET L'ALTERNANCE VIENT DE LÀ : la teinte suit désormais LA
+        // CHALEUR (le champ de flamme + la distance), plus le rayon seul.
+        // Rouge aux extrémités où la flamme s'éteint, orange dans le
+        // corps — et le BLANC reste au registre du dessus (les pointes,
+        // et la voix blanche des quatre). Trois registres qui alternent
+        // au lieu d'un aplat : c'est ça, une flamme.
+        float heat = clamp(0.66 * fl + 0.52 * napp - 0.06, 0.0, 1.0);
+        heat = clamp(heat + 0.05 * sin(t * 0.45), 0.0, 1.0);
+        const float3 vRacine = float3(1.00, 0.13, 0.005);
+        const float3 vCorps  = float3(1.00, 0.30, 0.015);
+        const float3 vChaud  = float3(1.00, 0.44, 0.035);
+        float3 warm = heat < 0.55
+            ? mix(vRacine, vCorps, heat / 0.55)
+            : mix(vCorps, vChaud, (heat - 0.55) / 0.45);
         // LA RAFALE DU TAP : les flammes sortent un peu, du côté touché —
         // la MÊME brame, amplifiée un souffle, jamais une couche neuve.
         float gust = flare * (0.30 + 0.70
@@ -462,9 +538,21 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         // LES POINTES BLANCHES : un feu a des langues qui BLANCHISSENT —
         // rares, portées par le même champ, vivantes sur toute la vie
         // du cadran (plus seulement au sommet de la rampe).
-        float tip = pow(max(fl - 0.58, 0.0) / 0.42, 2.2);
-        c += float3(1.00, 0.92, 0.80)
-             * (napp * ig * tip * 0.85 * (1.0 + 2.6 * gust));
+        // LE TROISIÈME REGISTRE — et il compte double maintenant. Sur un lit
+        // devenu franchement rouge, c'est LUI qui porte tout le blanc du
+        // « rouge / orange / blanc » : sans lui l'alternance n'a que deux
+        // termes. Seuil abaissé (0,58 → 0,52) et amplitude montée
+        // (0,85 → 1,25) : les pointes sont plus nombreuses et elles
+        // BLANCHISSENT vraiment au lieu de se deviner.
+        // « ASSEZ VIOLENT » (22-08) : seuil 0,52 → 0,44 (beaucoup plus de
+        // langues blanchissent), exposant 2,0 → 1,6 (elles montent plus
+        // vite au blanc au lieu de se deviner), amplitude 1,25 → 2,30, et
+        // la teinte quitte le crème pour un vrai blanc chaud. C'est le
+        // registre le plus haut du feu : sur un lit rouge, il doit
+        // TRANCHER, pas s'harmoniser.
+        float tip = pow(max(fl - 0.44, 0.0) / 0.56, 1.6);
+        c += float3(1.00, 0.96, 0.90)
+             * (napp * ig * tip * 2.30 * (1.0 + 2.6 * gust));
         // ET LE HALO ENTIER se soulève avec la rafale — voix comprises,
         // du côté touché : l'effet du tap se voit, pas seulement les
         // langues.
@@ -687,7 +775,9 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         float bandC = 0.80 * swellR;
         float dBand = (nr - bandC) / 0.115;
         float body = exp(-dBand * dBand);
-        float3 col = mix(float3(1.00, 0.78, 0.28),
+        // Le ruban « inspiration » du drag : sa tête dorait, elle passe à
+        // l'orange — son pied était déjà de la braise, il ne bouge pas.
+        float3 col = mix(float3(1.00, 0.66, 0.20),
                          float3(0.98, 0.42, 0.06),
                          clamp(dBand * 0.7 + 0.5, 0.0, 1.0));
         rgb -= float3(0.14, 0.095, 0.055) * (body * seat * ember * 0.60);
@@ -727,20 +817,27 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     float reflOn = nightOn * specK;
     float lipEnv = 0.0;
     if (reflOn > 0.004 && nr > 0.50) {
-        const float3 rc[4]  = { float3(1.00, 0.78, 0.40),
-                                float3(1.00, 0.54, 0.16),
-                                float3(1.00, 0.92, 0.78),
-                                float3(1.00, 0.64, 0.26) };
+        // ⚠️ CLONE EXACT de `cols[]` d'eclipseWorld — harmonisation 22-08,
+        // 2e passe : rouge profond / orange / BLANC / rouge-orange, calés
+        // sur la vidéo flamme de la home, bleu à zéro. Le verrou tient :
+        // le galet ne peut pas refléter un halo qui n'existe plus.
+        const float3 rc[4]  = { float3(1.00, 0.17, 0.02),
+                                float3(1.00, 0.46, 0.03),
+                                float3(1.00, 0.96, 0.90),
+                                float3(1.00, 0.29, 0.02) };
         const float rsp[4]  = {  6.2832 / 47.0, -6.2832 / 29.0,
                                  6.2832 / 19.0, -6.2832 / 71.0 };
         const float rph[4]  = { 0.4, 2.6, 4.4, 5.6 };
         const float rr0[4]  = { 1.02, 0.98, 1.01, 1.14 };
-        const float rsr[4]  = { 0.34, 0.19, 0.10, 0.42 };
-        const float rst[4]  = { 0.66, 0.50, 0.34, 0.72 };
+        // (voix blanche élargie — clone de srs/sts, 22-08)
+        const float rsr[4]  = { 0.34, 0.19, 0.17, 0.42 };
+        const float rst[4]  = { 0.66, 0.50, 0.46, 0.72 };
         const float rbp[4]  = { 13.0, 8.1, 5.2, 21.0 };
         const float rbb[4]  = { 0.72, 0.62, 0.50, 0.66 };
         const float rba[4]  = { 0.28, 0.38, 0.50, 0.30 };
-        const float rwg[4]  = { 0.55, 0.85, 0.45, 0.50 };
+        // (voix blanche dominante — clone de wgt, 22-08 : le blanc doit se
+        // refléter DANS le verre aussi, sinon le galet dément son halo)
+        const float rwg[4]  = { 0.55, 0.85, 1.05, 0.50 };
         float phi = atan2(d.y, d.x);
         float3 refl = float3(0.0);
         for (int i = 0; i < 4; i++) {
@@ -768,13 +865,18 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     // le lobe bas devient feu et suit les voix via lipEnv.
     rgb += float3(1.0) * (pow(up, 2.6) * band * 0.13 * specK * nGain
                           * (1.0 - 0.75 * nightOn));
-    rgb += mix(float3(1.0), float3(1.00, 0.78, 0.42), nightOn)
+    // Le spéculaire du lobe BAS, la nuit : il prenait la teinte du feu —
+    // et le feu n'est plus doré (22-08).
+    rgb += mix(float3(1.0), float3(1.00, 0.50, 0.14), nightOn)
            * (pow(down, 3.2) * band * 0.06 * specK * nGain
               * mix(1.0, 0.40 + 0.60 * min(lipEnv, 1.0), nightOn));
     // Le fil ne brille QUE face aux voix — fini le cercle parfait : la
     // séparation vient de l'éclairage, jamais d'un contour.
     float lip = exp(-pow((nr - 0.994) / 0.010, 2.0));
-    rgb += mix(float3(1.0, 0.99, 0.96), float3(1.00, 0.90, 0.74), nightOn)
+    // LE FIL DU LIMBE : c'est LUI qu'on lit comme « le galet a un liseré
+    // doré ». Il reste clair — un fil de verre n'est pas une braise — mais
+    // il quitte l'or pour un blanc chaud d'orange.
+    rgb += mix(float3(1.0, 0.99, 0.96), float3(1.00, 0.86, 0.68), nightOn)
            * (lip * mix(0.09, 0.030 + 0.11 * min(lipEnv, 1.0), nightOn)
               * shade * nGain
               * (1.0 - 0.6 * smoothstep(0.7, 1.0, spill)));
@@ -817,7 +919,10 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         float3 env = float3(layer.sample(clamp(center + dir * mEnv,
                                                lo, hi)).rgb);
         // Anti-clip : la saturation feu du monde survit au reflet.
-        env *= mix(float3(1.0), float3(1.00, 0.92, 0.80), nightOn);
+        // Le monde reflété est plus rouge qu'avant : l'anti-clip le suit
+        // d'un cran, sinon le miroir re-verdirait ce que le lit vient de
+        // perdre (le rapport compte, pas la valeur absolue).
+        env *= mix(float3(1.0), float3(1.00, 0.88, 0.72), nightOn);
         rgb += env * (fres * rimW);
     }
 

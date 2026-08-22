@@ -1187,8 +1187,11 @@ struct LiquidLensLab: View {
                     Text(faceTitle)
                         .font(.inter(12, .semibold))
                         .tracking(3.0)
+                        // L'encre du repos suit le feu du cadran : elle
+                        // était orange-doré (0,62/0,22), elle rejoint la
+                        // famille rouge/orange de l'harmonisation 22-08.
                         .foregroundStyle(resting
-                                         ? Color(red: 1.0, green: 0.62, blue: 0.22)
+                                         ? Color(red: 1.0, green: 0.48, blue: 0.18)
                                             .opacity(0.90)
                                          : Color.white.opacity(0.50))
                     Text(timeStr)
@@ -1225,11 +1228,34 @@ struct LiquidLensLab: View {
                     : sstep(Self.igniteSpan - 0.15, Self.igniteSpan + 0.35,
                             max(effortIgnite.map {
                                 now.timeIntervalSince($0) } ?? 0, 0))
-                DiamondPrimaryButton(title: "Terminer la série") {
-                    effortSeconds = elapsed
-                    draftRest = nil
-                    entering = true
-                }
+                // LE SLIDER DE LA HOME (22-08, « remplace le bouton
+                // terminer par le nouveau slider noir de la Home pour
+                // cohérence »). Même place, même rampe, même déclenchement :
+                // seul l'objet change. `.position` propose la taille pleine,
+                // le slider prend la largeur, le padding rend les marges —
+                // et sa poudre comme son rectangle-hôte vivent en
+                // overlay/background : ZÉRO emprise de layout, la page ne
+                // bouge pas d'un point.
+                //
+                // ✅ AUCUN VOL DE GESTE, vérifié : le drag de la page est
+                // désarmé par `summitAt == nil` — c'est-à-dire exactement
+                // quand le cadran est posé, donc quand ce slider existe. Et
+                // le tap de la flambée ne part que sur un TAP, jamais sur un
+                // glissement.
+                //
+                // Ce qu'on gagne en plus de la cohérence : un armement, un
+                // commit et un veto. Une série ne peut plus se terminer sur
+                // un doigt qui traîne.
+                // (`onConfirm:` NOMMÉ, jamais en closure traînante : la
+                // struct a deux propriétés optionnelles APRÈS lui — la
+                // traînante irait se coller au mauvais paramètre.)
+                SliderObsidienne(label: "Terminer la série",
+                                 height: 62,
+                                 onConfirm: {
+                                     effortSeconds = elapsed
+                                     draftRest = nil
+                                     entering = true
+                                 })
                 .padding(.horizontal, 26)
                 .opacity(chipInS * (1 - sstep(0, 0.25, igniteT)) * effortGate)
                 .allowsHitTesting(chipIn > 0.6 && !resting

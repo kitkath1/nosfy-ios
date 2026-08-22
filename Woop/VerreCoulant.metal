@@ -64,9 +64,27 @@ static float vgLobe(float2 p, float2 c, float2 axis, float2 s) {
 
 // Les couleurs INTRINSÈQUES (couleurs de LUMIÈRE, jamais de peinture —
 // elles ne servent qu'à travers 1-exp(-E·k)).
+// ============ L'HARMONISATION AVEC LA HOME (22-08) ============
+// Verdict : « la nouvelle page est très rouge dark — qu'il y ait plus de
+// rouge à la place du doré, léger hein ». La page exo a viré au rouge
+// sombre ; l'or de la card, calé sur une photo d'août, y détonne.
+//
+// LA LOI DU GESTE, et elle n'a qu'une ligne : **R reste à 1,000, TOUJOURS.**
+// On va vers le rouge en baissant le VERT (et le bleu qui suit), jamais en
+// baissant le rouge ni en montant le bleu — c'est l'anti-marron structurel
+// de la maison (« tenir la SATURATION »). Un doré qu'on assombrit vire au
+// brun ; un doré qu'on désature du vert vire à la braise.
+//
+// CE QUI NE BOUGE PAS, et c'est la moitié du travail : `vgBlancChaud`, le
+// fil droit, les traits de coin, la fenêtre spéculaire. Ce sont EUX qui
+// font lire « verre ». Les teinter, c'est perdre la matière, pas la
+// couleur. On ne repeint que la famille CHAUDE.
 constant float3 vgBlancChaud = float3(1.000, 0.965, 0.930); // les fils froids
-constant float3 vgSepia      = float3(1.000, 0.640, 0.360); // la brume chaude
-constant float3 vgCreme      = float3(1.000, 0.780, 0.520); // les flaques crème
+// La brume chaude : sépia doré (g/r 0,64) → sépia de BRAISE (g/r 0,56).
+constant float3 vgSepia      = float3(1.000, 0.560, 0.280); // la brume chaude
+// Les flaques : c'était LE plus doré de la carte (0,78/0,52). Elles restent
+// des flaques crème — mais d'une crème chauffée, pas d'un or.
+constant float3 vgCreme      = float3(1.000, 0.700, 0.420); // les flaques crème
 constant float3 vgNeutre     = float3(0.940, 0.945, 0.980); // l'épaule gauche
 constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin HD
 
@@ -405,8 +423,11 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // elle le bain et l'aura se REJOIGNENT, aucun noir entre eux).
         float bainW = smoothstep(0.32, 0.02, fxB)
                     * smoothstep(0.50, 0.02, q.y / H);
+        // Le bain garde son BLANC en haut (c'est le pont vers l'aura du
+        // médaillon, et un pont blanc reste blanc) ; c'est son pied, celui
+        // qui dorait, qui descend vers l'orange léger.
         float3 cBain = mix(float3(1.0, 0.95, 0.90),
-                           float3(1.0, 0.86, 0.68),
+                           float3(1.0, 0.78, 0.56),
                            smoothstep(0.10, 0.45, q.y / H));
         // Divisé par deux (16-08) : c'est lui qui tenait encore le coin
         // haut-gauche à +0,13 sur la diagonale et +0,10 sur la tranche
@@ -468,7 +489,14 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // `sin(essor·π)` — nul aux deux bouts, donc les deux états au
         // repos sont intacts.
         float feu = 1.0 + 0.85 * sin(clamp(essor, 0.0, 1.0) * 3.14159);
-        E += (0.32 * braise * feu) * float3(1.0, 0.52, 0.16);
+        // LA BRAISE PASSE AU ROUGE — et son ÉNERGIE baisse avec elle
+        // (0,32 → 0,27). Sans ça le geste serait invisible : la composition
+        // est en `1-exp(-E)`, et sur un foyer où E est déjà grand, changer
+        // le vecteur couleur ne déplace presque pas la luminance. C'est la
+        // leçon écrite plus bas ligne ~652 (« moduler l'énergie de ±30 %
+        // ne déplace la luminance que de 0,05 ») — ici on la paie d'avance
+        // au lieu de la repayer au verdict.
+        E += (0.27 * braise * feu) * float3(1.0, 0.44, 0.11);
 
         // LE CHEVEU DU TRAIT VERT (16-08). Après trois tentatives à côté,
         // elle a tranché en DESSINANT un trait vert sur sa capture : « je
@@ -490,14 +518,18 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // au pied, éteint en haut.
         float cheveuV = exp(-dSeg * dSeg / (2.0 * 0.34 * 0.34))
                       * (1.0 - 0.80 * tSeg * tSeg);
-        E += (fin * 1.05 * cheveuV * feu) * float3(1.0, 0.64, 0.28);
+        E += (fin * 1.05 * cheveuV * feu) * float3(1.0, 0.56, 0.21);
 
         // 1. LE CHEVEU EN ARC — son noyau est celui du trait du coin
         // (σ 0,50), pas celui des tranches : c'est un cheveu, pas un fil.
         float dxArc = qPar.x - 0.64 * W;
         float arcBas = exp(-dxArc * dxArc / (2.0 * 12.0 * 12.0));
         float gBas = exp(-d * d / (2.0 * 0.50 * 0.50));
-        E += (3.50 * arcBas * gBas * wB) * float3(1.0, 0.60, 0.28);
+        // LE CHEVEU EN ARC — l'événement le plus VU du bas de la card (la
+        // grande écharpe dorée de la capture). Il descend d'un cran, et son
+        // énergie avec lui (3,50 → 3,15) : même raison que la braise, un
+        // cœur saturé ne change pas de couleur, il change d'énergie.
+        E += (3.15 * arcBas * gBas * wB) * float3(1.0, 0.52, 0.21);
 
         // 2. LE RAYON À 41°.
         float xr = 0.75 * W + 1.15 * tB;
@@ -505,7 +537,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float rayon = exp(-dxr * dxr / (2.0 * 7.2 * 7.2))
                     * exp(-tB / 16.0)
                     * smoothstep(0.0, 2.5, tB);
-        E += (0.55 * rayon) * float3(1.0, 0.55, 0.22);
+        E += (0.55 * rayon) * float3(1.0, 0.49, 0.17);
         // La nappe douce DANS l'arc du coin haut-gauche (ses crops du
         // 16-08) : un patch court et rond juste derrière le biseau —
         // plus le long lobe diagonal d'avant.
@@ -562,7 +594,10 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // Le fil GAUCHE s'ORE en descendant (la référence : gris-chaud en
         // haut du flanc, doré franc vers le coin bas) — la teinte suit la
         // position, jamais l'intensité seule (la leçon oIris).
-        float3 cFilG = mix(float3(1.0, 0.96, 0.90), float3(1.0, 0.78, 0.52),
+        // Le fil gauche ne « s'ORE » plus en descendant : il ROUGIT. Le
+        // haut du flanc reste gris-chaud (intact), seule sa descente change
+        // de destination — c'est la même loi qu'avant, une autre arrivée.
+        float3 cFilG = mix(float3(1.0, 0.96, 0.90), float3(1.0, 0.70, 0.42),
                            smoothstep(0.45 * H, H, q.y));
         // PHASE 7 — LA TRANCHE HAUTE, événement par événement (mesurée) :
         // morte aux extrêmes, événement neutre à 7-21 % (pic 0,72 à
@@ -583,7 +618,9 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float warmT = smoothstep(0.55, 0.80, fx)
                     * (1.0 - smoothstep(0.86, 0.93, fx));
         envT += 0.34 * warmT;
-        float3 cTop = mix(vgBlancChaud, float3(1.0, 0.66, 0.34), warmT);
+        // La « microscopique lueur orange » de la tranche haute : elle était
+        // dorée (0,66/0,34), elle devient vraiment orange.
+        float3 cTop = mix(vgBlancChaud, float3(1.0, 0.58, 0.26), warmT);
         // LA TRANCHE BASSE : ligne continue 0,5-0,6 + LE HOTSPOT GOLD à
         // x=31-33 % (0,87-0,94 — le liseré qui touche la tranche sous le
         // point de jauge). ASYMÉTRIQUE, comme la mesure : montée lente
@@ -616,7 +653,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         envB *= creuxMil;
         envB += 0.25 * exp(-(fx - 0.74) * (fx - 0.74) / 0.00025)
               + 0.20 * exp(-(fx - 0.785) * (fx - 0.785) / 0.00018);
-        float3 cBas = mix(vgSepia, float3(1.0, 0.72, 0.35),
+        float3 cBas = mix(vgSepia, float3(1.0, 0.64, 0.27),
                           smoothstep(0.18, 0.32, fx)
                           * (1.0 - smoothstep(0.36, 0.52, fx)));
         // PHASE 5 — LE FIL GAUCHE, hiérarchie mesurée : le fil est
@@ -830,8 +867,11 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
                        + 0.70 * exp(-dth60 * dth60 / (2.0 * 0.314 * 0.314));
         float gTRc = smoothstep(1.6 * rH, 0.6 * rH, dTR);
         E += (ouvert * manqueTR * gTRc * gCoin) * vgBlancChaud;
+        // Les coins bas : le droit suit `vgCreme` (déjà chauffé plus haut),
+        // le gauche — « bas-gauche orange » du relevé — passe à la braise.
+        // Le haut-gauche reste BLANC : il ne fait pas partie du chaud.
         eRim += (2.20 * exp(-dBR / 13.0)) * vgCreme
-              + (1.65 * exp(-dBL / 20.0)) * float3(1.0, 0.58, 0.26)
+              + (1.65 * exp(-dBL / 20.0)) * float3(1.0, 0.50, 0.19)
               + (0.18 * exp(-dTL / 8.0)) * float3(1.0, 0.97, 0.94);
         E += eRim * gT;
 
@@ -873,7 +913,7 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         float profAirL = smoothstep(0.30, 0.50, q.y / H)
                        * (0.40 + 0.60 * exp(-(q.y - 0.55 * H) * (q.y - 0.55 * H)
                                             / (0.35 * H * 0.35 * H)));
-        Eo += (0.22 * exp(-tOut / 2.5) * wL * profAirL) * float3(1.0, 0.80, 0.62);
+        Eo += (0.22 * exp(-tOut / 2.5) * wL * profAirL) * float3(1.0, 0.72, 0.52);
         // ... et LE DÉBORDEMENT du trait de sa marque rouge : il « dépasse
         // légèrement », donc une portée courte (1,6 pt) et blanche, bornée
         // à la même tranche de hauteur que le cœur.
@@ -897,11 +937,15 @@ constant float3 vgVoile      = float3(1.000, 0.930, 0.860); // la nappe du coin 
         // mesuré dans sa capture 0,18 à 2 pt, 0,11 à 4, 0,07 à 6,
         // 0,05 à 8 — éteint vers 10. Le seuil anti-cellule (2 %
         // d'énergie) et la borne de 16 pt le tiennent : rien ne fuit.
+        // LES HALOS DANS L'AIR — c'est CE qu'on voit déborder de la card sur
+        // la nuit rouge, et donc ce qui devait rougir en premier. Ils
+        // gardent leur portée et leur seuil anti-cellule à l'identique :
+        // on repeint, on ne redessine pas.
         float dxAir = q.x - 0.64 * W;
         Eo += (0.42 * exp(-tOut / 4.5) * wB
                * exp(-dxAir * dxAir / (2.0 * 30.0 * 30.0)))
-              * float3(1.0, 0.52, 0.16);
-        Eo += (0.28 * exp(-dBL / 16.0)) * float3(1.0, 0.55, 0.25);
+              * float3(1.0, 0.44, 0.11);
+        Eo += (0.28 * exp(-dBL / 16.0)) * float3(1.0, 0.47, 0.18);
         Eo += (0.35 * exp(-dBR / 16.0)) * vgCreme;
 
         // (LES TROIS RAYONS SONT MORTS — Phase 2 de la restauration :

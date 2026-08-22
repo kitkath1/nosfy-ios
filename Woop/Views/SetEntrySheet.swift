@@ -78,15 +78,33 @@ struct SetEntrySheet: View {
             }
             Spacer(minLength: 0)
 
-            GaletSlide(label: "Glisser pour lancer le repos",
-                       validate: {
-                           // Le refus MONTRE sa raison : sans repos choisi,
-                           // les pastilles tremblent en rouge.
-                           if rest == nil { restNudge += 1 }
-                           return rest != nil
-                       },
-                       onMood: { m in mood = m },
-                       onConfirm: onConfirm)
+            // LE SLIDER DE LA HOME (22-08, « mets celui de la home pour
+            // consistance »). Le médaillon braise de `GaletSlide` est
+            // ARCHIVÉ : deux sliders de validation dans la même app, c'est
+            // deux grammaires du même geste, et celle de la home est
+            // désormais la seule.
+            //
+            // Le passage est un remplacement PUR : `SliderObsidienne`
+            // expose exactement les quatre mêmes propriétés — label,
+            // validate, onMood, onConfirm. Aucun adaptateur, aucune
+            // reprise de flow.
+            //   — le VETO survit : `validate` à false ⇒ grenat + deux coups
+            //     secs, et les pastilles de repos tremblent toujours ;
+            //   — l'EMBRASEMENT survit : `onMood` nourrit la même nappe de
+            //     feu du panneau. Mieux, la rampe de braise du slider EST
+            //     `SetEntrySheet.fire` (c'est écrit dans son en-tête) : les
+            //     deux étaient déjà la même famille de couleur.
+            // Hauteur 62 — celle de la home, à la lettre (elle était 70).
+            SliderObsidienne(label: "Glisser pour lancer le repos",
+                             height: 62,
+                             validate: {
+                                 // Le refus MONTRE sa raison : sans repos
+                                 // choisi, les pastilles tremblent en rouge.
+                                 if rest == nil { restNudge += 1 }
+                                 return rest != nil
+                             },
+                             onConfirm: onConfirm,
+                             onMood: { m in mood = m })
                 // 20 : la pilule s'ALIGNE sur la grille des molettes et des
                 // chips (verdict jury) — l'air du médaillon est garanti par
                 // l'emboîtement, plus par la marge.

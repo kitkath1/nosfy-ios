@@ -1,7 +1,18 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Le slider de validation — LE MÉDAILLON
+// MARK: - Le slider de validation — LE MÉDAILLON  ⚠️ ARCHIVÉ (22-08)
+//
+// PLUS AUCUN APPELANT. Son unique site — la feuille de saisie de série
+// (`SetEntrySheet`) — est passé à `SliderObsidienne`, celui de la home :
+// « archive notre slider dans l'overlay pour ajouter les reps et mets celui
+// de la home pour consistance ». Deux sliders de validation dans la même
+// app, c'était deux grammaires pour le même geste.
+//
+// Il dort ici comme dorment `ExerciseSetupCard` et `NotchedCard` : rien
+// n'est perdu, tout est mesuré, et le jour où une cérémonie mérite un
+// médaillon braise plutôt qu'un geste noir, il est prêt. Ne pas le croire
+// vivant : le fouetter ne changera plus un pixel à l'écran.
 
 /// LE GESTE QUI ENGAGE, recalé sur la référence de Kathryn
 /// (~/Downloads/woop-galet/ref.png). Un CTA se tape sans y penser ; une série
