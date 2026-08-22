@@ -602,10 +602,16 @@ devenue une ROUE INVISIBLE — rien n'est dessiné (pas de cercle, pas de
 moyeu, pas de rail), seule la LOI DE MOUVEMENT est circulaire, et c'est la
 lumière qui révèle le cercle.
 
-- **La géométrie** : moyeu invisible à (W/2 ; 0,681 h), orbite 0,246 h,
-  **115° par cran** (230 pt de doigt par cran). L'apex trône à ~43 % à sa
-  vraie taille ; les voisins plongent dans les coins bas (~78 %), tranchés
-  par les bords ; le 4ᵉ choix vit SOUS l'écran et en remonte.
+- **La géométrie — RESSERRÉE le 22-08** (verdict « je les trouve trop
+  éloignés » : à 115° l'œil ne reliait plus les trois points, les nacelles
+  se lisaient comme deux taches et la diagonale était MORTE — le vide
+  faisait cheap, pas luxe) : moyeu invisible à (W/2 ; 0,665 h), orbite
+  0,205 h, **82° par cran** (230 pt de doigt). L'apex à ~46 % à sa vraie
+  taille ; les voisins à ~64 %, échelle 0,66, flou plafonné à 3,4 pt et
+  voile allégé (on doit encore LIRE le widget d'à côté) — leurs centres
+  tombent sur les GOUTTIÈRES de la page (24/378), et le coin bas de l'apex
+  affleure leur haut le long de l'arc (~13 pt) : la roue est continue. Le
+  4ᵉ choix vit toujours SOUS l'écran et en remonte.
 - **Les trois flous** : la profondeur en CARRÉ de l'angle (le plan focal
   est à l'apex) ; **la mise au point** — la roue tourne floue et s'arrête
   nette (flou ≤ 2,2 pt + échelle 1,015 → 1,00, pilotés par la distance au

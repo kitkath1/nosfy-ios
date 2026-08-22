@@ -364,11 +364,17 @@ struct VitrineHote: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// LA ROUE INVISIBLE : 115° par cran sur l'orbite, 230 pt de doigt par
+    /// LA ROUE INVISIBLE : 82° par cran sur l'orbite, 230 pt de doigt par
     /// cran sous le pouce. Rien n'est dessiné — le moyeu vit dans le tiers
     /// bas, et c'est la lumière, les ombres et les trois flous qui révèlent
     /// le cercle.
-    private static let pasAngle: Double = 115
+    /// ⚠️ 115° était TROP LOIN (verdict « je les trouve trop éloignés ») :
+    /// l'œil ne reliait plus les trois points, les nacelles se lisaient
+    /// comme deux taches dans les coins et la diagonale était MORTE. Une
+    /// roue se lit quand les wagons SE SUIVENT : à 82°, le voisin affleure
+    /// le coin bas de l'apex le long de l'arc (~13 pt d'air), et les
+    /// centres des voisins tombent sur les GOUTTIÈRES de la page (24/378).
+    private static let pasAngle: Double = 82
     private static let pasPt: CGFloat = 230
 
     var body: some View {
@@ -427,8 +433,8 @@ struct VitrineHote: View {
         // hauteur : l'apex trône à ~43 % de l'écran, les voisins à ±115°
         // plongent dans les coins bas, tranchés par les bords, et le
         // quatrième choix vit SOUS l'écran — il en remonte quand on tourne.
-        let moyeu = CGPoint(x: W / 2, y: 0.681 * H)
-        let rayon = 0.246 * H
+        let moyeu = CGPoint(x: W / 2, y: 0.665 * H)
+        let rayon = 0.205 * H
         // LA MISE AU POINT : la distance signée au cran le plus proche.
         // Une pure fonction de `off` (livré image par image) — elle pilote
         // le flou de mouvement de l'apex, le voyage du reflet, le nom qui
@@ -471,10 +477,10 @@ struct VitrineHote: View {
         let rang = min(abs(Int(d.rounded())), 3)
         let entree = fen(pv, 0.42 + 0.08 * Double(rang), 1.0)
         let excede = (volant || reduceMotion) ? 0
-            : 70.0 * (1 - adouci(entree))
+            : 55.0 * (1 - adouci(entree))
         let theta = min(max(d * Self.pasAngle
-                            + (d >= 0 ? excede : -excede), -168), 168)
-        if abs(theta) < 150 || volant {
+                            + (d >= 0 ? excede : -excede), -160), 160)
+        if abs(theta) < 128 || volant {
             let a = abs(theta) / Self.pasAngle       // 0 à l'apex, 1 au cran
             let rad = theta * .pi / 180
             let surArc = CGPoint(x: moyeu.x + rayon * sin(rad),
@@ -490,7 +496,10 @@ struct VitrineHote: View {
             // LES TROIS FLOUS — la profondeur (en CARRÉ de l'angle : le
             // plan focal est à l'apex), et la mise au point (la roue tourne
             // floue, s'arrête nette — coupée sous Reduce Motion).
-            let flouProfondeur = 5.5 * pow(min(a, 1.3), 2)
+            // Les voisins restent PRÉSENTS (verdict « trop éloignés ») :
+            // le flou plafonne à ~3,4 pt au cran — on doit encore LIRE le
+            // widget d'à côté, pas deviner une tache.
+            let flouProfondeur = 3.4 * pow(min(a, 1.3), 2)
             let flouApex = reduceMotion ? 0
                 : 2.2 * min(abs(fracSigne) * 4, 1) * (1 - min(a * 3, 1))
             let am = pow(min(a, 1), 1.4)
@@ -499,7 +508,7 @@ struct VitrineHote: View {
             // (1,015 → 1,00) — jamais le flou seul.
             let zOrigine = Double(origine.width) / 170
             let zVol = volant ? zOrigine + (1 - zOrigine) * vol : 1
-            let echelle = (1 - 0.42 * min(a, 1.15)) * zVol
+            let echelle = (1 - 0.34 * min(a, 1.15)) * zVol
                 * (1 + (actif && !reduceMotion
                         ? 0.015 * min(abs(fracSigne) * 4, 1) : 0))
 
@@ -512,9 +521,9 @@ struct VitrineHote: View {
                                      style: .circular)
                         .fill(LinearGradient(
                             stops: [
-                                .init(color: .black.opacity(0.66 * am),
+                                .init(color: .black.opacity(0.55 * am),
                                       location: 0.00),
-                                .init(color: .black.opacity(0.34 * am),
+                                .init(color: .black.opacity(0.26 * am),
                                       location: 1.00),
                             ],
                             startPoint: .bottom, endPoint: .top))
