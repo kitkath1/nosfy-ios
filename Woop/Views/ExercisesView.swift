@@ -1750,16 +1750,29 @@ struct ExerciseCard: View {
 
     private static let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
 
-    /// Le noir de la carte : PUR sur toute la zone de la photo — le contrat qui
-    /// fond les images sans couture — soulevé en métal léger seulement sous le
-    /// bloc texte. SANS BORDURE : sur la page nuit, c'est la lumière qui passe
-    /// derrière qui dessine la silhouette.
-    private static let noirMetal = LinearGradient(
+    /// LA NUIT QUI SE DISSOUT — l'aplat noir qui porte la photo, et qui
+    /// s'efface avant le bas de la carte.
+    ///
+    /// ⚠️ C'EST LUI, LE FONDU (verdict 22-08 : « ça fait pas fondu entre le
+    /// haut avec l'image et le bas, c'est bizarre »). Le verre ne peut PAS se
+    /// fondre par le bas : son arête est ce qui en fait du verre. Alors on
+    /// retourne le problème — **le verre prend TOUTE la carte**, donc plus une
+    /// seule couture à l'intérieur, et c'est la NUIT qu'on peint par-dessus et
+    /// qu'on dissout. Le haut reste noir absolu (le contrat qui fond les
+    /// photos sans couture), le bas devient fenêtre, et entre les deux il n'y a
+    /// qu'un dégradé — rien à raccorder.
+    ///
+    /// ⚠️ ET AUCUNE TEINTE CHAUDE nulle part. Un dégradé de braise posé sur un
+    /// gris sombre vire au BRUN — verdict immédiat : « c'est marron ». La
+    /// chaleur doit venir de la VIDÉO à travers le verre, jamais d'un gris
+    /// réchauffé.
+    private static let nuitFondue = LinearGradient(
         stops: [
             .init(color: .black, location: 0.0),
-            .init(color: .black, location: 0.58),
-            .init(color: Color(red: 0.049, green: 0.051, blue: 0.061), location: 0.85),
-            .init(color: Color(red: 0.086, green: 0.090, blue: 0.102), location: 1.0)
+            .init(color: .black, location: 0.46),
+            .init(color: .black.opacity(0.72), location: 0.58),
+            .init(color: .black.opacity(0.30), location: 0.68),
+            .init(color: .black.opacity(0.0), location: 0.78)
         ],
         startPoint: .top, endPoint: .bottom
     )
@@ -1824,7 +1837,22 @@ struct ExerciseCard: View {
         }
         .frame(height: 200)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { Self.shape.fill(Self.noirMetal) }
+        .background {
+            ZStack {
+                // LA CARTE EST UNE SEULE DALLE DE VERRE — la recette de la
+                // dalle du profil, verbatim, mais sur TOUTE la carte : la
+                // forme remplie de clair, `glassEffect(.clear)` dedans. Pas de
+                // liseré : un trait autour du bas redécoupait la carte en deux
+                // étages et la faisait lire comme un panneau rapporté.
+                Self.shape
+                    .fill(Color.clear)
+                    .glassEffect(.clear, in: Self.shape)
+                // LA NUIT PAR-DESSUS, qui se dissout. Là où elle est pleine, le
+                // verre n'existe pas ; là où elle s'efface, la vidéo remonte au
+                // travers.
+                Self.shape.fill(Self.nuitFondue)
+            }
+        }
         .clipShape(Self.shape)
     }
 }
