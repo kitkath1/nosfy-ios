@@ -634,6 +634,117 @@ lumière qui révèle le cercle.
   un seul verre (l'apex). Reduce Motion : pas de mise au point, pas de
   dérive, pas d'excès d'angle — des fondus.
 
+## 13. LA CHALEUR PARTAGÉE — et la refonte des deux widgets neufs (commande du 22-08, **PAS CODÉ, attend le GO**)
+
+Deux verdicts de Kathryn : *« les widgets ont un orange très pâle —
+harmonise avec plus de dégradé, comme le composant flamme progression, le
+dégradé blanc-orange »* et *« retravaille les nouveaux widgets, leur effet
+au tap et leur background noir : le HIIT et le Peak Effort c'est très nul
+devant et au tap »*.
+
+### 13.1 Le diagnostic, chiffré
+
+- **L'ambre des widgets vit HORS de la rampe de la maison.**
+  `CardTon.ambreVif = (0,98 / 0,71 / 0,40)` — R n'est pas à 1,00 (la loi de
+  l'harmonisation rouge : R reste à 1,00) et l'écart G−B est trop faible :
+  un orange crème, pâle. La flamme, elle, tient `FlammePalette`
+  (`FlammeJauge.swift:609`) : blanc chauffé (1,0/0,94/0,80) → or
+  (1,0/0,78/0,38) → flamme (1,0/0,55/0,10) → cœur (1,0/0,40/0,04) → braise
+  (1,0/0,22/0,02) — « quatre arrêts qui ne perdent JAMAIS leur
+  saturation ».
+- **Et il est PLAT** : pastilles à deux tons voisins, segments à trois tons
+  horizontaux proches, gains en aplat. La flamme traverse la rampe entière.
+- **Les faces des widgets neufs sont vides** : 60-70 % de noir nu autour
+  d'une ligne et d'un texte — aucune densité comparée aux deux cards de
+  référence (barres, pastilles, pied structuré). Et leurs chambres sont des
+  TOOLTIPS (du texte centré), pas des révélations.
+
+### 13.2 LA LOI — une seule rampe de chaleur
+
+> **Rien ne se peint « ambre » : tout se peint « à telle CHALEUR ».** Tout
+> élément ALLUMÉ d'un widget est un point de la rampe `FlammePalette`, et
+> le blanc vit au point le plus CHAUD de l'élément, la braise à son
+> extinction — la grammaire de la flamme (blanc au pied, braise à la
+> pointe), partout.
+
+Une fonction partagée `CardTon.chaleur(t)` (0 = braise → 1 = blanc
+chauffé), écrite sur les arrêts de `FlammePalette` — l'interpolation ne se
+fait qu'ENTRE arrêts adjacents de la rampe (jamais un mix vers du gris :
+le chemin droit fabrique du brun).
+
+### 13.3 L'harmonisation, élément par élément
+
+| élément | aujourd'hui | demain |
+|---|---|---|
+| pastilles des jours (Régularité) | aplat 2 tons | **des perles de flamme** : cœur blanc chauffé décentré haut, corps or → flamme, extinction braise au bord bas, halo braise court (≤ 10 pt) |
+| piles de segments (Volume) | dégradé horizontal 3 tons | **chaque pile est une MINI-FLAMME** : le segment du pied en jaune de pointe/blanc chauffé, la montée or → flamme → braise vers le sommet — la flamme-jauge en colonne |
+| le pic de la ligne HIIT | ma rampe improvisée | recalé sur les arrêts EXACTS de `FlammePalette` (pointe blanc chauffé) |
+| gains et textes chauds (+173 %, « this week », l'anneau du pied) | aplat ambre | dégradé vertical **or → flamme** (l'école `encreTitre`, en chaleur) |
+| le liseré OR de la bezel | — | **ne bouge PAS** : c'est la lumière de la card, pas une donnée — la chaleur ne s'applique qu'aux données allumées (à re-trancher à l'œil au banc) |
+
+### 13.4 HIIT PEAK v2 — la face, puis la chambre
+
+**La face devient dense :** la trame froide s'affine et se multiplie
+(~34 segments de 1,7 pt — une soie, pas des tirets) ; le pic prend la
+rampe entière (braise aux épaules → flamme → or → pointe **blanc
+chauffé**) avec son bloom braise court ; et **LE FOYER** — sous le pic,
+dans le fond, une lueur radiale braise très basse (≤ 0,07, en canaux,
+ancrée au pic) : le noir n'est plus vide, il PORTE la chaleur. Le filet
+horizontal de la maison et le pied centré restent. Micro-vie : le sommet
+du pic scintille (l'école des points du mois, périodes incommensurables) —
+horloge endormie sous Reduce Motion, cadence à fouetter.
+
+**La chambre v2 — LE CYCLE EN GRAND.** Le tap ne pose plus une ligne de
+texte : il révèle LE SEGMENT LUI-MÊME — la timeline du cycle pleine
+largeur (récup en trame froide, effort en chaleur pleine), **les 4 tours
+répétés qui s'allument en cascade** (90 ms, `ChambreTemps`) : on VOIT
+« × 4 » au lieu de le lire. Au-dessus « 17.0 km/h » en encre métallique,
+au pied « 40 s × 4 · best segment » en sourd.
+
+### 13.5 PEAK EFFORT v2 — la face, puis la chambre
+
+**La forme liquide floue MEURT.** À sa place, **un vrai galet d'obsidienne
+PEINT** — l'école maison au complet (bol radial décentré, liseré à
+ÉVÉNEMENTS jamais continu, point chaud spéculaire DUR — sans lui l'arête
+est une lueur, pas un reflet —, contre-lumière du côté opposé) : petit
+(~0,42 W), posé sous la valeur comme un trophée. Un OBJET, pas un halo.
+Le reflet-événement devient **la caresse foil** (l'école du booster) : le
+sweep passe SUR la matière du galet quand `nouveau` — un passage toutes
+les 4,6 s, jamais un gyrophare.
+
+**La hiérarchie** : `PEAK` (sur-titre tracké) → **la valeur héro** — en
+chaleur or → flamme quand `nouveau`, en encre métallique sinon :
+*l'événement se lit à la couleur* → le nom de l'exo sous elle → le pied
+centré. Le fond : les lueurs anti-diagonales de la maison, plus une braise
+très basse au coin bas-droit quand `nouveau` (l'écho du foyer HIIT).
+
+**La chambre v2 — LE RÉCIT DU RECORD.** « 60 kg × 8 » en héros chaleur ;
+dessous « previous best · 55 kg » en sourd — et entre les deux, **la
+marche franchie, dessinée** : un trait vertical gradué braise → blanc qui
+monte du précédent au nouveau. Cascade `ChambreTemps`, pas un tooltip.
+
+### 13.6 Les jalons
+
+| # | ce qu'on juge | bancs |
+|---|---|---|
+| **H1** | la rampe partagée + l'harmonisation des 4 cards (perles, mini-flammes, pic, gains) | `-cardsLab`, verdict CÔTE À CÔTE avec la flamme (`-jaugeLab` en référence) |
+| **H2** | HIIT Peak v2 : face dense + foyer + chambre-cycle | `-cardsLab -widgetHiit`, `-chambre` |
+| **H3** | Peak Effort v2 : galet d'obsidienne + foil + chambre-récit | `-cardsLab -widgetPeak`, `-chambre` |
+
+La mesure de H1 : une capture flamme/widgets côte à côte, canaux
+comparés — **R = 1,00 partout sur l'allumé, saturation qui ne descend
+jamais** (la sonde, pas l'œil seul).
+
+### 13.7 Les pièges convoqués
+
+anti-brun (interpolation entre arrêts adjacents seulement) · halo ≤ 10 pt
+(au-delà, néon de bar) · les scintillements dorment sous Reduce Motion et
+hors chambre · aucune horloge nouvelle sur la PAGE (les enfants seulement)
+· le point chaud du galet est DUR (la leçon `verreGalet`) · le liseré or
+de la bezel ne change pas sans verdict.
+
+---
+
 **Restes pour E6 (le verdict téléphone)** :
 - les HAPTIQUES (le sim n'en a aucune) : le sec de l'entrée, les crans de
   la roue, CommitHaptic/RefusalHaptic, et le seuil des 0,50 s au doigt ;
