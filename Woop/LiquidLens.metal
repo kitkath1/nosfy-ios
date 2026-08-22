@@ -121,8 +121,8 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     // contraste avec elles qui fait l'alternance.
     // ⚠️ `srs`/`sts`/`wgt` sont CLONÉS dans les reflets (rsr/rst/rwg) —
     // les trois y changent à l'identique, comme la palette.
-    const float srs[4]   = { 0.34, 0.19, 0.17, 0.42 };
-    const float sts[4]   = { 0.66, 0.50, 0.46, 0.72 };
+    const float srs[4]   = { 0.34, 0.19, 0.23, 0.42 };
+    const float sts[4]   = { 0.66, 0.50, 0.58, 0.72 };
     const float bper[4]  = { 13.0, 8.1, 5.2, 21.0 };
     const float bbase[4] = { 0.72, 0.62, 0.50, 0.66 };
     const float bamp[4]  = { 0.28, 0.38, 0.50, 0.30 };
@@ -237,7 +237,11 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     // la saturation du rouge, par construction. La luminance, elle, est
     // conservée (on vise le niveau déjà atteint, jamais un blanc plat) :
     // le lobe garde son modelé, il change seulement de couleur.
-    float mBlanc = clamp(blancW * occ * 1.30, 0.0, 1.0);
+    // 2,20 et non 1,30 (« mets plus de blanc ») : le masque atteint son
+    // plein ailleurs qu'au seul cœur du lobe, donc le blanc a une SURFACE
+    // au lieu d'un point. C'est un réglage sans risque maintenant que la
+    // composition est un `mix` — pousser une addition aurait rallumé l'or.
+    float mBlanc = clamp(blancW * occ * 2.20, 0.0, 1.0);
     if (mBlanc > 0.003) {
         float niveau = max(max(outc.r, outc.g), outc.b);
         outc = mix(outc, float3(1.00, 0.97, 0.94) * niveau, mBlanc);
@@ -584,7 +588,9 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         // la teinte quitte le crème pour un vrai blanc chaud. C'est le
         // registre le plus haut du feu : sur un lit rouge, il doit
         // TRANCHER, pas s'harmoniser.
-        float tip = pow(max(fl - 0.44, 0.0) / 0.56, 1.6);
+        // Seuil 0,44 → 0,34 et exposant 1,6 → 1,25 : bien plus de langues
+        // blanchissent, et elles montent au blanc plus tôt dans leur course.
+        float tip = pow(max(fl - 0.34, 0.0) / 0.66, 1.25);
         // MÊME REMÈDE QUE LA VOIX BLANCHE : on TIRE vers le blanc, on ne
         // l'ajoute pas. Ici `c` porte déjà tout le lit rouge (dont le
         // canal R est saturé) — une addition y montait en jaune. Le `mix`
@@ -592,7 +598,7 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         // qu'elle reste une POINTE et non une tache plate. L'amplitude
         // redescend à 1,55 : elle compensait un blanc qui n'arrivait
         // jamais, elle n'a plus à le faire.
-        float mTip = clamp(napp * ig * tip * 1.55 * (1.0 + 2.6 * gust),
+        float mTip = clamp(napp * ig * tip * 2.70 * (1.0 + 2.6 * gust),
                            0.0, 1.0);
         if (mTip > 0.003) {
             float niv = max(max(max(c.r, c.g), c.b), 0.55);
@@ -875,8 +881,8 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
         const float rph[4]  = { 0.4, 2.6, 4.4, 5.6 };
         const float rr0[4]  = { 1.02, 0.98, 1.01, 1.14 };
         // (voix blanche élargie — clone de srs/sts, 22-08)
-        const float rsr[4]  = { 0.34, 0.19, 0.17, 0.42 };
-        const float rst[4]  = { 0.66, 0.50, 0.46, 0.72 };
+        const float rsr[4]  = { 0.34, 0.19, 0.23, 0.42 };
+        const float rst[4]  = { 0.66, 0.50, 0.58, 0.72 };
         const float rbp[4]  = { 13.0, 8.1, 5.2, 21.0 };
         const float rbb[4]  = { 0.72, 0.62, 0.50, 0.66 };
         const float rba[4]  = { 0.28, 0.38, 0.50, 0.30 };
