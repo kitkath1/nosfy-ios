@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-elevations-laterales.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

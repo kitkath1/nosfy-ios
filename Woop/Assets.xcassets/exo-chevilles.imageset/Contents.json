@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-chevilles.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

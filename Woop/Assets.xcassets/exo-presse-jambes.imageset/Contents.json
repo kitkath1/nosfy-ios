@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-presse-jambes.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

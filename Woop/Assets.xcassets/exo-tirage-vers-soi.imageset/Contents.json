@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "exo-tirage-vers-soi.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

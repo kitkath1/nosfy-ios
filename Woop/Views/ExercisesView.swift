@@ -57,12 +57,38 @@ enum ExosBanc {
     /// moyen de juger le titre qui prend le nom de la section (avec
     /// `-exosDial`, la scène est éteinte et floutée par le théâtre).
     static let section: Int? = valeur("-exosSection").map { Int($0) }
+    /// `-exosCherche <mot>` : la recherche OUVERTE sur ce mot, et la lumière de
+    /// la frappe rejouée en boucle. Une braise s'éteint en moins d'une seconde
+    /// et le simulateur ne tape sur aucune touche : sans relance, toute capture
+    /// arriverait sur une lumière déjà morte (l'école de la fumée de la
+    /// molette, `-exosDial`).
+    static let cherche: String? = mot("-exosCherche")
+    /// `-exosFrappe <âge>` : la braise FIGÉE à cet âge en secondes (0 = l'éclat
+    /// de la touche, 1 = presque éteinte). Une lumière qui vit une seconde ne
+    /// se juge pas autrement : filmée elle ne se clôt pas toujours, et une
+    /// capture prise au hasard tombe où elle veut.
+    static let frappe: Double? = valeur("-exosFrappe")
+    /// `-exosClavier <0|1>` : le clavier rangé ou sorti. Avec `-exosCherche` il
+    /// sort tout seul — c'est pour juger la GRILLE filtrée qu'on le range.
+    static let clavier: Double? = valeur("-exosClavier")
+    /// `-exosTouche <n>` : la touche `n` du clavier tenue ALLUMÉE (avec
+    /// `-exosFrappe` pour choisir l'âge de sa braise). Le simulateur ne se
+    /// pilote pas au doigt : sans ce banc, la lumière des touches ne peut être
+    /// jugée par personne.
+    static let touche: Int? = valeur("-exosTouche").map { Int($0) }
 
     private static func valeur(_ cle: String) -> Double? {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: cle), i + 1 < args.count,
               let v = Double(args[i + 1]) else { return nil }
         return v
+    }
+
+    private static func mot(_ cle: String) -> String? {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: cle), i + 1 < args.count,
+              !args[i + 1].hasPrefix("-") else { return nil }
+        return args[i + 1]
     }
 }
 
@@ -115,6 +141,12 @@ final class EtatExos {
     /// pures recalculées par image — aucune mutation par frame.
     var touchStart: Date?
     var touchEnd: Date?
+
+    /// LE CLAVIER EST OUVERT. Il vit ICI et pas en `@State` sur la page parce
+    /// que c'est le SCROLL qui le referme (« je regarde les résultats, je ne
+    /// tape plus ») : la grille l'éteint depuis sa closure de sonde, sans que
+    /// personne n'ait à lire l'offset dans un corps de vue.
+    var clavier = false
 
     /// La pulsation tactile d'une carte rejointe — dans l'état et pas en
     /// `@Binding` : la grille la déclenche et l'écoute, la page n'a pas à
@@ -310,6 +342,14 @@ struct ExercisesView: View {
     @State private var etat = EtatExos()
     @State private var filter: ExerciseCategory?
 
+    /// LA RECHERCHE — le mot tapé, et si le champ a pris la place du titre.
+    /// Ils vivent ici (et pas dans l'`@Observable`) parce qu'ils ne changent
+    /// qu'à la TOUCHE : la page a le droit de se ré-évaluer dix fois pour un
+    /// mot, comme elle le fait déjà au changement de section. Ce qui bouge par
+    /// IMAGE — la lumière — ne passe jamais par là.
+    @State private var q = ""
+    @State private var cherche = false
+
     /// LE CATALOGUE CACHÉ. Il était recalculé — `flatMap` sur les catégories —
     /// TROIS fois par évaluation de corps, donc trois fois par image de
     /// scroll. Il ne change qu'au filtre. Rempli DÈS L'INIT : le remplir à
@@ -398,6 +438,7 @@ struct ExercisesView: View {
                         .modifier(CarteLevee(etat: etat))
 
                     contenuCard(safeT: safeT, w: geo.size.width,
+                                safeB: geo.safeAreaInsets.bottom,
                                 reserve: reserve)
                         .modifier(CadreCarte(etat: etat, hEcran: hEcran,
                                              w: geo.size.width))
@@ -460,7 +501,16 @@ struct ExercisesView: View {
                 // des données, les cartes se TÉLÉPORTENT au changement de
                 // section.
                 withAnimation(.easeOut(duration: 0.28)) {
-                    items = ExosCatalogue.liste(filter)
+                    items = ExosCatalogue.liste(filter, q: q)
+                }
+                ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
+            }
+            // LE MOT CHANGE LA GRILLE — même cascade qu'un changement de
+            // section : la transaction animée est ce qui redistribue les cartes
+            // au lieu de les téléporter.
+            .onChange(of: q) { _, v in
+                withAnimation(.easeOut(duration: 0.28)) {
+                    items = ExosCatalogue.liste(filter, q: v)
                 }
                 ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
             }
@@ -493,6 +543,11 @@ struct ExercisesView: View {
             etat.detent = idx
             filter = ArcDial.items[idx].1
         }
+        if let m = ExosBanc.cherche {
+            cherche = true
+            q = m
+            etat.clavier = (ExosBanc.clavier ?? 1) > 0.5
+        }
         if let n = ExosBanc.dial {
             let idx = min(max(n, 0), ArcDial.items.count - 1)
             etat.pos = Double(idx)
@@ -513,7 +568,7 @@ struct ExercisesView: View {
     // MARK: - Le contenu de la card
 
     @ViewBuilder
-    private func contenuCard(safeT: CGFloat, w: CGFloat,
+    private func contenuCard(safeT: CGFloat, w: CGFloat, safeB: CGFloat,
                              reserve: CGFloat) -> some View {
         let cardW = w - 2 * GrandeCardExos.margeCote
         ZStack(alignment: .top) {
@@ -529,6 +584,7 @@ struct ExercisesView: View {
                         // choisie au tambour c'est ELLE qu'on lit. Le titre
                         // n'annonce pas l'écran, il annonce le contenu.
                         titre: filter?.rawValue ?? "Exercices",
+                        q: $q, cherche: $cherche,
                         retour: {
                             withAnimation(.easeOut(duration: 0.3)) {
                                 selection = .home
@@ -536,6 +592,12 @@ struct ExercisesView: View {
                         },
                         tirer: { poignee($0) },
                         reposer: { poigneeFin() })
+            // RIEN TROUVÉ — une grille vide se lit comme une page cassée. La
+            // ligne se pose sous le bandeau, jamais au centre de l'écran : le
+            // bas appartient au lit de la molette.
+            if items.isEmpty, !q.isEmpty {
+                VideRecherche(q: q, reserve: reserve)
+            }
         }
         // LE THÉÂTRE DU TOUCHER. ⚠️ Le noir est descendu de 0,55 à 0,30 et le
         // flou de 13 à 10 (verdict 22-08 : « trop sombre ») : les cartes
@@ -568,6 +630,21 @@ struct ExercisesView: View {
                 .anchorPreference(key: SlotAnchorKey.self, value: .bounds) {
                     ["tuto-dial": $0]
                 }
+        }
+        // LE CLAVIER DE BRAISE — DERNIER, donc au-dessus de la molette et de la
+        // prise du bouton : quand il est là, c'est lui qui prend le pouce. Il
+        // ne MONTE PAS avec la card (pas de `MonteAvecLaCard`) : un clavier
+        // n'est pas dans la page, il est posé sur l'écran, comme celui du
+        // système.
+        .overlay(alignment: .bottom) {
+            if etat.clavier {
+                ClavierBraise(q: $q, safeB: safeB, valider: {
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                        etat.clavier = false
+                    }
+                })
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
@@ -866,9 +943,30 @@ enum ExosCatalogue {
     /// corps du `TabView` racine, donc à chaque passage de celui-ci.
     static let tout: [Exercise] = liste(nil)
 
-    static func liste(_ filtre: ExerciseCategory?) -> [Exercise] {
-        let categories = filtre.map { [$0] } ?? ExerciseCategory.allCases
-        return categories.flatMap { ExerciseCatalog.exercises(in: $0) }
+    /// ⚠️ UNE RECHERCHE EST GLOBALE. Dès qu'une lettre est tapée, la section
+    /// n'a plus cours : chercher « squat » depuis Abdos doit trouver le squat,
+    /// pas rendre une page vide à cause d'un filtre qu'on ne voit plus. La
+    /// section reprend la main dès que le champ est vidé.
+    static func liste(_ filtre: ExerciseCategory?, q: String = "") -> [Exercise] {
+        let cle = clef(q)
+        guard !cle.isEmpty else {
+            let categories = filtre.map { [$0] } ?? ExerciseCategory.allCases
+            return categories.flatMap { ExerciseCatalog.exercises(in: $0) }
+        }
+        return ExerciseCatalog.all.filter { e in
+            clef(e.name).contains(cle) || clef(e.muscle).contains(cle)
+                || clef(e.equipment.rawValue).contains(cle)
+                || clef(e.category.rawValue).contains(cle)
+        }
+    }
+
+    /// Sans accents ni casse : « élévations » se trouve en tapant
+    /// « elevations », « Développé » en tapant « developpe ». Une recherche qui
+    /// exige les accents d'un clavier de téléphone ne sert personne.
+    static func clef(_ s: String) -> String {
+        s.folding(options: [.diacriticInsensitive, .caseInsensitive],
+                  locale: Locale(identifier: "fr_FR"))
+         .trimmingCharacters(in: .whitespaces)
     }
 }
 
@@ -958,6 +1056,9 @@ private struct BandeauExos: View {
     let etat: EtatExos
     /// « Exercices » au repos, le nom de la SECTION dès qu'on en choisit une.
     let titre: String
+    /// LE MOT CHERCHÉ, et si le champ a pris la place du titre.
+    @Binding var q: String
+    @Binding var cherche: Bool
     var retour: () -> Void
     var tirer: (DragGesture.Value) -> Void
     var reposer: () -> Void
@@ -976,20 +1077,36 @@ private struct BandeauExos: View {
                     // maison (20 du bord physique, 4 au-dessus, 8 en dessous).
                     ChipVerre(symbole: "chevron.left", label: "Retour",
                               action: retour)
-                    // Le mot CHANGE avec la section : il ne se remplace pas
-                    // d'un coup, il s'efface et le suivant monte à sa place —
-                    // le `.id` force la transition, la transaction du filtre
-                    // lui donne sa courbe.
-                    Text(titre)
-                        .font(.inter(30, .semibold))
-                        .tracking(-0.4)
-                        .foregroundStyle(WoopGradient.silverText)
-                        .fixedSize()
-                        .id(titre)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: 10)),
-                            removal: .opacity.combined(with: .offset(y: -8))))
-                    Spacer(minLength: 0)
+                    if cherche {
+                        // LE MOT TAPÉ EST LE TITRE : mêmes cotes, même encre.
+                        // On n'ouvre pas une barre de recherche par-dessus la
+                        // page — le titre DEVIENT le champ, et la braise prend
+                        // au bout des lettres.
+                        ChampRecherche(q: $q, reveiller: { etat.clavier = true })
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .transition(.opacity.combined(with: .offset(y: 8)))
+                    } else {
+                        // Le mot CHANGE avec la section : il ne se remplace pas
+                        // d'un coup, il s'efface et le suivant monte à sa place —
+                        // le `.id` force la transition, la transaction du filtre
+                        // lui donne sa courbe.
+                        Text(titre)
+                            .font(.inter(30, .semibold))
+                            .tracking(-0.4)
+                            .foregroundStyle(WoopGradient.silverText)
+                            .fixedSize()
+                            .id(titre)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 10)),
+                                removal: .opacity.combined(with: .offset(y: -8))))
+                        Spacer(minLength: 0)
+                    }
+                    // LA LOUPE, au coin droit de la ligne du titre. Le même
+                    // galet de verre que le chevron : à cette place, tout autre
+                    // objet serait une pièce rapportée.
+                    ChipVerre(symbole: cherche ? "xmark" : "magnifyingglass",
+                              label: cherche ? "Fermer la recherche" : "Chercher",
+                              action: basculer)
                 }
                 .padding(.horizontal, ExercisesView.encart)
                 .padding(.top, 4)
@@ -1019,6 +1136,347 @@ private struct BandeauExos: View {
                 }
                 .onEnded { _ in reposer() }
         )
+    }
+
+    /// Ouvre le champ, ou le ferme EN VIDANT le mot : une recherche qu'on
+    /// referme ne doit pas laisser la grille filtrée derrière un titre qui
+    /// annonce une section.
+    private func basculer() {
+        let ouvrir = !cherche
+        if !ouvrir { q = "" }
+        withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
+            cherche = ouvrir
+            etat.clavier = ouvrir
+        }
+    }
+}
+
+// MARK: - Le champ de recherche — ET LA BRAISE DE LA FRAPPE
+
+/// Le titre DEVIENT le champ : 30 semibold, l'encre de la maison, le curseur en
+/// braise. La lumière vit DERRIÈRE les lettres et son cœur est posé sur leur
+/// ligne — des lettres blanches dans une braise, ça ne se lit pas « un halo
+/// sous du texte », ça se lit « des lettres allumées ».
+///
+/// ⚠️ CE N'EST PAS UN `TextField`. Le clavier du système ne se dessine pas :
+/// pour que la lumière prenne aussi DANS LES TOUCHES, le clavier est à nous
+/// (`ClavierBraise`) — et un clavier à nous n'a rien à dire à un champ du
+/// système. Le texte est donc du `Text`, et le curseur est peint par la braise.
+/// On y perd le collage et la dictée ; on y gagne la seule chose qui comptait.
+private struct ChampRecherche: View {
+    @Binding var q: String
+    /// Rouvrir le clavier en tapant sur le mot — une fois rangé (la coche), il
+    /// n'y a plus que ça pour le rappeler.
+    var reveiller: () -> Void
+
+    /// L'instant de la dernière touche et le compte des touches : TOUTE la
+    /// lumière s'écrit dessus. Ils ne changent qu'à la frappe — jamais par
+    /// image.
+    @State private var frappe = Date()
+    @State private var coups = 0
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if q.isEmpty {
+                Text("Chercher")
+                    .font(.inter(30, .semibold))
+                    .tracking(-0.4)
+                    .foregroundStyle(Color.white.opacity(0.22))
+            } else {
+                Text(q)
+                    .font(.inter(30, .semibold))
+                    .tracking(-0.4)
+                    .foregroundStyle(WoopGradient.silverText)
+                    .lineLimit(1)
+                    // Un mot plus long que la ligne se SERRE au lieu de pousser
+                    // la loupe hors de l'écran.
+                    .minimumScaleFactor(0.7)
+            }
+        }
+        .frame(height: 44, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // LA LUMIÈRE, DERRIÈRE. Sa bande est plus haute que la ligne (68 contre
+        // 44) : un `Canvas` DÉCOUPE à son cadre, et un souffle plus grand que
+        // lui s'y coupe en deux traits horizontaux nets. Elle déborde donc de
+        // 12 pt de part et d'autre — la réserve du bandeau les a.
+        .background(alignment: .center) {
+            GeometryReader { g in
+                let m = Self.avance(q)
+                BraiseEcriture(
+                    x: min(max(m + 4, 7), max(g.size.width - 7, 8)),
+                    mot: m, frappe: frappe, coups: coups, gel: ExosBanc.frappe)
+            }
+            .frame(height: 68)
+            .allowsHitTesting(false)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { reveiller() }
+        .onChange(of: q) { _, _ in
+            coups += 1
+            frappe = .now
+        }
+        .onAppear {
+            if ExosBanc.cherche != nil, ExosBanc.frappe == nil {
+                // LE BANC : la braise se rejoue en boucle, sinon toute capture
+                // arrive sur une lumière morte (l'école de la fumée). Inutile
+                // quand `-exosFrappe` la fige déjà.
+                Timer.scheduledTimer(withTimeInterval: 1.1, repeats: true) { _ in
+                    coups += 1
+                    frappe = .now
+                }
+            }
+        }
+    }
+
+    /// L'abscisse du curseur : la largeur du texte déjà tapé, dans la fonte du
+    /// titre.
+    ///
+    /// ⚠️ MESURÉE À UIKit, pas par une sonde de géométrie. Une sonde qui rend
+    /// une constante ne rappelle jamais (le piège payé au scroll), et surtout
+    /// cette valeur ne doit changer qu'à la TOUCHE : la faire remonter par une
+    /// préférence, c'est une passe de layout par image de frappe.
+    static func avance(_ s: String) -> CGFloat {
+        guard !s.isEmpty else { return 0 }
+        let f = UIFont(name: "Inter-SemiBold", size: 30)
+            ?? .systemFont(ofSize: 30, weight: .semibold)
+        return (s as NSString)
+            .size(withAttributes: [.font: f, .kern: -0.4]).width
+    }
+}
+
+/// LA BRAISE DE L'ÉCRITURE — la lumière qui prend au bout du mot.
+///
+/// ⚠️ CE QUI FAISAIT « CHEAP » À LA PREMIÈRE PASSE, et qui est la leçon :
+///
+///   1. **une seule tache floue.** Un gros rond orange dégradé, c'est un halo
+///      de retouche. Une lumière chère a de la STRUCTURE — ici un filament net
+///      en travers, un curseur à l'arête franche, un lit d'un point d'épaisseur.
+///      Le net contre le flou, c'est ça qui fait la matière ;
+///   2. **le blanc étalé.** Le blanc chaud tient dans les 15 % du centre ;
+///      au-delà il ne fait pas « chaud », il fait GRIS (mesuré B/R = 0,58 quand
+///      la braise de la page est à 0,20) ;
+///   3. **la courbe en flash.** Une lumière qui naît à son maximum et retombe,
+///      c'est un flash d'appareil photo. Il faut une ATTAQUE (trois centièmes
+///      pour monter) et une TRAÎNE longue et basse — un éclair contre une
+///      braise ;
+///   4. **trop d'aire, pas assez d'écart.** On a baissé les surfaces et monté
+///      le contraste : moins de lumière, mais plus vive.
+///
+/// ⚠️ UN SEUL `Canvas`, la loi 4 de la page : ce qui bouge par image est un
+/// DESSIN, jamais une pile de calques animés.
+///
+/// ⚠️ ET AUCUN `.blur`. Un flou SwiftUI pose un voile clair UNIFORME sur tout
+/// le rectangle de son hôte (le piège payé au galet) — sur un bandeau noir, ça
+/// se voit tout de suite. La douceur vient des dégradés RADIAUX, qui n'ont pas
+/// de bord ; et les nappes larges sont des cercles ÉCRASÉS par le repère
+/// (`scaleBy`), jamais des ellipses remplies d'un dégradé rond — une ellipse
+/// coupe son dégradé en pleine lumière et laisse deux arêtes.
+struct BraiseEcriture: View {
+    /// L'abscisse du curseur — le bout du mot.
+    let x: CGFloat
+    /// La largeur du mot déjà écrit : le lit ne court QUE sous les lettres.
+    let mot: CGFloat
+    /// L'instant de la dernière touche : TOUT s'écrit dessus.
+    let frappe: Date
+    /// Le compte des touches. Il SÈME les cendres : deux touches de suite ne
+    /// doivent pas donner la même dérive, et un tirage au sort par image les
+    /// ferait grésiller au lieu de les faire monter.
+    let coups: Int
+    /// LE BANC (`-exosFrappe`) : l'âge imposé, et la respiration arrêtée avec
+    /// lui. Deux captures du même âge doivent rendre la même image.
+    let gel: Double?
+
+    /// La braise de la page — celle des liserés du tuto, au trait près.
+    static let braise = Color(red: 1.0, green: 0.56, blue: 0.20)
+    /// Le blanc chaud du cœur. ⚠️ Il reste SATURÉ (0,86 de bleu, pas 1,0) :
+    /// c'est la loi anti-brun de la page — on désature le vert, on ne remonte
+    /// jamais le bleu, sinon la braise vire au rose sale.
+    static let coeur = Color(red: 1.0, green: 0.94, blue: 0.86)
+    /// La robe profonde, celle qui meurt dans le noir.
+    static let profond = Color(red: 0.98, green: 0.26, blue: 0.06)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+            Canvas { ctx, size in
+                let age = gel ?? max(0, tl.date.timeIntervalSince(frappe))
+                // L'ATTAQUE ET LA TRAÎNE. `f` monte en trois centièmes puis
+                // s'éteint lentement — c'est cette montée, invisible à l'œil
+                // mais présente, qui distingue une braise d'un flash.
+                let f = min(age / 0.03, 1) * exp(-max(0, age - 0.03) * 3.4)
+                // Le repos n'est pas l'extinction : la braise RESPIRE tant que
+                // le champ est ouvert, sinon un champ vide est un trou noir.
+                let horloge = tl.date.timeIntervalSinceReferenceDate
+                let respire = gel == nil
+                    ? 0.5 + 0.5 * sin(horloge * 2 * .pi / 3.1) : 0.5
+                // La ligne des lettres : le centre optique d'un 30 semibold est
+                // un cheveu au-dessus du centre géométrique de sa bande.
+                let y = size.height * 0.47
+
+                // Une lueur = un cercle de dégradé radial. `ap` l'écrase
+                // verticalement AUTOUR de son centre : les nappes larges
+                // restent dans la bande au lieu de s'y couper.
+                func lueur(_ c: CGPoint, _ r: CGFloat, _ ap: CGFloat,
+                           _ stops: [Gradient.Stop]) {
+                    guard r > 0.4 else { return }
+                    ctx.drawLayer { l in
+                        l.translateBy(x: c.x, y: c.y)
+                        l.scaleBy(x: 1, y: ap)
+                        l.fill(Path(ellipseIn: CGRect(x: -r, y: -r,
+                                                      width: 2 * r, height: 2 * r)),
+                               with: .radialGradient(Gradient(stops: stops),
+                                                     center: .zero,
+                                                     startRadius: 0, endRadius: r))
+                    }
+                }
+
+                // 1. LE LIT — un TRAIT d'un point sous les lettres, qui refroidit
+                // vers le début du mot. Il s'arrête EXACTEMENT au bout du mot :
+                // une barre qui dépasse dans le noir n'est plus une braise sous
+                // des lettres, c'est un soulignement.
+                let g0 = max(3, x - mot)
+                if x - g0 > 6 {
+                    let lit = CGRect(x: g0, y: y + 18, width: x - g0, height: 1)
+                    ctx.fill(
+                        Path(lit),
+                        with: .linearGradient(
+                            Gradient(stops: [
+                                .init(color: Self.profond.opacity(0), location: 0),
+                                .init(color: Self.braise.opacity(0.16 + 0.30 * f),
+                                      location: 0.62),
+                                .init(color: Self.coeur.opacity(0.34 + 0.50 * f),
+                                      location: 1)]),
+                            startPoint: CGPoint(x: g0, y: 0),
+                            endPoint: CGPoint(x: x, y: 0)))
+                    // Sa vapeur : une nappe basse, très large, très faible.
+                    let vr = min(x - g0, 150)
+                    lueur(CGPoint(x: x - vr * 0.30, y: y + 18), vr, 0.15,
+                          [.init(color: Self.braise.opacity(0.05 + 0.10 * f),
+                                 location: 0),
+                           .init(color: Self.braise.opacity(0), location: 1)])
+                }
+
+                // 2. LA ROBE — large, profonde, jamais claire. C'est elle qui
+                // pose la chaleur ; elle ne doit jamais devenir le sujet, donc
+                // elle SERRE la ligne (0,60) au lieu de faire un disque au-
+                // dessus du mot.
+                lueur(CGPoint(x: x, y: y), 24 + 24 * f, 0.60,
+                      [.init(color: Self.braise.opacity(0.15 + 0.24 * f), location: 0),
+                       .init(color: Self.profond.opacity(0.10 + 0.18 * f), location: 0.42),
+                       .init(color: Self.profond.opacity(0), location: 1)])
+
+                // 3. LE NOYAU — serré, blanc, et c'est le seul blanc du dessin.
+                lueur(CGPoint(x: x, y: y), 8 + 7 * f, 0.92,
+                      [.init(color: Self.coeur.opacity(0.50 + 0.45 * f), location: 0),
+                       .init(color: Self.braise.opacity(0.34 + 0.40 * f), location: 0.46),
+                       .init(color: Self.braise.opacity(0), location: 1)])
+
+                // 4. LE FILAMENT — la signature. Une lame de lumière NETTE en
+                // travers du noyau, comme un tungstène vu à travers du verre :
+                // c'est le trait franc contre le flou qui fait lire du métal
+                // chauffé plutôt qu'une tache.
+                //
+                // ⚠️ IL EST DÉCENTRÉ VERS LA GAUCHE. Symétrique, il partait
+                // aussi loin dans le noir à droite que sur le mot à gauche —
+                // et une lance de lumière posée sur du vide, ça redevient un
+                // reflet d'objectif. Une traîne se laisse DERRIÈRE soi.
+                let fl = 30 + 78 * f
+                ctx.drawLayer { l in
+                    l.translateBy(x: x - fl * 0.20, y: y)
+                    l.scaleBy(x: 1, y: 0.028)
+                    l.fill(Path(ellipseIn: CGRect(x: -fl, y: -fl,
+                                                  width: 2 * fl, height: 2 * fl)),
+                           with: .radialGradient(Gradient(stops: [
+                            .init(color: Self.coeur.opacity(0.42 + 0.45 * f), location: 0),
+                            .init(color: Self.braise.opacity(0.26 + 0.34 * f), location: 0.34),
+                            .init(color: Self.braise.opacity(0), location: 1)]),
+                                 center: .zero, startRadius: 0, endRadius: fl))
+                }
+
+                // 5. LE CURSEUR — une arête FRANCHE. Il ne clignote pas : un
+                // clignotement de curseur est une convention de traitement de
+                // texte, pas une braise. Il respire, et il blanchit à la touche.
+                let ch = 30.0
+                let cr = CGRect(x: x - 1.1, y: y - ch / 2, width: 2.2, height: ch)
+                ctx.fill(Path(roundedRect: cr, cornerRadius: 1.1),
+                         with: .linearGradient(
+                            Gradient(stops: [
+                                .init(color: Self.braise.opacity(0.30 + 0.30 * f),
+                                      location: 0),
+                                .init(color: Self.coeur.opacity(0.72 + 0.28 * f),
+                                      location: 0.46),
+                                .init(color: Self.braise.opacity(0.34 + 0.30 * f),
+                                      location: 1)]),
+                            startPoint: CGPoint(x: 0, y: y - ch / 2),
+                            endPoint: CGPoint(x: 0, y: y + ch / 2)))
+                // Le nimbe du curseur au repos : c'est lui qui respire quand
+                // personne ne tape.
+                lueur(CGPoint(x: x, y: y), 13 + 3 * CGFloat(respire), 0.90,
+                      [.init(color: Self.braise.opacity(0.10 + 0.05 * respire),
+                             location: 0),
+                       .init(color: Self.braise.opacity(0), location: 1)])
+
+                // 6. LE SOUFFLE — il part du curseur et RECULE SUR LE MOT
+                // (écrasé à 0,24). Centré sur le curseur et bordé de clair, il
+                // partait dans le noir à droite et s'y lisait comme un reflet
+                // d'objectif sale : une auréole, pas un souffle.
+                let s = 1 - exp(-age * 4.4)
+                let sa = 0.17 * exp(-age * 3.6)
+                if sa > 0.004 {
+                    let sr = 18 + 78 * s
+                    lueur(CGPoint(x: x - sr * 0.34, y: y), sr, 0.24,
+                          [.init(color: Self.profond.opacity(0), location: 0),
+                           .init(color: Self.braise.opacity(sa * 0.5), location: 0.58),
+                           .init(color: Self.braise.opacity(sa), location: 0.80),
+                           .init(color: Self.profond.opacity(0), location: 1)])
+                }
+
+                // 7. LES CENDRES — deux, minuscules, qui montent en dérivant.
+                // Trois grosses étincelles, c'était le feu d'artifice ; deux
+                // points d'un point et demi, c'est de la cendre chaude.
+                if age < 1.4 {
+                    let t = min(age / 1.4, 1)
+                    for k in 0..<2 {
+                        let g = Double((coups &* 53 &+ k &* 97) % 211) / 211.0
+                        let ang = -Double.pi / 2 - 0.45 + 0.9 * g
+                        let v = 30 + 40 * g
+                        let px = x + CGFloat(cos(ang) * v * t)
+                        let py = y + CGFloat(sin(ang) * v * t) + CGFloat(16 * t * t)
+                        let a = 0.75 * exp(-age * 2.4) * (1 - t)
+                        lueur(CGPoint(x: px, y: py), 1.8, 1,
+                              [.init(color: Self.coeur.opacity(a), location: 0),
+                               .init(color: Self.braise.opacity(a * 0.5), location: 0.5),
+                               .init(color: Self.braise.opacity(0), location: 1)])
+                    }
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// RIEN TROUVÉ. Une grille vide sur une page noire ne se lit pas « aucun
+/// résultat », elle se lit « la page est cassée ». Une ligne suffit — et elle
+/// se pose SOUS le bandeau, jamais au centre de l'écran : le bas de la card
+/// appartient au lit de la molette.
+private struct VideRecherche: View {
+    let q: String
+    let reserve: CGFloat
+
+    var body: some View {
+        VStack(spacing: 7) {
+            Text("Rien pour « \(q) »")
+                .font(.inter(15, .semibold))
+                .foregroundStyle(Color.white.opacity(0.62))
+            Text("Un muscle, une machine, une section — tout se cherche.")
+                .font(.inter(12))
+                .foregroundStyle(Color.white.opacity(0.28))
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 36)
+        .padding(.top, reserve + 52)
+        .allowsHitTesting(false)
+        .transition(.opacity)
     }
 }
 
@@ -1223,6 +1681,21 @@ private struct GrilleExos: View {
             }
         }
         .scrollIndicators(.hidden)
+        // ON NE TAPE PLUS QUAND ON REGARDE : le clavier se range dès que le
+        // DOIGT pousse la liste.
+        //
+        // ⚠️ ET C'EST LA PHASE QU'ON ÉCOUTE, PAS LA GÉOMÉTRIE. Branché sur la
+        // sonde de scroll, le clavier mourait à la première image : cette sonde
+        // tombe une fois au tout premier layout, doigt ou pas — le clavier ne
+        // s'est jamais montré une seule fois. Et le filtrer sur un déplacement
+        // ne suffirait pas non plus : chaque lettre tapée renvoie la liste en
+        // tête (`ordre`), donc chaque lettre refermerait le clavier.
+        .onScrollPhaseChange { _, phase in
+            guard phase == .interacting, etat.clavier else { return }
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                etat.clavier = false
+            }
+        }
     }
 
     /// La prise du voile pour la carte d'indice `i` : 0 = nette, 1 = fondue au

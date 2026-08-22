@@ -3,8 +3,13 @@ import SwiftData
 
 // MARK: - Catalogue
 
+/// L'ordre des cas est celui de la molette et des sections de la page exos :
+/// on descend le corps — le haut, les abdos, le bas — et le cardio ferme la
+/// marche parce qu'il ne désigne pas une zone.
 enum ExerciseCategory: String, Codable, CaseIterable, Identifiable {
+    case haut = "Haut"
     case abdos = "Abdos"
+    case bas = "Bas"
     case fessiers = "Fessiers"
     case cardio = "Cardio"
 
@@ -12,7 +17,9 @@ enum ExerciseCategory: String, Codable, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
+        case .haut: return "Dos, pectoraux, épaules, bras"
         case .abdos: return "Rotation, gainage, anti-rotation"
+        case .bas: return "Jambes et chaîne postérieure"
         case .fessiers: return "Extension de hanche, abduction"
         case .cardio: return "Intervalles et endurance"
         }
@@ -23,6 +30,8 @@ enum ExerciseCategory: String, Codable, CaseIterable, Identifiable {
 enum Equipment: String, Codable {
     case poulie = "Poulie"
     case machine = "Machine"
+    case barre = "Barre"
+    case halteres = "Haltères"
     case poidsDuCorps = "Poids du corps"
 }
 
@@ -59,6 +68,10 @@ struct Exercise: Identifiable, Hashable {
 }
 
 enum ExerciseCatalog {
+    /// ⚠️ L'ordre des sections À L'ÉCRAN vient de `ExerciseCategory.allCases`,
+    /// pas de ce tableau (`ExosCatalogue.liste` filtre catégorie par
+    /// catégorie) : ici seul l'ordre À L'INTÉRIEUR d'une catégorie compte, et
+    /// `all[0]` sert de témoin dans plusieurs bancs — on n'y touche pas.
     static let all: [Exercise] = [
         // MARK: Abdos
         Exercise(
@@ -97,6 +110,94 @@ enum ExerciseCatalog {
             muscle: "Grand droit",
             cue: "Enroule le buste vertèbre par vertèbre, expire en fin de course.",
             mistake: "Tirer sur les poignées avec les bras au lieu d'enrouler le buste."),
+        Exercise(
+            id: "crunch-poulie", name: "Crunch à genoux à la poulie",
+            category: .abdos, equipment: .poulie, tracking: .setsRepsWeight,
+            muscle: "Grand droit",
+            cue: "À genoux, enroule le buste vers les cuisses ; les bras ne font que tenir la corde.",
+            mistake: "Tirer avec les bras et pivoter des hanches au lieu d'enrouler le buste."),
+        Exercise(
+            id: "gainage", name: "Gainage",
+            category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
+            muscle: "Transverse et gainage profond",
+            cue: "Appuis sur les avant-bras, bassin dans l'axe des épaules, respire sans creuser le ventre.",
+            mistake: "Laisser le bassin s'affaisser, ou remonter les fesses pour souffler."),
+        Exercise(
+            id: "crunch-sol", name: "Crunch au sol",
+            category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
+            muscle: "Grand droit",
+            cue: "Mains aux tempes, décolle les omoplates en soufflant, le bas du dos reste au sol.",
+            mistake: "Tirer sur la nuque avec les mains."),
+        Exercise(
+            id: "chevilles", name: "Toucher de chevilles",
+            category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
+            muscle: "Obliques",
+            cue: "Buste légèrement relevé, viens toucher une cheville puis l'autre en fléchissant sur le côté.",
+            mistake: "Tendre les bras vers les pieds sans fléchir le buste."),
+
+        // MARK: Haut du corps
+        Exercise(
+            id: "developpe-couche", name: "Développé couché à la barre",
+            category: .haut, equipment: .barre, tracking: .setsRepsWeight,
+            muscle: "Pectoraux, triceps, épaules",
+            cue: "Descends la barre au milieu de la poitrine, coudes à 45°, les pieds ancrés au sol.",
+            mistake: "Faire rebondir la barre sur la poitrine pour relancer la montée."),
+        Exercise(
+            id: "papillon", name: "Papillon à la machine",
+            category: .haut, equipment: .machine, tracking: .setsRepsWeight,
+            muscle: "Pectoraux",
+            cue: "Coudes légèrement fléchis, referme les bras devant toi en serrant la poitrine.",
+            mistake: "Tendre complètement les bras et tirer avec les épaules."),
+        Exercise(
+            id: "tirage-vertical", name: "Tirage vertical à la machine",
+            category: .haut, equipment: .machine, tracking: .setsRepsWeight,
+            muscle: "Grand dorsal",
+            cue: "Tire vers le haut de la poitrine, coudes le long du corps, poitrine ouverte.",
+            mistake: "Se balancer en arrière pour arracher la charge."),
+        Exercise(
+            id: "tirage-vers-soi", name: "Tirage vers soi à la poulie",
+            category: .haut, equipment: .poulie, tracking: .setsRepsWeight,
+            muscle: "Haut du dos et arrière d'épaule",
+            cue: "Amène les mains vers le visage, coudes hauts, omoplates serrées en fin de course.",
+            mistake: "Tirer des bras seuls en laissant les épaules monter vers les oreilles."),
+        Exercise(
+            id: "curl-machine", name: "Curl à la machine",
+            category: .haut, equipment: .machine, tracking: .setsRepsWeight,
+            muscle: "Biceps",
+            cue: "Coudes calés sur le pupitre, monte sans décoller les bras, descends en freinant.",
+            mistake: "Lâcher la descente et laisser le bras retomber d'un coup."),
+        Exercise(
+            id: "elevations-laterales", name: "Élévations latérales aux haltères",
+            category: .haut, equipment: .halteres, tracking: .setsRepsWeight,
+            muscle: "Deltoïdes latéraux",
+            cue: "Monte les bras jusqu'à l'horizontale, coudes à peine fléchis, sans à-coup.",
+            mistake: "Balancer le buste pour lancer les haltères plus haut."),
+
+        // MARK: Bas du corps
+        Exercise(
+            id: "squat-barre", name: "Squat à la barre",
+            category: .bas, equipment: .barre, tracking: .setsRepsWeight,
+            muscle: "Quadriceps et fessiers",
+            cue: "Barre calée sur le haut du dos, descends les hanches en arrière jusqu'à la cuisse parallèle.",
+            mistake: "Décoller les talons et laisser les genoux rentrer à la remontée."),
+        Exercise(
+            id: "presse-jambes", name: "Presse à jambes",
+            category: .bas, equipment: .machine, tracking: .setsRepsWeight,
+            muscle: "Quadriceps et fessiers",
+            cue: "Pieds à largeur de hanches, descends jusqu'à l'angle droit, pousse sans verrouiller les genoux.",
+            mistake: "Décoller le bas du dos du dossier pour aller chercher de l'amplitude."),
+        Exercise(
+            id: "souleve-de-terre", name: "Soulevé de terre",
+            category: .bas, equipment: .barre, tracking: .setsRepsWeight,
+            muscle: "Ischio-jambiers, fessiers et dos",
+            cue: "Dos plat, barre contre les tibias, pousse dans le sol et redresse-toi d'un bloc.",
+            mistake: "Arrondir le bas du dos en démarrant par les épaules."),
+        Exercise(
+            id: "extension-lombaire", name: "Extension lombaire au banc",
+            category: .bas, equipment: .machine, tracking: .setsRepsWeight,
+            muscle: "Lombaires et ischio-jambiers",
+            cue: "Descends en charnière de hanche, remonte jusqu'à l'alignement du corps — pas plus haut.",
+            mistake: "Terminer en hyperextension, le dos cambré au-dessus de la ligne."),
 
         // MARK: Fessiers
         Exercise(
