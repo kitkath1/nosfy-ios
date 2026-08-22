@@ -844,11 +844,25 @@ enum FondBanc {
 /// phrase dans le fichier (L1-L4 sur du noir absolu, L5 ≤ 52 au pire frame).
 /// Rien de tout ça ne se rattrape ici.
 struct HomeFondVideo: UIViewRepresentable {
+    /// LE SCRUB — 0 → 1. Non nil, la vidéo cesse de jouer et **suit le
+    /// geste image par image** : c'est la technique de la page AirPods
+    /// d'Apple, et elle n'a rien d'un moteur 3D — un pixel de geste = un
+    /// `seek`. Nil, la boucle reprend.
+    var scrub: Double?
+
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
         var retour: NSObjectProtocol?
         var statut: NSKeyValueObservation?
+        /// Le geste tient la vidéo.
+        var scrubbing = false
+        /// ⚠️ UN SEUL SEEK EN VOL. Empiler les seeks à 60 Hz met AVPlayer à
+        /// genoux : on garde la DERNIÈRE cible demandée et on la joue quand
+        /// le seek courant rend la main. C'est la coalescence classique, et
+        /// sans elle le scrub est une diaporama.
+        var enVol = false
+        var attente: CMTime?
         deinit {
             if let r = retour { NotificationCenter.default.removeObserver(r) }
             statut?.invalidate()
@@ -898,7 +912,41 @@ struct HomeFondVideo: UIViewRepresentable {
         return v
     }
 
-    func updateUIView(_ v: BoosterLoopLayerView, context: Context) {}
+    func updateUIView(_ v: BoosterLoopLayerView, context: Context) {
+        let c = context.coordinator
+        guard let p = c.player else { return }
+        guard let scrub else {
+            if c.scrubbing {
+                c.scrubbing = false
+                c.attente = nil
+                p.play()
+            }
+            return
+        }
+        if !c.scrubbing {
+            c.scrubbing = true
+            p.pause()
+        }
+        guard let d = p.currentItem?.duration, d.isNumeric, d.seconds > 0
+        else { return }
+        let t = CMTime(seconds: d.seconds * min(max(scrub, 0), 1),
+                       preferredTimescale: 600)
+        Self.viser(p, t, c)
+    }
+
+    /// Le seek coalescé : on ne demande jamais deux seeks à la fois.
+    private static func viser(_ p: AVQueuePlayer, _ t: CMTime,
+                              _ c: Coordinator) {
+        guard !c.enVol else { c.attente = t; return }
+        c.enVol = true
+        p.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero) { _ in
+            c.enVol = false
+            if let suivant = c.attente {
+                c.attente = nil
+                viser(p, suivant, c)
+            }
+        }
+    }
 
     static func dismantleUIView(_ v: BoosterLoopLayerView,
                                 coordinator: Coordinator) {
@@ -930,6 +978,14 @@ struct GrandeCardVideo: View {
     /// « Bonjour » à cheval sur l'heure. Un tiroir qui s'ouvre ne déménage pas
     /// la pièce.
     var levee: CGFloat = 0
+    /// LA SCÈNE DE DÉPART, 0 → 1 : la card se détache, pivote et descend.
+    /// ⚠️ T1 est une MESURE, pas une hypothèse : la loi de la maison dit qu'un
+    /// `scaleEffect` sur un `AVPlayerLayer` SAUTE (couche UIKit, pas
+    /// d'interpolation dans la transaction SwiftUI). Reste à savoir si un
+    /// `rotation3DEffect` se comporte pareil — si oui, il faudra GELER la
+    /// vidéo en image avant de la transformer, et ce gel devient le prérequis
+    /// de toute la cinématique.
+    var scene: Double = 0
 
     var body: some View {
         Color.black
@@ -943,7 +999,8 @@ struct GrandeCardVideo: View {
                     Image("home-fond-poster")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                    HomeFondVideo()
+                    // LE GESTE TIENT LA VIDÉO dès qu'il commence.
+                    HomeFondVideo(scrub: scene > 0.004 ? scene : nil)
                 }
                 // ⚠️ LA CARD DESCEND JUSQU'AU BORD PHYSIQUE. La marge de
                 // nuit était appliquée aux QUATRE côtés : mesuré à la
@@ -961,6 +1018,46 @@ struct GrandeCardVideo: View {
                 // Le vide du bas n'est donc plus une marge : c'est la
                 // bande que le TIRAGE découvre, et elle n'existe que
                 // quand on soulève la card.
+                // ⚠️ LA PILULE BOUGE DANS SON CADRE. La transformation est
+                // posée AVANT le clip : la forme arrondie la découpe, et la
+                // card ne quitte jamais l'écran. J'avais transformé la card
+                // ENTIÈRE — elle sortait du cadre et la page se vidait. La
+                // card est le CADRE, la vidéo est le CONTENU.
+                // ⚠️ TOUT EST ANCRÉ EN BAS, et c'est LA correction. Un zoom
+                // ancré au CENTRE fait fuir les bords vers l'extérieur : le
+                // bas de la vidéo — LA BRAISE — sortait par le bas, et
+                // l'`offset` l'enfonçait encore. On finissait par regarder une
+                // zone plus haute de l'image, là où il n'y a que du rouge
+                // sombre. La braise ne peut pas survivre à un zoom centré :
+                // c'est arithmétique, pas une affaire de réglage.
+                //
+                // Ancré en BAS, le bord inférieur est CLOUÉ — la braise reste
+                // exactement où elle est — et tout ce qui est au-dessus (la
+                // pilule) grandit VERS LE BAS. C'est ça, « la vidéo roule du
+                // haut vers le bas ». Et l'offset devient inutile : le zoom
+                // ancré en bas produit DÉJÀ la descente.
+                //
+                // Même ancre pour la rotation : au centre elle bascule comme
+                // une carte qu'on incline ; en bas, comme un couvercle qui se
+                // rabat. C'est le roulé Apple.
+                // ⚠️ AUCUNE ANCRE NE PEUT SAUVER UN GROS ZOOM, et c'est
+                // arithmétique : une homothétie éloigne TOUT de son ancre.
+                //  · ancrée au CENTRE, le bas fuit par le bas → la braise sort ;
+                //  · ancrée en BAS, tout grandit VERS LE HAUT → la vidéo
+                //    « remonte », ce qui est exactement le contraire du geste
+                //    demandé (essayé, et c'était pire).
+                // On ne peut pas tenir deux points à la fois avec une seule
+                // échelle. Donc le zoom reste MODESTE (×1,15) et c'est le
+                // SCRUB qui porte le mouvement : lui change le CONTENU de
+                // l'image sans toucher au cadrage, donc sans jamais chasser
+                // la braise ni l'arête de la card.
+                .rotation3DEffect(.degrees(10 * scene),
+                                  axis: (x: 1, y: 0, z: 0),
+                                  anchor: .center, perspective: 0.5)
+                .rotation3DEffect(.degrees(-5 * scene),
+                                  axis: (x: 0, y: 1, z: 0),
+                                  anchor: .center, perspective: 0.5)
+                .scaleEffect(1 + 0.15 * scene)
                 .clipShape(UnevenRoundedRectangle(
                     topLeadingRadius: rayon,
                     bottomLeadingRadius: rayonEcran,
@@ -1068,7 +1165,7 @@ struct SemaineStrip: View {
     /// vidéo bouge dessous, et c'est ce qu'on veut voir.
     var verre: Bool = false
     /// Le sous-titre gris, au registre des légendes des cards.
-    var sousTitre: String = "your last sessions" 
+    var sousTitre: String = "Your last sessions" 
 
     /// La mini sous le doigt. Une seule à la fois : on ne presse pas deux
     /// cartes.
@@ -1196,8 +1293,8 @@ struct SemaineStrip: View {
                     .font(.inter(20, .semibold))
                     .foregroundStyle(.white.opacity(0.94))
                 Text(sousTitre)
-                    .font(.system(size: 7.31, weight: .regular))
-                    .tracking(7.31 * 0.030)
+                    .font(.system(size: 8.50, weight: .regular))
+                    .tracking(8.50 * 0.030)
                     .foregroundStyle(CardTon.encreDouce)
             }
             .padding(.top, 16).padding(.leading, 22)
@@ -1511,6 +1608,23 @@ struct HomeNuitPage: View {
     /// galet rentrait au coin en plein milieu du geste. Un axe se décide UNE
     /// fois — le tester à chaque image le ferait osciller.
     @State private var axeVertical: Bool?
+    /// LA SCÈNE DE DÉPART, 0 → 1 — **CALCULÉE, jamais stockée.**
+    ///
+    /// ⚠️ C'est le correctif de fond. Tant que c'était un `@State` que chaque
+    /// geste devait penser à remplir, il suffisait d'un chemin qui l'oubliait
+    /// pour que tout casse : taper « pull to start » ouvrait le tiroir SANS
+    /// jamais toucher la caméra — le slider n'apparaissait pas, le texte ne
+    /// descendait pas, la pilule ne bougeait pas. Dérivée du tirage et du
+    /// cran, elle ne peut plus être désynchronisée par construction, quel que
+    /// soit le geste qui l'a produite.
+    ///
+    /// Elle reste ANIMÉE : `Chambre` est `Animatable`, donc SwiftUI interpole
+    /// sa valeur image par image même si elle est recalculée d'un bloc.
+    private var scene: Double {
+        if enSeance { return 0 }
+        if tiroirOuvert { return 1 }
+        return min(max(Double(-tirage) / 150, 0), 1)
+    }
 
     /// La hauteur à laquelle la card se tient pendant la séance — assez pour
     /// découvrir le player en entier, jamais plus.
@@ -1563,6 +1677,12 @@ struct HomeNuitPage: View {
                      // Le slider est dans la bande : pendant qu'il est là, le
                      // galet ne dispute plus le doigt.
                      verrouille: tiroirOuvert && !enSeance) {
+                // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
+                // non ! »). J'avais lu « nouvelle scène » comme « autre
+                // écran » — c'est faux : la card CHAUDE reste, c'est elle la
+                // scène. Elle zoome et descend, elle ne s'éteint pas. Une
+                // page qui devient noire perd justement ce qui la rendait
+                // vivante.
                 fondPage
             } contenu: {
                 mobilier(geo)
@@ -1589,6 +1709,16 @@ struct HomeNuitPage: View {
             if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
                 tiroirOuvert = true
                 tirage = reposCard
+            }
+            if CommandLine.arguments.contains("-camTest") {
+                Timer.scheduledTimer(withTimeInterval: 2.4,
+                                     repeats: true) { _ in
+                    withAnimation(.timingCurve(0.25, 0.1, 0.25, 1,
+                                               duration: 1.1)) {
+                        tiroirOuvert.toggle()
+                        tirage = tiroirOuvert ? -Self.leveeTiroir : 0
+                    }
+                }
             }
             jouerArrivee()
             jouerGaletBanc()
@@ -1622,22 +1752,6 @@ struct HomeNuitPage: View {
                             // piste arrive : le secret DEVIENT la clé.
                             LuneSecrete(p: luneP)
                                 .opacity(tiroirOuvert ? 0 : 1)
-                            // LE SLIDER, dans la bande. La piste se DÉROULE
-                            // depuis la gauche au lieu de paraître : une
-                            // barre qui apparaît d'un bloc est une image,
-                            // une barre qui se déroule est un objet.
-                            SliderObsidienne(label: "Démarrer",
-                                             height: 62,
-                                             onConfirm: { demarrer() })
-                                .padding(.horizontal, 24)
-                                // 28 pt d'air sous l'arête de la card : à 46
-                                // le slider passait DERRIÈRE elle de 12 pt et
-                                // se lisait comme collé.
-                                .padding(.bottom, 26)
-                                .opacity(tiroirOuvert ? 1 : 0)
-                                .scaleEffect(x: tiroirOuvert ? 1 : 0.30,
-                                             anchor: .leading)
-                                .allowsHitTesting(tiroirOuvert)
                         }
                     }
                 }
@@ -1663,8 +1777,17 @@ struct HomeNuitPage: View {
                     if FondBanc.rasant {
                         HomeNuitFond(p: rasantNe)
                     } else {
+                        // ⚠️ LA CARD SE RACCOURCIT TOUJOURS — c'est son ARÊTE
+                        // BASSE, avec ses coins, qui dit qu'elle est une
+                        // card. En la laissant courir jusqu'au bord de
+                        // l'écran (essayé pour « pas de fond noir »), on
+                        // supprime la seule chose qui lui donne une forme, et
+                        // la page n'a plus d'objet. Le noir sous elle n'est
+                        // pas un fond : c'est la PAGE, et c'est là que vit le
+                        // slider.
                         GrandeCardVideo(naissance: naissance,
-                                        levee: max(-tirage, 0))
+                                        levee: max(-tirage, 0),
+                                        scene: scene)
                     }
                 }
                 // Le tirage vers le BAS déplace toujours toute la home (« je
@@ -1679,7 +1802,69 @@ struct HomeNuitPage: View {
     /// LE MOBILIER : ce qui recule quand la couronne éclôt.
     @ViewBuilder
     private func mobilier(_ geo: GeometryProxy) -> some View {
+        Chambre(p: scene) { s in mobilierScene(geo, s) }
+    }
+
+    /// LES FENÊTRES DE LA CAMÉRA. L'ordre n'est pas décoratif : **le NET part
+    /// avant la géométrie**, et le noir arrive AVANT les mots — la loi de la
+    /// maison, la lumière avant le texte.
+    private func fenScene(_ s: Double, _ a: Double, _ b: Double) -> Double {
+        min(max((s - a) / (b - a), 0), 1)
+    }
+
+    @ViewBuilder
+    private func mobilierScene(_ geo: GeometryProxy,
+                               _ s: Double) -> some View {
+        // 0,00 → 0,30 : les trois objets PERDENT LE NET. Le flou monte AVANT
+        // que l'opacité ne tombe — sinon on lit une disparition, pas une mise
+        // au point, et c'est exactement la différence entre « des éléments
+        // masqués » et « un changement de profondeur de champ ».
+        let net = fenScene(s, 0.00, 0.30)
+        // 0,05 → 0,55 : le texte du haut descend et s'éteint.
+        let haut = fenScene(s, 0.05, 0.55)
+        // 0,55 → 1,00 : le nouveau message s'écrit.
+        let mot = fenScene(s, 0.55, 1.00)
         ZStack(alignment: .topLeading) {
+            // LA PHRASE CINÉMATIQUE, à la place du carré vert.
+            // ⚠️ MÊME CORPS, MÊME GRAISSE, MÊME GOUTTIÈRE que la phrase
+            // d'accueil (30 semibold, 24 pt de marge). C'est LE MÊME BLOC qui
+            // a voyagé et changé de mots — à 24 pt, on lisait deux textes
+            // différents au lieu d'une transformation.
+            Text("Allez Kathryn, glissez le slider pour débuter la séance.")
+                .font(.inter(30, .semibold))
+                .foregroundStyle(.white.opacity(0.94))
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+                // ⚠️ IL ATTERRIT EN BAS DE LA CARD, DANS LA BRAISE — pas en
+                // haut. Le texte n'est pas remplacé sur place : le bloc
+                // VOYAGE du haut jusqu'à l'arête basse de la card orange, et
+                // c'est là qu'il devient l'autre phrase. 40 pt au-dessus de
+                // l'arête : la braise l'éclaire, et il reste DANS la card.
+                .frame(width: geo.size.width - 72, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottomLeading)
+                .padding(.leading, 24)
+                .padding(.bottom, 122)
+                .blur(radius: 8 * (1 - mot))
+                .opacity(mot)
+                .offset(y: 18 * (1 - mot))
+                .allowsHitTesting(false)
+
+            // LE SLIDER VIT DANS L'ESPACE NOIR SOUS LA CARD — celui que la
+            // card ouvre en se raccourcissant, jamais une nappe posée sur la
+            // page. C'est le MÊME espace que le player en séance : un seul
+            // endroit, trois contenus, et la cohérence d'expérience avec lui.
+            SliderObsidienne(label: "Démarrer",
+                             height: 62,
+                             onConfirm: { demarrer() })
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity,
+                       alignment: .bottom)
+                .padding(.bottom, 26)
+                .opacity(fenScene(s, 0.70, 1.00))
+                .scaleEffect(x: 0.30 + 0.70 * fenScene(s, 0.70, 1.00),
+                             anchor: .leading)
+                .allowsHitTesting(s > 0.9)
                 Group {
                     PhraseVue(p: arrivee, params: phrase, rasant: rasant,
                               fragments: PhraseTexte.fragments(
@@ -1697,8 +1882,14 @@ struct HomeNuitPage: View {
                         .padding(.top, 48)
                         // La dissolution : passé 40 pt de tirage vers le
                         // haut, la phrase s'efface dans la nuit.
-                        .blur(radius: dissolution)
-                        .opacity(1 - 0.70 * min(max((scroll - 40) / 120, 0), 1))
+                        .blur(radius: dissolution + 10 * haut)
+                        .opacity((1 - 0.70 * min(max((scroll - 40) / 120, 0), 1))
+                                 * (1 - haut))
+                        // ELLE FAIT LE MÊME TRAJET : du haut jusqu'en bas de
+                        // la card. Un bloc qui descend de 15 % se contente de
+                        // s'éteindre en glissant ; celui-ci VOYAGE, et c'est
+                        // le voyage qui raconte la transformation.
+                        .offset(y: geo.size.height * 0.560 * haut)
                         // Le plan traîne : 14 % de retard sur le tirage —
                         // la parallaxe INTERNE de la card.
                         .offset(y: -scroll * (1 - phrase.plan))
@@ -1717,7 +1908,18 @@ struct HomeNuitPage: View {
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.375)
-                        .allowsHitTesting(false)
+                        .offset(y: 8 * net)
+                        // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
+                        // NATIF empile deux passes de flou — c'est
+                        // l'opération la plus chère de la page, et au-delà de
+                        // 6 pt on ne distingue plus rien : on payait pour du
+                        // vide, à chaque image du tirage.
+                        .blur(radius: 6 * net)
+                        .opacity(1 - net)
+                        // ⚠️ ELLES NE SONT PLUS SOURDES. Le `false` datait du
+                        // temps où les cards n'étaient que du mobilier ; avec
+                        // la chambre noire elles répondent au doigt, et il
+                        // n'atteignait tout simplement jamais leur geste.
                         .opacity(RasantHorloge.iso ? 0 : 1)
 
                     // LA SEMAINE — le mobilier de la page, sourd au doigt
@@ -1728,6 +1930,14 @@ struct HomeNuitPage: View {
                                  lisere: true, verre: true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.620)
+                        .offset(y: 8 * net)
+                        // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
+                        // NATIF empile deux passes de flou — c'est
+                        // l'opération la plus chère de la page, et au-delà de
+                        // 6 pt on ne distingue plus rien : on payait pour du
+                        // vide, à chaque image du tirage.
+                        .blur(radius: 6 * net)
+                        .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
 
                     // LA RANGÉE DU BAS — le slider de départ, à la place que
@@ -1749,7 +1959,7 @@ struct HomeNuitPage: View {
                         .padding(.bottom, 24)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
-                        .opacity(enSeance || tiroirOuvert ? 0 : arrivee)
+                        .opacity(enSeance ? 0 : arrivee * (1 - net))
                         .allowsHitTesting(!enSeance && !tiroirOuvert)
                         .onTapGesture {
                             // L'INVITE EST TAPABLE : sans ça le départ passe

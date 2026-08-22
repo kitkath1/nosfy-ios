@@ -31,7 +31,19 @@
 #     frames pleines). Mesuré après cuisson : L1-L4 p95 = 0, L5 ≤ 52 au
 #     pire frame (la flaque validée du J2 était à 55).
 #  5. LE GLITCH NOIR (verdict 21-08 « des fois glitch noir, résous
-#     absolument ») : la sortie est en **540 x 1174** — le simulateur décode
+#     ⚠️ SORTIE PORTÉE À 1620 x 3522 (22-08). Elle était en 540 x 1174 pour
+#     ménager le SIMULATEUR, qui décode en logiciel — mais l'écran fait
+#     1206 x 2622 : la vidéo était déjà agrandie 2,23x AU REPOS, et le zoom
+#     cinématique x2 la poussait à 4,5x. Verdict : « on dirait qu'elle est
+#     pixel », et c'est mesuré. Le téléphone décode en MATÉRIEL et avale ça
+#     sans broncher ; on ne paie plus la qualité du produit pour le confort
+#     ⚠️ GOP COURT (-g 12) POUR LE SCRUB — la technique de la page AirPods :
+#     un pixel de geste = une frame, aucun moteur 3D, juste un seek. Avec une
+#     clé toutes les 48 frames, chaque seek décodait jusqu'à 48 images et le
+#     geste hachait. MESURÉ : en toutes-clés (-g 1) le fichier montait à
+#     99 Mo — l'intra-only compresse trop mal à cette définition. À -g 12 le
+#     pire seek ne décode plus que 12 images et le poids reste tenable.
+#     (Ancien commentaire : le simulateur décode
 #     en LOGICIEL, et à 1080 x 2348 il rate des frames ; une frame ratée sur
 #     une couche opaque, c'est du NOIR plein écran. Le contenu est mou
 #     (fumée, verre) : la moitié de résolution ne se voit pas. GOP court
@@ -76,9 +88,9 @@ color=c=black:s=1080x2348:r=24,format=gbrp[bg];\
 [p][f]blend=all_mode=screen[m];\
 [m][2:v]overlay=0:0[s];\
 [s]split[a][b];[b]reverse,trim=start_frame=1:end_frame=144,setpts=PTS-STARTPTS[r];\
-[a][r]concat=n=2:v=1,setpts=3.0*PTS,minterpolate=fps=24:mi_mode=blend,scale=540:1174,format=yuv420p[out]" \
-  -map "[out]" -c:v libx264 -preset slow -crf 20 \
-  -pix_fmt yuv420p -g 48 -keyint_min 24 -sc_threshold 0 \
+[a][r]concat=n=2:v=1,setpts=3.0*PTS,minterpolate=fps=24:mi_mode=blend,scale=1620:3522,format=yuv420p[out]" \
+  -map "[out]" -c:v libx264 -preset slow -crf 21 \
+  -pix_fmt yuv420p -g 12 -keyint_min 12 -sc_threshold 0 \
   -movflags +faststart -an \
   ../../Woop/Media/home-fond-loop.mp4
 
