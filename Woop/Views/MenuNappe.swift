@@ -698,18 +698,8 @@ struct MenuItems: View {
             // tremble, la ligne non — une fumée qui vibre verticalement entre
             // deux items se lit comme un défaut.
             let y = CGFloat(s) * Self.pas + Self.hauteurItem / 2
-            GaletFumee(start: touche, fin: lache,
-                       centre: CGPoint(x: main?.x ?? 120, y: y),
-                       // ⚠️ 16, ET C'EST UN CHOIX DE FORME, pas de goût.
-                       // `knobSmoke` est écrit pour ENTOURER un bouton : il ne
-                       // peint rien sous `r < R`, et son enveloppe est
-                       // proportionnelle à R. Sur le galet ce creux est occupé
-                       // par la pastille ; sur un mot, il est occupé par LE
-                       // DOIGT. À 26 le creux dépassait la pulpe et se voyait
-                       // comme un trou ; à 16 la bouffée fait ~40 pt de rayon
-                       // et le doigt la couvre. (En capture il n'y a pas de
-                       // doigt : le trou s'y voit, et c'est normal.)
-                       rayon: 16)
+            PanacheSection(start: touche, fin: lache,
+                           foyer: CGPoint(x: main?.x ?? 120, y: y))
         }
     }
 }
@@ -834,6 +824,59 @@ private struct MiniExercices: View {
                 .resizable().scaledToFit()
                 .padding(cote * 0.10)
                 .opacity(0.80)
+        }
+    }
+}
+
+/// LE PANACHE D'UNE SECTION — il MONTE du doigt, il n'entoure rien.
+///
+/// ⚠️ Il remplace `knobSmoke` ici, et c'est une question de FORME, pas de
+/// réglage : ce shader ne peint que pour `r > R`, donc il laisse un TROU
+/// circulaire au centre. Autour du galet c'est juste — la pastille l'occupe.
+/// Sur un mot il n'y a rien à occuper, et on voyait un rond (verdict 22-08 :
+/// « pourquoi il y a un rond dans le menu pour la fumée au drag des
+/// sections »). Le doigt ne le remplit pas : il est POSÉ dessus, pas dedans.
+///
+/// Même shader que l'invite (`panacheInvite`, HomeNuit.metal), à l'échelle
+/// 0,45 : les lignes voisines sont à 56 pt, un panache pleine hauteur les
+/// traverserait.
+private struct PanacheSection: View {
+    let start: Date?
+    let fin: Date?
+    let foyer: CGPoint
+
+    private static let larg: CGFloat = 190
+    private static let haut: CGFloat = 104
+    private static let echelle: Float = 0.45
+    private static let origine = Date()
+
+    var body: some View {
+        if let start = fumeeBanc ? (start ?? Self.origine) : start {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                let now = tl.date
+                let age = now.timeIntervalSince(start)
+                let attack = min(age / 0.10, 1.0)
+                let release = fumeeBanc ? 0
+                    : (fin.map { now.timeIntervalSince($0) } ?? 0)
+                // Même enveloppe gestuelle que le galet : attaque 0,10 s,
+                // extinction exponentielle en 0,45 s au relâcher.
+                let puff = attack * exp(-max(release, 0) / 0.45)
+                let t = now.timeIntervalSinceReferenceDate
+                    .truncatingRemainder(dividingBy: 900)
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.panacheInvite(
+                        .float2(Float(Self.larg), Float(Self.haut)),
+                        .float(t),
+                        // Le foyer est au BAS de la boîte : la fumée monte.
+                        .float2(Float(Self.larg / 2), Float(Self.haut - 6)),
+                        .float(Float(min(puff, 1) * 0.85)),
+                        .float(Self.echelle)
+                    ))
+                    .frame(width: Self.larg, height: Self.haut)
+                    .position(x: foyer.x, y: foyer.y - Self.haut / 2 + 6)
+            }
+            .allowsHitTesting(false)
         }
     }
 }

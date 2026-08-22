@@ -228,9 +228,14 @@ static float nrfbm(float2 p) {
 //
 // `src` : le foyer, en points, dans le repère de l'hôte. `souffle` :
 // l'enveloppe (0 → 1), respirée côté Swift sur deux périodes premières.
+// `echelle` : la TAILLE du panache. 1,0 sous l'invite (il a 190 pt pour
+// monter) ; ~0,45 sur une ligne de menu, où les voisines sont à 56 pt et où un
+// panache pleine hauteur les traverserait. Elle met à l'échelle les trois
+// enveloppes ET l'ondulation d'un coup : un panache réduit doit rester un
+// panache, pas une version écrasée de lui-même.
 [[ stitchable ]] half4 panacheInvite(float2 position, half4 color,
                                      float2 size, float t, float2 src,
-                                     float souffle) {
+                                     float souffle, float echelle) {
     if (souffle < 0.004) { return half4(0.0); }
     float2 p = position - src;
     // y descend à l'écran : ce qui est AU-DESSUS du foyer a un p.y négatif.
@@ -239,9 +244,10 @@ static float nrfbm(float2 p) {
 
     // LA COLONNE S'ÉVASE en montant, et elle ONDULE. Une colonne droite est un
     // tuyau ; c'est la dérive latérale qui fait la fumée.
-    float ondule = sin(montee * 0.034 + t * 0.55) * (3.0 + montee * 0.055)
-                 + sin(montee * 0.017 - t * 0.31) * (2.0 + montee * 0.030);
-    float demi = 22.0 + montee * 0.40;
+    float k = max(echelle, 0.05);
+    float ondule = sin(montee * 0.034 / k + t * 0.55) * (3.0 + montee * 0.055)
+                 + sin(montee * 0.017 / k - t * 0.31) * (2.0 + montee * 0.030);
+    float demi = 22.0 * k + montee * 0.40;
     float lat = (p.x - ondule) / demi;
     if (fabs(lat) > 1.6) { return half4(0.0); }
 
@@ -258,8 +264,8 @@ static float nrfbm(float2 p) {
     // TROIS ENVELOPPES. Le pied : la fumée NAÎT, elle n'est pas posée en bloc
     // sur le chevron. Le sommet : elle se dilue. Les flancs : une gaussienne,
     // jamais un bord.
-    float pied = smoothstep(0.0, 30.0, montee);
-    float haut = 1.0 - smoothstep(64.0, 186.0, montee);
+    float pied = smoothstep(0.0, 30.0 * k, montee);
+    float haut = 1.0 - smoothstep(64.0 * k, 186.0 * k, montee);
     float flanc = exp(-lat * lat * 2.1);
     float amp = souffle * s * pied * haut * flanc;
 

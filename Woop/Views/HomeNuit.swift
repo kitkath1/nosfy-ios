@@ -3119,7 +3119,8 @@ private struct FumeeInvite: View {
                         .float2(Float(Self.larg), Float(Self.haut)),
                         .float(t),
                         .float2(Float(Self.larg / 2), Float(Self.foyerY)),
-                        .float(Float(max(souffle, 0)))
+                        .float(Float(max(souffle, 0))),
+                        .float(1.0)
                     ))
                     .frame(width: Self.larg, height: Self.haut)
                     .offset(y: Self.haut - Self.assise)
