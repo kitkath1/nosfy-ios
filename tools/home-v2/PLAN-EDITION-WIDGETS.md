@@ -555,3 +555,52 @@ pas les widgets neufs) ; E3 et E5 peuvent se glisser en parallèle.
 | **D** | La langue de la drop-list et du refus : les cards parlent anglais, la page français | **anglais** (`Change / Remove`, `Keep at least one widget`) — la zone widgets est déjà anglaise, et le parcours a basculé le 22-08 |
 | **E** | HIIT Peak v1 sur le PLAN des séances terminées (pas de « réalisé » cardio dans le modèle) ? | **oui** — l'extension `isDone` cardio est un chantier modèle+sync séparé |
 | **F** | Le seuil du long press : 0,50 s (vif) ou 0,65 s (sûr) ? | **0,50 s** avec tolérance 10 pt — à fouetter au téléphone à E6 |
+
+---
+
+## 12. LIVRÉ LE 22-08 — COMMIT `b28bc46` (GO « full confiance », arbitrages A–F appliqués tels que recommandés)
+
+**E1 + E2 + E3 + E4 + E5 en un commit.** `Woop/Views/WidgetEdition.swift`
+(pastille, liste, refus, poudre, vitrine, bancs), `WidgetsCards.swift`
+(CardTouche à trois grammaires, `penche`, CardHiitPeak, CardPeakEffort,
+CardFantome, WidgetKind, SemaineStats, CardsRangee refaite),
+`HomeNuit.swift` (états, flow, guards, overlays, @Query), `MenuNappe.swift`
+(`reculExterne`), `WoopApp.swift` (flags + demo data réparé). Vérifié au
+simulateur dédié `kat-vitrine` (E8223D4B…), captures et films dans le
+scratchpad de session — flow complet filmé : entrée → vol → roue → confirm
+→ le slot réécrit et LA MÊME card qui atterrit.
+
+**Les pièges PAYÉS au fouettage de ce chantier** (mesurés, pas devinés) :
+1. **Le verre de la pop-up réfractait la phrase À L'ENVERS**, et aucune
+   plaque ne le tue (le verre réfracte AVANT la plaque, par construction).
+   → le refus est PEINT (radial + cheveu + double ombre) : quand le monde
+   sous un verre n'est que de l'encre, on peint — la leçon de la pastille,
+   généralisée. (La drop-list, elle, garde son verre : plaque à 0,62.)
+2. **Un score HIIT linéaire en durée fait gagner LA MARCHE** — mesuré :
+   « 5,5 km/h · 20:00 continuous » battait les sprints. → vitesse en
+   puissance 2,2, durée en racine, plancher à 9,5 km/h.
+3. **`formatted(.number)` suit la locale** : « 5,5 km/h » à virgule sur
+   une card anglaise. → tous les formats des widgets en point décimal
+   (`String(format:)`).
+4. **Le clone de la vitrine portait les DÉFAUTS** : « 17.0 » en vol qui
+   devenait « 5.5 » à l'atterrissage — deux objets, pas un. → la vitrine
+   reçoit les mêmes données que la rangée.
+5. **La forme liquide du Peak Effort à blanc 0,078 se lisait comme un
+   ovale gris posé** → 0,050/0,006, plus large et plus basse (0,66 × 0,30),
+   rim à 0,13 : elle se devine, le reflet la révèle.
+6. **Le vol devait raccorder l'ÉCHELLE** : la rangée en édition est zoomée
+   0,96 — le clone part à la taille exacte du slot (origine ajustée par
+   `origineSlot`) et grandit en volant, sinon la prise de relais saute.
+
+**Restes pour E6 (le verdict téléphone)** :
+- les HAPTIQUES (le sim n'en a aucune) : le sec de l'entrée, les crans de
+  la roue, CommitHaptic/RefusalHaptic, et le seuil des 0,50 s au doigt ;
+- la **languette blanche du galet rangé** reste visible au flanc gauche
+  pendant la vitrine (grammaire maison du rangement) — à trancher à l'œil ;
+- l'ANNULATION (tap scrim → le widget d'origine revole) : codée, jamais
+  filmée (pas de banc dédié) ;
+- la compression de la card avant la poudre (aujourd'hui : démontage sous
+  le burst — se lit bien en film, mais un écrasement 0,94 ferait plus
+  physique) ;
+- Reduce Motion (chemins courts codés partout, jamais capturés) ;
+- la cadence de la vitrine (`SondeCadence`) et le wiggle 20 Hz en batterie.
