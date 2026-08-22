@@ -757,6 +757,18 @@ jamais** (la sonde, pas l'œil seul).
 - Toutes les horloges neuves : 12 Hz, endormies sous Reduce Motion (et
   sous la chambre pour la soie/l'ascension), CADRE FORCÉ (le piège
   TimelineView payé trois fois dans ce fichier).
+- **2ᵉ salve de verdicts (« hover HYPER CHEAP, on dirait un enfant »)** :
+  la chambre HIIT capsules est morte → **LE BRASIER** (l'onde : le fil
+  froid pleine largeur, les `tours` pics de soie qui s'embrasent en
+  cascade, foyer respirant, sommets scintillants, ÉTINCELLES montantes,
+  REFLET renversé façon laque) ; la chambre Peak → **LA MARCHE** (la soie
+  au profil sigmoïde : plateau froid de l'ancien record qui s'embrase en
+  franchissant vers le plateau du nouveau, « +10 » dessus, étincelles,
+  reflet) ; la face Peak → la comète (trait épaissi vers le record,
+  reflet de braise au sol, jalons de trame). Et LES HAPTIQUES partout :
+  retour léger à la fermeture des chambres, .soft au tap du fantôme, et
+  LA MOLETTE DE LA VITRINE GRONDE EN CONTINU (`RocketHaptics.dragLevel`
+  piloté par la vitesse, `dragEnd` au lâcher) en plus des crans.
 
 ### 13.8 Les pièges convoqués
 

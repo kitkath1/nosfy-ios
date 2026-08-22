@@ -361,6 +361,9 @@ struct VitrineHote: View {
     @State private var grab: Double?
     @State private var dernierCentre = 0
     @State private var lancee = false
+    /// La position au dernier événement du geste — le GRAIN CONTINU de la
+    /// molette en dérive sa vitesse.
+    @State private var roueAncien: Double = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -633,11 +636,19 @@ struct VitrineHote: View {
                     guard abs(v.translation.width)
                             > abs(v.translation.height) else { return }
                     grab = offset
+                    roueAncien = offset
                 }
                 guard let g0 = grab else { return }
                 offset = borneDouce(g0 - Double(v.translation.width)
                                     / Double(Self.pasPt),
                                     max: Double(n - 1))
+                // LE GRAIN DE LA MOLETTE, en continu (verdict 22-08 : « la
+                // molette, en mettre tout le temps ») : le grondement
+                // enfle avec la vitesse de rotation — la recette de la
+                // charge de la couronne (`RocketHaptics.dragLevel`).
+                RocketHaptics.shared.dragLevel(
+                    min(abs(offset - roueAncien) * 10, 1))
+                roueAncien = offset
                 let c = min(max(Int(offset.rounded()), 0), n - 1)
                 if c != dernierCentre {
                     dernierCentre = c
@@ -647,6 +658,7 @@ struct VitrineHote: View {
             .onEnded { v in
                 guard let g0 = grab else { return }
                 grab = nil
+                RocketHaptics.shared.dragEnd()
                 let borne = Double(n - 1)
                 let vel = min(max(-Double(v.velocity.width)
                                   / Double(Self.pasPt), -6), 6)
