@@ -1764,6 +1764,27 @@ struct HomeNuitPage: View {
         return stats?.faites ?? faits
     }
 
+    /// LES WIDGETS VIDES (le cas empty, verdict 22-08) : le design reste,
+    /// grisé. Un widget dont la semaine n'a rien à dire ne MENT pas avec
+    /// ses défauts de banc. `-widgetsVides` force les quatre (capture).
+    private var widgetsVides: Set<WidgetKind> {
+        if CommandLine.arguments.contains("-widgetsVides") {
+            return Set(WidgetKind.allCases)
+        }
+        guard let s = stats else {
+            // Pas une seule séance terminée : rien n'est vrai — tout est
+            // gris (sauf au banc forcé, qui passe par -semaineFaits).
+            return workoutsBruts.isEmpty && SemaineBanc.faits == nil
+                ? Set(WidgetKind.allCases) : []
+        }
+        var v: Set<WidgetKind> = []
+        if s.faites == 0 { v.insert(.regularite) }
+        if s.volumeValeur == "0.0" { v.insert(.volume) }
+        if s.hiit == nil { v.insert(.hiitPeak) }
+        if s.peak == nil { v.insert(.peakEffort) }
+        return v
+    }
+
     private func ecrireSlot(_ i: Int, _ k: WidgetKind?) {
         if i == 0 { slot0Brut = k?.rawValue ?? "vide" }
         else { slot1Brut = k?.rawValue ?? "vide" }
@@ -1980,6 +2001,7 @@ struct HomeNuitPage: View {
                                     moisFaits: stats?.moisFaits,
                                     hiit: stats?.hiit ?? HiitPeakInfo(),
                                     peak: stats?.peak ?? PeakEffortInfo(),
+                                    vides: widgetsVides,
                                     auto: VitrineBanc.auto,
                                     onSortie: {
                                         withAnimation(.timingCurve(
@@ -2373,6 +2395,7 @@ struct HomeNuitPage: View {
                                 peak: stats?.peak ?? PeakEffortInfo(),
                                 arrivee: arrivee, lisere: true, verre: true,
                                 slots: slots,
+                                vides: widgetsVides,
                                 edition: editionP,
                                 editionActive: edition,
                                 masque: vitrineSlot,

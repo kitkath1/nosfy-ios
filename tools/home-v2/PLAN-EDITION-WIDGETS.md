@@ -780,6 +780,35 @@ de la bezel ne change pas sans verdict.
 
 ---
 
+### 13.9 LE CAS VIDE + les notes du 23-08
+
+- **LE CAS VIDE, LIVRÉ** (verdict : « pas tout vide naturellement, on
+  laisse le design mais c'est grisé ») : chaque card a `vide:` —
+  saturation 0 + extinction 0,55 sur tout le contenu, TOUTES les horloges
+  de micro-vie endormies (rien ne respire quand il n'y a rien à dire).
+  La page décide (`widgetsVides`) : zéro séance terminée = tout gris ;
+  sinon par widget (faites = 0, volume = 0, pas de HIIT, pas de peak).
+  La vitrine reçoit les mêmes `vides` — elle ne ment pas. Banc :
+  `-widgetsVides` force les quatre.
+- **À NOTER (backend)** : le Peak Effort scanne déjà TOUS les exercices
+  (charge par exerciseID, vitesse sur le cardio) — mais il calcule sur le
+  SwiftData local à l'apparition. Le branchement temps réel/background
+  (recalcul à la fin de séance, sync Supabase des records) est un chantier
+  backend à part, avec l'extension `isDone` cardio (arbitrage E).
+- **LA FLUIDITÉ DE LA ROUE, mesurée au sim** (mpdecimate, fenêtre 6 s de
+  `-vitrineAuto`) : ~16 images uniques/s scène complète — dans la norme du
+  simulateur (rendu logiciel + vidéo décodée logiciel ; la maison mesure
+  18-36 img/s sur les scènes chargées), aucun gel visible au film. Le
+  verdict de cadence RÉEL = téléphone, `SondeCadence` (E6).
+- **« Tout voir » vs le carrousel (question du 22-08)** : la roue reste
+  la bonne forme pour CHOISIR à 3-4 (un choix = un objet dans la lumière).
+  Le jour où le catalogue dépasse ~5 widgets, l'évolution proposée est
+  **L'OBSERVATOIRE** : « tout voir » ne change pas de paradigme — la
+  caméra RECULE et la roue se révèle en ANNEAU COMPLET (tous les widgets
+  sur le cercle entier, à égalité, la lumière au centre) ; on tape un
+  point de l'anneau, la caméra replonge et la roue le porte à l'apex.
+  Même géométrie, deux échelles — rien à réapprendre.
+
 **Restes pour E6 (le verdict téléphone)** :
 - les HAPTIQUES (le sim n'en a aucune) : le sec de l'entrée, les crans de
   la roue, CommitHaptic/RefusalHaptic, et le seuil des 0,50 s au doigt ;

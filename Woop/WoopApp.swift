@@ -151,7 +151,8 @@ struct RootView: View {
                                  "-editWidgets", "-editFige", "-editListe",
                                  "-editRefus", "-editSupprime",
                                  "-vitrineLab", "-vitrineAuto",
-                                 "-vitrineChoisit", "-slots"]
+                                 "-vitrineChoisit", "-slots",
+                                 "-widgetsVides"]
         .contains { CommandLine.arguments.contains($0) }
     /// Banc du fond aurora nu : `-bgLab` — noir, aurore basse, parallaxe 3D.
     private static let bgLab = CommandLine.arguments.contains("-bgLab")

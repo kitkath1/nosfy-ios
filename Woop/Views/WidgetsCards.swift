@@ -695,6 +695,8 @@ struct CardVolume: View {
     ]
     var totalMois: String = "31.6"
     var record: String = "8.4"
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
     /// L'inclinaison du mode édition (degrés) — transmise au liseré, qui
     /// contre-tourne.
     var penche: Double = 0
@@ -719,6 +721,8 @@ struct CardVolume: View {
                     quatreSemaines(ChambreTemps.fond(c))
                 }
             }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
         }
         // ⚠️ Un `Rectangle`, et c'est la CORRECTION : l'ancien rayon 26 était
         // codé en dur (juste à 170 pt, faux partout ailleurs — au banc 330 le
@@ -875,14 +879,14 @@ struct CardVolume: View {
                 // sous Reduce Motion — et LE CADRE EST FORCÉ (le piège de
                 // la TimelineView qui se dimensionne sur son contenu).
                 TimelineView(.animation(minimumInterval: 1.0 / 12,
-                                        paused: reduceMotion)) { tl in
+                                        paused: reduceMotion || vide)) { tl in
                     let t = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
                             let cx = (0.156 + 0.1115 * Double(i)) * W
                             let per = 3.1 + 1.9
                                 * (Double((i &* 41) % 100) / 100)
-                            let vive = reduceMotion ? 0
+                            let vive = reduceMotion || vide ? 0
                                 : 0.5 + 0.5 * sin(t * 2 * .pi / per
                                                   + Double(i) * 2.1)
                             CardBarre(jour: j, W: W, H: H, p: p,
@@ -947,6 +951,9 @@ struct CardSeances: View {
     /// aux vraies séances vient au jalon du flow ; ici, une trame plausible.
     var moisFaits: Set<Int> = [2, 3, 5, 8, 9, 12, 14, 15, 18, 19, 20, 21]
     var moisJours: Int = 31
+    /// LE CAS VIDE (verdict 22-08) : pas de données → le design RESTE,
+    /// mais GRISÉ — la chaleur s'éteint, rien ne respire.
+    var vide: Bool = false
     var penche: Double = 0
     var interaction: CardMode = .libre
 
@@ -968,6 +975,8 @@ struct CardSeances: View {
                     mois(ChambreTemps.fond(c))
                 }
             }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
         }
         // ⚠️ Un `Rectangle` — voir CardVolume : l'ancien rayon 26 en dur
         // mentait à toute autre taille que 170.
@@ -1106,13 +1115,13 @@ struct CardSeances: View {
                 // ⚠️ 12 Hz, l'horloge dort sous Reduce Motion, et LE CADRE
                 // EST FORCÉ (le piège de la TimelineView).
                 TimelineView(.animation(minimumInterval: 1.0 / 12,
-                                        paused: reduceMotion)) { tl in
+                                        paused: reduceMotion || vide)) { tl in
                     let t = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         ForEach(0..<jours.count, id: \.self) { i in
                             let on = Double(i) < Double(faites) * p
                             let derniere = on && i == faites - 1
-                            let s = derniere && !reduceMotion
+                            let s = derniere && !reduceMotion && !vide
                                 ? 0.5 + 0.5 * sin(t * 2 * .pi / 4.7) : 0
                             Circle()
                                 .fill(on
@@ -1204,6 +1213,8 @@ struct CardHiitPeak: View {
     var tours: Int = 4
     var chambreLigne: String = "17.0 km/h · 40 s · ×4"
     var chambreSous: String = "this week's peak"
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
@@ -1226,6 +1237,8 @@ struct CardHiitPeak: View {
                     interieur(ChambreTemps.fond(c))
                 }
             }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
         }
         .contentShape(Rectangle())
         .modifier(CardTouche(mode: interaction,
@@ -1424,7 +1437,8 @@ struct CardHiitPeak: View {
             // points du mois). ⚠️ 12 Hz, l'horloge dort sous Reduce Motion
             // et quand la chambre couvre ; LE CADRE EST FORCÉ.
             TimelineView(.animation(minimumInterval: 1.0 / 12,
-                                    paused: reduceMotion || chambre > 0.5)) { tl in
+                                    paused: reduceMotion || vide
+                                        || chambre > 0.5)) { tl in
                 let tps = tl.date.timeIntervalSinceReferenceDate
                 ZStack {
                     // ── LE FOYER (plan §13.4) : sous le pic, une lueur de
@@ -1525,6 +1539,8 @@ struct CardPeakEffort: View {
     var chambreBas: String = "previous best · 55 kg"
     /// Un nouveau peak vient d'être détecté : la forme attrape le reflet.
     var nouveau: Bool = true
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
@@ -1547,6 +1563,8 @@ struct CardPeakEffort: View {
                     interieur(ChambreTemps.fond(c))
                 }
             }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
         }
         .contentShape(Rectangle())
         .modifier(CardTouche(mode: interaction,
@@ -1802,7 +1820,8 @@ struct CardPeakEffort: View {
         let ex = 0.670 * W, ey = 0.598 * H
         let aL = min(max((p - 0.45) / 0.45, 0), 1)
         TimelineView(.animation(minimumInterval: 1.0 / 12,
-                                paused: reduceMotion || chambre > 0.5)) { tl in
+                                paused: reduceMotion || vide
+                                    || chambre > 0.5)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
             let souffle = reduceMotion ? 0.0
                 : 0.5 + 0.5 * sin(t * 2 * .pi / 4.7)
@@ -2375,6 +2394,8 @@ struct CardsRangee: View {
     /// LES DEUX SLOTS — `nil` = le fantôme. Persistés par la page
     /// (`widgetSlot0/1` en `@AppStorage`).
     var slots: [WidgetKind?] = [.regularite, .volume]
+    /// LES WIDGETS VIDES (pas de données) : le design reste, GRISÉ.
+    var vides: Set<WidgetKind> = []
     /// 0 → 1, l'entrée du mode édition (curseur animé par la page, livré
     /// image par image via `Chambre`).
     var edition: Double = 0
@@ -2444,29 +2465,31 @@ struct CardsRangee: View {
             ? .inerte
             : (onEdition.map { f in CardMode.home(onEdition: { f(slot) }) }
                ?? .libre)
+        let mort = vides.contains(kind)
         switch kind {
         case .regularite:
             if let mf = moisFaits {
                 CardSeances(faites: faites, prevues: prevues, pied: pied,
                             p: pose, lisere: lisere, verre: verre,
-                            moisFaits: mf,
+                            moisFaits: mf, vide: mort,
                             penche: penche, interaction: mode)
             } else {
                 CardSeances(faites: faites, prevues: prevues, pied: pied,
                             p: pose, lisere: lisere, verre: verre,
+                            vide: mort,
                             penche: penche, interaction: mode)
             }
         case .volume:
             CardVolume(valeur: volume, unite: volumeUnite, jours: jours,
                        gain: gain, moyenne: moyenne, p: pose,
-                       lisere: lisere, verre: verre,
+                       lisere: lisere, verre: verre, vide: mort,
                        penche: penche, interaction: mode)
         case .hiitPeak:
             CardHiitPeak(vitesse: hiit.vitesse,
                          repetitions: hiit.repetitions,
                          pic: hiit.pic, picLargeur: hiit.picLargeur,
                          tours: hiit.tours,
-                         chambreLigne: hiit.chambreLigne,
+                         chambreLigne: hiit.chambreLigne, vide: mort,
                          p: pose, lisere: lisere, verre: verre,
                          penche: penche, interaction: mode)
         case .peakEffort:
@@ -2474,7 +2497,7 @@ struct CardsRangee: View {
                            delta: peak.delta, precedent: peak.precedent,
                            chambreHaut: peak.chambreHaut,
                            chambreBas: peak.chambreBas,
-                           nouveau: peak.nouveau,
+                           nouveau: peak.nouveau, vide: mort,
                            p: pose, lisere: lisere, verre: verre,
                            penche: penche, interaction: mode)
         }

@@ -346,6 +346,8 @@ struct VitrineHote: View {
     var moisFaits: Set<Int>? = nil
     var hiit: HiitPeakInfo = HiitPeakInfo()
     var peak: PeakEffortInfo = PeakEffortInfo()
+    /// Les widgets VIDES : mêmes cards, grisées — la vitrine ne ment pas.
+    var vides: Set<WidgetKind> = []
     var auto: Bool = false
     /// LA SORTIE COMMENCE : la page relâche son recul PENDANT que l'élu
     /// vole — pas après (« l'élu descend avec la nappe », la grammaire de
@@ -563,35 +565,39 @@ struct VitrineHote: View {
         let mode: CardMode = actif
             ? .vitrine(onTap: { confirmer(kind) })
             : .inerte
+        let mort = vides.contains(kind)
         switch kind {
         case .regularite:
             if let mf = moisFaits {
                 CardSeances(faites: faites, prevues: prevues,
                             pied: piedSeances, p: 1,
                             lisere: true, verre: actif,
-                            moisFaits: mf, interaction: mode)
+                            moisFaits: mf, vide: mort, interaction: mode)
             } else {
                 CardSeances(faites: faites, prevues: prevues,
                             pied: piedSeances, p: 1,
-                            lisere: true, verre: actif, interaction: mode)
+                            lisere: true, verre: actif,
+                            vide: mort, interaction: mode)
             }
         case .volume:
             CardVolume(valeur: volume, unite: volumeUnite, jours: jours,
                        gain: gain, moyenne: moyenne, p: 1,
-                       lisere: true, verre: actif, interaction: mode)
+                       lisere: true, verre: actif, vide: mort,
+                       interaction: mode)
         case .hiitPeak:
             CardHiitPeak(vitesse: hiit.vitesse,
                          repetitions: hiit.repetitions,
                          pic: hiit.pic, picLargeur: hiit.picLargeur,
                          tours: hiit.tours,
-                         chambreLigne: hiit.chambreLigne, p: 1,
-                         lisere: true, verre: actif, interaction: mode)
+                         chambreLigne: hiit.chambreLigne, vide: mort,
+                         p: 1, lisere: true, verre: actif,
+                         interaction: mode)
         case .peakEffort:
             CardPeakEffort(titre: peak.titre, valeur: peak.valeur,
                            delta: peak.delta, precedent: peak.precedent,
                            chambreHaut: peak.chambreHaut,
                            chambreBas: peak.chambreBas,
-                           nouveau: peak.nouveau, p: 1,
+                           nouveau: peak.nouveau, vide: mort, p: 1,
                            lisere: true, verre: actif, interaction: mode)
         }
     }
