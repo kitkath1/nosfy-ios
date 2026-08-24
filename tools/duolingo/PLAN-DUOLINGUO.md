@@ -576,6 +576,46 @@ exos vivante, verdict Kathryn ; la largeur de la frontière (90 % de
 l'écran) rend le galet 4/5 plus central que la maquette ; la preuve fine
 « lecteurs vivants = courant + entrant » attend le téléphone (J5).
 
+## 9ter. JALONS J2 + J3 — LIVRÉS LE 24-08 (même session)
+
+**Livré** : `Woop/Views/GaletEtape.swift` (le galet-étape : dôme mat 6
+arrêts, flanc que le press mange, foyer qui glisse vers le doigt,
+micro-tilt ≤ 4°, liseré `galetLisere` par états, refus par l'immobilité,
+mire `-duoGalets` sur deux fonds) ; le chemin dans la colonne (11 étapes
+1/3/2/2/3, serpentin ±62 dans les bandes mesurées, nœud-trésor 98 pt à la
+lune), le tap-avance (bascule 0,25 s + allumage du suivant + scrollTo la
+POSE aimantée si l'écran change), la naissance en cascade (60 ms d'écart),
+la dalle de chapitre (verre `.clear` nourri + pellicule noire + titre par
+écran en crossfade + rail factice lune/flamme), l'effacement de la dalle
+pendant le geste (sonde de PHASE, séparée de la géométrie), flags
+`-duoEtape <n>`.
+
+**Mesuré** : aller-retour filmé avec chemin + dalle : zéro flash en V,
+~42 images distinctes/s au sim ; la cascade de naissance joue au film ;
+l'encre de la dalle lisible sur les deux matières extrêmes (flamme
+blanche / verre noir).
+
+**Pièges payés (nouveaux)** :
+6. **`domeRS.x` de galetLisere est un RAYON** (LaunchPebble passe D =
+   rayon) — passé en diamètre, l'arc flottait à 38 pt HORS du dôme.
+7. **`fondu` de galetLisere attend des COSINUS** (LaunchPebble:289-290 :
+   `cos(deg × π/180)`) — en degrés bruts le fondu sature et le liseré
+   fait un ANNEAU complet : le radio-button interdit, rendu par erreur.
+8. **La boule de billard** : un écart trop grand entre le cœur et le bord
+   du dégradé radial lit « balle de ping-pong » — la matière de la maison
+   est MATE, le volume vient du flanc, du liseré et du foyer.
+9. **L'encre sur verre nourri de matière claire se perd** : la pellicule
+   noire (0,30) AU-DESSUS du verre, SOUS l'encre — l'école de la molette —
+   règle la lisibilité ET calme l'anneau fantôme du bout de capsule.
+10. **DragGesture(minimumDistance: 0) dans un ScrollView** : la fin d'un
+    scroll qui passe sur un galet compte comme un tap — le tap se garde
+    par la course (< 12 pt).
+
+**Reste ouvert (J2/J3)** : le press/refus/tilt se jugent AU DOIGT (le sim
+ne tape pas) ; « CHAPITRE 1 » encore discret sur flanc très clair ; le
+léger halo au bout droit de la dalle (écran 1) ; les partitions J4
+(frontière chorégraphiée, voiles déjà posés) ; verdicts téléphone.
+
 ---
 
 ## 10. LES ARBITRAGES EN ATTENTE (verdicts Kathryn — les défauts sont posés,

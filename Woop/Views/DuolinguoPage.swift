@@ -71,6 +71,32 @@ struct EcranSpec: Equatable, Identifiable {
                   bas: .init(nom: "duo-flamme-bleue", ratioHL: 466.0/804.0)),
     ]
 
+    /// LE SERPENTIN (J3) — les 11 étapes, posées dans la bande noire
+    /// MESURÉE de chaque écran (§2bis du plan), cotes pour 874 pt de haut.
+    /// La dernière est LE NŒUD-TRÉSOR (« le chest Duolingo, c'est le
+    /// booster de Woop ») : plus grand, il porte la lune, il promet.
+    struct EtapeSpec: Equatable, Identifiable {
+        let id: Int
+        let ecran: Int
+        let dx: CGFloat        // écart à l'axe (serpentin ±62)
+        let y: CGFloat         // dans l'écran, base 874
+        var tresor = false
+    }
+
+    static let etapes: [EtapeSpec] = [
+        EtapeSpec(id: 0, ecran: 0, dx: 0, y: 542),
+        EtapeSpec(id: 1, ecran: 1, dx: -58, y: 385),
+        EtapeSpec(id: 2, ecran: 1, dx: 52, y: 500),
+        EtapeSpec(id: 3, ecran: 1, dx: -40, y: 615),
+        EtapeSpec(id: 4, ecran: 2, dx: 55, y: 350),
+        EtapeSpec(id: 5, ecran: 2, dx: -50, y: 480),
+        EtapeSpec(id: 6, ecran: 3, dx: 45, y: 360),
+        EtapeSpec(id: 7, ecran: 3, dx: -55, y: 450),
+        EtapeSpec(id: 8, ecran: 4, dx: 50, y: 400),
+        EtapeSpec(id: 9, ecran: 4, dx: -45, y: 495),
+        EtapeSpec(id: 10, ecran: 4, dx: 0, y: 590, tresor: true),
+    ]
+
     /// LA FRONTIÈRE 4/5 : une seule fenêtre à cheval sur la couture, ancrée
     /// trailing — le dôme rouge vit au bas de l'écran 4, le ventre bleu au
     /// haut de l'écran 5, et c'est le scroll qui fait le voyage (LOI 1).
@@ -96,6 +122,14 @@ struct EcranSpec: Equatable, Identifiable {
     var lectureFrontiere = false
     /// Le gel du banc (`-duoFreeze`) et de reduceMotion : tout à l'arrêt.
     var gel = false
+    /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
+    var etape = 0
+    /// L'écran posé (pour le titre de la dalle) et le geste en cours
+    /// (la dalle s'efface pendant le scroll).
+    var ecranCourant = 0
+    var enGeste = false
+    /// La naissance : les étapes déjà apparues (cascade d'ouverture).
+    var nees: Set<Int> = []
 
     /// Recalcule les rates depuis l'offset — écritures GARDÉES : la sonde
     /// tombe à chaque image, les booléens ne bougent qu'aux frontières.
@@ -109,6 +143,9 @@ struct EcranSpec: Equatable, Identifiable {
         }
         let front = !gel && (a == 3 || b == 3 || a == 4 || b == 4)
         if lectureFrontiere != front { lectureFrontiere = front }
+        let pose = Int((y / hauteur).rounded())
+        let borne = max(0, min(4, pose))
+        if ecranCourant != borne { ecranCourant = borne }
     }
 }
 
@@ -317,6 +354,144 @@ private struct EcranDuo: View {
     }
 }
 
+// MARK: - Le chemin
+
+/// LE SERPENTIN — une seule couche pour toute la colonne, posée au-dessus
+/// du verre vidéo. Pas de fil : dans le noir OLED, le chemin se lit par
+/// les galets seuls (le pointillé board-game est interdit, LOI 4).
+private struct CheminDuo: View {
+    let etat: EtatDuo
+    let hauteur: CGFloat
+    let largeur: CGFloat
+    /// L'étape suivante vit sur un autre écran → la page défile d'une pose.
+    var onEcranSuivant: (Int) -> Void = { _ in }
+
+    var body: some View {
+        let k = hauteur / 874.0
+        ZStack(alignment: .topLeading) {
+            ForEach(EcranSpec.etapes) { e in
+                let quel = etatDe(e)
+                GaletEtape(etat: quel,
+                           numero: e.tresor ? nil : e.id + 1,
+                           glyphe: e.tresor ? "moon.fill" : nil,
+                           taille: e.tresor ? 98 : (quel == .actif ? 84 : 76),
+                           onTap: { tape(e) })
+                    .scaleEffect(etat.nees.contains(e.id) ? 1 : 0.92)
+                    .opacity(etat.nees.contains(e.id) ? 1 : 0)
+                    .position(x: largeur / 2 + e.dx,
+                              y: (CGFloat(e.ecran) * 874 + e.y) * k)
+            }
+        }
+        .frame(width: largeur, height: hauteur * 5, alignment: .topLeading)
+    }
+
+    private func etatDe(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
+        if e.id < etat.etape { return .accompli }
+        if e.id == etat.etape { return .actif }
+        if e.id == etat.etape + 1 { return .prochain }
+        return .verrouille
+    }
+
+    /// LE PASSAGE D'ÉTAPE (partition §7) : l'adieu de l'actif, la bascule,
+    /// l'allumage du suivant — et si le suivant vit sur l'écran d'après,
+    /// la page défile vers sa POSE aimantée (jamais une mi-course que
+    /// l'aimant re-happerait).
+    private func tape(_ e: EcranSpec.EtapeSpec) {
+        guard e.id == etat.etape,
+              etat.etape + 1 < EcranSpec.etapes.count else { return }
+        let suivant = etat.etape + 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                etat.etape = suivant
+            }
+        }
+        let la = EcranSpec.etapes[suivant].ecran
+        if la != e.ecran {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                onEcranSuivant(la)
+            }
+        }
+    }
+}
+
+// MARK: - La dalle de chapitre
+
+/// LA DALLE — verre natif `.clear` NOURRI par la vidéo (chaque écran a sa
+/// fenêtre haute au repos : il y a toujours de la matière dessous, le cas
+/// exact que la loi affinée du 20-08 autorise). L'encre vit AU-DESSUS du
+/// verre, jamais dans le conteneur (l'encre lentillée = fantômes). Elle
+/// s'efface pendant le geste — le verre se DÉMONTE sous 1 % (le natif
+/// ignore `.opacity`), l'encre fond.
+private struct DalleChapitre: View {
+    let etat: EtatDuo
+    static let noms = ["Le verre noir", "La flamme suspendue", "Le rouge",
+                       "Le feu renversé", "Le bleu"]
+
+    var body: some View {
+        let visible = !etat.enGeste
+        ZStack {
+            if visible {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .glassEffect(.clear,
+                                     in: RoundedRectangle(cornerRadius: 20))
+                }
+                // LA PELLICULE — l'école de la molette : une pellicule noire
+                // AU-DESSUS du verre, SOUS l'encre. Sans elle, l'encre
+                // blanche se perd sur la flamme blanche (écran 2) et le
+                // bout de la capsule lentille un anneau fantôme sur le
+                // flanc clair du galet noir (écran 1).
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.black.opacity(0.30))
+            }
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("CHAPITRE 1")
+                        .font(.system(size: 11, weight: .semibold))
+                        .kerning(1.6)
+                        .foregroundStyle(Color(white: 0.52))
+                    ZStack(alignment: .leading) {
+                        Text(Self.noms[etat.ecranCourant])
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(LinearGradient(
+                                colors: [Color(white: 1.0), Color(white: 0.82)],
+                                startPoint: .top, endPoint: .bottom))
+                            .id(etat.ecranCourant)
+                            .transition(.opacity)
+                    }
+                }
+                Spacer(minLength: 12)
+                // LE RAIL DE JEU — la surface, pas la stratégie : chiffres
+                // FACTICES, monochromes, inertes cette session.
+                HStack(spacing: 14) {
+                    rail(glyphe: "moon.fill", valeur: "240")
+                    rail(glyphe: "flame.fill", valeur: "7")
+                }
+            }
+            .padding(.horizontal, 18)
+            .opacity(visible ? 1 : 0)
+        }
+        .frame(height: 58)
+        .padding(.horizontal, 20)
+        .animation(.easeInOut(duration: 0.28), value: visible)
+        .animation(.easeInOut(duration: 0.35), value: etat.ecranCourant)
+        .allowsHitTesting(false)
+    }
+
+    private func rail(glyphe: String, valeur: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: glyphe)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(white: 0.60))
+            Text(valeur)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(LinearGradient(
+                    colors: [Color(white: 0.98), Color(white: 0.78)],
+                    startPoint: .top, endPoint: .bottom))
+        }
+    }
+}
+
 // MARK: - La page
 
 struct DuolinguoPage: View {
@@ -328,6 +503,7 @@ struct DuolinguoPage: View {
 
     /// Options du banc, lues DANS la vue (jamais dans RootView).
     var ecranInitial: Int = 0
+    var etapeInitiale: Int = 0
     var gel = false
     var auto = false
 
@@ -362,6 +538,17 @@ struct DuolinguoPage: View {
                         .offset(y: 4 * hauteur - hFront / 2)
                         .allowsHitTesting(false)
                 }
+                // LE CHEMIN — au-dessus du verre vidéo, DANS le scroll.
+                .overlay(alignment: .top) {
+                    CheminDuo(etat: etat, hauteur: hauteur,
+                              largeur: g.size.width) { ecran in
+                        withAnimation(.easeInOut(duration: 0.7)) {
+                            ordre.scrollTo(y: CGFloat(ecran) * hauteur)
+                        }
+                        UIImpactFeedbackGenerator(style: .medium)
+                            .impactOccurred(intensity: 0.9)
+                    }
+                }
             }
             .scrollTargetBehavior(.paging)
             .scrollIndicators(.hidden)
@@ -377,19 +564,50 @@ struct DuolinguoPage: View {
             } action: { _, neuf in
                 etat.piloter(y: neuf.y, hauteur: hauteur)
             }
+            // LA PHASE, séparée de la géométrie (une sonde de phase ne vole
+            // pas les rappels de la sonde composée) : la dalle s'efface au
+            // doigt, revient à la pose.
+            .onScrollPhaseChange { _, neuf in
+                let geste = neuf != .idle
+                if etat.enGeste != geste { etat.enGeste = geste }
+            }
             .onAppear {
                 etat.gel = gel || reduceMotion
+                etat.etape = etapeInitiale
                 etat.piloter(y: CGFloat(ecranInitial) * hauteur, hauteur: hauteur)
                 if ecranInitial > 0 {
                     ordre.scrollTo(y: CGFloat(ecranInitial) * hauteur)
                 }
                 if auto { lancerAuto(hauteur: hauteur) }
+                naissance()
             }
         }
         .background(Color.black.ignoresSafeArea())
+        // LA DALLE — hors scroll (école PorteEntree : le header vit hors
+        // scroll), posée sous l'île.
+        .overlay(alignment: .top) {
+            DalleChapitre(etat: etat)
+                .padding(.top, 8)
+        }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .sondeCadence("duo")
+    }
+
+    /// L'OUVERTURE (partition §7, version J3) : les étapes naissent en
+    /// cascade, 60 ms d'écart, après que la colonne s'est posée.
+    private func naissance() {
+        if etat.gel {
+            etat.nees = Set(EcranSpec.etapes.map(\.id))
+            return
+        }
+        for (n, e) in EcranSpec.etapes.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(n) * 0.06) {
+                _ = withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+                    etat.nees.insert(e.id)
+                }
+            }
+        }
     }
 
     /// Le corps ne lit pas `etat`… sauf ce booléen discret de la frontière,
@@ -424,9 +642,20 @@ struct DuoLab: View {
                   let n = Int(args[i + 1]) else { return 0 }
             return max(0, min(4, n - 1))
         }()
-        DuolinguoPage(ecranInitial: ecran,
-                      gel: args.contains("-duoFreeze"),
-                      auto: args.contains("-duoAuto"))
-            .environment(\.colorScheme, .dark)
+        let etape: Int = {
+            guard let i = args.firstIndex(of: "-duoEtape"), i + 1 < args.count,
+                  let n = Int(args[i + 1]) else { return 0 }
+            return max(0, min(EcranSpec.etapes.count - 1, n))
+        }()
+        if args.contains("-duoGalets") {
+            // La mire du galet-étape (J2) : la grammaire seule, deux fonds.
+            GaletEtapeLab()
+        } else {
+            DuolinguoPage(ecranInitial: ecran,
+                          etapeInitiale: etape,
+                          gel: args.contains("-duoFreeze"),
+                          auto: args.contains("-duoAuto"))
+                .environment(\.colorScheme, .dark)
+        }
     }
 }
