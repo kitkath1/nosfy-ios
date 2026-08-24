@@ -52,6 +52,39 @@ gainStep() { # $1 gain -> imprime le bout de graphe
   echo "format=gbrp,lutrgb=r=val*$1:g=val*$1:b=val*$1,"
 }
 
+# LE FEU UNIQUE (4e salve, LOI F2) : une couture de feu = UN fichier — le
+# feu qui monte (moitie haute) et son double suspendu (moitie basse,
+# vflip+hflip+decale dans le temps). La jonction : chaque moitie MEURT en
+# fondu (120 px) dans la zone de recouvrement (rangees 480-600), puis les
+# deux se SOMMENT en blend screen (gbrp AVANT le blend, la loi exos) — le
+# coeur du feu est la somme de deux lumieres qui s'eteignent en douceur :
+# aucune arete n'existe, par construction. Les deux bouts du fichier
+# meurent a ZERO VRAI (l'invariant F1).
+# ⚠️ JAMAIS `-loop 1` sur un masque/une image de filtre : l'entree devient
+# INFINIE, le graphe n'a pas de fin — 115 Mo sans moov, tue au timeout
+# (paye ici meme). Les images nues en overlay (repeatlast) suffisent.
+cuireFeu() { # $1 nom  $2 source  $3 crop  $4 gain  $5 roll(frames)
+  local n=$(nbf "$2")
+  ffmpeg -y -v error -i "$2" -i "$TMP/scrim-moitieA.png" \
+    -i "$TMP/scrim-moitieB.png" -i "$TMP/scrim-feu.png" \
+    -filter_complex "\
+[0:v]split=3[sa][sb1][sb2];\
+[sa]crop=$3,scale=804:600,$(gainStep $4)format=gbrp[ac];\
+[ac][1:v]overlay=0:0[af];\
+[af]pad=804:1080:0:0:black,format=gbrp[A];\
+[sb1]trim=start_frame=$5,setpts=PTS-STARTPTS[b1];\
+[sb2]trim=end_frame=$5,setpts=PTS-STARTPTS[b2];\
+[b1][b2]concat=n=2:v=1[bs];\
+[bs]crop=$3,vflip,hflip,scale=804:600,$(gainStep $4)format=gbrp[bc];\
+[bc][2:v]overlay=0:0[bf];\
+[bf]pad=804:1080:0:480:black,format=gbrp[B];\
+[A][B]blend=all_mode=screen[mm];\
+[mm][3:v]overlay=0:0[sc];\
+[sc]split[pa][pb];[pb]reverse,trim=start_frame=1:end_frame=$((n-1)),setpts=PTS-STARTPTS[r];\
+[pa][r]concat=n=2:v=1,format=yuv420p[out]" \
+    -map "[out]" $X264 "$OUT/$1.mp4"
+}
+
 nbf() { ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of csv=p=0 "$1" }
 
 # ------------------------------------------------------------- fonctions
@@ -115,20 +148,23 @@ def scrim(name, W, H, top, bottom):
     img = np.zeros((H, W, 4), dtype=np.uint8)
     img[..., 3] = np.broadcast_to((np.clip(a,0,1)*255).astype(np.uint8), (H, W))
     Image.fromarray(img).save(os.path.join(os.environ["TMP_SCRIM"], f"scrim-{name}.png"))
-# 2e salve 24-08 : les extinctions interieures passent a ~45 % de la
-# hauteur (« pas fondu dans le noir ») ; duo-verre-rouge est MORT ;
-# duo-galet-rouge devient une frontiere pleine capsule (90/90).
+# 4e salve 24-08 (LOI F1, l'invariant du zero) : les capsules emergent du
+# noir sur 200 px ; les feux uniques portent leurs queues a zero dans
+# scrim-feu ; les 4 fichiers de flammes separees sont MORTS (LOI F2).
 for spec in [
-    ("duo-galet-noir",          1206, 1560,   0, 130),
-    ("duo-flamme-blanche",       804,  440, 198,   0),
-    ("duo-flamme-blanche-haut",  804,  520,   0, 234),
-    ("duo-galet-rouge",         1080, 2100,  90,  90),
-    ("duo-flamme-rouge",         804,  540, 243,   0),
-    ("duo-flamme-rouge-haut",    804,  540,   0, 243),
-    ("duo-galet-rougebleu",     1080, 2100,  90,  90),
+    ("duo-galet-noir",          1206, 1560,   0, 220),
+    ("duo-galet-rouge",         1080, 2100, 200, 200),
+    ("duo-galet-rougebleu",     1080, 2100, 200, 200),
     ("duo-flamme-bleue",         804,  440, 198,   0),
 ]:
     scrim(*spec)
+# les queues du feu unique (804x1080) : 150 px a zero aux deux bouts
+scrim("feu", 804, 1080, 150, 150)
+# les fondus de jonction des deux moities (804x600) : la moitie A (le feu
+# qui monte) meurt sur ses 120 dernieres rangees, la moitie B (le double)
+# sur ses 120 premieres — leur somme en screen fait le coeur, sans arete.
+scrim("moitieA", 804, 600, 0, 120)
+scrim("moitieB", 804, 600, 120, 0)
 EOF
 
 DL=~/Downloads
@@ -139,14 +175,11 @@ DL=~/Downloads
 # largeur, le col sort par le haut, le ventre aux 4/5 de la fenetre.
 cuirePill duo-galet-noir "$DL/Video noir_liquid.mp4" "1292:1672:440:1557" "1206x1560"
 
-# --- ecran 1 bas / 2 haut : la flamme blanche (le fichier au nom menteur)
-# 2e SALVE : « trop haute, trop forte » -> bande la plus BASSE de la
-# source, fenetre 220 pt, gain x0,62, extinction interieure 45 %.
-cuireA duo-flamme-blanche "$DL/Video rougeetbleu_liquid.mp4" "1080:592:0:1328" 0 "804x440" 0.62
-pingpong "$TMP/duo-flamme-blanche-A.mp4" "$OUT/duo-flamme-blanche.mp4" $X264
-cuireA duo-flamme-blanche-haut "$DL/Video rougeetbleu_liquid.mp4" "1080:698:0:1222" 1 "804x520" 0.62
-pingpong "$TMP/duo-flamme-blanche-haut-A.mp4" "$TMP/duo-flamme-blanche-haut-P.mp4" $MASTER
-roll "$TMP/duo-flamme-blanche-haut-P.mp4" "$OUT/duo-flamme-blanche-haut.mp4"
+# --- LE FEU UNIQUE 1/2 (la flamme blanche, le fichier au nom menteur) :
+# un seul objet sur la couture — 4e salve, LOI F2. Bande basse de la
+# source (100 px de nuit en tete pour la queue a zero), gain x0,62,
+# decalage temporel de 85 frames entre les deux moities.
+cuireFeu duo-feu-blanc "$DL/Video rougeetbleu_liquid.mp4" "1080:806:0:1114" 0.62 85
 
 # --- LA FRONTIERE 2/3 : la capsule rouge ENTIERE (verdict 2e salve :
 # « ca doit etre le meme element »). Ecole rougebleu : plein pied, fenetre
@@ -156,14 +189,9 @@ roll "$TMP/duo-flamme-blanche-haut-P.mp4" "$OUT/duo-flamme-blanche-haut.mp4"
 # duo-verre-rouge (le crop exos) est MORT : la continuite prime la parite.
 cuirePill duo-galet-rouge "$DL/Video rouge_liquid.mp4" "1778:3458:382:227" "1080x2100"
 
-# --- ecran 3 bas / 4 haut : la flamme rouge de la famille home
-# 2e SALVE : fenetre 270 pt, gain x0,80 (les canaux ensemble : S tient),
-# extinction 45 %.
-cuireA duo-flamme-rouge "$DL/video_flamme_rouge.mp4" "2160:1450:0:2386" 0 "804x540" 0.80
-pingpong "$TMP/duo-flamme-rouge-A.mp4" "$OUT/duo-flamme-rouge.mp4" $X264
-cuireA duo-flamme-rouge-haut "$DL/video_flamme_rouge.mp4" "2160:1450:0:2386" 1 "804x540" 0.80
-pingpong "$TMP/duo-flamme-rouge-haut-A.mp4" "$TMP/duo-flamme-rouge-haut-P.mp4" $MASTER
-roll "$TMP/duo-flamme-rouge-haut-P.mp4" "$OUT/duo-flamme-rouge-haut.mp4"
+# --- LE FEU UNIQUE 3/4 (la flamme rouge de la famille home) : meme loi,
+# gain x0,80 (S tient), decalage 72 frames (145 au total).
+cuireFeu duo-feu-rouge "$DL/video_flamme_rouge.mp4" "2160:1612:0:2224" 0.80 72
 
 # --- la frontiere 4/5 : le galet rouge-et-bleu (l'autre nom menteur)
 cuirePill duo-galet-rougebleu "$DL/Video_Flamme_bleu_.mp4" "1812:3524:270:0" "1080x2100"
@@ -173,18 +201,16 @@ cuireA duo-flamme-bleue "$DL/video_flamme_bleu.mp4" "1080:592:0:1328" 0 "804x440
 pingpong "$TMP/duo-flamme-bleue-A.mp4" "$OUT/duo-flamme-bleue.mp4" $X264
 
 # ------------------------------------------------------------------ poses
-for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut \
-         duo-galet-rouge duo-flamme-rouge \
-         duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
+         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
   pose $n
 done
 
 # ------------------------------------------------- portillons (mesures)
 echo ""
 echo "== PORTILLONS J0 =="
-for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut \
-         duo-galet-rouge duo-flamme-rouge \
-         duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
+         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
   f="$OUT/$n.mp4"
   nf=$(nbf "$f")
   ffmpeg -y -v error -i "$f" -vf "select=eq(n\,0)" -vsync 0 "$TMP/$n-f0.png"
@@ -195,9 +221,8 @@ import numpy as np, os, glob
 from PIL import Image
 tmp = os.environ["TMP"]
 out = "../../Woop/Media"
-names = ["duo-galet-noir","duo-flamme-blanche","duo-flamme-blanche-haut",
-         "duo-galet-rouge","duo-flamme-rouge",
-         "duo-flamme-rouge-haut","duo-galet-rougebleu","duo-flamme-bleue"]
+names = ["duo-galet-noir","duo-feu-blanc","duo-galet-rouge",
+         "duo-feu-rouge","duo-galet-rougebleu","duo-flamme-bleue"]
 print(f"{'fichier':28s} {'couture':>8s} {'bordH p99':>10s} {'bordB p99':>10s} {'noir p50':>9s} {'Mo':>6s}")
 total = 0.0
 for n in names:
@@ -213,4 +238,4 @@ for n in names:
 print(f"{'TOTAL':28s} {'':8s} {'':10s} {'':10s} {'':9s} {total:6.1f}")
 EOF
 echo ""
-echo "cuit -> Woop/Media/duo-*.mp4 (8) + Assets duo-*-poster (8)"
+echo "cuit -> Woop/Media/duo-*.mp4 (6) + Assets duo-*-poster (6)"

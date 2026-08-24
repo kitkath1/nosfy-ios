@@ -945,6 +945,192 @@ premier « trop »).
 
 ---
 
+## 13. LA 4ᵉ SALVE — « LE FEU UNIQUE » (dicté le 24-08 soir, PAS CODÉ)
+
+Les verdicts verbatim :
+
+> « regarde, ça va pas dans les flammes, il y a des genres de CALQUES et
+> c'est pas naturel — ça doit être fondu naturel, on ne doit pas savoir
+> que c'est deux composants isolés, ça doit être magnifique, ça ne l'est
+> pas »
+
+> « pareil les pills : le fondu entre deux écrans, pas assez fondu, animé,
+> naturel — les transitions ne sont pas spectaculaires ! »
+
+> « tu vas trop trop vite »
+
+**Le mea culpa de méthode (avant le diagnostic)** : mon détecteur de coupe
+moyennait chaque rangée sur toute la largeur — un calque de +10 à +20 se
+noyait dans la moyenne, il a rendu 19, et j'ai RATIONALISÉ ce résiduel en
+« structure du brasier » (le piège 14 était déjà écrit… et je suis tombé
+dedans en le contournant). La règle de cette salve : **les deux captures
+de Kathryn sont la vérité de calibration** — le nouveau détecteur doit
+les condamner AVANT d'avoir le droit d'absoudre quoi que ce soit, et
+chaque couture reçoit SON verdict humain avant de passer à la suivante.
+On ne va plus vite que la preuve.
+
+**Le diagnostic à la racine** : une fenêtre rectangulaire dont le contenu
+n'est pas à ZÉRO sur son bord montrera TOUJOURS ce bord dès qu'il passe
+sur autre chose que du noir — additif ou pas, rideau ou pas. Le rideau
+runtime est lui-même un calque (sa bande sombre à opacité partielle,
+visible dans la capture blanche). Et deux flammes qui se croisent restent
+deux composants, quoi qu'on maquille. Il faut UN SEUL feu par couture et
+UN invariant mathématique.
+
+### LA DOCTRINE DU FEU UNIQUE (deux lois, au-dessus de tout le reste)
+
+**LOI F1 — L'INVARIANT DU ZÉRO.** Le contenu de CHAQUE fichier vidéo
+atteint le NOIR VRAI (0) avant CHAQUE bord de sa fenêtre — cuit, mesuré,
+sans exception. Un bord qui doit « saigner » sur un bord d'écran à la
+pose s'obtient par OVERSHOOT (la fenêtre dépasse le bord physique, la
+queue du fondu vit hors écran), jamais par des pixels vifs au bord. Alors
+aucune ligne n'est POSSIBLE, nulle part, jamais — par mathématique, pas
+par cache. Conséquence : **TOUS les rideaux runtime MEURENT** (ils
+étaient des calques de plus).
+
+**LOI F2 — LE FEU EST UN, COMME LE VERRE.** Ce qui a rendu les capsules
+justes (« c'est top que tu as fait le même élément ») s'applique aux
+feux : chaque couture de feu devient UN objet chevauchant — le feu et son
+double suspendu, CUITS EN UN SEUL FICHIER. Plus deux flammes qui se
+croisent : un seul cœur de feu posé sur la couture, dont l'écran du bas
+montre les plumes qui montent et l'écran du haut les plumes qui pendent.
+« On ne doit pas savoir que c'est deux composants » → ce n'en est plus
+qu'un.
+
+### F1 — LA CUISSON DU FEU UNIQUE
+
+- **`duo-feu-blanc.mp4` (couture 1/2) et `duo-feu-rouge.mp4` (couture
+  3/4)** : un canevas ~402×600 pt (804×1200 px) posé sur la couture.
+  Moitié haute = la bande de flamme telle quelle (base vive en bas,
+  plumes mourant vers le haut) ; moitié basse = la même retournée
+  (vflip+hflip+roll de phase — la décorrélation cuite). Les deux bases
+  vives se rejoignent SUR la couture : le cœur du feu. **La jonction est
+  CROSSFADÉE dans le fichier sur ~120 px** — la continuité est cuite, un
+  raccord runtime est impossible à rater puisqu'il n'existe pas.
+- Les DEUX bouts du fichier (les queues de plumes) meurent à ZÉRO VRAI
+  (smoothstep long, portillon : p99 des 12 dernières rangées = 0).
+- À la pose de l'écran du bas : le cœur vif affleure le bord physique
+  BAS de l'écran, les plumes montent — la maquette, mieux qu'avant. À la
+  pose de l'écran du haut : le cœur affleure le bord HAUT, les plumes
+  pendent. Entre les deux : UN objet qui traverse, jamais deux.
+- **`duo-flamme-bleue` v3** (écran 5, pas de couture en dessous) : les
+  deux bouts à zéro + OVERSHOOT de 60 pt (la fenêtre plonge sous le bord
+  physique à la pose — sa queue basse ne se voit qu'en voyage, déjà à
+  zéro).
+- **Les capsules v3** (`duo-galet-rouge`, `duo-galet-rougebleu`) : les
+  fondus de bouts passent de 90 px à **~200 px jusqu'au zéro vrai**
+  (« pas assez fondu » : le verre ÉMERGE du noir sur une vraie distance),
+  et leurs rideaux runtime meurent aussi.
+- **`duo-galet-noir` v3** : le fondu bas à zéro sur 200 px (même loi).
+- Portillon F1, par fichier : p99 = 0 sur les 12 rangées de chaque bout ;
+  la planche des poses contre les maquettes (silhouettes ±4 %) — 
+  l'overshoot ne doit RIEN changer aux poses.
+
+### F2 — LE RUNTIME SIMPLIFIÉ (moins de pièces, pas plus)
+
+- `FeuxDuo` (5 fenêtres + contre-mouvement + rideaux) est REMPLACÉ par
+  **deux feux-frontières** (l'école FrontiereSpec exacte : fenêtre à
+  cheval, poses {0, −H}, offset constant, additif `.plusLighter`) + la
+  fenêtre simple overshootée de l'écran 5. Le contre-mouvement de T3
+  MEURT (plus rien à croiser), les rideaux MEURENT partout.
+- Le rack focus reste (net aux poses, défocus au voyage — mêmes rampes) ;
+  les voiles restent (après la fusion) ; le `compositingGroup` dernier
+  reste (la loi de l'additif).
+- Bilan : 3 calques de feu au lieu de 5, zéro rideau, moins de code que
+  la salve précédente — la beauté par soustraction.
+
+### F3 — LE SPECTACULAIRE DES CAPSULES (« plus fondu, animé, naturel »)
+
+La traversée d'une capsule devient une vraie scène, chaque ingrédient
+chiffré et coupé par reduceMotion :
+
+1. **L'émergence** : grâce aux fondus de 200 px cuits (F1), le verre naît
+   du noir sur une vraie distance — plus jamais un bord qui « arrive ».
+2. **L'approche de la caméra** : l'échelle au passage passe de 1,02 à
+   **1,05** (le verre passe PRÈS), la courbe en S de 0,08 H à **0,10 H**
+   (elle s'attarde davantage), le tilt de 1,5° à **3°** (on voit le verre
+   tourner).
+3. **La lueur de passage** montée à **0,22**, teintée par l'écran (blanc
+   chaud sur le rouge, froid sur le bleu — la loi de la température du
+   chemin).
+4. **La scène s'efface pour le sujet** : pendant la traversée d'une
+   capsule (sin(π·u) de SA course), les voiles des deux écrans adjacents
+   gagnent +12 % — le monde recule, le projecteur est pour elle.
+5. Le bercement (±3 pt, 11/13 s) et le défocus-sujet restent tels quels.
+   ⚠️ Chaque chiffre est un CURSEUR au banc : au premier « trop », on
+   divise par deux — le spectaculaire de la maison est une rareté, pas
+   une foire.
+
+### F4 — LE FOUETTAGE REFONDÉ (la preuve avant la vitesse)
+
+- **LE DÉTECTEUR DE LIGNE** (il remplace le détecteur de coupe) : une
+  ligne droite = un saut de rangée COHÉRENT sur la largeur — score =
+  |moyenne_x(Δy)| pondéré par sa consistance (σ_x faible), calculé sur
+  chaque rangée de chaque frame. **Calibration OBLIGATOIRE d'abord : les
+  deux captures de Kathryn doivent scorer HAUT (positifs), les poses
+  doivent scorer bas (négatifs) — le seuil se pose ENTRE, et le détecteur
+  n'a le droit d'absoudre qu'après avoir condamné les captures.**
+- Films de CHAQUE couture séparément, à deux vitesses (l'aller-retour
+  auto + un passage LENT, nouveau flag `-duoAutoLent`) — les calques se
+  voient au ralenti.
+- Non-régression des poses (silhouettes ±4 %), flash en V, voile du blur,
+  cadence.
+- **Un jalon = UNE couture validée par Kathryn avant la suivante** — le
+  remède au « trop vite » : F-a (couture 1/2 blanche), F-b (3/4 rouge),
+  F-c (2/3 et 4/5 capsules v3 + spectaculaire), F-d (l'ensemble + écran 5).
+
+### L'ordre de la salve
+
+| # | Ce qu'on juge | Portillons |
+|---|---|---|
+| **F0 — le détecteur calibré** | le détecteur de ligne sur les captures de Kathryn | il les CONDAMNE (score net au-dessus du seuil) et absout les poses — sinon on ne code rien |
+| **F1 — la cuisson** | 5 fichiers recuits (2 feux uniques, bleue v3, 2 capsules v3, noir v3) | zéro vrai aux bouts (p99 = 0 sur 12 rangées) ; jonctions crossfadées ; poses intactes ±4 % |
+| **F-a** | la couture 1/2 au film (lent + auto) | détecteur de ligne muet ; verdict Kathryn AVANT F-b |
+| **F-b** | la couture 3/4 | idem |
+| **F-c** | les capsules v3 + le spectaculaire F3 | idem + curseurs jugés |
+| **F-d** | l'ensemble + écran 5 + fouettage complet | la table F4 entière |
+
+### F0→F4 — LIVRÉS LE 24-08 (même session, commit de salve)
+
+**F0** : `tools/duolingo/sonde_ligne.py` — la sonde de ligne (saut de
+rangée COHÉRENT : |mean_x| avec std_x < max(4 ; 0,9·mean)), calibrée sur
+les captures de Kathryn archivées (`shots/verdict-calques-*.png`) :
+positifs 10,5 et 14,0, poses propres < 5 → **seuil 7**. Deux pièges de
+calibration payés : la cohérence à `std < 2m` laissait passer l'arc du
+ventre (23/43) — un vrai calque rend std ≪ mean ; et la zone descend à
+16 % (la dalle qui revient à l'atterrissage est un bord d'UI légitime).
+
+**F1** : `cuireFeu()` — les feux uniques `duo-feu-blanc` / `duo-feu-rouge`
+(804×1080 : moitié qui monte + double suspendu vflip+hflip+décalé de
+~demi-boucle, chaque moitié meurt en fondu 120 px dans le recouvrement,
+somme en `blend screen` sur gbrp — le cœur est cuit, aucune arête par
+construction) ; capsules et galet noir recuits (fondus 200/220 px au
+zéro). Portillons : bouts à 0,0 partout, coutures ≤ 1,68, 20,7 Mo.
+⚠️ Piège payé : **JAMAIS `-loop 1` sur une image de filtre** — l'entrée
+devient infinie, le graphe ne finit jamais (115 Mo sans moov, tué au
+timeout) ; les images nues en overlay (repeatlast) suffisent.
+
+**F2** : FeuxDuo = 2 feux uniques (école FrontiereSpec, poses {0,−H},
+additif) + la bleue simple (son bord bas ne visite jamais le viewport —
+l'overshoot était inutile, analysé) ; RIDEAUX morts partout ;
+contre-mouvement mort ; **les VOILES PAR ZONES sont morts aussi** — payé
+à la sonde (frames 401-403, score 23) : un voile par écran pose une
+MARCHE à la couture, en plein feu désormais continu. Le voile vit DANS la
+fenêtre (opacité uniforme par objet : capsules −50 % au-delà des poses,
+verre noir −35 % au voyage, le feu JAMAIS — il est le sujet de sa
+couture).
+
+**F3** : courbe en S 0,10 H, échelle 1,05, tilt 3°, lueur 0,22 TEINTÉE
+(chaude capsule rouge, froide rouge-et-bleu), bercement inchangé.
+
+**F4 mesuré (film 20 img/s, hors lancement et hors zone dalle)** :
+**sonde de ligne en transition : max 2,76 ; p95 2,23 ; médiane 1,46**
+(seuil 7 ; les captures de Kathryn : 10,5 / 14,0). Zéro flash en V.
+Les poses : intactes. Restent les verdicts Kathryn par couture (F-a → F-d
+au doigt) et le téléphone.
+
+---
+
 ## 10. LES ARBITRAGES EN ATTENTE (verdicts Kathryn — les défauts sont posés,
 rien n'est codé avant J-concerné)
 
