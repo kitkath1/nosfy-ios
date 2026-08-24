@@ -1751,6 +1751,140 @@ avant toute présentation. Les portillons du §14 (mort ≥ 150 pt en
 proportion de la nouvelle taille, bords à zéro, étendue, paliers) gardent
 la cuisson.
 
+## 16. « LA SCÈNE AUX GALETS » (24-08 soir, dicté sur le verdict du §15
+exécuté — PAS CODÉ, son go attendu)
+
+Le verdict verbatim (sur capture É2 à la pose) :
+
+> « bah non, on ne voit plus rien sur les flammes — mais pas mal
+> l'idée. Et pareil : je voulais qu'au scroll les pills vidéo fassent
+> une ROTATION et un effet BLUR NOIR avant qu'elles arrivent, car les
+> principaux acteurs de l'écran c'est aussi les galets de progression.
+> refais un plan »
+
+**Le diagnostic** : la direction braise est VALIDÉE, mais le §15 a
+sur-corrigé — en tuant le double renversé j'ai tué TOUTE flamme des
+hauts d'écrans : É2 et É4 à la pose n'ont plus un seul feu (sa capture :
+noir + galets + dôme rouge, zéro flamme). Et l'arrivée des capsules est
+aujourd'hui l'inverse de son vœu : la capsule-sujet voyage NETTE (la loi
+T3 du §12) — elle veut qu'elle voyage FLOUE ET SOMBRE et se RÉSOLVE à la
+pose : le sujet émerge de la profondeur, les galets règnent pendant le
+voyage. La loi T3 meurt, l'arrivée cinéma la remplace.
+
+### G1 — LES FLAMMES RETROUVÉES (la présence, sans revenir au brouillard)
+
+- **Les braises basses grandissent** : visibles 160 → **~215 pt** (crête
+  toujours ≤ 262, LOI RARE-1), luminance tenue. Cuisson : mêmes recettes
+  `cuireBraise` (point noir écrasé, vignette, miroir overshoot), crop
+  élargi (blanche `1080:520:0:1356`, rouge `2160:1100:0:2692`, canevas
+  804×640 dont 160 px d'overshoot).
+- **LES BRAISES SUSPENDUES REVIENNENT** (le manque exact de sa capture) :
+  É2 et É4 reçoivent en HAUT une braise RENVERSÉE de **~130 pt** —
+  la même matière vflip, PETITE et fondue (extinction basse longue,
+  vignette). Ce n'est PAS le retour du X : les deux braises d'une couture
+  ne se croisent jamais (chacune clouée à SON bord, inclinées à 55 % en
+  voyage, la lueur fait le pont). « La flamme suspendue » redevient vraie.
+- Fichiers : `duo-flamme-blanche-haut.mp4`, `duo-flamme-rouge-haut.mp4`
+  (804×340 : 260 px visibles + 80 d'overshoot haut, roll de phase
+  demi-boucle — jamais en phase avec la basse). Portillons : bords zéro,
+  ligne < 7, étendue par feu ≤ 262 pt, couture ≤ 2, déphasage vérifié.
+
+### G2 — L'ARRIVÉE DES CAPSULES (rotation + blur noir qui se RÉSOLVENT)
+
+La loi T3 (« le sujet reste net ») MEURT — remplacée par :
+
+**LOI G — LE SUJET ÉMERGE.** Pendant sa traversée, la capsule est
+floue, sombre et inclinée ; tout se résout à ZÉRO à la pose (sin(π·u)
+sur les trois canaux — la forme qui s'annule aux deux poses) :
+
+- **le blur noir** : rayon **10 pt × sin(π·u)** (net aux poses, flou au
+  cœur du voyage) + assombrissement **0,35 × sin(π·u)** par-dessus les
+  rideaux N0 — elle arrive DE la profondeur noire ;
+- **la rotation** : le tilt passe de 2° à **7° × sin(π·u)** sur l'axe X
+  (perspective 0,5) — on VOIT le verre tourner en approchant, immobile
+  posé ;
+- l'échelle 1,02 et la courbe en S restent ; la lueur de passage 0,12
+  reste (elle troue le sombre — le verre s'allume en passant).
+- **La hiérarchie voulue** : pendant le voyage la capsule est douce et
+  sombre → les galets (nets, au-dessus) sont les acteurs ; à la pose la
+  capsule se résout et reprend la scène.
+- ⚠️ Les gardes : tout en visualEffect (zéro invalidation) ; le blur
+  vit sur LA SEULE capsule en traversée (1 fenêtre, jamais 2) — cadence
+  mesurée, échelle de repli 10 → 6 → 4 pt ; le détecteur de VOILE (le
+  blur laisse son calque : noir autour ≤ 4/255) ; reduceMotion coupe
+  rotation et blur (piège 19).
+- Curseurs au banc : `-duoArrivee <deg>` (défaut 7), `-duoFocusPill <pt>`
+  (défaut 10), `-duoBraise` inchangé.
+
+### G3 — LE FOUETTAGE PUIS SON VERDICT
+
+Films aller-retour × 2 vitesses ; sonde de ligne (< 7) ; fraction
+lumineuse (les braises suspendues remontent les poses — portillon : pose
+≤ 35 %, transition ≤ pose) ; détecteur de voile du blur ; zéro flash ;
+cadence pendant les traversées floutées (les deux nombres) ; puis les
+curseurs jugés AU DOIGT par Kathryn (braise, degrés, rayon), téléphone
+ensuite (N10 du §14 reste la liste).
+
+## 17. « LA BOULE DE FEU » — le morphisme des flammes (24-08 soir, dicté
+sur son idée — PAS CODÉ, son go attendu)
+
+> « au pire elles peuvent être toutes petites les flammes entre elles :
+> au scroll elles se CONDENSENT limite entre elles EN BOULE, et une fois
+> sur l'écran elles se DÉVOILENT — refais un plan de morphisme
+> magnifique »
+
+**L'idée, en langage de la maison** : la flamme n'est plus un objet qui
+s'incline en voyage — c'est une matière qui RESPIRE avec le scroll. À la
+pose : la braise déployée, plumes vivantes. Au voyage : les DEUX braises
+d'une couture se condensent l'une VERS l'autre — chacune se contracte
+vers son point de couture — et leur somme additive au centre du voyage
+est UNE BOULE de feu compacte posée sur la couture, enveloppée de la
+lueur. À l'arrivée : la braise de l'écran qui se pose SE DÉVOILE depuis
+la boule — le feu se déplie. Un seul geste continu : flamme → boule →
+flamme.
+
+**Pourquoi c'est réalisable proprement (et pas cher)** : tout est du
+TRANSFORM en visualEffect — « on transforme, on ne redimensionne
+jamais » :
+
+### M1 — LA CONDENSATION
+
+- Chaque braise reçoit une échelle pilotée par sa traversée :
+  `scale = 1 − (1 − boule) × sin(π·u)` avec `boule ≈ 0,32`
+  (`-duoBoule <0-1>` au banc) — pleine à la pose, boule au cœur du
+  voyage, la forme sin qui s'annule aux DEUX poses (la loi des arrivées).
+- **L'ANCRE fait le morphisme** : la basse se contracte ancrée
+  BAS-CENTRE (sa base reste collée à la couture — elle fond VERS la
+  couture) ; la suspendue ancrée HAUT-CENTRE. Les deux glissent l'une
+  vers l'autre par construction, et l'additif fait de leur rencontre UNE
+  boule — jamais deux objets (la leçon de toutes les salves : un seul
+  objet par couture au voyage).
+- L'inclinaison à 55 % MEURT (remplacée : la condensation EST le
+  « montrer moins ») ; reste un léger dim ~20 % au cœur du voyage pour
+  que la boule soit dense, pas éblouissante.
+- La LUEUR de couture devient LE CŒUR DE LA BOULE : rayon resserré
+  (~0,35 × largeur), intensité au pic ~0,35, teintée chapitre — c'est
+  elle qui enrobe la boule et fait le liant.
+
+### M2 — LE DÉVOILEMENT
+
+- À l'approche de la pose, la braise se redéploie (le même sin — aucune
+  mécanique nouvelle) ; la VIDÉO continue de jouer pendant tout le
+  morphisme : le dévoilement est vivant (les plumes bougent en se
+  dépliant), jamais un simple zoom d'image.
+- La respiration est symétrique et réversible au doigt (scrub avant/
+  arrière = le même chemin — géométrie pure, zéro état).
+
+### M3 — LE FOUETTAGE
+
+- Films 2 vitesses ; sonde de ligne < 7 ; le test de la BOULE à l'œil :
+  au cœur du voyage, UNE seule forme lumineuse par couture (jamais deux) ;
+  poses intactes (scale = 1 exact) ; cadence inchangée (transforms purs,
+  aucun blur ajouté) ; reduceMotion : condensation coupée (opacité
+  simple).
+- Curseurs : `-duoBoule` (0,32), `-duoBraise` (le cœur), l'arrivée des
+  capsules inchangée (§16).
+
 ### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
 
 1. **La direction des feux** (N2) : A / B / C / D et compositions — défaut

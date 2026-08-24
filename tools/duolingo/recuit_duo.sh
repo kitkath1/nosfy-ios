@@ -158,16 +158,20 @@ for spec in [
     ("duo-flamme-bleue",         804,  440, 198,   0),
 ]:
     scrim(*spec)
-# §15 : la braise de pose (804x480 = 160 pt visibles + 80 d'overshoot
-# miroir) — extinction haute 160 px, fondu de l'overshoot 160 px.
-scrim("braise", 804, 480, 160, 160)
+# §16 G1 : les braises — basses 215 pt visibles (430 px) + 80 pt de
+# miroir ; suspendues (pre-flip) 130 pt (260 px) + 40 pt de miroir.
+scrim("basse", 804, 590, 200, 160)
+scrim("haute", 804, 340, 150, 80)
 # la vignette gaussienne laterale (multiply) : du noir aux flancs par
 # construction, la braise est un dome de lumiere centre.
-x = np.arange(804)
-g = np.exp(-(((x - 402) / 300.0) ** 2) * 2.2)
-v = np.broadcast_to((g * 255).astype(np.uint8)[None, :], (480, 804))
-Image.fromarray(np.stack([v, v, v], axis=-1)).save(
-    os.path.join(os.environ["TMP_SCRIM"], "vignette.png"))
+def vignette(name, W, H, sigma, k):
+    x = np.arange(W)
+    g = np.exp(-(((x - W/2) / sigma) ** 2) * k)
+    v = np.broadcast_to((g * 255).astype(np.uint8)[None, :], (H, W))
+    Image.fromarray(np.stack([v, v, v], axis=-1)).save(
+        os.path.join(os.environ["TMP_SCRIM"], f"{name}.png"))
+vignette("vig-basse", 804, 590, 300, 2.2)
+vignette("vig-haute", 804, 340, 260, 2.4)
 EOF
 
 DL=~/Downloads

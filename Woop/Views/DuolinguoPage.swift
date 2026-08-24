@@ -53,6 +53,10 @@ struct EcranSpec: Equatable, Identifiable {
         /// §15, D3 — LE VOYAGE EST NOIR : une braise de pose s'éteint dès
         /// le geste, morte à `extinctionVoyage × H` de déplacement.
         var extinctionVoyage: CGFloat = 0
+        /// §16 G2 « tous les écrans » : la capsule vidéo d'un écran (le
+        /// verre noir) reçoit aussi l'émergence — floue et sombre dès
+        /// qu'elle quitte sa pose, résolue posée.
+        var emerge = false
         var pose: String { nom + "-poster" }
     }
 
@@ -65,17 +69,26 @@ struct EcranSpec: Equatable, Identifiable {
         // ÉCRAN 1 — LE VERRE NOIR (col au bord, ventre aux 4/5 de la fenêtre)
         EcranSpec(id: 0,
                   haut: .init(nom: "duo-galet-noir", ratioHL: 1560.0/1206.0,
-                              parallaxe: 0.10),
-                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 480.0/804.0,
-                             flamme: true, overshoot: 80,
-                             extinctionVoyage: 0.25)),
-        EcranSpec(id: 1, haut: nil, bas: nil),   // LA BRAISE BLANCHE
+                              parallaxe: 0.10, emerge: true),
+                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 430.0/804.0,
+                             flamme: true, extinctionVoyage: 0.25)),
+        // ÉCRAN 2 — LA BRAISE BLANCHE : la suspendue REVIENT (§16 G1 —
+        // « on ne voit plus rien sur les flammes ») : petite, renversée,
+        // clouée en haut, jamais croisée avec la basse.
+        EcranSpec(id: 1,
+                  haut: .init(nom: "duo-flamme-blanche-haut",
+                              ratioHL: 260.0/804.0, flamme: true,
+                              extinctionVoyage: 0.25),
+                  bas: nil),
         // ÉCRAN 3 — LE ROUGE (le haut = la frontière 2/3, le bas = la braise)
         EcranSpec(id: 2, haut: nil,
-                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 480.0/804.0,
-                             flamme: true, overshoot: 80,
-                             extinctionVoyage: 0.25)),
-        EcranSpec(id: 3, haut: nil, bas: nil),   // LA BRAISE ROUGE
+                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 430.0/804.0,
+                             flamme: true, extinctionVoyage: 0.25)),
+        EcranSpec(id: 3,
+                  haut: .init(nom: "duo-flamme-rouge-haut",
+                              ratioHL: 260.0/804.0, flamme: true,
+                              extinctionVoyage: 0.25),
+                  bas: nil),   // LA BRAISE ROUGE
         // ÉCRAN 5 — LE BLEU (le haut = la frontière 4/5, le bas = la
         // flamme bleue, rendue dans la couche des feux)
         EcranSpec(id: 4,
@@ -165,12 +178,15 @@ struct EcranSpec: Equatable, Identifiable {
         var ecrans: [Int] { [couture - 1, couture] }
     }
 
+    /// §16 recalé (« les pills sont trop proéminentes ») : 360 → 300 pt
+    /// de large (~583 pt de haut au lieu de 700) — les galets restent les
+    /// acteurs, la capsule reste l'événement.
     static let frontieres: [FrontiereSpec] = [
         FrontiereSpec(id: 0, nom: "duo-galet-rouge",
-                      ratioHL: 2100.0/1080.0, largeurFrac: 360.0/402.0,
+                      ratioHL: 2100.0/1080.0, largeurFrac: 300.0/402.0,
                       couture: 2, bord: .leading),
         FrontiereSpec(id: 1, nom: "duo-galet-rougebleu",
-                      ratioHL: 2100.0/1080.0, largeurFrac: 360.0/402.0,
+                      ratioHL: 2100.0/1080.0, largeurFrac: 300.0/402.0,
                       couture: 4, bord: .trailing),
     ]
 }
@@ -397,6 +413,11 @@ private struct FenetreVideo: View {
     var sujet = false
     /// Le rayon max du rack focus (0 = mort ; réglé par `-duoFocus`).
     var flou: CGFloat = 0
+    /// §17 LA BOULE DE FEU : une braise se CONDENSE en voyage (échelle
+    /// vers `boule`, ancrée sur sa couture) et se DÉVOILE à la pose —
+    /// sin(π·u), nul aux deux poses, réversible au doigt.
+    var boule: CGFloat = 0
+    var ancreBoule: UnitPoint = .center
     let joue: Bool
 
     var body: some View {
@@ -425,34 +446,55 @@ private struct FenetreVideo: View {
                 // couture.
                 let r: CGFloat
                 let nuit: CGFloat
+                var sc: CGFloat = 1
                 if sujet {
-                    // Net entre ses poses ; au-delà, il fond dans la
-                    // profondeur (rampe 0,35 H) et s'éteint à moitié.
+                    // LOI G (§16) — LE SUJET ÉMERGE : la loi T3 (« le
+                    // sujet voyage net ») est MORTE. En traversée la
+                    // capsule est FLOUE et SOMBRE, tout se résout à ZÉRO
+                    // aux poses (sin(π·u)) — elle arrive de la
+                    // profondeur, les galets règnent pendant le voyage.
                     let haut = poses.max() ?? 0
                     let bas = poses.min() ?? 0
+                    let u = max(0, min(1, (haut - d) / max(1, haut - bas)))
+                    // §17 cover-flow : |sin(2πu)| — floue/sombre à
+                    // l'APPROCHE, NETTE face caméra au centre (le moment
+                    // de présentation), floue au départ, nette posée.
+                    let sTrav = abs(sin(2 * .pi * u))
+                    // au-delà de ses poses elle quitte son histoire :
+                    // elle fond (rampe 0,35 H) et s'éteint à moitié.
                     let dehors = max(0, max(d - haut, bas - d))
-                    let u = min(1, dehors / (0.35 * hauteur))
-                    let s = u * u * (3 - 2 * u)
-                    r = flou * s
-                    nuit = 0.5 * s
+                    let ud = min(1, dehors / (0.35 * hauteur))
+                    let sd = ud * ud * (3 - 2 * ud)
+                    r = flou * (sTrav + sd)
+                    // §16 doublé (« améliore 100 % l'effet ») : le noir
+                    // de traversée monte à 0,5 — elle ÉMERGE vraiment.
+                    nuit = min(0.85, 0.5 * sTrav + 0.5 * sd)
                 } else {
                     let u = min(1, dist / (0.5 * hauteur))
                     let s = u * u * (3 - 2 * u)
                     r = flou * s
                     var n: CGFloat = additif ? 0 : 0.35 * s
-                    // §15 D3 recalé (verdict : « on ne voit plus les
-                    // flammes au scroll ») : la flamme ne MEURT plus en
-                    // voyage — elle S'INCLINE à ~55 % et se fond d'une
-                    // page à l'autre. Ses bords n'existent pas dans la
-                    // matière (vignette + fondus cuits) : elle peut
-                    // voyager sans jamais couper.
-                    if spec.extinctionVoyage > 0 {
+                    // §17 — LA CONDENSATION : au voyage la braise se
+                    // contracte vers sa couture (l'ancre fait le
+                    // morphisme) ; l'inclinaison 55 % du §15 est MORTE,
+                    // la boule EST le « montrer moins ». Léger dim 0,2
+                    // pour une boule dense, pas éblouissante.
+                    if boule > 0 {
+                        let ub = min(1, dist / hauteur)
+                        let sb = sin(.pi * ub)
+                        sc = 1 - (1 - boule) * sb
+                        n = max(n, 0.20 * sb)
+                    } else if spec.extinctionVoyage > 0 {
+                        // reduceMotion : le repli simple (fondu, pas de
+                        // morphisme).
                         let ue = min(1, dist / (spec.extinctionVoyage * hauteur))
                         n = max(n, 0.45 * (ue * ue * (3 - 2 * ue)))
                     }
                     nuit = n
                 }
-                return contenu.offset(y: dy).blur(radius: r)
+                return contenu.offset(y: dy)
+                    .scaleEffect(sc, anchor: ancreBoule)
+                    .blur(radius: r)
                     .opacity(Double(1 - nuit))
             }
     }
@@ -479,7 +521,10 @@ private struct EcranDuo: View {
                 if let haut = spec.haut, !haut.flamme {
                     FenetreVideo(spec: haut, largeur: g.size.width,
                                  restY: 0, hauteur: g.size.height,
-                                 flou: DuoReglages.focusEffectif,
+                                 sujet: haut.emerge,
+                                 flou: haut.emerge
+                                     ? DuoReglages.focusPillEffectif
+                                     : DuoReglages.focusEffectif,
                                  joue: joue)
                         .offset(x: haut.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
@@ -489,7 +534,10 @@ private struct EcranDuo: View {
                     FenetreVideo(spec: bas, largeur: g.size.width,
                                  restY: g.size.height - g.size.width * bas.ratioHL,
                                  hauteur: g.size.height,
-                                 flou: DuoReglages.focusEffectif,
+                                 sujet: bas.emerge,
+                                 flou: bas.emerge
+                                     ? DuoReglages.focusPillEffectif
+                                     : DuoReglages.focusEffectif,
                                  joue: joue)
                         .offset(x: bas.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
@@ -521,12 +569,24 @@ private struct FeuxDuo: View {
             // dans FenetreVideo). Le voyage est noir.
             ForEach(Array(EcranSpec.feux.enumerated()), id: \.offset) { _, feu in
                 let h = largeur * feu.spec.ratioHL
-                let yLocal = feu.enHaut ? 0 : hauteur - h + feu.spec.overshoot
+                let yLocal = feu.enHaut ? 0 : hauteur - h
+                // §17 — LA BOULE : en voyage la braise se condense vers
+                // SA couture (l'ancre fait le morphisme) ; §17 M2 — LE
+                // DÉVOILEMENT : pendant le geste tout est voilé de blur,
+                // au repos la braise se dévoile doucement (0,7 s).
                 FenetreVideo(spec: feu.spec, largeur: largeur,
                              restY: yLocal, hauteur: hauteur,
                              additif: true,
                              flou: DuoReglages.focusEffectif,
+                             boule: DuoReglages.bouleEffectif,
+                             ancreBoule: feu.enHaut ? .top : .bottom,
                              joue: etat.lecture[feu.ecran])
+                    .blur(radius: etat.enGeste && !etat.gel
+                          ? DuoReglages.voileGeste : 0)
+                    .animation(etat.enGeste
+                               ? .easeIn(duration: 0.25)
+                               : .easeOut(duration: 0.7),
+                               value: etat.enGeste)
                     .offset(y: CGFloat(feu.ecran) * hauteur + yLocal)
             }
             // §15 D3 — LA LUEUR DE COUTURE : « une seule chose qui se fond
@@ -576,6 +636,41 @@ enum DuoReglages {
               let v = Double(a[i + 1]) else { return 0.28 }
         return max(0, min(1, v))
     }()
+    /// §16 G2 — l'arrivée des capsules : la rotation (`-duoArrivee <deg>`,
+    /// défaut 7) et le blur du sujet (`-duoFocusPill <pt>`, défaut 10) —
+    /// tous deux résolus à zéro aux poses, coupés par reduceMotion.
+    static let arriveeDeg: Double = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoArrivee"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 16 }
+        return max(0, min(25, v))
+    }()
+    static let focusPill: CGFloat = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoFocusPill"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 16 }
+        return CGFloat(max(0, v))
+    }()
+    static let arriveeEffectif: Double =
+        UIAccessibility.isReduceMotionEnabled ? 0 : arriveeDeg
+    static let focusPillEffectif: CGFloat =
+        UIAccessibility.isReduceMotionEnabled ? 0 : focusPill
+    /// §17 — la taille de la boule (`-duoBoule <0-1>`, défaut 0,32) et le
+    /// voile de blur du geste (le dévoilement au repos, `-duoVoile <pt>`).
+    static let bouleScale: CGFloat = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoBoule"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 0.32 }
+        return CGFloat(max(0.1, min(1, v)))
+    }()
+    static let voileGeste: CGFloat = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoVoile"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 9 }
+        return CGFloat(max(0, v))
+    }()
+    static let bouleEffectif: CGFloat =
+        UIAccessibility.isReduceMotionEnabled ? 0 : bouleScale
     /// reduceMotion coupe le rack focus (piège 19) — figé au lancement.
     static let focusEffectif: CGFloat =
         UIAccessibility.isReduceMotionEnabled ? 0 : focusMax
@@ -811,7 +906,7 @@ struct DuolinguoPage: View {
                                          hauteur: hauteur,
                                          poses: [0, -hauteur],
                                          sujet: true,
-                                         flou: DuoReglages.focusEffectif,
+                                         flou: DuoReglages.focusPillEffectif,
                                          joue: etat.lectureFrontieres[f.id])
                                 // F3 — LA LUEUR DE PASSAGE, teintée : la
                                 // capsule s'allume en passant devant la
@@ -857,19 +952,25 @@ struct DuolinguoPage: View {
                                 }
                                 .compositingGroup()
                         }
-                            // §15 D4 — LA COURBE EN S (0,10 H) + la retenue :
-                            // échelle 1,02, tilt 2° en sin(π·u) — nul aux
-                            // DEUX poses. Le premium par la retenue.
+                            // §17 — LA ROTATION PARALLAX COVER-FLOW : la
+                            // rotation est SIGNÉE (sin 2πu) — la capsule
+                            // arrive inclinée vers la caméra, se DRESSE
+                            // face à toi au centre (présentation, nette),
+                            // s'incline dans l'autre sens en repartant,
+                            // droite aux poses. La courbe en S (0,10 H)
+                            // + l'échelle de présentation (pic au centre).
                             .visualEffect { [restF, hauteur] contenu, proxy in
                                 let d = restF - proxy.frame(in: .scrollView).minY
                                 let u = max(0, min(1, d / hauteur))
                                 let s = sin(.pi * u)
+                                let sSigne = sin(2 * .pi * u)
                                 return contenu
                                     .offset(y: 0.10 * hauteur * s)
-                                    .scaleEffect(1 + 0.02 * s)
-                                    .rotation3DEffect(.degrees(2.0 * s),
-                                                      axis: (x: 1, y: 0, z: 0),
-                                                      perspective: 0.5)
+                                    .scaleEffect(1 + 0.03 * s)
+                                    .rotation3DEffect(
+                                        .degrees(DuoReglages.arriveeEffectif * sSigne),
+                                        axis: (x: 1, y: 0, z: 0),
+                                        perspective: 0.6)
                             }
                             .frame(maxWidth: .infinity, alignment: f.bord)
                             .offset(y: CGFloat(f.couture) * hauteur - hF / 2)
