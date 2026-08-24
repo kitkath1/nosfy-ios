@@ -83,15 +83,16 @@ struct CorpsNacre: View {
     /// écart d'un float = la page BLANCHE, sans une seule erreur).
     /// Les scalaires vivent ici en littéraux nommés par position :
     /// forme (rayon, Δ 10 dedans), ligne (σ 0,60, σ halo 3,4),
-    /// souffle (amplitude 0,16, plancher bas 0,12), fondu (cos θ
-    /// plein 0,35, fin −0,62), ombre (profondeur 0,46, τ 14).
+    /// souffle (amplitude 0,16, plancher bas 0 — le bas est LIBRE,
+    /// verdict 24-08), fondu (cos θ plein 0,35, fin −0,62), ombre
+    /// (profondeur 0,46, τ 14 — morte au pied dans le shader).
     private func lisereShader(w: CGFloat, h: CGFloat) -> Shader {
         ShaderLibrary.corpsLisere(
             .float2(Float(w * 0.5), Float(h * 0.5)),
             .float2(Float(w * 0.5), Float(h * 0.5)),
             .float2(Float(rayon), 10.0),
             .float2(0.60, 3.4),
-            .float2(0.16, 0.12),
+            .float2(0.16, 0.0),
             .float2(0.35, -0.62),
             .float2(0.46, 14.0),
             .float(1.0))

@@ -57,9 +57,9 @@ static inline float clRR(float2 p, float2 demi, float r) {
     if (dist > port || dedans > max(delta + port, portOmbre)) return color;
 
     // La loi angulaire : cos θ vers le haut — le liseré vif au sommet
-    // (la lampe de la maison éclaire d'en haut), MOURANT vers le bas —
-    // mais jamais mort : le plancher garde un fil fantôme tout autour,
-    // un corps blanc bord à bord sans arête basse se lit coupé.
+    // (la lampe de la maison éclaire d'en haut), MOURANT vers le bas.
+    // Le plancher (souffle.y) est un réglage : à 0 le bas est LIBRE
+    // (verdict 24-08 — toute barre au pied cercle le corps).
     const float rn = max(length(rel), 1e-5);
     const float c = -rel.y / rn;
     const float bout = mix(clamp(souffle.y, 0.0, 1.0), 1.0,
@@ -74,7 +74,11 @@ static inline float clRR(float2 p, float2 demi, float r) {
     // elle s'ouvre en flanc et au pied.
     if (ombre.x > 0.002 && dedans > 0.0) {
         const float flanc = 1.0 - smoothstep(0.788, 0.9962, c);
-        const float amp = ombre.x * (0.05 + 0.95 * flanc);
+        // LE BAS EST LIBRE (verdict 24-08 : « enlève le border en
+        // bas ») : l'ombre vit sur les FLANCS seulement — au pied
+        // elle faisait une barre sombre qui cerclait le corps.
+        const float basMort = smoothstep(-0.80, -0.42, c);
+        const float amp = ombre.x * (0.05 + 0.95 * flanc) * basMort;
         const float creux = smoothstep(0.2, 2.5, dedans)
                             * exp(-max(dedans - 2.5, 0.0) / max(ombre.y, 1.0))
                             * (1.0 - smoothstep(22.0, 36.0, dedans));

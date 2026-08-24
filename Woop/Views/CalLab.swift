@@ -2497,12 +2497,13 @@ private struct MoisIpod: View {
             CorpsNacre(allume: entree)
                 .ignoresSafeArea()
             VStack(spacing: 18) {
-                // LE VRAI ÉCRAN (verdict 24-08 : « l'écran noir
-                // prend tout le header ») — la vitre sombre monte
-                // jusqu'au bord HAUT de la dalle, l'heure vit
-                // dessus, le titre blanc dedans ; il ne reste que
-                // les rails de nacre sur les flancs.
+                // LE VRAI ÉCRAN (verdicts 24-08) : la vitre sombre
+                // prend le header — l'heure vit dessus, le titre
+                // blanc dedans — mais elle respecte le layout de la
+                // réf « place. » : une CEINTURE de plastique tout
+                // autour du haut (14, concentrique au coin 52).
                 ecranIpod(topInset: topInset)
+                    .padding(.top, 14)
                 Spacer(minLength: 0)
                 // LE BLOC DU BAS : la matrice de points au-dessus de
                 // la roue, posées à MÊME le corps blanc — un iPod n'a
@@ -2687,20 +2688,25 @@ private struct MoisIpod: View {
         RoundedRectangle(cornerRadius: rayonFenetre, style: .continuous)
     }
 
-    /// LA VITRE SOMBRE : la rampe du corps de l'ancienne carte flamme,
-    /// devenue OPAQUE — il n'y a plus de scène vidéo à réfracter
-    /// derrière, et un écran encastré ne laisse pas passer la coque.
+    /// LA VITRE SOMBRE : la base opaque, et DESSOUS le contenu — LA
+    /// FLAMME (verdict 24-08 : « met un background de flamme jolie ») :
+    /// le fond cuit de la page exo, la famille du galet de verre rouge
+    /// de la molette. Un voile noir garde le manège lisible.
     private var fenetreEcran: some View {
-        formeFenetre.fill(LinearGradient(
-            stops: [
-                .init(color: Color(red: 0.055, green: 0.053,
-                                   blue: 0.058), location: 0.0),
-                .init(color: Color(red: 0.032, green: 0.030,
-                                   blue: 0.034), location: 0.55),
-                .init(color: Color(red: 0.018, green: 0.017,
-                                   blue: 0.020), location: 1.0),
-            ],
-            startPoint: .top, endPoint: .bottom))
+        ZStack {
+            formeFenetre.fill(Color(red: 0.018, green: 0.017,
+                                    blue: 0.020))
+            Color.clear
+                .overlay {
+                    CalqueVideo(nom: "exos-fond-loop",
+                                pose: "exos-fond-poster",
+                                rate: storyIpod == nil ? 1.0 : 0.0)
+                }
+                .clipShape(formeFenetre)
+                .allowsHitTesting(false)
+            formeFenetre.fill(Color.black.opacity(0.30))
+                .allowsHitTesting(false)
+        }
     }
 
     /// L'arête de contact fenêtre/nacre : sur du blanc, le liseré est
@@ -2708,6 +2714,17 @@ private struct MoisIpod: View {
     private var fenetreSertie: some View {
         formeFenetre.strokeBorder(Color.black.opacity(0.28),
                                   lineWidth: 1)
+            .allowsHitTesting(false)
+    }
+
+    /// LE LISERÉ INTÉRIEUR (verdict 24-08, la réf « place. ») : le fil
+    /// clair de la tranche de la vitre, DANS l'écran — c'est lui qui
+    /// fait lire une dalle épaisse encastrée, pas un aplat.
+    private var fenetreLisereInt: some View {
+        RoundedRectangle(cornerRadius: rayonFenetre - 3,
+                         style: .continuous)
+            .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            .padding(3)
             .allowsHitTesting(false)
     }
 
@@ -2766,6 +2783,7 @@ private struct MoisIpod: View {
             // du LCD — la vitre a une épaisseur.
             limbeLCD
             fenetreSertie
+            fenetreLisereInt
         }
         .clipShape(formeFenetre)
         // Le RECT du LCD : le portail de la story s'ouvre d'ici —
@@ -2893,7 +2911,9 @@ private struct MoisIpod: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.top, max(topInset, 24) + 2)
+        // L'écran commence 14 pt sous le bord : l'heure vit dans son
+        // haut, le titre se cale dessous.
+        .padding(.top, max(topInset - 14.0, 20) + 2)
         .padding(.bottom, 6)
         .opacity(headerA)
     }
@@ -3143,12 +3163,41 @@ private struct MoisIpod: View {
                 .compositingGroup()
                 .allowsHitTesting(false)
             grainTournant
+            anisotropie
             roseeVue
                 .blendMode(.plusLighter)
                 .compositingGroup()
                 .allowsHitTesting(false)
         }
         .frame(width: donut, height: donut)
+    }
+
+    /// L'anisotropie : deux lobes doux qui tournent à MI-vitesse du
+    /// doigt (le brossage circulaire) + le poignet — zéro horloge.
+    /// MORTE au passage vidéo, REVENUE au verdict 24-08 (« plus
+    /// d'animation au scroll dans la molette ») : c'est elle qui fait
+    /// vivre le verre sous le geste.
+    private var anisotropie: some View {
+        AngularGradient(
+            stops: [
+                .init(color: .clear, location: 0.0),
+                .init(color: .white.opacity(0.035), location: 0.20),
+                .init(color: .clear, location: 0.28),
+                .init(color: .white.opacity(0.028), location: 0.70),
+                .init(color: .clear, location: 0.78),
+                .init(color: .clear, location: 1.0),
+            ],
+            center: .center)
+            .frame(width: donut, height: donut)
+            .blur(radius: 7)
+            .drawingGroup()
+            .rotationEffect(.radians(Double(angleCumul) * 0.5
+                + Double(motion.pench.width) * 0.35))
+            .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
+                .frame(width: donut, height: donut))
+            .blendMode(.plusLighter)
+            .compositingGroup()
+            .allowsHitTesting(false)
     }
 
     /// Le halo du doigt sur l'anneau — masqué au disque : rien ne
