@@ -146,7 +146,23 @@ struct EcranSpec: Equatable, Identifiable {
         let pose = Int((y / hauteur).rounded())
         let borne = max(0, min(4, pose))
         if ecranCourant != borne { ecranCourant = borne }
+        // LA BASCULE ROUGE → BLEU (partition J4) : quand la couture 4/5
+        // traverse le centre du viewport (y = 3,5 H), UNE haptique légère —
+        // hystérésis de 60 pt, une seule par traversée.
+        let seuil = 3.5 * hauteur
+        if !gel {
+            let avant = yPrecedent < seuil
+            let apres = y < seuil
+            if avant != apres, abs(y - derniereBascule) > 60 {
+                derniereBascule = y
+                UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+            }
+        }
+        yPrecedent = y
     }
+
+    @ObservationIgnored private var yPrecedent: CGFloat = 0
+    @ObservationIgnored private var derniereBascule: CGFloat = -10_000
 }
 
 /// LA SONDE — une seule, composée : le champ vivant (y) emporte le stable
@@ -530,10 +546,25 @@ struct DuolinguoPage: View {
                 // des écrans.
                 .overlay(alignment: .top) {
                     let hFront = largeurFront * EcranSpec.frontiere.ratioHL
+                    let restFront = hauteur - hFront / 2
                     FenetreVideo(spec: EcranSpec.frontiere,
                                  largeur: largeurFront,
-                                 restY: hauteur - hFront / 2,
+                                 restY: restFront,
                                  joue: etatFrontiere)
+                        // LA COURBE EN S (partition J4) : le morceau de
+                        // bravoure s'attarde au centre du viewport — un
+                        // retard en sin(π·u) qui culmine à mi-traversée
+                        // (+0,08 H) et meurt aux deux poses, une houle
+                        // d'échelle de 2 %. Tout dans le proxy, zéro
+                        // invalidation.
+                        .visualEffect { [restFront, hauteur] contenu, proxy in
+                            let d = restFront - proxy.frame(in: .scrollView).minY
+                            let u = max(0, min(1, d / hauteur))
+                            let s = sin(.pi * u)
+                            return contenu
+                                .offset(y: 0.08 * hauteur * s)
+                                .scaleEffect(1 + 0.02 * s)
+                        }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .offset(y: 4 * hauteur - hFront / 2)
                         .allowsHitTesting(false)

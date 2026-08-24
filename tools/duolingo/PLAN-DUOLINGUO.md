@@ -613,8 +613,18 @@ blanche / verre noir).
 
 **Reste ouvert (J2/J3)** : le press/refus/tilt se jugent AU DOIGT (le sim
 ne tape pas) ; « CHAPITRE 1 » encore discret sur flanc très clair ; le
-léger halo au bout droit de la dalle (écran 1) ; les partitions J4
-(frontière chorégraphiée, voiles déjà posés) ; verdicts téléphone.
+léger halo au bout droit de la dalle (écran 1) ; verdicts téléphone.
+
+## 9quater. JALON J4 — LIVRÉ LE 24-08 (même session)
+
+La partition de la frontière : **la courbe en S** (le galet rouge-et-bleu
+s'attarde au centre du viewport — retard en sin(π·u) culminant à +0,08 H à
+mi-traversée, mort aux deux poses) + **la houle d'échelle** (2 %) en
+visualEffect pur, et **la haptique de bascule** rouge→bleu quand la
+couture traverse le centre du viewport (y = 3,5 H), hystérésis 60 pt, une
+par traversée, dans `piloter()` (champs `@ObservationIgnored`). Les voiles
+sortants étaient déjà posés depuis J1. Se juge AU DOIGT et au téléphone
+(J5) : la courbe en S au film, le delta ≤ 1 pt à la couture.
 
 ---
 
