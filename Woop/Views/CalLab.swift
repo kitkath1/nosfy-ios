@@ -1755,59 +1755,6 @@ private struct CineBilan: View {
 
 // MARK: - La vitre vivante (l'iPod)
 
-// MARK: - Le liquide de la molette (l'iPod)
-
-/// LE LAIT NOIR ET BLANC (le verdict) : des MÉTABALLES sous le verre
-/// natif — des gouttes qui dérivent, se soudent et suivent le doigt,
-/// jamais de la brume. Animatable sur `vie` (la loi des rampes : un
-/// uniforme nu popperait sec) ; le doigt et le remous en assignation
-/// directe — le doigt EST l'animation. L'horloge tourne tant que la
-/// page vit (le fluide EST le sujet), et dort sous Reduce Motion :
-/// l'état sans le voyage.
-private struct LiquideVue: View, Animatable {
-    var vie: CGFloat
-    var doigtX: CGFloat
-    var doigtY: CGFloat
-    var remous: CGFloat
-    let largeur: CGFloat
-    let hauteur: CGFloat
-    /// Les prises de la console : le rayon des gouttes, leur vitesse
-    /// de dérive, leur nombre — et LA RÈGLE (veille franche au repos,
-    /// éveil plein sous le doigt).
-    let goutte: CGFloat
-    let vitesse: CGFloat
-    let nombre: CGFloat
-    let veille: CGFloat
-    let eveil: CGFloat
-
-    private static let t0 = Date()
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var animatableData: CGFloat {
-        get { vie }
-        set { vie = newValue }
-    }
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
-            let t = tl.date.timeIntervalSince(Self.t0)
-            Rectangle()
-                .fill(Color.white)
-                .colorEffect(ShaderLibrary.liquideMolette(
-                    .float2(Float(largeur), Float(hauteur)),
-                    .float2(Float(doigtX), Float(doigtY)),
-                    .float2(Float(vie), Float(t)),
-                    .float2(Float(goutte), Float(vitesse)),
-                    .float2(Float(veille), Float(eveil)),
-                    .float2(Float(nombre), Float(remous))))
-        }
-        .frame(width: largeur, height: hauteur)
-        .allowsHitTesting(false)
-    }
-}
-
 /// Une salve de poudre au cran : née au point du doigt, éjectée en
 /// tangente (jalon 14 — la recette PoudreBac).
 private struct SalveCran: Identifiable, Equatable {
@@ -2035,204 +1982,6 @@ private struct MatricePoints: View {
                                    lineWidth: 0.7)
             }
         }
-        .allowsHitTesting(false)
-    }
-}
-
-// MARK: - La carte de verre de la flamme (l'iPod)
-
-/// LA CARTE DE TA CAPTURE, VERBATIM (le verdict : « cet effet glass,
-/// autour de l'écran et derrière la molette ») : la matière de
-/// `FlammeJauge.carte`, extraite au mot — le corps de verre à trois
-/// arrêts (gris-nuit à peine violet, JAMAIS brun), la nappe chaude qui
-/// respire, le grain, la vignette qui assoit, LE SERTISSAGE (la
-/// tranche qui prend la lumière en haut) et LA VEINE : l'arc d'or qui
-/// court sur l'arête.
-///
-/// UNE SEULE LIBERTÉ, et c'est une loi de la maison : la veine n'a pas
-/// d'horloge — son angle vient du GESTE (la rotation cumulée de la
-/// molette). La lumière tourne avec la main, elle ne défile pas.
-private struct CarteVerreFlamme: View {
-    /// Le rayon des coins de la coque.
-    var coins: CGFloat = 26
-    /// L'angle de la veine (radians) — le geste, jamais une horloge.
-    var veine: CGFloat = 0
-    /// La respiration de la nappe (0…1) — le foyer de la machine.
-    var souffle: Double = 0
-    /// MICRO 7 — l'ÉCLAT de la veine : elle brille avec la vitesse du
-    /// doigt et retombe à l'arrêt.
-    var eclat: Double = 0
-    /// Où la nappe chaude s'ancre (x, y en unités).
-    var foyerX: CGFloat = 0.115
-    var foyerY: CGFloat = 0.5
-
-    /// UNE COUCHE = UNE VARIABLE (la loi du type-checker : la version
-    /// à overlays enchaînés a TUÉ le compilateur, payé une 4e fois).
-    /// Le haut CARRÉ : la carte monte au bord de l'écran, Dynamic
-    /// Island comprise (l'école de la réf : l'artwork touche le bord,
-    /// le titre vit DEDANS) — l'appareil taille les coins hauts.
-    var hautCarre: Bool = false
-
-    /// Le bas CARRÉ : la carte sort par le bas de l'écran.
-    var basCarre: Bool = false
-
-    private var coque: AnyShape {
-        if basCarre {
-            return AnyShape(UnevenRoundedRectangle(
-                cornerRadii: .init(topLeading: coins,
-                                   bottomLeading: 0,
-                                   bottomTrailing: 0,
-                                   topTrailing: coins),
-                style: .continuous))
-        }
-        return hautCarre
-            ? AnyShape(UnevenRoundedRectangle(
-                cornerRadii: .init(topLeading: 0,
-                                   bottomLeading: coins,
-                                   bottomTrailing: coins,
-                                   topTrailing: 0),
-                style: .continuous))
-            : AnyShape(RoundedRectangle(cornerRadius: coins,
-                                        style: .continuous))
-    }
-
-    /// LE VERRE NATIF sous le corps : c'est LUI qui bombe le fond
-    /// (l'aurora est douce — le cas autorisé de la loi du verre). Sans
-    /// réfraction, un rectangle reste plat : c'était le « cheap ».
-    private var verreNatif: some View {
-        coque.fill(Color.clear)
-            .glassEffect(.clear, in: coque)
-    }
-
-    private var corps: some View {
-        coque.fill(LinearGradient(
-            stops: [
-                .init(color: Color(red: 0.055, green: 0.053,
-                                   blue: 0.058), location: 0.0),
-                .init(color: Color(red: 0.032, green: 0.030,
-                                   blue: 0.034), location: 0.55),
-                .init(color: Color(red: 0.018, green: 0.017,
-                                   blue: 0.020), location: 1.0),
-            ],
-            startPoint: .top, endPoint: .bottom))
-    }
-
-    private var nappe: some View {
-        let s: Double = 0.72 + 0.28 * souffle
-        let a1: Double = 0.055 * s
-        let a2: Double = 0.022 * s
-        return EllipticalGradient(
-            stops: [
-                .init(color: FlammePalette.coeur.opacity(a1),
-                      location: 0.0),
-                .init(color: FlammePalette.braise.opacity(a2),
-                      location: 0.45),
-                .init(color: .clear, location: 1.0),
-            ],
-            center: UnitPoint(x: foyerX, y: foyerY),
-            startRadiusFraction: 0, endRadiusFraction: 0.62)
-            .blendMode(.plusLighter)
-    }
-
-    private var grain: some View {
-        GrainTexture.tuile
-            .resizable(resizingMode: .tile)
-            .opacity(0.045)
-            .blendMode(.overlay)
-            .allowsHitTesting(false)
-    }
-
-    private var vignette: some View {
-        EllipticalGradient(
-            stops: [
-                .init(color: .clear, location: 0.60),
-                .init(color: Color.black.opacity(0.15), location: 1.0),
-            ],
-            center: .center,
-            startRadiusFraction: 0, endRadiusFraction: 0.82)
-    }
-
-    /// LE CHANFREIN (le verdict « pas de verre gonflé ») : une bande
-    /// LARGE de lumière qui enveloppe l'arête haute et s'enroule dans
-    /// les coins — un trait de 1 px n'a pas d'épaisseur, c'est ça qui
-    /// rendait plat. Le verre a un bord, et un bord a une largeur.
-    private var chanfrein: some View {
-        coque.stroke(Color.white.opacity(0.30), lineWidth: 9)
-            .blur(radius: 5)
-            .mask(LinearGradient(
-                stops: [
-                    .init(color: .black, location: 0.0),
-                    .init(color: .black.opacity(0.35), location: 0.18),
-                    .init(color: .clear, location: 0.52),
-                ],
-                startPoint: .top, endPoint: .bottom))
-            .blendMode(.plusLighter)
-    }
-
-    /// LE REBOND DU PIED : le bord bas renvoie la lumière — plus fin,
-    /// plus vif, à peine chaud. C'est la deuxième arête du volume.
-    private var rebond: some View {
-        coque.stroke(Color.white.opacity(0.22), lineWidth: 5)
-            .blur(radius: 3)
-            .mask(LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0.62),
-                    .init(color: .black.opacity(0.5), location: 0.88),
-                    .init(color: .black, location: 1.0),
-                ],
-                startPoint: .top, endPoint: .bottom))
-            .blendMode(.plusLighter)
-    }
-
-    /// Le fil de tranche, gardé SOUS le chanfrein : il ne fait plus le
-    /// volume, il en trace la crête.
-    private var sertissage: some View {
-        coque.stroke(LinearGradient(
-            stops: [
-                .init(color: Color.white.opacity(0.14), location: 0.0),
-                .init(color: Color.white.opacity(0.04), location: 0.4),
-                .init(color: Color.white.opacity(0.02), location: 1.0),
-            ],
-            startPoint: .top, endPoint: .bottom), lineWidth: 1)
-    }
-
-    private var veineVue: some View {
-        let op: Double = 0.30 + 0.18 * souffle + 0.42 * eclat
-        return coque.stroke(AngularGradient(
-            stops: [
-                .init(color: .clear, location: 0.0),
-                .init(color: .clear, location: 0.36),
-                .init(color: FlammePalette.or.opacity(0.25),
-                      location: 0.46),
-                .init(color: FlammePalette.blanc.opacity(0.85),
-                      location: 0.50),
-                .init(color: FlammePalette.or.opacity(0.25),
-                      location: 0.54),
-                .init(color: .clear, location: 0.64),
-                .init(color: .clear, location: 1.0),
-            ],
-            center: .center, angle: .radians(Double(veine))),
-            lineWidth: 1)
-            .blendMode(.plusLighter)
-            .opacity(op)
-    }
-
-    var body: some View {
-        ZStack {
-            verreNatif
-            // Le corps LAISSE PASSER la scène : c'est elle que le
-            // verre de la molette réfracte (« on ne voit pas assez la
-            // réflexion » — un socle noir mat n'a rien à refléter).
-            corps.opacity(0.46)
-            nappe
-            grain
-            vignette
-            chanfrein
-            rebond
-            sertissage
-            veineVue
-        }
-        .clipShape(coque)
         .allowsHitTesting(false)
     }
 }
@@ -2644,38 +2393,14 @@ private struct MoisIpod: View {
     @State private var manegeA: Double = 0
     @State private var matriceA: Double = 0
 
-    // LA CONSOLE D'AJUSTAGE (la demande) : six curseurs vivants —
-    // Kathryn trouve le beau, dicte les chiffres, on les grave en dur.
-    /// La veille : le lait visible au repos (la règle).
-    @State private var regVeille: Double = 0.22
-    /// L'éveil sous le doigt : plein blanc.
-    @State private var regEveil: Double = 1.0
-    /// Le nombre de ronds blancs.
-    @State private var regGouttes: Double = 4
-    /// Le rayon des ronds blancs (px) — gros, mais DISTINCTS (les 62
-    /// fusionnaient en une seule masse : effet yin-yang).
-    @State private var regTaille: Double = 64
-    /// La vitesse de dérive.
-    @State private var regVitesse: Double = 0.35
-    /// La clarté du verre (face + brillance). 0 = AUCUN voile (le
-    /// témoin-carte a montré que la brillance noyait le verre natif).
-    @State private var regClarte: Double = 0.15
-    /// LE TÉMOIN DU VERRE (la demande : « une image de card random
-    /// pour voir comment ça réfracte ») : la console pose une carte
-    /// sous la dalle à la place des halos — le juge de paix.
-    @State private var fondCarte = true
-
     // LES COTES MAÎTRESSES (jalon 1) — dérivation, gabarit 393×852 :
     // plaque = W − 32 ; donut = 0,676·plaque ; puits = 0,410·donut
     // (le ratio du vrai iPod 6G, 15,9/38,4) ; glyphes à r 86.
     private let plaqueL: CGFloat = 377
-    private let ecranH: CGFloat = 392
     private let moletteH: CGFloat = 280
     private let donut: CGFloat = 244
     private let puits: CGFloat = 100
     private let rGlyphes: CGFloat = 86
-    private let formePlaque = RoundedRectangle(cornerRadius: 26,
-                                               style: .continuous)
 
     /// LES BANCS DE LA PREUVE (« prouve-moi que c'est liquid glass ») :
     /// `-ipodTemoin` remplace la matière du donut par une GRILLE + une
@@ -2722,7 +2447,11 @@ private struct MoisIpod: View {
                 // story 2 coupé). Ici : même géométrie que la page,
                 // aucune fenêtre système, le portail s'ouvre du LCD.
                 if let launch = storyIpod {
+                    // Le portail part du coin de la FENÊTRE sombre
+                    // (40) et morphe vers le coin de l'appareil (52) :
+                    // continuité parfaite pendant l'ouverture.
                     StoryPortal(from: launch.rect,
+                                fromRadius: rayonFenetre,
                                 session: launch.session) {
                         fermerStory()
                     }
@@ -2731,32 +2460,15 @@ private struct MoisIpod: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        // LA PAGE EST BLANCHE : l'heure s'écrit à l'encre. La story,
+        // elle, reste une nuit plein écran — le scheme suit.
+        .preferredColorScheme(storyIpod == nil ? .light : .dark)
         .onAppear { arrivee() }
         .onDisappear { inertie?.cancel() }
     }
 
     /// La pill de verre sur la story : ✕ seul — la story garde ses
     /// gestes natifs (tap = passer), la pill n'est que la sortie.
-    /// LE SOCLE DU BAS : la carte de verre bord à bord, coins hauts
-    /// seuls (le bas sort de l'écran), l'arête haute FONDUE dans le
-    /// noir — deux zones, pas trois cartes.
-    private var socleBas: some View {
-        CarteVerreFlamme(coins: 28,
-                         veine: angleCumul * 0.5,
-                         souffle: min(1.0, foyer * 3.0),
-                         eclat: min(1.0, Double(abs(omega)) * 0.10),
-                         foyerX: 0.5, foyerY: 0.5)
-            // L'ÉTAGE : le socle est plus sombre que la carte du haut
-            // (Apple étage toujours la profondeur).
-            .overlay {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black.opacity(0.22))
-                    .allowsHitTesting(false)
-            }
-            .shadow(color: .black.opacity(0.62), radius: 26, y: 12)
-    }
-
     private var pillStory: some View {
         Image(systemName: "xmark")
             .font(.system(size: 15, weight: .semibold))
@@ -2777,41 +2489,29 @@ private struct MoisIpod: View {
 
     private var pageContenu: some View {
         ZStack(alignment: .top) {
-            Color.black.ignoresSafeArea()
-            // La scène : le verre de la molette n'existe que par ce
-            // qu'il réfracte.
-            FondCalendrier()
-                .opacity(0.85)
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
-            // LA FENÊTRE DE LUMIÈRE (jalon 6) : le voile s'OUVRE sous
-            // la molette — STATIQUE, jamais animé (constant ≠ uniforme).
-            Rectangle()
-                .fill(RadialGradient(
-                    stops: [
-                        .init(color: .black.opacity(0.22), location: 0.0),
-                        .init(color: .black.opacity(0.36), location: 0.5),
-                        .init(color: .black.opacity(0.52), location: 1.0),
-                    ],
-                    center: UnitPoint(x: 0.5, y: 0.76),
-                    startRadius: 60, endRadius: 460))
-                .allowsHitTesting(false)
+            // LE CORPS BLANC : la nacre plein écran — l'iPod n'est
+            // plus une carte de verre posée sur la nuit, il EST la
+            // page (la réf iPod classique). Le fond vidéo et la
+            // fenêtre de lumière sont MORTS avec la nuit : un corps
+            // opaque les affamait de toute façon. Le rayon suit les
+            // coins de la dalle (`-corpsRayon` pour l'arbitrage
+            // 40/52 au fouettage).
+            CorpsNacre(allume: entree)
                 .ignoresSafeArea()
             VStack(spacing: 18) {
-                // LE VRAI ÉCRAN (le verdict : « un vrai écran d'iPod »)
-                // — la dalle 4:3 posée dans le corps, le manège des
-                // séances dedans. La console -liquideLab garde sa
-                // place.
-                if CommandLine.arguments.contains("-liquideLab") {
-                    consoleLiquide
-                        .padding(.top, 10)
-                } else {
-                    ecranIpod
-                }
+                // LE HEADER SUR LE BLANC : sorti de la carte — la
+                // typo à l'encre sombre posée à même la nacre, le
+                // chevron aux cotes de la maison.
+                statutIpod
+                // LE VRAI ÉCRAN (le verdict : « un vrai écran
+                // d'iPod ») — la fenêtre SOMBRE encastrée dans le
+                // corps blanc, le manège des séances dedans,
+                // intouché.
+                ecranIpod
                 Spacer(minLength: 0)
-                // LE BLOC DU BAS PREND TOUT LE BAS (la réf Apple
-                // Music) : bord à bord, coins hauts seuls, fondu dans
-                // le noir — la MATRICE DE POINTS au-dessus de la roue.
+                // LE BLOC DU BAS : la matrice de points au-dessus de
+                // la roue, posées à MÊME le corps blanc — un iPod n'a
+                // qu'une seule coque, le socle de verre est mort.
                 VStack(spacing: 16) {
                     MatricePoints(
                         texte: month.titre(calendar: calendar),
@@ -2822,14 +2522,24 @@ private struct MoisIpod: View {
                                    value: lampeVive)
                         .opacity(matriceA)
                         .scaleEffect(0.98 + 0.02 * matriceA)
-                    plaqueMolette
-                        .scaleEffect(0.92)
+                    // LE PIÈGE DETAIL-GONFLE, PAYÉ ICI AUSSI : la
+                    // plaque (377 fixes) excède la proposition du
+                    // VStack (écran − 40 de padding) — le VStack
+                    // gonflait à 417 pt et TOUTE la page se centrait
+                    // 7,5 pt trop à droite (mesuré : +22 px, coins
+                    // asymétriques 46/26). L'hôte neutre + overlay est
+                    // la seule forme qui ne gonfle pas.
+                    Color.clear
                         .frame(height: 262)
+                        .frame(maxWidth: .infinity)
+                        .overlay {
+                            plaqueMolette
+                                .scaleEffect(0.92)
+                        }
                 }
                 .padding(.top, 22)
                 .padding(.bottom, 18)
                 .frame(maxWidth: .infinity)
-                .background { socleBas }
                 .scaleEffect(1.0 - 0.12 * grandEcran, anchor: .top)
                 .opacity(Double(max(0, 1.0 - grandEcran * 0.65)))
                 // MICRO 9 — LE REFUS PHYSIQUE : à la butée, le bloc
@@ -2972,23 +2682,51 @@ private struct MoisIpod: View {
     /// laquée, le LCD allumé (backlight bas, BLEED des coins, grain),
     /// l'OMBRE DU LIMBE double (la vitre a une épaisseur), la VITRE au
     /// reflet-fenêtre gyro. `grandEcran` interpole l'iPod → le cinéma.
+    /// Le rayon de la fenêtre sombre — cohérent avec le corps (40),
+    /// et le rayon de DÉPART du portail story (`fromRadius`).
+    private let rayonFenetre: CGFloat = 40
+    private var formeFenetre: RoundedRectangle {
+        RoundedRectangle(cornerRadius: rayonFenetre, style: .continuous)
+    }
+
+    /// LA VITRE SOMBRE : la rampe du corps de l'ancienne carte flamme,
+    /// devenue OPAQUE — il n'y a plus de scène vidéo à réfracter
+    /// derrière, et un écran encastré ne laisse pas passer la coque.
+    private var fenetreEcran: some View {
+        formeFenetre.fill(LinearGradient(
+            stops: [
+                .init(color: Color(red: 0.055, green: 0.053,
+                                   blue: 0.058), location: 0.0),
+                .init(color: Color(red: 0.032, green: 0.030,
+                                   blue: 0.034), location: 0.55),
+                .init(color: Color(red: 0.018, green: 0.017,
+                                   blue: 0.020), location: 1.0),
+            ],
+            startPoint: .top, endPoint: .bottom))
+    }
+
+    /// L'arête de contact fenêtre/nacre : sur du blanc, le liseré est
+    /// SOMBRE — c'est lui qui détache la vitre (la loi du ChipVerre).
+    private var fenetreSertie: some View {
+        formeFenetre.strokeBorder(Color.black.opacity(0.28),
+                                  lineWidth: 1)
+            .allowsHitTesting(false)
+    }
+
     private var ecranIpod: some View {
         // PLUS DE HAUTEUR EN DUR (payé deux fois : 410 puis 400 se
         // faisaient COMPRESSER, l'un coupait le texte, l'autre laissait
-        // 200 pt de noir mort). La carte prend CE QUI RESTE, le socle
-        // garde sa hauteur naturelle : ça rentre sur tout gabarit.
+        // 200 pt de noir mort). La fenêtre prend CE QUI RESTE, le bloc
+        // du bas garde sa hauteur naturelle : ça rentre sur tout
+        // gabarit.
         return ZStack {
-            // LA CARTE DE VERRE (ta capture) autour de l'écran — la
-            // matière de la carte flamme : verre, sertissage, veine
-            // qui tourne avec le geste, nappe qui respire au foyer.
-            CarteVerreFlamme(coins: 28,
-                             veine: angleCumul * 0.5,
-                             souffle: min(1.0, foyer * 3.0),
-                             eclat: min(1.0, Double(abs(omega)) * 0.10),
-                             foyerX: 0.5, foyerY: 0.94)
+            // LA FENÊTRE SOMBRE : l'écran ENCASTRÉ dans le corps blanc
+            // — plus une carte qui flotte (son ombre est morte avec
+            // elle), une vitre sombre sertie dans la nacre. Le header
+            // vit désormais SUR le blanc, hors de la vitre.
+            fenetreEcran
             ZStack {
                 VStack(spacing: 0) {
-                    statutIpod
                     ZStack {
                         if montrerCine {
                             CineEcran(p: cineEcranP,
@@ -3025,15 +2763,20 @@ private struct MoisIpod: View {
                                    dampingFraction: 0.7),
                            value: puitsAppui)
             }
-            .padding(.bottom, 14)
-            // Le RECT du LCD : le portail de la story s'ouvre d'ici.
-            .onGeometryChange(for: CGRect.self) { proxy in
-                proxy.frame(in: .global)
-            } action: { lcdRect = $0 }
+            .padding(.vertical, 14)
+            // L'ombre du limbe : la bezel porte son ombre sur le haut
+            // du LCD — la vitre a une épaisseur.
+            limbeLCD
+            fenetreSertie
         }
+        .clipShape(formeFenetre)
+        // Le RECT du LCD : le portail de la story s'ouvre d'ici —
+        // désormais la fenêtre elle-même, coin 40 compris.
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .global)
+        } action: { lcdRect = $0 }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .scaleEffect(1.05 - 0.05 * poseP)
-        .shadow(color: .black.opacity(0.62), radius: 26, y: 12)
     }
 
     // MARK: La cinématique de l'écran
@@ -3138,27 +2881,27 @@ private struct MoisIpod: View {
 
     /// LE HEADER MODERNE (le verdict : « pas assez moderne ») : la
     /// bande grise de l'iPod rétro est MORTE — plus de fond, plus de
-    /// séparateur, plus de pictos. De la typo posée sur le verre, de
+    /// séparateur, plus de pictos. De la typo posée sur la NACRE, de
     /// l'air, et rien d'autre : le mois en tête, le compte en regard.
+    /// Sur le blanc, tout passe à l'encre sombre — le glyphe et le
+    /// texte basculent ENSEMBLE (la loi du ChipVerre, `clarte`).
     private var statutIpod: some View {
         HStack(spacing: 12) {
             ChipVerre(symbole: "chevron.left", label: "Retour",
-                      action: onClose)
+                      clarte: 1, action: onClose)
                 .scaleEffect(0.78)
             VStack(alignment: .leading, spacing: 0) {
                 Text(month.titre(calendar: calendar))
                     .font(.inter(22, .bold)).tracking(-0.5)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ChipVerre.encreClaire)
                 Text("\(month.sessions.count) s\u{00E9}ances")
                     .font(.inter(11, .medium)).tracking(0.8)
-                    .foregroundStyle(Color.inkMuted)
+                    .foregroundStyle(ChipVerre.encreClaire.opacity(0.55))
                     .textCase(.uppercase)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 18)
-        .padding(.bottom, 6)
+        .padding(.top, 6)
         .opacity(headerA)
     }
 
@@ -3197,115 +2940,6 @@ private struct MoisIpod: View {
     private var posLecture: Int { index }
     private var maxLecture: Int { month.sessions.count - 1 }
 
-    /// LA CONSOLE D'AJUSTAGE (la demande : « une console de debug
-    /// POUR AJUSTER ») : le matériau complet — noir + lait + vitre +
-    /// brillance — plein cadre, ET les six curseurs posés dessus. Un
-    /// curseur bouge → la console ET la molette changent en direct ;
-    /// Kathryn dicte les chiffres gagnants, on les grave en dur.
-    private var consoleLiquide: some View {
-        ZStack(alignment: .bottom) {
-            Color.clear
-                .frame(width: plaqueL, height: ecranH)
-                .overlay {
-                    ZStack {
-                        if fondCarte {
-                            // LA CARTE-TÉMOIN : du contenu riche sous
-                            // la dalle — on VOIT si le verre réfracte.
-                            SessionVinyle(
-                                session: month.sessions[index])
-                                .frame(width: 330, height: 330)
-                                .scaleEffect(1.19)
-                        } else {
-                            Rectangle().fill(LinearGradient(
-                                colors: [
-                                    Color(white: 0.05
-                                        + 0.09 * regClarte),
-                                    Color(white: 0.028
-                                        + 0.045 * regClarte),
-                                ],
-                                startPoint: .top, endPoint: .bottom))
-                            LiquideVue(
-                                vie: max(CGFloat(lampeVive), 0.6),
-                                doigtX: 196.0
-                                    + cos(angleLampe) * 150.0,
-                                doigtY: 196.0
-                                    + sin(angleLampe) * 150.0,
-                                remous: min(1.0, abs(omega) * 0.12),
-                                largeur: 392, hauteur: 392,
-                                goutte: CGFloat(regTaille) * 1.5,
-                                vitesse: CGFloat(regVitesse),
-                                nombre: CGFloat(regGouttes),
-                                veille: CGFloat(regVeille),
-                                eveil: CGFloat(regEveil))
-                                .blendMode(.plusLighter)
-                                .compositingGroup()
-                        }
-                    }
-                    .frame(width: 392, height: 392)
-                }
-                .clipShape(formePlaque)
-                // LE VERRE NATIF plein cadre — la dalle .clear du
-                // profil, posée en couvercle sur le lait.
-                .overlay {
-                    formePlaque
-                        .fill(Color.clear)
-                        .glassEffect(.clear, in: formePlaque)
-                        .allowsHitTesting(false)
-                }
-                .overlay {
-                    brillanceVerre
-                        .opacity(regClarte)
-                        .allowsHitTesting(false)
-                }
-                .allowsHitTesting(false)
-            panneauReglages
-        }
-        .frame(width: plaqueL, height: ecranH)
-    }
-
-    /// Les six curseurs — un banc, pas un produit : Slider système,
-    /// mono, valeurs chiffrées à dicter.
-    private var panneauReglages: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 8) {
-                Text("fond")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .frame(width: 66, alignment: .leading)
-                Picker("fond", selection: $fondCarte) {
-                    Text("halos").tag(false)
-                    Text("carte").tag(true)
-                }
-                .pickerStyle(.segmented)
-            }
-            regRow("veille", $regVeille, 0 ... 1)
-            regRow("éveil", $regEveil, 0 ... 1.4)
-            regRow("halos", $regGouttes, 1 ... 14)
-            regRow("taille", $regTaille, 20 ... 140)
-            regRow("vitesse", $regVitesse, 0 ... 1)
-            regRow("clarté", $regClarte, 0 ... 1)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color.black.opacity(0.55),
-                    in: RoundedRectangle(cornerRadius: 14))
-        .padding(10)
-    }
-
-    private func regRow(_ nom: String, _ v: Binding<Double>,
-                        _ borne: ClosedRange<Double>) -> some View {
-        HStack(spacing: 8) {
-            Text(nom)
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.7))
-                .frame(width: 66, alignment: .leading)
-            Slider(value: v, in: borne)
-            Text(String(format: "%.2f", v.wrappedValue))
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.white)
-                .frame(width: 48, alignment: .trailing)
-        }
-    }
 
     // MARK: La plaque molette (jalon 3)
 
@@ -3357,11 +2991,13 @@ private struct MoisIpod: View {
                     // POIGNET seulement (l'école du sticker — jamais
                     // un balayage), affirmé à la chaleur (la règle du
                     // clic).
+                    // Le 0,15 est le chiffre GRAVÉ de la console
+                    // -liquideLab (morte avec le lait shader).
                     brillanceVerre
                         .mask(Circle()
                             .frame(width: donut, height: donut))
                         .opacity((0.45 + 0.55 * Double(vitreChaleur))
-                            * regClarte * 1.2)
+                            * 0.15 * 1.2)
                         .allowsHitTesting(false)
                     // LE FIL SPÉCULAIRE DE L'ARÊTE : le détail qui
                     // fait lire « verre » en un dixième de seconde.
@@ -3406,6 +3042,11 @@ private struct MoisIpod: View {
             .mask {
                 if Self.molAnneau { masqueAnneau } else { masquePlein }
             }
+            // LE VERRE RESTE DE NUIT : la page est passée au scheme
+            // clair (corps blanc), mais le matériau du donut a été
+            // réglé sous .dark — en clair, le givre du natif remonte
+            // et blanchit le noir-qui-brûle de la vidéo.
+            .environment(\.colorScheme, .dark)
             .allowsHitTesting(false)
         if Self.molNoir {
             Circle()
@@ -3471,43 +3112,39 @@ private struct MoisIpod: View {
 
     /// Le visuel du donut — le CONTENU sous le verre natif (les
     /// glyphes, eux, vivent AU-DESSUS de la dalle, comme au profil).
+    /// LE GALET DE VERRE ROUGE : la vidéo recuite (zoom 2× CUIT au
+    /// recuit_molette — jamais un scaleEffect, zoom rastérisé = flou)
+    /// est le combustible du verre natif : le verre ne montre que ce
+    /// qu'il réfracte — à jeun il n'est qu'un disque gris. La vidéo
+    /// reste FIXE sous le doigt : un click wheel ne tourne pas, c'est
+    /// `grainTournant` qui porte la rotation.
     private var moletteVisuel: some View {
         ZStack {
             if Self.temoin {
                 temoinVue
             } else {
-                donutAnatomie
+                // Hôte NEUTRE + overlay + clipShape (le pattern
+                // ExosFond) : le clip ne mord une couche UIKit qu'à
+                // la bonne taille — l'incident des 2,3 pt. Source
+                // carrée 1080 dans un hôte carré : aspectFill ne
+                // rogne rien, par construction.
+                Color.clear
+                    .frame(width: donut, height: donut)
+                    .overlay {
+                        CalqueVideo(nom: "molette-glass-loop",
+                                    pose: "molette-glass-poster",
+                                    rate: storyIpod == nil ? 1.0 : 0.0)
+                    }
+                    .clipShape(Circle())
+                    .allowsHitTesting(false)
             }
-            liquideDonut
             grainTournant
-            anisotropie
             roseeVue
                 .blendMode(.plusLighter)
                 .compositingGroup()
                 .allowsHitTesting(false)
         }
         .frame(width: donut, height: donut)
-    }
-
-    /// LE LAIT DANS L'EMPREINTE : les gouttes noir et blanc SOUS le
-    /// verre — la seule lumière de la molette. Le doigt (r 96, dans
-    /// l'anneau) aspire les gouttes ; le remous force le tirage. Le
-    /// masque tue tout au bord : rien ne déborde de l'objet, jamais.
-    private var liquideDonut: some View {
-        LiquideVue(vie: CGFloat(lampeVive),
-                   doigtX: 122.0 + cos(angleLampe) * 96.0,
-                   doigtY: 122.0 + sin(angleLampe) * 96.0,
-                   remous: min(1.0, abs(omega) * 0.12),
-                   largeur: donut, hauteur: donut,
-                   goutte: CGFloat(regTaille),
-                   vitesse: CGFloat(regVitesse),
-                   nombre: CGFloat(regGouttes),
-                   veille: CGFloat(regVeille),
-                   eveil: CGFloat(regEveil))
-            .mask(Circle().frame(width: donut, height: donut))
-            .opacity(0.85)
-            .compositingGroup()
-            .allowsHitTesting(false)
     }
 
     /// L'assise : l'ombre sous le donut, et le liseré de lumière que
@@ -3586,49 +3223,6 @@ private struct MoisIpod: View {
         }
     }
 
-    /// L'anatomie du donut — la face de VERRE : un cran plus claire
-    /// que la nuit (un verre accroche l'ambiance, le mat l'avale), et
-    /// LA RÈGLE DU CLIC : au toucher le verre S'ÉCLAIRCIT d'un cran —
-    /// les liquides se lisent pleinement. Les plusLighter dans LEUR
-    /// groupe.
-    private var donutAnatomie: some View {
-        let haut: Double = 0.05 + 0.09 * regClarte
-            + 0.05 * Double(vitreChaleur)
-        let bas: Double = 0.028 + 0.045 * regClarte
-            + 0.03 * Double(vitreChaleur)
-        return ZStack {
-            Circle().fill(LinearGradient(
-                colors: [Color(white: haut), Color(white: bas)],
-                startPoint: .top, endPoint: .bottom))
-            Circle().fill(RadialGradient(
-                stops: [
-                    .init(color: .clear, location: 0.86),
-                    .init(color: .black.opacity(0.11), location: 1.0),
-                ],
-                center: .center, startRadius: 0, endRadius: 122))
-            // Le tombant vers le puits (Ø 100 = location 0,41).
-            Circle().fill(RadialGradient(
-                stops: [
-                    .init(color: .black.opacity(0.13), location: 0.40),
-                    .init(color: .black.opacity(0.03), location: 0.47),
-                    .init(color: .clear, location: 0.56),
-                ],
-                center: .center, startRadius: 0, endRadius: 122))
-            Circle()
-                .stroke(Color.white.opacity(0.09), lineWidth: 1.5)
-                .blur(radius: 1.2)
-                .mask(LinearGradient(
-                    stops: [
-                        .init(color: .black, location: 0.0),
-                        .init(color: .clear, location: 0.55),
-                    ],
-                    startPoint: .top, endPoint: .bottom))
-                .blendMode(.plusLighter)
-        }
-        .frame(width: donut, height: donut)
-        .compositingGroup()
-    }
-
     /// La rosée du contact : le verre sent le doigt avant le geste.
     private var roseeVue: some View {
         let xR: CGFloat = 122.0 + cos(angleLampe) * 104.0
@@ -3666,31 +3260,6 @@ private struct MoisIpod: View {
         .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
             .frame(width: donut, height: donut))
         .allowsHitTesting(false)
-    }
-
-    /// L'anisotropie : deux lobes doux qui tournent à MI-vitesse du
-    /// doigt (le brossage circulaire) + le poignet — zéro horloge.
-    private var anisotropie: some View {
-        AngularGradient(
-            stops: [
-                .init(color: .clear, location: 0.0),
-                .init(color: .white.opacity(0.035), location: 0.20),
-                .init(color: .clear, location: 0.28),
-                .init(color: .white.opacity(0.028), location: 0.70),
-                .init(color: .clear, location: 0.78),
-                .init(color: .clear, location: 1.0),
-            ],
-            center: .center)
-            .frame(width: donut, height: donut)
-            .blur(radius: 7)
-            .drawingGroup()
-            .rotationEffect(.radians(Double(angleCumul) * 0.5
-                + Double(motion.pench.width) * 0.35))
-            .mask(Circle().strokeBorder(Color.white, lineWidth: 72)
-                .frame(width: donut, height: donut))
-            .blendMode(.plusLighter)
-            .compositingGroup()
-            .allowsHitTesting(false)
     }
 
     private static func hachis(_ i: Int, _ k: Int) -> Double {

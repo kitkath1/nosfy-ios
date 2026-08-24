@@ -17,8 +17,9 @@ using namespace metal;
 // brillerait sur du noir, parce qu'il invente sa lumière au lieu de
 // l'emprunter. On y gagne aussi ce que le natif ne sait pas faire : la
 // DISPERSION (le rouge et le bleu qui ne sortent pas au même endroit de
-// l'arête), et un COL réglable au pixel — une union lisse de deux SDF, la
-// métaballe de `LiquideMolette`, au lieu d'un `spacing` de conteneur.
+// l'arête), et un COL réglable au pixel — une union lisse de deux SDF, à la
+// métaballe (l'école du lait de molette, aujourd'hui mort), au lieu d'un
+// `spacing` de conteneur.
 //
 // PIÈGES DÉJÀ PAYÉS, RESPECTÉS ICI :
 //   — l'arité : la signature doit matcher l'appel Swift AU FLOAT PRÈS, sinon
