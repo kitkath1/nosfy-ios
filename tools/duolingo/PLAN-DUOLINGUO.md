@@ -1157,3 +1157,614 @@ rien n'est codé avant J-concerné)
    battement 3:2 se voit au téléphone (J5), bascule 30 re-cuite.
 10. **Le ralenti des flammes hautes** — défaut : NON ; A/B au J0 seulement
     si les jumelles battent en phase malgré la rotation.
+
+---
+
+## 14. LA 5ᵉ CAMPAGNE — « LE FEU RARE » (v2 — refondue le 24-08 soir sur
+SON verdict du plan v1, toujours PAS CODÉE. La v1 avait été fouettée par
+trois juges adverses — 25 fautes intégrées ; les bloquantes : une sonde qui
+condamnait ses propres négatifs, une préview-clip qui fabriquait l'arête
+qu'elle prétendait juger, un overshoot manquant qui violait la LOI F1
+payée la veille. Puis Kathryn a jugé le plan lui-même :
+
+> « t'es sûr ? faut VRAIMENT que les flammes soient fondues sinon c'est
+> cheap — vs mes derniers screenshots. tu vas souvent trop vite donc
+> attention : refais un plan »
+
+La v2 répond aux deux : LE FONDU devient la loi souveraine — RARE-0, avec
+ses portillons propres (le bord introuvable, la longueur de mort, le
+banding de la queue), calibrés pour condamner SES captures — et la porte
+entre jalons est durcie contre le « trop vite ».
+
+**v3, même soir** — une contre-lecture adverse a rendu 8 fautes sur la v2
+(les bloquantes : les cotes de N3 violaient le « mort ≥ 150 pt » du même
+jalon ; « sans plateau » condamnait le cœur vif que RARE-0 défend), toutes
+intégrées. ET le verdict le plus important est tombé pendant la refonte,
+sur un nouveau screenshot du sim (le X gris pleine page — archivé comme
+troisième contre-exemple) :
+
+> « les vidéos flammes sont encore trop cheap au scroll, regarde cette
+> horreur […] peut-être que les vidéos comme ça ne sont PAS la bonne
+> solution, tu n'arrives pas à les fondre à la perfection — propose des
+> solutions, un plan hardcore UI »
+
+**LE MÉDIUM EST AU PROCÈS** : la question de N2 n'est plus « quel crop de
+vidéo », c'est « la couture de feu doit-elle être de la vidéo DU TOUT ».
+La palette des solutions S1-S5 remplace l'ancien tour A/B/C/D.)
+
+Les verdicts verbatim (24-08 soir, sim ouvert) :
+
+> « toujours ce problème : les flammes (rouges et blanches) sont ensemble
+> mais c'est BEAUCOUP TROP CHEAP, ça doit être fondu — peut-être que le
+> côté renversé ne va pas […] rends fluide le scroll des flammes ou trouve
+> un design / agencement pour combler cette fracture UI au scroll, je
+> déteste »
+
+> « les pills au scroll doivent être fondues, très belles, et "tourner" en
+> mode parallaxe, en mode APPLE au scroll, très très très premium et fin —
+> sans lag de vidéo »
+
+> « les flammes blanches sont trop coupées et trop hautes dans l'écran :
+> 30 % max de l'écran, bottom ou top ; c'est pas fondu, c'est coupé net
+> beurk alors que l'écran est noir de base »
+
+Et la régression du PROMPT-REPRISE reste en tête de file : le fondu
+profond des capsules en voyage se répare EN PREMIER.
+
+**Le diagnostic (la suite honnête du §13)** : la couture est gagnée
+(sonde de ligne 2,8 contre 14 sur ses captures), la beauté a perdu. Le feu
+unique fait 540 pt de fenêtre — à mi-voyage il occupe 62 % du viewport ;
+affaibli (gain ×0,62) puis défocalisé (10 pt) il est un BROUILLARD gris.
+Trois fautes distinctes :
+
+1. **TROP GRAND.** La loi des 30 % n'existait nulle part ; aucun portillon
+   ne mesurait l'ÉTENDUE lumineuse — seulement les arêtes (sonde de ligne)
+   et les bords (invariant du zéro). Un feu sans couture peut rester un
+   nuage.
+2. **TROP MOU.** « Diminuer la force » (2ᵉ salve) a été payé en gain
+   ×0,62 : baisser un feu SANS réduire son étendue fabrique du gris. Le
+   réflexe s'inverse : la force se GARDE, c'est l'étendue qui meurt.
+3. **LE DOUBLE RENVERSÉ n'a jamais eu son procès.** « Peut-être que le
+   côté renversé ne va pas » — chaque salve l'a raffiné (hflip, roll de
+   phase, crossfade cuit) sans jamais questionner son EXISTENCE. §10.7
+   attendait ce verdict depuis le début.
+
+Et le rack focus sur les feux salit (PROMPT-REPRISE, diagnostic 3) : il
+n'a jamais été jugé MORT — `-duoFocus 0` existe et n'a jamais été montré.
+
+### LA DOCTRINE DU FEU RARE (quatre lois — RARE-*, pour ne pas
+collisionner avec les R1-R4 du §11 ni le jalon R-n du §9)
+
+**LOI RARE-0 — LE FONDU EST SOUVERAIN.** Un feu n'a PAS de bord : il NAÎT
+du noir et y RETOURNE sur une longue distance — à la pose comme en voyage,
+on ne peut pointer NULLE PART « ici la flamme s'arrête » (le test du BORD
+INTROUVABLE, jugé sur still zoomé à chaque jalon de feu). **L'exception
+héritée de la LOI F1** : le bord PHYSIQUE de l'écran n'est pas un bord de
+matière — la coupe par l'écran à la pose est légitime si la matière
+continue hors champ (l'overshoot) ; le test juge les bords DE MATIÈRE,
+dans le champ. Le fondu prime TOUT : taille, vivacité, spectaculaire — un
+réglage qui gagne en dessin mais perd en fondu est REFUSÉ d'office. Ses
+deux captures du 24-08 soir (le X gris de la blanche, le nuage rouge) sont
+les contre-exemples de calibration — chacune condamnée par le portillon
+qui PEUT la voir : la blanche « coupée net » par la pente d'enveloppe, le
+nuage rouge par l'étendue et le dessin (un brouillard peut mourir en
+douceur : sa faute n'est pas la mort, c'est la matière partout). C'est
+l'ENSEMBLE des portillons qui doit les condamner toutes les deux avant
+d'avoir le droit d'absoudre quoi que ce soit — pas chaque portillon
+chacune.
+
+⚠️ Et la leçon qui empêche de re-payer le §13 : **le fondu n'est PAS le
+brouillard.** Le brouillard, c'est de la matière PARTOUT (une faute
+d'ÉTENDUE) ; le fondu, c'est une matière qui MEURT BIEN (une qualité de
+BORD). « Vif et dessiné » ne contredit pas « fondu » : le cœur est vif,
+les bords N'EXISTENT PAS — un feu est une lumière qui naît du noir, jamais
+une forme posée sur le noir. RARE-1 coupe l'étendue, RARE-0 soigne la
+mort ; les deux ensemble, jamais l'une sans l'autre.
+
+**LOI RARE-1 — LE FEU EST RARE ET ANCRÉ.** L'étendue lumineuse de CHAQUE
+feu (sa bande de rangées allumées, mesurée PAR OBJET — jamais le viewport
+entier) tient dans ≤ 30 % de l'écran (262 pt pour 874) À TOUT INSTANT —
+pose ET voyage. Le cœur vif est bien plus court (~90-150 pt — et quand
+RARE-0 réclame des queues plus longues, c'est le cœur qui cède). Et la loi
+d'ANCRAGE du verbatim (« bottom ou top ») : à la pose, tout feu est CLOUÉ
+à un bord d'écran ; un feu qui visite le CENTRE du viewport en voyage
+n'est pas un défaut de mesure, c'est un choix de design — le sien (le
+tour N2 le lui dit en face). Un feu est DESSINÉ (gain tenu), jamais un
+nuage.
+
+**LOI RARE-2 — LE VOYAGE MONTRE MOINS (aux coutures de FEU).** Pendant une
+transition de feu, la fraction lumineuse BAISSE ou tient — elle ne monte
+jamais : la transition est une soustraction, pas une addition. Périmètre
+STRICT : les coutures de feu. La capsule-SUJET en traversée chorégraphiée
+est EXEMPTÉE — sa lueur de passage (0,22) est du validé (« c'est top »),
+la loi ne condamne pas le seul moment qu'elle aime.
+
+**LOI RARE-3 — UN VERDICT PAR JALON, ET LA PORTE ENTRE JALONS EST DURE.**
+Un changement, un film, SON verdict, puis le suivant. Les A/B se montent
+en RUNTIME sur les fichiers existants AVANT toute cuisson — et quand un
+aperçu runtime MENT (cadrage, clip), le mensonge est déclaré d'avance ou
+remplacé par une mini-cuisson jetable. Une cuisson de bundle n'a lieu
+qu'après une direction tranchée par elle. **La porte** (le remède au « tu
+vas trop vite », dit QUATRE fois maintenant), en DEUX régimes — la
+contre-lecture a montré que la version « verdict partout » avait un trou :
+N1/N8/N9/N11 n'ont pas de verdict de Kathryn possible, et un jalon qui ne
+peut pas se fermer se livre « dans le même souffle », exactement la faute.
+Donc : les **jalons À VERDICT** (N0, N2-N7, N10) se ferment par SON
+verdict archivé (la capture/le film dans `shots/verdict-*`, sa phrase
+notée au plan) AVANT que le suivant ne s'ouvre — jamais deux jalons À
+VERDICT livrés sans sa phrase entre les deux. Les **jalons À PORTILLONS**
+(N1, N8, N9, N11) se ferment par leurs MESURES archivées dans `shots/`,
+et peuvent s'enchaîner avec le jalon qu'ils servent. Si un jalon révèle
+un problème du précédent, on ROUVRE le précédent, on n'empile pas.
+
+### LES JALONS (N comme le noir — un commit par chemins, un film, un
+verdict chacun ; le mini-fouettage à chaque jalon reste la règle)
+
+| # | Ce qu'on juge | Portillons |
+|---|---|---|
+| **N0** | la réparation du fondu des capsules (la régression) + `-duoAutoLent` | fondu À L'ŒIL sur film lent, profondeur perçue ~300 pt, bord introuvable ; sonde de ligne < 7 sur la traversée ; poses ±4 % si recuit |
+| **N1** | la sonde de BROUILLARD calibrée (par OBJET) | elle CONDAMNE l'état actuel ET absout poses + traversées de capsules — sinon la sonde est rejetée, on ne code rien |
+| **N2** | LE TOUR DES SOLUTIONS S1-S5 — le MÉDIUM au procès (braise hybride / noir assumé / still parfaite / vidéo corrigée / shader intégral), flou mort en défaut | verdict de SOLUTION de Kathryn, au doigt ; préviews menteuses déclarées |
+| **N3** | la fabrication de la solution choisie — couture 1/2 SEULE | LE FONDU D'ABORD : bord introuvable + mort ≥ 150 pt (cœur exclu) + paliers sans liserés (frame décodée) ; puis brouillard par feu (≤ 262 pt à tout instant, dessin tenu) ; ligne < 7 ; zéro vrai aux bouts ; couture ≤ 2 ; noir p50 ≤ 2 |
+| **N4** | la couture 1/2 finale — tour d'écoute des réglages, ordre écrit | portillons N3 rejoués + zéro flash en V |
+| **N5** | la couture 3/4 (la recette sur le rouge, S tenue) | idem N3, film dédié |
+| **N6** | l'écran 5 : la bleue au régime des 30 % (déjà à 220 pt — vérification, extinction peut-être rallongée) | idem, régime UNIQUE pour les feux |
+| **N7** | le « tourner » des capsules — TROIS NATURES au flag | rotation/effet NUL aux deux poses ; ligne muette ; verdict au doigt |
+| **N8** | la fluidité mesurée (« sans lag ») | SondeCadence 60 par régime + ≥ 22 pixel-buffers/s par calque vivant ; la table EXACTE des lecteurs au log ; échelle de repli écrite |
+| **N9** | le fouettage de campagne (sim) | films 4 coutures × 2 vitesses ; ligne + brouillard + flash ; silhouettes vs GELS validés ; gels des bancs voisins ; press à mi-transition |
+| **N10** | le verdict téléphone + les verdicts jamais rendus | OLED, chauffe, cadence vraie, gyro, le doigt — la liste §N10 entière |
+| **N11** | la consolidation | plan/mémoire à jour ; fichiers morts hors bundle ; poids ≤ 45 Mo ; reports NOMMÉS |
+
+### N0 — LA RÉPARATION DES CAPSULES (EN PREMIER, un tour court)
+
+D'abord l'outil du portillon : **`-duoAutoLent`** se code ICI (trois
+lignes, école `lancerAuto`, durée ×3 — le jalon de la régression ne peut
+pas dépendre d'un flag promis à N1). Puis trois candidats montés ENSEMBLE
+au banc (`-duoFonduPill a|b|c`), film lent d'une traversée 2/3 :
+
+- **(a) le recuit seul** : scrims des capsules 200 → 600 px (fondu cuit
+  200 pt — l'émergence sur ~29 % de la capsule). ⚠️ Change AUSSI la pose
+  (les bouts fondent au repos). Préview runtime honnête : le même gradient
+  en overlay, opacité CONSTANTE 1.
+- **(b) le rideau rendu aux SEULES capsules** : LinearGradient noir aux
+  deux bouts de la fenêtre frontière (dans le contenu de la fenêtre, à
+  côté de la lueur de passage — même mécanique visualEffect, zéro
+  invalidation), opacité 0 à la pose → 1 en voyage. **Rampe 0,10 H en
+  DÉFAUT — c'est le piège 11 payé à la 2ᵉ salve (« la rampe se règle sur
+  l'ARÊTE, pas sur le voyage : 0,25 H laissait 200 pt à découvert ») ; les
+  bouts quasi nets (67 pt de fondu cuit) entrent au viewport dès les
+  premiers points de déplacement.** 0,20 H en variante au flag pour le
+  film comparatif. ⚠️ (b) est un **AMENDEMENT de la LOI F1** (« TOUS les
+  rideaux runtime meurent »), au même format que les amendements de la
+  LOI 3 en N2 : si elle choisit (b), F1 se restreint aux feux — son mot,
+  son verdict. Le précédent qui impose la prudence : le §13 avait VU un
+  rideau dans sa capture blanche. D'où le portillon dédié : un still
+  zoomé du rideau lui-même À MI-OPACITÉ (sa bande sombre est le calque
+  payé — la sonde de ligne seule ne suffit pas, elle a déjà absous ce
+  rideau-là une fois). Pose INTACTE par construction.
+- **(c) le mixte** : scrims 400 px + rideau 150 pt.
+
+Portillon : le fondu en voyage se voit À L'ŒIL sur le film lent (le
+portillon du PROMPT-REPRISE) avec la cible chiffrée de l'avant-régression :
+une profondeur PERÇUE de l'ordre de ~300 pt (contre 67 aujourd'hui), et le
+BORD INTROUVABLE sur still zoomé à mi-voyage (RARE-0 vaut pour le verre
+comme pour le feu) ; la sonde de ligne reste muette sur la traversée — un
+rideau à bande trop courte ou trop opaque redevient un calque ; si (a),
+poses contre maquettes ±4 %. Verdict avant tout le reste.
+
+### N1 — LA SONDE DE BROUILLARD (le F0 de cette campagne)
+
+`tools/duolingo/sonde_brouillard.py`. ⚠️ La faute que le fouettage du plan
+a tuée : mesurer le VIEWPORT entier condamne les négatifs de sa propre
+calibration (une pose légitime cumule 420-580 pt de rangées allumées —
+flamme + dôme + galets + dalle) — la mesure est PAR OBJET, ou elle n'est
+pas.
+
+**Le mécanisme d'isolation, d'abord** : un flag banc **`-duoSondeFeux`**
+qui démonte chemin + dalle + rail + capsules pour les films de sonde (les
+feux seuls sur le noir — l'école de la mire `-duoGalets`, inversée) ; en
+garde-fou, les masques déterministes (les rects des fenêtres de verre et
+des galets se calculent d'EcranSpec/FrontiereSpec/etapes + l'offset connu
+du film auto) pour vérifier sur la page COMPLÈTE que rien d'imprévu ne
+s'allume.
+
+**Les mesures, par frame de film** :
+
+0. **le PLANCHER d'abord** : p50/p95 des zones noires pures (les bandes du
+   chemin, mesurées à 0,0 sur captures banc en §9bis) sur un film
+   RÉ-ENCODÉ existant — le seuil d'« allumé » se pose au-dessus de CE
+   plancher, jamais à 10 d'office (le noir H.264 soulevé, piège §8.2) ;
+1. **l'ÉTENDUE PAR FEU** : la hauteur de la bande allumée de CHAQUE feu —
+   portillon LOI RARE-1 : ≤ 262 pt à tout instant ;
+2. **la FRACTION aux coutures de feu** (LOI RARE-2, périmètre strict — la
+   capsule-sujet exemptée) : jamais plus haute en transition qu'aux poses
+   adjacentes ;
+3. **la COUPE D'ENVELOPPE** : le profil vertical lissé (moyenne par
+   rangée, fenêtre 20 pt) ne saute jamais — le « coupé net » d'un NUAGE,
+   que la sonde de ligne ne voit pas (elle cherche des arêtes fines
+   cohérentes, pas la frontière d'un brouillard) ;
+4. **le DESSIN** : L max du cœur du feu ≥ seuil à tout instant du voyage —
+   « gain tenu » devient un portillon, pas un vœu (la sonde ne doit pas
+   absoudre un feu redevenu soupe grise uniforme) ;
+5. **la MORT (le portillon du FONDU, RARE-0) — en DEUX morceaux** (la
+   contre-lecture a tué la version « sans plateau du pic au noir », qui
+   condamnait le cœur vif que RARE-0 défend) : d'abord **le CŒUR** — la
+   zone ≥ X % du pic, où le plateau est AUTORISÉ, longueur bornée par
+   RARE-1 (~90-150 pt) ; puis **la MORT** — du pied du cœur au plancher
+   noir, décroissance MONOTONE sans plateau ni saut, longueur ≥ ~150 pt.
+   Le seuil de pente se calibre sur la capture BLANCHE « coupée net »
+   (elle doit échouer — c'est ELLE que cette mesure sait voir ; le nuage
+   rouge, lui, est condamné par l'étendue et le dessin, RARE-0). Les
+   positifs de calibration à offset connu : les frames de mi-transition
+   des films banc de l'état actuel — les screenshots d'elle, à offset
+   inconnu et pleins de chemin, servent de référence visuelle, pas de
+   matière à sonde ;
+6. **le BANDING de la queue — jugé à la LARGEUR des paliers, jamais à la
+   hauteur de marche** (en 8 bits, deux niveaux voisins diffèrent de
+   1/255 par construction — c'est leur LARGEUR qui fait le liseré OLED) :
+   sur la frame DÉCODÉE du fichier final, px par niveau dans la queue et
+   périodicité des liserés, seuil calibré sur un dégradé témoin cuit
+   avec/sans dither — sinon crf plus bas ou dither au recuit, revérifié
+   après décodage (N3).
+
+**Calibration OBLIGATOIRE d'abord (la leçon F0)** : positifs = SES deux
+captures du 24-08 soir (à déposer dans `shots/verdict-brouillard-blanc.png`
+et `-rouge.png` — et à défaut, les frames de mi-transition de l'ÉTAT
+ACTUEL filmé au banc, qui montrent le même brouillard : `-duoAuto` +
+`-duoAutoLent`, ~60 % du viewport) ; négatifs = les poses (masquées) ET
+**les traversées de capsules actuelles (2/3 et 4/5) — le point fort
+validé, avec la tolérance explicite de la lueur 0,22**. La calibration
+vérifie EN PREMIER que les négatifs scorent sous les positifs — sinon la
+sonde est REJETÉE et retravaillée, et rien ne se code. La sonde de ligne
+(seuil 7) reste en garde de non-régression.
+
+### N2 — LE TOUR DES SOLUTIONS (le médium au procès — le verdict qui
+commande toute la campagne)
+
+**Le diagnostic du X gris (son screenshot, nommé faute par faute)** :
+quatre fautes empilées — (1) le DOUBLE RENVERSÉ CROISÉ : deux jets de
+plumes miroir qui se croisent font une écharpe abstraite, une topologie de
+X, pas un feu ; (2) le GAIN ×0,62 : une flamme affaiblie uniformément
+n'est plus blanche, elle est GRISE — le feu EST du contraste, l'affaiblir
+partout le tue ; (3) le RACK FOCUS 10 pt qui liquéfie ce qui restait de
+dessin ; (4) 540 pt d'étendue. Et la leçon STRUCTURELLE, celle que quatre
+salves ont payée sans la dire : **la vidéo se bat sur trois fronts
+perdants aux coutures** — ses fondus se cuisent en AVEUGLE contre un
+scroll vivant ; le H.264 sabote les longues queues sombres (noir soulevé,
+banding) ; et tout affaiblissement « pour fondre » détruit le caractère du
+feu. Un shader de LUMIÈRE n'a aucun de ces trois problèmes : extinction
+mathématique au zéro vrai, dither natif, réactif au geste, zéro décodage.
+
+Le registre honnête des précédents maison : le shader qui DESSINE une
+flamme a plafonné (flamme néon 7,6/10, ember « pas fluide ») — mais le
+souffle de lumière BAS est le registre PROUVÉ (ExoHeaderGlow, bgAurora,
+les liserés). On ne demande pas au shader une flamme : on lui demande une
+BRAISE.
+
+**Cinq solutions au banc** (`-duoFeu 1|2|3|4|5`), `-duoFocus 0` posé en
+DÉFAUT du tour (le blur a son procès aussi) :
+
+- **S1 — LA BRAISE AU SEUIL (hybride vidéo/shader — défaut proposé).**
+  Les flammes vidéo ne vivent qu'À LA POSE : petites (≤ 262 pt), ancrées à
+  leur bord, VIVES (gain tenu) ; dès le geste elles s'éteignent TÔT, par
+  les bords. La couture en voyage appartient à un souffle shader très bas
+  (école ExoHeaderGlow : source unique, cloche gaussienne, luminance crête
+  ≤ ~0,25) qui respire avec le scroll. Le fondu parfait PAR CONSTRUCTION,
+  la fluidité par construction. Le double renversé MEURT (son intuition).
+  La flamme redevient un événement de POSE ; le voyage redevient du noir
+  qui respire, traversé d'une braise.
+- **S2 — LE NOIR ASSUMÉ (la soustraction pure).** Comme S1 sans le
+  souffle : les feux ne vivent qu'aux poses, le voyage est NOIR, les
+  capsules restent les seuls événements de verre. Le plus radical, le plus
+  « le noir est la matière ». Zéro risque technique.
+- **S3 — L'IMAGE PARFAITE + LA VIE.** La flamme de pose n'est plus une
+  vidéo : une IMAGE cuite au numpy pixel par pixel — le profil de mort
+  écrit À LA MAIN, monotone, dithéré par nous, sans H.264 — la perfection
+  déterministe du fondu que quatre salves de vidéo n'ont jamais donnée.
+  Par-dessus, une vie discrète (respiration de luminance/échelle en
+  runtime léger). En voyage : extinction précoce, ou la braise S1.
+- **S4 — LA VIDÉO RÉDUITE ET VIVE (l'ancienne direction, aux cotes
+  corrigées).** Le feu unique recuit : canevas 402×390 pt — mort de 150 pt
+  de CHAQUE côté, cœur vif 90 pt, gain 0,90-1,00 tenu — crf 17 + dither.
+  La vidéo garde la couture. C'est la solution avec le plus de pièges
+  connus contre elle ; elle reste sur la mire parce que le mouvement vrai
+  d'une flamme filmée est irremplaçable SI le reste tient. ⚠️ C'est aussi
+  la seule où un feu visite le centre de l'écran en voyage — « ton
+  “bottom ou top” la refuse peut-être » (RARE-1, l'ancrage).
+- **S5 — LE SHADER INTÉGRAL.** Plus aucune vidéo de flamme sur la page :
+  braises shader partout, poses comprises ; seules les capsules restent
+  vidéo. Le plus Apple-minimal, le plus risqué en beauté de pose (le
+  registre braise doit porter seul l'identité feu).
+
+⚠️ S1/S3/S5 sont des AMENDEMENTS de la LOI 3 (« le feu est dans la
+vidéo — aucun shader de flamme ») : si elle en choisit un, sa loi tombe
+pour les feux concernés — c'est son mot, son verdict (le précédent :
+§10.1).
+
+**Les préviews qui mentent le déclarent (RARE-3)** : S1/S2 se
+prévisualisent honnêtement en runtime (extinction précoce sur les fichiers
+existants ; braise esquissée au banc) ; S3 se prévisualise par une still
+numpy posée au banc (rapide — sa VIE se juge au jalon suivant) ; S4 exige
+la MINI-CUISSON JETABLE (jamais un clip sec : le cœur crossfadé du fichier
+actuel est rangées 480-600 px, un clip y fabriquerait le « coupé net »
+qu'on juge). Le sort des hauts d'écrans 2 et 4 (« La flamme suspendue »,
+« Le feu renversé ») est posé au tour : écho court, braise seule, ou
+titres renommés — verdicts à elle.
+
+**Le tour se juge D'ABORD au FONDU** (RARE-0) : « est-ce fondu — le bord
+est-il introuvable ? », puis à l'IDENTITÉ (« est-ce encore du FEU ? »),
+puis à la fluidité au doigt. Une solution non fondue est éliminée quel que
+soit son charme. Verdict : UNE solution — ou un panachage PAR COUTURE —
+tranchée par Kathryn sur le sim ouvert. Rien ne se cuit avant son choix.
+
+### N3 — LA FABRICATION DE LA SOLUTION CHOISIE (couture 1/2 SEULE, la
+pire à ses yeux)
+
+La solution de N2 se fabrique sur LE SEUL feu blanc, jamais les deux
+coutures d'un coup. ⚠️ `${flt}[v]` en zsh à chaque graphe modifié (piège
+payé §9bis.3). **Un seul jeu de chiffres, cohérent avec les portillons
+N1.5 — la contre-lecture a payé la vérif : des queues de 105 pt sous un
+portillon à 150 pt, un overshoot de 70 pt pour une mort de 150, ne se
+reproduisent plus.**
+
+- **si S1/S2** : recuit des flammes de POSE — petites (≤ 262 pt à la
+  pose), ancrées, vives (gain tenu), extinction cuite ≥ 150 pt côté
+  intérieur (la mort N1.5), overshoot F1 côté bord physique si le cœur
+  saigne ; et pour S1, la braise réglée au banc (hauteur ~120-180 pt,
+  crête ≤ ~0,25, cloche gaussienne, teinte de l'écran, respiration liée
+  au geste).
+- **si S3** : la still cuite au numpy — le profil de mort écrit à la main
+  (monotone, ≥ 150 pt, dither 8 bits appliqué par NOUS — plus de H.264 du
+  tout sur les feux de pose), silhouette contre la maquette ; la vie
+  runtime se juge au jalon suivant, jamais dans le même souffle.
+- **si S4** : le feu unique v3 aux cotes CORRIGÉES : canevas 804×780 px
+  (402×390 pt) — queue haute 300 px (**150 pt de mort**) / cœur + jonction
+  crossfadée 180 px (90 pt vif) / queue basse 300 px (**150 pt**) ; à la
+  pose, la fenêtre chevauchante montre 195 pt ≤ 262 ✓ (l'étendue RARE-1
+  tient : la moitié sombre des queues n'est pas « allumée »). Variante
+  sans double : un seul feu qui monte, overshoot **≥ 150 pt** sous la
+  couture (la queue entre au viewport DÉJÀ morte). Gain 0,90-1,00 TENU
+  sur le cœur.
+- **si S5** : pas de cuisson — les braises se règlent au banc, par
+  couture, avec la question de l'identité feu posée frontalement.
+
+**La cuisson au service du fondu (S3/S4)** : crf 17 en UNE passe (l'école
+des galets, §9bis.2) ; le dither se vérifie **APRÈS décodage du fichier
+final** (x264 écrase précisément le bruit des aplats sombres — un dither
+dans le graphe peut mourir à l'encodage sans un mot) ; un long dégradé
+sombre à crf 20 pose des paliers, et un palier sur OLED est un « coupé
+net » de plus.
+
+Portillons — LE FONDU EN PREMIER : **le bord introuvable** (stills zoomés
+à la pose ET à mi-voyage : nulle part on ne peut pointer où la matière
+s'arrête — le bord physique excepté, RARE-0) ; **la mort** ≥ 150 pt
+monotone, cœur exclu (N1.5) ; **les paliers sans liserés** sur la frame
+décodée (N1.6). Puis la sonde de brouillard PAR FEU
+(étendue ≤ 262 pt à tout instant, fraction qui ne monte pas, dessin
+tenu) ; sonde de ligne < 7 ; invariant du zéro (p99 = 0 sur les 12 rangées
+des bouts) ; couture palindrome ≤ 2/255 ; noir p50 ≤ 2 ; l'écart aux
+maquettes ASSUMÉ et dit (elles sont des guides). **Le gel de l'état validé
+par son verdict devient LA référence de silhouette pour la suite (N9) — la
+maquette d'origine est amendée.** Verdict sur film lent + auto de la seule
+couture 1/2, AVANT le rouge.
+
+### N4 — LA COUTURE 1/2 FINALE (un tour d'écoute de réglages, pas une salve)
+
+Les curseurs restants — le dip/extinction (si C), l'offset exact de la
+fenêtre, le flou (défaut MORT sur les feux ; s'il revit, jamais > 6 pt et
+prouvé innocent du lag en N8), la respiration du noir — se montent TOUS en
+runtime sur flags, à la N2 : ELLE tranche une combinaison au banc (l'ordre
+de présentation écrit d'avance), puis UN film de confirmation aux
+portillons N3 rejoués + zéro flash en V. Pas de films empilés jugés en
+bloc — c'est la 2ᵉ salve qui recommencerait.
+
+### N5 — LA COUTURE 3/4 (le rouge)
+
+La recette validée, appliquée : gain tenu ~0,85-0,95 en TENANT S (la loi
+anti-brun ; et si une retouche de teinte s'invite : R reste à 1, on
+désature le VERT — l'école harmonisation-rouge). Mêmes portillons, film
+dédié, verdict avant N6.
+
+### N6 — L'ÉCRAN 5 (la bleue)
+
+Elle est DÉJÀ presque au régime (804×440 px = 402×220 pt, 25 % de
+l'écran, gain ×0,85 depuis la 2ᵉ salve) : le jalon est une VÉRIFICATION —
+étendue mesurée à la sonde, extinction haute (scrim actuel 198 px = 99 pt)
+rallongée si l'enveloppe coupe, recuisson SEULEMENT si un portillon
+échoue. Le régime des feux doit être UN. Verdict.
+
+### N7 — LE « TOURNER » DES CAPSULES (trois NATURES, pas trois volumes)
+
+Le geste demandé : « tourner en mode parallaxe, mode APPLE, très très très
+premium et fin ». Trois designs distincts sur flag (`-duoTourne 1|2|3`),
+au doigt :
+
+1. **LE TILT FIN (défaut proposé)** : rotation ∝ **sin(π·u)** — la forme
+   qui s'annule aux DEUX poses, celle du code existant ; jamais une rampe
+   en d/H, qui vaudrait ±2° à la pose et casserait le portillon —
+   amplitude ±2° au pic de traversée ; la courbe en S garde 0,10 H ;
+   l'échelle et la lueur REDESCENDENT (1,02 / 0,12) — le premium par la
+   retenue.
+2. **LE F3 ACTUEL en témoin** (1,05 / 3° / 0,22) — il reste sur la mire :
+   le §13 demandait « spectaculaire », le dernier verdict demande « fin »,
+   et ce curseur-là est le sien (arbitrage 3).
+3. **LE FOYER QUI VOYAGE** : l'objet ne bascule pas — sa LUMIÈRE tourne :
+   le reflet spéculaire glisse sur le verre avec le déplacement (école
+   « la lampe suit le pouce » / foyer au gyro SkyMotion), zéro géométrie,
+   zéro risque de lag. Le plus maison, peut-être le plus Apple.
+
+Tout vit dans le MÊME visualEffect que la courbe en S (un seul proxy,
+zéro invalidation) ; reduceMotion coupe (piège 19). Portillons : effet
+NUL aux deux poses ; sonde de ligne muette ; la cadence se prouve en N8.
+Verdict au doigt.
+
+### N8 — LA FLUIDITÉ MESURÉE (« sans lag de vidéo très important »)
+
+Les deux nombres par RÉGIME (repos, traversée de feu, traversée de
+capsule, aller-retour auto) : SondeCadence 60 tenus — chaque trou > 33 ms
+expliqué — ET ≥ 22 pixel-buffers/s par calque vivant (le sim est aveugle
+au diaporama : les DEUX nombres, toujours).
+
+**Le budget lecteurs se prouve contre la table EXACTE dérivée de
+`piloter()`** — pas contre une formule (la contre-lecture a corrigé mon
+propre exemple faux : un exemplaire faux dans la liste nominale empoisonne
+la preuve). En numérotation ÉCRAN 1-5 du plan (le code compte 0-4) et dans
+l'état AVANT le verdict N2 — la table se re-dérive après lui :
+
+| pose | lecteurs vivants (2 par pose, 3 max en transition) |
+|---|---|
+| É1 | galet noir + feu blanc (couture 1/2) |
+| É2 | feu blanc (1/2) + frontière rouge (2/3) |
+| É3 | frontière rouge (2/3) + feu rouge (3/4) |
+| É4 | feu rouge (3/4) + frontière rouge-bleu (4/5) |
+| É5 | frontière rouge-bleu (4/5) + flamme bleue |
+
+Le log se compare à CETTE liste, pose par pose, et le 3ᵉ vivant d'une
+transition est nommé (l'objet de la couture traversée + les deux voisins).
+
+L'échelle de repli ÉCRITE D'AVANCE : flou 6 pt → flou sur les seules
+capsules hors-poses → flou mort ; lueur/rotation divisées par deux ; en
+dernier recours, fenêtres plus courtes (jamais un demi-rate — l'artefact).
+Le suspect n°1 du lag est le blur runtime sur des couches vidéo larges :
+il arrive au procès MORT (défaut de N2) et ne revient que prouvé innocent.
+
+### N9 — LE FOUETTAGE DE CAMPAGNE (sim — AUCUNE présentation sans lui)
+
+La règle entière (mémoire fouettage-avant-montrer) : films des COUTURES
+restantes × deux vitesses (`-duoAuto`, `-duoAutoLent`) ; sonde de ligne +
+sonde de brouillard sur chaque film ; détecteur de flash en V ;
+**non-régression des poses contre les GELS validés** (l'état gelé après
+chaque verdict de Kathryn — les maquettes d'origine sont amendées par
+N2/N3, mesurer contre elles échouerait par construction) ; **gels
+avant/après des bancs voisins** (LaunchPebble/CorpsNacre si un shader
+partagé bouge — galetLisere est partagé) ; allers-retours d'états
+(`-duoEtape`, `-duoEcran`, ouverture refilmée) **+ LE PRESS À
+MI-TRANSITION** (le reste ouvert de la 2ᵉ salve : la dalle mi-fondue, le
+retour de pose — au film ici, au doigt en N10) ; relecture adverse de
+TOUTES les tables de pièges (§8, 9bis/ter, 11, 12, 13, 14).
+
+### N10 — LE VERDICT TÉLÉPHONE (et les verdicts jamais rendus)
+
+Le déploiement (mémoire deploy-iphone : UDID « iPhone de Frédéric », args
+devicectl APRÈS `--` ; si le compte Apple rebloque c'est un mur MANUEL —
+Xcode/Accounts, aucune commande ne le contourne) : noirs OLED, chauffe,
+cadence vraie pendant blurs/rotations, gyro des foyers.
+
+**La dette des salves passées se solde ICI, nommément** : press/refus/tilt
+des galets-étapes au doigt (J2) ; bercement/lueur des capsules
+(« diviser par deux au premier trop ») ; la largeur de frontière 90 % vs
+maquette (reste J1) ; le press à mi-transition au doigt ; le battement
+3:2 des mouvements lents (§10.9 — réactivé par les recuits N3/N5 : s'il
+se voit, bascule 30 documentée) ; l'intensité du défocus si le flou a
+survécu (6/10/14). Les verdicts fins (30 %, fondu, tourner) se REJUGENT
+là — le sim n'a jamais le dernier mot.
+
+### N11 — LA CONSOLIDATION (les reports NOMMÉS)
+
+Le §14 reçoit les verdicts et les pièges payés ; la mémoire
+woop-duolinguo-page se met à jour ; les fichiers morts sortent du bundle
+(anciens feux 540 pt, scrims obsolètes) ; le poids se re-mesure (≤ 45 Mo).
+Les reports sont NOMMÉS, pas balayés : **§10.8** (l'entrée/sortie de page
+dans l'app réelle — le seul trou structurel restant), **§10.9** (24 vs 30
+si le battement s'est vu en N10), **les restes J2/J3** (« CHAPITRE 1 »
+discret sur flanc clair, le halo au bout droit de la dalle écran 1), et la
+session gamification (stratégie, vrais compteurs). Commits PAR CHEMINS,
+messages français, aucun trailer (CLAUDE.md).
+
+### LES PIÈGES QUI MONTENT LA GARDE SUR CETTE CAMPAGNE
+
+- **Baisser sans réduire = du gris** (payé §13) : la vivacité se garde,
+  l'ÉTENDUE se coupe. Toute extinction est par les BORDS, jamais une
+  opacité uniforme (N2-C).
+- **Le fondu n'est pas le brouillard** (RARE-0) : soigner le bord n'excuse
+  jamais l'étendue, couper l'étendue n'excuse jamais le bord — un réglage
+  se juge sur LES DEUX, et le fondu gagne tout arbitrage entre eux.
+- **Le banding de la queue** : un long dégradé sombre en H.264 8 bits pose
+  des PALIERS — des liserés sur OLED, un « coupé net » de plus, invisible
+  au sim clair. Jugé à la LARGEUR des paliers sur la frame DÉCODÉE (N1.6 —
+  la hauteur de marche vaut 1/255 par construction, elle ne prouve rien) ;
+  remède crf 17 / dither VÉRIFIÉ après décodage (x264 écrase le bruit des
+  aplats sombres) (N3).
+- **La rampe d'un rideau se règle sur l'ARÊTE** (piège 11, payé 2ᵉ salve) :
+  0,10 H en défaut, toujours — les bouts quasi nets entrent au viewport
+  dès le premier point de déplacement (N0-b).
+- **Un rideau sur capsule redevient un calque** s'il est court ou opaque :
+  la sonde de ligne le juge à CHAQUE réglage (N0).
+- **Les préviews runtime MENTENT et le disent** : l'échelle de A est une
+  maquette de CADRAGE (pas de matière) ; un clip de B fabriquerait une
+  arête en plein cœur crossfadé — mini-cuisson jetable obligatoire (N2).
+- **La sonde qui mesure le viewport absout ou condamne n'importe quoi** :
+  toute mesure d'étendue est PAR OBJET, et la calibration vérifie ses
+  négatifs AVANT de servir (N1 — la faute tuée au fouettage de ce plan).
+- **Le blur runtime sur couches vidéo larges** : suspect n°1 du lag, jugé
+  mort d'abord, innocenté ensuite seulement (N2/N8).
+- **`simctl launch --terminate-running-process` à CHAQUE bascule de flag**
+  (piège 18) : un A/B relancé avec les vieux args est un verdict
+  empoisonné — les tours d'écoute N0/N2/N4/N7 vivent de flags.
+- **`stat` du binaire avant TOUTE capture, dès N0** (piège 15, payé 2×) :
+  la campagne est filmée de bout en bout, la relecture adverse de N9
+  arrive trop tard pour rattraper des films d'une app périmée.
+- **`${flt}[v]` en zsh** (piège §9bis.3) : N0-a et N3 modifient les
+  graphes de recuit_duo.sh.
+- **Chaque verdict de Kathryn s'archive en capture dans `shots/`**
+  (`verdict-*.png`) : la calibration des sondes en dépend (F0, N1).
+
+## 15. LE REFRAME DRASTIQUE — « LE CHEMIN D'ABORD » (24-08 soir, SON
+verdict pendant l'exécution — il SUPPLANTE la palette S1-S5 du §14-N2)
+
+> « on fait comme Duolingo ! tout doit être assez fondu noir dans les
+> décors, comme Apple — le décor a TROP DE PLACE au scroll, on doit se
+> focaliser sur les galets liquid glass ; tes flammes ne vont pas — un
+> plan complètement drastique »
+
+**Ce que quatre salves et une campagne n'avaient pas compris** : on
+optimisait le DÉCOR (les flammes) alors que le sujet de la page — comme
+chez Duolingo — est LE CHEMIN. L'œil doit suivre les étapes de verre ;
+le décor existe à peine.
+
+**La doctrine drastique (au-dessus de RARE-0..3, qui restent en garde)** :
+
+- **D1 — LE CHEMIN EST LE SUJET.** Les galets-étapes montent d'un cran
+  (82 / actif 92 / trésor 104), leur naissance, leur liseré-température et
+  leur vie portent la page. La lumière de la page vit DANS le verre.
+- **D2 — LE DÉCOR EST UN PARFUM.** Les flammes deviennent des BRAISES
+  basses de POSE : ~160 pt visibles max (crête bien plus basse), vives et
+  dessinées (point noir écrasé — le voile gris de la source meurt à la
+  cuisson), ancrées bottom, overshoot en base miroir fondue. Elles
+  n'existent qu'à la pose : dès le geste elles s'éteignent (mortes à
+  0,25 H). La couleur dit le chapitre, la flamme ne raconte plus rien.
+- **D3 — LE VOYAGE EST NOIR.** Pendant le scroll : le noir, les galets,
+  les capsules-frontières (validées) qui fondent profond (rideaux N0,
+  rampe 0,10 H) — et une lueur de couture très basse (≤ 0,18) qui respire
+  avec le geste aux coutures 1/2 et 3/4. Rien d'autre. Le rack focus est
+  MORT par défaut (`-duoFocus 0`).
+- **D4 — LES CAPSULES RESTENT LES ÉVÉNEMENTS.** Fines : rotation 2° en
+  sin(π·u), échelle 1,02, lueur 0,12 — le premium par la retenue.
+
+**Exécution (elle a dit « go, ça rend ou je m'en fous ») ** : cuisson des
+braises de pose (blanche/rouge 402×240 dont 80 d'overshoot miroir, point
+noir écrasé 60/24, crf 17) ; mort des feux uniques 540 pt ; extinction de
+voyage ; lueurs de couture ; rideaux des capsules ; galets grossis ;
+titres É2/É4 recalés (« La braise blanche » / « La braise rouge ») ;
+fouettage complet (films 2 vitesses, sonde de ligne, flash, cadence)
+avant toute présentation. Les portillons du §14 (mort ≥ 150 pt en
+proportion de la nouvelle taille, bords à zéro, étendue, paliers) gardent
+la cuisson.
+
+### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
+
+1. **La direction des feux** (N2) : A / B / C / D et compositions — défaut
+   proposé B + C. Le verdict qui commande toute la campagne. A s'annonce
+   avec son passage au centre (l'ancrage), D' avec son amendement de la
+   LOI 3.
+2. **Le flou** : défaut MORT sur les feux ; au mieux, capsules
+   hors-poses — N2/N4.
+3. **Le curseur spectaculaire/fin des capsules** : le §13 demandait
+   « spectaculaires ! », le dernier verdict demande « très fin » — le
+   témoin F3 est sur la mire N7, elle pose le curseur.
+4. **La nature du « tourner »** : tilt fin / F3 témoin / foyer qui
+   voyage — N7.
+5. **L'écho suspendu B'** et le sort des titres « La flamme suspendue » et
+   « Le feu renversé » si B gagne — N2/N3.
+6. **Le fondu des capsules** : (a) cuit / (b) rideau 0,10 H / (c) mixte —
+   N0.

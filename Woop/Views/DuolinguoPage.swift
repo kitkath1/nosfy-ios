@@ -45,33 +45,47 @@ struct EcranSpec: Equatable, Identifiable {
         /// T1 (LE TRAVELLING) : une flamme est une LUMIÈRE — elle se rend
         /// en additif dans la couche des feux, jamais dans sa section.
         var flamme = false
+        /// §15 (LE CHEMIN D'ABORD) : la fenêtre dépasse le bord physique de
+        /// l'écran de ce montant — la queue du fondu (base miroir cuite)
+        /// vit hors champ à la pose, déjà morte quand elle entre au
+        /// viewport (l'overshoot de la LOI F1).
+        var overshoot: CGFloat = 0
+        /// §15, D3 — LE VOYAGE EST NOIR : une braise de pose s'éteint dès
+        /// le geste, morte à `extinctionVoyage × H` de déplacement.
+        var extinctionVoyage: CGFloat = 0
         var pose: String { nom + "-poster" }
     }
 
-    /// 4e salve (LOI F2) : les flammes séparées sont MORTES — les coutures
-    /// de feu sont des FEUX UNIQUES chevauchants (voir `feuxUniques`), il
-    /// ne reste en section que le verre noir, et la bleue dans les feux.
+    /// §15 (LE CHEMIN D'ABORD) : les feux uniques 540 pt sont MORTS — le
+    /// décor est un PARFUM. Chaque couture de feu ne garde qu'une BRAISE
+    /// de pose (160 pt visibles, vignette cuite, base miroir en
+    /// overshoot), vive à la pose, éteinte dès le geste. Le voyage est
+    /// noir : les galets et les capsules portent la page.
     static let les5: [EcranSpec] = [
         // ÉCRAN 1 — LE VERRE NOIR (col au bord, ventre aux 4/5 de la fenêtre)
         EcranSpec(id: 0,
                   haut: .init(nom: "duo-galet-noir", ratioHL: 1560.0/1206.0,
                               parallaxe: 0.10),
-                  bas: nil),
-        EcranSpec(id: 1, haut: nil, bas: nil),   // LA FLAMME SUSPENDUE
-        EcranSpec(id: 2, haut: nil, bas: nil),   // LE ROUGE
-        EcranSpec(id: 3, haut: nil, bas: nil),   // LE FEU RENVERSÉ
+                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 480.0/804.0,
+                             flamme: true, overshoot: 80,
+                             extinctionVoyage: 0.25)),
+        EcranSpec(id: 1, haut: nil, bas: nil),   // LA BRAISE BLANCHE
+        // ÉCRAN 3 — LE ROUGE (le haut = la frontière 2/3, le bas = la braise)
+        EcranSpec(id: 2, haut: nil,
+                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 480.0/804.0,
+                             flamme: true, overshoot: 80,
+                             extinctionVoyage: 0.25)),
+        EcranSpec(id: 3, haut: nil, bas: nil),   // LA BRAISE ROUGE
         // ÉCRAN 5 — LE BLEU (le haut = la frontière 4/5, le bas = la
         // flamme bleue, rendue dans la couche des feux)
         EcranSpec(id: 4,
                   haut: nil,
                   bas: .init(nom: "duo-flamme-bleue", ratioHL: 440.0/804.0,
-                             flamme: true)),
+                             flamme: true, extinctionVoyage: 0.30)),
     ]
 
-    /// LES FEUX UNIQUES (LOI F2) — un fichier par couture de feu : le feu
-    /// qui monte et son double suspendu, joints par un cœur cuit sur la
-    /// couture. À la pose du bas, les plumes montent du bord ; à celle du
-    /// haut, elles pendent ; entre les deux, UN objet traverse.
+    /// §15 : plus AUCUN feu chevauchant — la struct reste pour l'histoire,
+    /// la liste est VIDE (le §13 l'avait remplie, le reframe l'a vidée).
     struct FeuUnique: Identifiable {
         let id: Int
         let nom: String
@@ -80,9 +94,20 @@ struct EcranSpec: Equatable, Identifiable {
         var pose: String { nom + "-poster" }
         var ecrans: [Int] { [couture - 1, couture] }
     }
-    static let feuxUniques: [FeuUnique] = [
-        FeuUnique(id: 0, nom: "duo-feu-blanc", couture: 1),
-        FeuUnique(id: 1, nom: "duo-feu-rouge", couture: 3),
+    static let feuxUniques: [FeuUnique] = []
+
+    /// §15, D3 — LA LUEUR DE COUTURE : aux coutures de feu (1/2 et 3/4),
+    /// une respiration de lumière très basse pendant le geste — motivée,
+    /// teintée par le chapitre, morte aux poses. C'est TOUT le décor du
+    /// voyage.
+    struct LueurCouture: Identifiable {
+        let id: Int
+        let couture: Int      // la couture k : centre à y = k × H
+        let teinte: (r: Double, g: Double, b: Double)
+    }
+    static let lueurs: [LueurCouture] = [
+        LueurCouture(id: 0, couture: 1, teinte: (1.00, 0.96, 0.88)),
+        LueurCouture(id: 1, couture: 3, teinte: (1.00, 0.42, 0.16)),
     ]
 
     /// Les flammes simples restantes (l'écran 5) pour la couche des feux.
@@ -161,8 +186,9 @@ struct EcranSpec: Equatable, Identifiable {
     var lecture: [Bool] = [true, true, false, false, false]
     /// Les lecteurs des fenêtres frontières (2/3 rouge, 4/5 rouge-bleu).
     var lectureFrontieres: [Bool] = [false, false]
-    /// Les lecteurs des feux uniques (coutures 1/2 et 3/4).
-    var lectureFeux: [Bool] = [true, false]
+    /// §15 : plus de feux chevauchants — la liste est vide, les braises de
+    /// pose vivent sur le booléen de LEUR écran.
+    var lectureFeux: [Bool] = []
     /// Le gel du banc (`-duoFreeze`) et de reduceMotion : tout à l'arrêt.
     var gel = false
     /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
@@ -413,7 +439,18 @@ private struct FenetreVideo: View {
                     let u = min(1, dist / (0.5 * hauteur))
                     let s = u * u * (3 - 2 * u)
                     r = flou * s
-                    nuit = additif ? 0 : 0.35 * s
+                    var n: CGFloat = additif ? 0 : 0.35 * s
+                    // §15 D3 recalé (verdict : « on ne voit plus les
+                    // flammes au scroll ») : la flamme ne MEURT plus en
+                    // voyage — elle S'INCLINE à ~55 % et se fond d'une
+                    // page à l'autre. Ses bords n'existent pas dans la
+                    // matière (vignette + fondus cuits) : elle peut
+                    // voyager sans jamais couper.
+                    if spec.extinctionVoyage > 0 {
+                        let ue = min(1, dist / (spec.extinctionVoyage * hauteur))
+                        n = max(n, 0.45 * (ue * ue * (3 - 2 * ue)))
+                    }
+                    nuit = n
                 }
                 return contenu.offset(y: dy).blur(radius: r)
                     .opacity(Double(1 - nuit))
@@ -478,32 +515,41 @@ private struct FeuxDuo: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // LES FEUX UNIQUES (LOI F2) : un objet par couture de feu, à
-            // cheval — l'école exacte des capsules, appliquée à la lumière.
-            ForEach(EcranSpec.feuxUniques) { f in
-                let h = largeur * f.ratioHL
-                let restF = hauteur - h / 2
-                FenetreVideo(spec: .init(nom: f.nom, ratioHL: f.ratioHL),
-                             largeur: largeur,
-                             restY: restF,
-                             hauteur: hauteur,
-                             poses: [0, -hauteur],
-                             additif: true,
-                             flou: DuoReglages.focusEffectif,
-                             joue: etat.lectureFeux[f.id])
-                    .offset(y: CGFloat(f.couture) * hauteur - h / 2)
-            }
-            // La flamme simple de l'écran 5 (pas de couture en dessous :
-            // son bord bas ne visite jamais le viewport).
+            // §15 — LES BRAISES DE POSE : chaque flamme vit sur SON écran,
+            // ancrée au bord bas, l'overshoot (base miroir cuite) sous le
+            // bord physique ; elle s'éteint dès le geste (extinctionVoyage
+            // dans FenetreVideo). Le voyage est noir.
             ForEach(Array(EcranSpec.feux.enumerated()), id: \.offset) { _, feu in
                 let h = largeur * feu.spec.ratioHL
-                let yLocal = feu.enHaut ? 0 : hauteur - h
+                let yLocal = feu.enHaut ? 0 : hauteur - h + feu.spec.overshoot
                 FenetreVideo(spec: feu.spec, largeur: largeur,
                              restY: yLocal, hauteur: hauteur,
                              additif: true,
                              flou: DuoReglages.focusEffectif,
                              joue: etat.lecture[feu.ecran])
                     .offset(y: CGFloat(feu.ecran) * hauteur + yLocal)
+            }
+            // §15 D3 — LA LUEUR DE COUTURE : « une seule chose qui se fond
+            // dans la page 1 et la page 2 au scroll » — UNE respiration de
+            // lumière par couture de feu, très basse, teintée chapitre,
+            // NULLE aux deux poses (sin²), à son pic à mi-traversée. Tout
+            // le décor du voyage tient là.
+            ForEach(EcranSpec.lueurs) { l in
+                let hL: CGFloat = 260
+                let rest = hauteur - hL / 2
+                EllipticalGradient(
+                    colors: [Color(red: l.teinte.r, green: l.teinte.g,
+                                   blue: l.teinte.b).opacity(0.55), .clear],
+                    center: .center)
+                    .frame(width: largeur, height: hL)
+                    .blendMode(.plusLighter)
+                    .visualEffect { [rest, hauteur] c, p in
+                        let d = rest - p.frame(in: .scrollView).minY
+                        let u = max(0, min(1, d / hauteur))
+                        let s = sin(.pi * u)
+                        return c.opacity(Double(s * s) * DuoReglages.braiseMax)
+                    }
+                    .offset(y: CGFloat(l.couture) * hauteur - hL / 2)
             }
         }
         .frame(width: largeur, height: hauteur * 5, alignment: .top)
@@ -515,11 +561,20 @@ private struct FeuxDuo: View {
 /// 0 = mort — le verdict d'intensité de Kathryn se joue sur ce flag :
 /// subtil 6 / assumé 10 / cinéma 14).
 enum DuoReglages {
+    /// §15 : le rack focus est MORT PAR DÉFAUT (son procès a eu lieu — il
+    /// liquéfiait les feux). `-duoFocus <pt>` le ressuscite au banc.
     static let focusMax: CGFloat = {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: "-duoFocus"), i + 1 < a.count,
-              let v = Double(a[i + 1]) else { return 10 }
+              let v = Double(a[i + 1]) else { return 0 }
         return CGFloat(max(0, v))
+    }()
+    /// §15 D3 : l'intensité de la lueur de couture (`-duoBraise <0-1>`).
+    static let braiseMax: Double = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoBraise"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 0.28 }
+        return max(0, min(1, v))
     }()
     /// reduceMotion coupe le rack focus (piège 19) — figé au lancement.
     static let focusEffectif: CGFloat =
@@ -543,10 +598,12 @@ private struct CheminDuo: View {
         ZStack(alignment: .topLeading) {
             ForEach(EcranSpec.etapes) { e in
                 let quel = etatDe(e)
+                // §15 D1 — LE CHEMIN EST LE SUJET : les galets montent
+                // d'un cran (82 / actif 92 / trésor 104).
                 GaletEtape(etat: quel,
                            numero: e.tresor ? nil : e.id + 1,
                            glyphe: e.tresor ? "moon.fill" : nil,
-                           taille: e.tresor ? 98 : (quel == .actif ? 84 : 76),
+                           taille: e.tresor ? 104 : (quel == .actif ? 92 : 82),
                            onTap: { tape(e) })
                     .scaleEffect(etat.nees.contains(e.id) ? 1 : 0.92)
                     .opacity(etat.nees.contains(e.id) ? 1 : 0)
@@ -620,8 +677,8 @@ private struct CapsuleVivante<Contenu: View>: View {
 /// ignore `.opacity`), l'encre fond.
 private struct DalleChapitre: View {
     let etat: EtatDuo
-    static let noms = ["Le verre noir", "La flamme suspendue", "Le rouge",
-                       "Le feu renversé", "Le bleu"]
+    static let noms = ["Le verre noir", "La braise blanche", "Le rouge",
+                       "La braise rouge", "Le bleu"]
 
     var body: some View {
         let visible = !etat.enGeste
@@ -669,7 +726,14 @@ private struct DalleChapitre: View {
         }
         .frame(height: 58)
         .padding(.horizontal, 20)
-        .animation(.easeInOut(duration: 0.28), value: visible)
+        // §15 — LA MORSURE FANTÔME (payée au film) : la pellicule noire de
+        // la dalle est INVISIBLE sur le fond noir… sauf quand un galet
+        // scrolle dessous pendant son fondu de sortie — un rectangle noir
+        // qui « mord » tout ce qui passe. La sortie doit être RAPIDE et
+        // physique (elle monte), le retour peut être doux.
+        .offset(y: visible ? 0 : -22)
+        .animation(visible ? .easeInOut(duration: 0.28)
+                           : .easeOut(duration: 0.11), value: visible)
         .animation(.easeInOut(duration: 0.35), value: etat.ecranCourant)
         .allowsHitTesting(false)
     }
@@ -761,24 +825,49 @@ struct DuolinguoPage: View {
                                         .visualEffect { [restF, hauteur] c, p in
                                             let d = restF - p.frame(in: .scrollView).minY
                                             let u = max(0, min(1, d / hauteur))
-                                            return c.opacity(Double(sin(.pi * u)) * 0.22)
+                                            return c.opacity(Double(sin(.pi * u)) * 0.12)
                                         }
                                         .allowsHitTesting(false)
                                 }
+                                // §14 N0 — LE RIDEAU DES CAPSULES : le fondu
+                                // profond en voyage (la régression réparée,
+                                // ~300 pt perçus). Opacité 0 à la pose → 1
+                                // dès 0,10 H de voyage (piège 11 : la rampe
+                                // se règle sur l'ARÊTE). AMENDEMENT assumé
+                                // de la LOI F1, restreinte aux feux.
+                                .overlay {
+                                    VStack(spacing: 0) {
+                                        LinearGradient(
+                                            colors: [.black, .black.opacity(0)],
+                                            startPoint: .top, endPoint: .bottom)
+                                            .frame(height: 300)
+                                        Spacer(minLength: 0)
+                                        LinearGradient(
+                                            colors: [.black.opacity(0), .black],
+                                            startPoint: .top, endPoint: .bottom)
+                                            .frame(height: 300)
+                                    }
+                                    .visualEffect { [restF, hauteur] c, p in
+                                        let d = p.frame(in: .scrollView).minY - restF
+                                        let dist = min(abs(d), abs(d + hauteur))
+                                        let u = min(1, dist / (0.10 * hauteur))
+                                        return c.opacity(Double(u * u * (3 - 2 * u)))
+                                    }
+                                    .allowsHitTesting(false)
+                                }
                                 .compositingGroup()
                         }
-                            // LA COURBE EN S creusée (F3 : elle s'attarde,
-                            // 0,10 H) + l'approche de la caméra (échelle
-                            // 1,05) + le tilt de voyage (3° — on VOIT le
-                            // verre tourner). Tout dans le proxy.
+                            // §15 D4 — LA COURBE EN S (0,10 H) + la retenue :
+                            // échelle 1,02, tilt 2° en sin(π·u) — nul aux
+                            // DEUX poses. Le premium par la retenue.
                             .visualEffect { [restF, hauteur] contenu, proxy in
                                 let d = restF - proxy.frame(in: .scrollView).minY
                                 let u = max(0, min(1, d / hauteur))
                                 let s = sin(.pi * u)
                                 return contenu
                                     .offset(y: 0.10 * hauteur * s)
-                                    .scaleEffect(1 + 0.05 * s)
-                                    .rotation3DEffect(.degrees(3.0 * s),
+                                    .scaleEffect(1 + 0.02 * s)
+                                    .rotation3DEffect(.degrees(2.0 * s),
                                                       axis: (x: 1, y: 0, z: 0),
                                                       perspective: 0.5)
                             }

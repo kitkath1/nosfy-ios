@@ -158,13 +158,16 @@ for spec in [
     ("duo-flamme-bleue",         804,  440, 198,   0),
 ]:
     scrim(*spec)
-# les queues du feu unique (804x1080) : 150 px a zero aux deux bouts
-scrim("feu", 804, 1080, 150, 150)
-# les fondus de jonction des deux moities (804x600) : la moitie A (le feu
-# qui monte) meurt sur ses 120 dernieres rangees, la moitie B (le double)
-# sur ses 120 premieres — leur somme en screen fait le coeur, sans arete.
-scrim("moitieA", 804, 600, 0, 120)
-scrim("moitieB", 804, 600, 120, 0)
+# §15 : la braise de pose (804x480 = 160 pt visibles + 80 d'overshoot
+# miroir) — extinction haute 160 px, fondu de l'overshoot 160 px.
+scrim("braise", 804, 480, 160, 160)
+# la vignette gaussienne laterale (multiply) : du noir aux flancs par
+# construction, la braise est un dome de lumiere centre.
+x = np.arange(804)
+g = np.exp(-(((x - 402) / 300.0) ** 2) * 2.2)
+v = np.broadcast_to((g * 255).astype(np.uint8)[None, :], (480, 804))
+Image.fromarray(np.stack([v, v, v], axis=-1)).save(
+    os.path.join(os.environ["TMP_SCRIM"], "vignette.png"))
 EOF
 
 DL=~/Downloads
@@ -175,11 +178,34 @@ DL=~/Downloads
 # largeur, le col sort par le haut, le ventre aux 4/5 de la fenetre.
 cuirePill duo-galet-noir "$DL/Video noir_liquid.mp4" "1292:1672:440:1557" "1206x1560"
 
-# --- LE FEU UNIQUE 1/2 (la flamme blanche, le fichier au nom menteur) :
-# un seul objet sur la couture — 4e salve, LOI F2. Bande basse de la
-# source (100 px de nuit en tete pour la queue a zero), gain x0,62,
-# decalage temporel de 85 frames entre les deux moities.
-cuireFeu duo-feu-blanc "$DL/Video rougeetbleu_liquid.mp4" "1080:806:0:1114" 0.62 85
+# --- §15 LE CHEMIN D'ABORD : les feux uniques 540 pt sont MORTS (le
+# decor est un parfum). Chaque couture de feu garde une BRAISE DE POSE :
+# 160 pt visibles + 80 pt d'overshoot en BASE MIROIR fondue (la matiere
+# continue sous le bord physique — jamais un pad noir : la jonction
+# contenu/noir posait une ligne dure, payee au frame). Le POINT NOIR de
+# la source s'ECRASE (lutrgb clip) : le voile gris laiteux du fond meurt,
+# le coeur remonte a pleine echelle — baisser le gain fabriquait du gris
+# (le piege « baisser pour fondre »). Et la VIGNETTE gaussienne laterale
+# (multiply) garantit du noir aux flancs par construction.
+cuireBraise() { # $1 nom  $2 source  $3 crop  $4 point_noir  $5 nb_frames
+  ffmpeg -y -v error -i "$2" -i "$TMP/vignette.png" -i "$TMP/scrim-braise.png" \
+    -filter_complex "\
+[0:v]crop=$3,scale=804:320,format=gbrp,\
+lutrgb=r='clip((val-$4)*255/$((255-$4)),0,255)':g='clip((val-$4)*255/$((255-$4)),0,255)':b='clip((val-$4)*255/$((255-$4)),0,255)'[c0];\
+[c0]split[c][m];[m]crop=804:160:0:160,vflip[mm];\
+[c]pad=804:480:0:0:black[p];[p][mm]overlay=0:320,format=gbrp[full];\
+[1:v]format=gbrp[vg];[full][vg]blend=all_mode=multiply[vv];\
+[vv][2:v]overlay=0:0[s];\
+[s]split[a][b];[b]reverse,trim=start_frame=1:end_frame=$(($5-1)),setpts=PTS-STARTPTS[r];\
+[a][r]concat=n=2:v=1,format=yuv420p[out]" \
+    -map "[out]" $X264P "$OUT/$1.mp4"
+}
+NBLANC=$(nbf "$DL/Video rougeetbleu_liquid.mp4")
+NROUGE=$(nbf "$DL/video_flamme_rouge.mp4")
+# crop rim-safe : 44 rangees au-dessus du lisere du cadre arrondi source
+cuireBraise duo-flamme-blanche "$DL/Video rougeetbleu_liquid.mp4" "1080:386:0:1490" 70 $NBLANC
+cuireBraise duo-flamme-rouge   "$DL/video_flamme_rouge.mp4"       "2160:816:0:2976" 24 $NROUGE
+# (mort au §15 : cuireFeu duo-feu-blanc "1080:806:0:1114" 0.62 85)
 
 # --- LA FRONTIERE 2/3 : la capsule rouge ENTIERE (verdict 2e salve :
 # « ca doit etre le meme element »). Ecole rougebleu : plein pied, fenetre
@@ -189,9 +215,7 @@ cuireFeu duo-feu-blanc "$DL/Video rougeetbleu_liquid.mp4" "1080:806:0:1114" 0.62
 # duo-verre-rouge (le crop exos) est MORT : la continuite prime la parite.
 cuirePill duo-galet-rouge "$DL/Video rouge_liquid.mp4" "1778:3458:382:227" "1080x2100"
 
-# --- LE FEU UNIQUE 3/4 (la flamme rouge de la famille home) : meme loi,
-# gain x0,80 (S tient), decalage 72 frames (145 au total).
-cuireFeu duo-feu-rouge "$DL/video_flamme_rouge.mp4" "2160:1612:0:2224" 0.80 72
+# (mort au §15 : cuireFeu duo-feu-rouge "2160:1612:0:2224" 0.80 72)
 
 # --- la frontiere 4/5 : le galet rouge-et-bleu (l'autre nom menteur)
 cuirePill duo-galet-rougebleu "$DL/Video_Flamme_bleu_.mp4" "1812:3524:270:0" "1080x2100"
@@ -201,16 +225,16 @@ cuireA duo-flamme-bleue "$DL/video_flamme_bleu.mp4" "1080:592:0:1328" 0 "804x440
 pingpong "$TMP/duo-flamme-bleue-A.mp4" "$OUT/duo-flamme-bleue.mp4" $X264
 
 # ------------------------------------------------------------------ poses
-for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
-         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-flamme-blanche duo-galet-rouge \
+         duo-flamme-rouge duo-galet-rougebleu duo-flamme-bleue; do
   pose $n
 done
 
 # ------------------------------------------------- portillons (mesures)
 echo ""
 echo "== PORTILLONS J0 =="
-for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
-         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-flamme-blanche duo-galet-rouge \
+         duo-flamme-rouge duo-galet-rougebleu duo-flamme-bleue; do
   f="$OUT/$n.mp4"
   nf=$(nbf "$f")
   ffmpeg -y -v error -i "$f" -vf "select=eq(n\,0)" -vsync 0 "$TMP/$n-f0.png"
@@ -221,8 +245,8 @@ import numpy as np, os, glob
 from PIL import Image
 tmp = os.environ["TMP"]
 out = "../../Woop/Media"
-names = ["duo-galet-noir","duo-feu-blanc","duo-galet-rouge",
-         "duo-feu-rouge","duo-galet-rougebleu","duo-flamme-bleue"]
+names = ["duo-galet-noir","duo-flamme-blanche","duo-galet-rouge",
+         "duo-flamme-rouge","duo-galet-rougebleu","duo-flamme-bleue"]
 print(f"{'fichier':28s} {'couture':>8s} {'bordH p99':>10s} {'bordB p99':>10s} {'noir p50':>9s} {'Mo':>6s}")
 total = 0.0
 for n in names:
