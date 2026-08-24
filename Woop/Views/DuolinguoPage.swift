@@ -50,25 +50,23 @@ struct EcranSpec: Equatable, Identifiable {
         EcranSpec(id: 0,
                   haut: .init(nom: "duo-galet-noir", ratioHL: 1560.0/1206.0,
                               parallaxe: 0.10),
-                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 524.0/804.0)),
-        // ÉCRAN 2 — LA FLAMME SUSPENDUE
+                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 440.0/804.0)),
+        // ÉCRAN 2 — LA FLAMME SUSPENDUE (le bas = la frontière rouge 2/3)
         EcranSpec(id: 1,
-                  haut: .init(nom: "duo-flamme-blanche-haut", ratioHL: 646.0/804.0),
-                  bas: .init(nom: "duo-galet-rouge", ratioHL: 600.0/1206.0,
-                             parallaxe: 0.10)),
-        // ÉCRAN 3 — LE ROUGE (la parité exos, en matière)
-        EcranSpec(id: 2,
-                  haut: .init(nom: "duo-verre-rouge", ratioHL: 840.0/1206.0,
-                              parallaxe: 0.12),
-                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 600.0/804.0)),
-        // ÉCRAN 4 — LE FEU RENVERSÉ (le bas appartient à la frontière)
-        EcranSpec(id: 3,
-                  haut: .init(nom: "duo-flamme-rouge-haut", ratioHL: 608.0/804.0),
+                  haut: .init(nom: "duo-flamme-blanche-haut", ratioHL: 520.0/804.0),
                   bas: nil),
-        // ÉCRAN 5 — LE BLEU (le haut appartient à la frontière)
+        // ÉCRAN 3 — LE ROUGE (le haut = la frontière rouge 2/3)
+        EcranSpec(id: 2,
+                  haut: nil,
+                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 540.0/804.0)),
+        // ÉCRAN 4 — LE FEU RENVERSÉ (le bas = la frontière 4/5)
+        EcranSpec(id: 3,
+                  haut: .init(nom: "duo-flamme-rouge-haut", ratioHL: 540.0/804.0),
+                  bas: nil),
+        // ÉCRAN 5 — LE BLEU (le haut = la frontière 4/5)
         EcranSpec(id: 4,
                   haut: nil,
-                  bas: .init(nom: "duo-flamme-bleue", ratioHL: 466.0/804.0)),
+                  bas: .init(nom: "duo-flamme-bleue", ratioHL: 440.0/804.0)),
     ]
 
     /// LE SERPENTIN (J3) — les 11 étapes, posées dans la bande noire
@@ -87,7 +85,7 @@ struct EcranSpec: Equatable, Identifiable {
         EtapeSpec(id: 0, ecran: 0, dx: 0, y: 542),
         EtapeSpec(id: 1, ecran: 1, dx: -58, y: 385),
         EtapeSpec(id: 2, ecran: 1, dx: 52, y: 500),
-        EtapeSpec(id: 3, ecran: 1, dx: -40, y: 615),
+        EtapeSpec(id: 3, ecran: 1, dx: -45, y: 580),
         EtapeSpec(id: 4, ecran: 2, dx: 55, y: 350),
         EtapeSpec(id: 5, ecran: 2, dx: -50, y: 480),
         EtapeSpec(id: 6, ecran: 3, dx: 45, y: 360),
@@ -97,16 +95,33 @@ struct EcranSpec: Equatable, Identifiable {
         EtapeSpec(id: 10, ecran: 4, dx: 0, y: 590, tresor: true),
     ]
 
-    /// LA FRONTIÈRE 4/5 : une seule fenêtre à cheval sur la couture, ancrée
-    /// trailing — le dôme rouge vit au bas de l'écran 4, le ventre bleu au
-    /// haut de l'écran 5, et c'est le scroll qui fait le voyage (LOI 1).
-    /// CLOUÉE en J1 (parallaxe 0) : un objet à cheval sur deux poses n'a pas
-    /// de repos unique — sa chorégraphie (courbe en S) est la partition J4.
-    static let frontiere = FenetreSpec(nom: "duo-galet-rougebleu",
-                                       ratioHL: 2100.0/1080.0,
-                                       parallaxe: 0)
-    /// Largeur de la frontière en fraction de l'écran (360/402 de la maquette).
-    static let frontiereLargeur: CGFloat = 360.0 / 402.0
+    /// LES FRONTIÈRES (2e salve : « ça doit être le même élément ») — une
+    /// fenêtre pleine capsule à cheval sur chaque couture de verre, et
+    /// c'est le scroll qui fait le voyage (LOI 1). La rouge monte du
+    /// bas-GAUCHE de l'écran 2 vers le haut de l'écran 3 ; la rouge-et-bleu
+    /// du bas-droite de l'écran 4 vers le haut de l'écran 5. Une seule
+    /// mécanique, deux instances.
+    struct FrontiereSpec: Identifiable {
+        let id: Int
+        let nom: String
+        let ratioHL: CGFloat
+        /// Largeur en fraction d'écran (360/402 de la maquette).
+        let largeurFrac: CGFloat
+        /// La couture chevauchée : centre de la fenêtre à `couture × H`.
+        let couture: Int
+        let bord: Alignment
+        var pose: String { nom + "-poster" }
+        var ecrans: [Int] { [couture - 1, couture] }
+    }
+
+    static let frontieres: [FrontiereSpec] = [
+        FrontiereSpec(id: 0, nom: "duo-galet-rouge",
+                      ratioHL: 2100.0/1080.0, largeurFrac: 360.0/402.0,
+                      couture: 2, bord: .leading),
+        FrontiereSpec(id: 1, nom: "duo-galet-rougebleu",
+                      ratioHL: 2100.0/1080.0, largeurFrac: 360.0/402.0,
+                      couture: 4, bord: .trailing),
+    ]
 }
 
 // MARK: - L'état
@@ -118,8 +133,8 @@ struct EcranSpec: Equatable, Identifiable {
 @Observable final class EtatDuo {
     /// Quels lecteurs vivent : un par écran (l'écran courant + l'entrant).
     var lecture: [Bool] = [true, true, false, false, false]
-    /// Le lecteur de la fenêtre frontière 4/5.
-    var lectureFrontiere = false
+    /// Les lecteurs des fenêtres frontières (2/3 rouge, 4/5 rouge-bleu).
+    var lectureFrontieres: [Bool] = [false, false]
     /// Le gel du banc (`-duoFreeze`) et de reduceMotion : tout à l'arrêt.
     var gel = false
     /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
@@ -141,28 +156,33 @@ struct EcranSpec: Equatable, Identifiable {
             let veut = !gel && (i == a || i == b)
             if lecture[i] != veut { lecture[i] = veut }
         }
-        let front = !gel && (a == 3 || b == 3 || a == 4 || b == 4)
-        if lectureFrontiere != front { lectureFrontiere = front }
+        for f in EcranSpec.frontieres {
+            let veut = !gel && f.ecrans.contains(where: { $0 == a || $0 == b })
+            if lectureFrontieres[f.id] != veut { lectureFrontieres[f.id] = veut }
+        }
         let pose = Int((y / hauteur).rounded())
         let borne = max(0, min(4, pose))
         if ecranCourant != borne { ecranCourant = borne }
-        // LA BASCULE ROUGE → BLEU (partition J4) : quand la couture 4/5
-        // traverse le centre du viewport (y = 3,5 H), UNE haptique légère —
-        // hystérésis de 60 pt, une seule par traversée.
-        let seuil = 3.5 * hauteur
+        // LA BASCULE d'une frontière (partition J4, généralisée 2e salve) :
+        // quand SA couture traverse le centre du viewport, UNE haptique
+        // légère — hystérésis 60 pt, une par traversée.
         if !gel {
-            let avant = yPrecedent < seuil
-            let apres = y < seuil
-            if avant != apres, abs(y - derniereBascule) > 60 {
-                derniereBascule = y
-                UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+            for f in EcranSpec.frontieres {
+                let seuil = (CGFloat(f.couture) - 0.5) * hauteur
+                let avant = yPrecedent < seuil
+                let apres = y < seuil
+                if avant != apres, abs(y - dernieresBascules[f.id]) > 60 {
+                    dernieresBascules[f.id] = y
+                    UIImpactFeedbackGenerator(style: .light)
+                        .impactOccurred(intensity: 0.7)
+                }
             }
         }
         yPrecedent = y
     }
 
     @ObservationIgnored private var yPrecedent: CGFloat = 0
-    @ObservationIgnored private var derniereBascule: CGFloat = -10_000
+    @ObservationIgnored private var dernieresBascules: [CGFloat] = [-10_000, -10_000]
 }
 
 /// LA SONDE — une seule, composée : le champ vivant (y) emporte le stable
@@ -302,6 +322,18 @@ private struct FenetreVideo: View {
     /// minY = 674 au repos — le minY nu la décalait de −67 pt à la pose
     /// (mesuré : le dôme rouge remontait dans la bande du chemin).
     let restY: CGFloat
+    /// La hauteur d'écran (l'échelle des rideaux).
+    let hauteur: CGFloat
+    /// Les POSES de la fenêtre, en déplacement d = minY − restY : {0} pour
+    /// une fenêtre d'écran, {0, −H} pour une frontière (deux chez-elle).
+    var poses: [CGFloat] = [0]
+    /// LES RIDEAUX (2e salve : la fin du « coupé/carré ») — le côté
+    /// bord-d'écran de chaque fenêtre est TRANCHÉ net dès qu'il voyage
+    /// dans le viewport. Un gradient noir toujours monté sur ce côté,
+    /// dont l'OPACITÉ seule est pilotée par la distance à la pose la plus
+    /// proche : 0 chez soi (la maquette intacte), 1 en voyage — la
+    /// matière fond dans le noir AVANT que sa ligne de coupe n'entre.
+    var rideaux: [Edge] = []
     let joue: Bool
 
     var body: some View {
@@ -311,6 +343,24 @@ private struct FenetreVideo: View {
                 CalqueVideoPilote(nom: spec.nom, pose: spec.pose,
                                   rate: joue ? 1.0 : 0.0)
             }
+            .overlay {
+                ZStack {
+                    ForEach(rideaux, id: \.self) { bord in
+                        rideau(bord)
+                            .visualEffect { [restY, poses, hauteur] c, p in
+                                let d = p.frame(in: .scrollView).minY - restY
+                                let dist = poses.map { abs(d - $0) }.min() ?? 0
+                                // Rampe COURTE (0,10 H) : l'arête entre dans
+                                // le viewport dès le premier point de voyage —
+                                // à 0,25 H le rideau arrivait trop tard
+                                // (mesuré : coupe résiduelle 45).
+                                let u = min(1, max(0, dist / (0.10 * hauteur)))
+                                return c.opacity(Double(u * u * (3 - 2 * u)))
+                            }
+                    }
+                }
+                .allowsHitTesting(false)
+            }
             .clipped()
             // La parallaxe : le verre est lourd, il prend du retard sur le
             // doigt. Tout se lit dans le proxy — zéro invalidation.
@@ -318,6 +368,18 @@ private struct FenetreVideo: View {
                 let d = proxy.frame(in: .scrollView).minY - restY
                 return contenu.offset(y: -d * parallaxe)
             }
+    }
+
+    private func rideau(_ bord: Edge) -> some View {
+        LinearGradient(
+            stops: bord == .top
+                ? [.init(color: .black, location: 0),
+                   .init(color: .black, location: 0.14),
+                   .init(color: .black.opacity(0), location: 0.44)]
+                : [.init(color: .black.opacity(0), location: 0.56),
+                   .init(color: .black, location: 0.86),
+                   .init(color: .black, location: 1)],
+            startPoint: .top, endPoint: .bottom)
     }
 }
 
@@ -337,7 +399,8 @@ private struct EcranDuo: View {
                 Color.black
                 if let haut = spec.haut {
                     FenetreVideo(spec: haut, largeur: g.size.width,
-                                 restY: 0, joue: joue)
+                                 restY: 0, hauteur: g.size.height,
+                                 rideaux: [.top], joue: joue)
                         .offset(x: haut.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .top)
@@ -345,7 +408,8 @@ private struct EcranDuo: View {
                 if let bas = spec.bas {
                     FenetreVideo(spec: bas, largeur: g.size.width,
                                  restY: g.size.height - g.size.width * bas.ratioHL,
-                                 joue: joue)
+                                 hauteur: g.size.height,
+                                 rideaux: [.bottom], joue: joue)
                         .offset(x: bas.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
@@ -361,7 +425,9 @@ private struct EcranDuo: View {
                     .visualEffect { contenu, proxy in
                         let f = proxy.frame(in: .scrollView)
                         let sortie = max(0, min(1, -f.minY / max(1, f.height)))
-                        return contenu.opacity(Double(sortie) * 0.12)
+                        // 2e salve : 12 % ne suffisait pas — l'écran qui
+                        // part s'éteint franchement (LOI 1 renforcée).
+                        return contenu.opacity(Double(sortie) * 0.35)
                     }
                     .allowsHitTesting(false)
             }
@@ -529,7 +595,6 @@ struct DuolinguoPage: View {
         // encoche de ZÉRO).
         GeometryReader { g in
             let hauteur = g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom
-            let largeurFront = g.size.width * EcranSpec.frontiereLargeur
             ScrollView(.vertical) {
                 VStack(spacing: 0) {
                     ForEach(EcranSpec.les5) { spec in
@@ -538,36 +603,40 @@ struct DuolinguoPage: View {
                     }
                 }
                 .scrollTargetLayout()
-                // LA FRONTIÈRE 4/5 — DANS le scroll (hors du scroll, la
+                // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
                 // sonde a une frame de retard : le galet glisserait contre
                 // ses écrans — la marche à la couture). Offset CONSTANT en
-                // coordonnées de contenu : le centre de la fenêtre sur la
-                // couture, à y = 4 × hauteur. Sous le chemin (J2+), au-dessus
-                // des écrans.
+                // coordonnées de contenu : le centre de chaque fenêtre sur
+                // SA couture. Sous le chemin, au-dessus des écrans.
                 .overlay(alignment: .top) {
-                    let hFront = largeurFront * EcranSpec.frontiere.ratioHL
-                    let restFront = hauteur - hFront / 2
-                    FenetreVideo(spec: EcranSpec.frontiere,
-                                 largeur: largeurFront,
-                                 restY: restFront,
-                                 joue: etatFrontiere)
-                        // LA COURBE EN S (partition J4) : le morceau de
-                        // bravoure s'attarde au centre du viewport — un
-                        // retard en sin(π·u) qui culmine à mi-traversée
-                        // (+0,08 H) et meurt aux deux poses, une houle
-                        // d'échelle de 2 %. Tout dans le proxy, zéro
-                        // invalidation.
-                        .visualEffect { [restFront, hauteur] contenu, proxy in
-                            let d = restFront - proxy.frame(in: .scrollView).minY
-                            let u = max(0, min(1, d / hauteur))
-                            let s = sin(.pi * u)
-                            return contenu
-                                .offset(y: 0.08 * hauteur * s)
-                                .scaleEffect(1 + 0.02 * s)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .offset(y: 4 * hauteur - hFront / 2)
-                        .allowsHitTesting(false)
+                    ForEach(EcranSpec.frontieres) { f in
+                        let lf = g.size.width * f.largeurFrac
+                        let hF = lf * f.ratioHL
+                        let restF = hauteur - hF / 2
+                        FenetreVideo(spec: .init(nom: f.nom, ratioHL: f.ratioHL),
+                                     largeur: lf,
+                                     restY: restF,
+                                     hauteur: hauteur,
+                                     poses: [0, -hauteur],
+                                     rideaux: [.top, .bottom],
+                                     joue: etat.lectureFrontieres[f.id])
+                            // LA COURBE EN S (partition J4) : le morceau de
+                            // bravoure s'attarde au centre du viewport — un
+                            // retard en sin(π·u) culminant à +0,08 H à
+                            // mi-traversée, mort aux deux poses, une houle
+                            // d'échelle de 2 %. Tout dans le proxy.
+                            .visualEffect { [restF, hauteur] contenu, proxy in
+                                let d = restF - proxy.frame(in: .scrollView).minY
+                                let u = max(0, min(1, d / hauteur))
+                                let s = sin(.pi * u)
+                                return contenu
+                                    .offset(y: 0.08 * hauteur * s)
+                                    .scaleEffect(1 + 0.02 * s)
+                            }
+                            .frame(maxWidth: .infinity, alignment: f.bord)
+                            .offset(y: CGFloat(f.couture) * hauteur - hF / 2)
+                            .allowsHitTesting(false)
+                    }
                 }
                 // LE CHEMIN — au-dessus du verre vidéo, DANS le scroll.
                 .overlay(alignment: .top) {
@@ -640,10 +709,6 @@ struct DuolinguoPage: View {
             }
         }
     }
-
-    /// Le corps ne lit pas `etat`… sauf ce booléen discret de la frontière,
-    /// isolé ici pour que seule la fenêtre frontière se réévalue.
-    private var etatFrontiere: Bool { etat.lectureFrontiere }
 
     /// `-duoAuto` : l'aller-retour filmé 1 → 5 → 1, une pose par écran —
     /// le film du fouettage (école `-porteAuto` : scrollTo dans withAnimation).

@@ -628,6 +628,141 @@ sortants étaient déjà posés depuis J1. Se juge AU DOIGT et au téléphone
 
 ---
 
+## 11. LE TOUR DE VERDICTS DU 24-08 (2ᵉ salve) — LES TRANSITIONS
+
+Trois captures de Kathryn en plein scroll. Les verdicts verbatim :
+
+> « la pills rouge n'est pas dans le même sens et au scroll c'est horrible
+> c'est coupé, ça doit être le même élément : trouve une solution pour
+> avoir la même continuité et surtout un magnifique effet fondu au
+> scroll ! là c'est cheap ! »
+
+> « pour les flammes haut et bas c'est horrible, autant les blanches que
+> les rouges : les blanches sont trop hautes dans l'écran (en bas comme en
+> haut) et leur effet n'est pas fondu dans le noir — il faut baisser la
+> vidéo et diminuer leur force blanche, c'est trop ; on voit pour toutes
+> les flammes l'effet coupé/moche/carré ; un gros manque de fluidité, de
+> fondu et de cohérence »
+
+**Le diagnostic (mesuré sur ses captures)** : chaque fenêtre est cuite
+pour que son bord lumineux tombe sur un bord d'ÉCRAN à la pose — pendant
+la transition, ce bord voyage au MILIEU du viewport et la matière est
+tranchée net (le dôme rouge coupé à l'équateur, les nappes de flammes en
+rectangles à couture dure). Les portillons J1 mesuraient les arêtes À LA
+POSE : ils étaient aveugles au voyage. Et la couture 2/3 montre DEUX
+verres différents (le dôme de l'écran 2 + le verre exos qui voyage) là où
+l'annotation « continuation » de la maquette a toujours voulu dire UN
+SEUL élément — la « parité exos » était mon raccourci, il meurt.
+
+### R1 — LA PILL ROUGE DEVIENT LA DEUXIÈME FRONTIÈRE (couture 2/3)
+
+- `duo-verre-rouge` (le crop exos) **MEURT sur cette page**. La continuité
+  prime la maquette É3 (la loi du 24-08 : les maquettes sont des guides).
+- Nouvelle cuisson : `duo-galet-rouge` v2 = la capsule ENTIÈRE de
+  `Video rouge_liquid.mp4`, école rougebleu (crop plein pied au ratio
+  d'une fenêtre frontière ~360×700), **ancrée à GAUCHE** (le dôme monte du
+  bas-gauche de l'écran 2 comme la maquette ; le ventre ambre occupe le
+  haut de l'écran 3). L'actuel `duo-galet-rouge` (dôme seul) meurt aussi.
+- La fenêtre = un chevauchant de couture 2/3, EXACTEMENT l'école 4/5 :
+  overlay dans le scroll, offset constant (centre = 2 H), courbe en S,
+  houle 2 %, haptique de bascule. Le code se généralise :
+  `FrontiereSpec { couture, fichier, largeur, ancrage }` × 2 — une seule
+  mécanique, deux instances.
+- Bilan lecteurs : 8 fenêtres au lieu de 9, budget décodeur en baisse.
+- L'écran 3 garde son nom (« Le rouge ») ; son haut = le ventre du galet
+  + le noir. EcranSpec et la bande du chemin de l'écran 3 se recalent
+  après cuisson (numpy, comme toujours).
+
+### R2 — LES RIDEAUX DE COUTURE (le fondu vivant, la fin du « carré »)
+
+- **Chaque fenêtre porte un RIDEAU** : un calque LinearGradient noir sur
+  son côté bord-d'écran (bas pour les fenêtres basses et les dômes
+  montants, haut pour les fenêtres hautes), hauteur ~38 % de la fenêtre,
+  TOUJOURS monté — seule son OPACITÉ est pilotée, en visualEffect (zéro
+  invalidation) : **0 à la pose** (la flamme touche son bord, la maquette
+  est intacte), **→ 1 en smoothstep sur |déplacement|/0,25 H** dès que la
+  fenêtre quitte sa pose. La matière fond dans le noir AVANT que sa ligne
+  de coupe n'entre dans le viewport — le « magnifique effet fondu au
+  scroll » demandé, sans toucher aux fichiers.
+- Le voile sortant uniforme passe de 12 % à ~35 % (rampe conservée) : ce
+  qui reste de l'écran qui part s'éteint franchement (LOI 1 renforcée).
+- Les frontières chevauchantes (2/3 et 4/5) gardent leurs rideaux aux
+  DEUX bouts de leur grande fenêtre (leurs scrims cuits existent, le
+  rideau vivant s'y ajoute pendant le voyage).
+- **Nouveau portillon de fouettage — le détecteur de COUPE** : sur le film
+  de chaque couture, le gradient vertical maximal du viewport (numpy, par
+  frame) ne dépasse jamais le seuil d'une arête franche (à calibrer sur
+  les captures d'aujourd'hui : elles sont le contre-exemple mesurable).
+  Les portillons d'arêtes se mesurent désormais À LA POSE **ET à
+  mi-transition**.
+
+### R3 — LES FLAMMES RECUITES : plus basses, plus faibles, fondues
+
+- **« Baisser la vidéo »** : le crop des blanches descend dans la source
+  (une bande plus basse : les plumes culminent plus bas) et les fenêtres
+  raccourcissent — blanche basse 262 → ~220 pt (crête ≤ 30 % de l'écran à
+  la pose), blanche haute 323 → ~260 pt. Rouges : 300/304 → ~270 pt
+  (cohérence).
+- **« Diminuer la force blanche »** : gain de luminance ~×0,62 au recuit
+  des blanches (curves dans le graphe — N&B pur, pas de risque de teinte) ;
+  rouges ~×0,80 en TENANT LA SATURATION (la loi anti-brun : on désature
+  jamais en baissant, on tient S).
+- **Les extinctions cuites s'allongent** : le fondu intérieur passe de
+  90 px à ~45 % de la hauteur du fichier, smoothstep — la flamme meurt
+  dans le noir bien avant sa ligne de coupe (le « pas fondu dans le
+  noir »).
+- Portillons par fichier : profil de luminance vertical (L max des plumes
+  blanches ≤ ~150 ; crête sous 30 % de l'écran à la pose ; rangée de
+  coupe intérieure p99 ≤ 2) ; les bandes du chemin re-mesurées (elles
+  RESPIRENT mieux — les flammes plus basses libèrent du noir).
+
+### R4 — LA COHÉRENCE DES COUTURES DE FLAMMES (1/2 et 3/4)
+
+Avec R2+R3, une couture de flammes devient : flamme basse fondue → noir →
+flamme haute fondue (le sandwich noir) ; le déphasage cuit du palindrome
+évite le miroir. Si le film lit encore « deux objets » : en réserve, le
+rideau ASYMÉTRIQUE (l'entrante retient son rideau 0,1 H de plus que la
+sortante — jamais deux flammes pleines dans le même viewport).
+
+### L'ordre de la salve (un commit, un banc, un verdict chacun)
+
+| # | Ce qu'on juge | Portillons |
+|---|---|---|
+| **V1 — le recuit** | duo-galet-rouge v2 (frontière) + les 4 flammes recuites, previews contre maquettes | portillons R3 chiffrés ; couture palindrome ≤ 2 ; poids |
+| **V2 — la frontière 2/3** | FrontiereSpec ×2, mort de duo-verre-rouge, EcranSpec recalé | la continuité au film : UN élément du dôme au ventre, delta ≤ 1 pt à la couture |
+| **V3 — les rideaux** | rideaux vivants + voile 35 % | détecteur de COUPE : zéro arête franche à mi-transition, sur les 4 coutures filmées |
+| **V4 — le fouettage de salve** | l'aller-retour complet | flash en V + coupe + cadence ; verdict Kathryn sim puis téléphone |
+
+### V1→V4 — LIVRÉS LE 24-08 (même session, commit de salve)
+
+**Mesuré — le détecteur de COUPE (saut de rangée max, milieu du viewport,
+frames de transition seulement, films 20 img/s)** :
+
+| état | coupe max | p95 | médiane |
+|---|---|---|---|
+| AVANT la salve (le film des captures de Kathryn) | 132,9 | 113,2 | 14,8 |
+| rideaux à rampe 0,25 H | 44,7 | 21,2 | 11,1 |
+| **rideaux à rampe 0,10 H (livré)** | **21,5** | **17,5** | **5,0** |
+
+Zéro flash en V hors lancement. Cuisson : coutures ≤ 1,71/255, blanches
+affaiblies (bord d'écran 157 contre 254), frontière rouge propre aux deux
+bouts (0,0/0,0), total 21,3 Mo.
+
+**Pièges payés (nouveaux)** :
+11. **La rampe du rideau se règle sur l'ARÊTE, pas sur le voyage** :
+    l'arête entre dans le viewport dès le premier point de déplacement —
+    une rampe 0,25 H laissait 200 pt de voyage à découvert (coupe 45) ;
+    0,10 H la tue (21,5).
+12. **Le détecteur de coupe a des faux positifs au LANCEMENT** (le zoom
+    d'app pose des arêtes énormes) : la fenêtre de mesure commence après
+    l'accalmie, et se croise avec le masque de MOUVEMENT (> 1,2 de delta
+    moyen) pour ne juger que les transitions.
+
+**Reste ouvert (salve)** : le press à mi-transition (dalle mi-fondue vue
+au film — vérifier le retour de pose au doigt) ; verdicts téléphone.
+
+---
+
 ## 10. LES ARBITRAGES EN ATTENTE (verdicts Kathryn — les défauts sont posés,
 rien n'est codé avant J-concerné)
 

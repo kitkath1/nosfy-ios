@@ -1,6 +1,6 @@
 #!/bin/zsh
-# LA CUISSON DE LA DUOLINGUO_PAGE (24-08) — produit les 9 fichiers
-# Woop/Media/duo-*.mp4 + leurs 9 poses, depuis les sources de Kathryn.
+# LA CUISSON DE LA DUOLINGUO_PAGE (24-08, 2e salve) — produit les 8
+# fichiers Woop/Media/duo-*.mp4 + leurs 8 poses, depuis les sources.
 # Plan : tools/duolingo/PLAN-DUOLINGUO.md §3. Les pieges payes qu'on ne
 # repaie pas :
 #  1. JAMAIS -ss : tout trim/roll DANS le graphe (trim+setpts). Un fondu
@@ -18,8 +18,9 @@
 #     PALINDROME (jamais de la source brute : sa coupure native PSNR
 #     15-22 dB se cuirait au coeur de la boucle). Pas de ralenti :
 #     minterpolate blend fabrique des fantomes sur les plumes.
-#  7. duo-verre-rouge = CROP du fichier exos deja cuit (ralenti x3, scrim
-#     et boucle embarques) — le fichier entier a 137 Mpix/s est interdit.
+#  7. DEUX FRONTIERES pleine capsule (2/3 rouge a gauche, 4/5 rouge-bleu a
+#     droite) — verdict 2e salve : la continuite prime tout, le crop exos
+#     (duo-verre-rouge) est mort.
 set -e
 cd "$(dirname "$0")"
 OUT=../../Woop/Media
@@ -44,14 +45,24 @@ cuirePill() { # $1 nom  $2 source  $3 crop  $4 WxH
     -map "[out]" $X264P "$OUT/$1.mp4"
 }
 
+# LE GAIN (verdict 24-08 2e salve : « diminue leur force ») : les trois
+# canaux ensemble — la SATURATION tient (min/max scalent pareil), la loi
+# anti-brun est sauve. En RGB, jamais sur les plans YUV.
+gainStep() { # $1 gain -> imprime le bout de graphe
+  echo "format=gbrp,lutrgb=r=val*$1:g=val*$1:b=val*$1,"
+}
+
 nbf() { ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of csv=p=0 "$1" }
 
 # ------------------------------------------------------------- fonctions
-# etape A : crop (+flip) + scale + scrim -> master crf 16
-cuireA() { # $1 nom  $2 source  $3 crop  $4 flip(0/1)  $5 WxH
+# etape A : crop (+flip) + scale (+gain) + scrim -> master crf 16
+cuireA() { # $1 nom  $2 source  $3 crop  $4 flip(0/1)  $5 WxH  [$6 gain]
   local flt="crop=$3"
   [[ "$4" == "1" ]] && flt="$flt,vflip,hflip"
   flt="$flt,scale=${5/x/:}"
+  if [[ -n "$6" ]]; then
+    flt="$flt,$(gainStep $6)format=yuv420p"
+  fi
   ffmpeg -y -v error -i "$2" -i "$TMP/scrim-$1.png" \
     -filter_complex "[0:v]${flt}[v];[v][1:v]overlay=0:0,format=yuv420p[out]" \
     -map "[out]" $MASTER "$TMP/$1-A.mp4"
@@ -104,16 +115,18 @@ def scrim(name, W, H, top, bottom):
     img = np.zeros((H, W, 4), dtype=np.uint8)
     img[..., 3] = np.broadcast_to((np.clip(a,0,1)*255).astype(np.uint8), (H, W))
     Image.fromarray(img).save(os.path.join(os.environ["TMP_SCRIM"], f"scrim-{name}.png"))
+# 2e salve 24-08 : les extinctions interieures passent a ~45 % de la
+# hauteur (« pas fondu dans le noir ») ; duo-verre-rouge est MORT ;
+# duo-galet-rouge devient une frontiere pleine capsule (90/90).
 for spec in [
     ("duo-galet-noir",          1206, 1560,   0, 130),
-    ("duo-flamme-blanche",       804,  524,  90,   0),
-    ("duo-flamme-blanche-haut",  804,  646,   0,  90),
-    ("duo-galet-rouge",         1206,  600,  80,   0),
-    ("duo-verre-rouge",         1206,  840,   0, 110),
-    ("duo-flamme-rouge",         804,  600,  90,   0),
-    ("duo-flamme-rouge-haut",    804,  608,   0,  90),
+    ("duo-flamme-blanche",       804,  440, 198,   0),
+    ("duo-flamme-blanche-haut",  804,  520,   0, 234),
+    ("duo-galet-rouge",         1080, 2100,  90,  90),
+    ("duo-flamme-rouge",         804,  540, 243,   0),
+    ("duo-flamme-rouge-haut",    804,  540,   0, 243),
     ("duo-galet-rougebleu",     1080, 2100,  90,  90),
-    ("duo-flamme-bleue",         804,  466,  90,   0),
+    ("duo-flamme-bleue",         804,  440, 198,   0),
 ]:
     scrim(*spec)
 EOF
@@ -127,41 +140,41 @@ DL=~/Downloads
 cuirePill duo-galet-noir "$DL/Video noir_liquid.mp4" "1292:1672:440:1557" "1206x1560"
 
 # --- ecran 1 bas / 2 haut : la flamme blanche (le fichier au nom menteur)
-cuireA duo-flamme-blanche "$DL/Video rougeetbleu_liquid.mp4" "1080:704:0:1216" 0 "804x524"
+# 2e SALVE : « trop haute, trop forte » -> bande la plus BASSE de la
+# source, fenetre 220 pt, gain x0,62, extinction interieure 45 %.
+cuireA duo-flamme-blanche "$DL/Video rougeetbleu_liquid.mp4" "1080:592:0:1328" 0 "804x440" 0.62
 pingpong "$TMP/duo-flamme-blanche-A.mp4" "$OUT/duo-flamme-blanche.mp4" $X264
-cuireA duo-flamme-blanche-haut "$DL/Video rougeetbleu_liquid.mp4" "1080:868:0:1052" 1 "804x646"
+cuireA duo-flamme-blanche-haut "$DL/Video rougeetbleu_liquid.mp4" "1080:698:0:1222" 1 "804x520" 0.62
 pingpong "$TMP/duo-flamme-blanche-haut-A.mp4" "$TMP/duo-flamme-blanche-haut-P.mp4" $MASTER
 roll "$TMP/duo-flamme-blanche-haut-P.mp4" "$OUT/duo-flamme-blanche-haut.mp4"
 
-# --- ecran 2 bas : le dome du galet rouge (decale a gauche, cadrage CUIT)
-# MESURE 24-08 : capsule x 528-1718 (centre 1123), sommet y 642. Le dome de
-# la maquette fait ~65 % de la largeur, centre a 0,37.
-cuirePill duo-galet-rouge "$DL/Video rouge_liquid.mp4" "1214:604:674:582" "1206x600"
-
-# --- ecran 3 haut : le crop du fond exos (boucle, ralenti et scrim embarques)
-# MESURE 24-08 (frame 420, mi-boucle : le verre ENTRE progressivement) : le
-# verre vit a y 979-1900, pic de lumiere y 1711 — le crop demarre a 850.
-ffmpeg -y -v error -i "$OUT/exos-fond-loop.mp4" -i "$TMP/scrim-duo-verre-rouge.png" \
-  -filter_complex "[0:v]crop=1300:906:0:965,scale=1206:840[v];[v][1:v]overlay=0:0,format=yuv420p[out]" \
-  -map "[out]" $X264 "$OUT/duo-verre-rouge.mp4"
+# --- LA FRONTIERE 2/3 : la capsule rouge ENTIERE (verdict 2e salve :
+# « ca doit etre le meme element »). Ecole rougebleu : plein pied, fenetre
+# 360x700 ancree a GAUCHE. MESURE : capsule x 528-1718 (centre 1123),
+# y 642-3081 ; le centre de la capsule a 0,417 de la fenetre (dome au
+# bas-gauche de l'ecran 2, la maquette), sommet a 12 % du crop.
+# duo-verre-rouge (le crop exos) est MORT : la continuite prime la parite.
+cuirePill duo-galet-rouge "$DL/Video rouge_liquid.mp4" "1778:3458:382:227" "1080x2100"
 
 # --- ecran 3 bas / 4 haut : la flamme rouge de la famille home
-cuireA duo-flamme-rouge "$DL/video_flamme_rouge.mp4" "2160:1612:0:2224" 0 "804x600"
+# 2e SALVE : fenetre 270 pt, gain x0,80 (les canaux ensemble : S tient),
+# extinction 45 %.
+cuireA duo-flamme-rouge "$DL/video_flamme_rouge.mp4" "2160:1450:0:2386" 0 "804x540" 0.80
 pingpong "$TMP/duo-flamme-rouge-A.mp4" "$OUT/duo-flamme-rouge.mp4" $X264
-cuireA duo-flamme-rouge-haut "$DL/video_flamme_rouge.mp4" "2160:1632:0:2203" 1 "804x608"
+cuireA duo-flamme-rouge-haut "$DL/video_flamme_rouge.mp4" "2160:1450:0:2386" 1 "804x540" 0.80
 pingpong "$TMP/duo-flamme-rouge-haut-A.mp4" "$TMP/duo-flamme-rouge-haut-P.mp4" $MASTER
 roll "$TMP/duo-flamme-rouge-haut-P.mp4" "$OUT/duo-flamme-rouge-haut.mp4"
 
 # --- la frontiere 4/5 : le galet rouge-et-bleu (l'autre nom menteur)
 cuirePill duo-galet-rougebleu "$DL/Video_Flamme_bleu_.mp4" "1812:3524:270:0" "1080x2100"
 
-# --- ecran 5 bas : la flamme bleue
-cuireA duo-flamme-bleue "$DL/video_flamme_bleu.mp4" "1080:626:0:1294" 0 "804x466"
+# --- ecran 5 bas : la flamme bleue (alignee sur la salve : 220 pt, x0,85)
+cuireA duo-flamme-bleue "$DL/video_flamme_bleu.mp4" "1080:592:0:1328" 0 "804x440" 0.85
 pingpong "$TMP/duo-flamme-bleue-A.mp4" "$OUT/duo-flamme-bleue.mp4" $X264
 
 # ------------------------------------------------------------------ poses
 for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut \
-         duo-galet-rouge duo-verre-rouge duo-flamme-rouge \
+         duo-galet-rouge duo-flamme-rouge \
          duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
   pose $n
 done
@@ -170,7 +183,7 @@ done
 echo ""
 echo "== PORTILLONS J0 =="
 for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut \
-         duo-galet-rouge duo-verre-rouge duo-flamme-rouge \
+         duo-galet-rouge duo-flamme-rouge \
          duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
   f="$OUT/$n.mp4"
   nf=$(nbf "$f")
@@ -183,7 +196,7 @@ from PIL import Image
 tmp = os.environ["TMP"]
 out = "../../Woop/Media"
 names = ["duo-galet-noir","duo-flamme-blanche","duo-flamme-blanche-haut",
-         "duo-galet-rouge","duo-verre-rouge","duo-flamme-rouge",
+         "duo-galet-rouge","duo-flamme-rouge",
          "duo-flamme-rouge-haut","duo-galet-rougebleu","duo-flamme-bleue"]
 print(f"{'fichier':28s} {'couture':>8s} {'bordH p99':>10s} {'bordB p99':>10s} {'noir p50':>9s} {'Mo':>6s}")
 total = 0.0
@@ -200,4 +213,4 @@ for n in names:
 print(f"{'TOTAL':28s} {'':8s} {'':10s} {'':10s} {'':9s} {total:6.1f}")
 EOF
 echo ""
-echo "cuit -> Woop/Media/duo-*.mp4 (9) + Assets duo-*-poster (9)"
+echo "cuit -> Woop/Media/duo-*.mp4 (8) + Assets duo-*-poster (8)"
