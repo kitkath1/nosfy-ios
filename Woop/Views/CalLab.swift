@@ -2315,6 +2315,14 @@ private struct MoisIpod: View {
     /// Le souffle du play : l'écran s'agrandit d'un cran, la molette
     /// se retire — le temps que le portail prenne l'écran.
     @State private var grandEcran: CGFloat = 0
+    /// LE TIRAGE écran→pill (verdict 24-08) : 0 = la molette, 1 = la
+    /// pill de commande. Piloté au doigt (drag vertical de l'écran),
+    /// aimanté au relâcher.
+    @State private var tirage: CGFloat = 0
+    @State private var tirageBase: CGFloat? = nil
+    /// L'axe du drag d'écran, verrouillé au premier mouvement
+    /// (0 indécis, 1 horizontal = crans, 2 vertical = tirage).
+    @State private var axeEcran: Int = 0
     // LA CINÉMATIQUE D'ARRIVÉE (l'école « Tout voir ») : la phrase du
     // mois écrite par ILLUMINATION avant le carrousel. Tap = skip.
     @State private var cineEcranP: CGFloat = 0
@@ -2418,6 +2426,10 @@ private struct MoisIpod: View {
         CommandLine.arguments.contains("-molAnneau")
     private static let molNoir =
         CommandLine.arguments.contains("-molNoir")
+    /// Banc de la pill : `-ipodPill` ouvre la page molette RANGÉE
+    /// (tirage = 1) — le sim ne sait pas faire le drag vertical.
+    private static let pillLab =
+        CommandLine.arguments.contains("-ipodPill")
 
     var body: some View {
         // LE PORTAIL : la page entière naît du rect de la card — un
@@ -2508,6 +2520,11 @@ private struct MoisIpod: View {
                 // LE BLOC DU BAS : la matrice de points au-dessus de
                 // la roue, posées à MÊME le corps blanc — un iPod n'a
                 // qu'une seule coque, le socle de verre est mort.
+                // LE TIRAGE (verdict 24-08) : tirer l'écran vers le
+                // bas RANGE la molette au profit de la pill de
+                // commande ; tirer vers le haut la rend. LE LAYOUT NE
+                // BOUGE PAS : la matrice reste, et les deux
+                // instruments partagent LA MÊME CHAMBRE de 262.
                 VStack(spacing: 16) {
                     MatricePoints(
                         texte: month.titre(calendar: calendar),
@@ -2520,17 +2537,26 @@ private struct MoisIpod: View {
                         .scaleEffect(0.98 + 0.02 * matriceA)
                     // LE PIÈGE DETAIL-GONFLE, PAYÉ ICI AUSSI : la
                     // plaque (377 fixes) excède la proposition du
-                    // VStack (écran − 40 de padding) — le VStack
-                    // gonflait à 417 pt et TOUTE la page se centrait
-                    // 7,5 pt trop à droite (mesuré : +22 px, coins
-                    // asymétriques 46/26). L'hôte neutre + overlay est
-                    // la seule forme qui ne gonfle pas.
+                    // VStack (écran − 28 de padding) — le VStack
+                    // gonflait et TOUTE la page se centrait 7,5 pt
+                    // trop à droite (mesuré : +22 px, coins
+                    // asymétriques 46/26). L'hôte neutre + overlay
+                    // est la seule forme qui ne gonfle pas.
                     Color.clear
                         .frame(height: 262)
                         .frame(maxWidth: .infinity)
                         .overlay {
                             plaqueMolette
                                 .scaleEffect(0.92)
+                                .opacity(Double(1.0 - tirage))
+                                .scaleEffect(1.0 - 0.10 * tirage)
+                                .allowsHitTesting(tirage < 0.1)
+                        }
+                        .overlay {
+                            pilleCommande
+                                .opacity(Double(tirage))
+                                .scaleEffect(0.88 + 0.12 * tirage)
+                                .allowsHitTesting(tirage > 0.9)
                         }
                 }
                 .padding(.top, 22)
@@ -2552,7 +2578,87 @@ private struct MoisIpod: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 24)
             .ignoresSafeArea(edges: .top)
+            // LE HEADER CANONIQUE (verdict 24-08 : « le même que la
+            // page profil ») : RangeeChips telle quelle — le chevron
+            // plein format à 20 du bord de la DALLE (il ne bouge
+            // JAMAIS d'une page à l'autre), le titre centré sur la
+            // ligne des chips. Il flotte AU-DESSUS de l'écran.
+            titrePage
         }
+    }
+
+    /// Le header à l'école du profil : « Août » centré .inter(17),
+    /// le chevron 44 aux cotes 20/4/8 — en blanc, l'écran est sombre.
+    private var titrePage: some View {
+        ZStack(alignment: .top) {
+            Text(month.titre(calendar: calendar))
+                .font(.inter(17, .semibold))
+                .tracking(-0.2)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .padding(.top, 4)
+                .allowsHitTesting(false)
+            RangeeChips(retour: onClose) { EmptyView() }
+        }
+        .opacity(headerA)
+    }
+
+    /// LA PILL DE COMMANDE (verdict 24-08) : la molette rangée, une
+    /// capsule de verre porte les quatre commandes — le shuffle
+    /// compris, sinon il meurt avec la roue.
+    ///
+    /// ⚠️ LE SCHEME EST LA CLÉ (piège payé deux fois sur cette page,
+    /// l'exact symétrique du donut) : la page vit en `.dark` pour que
+    /// l'heure reste blanche sur l'écran — un verre `.regular` y part
+    /// SOMBRE, et la teinte blanche du verre de jour n'en fait qu'un
+    /// pavé GRIS SALE sur la nacre. On lui rend le scheme CLAIR, et
+    /// il redevient le galet dépoli du ChipVerre.
+    private var pilleCommande: some View {
+        HStack(spacing: 8) {
+            pilleGlyphe("shuffle", taille: 15, poids: .semibold,
+                        encre: 0.62) { melanger() }
+            pilleGlyphe("backward.fill", taille: 16, poids: .semibold,
+                        encre: 0.72) { avancer(-1) }
+            pilleGlyphe("play.fill", taille: 21, poids: .bold,
+                        encre: 1.0) { jouer() }
+            pilleGlyphe("forward.fill", taille: 16, poids: .semibold,
+                        encre: 0.72) { avancer(1) }
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 72)
+        .background {
+            // Taille CONSTANTE dans un conteneur : le piège des
+            // bounds vivants (un verre redimensionné = blur plat
+            // définitif).
+            GlassEffectContainer(spacing: 0) {
+                Color.clear
+                    .glassEffect(.regular
+                        .tint(Color.white.opacity(0.42))
+                        .interactive(), in: Capsule())
+            }
+        }
+        // Sur la lumière, le liseré blanc n'existe plus : c'est une
+        // arête SOMBRE, très fine (la loi du ChipVerre).
+        .overlay(Capsule().strokeBorder(Color.black.opacity(0.10),
+                                        lineWidth: 1))
+        .environment(\.colorScheme, .light)
+        // L'objet posé sur le plastique a besoin du noir contre
+        // lequel il brille (la leçon du galet).
+        .shadow(color: .black.opacity(0.10), radius: 14, y: 6)
+        .fixedSize()
+    }
+
+    private func pilleGlyphe(_ nom: String, taille: CGFloat,
+                             poids: Font.Weight, encre: Double,
+                             action: @escaping () -> Void)
+        -> some View {
+        Image(systemName: nom)
+            .font(.system(size: taille, weight: poids))
+            .foregroundStyle(ChipVerre.encreClaire.opacity(encre))
+            .frame(width: 62, height: 62)
+            .contentShape(Circle())
+            .onTapGesture(perform: action)
     }
 
     /// L'ARRIVÉE (le wahou) : le portail (la card devient la page) →
@@ -2562,6 +2668,7 @@ private struct MoisIpod: View {
     private func arrivee() {
         clic.prepare()
         lourd.prepare()
+        if Self.pillLab { tirage = 1 }
         if reduceMotion {
             entree = 1
             poseP = 1
@@ -2741,7 +2848,13 @@ private struct MoisIpod: View {
             fenetreEcran
             ZStack {
                 VStack(spacing: 0) {
-                    titreEcran(topInset: topInset)
+                    // La CHAMBRE du header : le titre canonique flotte
+                    // au-dessus de l'écran (titrePage) — on lui
+                    // réserve sa ligne pour que le manège n'y monte
+                    // pas. L'écran commence 14 pt sous le bord de la
+                    // dalle, l'heure vit dans son haut.
+                    Color.clear
+                        .frame(height: max(topInset - 14.0, 20) + 56)
                     ZStack {
                         if montrerCine {
                             CineEcran(p: cineEcranP,
@@ -2866,14 +2979,32 @@ private struct MoisIpod: View {
     /// alimente la MÊME mécanique de crans que la molette — vers la
     /// gauche = la suivante, l'aimant au relâcher, la roue libre à
     /// l'élan. Deux instruments, une seule physique.
+    /// LE TIRAGE (verdict 24-08) : le même geste, à la VERTICALE —
+    /// l'axe se verrouille au premier mouvement (jamais les deux) :
+    /// tirer vers le bas range la molette (la pill), vers le haut la
+    /// rend.
     private var dragEcran: some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { v in
+                let x = v.translation.width
+                let y = v.translation.height
+                if axeEcran == 0 {
+                    axeEcran = abs(x) >= abs(y) ? 1 : 2
+                    if axeEcran == 2 {
+                        tirageBase = tirage
+                        UIImpactFeedbackGenerator(style: .soft)
+                            .impactOccurred(intensity: 0.4)
+                    }
+                }
+                if axeEcran == 2 {
+                    let base = tirageBase ?? 0
+                    tirage = min(max(base + y / 190.0, 0), 1)
+                    return
+                }
                 if inertie != nil {
                     inertie?.cancel()
                     inertie = nil
                 }
-                let x = v.translation.width
                 if let dernier = dragEcranX {
                     let d = -(x - dernier) / 92.0 * pasCran
                     let dt = max(v.time.timeIntervalSince(
@@ -2889,34 +3020,31 @@ private struct MoisIpod: View {
                 tempsEcran = v.time
             }
             .onEnded { _ in
+                if axeEcran == 2 {
+                    let base = tirageBase ?? 0
+                    // L'aimant : il faut un tiers de course pour
+                    // changer d'état — sinon retour à la pose.
+                    let cible: CGFloat = base < 0.5
+                        ? (tirage > 0.33 ? 1 : 0)
+                        : (tirage < 0.67 ? 0 : 1)
+                    withAnimation(.spring(response: 0.42,
+                                          dampingFraction: 0.82)) {
+                        tirage = cible
+                    }
+                    if cible != base {
+                        UIImpactFeedbackGenerator(style: .rigid)
+                            .impactOccurred(intensity: 0.7)
+                    }
+                    tirageBase = nil
+                } else {
+                    doigtLache()
+                }
+                axeEcran = 0
                 dragEcranX = nil
                 tempsEcran = nil
-                doigtLache()
             }
     }
 
-    /// LE TITRE DANS L'ÉCRAN (verdict 24-08 : « dans le header c'est
-    /// juste en blanc août sur une ligne ») : l'écran a pris tout le
-    /// haut — dedans, le chevron de verre-nuit et le mois en blanc,
-    /// UNE ligne, rien d'autre. Le compte de séances est mort du
-    /// header (la cinématique le dit déjà).
-    private func titreEcran(topInset: CGFloat) -> some View {
-        HStack(spacing: 12) {
-            ChipVerre(symbole: "chevron.left", label: "Retour",
-                      action: onClose)
-                .scaleEffect(0.78)
-            Text(month.titre(calendar: calendar))
-                .font(.inter(22, .bold)).tracking(-0.5)
-                .foregroundStyle(.white)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16)
-        // L'écran commence 14 pt sous le bord : l'heure vit dans son
-        // haut, le titre se cale dessous.
-        .padding(.top, max(topInset - 14.0, 20) + 2)
-        .padding(.bottom, 6)
-        .opacity(headerA)
-    }
 
     /// L'OMBRE DU LIMBE, DOUBLE : la bezel porte son ombre sur le haut
     /// du LCD (4 pt), et la VITRE en décale l'écho d'un pixel — c'est
@@ -3146,9 +3274,13 @@ private struct MoisIpod: View {
                 Color.clear
                     .frame(width: donut, height: donut)
                     .overlay {
+                        // En pause pendant la story ET quand la
+                        // molette est rangée derrière la pill.
                         CalqueVideo(nom: "molette-glass-loop",
                                     pose: "molette-glass-poster",
-                                    rate: storyIpod == nil ? 1.0 : 0.0)
+                                    rate: (storyIpod == nil
+                                           && tirage < 0.9)
+                                        ? 1.0 : 0.0)
                     }
                     .clipShape(Circle())
                     .allowsHitTesting(false)
