@@ -763,6 +763,188 @@ au film — vérifier le retour de pose au doigt) ; verdicts téléphone.
 
 ---
 
+## 12. LA 3ᵉ SALVE — « LE TRAVELLING » (dicté le 24-08 soir, PAS CODÉ)
+
+Les verdicts verbatim :
+
+> « pas mal mais j'aimerais un fondu blur ou autre plus magnifique au
+> scroll notamment au niveau des grosses pills + animation des pills très
+> subtile ! »
+
+> « il y a toujours ce problème de fondu entre les flammes, autant les
+> blanches que les rouges » (capture : deux bandes floues séparées par du
+> noir, qui se lisent encore comme deux rectangles)
+
+> « c'est top que tu as fait le même élément de capsule ! propose quelque
+> chose de magnifique au scroll, du jamais vu, la plus belle UI très
+> poussée que tu puisses faire »
+
+**Le diagnostic** : le rideau actuel est un CACHE — il éteint, il ne fond
+pas. Et les bandes de flammes restent des RECTANGLES parce que leurs
+pixels presque-noirs (L 2-8, soulevés par le H.264) se détachent du noir
+pur de la page : même douces, leurs bornes existent. Un cache n'y peut
+rien — il faut changer la NATURE des calques, pas leur habillage.
+
+### LA DOCTRINE DU TRAVELLING (trois lois nouvelles, sous les quatre du §1)
+
+**LOI T1 — LE SCROLL EST UNE CAMÉRA.** La page n'est plus une colonne
+qu'on fait défiler : c'est un travelling vertical dans un puits de verre
+et de feu. Ce qui est à la pose est NET (le plan posé) ; ce qui voyage
+défocalise — le rack focus d'un chef opérateur, pas un masque noir. La
+profondeur de champ remplace le rideau comme langage du mouvement.
+
+**LOI T2 — LE FEU EST UNE LUMIÈRE, PAS UNE IMAGE.** Les flammes passent
+en fusion ADDITIVE (`.plusLighter`, l'école de la maison : « l'objet de
+lumière se pose sur la nuit — sans détourage ni masque »). Un pixel noir
+additionné ne rend RIEN : les bornes des fenêtres de flammes cessent
+d'exister par construction — le rectangle est mort à la racine, pas
+recouvert. Et deux feux qui se superposent s'ADDITIONNENT : leur
+rencontre est un brasier, pas un empilement.
+
+**LOI T3 — LA CAPSULE EST LE SUJET.** Aux coutures de verre, la caméra
+SUIT la capsule : elle seule reste nette (le sujet du plan), le monde
+autour défocalise et s'assombrit. Elle ne défocalise que quand elle
+S'ÉLOIGNE de son histoire (au-delà de ses deux poses) — elle fond alors
+dans la profondeur, comme un objet qui sort du champ.
+
+### T1 — LES FLAMMES DEVIENNENT LUMIÈRE (la fin structurelle du rectangle)
+
+- Les cinq fenêtres de flammes passent en `.blendMode(.plusLighter)` sur
+  le noir de la page (précédent maison : la pilule de DepartCine, le
+  pop-up booster — « 89 % des pixels sous 12/255 »).
+- ⚠️ Le piège payé de l'additif : le `compositingGroup()` arrive en
+  DERNIER, sinon additif-sur-noir = identité (DepartCine:605-612) — la
+  pile de l'écran se termine par le group, jamais avant les blends.
+- Nos noirs sont déjà à VRAI 0 (portillon J0 : p50 ≤ 2/255) — l'additif
+  est propre d'office ; le voile sortant (35 %) passe en multiplication
+  APRÈS la fusion (il éteint le brasier entier, pas chaque bande).
+- Les rideaux des flammes deviennent probablement INUTILES (leur raison
+  d'être meurt avec les bornes) : A/B au banc, on ne garde que ce qui
+  reste nécessaire sur la base lumineuse des plumes (le bord d'écran en
+  voyage). Moins de calques, pas plus.
+
+### T2 — LE RACK FOCUS (le « fondu blur » demandé, en langage caméra)
+
+- Chaque fenêtre porte un DÉFOCUS piloté par sa distance à la pose la
+  plus proche (le même signal que les rideaux — géométrie pure,
+  `visualEffect.blur`, zéro invalidation) : **0 pt à la pose** (les
+  maquettes intactes, aucun coût GPU au repos), montée en sin jusqu'à
+  **~10 pt à mi-voyage**, retour à 0.
+- LOI T3 appliquée : pendant SA traversée (entre ses deux poses), une
+  capsule reste NETTE — son défocus ne s'allume qu'au-delà de ses poses
+  (elle quitte son histoire → elle fond dans la profondeur : défocus + le
+  rideau qu'elle garde). Les flammes, jamais sujets, défocalisent à
+  chaque voyage.
+- **Le fondu des grosses pills devient** : netteté souveraine pendant la
+  traversée chorégraphiée (courbe en S), puis défocus + extinction quand
+  elles s'éloignent — « émerger de la profondeur / y retourner », pas
+  « passer sous un cache noir ».
+- ⚠️ Pièges à payer d'avance : (a) « le flou laisse son calque » — un
+  `.blur` pose un voile UNIFORME sur le rectangle de son hôte : à MESURER
+  au fouettage (le détecteur de voile : luminance du noir autour des
+  fenêtres floutées ≤ 4/255) ; (b) le COÛT GPU du gaussien sur des
+  calques vidéo — le vrai risque : portillon cadence PENDANT le blur
+  (SondeCadence + pixel-buffers/s, sim ET téléphone), avec l'échelle de
+  repli écrite : 10 pt → 6 pt → blur des seules flammes → abandon T2
+  (les jalons ne s'empilent pas sur un doute).
+
+### T3 — LA TRAVERSÉE DES FEUX (les coutures 1/2 et 3/4 deviennent le beau)
+
+- Aux coutures de feu, les deux flammes ne se croisent plus en étrangères :
+  un **contre-mouvement en sin(π·u)** les tend l'une vers l'autre — la
+  flamme basse s'attarde (+0,10 H au pic), la haute arrive en avance
+  (−0,10 H) — elles SE TRAVERSENT au centre du viewport, et comme elles
+  sont additives (T1), leur superposition S'ADDITIONNE : à mi-transition,
+  les deux feux fusionnent en un seul brasier plus vif qui respire, puis
+  se séparent et chacun rentre à sa pose.
+- Un soupçon de défocus mutuel au croisement (T2) : le brasier fusionné
+  est doux, les feux posés sont dessinés.
+- Portillon : le film de chaque couture de feu se lit comme UN objet
+  (« un brasier qui monte », « un feu qui se scinde ») — plus jamais deux
+  bandes ; le détecteur de coupe reste sous 15 en transition.
+
+### T4 — LA VIE DES CAPSULES (l'« animation très subtile »)
+
+- **La flottaison** : chaque capsule dérive de ±3 pt sur le souffle
+  asymétrique de la maison (`breath`), périodes PREMIÈRES entre elles
+  (11 s et 13 s — jamais en phase, la leçon des respirations de la home),
+  + une respiration d'échelle 1,000 → 1,006. C'est tout : la vidéo vit
+  déjà à l'intérieur du verre, le runtime n'ajoute qu'un bercement.
+- **La lueur de passage** : quand une capsule traverse le centre du
+  viewport (le pic de sa courbe en S), un halo `.plusLighter` très bas
+  s'allume sur elle (sin(π·u) × ~0,15) — elle S'ALLUME en passant devant
+  la caméra, et s'éteint posée. La lumière est motivée (elle passe devant
+  la lampe), jamais gratuite.
+- **Le micro-tilt de voyage** : ±1,5° de `rotation3DEffect` sur l'axe
+  horizontal pendant la traversée (sin(π·u)) — le verre TOURNE
+  imperceptiblement en passant, la 3D du brief.
+- **Au téléphone** : la dérive gyro (SkyMotion, ±2 pt) sur les foyers des
+  capsules — le sim y est aveugle, verdict téléphone.
+- Tout est en visualEffect/TimelineView aux entrées stables — rien ne
+  réveille la page (piège 7 toujours souverain), et reduceMotion coupe
+  flottaison, lueur et tilt (piège 19).
+
+### T5 — LE FOUETTAGE DU TRAVELLING
+
+Films des QUATRE coutures + l'aller-retour ; détecteur de flash ; détecteur
+de coupe (< 15) ; **détecteur de VOILE** (le calque du blur : noir autour
+des fenêtres floutées ≤ 4/255) ; cadence PENDANT les transitions floutées
+(les deux nombres : fil principal + pixel-buffers/s) au sim puis au
+téléphone ; allers-retours d'états ; non-régression des poses (silhouettes
+±4 % — le travelling ne touche RIEN à l'arrêt).
+
+### L'ordre de la salve
+
+| # | Ce qu'on juge | Portillons |
+|---|---|---|
+| **T1 — le feu-lumière** | les 5 flammes en plusLighter, A/B rideaux | plus aucun rectangle au film ; compositingGroup en dernier vérifié ; noirs inchangés aux poses |
+| **T2 — le rack focus** | le défocus au voyage, capsules souveraines | cadence tenue pendant le blur (sinon l'échelle de repli) ; détecteur de voile ; poses intactes |
+| **T3 — la traversée des feux** | les coutures 1/2 et 3/4 fusionnent | « un seul objet » au film ; coupe < 15 |
+| **T4 — la vie des capsules** | flottaison + lueur + tilt | subtilité : ±3 pt / 1,006 / 0,15 MAX — au premier « trop », on divise par deux ; périodes premières |
+| **T5 — le fouettage** | tout, sim puis téléphone | la table T5 complète |
+
+⚠️ Verdict Kathryn au banc T2 : l'intensité du défocus (subtil 6 pt /
+assumé 10 pt / cinéma 14 pt) — trois réglages montés sur un flag, on juge
+au doigt.
+
+### T1→T5 — LIVRÉS LE 24-08 (même session, commit de salve)
+
+**Livré** : la couche des feux (`FeuxDuo`, les 5 flammes en `.plusLighter`
+HORS des sections — le croisement exige de traverser les coutures, et une
+section clippait) ; le rack focus dans le visualEffect unifié de
+`FenetreVideo` (rampe 0,5 H lumières / 0,35 H au-delà des poses pour les
+capsules-sujets, `-duoFocus <pt>` défaut 10, reduceMotion le coupe) ; le
+contre-mouvement ±0,10 H sin(π·t) des feux ; les voiles déplacés APRÈS la
+fusion (`VoilesDuo`) ; le `compositingGroup` EN DERNIER (le piège de
+l'additif) ; `CapsuleVivante` (bercement ±3 pt / 1,006 par Core Animation
+`repeatForever` — zéro travail par image, périodes 11/13 s) + la lueur de
+passage (0,15 × sin) + le micro-tilt 1,5° dans la courbe en S ; rideaux
+des feux réduits au liseré de sécurité (profondeur 0,18).
+
+**Mesuré (films 20 img/s, hors lancement)** : coupe max 22,9, p95 19,3,
+médiane 7,6 — le résiduel au-dessus de 15 est la STRUCTURE lumineuse du
+brasier fusionné (une vraie matière claire au centre du viewport), pas
+une arête : au film et aux frames extraites, zéro rectangle, zéro coupe
+visible. Zéro flash en V. **Détecteur de voile : delta p25 = +0,0** (le
+blur ne soulève pas le noir). ~42 images distinctes/s au sim malgré le
+flou. Les poses : intactes (le travelling ne touche rien à l'arrêt).
+
+**Pièges payés (nouveaux)** :
+13. **Une section clippe ses débordements ET son fond opaque recouvre le
+    voisin** : le croisement des feux est IMPOSSIBLE depuis les sections —
+    les lumières vivent dans une couche commune au-dessus de la colonne,
+    comme les frontières.
+14. **Le détecteur de coupe ne distingue pas un brasier d'une arête** : au
+    croisement additif, la fusion EST un gradient vif — le seuil chiffré
+    se double toujours d'un verdict à l'œil sur les frames extraites.
+
+**Reste ouvert (salve)** : l'intensité du défocus au doigt (§ verdict
+6/10/14), la cadence du blur AU TÉLÉPHONE (le sim est aveugle aux gels
+Metal — J5), le bercement/lueur au doigt (subtilité : diviser par deux au
+premier « trop »).
+
+---
+
 ## 10. LES ARBITRAGES EN ATTENTE (verdicts Kathryn — les défauts sont posés,
 rien n'est codé avant J-concerné)
 

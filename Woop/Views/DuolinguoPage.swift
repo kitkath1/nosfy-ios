@@ -42,6 +42,9 @@ struct EcranSpec: Equatable, Identifiable {
         let ratioHL: CGFloat     // hauteur/largeur du fichier cuit
         var parallaxe: CGFloat = 0   // le verre est lourd, il prend du retard
         var decalageX: CGFloat = 0   // décalage horizontal (cadrages latéraux)
+        /// T1 (LE TRAVELLING) : une flamme est une LUMIÈRE — elle se rend
+        /// en additif dans la couche des feux, jamais dans sa section.
+        var flamme = false
         var pose: String { nom + "-poster" }
     }
 
@@ -50,24 +53,39 @@ struct EcranSpec: Equatable, Identifiable {
         EcranSpec(id: 0,
                   haut: .init(nom: "duo-galet-noir", ratioHL: 1560.0/1206.0,
                               parallaxe: 0.10),
-                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 440.0/804.0)),
+                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 440.0/804.0,
+                             flamme: true)),
         // ÉCRAN 2 — LA FLAMME SUSPENDUE (le bas = la frontière rouge 2/3)
         EcranSpec(id: 1,
-                  haut: .init(nom: "duo-flamme-blanche-haut", ratioHL: 520.0/804.0),
+                  haut: .init(nom: "duo-flamme-blanche-haut", ratioHL: 520.0/804.0,
+                              flamme: true),
                   bas: nil),
         // ÉCRAN 3 — LE ROUGE (le haut = la frontière rouge 2/3)
         EcranSpec(id: 2,
                   haut: nil,
-                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 540.0/804.0)),
+                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 540.0/804.0,
+                             flamme: true)),
         // ÉCRAN 4 — LE FEU RENVERSÉ (le bas = la frontière 4/5)
         EcranSpec(id: 3,
-                  haut: .init(nom: "duo-flamme-rouge-haut", ratioHL: 540.0/804.0),
+                  haut: .init(nom: "duo-flamme-rouge-haut", ratioHL: 540.0/804.0,
+                              flamme: true),
                   bas: nil),
         // ÉCRAN 5 — LE BLEU (le haut = la frontière 4/5)
         EcranSpec(id: 4,
                   haut: nil,
-                  bas: .init(nom: "duo-flamme-bleue", ratioHL: 440.0/804.0)),
+                  bas: .init(nom: "duo-flamme-bleue", ratioHL: 440.0/804.0,
+                             flamme: true)),
     ]
+
+    /// Les feux, à plat pour la couche additive : (écran, spec, en-haut ?).
+    static let feux: [(ecran: Int, spec: FenetreSpec, enHaut: Bool)] = {
+        var f: [(Int, FenetreSpec, Bool)] = []
+        for e in les5 {
+            if let h = e.haut, h.flamme { f.append((e.id, h, true)) }
+            if let b = e.bas, b.flamme { f.append((e.id, b, false)) }
+        }
+        return f
+    }()
 
     /// LE SERPENTIN (J3) — les 11 étapes, posées dans la bande noire
     /// MESURÉE de chaque écran (§2bis du plan), cotes pour 874 pt de haut.
@@ -334,6 +352,22 @@ private struct FenetreVideo: View {
     /// proche : 0 chez soi (la maquette intacte), 1 en voyage — la
     /// matière fond dans le noir AVANT que sa ligne de coupe n'entre.
     var rideaux: [Edge] = []
+    /// La profondeur du rideau : 0,44 pour le verre (le cache profond),
+    /// 0,18 pour les feux (le liseré de sécurité du bord — assez pour
+    /// tuer la ligne, assez fin pour laisser le brasier de T3 sommer).
+    var rideauProfondeur: CGFloat = 0.44
+    /// T1 (LE TRAVELLING) : le feu est une LUMIÈRE — plusLighter, les
+    /// bornes de la fenêtre cessent d'exister (un noir additionné = rien).
+    var additif = false
+    /// T3 : le contre-mouvement vers la couture, en fraction de H
+    /// (+ = la flamme basse s'attarde vers le bas, − = la haute descend
+    /// au-devant) : les deux feux se traversent et fusionnent.
+    var contre: CGFloat = 0
+    /// T2/LOI T3 : le SUJET (une capsule) reste net entre ses deux poses ;
+    /// il ne défocalise qu'au-delà — il quitte son histoire.
+    var sujet = false
+    /// Le rayon max du rack focus (0 = mort ; réglé par `-duoFocus`).
+    var flou: CGFloat = 0
     let joue: Bool
 
     var body: some View {
@@ -362,22 +396,43 @@ private struct FenetreVideo: View {
                 .allowsHitTesting(false)
             }
             .clipped()
-            // La parallaxe : le verre est lourd, il prend du retard sur le
-            // doigt. Tout se lit dans le proxy — zéro invalidation.
-            .visualEffect { [parallaxe = spec.parallaxe, restY] contenu, proxy in
+            .blendMode(additif ? .plusLighter : .normal)
+            // LE TRAVELLING — tout se lit dans le proxy, zéro invalidation :
+            // la parallaxe, le contre-mouvement des feux (T3) et le rack
+            // focus (T2). Net à la pose, défocalisé en voyage.
+            .visualEffect { [parallaxe = spec.parallaxe, restY, poses,
+                            hauteur, contre, sujet, flou] contenu, proxy in
                 let d = proxy.frame(in: .scrollView).minY - restY
-                return contenu.offset(y: -d * parallaxe)
+                let dist = poses.map { abs(d - $0) }.min() ?? 0
+                let t = min(1, dist / hauteur)
+                let dy = -d * parallaxe + contre * hauteur * sin(.pi * t)
+                let r: CGFloat
+                if sujet {
+                    // Net entre ses poses ; au-delà, il fond dans la
+                    // profondeur (rampe 0,35 H).
+                    let haut = poses.max() ?? 0
+                    let bas = poses.min() ?? 0
+                    let dehors = max(0, max(d - haut, bas - d))
+                    let u = min(1, dehors / (0.35 * hauteur))
+                    r = flou * u * u * (3 - 2 * u)
+                } else {
+                    // Une lumière défocalise à chaque voyage (rampe 0,5 H).
+                    let u = min(1, dist / (0.5 * hauteur))
+                    r = flou * u * u * (3 - 2 * u)
+                }
+                return contenu.offset(y: dy).blur(radius: r)
             }
     }
 
     private func rideau(_ bord: Edge) -> some View {
-        LinearGradient(
+        let p = rideauProfondeur
+        return LinearGradient(
             stops: bord == .top
                 ? [.init(color: .black, location: 0),
-                   .init(color: .black, location: 0.14),
-                   .init(color: .black.opacity(0), location: 0.44)]
-                : [.init(color: .black.opacity(0), location: 0.56),
-                   .init(color: .black, location: 0.86),
+                   .init(color: .black, location: p * 0.32),
+                   .init(color: .black.opacity(0), location: p)]
+                : [.init(color: .black.opacity(0), location: 1 - p),
+                   .init(color: .black, location: 1 - p * 0.32),
                    .init(color: .black, location: 1)],
             startPoint: .top, endPoint: .bottom)
     }
@@ -397,43 +452,107 @@ private struct EcranDuo: View {
         GeometryReader { g in
             ZStack {
                 Color.black
-                if let haut = spec.haut {
+                // T1 : les FLAMMES ne vivent plus ici — elles sont des
+                // lumières, rendues dans la couche additive des feux
+                // (FeuxDuo), hors des sections qui les clippaient (le
+                // croisement de T3 exige de traverser la couture).
+                if let haut = spec.haut, !haut.flamme {
                     FenetreVideo(spec: haut, largeur: g.size.width,
                                  restY: 0, hauteur: g.size.height,
-                                 rideaux: [.top], joue: joue)
+                                 rideaux: [.top],
+                                 flou: DuoReglages.focusEffectif,
+                                 joue: joue)
                         .offset(x: haut.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .top)
                 }
-                if let bas = spec.bas {
+                if let bas = spec.bas, !bas.flamme {
                     FenetreVideo(spec: bas, largeur: g.size.width,
                                  restY: g.size.height - g.size.width * bas.ratioHL,
                                  hauteur: g.size.height,
-                                 rideaux: [.bottom], joue: joue)
+                                 rideaux: [.bottom],
+                                 flou: DuoReglages.focusEffectif,
+                                 joue: joue)
                         .offset(x: bas.decalageX)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
                 }
             }
-            // LE VOILE SORTANT (LOI 1 : la frontière appartient à UN objet,
-            // les autres s'effacent) — le « fondu noir quand nécessaire » du
-            // brief, version runtime : l'écran qui part sous le bord haut
-            // reçoit 0→12 % de nuit. Un Color en visualEffect : la géométrie
-            // pilote l'opacité, rien n'invalide la page.
-            .overlay {
-                Color.black
-                    .visualEffect { contenu, proxy in
-                        let f = proxy.frame(in: .scrollView)
-                        let sortie = max(0, min(1, -f.minY / max(1, f.height)))
-                        // 2e salve : 12 % ne suffisait pas — l'écran qui
-                        // part s'éteint franchement (LOI 1 renforcée).
-                        return contenu.opacity(Double(sortie) * 0.35)
-                    }
-                    .allowsHitTesting(false)
-            }
         }
         .clipped()
     }
+}
+
+// MARK: - Les feux (T1/T3)
+
+/// LA COUCHE DES FEUX — les cinq flammes en `.plusLighter` au-dessus de la
+/// colonne : un pixel noir additionné ne rend rien, les bornes des
+/// fenêtres cessent d'exister par construction. Et aux coutures de feu,
+/// le contre-mouvement (T3) tend les deux flammes l'une vers l'autre —
+/// elles se traversent, et l'additif fait de leur rencontre UN brasier.
+private struct FeuxDuo: View {
+    let etat: EtatDuo
+    let hauteur: CGFloat
+    let largeur: CGFloat
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            ForEach(Array(EcranSpec.feux.enumerated()), id: \.offset) { _, feu in
+                let h = largeur * feu.spec.ratioHL
+                let yLocal = feu.enHaut ? 0 : hauteur - h
+                FenetreVideo(spec: feu.spec, largeur: largeur,
+                             restY: yLocal, hauteur: hauteur,
+                             rideaux: [feu.enHaut ? .top : .bottom],
+                             rideauProfondeur: 0.18,
+                             additif: true,
+                             contre: feu.enHaut ? -0.10 : 0.10,
+                             flou: DuoReglages.focusEffectif,
+                             joue: etat.lecture[feu.ecran])
+                    .offset(y: CGFloat(feu.ecran) * hauteur + yLocal)
+            }
+        }
+        .frame(width: largeur, height: hauteur * 5, alignment: .top)
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Les voiles (après la fusion)
+
+/// LES VOILES SORTANTS — au-dessus des feux fusionnés (l'extinction
+/// s'applique au brasier entier, pas à chaque bande) : l'écran qui part
+/// sous le bord haut reçoit 0 → 35 % de nuit (LOI 1 renforcée).
+private struct VoilesDuo: View {
+    let hauteur: CGFloat
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { _ in
+                Color.black
+                    .frame(height: hauteur)
+                    .visualEffect { contenu, proxy in
+                        let f = proxy.frame(in: .scrollView)
+                        let sortie = max(0, min(1, -f.minY / max(1, f.height)))
+                        return contenu.opacity(Double(sortie) * 0.35)
+                    }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Les réglages du travelling, lus une fois (`-duoFocus <pt>`, défaut 10,
+/// 0 = mort — le verdict d'intensité de Kathryn se joue sur ce flag :
+/// subtil 6 / assumé 10 / cinéma 14).
+enum DuoReglages {
+    static let focusMax: CGFloat = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-duoFocus"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return 10 }
+        return CGFloat(max(0, v))
+    }()
+    /// reduceMotion coupe le rack focus (piège 19) — figé au lancement.
+    static let focusEffectif: CGFloat =
+        UIAccessibility.isReduceMotionEnabled ? 0 : focusMax
 }
 
 // MARK: - Le chemin
@@ -493,6 +612,30 @@ private struct CheminDuo: View {
                 onEcranSuivant(la)
             }
         }
+    }
+}
+
+// MARK: - La capsule vivante (T4)
+
+/// LE BERCEMENT — une dérive de ±3 pt et une respiration d'échelle de
+/// 0,6 %, portées par Core Animation (`repeatForever`) : AUCUN travail
+/// par image côté SwiftUI. Périodes PREMIÈRES entre les deux capsules
+/// (11 s / 13 s) — jamais en phase, la leçon des respirations de la home.
+private struct CapsuleVivante<Contenu: View>: View {
+    let periode: Double
+    let vivante: Bool
+    @ViewBuilder var contenu: () -> Contenu
+    @State private var berce = false
+
+    var body: some View {
+        contenu()
+            .offset(y: berce ? 3 : -3)
+            .scaleEffect(berce ? 1.006 : 1.0)
+            .onAppear {
+                guard vivante else { return }
+                withAnimation(.easeInOut(duration: periode)
+                    .repeatForever(autoreverses: true)) { berce = true }
+            }
     }
 }
 
@@ -603,28 +746,55 @@ struct DuolinguoPage: View {
                     }
                 }
                 .scrollTargetLayout()
+                // T1 — LA COUCHE DES FEUX : les flammes additives, hors
+                // des sections (le croisement de T3 traverse les coutures).
+                .overlay(alignment: .top) {
+                    FeuxDuo(etat: etat, hauteur: hauteur,
+                            largeur: g.size.width)
+                }
                 // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
                 // sonde a une frame de retard : le galet glisserait contre
                 // ses écrans — la marche à la couture). Offset CONSTANT en
                 // coordonnées de contenu : le centre de chaque fenêtre sur
-                // SA couture. Sous le chemin, au-dessus des écrans.
+                // SA couture. Au-dessus des feux, sous les voiles.
                 .overlay(alignment: .top) {
                     ForEach(EcranSpec.frontieres) { f in
                         let lf = g.size.width * f.largeurFrac
                         let hF = lf * f.ratioHL
                         let restF = hauteur - hF / 2
-                        FenetreVideo(spec: .init(nom: f.nom, ratioHL: f.ratioHL),
-                                     largeur: lf,
-                                     restY: restF,
-                                     hauteur: hauteur,
-                                     poses: [0, -hauteur],
-                                     rideaux: [.top, .bottom],
-                                     joue: etat.lectureFrontieres[f.id])
-                            // LA COURBE EN S (partition J4) : le morceau de
-                            // bravoure s'attarde au centre du viewport — un
-                            // retard en sin(π·u) culminant à +0,08 H à
-                            // mi-traversée, mort aux deux poses, une houle
-                            // d'échelle de 2 %. Tout dans le proxy.
+                        CapsuleVivante(periode: f.id == 0 ? 5.5 : 6.5,
+                                       vivante: !gel && !reduceMotion) {
+                            FenetreVideo(spec: .init(nom: f.nom, ratioHL: f.ratioHL),
+                                         largeur: lf,
+                                         restY: restF,
+                                         hauteur: hauteur,
+                                         poses: [0, -hauteur],
+                                         rideaux: [.top, .bottom],
+                                         sujet: true,
+                                         flou: DuoReglages.focusEffectif,
+                                         joue: etat.lectureFrontieres[f.id])
+                                // T4 — LA LUEUR DE PASSAGE : la capsule
+                                // s'allume en passant devant la caméra
+                                // (sin(π·u) × 0,15), s'éteint posée.
+                                .overlay {
+                                    RadialGradient(
+                                        colors: [.white.opacity(0.5), .clear],
+                                        center: .center,
+                                        startRadius: 0, endRadius: lf * 0.55)
+                                        .blendMode(.plusLighter)
+                                        .visualEffect { [restF, hauteur] c, p in
+                                            let d = restF - p.frame(in: .scrollView).minY
+                                            let u = max(0, min(1, d / hauteur))
+                                            return c.opacity(Double(sin(.pi * u)) * 0.15)
+                                        }
+                                        .allowsHitTesting(false)
+                                }
+                                .compositingGroup()
+                        }
+                            // LA COURBE EN S (partition J4) + le micro-tilt
+                            // de voyage (T4) : le verre TOURNE d'un cheveu
+                            // en passant devant la caméra. Tout dans le
+                            // proxy, zéro invalidation.
                             .visualEffect { [restF, hauteur] contenu, proxy in
                                 let d = restF - proxy.frame(in: .scrollView).minY
                                 let u = max(0, min(1, d / hauteur))
@@ -632,13 +802,26 @@ struct DuolinguoPage: View {
                                 return contenu
                                     .offset(y: 0.08 * hauteur * s)
                                     .scaleEffect(1 + 0.02 * s)
+                                    .rotation3DEffect(.degrees(1.5 * s),
+                                                      axis: (x: 1, y: 0, z: 0),
+                                                      perspective: 0.5)
                             }
                             .frame(maxWidth: .infinity, alignment: f.bord)
                             .offset(y: CGFloat(f.couture) * hauteur - hF / 2)
                             .allowsHitTesting(false)
                     }
                 }
-                // LE CHEMIN — au-dessus du verre vidéo, DANS le scroll.
+                // LES VOILES — après la fusion : l'extinction s'applique
+                // au brasier entier, pas à chaque bande.
+                .overlay(alignment: .top) {
+                    VoilesDuo(hauteur: hauteur)
+                }
+                // ⚠️ LE GROUP EN DERNIER (le piège de l'additif, DepartCine) :
+                // les blends plusLighter des feux et des lueurs se résolvent
+                // contre la colonne DANS ce group — posé avant eux, un
+                // additif-sur-transparent serait l'identité.
+                .compositingGroup()
+                // LE CHEMIN — au-dessus de tout, DANS le scroll.
                 .overlay(alignment: .top) {
                     CheminDuo(etat: etat, hauteur: hauteur,
                               largeur: g.size.width) { ecran in
