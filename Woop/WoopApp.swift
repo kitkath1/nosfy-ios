@@ -126,6 +126,10 @@ struct RootView: View {
     /// se replie au scroll de la liste des sessions. `-calAuto` : boucle
     /// vidéo ; `-calTune` (ou double-tap) : la console du verre.
     private static let calLab = CommandLine.arguments.contains("-calLab")
+    /// Banc de la Duolinguo_page « LE CHEMIN DE FEU » : `-duoLab`, la colonne
+    /// des cinq écrans seule. `-duoEcran <1-5>`, `-duoFreeze`, `-duoAuto`
+    /// sont lus dans la vue (tools/duolingo/PLAN-DUOLINGUO.md).
+    private static let duoLab = CommandLine.arguments.contains("-duoLab")
     /// Banc d'essai de la barre d'onglets bijou : `-navLab`, page nue. Double
     /// toucher pour cacher le panneau de fouettage.
     private static let navLab = CommandLine.arguments.contains("-navLab")
@@ -526,6 +530,8 @@ struct RootView: View {
     }
 
     private var mainBody: some View {
+        } else if Self.duoLab {
+            DuoLab()
         ZStack {
             // « Un seul ciel » : horloge globale (temps absolu modulo 900 s)
             // + état partagé SkyState (scroll, révélation, gyro) — chaque
