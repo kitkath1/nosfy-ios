@@ -2438,7 +2438,7 @@ private struct MoisIpod: View {
                 Color.black
                     .opacity(0.85 * Double(entree))
                     .ignoresSafeArea()
-                pageContenu
+                pageContenu(topInset: geo.safeAreaInsets.top)
                     .scaleEffect(s, anchor: UnitPoint(x: ax, y: ay))
                     .opacity(Double(min(1.0, 0.15 + entree * 1.7)))
                 // LA VRAIE STORY, DANS L'ARBRE (le verdict : le cover
@@ -2460,9 +2460,9 @@ private struct MoisIpod: View {
                 }
             }
         }
-        // LA PAGE EST BLANCHE : l'heure s'écrit à l'encre. La story,
-        // elle, reste une nuit plein écran — le scheme suit.
-        .preferredColorScheme(storyIpod == nil ? .light : .dark)
+        // L'heure vit SUR l'écran sombre (il prend tout le haut,
+        // verdict 24-08) : la barre reste blanche, comme la réf.
+        .preferredColorScheme(.dark)
         .onAppear { arrivee() }
         .onDisappear { inertie?.cancel() }
     }
@@ -2487,27 +2487,22 @@ private struct MoisIpod: View {
             .padding(.bottom, 24)
     }
 
-    private var pageContenu: some View {
+    private func pageContenu(topInset: CGFloat) -> some View {
         ZStack(alignment: .top) {
-            // LE CORPS BLANC : la nacre plein écran — l'iPod n'est
-            // plus une carte de verre posée sur la nuit, il EST la
-            // page (la réf iPod classique). Le fond vidéo et la
-            // fenêtre de lumière sont MORTS avec la nuit : un corps
-            // opaque les affamait de toute façon. Le rayon suit les
-            // coins de la dalle (`-corpsRayon` pour l'arbitrage
-            // 40/52 au fouettage).
+            // LE CORPS BLANC : le plastique iPod plein écran —
+            // l'iPod n'est plus une carte de verre posée sur la
+            // nuit, il EST la page (la réf iPod classique). Le fond
+            // vidéo et la fenêtre de lumière sont MORTS avec la
+            // nuit : un corps opaque les affamait de toute façon.
             CorpsNacre(allume: entree)
                 .ignoresSafeArea()
             VStack(spacing: 18) {
-                // LE HEADER SUR LE BLANC : sorti de la carte — la
-                // typo à l'encre sombre posée à même la nacre, le
-                // chevron aux cotes de la maison.
-                statutIpod
-                // LE VRAI ÉCRAN (le verdict : « un vrai écran
-                // d'iPod ») — la fenêtre SOMBRE encastrée dans le
-                // corps blanc, le manège des séances dedans,
-                // intouché.
-                ecranIpod
+                // LE VRAI ÉCRAN (verdict 24-08 : « l'écran noir
+                // prend tout le header ») — la vitre sombre monte
+                // jusqu'au bord HAUT de la dalle, l'heure vit
+                // dessus, le titre blanc dedans ; il ne reste que
+                // les rails de nacre sur les flancs.
+                ecranIpod(topInset: topInset)
                 Spacer(minLength: 0)
                 // LE BLOC DU BAS : la matrice de points au-dessus de
                 // la roue, posées à MÊME le corps blanc — un iPod n'a
@@ -2547,12 +2542,15 @@ private struct MoisIpod: View {
                 .offset(y: Double(refus) * 2.0)
                 .allowsHitTesting(grandEcran < 0.3)
             }
-            // LE BOÎTIER FLOTTE (le verdict : « les borders trop
-            // collés ça fait fake ») : des marges ÉGALES partout, rien
-            // qui touche un bord, rien qui sort de l'écran.
+            // Les RAILS : un peu de nacre à gauche et à droite
+            // (verdict 24-08, la réf « place. ») — 14 pt, ce qui rend
+            // le coin 40 de l'écran CONCENTRIQUE au coin 52 de la
+            // dalle. L'écran ignore le HAUT seul : le bas garde sa
+            // marge de zone sûre.
             .frame(maxHeight: .infinity)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 14)
             .padding(.bottom, 24)
+            .ignoresSafeArea(edges: .top)
         }
     }
 
@@ -2713,7 +2711,7 @@ private struct MoisIpod: View {
             .allowsHitTesting(false)
     }
 
-    private var ecranIpod: some View {
+    private func ecranIpod(topInset: CGFloat) -> some View {
         // PLUS DE HAUTEUR EN DUR (payé deux fois : 410 puis 400 se
         // faisaient COMPRESSER, l'un coupait le texte, l'autre laissait
         // 200 pt de noir mort). La fenêtre prend CE QUI RESTE, le bloc
@@ -2721,12 +2719,12 @@ private struct MoisIpod: View {
         // gabarit.
         return ZStack {
             // LA FENÊTRE SOMBRE : l'écran ENCASTRÉ dans le corps blanc
-            // — plus une carte qui flotte (son ombre est morte avec
-            // elle), une vitre sombre sertie dans la nacre. Le header
-            // vit désormais SUR le blanc, hors de la vitre.
+            // — elle monte jusqu'au bord haut de la dalle (verdict
+            // 24-08), l'heure et le titre vivent dessus.
             fenetreEcran
             ZStack {
                 VStack(spacing: 0) {
+                    titreEcran(topInset: topInset)
                     ZStack {
                         if montrerCine {
                             CineEcran(p: cineEcranP,
@@ -2763,7 +2761,7 @@ private struct MoisIpod: View {
                                    dampingFraction: 0.7),
                            value: puitsAppui)
             }
-            .padding(.vertical, 14)
+            .padding(.bottom, 14)
             // L'ombre du limbe : la bezel porte son ombre sur le haut
             // du LCD — la vitre a une épaisseur.
             limbeLCD
@@ -2879,29 +2877,24 @@ private struct MoisIpod: View {
             }
     }
 
-    /// LE HEADER MODERNE (le verdict : « pas assez moderne ») : la
-    /// bande grise de l'iPod rétro est MORTE — plus de fond, plus de
-    /// séparateur, plus de pictos. De la typo posée sur la NACRE, de
-    /// l'air, et rien d'autre : le mois en tête, le compte en regard.
-    /// Sur le blanc, tout passe à l'encre sombre — le glyphe et le
-    /// texte basculent ENSEMBLE (la loi du ChipVerre, `clarte`).
-    private var statutIpod: some View {
+    /// LE TITRE DANS L'ÉCRAN (verdict 24-08 : « dans le header c'est
+    /// juste en blanc août sur une ligne ») : l'écran a pris tout le
+    /// haut — dedans, le chevron de verre-nuit et le mois en blanc,
+    /// UNE ligne, rien d'autre. Le compte de séances est mort du
+    /// header (la cinématique le dit déjà).
+    private func titreEcran(topInset: CGFloat) -> some View {
         HStack(spacing: 12) {
             ChipVerre(symbole: "chevron.left", label: "Retour",
-                      clarte: 1, action: onClose)
+                      action: onClose)
                 .scaleEffect(0.78)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(month.titre(calendar: calendar))
-                    .font(.inter(22, .bold)).tracking(-0.5)
-                    .foregroundStyle(ChipVerre.encreClaire)
-                Text("\(month.sessions.count) s\u{00E9}ances")
-                    .font(.inter(11, .medium)).tracking(0.8)
-                    .foregroundStyle(ChipVerre.encreClaire.opacity(0.55))
-                    .textCase(.uppercase)
-            }
+            Text(month.titre(calendar: calendar))
+                .font(.inter(22, .bold)).tracking(-0.5)
+                .foregroundStyle(.white)
             Spacer(minLength: 0)
         }
-        .padding(.top, 6)
+        .padding(.horizontal, 16)
+        .padding(.top, max(topInset, 24) + 2)
+        .padding(.bottom, 6)
         .opacity(headerA)
     }
 
@@ -2991,13 +2984,15 @@ private struct MoisIpod: View {
                     // POIGNET seulement (l'école du sticker — jamais
                     // un balayage), affirmé à la chaleur (la règle du
                     // clic).
-                    // Le 0,15 est le chiffre GRAVÉ de la console
-                    // -liquideLab (morte avec le lait shader).
+                    // LA RÈGLE DU CLIC, remontée (verdict 24-08) : au
+                    // repos un souffle (0,075), au toucher le verre
+                    // S'ÉCLAIRCIT franchement — la vitre répond à la
+                    // main.
                     brillanceVerre
                         .mask(Circle()
                             .frame(width: donut, height: donut))
-                        .opacity((0.45 + 0.55 * Double(vitreChaleur))
-                            * 0.15 * 1.2)
+                        .opacity((0.15 + 0.85 * Double(vitreChaleur))
+                            * 0.5)
                         .allowsHitTesting(false)
                     // LE FIL SPÉCULAIRE DE L'ARÊTE : le détail qui
                     // fait lire « verre » en un dixième de seconde.
@@ -3138,6 +3133,15 @@ private struct MoisIpod: View {
                     .clipShape(Circle())
                     .allowsHitTesting(false)
             }
+            // LA LAMPE (verdict 24-08 : « rajouter les effets de
+            // lumière ») : le halo qui suit le doigt SOUS le verre,
+            // l'héritier des halos du lait shader — braise douce sur
+            // le galet sombre, à coût nul (pas d'horloge, le doigt
+            // EST l'animation).
+            lampeVue
+                .blendMode(.plusLighter)
+                .compositingGroup()
+                .allowsHitTesting(false)
             grainTournant
             roseeVue
                 .blendMode(.plusLighter)
@@ -3145,6 +3149,22 @@ private struct MoisIpod: View {
                 .allowsHitTesting(false)
         }
         .frame(width: donut, height: donut)
+    }
+
+    /// Le halo du doigt sur l'anneau — masqué au disque : rien ne
+    /// déborde de l'objet, jamais.
+    private var lampeVue: some View {
+        let xL: CGFloat = 122.0 + cos(angleLampe) * 92.0
+        let yL: CGFloat = 122.0 + sin(angleLampe) * 92.0
+        return Circle()
+            .fill(Color(red: 1.00, green: 0.88, blue: 0.74)
+                .opacity(0.42))
+            .frame(width: 96, height: 96)
+            .blur(radius: 24)
+            .position(x: xL, y: yL)
+            .opacity(Double(lampeVive) * 0.75)
+            .frame(width: donut, height: donut)
+            .mask(Circle().frame(width: donut, height: donut))
     }
 
     /// L'assise : l'ombre sous le donut, et le liseré de lumière que
@@ -3228,9 +3248,9 @@ private struct MoisIpod: View {
         let xR: CGFloat = 122.0 + cos(angleLampe) * 104.0
         let yR: CGFloat = 122.0 + sin(angleLampe) * 104.0
         return Circle()
-            .fill(Color.white.opacity(0.28))
-            .frame(width: 40, height: 40)
-            .blur(radius: 10)
+            .fill(Color.white.opacity(0.40))
+            .frame(width: 48, height: 48)
+            .blur(radius: 12)
             .position(x: xR, y: yR)
             .opacity(Double(rosee))
             .frame(width: donut, height: donut)

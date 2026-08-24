@@ -36,14 +36,16 @@ struct CorpsNacre: View {
     /// net contre le noir (la loi crestFade du dôme d'exercice).
     var allume: CGFloat = 1
 
-    // Les teintes, dérivées du papier par tirage (ordre chaud R>G>B
-    // maintenu partout — la famille flanc/pied chaud du galet remontée
-    // vers le papier).
-    private static let hautC = Color(red: 0.972, green: 0.966, blue: 0.952)
-    private static let corpsC = Color(red: 0.938, green: 0.928, blue: 0.905)
-    private static let flancC = Color(red: 0.902, green: 0.884, blue: 0.848)
-    private static let piedC = Color(red: 0.862, green: 0.832, blue: 0.786)
-    private static let foyerC = Color(red: 0.985, green: 0.940, blue: 0.870)
+    // Les teintes (verdict 24-08 : « une matière un peu plus iPod ») :
+    // le PLASTIQUE, pas la nacre crème — des blancs NEUTRES, à peine
+    // chauds (−0,004 sur le bleu, juste de quoi éviter le clinique),
+    // et une descente courte : l'iPod est presque plat, son volume
+    // vient du liseré et de l'ombre du bord, pas d'un dégradé.
+    private static let hautC = Color(red: 0.980, green: 0.979, blue: 0.976)
+    private static let corpsC = Color(red: 0.958, green: 0.957, blue: 0.954)
+    private static let flancC = Color(red: 0.934, green: 0.933, blue: 0.929)
+    private static let piedC = Color(red: 0.908, green: 0.907, blue: 0.903)
+    private static let foyerC = Color(red: 0.998, green: 0.997, blue: 0.994)
 
     private var forme: RoundedRectangle {
         RoundedRectangle(cornerRadius: rayon, style: .continuous)
@@ -109,15 +111,16 @@ struct CorpsNacre: View {
             startPoint: .top, endPoint: .bottom))
     }
 
-    /// LE FOYER : le côté brillant — un voile chaud localisé sous la
-    /// lampe haut-gauche, blend normal (en plusLighter il écrêterait au
-    /// blanc pur sur un fond à L≈245, et le blanc écrêté se lit jaune).
+    /// LE FOYER : le brillant du plastique — un reflet FROID et
+    /// discret sous la lampe haut-gauche (le gloss d'un iPod, pas la
+    /// chaleur d'une nacre), blend normal (en plusLighter il
+    /// écrêterait au blanc pur sur un fond à L≈245).
     private func nacreFoyer(w: CGFloat, h: CGFloat) -> some View {
         Ellipse()
             .fill(RadialGradient(
                 stops: [
-                    .init(color: Self.foyerC.opacity(0.35), location: 0.0),
-                    .init(color: Self.foyerC.opacity(0.14), location: 0.60),
+                    .init(color: Self.foyerC.opacity(0.30), location: 0.0),
+                    .init(color: Self.foyerC.opacity(0.12), location: 0.60),
                     .init(color: Self.foyerC.opacity(0.0), location: 1.0),
                 ],
                 center: .center, startRadius: 0, endRadius: w * 0.48))
