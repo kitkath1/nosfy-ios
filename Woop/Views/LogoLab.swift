@@ -115,7 +115,7 @@ struct MonolithScene: View {
     /// La vie de l'objet posé — cf. MonolithCanvas.
     var idleLife: Float = 0
     /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante).
-    var night: SIMD3<Float> = .zero
+    var night: SIMD4<Float> = .zero
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -273,7 +273,7 @@ struct MonolithCanvas: View {
     /// pendant la cinématique, pleine une fois la lune arrivée sur la page.
     var idleLife: Float = 0
     /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante).
-    var night: SIMD3<Float> = .zero
+    var night: SIMD4<Float> = .zero
 
     fileprivate static let debugSDF = CommandLine.arguments.contains("-logoDebugSDF")
 
@@ -292,7 +292,7 @@ struct MonolithCanvas: View {
                 .float3(camera.x, camera.y, camera.z),
                 .float4(cineCtl.x, cineCtl.y, cineCtl.z, cineCtl.w),
                 .float(edgeFade), .float(soloNeon), .float(idleLife),
-                .float3(night.x, night.y, night.z),
+                .float4(night.x, night.y, night.z, night.w),
                 .image(MoonSDF.image))))
     }
 

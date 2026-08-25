@@ -185,6 +185,42 @@ final class RocketHaptics {
         try? p.start(atTime: CHHapticTimeImmediate)
     }
 
+    /// LES PALIERS DE LA LUNE DE SANG (la porte, 22-08) : un battement par
+    /// moment — le coup sourd et grave du cœur du splash, envoyé D'UN BLOC au
+    /// moteur (jamais image par image : une vibration cadencée par la boucle
+    /// d'affichage tremble précisément quand le GPU peine). `fort` = le choc
+    /// de la POSE, quand la plongée s'arrête : plein poids, un peu plus sec.
+    /// Muet au simulateur.
+    func paliers(_ battements: [(time: Double, fort: Bool)]) {
+        guard let engine else { return }
+        var events: [CHHapticEvent] = []
+        for b in battements {
+            events.append(CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    .init(parameterID: .hapticIntensity,
+                          value: b.fort ? 1.0 : 0.85),
+                    .init(parameterID: .hapticSharpness,
+                          value: b.fort ? 0.30 : 0.08),
+                ],
+                relativeTime: b.time))
+            events.append(CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    .init(parameterID: .hapticIntensity,
+                          value: b.fort ? 0.70 : 0.45),
+                    .init(parameterID: .hapticSharpness, value: 0.05),
+                ],
+                relativeTime: b.time, duration: b.fort ? 0.36 : 0.28))
+        }
+        guard let pattern = try? CHHapticPattern(events: events,
+                                                 parameterCurves: []),
+              let p = try? engine.makePlayer(with: pattern) else { return }
+        player = p
+        try? engine.start()
+        try? p.start(atTime: CHHapticTimeImmediate)
+    }
+
     /// LA PAUSE DU SOMMET (lentille liquide) : une fusée sur le point de
     /// décoller. Le grondement part à peine perceptible, la montée en régime
     /// ACCÉLÈRE — les crans se resserrent vers la fin — et la détonation

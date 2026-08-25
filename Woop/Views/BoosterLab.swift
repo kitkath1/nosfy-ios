@@ -1238,6 +1238,16 @@ struct BoosterStage: UIViewRepresentable {
     /// MÊME à 60 fps — le géant du profil scrollé hors de vue coûtait
     /// 560×700 en continu sous toute la page.
     var paused: Bool = false
+    /// LE DÉCOR INTERACTIF (la porte, 22-08, PLAN-V2-MANEGE.md) : PAN
+    /// SEULEMENT. Le tap et le maintien ne sont pas installés — l'engagement
+    /// (commitGallery, dont le tap est le SEUL appelant) devient
+    /// inatteignable par construction. La rotation au doigt, la pichenette
+    /// et le gyro restent entiers.
+    var panOnly: Bool = false
+    /// LE DÉCOR SILENCIEUX : la galerie sans sa nappe (`BoosterAmbience`).
+    /// Sur un écran d'entrée, la musique du manège n'a rien à faire — et la
+    /// porte-nappe de `placingStep` est satisfaite par l'horloge seule.
+    var muet: Bool = false
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -1258,7 +1268,7 @@ struct BoosterStage: UIViewRepresentable {
         context.coordinator.forgeActive = forge
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
-                                   gallery: gallery)
+                                   gallery: gallery, muet: muet)
         context.coordinator.handle = handle
         handle?.coordinator = context.coordinator
         // La poignée arrive APRÈS `attach` : le `didSet` du mode a déjà
@@ -1275,25 +1285,31 @@ struct BoosterStage: UIViewRepresentable {
         let pan = UIPanGestureRecognizer(target: context.coordinator,
                                          action: #selector(Coordinator.pan(_:)))
         view.addGestureRecognizer(pan)
-        let tap = UITapGestureRecognizer(target: context.coordinator,
-                                         action: #selector(Coordinator.tap(_:)))
-        view.addGestureRecognizer(tap)
-        // LA CHARGE AU MAINTIEN : le doigt posé sans déchirer. Le pan
-        // garde la priorité (il convertit la charge en découpe) — le
-        // long-press n'avale rien.
-        let hold = UILongPressGestureRecognizer(
-            target: context.coordinator,
-            action: #selector(Coordinator.hold(_:)))
-        hold.minimumPressDuration = 0.18
-        hold.cancelsTouchesInView = false
-        view.addGestureRecognizer(hold)
+        // LE DÉCOR (`panOnly`) : ni tap ni maintien. Le tap est le SEUL
+        // appelant de commitGallery — non installé, la cérémonie complète est
+        // inatteignable, quoi que fasse le doigt.
+        if !panOnly {
+            let tap = UITapGestureRecognizer(target: context.coordinator,
+                                             action: #selector(Coordinator.tap(_:)))
+            view.addGestureRecognizer(tap)
+            // LA CHARGE AU MAINTIEN : le doigt posé sans déchirer. Le pan
+            // garde la priorité (il convertit la charge en découpe) — le
+            // long-press n'avale rien.
+            let hold = UILongPressGestureRecognizer(
+                target: context.coordinator,
+                action: #selector(Coordinator.hold(_:)))
+            hold.minimumPressDuration = 0.18
+            hold.cancelsTouchesInView = false
+            view.addGestureRecognizer(hold)
         // SANS delegate, UIKit interdit pan et long-press ENSEMBLE : le
         // doigt posé 0,18 s (la charge — le geste appris) empêchait le
         // pan de naître pour tout le reste du toucher, et la découpe ne
         // pouvait JAMAIS prendre le relais du maintien. Le relais
         // `adoptHoldIntoTear` suppose cette simultanéité.
+            hold.delegate = context.coordinator
+            context.coordinator.holdRecognizer = hold
+        }
         pan.delegate = context.coordinator
-        hold.delegate = context.coordinator
         // L'HORLOGE DE LA MISE EN PLACE ATTEND LES PIXELS : le delegate
         // de rendu dit quand la scène a VRAIMENT dessiné (sur téléphone,
         // Metal compile les pipelines à la première frame — le
@@ -1301,7 +1317,6 @@ struct BoosterStage: UIViewRepresentable {
         // dévissait sur une vue NOIRE : « il manque l'arrivée »).
         view.delegate = context.coordinator
         context.coordinator.panRecognizer = pan
-        context.coordinator.holdRecognizer = hold
         if CommandLine.arguments.contains("-boosterHoldDemo") {
             context.coordinator.holdDemo()
         }
@@ -1659,7 +1674,7 @@ struct BoosterStage: UIViewRepresentable {
 
         func attach(to view: SCNView, still: Bool, dos: Bool = false,
                     mylar: Bool = false, yawDeg: Float? = nil,
-                    gallery: Bool = false) {
+                    gallery: Bool = false, muet: Bool = false) {
             self.view = view
             self.still = still
             self.dos = dos
@@ -1706,8 +1721,13 @@ struct BoosterStage: UIViewRepresentable {
                     // porte-nappe de placingStep retient l'IMAGE 0,25 s).
                     // Attaque 0,9 s — à 2,4 s elle était inaudible au
                     // lever de rideau (fondu linéaire).
-                    ambience = BoosterAmbience()
-                    ambience?.act(BoosterAmbience.manege, over: 0.9)
+                    // LE DÉCOR (`muet`, la porte) : pas de nappe — mais
+                    // `nappeT0` se pose QUAND MÊME : la porte-nappe de
+                    // placingStep est une horloge, elle doit passer.
+                    if !muet {
+                        ambience = BoosterAmbience()
+                        ambience?.act(BoosterAmbience.manege, over: 0.9)
+                    }
                     nappeT0 = CACurrentMediaTime()
                     beginPlacing()
                 }
@@ -1716,6 +1736,19 @@ struct BoosterStage: UIViewRepresentable {
                 mode = .idle
                 if !still { startInvite() }
             }
+        }
+
+        /// LA POSE REJOUÉE (la porte, 22-08) : la cinématique de mise en
+        /// place, à la demande — le décor la rejoue à CHAQUE arrivée sur sa
+        /// page. `beginPlacing` remet lui-même caméra, feux, studio et offset
+        /// à zéro ; pendant qu'il joue, le gyro se tait tout seul (il n'écrit
+        /// qu'en `.galleryIdle`). Une ligne, parce que `beginPlacing` est
+        /// privé et que `BoosterHandle.coordinator` n'expose que l'interne.
+        func rejoueLaPose() {
+            guard stage != nil else { return }
+            stopScroll()
+            stopRingSpin()
+            beginPlacing()
         }
 
         /// LE DÉMONTAGE — sans lui, LE MANÈGE CONTINUE DE CHANTER après

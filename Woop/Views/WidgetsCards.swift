@@ -198,6 +198,11 @@ struct CardCorps<Contenu: View>: View {
     /// derrière « 8.4 kg », la lisibilité tombe. Le noir arrive exactement au
     /// moment où l'on REGARDE — le verre pour l'ambiance, le noir pour lire.
     var chambre: Double = 0
+    /// LA PLAQUE NOIRE, DÉCOUPLÉE de la chambre. `nil` = comportement
+    /// d'origine (la chambre la pilote). `0` = jamais de plaque : l'intérieur
+    /// s'ouvre SANS boucher le verre — c'est ce que veut la porte, où le mois
+    /// doit se lire à travers un Liquid Glass vivant.
+    var plaque: Double? = nil
     /// LA PLACE DU DOIGT dans la card, en points. La lumière la suit — la
     /// même loi que les halos du menu, déjà validée : la lumière suit la main.
     var doigt: CGPoint?
@@ -302,7 +307,19 @@ struct CardCorps<Contenu: View>: View {
                     // jamais — il reste du gris, plus clair en haut.
                     dedans.stroke(cardLisereDedans, lineWidth: 1.1)
                     // LA PLAQUE : sur le verre, sous l'encre.
-                    dedans.fill(Color.black).opacity(0.93 * chambre)
+                    // ⚠️ `plaque` la DÉCOUPLE de la chambre (la porte, 25-08).
+                    // La grille du mois n'existe que chambre ouverte, et la
+                    // chambre fait TOMBER cette plaque — le mois et le verre
+                    // étaient donc exclusifs par construction. C'est un
+                    // arbitrage de LISIBILITÉ (« le verre pour l'ambiance, le
+                    // noir pour lire »), juste pour la home où un globe clair
+                    // de la vidéo passe derrière « 8.4 kg ». Sur la porte,
+                    // l'encre du mois est de gros points orange sur une nuit
+                    // déjà sombre : elle tient sans plaque. La home garde son
+                    // comportement (défaut = la chambre pilote), la porte pose
+                    // `plaque: 0` et garde son verre.
+                    dedans.fill(Color.black)
+                        .opacity(0.93 * (plaque ?? chambre))
                 }
                 .padding(e)
 
@@ -685,6 +702,8 @@ struct CardVolume: View {
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
     /// LES QUATRE DERNIÈRES SEMAINES, normalisées — l'intérieur de la chambre.
     /// La plus récente en dernier, et c'est elle qui brille.
     var semaines: [[Double]] = [
@@ -711,7 +730,7 @@ struct CardVolume: View {
 
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt, penche: penche) {
+                  plaque: plaque, doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface
@@ -956,16 +975,26 @@ struct CardSeances: View {
     var vide: Bool = false
     var penche: Double = 0
     var interaction: CardMode = .libre
+    /// LA CHAMBRE PILOTÉE DU DEHORS (la porte, 23-08). Non-nil, elle prend la
+    /// main sur le doigt : l'hôte anime l'ouverture lui-même. Née pour montrer
+    /// LE MOIS sur un écran où les cards sont inertes — la grille des trente
+    /// et un points n'existe qu'ouverte, et sans doigt elle ne s'ouvrait
+    /// jamais. `nil` = le comportement d'origine, au pixel.
+    var chambreImposee: Double? = nil
+    /// La plaque noire, découplée (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
 
     /// `-chambre` fige la chambre OUVERTE : le simulateur ne sait pas
     /// tenir un doigt, et une chambre ne se juge qu'ouverte.
-    @State private var chambre: Double =
+    @State private var chambreDoigt: Double =
         CommandLine.arguments.contains("-chambre") ? 1 : 0
     @State private var doigt: CGPoint?
 
+    private var chambre: Double { chambreImposee ?? chambreDoigt }
+
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt, penche: penche) {
+                  plaque: plaque, doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface
@@ -983,7 +1012,7 @@ struct CardSeances: View {
         .contentShape(Rectangle())
         // ⚠️ UN SEUL GESTE : un `onLongPressGesture` volerait le tap.
         .modifier(CardTouche(mode: interaction,
-                             chambre: $chambre, doigt: $doigt))
+                             chambre: $chambreDoigt, doigt: $doigt))
     }
 
     /// L'INTÉRIEUR — LE MOIS. Les sept pastilles de la semaine s'écartent en
@@ -1218,6 +1247,8 @@ struct CardHiitPeak: View {
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
     var penche: Double = 0
     var interaction: CardMode = .libre
 
@@ -1227,7 +1258,7 @@ struct CardHiitPeak: View {
 
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt, penche: penche) {
+                  plaque: plaque, doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface
@@ -1544,6 +1575,8 @@ struct CardPeakEffort: View {
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
     var penche: Double = 0
     var interaction: CardMode = .libre
 
@@ -1553,7 +1586,7 @@ struct CardPeakEffort: View {
 
     var body: some View {
         CardCorps(lisere: lisere, verre: verre, chambre: chambre,
-                  doigt: doigt, penche: penche) {
+                  plaque: plaque, doigt: doigt, penche: penche) {
             Chambre(p: chambre) { c in
                 ZStack {
                     surface

@@ -274,6 +274,17 @@ struct CalqueVideo: UIViewRepresentable {
             playerLayer.videoGravity = .resizeAspectFill
             playerLayer.backgroundColor = UIColor.clear.cgColor
             layer.addSublayer(playerLayer)
+            // ⚠️ **LE FILET DU DÉBORDEMENT** (ajouté 22-08, chantier de la
+            // porte). Un `AVPlayerLayer` en `resizeAspectFill` sort de ses
+            // bornes, et **le `clipShape` de SwiftUI ne rattrape PAS une couche
+            // UIKit** — mesuré ailleurs à 2,3 pt de débord au lieu de 10 sur la
+            // card exos. Ce calque n'était sauvé que par un hasard : le ratio du
+            // cadre de la flamme (402,010/427,322 = 0,940766) est celui du
+            // fichier (604/642 = 0,940810) à 4,4e-5 près, soit moins de 0,02 pt
+            // de marge. Ce n'est pas un filet, c'est une coïncidence — et la
+            // porte réutilise ce calque à d'autres cotes.
+            clipsToBounds = true
+            playerLayer.masksToBounds = true
         }
         required init?(coder: NSCoder) { fatalError() }
         override func layoutSubviews() {

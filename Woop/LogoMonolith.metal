@@ -260,7 +260,7 @@ static float lmStars(float2 pos, float t) {
                                     float3 sdfRanges, float3 moonPlace,
                                     float3 camera, float4 cineCtl,
                                     float edgeFade, float soloNeon,
-                                    float idleLife, float3 night,
+                                    float idleLife, float4 night,
                                     texture2d<half> moonSDF) {
     constexpr sampler kFace(address::clamp_to_edge, filter::linear, coord::normalized);
 
@@ -309,11 +309,17 @@ static float lmStars(float2 pos, float t) {
     // pas un projecteur qu'on ajoute.
     float cine = cineCtl.x, boom = cineCtl.y, bgFade = cineCtl.z;
     float solo = saturate(soloNeon);
-    // L'AGONIE DE LA LUNE DE SANG, en étapes — pilotée par la marée des
-    // nuages. Une vraie éclipse n'est pas un virage de teinte : la lumière
-    // TOMBE pendant que la couleur monte, la paroi cède avant le cœur, le
-    // halo se contracte. `blood` est l'avancement de cette agonie.
-    float blood = smoothstep(0.25, 0.80, night.y);
+    // L'AGONIE DE LA LUNE DE SANG, en étapes. Une vraie éclipse n'est pas un
+    // virage de teinte : la lumière TOMBE pendant que la couleur monte, la
+    // paroi cède avant le cœur, le halo se contracte. `blood` est l'avancement
+    // de cette agonie.
+    //
+    // ⚠️ DÉCOUPLÉ DE LA MARÉE (22-08, la porte). `blood` vivait sur `night.y`,
+    // le MÊME canal que la couverture nuageuse (V, plus bas) : une lune rouge
+    // NETTE, sans voile, n'était pas exprimable — dès y ≥ 0,80 les nuages
+    // avalaient l'écran. Le sang a maintenant son canal, `night.w` ; le splash
+    // archivé passe w = y et rend au pixel ce qu'il rendait.
+    float blood = smoothstep(0.25, 0.80, night.w);
     float body01 = 1.0 - solo;              // ce qui reste du pavé
     // ---- LE GRÉSILLEMENT DU NÉON POSÉ. Une fois l'objet arrivé sur la page,
     // il ne doit plus jamais avoir l'air ARRÊTÉ — un objet parfaitement

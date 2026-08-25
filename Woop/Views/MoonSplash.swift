@@ -98,8 +98,10 @@ struct MoonSplashBeat {
     /// La vie de l'objet POSÉ : flottement lent et grésillement rare
     /// (cf. MonolithCanvas). Elle s'allume quand l'objet touche.
     var idleLife: Float = 0
-    /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante).
-    var night: SIMD3<Float> = .zero
+    /// Le plan de nuit : (atmosphère, marée des nuages, braise mourante,
+    /// sang). Le canal du sang est né découplé de la marée le 22-08 (la
+    /// porte) ; ICI il la suit — c'est la marée qui fait l'agonie du splash.
+    var night: SIMD4<Float> = .zero
     /// L'âge de la volée d'oiseaux. Négatif = pas d'oiseaux.
     var birdAge: Double = -1
     /// Le lacet d'arrivée : la lune renaît de biais et pivote vers sa pose.
@@ -408,6 +410,11 @@ struct MoonSplashBeat {
 
         b.camera = SIMD3(target.x, target.y, zoom)
         b.cineCtl.x = cine
+        // LE SANG SUIT LA MARÉE — la loi historique de ce plan-séquence,
+        // conservée au pixel : `blood` a déménagé de `night.y` vers `night.w`
+        // (le découplage de la porte, 22-08), et ce miroir rend l'archive
+        // identique à elle-même.
+        b.night.w = b.night.y
         return b
     }
 

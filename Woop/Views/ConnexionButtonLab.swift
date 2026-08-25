@@ -154,6 +154,12 @@ struct DiamondPrimaryButton: View {
     /// peu plutôt que de passer sous la flèche (`minimumScaleFactor`) — le
     /// registre tient jusqu'à environ trente signes.
     var title: String = "CONNEXION"
+    /// Un glyphe SF posé À GAUCHE, dans la gouttière déjà réservée (le texte
+    /// garde son `padding(.horizontal, 38)` des deux côtés, donc son centrage).
+    /// Quand il est là, LA FLÈCHE DISPARAÎT : un logo à gauche plus une flèche
+    /// à droite, c'est deux signaux pour une seule action. Né pour le
+    /// « SE CONNECTER » + pomme de la porte (22-08).
+    var glyph: String? = nil
     /// Le banc force l'état tap (1 = pressé en continu) ; nil = interaction
     /// réelle, l'écrin suit le doigt.
     var benchPress: Float? = nil
@@ -235,10 +241,20 @@ struct DiamondPrimaryButton: View {
             .padding(.horizontal, 38)
             .frame(maxWidth: .infinity)
             .overlay(alignment: .trailing) {
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(Color.white.opacity(0.82))
-                    .padding(.trailing, 22)
+                if glyph == nil {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 15, weight: .light))
+                        .foregroundStyle(Color.white.opacity(0.82))
+                        .padding(.trailing, 22)
+                }
+            }
+            .overlay(alignment: .leading) {
+                if let glyph {
+                    Image(systemName: glyph)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.92))
+                        .padding(.leading, 22)
+                }
             }
     }
 }
