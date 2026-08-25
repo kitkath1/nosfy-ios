@@ -339,14 +339,16 @@ struct PillMireLab: View {
                     rangee()
                 }
                 Text("SUR LE FEU").etiquette
-                HStack(spacing: 26) {
+                // §20 Pil-3 — LE PRESS : « quand on appuie, de la fumée ou
+                // de la lumière sort ». Les deux candidats, à presser.
+                HStack(spacing: 30) {
                     VStack(spacing: 6) {
-                        pillMetal(date: "12 JUN", taille: 100)
-                        Text("D métal (grand)").etiquette
+                        PressDemo(fumee: false)
+                        Text("A — la lumière").etiquette
                     }
                     VStack(spacing: 6) {
-                        GaletEtape(etat: .actif, numero: 2, taille: 92)
-                        Text("E actif (actuel)").etiquette
+                        PressDemo(fumee: true)
+                        Text("B — la fumée").etiquette
                     }
                 }
             }
@@ -479,6 +481,138 @@ private extension Text {
     var etiquette: some View {
         self.font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundStyle(.white.opacity(0.45))
+    }
+}
+
+/// §20 Pil-3 — LE PRESS DU BOUTON : au maintien la lumière s'accumule
+/// sous la face (l'énergie), au relâcher elle S'ÉCHAPPE — en bloom (A) ou
+/// en volutes de fumée pâle (B, esquisse). Rampes horodatées, fonctions
+/// pures du temps (la maison : un @State par image est interdit).
+private struct PressDemo: View {
+    let fumee: Bool
+    @State private var presseDepuis: Date? = nil
+    @State private var relacheA: Date = .distantPast
+    @State private var burstA: Date = .distantPast
+
+    var body: some View {
+        let D: CGFloat = 84
+        TimelineView(.animation(minimumInterval: nil,
+                                paused: pauseTimeline)) { ctx in
+            let now = ctx.date
+            let press = rampe(now)
+            let u = burst(now)
+            ZStack {
+                // l'échappée au relâcher
+                if u < 1 {
+                    if fumee {
+                        volutes(u: u, D: D)
+                    } else {
+                        Circle()
+                            .fill(RadialGradient(
+                                colors: [Color(red: 1, green: 0.96,
+                                               blue: 0.88).opacity(0.45 * (1 - u)),
+                                         .clear],
+                                center: .center, startRadius: 0,
+                                endRadius: D * (0.7 + 0.8 * u)))
+                            .frame(width: D * 2.2, height: D * 2.2)
+                            .blendMode(.plusLighter)
+                    }
+                }
+                // la lumière qui s'ACCUMULE au maintien
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [Color.white.opacity(0.30 * press), .clear],
+                        center: .center, startRadius: 0, endRadius: D * 0.9))
+                    .frame(width: D * 1.8, height: D * 1.8)
+                    .blendMode(.plusLighter)
+                corpsBouton(D: D, press: press)
+                    .offset(y: 3.5 * press)
+            }
+            .frame(width: D + 60, height: D + 60)
+        }
+        .contentShape(Circle())
+        .gesture(DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                if presseDepuis == nil {
+                    presseDepuis = Date()
+                    UIImpactFeedbackGenerator(style: .medium)
+                        .impactOccurred(intensity: 0.85)
+                }
+            }
+            .onEnded { _ in
+                relacheA = Date()
+                burstA = Date()
+                presseDepuis = nil
+                UIImpactFeedbackGenerator(style: .light)
+                    .impactOccurred(intensity: 0.6)
+            })
+    }
+
+    private var pauseTimeline: Bool {
+        if presseDepuis != nil { return false }
+        return Date().timeIntervalSince(burstA) > 1.6
+            && Date().timeIntervalSince(relacheA) > 0.5
+    }
+
+    private func rampe(_ now: Date) -> Double {
+        func lisse(_ v: Double) -> Double {
+            let u = min(max(v, 0), 1); return u * u * (3 - 2 * u)
+        }
+        if let d = presseDepuis { return lisse(now.timeIntervalSince(d) / 0.12) }
+        return 1 - lisse(now.timeIntervalSince(relacheA) / 0.30)
+    }
+
+    private func burst(_ now: Date) -> Double {
+        min(max(now.timeIntervalSince(burstA) / (fumee ? 1.4 : 0.55), 0), 1)
+    }
+
+    /// les volutes : trois souffles pâles qui montent et se dissolvent
+    private func volutes(u: Double, D: CGFloat) -> some View {
+        ForEach(0..<3, id: \.self) { i in
+            let fi = Double(i)
+            let ui = min(max((u * 1.4 - fi * 0.12), 0), 1)
+            let derive: CGFloat = [-14, 10, -4][i]
+            Ellipse()
+                .fill(Color(white: 0.88).opacity(0.26 * (1 - ui) * (ui > 0 ? 1 : 0)))
+                .frame(width: D * (0.30 + 0.45 * ui),
+                       height: D * (0.22 + 0.30 * ui))
+                .offset(x: derive * ui + [8, -10, 2][i],
+                        y: -D * 0.30 - D * 0.75 * ui)
+                .blur(radius: 5 + 7 * ui)
+        }
+    }
+
+    private func corpsBouton(D: CGFloat, press: Double) -> some View {
+        ZStack {
+            Ellipse()
+                .fill(Color.black.opacity(0.6))
+                .frame(width: D * 0.92, height: D * 0.30)
+                .offset(y: D * 0.50 - 3.5 * press)
+                .blur(radius: 7)
+            Circle().fill(Color(white: 0.055))
+                .frame(width: D, height: D).offset(y: 5 - 3.5 * press)
+            Circle()
+                .fill(RadialGradient(
+                    stops: [.init(color: Color(white: 0.40), location: 0),
+                            .init(color: Color(white: 0.28), location: 0.55),
+                            .init(color: Color(white: 0.16), location: 1)],
+                    center: UnitPoint(x: 0.42, y: 0.36),
+                    startRadius: 0, endRadius: D * 0.62))
+                .frame(width: D - 2, height: D - 2)
+            Ellipse().fill(Color.white.opacity(0.20))
+                .frame(width: D * 0.55, height: D * 0.30)
+                .offset(x: -D * 0.10, y: -D * 0.22)
+                .blur(radius: 6)
+            Circle().fill(Color.clear)
+                .glassEffect(.clear, in: Circle())
+                .frame(width: D, height: D)
+            Text("25 AUG")
+                .font(.system(size: D * 0.19, weight: .bold, design: .rounded))
+                .kerning(0.6)
+                .foregroundStyle(LinearGradient(
+                    colors: [Color(white: 1.0), Color(white: 0.80)],
+                    startPoint: .top, endPoint: .bottom))
+        }
     }
 }
 
