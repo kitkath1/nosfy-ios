@@ -1154,7 +1154,11 @@ struct DuoLab: View {
                   let n = Int(args[i + 1]) else { return 0 }
             return max(0, min(EcranSpec.etapes.count - 1, n))
         }()
-        if args.contains("-duoGalets") {
+        if args.contains("-pillMire") {
+            // §20 Pil-1 : la mire des matières (natif / liquidLens / peint /
+            // métal sablé) sur noir et sur feu.
+            PillMireLab()
+        } else if args.contains("-duoGalets") {
             // La mire du galet-étape (J2) : la grammaire seule, deux fonds.
             GaletEtapeLab()
         } else {

@@ -223,3 +223,44 @@ static inline float3 lisHash3(float n) {
     const half kk = half(k), inv = half(1.0 - k);
     return half4(blanc * kk + color.rgb * inv, kk + color.a * inv);
 }
+
+// ---------------------------------------------------------------------------
+// §20 Pil-1 — LE MÉTAL SABLÉ (la réf : l'icône Slack en métal noir pailleté).
+// colorEffect : le CORPS seul — obsidienne sablée au grain fin, paillettes
+// d'argent rares qui scintillent, biseau rim-light sur l'arc haut. Le néon
+// blanc et la date gravée vivent en SwiftUI au-dessus.
+// ⚠️ Nyquist (payé sur ObjectiveJewel) : cellules ≥ 2 pt — un grain plus fin
+// aliase sans raster 3×.
+// Arité : 3 args (float2 centre, float2 Rt, float2 regl) — l'appel Swift
+// suit AU FLOAT PRÈS (page blanche sinon).
+
+static float hachePill(float2 p) {
+    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+}
+
+[[stitchable]] half4 pillMetal(float2 pos, half4 color, float2 centre,
+                               float2 Rt, float2 regl) {
+    float R = Rt.x, t = Rt.y;
+    float grainAmp = regl.x, sparkGain = regl.y;
+    float2 d = pos - centre;
+    float r = length(d);
+    if (r > R + 1.5) { return half4(0.0h); }
+    float edge = 1.0 - smoothstep(R - 1.0, R + 1.0, r);
+    // le corps : l'obsidienne, la lumière rasante du haut (pente douce)
+    float base = 0.115 - 0.030 * (d.y / max(R, 1.0));
+    // le grain sablé (cellules 2 pt — la borne Nyquist)
+    float g = hachePill(floor(pos / 2.0)) - 0.5;
+    base += g * grainAmp;
+    // le biseau : rim-light sur l'arc haut, creux à peine sombre en bas
+    float rim = smoothstep(R - 4.5, R - 1.2, r);
+    float haut = clamp(-d.y / max(r, 1.0), 0.0, 1.0);
+    base += rim * haut * 0.38;
+    base -= rim * (1.0 - haut) * 0.05;
+    // les paillettes d'argent : rares (1,8 %), scintillement lent
+    float2 cell = floor(pos / 2.6);
+    float h = hachePill(cell);
+    float tw = 0.5 + 0.5 * sin(t * 1.7 + h * 43.98);
+    float spark = step(0.982, h) * tw * sparkGain;
+    float v = clamp(base + spark, 0.0, 1.0);
+    return half4(half3(v), 1.0h) * half(edge);
+}

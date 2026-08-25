@@ -317,6 +317,147 @@ struct GaletEtape: View {
     }
 }
 
+// MARK: - La mire des matières (`-pillMire`, §20 Pil-1)
+
+/// LA MIRE DES MATIÈRES — les candidats du « à faire » (A natif /
+/// B liquidLens / C peint enrichi), le métal sablé v1 (D) et l'actif (E),
+/// sur DEUX fonds : le noir pur et le feu (les poses réelles de la page).
+/// La question de Pil-1 : « le à-faire : natif, liquidLens ou peint ? »
+struct PillMireLab: View {
+    var body: some View {
+        ZStack {
+            Color.black
+            VStack(spacing: 26) {
+                Text("SUR LE NOIR").etiquette
+                rangee()
+                ZStack {
+                    HStack(spacing: 0) {
+                        Image("duo-feu-blanc-poster").resizable().scaledToFill()
+                        Image("duo-feu-rouge-poster").resizable().scaledToFill()
+                    }
+                    .frame(height: 190).clipped()
+                    rangee()
+                }
+                Text("SUR LE FEU").etiquette
+                HStack(spacing: 26) {
+                    VStack(spacing: 6) {
+                        pillMetal(date: "12 JUN", taille: 100)
+                        Text("D métal (grand)").etiquette
+                    }
+                    VStack(spacing: 6) {
+                        GaletEtape(etat: .actif, numero: 2, taille: 92)
+                        Text("E actif (actuel)").etiquette
+                    }
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .statusBarHidden()
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func rangee() -> some View {
+        HStack(spacing: 14) {
+            VStack(spacing: 6) {
+                pillNatif
+                Text("A natif").etiquette
+            }
+            VStack(spacing: 6) {
+                pillLens
+                Text("B liquidLens").etiquette
+            }
+            VStack(spacing: 6) {
+                GaletEtape(etat: .verrouille, numero: 4, taille: 76)
+                    .frame(width: 84, height: 84)
+                Text("C peint").etiquette
+            }
+            VStack(spacing: 6) {
+                pillMetal(date: "12 JUN", taille: 76)
+                Text("D métal").etiquette
+            }
+        }
+    }
+
+    /// A — LE NATIF `.clear` (le procès du §10.1, enfin sur mire — l'encre
+    /// vit HORS du conteneur, la loi de la molette).
+    private var pillNatif: some View {
+        GlassEffectContainer(spacing: 0) {
+            Circle()
+                .fill(Color.clear)
+                .glassEffect(.clear, in: Circle())
+                .frame(width: 76, height: 76)
+        }
+        .frame(width: 84, height: 84)
+    }
+
+    /// B — LE LIQUIDLENS en petit : la vraie lentille de la fiche exo
+    /// (layerEffect — elle réfracte SA couche : le patch de fond qu'on lui
+    /// donne). Queue d'appel = 18 floats, l'arité de LaunchPebble.
+    private var pillLens: some View {
+        TimelineView(.animation) { ctx in
+            let t = Float(ctx.date.timeIntervalSinceReferenceDate)
+            ZStack {
+                Image("duo-feu-blanc-poster")
+                    .resizable().scaledToFill()
+                    .frame(width: 84, height: 84)
+                    .clipped()
+                    .opacity(0.55)
+            }
+            .layerEffect(ShaderLibrary.liquidLens(
+                .float2(84, 84), .float2(42, 42), .float(36),
+                .float(0.055), .float(0.9), .float(0),
+                .float(1.0), .float(0.30), .float(t),
+                .float(0), .float(0), .float(0), .float(0),
+                .float(0), .float(0), .float(0), .float(0)),
+                maxSampleOffset: CGSize(width: 24, height: 24))
+        }
+        .frame(width: 84, height: 84)
+    }
+
+    /// D — LE MÉTAL SABLÉ v1 : le shader `pillMetal` + le NÉON blanc
+    /// autour du noir (anneau fin) + la DATE gravée en creux (l'emboss :
+    /// encre sombre, lumière sur la lèvre basse).
+    private func pillMetal(date: String, taille: CGFloat) -> some View {
+        TimelineView(.animation(minimumInterval: 0.08)) { ctx in
+            let t = Float(ctx.date.timeIntervalSinceReferenceDate)
+            let pad: CGFloat = 12
+            ZStack {
+                Rectangle()
+                    .fill(.white)
+                    .frame(width: taille + 2 * pad, height: taille + 2 * pad)
+                    .colorEffect(ShaderLibrary.pillMetal(
+                        .float2(Float(pad + taille / 2), Float(pad + taille / 2)),
+                        .float2(Float(taille / 2), t),
+                        .float2(0.018, 0.85)))
+                // LE NÉON BLANC autour du noir — fin, calme, constant.
+                Circle()
+                    .stroke(Color.white.opacity(0.75), lineWidth: 1.4)
+                    .frame(width: taille + 1, height: taille + 1)
+                    .blur(radius: 0.6)
+                Circle()
+                    .stroke(Color.white.opacity(0.28), lineWidth: 4)
+                    .frame(width: taille + 3, height: taille + 3)
+                    .blur(radius: 3.5)
+                // LA DATE GRAVÉE : l'encre enfoncée, la lèvre basse allumée.
+                Text(date)
+                    .font(.system(size: taille * 0.20, weight: .bold,
+                                  design: .rounded))
+                    .kerning(0.8)
+                    .foregroundStyle(Color(white: 0.04))
+                    .shadow(color: .white.opacity(0.30), radius: 0.4, y: 0.8)
+            }
+        }
+        .frame(width: taille + 24, height: taille + 24)
+    }
+}
+
+private extension Text {
+    var etiquette: some View {
+        self.font(.system(size: 10, weight: .medium, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.45))
+    }
+}
+
 // MARK: - La mire (`-duoGalets`)
 
 /// LA MIRE DU GALET-ÉTAPE : la grammaire complète sur mire grise et sur
