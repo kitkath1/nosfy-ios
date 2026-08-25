@@ -560,6 +560,10 @@ private struct FeuxDuo: View {
     let etat: EtatDuo
     let hauteur: CGFloat
     let largeur: CGFloat
+    /// §18 P1 — la zone morte du HUD se MESURE au runtime, jamais ne se
+    /// déclare (la dalle vit SOUS la safe area : ~y 67→125 physique) :
+    /// les braises suspendues naissent SOUS elle.
+    let decalageHaut: CGFloat
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -569,7 +573,10 @@ private struct FeuxDuo: View {
             // dans FenetreVideo). Le voyage est noir.
             ForEach(Array(EcranSpec.feux.enumerated()), id: \.offset) { _, feu in
                 let h = largeur * feu.spec.ratioHL
-                let yLocal = feu.enHaut ? 0 : hauteur - h
+                // §18 P1 : l'offset entre dans yLocal — qui nourrit restY
+                // ET l'offset ensemble (un offset seul poserait dist ≈ 130
+                // à la pose : une mini-condensation permanente).
+                let yLocal = feu.enHaut ? decalageHaut : hauteur - h
                 // §17 — LA BOULE : en voyage la braise se condense vers
                 // SA couture (l'ancre fait le morphisme) ; §17 M2 — LE
                 // DÉVOILEMENT : pendant le geste tout est voilé de blur,
@@ -671,6 +678,8 @@ enum DuoReglages {
     }()
     static let bouleEffectif: CGFloat =
         UIAccessibility.isReduceMotionEnabled ? 0 : bouleScale
+    /// §18 P0.2 — le log de phase du scroll (`-duoLogPhase`).
+    static let logPhase = CommandLine.arguments.contains("-duoLogPhase")
     /// reduceMotion coupe le rack focus (piège 19) — figé au lancement.
     static let focusEffectif: CGFloat =
         UIAccessibility.isReduceMotionEnabled ? 0 : focusMax
@@ -861,6 +870,9 @@ struct DuolinguoPage: View {
     var etapeInitiale: Int = 0
     var gel = false
     var auto = false
+    /// §18 P0.1 — `-duoAutoLent` : le même aller-retour, durée ×3 (les
+    /// calques et les relais se jugent au ralenti).
+    var lent = false
 
     var body: some View {
         // LE PROXY EST DEHORS, seul le défilement fuit la zone sûre (école
@@ -880,7 +892,8 @@ struct DuolinguoPage: View {
                 // des sections (le croisement de T3 traverse les coutures).
                 .overlay(alignment: .top) {
                     FeuxDuo(etat: etat, hauteur: hauteur,
-                            largeur: g.size.width)
+                            largeur: g.size.width,
+                            decalageHaut: g.safeAreaInsets.top + 58 + 12)
                 }
                 // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
                 // sonde a une frame de retard : le galet glisserait contre
@@ -1011,7 +1024,26 @@ struct DuolinguoPage: View {
             // LA PHASE, séparée de la géométrie (une sonde de phase ne vole
             // pas les rappels de la sonde composée) : la dalle s'efface au
             // doigt, revient à la pose.
-            .onScrollPhaseChange { _, neuf in
+            .onScrollPhaseChange { vieux, neuf in
+                // §18 P0.2 — LE LOG DE PHASE (`-duoLogPhase`) : la preuve
+                // que la phase tombe (ou pas) au scrollTo programmé —
+                // print (--console-pty) ET fichier du conteneur (films).
+                if DuoReglages.logPhase {
+                    let ligne = "phase \(vieux) -> \(neuf) t=\(Date().timeIntervalSince1970)\n"
+                    print("DUOPHASE: \(ligne)", terminator: "")
+                    if let d = FileManager.default.urls(
+                        for: .documentDirectory, in: .userDomainMask).first {
+                        let f = d.appendingPathComponent("duo-phase.log")
+                        if let h = try? FileHandle(forWritingTo: f) {
+                            h.seekToEndOfFile()
+                            h.write(ligne.data(using: .utf8)!)
+                            try? h.close()
+                        } else {
+                            try? ligne.write(to: f, atomically: true,
+                                             encoding: .utf8)
+                        }
+                    }
+                }
                 let geste = neuf != .idle
                 if etat.enGeste != geste { etat.enGeste = geste }
             }
@@ -1057,10 +1089,11 @@ struct DuolinguoPage: View {
     /// `-duoAuto` : l'aller-retour filmé 1 → 5 → 1, une pose par écran —
     /// le film du fouettage (école `-porteAuto` : scrollTo dans withAnimation).
     private func lancerAuto(hauteur: CGFloat) {
+        let f: Double = lent ? 3.0 : 1.0
         let poses: [Int] = Array(0...4) + Array((0...3).reversed())
         for (n, ecran) in poses.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6 + Double(n) * 2.2) {
-                withAnimation(.easeInOut(duration: 1.1)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6 + Double(n) * 2.2 * f) {
+                withAnimation(.easeInOut(duration: 1.1 * f)) {
                     ordre.scrollTo(y: CGFloat(ecran) * hauteur)
                 }
             }
@@ -1094,7 +1127,9 @@ struct DuoLab: View {
             DuolinguoPage(ecranInitial: ecran,
                           etapeInitiale: etape,
                           gel: args.contains("-duoFreeze"),
-                          auto: args.contains("-duoAuto"))
+                          auto: args.contains("-duoAuto")
+                              || args.contains("-duoAutoLent"),
+                          lent: args.contains("-duoAutoLent"))
                 .environment(\.colorScheme, .dark)
         }
     }
