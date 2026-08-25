@@ -158,22 +158,28 @@ for spec in [
     ("duo-flamme-bleue",         804,  440, 198,   0),
 ]:
     scrim(*spec)
-# §17/§18 (LA VÉRITÉ DU BUNDLE, restaurée au fouettage §18) : les braises
-# sont des LARMES — fondu aux DEUX bouts (plus de miroir, plus
-# d'overshoot : le socle horizontal de la source posait un TRAIT), et la
-# VIGNETTE 2D ELLIPTIQUE « de peintre » : aucune structure droite ne
-# survit. Basses 804x430 (215 pt), suspendues 804x260 (130 pt, cuites
-# pre-flip puis vflip du canevas entier + roll demi-boucle).
-scrim("basse", 804, 430, 200, 130)
-scrim("haute", 804, 260, 90, 130)
+# §19 (LE FEU UNIQUE-LARME) : UN fichier 804x640 par couture de feu — le
+# coeur SUR la couture (rangee 320), plumes au-dessus (mort 180), REFLET
+# dessous. Les lecons payees a la jonction : toute ATTENUATION du miroir
+# a la jonction fabrique une MARCHE (x0,80 = ligne 22 ; rampe alpha =
+# trou noir, ligne 65) — la forme juste est le MIROIR PUR (continuite
+# valeur pour valeur) + flou PROGRESSIF (maskedmerge, net a 300 -> flou
+# plein a 400) + extinction qui PART DE ZERO a la jonction (scrim bas de
+# 320). La vignette 2D zeroe ses 12 colonnes de bord.
+scrim("feularme", 804, 640, 180, 320)
 def vig2d(name, W, H, cx, cy, sx, sy):
     xx, yy = np.meshgrid(np.arange(W), np.arange(H))
     g = np.exp(-(((xx-cx)/sx)**2 + ((yy-cy)/sy)**2))
+    g[:, :12] = 0; g[:, -12:] = 0
     v = (g*255).astype(np.uint8)
     Image.fromarray(np.stack([v,v,v], axis=-1)).save(
         os.path.join(os.environ["TMP_SCRIM"], f"{name}.png"))
-vig2d("vig-basse", 804, 430, 402, 300, 250, 200)
-vig2d("vig-haute", 804, 260, 402, 185, 230, 130)
+vig2d("vig-feularme", 804, 640, 402, 320, 230, 200)
+y = np.linspace(0, 639, 640)[:, None]
+mk = np.clip((y - 300) / 100.0, 0, 1)
+v = np.broadcast_to((mk * 255).astype(np.uint8), (640, 804))
+Image.fromarray(np.array(v)).save(
+    os.path.join(os.environ["TMP_SCRIM"], "blurmask.png"))
 EOF
 
 DL=~/Downloads
@@ -193,45 +199,33 @@ cuirePill duo-galet-noir "$DL/Video noir_liquid.mp4" "1292:1672:440:1557" "1206x
 # le coeur remonte a pleine echelle — baisser le gain fabriquait du gris
 # (le piege « baisser pour fondre »). Et la VIGNETTE gaussienne laterale
 # (multiply) garantit du noir aux flancs par construction.
-# LA BRAISE BASSE (804x430) : crush du point noir (le voile gris de la
-# source meurt — jamais par le gain), vignette 2D multiply, fondu cuit
-# aux deux bouts (scrim), palindrome, crf 17 une passe.
-cuireBraiseBasse() { # $1 nom  $2 source  $3 crop  $4 point_noir  $5 nbf
-  ffmpeg -y -v error -i "$2" -i "$TMP/vig-basse.png" -i "$TMP/scrim-basse.png" \
+# §19 — LE FEU UNIQUE-LARME (804x640, coeur sur la couture) : moitie
+# haute = la flamme (crush du point noir — le voile gris de la source
+# meurt, jamais par le gain), moitie basse = son MIROIR PUR, flou
+# progressif maskedmerge, vignette 2D, extinction basse partant de la
+# jonction, palindrome, crf 17 une passe.
+cuireFeuLarme() { # $1 nom  $2 source  $3 crop  $4 point_noir  $5 nbf
+  ffmpeg -y -v error -i "$2" -i "$TMP/vig-feularme.png" \
+    -i "$TMP/scrim-feularme.png" -i "$TMP/blurmask.png" \
     -filter_complex "\
-[0:v]crop=$3,scale=804:430,format=gbrp,\
-lutrgb=r='clip((val-$4)*255/$((255-$4)),0,255)':g='clip((val-$4)*255/$((255-$4)),0,255)':b='clip((val-$4)*255/$((255-$4)),0,255)',format=gbrp[c];\
-[1:v]format=gbrp[vg];[c][vg]blend=all_mode=multiply[vv];\
+[0:v]crop=$3,scale=804:320,format=gbrp,\
+lutrgb=r='clip((val-$4)*255/$((255-$4)),0,255)':g='clip((val-$4)*255/$((255-$4)),0,255)':b='clip((val-$4)*255/$((255-$4)),0,255)'[c0];\
+[c0]split[c][m];\
+[m]vflip[mm];\
+[c]pad=804:640:0:0:black[p];[p][mm]overlay=0:320,format=gbrp[full];\
+[full]split[sharp][fl];[fl]gblur=sigma=14[bl];\
+[3:v]format=gray[mask];[sharp][bl][mask]maskedmerge,format=gbrp[prog];\
+[1:v]format=gbrp[vg];[prog][vg]blend=all_mode=multiply[vv];\
 [vv][2:v]overlay=0:0[s];\
 [s]split[a][b];[b]reverse,trim=start_frame=1:end_frame=$(($5-1)),setpts=PTS-STARTPTS[r];\
 [a][r]concat=n=2:v=1,format=yuv420p[out]" \
     -map "[out]" $X264P "$OUT/$1.mp4"
 }
-# LA BRAISE SUSPENDUE (804x260) : cuite comme une basse PETITE, puis
-# vflip du canevas ENTIER (les plumes pendent) + ROLL demi-boucle du
-# palindrome (jamais en phase avec la basse de sa couture).
-cuireBraiseHaute() { # $1 nom  $2 source  $3 crop  $4 point_noir  $5 nbf
-  local k=$(($5))
-  ffmpeg -y -v error -i "$2" -i "$TMP/vig-haute.png" -i "$TMP/scrim-haute.png" \
-    -filter_complex "\
-[0:v]crop=$3,scale=804:260,format=gbrp,\
-lutrgb=r='clip((val-$4)*255/$((255-$4)),0,255)':g='clip((val-$4)*255/$((255-$4)),0,255)':b='clip((val-$4)*255/$((255-$4)),0,255)',format=gbrp[c];\
-[1:v]format=gbrp[vg];[c][vg]blend=all_mode=multiply[vv];\
-[vv][2:v]overlay=0:0,vflip[s];\
-[s]split[a][b];[b]reverse,trim=start_frame=1:end_frame=$(($5-1)),setpts=PTS-STARTPTS[r];\
-[a][r]concat=n=2:v=1[pp];\
-[pp]split[x][y];[x]trim=start_frame=$k,setpts=PTS-STARTPTS[ra];[y]trim=start_frame=0:end_frame=$k,setpts=PTS-STARTPTS[rb];\
-[ra][rb]concat=n=2:v=1,format=yuv420p[out]" \
-    -map "[out]" $X264P "$OUT/$1.mp4"
-}
 NBLANC=$(nbf "$DL/Video rougeetbleu_liquid.mp4")
 NROUGE=$(nbf "$DL/video_flamme_rouge.mp4")
 # crops rim-safe (44 rangees au-dessus du lisere du cadre arrondi source)
-cuireBraiseBasse duo-flamme-blanche "$DL/Video rougeetbleu_liquid.mp4" "1080:578:0:1298" 70 $NBLANC
-cuireBraiseBasse duo-flamme-rouge   "$DL/video_flamme_rouge.mp4"       "2160:1155:0:2637" 24 $NROUGE
-cuireBraiseHaute duo-flamme-blanche-haut "$DL/Video rougeetbleu_liquid.mp4" "1080:349:0:1527" 70 $NBLANC
-cuireBraiseHaute duo-flamme-rouge-haut   "$DL/video_flamme_rouge.mp4"       "2160:699:0:3093" 24 $NROUGE
-# (mort au §15 : cuireFeu duo-feu-blanc "1080:806:0:1114" 0.62 85)
+cuireFeuLarme duo-feu-blanc "$DL/Video rougeetbleu_liquid.mp4" "1080:430:0:1446" 70 $NBLANC
+cuireFeuLarme duo-feu-rouge "$DL/video_flamme_rouge.mp4"       "2160:860:0:2932"  24 $NROUGE
 
 # --- LA FRONTIERE 2/3 : la capsule rouge ENTIERE (verdict 2e salve :
 # « ca doit etre le meme element »). Ecole rougebleu : plein pied, fenetre
@@ -251,16 +245,16 @@ cuireA duo-flamme-bleue "$DL/video_flamme_bleu.mp4" "1080:592:0:1328" 0 "804x440
 pingpong "$TMP/duo-flamme-bleue-A.mp4" "$OUT/duo-flamme-bleue.mp4" $X264
 
 # ------------------------------------------------------------------ poses
-for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut duo-galet-rouge \
-         duo-flamme-rouge duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
+         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
   pose $n
 done
 
 # ------------------------------------------------- portillons (mesures)
 echo ""
 echo "== PORTILLONS J0 =="
-for n in duo-galet-noir duo-flamme-blanche duo-flamme-blanche-haut duo-galet-rouge \
-         duo-flamme-rouge duo-flamme-rouge-haut duo-galet-rougebleu duo-flamme-bleue; do
+for n in duo-galet-noir duo-feu-blanc duo-galet-rouge \
+         duo-feu-rouge duo-galet-rougebleu duo-flamme-bleue; do
   f="$OUT/$n.mp4"
   nf=$(nbf "$f")
   ffmpeg -y -v error -i "$f" -vf "select=eq(n\,0)" -vsync 0 "$TMP/$n-f0.png"
@@ -271,8 +265,8 @@ import numpy as np, os, glob
 from PIL import Image
 tmp = os.environ["TMP"]
 out = "../../Woop/Media"
-names = ["duo-galet-noir","duo-flamme-blanche","duo-flamme-blanche-haut","duo-galet-rouge",
-         "duo-flamme-rouge","duo-flamme-rouge-haut","duo-galet-rougebleu","duo-flamme-bleue"]
+names = ["duo-galet-noir","duo-feu-blanc","duo-galet-rouge",
+         "duo-feu-rouge","duo-galet-rougebleu","duo-flamme-bleue"]
 print(f"{'fichier':28s} {'couture':>8s} {'bordH p99':>10s} {'bordB p99':>10s} {'noir p50':>9s} {'Mo':>6s}")
 total = 0.0
 for n in names:

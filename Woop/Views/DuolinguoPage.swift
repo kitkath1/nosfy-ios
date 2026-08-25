@@ -67,28 +67,16 @@ struct EcranSpec: Equatable, Identifiable {
     /// noir : les galets et les capsules portent la page.
     static let les5: [EcranSpec] = [
         // ÉCRAN 1 — LE VERRE NOIR (col au bord, ventre aux 4/5 de la fenêtre)
+        // §19 : les 4 braises séparées sont MORTES — deux vidéos par
+        // couture, c'est topologiquement condamné (l'entre-deux). Chaque
+        // couture de feu = UN feu-larme chevauchant (`feuxUniques`).
         EcranSpec(id: 0,
                   haut: .init(nom: "duo-galet-noir", ratioHL: 1560.0/1206.0,
                               parallaxe: 0.10, emerge: true),
-                  bas: .init(nom: "duo-flamme-blanche", ratioHL: 430.0/804.0,
-                             flamme: true, extinctionVoyage: 0.25)),
-        // ÉCRAN 2 — LA BRAISE BLANCHE : la suspendue REVIENT (§16 G1 —
-        // « on ne voit plus rien sur les flammes ») : petite, renversée,
-        // clouée en haut, jamais croisée avec la basse.
-        EcranSpec(id: 1,
-                  haut: .init(nom: "duo-flamme-blanche-haut",
-                              ratioHL: 260.0/804.0, flamme: true,
-                              extinctionVoyage: 0.25),
                   bas: nil),
-        // ÉCRAN 3 — LE ROUGE (le haut = la frontière 2/3, le bas = la braise)
-        EcranSpec(id: 2, haut: nil,
-                  bas: .init(nom: "duo-flamme-rouge", ratioHL: 430.0/804.0,
-                             flamme: true, extinctionVoyage: 0.25)),
-        EcranSpec(id: 3,
-                  haut: .init(nom: "duo-flamme-rouge-haut",
-                              ratioHL: 260.0/804.0, flamme: true,
-                              extinctionVoyage: 0.25),
-                  bas: nil),   // LA BRAISE ROUGE
+        EcranSpec(id: 1, haut: nil, bas: nil),   // LA BRAISE BLANCHE
+        EcranSpec(id: 2, haut: nil, bas: nil),   // LE ROUGE
+        EcranSpec(id: 3, haut: nil, bas: nil),   // LA BRAISE ROUGE
         // ÉCRAN 5 — LE BLEU (le haut = la frontière 4/5, le bas = la
         // flamme bleue, rendue dans la couche des feux)
         EcranSpec(id: 4,
@@ -97,31 +85,35 @@ struct EcranSpec: Equatable, Identifiable {
                              flamme: true, extinctionVoyage: 0.30)),
     ]
 
-    /// §15 : plus AUCUN feu chevauchant — la struct reste pour l'histoire,
-    /// la liste est VIDE (le §13 l'avait remplie, le reframe l'a vidée).
+    /// §19 — LE FEU UNIQUE-LARME : la topologie du §13 (un fichier
+    /// chevauchant par couture — l'école des capsules validées) × la
+    /// matière du §17 (crush + vignette 2D + fondu partout). Le cœur du
+    /// feu vit SUR la couture (rangée 320 du fichier 804×640) : à la pose
+    /// basse les plumes montent DU bord (le footer), à la pose haute la
+    /// lueur-reflet saigne DU bord derrière la dalle (le header), au
+    /// scroll UN corps traverse — l'espace entre les flammes n'existe
+    /// plus, par construction.
     struct FeuUnique: Identifiable {
         let id: Int
         let nom: String
         let couture: Int
-        let ratioHL: CGFloat = 1080.0 / 804.0
+        let ratioHL: CGFloat = 640.0 / 804.0
         var pose: String { nom + "-poster" }
         var ecrans: [Int] { [couture - 1, couture] }
     }
-    static let feuxUniques: [FeuUnique] = []
+    static let feuxUniques: [FeuUnique] = [
+        FeuUnique(id: 0, nom: "duo-feu-blanc", couture: 1),
+        FeuUnique(id: 1, nom: "duo-feu-rouge", couture: 3),
+    ]
 
-    /// §15, D3 — LA LUEUR DE COUTURE : aux coutures de feu (1/2 et 3/4),
-    /// une respiration de lumière très basse pendant le geste — motivée,
-    /// teintée par le chapitre, morte aux poses. C'est TOUT le décor du
-    /// voyage.
+    /// §19 : la lueur de couture est MORTE — le corps du feu EST la
+    /// continuité.
     struct LueurCouture: Identifiable {
         let id: Int
-        let couture: Int      // la couture k : centre à y = k × H
+        let couture: Int
         let teinte: (r: Double, g: Double, b: Double)
     }
-    static let lueurs: [LueurCouture] = [
-        LueurCouture(id: 0, couture: 1, teinte: (1.00, 0.96, 0.88)),
-        LueurCouture(id: 1, couture: 3, teinte: (1.00, 0.42, 0.16)),
-    ]
+    static let lueurs: [LueurCouture] = []
 
     /// Les flammes simples restantes (l'écran 5) pour la couche des feux.
     static let feux: [(ecran: Int, spec: FenetreSpec, enHaut: Bool)] = {
@@ -202,9 +194,8 @@ struct EcranSpec: Equatable, Identifiable {
     var lecture: [Bool] = [true, true, false, false, false]
     /// Les lecteurs des fenêtres frontières (2/3 rouge, 4/5 rouge-bleu).
     var lectureFrontieres: [Bool] = [false, false]
-    /// §15 : plus de feux chevauchants — la liste est vide, les braises de
-    /// pose vivent sur le booléen de LEUR écran.
-    var lectureFeux: [Bool] = []
+    /// §19 : les lecteurs des feux-larmes chevauchants (coutures 1/2, 3/4).
+    var lectureFeux: [Bool] = [true, false]
     /// Le gel du banc (`-duoFreeze`) et de reduceMotion : tout à l'arrêt.
     var gel = false
     /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
@@ -567,10 +558,31 @@ private struct FeuxDuo: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // §15 — LES BRAISES DE POSE : chaque flamme vit sur SON écran,
-            // ancrée au bord bas, l'overshoot (base miroir cuite) sous le
-            // bord physique ; elle s'éteint dès le geste (extinctionVoyage
-            // dans FenetreVideo). Le voyage est noir.
+            // §19 — LES FEUX-LARMES CHEVAUCHANTS : un objet par couture de
+            // feu (école FrontiereSpec), cœur SUR la couture, additif. Le
+            // voile de geste + dévoilement au repos restent (sa
+            // chorégraphie) ; un dim de voyage léger (RARE-2).
+            ForEach(EcranSpec.feuxUniques) { f in
+                let h = largeur * f.ratioHL
+                let restF = hauteur - h / 2
+                FenetreVideo(spec: .init(nom: f.nom, ratioHL: f.ratioHL,
+                                         extinctionVoyage: 1.1),
+                             largeur: largeur,
+                             restY: restF,
+                             hauteur: hauteur,
+                             poses: [0, -hauteur],
+                             additif: true,
+                             flou: DuoReglages.focusEffectif,
+                             joue: etat.lectureFeux[f.id])
+                    .blur(radius: etat.enGeste && !etat.gel
+                          ? DuoReglages.voileGeste : 0)
+                    .animation(etat.enGeste
+                               ? .easeIn(duration: 0.25)
+                               : .easeOut(duration: 0.7),
+                               value: etat.enGeste)
+                    .offset(y: CGFloat(f.couture) * hauteur - h / 2)
+            }
+            // La flamme simple de l'écran 5 (la bleue — rien dessous).
             ForEach(Array(EcranSpec.feux.enumerated()), id: \.offset) { _, feu in
                 let h = largeur * feu.spec.ratioHL
                 // §18 P1 : l'offset entre dans yLocal — qui nourrit restY
@@ -585,8 +597,6 @@ private struct FeuxDuo: View {
                              restY: yLocal, hauteur: hauteur,
                              additif: true,
                              flou: DuoReglages.focusEffectif,
-                             boule: DuoReglages.bouleEffectif,
-                             ancreBoule: feu.enHaut ? .top : .bottom,
                              joue: etat.lecture[feu.ecran])
                     .blur(radius: etat.enGeste && !etat.gel
                           ? DuoReglages.voileGeste : 0)
