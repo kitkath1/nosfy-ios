@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 // MARK: - LA CARD REWARD — le pop-up noir du chiffre
 
@@ -56,6 +57,10 @@ struct RewardPopup: View {
     /// L'unité sous le chiffre — le « Weeks » de la réf.
     let unit: String
     var style: RewardStyle = .halo
+    /// La vidéo du header (nom de ressource `Woop/Media`, sans
+    /// extension) — le REWARD à mise en scène : elle SORT de la matière
+    /// noire de la card, joue UNE fois, gèle sur sa dernière frame.
+    var videoNom: String? = nil
     var onClose: () -> Void
 
     /// L'unique progrès de l'entrée [0,1] — toutes les rampes en dérivent.
@@ -80,8 +85,9 @@ struct RewardPopup: View {
 
     var body: some View {
         RewardScene(p: p, count: count, title: title, subtitle: subtitle,
-                    unit: unit, style: style, naissance: naissance,
-                    enSortie: enSortie, fermer: fermer)
+                    unit: unit, style: style, videoNom: videoNom,
+                    naissance: naissance, enSortie: enSortie,
+                    fermer: fermer)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
             .onAppear {
@@ -136,6 +142,7 @@ private struct RewardScene: View, Animatable {
     let subtitle: String
     let unit: String
     let style: RewardStyle
+    let videoNom: String?
     let naissance: Date
     let enSortie: Bool
     var fermer: () -> Void
@@ -215,7 +222,7 @@ private struct RewardScene: View, Animatable {
                         ],
                         startPoint: .top, endPoint: .bottom))
 
-                if style == .halo {
+                if style == .halo, videoNom == nil {
                     // 4. LE GROS HALO DU BAS — la fumée blanche de la réf,
                     //    en DEUX couches (la nappe large + le cœur), du bas
                     //    uniquement. C'est le slot des futures vidéos.
@@ -261,9 +268,10 @@ private struct RewardScene: View, Animatable {
                     // Et le HALO DE SOL — monté d'un cran (verdict
                     // « augmente le halo ») : la brume dans laquelle les
                     // capitales couchées TREMPENT, en deux nappes.
-                    // (Pas en spotlight : là, la nuit est totale — la
-                    // seule lumière viendra de la lampe, jalon S3.)
-                    if style != .spotlight {
+                    // (Pas en spotlight — la nuit y est totale — ni sous
+                    // une VIDÉO : le corps doit rester noir + lumière
+                    // chaude, les nappes le lavaient en gris, mesuré.)
+                    if style != .spotlight, videoNom == nil {
                     Self.forme.fill(
                         EllipticalGradient(
                             stops: [
@@ -300,6 +308,30 @@ private struct RewardScene: View, Animatable {
                     PoudreDiamant(largeur: largeur, hauteur: hauteur,
                                   naissance: naissance)
                         .opacity(sstep(0.35, 0.75, p))
+                }
+
+                // 5 ter. LA VIDÉO DU HEADER — elle SORT de la matière
+                //    noire : fond noir vrai sur card noire, et un fondu
+                //    qui la scelle au corps (jamais une coupe). Elle
+                //    joue UNE fois et gèle sur sa dernière frame.
+                if let nom = videoNom {
+                    VStack(spacing: 0) {
+                        VideoReward(nom: nom)
+                            .frame(height: hauteur * 0.42)
+                            .overlay(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .clear, location: 0.55),
+                                        .init(color: .black.opacity(0.85),
+                                              location: 0.88),
+                                        .init(color: .black, location: 1)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom))
+                        Spacer(minLength: 0)
+                    }
+                    .opacity(sstep(0.10, 0.35, p))
+                    .allowsHitTesting(false)
                 }
 
                 // 6. LE LISERÉ — neutre, allumé PAR LE BAS comme tout le
@@ -399,7 +431,9 @@ private struct RewardScene: View, Animatable {
                 .foregroundStyle(WoopGradient.silverText)
                 .opacity(sstep(0.36, 0.58, p))
                 .offset(y: 5 * (1 - sstep(0.36, 0.62, p)))
-                .padding(.top, 26)
+                // Avec vidéo, le bloc de tête descend SOUS elle — le
+                // titre se pose dans le fondu, comme la réf du plan.
+                .padding(.top, videoNom == nil ? 26 : hauteur * 0.40)
             Text(subtitle)
                 .font(.inter(13.5))
                 .foregroundStyle(Color.white.opacity(0.55))
@@ -424,12 +458,18 @@ private struct RewardScene: View, Animatable {
                         .offset(y: 8 * (1 - sstep(0.44, 0.74, p)))
                 }
             } else if style == .spotlight {
+                // L'ARRIVÉE du chiffre (verdict « les chiffres s'animent
+                // à l'arrivée ») : il se pose d'un souffle pendant que le
+                // count-up tourne — transform, jamais un resize.
                 ChiffreMatrice(valeur: valeurCourante,
                                naissance: naissance)
                     .opacity(sstep(0.26, 0.44, p))
+                    .scaleEffect(0.94 + 0.06 * sstep(0.26, 0.58, p))
             } else {
-                ChiffreReward(valeur: valeurCourante)
+                ChiffreReward(valeur: valeurCourante,
+                              corps: videoNom == nil ? 190 : 118)
                     .opacity(sstep(0.26, 0.44, p))
+                    .scaleEffect(0.95 + 0.05 * sstep(0.26, 0.58, p))
                     // LE GALET DE VERRE (variant .galet) — posé SUR le
                     // chiffre en overlay (le layout ne bouge pas), il
                     // arrive une fois le chiffre posé.
@@ -559,11 +599,14 @@ private struct PoudreDiamant: View {
 /// Monospacé : le layout ne respire pas entre 9 et 10.
 private struct ChiffreReward: View {
     let valeur: Int
+    /// Le corps de la fonte — 190 en pleine card, réduit quand une
+    /// vidéo occupe le header.
+    var corps: CGFloat = 190
 
     var body: some View {
         let tilt = SkyMotion.shared.tilt
         Text("\(valeur)")
-            .font(.inter(190, .medium))
+            .font(.inter(corps, .medium))
             .monospacedDigit()
             .tracking(-2)
             .foregroundStyle(
@@ -1043,6 +1086,43 @@ private struct GaletVerre: View {
                 }
             }
     }
+}
+
+// MARK: - La vidéo du header
+
+private final class VideoRewardUIView: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+}
+
+/// LE LECTEUR DU HEADER — une vidéo fond noir qui sort de la matière de
+/// la card : lecture UNIQUE, muette, et STOP SUR LA DERNIÈRE FRAME
+/// (`actionAtItemEnd = .pause`) — le fondu permanent, jamais une coupe.
+/// Pièges payés appliqués : aspectFill déborde son cadre →
+/// `clipsToBounds + masksToBounds` ; `AVPlayerLayer` ne coûte rien
+/// (mesure SondeCadence du 18-08) ; ressource NUE de `Woop/Media`,
+/// chargée par le bundle.
+private struct VideoReward: UIViewRepresentable {
+    let nom: String
+
+    func makeUIView(context: Context) -> VideoRewardUIView {
+        let v = VideoRewardUIView()
+        v.clipsToBounds = true
+        v.layer.masksToBounds = true
+        v.backgroundColor = .black
+        guard let url = Bundle.main.url(forResource: nom,
+                                        withExtension: "mp4")
+        else { return v }
+        let lecteur = AVPlayer(url: url)
+        lecteur.isMuted = true
+        lecteur.actionAtItemEnd = .pause
+        let couche = v.layer as! AVPlayerLayer
+        couche.player = lecteur
+        couche.videoGravity = .resizeAspectFill
+        lecteur.play()
+        return v
+    }
+
+    func updateUIView(_ v: VideoRewardUIView, context: Context) {}
 }
 
 /// La feuille gyro : elle SEULE relit `SkyMotion` à 30 Hz (le contenu,

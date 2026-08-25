@@ -650,11 +650,20 @@ struct ExerciseDetailView: View {
         }
         // Le banc du spotlight (jalon S1) : `-spotLab` ouvre la robe
         // spotlight SEULE, sans fermeture auto — l'atelier de la matrice
-        // (comparaisons `-spotViolet` / `-spotAlea` sur captures).
+        // (comparaison `-spotAlea` sur captures).
         .task {
             guard CommandLine.arguments.contains("-spotLab") else { return }
             try? await Task.sleep(for: .seconds(1.0))
             rewardVariant = 3
+            rewardShow = true
+        }
+        // Le banc de la VIDÉO reward : `-rewardVideo` ouvre la card à
+        // header vidéo (corps halo compacté), sans fermeture auto.
+        .task {
+            guard CommandLine.arguments.contains("-rewardVideo")
+            else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 2
             rewardShow = true
         }
         // Le chevron du chip a remplacé la barre système : deux flèches de
@@ -808,6 +817,9 @@ struct ExerciseDetailView: View {
                         subtitle: "Congratulations, you've completed your training!",
                         unit: "Sets",
                         style: Self.rewardStyles[rewardVariant],
+                        videoNom: CommandLine.arguments
+                            .contains("-rewardVideo")
+                            ? "reward-piece-1" : nil,
                         onClose: { rewardShow = false })
                 }
             }
