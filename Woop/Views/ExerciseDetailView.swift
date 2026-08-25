@@ -41,6 +41,13 @@ struct ExerciseDetailView: View {
     @State private var rewardVariant = 3
     private static let rewardStyles: [RewardStyle] =
         [.galet, .neon, .halo, .spotlight]
+    /// Le tour des vidéos pièce au banc `-rewardVideo` — les 5 recuites
+    /// de la famille défilent, une par ouverture.
+    @State private var rewardVideoTour = 0
+    private static let rewardVideos = [
+        "reward-piece-1", "reward-piece-2", "reward-piece-3",
+        "reward-piece-4", "reward-piece-5"
+    ]
 
     // Le brouillon. Il vivait dans la feuille modale ; c'est désormais l'état de
     // la page elle-même. On part de ZÉRO série : la première naît du geste de
@@ -819,7 +826,9 @@ struct ExerciseDetailView: View {
                         style: Self.rewardStyles[rewardVariant],
                         videoNom: CommandLine.arguments
                             .contains("-rewardVideo")
-                            ? "reward-piece-1" : nil,
+                            ? Self.rewardVideos[
+                                rewardVideoTour % Self.rewardVideos.count]
+                            : nil,
                         onClose: { rewardShow = false })
                 }
             }
@@ -1510,6 +1519,7 @@ struct ExerciseDetailView: View {
             // l'atelier — son vrai rôle (date, heure) attend toujours.
             ChipVerre(symbole: "ellipsis", label: "Options") {
                 rewardVariant = (rewardVariant + 1) % Self.rewardStyles.count
+                rewardVideoTour += 1
                 rewardShow = true
             }
         }

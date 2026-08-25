@@ -262,6 +262,24 @@ Conséquences dures :
    `AVPlayerLayer` ne coûte rien, c'est le Canvas et le verre qui
    coûtent (mesure SondeCadence du 18-08).
 
+### LA RECUISSON EST FAITE (25-08 soir) — et le MODE DÉMO
+
+Les 9 vidéos sont recuites dans `Woop/Media` (1080, H.264, muettes,
+0,3-2 Mo pièce, dernières frames TOUTES vérifiées stables et sombres —
+`reward-fire` meurt même sur du noir pur, fondu idéal) :
+`reward-piece-1…5`, `reward-fire`, `reward-lune`, `reward-rare`,
+`reward-welcome` (portrait). `chauve_sourie_pièce_rewads_5.mp4` reçue
+le 25-08 soir (4K paysage 5,0 s) est la 5ᵉ de la famille.
+
+**LE MODE DÉMO (à prendre en compte partout)** : une fois le flow
+end-to-end branché (l'autre session le prépare), Kathryn enchaînera de
+VRAIES séances — jusqu'à ~30 séries — pour VOIR tous les variants dans
+sa page exo. Donc : un preset `reward_rules` **« demo »** qui délie les
+plafonds (budget pop-ups ∞, cooldowns ~0, rotation forcée des styles et
+des vidéos, pièce noire déclenchable) — activé par un drapeau de
+lancement, JAMAIS le preset par défaut. L'API du composant est prête :
+`RewardPopup(style:videoNom:)` se pilote de l'extérieur.
+
 ### En produire PLUS ? (question du 25-08)
 
 **Pas pour lancer — oui pour durer.** La rareté fait le premium : 7

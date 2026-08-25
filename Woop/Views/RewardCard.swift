@@ -147,6 +147,9 @@ private struct RewardScene: View, Animatable {
     let enSortie: Bool
     var fermer: () -> Void
 
+    /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
+    @State private var videoRelance = 0
+
     var animatableData: Double {
         get { p }
         set { p = newValue }
@@ -316,7 +319,7 @@ private struct RewardScene: View, Animatable {
                 //    joue UNE fois et gèle sur sa dernière frame.
                 if let nom = videoNom {
                     VStack(spacing: 0) {
-                        VideoReward(nom: nom)
+                        VideoReward(nom: nom, relance: videoRelance)
                             .frame(height: hauteur * 0.42)
                             .overlay(
                                 LinearGradient(
@@ -328,10 +331,13 @@ private struct RewardScene: View, Animatable {
                                         .init(color: .black, location: 1)
                                     ],
                                     startPoint: .top, endPoint: .bottom))
+                            // Le tap RELANCE la vidéo (verdict) — le
+                            // drag de la card garde son geste (min 3 pt).
+                            .contentShape(Rectangle())
+                            .onTapGesture { videoRelance += 1 }
                         Spacer(minLength: 0)
                     }
                     .opacity(sstep(0.10, 0.35, p))
-                    .allowsHitTesting(false)
                 }
 
                 // 6. LE LISERÉ — neutre, allumé PAR LE BAS comme tout le
@@ -1103,6 +1109,15 @@ private final class VideoRewardUIView: UIView {
 /// chargée par le bundle.
 private struct VideoReward: UIViewRepresentable {
     let nom: String
+    /// Le compteur de RELANCE (verdict « quand j'appuie sur une vidéo,
+    /// ça la relance ») : chaque incrément rembobine et rejoue.
+    var relance: Int = 0
+
+    final class Coordinateur {
+        var derniereRelance = 0
+    }
+
+    func makeCoordinator() -> Coordinateur { Coordinateur() }
 
     func makeUIView(context: Context) -> VideoRewardUIView {
         let v = VideoRewardUIView()
@@ -1122,7 +1137,17 @@ private struct VideoReward: UIViewRepresentable {
         return v
     }
 
-    func updateUIView(_ v: VideoRewardUIView, context: Context) {}
+    func updateUIView(_ v: VideoRewardUIView, context: Context) {
+        // La scène se ré-évalue à chaque frame de `p` : seule une VRAIE
+        // relance (le compteur qui change) rembobine.
+        guard context.coordinator.derniereRelance != relance,
+              let lecteur = (v.layer as? AVPlayerLayer)?.player
+        else { return }
+        context.coordinator.derniereRelance = relance
+        lecteur.seek(to: .zero, toleranceBefore: .zero,
+                     toleranceAfter: .zero)
+        lecteur.play()
+    }
 }
 
 /// La feuille gyro : elle SEULE relit `SkyMotion` à 30 Hz (le contenu,
@@ -1131,6 +1156,14 @@ private struct VideoReward: UIViewRepresentable {
 /// d'elle) ; l'inclinaison 3D reste un murmure.
 private struct CarteGyro<Contenu: View>: View {
     @ViewBuilder var contenu: () -> Contenu
+
+    /// LE TILT AU DOIGT (verdict « effet gyroscopique au drag de la
+    /// pop-up ») : le drag couche la card en 3D — gauche/droite surtout,
+    /// un souffle en vertical — et elle revient en ressort au lâcher.
+    /// Le ressort vit sur la VALEUR animée du modificateur (la leçon) ;
+    /// en `simultaneousGesture` : Close, le galet et le scrim gardent
+    /// leurs gestes.
+    @State private var pente = CGSize.zero
 
     private static var forme: RoundedRectangle {
         RoundedRectangle(cornerRadius: 36, style: .continuous)
@@ -1158,9 +1191,22 @@ private struct CarteGyro<Contenu: View>: View {
                     .clipShape(Self.forme)
                     .allowsHitTesting(false)
             }
-            .rotation3DEffect(.degrees(2.6 * tilt.dx),
-                              axis: (x: 0, y: 1, z: 0))
-            .rotation3DEffect(.degrees(-2.2 * tilt.dy),
-                              axis: (x: 1, y: 0, z: 0))
+            .rotation3DEffect(
+                .degrees(2.6 * tilt.dx
+                         + max(-11, min(11, pente.width * 0.085))),
+                axis: (x: 0, y: 1, z: 0))
+            .rotation3DEffect(
+                .degrees(-2.2 * tilt.dy
+                         - max(-7, min(7, pente.height * 0.055))),
+                axis: (x: 1, y: 0, z: 0))
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 3)
+                    .onChanged { v in pente = v.translation }
+                    .onEnded { _ in
+                        withAnimation(.spring(response: 0.42,
+                                              dampingFraction: 0.62)) {
+                            pente = .zero
+                        }
+                    })
     }
 }
