@@ -357,61 +357,75 @@ struct PillMireLab: View {
     }
 
     private func rangee() -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 22) {
             VStack(spacing: 6) {
-                pillNatif
-                Text("A natif").etiquette
+                boutonNatif(date: nil, ame: 0.16)
+                Text("à faire").etiquette
             }
             VStack(spacing: 6) {
-                pillLens
-                Text("B liquidLens").etiquette
-            }
-            VStack(spacing: 6) {
-                GaletEtape(etat: .verrouille, numero: 4, taille: 76)
-                    .frame(width: 84, height: 84)
-                Text("C peint").etiquette
+                boutonNatif(date: "25 AUG", ame: 0.30)
+                Text("actif").etiquette
             }
             VStack(spacing: 6) {
                 pillMetal(date: "12 JUN", taille: 76)
-                Text("D métal").etiquette
+                Text("fait — métal").etiquette
             }
         }
     }
 
-    /// A — LE NATIF `.clear` (le procès du §10.1, enfin sur mire — l'encre
-    /// vit HORS du conteneur, la loi de la molette).
-    private var pillNatif: some View {
-        GlassEffectContainer(spacing: 0) {
+    /// LE BOUTON NATIF NOURRI (son verdict Pil-1 : « on part en natif,
+    /// mais on doit VOIR que c'est un bouton ») — le verre à jeun rendait
+    /// un trou : on le NOURRIT (une âme peinte dessous, qu'il réfracte),
+    /// et on lui donne le corps d'un bouton Duolingo : le FLANC épais
+    /// sous la face, l'ombre portée de l'élévation. L'encre vit AU-DESSUS
+    /// du verre, jamais dedans (la loi de la molette).
+    private func boutonNatif(date: String?, ame: Double) -> some View {
+        let D: CGFloat = 76
+        return ZStack {
+            // l'ombre portée : le bouton est POSÉ sur la page
+            Ellipse()
+                .fill(Color.black.opacity(0.6))
+                .frame(width: D * 0.92, height: D * 0.30)
+                .offset(y: D * 0.50)
+                .blur(radius: 7)
+            // le flanc : l'épaisseur que le press mangera
+            Circle()
+                .fill(Color(white: 0.055))
+                .frame(width: D, height: D)
+                .offset(y: 5)
+            // l'âme : ce que le verre réfracte — la nacre qui nourrit
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: Color(white: ame + 0.14), location: 0),
+                        .init(color: Color(white: ame), location: 0.55),
+                        .init(color: Color(white: ame * 0.55), location: 1),
+                    ],
+                    center: UnitPoint(x: 0.42, y: 0.36),
+                    startRadius: 0, endRadius: D * 0.62))
+                .frame(width: D - 2, height: D - 2)
+            Ellipse()
+                .fill(Color.white.opacity(0.20))
+                .frame(width: D * 0.55, height: D * 0.30)
+                .offset(x: -D * 0.10, y: -D * 0.22)
+                .blur(radius: 6)
+            // LA FACE DE VERRE NATIF — elle a maintenant de quoi vivre
             Circle()
                 .fill(Color.clear)
                 .glassEffect(.clear, in: Circle())
-                .frame(width: 76, height: 76)
-        }
-        .frame(width: 84, height: 84)
-    }
-
-    /// B — LE LIQUIDLENS en petit : la vraie lentille de la fiche exo
-    /// (layerEffect — elle réfracte SA couche : le patch de fond qu'on lui
-    /// donne). Queue d'appel = 18 floats, l'arité de LaunchPebble.
-    private var pillLens: some View {
-        TimelineView(.animation) { ctx in
-            let t = Float(ctx.date.timeIntervalSinceReferenceDate)
-            ZStack {
-                Image("duo-feu-blanc-poster")
-                    .resizable().scaledToFill()
-                    .frame(width: 84, height: 84)
-                    .clipped()
-                    .opacity(0.55)
+                .frame(width: D, height: D)
+            // l'encre AU-DESSUS du verre
+            if let date {
+                Text(date)
+                    .font(.system(size: D * 0.20, weight: .bold,
+                                  design: .rounded))
+                    .kerning(0.6)
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.0), Color(white: 0.80)],
+                        startPoint: .top, endPoint: .bottom))
             }
-            .layerEffect(ShaderLibrary.liquidLens(
-                .float2(84, 84), .float2(42, 42), .float(36),
-                .float(0.055), .float(0.9), .float(0),
-                .float(1.0), .float(0.30), .float(t),
-                .float(0), .float(0), .float(0), .float(0),
-                .float(0), .float(0), .float(0), .float(0)),
-                maxSampleOffset: CGSize(width: 24, height: 24))
         }
-        .frame(width: 84, height: 84)
+        .frame(width: D + 24, height: D + 24)
     }
 
     /// D — LE MÉTAL SABLÉ v1 : le shader `pillMetal` + le NÉON blanc
@@ -422,13 +436,23 @@ struct PillMireLab: View {
             let t = Float(ctx.date.timeIntervalSinceReferenceDate)
             let pad: CGFloat = 12
             ZStack {
+                // le bouton est POSÉ : l'ombre de l'élévation + le flanc
+                Ellipse()
+                    .fill(Color.black.opacity(0.6))
+                    .frame(width: taille * 0.92, height: taille * 0.30)
+                    .offset(y: taille * 0.50)
+                    .blur(radius: 7)
+                Circle()
+                    .fill(Color(white: 0.04))
+                    .frame(width: taille, height: taille)
+                    .offset(y: 5)
                 Rectangle()
                     .fill(.white)
                     .frame(width: taille + 2 * pad, height: taille + 2 * pad)
                     .colorEffect(ShaderLibrary.pillMetal(
                         .float2(Float(pad + taille / 2), Float(pad + taille / 2)),
                         .float2(Float(taille / 2), t),
-                        .float2(0.018, 0.85)))
+                        .float2(0.016, 0.8)))
                 // LE NÉON BLANC autour du noir — fin, calme, constant.
                 Circle()
                     .stroke(Color.white.opacity(0.75), lineWidth: 1.4)

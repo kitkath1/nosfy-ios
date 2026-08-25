@@ -238,6 +238,21 @@ static float hachePill(float2 p) {
     return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
 }
 
+// v2 (verdict « trop cheap, je veux du relief 3D ») : le VRAI relief — un
+// profil de galet bombe-biseaute (plateau + epaule cosinus), les NORMALES
+// derivees du profil, une lumiere haut-gauche : diffus + speculaire +
+// rim. Le puck existe, il n'est plus peint.
+static float hauteurPill(float r, float R, float bev) {
+    if (r >= R) { return 0.0; }
+    float plat = R - bev;
+    if (r <= plat) {
+        // le plateau bombe a peine (le dome de la ref)
+        return 1.0 - 0.10 * (r / plat) * (r / plat);
+    }
+    float u = (r - plat) / bev;                 // 0..1 sur l'epaule
+    return 0.90 * cos(u * 1.5707963);
+}
+
 [[stitchable]] half4 pillMetal(float2 pos, half4 color, float2 centre,
                                float2 Rt, float2 regl) {
     float R = Rt.x, t = Rt.y;
@@ -245,22 +260,34 @@ static float hachePill(float2 p) {
     float2 d = pos - centre;
     float r = length(d);
     if (r > R + 1.5) { return half4(0.0h); }
-    float edge = 1.0 - smoothstep(R - 1.0, R + 1.0, r);
-    // le corps : l'obsidienne, la lumière rasante du haut (pente douce)
-    float base = 0.115 - 0.030 * (d.y / max(R, 1.0));
-    // le grain sablé (cellules 2 pt — la borne Nyquist)
+    float edge = 1.0 - smoothstep(R - 0.8, R + 0.8, r);
+    float bev = R * 0.22;
+    // les normales par difference finie du profil (l'echelle z donne le
+    // moelleux du relief)
+    float zScale = R * 0.55;
+    float e = 1.0;
+    float hx1 = hauteurPill(length(d + float2(e, 0.0)), R, bev);
+    float hx0 = hauteurPill(length(d - float2(e, 0.0)), R, bev);
+    float hy1 = hauteurPill(length(d + float2(0.0, e)), R, bev);
+    float hy0 = hauteurPill(length(d - float2(0.0, e)), R, bev);
+    float3 n = normalize(float3((hx0 - hx1) * zScale * 0.5,
+                                (hy0 - hy1) * zScale * 0.5, 1.0));
+    float3 L = normalize(float3(-0.42, -0.72, 0.55));
+    float diff = max(dot(n, L), 0.0);
+    float3 V = float3(0.0, 0.0, 1.0);
+    float3 Rf = reflect(-L, n);
+    float spec = pow(max(dot(Rf, V), 0.0), 28.0);
+    // la matiere : obsidienne sablee (grain 2 pt, la borne Nyquist)
     float g = hachePill(floor(pos / 2.0)) - 0.5;
-    base += g * grainAmp;
-    // le biseau : rim-light sur l'arc haut, creux à peine sombre en bas
-    float rim = smoothstep(R - 4.5, R - 1.2, r);
-    float haut = clamp(-d.y / max(r, 1.0), 0.0, 1.0);
-    base += rim * haut * 0.38;
-    base -= rim * (1.0 - haut) * 0.05;
-    // les paillettes d'argent : rares (1,8 %), scintillement lent
-    float2 cell = floor(pos / 2.6);
+    float base = 0.085 + g * grainAmp;
+    // le sable casse le speculaire (sablage : le highlight est granuleux)
+    float specG = spec * (0.75 + 0.5 * g * 4.0);
+    float v = base * (0.55 + 1.35 * diff) + specG * 0.34;
+    // les paillettes d'argent : fines, elles ne vivent que la ou la
+    // lumiere tombe (diff), scintillement lent
+    float2 cell = floor(pos / 2.2);
     float h = hachePill(cell);
-    float tw = 0.5 + 0.5 * sin(t * 1.7 + h * 43.98);
-    float spark = step(0.982, h) * tw * sparkGain;
-    float v = clamp(base + spark, 0.0, 1.0);
-    return half4(half3(v), 1.0h) * half(edge);
+    float tw = 0.5 + 0.5 * sin(t * 1.6 + h * 43.98);
+    v += step(0.976, h) * tw * sparkGain * (0.35 + 0.65 * diff);
+    return half4(half3(clamp(v, 0.0, 1.0)), 1.0h) * half(edge);
 }
