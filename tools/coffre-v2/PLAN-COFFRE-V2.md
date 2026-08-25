@@ -772,6 +772,59 @@ L 152. Sur le sol, ce qui porte l'objet n'est plus son bourrelet lumineux mais
 sa **silhouette sombre**. C'est un autre registre que sa référence — plus
 graphique, aussi beau, et il faut qu'elle le voie avant qu'on grave.
 
+### ★★ LES DEUX PIÈCES SONT LIVRÉES ET CUITES (25-08, `recuit_pieces.py`)
+
+`gold_glass_piece.mp4` et `silver_glass_piece.mp4` — deux vrais tours de
+manège, **même dessin**, la pièce elle-même qui tourne et passe par la tranche.
+Kathryn les annonce elle-même comme mal cadrées (« l'IA a halluciné »). Mesuré,
+elle a raison, et le défaut est pire que du cadrage :
+
+| | OR | ARGENT |
+|---|---|---|
+| images | 145 | 145 |
+| diamètre dans le cadre | 538 px | **836 px (×1,55)** |
+| dérive du centre x | 14 px | **30 px** (8 % du diamètre) |
+| faces / tranches aux images | 0·53·94 / 30·74·114 | 0·67 / 36·99 |
+| **un tour complet** | **~94 images** | **~124 images** |
+| épaisseur du chant | 36 % | 30 % |
+
+→ **Pas la même taille, pas la même vitesse, et elles dérivent.** Posées côte à
+côte, elles se désynchronisent en trois secondes. Aucun réglage d'affichage ne
+rattrape ça : il faut recuire.
+
+**LA MÉTHODE : on ne recadre pas, ON RE-CHRONOMÈTRE.**
+`tools/coffre-v2/recuit_pieces.py` mesure la largeur projetée image par image,
+en déduit **les repères d'angle** (face = 180°·k, tranche = 90° + 180°·k), puis
+**ré-échantillonne sur une grille d'angles régulière**. Sortie : une planche de
+sprites, 72 cases pour un tour, alpha prémultipliée.
+
+⚠️ **LE PIÈGE PAYÉ DANS CE SCRIPT, ET IL EST INSTRUCTIF.** Le premier jet
+inversait la largeur par un `arccos` image par image. Or la dérivée de
+`D·cos θ` est **nulle à la face** : là où la pièce est presque frontale, la
+largeur ne bouge plus et l'angle devient indéterminé. Résultat mesuré :
+**96 cases demandées, 41 images distinctes servies**, toutes tassées autour des
+tranches. Le remède est de ne se servir de la largeur que pour repérer les
+ÉVÉNEMENTS (les extrêmes, qui sont nets) et d'interpoler linéairement entre
+eux : **72 cases → 72 images distinctes**, pour les deux pièces.
+
+**LE RÉSULTAT, MESURÉ** : après cuisson, les deux pièces ont le même diamètre
+**à 0,3 % près** (329-330 px) et **le même angle à chaque case**. Elles sont
+jumelles. Preuves : `refs/pieces-jumelles.jpg` (les deux, case par case),
+`refs/piece-or-detouree.jpg` (le détourage sur gris — aucune boîte, aucun
+halo), `refs/pieces-sur-la-scene.jpg` (à la vraie taille, sur la vraie chambre,
+avec l'ombre de contact).
+
+**⚠️ RESTE À TRANCHER AU JALON C1 — LE POIDS.** Aux réglages actuels
+(72 cases × 384 px), une planche pèse **8,5 à 9,8 Mo** et occupe **42 Mo une
+fois décodée**. Deux pièces résidentes = 84 Mo : trop. Trois leviers, à régler
+sur mesure et pas à l'intuition : moins de cases (48 → 7,5°/case, visible au
+drag lent ?), des cases plus petites (384 → la pièce fait 330 px pour un
+affichage à 396 px en 3×, on est déjà en léger sur-échantillonnage), et surtout
+**ne monter qu'une planche à la fois** (le manège n'en montre qu'une).
+
+**Les planches ne sont PAS commitées** : c'est la RECETTE qui fait foi, pas
+l'artefact (la leçon de `recuit_duo.sh`). Une commande les régénère.
+
 ### Ce qui n'est PAS nécessaire
 Ni image de la tranche, ni version « allumée » par la salle, ni fond : la page
 fournit la chambre. Une pièce, deux fois, c'est tout.
