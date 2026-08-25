@@ -509,7 +509,30 @@ struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
 
+    /// `-coffreV1` rejoue l'ANCIENNE page (le film du coffre, la pastille) —
+    /// elle reste montable, c'est la règle de l'archive.
+    private static let v1 = CommandLine.arguments.contains("-coffreV1")
+
     var body: some View {
+        // ⚠️ **L'ENVELOPPE EST MINCE, ET SA SIGNATURE N'A PAS BOUGÉ.** Quatre
+        // pages ouvrent cette porte (`HomeNuit`, `HomeAuroraView`,
+        // `ProfilLune`, `WoopApp`) : la refonte remplace ce qu'il y a
+        // DERRIÈRE, jamais la poignée.
+        //
+        // ⚠️ **LE PAGER VERTICAL EST MORT** (verdict Kathryn, 25-08 : « la
+        // page démon aussi, plus besoin là »). Et c'était le prérequis de la
+        // v2 : son drag vertical est désormais pris par la levée de card et
+        // la lune — les deux ne pouvaient pas coexister sur le même geste.
+        // `HaloDawnLab` n'est pas supprimée pour autant, elle n'est
+        // simplement plus atteignable d'ici (son banc la monte toujours).
+        if Self.v1 {
+            ancienne
+        } else {
+            CoffreV2Page(coins: coins, onClose: onClose)
+        }
+    }
+
+    private var ancienne: some View {
         // LE PROXY EST DEHORS, et lui ne fuit pas la zone sûre : c'est la
         // seule façon de connaître l'encoche pour poser le chevron à sa
         // place, alors que la page, elle, doit toucher les bords.

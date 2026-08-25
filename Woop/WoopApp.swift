@@ -190,6 +190,10 @@ struct RootView: View {
     /// Banc de la page du trésor : `-coffreLab` — le gros plan du coffre qui
     /// vient se poser en haut, le titre, la pièce et le compte. Rejouable.
     private static let coffreLab = CommandLine.arguments.contains("-coffreLab")
+    /// Banc de LA CHAMBRE AU TRÉSOR (coffre v2) : `-coffre2` — la page seule.
+    /// `-coffreSansFilm` saute l'arrivée, `-coffreSkip` la passe toute seule à
+    /// 2 s (le simulateur ne tape pas), `-coffreV1` rejoue l'ANCIENNE page.
+    private static let coffre2 = CommandLine.arguments.contains("-coffre2")
     /// Banc de la pièce de lune : `-pieceLab` — l'anneau d'or, la laque et le
     /// croissant, tournables au doigt. `-pieceSmall` la montre aux tailles
     /// réelles du header, `-pieceFreeze <rad>` fige le lacet pour comparer
@@ -520,6 +524,8 @@ struct RootView: View {
             HaloDawnLab()
         } else if Self.successLab {
             SuccessLab()
+        } else if Self.coffre2 {
+            CoffreV2Lab()
         } else if Self.coffreLab {
             CoffreFortLab()
         } else if Self.coffreFlip {
