@@ -2315,6 +2315,103 @@ A/B au banc, un seul candidat livré :
 - Puis P2/P3/P7/P8 de la partition reprennent (dalle, dévoilement,
   fouettage, téléphone).
 
+## 21. LA GAMIFICATION DU CHEMIN — « le chemin libre » (25-08, dicté sur
+son brief : « une pill = une session ; la pill-lune = un cadeau ; ça me
+ferait chier qu'on m'impose un entraînement — je veux faire ce que je
+veux, mais tu peux me challenger ». PAS CODÉ — à valider ICI, puis à
+reporter au plan BACKEND.)
+
+### 21.1 LA LOI FONDATRICE — L'ANTI-DUOLINGO
+
+**Le chemin ne PRESCRIT jamais : il ENREGISTRE.** Chez Duolingo, la pill
+dit « fais cette leçon » ; chez Woop, la pill se GRAVE quand une session
+— n'importe laquelle, celle qu'elle veut — est faite. La liberté est la
+règle, le défi est une INVITATION : jamais un portail, jamais une
+punition, jamais un rouge de culpabilité. (Sa phrase fait loi.)
+
+### 21.2 LE CHAPITRE (« on fait quoi par chapitre, combien de pills ? »)
+
+- **UN CHAPITRE = 10 SESSIONS + LA PILL-LUNE** (11 nœuds — exactement les
+  11 étapes déjà posées : 1+3+2+2+3 sur les cinq écrans). Le voyage de
+  couleur (noir → blanc → rouge → rouge-et-bleu → bleu) EST le chapitre :
+  finir un chapitre = avoir traversé les cinq écrans.
+- **Compté en SESSIONS, jamais en calendrier** : pas de « semaine ratée »
+  possible — elle avance à SON rythme, le chapitre l'attend. (L'école
+  calendrier/mois existe ailleurs — l'iPod du mois ; ici c'est le COMPTE
+  qui fait le chemin.)
+- Les chapitres sont infinis (Chapitre 1, 2, 3…) ; chaque nouveau
+  chapitre rejoue la descente des cinq écrans. Plus tard : une variation
+  de teinte par chapitre (le monde se réchauffe/refroidit) — hors session.
+
+### 21.3 LES PILLS (les états, mappés sur les matières VALIDÉES en Pil-1)
+
+| état | matière | contenu |
+|---|---|---|
+| **faite** | métal sablé daté | LA DATE de la session (« 12 JUN ») gravée — le chemin est un JOURNAL de ce qu'elle a fait |
+| **active** | verre nourri + date du jour | le PROCHAIN nœud : elle s'allume, elle attend — elle n'exige RIEN |
+| **à faire** | verre muet | AUCUNE date, AUCUN contenu imposé — une promesse vide qu'elle remplira comme elle veut |
+| **parfaite** | métal + souffle d'or | la session qui contenait un RECORD (ou un défi cueilli) — l'or est RARE (la loi de la maison) |
+| **la lune** | le nœud-trésor (98-104) | LE CADEAU du chapitre |
+
+### 21.4 LES RÉCOMPENSES (« combien de fois on fait le reward ? »)
+
+Trois étages, du micro au rare — chaque étage existe DÉJÀ dans l'économie
+de la maison, rien ne s'invente :
+
+1. **Chaque SÉRIE faite : 20 pièces** (la règle en vigueur, inchangée —
+   BRAVO l'annonce déjà).
+2. **Chaque SESSION : la pill se grave** — la cérémonie est VISUELLE (le
+   verre devient métal, la date s'embosse, l'échappée de lumière/fumée du
+   press Pil-3 joue à la gravure) + le total de pièces de la séance
+   rappelé. Pas de monnaie en plus : la gravure EST la récompense.
+3. **Chaque CHAPITRE (la pill-lune) : UN BOOSTER** — le « chest »
+   Duolingo, c'est le Sacre de Woop (décidé au §6.3, toute l'économie
+   carte-lune existe). Cadence : 1 booster / 10 sessions — assez rare
+   pour rester une fête, la cérémonie du manège fait le reste.
+   L'ouverture du booster se joue DEPUIS la lune (le flow existant).
+
+### 21.5 LES DÉFIS — « tu peux me challenger » (jamais m'imposer)
+
+**Le défi est une invitation posée SUR le chapitre, cueillie
+PASSIVEMENT** : elle s'entraîne comme elle veut ; si ce qu'elle a fait
+matche le défi, il se cueille TOUT SEUL (détection, jamais obligation).
+Refusé/ignoré = RIEN ne se passe (pas de croix rouge, pas de streak
+brisé, pas de culpabilité — l'anti-Duolingo jusqu'au bout).
+
+Trois saveurs, tirées de SES données (le backend nourrira) :
+- **RÉGULARITÉ** : « 3 sessions en 7 jours » — la flamme-jauge existante
+  est sa surface (elle s'éteint DOUCEMENT, se rallume, jamais punitive).
+- **DÉPASSEMENT** : « bats ton volume/ton max sur UN exo de ton choix » —
+  le choix reste à elle, le défi ne nomme jamais l'exo.
+- **EXPLORATION** : « un muscle peu visité ce chapitre » — une suggestion,
+  pas un programme.
+
+**La cueillette** : le défi cueilli transforme la pill du jour en
+PARFAITE (l'or) et double les pièces de la séance. Un défi par chapitre
+en v1 (la rareté), affiché sur la dalle de chapitre (le rail de jeu §6.4
+a déjà la place) — formulation d'INVITATION (« et si… ? »), jamais
+d'injonction.
+
+### 21.6 CE QUI PART AU PLAN BACKEND (une fois validé ici — son mot)
+
+- `sessions` : date, séries, pièces, flags record — l'essentiel existe
+  via les séances ; la pill lit CETTE table.
+- `chapitres` : DÉRIVÉ (count/10), pas une table — le chemin se calcule.
+- `defis` : type, fenêtre, état (proposé/cueilli/expiré doux), la graine
+  de génération depuis ses données.
+- `rewards` : le grant booster à la lune (l'école des 3 tables Supabase
+  du parcours booster, tools/sacre/).
+- La page branche `EtapeSpec` sur `sessions` (dates réelles) — les dates
+  factices J-9…J meurent à ce moment-là.
+
+### LES QUESTIONS (ses verdicts — les défauts sont posés)
+
+1. **« 10 sessions + la lune par chapitre — oui ou non ? »** (la
+   structurante ; alternatives : 7+lune plus court, 15+lune plus rare)
+2. Le booster à CHAQUE lune, ou un booster sur deux + pièces sinon ?
+   (défaut : chaque lune)
+3. Un défi par chapitre (défaut) ou par semaine ?
+
 ### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
 
 1. **La direction des feux** (N2) : A / B / C / D et compositions — défaut
