@@ -1,0 +1,30 @@
+import Foundation
+
+// MARK: - La bourse
+//
+// LA MONNAIE N'EXISTE PAS ENCORE DANS WOOP. Aucun modèle SwiftData ne porte
+// de pièces (Workout, LoggedExercise, StrengthSet, CardioPhase — c'est tout),
+// et aucune règle ne dit ce qu'une séance rapporte. Ce point d'accès est donc
+// une MAQUETTE assumée, tenue en UN SEUL endroit : le jour où l'économie est
+// tranchée, c'est ce corps-là qu'on remplace, et pas une ligne de la page ne
+// bouge.
+//
+// ⚠️ POURQUOI ELLE VIT DANS SON PROPRE FICHIER DEPUIS LE 25-08.
+// Elle habitait `CoffreFortView.swift`, c'est-à-dire le fichier que la refonte
+// du coffre (chantier `tools/coffre-v2/`) remplace entièrement. Or elle est
+// consommée par CINQ sites HORS de cette page :
+//
+//     HomeAuroraView.swift · HomeNuit.swift · ProfilLune.swift
+//     BravoLab.swift (`perSeries`) · SetHistoryRow.swift (valeur par défaut)
+//
+// Laisser l'économie de l'app dans le fichier d'une page qu'on démonte, c'est
+// faire dépendre cinq compilations du sort d'un écran. Elle en sort AVANT
+// toute autre ligne du chantier — c'est le jalon C0 du plan.
+enum CoffreFortPurse {
+    /// L'ÉCONOMIE EST TRANCHÉE (13 août 2026) : chaque SÉRIE terminée
+    /// rapporte 20 pièces. La fiche, BRAVO et le coffre disent le même
+    /// nombre — et si la règle bouge un jour, c'est toujours CE corps-là
+    /// qu'on remplace, pas une ligne des pages.
+    static let perSeries = 20
+    static func coins(doneSeries: Int) -> Int { doneSeries * perSeries }
+}

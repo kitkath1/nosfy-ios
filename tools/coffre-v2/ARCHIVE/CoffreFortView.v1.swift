@@ -2,15 +2,22 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
-// ⚠️ DEUX PIÈCES ONT QUITTÉ CE FICHIER LE 25-08 (jalon C0 du chantier
-// `tools/coffre-v2/`), parce que cette page va être REMPLACÉE et qu'elles sont
-// consommées ailleurs :
-//   · `CoffreFortPurse` → `CoffreFortPurse.swift` (5 sites : HomeAuroraView,
-//     HomeNuit, ProfilLune, BravoLab, SetHistoryRow) ;
-//   · `CinematicPlayer` + `CinematicPlayerHost` → `CinematicPlayer.swift`
-//     (5 sites : StoryVideo ×2, BravoLab ×3).
-// Rien d'autre n'a bougé : la page ci-dessous est la v1, intacte, et son
-// exemplaire figé vit dans `tools/coffre-v2/ARCHIVE/`.
+// MARK: - La bourse
+//
+// LA MONNAIE N'EXISTE PAS ENCORE DANS WOOP. Aucun modèle SwiftData ne porte
+// de pièces (Workout, LoggedExercise, StrengthSet, CardioPhase — c'est tout),
+// et aucune règle ne dit ce qu'une séance rapporte. Ce point d'accès est donc
+// une MAQUETTE assumée, tenue en UN SEUL endroit : le jour où l'économie est
+// tranchée, c'est ce corps-là qu'on remplace, et pas une ligne de la page ne
+// bouge.
+enum CoffreFortPurse {
+    /// L'ÉCONOMIE EST TRANCHÉE (13 août 2026) : chaque SÉRIE terminée
+    /// rapporte 20 pièces. La fiche, BRAVO et le coffre disent le même
+    /// nombre — et si la règle bouge un jour, c'est toujours CE corps-là
+    /// qu'on remplace, pas une ligne des pages.
+    static let perSeries = 20
+    static func coins(doneSeries: Int) -> Int { doneSeries * perSeries }
+}
 
 // MARK: - La partition
 
@@ -59,6 +66,52 @@ enum CoffreFortCine {
     /// l'image, jamais avant elle. La vidéo finit à 7,04 s — elle se fige
     /// sur son plan moyen, qui est l'image de repos.
     static let contentAt: Double = 6.85
+}
+
+// MARK: - Le lecteur
+
+/// `AVPlayerLayer` nu dans un `UIView`. `VideoPlayer` (AVKit) apporte ses
+/// commandes de lecture et son propre fond — deux choses dont une
+/// cinématique ne veut pas.
+final class CinematicPlayerHost: UIView {
+    override static var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+}
+
+struct CinematicPlayer: UIViewRepresentable {
+    let player: AVPlayer
+    /// Le fond de l'hôte. NOIR partout (une cinématique se joue sur du noir) —
+    /// sauf pour un lecteur qui BOUCLE : à chaque bouclage, `AVPlayerLooper`
+    /// change d'item et la couche se vide le temps d'une à trois images. Avec
+    /// un fond noir, ce vide est un FLASH NOIR (mesuré : luminance 0,0000, une
+    /// fois par période) ; avec un fond transparent, c'est l'image posée
+    /// dessous qui apparaît — et comme le fichier de boucle commence et finit
+    /// sur la même image, c'est exactement celle qu'on devait voir.
+    var opaqueBackground: Bool = true
+
+    func makeUIView(context: Context) -> CinematicPlayerHost {
+        let view = CinematicPlayerHost()
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
+        // `resizeAspect`, et non `resizeAspectFill`. La vidéo est en 16:9
+        // PAYSAGE, sa place fait 40 % de la hauteur d'un écran de téléphone :
+        // remplir imposait de jeter 35 % de la largeur, et ce tiers-là
+        // contenait les FLANCS DU COFFRE. À l'écran l'objet n'était plus
+        // lisible — une masse sombre coupée des deux côtés.
+        //
+        // On entre donc la vidéo entière, et c'est `restScale` qui la fait
+        // respirer jusqu'aux bords. Le cadre laisse du noir au-dessus et en
+        // dessous : sur une page noire absolue, personne ne le verra jamais.
+        view.playerLayer.videoGravity = .resizeAspect
+        view.playerLayer.player = player
+        return view
+    }
+
+    func updateUIView(_ view: CinematicPlayerHost, context: Context) {
+        if view.playerLayer.player !== player { view.playerLayer.player = player }
+        view.backgroundColor = opaqueBackground ? .black : .clear
+        view.isOpaque = opaqueBackground
+    }
 }
 
 // MARK: - La page du trésor
