@@ -725,6 +725,53 @@ elle est RÉELLE**. Le flou et le zoom du manège restent disponibles (ce sont
 des images, pas du verre natif) mais ne servent plus qu'à la mise au point du
 voyage, si elle en veut.
 
+### ★ LE FILM EST LIVRÉ — `lune_noir_video_360.mp4` (25-08), et il est BON
+
+2494 × 3326, HEVC 10 bits, 24 i/s, **193 images**, 8,04 s, 19,1 Mo.
+
+**Ce que la mesure dit, et tout est excellent :**
+
+| Mesure | Valeur | Conséquence |
+|---|---|---|
+| Le disque | bbox **509 × 503**, écart-type des quatre bords : **0,5 / 0,5 / 0,3 / 0,0 px** sur 193 images | **immobile au demi-pixel** — le détourage est UNE ellipse, calculée une fois, valable pour tout le tour |
+| Le fond | **min 0, moyenne 0,000, max 0** aux quatre coins | rien à incruster : on coupe au bord du disque, il n'y a pas de voile à tuer |
+| Le ratio | 0,986 à 0,992 | un cercle (très légèrement plus large que haut) |
+
+**⚠️ MAIS CE N'EST PAS LA PIÈCE QUI TOURNE — C'EST LA LUNE DEDANS.** Le disque
+de verre est rigoureusement identique d'un bout à l'autre ; ce qui pivote sur
+l'axe vertical, c'est **le croissant à l'intérieur**, qui passe **de champ (un
+simple trait vertical) aux images ~48 et ~144**. Ce n'est pas ce qui avait été
+spécifié — et c'est **plus beau** : un objet 3D qui tourne dans une bulle de
+verre immobile, plutôt qu'un palet qui bascule. Deux conséquences :
+- le geste droite-gauche fait tourner **la lune**, pas la pièce ;
+- ce film **ne donne pas deux faces** (or / sombre) : il n'y a qu'une pièce, la
+  sombre. La distinction or/noire reste à trancher (question ②).
+
+**LE TEST DE COMPOSITION EST FAIT** (`refs/essai-sol.jpg`,
+`essai-contact.jpg`, `essai-noir.jpg`) : sa pièce détourée, posée sur le vrai
+fond de la chambre.
+> **Réponse à son inquiétude (« ma vidéo est sur fond noir, ça va le faire ? »)
+> : OUI, et sans rien lui redemander.** Le fond noir n'est pas un problème,
+> c'est un cadeau — il est à zéro absolu et le disque est fixe, donc le
+> détourage est exact.
+
+Ce que les trois essais montrent :
+- **Sur le sol** (y/H 0,63, sa maquette) : la pièce lit comme un **galet
+  d'obsidienne** — silhouette très nette contre le sol clair, croissant qui
+  brûle. Grounded, lisible, premium.
+- **Avec une ombre de contact** (ellipse serrée, écrasée à 0,115 de son
+  diamètre, 80 % d'assombrissement, posée à 0,40 D sous le centre) : c'est ELLE
+  qui sépare « posé » de « collé ». ⚠️ Une flaque large ne pose rien, elle
+  salit le sol — l'ombre doit être **serrée**.
+- **Dans le noir du haut** (y/H 0,27) : les hautes lumières du bourrelet
+  chantent (c'est l'éclairage pour lequel elle a rendu), mais l'objet FLOTTE.
+
+**Le seul renoncement, et il faut le nommer** : sa pièce a été rendue contre du
+noir, donc ses reflets clairs (L 200-255) perdent leur mordant contre un sol à
+L 152. Sur le sol, ce qui porte l'objet n'est plus son bourrelet lumineux mais
+sa **silhouette sombre**. C'est un autre registre que sa référence — plus
+graphique, aussi beau, et il faut qu'elle le voie avant qu'on grave.
+
 ### Ce qui n'est PAS nécessaire
 Ni image de la tranche, ni version « allumée » par la salle, ni fond : la page
 fournit la chambre. Une pièce, deux fois, c'est tout.
