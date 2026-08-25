@@ -2007,6 +2007,18 @@ rect) ; ligne < 7 ; bandes du chemin re-mesurées.
 **Question (fermée) : « É2/É4 posés : les flammes hautes sont bien là,
 oui ou non ? »**
 
+> **P0+P1 LIVRÉS le 25-08 (`da18df1`).** P0 : `-duoAutoLent` ✓ ; log de
+> phase ✓ — **la FAUTE 5 est INFIRMÉE** (animating/idle tombent au
+> scrollTo : le dévoilement jouait, les montages étaient fidèles — P3.a
+> devient inutile, P3 se réduit au choix de courbe) ; sonde de dalle au
+> rect MESURÉ (y 69→130 pt sur capture, pas 8→66) ; **le script
+> reproduit le bundle À L'OCTET PRÈS** (4 braises témoins identiques).
+> P1 : `decalageHaut = safeTop+58+12` dans yLocal — captures posées :
+> braise blanche et rouge ENTIÈRES sous la dalle (première lumière
+> y 154, rect fini à 130). Non-régression : ligne 2,24, zéro flash hors
+> un creux d'UNE frame au premier geste après boot froid (consigné,
+> vérif téléphone P8). **Verdict Kathryn attendu.**
+
 **P1-bis — LE COL FONDU DU VERRE NOIR (sa demande du 25-08).**
 - Deux candidats cuits EN PRÉVIEW (hors bundle) : scrim haut **120 px**
   (doux) et **220 px** (profond) — le fondu va jusqu'au noir au bord
@@ -2127,6 +2139,89 @@ planche des quatre feux, proposition écrite, « d'accord — oui/non ? ».
   portillon « re-cuire reproduit le bundle ».
 - **Un offset de fenêtre entre dans yLocal (restY + offset ensemble)**,
   sinon la géométrie de pose ment (mini-condensation permanente).
+
+## 19. « LE FEU UNIQUE-LARME » — la synthèse (25-08, dicté après son
+verdict sur P1 : « toujours trop d'espace entre les flammes au scroll…
+elles doivent être bien dans le header et le footer, là on dirait que
+c'est posé, c'est archi nul… peut-être que la solution des deux vidéos
+ça ne va pas » — PAS CODÉ, son go attendu)
+
+### 19.1 LE DIAGNOSTIC FINAL (pourquoi 10 sessions n'ont pas fixé ça)
+
+**Deux vidéos par couture ne peuvent PAS marcher — c'est topologique,
+pas un réglage.** Deux objets distincts ont toujours un ENTRE-DEUX : on
+l'a maquillé (rideaux), fusionné (feu unique §13 — raté par la matière :
+brouillard 540 pt), condensé (boule §17 — deux lueurs à 36 pt, jamais
+une), écarté (P1 — et la flamme « posée comme » est née : détachée de
+son bord, un autocollant qui flotte). Chaque échec avait la même racine.
+
+**Et une flamme d'écran doit vivre À SON BORD** (« bien dans le header
+et le footer ») : détachée du bord, elle flotte ; collée au bord haut,
+elle meurt sous l'île et la dalle. La seule forme qui résout TOUT : un
+objet qui APPARTIENT à la couture et saigne dans les deux écrans.
+
+**La synthèse des deux moitiés prouvées** : la TOPOLOGIE du §13 (un
+seul fichier chevauchant par couture de feu — l'école FrontiereSpec,
+celle des capsules qu'elle a validées « c'est top le même élément ») ×
+la MATIÈRE du §17 (la larme : point noir écrasé, vignette 2D de
+peintre, fondu partout — la seule matière jamais trouvée belle ici).
+Le §13 avait la bonne forme et une matière ratée ; le §17 la bonne
+matière et une forme ratée. On assemble.
+
+### 19.2 LE FICHIER (un par couture de feu : `duo-feu-blanc`,
+`duo-feu-rouge` — v2, 2 fichiers au lieu de 4 braises)
+
+- **804×640 px (402×320 pt), le CŒUR du feu sur la couture** (rangées
+  ~280-360) : au-dessus, les plumes qui montent (la source telle
+  quelle, crush 70/24, mort au zéro vrai sur les 180 premières
+  rangées) ; au-dessous, la lueur-sous-le-feu (le miroir flouté gblur 16
+  ×0,80 de l'école §16 — jamais un axe), morte au zéro sur les 160
+  dernières. Vignette 2D centrée sur le cœur (σx 260 / σy 200). Une
+  passe crf 17, palindrome. Les recettes AU SCRIPT le jour même (la loi
+  P0.4).
+- **À la pose de l'écran BAS** (É1, É3) : la moitié haute visible — les
+  plumes montent DU bord bas, le cœur affleure le bord : le feu est
+  DANS le footer. **À la pose de l'écran HAUT** (É2, É4) : la moitié
+  basse visible — la lueur saigne DU bord haut, DERRIÈRE l'île et la
+  dalle (une lumière sous une carte : naturel), son ventre visible sous
+  la dalle : le feu est DANS le header, jamais « posé ». **Au scroll :
+  UN corps traverse — l'espace entre les flammes n'existe plus, par
+  construction.**
+- Portillons fichier : bords 4 côtés à 0 ; couture palindrome ≤ 2 ;
+  aucune rangée à saut cohérent (< 7) ; profil vertical : UNE seule
+  composante lumineuse (le corps), monotone de part et d'autre du cœur.
+
+### 19.3 LE RUNTIME (plus simple que ce qu'il remplace)
+
+- La fenêtre chevauchante ressuscite (`feuxUniques`, poses {0, −H},
+  offset constant centre = couture×H, additive, `lectureFeux`) — le
+  code du §13 existe encore, vidé : on le remplit.
+- **Meurent** : les 4 braises et leurs specs, la condensation-boule et
+  ses ancres, la lueur de couture (le corps EST la continuité), le
+  jalon P4 tout entier (la fente meurt par topologie, pas par relais).
+- **Restent** : le voile de geste + dévoilement au repos (sa
+  chorégraphie), un dim de voyage léger (~15 % à mi-course, sin —
+  RARE-2), le cover-flow des capsules, la bleue telle quelle (pas de
+  couture sous elle).
+- reduceMotion : dim simple.
+
+### 19.4 LES JALONS (la porte inchangée : un jalon, une question)
+
+- **U1 — la cuisson des deux feux** + script + portillons 19.2. Puis
+  captures POSÉES É1/É2/É3/É4 : le portillon « header/footer » — la
+  lumière est CONNEXE à son bord d'écran (profil vertical : aucun îlot
+  détaché — le contraire exact de « posé comme »).
+  **Question : « posés : le feu est bien DANS le header et le footer —
+  oui ou non ? »**
+- **U2 — le scroll** : films 2 vitesses des coutures 1/2 et 3/4 — le
+  portillon : UNE composante lumineuse par couture sur CHAQUE frame du
+  voyage (la mesure du §18-P4, enfin gagnable par construction) ;
+  ligne < 7 ; zéro flash ; cadence.
+  **Question : « au scroll : plus aucun espace entre les flammes —
+  oui ou non ? »**
+- Puis la partition reprend son cours : **P1-bis** (le col du verre
+  noir, sa demande, toujours en attente), **P2** (la dalle propre),
+  **P3** (la courbe du dévoilement), **P7**, **P8**.
 
 ### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
 
