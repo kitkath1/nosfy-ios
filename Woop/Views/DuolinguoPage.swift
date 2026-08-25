@@ -233,16 +233,17 @@ struct EcranSpec: Equatable, Identifiable {
         let pose = Int((y / hauteur).rounded())
         let borne = max(0, min(4, pose))
         if ecranCourant != borne { ecranCourant = borne }
-        // LA BASCULE d'une frontière (partition J4, généralisée 2e salve) :
-        // quand SA couture traverse le centre du viewport, UNE haptique
-        // légère — hystérésis 60 pt, une par traversée.
+        // LES HAPTIQUES DU SCROLL (sa demande du 25-08) : UNE haptique
+        // légère quand une couture — les QUATRE : capsules (2/3, 4/5) ET
+        // feux (1/2, 3/4) — traverse le centre du viewport. Hystérésis
+        // 60 pt, une par traversée.
         if !gel {
-            for f in EcranSpec.frontieres {
-                let seuil = (CGFloat(f.couture) - 0.5) * hauteur
+            for (k, couture) in coutures.enumerated() {
+                let seuil = (CGFloat(couture) - 0.5) * hauteur
                 let avant = yPrecedent < seuil
                 let apres = y < seuil
-                if avant != apres, abs(y - dernieresBascules[f.id]) > 60 {
-                    dernieresBascules[f.id] = y
+                if avant != apres, abs(y - dernieresBascules[k]) > 60 {
+                    dernieresBascules[k] = y
                     UIImpactFeedbackGenerator(style: .light)
                         .impactOccurred(intensity: 0.7)
                 }
@@ -251,8 +252,20 @@ struct EcranSpec: Equatable, Identifiable {
         yPrecedent = y
     }
 
+    /// L'ATTERRISSAGE : le « thock » quand la page se POSE sur un autre
+    /// écran que celui du départ du geste (appelé par la sonde de phase).
+    func gesteCommence() { ecranAuDepart = ecranCourant }
+    func gesteFini() {
+        guard !gel, ecranCourant != ecranAuDepart else { return }
+        ecranAuDepart = ecranCourant
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.85)
+    }
+
+    @ObservationIgnored private let coutures = [1, 2, 3, 4]
+    @ObservationIgnored private var ecranAuDepart = 0
     @ObservationIgnored private var yPrecedent: CGFloat = 0
-    @ObservationIgnored private var dernieresBascules: [CGFloat] = [-10_000, -10_000]
+    @ObservationIgnored private var dernieresBascules: [CGFloat] =
+        [-10_000, -10_000, -10_000, -10_000]
 }
 
 /// LA SONDE — une seule, composée : le champ vivant (y) emporte le stable
@@ -1061,7 +1074,12 @@ struct DuolinguoPage: View {
                     }
                 }
                 let geste = neuf != .idle
-                if etat.enGeste != geste { etat.enGeste = geste }
+                if etat.enGeste != geste {
+                    etat.enGeste = geste
+                    // le thock d'atterrissage : la page s'est posée sur
+                    // un AUTRE écran que celui du départ du geste.
+                    if geste { etat.gesteCommence() } else { etat.gesteFini() }
+                }
             }
             .onAppear {
                 etat.gel = gel || reduceMotion
