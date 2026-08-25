@@ -30,6 +30,14 @@ struct ExerciseDetailView: View {
 
     @State private var confirmation: String?
 
+    /// LA CARD REWARD au banc vivant : le « … » du header la déclenche
+    /// (FAKE, pour l'entraîner à l'œil sur la vraie page) — les vraies
+    /// portes (fin d'exo ? fin de séance ?) ne sont pas tranchées.
+    @State private var rewardShow = false
+    /// Le variant montré — ALTERNE à chaque ouverture (« des fois fais un
+    /// autre variant ») : néon (réf WWDC) d'abord, halo (réf Apple) ensuite.
+    @State private var rewardNeon = false
+
     // Le brouillon. Il vivait dans la feuille modale ; c'est désormais l'état de
     // la page elle-même. On part de ZÉRO série : la première naît du geste de
     // lancement, elle n'attend pas déjà là.
@@ -622,6 +630,20 @@ struct ExerciseDetailView: View {
         .scaleEffect(dive, anchor: UnitPoint(x: 0.5, y: 0.84))
         .task { await runAubeBench() }
         .task { await runCarteBench() }
+        // Le banc de la card reward : `-rewardAuto` l'ouvre seul après un
+        // battement (le simulateur n'a pas de doigt pour le chip), et la
+        // rejoue en boucle ouverte→fermée pour filmer l'aller-retour.
+        .task {
+            guard CommandLine.arguments.contains("-rewardAuto") else { return }
+            // C'est le popup qui joue SA sortie (il s'auto-ferme sous le
+            // même argument) — la démonter d'ici serait une coupe sèche.
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1.4))
+                rewardNeon.toggle()
+                rewardShow = true
+                try? await Task.sleep(for: .seconds(6.0))
+            }
+        }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.
         .navigationBarBackButtonHidden(true)
@@ -760,6 +782,20 @@ struct ExerciseDetailView: View {
                     }
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
+                }
+                // LA CARD REWARD — au-dessus de tout : elle joue seule son
+                // entrée (fondu noir) et sa sortie ; démontée une fois
+                // refermée. Le chiffre est celui des séries faites — 4 en
+                // plancher tant que le déclencheur est le fake du header
+                // (un count-up 0 → 0 n'apprendrait rien à l'œil).
+                if rewardShow {
+                    RewardPopup(
+                        count: max(sets.filter(\.isDone).count, 4),
+                        title: "Training",
+                        subtitle: "Congratulations, you've completed your training!",
+                        unit: "Sets",
+                        style: rewardNeon ? .neon : .halo,
+                        onClose: { rewardShow = false })
                 }
             }
         }
@@ -1445,7 +1481,12 @@ struct ExerciseDetailView: View {
     /// de bascule reste dans `ChipVerre`, prêt pour un fond clair.)
     private var headerChips: some View {
         RangeeChips(retour: { dismiss() }) {
-            ChipVerre(symbole: "ellipsis", label: "Options") {}
+            // Le geste du « … » est PRÊTÉ à la card reward le temps de
+            // l'atelier — son vrai rôle (date, heure) attend toujours.
+            ChipVerre(symbole: "ellipsis", label: "Options") {
+                rewardNeon.toggle()
+                rewardShow = true
+            }
         }
     }
 
