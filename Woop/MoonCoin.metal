@@ -300,6 +300,16 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
         float3 lacquer = mix(float3(0.0055, 0.0038, 0.0026),
                              float3(0.0575, 0.0282, 0.0072),
                              toRim);
+        // LE MAT A SA PROPRE LAQUE (verdict 24-08 : « plus noir stp, c'est
+        // marron on dirait »). La rampe ci-dessus est AMBRÉE (15:7:2 en
+        // R:V:B au bord) parce que sur la pièce d'or c'est l'anneau qui
+        // rejaillit sur le vernis — sous l'anthracite, le même ambre sans
+        // son or fabrique du BRUN. Le galet noir prend un graphite NEUTRE,
+        // à peine froid : un noir premium n'est jamais chaud.
+        lacquer = mix(lacquer,
+                      mix(float3(0.0040, 0.0040, 0.0046),
+                          float3(0.0262, 0.0266, 0.0292), toRim),
+                      matte);
         // Le rejaillissement de l'anneau : court, et carré — il ne porte que
         // sur le dernier tiers de la face.
         const float bounce = smoothstep(rimIn - 0.52, rimIn - 0.02, rN);
@@ -309,8 +319,11 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
 
         // Le vernis : une nappe spéculaire large et FAIBLE. La règle du piano
         // black — un lustre large et discret, jamais un point brillant.
+        // Neutre-froid sous le mat, pour la même raison que la laque.
         const float2 vk = pF / max(coinR, 1e-3) - MC_KEY * 0.42;
-        lacquer += float3(0.34, 0.30, 0.26) * (0.055 * exp(-dot(vk, vk) * 2.6));
+        const float3 vernis = mix(float3(0.34, 0.30, 0.26),
+                                  float3(0.29, 0.30, 0.33), matte);
+        lacquer += vernis * (0.055 * exp(-dot(vk, vk) * 2.6));
 
         const float inner = smoothstep(rimIn + 0.010, rimIn - 0.014, rN);
         col = mix(col, lacquer, inner * faceMask);
@@ -449,7 +462,11 @@ constant float2 MC_KEY = float2(-0.5299, -0.8480);
     // Sans le facteur `(1 − 0,5·rN)` du tour 2, qui ÉTEIGNAIT le bain à
     // mesure qu'on s'éloignait du centre — c'est-à-dire exactement là où la
     // référence est la plus claire.
-    col += NEON * (0.185 * spill * lit * faceMask);
+    // SUR LE MAT, LE BAIN SE RESSERRE (le même verdict du 24-08) : 0,185
+    // de bain orange posé sur un graphite fabrique du brun à mi-rayon.
+    // La lueur reste — sans elle le croissant est un autocollant — mais
+    // elle BORDE le tube au lieu de vernir toute la face.
+    col += NEON * (0.185 * mix(1.0, 0.42, matte) * spill * lit * faceMask);
 
     // ------------------------------------------------------------------
     // LE BLOOM — la pièce pose sa lumière sur la nuit

@@ -1844,3 +1844,47 @@ l'anneau qui partait du galet.
    juste est un petit **type de mesures** calculé dehors, que la vue
    consomme.
 
+
+## 14. LA PIÈCE DU TRÉSOR (25-08) — la porte du coffre, revenue de la v1
+
+La demande : « il manque la pièce dans le coin qui connecte à la page
+coffre — en noir pas or, plus premium, plus Apple, néon discret. » Puis le
+verdict de première passe : « plus noir stp, c'est marron on dirait. »
+
+**Livré.** `CoffreFortCoinButton` (le composant v1, inchangé pour la v1)
+gagne un paramètre `matte` passé au shader `moonCoin` — la matière de la
+page BRAVO : anthracite, reflets, tranche, croissant à 52 %. Posée en
+haut-droit de `HomeNuitPage` (top 43 = l'œil de la première ligne de la
+phrase, trailing 24 = la marge miroir du texte), elle suit la grammaire du
+mobilier : née avec `arrivee`, éteinte par `net` (offset 8 + flou 6 +
+opacité), sourde pendant l'édition et la vitrine. Tap → fumée claire puis
+`CoffreFortFlow` en `fullScreenCover` (20 pièces la série, le corps
+`CoffreFortPurse`). Banc : `-coffreSmoke` (le même nom que la v1).
+
+**Le brun, mesuré et tué (MoonCoin.metal).** Le `matte` d'origine
+n'éteignait que le métal : la LAQUE de la face gardait sa rampe ambrée
+(15:7:2 en R:V:B au bord — de l'or sans son anneau, c'est du brun) et le
+bain du néon (spill 0,185) vernissait toute la face. Sous `matte` : laque
+graphite neutre à peine froide, vernis neutre, spill à 42 %. La pièce
+d'or (matte 0) ne bouge pas d'un octet.
+
+**⚠️ PIÈGE PAYÉ — l'overlay de fumée DANS le `contenu` de MenuHote ne
+peint RIEN.** L'ancre se résolvait, `CoinSmoke` se montait (vérifié aux
+prints : box juste, toucher reçu), et pas un pixel n'arrivait à l'écran —
+sur film complet, zéro. Le MÊME code déplacé AU NIVEAU PAGE (au-dessus de
+MenuHote, la grammaire exacte de la v1) peint normalement (pic mesuré
+14/255 de moyenne dans l'anneau, p99,5 à 213). La préférence traverse la
+hiérarchie, donc rien ne change au câblage — seul l'hébergement compte.
+Non élucidé au fond (le trio identité `blur(0)/scale(1)/opacity(1)` du
+retrait est suspect) ; la loi pratique : **les couches transitoires à
+TimelineView se posent au niveau page, jamais dans `contenu:`**.
+
+**La fumée est CLAIRE, et c'est mesuré** : la palette sombre du trésor
+culmine ici à 0,45/255 de moyenne — invisible sur le coin noir absolu.
+
+**Fouetté au film** (`-departAuto`, 15 i/s) : naissance en fondu avec
+l'arrivée, extinction avec le mobilier au départ (la partition des cards,
+`net` partagé), retour à la fermeture — aucun saut hors grammaire.
+Captures : `shots/verdict-piece-noire-page.jpg` / `-crop.jpg`. Restent :
+le verdict téléphone (haptique du tap, tintement, fumée réelle) et la
+promotion du compte de pièces au vrai backend le jour venu.

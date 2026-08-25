@@ -1647,6 +1647,15 @@ struct HomeNuitPage: View {
     /// rate — l'état final, sans le trajet.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    // MARK: - LA PIÈCE DU TRÉSOR (retour de la v1, verdict 24-08)
+
+    /// L'horloge de la fumée de la pièce, ou `nil` si personne n'y touche.
+    @State private var fumeePiece: Date?
+    /// L'instant où le doigt s'est levé (la bouffée retombe de là).
+    @State private var fumeePieceFin: Date?
+    /// La page du trésor.
+    @State private var coffreOuvert = false
+
     /// LE TIRAGE de la card géante (verdict 21-08 : « je dois pouvoir drag
     /// toute la home ») — le déplacement RENDU, déjà élastiqué.
     @State private var tirage: CGFloat = TirageBanc.fige ?? 0
@@ -2018,6 +2027,44 @@ struct HomeNuitPage: View {
                 .environment(\.encartBas, geo.safeAreaInsets.bottom)
             }
         }
+        // LA FUMÉE DE LA PIÈCE se dessine ICI, au niveau de la page et
+        // AU-DESSUS de MenuHote — la grammaire exacte de la v1 : la pièce
+        // publie sa place (l'ancre traverse toute la hiérarchie), et le
+        // nuage — qui déborde de près de cent points — s'étale sans
+        // rencontrer le bord d'un hôte qui l'aurait tranché au couteau.
+        // Palette CLAIRE, et c'est MESURÉ : la sombre — composée « à peine
+        // plus claire que la nuit » pour la page du trésor — culmine ici à
+        // 0,45/255 de moyenne dans l'anneau de la pièce, c'est-à-dire
+        // nulle part. Le coin est noir absolu : seule une fumée pâle y
+        // existe, et son gain de 0,30 la garde en souffle, pas en nuage.
+        .overlayPreferenceValue(CoffreFortCoinBounds.self) { anchor in
+            GeometryReader { proxy in
+                if let anchor, let fumeePiece {
+                    let box = proxy[anchor]
+                    CoinSmoke(center: CGPoint(x: box.midX, y: box.midY),
+                              radius: CoffreFortCoinButton.diameter / 2,
+                              start: fumeePiece, end: fumeePieceFin,
+                              palette: .light)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        // Plein écran, pas une feuille : la cinématique du trésor doit
+        // couvrir TOUTE la page (la loi de la v1 — une cinématique avec du
+        // mobilier qui flotte par-dessus n'est plus une cinématique).
+        .fullScreenCover(isPresented: $coffreOuvert) {
+            CoffreFortFlow(
+                // La règle des pièces : 20 par SÉRIE faite — le trésor
+                // compte les séries de toutes les séances terminées.
+                coins: CoffreFortPurse.coins(
+                    doneSeries: workoutsBruts
+                        .filter { !$0.isActive }
+                        .flatMap { $0.exercises ?? [] }
+                        .reduce(0) { $0 + $1.completedSets })
+            ) {
+                coffreOuvert = false
+            }
+        }
         .onAppear {
             guard !deja else { return }
             deja = true
@@ -2030,6 +2077,19 @@ struct HomeNuitPage: View {
             if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
                 tiroirOuvert = true
                 tirage = reposCard
+            }
+            // `-coffreSmoke` : la bouffée part SEULE, deux secondes après
+            // l'arrivée, et la page du trésor ne s'ouvre pas (c'est l'action
+            // du bouton, pas le toucher, qui l'ouvre). Le simulateur ne sait
+            // pas poser un doigt — sans ce banc, la fumée n'est vérifiable
+            // que sur l'appareil. Le même nom que la v1 : même bouffée.
+            if CommandLine.arguments.contains("-coffreSmoke") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    toucherPiece(true)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                        toucherPiece(false)
+                    }
+                }
             }
             // `-departAuto` : LE FILM REJOUÉ EN BOUCLE. Le simulateur ne sait
             // pas poser un doigt — et une cinématique de 1,95 s ne se juge pas
@@ -2528,6 +2588,37 @@ struct HomeNuitPage: View {
                         .animation(.spring(response: 0.42,
                                            dampingFraction: 0.84),
                                    value: galetRange)
+
+                    // LA PIÈCE DU TRÉSOR — la porte du coffre, revenue de
+                    // la v1 (verdict 24-08 : « en noir pas or, plus
+                    // premium, plus Apple, néon discret »). La matière est
+                    // celle de BRAVO : `matte: 1` éteint le MÉTAL seul —
+                    // l'anthracite garde ses reflets, sa tranche et son
+                    // épaisseur — et le croissant descend de lui-même à
+                    // 52 % : le néon discret est DANS la matière, pas dans
+                    // une opacité posée dessus.
+                    // Alignée sur l'œil de la première ligne de la phrase
+                    // (top 48 + centre de ligne 18 − rayon 23 = 43), à la
+                    // marge miroir du texte (24).
+                    CoffreFortCoinButton(onPress: { toucherPiece($0) },
+                                         action: { ouvrirCoffre() },
+                                         matte: 1)
+                        .padding(.top, 43)
+                        .padding(.trailing, 24)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: .topTrailing)
+                        // Elle recule avec le mobilier : la grammaire des
+                        // cards (offset 8, flou plafonné 6, extinction) —
+                        // et elle naît avec la phrase.
+                        .offset(y: 8 * net)
+                        .blur(radius: 6 * net)
+                        .opacity((1 - net) * arrivee)
+                        .opacity(RasantHorloge.iso ? 0 : 1)
+                        // Sourde dès que la page fait autre chose : le
+                        // film, l'édition, la vitrine — un bouton qui
+                        // s'estompe ne doit plus prendre le doigt.
+                        .allowsHitTesting(net < 0.02 && !edition
+                                          && vitrineSlot == nil)
                 }
                 .offset(y: max(tirage, 0))
         }
@@ -2543,6 +2634,35 @@ struct HomeNuitPage: View {
                                   dampingFraction: 0.84)) {
                 reglageOuvert = false
             }
+        }
+    }
+
+    /// Le doigt se pose, le doigt se lève — l'horloge de la fumée vit dans
+    /// la page parce que c'est elle qui la dessine (la grammaire de la v1).
+    private func toucherPiece(_ pose: Bool) {
+        if pose {
+            fumeePiece = .now
+            fumeePieceFin = nil
+        } else {
+            let marque = Date.now
+            fumeePieceFin = marque
+            // La bouffée s'éteint en ~0,45 s ; on démonte le sous-arbre une
+            // fois qu'il ne reste rien à dessiner, pour rendre les 30 Hz du
+            // TimelineView. Une autre bouffée a pu naître entre-temps : on
+            // n'éteint que la SIENNE.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                guard fumeePieceFin == marque else { return }
+                fumeePiece = nil
+                fumeePieceFin = nil
+            }
+        }
+    }
+
+    /// Le toucher fume, PUIS la page s'ouvre. Ouverte au même instant, la
+    /// fumée serait recouverte avant d'avoir été vue.
+    private func ouvrirCoffre() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            coffreOuvert = true
         }
     }
 

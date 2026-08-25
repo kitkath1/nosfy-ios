@@ -37,6 +37,12 @@ struct CoffreFortCoinBounds: PreferenceKey {
 struct CoffreFortCoinButton: View {
     var onPress: (Bool) -> Void
     var action: () -> Void
+    /// Le MAT de la pièce, passé tel quel au shader : 0 = l'or du header
+    /// v1, 1 = l'anthracite de BRAVO — le métal s'éteint, reflets et
+    /// tranche gardés, et le croissant descend de lui-même à 52 %. C'est
+    /// la pièce de la home v2 (verdict 24-08 : « en noir pas or, plus
+    /// premium, néon discret »).
+    var matte: Float = 0
 
     /// Le diamètre visible. Parti de 42 (la taille du coffre), monté à 52
     /// pour qu'un bijou qu'on fait tourner ait de quoi se montrer, puis
@@ -48,7 +54,7 @@ struct CoffreFortCoinButton: View {
             .frame(width: Self.diameter, height: Self.diameter)
             .anchorPreference(key: CoffreFortCoinBounds.self, value: .bounds) { $0 }
             .overlay {
-                MoonCoinView(coinR: Self.diameter / 2, onTap: {
+                MoonCoinView(coinR: Self.diameter / 2, matte: matte, onTap: {
                     onPress(true)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
                         onPress(false)
