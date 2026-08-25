@@ -211,18 +211,23 @@ struct EcranSpec: Equatable, Identifiable {
     /// tombe à chaque image, les booléens ne bougent qu'aux frontières.
     func piloter(y: CGFloat, hauteur: CGFloat) {
         guard hauteur > 0 else { return }
-        let a = max(0, min(4, Int(floor(y / hauteur))))
-        let b = max(0, min(4, Int(ceil(y / hauteur))))
+        // §19 (« des fois lag/écran noir au scroll ») : un lecteur qui
+        // passe rate 0→1 EN PLEIN geste flushe sa couche — des frames
+        // noires. Le remède : réveiller les voisins UNE page à l'avance
+        // (a-1…b+1) — plus aucun réveil en plein voyage, et un lecteur
+        // à rate 0 ne décode toujours pas.
+        let a = max(0, min(4, Int(floor(y / hauteur)) - 1))
+        let b = max(0, min(4, Int(ceil(y / hauteur)) + 1))
         for i in 0..<5 {
-            let veut = !gel && (i == a || i == b)
+            let veut = !gel && (i >= a && i <= b)
             if lecture[i] != veut { lecture[i] = veut }
         }
         for f in EcranSpec.frontieres {
-            let veut = !gel && f.ecrans.contains(where: { $0 == a || $0 == b })
+            let veut = !gel && f.ecrans.contains(where: { $0 >= a && $0 <= b })
             if lectureFrontieres[f.id] != veut { lectureFrontieres[f.id] = veut }
         }
         for f in EcranSpec.feuxUniques {
-            let veut = !gel && f.ecrans.contains(where: { $0 == a || $0 == b })
+            let veut = !gel && f.ecrans.contains(where: { $0 >= a && $0 <= b })
             if lectureFeux[f.id] != veut { lectureFeux[f.id] = veut }
         }
         let pose = Int((y / hauteur).rounded())
@@ -975,13 +980,14 @@ struct DuolinguoPage: View {
                                 }
                                 .compositingGroup()
                         }
-                            // §17 — LA ROTATION PARALLAX COVER-FLOW : la
-                            // rotation est SIGNÉE (sin 2πu) — la capsule
-                            // arrive inclinée vers la caméra, se DRESSE
-                            // face à toi au centre (présentation, nette),
-                            // s'incline dans l'autre sens en repartant,
-                            // droite aux poses. La courbe en S (0,10 H)
-                            // + l'échelle de présentation (pic au centre).
+                            // §19 — LE GROS ZOOM-DÉZOOM + LA ROTATION
+                            // COVER-FLOW (sa demande : « gros zoom puis
+                            // dézoom et rotation à la Apple ») : la
+                            // capsule passe PRÈS de la caméra (+20 % au
+                            // centre du voyage), se dresse face à toi
+                            // (rotation signée sin 2πu, nulle aux poses),
+                            // puis DÉZOOME en se posant. La courbe en S
+                            // (0,10 H) l'attarde au centre.
                             .visualEffect { [restF, hauteur] contenu, proxy in
                                 let d = restF - proxy.frame(in: .scrollView).minY
                                 let u = max(0, min(1, d / hauteur))
@@ -989,7 +995,7 @@ struct DuolinguoPage: View {
                                 let sSigne = sin(2 * .pi * u)
                                 return contenu
                                     .offset(y: 0.10 * hauteur * s)
-                                    .scaleEffect(1 + 0.03 * s)
+                                    .scaleEffect(1 + 0.20 * s)
                                     .rotation3DEffect(
                                         .degrees(DuoReglages.arriveeEffectif * sSigne),
                                         axis: (x: 1, y: 0, z: 0),

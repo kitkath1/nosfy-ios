@@ -152,7 +152,7 @@ def scrim(name, W, H, top, bottom):
 # noir sur 200 px ; les feux uniques portent leurs queues a zero dans
 # scrim-feu ; les 4 fichiers de flammes separees sont MORTS (LOI F2).
 for spec in [
-    ("duo-galet-noir",          1206, 1560,   0, 220),
+    ("duo-galet-noir",          1206, 1560, 220, 220),  # P1-bis : col PROFOND (son verdict — le pull-to-refresh ne revele plus un trait)
     ("duo-galet-rouge",         1080, 2100, 200, 200),
     ("duo-galet-rougebleu",     1080, 2100, 200, 200),
     ("duo-flamme-bleue",         804,  440, 198,   0),
@@ -166,7 +166,7 @@ for spec in [
 # valeur pour valeur) + flou PROGRESSIF (maskedmerge, net a 300 -> flou
 # plein a 400) + extinction qui PART DE ZERO a la jonction (scrim bas de
 # 320). La vignette 2D zeroe ses 12 colonnes de bord.
-scrim("feularme", 804, 640, 180, 320)
+scrim("feularme", 804, 640, 220, 320)  # « plus diffus » : extinction haute allongee
 def vig2d(name, W, H, cx, cy, sx, sy):
     xx, yy = np.meshgrid(np.arange(W), np.arange(H))
     g = np.exp(-(((xx-cx)/sx)**2 + ((yy-cy)/sy)**2))
@@ -176,7 +176,7 @@ def vig2d(name, W, H, cx, cy, sx, sy):
         os.path.join(os.environ["TMP_SCRIM"], f"{name}.png"))
 vig2d("vig-feularme", 804, 640, 402, 320, 230, 200)
 y = np.linspace(0, 639, 640)[:, None]
-mk = np.clip((y - 300) / 100.0, 0, 1)
+mk = np.clip(0.25 + np.clip((y - 300) / 100.0, 0, 1) * 0.75, 0, 1)  # plancher 25 % : les pointes revent aussi
 v = np.broadcast_to((mk * 255).astype(np.uint8), (640, 804))
 Image.fromarray(np.array(v)).save(
     os.path.join(os.environ["TMP_SCRIM"], "blurmask.png"))
