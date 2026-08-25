@@ -814,13 +814,31 @@ jumelles. Preuves : `refs/pieces-jumelles.jpg` (les deux, case par case),
 halo), `refs/pieces-sur-la-scene.jpg` (à la vraie taille, sur la vraie chambre,
 avec l'ombre de contact).
 
-**⚠️ RESTE À TRANCHER AU JALON C1 — LE POIDS.** Aux réglages actuels
-(72 cases × 384 px), une planche pèse **8,5 à 9,8 Mo** et occupe **42 Mo une
-fois décodée**. Deux pièces résidentes = 84 Mo : trop. Trois leviers, à régler
-sur mesure et pas à l'intuition : moins de cases (48 → 7,5°/case, visible au
-drag lent ?), des cases plus petites (384 → la pièce fait 330 px pour un
-affichage à 396 px en 3×, on est déjà en léger sur-échantillonnage), et surtout
-**ne monter qu'une planche à la fois** (le manège n'en montre qu'une).
+**LE POIDS — TRANCHÉ PAR LA MESURE (25-08).** Aux réglages du premier essai
+(72 × 384) une planche pèse 9,3 Mo et occupe **40 Mo décodée** : deux pièces
+résidentes = 80 Mo, intenable. Sept configurations mesurées :
+
+| config | planche | fichier | RAM | pas |
+|---|---|---|---|---|
+| 72 × 384 | 3456×3072 | 9,3 Mo | 40 Mo | 5,0° |
+| **72 × 320** | **2880×2560** | **7,0 Mo** | **28 Mo** | **5,0°** |
+| 72 × 288 | 2592×2304 | 5,8 Mo | 23 Mo | 5,0° |
+| 48 × 320 | 2240×2240 | 4,7 Mo | 19 Mo | 7,5° |
+| 36 × 320 | 1920×1920 | 3,5 Mo | 14 Mo | 10,0° |
+
+**Retenu : 72 cases × 320 px.** Les deux raisons, et elles sont mesurées :
+- **Le pas reste à 5°.** Descendre à 48 cases (7,5°) ferait cranter la rotation
+  sous un doigt lent — et c'est exactement le geste qu'on vend.
+- **La perte de définition est nulle à l'œil.** À 320 la pièce fait 271 px pour
+  un affichage à 396 px en 3× (sur-échantillonnage 1,46), et la comparaison
+  384/320/288 au format d'écran est **indiscernable** — les caustiques du tore
+  et les hachures du croissant survivent toutes
+  (`tools/coffre-v2/refs/…`, essai fait). Le verre est fait de dégradés
+  DOUX : c'est la matière la plus tolérante au ré-échantillonnage qui soit.
+
+⚠️ **ET LA RÈGLE QUI VA AVEC : UNE SEULE PLANCHE MONTÉE À LA FOIS.** Le manège
+n'en montre qu'une ; garder les deux en mémoire doublerait la note pour rien.
+Pic mémoire visé : **28 Mo**, pas 56.
 
 **Les planches ne sont PAS commitées** : c'est la RECETTE qui fait foi, pas
 l'artefact (la leçon de `recuit_duo.sh`). Une commande les régénère.
