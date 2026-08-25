@@ -1885,6 +1885,249 @@ jamais » :
 - Curseurs : `-duoBoule` (0,32), `-duoBraise` (le cœur), l'arrivée des
   capsules inchangée (§16).
 
+## 18. « LA PARTITION » — la ré-analyse aux montages + le plan minutieux
+(25-08, dicté après « toujours pas, réanalyse, tu vas trop trop vite et
+tes plans ne sont pas assez précis — fais un plan très minutieux et
+long, c'est pas grave ». Fouetté avant présentation : 2 juges adverses,
+16 fautes intégrées — les majeures : la SAFE AREA oubliée dans toute
+l'arithmétique de la dalle, le relais de la boule troué à ses bords, le
+script de cuisson incapable de recuire le bundle réel.)
+
+### 18.1 LA RÉ-ANALYSE (les montages frame par frame du film v4 — ce que
+les sondes ne voyaient pas)
+
+Trois montages de 8 frames (la condensation 3/4, le dévoilement à la
+pose É4, l'arrivée de la capsule 2/3). Les fautes, par gravité :
+
+**FAUTE 1 — LA BOULE EST ENCORE « DEUX COMPOSANTS » (frames 220-243).**
+Deux blobs faibles empilés, une fente noire entre eux. La géométrie
+mesurée (corrigée au fouettage — ma première arithmétique était
+fausse) : les cœurs lumineux vivent à ~60 pt et ~52 pt de leurs bords de
+fenêtre ; l'échelle ancrée 0,32 les amène à ~36 pt l'un de l'autre —
+proches mais JAMAIS fusionnés, et si dimmés que la rencontre est deux
+lueurs mortes, pas une boule. Le verdict le plus ancien du chantier
+(« on ne doit pas savoir que c'est deux composants ») revient par la
+faiblesse, pas par la distance.
+
+**FAUTE 2 — LE PATCH RECTANGULAIRE (frames 223-233).** Une fenêtre vidéo
+à l'échelle 0,32 montre sa SILHOUETTE (épaules droites de la vignette
+vue de loin). Un scale fort n'est pas une condensation de matière —
+c'est un autocollant qui rétrécit.
+
+**FAUTE 3 — LES SUSPENDUES SONT INVISIBLES, ET LA CAUSE EST LA SAFE
+AREA.** La dalle ne vit PAS à y 8→66 : son overlay respecte la zone
+sûre (seul le ScrollView l'ignore) — elle occupe ~y 67→125 PHYSIQUE,
+sous l'île. Les fenêtres d'écran, elles, sont plein-physique (y 0). La
+braise suspendue (y 0→130) est donc mangée par l'île PUIS par la dalle
+sur la quasi-totalité de sa hauteur. **C'est la racine du « on ne voit
+plus rien sur les flammes » : elles sont à l'écran, entièrement
+cachées.** Aucune cote de HUD ne se déclare : elles se MESURENT sur
+capture (safe top réel + rect réel de la dalle).
+
+**FAUTE 4 — LA DALLE EN TRANSITION reste une machine à artefacts** (le
+pavé noir au départ, un slab clair à mi-fondu sur la braise blanche,
+frame 170). Sa sortie a des états intermédiaires visibles.
+
+**FAUTE 5 — LE DÉVOILEMENT N'A PEUT-ÊTRE JAMAIS JOUÉ dans les films.**
+Piloté par `enGeste` (onScrollPhaseChange) — or les films `-duoAuto`
+scrollent par `scrollTo` programmé : la phase n'est pas garantie de
+tomber comme au doigt. Conséquence propagée : **les montages des fautes
+1-2 ont peut-être été filmés SANS le voile de 9 pt** — leur gravité
+(pas leur existence) se re-constate sur banc réparé AVANT de cuire quoi
+que ce soit (P3.a est prérequis des films de P4).
+
+**CE QUI EST PROUVÉ ET TIENT** (interdit d'y retoucher sans son ordre) :
+zéro arête (ligne 2,4 contre 14), zéro flash, fraction méd. 20 %, la
+matière larme-2D des braises basses, l'arrivée cover-flow LISIBLE au
+montage, les noirs vrais, la cadence sim. **CE QUI N'A JAMAIS ÉTÉ
+VÉRIFIÉ** : le doigt, le dévoilement, le téléphone, le press à
+mi-transition, `-duoAutoLent`.
+
+**L'INTENTION DÉCLARÉE (à confirmer en P8)** : la page alterne DEUX
+grammaires de transition — aux coutures de feu (1/2, 3/4) LE FEU SE
+CONDENSE en boule ; aux coutures de verre (2/3, 4/5) LE VERRE ÉMERGE en
+cover-flow. C'est un rythme voulu, pas un accident.
+
+### 18.2 LA MÉTHODE DE LA PARTITION (la porte, durcie une bonne fois)
+
+- **UN jalon par échange, UNE question FERMÉE par jalon** (écrite
+  d'avance ci-dessous — une seule bascule ; les curseurs restent des
+  flags qu'elle actionne si le « non » tombe). Verdict archivé
+  (`shots/verdict-P*.png` + sa phrase ici) avant d'ouvrir le suivant.
+- **Chaque jalon filmé en DEUX vitesses** (`-duoAuto` + `-duoAutoLent`),
+  jugé d'abord au film LENT.
+- **Le chemin critique est court** : P0 → P1 → P1bis → P2 → P3 → P4 →
+  P7 → P8. **P5 et P6 sont CONDITIONNELS** (après P8, seulement si ses
+  verdicts les réclament) — on ne rouvre pas ce qui tient (le pattern
+  des salves passées, nommé et banni).
+- Les portillons chiffrés gardent la non-régression ; le juge de la
+  beauté reste elle.
+
+### 18.3 LES JALONS
+
+**P0 — L'OUTILLAGE DE PREUVE (à portillons, enchaînable avec P1).**
+1. `-duoAutoLent` : le même aller-retour, durée ×3.
+2. Le LOG DE PHASE (`-duoLogPhase`) : une ligne par changement de phase
+   (phase, y, horodatage) — en `print` relu par
+   `simctl launch --console-pty`, ET en fichier dans le conteneur de
+   l'app (relu par `simctl get_app_container data`) pour les films.
+3. La SONDE DE DALLE : le rect réel de la dalle se MESURE d'abord sur
+   capture posée (safe top + cadre) ; la sonde croppe CE rect-là sur
+   les films — portillon : après 3 frames de geste, aucun pixel
+   structuré (ni pavé sombre, ni slab clair) jusqu'au retour de pose.
+4. **LE SCRIPT REDEVIENT LA VÉRITÉ** (bloquant du fouettage) :
+   `recuit_duo.sh` reçoit les recettes RÉELLES des 4 braises (scrims
+   `basse` 804×430 200/130 + `haute` 804×260 90/130, vignettes 2D
+   `vig-basse` σ250/200 c(402,300) et `vig-haute` σ230/130 c(402,185),
+   canevas 804×430 et 804×260, crops blanche `1080:578:0:1298` bp 70 /
+   rouge `2160:1155:0:2637` bp 24 / hautes `1080:349:0:1527` et
+   `2160:699:0:3093`, vflip final + roll demi-boucle des hautes,
+   crf 17 une passe). **Portillon : re-cuire reproduit les fichiers du
+   bundle (dims identiques + portillons J0 verts).**
+Sorties : sonde de dalle rejouée sur le film v4 existant ; les flags
+prouvés sur UN film neuf. Aucun verdict Kathryn requis.
+
+**P1 — LES SUSPENDUES VISIBLES (faute 3).**
+- La cote se DÉRIVE, jamais ne se déclare : sommet des braises hautes à
+  `safeAreaInsets.top + 58 + 12` (mesuré ~y 129-137 selon l'appareil),
+  via `yLocal` — **l'offset entre dans yLocal qui nourrit restY ET
+  l'offset ensemble** (un offset seul poserait dist ≈ 130 à la pose :
+  une mini-condensation permanente sur braise posée, la faute
+  silencieuse relevée au fouettage).
+- La fenêtre reste 402×130 ; le profil mesuré du fichier (première
+  lumière à ~14 pt du bord, cœur à ~52 pt) place le cœur à ~y 185 :
+  VISIBLE, entier, sous la dalle. Aucun recuit d'abord — l'offset seul,
+  on juge, on recadre après si le cadrage déçoit (recuit possible grâce
+  à P0.4).
+- Si le feu touche encore le verre de la dalle à la pose : pellicule
+  0,30 → 0,22 (capture comparée, même jalon).
+Portillons : capture posée É2 et É4 — braise haute entière hors du rect
+mesuré de la dalle (portillon numpy : zéro pixel de braise dans le
+rect) ; ligne < 7 ; bandes du chemin re-mesurées.
+**Question (fermée) : « É2/É4 posés : les flammes hautes sont bien là,
+oui ou non ? »**
+
+**P1-bis — LE COL FONDU DU VERRE NOIR (sa demande du 25-08).**
+- Deux candidats cuits EN PRÉVIEW (hors bundle) : scrim haut **120 px**
+  (doux) et **220 px** (profond) — le fondu va jusqu'au noir au bord
+  (c'est la nature d'un scrim ; si elle veut un col encore lisible, le
+  plafond d'alpha devient un paramètre de scrim — dit, pas découvert).
+  Le scrim bas 220 px inchangé, une passe crf 17, palindrome.
+- Le gagnant part au bundle + pose refaite.
+Portillons : couture ≤ 2 ; silhouette du reste intacte (±4 % vs gel) ;
+p99 des 4 rangées hautes avant/après (le chiffre du fondu).
+**Question : « le col : doux (120) ou profond (220) ? »**
+
+**P2 — LA DALLE PROPRE EN TRANSITION (faute 4).**
+- **Le verre sort SEC** (retrait sans transition — le natif ignore
+  l'opacité, toute transition sur lui ne fait que retarder son pop) ;
+  la PELLICULE s'anime seule en opacité 0,08 s ; l'ENCRE en 0,15 s
+  (elle survit 70 ms à la pellicule : assumé — l'encre seule sur le
+  noir ne fait pas d'artefact). Le retour garde 0,28 s. Plus d'offset
+  de sortie (il promenait le pavé sur les galets).
+Portillons : sonde de dalle muette sur films 2 vitesses ; zéro morsure
+sur galets en pleine transition.
+**Question : « au scroll, plus aucun rectangle fantôme en haut — oui ou
+non ? »**
+
+**P3 — LE DÉVOILEMENT PROUVÉ PUIS RÉGLÉ (faute 5).**
+- a) Le log P0.2 tranche. Si la phase ne tombe pas au scrollTo : sous
+  `-duoAuto`, **le callback de phase ne pilote PLUS enGeste** (garde
+  sur le flag — une seule main sur le booléen) ; le banc le pilote aux
+  deadlines de `lancerAuto` (vrai au départ du withAnimation, faux à
+  +1,1 s). Les films montrent alors CE QUE LE DOIGT verra. **Prérequis
+  des films de P4.**
+- b) La courbe : `easeOut 0,7 s` contre `spring(0.55, 0.8)` — deux
+  films lents. Le voile reste à 9 pt (sa variante 6 pt montrée dans le
+  MÊME film, en seconde moitié).
+Portillons : le dévoilement mesuré à OFFSET POSÉ (frames après l'arrêt,
+zone braise recalée par l'offset connu, variance laplacienne normalisée
+par la moyenne² — la mesure du fouettage : jamais pendant le voyage, où
+échelle et dim la polluent) ; cadence tenue.
+**Question : « le dévoilement : courbe douce (A) ou ressort (B) ? »**
+
+**P4 — LA BOULE UNE (fautes 1+2 — le cœur du morphisme).**
+La boule cesse d'être deux fenêtres réduites : **LA BOULE EST L'ORBE**
+(un seul objet dessiné), les braises y fondent PAR L'OPACITÉ :
+- L'orbe : Ø ~140 pt, double stop (cœur teinté 0,9 → mi 0,25 → clair),
+  posé SUR la couture, **flag PROPRE `-duoOrbe` (défaut 0,45)** —
+  découplé de `-duoBraise` (le pic 0,45 était improductible avec
+  braiseMax 0,28 : la faute « un seul jeu de chiffres », payée au §14,
+  ne se repaie pas). L'alpha 0,55 du gradient actuel MEURT, remplacé
+  par le double stop.
+- Les braises : plancher d'échelle **0,72** (le patch commence sous
+  ~0,6), ancres de bord conservées — **l'ancre devient indifférente
+  parce que le relais est l'OPACITÉ** (l'arbitrage du fouettage : on ne
+  répare pas la géométrie des cœurs, on éteint les fenêtres avant
+  qu'elle ne compte ; le piège « ancre au cœur » est retiré) — et
+  extinction VRAIE : coefficient **1,0** (jamais 0,9 — un fantôme à
+  11 % en additif sur noir se voit) : `opacité = 1 −
+  smoothstep(u ∈ [0,18 ; 0,52])`, symétrique au retour.
+- P1 pris en acte : l'ancre des suspendues vit désormais à ~130 pt de
+  la couture — sans importance, leurs fenêtres sont éteintes bien avant
+  que l'écart ne se lise (le relais par l'opacité, encore).
+- La passation est ADDITIVE (fondu enchaîné de lumières, pas un swap) ;
+  reduceMotion : orbe seul, braises en fondu simple.
+Portillons (les DEUX trous du fouettage fermés) : comptage de
+composantes connexes sur CHAQUE frame de la traversée — **la pire frame
+fait le portillon** (le trou du relais est aux bords, u 0,25-0,45,
+jamais au centre) ; profil de luminance totale par frame : montée vers
+le pic puis descente vers la pose SANS CREUX (le trou de relais mesuré,
+pas espéré) ; ligne < 7 ; fraction ≤ pose ; seuil de luminance des
+composantes calé sur le plancher noir mesuré en P0.
+**Question : « la boule telle quelle — oui ou non ? »** (les curseurs
+`-duoOrbe`/`-duoBoule` restent à sa main si le non tombe).
+
+**P7 — LE FOUETTAGE COMPLET (à portillons).**
+Films 2 vitesses × 4 coutures + aller-retour ; ligne, fraction,
+composantes de la boule (toutes frames), sonde de dalle, flash, voile
+(flancs ≤ 4 hors lueur) ; **l'ouverture refilmée** (la cascade de
+naissance — perdue depuis N9, réintégrée) ; non-régression contre les
+GELS des verdicts P1-P4 ; allers-retours d'états ; LE PRESS À
+MI-TRANSITION (dette 2ᵉ salve) ; cadence par régime (les deux nombres).
+
+**P8 — LE TÉLÉPHONE (le verdict qui compte).**
+Déploiement (mémoire deploy-iphone) ; noirs OLED réels des braises ;
+chauffe pendant blurs ; gyro ; **la dette des galets nommée** (press/
+refus/tilt au doigt — D1 « le chemin est le sujet » n'a pas eu un jalon
+et le doit) ; les deux grammaires (boule / cover-flow) confirmées ou
+infirmées par elle ; l'intensité des curseurs au doigt.
+**Question finale : « au doigt sur TON téléphone : la magie y est —
+oui ou non ? »**
+
+**P5 (CONDITIONNEL, après P8) — LE COVER-FLOW AFFINÉ.** Seulement si
+son verdict le réclame : mire 3 réglages (12°/0,5 ; 16°/0,6 actuel ;
+20°/0,7 + échelle 1,04), courbe de blur asymétrique (résolution rapide
+dès 40 %), noir 0,5 vs 0,38. Portillons : netteté à la présentation
+(variance laplacienne à la frame du pic, position calculée) ; cadence ;
+voile.
+
+**P6 (CONDITIONNEL, après P8) — LA MATIÈRE FINE.** Seulement si
+réclamé : la bleue au régime larme-2D ; ralenti cuit ×0,8 si battement
+au lent (jamais minterpolate) ; gains par teinte (S tenue, R à 1) sur
+planche des quatre feux, proposition écrite, « d'accord — oui/non ? ».
+
+### 18.4 LES PIÈGES NEUFS DE CETTE PARTITION
+
+- **Un HUD se MESURE, il ne se déclare pas** : la dalle vit sous la
+  safe area (~y 67→125), pas à son padding nominal — toute cote de
+  zone morte dérive du runtime ou d'une capture (faute 3, payée).
+- **Sous ~0,6 d'échelle, une fenêtre vidéo montre sa silhouette** — le
+  relais passe par l'OPACITÉ vers un objet dessiné, avec extinction
+  VRAIE (1,0 — un fantôme à 11 % en additif se voit).
+- **Le trou d'un relais est à ses BORDS, jamais à son centre** : tout
+  portillon de relais court sur toutes les frames et retient la PIRE.
+- **`onScrollPhaseChange` n'est pas garanti au scrollTo programmé** —
+  et deux mains sur un même booléen (sonde + pilote de banc) rendent
+  le film infidèle : la garde d'abord, le pilote ensuite.
+- **Un HUD au-dessus d'un monde noir compte ses états intermédiaires**
+  (le verre natif sort SEC ; seules pellicule et encre s'animent).
+- **Un script de cuisson qui ne recuit pas le bundle est une dette
+  active** : chaque one-off se reporte dans le script LE JOUR MÊME,
+  portillon « re-cuire reproduit le bundle ».
+- **Un offset de fenêtre entre dans yLocal (restY + offset ensemble)**,
+  sinon la géométrie de pose ment (mini-condensation permanente).
+
 ### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
 
 1. **La direction des feux** (N2) : A / B / C / D et compositions — défaut
