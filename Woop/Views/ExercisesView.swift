@@ -442,6 +442,17 @@ struct ExercisesView: View {
                                 reserve: reserve)
                         .modifier(CadreCarte(etat: etat, hEcran: hEcran,
                                              w: geo.size.width))
+                    // banc jetable `-exosSonde` (chasse au souffle 25-08) :
+                    // les insets vivants, à l'écran, lisibles en mitraille.
+                    if CommandLine.arguments.contains("-exosSonde") {
+                        Text(String(format: "sT %.1f sB %.1f h %.1f",
+                                    safeT, geo.safeAreaInsets.bottom,
+                                    geo.size.height))
+                            .font(.system(size: 13, weight: .bold,
+                                          design: .monospaced))
+                            .foregroundStyle(.green)
+                            .position(x: 150, y: 400)
+                    }
                 }
                 // ⚠️ AUCUN `frame` EXPLICITE ICI : c'est `ignoresSafeArea` qui
                 // propose l'écran entier au ZStack. Un cadre fixé à la hauteur

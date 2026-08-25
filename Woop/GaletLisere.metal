@@ -291,3 +291,108 @@ static float hauteurPill(float r, float R, float bev) {
     v += step(0.976, h) * tw * sparkGain * (0.35 + 0.65 * diff);
     return half4(half3(clamp(v, 0.0, 1.0)), 1.0h) * half(edge);
 }
+
+// ============================================================================
+// LA GOUTTE DE VERRE (§22) — le galet-étape recalé sur la référence
+// « CHAPITRE » : une goutte de verre noir POSÉE sur le noir de la page,
+// photographiée plus que dessinée. Ce qui la fait exister sur du noir pur
+// (le verre natif y rend un trou) : le liseré spéculaire NET qui court sur
+// l'arc haut, la lumière qui POOLE dans l'épaisseur du bas — une ligne
+// vive doublée d'une nappe large et douce — et deux glints aux flancs.
+//
+// La forme n'est pas un cercle : trois harmoniques basses modulent le
+// rayon par GRAINE — chaque goutte du chemin est unique, comme des gouttes
+// réelles tombées sur une dalle. La normale du contour porte la correction
+// tangentielle (dérivée de la forme) : les lumières suivent la goutte,
+// jamais le cercle qui l'approxime.
+// ============================================================================
+
+[[stitchable]] half4 goutteVerre(float2 pos, half4 color,
+                                 float2 centre,   // cx, cy (pt de la vue)
+                                 float2 Ra,       // R rayon, aspect (1 = rond)
+                                 float2 graine,   // graine d'arcs, chaud (or)
+                                 float2 gains,    // gainRim, gainPool (l'état)
+                                 float2 vie,      // press 0-1, souffle 0-1
+                                 float2 divers,   // refus 0-1, réserve
+                                 float gain) {
+    // ================================================================
+    // LA PASTILLE-BIJOU (réf 2, « à partir de maintenant ») : un ROND
+    // parfait, l'effet BOUTON à DEUX bordures — l'anneau externe vif,
+    // l'interstice noir, l'anneau interne discret — et la lumière en
+    // ARCS INÉGAUX le long des anneaux (l'école du liseré fin de la
+    // flamme : des lobes en cosinus qui meurent en fondu, jamais un
+    // anneau égal). Dôme de verre fumé sombre, chiffre au-dessus.
+    // La FUMÉE est semi-transparente : la lentille native vit dessous.
+    // ================================================================
+    float R = Ra.x;
+    float s = graine.x;
+    float2 q = (pos - centre) / R;
+    q.y /= Ra.y;
+    float rr = length(q);
+    if (rr > 1.30) { return half4(0.0h); }
+    float th = atan2(q.y, q.x);
+    float aa = 1.0 / R;
+    float mask = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, rr);
+    float press = vie.x, souffle = vie.y, refus = divers.x;
+    float gRim = gains.x * (1.0 + 0.12 * souffle + 0.22 * press + 0.55 * refus);
+    float gPool = gains.y * (1.0 + 0.35 * press + 0.30 * refus);
+
+    // LES ARCS — la lampe en haut (léger biais gauche), le contre-arc
+    // en bas à droite, et deux étincelles seedées. Fondu en cosinus :
+    // un lobe naît, culmine, meurt — le liseré fin de la maison.
+    float thLampe = -1.85 + 0.25 * sin(s * 1.7);
+    float thContre = 1.25 + 0.30 * sin(s * 2.3 + 1.1);
+    float lobeL = pow(max(cos(th - thLampe), 0.0), 3.5);
+    float lobeC = pow(max(cos(th - thContre), 0.0), 4.0);
+    float et1 = pow(0.5 + 0.5 * sin(2.0 * th + s * 5.1), 10.0);
+    float et2 = pow(0.5 + 0.5 * sin(3.0 * th + s * 7.7 + 2.1), 12.0);
+
+    // L'ANNEAU EXTERNE — vif, métallique : un plancher partout (le
+    // bijou), les lobes par-dessus.
+    float profExt = 0.45 + 0.85 * lobeL + 0.42 * lobeC
+                  + 0.55 * et1 + 0.40 * et2;
+    float annExt = exp(-pow((rr - 0.960) / 0.017, 2.0)) * profExt
+                 * 1.7 * gRim;
+
+    // L'INTERSTICE NOIR (0,87-0,93) : rien — c'est lui, l'effet bouton.
+
+    // L'ANNEAU INTERNE — discret, ses arcs légèrement tournés (organique).
+    float lobeL2 = pow(max(cos(th - thLampe - 0.45), 0.0), 3.0);
+    float lobeC2 = pow(max(cos(th - thContre + 0.35), 0.0), 4.0);
+    float profInt = 0.32 + 0.55 * lobeL2 + 0.30 * lobeC2 + 0.30 * et2;
+    float annInt = exp(-pow((rr - 0.885) / 0.014, 2.0)) * profInt
+                 * 1.25 * gRim;
+
+    // LE DÔME — verre fumé sombre : un souffle de ciel en haut, une
+    // lueur de fond TRÈS basse dans le bas du verre.
+    float up = max(0.0, -q.y / max(rr, 1e-4));
+    float dn = max(0.0, q.y / max(rr, 1e-4));
+    float dome = 0.026 + 0.030 * exp(-pow((rr - 0.38) / 0.40, 2.0)) * up;
+    float fond = exp(-pow((rr - 0.68) / 0.17, 2.0)) * pow(dn, 1.6)
+               * 0.18 * gPool;
+
+    // le bloom externe : le souffle du bijou, mort avant le pad
+    float dehors = max(0.0, rr - 1.0);
+    float glowOut = exp(-pow(dehors / 0.05, 2.0)) * step(1.0, rr)
+                  * profExt * 0.10 * gRim;
+    if (mask <= 0.0) {
+        float g = 1.0 - exp(-glowOut * 1.7);
+        return half4(half3(g * gain), 0.0h);
+    }
+
+    float fumee = 0.52;
+    float lignes = annExt + annInt + fond;
+    float l = 1.0 - exp(-lignes * 1.7);
+    float3 or3 = float3(1.0, 0.84, 0.58);
+    float3 teinte = mix(float3(1.0),
+                        mix(float3(1.0), or3, graine.y),
+                        lignes > 0.0 ? fond / max(lignes, 1e-4) : 0.0);
+    // l'ombre d'encastrement : le dôme est ENFONCÉ dans la bague —
+    // un voile qui n'assombrit que ce qui passe dessous (vidéo), sous
+    // l'arc haut interne.
+    float up2 = max(0.0, -q.y / max(rr, 1e-4));
+    float occ = 0.18 * up2 * exp(-pow((rr - 0.80) / 0.09, 2.0));
+    float alpha = min(1.0, fumee + l + occ);
+    float3 rgb = teinte * l + float3(dome);
+    return half4(half3(rgb * gain), half(alpha)) * half(mask);
+}

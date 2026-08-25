@@ -137,19 +137,30 @@ struct EcranSpec: Equatable, Identifiable {
         var tresor = false
     }
 
-    static let etapes: [EtapeSpec] = [
-        EtapeSpec(id: 0, ecran: 0, dx: 0, y: 542),
-        EtapeSpec(id: 1, ecran: 1, dx: -58, y: 385),
-        EtapeSpec(id: 2, ecran: 1, dx: 52, y: 500),
-        EtapeSpec(id: 3, ecran: 1, dx: -45, y: 580),
-        EtapeSpec(id: 4, ecran: 2, dx: 55, y: 350),
-        EtapeSpec(id: 5, ecran: 2, dx: -50, y: 480),
-        EtapeSpec(id: 6, ecran: 3, dx: 45, y: 360),
-        EtapeSpec(id: 7, ecran: 3, dx: -55, y: 450),
-        EtapeSpec(id: 8, ecran: 4, dx: 50, y: 400),
-        EtapeSpec(id: 9, ecran: 4, dx: -45, y: 495),
-        EtapeSpec(id: 10, ecran: 4, dx: 0, y: 590, tresor: true),
-    ]
+    /// §22 LES GOUTTES — 10 galets PAR ÉCRAN (la réf « CHAPITRE 1 ») : le
+    /// chemin GRIMPE dans chaque écran, le 1 en bas près du monument, le
+    /// 10 en haut sous la dalle. Le serpentin est une sinusoïde lente
+    /// déphasée par écran + un jitter déterministe — organique, jamais un
+    /// zigzag. Le dernier galet du dernier écran est le nœud-trésor.
+    static let etapes: [EtapeSpec] = {
+        var out: [EtapeSpec] = []
+        for ecran in 0..<5 {
+            for n in 0..<10 {
+                let id = ecran * 10 + n
+                // la réf : le chemin est SERRÉ (pas 50) et vit AU-DESSUS
+                // du monument — jamais dessus.
+                let y: CGFloat = 700 - CGFloat(n) * 58
+                let phase = 1.1 + 1.9 * Double(ecran)
+                let jitter = sin(Double(id) * 12.9898) * 10
+                let dx = min(max(78 * sin(0.82 * Double(n) + phase)
+                                 + jitter, -92), 92)
+                out.append(EtapeSpec(id: id, ecran: ecran,
+                                     dx: CGFloat(dx), y: y,
+                                     tresor: ecran == 4 && n == 9))
+            }
+        }
+        return out
+    }()
 
     /// LES FRONTIÈRES (2e salve : « ça doit être le même élément ») — une
     /// fenêtre pleine capsule à cheval sur chaque couture de verre, et
@@ -206,6 +217,12 @@ struct EcranSpec: Equatable, Identifiable {
     var enGeste = false
     /// La naissance : les étapes déjà apparues (cascade d'ouverture).
     var nees: Set<Int> = []
+    /// §23 LE BRANCHEMENT — la page a un hôte : le tap de l'actif ouvre
+    /// le panneau de départ au lieu d'avancer l'étape (le banc, lui, ne
+    /// change pas d'un poil).
+    var branchee = false
+    /// Le panneau de départ (l'overlay liquid glass au-dessus de l'actif).
+    var departOuvert = false
 
     /// Recalcule les rates depuis l'offset — écritures GARDÉES : la sonde
     /// tombe à chaque image, les booléens ne bougent qu'aux frontières.
@@ -723,6 +740,8 @@ private struct CheminDuo: View {
     let hauteur: CGFloat
     let largeur: CGFloat
     /// L'étape suivante vit sur un autre écran → la page défile d'une pose.
+    /// §23 — le panneau confirmé (la page transmet à son hôte).
+    var onDemarrer: () -> Void = {}
     var onEcranSuivant: (Int) -> Void = { _ in }
 
     var body: some View {
@@ -730,20 +749,71 @@ private struct CheminDuo: View {
         ZStack(alignment: .topLeading) {
             ForEach(EcranSpec.etapes) { e in
                 let quel = etatDe(e)
-                // §15 D1 — LE CHEMIN EST LE SUJET : les galets montent
-                // d'un cran (82 / actif 92 / trésor 104).
+                // §22 réf 2 — LES PASTILLES : taille UNIQUE 62 (trésor 72), le
+                // chiffre repart à 1 à chaque écran-chapitre (la réf).
                 GaletEtape(etat: quel,
-                           numero: e.tresor ? nil : e.id + 1,
+                           numero: e.tresor ? nil : e.id % 10 + 1,
                            glyphe: e.tresor ? "moon.fill" : nil,
-                           taille: e.tresor ? 104 : (quel == .actif ? 92 : 82),
+                           taille: e.tresor ? 72 : 62,
+                           graine: Double(e.id),
+                           // le budget verre : la lentille native ne vit
+                           // que là où la VIDÉO passe dessous — les gouttes
+                           // de bord (monuments et coutures de feu) des
+                           // écrans voisins. Au cœur du noir, le natif ne
+                           // fait qu'un voile gris (mesuré v11).
+                           lentille: abs(e.ecran - etat.ecranCourant) <= 1
+                               && (e.id % 10 <= 1 || e.id % 10 >= 8
+                                   || e.tresor),
                            onTap: { tape(e) })
                     .scaleEffect(etat.nees.contains(e.id) ? 1 : 0.92)
                     .opacity(etat.nees.contains(e.id) ? 1 : 0)
                     .position(x: largeur / 2 + e.dx,
                               y: (CGFloat(e.ecran) * 874 + e.y) * k)
             }
+            // §23 — L'ILLUMINATION + LE PANNEAU DE DÉPART, ancrés au galet
+            // actif (ils défilent avec le chemin, jamais posés sur l'écran).
+            if etat.branchee {
+                let e = EcranSpec.etapes[min(etat.etape,
+                                             EcranSpec.etapes.count - 1)]
+                let px = largeur / 2 + e.dx
+                let py = (CGFloat(e.ecran) * 874 + e.y) * k
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [.white.opacity(0.16), .clear],
+                        center: .center, startRadius: 0, endRadius: 72))
+                    .frame(width: 150, height: 150)
+                    .position(x: px, y: py)
+                    .opacity(etat.departOuvert ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.35),
+                               value: etat.departOuvert)
+                    .allowsHitTesting(false)
+                if etat.departOuvert {
+                    // au-dessus du galet — ou dessous s'il vit dans le
+                    // tiers haut de son écran.
+                    PanneauDepartChemin(
+                        onCommencer: { fermerEtDemarrer() },
+                        onPlusTard: {
+                            withAnimation(.easeOut(duration: 0.22)) {
+                                etat.departOuvert = false
+                            }
+                        })
+                        .position(x: largeur / 2,
+                                  y: e.y < 320 ? py + 124 : py - 116)
+                        .transition(.opacity.combined(
+                            with: .scale(scale: 0.88)))
+                        .zIndex(5)
+                }
+            }
         }
         .frame(width: largeur, height: hauteur * 5, alignment: .topLeading)
+    }
+
+    /// §23 — le PRIMARY : l'haptique, le panneau LIBÈRE la scène (0,15 s,
+    /// la loi des deux mouvements), puis l'hôte prend la main.
+    private func fermerEtDemarrer() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.easeOut(duration: 0.18)) { etat.departOuvert = false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { onDemarrer() }
     }
 
     private func etatDe(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
@@ -758,6 +828,14 @@ private struct CheminDuo: View {
     /// la page défile vers sa POSE aimantée (jamais une mi-course que
     /// l'aimant re-happerait).
     private func tape(_ e: EcranSpec.EtapeSpec) {
+        // §23 : branchée, l'étape courante ne s'avance plus au tap — elle
+        // PROPOSE (le panneau de départ). L'avance viendra de la séance.
+        if etat.branchee, e.id == etat.etape {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                etat.departOuvert = true
+            }
+            return
+        }
         guard e.id == etat.etape,
               etat.etape + 1 < EcranSpec.etapes.count else { return }
         let suivant = etat.etape + 1
@@ -809,6 +887,8 @@ private struct CapsuleVivante<Contenu: View>: View {
 /// ignore `.opacity`), l'encre fond.
 private struct DalleChapitre: View {
     let etat: EtatDuo
+    /// §23 — le chevron de retour (dans la capsule, à gauche du bloc).
+    var onRetour: (() -> Void)? = nil
     static let noms = ["Le verre noir", "La braise blanche", "Le rouge",
                        "La braise rouge", "Le bleu"]
 
@@ -830,11 +910,27 @@ private struct DalleChapitre: View {
                     .fill(Color.black.opacity(0.30))
             }
             HStack(alignment: .center) {
+                if let onRetour {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light)
+                            .impactOccurred()
+                        onRetour()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(white: 0.82))
+                            .frame(width: 30, height: 58)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("CHAPITRE 1")
+                    // §22 : un écran = un chapitre de 10 gouttes.
+                    Text("CHAPITRE \(etat.ecranCourant + 1)")
                         .font(.system(size: 11, weight: .semibold))
                         .kerning(1.6)
                         .foregroundStyle(Color(white: 0.52))
+                        .contentTransition(.numericText())
                     ZStack(alignment: .leading) {
                         Text(Self.noms[etat.ecranCourant])
                             .font(.system(size: 17, weight: .semibold))
@@ -867,7 +963,7 @@ private struct DalleChapitre: View {
         .animation(visible ? .easeInOut(duration: 0.28)
                            : .easeOut(duration: 0.11), value: visible)
         .animation(.easeInOut(duration: 0.35), value: etat.ecranCourant)
-        .allowsHitTesting(false)
+        .allowsHitTesting(onRetour != nil)
     }
 
     private func rail(glyphe: String, valeur: String) -> some View {
@@ -901,6 +997,11 @@ struct DuolinguoPage: View {
     /// §18 P0.1 — `-duoAutoLent` : le même aller-retour, durée ×3 (les
     /// calques et les relais se jugent au ralenti).
     var lent = false
+    /// §23 — les deux sorties. La page ne connaît JAMAIS son hôte : le
+    /// chevron appelle `onRetour`, le panneau confirmé appelle
+    /// `onDemarrer`. `nil` = le banc `-duoLab`, rien ne change.
+    var onRetour: (() -> Void)? = nil
+    var onDemarrer: (() -> Void)? = nil
 
     var body: some View {
         // LE PROXY EST DEHORS, seul le défilement fuit la zone sûre (école
@@ -1027,7 +1128,8 @@ struct DuolinguoPage: View {
                 // LE CHEMIN — au-dessus de tout, DANS le scroll.
                 .overlay(alignment: .top) {
                     CheminDuo(etat: etat, hauteur: hauteur,
-                              largeur: g.size.width) { ecran in
+                              largeur: g.size.width,
+                              onDemarrer: { onDemarrer?() }) { ecran in
                         withAnimation(.easeInOut(duration: 0.7)) {
                             ordre.scrollTo(y: CGFloat(ecran) * hauteur)
                         }
@@ -1082,6 +1184,7 @@ struct DuolinguoPage: View {
                 }
             }
             .onAppear {
+                etat.branchee = onDemarrer != nil
                 etat.gel = gel || reduceMotion
                 etat.etape = etapeInitiale
                 etat.piloter(y: CGFloat(ecranInitial) * hauteur, hauteur: hauteur)
@@ -1096,7 +1199,7 @@ struct DuolinguoPage: View {
         // LA DALLE — hors scroll (école PorteEntree : le header vit hors
         // scroll), posée sous l'île.
         .overlay(alignment: .top) {
-            DalleChapitre(etat: etat)
+            DalleChapitre(etat: etat, onRetour: onRetour)
                 .padding(.top, 8)
         }
         .statusBarHidden()
@@ -1111,10 +1214,34 @@ struct DuolinguoPage: View {
             etat.nees = Set(EcranSpec.etapes.map(\.id))
             return
         }
+        // §22 : 50 étapes — la cascade resserrée à 35 ms, sinon 3 s.
         for (n, e) in EcranSpec.etapes.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(n) * 0.06) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(n) * 0.035) {
                 _ = withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
                     etat.nees.insert(e.id)
+                }
+            }
+        }
+        // §23 — L'ARRIVÉE PROPOSE : branchée, une fois la cascade posée,
+        // le galet courant s'illumine et le panneau naît (haptique douce).
+        if etat.branchee {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                    etat.departOuvert = true
+                }
+            }
+            // banc : `-duoAutoDepart` — le primary se confirme seul à
+            // +3,8 s (le film du départ sans doigt).
+            if CommandLine.arguments.contains("-duoAutoDepart") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.18)) {
+                        etat.departOuvert = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        onDemarrer?()
+                    }
                 }
             }
         }
@@ -1132,6 +1259,116 @@ struct DuolinguoPage: View {
                 }
             }
         }
+    }
+}
+
+
+// MARK: - Le panneau de départ (§23)
+
+/// LE PETIT OVERLAY LIQUID GLASS au-dessus du galet actif : à gauche la
+/// MINI-CARD (sticker flamme + la date du jour), à droite le titre, le
+/// PRIMARY et le bouton-lien. Le verre est natif `.clear` + pellicule
+/// noire AU-DESSUS, l'encre au-dessus de tout (l'école de la dalle,
+/// verbatim). Taille CONSTANTE — l'entrée est un transform (la loi des
+/// bounds vivants).
+private struct PanneauDepartChemin: View {
+    var onCommencer: () -> Void
+    var onPlusTard: () -> Void
+
+    /// La date du jour, figée à la naissance du panneau (jamais un Date()
+    /// par image — la loi de la page ré-évaluée).
+    private static let jour: String = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = "d"
+        return f.string(from: Date())
+    }()
+    private static let mois: String = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = "MMM"
+        return f.string(from: Date()).uppercased()
+            .replacingOccurrences(of: ".", with: "")
+    }()
+
+    var body: some View {
+        HStack(spacing: 14) {
+            miniCard
+            VStack(alignment: .leading, spacing: 9) {
+                Text("Session du jour")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.0), Color(white: 0.84)],
+                        startPoint: .top, endPoint: .bottom))
+                Button(action: onCommencer) {
+                    Text("Commencer")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(white: 0.06))
+                        .padding(.horizontal, 20)
+                        .frame(height: 34)
+                        .background(Capsule().fill(Color(white: 0.96)))
+                }
+                .buttonStyle(.plain)
+                Button(action: onPlusTard) {
+                    Text("Plus tard")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(width: 296)
+        .background {
+            ZStack {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .glassEffect(.clear,
+                                     in: RoundedRectangle(cornerRadius: 28))
+                }
+                // la pellicule : le noir AU-DESSUS du verre, sous l'encre.
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color.black.opacity(0.32))
+            }
+        }
+        .shadow(color: .black.opacity(0.55), radius: 20, y: 10)
+    }
+
+    /// LA MINI-CARD : double coque noire (l'école des minis de la
+    /// semaine), le sticker flamme laqué chaud, le jour en gros chiffre
+    /// métallique, le mois en petites capitales.
+    private var miniCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color(white: 0.055))
+            RoundedRectangle(cornerRadius: 13)
+                .fill(Color(red: 0.012, green: 0.012, blue: 0.012))
+                .padding(2)
+            RoundedRectangle(cornerRadius: 15)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            VStack(spacing: 3) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(red: 1.0, green: 0.86, blue: 0.55),
+                                 Color(red: 0.98, green: 0.45, blue: 0.12)],
+                        startPoint: .top, endPoint: .bottom))
+                    .shadow(color: Color(red: 1, green: 0.5, blue: 0.1)
+                        .opacity(0.55), radius: 6)
+                Text(Self.jour)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.0), Color(white: 0.72)],
+                        startPoint: .top, endPoint: .bottom))
+                Text(Self.mois)
+                    .font(.system(size: 9, weight: .semibold))
+                    .kerning(1.4)
+                    .foregroundStyle(Color(white: 0.55))
+            }
+        }
+        .frame(width: 66, height: 88)
     }
 }
 

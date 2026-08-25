@@ -665,7 +665,17 @@ struct RootView: View {
             if !showSplash && !showAuth && !homeEclipsee {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
-                    HomeAuroraView(selection: $selection)
+                    // §23 LE BRANCHEMENT — LA HOME V2 ROUGE prend l'onglet
+                    // (la porte y atterrit après la connexion). Son menu
+                    // route (onRoute), son slider ouvre LE CHEMIN, le
+                    // chemin démarre la séance et route vers Exercices.
+                    // L'ancienne home (HomeAuroraView) reste en archive.
+                    HomeNuitPage(onRoute: { dest in
+                                     withAnimation(.easeOut(duration: 0.3)) {
+                                         selection = dest
+                                     }
+                                 },
+                                 exoParRoute: true)
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
@@ -685,7 +695,7 @@ struct RootView: View {
                         withAnimation(.easeOut(duration: 0.3)) {
                             selection = .home
                         }
-                    })
+                    }, ouvreIpod: true)
                     .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
@@ -712,8 +722,11 @@ struct RootView: View {
                 // est une maison de cartes : la barre lui mangeait le bas
                 // de sa collection pour une navigation que son chevron
                 // assure déjà.
+                // §23 : la home v2 n'a PLUS de nav bar (sa loi — le menu
+                // route) : la barre bijou ne se montre plus nulle part,
+                // le code reste pour l'archive de la v1.
                 if selection != .exercises && selection != .profile
-                    && selection != .progress {
+                    && selection != .progress && selection != .home {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
                                 onPlay: {
@@ -1264,9 +1277,32 @@ enum DemoData {
             let days: Int
             let strength: [(String, [(Int, Double)])]
             let cardio: [(String, [(PhaseKind, Int, Double)])]
+            // « pleins de données » (25-08) : l'heure de la séance — deux
+            // séances le même jour ont besoin de deux heures.
+            var hour: Int = 18
         }
 
         let plans: [Plan] = [
+            // AUJOURD'HUI, deux séances (la home ne doit jamais être vide).
+            Plan(days: 0,
+                 strength: [("woop-haute", [(12, 25), (12, 27.5), (10, 30)]),
+                            ("hip-thrust", [(12, 55), (10, 60), (8, 65)])],
+                 cardio: [], hour: 8),
+            Plan(days: 0,
+                 strength: [("squat-poulie", [(15, 27.5), (15, 30), (12, 32.5)]),
+                            ("kickback", [(15, 15), (12, 17.5)])],
+                 cardio: [], hour: 12),
+            Plan(days: 3,
+                 strength: [("pull-through", [(12, 30), (12, 32.5), (10, 35)]),
+                            ("abduction", [(15, 10), (15, 12.5)])],
+                 cardio: []),
+            Plan(days: 6,
+                 strength: [("crunch-machine", [(15, 32.5), (15, 35)]),
+                            ("gainage-militaire", [(10, 10), (10, 12.5)])],
+                 cardio: [("tapis-lent", [(.recuperation, 900, 5.8)])]),
+            Plan(days: 10,
+                 strength: [("hip-thrust", [(12, 47.5), (10, 52.5), (8, 57.5)])],
+                 cardio: []),
             Plan(days: 26,
                  strength: [("woop-haute", [(12, 15), (12, 15), (10, 17.5)]),
                             ("hip-thrust", [(12, 40), (10, 45)])],
@@ -1323,8 +1359,9 @@ enum DemoData {
         ]
 
         for plan in plans {
-            let workout = Workout(startedAt: daysAgo(plan.days))
-            workout.endedAt = daysAgo(plan.days).addingTimeInterval(60 * 52)
+            let workout = Workout(startedAt: daysAgo(plan.days, hour: plan.hour))
+            workout.endedAt = daysAgo(plan.days, hour: plan.hour)
+                .addingTimeInterval(60 * 52)
             context.insert(workout)
             var order = 0
 

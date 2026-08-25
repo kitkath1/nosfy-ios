@@ -105,6 +105,10 @@ struct WorkoutPill: View {
         .padding(.top, docked ? 10 : 0)
         .frame(maxWidth: .infinity)
         .frame(height: docked ? 76 : 64)
+        // le souffle de la lune et de la braise — scopé : seul `lueur`
+        // anime, aucune autre mutation de layout n'hérite de l'infini.
+        .animation(.easeInOut(duration: 2.6)
+            .repeatForever(autoreverses: true), value: lueur)
         .background {
             // ⚠️ LA DALLE EST NOIRE, PAS GRISE — et c'est une loi du
             // composant, pas un réglage de page (verdict 22-08 :
@@ -231,10 +235,12 @@ struct WorkoutPill: View {
                 .frame(width: 20, height: 20)
         }
         .frame(width: 42, height: 42)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 2.6)
-                .repeatForever(autoreverses: true)) { lueur = true }
-        }
+        // ⚠️ JAMAIS un `withAnimation(.repeatForever)` à l'onAppear : la
+        // transaction infinie FUIT dans le layout des ancêtres — la page
+        // exo entière respirait à 5,2 s (mesuré à la mitraille, 25-08).
+        // L'animation SCOPÉE (`value: lueur`) ne porte que ce que lueur
+        // touche, ici et dans la braise (le modifier vit sur le body).
+        .onAppear { lueur = true }
     }
 
     /// Le sous-titre : l'état d'attente, ou le temps de séance en

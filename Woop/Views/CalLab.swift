@@ -54,6 +54,10 @@ private struct GlassTuning {
 struct CalendarStickersPage: View {
     var autoLoop = false
     var onBack: () -> Void = {}
+    /// §23 — l'onglet Progrès ARRIVE sur l'iPod du mois courant (sa
+    /// demande du 25-08 : « le nouveau iPod dans la page progrès ») ;
+    /// le fermer pose sur la grille à stickers.
+    var ouvreIpod = false
 
     @State private var monthAnchor = Date()
     @State private var pushEdge: Edge = .trailing
@@ -255,7 +259,7 @@ struct CalendarStickersPage: View {
                 }
                 // Le banc de l'iPod : direct dans la page du mois —
                 // avec le mois précédent pour la phrase.
-                if Self.ipodBanc, moisOuvert == nil {
+                if Self.ipodBanc || ouvreIpod, moisOuvert == nil {
                     let liste = DemoMonth.recent(calendar: calendar)
                     if let premier = liste.first {
                         let nom = liste.count > 1

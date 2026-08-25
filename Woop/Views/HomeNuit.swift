@@ -1659,6 +1659,17 @@ struct HomeNuitPage: View {
     /// LE TIRAGE de la card géante (verdict 21-08 : « je dois pouvoir drag
     /// toute la home ») — le déplacement RENDU, déjà élastiqué.
     @State private var tirage: CGFloat = TirageBanc.fige ?? 0
+    /// §23 LE BRANCHEMENT — le chemin (la Duolinguo_page) et, par-dessus
+    /// lui, la RED PAGE EXO quand le panneau du galet a confirmé.
+    @State private var cheminOuvert = false
+    @State private var exoOuvert = false
+    /// §23 — LE PIÈGE DES INSETS (payé sur l'ardoise du player) : un
+    /// ScrollView `ignoresSafeArea` monté SOUS un cover re-négocie ses
+    /// insets à chaque passe et fait RESPIRER la page au-dessus. Une fois
+    /// l'exo posée, le chemin se DÉMONTE (il ne doit pas survivre — le
+    /// retour de l'exo replie tout jusqu'à la home).
+    @State private var cheminDemonte = false
+    @Environment(\.modelContext) private var modelContext
     /// Le verrou de l'haptique du secret : la braise ne se sent qu'UNE fois
     /// par découverte, pas à chaque image passée au-dessus du seuil.
     @State private var luneSentie = false
@@ -1673,6 +1684,10 @@ struct HomeNuitPage: View {
     /// et le jour où la v2 prend l'onglet, le même point d'appel pilotera
     /// `selection`. On n'invente pas une navigation qui n'existe pas.
     var onRoute: (WoopTab) -> Void = { _ in }
+    /// §23 — dans le monde TabView, le départ du chemin ROUTE vers
+    /// l'onglet exercices (une seule RED PAGE EXO montée) au lieu
+    /// d'empiler un cover par-dessus le chemin.
+    var exoParRoute = false
 
     /// L'ordre de la colonne — il doit suivre `MenuItems.titres` à la lettre.
     static let destinations: [WoopTab] = [.profile, .progress, .exercises]
@@ -2052,6 +2067,32 @@ struct HomeNuitPage: View {
         // Plein écran, pas une feuille : la cinématique du trésor doit
         // couvrir TOUTE la page (la loi de la v1 — une cinématique avec du
         // mobilier qui flotte par-dessus n'est plus une cinématique).
+        .fullScreenCover(isPresented: $cheminOuvert) {
+            // §23 — LE CHEMIN. La page est agnostique : le chevron ferme,
+            // le panneau confirmé démarre la séance et pose la RED PAGE
+            // EXO par-dessus (cover imbriqué — le retour de l'exo replie
+            // tout jusqu'à la home, card levée).
+            ZStack {
+                if cheminDemonte {
+                    Color.black.ignoresSafeArea()
+                } else {
+                    DuolinguoPage(onRetour: { cheminOuvert = false },
+                                  onDemarrer: { demarrerDepuisChemin() })
+                }
+            }
+                .environment(\.colorScheme, .dark)
+                .fullScreenCover(isPresented: $exoOuvert) {
+                    ExercisesView(selection: Binding(
+                        get: { .exercises },
+                        set: { nouveau in
+                            if nouveau == .home {
+                                exoOuvert = false
+                                cheminOuvert = false
+                            }
+                        }))
+                        .environment(\.colorScheme, .dark)
+                }
+        }
         .fullScreenCover(isPresented: $coffreOuvert) {
             CoffreFortFlow(
                 // La règle des pièces : 20 par SÉRIE faite — le trésor
@@ -2074,6 +2115,13 @@ struct HomeNuitPage: View {
             if enSeance { tirage = reposCard }
             // `-tiroirOuvert` : le tiroir déjà tiré, pour juger le slider
             // dans la bande sans doigt.
+            // §23 banc : `-homeChemin` — la porte du chemin déjà ouverte
+            // (le film de l'arrivée + panneau sans doigt).
+            if CommandLine.arguments.contains("-homeChemin") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    cheminOuvert = true
+                }
+            }
             if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
                 tiroirOuvert = true
                 tirage = reposCard
@@ -2341,7 +2389,10 @@ struct HomeNuitPage: View {
             // endroit, trois contenus, et la cohérence d'expérience avec lui.
             SliderObsidienne(label: libelleSlider,
                              height: 62,
-                             onConfirm: { demarrer() })
+                             // §23 : la course validée ouvre LE CHEMIN —
+                             // le panneau du galet reprend la proposition
+                             // (l'overlay lune du départ reste au banc).
+                             onConfirm: { ouvrirChemin() })
                 // ⚠️ 12 ET NON 24 (verdict 22-08 : « il doit quasi faire tout
                 // l'écran, s'arrêter aux petites bordures noires »). Contrôle
                 // géométrique : le point le plus à gauche de la capsule est
@@ -2480,13 +2531,17 @@ struct HomeNuitPage: View {
                         .opacity(RasantHorloge.iso ? 0 : 1)
                     }
 
-                    // LA SEMAINE — le mobilier de la page, sourd au doigt
-                    // tant que le tap-story n'est pas câblé (jalon flow).
+                    // LA SEMAINE — la 3e card : son tap ouvre LE CHEMIN
+                    // (§23, sa demande : « celle avec les mini cards des
+                    // dates »). Les minis garderont leur story au jalon
+                    // flow ; aujourd'hui la card entière est la porte.
                     if verreMonte {
                     SemaineStrip(faits: faitsAffiche, prevus: prevus,
                                  arrivee: arrivee,
                                  materialises: materialises,
                                  lisere: true, verre: true)
+                        .contentShape(RoundedRectangle(cornerRadius: 22))
+                        .onTapGesture { ouvrirChemin() }
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.620)
                         .offset(y: 8 * net)
@@ -3034,6 +3089,49 @@ struct HomeNuitPage: View {
     /// (la vidéo de la lune qui se charge) — c'est là qu'on confirme.
     private func demarrer() {
         DepartEtat.shared.proposer()
+    }
+
+    /// §23 — LA PORTE DU CHEMIN (le slider validé, ou la card semaine).
+    private func ouvrirChemin() {
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        cheminDemonte = false
+        cheminOuvert = true
+    }
+
+    /// §23 — le panneau du galet a confirmé : la séance démarre (le même
+    /// état que « Commencer » du slider — la card sera levée au retour),
+    /// et la RED PAGE EXO arrive par-dessus le chemin.
+    private func demarrerDepuisChemin() {
+        debutSeance = Date()
+        enSeance = true
+        tirage = reposCard
+        // LA VRAIE SÉANCE (même en démo) : le geste exact de
+        // startWorkout() — un Workout ouvert de plus serait inaffichable,
+        // donc jamais de doublon.
+        let ouverts = (try? modelContext.fetch(FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt == nil }))) ?? []
+        if ouverts.isEmpty {
+            let seance = Workout()
+            modelContext.insert(seance)
+            try? modelContext.save()
+            WorkoutActivityController.ensure(seance)
+        }
+        if exoParRoute {
+            // le monde TabView : le chemin se replie, l'onglet exo prend
+            // la scène avec la séance qui tourne.
+            cheminOuvert = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                onRoute(.exercises)
+            }
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            exoOuvert = true
+        }
+        // le cover posé, le chemin fantôme se démonte (piège des insets).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            cheminDemonte = true
+        }
     }
 
     /// « COMMENCER » — et la card SE LÈVE TOUTE SEULE pour présenter le

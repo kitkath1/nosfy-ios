@@ -1,19 +1,19 @@
 import SwiftUI
 import Observation
 
-// LE GALET-ÉTAPE — le nœud du chemin de feu (J2, plan
-// tools/duolingo/PLAN-DUOLINGUO.md §6). École LaunchPebble en petit :
-// dôme radial + foyer en voile séparé + liseré `galetLisere` — du verre
-// PEINT (LOI 3 : le natif à jeun sur du noir rend un trou dans du métal).
+// LE GALET-ÉTAPE (§22, réf 2 « LA PASTILLE-BIJOU ») — un ROND parfait,
+// l'effet BOUTON à DEUX bordures : anneau externe vif / interstice noir /
+// anneau interne discret, la lumière en ARCS INÉGAUX le long des anneaux
+// (l'école du liseré fin : lobes en cosinus qui meurent en fondu, jamais
+// un anneau égal), dôme de verre fumé sombre. Le peint (`goutteVerre`)
+// est une FUMÉE semi-transparente : la lentille native `.clear` vit
+// dessous et réfracte la vidéo. L'encre du chiffre vit AU-DESSUS.
 //
-// La grammaire est MUETTE (LOI 4) : les états se disent par la matière et
-// la taille, jamais par la couleur ni un anneau. Le refus d'un verrouillé
-// est L'IMMOBILITÉ : le press s'avorte à 1 %, le liseré s'allume une fois,
-// froid, 0,12 s — un caillou refuse en étant un caillou.
-//
-// Le « légèrement 3D » : un FLANC de 2,5 pt sous le dôme (l'épaisseur que
-// le press mange), le foyer qui glisse vers le doigt, et un micro-tilt
-// ≤ 4° vers le point de contact.
+// La grammaire est MUETTE (LOI 4) : la matière ne meurt jamais (la photo
+// est la loi), les états ne jouent que sur une marge fine de gains, la
+// taille et la respiration de l'actif. Le refus d'un verrouillé est
+// L'IMMOBILITÉ : le press s'avorte à 1 %, les liserés s'allument une
+// fois, froid, 0,12 s — un caillou refuse en étant un caillou.
 
 // MARK: - Les états
 
@@ -25,6 +25,39 @@ enum EtapeEtat: Equatable {
     case parfait             // le souffle d'or dans le liseré
 }
 
+// MARK: - La forme de la goutte
+
+/// LA MÊME forme que le shader `goutteVerre` (3 harmoniques + rotation +
+/// écrasement), côté SwiftUI — pour la LENTILLE NATIVE qui vit sous le
+/// peint. Les deux DOIVENT rester jumelles : un écart = un liseré qui
+/// flotte hors du verre.
+struct GoutteForme: Shape {
+    var graine: Double
+    var aspect: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let s = graine
+        let R = rect.width / 2
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let rot = 0.0
+        var pts: [CGPoint] = []
+        for i in 0..<96 {
+            let th = Double(i) / 96 * 2 * .pi
+            let rho = 1.0   // réf 2 : la pastille est un ROND parfait
+            let x = cos(th) * rho
+            let ys = sin(th) * rho * aspect
+            let xr = cos(-rot) * x - sin(-rot) * ys
+            let yr = sin(-rot) * x + cos(-rot) * ys
+            pts.append(CGPoint(x: c.x + CGFloat(xr) * R,
+                               y: c.y + CGFloat(yr) * R))
+        }
+        var p = Path()
+        p.addLines(pts)
+        p.closeSubpath()
+        return p
+    }
+}
+
 // MARK: - Le galet
 
 struct GaletEtape: View {
@@ -33,16 +66,35 @@ struct GaletEtape: View {
     /// pour les jalons — jamais les glyphes Duolingo.
     var numero: Int? = nil
     var glyphe: String? = nil
-    /// 76 au repos, 84 pour l'actif (la hiérarchie par la taille), 98 pour
-    /// le nœud-trésor.
-    var taille: CGFloat = 76
+    /// La LARGEUR de la goutte (§22 : 60 au repos, 66 pour l'actif, 82
+    /// pour le nœud-trésor) — la hauteur en découle par l'écrasement.
+    var taille: CGFloat = 60
+    /// La graine de forme : chaque goutte du chemin est unique.
+    var graine: Double = 0
+    /// LA LENTILLE NATIVE — le verre `.clear` qui RÉFRACTE la vidéo qui
+    /// bouge dessous (l'orbe, les flammes). Légal ici : le contenu est
+    /// DOUX (la loi affinée du 20-08). Sur le noir pur elle est invisible
+    /// — les cheveux peints portent la goutte. Coupée hors des écrans
+    /// voisins (le budget verre).
+    var lentille: Bool = true
     var onTap: () -> Void = {}
+
+    /// L'écrasement de la goutte : plus large que haute, comme une goutte
+    /// posée (la réf « CHAPITRE 1 » : ~0,72), jitté par graine — aucune
+    /// goutte n'est tombée pareil.
+    static let aspect: CGFloat = 1.0
+    private var aspectGoutte: CGFloat {
+        Self.aspect
+    }
 
     /// Les horodatages des rampes — un uniform de shader n'est pas
     /// animable par SwiftUI : la timeline fait la pente (école pressLevel).
     @State private var presseDepuis: Date? = nil
     @State private var relacheA: Date = .distantPast
     @State private var refusA: Date = .distantPast
+    /// La bouffée de FUMÉE du press (sa demande : « quand on appuie ça
+    /// sort de la fumée ») — horodatée, fonction pure du temps.
+    @State private var fumeeA: Date = .distantPast
     @State private var doigt: CGPoint = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -60,7 +112,9 @@ struct GaletEtape: View {
             corps(t: t, press: press, verrouille: verrouille)
         }
         .frame(width: taille + 2 * pad, height: taille + 2 * pad)
-        .contentShape(Circle().inset(by: pad - 6))
+        // les pastilles se frôlent (pas 58 / Ø 62) : la zone de tap
+        // colle au bouton, sinon elle vole le doigt du voisin.
+        .contentShape(Circle().inset(by: pad - 2))
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { g in
@@ -68,6 +122,7 @@ struct GaletEtape: View {
                     if presseDepuis == nil {
                         presseDepuis = Date()
                         if !verrouille {
+                            fumeeA = Date()
                             UIImpactFeedbackGenerator(style: .medium)
                                 .impactOccurred(intensity: 0.85)
                         }
@@ -101,6 +156,7 @@ struct GaletEtape: View {
         let now = Date()
         return now.timeIntervalSince(relacheA) > 1.0
             && now.timeIntervalSince(refusA) > 1.0
+            && now.timeIntervalSince(fumeeA) > 1.5
     }
 
     /// La rampe horodatée : montée 0,10 s, descente 0,26 s, en smoothstep —
@@ -119,6 +175,7 @@ struct GaletEtape: View {
     @ViewBuilder
     private func corps(t: Double, press: Double, verrouille: Bool) -> some View {
         let D = taille
+        let H = D * aspectGoutte
         let centre = CGPoint(x: pad + D / 2, y: pad + D / 2)
         let pressAmpl = verrouille ? 0.01 : 0.03
         let enfonce = 1 - pressAmpl * press
@@ -130,50 +187,63 @@ struct GaletEtape: View {
             .timeIntervalSince(refusA) / 0.12)
 
         ZStack {
-            // LE FLANC — l'épaisseur du verre, que le press mange.
-            Circle()
-                .fill(couleurFlanc)
-                .frame(width: D, height: D)
-                .position(x: centre.x, y: centre.y + 2.5 * enfonce)
-            // LE DÔME — 6 arrêts, la lampe de la maison en haut à gauche.
-            Circle()
-                .fill(RadialGradient(
-                    stops: arretsDome,
-                    center: UnitPoint(x: 0.44, y: 0.40),
-                    startRadius: 0, endRadius: D * 0.78))
-                .frame(width: D, height: D)
-                .position(centre)
-            // LE FOYER — un voile, pas un anneau (« un gradient radial ne
-            // sait faire que des ANNEAUX »). Il glisse vers le doigt.
+            // Le reflet au sol : la goutte est POSÉE — à peine visible.
+            // LE MIROIR DU SOL — la réf : sous chaque goutte, un reflet
+            // doux étiré vers le bas sur la dalle noire.
             Ellipse()
                 .fill(RadialGradient(
-                    stops: [
-                        .init(color: .white.opacity(foyerA * (1 + 0.5 * press)), location: 0),
-                        .init(color: .white.opacity(foyerA * 0.4), location: 0.55),
-                        .init(color: .white.opacity(0), location: 1),
-                    ],
-                    center: .center, startRadius: 0, endRadius: D * 0.30))
-                .frame(width: D * 0.62, height: D * 0.46)
-                .position(x: centre.x - D * 0.14 + decalFoyer.x * press,
-                          y: centre.y - D * 0.18 + decalFoyer.y * press)
-                .blur(radius: 7)
-            // LE GLYPHE LAQUÉ — corps mat, glyphe laqué (l'école du galet
-            // play). Un chiffre est légal sur du verre peint (école cadran).
+                    colors: [.white.opacity(0.08), .clear],
+                    center: .center, startRadius: 0, endRadius: D * 0.42))
+                .frame(width: D * 0.88, height: D * 0.30)
+                .position(x: centre.x, y: centre.y + H / 2 + D * 0.15)
+                .blur(radius: 6)
+            Ellipse()
+                .fill(RadialGradient(
+                    colors: [.white.opacity(0.05), .clear],
+                    center: .center, startRadius: 0, endRadius: D * 0.26))
+                .frame(width: D * 0.55, height: D * 0.10)
+                .position(x: centre.x, y: centre.y + H / 2 + D * 0.05)
+                .blur(radius: 3)
+            // LA LENTILLE NATIVE — sous le peint : elle plie la vidéo qui
+            // passe derrière la goutte (taille CONSTANTE, jamais animée —
+            // la loi des bounds vivants).
+            if lentille {
+                Color.clear
+                    .glassEffect(.clear, in: GoutteForme(graine: graine,
+                                                         aspect: aspectGoutte))
+                    .frame(width: D, height: D)
+                    .position(centre)
+            }
+            // LA GOUTTE PEINTE — la fumée semi-transparente + les cheveux
+            // de lumière du shader `goutteVerre`, AU-DESSUS du natif.
+            Rectangle()
+                .fill(.white)
+                .frame(width: D + 2 * pad, height: D + 2 * pad)
+                .colorEffect(goutteShader(souffle: souffle,
+                                          press: press, refus: refus))
+            // LE GLYPHE LAQUÉ — l'encre vit AU-DESSUS du verre peint.
             glypheVue
-                .position(x: centre.x, y: centre.y - 1)
+                .position(x: centre.x, y: centre.y + 1)
         }
         .compositingGroup()
-        .colorEffect(lisereShader(t: t, souffle: souffle,
-                                  press: press, refus: refus))
-        // L'or du parfait : un souffle très bas, DERRIÈRE le liseré blanc.
-        .background {
-            if etat == .parfait {
-                Circle()
-                    .stroke(Color(red: 1.0, green: 0.82, blue: 0.45)
-                        .opacity(0.10 + 0.10 * souffle), lineWidth: 3)
-                    .frame(width: D + 2, height: D + 2)
-                    .position(centre)
-                    .blur(radius: 4)
+        // LA FUMÉE DU PRESS — trois volutes pâles qui s'échappent du
+        // bouton et se dissolvent (l'école Pil-3 B), une bouffée par
+        // press, fonction pure du temps.
+        .overlay {
+            let u = min(max((t - fumeeA.timeIntervalSinceReferenceDate) / 1.3, 0), 1)
+            if u > 0 && u < 1 {
+                ForEach(0..<3, id: \.self) { i in
+                    let ui = min(max(u * 1.4 - Double(i) * 0.12, 0), 1)
+                    let derive: CGFloat = [-14, 10, -4][i]
+                    Ellipse()
+                        .fill(Color(white: 0.88)
+                            .opacity(0.24 * (1 - ui) * (ui > 0 ? 1 : 0)))
+                        .frame(width: D * (0.30 + 0.45 * ui),
+                               height: D * (0.22 + 0.30 * ui))
+                        .offset(x: derive * ui + [8, -10, 2][i],
+                                y: -H * 0.34 - D * 0.62 * ui)
+                        .blur(radius: 5 + 7 * ui)
+                }
             }
         }
         .scaleEffect(enfonce)
@@ -186,61 +256,20 @@ struct GaletEtape: View {
 
     // MARK: la matière par état
 
-    private var arretsDome: [Gradient.Stop] {
-        func gris(_ v: Double) -> Color { Color(white: v) }
-        // ⚠️ PAS UNE BOULE DE BILLARD (payé à la première mire) : un écart
-        // trop grand entre le cœur et le bord lit « balle de ping-pong ».
-        // La matière de la maison est MATE — le volume vient du flanc, du
-        // liseré et du foyer, le dôme reste presque plat.
+    /// Les gains de la goutte (rim, pool, or) — la grammaire reste MUETTE :
+    /// l'état se dit par l'intensité de la lumière, jamais par la couleur
+    /// (l'or du parfait excepté, dans la nappe basse seulement).
+    private var gainsEtat: (rim: Float, pool: Float, chaud: Float) {
+        // LA PHOTO EST LA LOI : la matière ne meurt jamais — les états
+        // ne jouent que sur une marge fine (le chemin se lit au chiffre
+        // et à la respiration de l'actif).
         switch etat {
-        case .verrouille, .prochain:
-            // L'obsidienne : presque le noir de la page, le volume à peine.
-            return [.init(color: gris(0.135), location: 0.0),
-                    .init(color: gris(0.12), location: 0.40),
-                    .init(color: gris(0.09), location: 0.78),
-                    .init(color: gris(0.07), location: 0.92),
-                    .init(color: gris(0.095), location: 0.99),
-                    .init(color: gris(0.095), location: 1.0)]
-        case .actif:
-            // La nacre du galet d'aube, ramenée au petit format — mate.
-            return [.init(color: gris(0.50), location: 0.0),
-                    .init(color: gris(0.46), location: 0.40),
-                    .init(color: gris(0.38), location: 0.78),
-                    .init(color: gris(0.32), location: 0.92),
-                    .init(color: gris(0.42), location: 0.99),
-                    .init(color: gris(0.42), location: 1.0)]
-        case .accompli, .parfait:
-            // La nacre CALME : plus sombre, sans foyer vif.
-            return [.init(color: gris(0.30), location: 0.0),
-                    .init(color: gris(0.27), location: 0.40),
-                    .init(color: gris(0.22), location: 0.78),
-                    .init(color: gris(0.185), location: 0.92),
-                    .init(color: gris(0.25), location: 0.99),
-                    .init(color: gris(0.25), location: 1.0)]
+        case .verrouille: return (0.85, 0.85, 0)
+        case .prochain: return (0.92, 0.92, 0)
+        case .actif: return (1.0, 1.0, 0)
+        case .accompli: return (0.95, 0.90, 0)
+        case .parfait: return (0.95, 0.90, 0.5)
         }
-    }
-
-    private var couleurFlanc: Color {
-        switch etat {
-        case .verrouille, .prochain: return Color(white: 0.035)
-        default: return Color(white: 0.12)
-        }
-    }
-
-    private var foyerA: Double {
-        switch etat {
-        case .verrouille, .prochain: return 0.05
-        case .actif: return 0.30
-        case .accompli, .parfait: return 0.14
-        }
-    }
-
-    private var decalFoyer: CGPoint {
-        // Le foyer glisse VERS le doigt (borné à ±6 pt).
-        let c = CGPoint(x: pad + taille / 2, y: pad + taille / 2)
-        let dx = min(max(doigt.x - c.x, -30), 30) / 5
-        let dy = min(max(doigt.y - c.y, -30), 30) / 5
-        return CGPoint(x: dx, y: dy)
     }
 
     private var axeTilt: (x: CGFloat, y: CGFloat, z: CGFloat) {
@@ -253,13 +282,15 @@ struct GaletEtape: View {
     }
 
     @ViewBuilder private var glypheVue: some View {
+        // La réf : des chiffres BLANCS, droits, poids moyen — jamais
+        // rounded (le chiffre de la réf est un SF droit).
         let laque = LinearGradient(
-            colors: [Color(white: 1.0), Color(white: 0.78)],
+            colors: [Color(white: 0.92), Color(white: 0.74)],
             startPoint: .top, endPoint: .bottom)
         let alpha: Double = {
             switch etat {
-            case .verrouille: return 0.22
-            case .prochain: return 0.30
+            case .verrouille: return 0.85
+            case .prochain: return 0.90
             case .actif: return 1.0
             case .accompli, .parfait: return 0.92
             }
@@ -267,53 +298,32 @@ struct GaletEtape: View {
         Group {
             if let g = glyphe {
                 Image(systemName: g)
-                    .font(.system(size: taille * 0.30, weight: .semibold))
+                    .font(.system(size: taille * 0.26, weight: .regular))
             } else if let n = numero {
                 Text("\(n)")
-                    .font(.system(size: taille * 0.36, weight: .semibold,
-                                  design: .rounded))
+                    .font(.system(size: taille * 0.27, weight: .regular))
             }
         }
         .foregroundStyle(laque)
         .opacity(alpha)
     }
 
-    /// `galetLisere` — 7 × float2 + 1 float, l'arité au float près (page
-    /// BLANCHE sinon). Cercle : écrasement 1. Le liseré vit sur l'arc
-    /// haut (la lampe de la maison), il meurt bien avant le bord du pad.
-    /// ⚠️ domeRS.x est un RAYON (l'école LaunchPebble passe D = rayon) —
-    /// passé en diamètre, l'arc flottait à 38 pt HORS du dôme (payé à la
-    /// première mire).
-    private func lisereShader(t: Double, souffle: Double,
-                              press: Double, refus: Double) -> Shader {
-        let D = Float(taille / 2)
-        let cx = Float(pad + taille / 2), cy = Float(pad + taille / 2)
-        let (delta, gain): (Float, Float) = {
-            switch etat {
-            case .verrouille, .prochain:
-                return (5, 0.16 + Float(refus) * 0.55)
-            case .actif:
-                return (8 + Float(souffle) * 3.0, 0.85 + Float(press) * 0.15)
-            case .accompli, .parfait:
-                return (6, 0.34)
-            }
-        }()
-        let haloA: Float = etat == .actif ? 0.10 + Float(souffle) * 0.08 : 0.04
-        let dust: Float = etat == .actif ? 0.35 : 0
-        // ⚠️ `fondu` attend des COSINUS d'angle (école LaunchPebble:289-290),
-        // pas des degrés — en degrés bruts le fondu sature et le liseré fait
-        // un ANNEAU complet, le radio-button interdit (payé à la 2e mire).
-        let full = Float(cos(44.0 * Double.pi / 180))
-        let end = Float(cos(110.0 * Double.pi / 180))
-        return ShaderLibrary.galetLisere(
-            .float2(cx, cy),
-            .float2(D, 1.0),
-            .float2(delta, 0.60),
-            .float2(3.0, haloA),
-            .float2(full, end),
-            .float2(dust, Float(t)),
-            .float2(0.34, 10),
-            .float(gain))
+    /// `goutteVerre` — 6 × float2 + 1 float, l'arité au float près (page
+    /// BLANCHE sinon). Ra.x est la DEMI-largeur ; la forme vient de la
+    /// graine, les états ne jouent que sur les gains de lumière.
+    private func goutteShader(souffle: Double, press: Double,
+                              refus: Double) -> Shader {
+        let R = Float(taille / 2)
+        let c = Float(pad + taille / 2)
+        let g = gainsEtat
+        return ShaderLibrary.goutteVerre(
+            .float2(c, c),
+            .float2(R, Float(aspectGoutte)),
+            .float2(Float(graine), g.chaud),
+            .float2(g.rim, g.pool),
+            .float2(Float(press), Float(souffle)),
+            .float2(Float(refus), 0),
+            .float(1.0))
     }
 }
 
@@ -618,38 +628,42 @@ private struct PressDemo: View {
 
 // MARK: - La mire (`-duoGalets`)
 
-/// LA MIRE DU GALET-ÉTAPE : la grammaire complète sur mire grise et sur
-/// noir (le galet vivra sur le noir de la LOI 2 — les deux fonds jugent).
+/// LA MIRE DU GALET-ÉTAPE (§22) : le serpentin RÉEL de l'écran « La
+/// braise rouge » (la spec verbatim, jamais une copie), sur le noir de la
+/// page, états mélangés comme en situation — 1-3 accomplis, 4 parfait,
+/// 5 actif, 6 prochain, le reste verrouillé. La mire EST la vérité.
 struct GaletEtapeLab: View {
     @State private var actifTape = 0
 
     var body: some View {
-        HStack(spacing: 0) {
-            colonne(fond: Color(white: 0.42))
-            colonne(fond: .black)
+        GeometryReader { geo in
+            let k = geo.size.height / 874.0
+            ZStack(alignment: .topLeading) {
+                Color.black
+                ForEach(EcranSpec.etapes.filter { $0.ecran == 3 }) { e in
+                    let n = e.id % 10
+                    GaletEtape(etat: etatMire(n),
+                               numero: n + 1,
+                               taille: 62,
+                               graine: Double(e.id),
+                               onTap: { actifTape += 1 })
+                        .position(x: geo.size.width / 2 + e.dx,
+                                  y: e.y * k)
+                }
+            }
         }
         .ignoresSafeArea()
         .statusBarHidden()
         .environment(\.colorScheme, .dark)
     }
 
-    private func colonne(fond: Color) -> some View {
-        ZStack {
-            fond
-            VStack(spacing: 12) {
-                GaletEtape(etat: .verrouille, numero: 4)
-                GaletEtape(etat: .prochain, numero: 3)
-                GaletEtape(etat: .actif, numero: 2, taille: 84,
-                           onTap: { actifTape += 1 })
-                GaletEtape(etat: .accompli, numero: 1)
-                GaletEtape(etat: .parfait, numero: 1)
-                GaletEtape(etat: .verrouille, glyphe: "moon.fill",
-                           taille: 98)
-                Text("taps : \(actifTape)")
-                    .font(.system(size: 11, weight: .medium,
-                                  design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.4))
-            }
+    private func etatMire(_ n: Int) -> EtapeEtat {
+        switch n {
+        case 0, 1, 2: return .accompli
+        case 3: return .parfait
+        case 4: return .actif
+        case 5: return .prochain
+        default: return .verrouille
         }
     }
 }
