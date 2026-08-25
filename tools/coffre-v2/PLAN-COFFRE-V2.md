@@ -447,6 +447,73 @@ s'appliquer à une pièce en verre natif.** Trois issues, à trancher au banc C5
   plancher 0,85 pt). C'est exactement le cas où la loi affinée du dépôt dit
   **`liquidLens`**, pas `.clear`. → **C4 teste les deux.**
 
+### 6.3 bis ⚠️ LE SHADER DE VERRE A ÉCHOUÉ — ET C'EST MESURÉ (25-08)
+
+Verdict de Kathryn sur la première pièce montrée : *« c'est pas liquid glass, faut
+que tu travailles »*, puis, devant le second jet : *« c'est quoi cette horreur ».*
+Elle avait raison les deux fois.
+
+**Ce que l'objet est vraiment.** Sa référence n'est pas une pièce de métal :
+c'est un **cabochon de verre transparent** avec un disque noir suspendu dedans.
+Mesuré sur son rendu 4K natif (`tools/coffre-v2/refs/piece-ref-4k.png`,
+profil par `compare_piece.py`) :
+
+| Zone | Mesure |
+|---|---|
+| L'ellipse | ratio h/w **0,902** → un **TANGAGE** de 25,6°, pas un lacet |
+| La face | r/R 0 → 0,62 · **52 % de ses pixels sous L 3**, médiane **2,7** |
+| Le tore | r/R 0,65 → 1,03 · **45 % de ses pixels sous L 10**, médiane **14**, moyenne 51, p90 183 |
+| Les arcs | ★ 0,77 (dominé par le HAUT, 105/66) · gorge 0,91 · ★ 0,95 (dominé par le BAS, 66/50) |
+| La teinte | verre **neutre** (sat 0,01-0,04) · or **ambre en demi-teintes** (sat 0,30-0,47), pics au blanc dans les deux cas |
+
+**Les trois lois que ça donne** (elles restent vraies quelle que soit la
+technique retenue) :
+1. **LE VERRE EST NOIR.** La moitié du bourrelet laisse passer le fond ; sa
+   moyenne de 51 ne vient que des 12 % de pixels très clairs — de **fines
+   lignes**. Rien ne doit être constant sur l'anneau.
+2. **LA FACE EST UN TROU NOIR** (médiane 2,7). Sa saturation de 0,75 ne dit pas
+   qu'elle baigne dans l'orange : elle dit que le PEU qui s'y trouve est orange.
+3. **DEUX SOURCES, PAS UNE.** Les deux arcs viennent de lampes différentes.
+
+**Le score, tour par tour** (`compare_piece.py`, note sur 10) :
+
+| Tour | Ce qui a été corrigé | Note |
+|---|---|---|
+| 1 | le premier jet | **2,66** |
+| 2 | le tangage (je rendais un CERCLE, ratio 1,018) | **3,93** |
+| 3 | le tore rendu transparent (base retirée), la face rendue noire, le bain court | **5,18** |
+
+**La décision : ON ARRÊTE LE SHADER.** Trois tours pour +2,5 points ; il en
+faudrait dix de plus pour espérer 8, et **9,8 est hors de portée d'un shader
+analytique face à un rendu ray-tracé**. Le verre est le pire cas : sa beauté
+EST la transparence, la réfraction et les caustiques internes — c'est
+littéralement ce pour quoi le ray tracing existe.
+
+**LA VOIE RETENUE (proposée par Kathryn le 25-08 : « si c'est plus simple que
+je gère des images et que tu les utilises »)** : **ses rendus deviennent les
+pièces.** C'est déjà l'école de la maison — la pilule de la home v2 EST une
+vidéo, et c'est ce qui la rend belle.
+
+**⚠️ ET ÇA DÉBLOQUE LE MANÈGE.** Tout le §6.3 (pas de `scaleEffect`, pas de
+`.blur`) ne vaut que pour le **verre natif**. Sur une IMAGE, le zoom et le
+flou redeviennent parfaitement légitimes. **Le retournement n'est donc plus une
+nécessité technique** — on peut revenir à ce qu'elle avait demandé au départ :
+un manège horizontal entre deux pièces, avec le flou de mise au point (§4.1).
+
+**Ce qui est PERDU, et il faut le dire** : une image ne réfracte pas la salle
+en direct. L'idée « la pièce lentille le sol éclairé » (Loi 4) devient un effet
+CUIT, pas vivant. C'est un vrai renoncement, et il est acceptable : la beauté
+de l'objet passe avant la physique de sa lumière.
+
+**Ce qui SURVIT du travail jeté** :
+- `tools/coffre-v2/compare_piece.py` — l'instrument. Il servira à vérifier que
+  les images livrées sont cadrées et exposées pareil d'une pièce à l'autre.
+- `tools/coffre-v2/refs/piece-verre.json` / `piece-or.json` — le profil radial
+  de référence, la définition chiffrée de l'objet.
+- `Woop/PieceVerre.metal` + le banc `-pieceCalibre` : **gardés, pas appelés**.
+  Ils portent la spec mesurée ; si un jour une pièce doit être générée (une
+  couleur inédite, une pièce d'or « parfaite »), c'est de là qu'on repart.
+
 ### 6.4 Le vrai risque, nommé
 Le juge de design le pose sans détour : couper d'un **palet ray-tracé** (liseré
 L 179-255, laque noire, croissant émissif) vers un `moonCoin` + verre **posé sur
@@ -586,6 +653,37 @@ drag vertical à la levée de card. Conséquences, toutes bonnes :
 et le flou (§6.3). Ma reco : **une seule pièce qui se RETOURNE** — l'or d'un
 côté, la noire de l'autre, le scroll droite-gauche la fait tourner. **Ou tu
 tiens à voir les deux pièces côte à côte ?**
+
+---
+
+## §10 bis. CE QUE KATHRYN DOIT LIVRER (les images des pièces)
+
+Décidé le 25-08 après l'échec du shader (§6.3 bis). **Format, cadrage et
+exposition comptent autant que le rendu** — l'instrument `compare_piece.py`
+vérifiera que les deux pièces sont jumelles.
+
+### Le minimum, qui débloque tout
+**DEUX images, une par pièce** — la sombre (verre) et l'ambre (or) :
+
+| Critère | Exigence | Pourquoi |
+|---|---|---|
+| Fond | **noir pur (0,0,0)** ou transparent | tout autre fond laisse un halo carré au compositing |
+| Cadrage | la pièce **centrée**, la même marge autour des deux | le manège compare deux objets : un décalage de 2 % se lit comme un saut |
+| Pose | **la même inclinaison pour les deux**, celle de sa référence (ellipse h/w ≈ 0,90) | c'est la pose qu'elle a validée, et elle n'a pas besoin d'être tournée ensuite |
+| Taille | **≥ 1400 px de côté**, carré | la pièce fait 132 pt à l'écran, soit 396 px en 3× ; la marge sert au zoom du manège |
+| Format | **PNG** (16 bits si possible) | le dégradé du tore descend à L 2-14 : un JPEG y fabrique des blocs |
+| Lumière | **identique sur les deux** | sinon l'une paraît plus « allumée » que l'autre au passage |
+
+### L'option qui les fait TOURNER
+Si les pièces doivent pivoter pendant le voyage (la loi cover-flow, §4.1) :
+un **tour de manège** par pièce — la pièce qui tourne sur son axe vertical,
+**48 images pour 180°**, cadrage et lumière constants, fond noir. Vidéo ou
+séquence PNG numérotée. On scrube alors au doigt, et chaque angle est un vrai
+rendu.
+
+### Ce qui n'est PAS nécessaire
+Ni image de la tranche, ni version « allumée » par la salle, ni fond : la page
+fournit la chambre. Une pièce, deux fois, c'est tout.
 
 ---
 

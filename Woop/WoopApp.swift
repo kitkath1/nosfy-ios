@@ -136,11 +136,10 @@ struct RootView: View {
     /// Banc d'essai de la home aurora : `-homeLab` (+ `-demoData` pour les
     /// cartes). L'ancienne home noire reste la vraie.
     private static let homeLab = CommandLine.arguments.contains("-homeLab")
-    /// Banc de la home v2 « chambre noire » : `-homeV2` — la grande card
-    /// vidéo, la phrase, la semaine (le plan : `tools/home-v2/PLAN-HOME-V2.md`).
-    /// `-rasantLab` ouvre la console, `-fondRasant` rend le rasant archivé du
-    /// jalon 1, `-semaineFaits <n>` et `-semaineMaterialise` jugent la semaine,
-    /// `-tirageFige <pt>` tient la card tirée (le secret sous elle).
+    /// Banc de la home v2 « chambre noire » : `-homeV2` — le noir et le rasant
+    /// de gauche, SEULS (jalon 1 du plan `tools/home-v2/PLAN-HOME-V2.md`).
+    /// `-rasantLab` ajoute la console de fouettage, `-rasantTemoin` pose la
+    /// phrase en témoin, `-rasantFreeze <t>` fige l'horloge.
     /// ⚠️ TOUS les drapeaux de ce chantier ouvrent la page. `-phraseLab` seul
     /// ne le faisait pas : il lançait l'app normale (la home aurora), et on
     /// croyait le banc cassé alors qu'on regardait l'ancienne page.
@@ -196,6 +195,18 @@ struct RootView: View {
     /// réelles du header, `-pieceFreeze <rad>` fige le lacet pour comparer
     /// deux tours de fouettage au MÊME angle.
     private static let pieceLab = CommandLine.arguments.contains("-pieceLab")
+    /// Banc du RETOURNEMENT (chantier coffre v2, jalon C5) : `-coffreFlip` —
+    /// une seule pièce, l'or d'un côté et la nuit de l'autre, qu'on retourne
+    /// au pouce. `-coffreFlipAuto` la retourne toute seule (le sim ne pose pas
+    /// de doigt), `-coffreFlipSol` la pose sur le sol de la chambre, et
+    /// `-coffreFlipFige <deg>` impose le lacet pour des captures comparables.
+    /// `-pieceCalibre` / `-pieceCalibreOr` posent la pièce SEULE au lacet de la
+    /// référence : c'est la seule image que `tools/coffre-v2/compare_piece.py`
+    /// sait noter.
+    private static let coffreFlip = ["-coffreFlip", "-coffreFlipAuto",
+                                     "-coffreFlipSol", "-pieceCalibre",
+                                     "-pieceCalibreOr"]
+        .contains(where: CommandLine.arguments.contains)
     /// Banc des stories : `-storyLab` — la carte noire qu'on tire vers le
     /// haut, le portail qui s'ouvre, puis les trois écrans. La carte revient
     /// à la fermeture, donc la cinématique se rejoue à volonté sans rien
@@ -222,7 +233,38 @@ struct RootView: View {
     /// collection d'entraînements (chantier 18-08). `-carnetOuvert` montre
     /// la double page, `-carnetCote` le trois-quarts.
     private static let carnetLab = CommandLine.arguments.contains("-carnetLab")
-    @State private var showSplash = true
+    /// Banc de LA PORTE : `-porteLab` — l'entrée dans l'app (chantier 22-08,
+    /// `tools/porte/PLAN-PORTE.md`). `-portePage <n>` fige une page,
+    /// `-porteFlamme <v>` règle la descente de la flamme, `-porteAuto` balaie
+    /// les quatre pages tout seul, `-porteArrivee` joue le film d'arrivée.
+    private static let porteLab = CommandLine.arguments.contains("-porteLab")
+    /// Banc de la LUNE DE SANG : `-luneSangLab` — les trois états tenus
+    /// (3,40 s) en boucle à la demande ; `-luneSangFreeze <t>` fige un instant.
+    private static let luneSangLab =
+        CommandLine.arguments.contains("-luneSangLab")
+    /// LA PORTE A-T-ELLE DÉJÀ ÉTÉ VUE ? Le film d'entrée (lune de sang +
+    /// arrivée, 8,4 s) ne se paie qu'UNE fois : ensuite le carrousel s'ouvre
+    /// directement sur sa boucle (l'arbitrage du 22-08, PLAN-PORTE.md § 8).
+    /// ⚠️ LE REMÈDE `tutoExosVu` EST RECOPIÉ : en DEBUG la clé n'est jamais
+    /// lue (sinon le film ne serait visible qu'une fois par installation —
+    /// intestable) ; `-porteVue` force le raccourci en debug, `-porteNeuve`
+    /// rejoue le premier lancement partout.
+    private static let porteDejaVue: Bool = {
+        if CommandLine.arguments.contains("-porteNeuve") {
+            UserDefaults.standard.removeObject(forKey: "woop.porteVue")
+            return false
+        }
+        #if DEBUG
+        return CommandLine.arguments.contains("-porteVue")
+        #else
+        return UserDefaults.standard.bool(forKey: "woop.porteVue")
+        #endif
+    }()
+
+    /// Le splash (la lune de sang) n'existe qu'au premier lancement : aux
+    /// suivants la porte s'ouvre directement — on économise les 8,4 s
+    /// (et les 13,95 s de l'ancien plan-séquence, passé en archive).
+    @State private var showSplash = !RootView.porteDejaVue
     /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
     /// (captures d'écran automatisées uniquement).
@@ -342,6 +384,63 @@ struct RootView: View {
     /// sans feuille de confirmation : une cérémonie qui demanderait ensuite
     /// « es-tu sûre ? » ne serait plus une cérémonie. Le geste reste
     /// réversible, « Annuler cette séance » vit dans l'overlay.
+    /// La durée de la séance ouverte, en texte de bilan.
+    private var dureeSeanceTexte: String {
+        guard let a = active else { return "" }
+        let m = max(1, Int(Date.now.timeIntervalSince(a.startedAt)) / 60)
+        return "\(m) min"
+    }
+
+    /// LA CLÔTURE — le « Terminer » du panneau de pause. La séance se
+    /// ferme, puis LA CHAÎNE DE FIN : la bascule home + le trophée
+    /// (le onChange existant s'en charge via WoopCelebration), la notif
+    /// des pièces (+20/série), et la pop-up booster qui propose le
+    /// sachet gagné.
+    private func terminerSeance() {
+        guard let a = active else {
+            // Jamais muet : la séance a disparu sous nos pieds (purge,
+            // relance) — on referme ET on rend la home, plutôt qu'un
+            // bouton qui ne fait rien.
+            withAnimation(.easeOut(duration: 0.22)) {
+                depart.pauseOuverte = false
+            }
+            withAnimation(.easeOut(duration: 0.3)) { selection = .home }
+            return
+        }
+        let gain = a.setCount * 20
+        print("[flow] terminerSeance : exos=\(a.exerciseCount) "
+              + "séries=\(a.setCount) gain=\(gain)")
+        withAnimation(.easeOut(duration: 0.22)) {
+            depart.pauseOuverte = false
+        }
+        a.endedAt = .now
+        try? modelContext.save()
+        WorkoutActivityController.end()
+        // LE TROPHÉE ET LE BOOSTER SE MÉRITENT : une séance sans une
+        // seule série ne remplit rien et ne propose rien (l'économie
+        // dit 20 pièces PAR SÉRIE — une séance vide vaut zéro).
+        if gain > 0 { WoopCelebration.shared.workoutFinished() }
+        // LA REDIRECTION EST EXPLICITE — jamais suspendue aux gardes
+        // de la célébration (« il ne se passe rien » payé : Terminer
+        // doit RAMENER À LA HOME, d'où qu'on vienne).
+        withAnimation(.easeOut(duration: 0.3)) { selection = .home }
+        // L'envoi part en fond — jamais le droit de bloquer la chaîne.
+        let snapshot = a.snapshot()
+        Task.detached { await SupabaseSync.shared.push([snapshot]) }
+        if gain > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                withAnimation { depart.notifPieces = gain }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) {
+                withAnimation { depart.notifPieces = nil }
+            }
+        }
+        guard gain > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.2) {
+            SacreEtat.shared.proposer()
+        }
+    }
+
     private func startWorkout() {
         guard active == nil else {
             // Une séance est déjà ouverte : le galet la RAMÈNE au lieu d'en
@@ -385,6 +484,10 @@ struct RootView: View {
             NeonPrimaryLab()
         } else if Self.counterLab {
             CounterLab()
+        } else if Self.porteLab {
+            PorteEntree()
+        } else if Self.luneSangLab {
+            LuneSangLab()
         } else if Self.loginLab {
             AuroraLoginView()
         } else if Self.authNebula {
@@ -419,6 +522,8 @@ struct RootView: View {
             SuccessLab()
         } else if Self.coffreLab {
             CoffreFortLab()
+        } else if Self.coffreFlip {
+            CoffreFlipLab()
         } else if Self.pieceLab {
             MoonCoinLab()
         } else if Self.bravoLab {
@@ -435,6 +540,8 @@ struct RootView: View {
             NavLab()
         } else if Self.calLab {
             CalLab()
+        } else if Self.duoLab {
+            DuoLab()
         } else {
             mainBody
         }
@@ -530,8 +637,6 @@ struct RootView: View {
     }
 
     private var mainBody: some View {
-        } else if Self.duoLab {
-            DuoLab()
         ZStack {
             // « Un seul ciel » : horloge globale (temps absolu modulo 900 s)
             // + état partagé SkyState (scroll, révélation, gyro) — chaque
@@ -612,13 +717,32 @@ struct RootView: View {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
                                 onPlay: {
-                                    // Séance déjà ouverte : le galet la
-                                    // RAMÈNE (jamais deux séances) ;
-                                    // sinon le panneau du départ.
-                                    if let a = active {
-                                        sheetWorkout = a
+                                    // Séance déjà ouverte : le galet
+                                    // RAMÈNE À LA SÉANCE — la page
+                                    // exercices, où vit LE player
+                                    // (l'ardoise de la fiche exo).
+                                    // JAMAIS la vieille feuille noire
+                                    // (le sheet à la comète est mort —
+                                    // verdict). Sinon : le panneau du
+                                    // départ.
+                                    if active != nil {
+                                        withAnimation(.easeOut(duration: 0.3)) {
+                                            selection = .exercises
+                                        }
                                     } else {
                                         DepartEtat.shared.proposer()
+                                    }
+                                },
+                                onPlayHold: {
+                                    // Le STOP universel : l'appui tenu
+                                    // sur le galet en séance ouvre
+                                    // « Terminer la séance ? ».
+                                    guard active != nil else { return }
+                                    UIImpactFeedbackGenerator(style: .medium)
+                                        .impactOccurred()
+                                    withAnimation(.spring(response: 0.42,
+                                                          dampingFraction: 0.88)) {
+                                        depart.pauseOuverte = true
                                     }
                                 },
                                 invitePulse: invitePulseAt,
@@ -661,12 +785,27 @@ struct RootView: View {
                 // « Annuler cette séance » la supprime pendant que la feuille
                 // se referme : on ne lit pas un objet déjà sorti de la base.
                 if !workout.isDeleted {
-                    ActiveWorkoutSheet(workout: workout) {
-                        // « Ajouter un exercice » : on referme la feuille et on
-                        // ouvre la bibliothèque — c'est là qu'on loggue.
-                        sheetWorkout = nil
-                        selection = .exercises
-                    }
+                    ActiveWorkoutSheet(workout: workout,
+                        onAddExercise: {
+                            // « Ajouter un exercice » : on referme la
+                            // feuille et on ouvre la bibliothèque.
+                            sheetWorkout = nil
+                            selection = .exercises
+                        },
+                        onStopViaPause: {
+                            // LE STOP DU PLAYER : la feuille se retire,
+                            // le panneau de pause de la maison monte —
+                            // « Terminer » y déclenche toute la chaîne
+                            // de fin (trophée, pièces, booster).
+                            sheetWorkout = nil
+                            DispatchQueue.main.asyncAfter(
+                                deadline: .now() + 0.4) {
+                                withAnimation(.spring(response: 0.42,
+                                                      dampingFraction: 0.88)) {
+                                    depart.pauseOuverte = true
+                                }
+                            }
+                        })
                 }
             }
             }
@@ -684,6 +823,39 @@ struct RootView: View {
             // la descente — l'école du « Recommencer » de la fiche
             // d'exercice. Inséré et retiré d'un coup, le panneau
             // n'aurait jamais de sortie vers le bas.
+            // LE PLAYER EST LA FEUILLE DE SÉANCE (le verdict de la
+            // maison : « séance en cours = le galet néon SEUL » — la
+            // carte flottante est morte deux fois, elle ne revient
+            // pas). Le galet ramène la feuille ; son « Terminer
+            // l'entraînement » ouvre le panneau ci-dessous.
+
+            // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
+            // la séance — le trophée, la notif des pièces et la pop-up
+            // booster s'enchaînent derrière (terminerSeance).
+            PausePanneauHote(
+                ouverte: depart.pauseOuverte,
+                duree: dureeSeanceTexte,
+                series: active?.setCount ?? 0,
+                gain: (active?.setCount ?? 0) * 20,
+                onTerminer: { terminerSeance() },
+                onContinuer: {
+                    withAnimation(.easeOut(duration: 0.22)) {
+                        depart.pauseOuverte = false
+                    }
+                })
+                .zIndex(5)
+
+            // LA NOTIF DES PIÈCES — la mini capsule liquid glass qui
+            // descend à l'arrivée home, le compte qui roule.
+            VStack {
+                PiecesNotif(gain: depart.notifPieces ?? 0,
+                            visible: depart.notifPieces != nil)
+                Spacer()
+            }
+            .padding(.top, 8)
+            .zIndex(9)
+            .allowsHitTesting(false)
+
             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
             // racine (l'école du parcours booster : l'état partagé, pas
             // une notification). « Commencer » = la séance du galet
@@ -754,21 +926,22 @@ struct RootView: View {
                     .zIndex(8)
                     .transition(.opacity)
                 if !showSplash {
-                    // Plus aucun conteneur zoomé : la caméra de la cérémonie
-                    // vit DANS le shader de la lune (CineMonolith, côté
-                    // AuroraLoginView) — le rendu reste vectoriel.
-                    AuroraLoginView(onConnect: { digits in
-                        // CONNEXION entre SANS CONDITION : le parcours se
-                        // teste de bout en bout, champ vide compris. Mais
-                        // on ne retient que ce qui est un numéro — une
-                        // saisie vide écraserait `woop.phone`, et avec lui
-                        // la session Supabase déjà ouverte (elle abandonne
-                        // son jeton dès que l'identité change).
+                    // LA PORTE (22-08, PLAN-PORTE.md) : le carrousel des
+                    // quatre pages remplace l'écran aurora — qui reste vivant,
+                    // en archive, derrière `-loginLab`. Même contrat exact :
+                    // `onConnect` + `cineStart` poussé par la racine.
+                    PorteEntree(onConnect: { digits in
+                        // Le parcours entre SANS CONDITION. On ne retient que
+                        // ce qui est un numéro — la porte passe une chaîne
+                        // vide, donc `woop.phone` (la clé de session Supabase)
+                        // n'est jamais écrasé ; le jour où l'identité viendra
+                        // d'Apple, cette clé changera de nature (§ 6 du plan).
                         if digits.count == 10 {
                             UserDefaults.standard.set(digits, forKey: "woop.phone")
                         }
                         startConnexionCinematic()
-                    }, cineStart: cineStart)
+                    }, cineStart: cineStart,
+                       arrivee: !Self.porteDejaVue)
                     .transition(.opacity)
                     .zIndex(9)
                 }
@@ -786,15 +959,13 @@ struct RootView: View {
             if showSplash {
                 // Le splash tient sa propre horloge : lui seul sait quand sa
                 // séquence est finie, et il peut être passé d'un toucher.
-                // C'est désormais la LUNE : le plan-séquence de la bouteille
-                // et du diablotin reste en archive, rejouable par
-                // `-splashTest`, mais l'app ne s'ouvre plus dessus.
-                // `landsOnAurora: false` : l'écran qui suit ici est
-                // l'authentification, pas l'aurore orange du banc. Le
-                // monolithe fait donc son vol sur du noir, et la page prend
-                // le relais — découvrir un fond que personne n'affiche
-                // ensuite ne ferait qu'un raccord qui ment.
-                MoonSplashView(landsOnAurora: false) {
+                // C'est désormais LA LUNE DE SANG (22-08, la porte) : trois
+                // états tenus, 3,40 s, qui meurent au noir — et le film
+                // d'arrivée de la porte COMMENCE au noir, donc la couture est
+                // introuvable. Le plan-séquence de 13,95 s reste en archive,
+                // rejouable par `-moonSplashLab` ; la bouteille et le
+                // diablotin par `-splashTest`.
+                LuneDeSangView {
                     withAnimation(.easeOut(duration: 0.5)) { showSplash = false }
                 }
                 .transition(.opacity)
@@ -811,7 +982,13 @@ struct RootView: View {
         // encore l'écran — sans la clé, le banc ne se rejouerait jamais.
         .task(id: showSplash || showAuth) {
             guard !showSplash, !showAuth else { return }
-            if CommandLine.arguments.contains("-departPanneau") {
+            if CommandLine.arguments.contains("-clotureTest") {
+                // La chaîne de fin de séance se joue toute seule (dock
+                // visible → clôture → trophée → notif pièces → pop-up
+                // booster) — le stop ne se tape pas en ligne de commande.
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                terminerSeance()
+            } else if CommandLine.arguments.contains("-departPanneau") {
                 // Le banc du panneau de départ (le galet ne se tape pas
                 // en ligne de commande).
                 try? await Task.sleep(nanoseconds: 800_000_000)
@@ -839,6 +1016,14 @@ struct RootView: View {
         // EN PLEIN dévissage). Un souffle après la pose, sous le noir
         // opaque ; à la fermeture la home revient DANS LA MÊME
         // transaction que la sortie du manège.
+        // LE PLAYER DEMANDE LA CLÔTURE (son panneau stop a dit oui) :
+        // la racine l'exécute — elle seule tient la séance et la chaîne.
+        .onChange(of: depart.clotureDemandee) { _, demandee in
+            guard demandee else { return }
+            print("[flow] racine : clôture reçue")
+            depart.clotureDemandee = false
+            terminerSeance()
+        }
         .onChange(of: sacre.manegePose) { _, pose in
             guard pose else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -886,13 +1071,25 @@ struct RootView: View {
             DispatchQueue.global(qos: .utility).async {
                 _ = BoosterScene.hdrStudio
             }
-            // LE FOUR : les pipelines Metal du manège se compilent
-            // PENDANT le splash — une scène jetable rendue quelques
-            // frames au fond de la fenêtre, invisible. Sans lui, la
-            // première ouverture payait ~1,5 s de NOIR entre le tap et
-            // le rideau (la porte de rendu tenait l'horloge, mais
-            // l'attaque de l'entrée était morte).
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            // LE FOUR : les pipelines Metal du manège se compilent en début
+            // de session — une scène jetable rendue quelques frames au fond
+            // de la fenêtre, invisible. Sans lui, la première ouverture
+            // payait ~1,5 s de NOIR entre le tap et le rideau.
+            //
+            // ⚠️ IL ATTEND LA FIN DU FILM D'ENTRÉE (22-08, la porte). À
+            // +2,5 s fixes, il tombait en plein deuxième palier de la lune
+            // de sang : 143-204 ms de trou MESURÉS à la sonde (l'ancien
+            // splash de 13,95 s absorbait l'à-coup dans son travelling à
+            // demi-résolution ; la lune, elle, est courte et plein cadre).
+            // Le manège est à des minutes d'ici — le four peut cuire tard.
+            // (Un Task à part : la purge et la poussée Supabase, plus bas,
+            // n'ont pas à attendre le film.)
+            Task { @MainActor in
+                while showSplash {
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                }
+                // L'arrivée V2 (8,23 s) + la cascade, puis un souffle.
+                try? await Task.sleep(nanoseconds: 9_200_000_000)
                 guard let stage = BoosterScene(still: true, mylar: false,
                                                gallery: true),
                       let fenetre = UIApplication.shared.connectedScenes
@@ -934,11 +1131,27 @@ struct RootView: View {
             let fantomes = workouts.filter {
                 $0.endedAt == nil && (purgeTout
                     || $0.startedAt < Date.now.addingTimeInterval(-12 * 3600)
+                    // 3 h, pas 30 min : un rebuild au milieu d'un test
+                    // effaçait la séance en cours et cassait le flow.
                     || ($0.setCount == 0 && $0.startedAt
-                        < Date.now.addingTimeInterval(-30 * 60)))
+                        < Date.now.addingTimeInterval(-3 * 3600)))
             }
             if !fantomes.isEmpty {
                 fantomes.forEach { modelContext.delete($0) }
+                try? modelContext.save()
+            }
+            // LES ABANDONNÉES : une séance AVEC contenu laissée ouverte
+            // plus de 3 h s'ENREGISTRE en silence (une heure au compteur,
+            // pas de célébration) — elle ne tient plus le galet en
+            // « en cours » au retour du lendemain.
+            let abandonnees = workouts.filter {
+                $0.endedAt == nil && $0.setCount > 0
+                    && $0.startedAt < Date.now.addingTimeInterval(-3 * 3600)
+            }
+            if !abandonnees.isEmpty {
+                abandonnees.forEach {
+                    $0.endedAt = $0.startedAt.addingTimeInterval(3600)
+                }
                 try? modelContext.save()
             }
             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
@@ -958,7 +1171,12 @@ struct RootView: View {
                 let marker = URL.documentsDirectory.appending(path: "cine-armed")
                 try? Date.now.ISO8601Format().write(to: marker, atomically: true,
                                                     encoding: .utf8)
-                try? await Task.sleep(nanoseconds: 6_000_000_000)
+                // ⚠️ DOUZE secondes, plus six : depuis la porte (22-08), le
+                // FILM D'ARRIVÉE joue APRÈS le splash — et la V2 l'a rallongé
+                // à 8,23 s (+ la cascade). À six, la cérémonie partait en
+                // plein film et posait `showAuth = false` derrière lui
+                // (l'angle mort relevé par la contre-expertise du plan, § 8).
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
                 startConnexionCinematic()
             }
         }
