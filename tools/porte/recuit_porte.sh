@@ -193,7 +193,7 @@ r='0/0 0.05/0.17 0.15/0.40 0.40/0.70 1/1':\
 g='0/0 0.05/0.13 0.15/0.31 0.40/0.59 1/1':\
 b='0/0 0.05/0.08 0.15/0.21 0.40/0.45 1/1'"
 ffmpeg -y -v error -i "$SRC/splash_3.mp4" \
-  -vf "crop=1956:2977:0:0,$LIFT,scale=1080:1644,\
+  -vf "crop=1400:2131:278:0,$LIFT,scale=1080:1644,\
 minterpolate=fps=30:mi_mode=blend,format=yuv420p" \
   -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -an "$TMP/track-aller.mp4"
 pingpong "$TMP/track-aller.mp4" "$DEST/onb-track-loop.mp4"
