@@ -2223,6 +2223,98 @@ matière et une forme ratée. On assemble.
   noir, sa demande, toujours en attente), **P2** (la dalle propre),
   **P3** (la courbe du dévoilement), **P7**, **P8**.
 
+## 20. « LES PILLS DU CHEMIN » — le chantier des galets-étapes (25-08,
+dicté sur sa référence : l'icône Slack en MÉTAL NOIR SABLÉ pailleté
+d'argent, biseau 3D, éclairage rasant — PAS CODÉ, son go attendu)
+
+Le brief verbatim : « les Pills doivent avoir du relief limite 3D et un
+aspect très premium. Les sessions À FAIRE : full liquid glass ; celles
+FAITES : une sorte de métal comme l'image, et néon blanc autour du
+noir, la date (12 Jun — on fonctionne par date), la logique de
+gamification à voir. Et quand on appuie dessus, de la fumée ou de la
+lumière sort. »
+
+**La référence à archiver** : `shots/ref-pill-metal.png` (le Slack métal
+sablé — grain fin, paillettes argentées éparses, biseau doux, lumière
+rasante du haut, coins très arrondis). C'est un REGISTRE que la maison
+connaît : le moonCoin mat/poli (BravoLab), la carte obsidienne, le
+brossage d'ObjectiveJewel.
+
+### 20.1 LA GRAMMAIRE DES DEUX MATIÈRES (l'état se dit par la matière —
+LOI 4 du §1, enfin incarnée)
+
+- **À FAIRE (verrouillé/prochain) — LE VERRE PLEIN (full liquid glass)** :
+  la pill est une lentille de verre bombée, relief limite 3D. ⚠️ Le
+  procès du §10.1 se tient ENFIN ici, sur mire, avec les trois candidats
+  côte à côte : (a) le natif `.glassEffect(.clear)` — la loi du « trou
+  dans du métal » le condamne sur noir pur, MAIS les feux vivent
+  désormais sous le chemin : à re-juger sur la vraie page ; (b) le
+  **liquidLens** en petit (l'école de la fiche exo, VALIDÉE — les
+  INTERDITS de la mémoire lentille-liquide font loi ; ⚠️ coût ×11
+  instances : rasterisé une fois par état, jamais 11 shaders vivants) ;
+  (c) le verre PEINT enrichi (l'actuel GaletEtape + réfraction feinte du
+  foyer). Son verdict tranche LA matière du « à faire ».
+- **FAITE (accompli) — LE MÉTAL SABLÉ DE LA RÉF** : `GaletMetal.metal`
+  (colorEffect) — le corps obsidienne sablée (grain fin), les
+  **paillettes d'argent** éparses qui SCINTILLENT au gyro (école
+  SkyMotion — le sim y est aveugle, verdict téléphone), le biseau qui
+  prend la lumière rasante (un rim-light haut, école fil de crête), le
+  **NÉON BLANC autour du noir** : l'anneau gaussien de `galetLisere`
+  monté en blanc pur, fin, constant (l'accompli rayonne, calme). La
+  **DATE gravée** (« 12 JUN », petites capitales) en creux — l'emboss de
+  la réf : encre enfoncée, lumière sur la lèvre basse du creux.
+  ⚠️ Pièges à poste : le **Nyquist 3× d'ObjectiveJewel** (un grain/des
+  paillettes SOUS-échantillonnés aliassent — raster 3× obligatoire) ; le
+  cadre fantôme au bord du pad ; l'arité stitchable ; scalaires en `let`.
+- **L'ACTIVE (la session du jour)** : le verre plein du « à faire » +
+  le souffle du liseré (l'appel), + SA date du jour. La hiérarchie
+  taille reste (92).
+
+### 20.2 LES DATES (« on fonctionne par date »)
+
+Chaque pill porte une DATE de session au lieu du chiffre : les faites =
+leur date passée gravée dans le métal ; l'active = aujourd'hui ; les à
+faire = MUETTES (le verre vierge — une date future serait une promesse,
+la gamification décidera). Session UI : dates FACTICES dérivées
+d'aujourd'hui (J-9…J), format « 12 JUN » petites capitales. **La logique
+de gamification (calendrier réel, streaks, liens séances) est
+explicitement REPORTÉE — sa note : « à voir »** ; la surface seule se
+dessine (l'école du rail de jeu §6.4).
+
+### 20.3 LE PRESS (« de la fumée ou de la lumière sort »)
+
+A/B au banc, un seul candidat livré :
+- **(A) LA LUMIÈRE (défaut proposé)** : au press, une lumière S'ÉCHAPPE
+  de sous la pill — un bloom additif bas qui gonfle depuis le flanc
+  (école lueur de passage : plusLighter, motivé, ≤ 0,3), meurt au
+  relâcher. Zéro techno neuve, très Apple.
+- **(B) LA FUMÉE** : la fumée noire au tap existe à la maison
+  (carteLuneV2) — une volute qui s'échappe du bord et se dissout. Plus
+  wow, plus cher, banc à part (la mémoire lentille-liquide l'avait déjà
+  remise « à un banc à part »).
+- Les deux gardent l'enfoncement 3 % + flanc mangé + tilt ≤ 4° + les
+  haptiques existantes ; le refus reste L'IMMOBILITÉ (la loi §6.2).
+
+### 20.4 LES JALONS (la porte : un jalon, une question fermée)
+
+- **Pil-1 — LA MIRE DES MATIÈRES** (`-duoGalets` enrichie) : les 3
+  candidats « à faire » + le métal sablé v1 + l'active, sur les DEUX
+  fonds (noir pur / feu dessous). **Question : « le à-faire : natif,
+  liquidLens ou peint enrichi ? »**
+- **Pil-2 — LE MÉTAL AFFINÉ** : grain/paillettes/biseau/néon/date aux
+  curseurs (`-pillGrain`, `-pillNeon`), zoom ×8 anti cadre fantôme,
+  Nyquist 3× vérifié. **Question : « le métal : fidèle à ta réf —
+  oui/non ? »**
+- **Pil-3 — LE PRESS** : A/B lumière/fumée au doigt.
+  **Question : « lumière (A) ou fumée (B) ? »**
+- **Pil-4 — LA PAGE HABILLÉE** : les 11 pills en situation (dates
+  factices, états mélangés via `-duoEtape`), fouettage (cadence — 11
+  shaders = le suspect, l'échelle de repli : raster par état),
+  non-régression des feux/capsules. **Question : « le chemin est-il
+  enfin le bijou de la page — oui/non ? »**
+- Puis P2/P3/P7/P8 de la partition reprennent (dalle, dévoilement,
+  fouettage, téléphone).
+
 ### LES ARBITRAGES DE CETTE CAMPAGNE (défauts posés, SES verdicts)
 
 1. **La direction des feux** (N2) : A / B / C / D et compositions — défaut
