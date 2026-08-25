@@ -36,8 +36,16 @@ import SwiftUI
 ///   (blanc chaud sur un disque sombre), l'unité écrite À PLAT en
 ///   capitales sombres couchées en perspective ; la lumière vient du
 ///   chiffre, plus du bas.
+/// - `.galet` : le chiffre nu, et PAR-DESSUS un GROS GALET de VRAI verre
+///   natif (glassEffect) qui se promène sur lui et le réfracte — le
+///   chiffre est la nourriture de la lentille, et le doigt peut saisir
+///   le galet (retour élastique, haptique à la prise et au lâcher).
+/// - `.spotlight` : la nuit totale, le chiffre en métal sombre, et DANS
+///   le glyphe LA MATRICE — une trame de micro-mots presque noirs qui
+///   s'éclairent par vagues (plan fin : tools/rewards/PLAN-SPOTLIGHT-V4.md,
+///   jalon S1 = la trame morte + un front figé).
 enum RewardStyle {
-    case halo, neon
+    case halo, neon, galet, spotlight
 }
 
 struct RewardPopup: View {
@@ -243,48 +251,56 @@ private struct RewardScene: View, Animatable {
                     chiffresFantomes(largeur: largeur)
                         .opacity(sstep(0.50, 0.82, p))
                 } else {
-                    // 4 bis. LE DISQUE DE LA NUIT (réf WWDC) — la lune
-                    //    sombre derrière le chiffre : à peine plus claire
-                    //    que le noir, elle donne sa profondeur au bloom.
-                    Circle()
-                        .fill(RadialGradient(
-                            stops: [
-                                .init(color: .white.opacity(0.15), location: 0),
-                                .init(color: .white.opacity(0.10),
-                                      location: 0.72),
-                                .init(color: .white.opacity(0.05),
-                                      location: 0.92),
-                                .init(color: .clear, location: 1)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: largeur * 0.47))
-                        .frame(width: largeur * 0.94,
-                               height: largeur * 0.94)
-                        .offset(y: -hauteur * 0.10)
-                        .opacity(sstep(0.20, 0.55, p))
-                    // Et un SOUFFLE de sol : ce que le chiffre verse sur
-                    // les capitales couchées — discret, jamais le gros
-                    // halo du variant Apple.
+                    // 4 bis. LE DISQUE DE LA NUIT (réf WWDC, néon seul) —
+                    //    la lune sombre derrière le chiffre : à peine plus
+                    //    claire que le noir, elle donne sa profondeur au
+                    //    bloom. La pill, elle, veut une scène nue.
+                    if style == .neon {
+                        disqueNuit(largeur: largeur, hauteur: hauteur)
+                    }
+                    // Et le HALO DE SOL — monté d'un cran (verdict
+                    // « augmente le halo ») : la brume dans laquelle les
+                    // capitales couchées TREMPENT, en deux nappes.
+                    // (Pas en spotlight : là, la nuit est totale — la
+                    // seule lumière viendra de la lampe, jalon S3.)
+                    if style != .spotlight {
                     Self.forme.fill(
                         EllipticalGradient(
                             stops: [
-                                .init(color: .white.opacity(0.14), location: 0),
+                                .init(color: .white.opacity(0.26), location: 0),
+                                .init(color: .white.opacity(0.09),
+                                      location: 0.55),
                                 .init(color: .clear, location: 1)
                             ],
-                            center: UnitPoint(x: 0.5, y: 0.86),
+                            center: UnitPoint(x: 0.5, y: 1.02),
                             startRadiusFraction: 0,
-                            endRadiusFraction: 0.55))
+                            endRadiusFraction: 0.85))
                         .blendMode(.screen)
                         .opacity(sstep(0.35, 0.70, p))
+                    Self.forme.fill(
+                        EllipticalGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.20), location: 0),
+                                .init(color: .clear, location: 1)
+                            ],
+                            center: UnitPoint(x: 0.5, y: 0.88),
+                            startRadiusFraction: 0,
+                            endRadiusFraction: 0.5))
+                        .blendMode(.screen)
+                        .opacity(sstep(0.40, 0.75, p))
+                    }
                 }
 
                 // 5 bis. LA POUDRE DE DIAMANT (verdict) — les grains
                 //    naissent dans le halo et scintillent TRANCHÉ, la
                 //    recette de PoudreBooster en monochrome lunaire.
-                PoudreDiamant(largeur: largeur, hauteur: hauteur,
-                              naissance: naissance)
-                    .opacity(sstep(0.35, 0.75, p))
+                //    (Pas en spotlight : la nuit y est nue, la matière
+                //    vit DANS le chiffre.)
+                if style != .spotlight {
+                    PoudreDiamant(largeur: largeur, hauteur: hauteur,
+                                  naissance: naissance)
+                        .opacity(sstep(0.35, 0.75, p))
+                }
 
                 // 6. LE LISERÉ — neutre, allumé PAR LE BAS comme tout le
                 //    reste : c'est lui qui détache le noir du noir.
@@ -319,6 +335,26 @@ private struct RewardScene: View, Animatable {
         // continue sous la card et la détache de la page.
         .shadow(color: .white.opacity(0.14 * sstep(0.25, 0.65, p)),
                 radius: 38, y: 30)
+    }
+
+    /// La lune sombre du variant néon — une SCÈNE, pas un dégradé : son
+    /// bord se lit contre le noir (la marche 0,05 → 0), le champ de
+    /// halation éclaire sa moitié haute, sa base se noie dans la brume.
+    private func disqueNuit(largeur: CGFloat, hauteur: CGFloat) -> some View {
+        Circle()
+            .fill(RadialGradient(
+                stops: [
+                    .init(color: .white.opacity(0.15), location: 0),
+                    .init(color: .white.opacity(0.10), location: 0.72),
+                    .init(color: .white.opacity(0.05), location: 0.92),
+                    .init(color: .clear, location: 1)
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: largeur * 0.47))
+            .frame(width: largeur * 0.94, height: largeur * 0.94)
+            .offset(y: -hauteur * 0.10)
+            .opacity(sstep(0.20, 0.55, p))
     }
 
     /// Les voisins de l'odomètre — figés à ±1 du chiffre FINAL (les faire
@@ -374,13 +410,10 @@ private struct RewardScene: View, Animatable {
                 .opacity(sstep(0.42, 0.64, p))
                 .offset(y: 5 * (1 - sstep(0.42, 0.68, p)))
             Spacer(minLength: 0)
-            if style == .halo {
-                ChiffreReward(valeur: valeurCourante)
-                    .opacity(sstep(0.26, 0.44, p))
-            } else {
-                // UN SEUL BLOC centré : dans la réf, le chiffre S'ASSOIT
-                // sur les capitales couchées — pas d'air entre eux (un
-                // Spacer entre les deux les aurait écartés).
+            if style == .neon {
+                // UN SEUL BLOC centré : le chiffre S'ASSOIT sur les
+                // capitales couchées — pas d'air entre eux (un Spacer
+                // entre les deux les aurait écartés).
                 VStack(spacing: -30) {
                     ChiffreNeon(valeur: valeurCourante,
                                 allume: sstep(0.30, 0.72, p))
@@ -390,11 +423,27 @@ private struct RewardScene: View, Animatable {
                         .opacity(sstep(0.44, 0.70, p))
                         .offset(y: 8 * (1 - sstep(0.44, 0.74, p)))
                 }
+            } else if style == .spotlight {
+                ChiffreMatrice(valeur: valeurCourante,
+                               naissance: naissance)
+                    .opacity(sstep(0.26, 0.44, p))
+            } else {
+                ChiffreReward(valeur: valeurCourante)
+                    .opacity(sstep(0.26, 0.44, p))
+                    // LE GALET DE VERRE (variant .galet) — posé SUR le
+                    // chiffre en overlay (le layout ne bouge pas), il
+                    // arrive une fois le chiffre posé.
+                    .overlay {
+                        if style == .galet {
+                            GaletVerre(naissance: naissance)
+                                .opacity(sstep(0.55, 0.85, p))
+                        }
+                    }
             }
             Spacer(minLength: 0)
-            // L'unité du variant halo — le « Weeks » de la réf Apple,
-            // blanc dans la fumée (en néon elle vit dans le bloc central).
-            if style == .halo {
+            // L'unité en blanc dans la fumée — halo ET pill (en néon elle
+            // vit couchée dans le bloc central).
+            if style != .neon {
                 Text(unit)
                     .font(.inter(19, .semibold))
                     .foregroundStyle(Color.white.opacity(0.95))
@@ -531,6 +580,252 @@ private struct ChiffreReward: View {
     }
 }
 
+// MARK: - Le spotlight (jalon S1 : la trame morte)
+
+/// LE CHIFFRE-MATRICE — le métal sombre, et DANS le glyphe la trame de
+/// micro-mots. S1 : la trame est MORTE (repos 0,07) avec UN front de
+/// vague FIGÉ aux deux tiers (l'état reduceMotion du plan) pour juger
+/// contenu/typo/densité sur capture. Les vagues vivantes sont S2.
+///
+/// L'architecture qui tiendra la cadence en S2 : la trame ne se
+/// redessine JAMAIS — deux couches de LA MÊME trame (sombre + claire),
+/// le front n'est qu'un MASQUE en gradient, et le tout est masqué par
+/// le glyphe (l'allumage coupe donc mi-token, caractère par caractère,
+/// gratuitement). La trame déborde le glyphe : elle vit en overlay du
+/// chiffre et le masque-glyphe fait le rognage — l'hôte ne gonfle pas
+/// (la fente).
+private struct ChiffreMatrice: View {
+    let valeur: Int
+
+    /// La comparaison restante du jalon S1 (sur captures) : `-spotAlea`
+    /// (aléatoire pur vs 70/30 bribes réelles). LE VIOLET EST MORT
+    /// (verdict : « ça existe pas dans l'app — des nuances de blanc,
+    /// mais pas plus »).
+    private static let alea = CommandLine.arguments.contains("-spotAlea")
+
+    /// L'horloge des vagues et de la pluie.
+    let naissance: Date
+
+    /// Le tic des MUTATIONS — un caractère change de temps en temps,
+    /// jamais plus (le tic Matrix, subliminal).
+    @State private var mut = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private func glyphe() -> Text {
+        Text("\(valeur)")
+            .font(.inter(160, .heavy))
+            .monospacedDigit()
+            .tracking(-1)
+    }
+
+    /// La hauteur de la grille (24 rangées de ~10 pt) — la période de la
+    /// pluie : deux copies empilées défilent, le raccord est invisible.
+    private static let hGrille: CGFloat = 24 * 10 + 23 * 2
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            corps(t: tl.date.timeIntervalSince(naissance))
+        }
+        .task {
+            guard !reduceMotion else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(0.7))
+                mut += 1
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func corps(t: Double) -> some View {
+        let tilt = SkyMotion.shared.tilt
+        return glyphe()
+            // La face métal — sombre : le chiffre n'existe que là où la
+            // lumière le touchera (S3, la lampe).
+            .foregroundStyle(
+                LinearGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.34), location: 0),
+                        .init(color: .white.opacity(0.14), location: 0.5),
+                        .init(color: .white.opacity(0.07), location: 1)
+                    ],
+                    startPoint: .top, endPoint: .bottom))
+            // LE DÉGRADÉ BLANC LÉGER AUTOUR (verdict) — le souffle qui
+            // détache le chiffre de la nuit, jamais un néon.
+            .background {
+                glyphe()
+                    .foregroundStyle(Color.white)
+                    .blur(radius: 24)
+                    .opacity(0.15)
+            }
+            // LE REFLET AU SOL (verdict — l'effet miroir de la maison) :
+            // le glyphe retourné, écrasé d'un souffle, qui meurt vite.
+            .background(alignment: .top) {
+                glyphe()
+                    .foregroundStyle(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.22),
+                                      location: 0),
+                                .init(color: .white.opacity(0.05),
+                                      location: 0.45),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .bottom, endPoint: .top))
+                    .scaleEffect(x: 1, y: -0.92, anchor: .center)
+                    .blur(radius: 1.5)
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.6), location: 0),
+                                .init(color: .clear, location: 0.55)
+                            ],
+                            startPoint: .top, endPoint: .bottom))
+                    .opacity(0.5)
+                    .offset(y: 158)
+            }
+            .overlay {
+                ZStack {
+                    // La trame au repos — presque noire, une texture
+                    // qu'on devine, pas qu'on lit.
+                    pluie(t: t)
+                        .opacity(0.10)
+                    // LES VAGUES — la même trame, claire, masquée par
+                    // des fronts qui RESPIRENT et dérivent (périodes
+                    // premières entre elles, le gyro incline la course).
+                    pluie(t: t)
+                        .mask(vagues(t: t, tilt: tilt))
+                }
+                // Le glyphe rogne tout : la matrice n'existe QUE dans
+                // le mot.
+                .mask(glyphe())
+            }
+    }
+
+    /// LA PLUIE — la trame défile lentement vers le bas, deux copies
+    /// empilées pour un raccord invisible. La trame elle-même ne se
+    /// redessine JAMAIS par frame (entrées stables hors `mut`).
+    private func pluie(t: Double) -> some View {
+        let y = CGFloat((t * 7.0)
+            .truncatingRemainder(dividingBy: Double(Self.hGrille)))
+        return ZStack {
+            TrameMatrice(alea: Self.alea, mut: mut)
+                .offset(y: y)
+            TrameMatrice(alea: Self.alea, mut: mut)
+                .offset(y: y - Self.hGrille)
+        }
+    }
+
+    /// Les deux fronts vivants — le maître large, l'écho latéral faible.
+    private func vagues(t: Double, tilt: CGVector) -> some View {
+        ZStack {
+            EllipticalGradient(
+                stops: [
+                    .init(color: .white, location: 0),
+                    .init(color: .white.opacity(0.5), location: 0.5),
+                    .init(color: .clear, location: 1)
+                ],
+                center: UnitPoint(
+                    x: 0.42 + 0.22 * sin(t * 0.23) + 0.15 * tilt.dx,
+                    y: 0.36 + 0.20 * cos(t * 0.17) + 0.12 * tilt.dy),
+                startRadiusFraction: 0,
+                endRadiusFraction: 0.80)
+            EllipticalGradient(
+                stops: [
+                    .init(color: .white.opacity(0.6), location: 0),
+                    .init(color: .clear, location: 1)
+                ],
+                center: UnitPoint(
+                    x: 0.68 - 0.24 * sin(t * 0.31 + 2.1),
+                    y: 0.70 + 0.16 * cos(t * 0.29 + 0.8)),
+                startRadiusFraction: 0,
+                endRadiusFraction: 0.45)
+        }
+    }
+}
+
+/// LA TRAME — la grille de micro-mots, rendue UNE fois (contenu par
+/// hash déterministe, jamais un random par frame). Une rangée = UN Text
+/// (le mi-token vient des masques, pas du découpage).
+private struct TrameMatrice: View {
+    let alea: Bool
+    /// Le tic des mutations — UN mot change par tic, jamais plus.
+    let mut: Int
+
+    private static let alphabet =
+        Array("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz0123456789+")
+    /// Les bribes réelles de la maison — ce qu'une vague laisse
+    /// attraper : des fragments de SA séance.
+    private static let bribes = [
+        "24KG", "12X3", "AUG25", "SETS", "+20", "REST60", "17KMH",
+        "1280KG", "PR", "W4", "+4KG", "WOOP"
+    ]
+
+    var body: some View {
+        // Hors layout : la grille déborde, l'hôte ne doit rien sentir.
+        Color.clear
+            .overlay {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(0..<24, id: \.self) { r in
+                        Text(Self.ligne(r, alea: alea, mut: mut))
+                            .font(.system(size: 8, weight: .semibold,
+                                          design: .monospaced))
+                            .tracking(0.5)
+                            .foregroundStyle(Self.encre(r))
+                            .lineLimit(1)
+                            .fixedSize()
+                            .offset(x: CGFloat(Self.hash(r, 40) * 34.0) - 17)
+                    }
+                }
+            }
+    }
+
+    /// L'encre d'une rangée — DES NUANCES DE BLANC, rien d'autre (le
+    /// violet est mort par verdict) : trois blancs tirés par hash, la
+    /// trame respire sans jamais changer de couleur.
+    private static func encre(_ r: Int) -> Color {
+        let n = hash(r, 50)
+        if n < 0.30 { return Color.white.opacity(0.70) }
+        if n < 0.65 { return Color.white.opacity(0.84) }
+        return Color.white.opacity(0.96)
+    }
+
+    private static func ligne(_ r: Int, alea: Bool, mut: Int) -> String {
+        // LA MUTATION : au tic `mut`, UN SEUL mot de UNE rangée change
+        // (le tic Matrix, subliminal) — tout le reste est éternel.
+        let rMut = mut % 24
+        let cMut = (mut / 24 + mut) % 7
+        var mots: [String] = []
+        for c in 0..<7 {
+            let graine = r * 31 + c
+                + ((r == rMut && c == cMut) ? (mut + 1) * 7919 : 0)
+            // 70/30 : le fond aléatoire, et les bribes réelles semées
+            // (positions stables par hash — elles ne bougent jamais).
+            if !alea, hash(graine, 20) < 0.30 {
+                mots.append(bribes[Int(hash(graine, 21)
+                                       * Double(bribes.count))])
+            } else {
+                let long = 5 + Int(hash(graine, 22) * 4)
+                var mot = ""
+                for k in 0..<long {
+                    mot.append(alphabet[Int(hash(graine * 13 + k, 23)
+                                            * Double(alphabet.count))])
+                }
+                mots.append(mot)
+            }
+        }
+        return mots.joined(separator: " :.. ")
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return min(s - floor(s), 0.999)
+    }
+}
+
 /// LE CHIFFRE NÉON (réf WWDC « 1 DAY TO GO ») — le tube blanc-chaud qui
 /// BLOOM : trois couches du même glyphe (le souffle d'or large, le corps
 /// chaud, le cœur blanc), l'allumage suit `allume` — le néon s'embrase
@@ -549,8 +844,15 @@ private struct ChiffreNeon: View {
 
     var body: some View {
         ZStack {
-            // Le souffle d'or — large mais discret, plus chaud vers le
-            // HAUT (dans la réf la lumière est la plus vive en crête).
+            // LA BRUME — très large, très diluée : elle n'a plus de forme
+            // de chiffre, c'est un climat. (La version « champ + tube
+            // surexposé + grain » a été essayée et RECALÉE — « horrible,
+            // je préférais d'avant » : cette robe-ci est la bonne.)
+            glyphe()
+                .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.55))
+                .blur(radius: 72)
+                .opacity(0.38 * allume)
+            // Le souffle d'or — large et doux, plus chaud vers le HAUT.
             glyphe()
                 .foregroundStyle(
                     LinearGradient(
@@ -561,15 +863,15 @@ private struct ChiffreNeon: View {
                                                blue: 0.36), location: 1)
                         ],
                         startPoint: .top, endPoint: .bottom))
-                .blur(radius: 30)
-                .opacity(0.55 * allume)
-            // Le corps chaud — serré contre le tube.
+                .blur(radius: 44)
+                .opacity(0.42 * allume)
+            // Le corps chaud — un voile, pas un cerne.
             glyphe()
                 .foregroundStyle(Color(red: 1.0, green: 0.93, blue: 0.78))
-                .blur(radius: 9)
-                .opacity(0.75 * allume)
-            // Le cœur — BLANC (la réf n'est jamais beurre), la chaleur ne
-            // vit qu'à l'extrême pied du glyphe.
+                .blur(radius: 15)
+                .opacity(0.55 * allume)
+            // Le cœur — BLANC (jamais beurre), la chaleur ne vit qu'au
+            // pied du glyphe.
             glyphe()
                 .foregroundStyle(
                     LinearGradient(
@@ -597,34 +899,149 @@ private struct UnitePlate: View {
 
     private func mot() -> Text {
         Text(texte.uppercased())
-            .font(.inter(84, .heavy))
-            .tracking(4)
+            .font(.inter(100, .heavy))
+            .tracking(7)
     }
 
     var body: some View {
         ZStack {
             // L'épaisseur — le même mot, plus sombre, décalé : l'extrusion.
             mot()
-                .foregroundStyle(Color.white.opacity(0.07))
-                .offset(y: 4)
+                .foregroundStyle(Color.white.opacity(0.08))
+                .offset(y: 5)
             // La face — SOMBRE (à peine plus claire que la nuit), la
             // crête seule attrape la lumière du chiffre.
             mot()
                 .foregroundStyle(
                     LinearGradient(
                         stops: [
-                            .init(color: .white.opacity(0.34), location: 0),
-                            .init(color: .white.opacity(0.13), location: 0.45),
-                            .init(color: .white.opacity(0.05), location: 1)
+                            .init(color: .white.opacity(0.36), location: 0),
+                            .init(color: .white.opacity(0.15), location: 0.45),
+                            .init(color: .white.opacity(0.06), location: 1)
                         ],
                         startPoint: .top, endPoint: .bottom))
         }
-        .rotation3DEffect(.degrees(56), axis: (x: 1, y: 0, z: 0),
-                          anchor: .bottom, perspective: 0.85)
+        // LE PIED FONDU : le bas du mot se dissout dans le halo de sol —
+        // le masque vit AVANT la rotation, il fond le bord PROCHE, celui
+        // qui trempe dans la brume.
+        .mask(
+            LinearGradient(
+                stops: [
+                    .init(color: .white, location: 0),
+                    .init(color: .white, location: 0.52),
+                    .init(color: .white.opacity(0.25), location: 0.85),
+                    .init(color: .clear, location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom))
+        // L'inclinaison : 40° et une perspective modérée. (La version
+        // « extrusion réelle 30°, mot géant rogné » a été essayée et
+        // RECALÉE — cette robe-ci est celle qu'elle préfère.)
+        .rotation3DEffect(.degrees(40), axis: (x: 1, y: 0, z: 0),
+                          anchor: .bottom, perspective: 0.55)
         .lineLimit(1)
         .minimumScaleFactor(0.5)
         .allowsHitTesting(false)
         .accessibilityLabel(texte)
+    }
+}
+
+/// LE GALET DE VERRE — le VRAI Liquid Glass (verdict « un gros galet,
+/// pas une pill »), pas une peinture : un galet `glassEffect` qui se
+/// promène SUR le chiffre et le réfracte — le chiffre blanc est sa
+/// nourriture — et que LE DOIGT peut saisir : il suit la main (haptique
+/// à la prise), et retombe en ressort sur sa dérive au lâcher.
+///
+/// Les lois : taille CONSTANTE (les bounds vivants tuent le verre), tout
+/// mouvement est un OFFSET (transform), le verre force son `.dark`.
+/// LE RESSORT DU LÂCHER vit sur le MODIFICATEUR `.offset(prise)` — la
+/// seule voie animée : lire un @State sous withAnimation dans le calcul
+/// du Timeline rendrait la valeur MODÈLE (la garde morte, déjà payée) et
+/// le galet CLAQUERAIT au lieu de revenir. `reduceMotion` : la dérive se
+/// pose, le doigt garde la main.
+private struct GaletVerre: View {
+    var naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// L'écart posé par le doigt — vivant pendant le drag, ressort à zéro
+    /// au lâcher.
+    @State private var prise = CGSize.zero
+    @State private var enMain = false
+    /// Les battements haptiques : la prise, puis le lâcher.
+    @State private var grab = 0
+    @State private var drop = 0
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            let tilt = SkyMotion.shared.tilt
+            // La dérive se fait discrète sous le doigt : la main commande.
+            let libre: CGFloat = enMain ? 0.25 : 1
+            let x = (sin(t * 0.55) * 46 + sin(t * 1.07 + 1.7) * 11) * libre
+                + 22 * tilt.dx
+            let y = (cos(t * 0.43 + 0.8) * 34 + sin(t * 0.83) * 7) * libre
+                + 15 * tilt.dy
+            galet
+                .offset(x: x, y: y)
+        }
+        .offset(prise)
+        .gesture(saisie)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: grab)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7),
+                         trigger: drop)
+        .accessibilityHidden(true)
+    }
+
+    /// Le corps de la pastille — RONDE et un peu plus petite (verdict),
+    /// verre `.clear` : le rim courbe est ce qui PLIE le mieux la lumière
+    /// du chiffre. Son BORDER est du verre lui aussi : un anneau de
+    /// crête épais + son écho intérieur — jamais une nappe pleine (frost).
+    private var galet: some View {
+        Color.clear
+            .frame(width: 152, height: 152)
+            .glassEffect(.clear.interactive(), in: Circle())
+            .environment(\.colorScheme, .dark)
+            // L'anneau de verre : la crête épaisse qui prend la lumière…
+            .overlay(
+                Circle().strokeBorder(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.42), location: 0),
+                            .init(color: .white.opacity(0.10),
+                                  location: 0.55),
+                            .init(color: .white.opacity(0.22), location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                    lineWidth: 3))
+            // …et son écho intérieur, décollé d'un souffle : l'épaisseur
+            // du bord se lit, c'est elle le « border liquid glass ».
+            .overlay(
+                Circle().strokeBorder(Color.white.opacity(0.10),
+                                      lineWidth: 1)
+                    .padding(4))
+            .contentShape(Circle())
+    }
+
+    private var saisie: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if !enMain {
+                    enMain = true
+                    grab += 1
+                }
+                prise = v.translation
+            }
+            .onEnded { _ in
+                enMain = false
+                drop += 1
+                withAnimation(.spring(response: 0.48,
+                                      dampingFraction: 0.68)) {
+                    prise = .zero
+                }
+            }
     }
 }
 

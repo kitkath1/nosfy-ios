@@ -34,9 +34,13 @@ struct ExerciseDetailView: View {
     /// (FAKE, pour l'entraîner à l'œil sur la vraie page) — les vraies
     /// portes (fin d'exo ? fin de séance ?) ne sont pas tranchées.
     @State private var rewardShow = false
-    /// Le variant montré — ALTERNE à chaque ouverture (« des fois fais un
-    /// autre variant ») : néon (réf WWDC) d'abord, halo (réf Apple) ensuite.
-    @State private var rewardNeon = false
+    /// Le variant montré — TOURNE à chaque ouverture (« des fois fais un
+    /// autre variant ») : galet (le vrai verre saisissable sur le
+    /// chiffre), puis néon (réf WWDC), puis halo (réf Apple). Part à 2 :
+    /// la première ouverture avance sur 0 — le galet, la nouveauté d'abord.
+    @State private var rewardVariant = 3
+    private static let rewardStyles: [RewardStyle] =
+        [.galet, .neon, .halo, .spotlight]
 
     // Le brouillon. Il vivait dans la feuille modale ; c'est désormais l'état de
     // la page elle-même. On part de ZÉRO série : la première naît du geste de
@@ -639,10 +643,19 @@ struct ExerciseDetailView: View {
             // même argument) — la démonter d'ici serait une coupe sèche.
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1.4))
-                rewardNeon.toggle()
+                rewardVariant = (rewardVariant + 1) % Self.rewardStyles.count
                 rewardShow = true
                 try? await Task.sleep(for: .seconds(6.0))
             }
+        }
+        // Le banc du spotlight (jalon S1) : `-spotLab` ouvre la robe
+        // spotlight SEULE, sans fermeture auto — l'atelier de la matrice
+        // (comparaisons `-spotViolet` / `-spotAlea` sur captures).
+        .task {
+            guard CommandLine.arguments.contains("-spotLab") else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 3
+            rewardShow = true
         }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.
@@ -794,7 +807,7 @@ struct ExerciseDetailView: View {
                         title: "Training",
                         subtitle: "Congratulations, you've completed your training!",
                         unit: "Sets",
-                        style: rewardNeon ? .neon : .halo,
+                        style: Self.rewardStyles[rewardVariant],
                         onClose: { rewardShow = false })
                 }
             }
@@ -1484,7 +1497,7 @@ struct ExerciseDetailView: View {
             // Le geste du « … » est PRÊTÉ à la card reward le temps de
             // l'atelier — son vrai rôle (date, heure) attend toujours.
             ChipVerre(symbole: "ellipsis", label: "Options") {
-                rewardNeon.toggle()
+                rewardVariant = (rewardVariant + 1) % Self.rewardStyles.count
                 rewardShow = true
             }
         }
