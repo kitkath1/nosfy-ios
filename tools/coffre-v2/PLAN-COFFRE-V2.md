@@ -1,0 +1,544 @@
+# LA CHAMBRE AU TRÉSOR — plan de refonte de la page coffre (v2)
+
+> Chantier ouvert le 25-08-2026. La page actuelle (`CoffreFortView.swift`,
+> **710 lignes**, commitée `f9f2da9`) est ARCHIVÉE, pas amendée.
+> **Ce document est la v2 du plan.** La v1 a été fouettée par trois juges
+> adverses (fidélité / technique / design) qui y ont trouvé une esquive
+> caractérisée, quatre chiffres faux et une loi qui s'auto-détruisait. Le
+> §12 garde la trace de ce qui a été cassé — c'est la seule façon de ne pas
+> le repayer.
+
+---
+
+## §0. LA DEMANDE, DÉCOMPOSÉE
+
+Verbatim de Kathryn (25-08), et ce que chaque phrase engage :
+
+| # | Sa phrase | Ce que ça engage |
+|---|---|---|
+| D1 | « remplacer la vidéo d'arrivée par `Liquid_pièces.mp4` » | Nouvelle cuisson, nouvelle partition. **Le film entier, passage compris.** |
+| D2 | « même comportement : au tap je peux passer l'animation » | Le raccourci survit — **et sa surface tapable aussi** (aujourd'hui bornée au bloc vidéo). |
+| D3 | « on va revoir toute la page, tu peux l'archiver et en faire une nouvelle » | Refonte totale. **Trois extractions bloquantes** avant la première ligne neuve. |
+| D4 | « même layout que la home et exercice : toute la page est une card qu'on peut **scroller / dragger**, et **on voit la lune** » | **Un COMPORTEMENT, pas une forme.** `CarteLevee` + `FormeCardExos` + `EtatExos` + `LuneSecrete`. La lune est nommée dans le dépôt. |
+| D5 | « le background s'active **que quand on touche la pièce** » | **La pièce est l'interrupteur** — et « que quand » se lit *momentané*. |
+| D6 | « scroll droite-gauche, deux types : or et noires, avec un blur au scroll » | Le manège horizontal — **c'est LUI, le « scroller » de D4**. |
+| D7 | « dans le header noir, la même taille de typo que la Home, sur 3 lignes » | La grammaire `PhraseVue`, aux vraies constantes. |
+| D8 | « les pièces en liquid glass natif, qu'on voie leur beauté » | Verre natif — avec **de la matière dessous**, et le croissant éteint dans le shader. |
+
+**Sa maquette** (screenshot du 25-08) confirme D4 + D7 : la card démarre haut,
+la phrase 3 lignes vit **sur le noir DANS la card**, la barre néon coupe à
+mi-hauteur, la pièce est posée au sol dessous.
+
+**Les deux axes de D4/D6, et ils ne se disputent rien :**
+- **horizontal** = le manège des pièces (« scroller ») ;
+- **vertical** = la levée de la card (« dragger ») → **la lune apparaît dans la
+  bande découverte**, exactement comme la home et les exos.
+
+---
+
+## §1. LES MESURES — ce que les deux fichiers autorisent
+
+Sondés le 25-08 sur les originaux de `~/Downloads`, puis **re-sondés par deux
+juges indépendants**. Rien ici n'est estimé.
+
+### 1.1 `Liquid_pièces.mp4` — le film des pièces
+
+| Grandeur | Mesure |
+|---|---|
+| Format | 3840 × 2160 (16:9 **paysage**), HEVC 10 bits, 24 i/s, 193 images, 8,04 s, 9,4 Mo |
+| Structure | **DEUX cycles identiques de 96 images (4,00 s)** — le second recopie le premier |
+| Le sujet | **DEUX palets ray-tracés** — un de verre sombre, un d'OR — biseaux concentriques, liseré spéculaire blanc (**L 179 de moyenne, pointes à 255**), et **chacun porte le croissant de la maison** en néon orange gravé dans sa laque |
+| Le mouvement | Ils **culbutent vers l'objectif et PASSENT DEVANT**, comme des pièces qui tombent |
+| Largeur occupée | img 0 : **0,146** · img 70 (au plus près) : **0,552** · img 78 : la pièce d'or est **DE CHAMP, sur la tranche, en feu** · img 79 : **0,102**, elles sont sorties |
+| Le noir | min **0**, moyenne **2,46** — **vrai zéro, aucun voile** |
+| Couture de boucle | **3,11** — elle boucle presque proprement |
+
+**Trois conséquences dures :**
+
+1. **⚠️ LE PASSAGE EST *LE* PLAN DU FILM.** Entre les images **70 et 79**, les
+   pièces passent devant l'objectif et la pièce d'or se met sur la tranche.
+   C'est pour ça qu'elle a choisi ce fichier : *des pièces qui tombent vers
+   elle*. Couper avant, c'est lui rendre *des pièces qui grossissent*. **La
+   v1 de ce plan coupait à l'image 70. C'était la faute la plus grave.**
+2. **Ce film ne se POSE jamais.** Aucune image où une pièce est immobile.
+   L'atterrissage doit donc être **fabriqué** — et il se fabrique *après* le
+   passage, pas à sa place (§5).
+3. **Il ne peut pas remplir un portrait.** Au plus près la matière tient
+   x ∈ [0,21 ; 0,75] ; un crop 9:19,5 ne garde que 23 % de la largeur et
+   **coupe les deux pièces en deux**. Le film vit donc en **BANDE 16:9**.
+
+### 1.2 `backgroundcoffre.mp4` — la chambre
+
+| Grandeur | Mesure |
+|---|---|
+| Format | 2160 × 3840 (9:16 **portrait**), HEVC 10 bits, 24 i/s, 193 images, 8,04 s, 10,6 Mo |
+| Mouvement | **0,61 / 255** de moyenne image à image (un juge indépendant mesure 0,27 — même ordre, même conclusion) : la vidéo est **quasi immobile** |
+| Couture de boucle | **1,05** — elle boucle proprement, **aucun palindrome nécessaire** |
+| Le quart haut | min **0**, moyenne **0,00**, p99 **0,00** — **VRAI ZÉRO ABSOLU** |
+| Profil vertical | noir de 0 à 45 % · **barre néon à y/H = 0,494** · sol clair **140 → 152** de 50 % à 100 % |
+| Étendue de la barre | x ∈ [0,169 ; 0,819] — elle a des **bouts visibles**, c'est un objet dans la pièce |
+| Couleur du cœur | RGB (174, 166, 134) — chaud, jamais saturé |
+
+**Conséquences :**
+1. **Le noir du haut est à vrai zéro** → header noir, haut de card et haut de
+   vidéo sont **le même noir**. Aucune couture possible entre le texte et la
+   scène. C'est le cadeau de ce fichier.
+2. **La vidéo ne bouge pas** → « l'activer » ne peut pas vouloir dire « la
+   faire jouer » : ça ne se verrait pas. **Activer = allumer** (§2, Loi 1).
+3. **Le sol est à L 150** → c'est lui qui rend le verre natif possible (Loi 4).
+
+---
+
+## §2. LES CINQ LOIS DE LA PAGE
+
+**Loi 1 — LA PIÈCE EST L'INTERRUPTEUR, ET L'INTERRUPTEUR EST MOMENTANÉ.**
+La salle vit **tant que le doigt est posé**, et retombe quand il se lève.
+*Pourquoi momentané :* un interrupteur qu'on ne bascule qu'une fois est un
+**fusible** — c'est la seule interaction de la page, et elle s'épuiserait au
+premier usage. Momentanée, la page retrouve son noir au repos, le geste est
+rejouable à l'infini, et l'objet devient un vrai objet.
+
+**Loi 2 — LE NOIR EST CONTINU.**
+Un seul noir, mesuré à zéro, du haut de l'écran jusqu'à la barre. La card ne
+« commence » pas : elle se révèle par sa lumière. Aucun liseré, aucun scrim,
+aucune bordure ne doit trahir où elle démarre.
+
+**Loi 3 — UNE SEULE LAMPE.**
+La barre néon de la vidéo est l'unique source. Le verre la réfracte, la pièce
+porte son ombre au sol, le compte prend sa chaleur. **Aucun halo maison.**
+*Exception unique et nommée :* le croissant de la pièce, qui est sa propre
+lumière — et qui n'éclaire que l'intérieur de sa silhouette.
+
+**Loi 4 — LE VERRE A ENFIN DE QUOI VIVRE… QUAND LA LAMPE EST ALLUMÉE.**
+Le dépôt porte la loi mesurée (`HomeNuit.swift:536-542`) : *« le `glassEffect`
+natif ne marche pas sur les PETITS objets posés sur du noir […] `.clear` natif
+reste souverain sur les GRANDES [surfaces] »*, et le galet de 56 pt fut retiré
+parce qu'*« un objet qui est la chose la plus brillante de l'écran se lit
+comme un AUTOCOLLANT »*. À **132 pt sur un sol à L 150**, on est loin de la
+zone morte : **sa demande D8 est juste, et c'est cette page qui pouvait la
+tenir.**
+⚠️ **Corollaire, et c'est le piège de la Loi 1 :** salle éteinte, le verre n'a
+RIEN. La pièce au repos ne peut donc pas compter sur lui — elle vit sur son
+corps peint et sur son croissant (§6.4).
+
+**Loi 5 — LE FILM NE MENT PAS SUR LE LIEU.**
+Le film montre les pièces dans le noir ; la page les montre dans la chambre.
+Le raccord ne se fait pas sur une coupe mais sur **ce que le passage laisse
+derrière lui** (§5.2).
+
+---
+
+## §3. L'ANATOMIE CHIFFRÉE
+
+Cotes pour un iPhone 17 Pro (402 × 874 pt).
+
+### 3.1 La card — LE PATRON COMPLET, gestes compris
+
+⚠️ **La v1 de ce plan ne recopiait que la géométrie.** `GrandeCardExos` ne fait
+QUE le fond — le fichier le dit lui-même (`ExosFond.swift:167` : *« LA LEVÉE NE
+VIT PLUS ICI »*). D4 demande un **comportement**, et il est déjà écrit.
+
+**(a) La géométrie** — `GrandeCardExos` (`ExosFond.swift:103-174`), vérifiée
+ligne à ligne par le juge technique :
+
+| Cote | Valeur | Ligne |
+|---|---|---|
+| `margeHaut` | **10** | `:112` |
+| `margeCote` | **0** | `:113` |
+| `rayon` | **55** (4 coins) — loi concentrique : elle touche l'arête, donc rayon **d'écran** | `:119` |
+| Forme | `UnevenRoundedRectangle(…, .continuous)`, **publiée** `static var forme` | `:124-130` |
+| Corps | `Color.black` + overlay(`Color.clear`.overlay{ poster + vidéo }) | `:132-159` |
+| Naissance | `.opacity(n)` · `.scaleEffect(1,015 − 0,015·n)` — jamais un bounce | `:163-164` |
+
+**(b) Les gestes** — cinq pièces, dont **quatre `private` dans
+`ExercisesView.swift`** : elles doivent être **promues ou recopiées**
+(~120 lignes, à budgéter dans le jalon C2, pas en fin de parcours) :
+
+| Pièce | Ligne | Rôle |
+|---|---|---|
+| `FormeCardExos` | `:238` | `Shape` **`Animatable`** sur `levee` + `haut` — la card se RACCOURCIT sans changer de frame |
+| `CarteLevee` | `:269` (**private**) | `clipShape(FormeCardExos)` + `offset(y: max(tirage, 0))` |
+| `MonteAvecLaCard` | `:282` (**private**) | ce qui remonte avec le bord bas — **un simple offset, aucune taille ne change** |
+| `CadreCarte` | `:312` (**private**) | cadre le contenu DANS la forme de la card |
+| `BandeExos` + `EclatLune` | `:992`, `:978` (**private**) | **LA BANDE DÉCOUVERTE, ET C'EST LÀ QUE VIT LA LUNE** |
+| `EtatExos` | `:100` | `@Observable` — `tirage`, `levee`, `leveeDrag`, `luneP`, `luneHautP` |
+
+**(c) ⚠️ LA LOI DE FLUIDITÉ** (`ExercisesView.swift:173-187`), que la v1
+ignorait : `leveeFixe` a le droit de passer par un `frame` ; **`leveeDrag`
+JAMAIS** — *« un `padding`/`frame` animé par image redimensionne
+l'`AVPlayerLayer` ET re-layoute le ScrollView »*. Sans elle, on rejoue
+littéralement « ça laggue quand on drag la card ».
+
+### 3.2 La lune (D4) — elle a un nom, elle est greppable
+
+**Aucune question à poser :** `LuneSecrete` (`HomeNuit.swift:1158`), dont le
+commentaire dit *« Quand la grande card se SOULÈVE (tirage vers le HAUT), la
+bande du BAS se découvre et le croissant de la marque s'y allume »*.
+
+- Home : `luneP = (−tirage − 70) / 60`, posée `HomeNuit.swift:2171` sous
+  *« LA LUNE — le secret d'aujourd'hui »*.
+- Exos : **deux** exemplaires, bas et haut — `luneP = (−tirage − 62)/56`,
+  `luneHautP = (tirage − 74)/50`, `ExercisesView.swift:1027-1033`.
+
+**Ici : les deux**, comme les exos. Tirer vers le haut découvre la lune du bas ;
+pousser vers le bas découvre celle du haut. C'est *exactement* « le même layout
+que la home et exercice », au sens plein de sa phrase.
+
+### 3.3 Le header (D7)
+
+| Grandeur | Valeur home | Ici |
+|---|---|---|
+| Police / corps | Inter-**SemiBold 30** (`:315`, `:495`) | identique |
+| Tracking | **−0,4** (`:316`) | identique |
+| Interligne | VStack `spacing: 2` (`:321`) | identique |
+| Ton clair | **1,00** (`:497`) | identique |
+| Ton sourd | 0,42 → 0,54 **selon la lampe** (`:331`, `:336`, `:519-521`) | **constant 0,42** — obtenu **sans toucher `PhraseVue`** : poser `sourdLumiere = 0,42` neutralise le champ (`sourd + (sourdLumiere − sourd)·n`) |
+| Masque d'argent | 1,00 → 0,90 (`:340`, `:446`) | identique |
+| Marge gauche / haut | **24** (`:2384`) / **48 depuis la safe area** (`:2389`) | identique |
+| Largeur de bloc | 300 (`:322`) | à re-mesurer sur 3 lignes |
+| Lignes | 5 fragments | **3**, alternance clair / sourd / clair |
+
+⚠️ **Trois accrocs réels que la v1 ne voyait pas :**
+1. **La cascade n'est pas à 0,10 s.** La home est à `retard = 0,14` (`:348`) et
+   `duree = 0,90` (`:350`) → 3 lignes = 2 × 0,14 + 0,90 = **1,18 s**.
+   La v1 budgétait 0,50 s : **sous-dimensionné d'un facteur 2,4**.
+2. **`duréeTotale = duree + 4·retard`** (`:365`) est **câblé sur 5 fragments**.
+   À 3 lignes, la dernière finit à p ≈ 0,81 et il reste 19 % de rampe morte :
+   il **faut** passer `duree`/`retard` — ce n'est donc pas « identique ».
+3. **`PhraseVue` exige deux `@Binding`** (`objectif`, `reglageOuvert`,
+   `:417-419`) et monte `ObjectifTouche` dès qu'un fragment porte un objectif.
+   À fournir à vide ici.
+
+⚠️ Le découpage en `VStack` de `Text` est **obligatoire** : *« SwiftUI ne sait
+pas flouter ni décaler un RUN dans un paragraphe qui se replie »*.
+⚠️ `PhraseVue` est `Animatable` : des rampes échelonnées sous un `@State` +
+`withAnimation` **ne jouent qu'au doigt** (piège payé).
+
+*Note de langue :* sa maquette écrit « Find what, your worked for. » — la forme
+juste est « **Find what you worked for.** ». Et la **3ᵉ ligne devient l'invite**
+(§4.2).
+
+### 3.4 La pièce
+- Diamètre **132 pt** (rayon 66) — 33 % de la largeur de card, mesuré sur sa
+  maquette.
+- ⚠️ L'hôte du shader `moonCoin` fait **3,4 rayons (224 pt)** : gabarit
+  `Color.clear` + overlay obligatoire, sinon **il impose sa taille** (débord de
+  138 pt mesuré sur l'ancienne page).
+- Centre à **y ≈ 0,63 × H ≈ 544 pt** — posée *sur* le sol, jamais flottante :
+  **son ombre portée est ce qui la pose** (Loi 3).
+
+### 3.5 Le compte — ⚠️ LA PASTILLE MEURT
+La v1 gardait `TresorPastille` / `BravoPillView`. **Trois raisons de la tuer :**
+1. Elle fabrique **trois objets ronds sur le même axe vertical** (le palet, la
+   mini-pièce DANS la pastille, la pièce du manège) — c'est l'échec
+   « autocollant » à l'échelle de la page.
+2. Son **fil d'or 0,7 pt** et la respiration de son néon sont une **deuxième
+   source de lumière** avec ses propres règles → viol frontal de la Loi 3.
+3. Loi maison : *chaque chose se dit une fois*. La page a pour sujet **une
+   pièce** ; lui coller dessous un second objet rond qui dit « argent » est une
+   redite.
+
+**Le nombre devient la LÉGENDE de la pièce** : une ligne sous elle, dans le
+système typographique de la phrase, **ton sourd 0,42, sans conteneur**. Un
+grand chiffre, un petit mot. C'est la seule chose autorisée à prendre la
+chaleur quand la salle s'allume.
+
+---
+
+## §4. LE MANÈGE DES DEUX PIÈCES (D6) ET L'INVITE
+
+### 4.1 La loi du manège, déjà validée ailleurs
+La loi cover-flow du CHEMIN DE FEU (validée par elle : « trop beau on y
+arrive »), transposée en horizontal. `u` = l'avancement entre deux crans :
+
+| Grandeur | Formule | Rôle |
+|---|---|---|
+| Rotation | `sin(2π·u) × 16°`, axe **(0,1,0)**, perspective 0,6 | ⚠️ **SIGNÉE**. Un `sin(π·u)` symétrique est **invisible par construction** — piège payé, elle l'a réclamé dix fois avant que ça rentre. |
+| Flou / nuit | `\|sin(2π·u)\|` | monte au milieu du voyage, **résout à zéro** aux deux poses |
+| Échelle | `1 + 0,20·sin(π·u)` | le « gros zoom puis dézoom » |
+
+Le flou n'est pas un effet, c'est **la mise au point** : ce qui voyage est
+flou, ce qui est posé est net — la deuxième pièce **naît du flou**.
+⚠️ Plafond **6 pt** : un blur sur du verre natif empile deux passes.
+⚠️ Ces transforms s'appliquent **sur le groupe composé**, jamais sur le frame
+du verre (§6.3).
+
+### 4.2 L'invite — sans quoi la page est un écran mort
+À la fin de l'arrivée, plus rien ne bouge jusqu'au doigt, et l'objet censé
+inviter est **à son état le plus pauvre** (salle éteinte = verre vide). Trois
+signaux, aucun ne viole les Lois 2 et 3 :
+
+1. **La braise du croissant.** Une respiration très lente de **l'émission de la
+   ligne seule** — période 4,5 à 5,5 s, plafond sous L 90. **Aucun pixel hors
+   de la silhouette ne change.** (`moonCoin` a déjà `breath` et `idleLife`.)
+2. **La pièce arrive VIVANTE.** Au raccord, elle garde une **rotation
+   résiduelle amortie sur ~1,2 s**, comme une pièce lancée qui s'immobilise.
+   Une chose qui vient de s'arrêter reste touchable à l'œil plusieurs secondes.
+3. **Le mot invite, pas la lumière.** La **3ᵉ ligne de la phrase EST le signal**
+   (« Touch it. »). Coût : zéro pixel de lumière. Elle meurt dès qu'on lui
+   obéit. C'est le geste Apple : la pièce reste noire, **c'est le texte qui
+   invite**.
+
+### 4.3 Ce qui reste à trancher
+**Ce qui sépare l'or de la noire n'est pas dit** (question ②). Recommandation :
+**l'or = les pièces gagnées** (le compte d'aujourd'hui) · **la noire = celles à
+gagner** (le prochain palier, la prochaine lune du chemin).
+
+---
+
+## §5. LA PARTITION DE L'ARRIVÉE (D1 + D2)
+
+### 5.1 Ce que la v1 avait faux
+Elle coupait à l'image 70 et se félicitait de raccourcir l'arrivée de 6,85 s à
+3,6 s. **Trois substitutions non demandées** : le passage jeté, le
+raccourcissement inventé, et la présence à l'écran qui tombe de `slotRatio 0,40`
++ `zoom 2,15` à **226 pt sur 874, soit 26 %** — le seul chiffre qui tranchait
+était le seul absent.
+
+### 5.2 La partition v2 — le passage est gardé
+
+| t (s) | Ce qui se passe |
+|---|---|
+| 0,00 | Page **noire absolue**. La card est là, sa salle est ÉTEINTE. Le film démarre en bande 16:9. |
+| 0,00 → 1,04 | Les pièces arrivent de loin (largeur 0,146 → 0,165). |
+| 1,04 → 2,92 | Elles culbutent et grossissent (→ **0,552** à l'image 70). |
+| **2,92 → 3,29** | **LE PASSAGE** — images 70 à 79. Elles passent devant l'objectif ; la pièce d'or se met **sur la tranche, en feu**. C'est le plan du film, il se joue en entier. |
+| **3,29** | **CE QUE LE PASSAGE LAISSE** : la bande s'éteint (0,22 s) et **une pièce reste**. Elle naît **au lacet exact de l'image de coupe** (~12-15°), à l'échelle qu'elle avait, et se pose (0,55 s, `easeOut`) — **rotation résiduelle amortie sur 1,2 s** (§4.2). |
+| 3,50 → 4,68 | La phrase s'écrit, **1,18 s** (`retard 0,14`, `duree 0,90`). |
+| 4,68 | La légende du compte naît. |
+| ∞ | Salle **ÉTEINTE**. La pièce respire (§4.2). **On attend le doigt.** |
+
+**Total 4,68 s** contre 6,85 s aujourd'hui — le gain vient du film, pas d'une
+coupe : on ne jette rien.
+
+### 5.3 ⚠️ LA RÈGLE DE PLACEMENT QUE LA V1 N'AVAIT PAS
+Le plan v1 ne disait **jamais où la bande 16:9 se pose verticalement**. Or le
+centre de la pièce à l'image de coupe **n'est pas** le centre de la bande, et sa
+place au sol est y ≈ 544 pt. Selon le placement, elle devrait descendre ~100 pt
+**en plus** de rétrécir — et ça se verrait.
+
+> **On aligne le CENTRE DE LA PIÈCE, pas le centre de la bande.** Le cadre du
+> film se calcule **à l'envers**, depuis le centroïde de la pièce à l'image de
+> coupe, pour que le raccord soit une **pose** et pas un déplacement.
+
+Et il faut **vérifier** que `CinematicPlayer` ne recadre pas :
+`videoGravity = .resizeAspect` est **codé en dur** (`:105`) — valable seulement
+si le cadre a le ratio exact du fichier. On le mesure, on ne l'hérite pas.
+
+### 5.4 Le raccourci (D2) — et les deux trous de la v1
+Le mécanisme se réécrit **comme une fonction du temps** (une seule horloge —
+une chaîne d'`asyncAfter` fait une marche par réveil, leçon payée trois fois),
+donc passer devant = **avancer le curseur à T**.
+
+⚠️ **Trou 1 — la surface tapable.** Aujourd'hui elle est bornée au bloc vidéo
+(`Color.clear.frame(height: H · slotRatio).onTapGesture(perform: skip)`,
+`:176-179`). « Le même comportement » porte aussi là-dessus : **la surface du
+raccourci est la bande du film, et rien d'autre**.
+
+⚠️ **Trou 2 — la collision de sémantique.** La pièce naît à 3,29 s, l'arrivée
+finit à 4,68 s. Dans cette fenêtre, un doigt sur la pièce **passe l'animation**
+ou **allume la salle** ? Arbitrage : **tant que l'arrivée n'est pas finie, la
+pièce n'écoute pas** ; seule la bande écoute, et elle passe devant. La pièce
+prend le doigt à T.
+
+---
+
+## §6. LE VERRE NATIF DES PIÈCES (D8)
+
+### 6.1 Le patron de référence existe déjà
+`GaletEtape.swift:395-430` et `:590-640` — corps peint DOUX dessous
+(`RadialGradient` nacre + ellipse spéculaire floutée), `Circle().fill(.clear)
+.glassEffect(.clear, in: Circle())`, **encre AU-DESSUS**, sur des galets de
+82-104 pt. **L'ordre en trois couches est conforme.**
+
+### 6.2 Les trois couches, corrigées
+1. **Dessous — LE CORPS PEINT.** `moonCoin`, `matte: 0` (or) / `matte: 1`
+   (anthracite — dont j'ai **neutralisé la laque aujourd'hui**, commit
+   `bafc9c5` : le brun 15:7:2 est mort).
+   ⚠️ **ET `reveal: 0`.** `moonCoin` **peint le croissant lui-même**
+   (`MoonCoin.metal:445-453`) : laissé allumé, il serait **lentillé** sous le
+   verre (les fantômes) *et* repeint net par-dessus — **le croissant deux
+   fois**. `reveal: 0` l'éteint dans le shader. La v1 ne le disait nulle part.
+2. **LE VERRE.** `.clear`, jamais `.regular` (interdit par la loi maison),
+   nourri par le corps peint **et** par le sol à travers la card.
+3. **Dessus — LE CROISSANT.** Peint au-dessus du verre.
+   ⚠️ **Une encre DANS un conteneur de verre est lentillée** (fantômes).
+
+### 6.3 ⚠️ Les pièges qui vont mordre
+- **Le verre aux bounds vivants** : un `glassEffect` redimensionné image par
+  image devient un **blur plat définitif**. Le manège s'applique **par
+  transforms sur le groupe composé**, jamais en changeant le `frame` du verre.
+- **Le verre natif ignore `.opacity`** : pour le faire disparaître pendant le
+  film, il faut le **DÉMONTER**, avec un verrou à une bascule par cycle
+  (`HomeNuit.swift:2434-2443`, `verreMonte`).
+- **⚠️ `.environment(\.colorScheme, .dark)` N'EST PAS le remède au blanc
+  laiteux — et ici c'est un NO-OP** : l'app est déjà `.preferredColorScheme(.dark)`
+  (`WoopApp.swift:64`). La v1 citait le bon piège et le mauvais remède. **Les
+  vrais remèdes sont nommés dans le code** (`CalLab.swift:3181`) : le **masque
+  d'ANNEAU** (le verre ne vit que sur la bande) et **la NUIT posée dessus**
+  (`Circle().fill(.black.opacity(0,46))`) — plus la **teinte noire** d'`ArcKnob`
+  (`.regular.tint(black 0,38)`, choisie parce qu'*« à 0,20 il buvait la flamme
+  et rendait un galet blanc laiteux »*).
+- **⚠️ `.clear` = contenu DOUX seulement.** Sous le verre il y aura la vidéo
+  (doux ✓) **et** `moonCoin`, qui est NET (liseré `rimIn = 0,946`, tube à
+  plancher 0,85 pt). C'est exactement le cas où la loi affinée du dépôt dit
+  **`liquidLens`**, pas `.clear`. → **C4 teste les deux.**
+
+### 6.4 Le vrai risque, nommé
+Le juge de design le pose sans détour : couper d'un **palet ray-tracé** (liseré
+L 179-255, laque noire, croissant émissif) vers un `moonCoin` + verre **posé sur
+une salle éteinte, donc sur rien**, c'est remplacer l'objet héros par **un
+disque terne**. Aucune courbe ne rattrape ça.
+
+**Les trois remèdes, cumulés :**
+1. Le corps peint dessous porte la pièce quand le verre n'a rien (Loi 4,
+   corollaire) ;
+2. le croissant respire (§4.2.1) — c'est sa propre lumière, elle ne dépend pas
+   de la salle ;
+3. la rotation résiduelle (§4.2.2) : un objet qui finit de tourner est vivant
+   même mat.
+
+**Et le plan B, s'il faut le sortir** : la pièce du film découpée en sprite
+(l'école de la home v2, où la pilule EST une vidéo). **A/B au banc en C4** —
+je monte le verre, le sprite n'existe que si le verre échoue.
+
+---
+
+## §7. L'ARCHIVE — ⚠️ TROIS EXTRACTIONS BLOQUANTES, PAS UNE
+
+La v1 n'en voyait qu'une. Remplacer le fichier sans les trois **casse huit
+compilations**.
+
+| Ce qui sort | Sites externes | Conséquence si oublié |
+|---|---|---|
+| **`CoffreFortPurse`** (`:13-20`, `perSeries = 20`) — la **seule** définition de l'économie | **5** : `HomeAuroraView:246`, `HomeNuit:2059`, `ProfilLune:114`, `BravoLab:642`, `SetHistoryRow:23` | 5 compilations mortes |
+| **`CinematicPlayer` + `CinematicPlayerHost`** (`:76-115`) | **5** : `StoryVideo:77`, `StoryVideo:81`, `BravoLab:528`, `BravoLab:531`, `BravoLab:566` | **StoryVideo et BravoLab morts** |
+| **`CoffreFortFlow(coins:onClose:)`** (`:561`) — le point d'entrée public | **4** : `HomeNuit:2056`, `HomeAuroraView:243`, `ProfilLune:280`, `WoopApp:512` | **3 pages ne s'ouvrent plus** |
+
+**Le reste :**
+- `CoinSmoke` / `CoinSmokeWarm` : **déjà dehors** (`CoffreFortCoin.swift`).
+- Le chevron : `ChipVerre` + **la cote** `leading 20` / `top safeTop + 4`.
+  ⚠️ Un `padding(.top, 16)` le pose **46 pt trop haut, dans l'îlot** (mesuré,
+  verbatim dans le code `:399-402`).
+- `TresorPastille` : **morte** (§3.5).
+- `CoffreFortCine` : morte (partition recalée sur `coffre-beau`, qui disparaît).
+- `HaloDawnLab` **est** la page démon du pager — son sort est la question ③.
+- `coffre-beau.mp4` : retiré du paquet (6,2 Mo rendus) après validation.
+
+**Où va l'archive** : `tools/coffre-v2/ARCHIVE/` — le fichier complet, une
+capture pleine page, la partition chiffrée, et `ARCHIVE.md`. **La v1 doit
+rester rejouable** (règle maison, payée sur la home v1).
+
+---
+
+## §8. LES JALONS
+
+Un jalon par échange, une capture archivée dans `tools/coffre-v2/shots/`.
+
+| # | Jalon | Banc | Ce qu'on juge |
+|---|---|---|---|
+| **C0** | **Les 3 extractions + l'archive** | — | rien ne casse ; la v1 rejouable |
+| **C1** | **Les deux cuissons** : `coffre-piece-loop` (bande 16:9, **cycle entier, passage compris**, crush du noir, fondu de bords) + `coffre-salle-loop` (portrait 540×1174, boucle simple) + les deux posters | `-coffreMedia` | poids, couture, noir à zéro, **aucun glitch noir au sim** |
+| **C2** | **LA CARD ET SES GESTES** — la géométrie **+ la promotion des 5 pièces privées** + la loi de fluidité + **les deux lunes** | `-coffre2`, `-coffreTirage` | ça drague sans lag ; la lune apparaît ; on ne voit pas où la card commence |
+| **C3** | **L'ALLUMAGE MOMENTANÉ** : la salle vit sous le doigt et retombe | `-coffreAllume` | une lampe qui s'allume, jamais un fondu d'image — **et la retombée** |
+| **C4** | **LA PIÈCE** : 3 couches, `reveal: 0`, **A/B `.clear` vs `liquidLens`**, et le plan B sprite si échec | `-coffrePiece`, `-coffreVerreAB` | « on voit leur beauté » — ou l'autocollant |
+| **C5** | **LE MANÈGE** : 2 crans, rotation signée, flou de mise au point | `-coffreManege`, `-coffreManegeAuto` | la deuxième pièce **naît du flou** |
+| **C6** | **L'ARRIVÉE** : le film entier + le raccord **aligné sur le centroïde** + le raccourci + l'arbitrage du tap | `-coffreSkip`, `-coffreArrivee` | le raccord : **une pose, pas un déplacement** |
+| **C7** | **LA PHRASE ET LA LÉGENDE** : 3 lignes, cascade 1,18 s, `sourdLumiere = 0,42`, l'invite | `-coffrePhrase` | la hiérarchie : la pièce d'abord |
+| **C8** | **L'INVITE** : braise du croissant + rotation résiduelle | `-coffreInvite` | est-ce vivant sans rien allumer ? |
+| **C9** | **LE FOUETTAGE** : films 2 vitesses, détecteur de flash, sonde de cadence, Reduce Motion, allers-retours | `-coffreAuto` | **rien ne se montre sans être filmé** |
+| **C10** | **LE TÉLÉPHONE** : OLED, haptiques, chauffe, gyro | appareil | le verdict qui compte |
+
+**Simulateur dédié** : `kat-coffre` + `dd-coffre/`. On committe **par chemins**
+(les sessions parallèles touchent les mêmes fichiers).
+
+---
+
+## §9. LES PIÈGES CONNUS QUI VONT MORDRE ICI
+
+1. **`aspectRatio(.fill)` ne prend pas la taille proposée** → hôte
+   `Color.clear` de taille neutre, sinon la card se pose à 2,3 pt du bord au
+   lieu de 10.
+2. **`resizeAspectFill` déborde ses bornes** — `clipsToBounds` **et**
+   `masksToBounds`, le `clipShape` SwiftUI ne rattrape pas UIKit.
+3. **Le glitch noir du simulateur** : décodeur logiciel. Remèdes cumulés :
+   sortie **540×1174**, **image de pose** sous une couche vidéo **transparente**
+   (jamais noire), preroll. ⚠️ `AVPlayer.preroll` **lève une exception** tant
+   que `status != readyToPlay`.
+4. **`AVPlayerLooper`, jamais un seek sur `didPlayToEndTime`** ; looper
+   **retenu** par le coordinateur.
+5. **Le `rate` 0 → 1 en plein geste vide la couche** → pré-réveil.
+6. **`ignoresSafeArea` sur un `GeometryReader`** lui fait rendre une encoche de
+   **ZÉRO** — seul le défilement fuit, jamais le proxy qui mesure.
+7. **Une seule sonde de scroll** : une sonde qui rend une constante ne rappelle
+   plus jamais.
+8. **Le double `withAnimation`** sur la même valeur au même tour = RIEN.
+9. **`.blur` laisse son calque** : le flou vit sur les **glyphes** ou sur le
+   **contenu qui passe dessous**.
+10. **La page ré-évaluée par image** : aucun `@State` écrit par image sur la vue
+    qui porte tout.
+11. **`xcodebuild | grep` rend le code de grep** → **`stat` du binaire avant
+    chaque capture**.
+
+---
+
+## §10. LES QUESTIONS FERMÉES
+
+Trois. La question « c'est quoi la lune ? » de la v1 a été **supprimée** : la
+réponse était greppable (§3.2).
+
+**① L'interrupteur est-il MOMENTANÉ ?** La salle s'allume tant que ton doigt
+est posé sur la pièce, et **retombe quand tu le lèves** — au lieu de rester
+allumée pour toujours. *(Recommandé : allumée pour toujours, c'est un fusible —
+la seule interaction de la page s'épuise au premier usage.)*
+
+**② L'or et la noire — qu'est-ce qui les sépare ?** Recommandation :
+**l'or = les pièces gagnées** (ton compte) · **la noire = celles à gagner** (le
+prochain palier, la prochaine lune du chemin).
+
+**③ La page démon (`HaloDawnLab`) — elle reste ou elle meurt ?** Aujourd'hui on
+y descend par un pager vertical depuis le coffre. Mais **le drag vertical est
+désormais pris par la levée de card et la lune** (D4) : les deux ne peuvent pas
+coexister sur le même geste. *(Recommandé : la page démon meurt de ce parcours ;
+si tu y tiens, elle se rejoint autrement — et je te propose comment.)*
+
+---
+
+## §11. CE QUI N'EST PAS ENCORE CHIFFRÉ (dette assumée)
+
+Le juge de design a raison sur un point : *« la meilleure idée de la page
+n'engage aucune grandeur »*. Trois choses sont à mesurer au banc C3, pas à
+décider ici :
+- **la durée de l'allumage** (montée) et **de la retombée** — une lampe monte
+  vite et retombe lentement, jamais l'inverse ;
+- **le délai au doigt** — combien de ms entre le contact et la première lueur ;
+- **la luminance cible du sol** à l'écran une fois la card composée (la source
+  est à L 150 ; ce qui compte est ce qu'on lit après composition).
+
+---
+
+## §12. CE QUE LES JUGES ONT CASSÉ DANS LA V1
+
+Gardé pour ne pas le repayer.
+
+| # | Le défaut | La correction |
+|---|---|---|
+| 1 | **Le passage du film jeté** (coupe à l'image 70) et l'arrivée raccourcie sans qu'on l'ait demandé | Le cycle entier se joue, passage compris (§5.2) |
+| 2 | **D4 esquivée** : « le patron à la lettre » = 6 cotes statiques, **zéro geste**, et `CarteLevee` jamais nommé | §3.1(b) : les 5 pièces privées à promouvoir + la loi de fluidité |
+| 3 | **« On voit la lune » posé en question** alors que la réponse est **greppable** (`LuneSecrete`) | §3.2, question supprimée |
+| 4 | **La cascade à 0,10 s** — la home est à `retard 0,14` / `duree 0,90` → **1,18 s** | §3.3, partition rebudgétée |
+| 5 | **`duréeTotale` câblé sur 5 fragments** | §3.3 : passer `duree`/`retard` |
+| 6 | **`.environment(colorScheme, .dark)` vendu comme le remède au blanc laiteux** — c'est un **no-op** (l'app est déjà dark) | §6.3 : masque d'anneau + nuit posée + teinte noire |
+| 7 | **Le croissant peint deux fois** (`moonCoin` le peint déjà) | §6.2 : `reveal: 0` |
+| 8 | **`.clear` sur du contenu NET** alors que la loi dit `liquidLens` | §6.3 + A/B en C4 |
+| 9 | **Une seule extraction bloquante** vue sur trois | §7 : +`CinematicPlayer` (5 sites), +`CoffreFortFlow` (4 sites) |
+| 10 | **La place verticale de la bande jamais dite** | §5.3 : on aligne le **centroïde de la pièce** |
+| 11 | **La surface tapable du raccourci** et la **collision de sémantique** du tap | §5.4 |
+| 12 | **La pastille du compte** gardée : 3 objets ronds, 2ᵉ source de lumière | §3.5 : elle meurt, le nombre devient légende |
+| 13 | **La page morte** après l'arrivée (rien ne bouge, verre vide) | §4.2 : braise, rotation résiduelle, l'invite par le mot |
+| 14 | **« 710 lignes » puis « 416 l. »** dans un document qui proclame « rien n'est estimé » | Corrigé : **710** (le fichier), 416 (la seule struct `CoffreFortView`) |
+
+---
+
+*Rien n'est codé. Le premier coup de pioche est **C0** — les trois extractions
+et l'archive — et il ne demande aucun des trois verdicts.*
