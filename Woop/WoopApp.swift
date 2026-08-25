@@ -1244,14 +1244,32 @@ enum DemoData {
         seed(in: container)
     }
 
-    /// Sème si la base ne contient AUCUNE séance terminée — la seule condition
-    /// qui compte pour la pile de la home, puisque c'est elle qu'elle affiche.
-    /// Une base pleine de séances en cours est, pour la home, une base vide.
+    /// ⚠️ **SÈME DÈS QUE LES TROIS DERNIÈRES SEMAINES SONT CLAIRSEMÉES** —
+    /// et c'est le correctif du 25-08 (« mets plein de données dans la home,
+    /// elle est empty »).
+    ///
+    /// L'ancienne condition était « AUCUNE séance terminée dans toute la
+    /// base ». Elle a l'air prudente et elle est en fait **presque toujours
+    /// fausse** : il suffit d'UNE séance d'essai, faite six semaines plus tôt
+    /// et depuis longtemps oubliée, pour que le seed refuse à jamais de
+    /// tourner. Et comme la home ne lit QUE la semaine courante (`SemaineStats`
+    /// borne à `dateInterval(of: .weekOfYear)`), on se retrouve avec une base
+    /// qui n'est pas vide et une home qui, elle, l'est : widgets gris, phrase
+    /// à zéro, card de semaine sans un seul sticker.
+    ///
+    /// La bonne question n'est donc pas « y a-t-il quelque chose quelque
+    /// part ? » mais **« la fenêtre que les écrans regardent est-elle
+    /// nourrie ? »**. On compte les séances terminées des 21 derniers jours ;
+    /// sous dix, on complète. Rien n'est effacé — le seed n'ajoute jamais que
+    /// des séances passées, et la condition redevient fausse aussitôt, donc il
+    /// ne peut pas doubler.
     @MainActor
     static func seedDemoIfNoneFinished(in container: ModelContainer) {
         let context = container.mainContext
         let all = (try? context.fetch(FetchDescriptor<Workout>())) ?? []
-        guard all.allSatisfy({ $0.endedAt == nil }) else { return }
+        let depuis = Date.now.addingTimeInterval(-21 * 86400)
+        let recentes = all.filter { $0.endedAt != nil && $0.startedAt >= depuis }
+        guard recentes.count < 10 else { return }
         seed(in: container)
     }
 
@@ -1283,7 +1301,23 @@ enum DemoData {
         }
 
         let plans: [Plan] = [
-            // AUJOURD'HUI, deux séances (la home ne doit jamais être vide).
+            // ⚠️ LA SEMAINE COURANTE DOIT REMPLIR LA CARD (verdict 25-08 :
+            // « mets plein de données dans la home, elle est empty »). La card
+            // « This week. » ouvre **`max(prevus, 1)` emplacements** — cinq,
+            // l'objectif — et n'en pose de solides que `faits`. À trois
+            // séances, deux cases restaient donc vides ET les deux widgets
+            // n'avaient qu'un maigre échantillon à moyenner.
+            //
+            // ⚠️ ET LA FENÊTRE EST ÉTROITE : `SemaineStats` borne à
+            // `dateInterval(of: .weekOfYear)` avec `firstWeekday = 2`. Compter
+            // sur les jours 3, 4, 6 ne sert à RIEN — selon le jour où l'app
+            // s'ouvre, ils tombent la semaine d'avant. Seuls les jours 0 et 1
+            // sont dans la semaine courante à coup sûr : c'est là, et nulle
+            // part ailleurs, qu'il faut mettre la matière.
+            //
+            // Cinq séances sur deux jours, de NATURES DIFFÉRENTES : la card
+            // pose un sticker par nature, et cinq fois le même bras se lirait
+            // comme un bug d'affichage.
             Plan(days: 0,
                  strength: [("woop-haute", [(12, 25), (12, 27.5), (10, 30)]),
                             ("hip-thrust", [(12, 55), (10, 60), (8, 65)])],
@@ -1292,6 +1326,19 @@ enum DemoData {
                  strength: [("squat-poulie", [(15, 27.5), (15, 30), (12, 32.5)]),
                             ("kickback", [(15, 15), (12, 17.5)])],
                  cardio: [], hour: 12),
+            // La troisième d'aujourd'hui : du CARDIO, pour que la semaine ne
+            // soit pas monochrome et que le volume ne soit pas la seule
+            // histoire racontée.
+            Plan(days: 0,
+                 strength: [],
+                 cardio: [("tapis-lent", [(.recuperation, 1500, 6.2)])],
+                 hour: 19),
+            // Et deux de plus HIER : on arrive à cinq dans la semaine, la card
+            // est pleine et les widgets ont de quoi comparer.
+            Plan(days: 1,
+                 strength: [("abduction", [(15, 12.5), (15, 15), (12, 15)]),
+                            ("crunch-machine", [(15, 35), (15, 37.5)])],
+                 cardio: [], hour: 9),
             Plan(days: 3,
                  strength: [("pull-through", [(12, 30), (12, 32.5), (10, 35)]),
                             ("abduction", [(15, 10), (15, 12.5)])],
@@ -1332,10 +1379,30 @@ enum DemoData {
             Plan(days: 9,
                  strength: [],
                  cardio: [("hiit-tapis", [(.repos, 60, 6), (.acceleration, 30, 14), (.recuperation, 90, 6), (.acceleration, 30, 14), (.recuperation, 90, 6), (.sprint, 30, 15), (.repos, 120, 5)])]),
+            // ⚠️ LES JOURS 7 ET 8 SONT LE TÉMOIN DE COMPARAISON, et il doit
+            // être NOURRI. La card Volume compare la semaine courante à la
+            // semaine d'avant **au même temps écoulé** (correctif du 25-08
+            // dans `SemaineStats`) : un mardi soir, elle regarde donc le lundi
+            // et le mardi précédents, et RIEN D'AUTRE. Avec une seule séance
+            // dans cette fenêtre, le rapport partait à **+493 %** — un chiffre
+            // juste et illisible. Deux séances par jour de part et d'autre, et
+            // l'écart redevient une information (~+25 %) au lieu d'un cri.
             Plan(days: 7,
                  strength: [("abduction", [(15, 10), (15, 10), (12, 12.5)]),
                             ("squat-poulie", [(15, 25), (15, 25)])],
-                 cardio: []),
+                 cardio: [], hour: 8),
+            Plan(days: 7,
+                 strength: [("hip-thrust", [(12, 50), (10, 55), (8, 55)]),
+                            ("woop-haute", [(12, 22.5), (12, 25)])],
+                 cardio: [], hour: 17),
+            Plan(days: 8,
+                 strength: [("squat-poulie", [(15, 30), (15, 30), (12, 32.5)]),
+                            ("crunch-machine", [(15, 32.5), (15, 35)])],
+                 cardio: [], hour: 10),
+            Plan(days: 8,
+                 strength: [("kickback", [(15, 15), (15, 15)])],
+                 cardio: [("tapis-lent", [(.recuperation, 1200, 6.0)])],
+                 hour: 18),
             Plan(days: 5,
                  strength: [("woop-haute", [(12, 22.5), (12, 22.5), (10, 25)]),
                             ("crunch-machine", [(15, 30), (15, 32.5)])],

@@ -962,6 +962,11 @@ struct CardSeances: View {
     var prevues: Int = 5
     var legende: String = "Sessions this week"
     var jours: [String] = ["M", "T", "W", "T", "F", "S", "S"]
+    /// LES JOURS RÉELLEMENT FAITS, en index de semaine (0 = lundi). `nil` →
+    /// les perles retombent sur le compteur de progression d'origine (les
+    /// `faites` premières), ce que veulent les bancs et les aperçus sans
+    /// calendrier. Voir le commentaire des perles pour le défaut que ça règle.
+    var joursFaits: Set<Int>? = nil
     var pied: String = "1 session left to hit your goal"
     var p: Double = 1
     var lisere: Bool = true
@@ -1148,8 +1153,29 @@ struct CardSeances: View {
                     let t = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         ForEach(0..<jours.count, id: \.self) { i in
-                            let on = Double(i) < Double(faites) * p
-                            let derniere = on && i == faites - 1
+                            // ⚠️ **LES PERLES SE POSENT SUR LES VRAIS JOURS**
+                            // (correctif 25-08). Elles s'allumaient de gauche
+                            // à droite, « les `faites` premières » : un mardi
+                            // avec cinq séances, la card affirmait donc que
+                            // MERCREDI, JEUDI et VENDREDI étaient faits —
+                            // sous les lettres M T W T F, et à côté d'une card
+                            // Volume qui, elle, ne montrait de barres que sur
+                            // M et T. Deux cards voisines, les mêmes sept
+                            // lettres, deux vérités contraires : le défaut
+                            // saute aux yeux dès que la semaine est pleine.
+                            //
+                            // `joursFaits` porte les index des jours qui ont
+                            // vraiment une séance. `nil` = l'ancien
+                            // comportement, au pixel — les bancs et les
+                            // aperçus qui n'ont pas de calendrier gardent leur
+                            // compteur de progression.
+                            let on: Bool = {
+                                if let f = joursFaits { return f.contains(i) }
+                                return Double(i) < Double(faites) * p
+                            }()
+                            let derniere = on && i == (joursFaits.map { f in
+                                f.max() ?? -1
+                            } ?? faites - 1)
                             let s = derniere && !reduceMotion && !vide
                                 ? 0.5 + 0.5 * sin(t * 2 * .pi / 4.7) : 0
                             Circle()
@@ -2038,6 +2064,9 @@ struct SemaineStats {
     var gain = "—"
     var moyenne = "—"
     var jours: [CardJour] = CardJour.semaineRef
+    /// Les index de semaine (0 = lundi) où une séance a vraiment eu lieu.
+    /// C'est ce que la card des séances allume — pas un compteur.
+    var joursFaits: Set<Int> = []
     var moisFaits: Set<Int> = []
     var hiit: HiitPeakInfo?
     var peak: PeakEffortInfo?
@@ -2053,10 +2082,25 @@ struct SemaineStats {
         let cette = finies.filter {
             $0.startedAt >= semaine.start && $0.startedAt < semaine.end
         }
+        // ⚠️ **ON COMPARE DEUX MOITIÉS DE SEMAINE, PAS UNE MOITIÉ À UN TOUT**
+        // (correctif 25-08). `precedente` prenait la semaine d'avant ENTIÈRE
+        // et la mettait face à la semaine courante ARRÊTÉE À AUJOURD'HUI. Un
+        // mardi, c'est deux jours contre sept : le widget annonçait « −16 % »
+        // à quelqu'un qui avait fait cinq séances en deux jours, et il aurait
+        // annoncé une baisse presque tous les lundis, mardis et mercredis de
+        // l'année. Ce n'était pas une mesure, c'était un artefact de fenêtre.
+        //
+        // On borne donc la semaine précédente au MÊME temps écoulé : de son
+        // lundi jusqu'au même moment, sept jours plus tôt. La comparaison
+        // redevient honnête dans les deux sens — et elle peut enfin être
+        // mauvaise pour une vraie raison.
+        let memeInstantAvant = maintenant.addingTimeInterval(-7 * 86400)
         let avant = finies.filter { $0.startedAt < semaine.start }
-        let precedente = avant.filter {
+        let precedente0 = avant.filter {
             $0.startedAt >= semaine.start.addingTimeInterval(-7 * 86400)
         }
+        /// La semaine d'avant, arrêtée au MÊME instant (sept jours plus tôt).
+        let precedente = precedente0.filter { $0.startedAt < memeInstantAvant }
 
         var s = SemaineStats()
         s.faites = cette.count
@@ -2089,6 +2133,9 @@ struct SemaineStats {
             let i = (wd + 5) % 7
             efforts[i] += w.totalVolume + 20 * Double(w.cardioMinutes)
             segments[i] += 1
+            // Le jour est FAIT dès qu'une séance s'y trouve — c'est ce que
+            // les perles de la card voisine doivent allumer, et rien d'autre.
+            s.joursFaits.insert(i)
         }
         let maxE = max(efforts.max() ?? 1, 1)
         let lettres = ["M", "T", "W", "T", "F", "S", "S"]
@@ -2417,6 +2464,9 @@ struct CardsRangee: View {
     var gain: String = "+12%"
     var jours: [CardJour] = CardJour.semaineRef
     var pied: String = "1 session left to hit your goal"
+    /// Les jours de la semaine réellement faits (0 = lundi). Transmis à la
+    /// card des séances : ses perles se posent dessus au lieu de compter.
+    var joursFaits: Set<Int>? = nil
     var moisFaits: Set<Int>? = nil
     var hiit: HiitPeakInfo = HiitPeakInfo()
     var peak: PeakEffortInfo = PeakEffortInfo()
@@ -2502,12 +2552,14 @@ struct CardsRangee: View {
         switch kind {
         case .regularite:
             if let mf = moisFaits {
-                CardSeances(faites: faites, prevues: prevues, pied: pied,
+                CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits, pied: pied,
                             p: pose, lisere: lisere, verre: verre,
                             moisFaits: mf, vide: mort,
                             penche: penche, interaction: mode)
             } else {
-                CardSeances(faites: faites, prevues: prevues, pied: pied,
+                CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits, pied: pied,
                             p: pose, lisere: lisere, verre: verre,
                             vide: mort,
                             penche: penche, interaction: mode)

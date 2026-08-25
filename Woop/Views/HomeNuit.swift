@@ -2022,6 +2022,7 @@ struct HomeNuitPage: View {
                                     moyenne: stats?.moyenne ?? "1.2 kg",
                                     piedSeances: stats?.pied
                                         ?? "1 session left to hit your goal",
+                                    joursFaits: stats?.joursFaits,
                                     moisFaits: stats?.moisFaits,
                                     hiit: stats?.hiit ?? HiitPeakInfo(),
                                     peak: stats?.peak ?? PeakEffortInfo(),
@@ -2501,6 +2502,7 @@ struct HomeNuitPage: View {
                                 jours: stats?.jours ?? CardJour.semaineRef,
                                 pied: stats?.pied
                                     ?? "1 session left to hit your goal",
+                                joursFaits: stats?.joursFaits,
                                 moisFaits: stats?.moisFaits,
                                 hiit: stats?.hiit ?? HiitPeakInfo(),
                                 peak: stats?.peak ?? PeakEffortInfo(),

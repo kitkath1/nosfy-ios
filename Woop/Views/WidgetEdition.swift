@@ -343,6 +343,11 @@ struct VitrineHote: View {
     var gain: String = "+12%"
     var moyenne: String = "1.2 kg"
     var piedSeances: String = "1 session left to hit your goal"
+    /// Les jours de la semaine réellement faits (0 = lundi) — la vitrine
+    /// doit montrer LES MÊMES perles que la home, sinon le widget change de
+    /// vérité en s'envolant (le piège des « vraies données du clone », déjà
+    /// payé sur le 17.0 qui devenait 5.5 à l'atterrissage).
+    var joursFaits: Set<Int>? = nil
     var moisFaits: Set<Int>? = nil
     var hiit: HiitPeakInfo = HiitPeakInfo()
     var peak: PeakEffortInfo = PeakEffortInfo()
@@ -570,11 +575,13 @@ struct VitrineHote: View {
         case .regularite:
             if let mf = moisFaits {
                 CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits,
                             pied: piedSeances, p: 1,
                             lisere: true, verre: actif,
                             moisFaits: mf, vide: mort, interaction: mode)
             } else {
                 CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits,
                             pied: piedSeances, p: 1,
                             lisere: true, verre: actif,
                             vide: mort, interaction: mode)
