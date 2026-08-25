@@ -48,24 +48,33 @@ juges indépendants**. Rien ici n'est estimé.
 | Format | 3840 × 2160 (16:9 **paysage**), HEVC 10 bits, 24 i/s, 193 images, 8,04 s, 9,4 Mo |
 | Structure | **DEUX cycles identiques de 96 images (4,00 s)** — le second recopie le premier |
 | Le sujet | **DEUX palets ray-tracés** — un de verre sombre, un d'OR — biseaux concentriques, liseré spéculaire blanc (**L 179 de moyenne, pointes à 255**), et **chacun porte le croissant de la maison** en néon orange gravé dans sa laque |
-| Le mouvement | Ils **culbutent vers l'objectif et PASSENT DEVANT**, comme des pièces qui tombent |
-| Largeur occupée | img 0 : **0,146** · img 70 (au plus près) : **0,552** · img 78 : la pièce d'or est **DE CHAMP, sur la tranche, en feu** · img 79 : **0,102**, elles sont sorties |
+| Le mouvement | Ils **s'approchent, atteignent leur plus près, se mettent SUR LA TRANCHE, puis S'ÉLOIGNENT** |
+| La courbe (largeur / aire) | img 20-27 : **0,158 → 0,169**, aire 2,6 % — *quasi immobiles* · img 28-30 : la **RUÉE** (0,169 → 0,394 en 3 images, deltas 7,6 / 11,4 / 17,4) · **img 68-72 : LE SOMMET, 0,552, aire 16 %, frontale** · img 76 : **0,175** (elle est de champ) · img 82 : 0,108, aire 4,2 % · img 90 : 0,131, hauteur 0,633 — **elles reculent** |
 | Le noir | min **0**, moyenne **2,46** — **vrai zéro, aucun voile** |
 | Couture de boucle | **3,11** — elle boucle presque proprement |
 
 **Trois conséquences dures :**
 
-1. **⚠️ LE PASSAGE EST *LE* PLAN DU FILM.** Entre les images **70 et 79**, les
-   pièces passent devant l'objectif et la pièce d'or se met sur la tranche.
-   C'est pour ça qu'elle a choisi ce fichier : *des pièces qui tombent vers
-   elle*. Couper avant, c'est lui rendre *des pièces qui grossissent*. **La
-   v1 de ce plan coupait à l'image 70. C'était la faute la plus grave.**
-2. **Ce film ne se POSE jamais.** Aucune image où une pièce est immobile.
-   L'atterrissage doit donc être **fabriqué** — et il se fabrique *après* le
-   passage, pas à sa place (§5).
+1. **⚠️ IL N'Y A PAS DE « PASSAGE DEVANT L'OBJECTIF ». LE SOMMET EST À
+   L'IMAGE 68-72, ET C'EST LÀ QU'ON COUPE.** Mesuré et vu image par image : au
+   sommet la pièce est frontale et emplit le cadre (aire 16 %) ; ensuite elle
+   **tourne sur la tranche** (largeur 0,552 → 0,175 en six images, la hauteur
+   tenant à 0,89) puis **rapetisse et s'éloigne** (aire 16 % → 4 %, hauteur
+   0,94 → 0,63). Rien ne sort du cadre, rien ne passe devant.
+   *Cette ligne a été écrite à l'envers dans la v2 de ce plan, sur la foi d'un
+   juge, et annoncée à Kathryn comme la découverte principale. Elle était
+   fausse : c'est la v1 qui avait raison. Voir §12.*
+2. **Le film s'ouvre sur 1,15 s de temps mort** (images 0-27 : deux pièces
+   minuscules et quasi immobiles, L 2,6). L'arrivée démarre donc à **l'image
+   27**, sur **LA RUÉE** — elles font irruption, déjà grosses, en flou de
+   mouvement. C'est une bien meilleure ouverture que 1,15 s de rien.
+   *(La ruée est progressive sur 4 images, pas une coupe franche : les deltas
+   montent 7,6 → 11,4 → 17,4. Un juge l'a lue comme un cut ; c'est un élan.)*
 3. **Il ne peut pas remplir un portrait.** Au plus près la matière tient
    x ∈ [0,21 ; 0,75] ; un crop 9:19,5 ne garde que 23 % de la largeur et
    **coupe les deux pièces en deux**. Le film vit donc en **BANDE 16:9**.
+4. **Ce film ne se POSE jamais** : aucune image où une pièce est immobile.
+   L'atterrissage se **fabrique**, au sommet (§5.2).
 
 ### 1.2 `backgroundcoffre.mp4` — la chambre
 
@@ -75,9 +84,10 @@ juges indépendants**. Rien ici n'est estimé.
 | Mouvement | **0,61 / 255** de moyenne image à image (un juge indépendant mesure 0,27 — même ordre, même conclusion) : la vidéo est **quasi immobile** |
 | Couture de boucle | **1,05** — elle boucle proprement, **aucun palindrome nécessaire** |
 | Le quart haut | min **0**, moyenne **0,00**, p99 **0,00** — **VRAI ZÉRO ABSOLU** |
-| Profil vertical | noir de 0 à 45 % · **barre néon à y/H = 0,494** · sol clair **140 → 152** de 50 % à 100 % |
+| Profil vertical | noir de 0 à 45 % · **barre néon à y/H = 0,494** · sol qui **plafonne à L 152** puis redescend à 143 |
 | Étendue de la barre | x ∈ [0,169 ; 0,819] — elle a des **bouts visibles**, c'est un objet dans la pièce |
-| Couleur du cœur | RGB (174, 166, 134) — chaud, jamais saturé |
+| ⚠️ Couleur de la barre (mesurée sur les **pixels clairs**, pas en moyenne de ligne) | cœur **(255, 255, 221)** *écrêté* · y−4 **(160, 0, 6) sat 1,00** · y+6 **(255, 139, 0) sat 1,00** · y+20 (255, 123, 34) · y+60 (255, 162, 139) · y+120 (196, 177, 177) |
+| ⚠️ Le sol, en **saturation** | y/H 0,55 : L 121, **sat 0,72** · **0,63 : L 152, sat 0,23** · 0,70 : sat 0,07 · 0,80 : sat 0,02 · 0,95 : sat 0,01 |
 
 **Conséquences :**
 1. **Le noir du haut est à vrai zéro** → header noir, haut de card et haut de
@@ -85,7 +95,20 @@ juges indépendants**. Rien ici n'est estimé.
    scène. C'est le cadeau de ce fichier.
 2. **La vidéo ne bouge pas** → « l'activer » ne peut pas vouloir dire « la
    faire jouer » : ça ne se verrait pas. **Activer = allumer** (§2, Loi 1).
-3. **Le sol est à L 150** → c'est lui qui rend le verre natif possible (Loi 4).
+3. **Le sol est à L 152** → c'est lui qui rend le verre natif possible (Loi 4).
+4. **⚠️ LA LAMPE EST UN NÉON ORANGE-ROUGE SATURÉ À CŒUR BRÛLÉ**, et la v2 de ce
+   plan disait « chaud, **jamais saturé** » sur la foi d'une **moyenne de ligne
+   polluée par le noir** — un artefact de ma propre sonde. La vérité :
+   **sat 1,00** à quatre pixels du cœur. Et la rampe exhibe la loi maison de ce
+   dépôt, celle de l'harmonisation rouge : **R reste à 255, c'est le VERT qui
+   monte (0 → 139 → 162), et le BLEU reste à 0 sur 120 px**. Obéir à un beige
+   (174,166,134), c'est fabriquer exactement le brun qu'on combat ici depuis
+   des mois.
+5. **⚠️ LE SOL SE DÉSATURE, ET LA PIÈCE EST POSÉE DANS SA ZONE TIÈDE.** Sat
+   0,72 sous la barre, **0,23 à y/H 0,63** — la place de la pièce, soit
+   RGB (178, 142, 137) : un gris chaud, c'est-à-dire la zone brune. À traiter
+   au jalon C4 (le corps de la pièce et son ombre y répondent), pas à
+   découvrir en capture.
 
 ---
 
@@ -254,14 +277,22 @@ arrive »), transposée en horizontal. `u` = l'avancement entre deux crans :
 | Grandeur | Formule | Rôle |
 |---|---|---|
 | Rotation | `sin(2π·u) × 16°`, axe **(0,1,0)**, perspective 0,6 | ⚠️ **SIGNÉE**. Un `sin(π·u)` symétrique est **invisible par construction** — piège payé, elle l'a réclamé dix fois avant que ça rentre. |
-| Flou / nuit | `\|sin(2π·u)\|` | monte au milieu du voyage, **résout à zéro** aux deux poses |
+| Flou / nuit | `\|sin(2π·u)\|` | ⚠️ **zéro aux DEUX poses ET AU MILIEU** ; il pique aux **quarts** (u = 0,25 et 0,75) |
 | Échelle | `1 + 0,20·sin(π·u)` | le « gros zoom puis dézoom » |
 
-Le flou n'est pas un effet, c'est **la mise au point** : ce qui voyage est
-flou, ce qui est posé est net — la deuxième pièce **naît du flou**.
-⚠️ Plafond **6 pt** : un blur sur du verre natif empile deux passes.
-⚠️ Ces transforms s'appliquent **sur le groupe composé**, jamais sur le frame
-du verre (§6.3).
+⚠️ **LA V2 DE CE PLAN LISAIT CE FLOU À L'ENVERS** (« monte au milieu du
+voyage »). La source dit le contraire, mot pour mot
+(`DuolinguoPage.swift:468-470`) : *« floue/sombre à l'APPROCHE, **NETTE face
+caméra au centre** (le moment de présentation), floue au départ, nette
+posée »*. Le voyage a donc **trois** temps nets — la pose de départ, **la
+présentation au centre**, la pose d'arrivée — et deux temps flous entre eux.
+C'est mieux que ce que j'avais écrit : la deuxième pièce ne « naît pas du
+flou », elle **se présente nette à mi-chemin**, puis se refloute avant de se
+poser. C'est ça, la chorégraphie qu'elle a validée au CHEMIN DE FEU.
+
+⚠️ **ET DEUX MÉCANISMES DE CE TABLEAU SONT INTERDITS SUR DU VERRE NATIF** —
+c'est le vrai problème du manège, voir §6.3 : ni `scaleEffect`, ni `.blur`.
+La forme du manège est donc **à trancher au banc C5**, pas ici.
 
 ### 4.2 L'invite — sans quoi la page est un écran mort
 À la fin de l'arrivée, plus rien ne bouge jusqu'au doigt, et l'objet censé
@@ -295,21 +326,23 @@ raccourcissement inventé, et la présence à l'écran qui tombe de `slotRatio 0
 + `zoom 2,15` à **226 pt sur 874, soit 26 %** — le seul chiffre qui tranchait
 était le seul absent.
 
-### 5.2 La partition v2 — le passage est gardé
+### 5.2 La partition v3 — on entre sur la ruée, on coupe au sommet
 
-| t (s) | Ce qui se passe |
-|---|---|
-| 0,00 | Page **noire absolue**. La card est là, sa salle est ÉTEINTE. Le film démarre en bande 16:9. |
-| 0,00 → 1,04 | Les pièces arrivent de loin (largeur 0,146 → 0,165). |
-| 1,04 → 2,92 | Elles culbutent et grossissent (→ **0,552** à l'image 70). |
-| **2,92 → 3,29** | **LE PASSAGE** — images 70 à 79. Elles passent devant l'objectif ; la pièce d'or se met **sur la tranche, en feu**. C'est le plan du film, il se joue en entier. |
-| **3,29** | **CE QUE LE PASSAGE LAISSE** : la bande s'éteint (0,22 s) et **une pièce reste**. Elle naît **au lacet exact de l'image de coupe** (~12-15°), à l'échelle qu'elle avait, et se pose (0,55 s, `easeOut`) — **rotation résiduelle amortie sur 1,2 s** (§4.2). |
-| 3,50 → 4,68 | La phrase s'écrit, **1,18 s** (`retard 0,14`, `duree 0,90`). |
-| 4,68 | La légende du compte naît. |
-| ∞ | Salle **ÉTEINTE**. La pièce respire (§4.2). **On attend le doigt.** |
+| t (s) | Image | Ce qui se passe |
+|---|---|---|
+| 0,00 | 27 | Page **noire absolue**, salle ÉTEINTE. Le film s'ouvre **sur LA RUÉE** — les pièces font irruption, déjà grosses, en flou de mouvement. Les 1,15 s de temps mort du fichier sont **coupées à la cuisson** (§1.1 conséquence 2). |
+| 0,00 → 0,17 | 27→31 | La ruée : largeur 0,169 → 0,394. |
+| 0,17 → 1,79 | 31→70 | Elles culbutent, tournent, grossissent jusqu'au **SOMMET** : 0,552, frontale, aire 16 %. |
+| **1,79** | **70** | **LA COUPE, AU SOMMET.** La bande s'éteint (0,22 s) et **la pièce de la page prend sa place** : elle naît **au lacet exact de l'image 70**, à l'échelle qu'elle y avait, et se pose (0,55 s, `easeOut`) — **rotation résiduelle amortie sur 1,2 s** (§4.2). |
+| 2,00 → 3,18 | — | La phrase s'écrit, **1,18 s** (`retard 0,14`, `duree 0,90`). |
+| 3,18 | — | La légende du compte naît. |
+| ∞ | — | Salle **ÉTEINTE**. La pièce respire (§4.2). **On attend le doigt.** |
 
-**Total 4,68 s** contre 6,85 s aujourd'hui — le gain vient du film, pas d'une
-coupe : on ne jette rien.
+**Total 3,18 s** contre 6,85 s aujourd'hui. ⚠️ **Le raccourcissement n'est pas
+un but** (elle ne l'a jamais demandé) : il tombe de ce qu'on garde — la ruée et
+la montée au sommet — et de ce qu'on jette, qui n'est que le temps mort du
+fichier et le recul d'après-sommet. Si elle veut plus long, on rallonge la pose
+et la phrase, jamais en réintroduisant les 1,15 s de rien.
 
 ### 5.3 ⚠️ LA RÈGLE DE PLACEMENT QUE LA V1 N'AVAIT PAS
 Le plan v1 ne disait **jamais où la bande 16:9 se pose verticalement**. Or le
@@ -365,9 +398,39 @@ prend le doigt à T.
    ⚠️ **Une encre DANS un conteneur de verre est lentillée** (fantômes).
 
 ### 6.3 ⚠️ Les pièges qui vont mordre
-- **Le verre aux bounds vivants** : un `glassEffect` redimensionné image par
-  image devient un **blur plat définitif**. Le manège s'applique **par
-  transforms sur le groupe composé**, jamais en changeant le `frame` du verre.
+
+**⚠️⚠️ LE PLUS GRAVE, ET LA V2 L'AVAIT ÉCRIT À L'ENVERS : LE MANÈGE ET LE VERRE
+NATIF SONT INCOMPATIBLES EN L'ÉTAT.** Deux précédents mesurés, tous deux
+verbatim dans le dépôt :
+
+- **Pas de `scaleEffect`** — `PorteEntree.swift:1274-1277` : *« ⚠️ **AUCUN
+  `scaleEffect` ICI NON PLUS** — un `glassEffect` mis à l'échelle rend un BLUR
+  PLAT, il cesse de lire comme du verre. **La cote passe donc dans le
+  `frame`** »*. La v2 prescrivait exactement l'inverse (« transforms sur le
+  groupe composé, jamais le frame »). C'est faux : pour le verre, **la taille
+  passe par le `frame`**, et une taille qui bouge **par image** est de toute
+  façon le piège des bounds vivants (`MenuCouronne.swift:35-36` : *« LE DISQUE
+  EST MONTÉ À TAILLE CONSTANTE, révélé par un masque — un `glassEffect` aux
+  bounds vivants reste flou plat pour toujours »*).
+- **Pas de `.blur`** — `MenuCouronne.swift:32-33` : *« ⚠️ Et jamais un
+  `.blur` : il pose un voile uniforme sur tout le rectangle de son hôte, **il
+  ne sait pas s'arrêter en rond** »*. Sur une pièce RONDE de 132 pt, le flou du
+  manège poserait un **voile carré**.
+
+→ **Le zoom `1 + 0,20·sin` et le flou `|sin(2πu)|` du §4.1 ne peuvent pas
+s'appliquer à une pièce en verre natif.** Trois issues, à trancher au banc C5 :
+ **(a) LE RETOURNEMENT** — une seule pièce qui se **retourne** (or d'un côté,
+ noire de l'autre) : plus de voyage, donc ni zoom ni flou à faire, et c'est la
+ grammaire naturelle d'une pièce ; **(b)** garder deux pièces et **remplacer le
+ flou par la nuit** (une opacité noire, qui n'a pas de forme) et le zoom par
+ un `frame` à valeurs discrètes ; **(c)** le plan B sprite (§6.4), qui rend
+ zoom et flou légitimes puisqu'il n'y a plus de verre.
+ *Recommandation : (a).* Elle a demandé « deux types de pièces » et un scroll,
+ pas nécessairement deux objets simultanés — et un retournement **est** un
+ scroll droite-gauche.
+
+**Les autres :**
+- **Le verre aux bounds vivants** : taille constante, révélée par un masque.
 - **Le verre natif ignore `.opacity`** : pour le faire disparaître pendant le
   film, il faut le **DÉMONTER**, avec un verrou à une bascule par cycle
   (`HomeNuit.swift:2434-2443`, `verreMonte`).
@@ -413,7 +476,7 @@ compilations**.
 |---|---|---|
 | **`CoffreFortPurse`** (`:13-20`, `perSeries = 20`) — la **seule** définition de l'économie | **5** : `HomeAuroraView:246`, `HomeNuit:2059`, `ProfilLune:114`, `BravoLab:642`, `SetHistoryRow:23` | 5 compilations mortes |
 | **`CinematicPlayer` + `CinematicPlayerHost`** (`:76-115`) | **5** : `StoryVideo:77`, `StoryVideo:81`, `BravoLab:528`, `BravoLab:531`, `BravoLab:566` | **StoryVideo et BravoLab morts** |
-| **`CoffreFortFlow(coins:onClose:)`** (`:561`) — le point d'entrée public | **4** : `HomeNuit:2056`, `HomeAuroraView:243`, `ProfilLune:280`, `WoopApp:512` | **3 pages ne s'ouvrent plus** |
+| **`CoffreFortFlow(coins:onClose:)`** (`:561`) — le point d'entrée public. **TRANCHÉ 25-08 : il survit en ENVELOPPE MINCE à signature identique** (le pager meurt, pas la porte) | **4** : `HomeNuit:2056`, `HomeAuroraView:243`, `ProfilLune:280`, `WoopApp:512` | **3 pages ne s'ouvrent plus** |
 
 **Le reste :**
 - `CoinSmoke` / `CoinSmokeWarm` : **déjà dehors** (`CoffreFortCoin.swift`).
@@ -422,7 +485,10 @@ compilations**.
   verbatim dans le code `:399-402`).
 - `TresorPastille` : **morte** (§3.5).
 - `CoffreFortCine` : morte (partition recalée sur `coffre-beau`, qui disparaît).
-- `HaloDawnLab` **est** la page démon du pager — son sort est la question ③.
+- `HaloDawnLab` **est** la page démon. **TRANCHÉ 25-08 : le pager meurt** — elle
+  n'est plus atteignable depuis le coffre, mais **elle n'est pas supprimée**
+  (son banc la monte toujours). On ne détruit pas une page qu'on n'a pas été
+  chargé de détruire.
 - `coffre-beau.mp4` : retiré du paquet (6,2 Mo rendus) après validation.
 
 **Où va l'archive** : `tools/coffre-v2/ARCHIVE/` — le fichier complet, une
@@ -438,11 +504,11 @@ Un jalon par échange, une capture archivée dans `tools/coffre-v2/shots/`.
 | # | Jalon | Banc | Ce qu'on juge |
 |---|---|---|---|
 | **C0** | **Les 3 extractions + l'archive** | — | rien ne casse ; la v1 rejouable |
-| **C1** | **Les deux cuissons** : `coffre-piece-loop` (bande 16:9, **cycle entier, passage compris**, crush du noir, fondu de bords) + `coffre-salle-loop` (portrait 540×1174, boucle simple) + les deux posters | `-coffreMedia` | poids, couture, noir à zéro, **aucun glitch noir au sim** |
+| **C1** | **Les deux cuissons** : `coffre-piece-arrivee` (bande 16:9, **images 27 → 71 seulement** — la ruée puis la montée au sommet, le temps mort et le recul jetés, crush du noir, fondu de bords) + `coffre-salle-loop` (portrait 540×1174, boucle simple) + les deux posters | `-coffreMedia` | poids, couture, noir à zéro, **aucun glitch noir au sim** |
 | **C2** | **LA CARD ET SES GESTES** — la géométrie **+ la promotion des 5 pièces privées** + la loi de fluidité + **les deux lunes** | `-coffre2`, `-coffreTirage` | ça drague sans lag ; la lune apparaît ; on ne voit pas où la card commence |
 | **C3** | **L'ALLUMAGE MOMENTANÉ** : la salle vit sous le doigt et retombe | `-coffreAllume` | une lampe qui s'allume, jamais un fondu d'image — **et la retombée** |
 | **C4** | **LA PIÈCE** : 3 couches, `reveal: 0`, **A/B `.clear` vs `liquidLens`**, et le plan B sprite si échec | `-coffrePiece`, `-coffreVerreAB` | « on voit leur beauté » — ou l'autocollant |
-| **C5** | **LE MANÈGE** : 2 crans, rotation signée, flou de mise au point | `-coffreManege`, `-coffreManegeAuto` | la deuxième pièce **naît du flou** |
+| **C5** | **LE MANÈGE — ET SA FORME EST À TRANCHER** : (a) le retournement d'une seule pièce *(reco)*, (b) deux pièces avec la nuit au lieu du flou, (c) le sprite. Le verre natif interdit `scaleEffect` et `.blur` (§6.3) | `-coffreManege`, `-coffreManegeAuto` | la présentation **nette au centre**, les poses nettes, rien de carré sur un objet rond |
 | **C6** | **L'ARRIVÉE** : le film entier + le raccord **aligné sur le centroïde** + le raccourci + l'arbitrage du tap | `-coffreSkip`, `-coffreArrivee` | le raccord : **une pose, pas un déplacement** |
 | **C7** | **LA PHRASE ET LA LÉGENDE** : 3 lignes, cascade 1,18 s, `sourdLumiere = 0,42`, l'invite | `-coffrePhrase` | la hiérarchie : la pièce d'abord |
 | **C8** | **L'INVITE** : braise du croissant + rotation résiduelle | `-coffreInvite` | est-ce vivant sans rien allumer ? |
@@ -489,18 +555,37 @@ réponse était greppable (§3.2).
 
 **① L'interrupteur est-il MOMENTANÉ ?** La salle s'allume tant que ton doigt
 est posé sur la pièce, et **retombe quand tu le lèves** — au lieu de rester
-allumée pour toujours. *(Recommandé : allumée pour toujours, c'est un fusible —
-la seule interaction de la page s'épuise au premier usage.)*
+allumée pour toujours. ***Recommandé : OUI, momentané.*** Restée allumée, c'est
+un fusible : la seule interaction de la page s'épuise au premier usage.
+⚠️ Et il faut la règle qui va avec (à mesurer en C3) : **la pièce garde un
+pourtour sombre quand la salle s'allume**. Sinon son croissant (L 86) s'inverse
+contre un sol à L 152 — il devient une rainure plus sombre que son fond — et le
+liseré spéculaire, qui ne brillait que contre du noir, s'aplatit. **L'unique
+interaction de la page serait destructrice pour son sujet.**
 
 **② L'or et la noire — qu'est-ce qui les sépare ?** Recommandation :
 **l'or = les pièces gagnées** (ton compte) · **la noire = celles à gagner** (le
 prochain palier, la prochaine lune du chemin).
 
-**③ La page démon (`HaloDawnLab`) — elle reste ou elle meurt ?** Aujourd'hui on
-y descend par un pager vertical depuis le coffre. Mais **le drag vertical est
-désormais pris par la levée de card et la lune** (D4) : les deux ne peuvent pas
-coexister sur le même geste. *(Recommandé : la page démon meurt de ce parcours ;
-si tu y tiens, elle se rejoint autrement — et je te propose comment.)*
+**③ ~~La page démon~~ — TRANCHÉ le 25-08 : « la page démon aussi, plus besoin
+là ».** Le pager vertical MEURT, et avec lui la seule chose qui disputait le
+drag vertical à la levée de card. Conséquences, toutes bonnes :
+- `CoffreFortFlow` **survit en enveloppe mince, à signature identique**
+  (`coins:onClose:`) — les 4 sites d'appel ne bougent pas d'une ligne — mais
+  son `ScrollView` paginé, son `LazyVStack` et son `containerRelativeFrame`
+  disparaissent ; il ne présente plus qu'une page.
+- `HaloDawnLab` n'est plus atteignable depuis le coffre. **Elle n'est pas
+  supprimée** (son banc la monte toujours) : on ne détruit pas une page qu'on
+  n'a pas été chargé de détruire.
+- Le drag vertical est **entièrement libre** pour la levée de card et les deux
+  lunes (§3.2). C'était la condition de D4.
+- Le `GeometryReader` qui mesurait `safeTop` pour le pager reste nécessaire au
+  chevron. ⚠️ Et il ne doit **toujours pas** porter `ignoresSafeArea` (§9.6).
+
+**Nouvelle question ③ — LA FORME DU MANÈGE.** Le verre natif interdit le zoom
+et le flou (§6.3). Ma reco : **une seule pièce qui se RETOURNE** — l'or d'un
+côté, la noire de l'autre, le scroll droite-gauche la fait tourner. **Ou tu
+tiens à voir les deux pièces côte à côte ?**
 
 ---
 
@@ -537,6 +622,29 @@ Gardé pour ne pas le repayer.
 | 12 | **La pastille du compte** gardée : 3 objets ronds, 2ᵉ source de lumière | §3.5 : elle meurt, le nombre devient légende |
 | 13 | **La page morte** après l'arrivée (rien ne bouge, verre vide) | §4.2 : braise, rotation résiduelle, l'invite par le mot |
 | 14 | **« 710 lignes » puis « 416 l. »** dans un document qui proclame « rien n'est estimé » | Corrigé : **710** (le fichier), 416 (la seule struct `CoffreFortView`) |
+
+### Et ce que la V2 a cassé toute seule (4ᵉ tour, 25-08)
+
+La v2 a corrigé 14 défauts **et en a introduit un**. Les juges ont été relus,
+et chaque grief re-mesuré par moi avant correction — deux d'entre eux étaient
+eux-mêmes exagérés (notés ci-dessous).
+
+| # | Le défaut | La correction |
+|---|---|---|
+| 15 | **⚠️ LE PIRE : « le passage devant l'objectif » N'EXISTE PAS.** La v2 a canonisé la lecture d'un juge — pièces qui passent devant, or sur la tranche « en feu », coupe à jeter — et **je l'ai annoncée à Kathryn comme la découverte principale**. Mesuré et vu : au sommet (68-72) la pièce est frontale et emplit le cadre, puis elle **se met de champ et RECULE** (aire 16 % → 4 %, hauteur 0,94 → 0,63). **La v1 avait raison : on coupe au sommet.** | §1.1 conséquence 1, §5.2 |
+| 16 | **La couleur de la lampe, mesurée en moyenne de ligne** (artefact pollué par le noir) : « (174,166,134), chaud, jamais saturé ». Vérité : cœur écrêté (255,255,221), **sat 1,00 à 4 px**, et la loi maison en clair — R à 255, le VERT qui monte, le BLEU à 0 | §1.2 conséquence 4 |
+| 17 | **La désaturation du sol jamais dite** — et la pièce est posée pile dans la zone tiède (sat 0,23, RGB 178/142/137) | §1.2 conséquence 5 |
+| 18 | **La loi du flou du manège lue à l'envers** : `\|sin(2πu)\|` est **nul au milieu** (le moment de présentation), pas maximal | §4.1 |
+| 19 | **La règle du verre écrite à l'envers** : la v2 disait « transforms sur le groupe, jamais le frame » ; le dépôt dit **l'inverse** (`PorteEntree:1274`), et interdit en plus le `.blur` sur du rond (`MenuCouronne:32`). **Le manège et le verre natif sont incompatibles en l'état** | §6.3, tranché au banc C5 |
+| 20 | **Les 1,15 s de temps mort au début du film**, jamais vues | §1.1 conséquence 2 |
+| — | *Grief non retenu :* « une coupe franche à l'image 28 ». C'est un **élan progressif** sur 4 images (deltas 7,6 → 11,4 → 17,4), pas un cut | noté §1.1 |
+| — | *Grief non retenu :* « il n'y a pas de passage » **et** « le film s'ouvre sur une coupe » venaient de deux juges qui se contredisaient ; seule la mesure a tranché | — |
+
+**LA LEÇON DE MÉTHODE, ET ELLE EST CHÈRE.** J'ai remplacé une lecture juste
+(la mienne, mesurée) par une lecture fausse (celle d'un juge, affirmée), parce
+qu'elle était formulée avec plus d'assurance. **Un juge qui affirme ne
+remplace pas une sonde qui mesure.** Tout grief d'un juge se re-mesure avant
+d'entrer au plan — et à plus forte raison avant d'être annoncé à Kathryn.
 
 ---
 
