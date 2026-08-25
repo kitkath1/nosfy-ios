@@ -674,12 +674,56 @@ vérifiera que les deux pièces sont jumelles.
 | Format | **PNG** (16 bits si possible) | le dégradé du tore descend à L 2-14 : un JPEG y fabrique des blocs |
 | Lumière | **identique sur les deux** | sinon l'une paraît plus « allumée » que l'autre au passage |
 
-### L'option qui les fait TOURNER
-Si les pièces doivent pivoter pendant le voyage (la loi cover-flow, §4.1) :
-un **tour de manège** par pièce — la pièce qui tourne sur son axe vertical,
-**48 images pour 180°**, cadrage et lumière constants, fond noir. Vidéo ou
-séquence PNG numérotée. On scrube alors au doigt, et chaque angle est un vrai
-rendu.
+### ★ LA VOIE PREMIUM — LE TOUR DE MANÈGE (proposée par Kathryn, 25-08)
+
+> « la pièce peut se tourner de droite à gauche, ou je génère une vidéo qu'on
+> manipule au scroll/drag ? » — « et la vidéo elle tourne sur elle-même en
+> entier, tu captes ? »
+
+**Oui, et c'est LA solution.** Le doigt choisit l'angle, chaque angle est un
+VRAI rendu ray-tracé : c'est la mécanique des pages produit d'Apple, et c'est
+le seul chemin vers le « premium » qu'aucun shader ne donnera ici.
+
+**⚠️ MAIS ON NE SEEKE PAS DANS UNE VIDÉO — c'est déjà mesuré et mort dans ce
+dépôt.** `DepartCine.swift:15-26`, trois mesures indépendantes :
+> *« `home-fond-loop.mp4` = 859 images, 72 clés (GOP 11,9). Le geste demandait
+> **4 295 img/s** et 360 franchissements de clé par seconde, à tolérance ZÉRO.
+> AVPlayer en sert **15 à 25** : on voyait **QUATRE images sur 859**. »*
+
+Un doigt qui tourne une pièce demande exactement ce régime-là. Un `seek` par
+image ne le tiendra jamais.
+
+**LA FORME JUSTE : elle livre une VIDÉO, je la coupe en IMAGES.**
+La vidéo est son format de travail — elle n'a pas à s'en occuper. À la cuisson
+(`recuit_coffre.sh`, jalon C1) le film devient une **planche de sprites** : une
+seule texture, chargée une fois, et le doigt ne fait plus que choisir une case.
+Zéro décodeur, zéro seek, réponse à l'image près.
+
+**Ce qu'il faut dans le film :**
+
+| Critère | Exigence | Pourquoi |
+|---|---|---|
+| Le tour | la pièce tourne sur son **axe vertical** (droite-gauche), **360° complet** | 360° ramène à la face de départ : la boucle est parfaite par construction |
+| ⚠️ La vitesse | **STRICTEMENT LINÉAIRE — aucun ease-in/ease-out** | c'est **le doigt** qui fait la courbe ; un ralenti cuit dans le film rend le geste collant sur les bords et glissant au milieu |
+| Les images | **96 à 144 pour le tour** (2,5° à 3,75° par image) | en dessous on voit les crans à la rotation lente |
+| Cadrage | **absolument constant** : même taille, même centre, du début à la fin | la moindre dérive se lit comme un tremblement sous le doigt |
+| Lumière | **fixe dans la scène**, pas attachée à la pièce | c'est la lumière qui doit balayer l'objet quand il tourne — sinon il a l'air peint |
+| Fond | **noir pur** | tout autre fond laisse une boîte au compositing |
+| Taille | **1000 à 1400 px de côté**, carré | affiché à ~400 px : c'est déjà large |
+
+**Les deux faces, et c'est le seul choix qui reste :**
+- **(a) UNE pièce, deux faces** — l'or d'un côté, la sombre de l'autre. Le tour
+  de 360° donne alors TOUT : face or → tranche → face sombre → tranche → or.
+  Un seul film, et le manège de droite à gauche EST le retournement.
+  ***C'est ma recommandation.***
+- **(b) DEUX pièces séparées**, comme dans son film actuel → deux tours de
+  manège, et le scroll passe de l'une à l'autre.
+
+**Ce que ça change pour la page** : le §4.1 (rotation `sin(2πu)`, flou, zoom)
+devient inutile pour la pièce elle-même — **la rotation n'est plus simulée,
+elle est RÉELLE**. Le flou et le zoom du manège restent disponibles (ce sont
+des images, pas du verre natif) mais ne servent plus qu'à la mise au point du
+voyage, si elle en veut.
 
 ### Ce qui n'est PAS nécessaire
 Ni image de la tranche, ni version « allumée » par la salle, ni fond : la page
