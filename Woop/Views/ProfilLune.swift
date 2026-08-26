@@ -1623,6 +1623,15 @@ struct DosVide: View {
         return Image(uiImage: mini)
     }()
 
+    /// ⚠️ **LA MINIATURE SE CUIT AVANT L'OUVERTURE** (26-08). `static let` =
+    /// `dispatch_once` : le PREMIER qui la touche paie — et jusqu'ici c'était
+    /// le premier rendu du Profil, donc le fil PRINCIPAL, à l'instant précis
+    /// où la page se monte. Décoder un PNG 1024×1536 et le re-rastériser là,
+    /// c'est une part directe du « la page met trop de temps à apparaître ».
+    /// Le fourneau la touche en fond de cale pendant le splash ; à l'ouverture
+    /// il ne reste qu'une lecture.
+    static func chauffer() { _ = dos }
+
     var body: some View {
         Button {
             UIImpactFeedbackGenerator(style: .rigid)

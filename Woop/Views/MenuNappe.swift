@@ -1126,8 +1126,16 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     .allowsHitTesting(ouvert)
                     .onTapGesture { fermer(nil) }
 
-                MenuHalos(p: montee, doigt: doigt)
-                    .opacity(lumiere)
+                // ⚠️ **ON DÉMONTE, ON N'ÉTEINT PAS** (26-08). `MenuHalos`
+                // était MONTÉ en permanence à `opacity(lumiere)` — donc son
+                // sous-arbre vivait (et son shader tournait) pendant toute la
+                // vie de la home pour peindre du VIDE. C'est le précédent
+                // `verreMonte`, et celui du `rate` resté à 2,2 : une opacité
+                // nulle n'arrête rien.
+                if lumiere > 0.001 {
+                    MenuHalos(p: montee, doigt: doigt)
+                        .opacity(lumiere)
+                }
 
                 if !couronne {
                     MenuItems(p: items, choisi: choisi, survol: survol,
@@ -1672,6 +1680,14 @@ struct MenuHote<Fond: View, Contenu: View>: View {
             return
         }
         guard !ouvert else { return }
+        // ⚠️ **LA COLONNE N'ATTEND PLUS LE GALET** (26-08). Verdict : « la
+        // fumée apparaît, puis il y a un délai, puis le menu arrive trop
+        // tard — la fumée et le menu doivent faire partie de la MÊME
+        // transition ». Ce `retard` (jusqu'à 0,26 s) était pensé pour la
+        // COURONNE, qui éclôt au sol sous le galet et doit donc attendre sa
+        // chute ; la colonne, elle, naît sur le côté et n'a rien à attendre.
+        // Elle héritait d'une cérémonie qui n'est pas la sienne.
+        retard = 0
         ouvert = true
     }
 
@@ -1791,7 +1807,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
         doigt = nil
         withAnimation(.easeOut(duration: 0.20)) { loupe = 0 }
         if let i = elu {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+            // 0,18 et non 0,52 : juste de quoi VOIR l'élu s'allumer (son
+            // animation dure 0,07) avant que la route ne parte. La colonne
+            // finit de se retirer PAR-DESSUS la page qui arrive — « on voit
+            // partir ce qu'on a choisi » reste vrai, sans faire attendre.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
                 choisi = nil
                 elu = nil
                 onChoix(i)
@@ -1830,9 +1850,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
             withAnimation(.easeOut(duration: 0.07)) { choisi = i }
         }
         elu = i
-        DispatchQueue.main.asyncAfter(deadline: .now() + (i == nil ? 0 : 0.13)) {
-            ouvert = false
-        }
+        // ⚠️ **PLUS DE MARCHE AVANT LA FERMETURE** (26-08). Choisir une section
+        // coûtait 0,13 s ICI, puis 0,52 s dans `jouer(false)`, AVANT même que
+        // `onChoix` ne soit appelé : la page de destination ne commençait à se
+        // construire qu'à ~0,65 s — et elle est chère à construire. C'est la
+        // moitié du « on dirait un chargement ». La fermeture se JOUE, elle
+        // ne se fait plus attendre.
+        ouvert = false
     }
 }
 

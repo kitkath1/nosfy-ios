@@ -252,6 +252,55 @@ enum DepartCine {
 /// frame change 60×/s relayoute et re-rend chaque image (loi payée dans
 /// `DepartSeance`). Les mouvements vivent en `scaleEffect` / `offset` /
 /// `rotation3DEffect` côté SwiftUI, jamais en `.frame` animée.
+/// LE CELLIER DES VIDÉOS — un `AVURLAsset` par fichier, gardé.
+///
+/// ⚠️ **IL N'Y AVAIT AUCUN CACHE POUR SEIZE LECTEURS** (26-08). Chaque
+/// `AVPlayerItem(url:)` construit son propre `AVURLAsset` et le fait PARSER :
+/// l'en-tête du fichier, la table d'index, les pistes. Payé à chaque montage,
+/// et les pages en montent plusieurs d'un coup — le Parcours en fait naître
+/// une dizaine dans la même image. C'est une part directe du « les pages
+/// mettent trop de temps à apparaître ».
+///
+/// ⚠️ **ON PARTAGE L'ASSET, JAMAIS L'ITEM.** Un `AVPlayerItem` n'appartient
+/// qu'à un seul lecteur — le donner à deux, c'est le voir disparaître du
+/// premier. L'asset, lui, est fait pour être partagé : c'est la ressource, pas
+/// la lecture.
+enum AssetsVideo {
+    private static var cache: [String: AVURLAsset] = [:]
+    private static let verrou = NSLock()
+
+    /// L'asset du fichier, chargé une fois pour toutes. `nil` si le fichier
+    /// n'est pas dans le bundle (l'appelant garde sa pose).
+    static func asset(_ nom: String) -> AVURLAsset? {
+        verrou.lock(); defer { verrou.unlock() }
+        if let a = cache[nom] { return a }
+        guard let url = Bundle.main.url(forResource: nom, withExtension: "mp4")
+        else { return nil }
+        let a = AVURLAsset(url: url,
+                           options: [AVURLAssetPreferPreciseDurationAndTimingKey: false])
+        cache[nom] = a
+        return a
+    }
+
+    /// Un item neuf sur un asset chaud.
+    static func item(_ nom: String) -> AVPlayerItem? {
+        asset(nom).map { AVPlayerItem(asset: $0) }
+    }
+
+    /// LES BOUCLES DU CHEMIN CHAUD, cuites en fond de cale pendant le splash.
+    /// On ne précharge QUE ce que la traversée rencontre à coup sûr : chauffer
+    /// tout le dossier coûterait la mémoire de fichiers qu'on ne verra pas.
+    static func chauffer() {
+        Task.detached(priority: .utility) {
+            for nom in ["home-fond-loop", "home-fond-pilule",
+                        "home-fond-flamme", "exos-fond-loop"] {
+                guard let a = asset(nom) else { continue }
+                _ = try? await a.load(.tracks)
+            }
+        }
+    }
+}
+
 struct CalqueVideo: UIViewRepresentable {
 
     /// Le nom du fichier dans le bundle, sans extension.
@@ -318,13 +367,14 @@ struct CalqueVideo: UIViewRepresentable {
     func makeUIView(context: Context) -> Vue {
         let v = Vue()
         v.pose.image = UIImage(named: pose)
-        guard let url = Bundle.main.url(forResource: nom, withExtension: "mp4")
+        // L'asset vient du cellier : chaud, il ne se re-parse pas.
+        guard let modele = AssetsVideo.item(nom)
         else { return v }                       // la pose tient la page seule
         let p = AVQueuePlayer()
         p.isMuted = true
         p.automaticallyWaitsToMinimizeStalling = false
         let c = context.coordinator
-        c.looper = AVPlayerLooper(player: p, templateItem: AVPlayerItem(url: url))
+        c.looper = AVPlayerLooper(player: p, templateItem: modele)
         c.player = p
         v.playerLayer.player = p
         p.play()

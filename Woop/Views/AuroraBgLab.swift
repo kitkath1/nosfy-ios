@@ -30,8 +30,18 @@ final class BgTilt: ObservableObject {
             let dx = max(-1, min(1, (raw.x - b.x) / 0.45))
             let dy = max(-1, min(1, (raw.y - b.y) / 0.45))
             // Lissage court : ni gigue, ni retard sensible.
-            self.value = CGPoint(x: self.value.x * 0.85 + dx * 0.15,
-                                 y: self.value.y * 0.85 + dy * 0.15)
+            // ⚠️ **BANDE MORTE** (26-08) — et elle compte DOUBLE ici : `value`
+            // est `@Published`, donc chaque écriture invalide TOUS les corps de
+            // vue qui observent ce `BgTilt`. Sans seuil, un téléphone POSÉ en
+            // publiait soixante par seconde, pour un mouvement nul. (La home v2
+            // en observe un ; la cérémonie de connexion en fait tourner un
+            // SECOND en même temps que `SkyMotion` — deux `CMMotionManager`
+            // pour la même main.)
+            let nv = CGPoint(x: self.value.x * 0.85 + dx * 0.15,
+                             y: self.value.y * 0.85 + dy * 0.15)
+            guard abs(nv.x - self.value.x) > 0.002
+                    || abs(nv.y - self.value.y) > 0.002 else { return }
+            self.value = nv
         }
     }
 }

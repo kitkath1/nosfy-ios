@@ -56,6 +56,12 @@ struct WoopApp: App {
         // cuisson au premier tap ne fait pas saccader : elle fait SAUTER le
         // plan. Elle se cuit donc ici, comme la SDF du croissant.
         CoinSmokeWarm.warmUp()
+        // ⚠️ **LE FOURNEAU** (26-08) — 3 pipelines chauffés sur 66, et aucun
+        // cache vidéo pour 16 lecteurs : c'est une part directe du verdict
+        // « les pages mettent trop de temps à apparaître, on dirait un
+        // chargement ». Les shaders du chemin chaud se cuisent ici, en fond
+        // de cale pendant le splash, et les boucles des onglets aussi.
+        Fourneau.chauffer()
     }
 
     var body: some Scene {
@@ -1478,5 +1484,65 @@ enum DemoData {
         }
 
         try? context.save()
+    }
+}
+
+
+// MARK: - LE FOURNEAU
+
+/// LES PIPELINES DU CHEMIN CHAUD, CUITS AVANT D'ÊTRE VUS.
+///
+/// ⚠️ **LA PREMIÈRE COMPILATION D'UN SHADER SE PAIE SUR LE FIL QUI DESSINE.**
+/// Trois pipelines seulement étaient chauffés (le bruit du ciel, la SDF du
+/// croissant, la fumée de la pièce) sur les soixante-six que porte l'app — et
+/// aucun des trois n'est sur le chemin d'une séance. Résultat mesuré au
+/// verdict : « je clique sur la pill, la fumée apparaît, puis il y a un délai,
+/// puis le menu arrive trop tard ». Cette fumée-là (`knobSmoke`) se compilait
+/// AU MOMENT DU TAP.
+///
+/// ⚠️ **L'ARITÉ EST RECOPIÉE VERBATIM DU SITE D'APPEL.** C'est la loi de
+/// `CoinSmokeWarm`, et c'est un piège déjà payé dans ce dépôt : une signature
+/// qui ne correspond pas chauffe une AUTRE variante — donc ne sert à rien — et
+/// côté runtime, un stitchable dont l'arité change sans son appel Swift rend
+/// une page BLANCHE, sans erreur. Toute modification d'un de ces shaders doit
+/// repasser ici.
+enum Fourneau {
+    /// La fumée du galet — la maison, le menu, la molette de la page exo.
+    /// (ExercisesView:1930 et MenuNappe:908.)
+    private static var knobSmoke: Shader {
+        ShaderLibrary.knobSmoke(.float2(100, 100), .float(0),
+                                .float4(50, 50, 20, 24), .float(0), .float(0))
+    }
+    /// Le panache de l'invite « pull to start » — la home, en permanence.
+    /// (HomeNuit:3898 et MenuNappe:868.)
+    private static var panacheInvite: Shader {
+        ShaderLibrary.panacheInvite(.float2(220, 220), .float(0),
+                                    .float2(110, 214), .float(0), .float(1))
+    }
+    /// Le nuage de braises de la connexion — plein écran, et il tombe pile
+    /// pendant la transition login → home. (ConnexionCinematic:167.)
+    private static var moonDust: Shader {
+        ShaderLibrary.moonDust(.float2(400, 800), .float(0), .float(0),
+                               .float3(200, 400, 60), .float2(0, 0))
+    }
+    /// Le bouton primaire de la maison — il est sur douze écrans.
+    /// (ConnexionButtonLab:213.)
+    private static var diamondButton: Shader {
+        ShaderLibrary.diamondButton(.float2(340, 58), .float(0),
+                                    .float(24), .float(19),
+                                    .float(0), .float(0), .float(0))
+    }
+
+    static func chauffer() {
+        Task.detached(priority: .utility) {
+            for s in [knobSmoke, panacheInvite, moonDust, diamondButton] {
+                try? await s.compile(as: .colorEffect)
+            }
+        }
+        AssetsVideo.chauffer()
+        // La miniature des 25 dos du Profil : un PNG 1024×1536 décodé puis
+        // re-rastérisé — il se payait sur le fil principal au premier montage
+        // de la page.
+        Task.detached(priority: .utility) { await DosVide.chauffer() }
     }
 }

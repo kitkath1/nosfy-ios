@@ -42,8 +42,21 @@ final class SkyMotion {
             baseline.dy += (raw.dy - baseline.dy) * 0.003
             let x = max(-1, min(1, (raw.dx - baseline.dx) / 0.22))
             let y = max(-1, min(1, (raw.dy - baseline.dy) / 0.22))
-            tilt.dx += (x - tilt.dx) * 0.24
-            tilt.dy += (y - tilt.dy) * 0.24
+            // ⚠️ **LA BANDE MORTE, ENFIN POSÉE** (26-08). Le plan de la porte
+            // l'exige en toutes lettres depuis le début (PLAN-V2-VIVANT §2.3 :
+            // « ne publie que si |Δ| > 0,002 — sinon on recrée la page qui se
+            // ré-évalue par image ») et personne ne l'avait écrite. Sans elle,
+            // `tilt` change à CHAQUE échantillon — trente fois par seconde,
+            // téléphone posé sur une table : le bruit du gyroscope suffit. Et
+            // chaque vue qui lit `SkyMotion.shared.tilt` dans son body se
+            // réévalue d'autant. Le lissage à 0,24 fait converger sans jamais
+            // atteindre : sans seuil, la valeur bouge indéfiniment.
+            let nx = tilt.dx + (x - tilt.dx) * 0.24
+            let ny = tilt.dy + (y - tilt.dy) * 0.24
+            if abs(nx - tilt.dx) > 0.002 || abs(ny - tilt.dy) > 0.002 {
+                tilt.dx = nx
+                tilt.dy = ny
+            }
             // La secousse : attaque rapide (0,55) pour qu'un coup sec se
             // sente, et aucun recentrage — elle rentre seule.
             guard let ua = motion?.userAcceleration else { return }

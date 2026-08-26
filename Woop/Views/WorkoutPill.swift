@@ -105,10 +105,21 @@ struct WorkoutPill: View {
         .padding(.top, docked ? 10 : 0)
         .frame(maxWidth: .infinity)
         .frame(height: docked ? 76 : 64)
-        // le souffle de la lune et de la braise — scopé : seul `lueur`
-        // anime, aucune autre mutation de layout n'hérite de l'infini.
-        .animation(.easeInOut(duration: 2.6)
-            .repeatForever(autoreverses: true), value: lueur)
+        // ⚠️ **LE SOUFFLE N'EST PLUS ICI — ET C'ÉTAIT ÇA, LE PLAYER QUI
+        // FLOTTE** (26-08). Verdict de Kathryn : « le logo Lune du player
+        // flotte, le bouton Stop flotte, ils remontent et redescendent
+        // légèrement — ils doivent être parfaitement fixes ».
+        //
+        // Le correctif du 25-08 avait bien SCOPÉ l'animation (`value: lueur`
+        // au lieu d'un `withAnimation` à l'`onAppear`), mais il l'avait posée
+        // TROP HAUT : ici, au-dessus des `.padding` et du `.frame(height:)`
+        // du pill. Or `lueur` ne pilote QUE des opacités. Elle bascule dans un
+        // `onAppear` qui tombe PENDANT l'insertion animée du pill (le
+        // `withAnimation(0,62 s)` de l'entrée en séance) : la géométrie EN VOL
+        // héritait donc de l'aller-retour infini de 2,6 s — 5,2 s le cycle,
+        // exactement la période mesurée à la mitraille. Une animation ne doit
+        // jamais couvrir plus que ce que sa valeur touche : elle descend sur
+        // les DEUX vues qui lisent `lueur`, la lune et le médaillon.
         .background {
             // ⚠️ LA DALLE EST NOIRE, PAS GRISE — et c'est une loi du
             // composant, pas un réglage de page (verdict 22-08 :
@@ -163,16 +174,22 @@ struct WorkoutPill: View {
         }
         .contentShape(docked ? AnyShape(dockShape) : AnyShape(shape))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Entraînement en cours — \(exercise.name)")
+        .accessibilityLabel("Workout in progress — \(exercise.name)")
         // LE PANNEAU DU STOP : un cover à fond CLAIR (jamais un sheet
         // système — il recule la fenêtre, payé deux fois) ; l'entrée et
         // la sortie sont jouées PAR le panneau, le cover reste muet.
         .fullScreenCover(isPresented: $stopAsk) {
             StopSessionSheet(
                 onEnd: {
-                    // La vraie fin de séance (save, BRAVO…) viendra se
-                    // brancher ici — le trou save() est un jalon connu.
+                    // LA VRAIE FIN DE SÉANCE, ENFIN BRANCHÉE (le trou
+                    // save() est comblé) : le panneau se retire, et la
+                    // racine joue toute la chaîne — clôture, retour
+                    // home, trophée, pièces qui volent, pop-up booster.
+                    print("[flow] stop onEnd → clôture demandée")
                     fermerStop()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        DepartEtat.shared.clotureDemandee = true
+                    }
                 },
                 onContinue: { fermerStop() },
                 series: doneSeries,
@@ -238,8 +255,13 @@ struct WorkoutPill: View {
         // ⚠️ JAMAIS un `withAnimation(.repeatForever)` à l'onAppear : la
         // transaction infinie FUIT dans le layout des ancêtres — la page
         // exo entière respirait à 5,2 s (mesuré à la mitraille, 25-08).
-        // L'animation SCOPÉE (`value: lueur`) ne porte que ce que lueur
-        // touche, ici et dans la braise (le modifier vit sur le body).
+        // ⚠️ ET L'ANIMATION VIT ICI, PAS SUR LE BODY (26-08) : posée sur le
+        // pill entier elle passait AU-DESSUS de ses paddings et de sa
+        // hauteur, et capturait la géométrie en vol de l'insertion — le
+        // player « flottait » à 5,2 s. Elle ne couvre plus que la lune,
+        // c'est-à-dire exactement ce que `lueur` touche.
+        .animation(.easeInOut(duration: 2.6)
+            .repeatForever(autoreverses: true), value: lueur)
         .onAppear { lueur = true }
     }
 
@@ -376,6 +398,10 @@ struct WorkoutPill: View {
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        // La même respiration que la lune, et RIEN d'autre : le médaillon lit
+        // `lueur` pour ses deux liserés, il n'a aucune géométrie animée.
+        .animation(.easeInOut(duration: 2.6)
+            .repeatForever(autoreverses: true), value: lueur)
     }
 
     private func roundButton(_ symbol: String,
