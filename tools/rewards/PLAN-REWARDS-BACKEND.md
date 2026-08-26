@@ -168,6 +168,23 @@ un seul fetch, petit, cacheable).
   halo bas/haut : enum, mini-stats : liste de fact_ids) — **jamais du
   style libre** : le client ne sait RENDRE que la grammaire.
 
+### LES TEXTES SONT DYNAMIQUES, LES LAYOUTS SONT FIGÉS (26-08)
+
+Kathryn : « de toute façon les textes seront plus tard dynamiques, ils
+changeront grâce à l'IA — on ne fait que les layouts ». Conséquences
+contractuelles :
+
+- **Aucun mot n'est en dur dans une robe** : `title`, `subtitle`, et
+  pour les robes à TEXTE GÉANT (You Made It, Welcome v2) une entrée
+  `bigLines: [String]` (1 à 3 lignes courtes).
+- **La longueur est un CONTRAT** : chaque robe déclare son maximum
+  (ex. 3 à 9 signes par ligne géante) — au-delà, la typo casse. L'IA
+  reçoit cette borne et la respecte ; le client tronque en dernier
+  recours, il ne rétrécit JAMAIS (une ligne géante rétrécie n'est plus
+  géante).
+- **Les tailles, graisses et couleurs restent au Design System** :
+  l'IA choisit les MOTS et le variant, jamais la typo.
+
 ### Les données personnelles pour l'IA (question du 25-08 : poids, taille, âge ?)
 
 Doctrine : **v1 SANS données corporelles.** Ce qui rend la narration
