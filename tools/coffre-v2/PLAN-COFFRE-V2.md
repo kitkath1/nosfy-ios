@@ -910,3 +910,100 @@ d'entrer au plan — et à plus forte raison avant d'être annoncé à Kathryn.
 
 *Rien n'est codé. Le premier coup de pioche est **C0** — les trois extractions
 et l'archive — et il ne demande aucun des trois verdicts.*
+
+---
+
+## §13. LE COFFRE v3 — ÉTAT AU 26-08 ET PASSATION
+
+> Écrit pour la prochaine session. Ce qui suit est **mesuré ou lu dans le
+> code** ; ce qui ne l'est pas est marqué « non identifié ».
+
+### 13.1 Ce qui EXISTE et tourne (`Woop/Views/CoffreV2.swift`, ~700 l.)
+
+Commits : `cdf9dc8` (la page) · `85ecd31` (le manège + salle allumée) ·
+`73f2081` (le geste unique) · `7c4f40b` (la profondeur + haptiques).
+
+- **La card** au patron `GrandeCardExos` (marge 10, rayon 55) qui porte la
+  chambre de Kathryn (`coffre-salle-loop.mp4`, 540×1174, 306 Ko, boucle simple,
+  image de pose sous une couche transparente).
+- **La salle est ALLUMÉE par défaut** ; le doigt sur la pièce pousse la lampe
+  d'un cran (montée 0,26 s, retombée 0,62 s).
+- **Deux pièces** en planches de sprites 72 cases × 320 px, cuites par
+  `recuit_pieces.py` depuis ses deux films — **jumelles à 0,3 % près**.
+- **Le manège** : rail à 0,40 W, les DEUX pièces montées en permanence, flou de
+  mise au point, élastique tanh aux deux bouts, cran au lâcher, grain haptique
+  par dixième de course. Vers la DROITE amène la noire.
+- **La profondeur** : la pièce tenue s'avance de 14 % + ombre portée, l'autre
+  recule de 12 % et se floute de 5 pt.
+- **Un angle par pièce** (`tours: [Double]`), grain haptique tous les 10°.
+- **La card se raccourcit par le bas** (`FormeCardExos`) → la lune se découvre.
+- **UN SEUL GESTE** pour toute la page, qui trie par l'endroit du contact.
+- **L'arrivée** : `coffre-arrivee.mp4` (images 27→71 de `Liquid_pièces`,
+  243 Ko), 2,85 s, un tap la passe, raccord à courbe unique vers la pièce posée.
+- `CoffreFortFlow` est l'**enveloppe mince** : même signature, 4 points d'appel
+  intacts, `-coffreV1` rejoue l'ancienne page.
+- Bancs : `-coffre2` · `-coffreSansFilm` · `-coffreSkip` · `-coffreArgent` ·
+  `-coffrePage <v>` · `-coffre2Allume`. Sim dédié **kat-coffre**
+  (`5FF5AD67-F97E-47E4-AC22-D0782CD541B8`).
+
+### 13.2 LES QUATRE DÉFAUTS OUVERTS (verdicts du 26-08)
+
+**① « L'arrivée de la vidéo ne se voit pas, elle est fondue bizarrement. »**
+*Cause, lue dans le code et mesurable :* le film vit dans une bande de
+**402 × 226 pt au milieu d'un écran de 874** — soit **26 % de la hauteur** — et
+il porte un fondu doux sur ses QUATRE bords (`fonduBords`, 9 à 10 % de chaque
+côté). Sur du noir, une bande sombre à bords fondus ne se lit pas comme une
+vidéo : elle se lit comme un halo. Et ses pièces COMMENCENT petites (largeur
+0,169 du cadre à l'image 27).
+*Remède à essayer :* le film **plein cadre**, recadré sur la bande centrale où
+vivent les pièces (mesuré : x ∈ [0,21 ; 0,75] — un crop portrait y est
+possible SI l'on recentre, contrairement au plein 9:19,5 qui les coupe) ; le
+fondu latéral supprimé, ne garder qu'un fondu haut/bas court. **À FILMER**, la
+capture fixe ne dit rien d'une arrivée. ⚠️ Le tap qui passe doit survivre.
+
+**② « La pièce floue doit être plus basse, pas au même niveau que l'autre. »**
+*Trivial et non fait :* `MesuresPiece` ne décale que l'échelle, le flou et
+l'opacité. Il lui manque un **`y` qui suive `recul`** — la voisine descend de
+quelques points quand elle recule. Une ligne.
+
+**③ « Il manque un effet spectaculaire après l'arrivée. »**
+*Non conçu.* Piste cohérente avec les lois de la page : au contact, **la barre
+néon FRAPPE** (flash court, une onde qui traverse le sol), la chambre s'allume
+d'un coup au lieu du fondu actuel, et l'ombre de contact rebondit. C'est
+l'ATTERRISSAGE qui manque, pas la descente.
+
+**④ « Quand je tape sur une pièce, plein de petites pièces sortent mais ça ne
+fait rien de plus. »**
+*NON IDENTIFIÉ, et il faut le dire.* Il n'y a **aucun système de particules
+dans `CoffreV2.swift`**, et `Paillettes` (`RocketHaptics.swift:548`) est une
+classe d'HAPTIQUES, pas de visuel. Deux pistes à vérifier avant de coder quoi
+que ce soit : `VolDePieces` (`HomeAuroraView`) et `PlayerSeance` — les deux
+seuls fichiers du dépôt qui savent faire voler des pièces. **À filmer sur le
+téléphone** : c'est le seul moyen de savoir ce que c'est. Et sa remarque porte
+autant sur le fond : le tap sur une pièce **ne fait rien** — il faudra décider
+ce qu'il fait.
+
+### 13.3 Les pièges payés sur ce chantier (à ne pas repayer)
+
+1. **Un geste posé sur un conteneur dont les enfants sont en `.position()`
+   PREND TOUT L'ÉCRAN.** Avec `minimumDistance: 0` il gagne partout. C'était
+   la cause UNIQUE de trois pannes (seconde pièce inatteignable, card qui ne
+   se soulève pas, tap qui ne passe pas). Remède : **un seul geste** qui trie
+   par l'endroit du contact — ne rien laisser à arbitrer.
+2. **Une card qui ne fait que `offset(y: max(tirage, 0))` NE BOUGE PAS quand on
+   tire vers le haut.** Il faut une forme `Animatable` qui se raccourcit.
+3. **Un argument de lancement n'arrive PAS toujours en `NSNumber`** —
+   `-coffrePage 0.35` arrive en `String`. Lire les deux formes, toujours
+   (`CoffreV2Page.nombre(_:)`).
+4. **`offset` est une transformation de RENDU, pas de layout** : le
+   `frame(alignment:)` qui suit aligne des bornes qui n'ont pas bougé. Pour
+   découper une planche de sprites, on découpe le **`CGImage`**.
+5. **Le vérificateur de types sature** sur des mesures inlinées dans un
+   `ViewBuilder` → les sortir dans un type (`MesuresPiece`).
+6. **Le simulateur ne fabrique pas de doigt** et l'accès accessibilité
+   d'AppleScript est refusé sur cette machine : tout geste se juge au
+   TÉLÉPHONE, ou par un banc qui fige l'état.
+7. **Kathryn utilise le simulateur pendant les captures** — utiliser
+   **kat-coffre**, jamais le sien.
+8. **L'autre session casse le build** (`RewardCard.swift`, deux fois en une
+   heure) : boucler sur le build plutôt que toucher son fichier.
