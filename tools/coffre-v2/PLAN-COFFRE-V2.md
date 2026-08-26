@@ -1007,3 +1007,783 @@ ce qu'il fait.
    **kat-coffre**, jamais le sien.
 8. **L'autre session casse le build** (`RewardCard.swift`, deux fois en une
    heure) : boucler sur le build plutôt que toucher son fichier.
+
+---
+
+## §14. LE COFFRE v4 — LES QUATRE DÉFAUTS TRAITÉS (26-08)
+
+> Tout ce qui suit est **mesuré** ou **filmé au simulateur**. Le banc de la
+> session : `-coffre2 -coffreTap -coffreTapFerme`, sim **kat-coffre**.
+
+### 14.1 ① « L'arrivée ne se voit pas, elle est fondue bizarrement »
+
+Le §13 accusait la bande de 26 % et le fondu des quatre bords. Les deux
+étaient vrais, et **il y avait une troisième cause, plus grosse que les deux
+autres réunies** :
+
+| Sonde | v1 | v2 |
+|---|---|---|
+| Pic de luminance de la pièce (dernière image) | **L 70 / 255** | **L 255** |
+| p99 de la pièce | 64 | **241** (la planche de sprites : 253) |
+| Cadre | 1080 × 608, posé en bande de 402 × 226 pt | 1280 × 1200, posé **plein largeur** |
+| Largeur de la pièce à l'écran | 212 pt | **370 pt** |
+| Masque | fondu sur les 4 bords | **aucun** |
+
+**LE FICHIER ÉTAIT CUIT 3,4 FOIS TROP SOMBRE.** Le film source décodé
+correctement culmine à 254 ; le `coffre-arrivee.mp4` livré culminait à 70. Ce
+n'était pas un choix, c'était une cuisson ratée — et ça explique tout : une
+pièce à 27 % de sa lumière sur du noir n'est pas une arrivée, c'est un
+fantôme. Le raccord sautait en plus de 70 à 255 en une image.
+
+**ET LE FONDU MANGEAIT LA PIÈCE.** Mesuré : les quatre bords du fichier sont à
+**zéro absolu** (max 0,0 sur les colonnes et lignes extrêmes) — il n'y avait
+donc rien à fondre, du noir sur du noir. En revanche la pièce occupe
+y ∈ [0,021 ; 0,964] du cadre et le masque effaçait de 0 à 0,10 et de 0,90 à 1 :
+**il rongeait le haut et le bas de l'objet**. « Fondue bizarrement », mot pour
+mot.
+
+**LA RECETTE DE LA v2** (à rejouer telle quelle si le fichier se reperd) :
+
+```sh
+ffmpeg -y -i ~/Downloads/Liquid_pièces.mp4 \
+  -vf "select='between(n\,27\,71)',crop=2304:2160:697:0,\
+scale=1280:1200:flags=lanczos,setpts=N/24/TB,format=yuv420p" \
+  -fps_mode cfr -r 24 -c:v libx264 -profile:v high -crf 17 -preset veryslow \
+  -movflags +faststart -an -color_range tv -colorspace bt709 \
+  -color_primaries bt709 -color_trc bt709 Woop/Media/coffre-arrivee.mp4
+```
+
+Le `crop` est **symétrique autour de la pièce** (centre mesuré x = 0,4815) :
+le cadre du film vaut donc exactement la largeur de l'écran, et la pièce y fait
+0,9203 de cette largeur. 940 Ko contre 243.
+
+### 14.2 ⚠️⚠️ ET LE RACCORD EST MORT — recalé DEUX FOIS
+
+La v2 gardait l'idée du plan (« la pièce du film devient la pièce de la
+page »). Verdict : *« horrible encore, tu l'as fait fondre avec l'une des
+pièces qui se pose après, NON ! joue plutôt le fondu noir de fin de vidéo,
+pour un effet wahou »*.
+
+**La cause profonde était structurelle, pas cosmétique :** ce sont **deux
+rendus différents du même objet** — le film vient de `Liquid_pièces`, les
+sprites de `gold_glass_piece` — donc quoi qu'on fasse, l'œil voit un objet en
+remplacer un autre. Aucun réglage ne rattrape ça.
+
+**LA FORME JUSTE, en trois temps et zéro morphing** (chronométrée au
+simulateur, 30 img/s) :
+
+| t | Ce qui se passe | Mesuré |
+|---|---|---|
+| 0 → 1,88 s | Le film joue, plein cadre | |
+| 1,88 → 2,55 | Son sommet est TENU | immobilité mesurée (d = 0,00) |
+| 2,55 → 2,89 | **FONDU AU NOIR** (`easeIn 0,34`) | 11,2 → 0,0 |
+| 2,89 → 3,05 | **NOIR ABSOLU TENU** | tot = 0,00 pendant 0,17 s |
+| 3,05 → 3,22 | **LA CHAMBRE S'ALLUME D'UN COUP** | sol 0 → 147 en **0,17 s** |
+| 3,05 → 3,7 | La nappe chaude retombe | tot 87 → 71 |
+
+Le noir tenu n'est pas une économie, **c'est la coupure** : sans lui le film et
+la page se chevauchent et on retombe sur le fondu recalé.
+
+### 14.3 ⚠️⚠️⚠️ LE PIÈGE QUI A COÛTÉ LE PLUS : LES COURBES DÉRIVÉES
+
+La v2 écrivait toute la mise en scène en courbes dérivées d'un état animé —
+`chute = 1 − (1−raccord)^2,2`, `filmP`, `salleP`, chacune posée sur son
+`.opacity` ou son `.position`. **Aucune n'a jamais été jouée.**
+
+> **SwiftUI n'évalue le corps d'une vue QU'UNE FOIS par animation, à la valeur
+> d'ARRIVÉE, puis il interpole les MODIFICATEURS entre leurs deux bouts.** Une
+> courbe écrite dans le corps ne survit donc que par ses extrémités : elle est
+> remplacée par la courbe de l'animation elle-même.
+
+Mesuré : l'allumage réglé pour 0,157 s durait **0,40 s** et démarrait 0,24 s
+trop tôt — c'est-à-dire qu'il suivait la rampe de `raccord`, pas la mienne.
+
+**Les deux remèdes, et il faut choisir :**
+1. **Tout garder LINÉAIRE** dans les mesures (c'est ce que fait `MesuresPiece`
+   pour la loupe : interpoler la mesure ou interpoler le modificateur donne
+   alors le même résultat) ;
+2. **Sortir la forme non linéaire dans un type `Animatable`** — c'est ce que
+   fait déjà `FormeCardExos` (Shape) et ce que fait désormais `PieceSprite`
+   (View), qui sans ça n'animerait AUCUNE rotation.
+
+La v4 a choisi (1) partout et (2) pour la rotation. Les temps forts qui ont
+vraiment besoin d'une courbe (la frappe, l'onde) vivent dans un `TimelineView`
+— une **vraie** horloge, la seule qui ne mente jamais.
+
+### 14.4 ② La pièce floue est plus basse
+
+`MesuresPiece.bas = 18·loin + 11·recul` (pt). Le défaut n'était pas le flou,
+c'était la LIGNE : deux pièces sur le même axe horizontal disent « côte à
+côte » plus fort que le flou ne dit « pas encore à toi ». L'ombre de contact
+suit (`repos.y + m.bas + d·0,40`), sinon elle s'en décolle.
+
+### 14.5 ③ L'effet spectaculaire — `Atterrissage`
+
+Quatre choses au même instant, **toutes de la lumière** (loi 3 : on ne pose pas
+de lampe, on fait FRAPPER celle qui est là) :
+la **nappe** (radiale, centrée sur la barre, 0,46 · coup) · la **barre** qui
+encaisse (cœur blanc chaud + nappe orange, montée 45 ms, chute 0,40 s) ·
+l'**onde** au sol (anneau écrasé à 0,30, jusqu'à 2,8 × la pièce) · la **pièce
+et son ombre** qui s'écrasent puis rebondissent (keyframes).
+
+⚠️ Deux pièges évités d'un coup : un `TimelineView` au lieu de deux
+`withAnimation` sur la même valeur (qui n'animent RIEN), et un **compteur**
+`choc` comme déclencheur de keyframes au lieu d'une date qu'on remet à `nil`
+(le démontage re-déclencherait l'effet).
+
+### 14.6 ④ Le tap — LA LOUPE
+
+La « pluie de petites pièces » reste **NON IDENTIFIÉE** : re-vérifié à la
+grep, il n'y a toujours aucun système de particules dans cette page, et les
+trois seuls du dépôt (`VolDePieces`, `SeriesCoinFlight`, `CoinField`) sont
+montés ailleurs, sous des `fullScreenCover` qui les couvrent. **`-coffreTap`
+existe maintenant pour la filmer** (piège n° 6 : le simulateur ne fabrique pas
+de doigt, donc une réponse au tap qu'aucun banc ne déclenche n'est jamais
+vérifiée).
+
+Ce que le tap FAIT, en revanche, est tranché (demande du 26-08) : **il ouvre la
+pièce.** Un seul curseur `loupe`, ressort 0,62 s :
+- la pièce passe à **0,64 W = 251 pt** et vient à 0,545 H (0,78 W recalé :
+  « trop gros, et c'est collé au néon ») ;
+- **la chambre REMONTE** — `scaleEffect(1,34, anchor: .bottom)`, jamais un
+  `offset` (qui ouvrirait une bande vide en bas) : la barre monte de 115 pt ;
+- **écart mesuré barre → haut de pièce : 69 pt** (contre 3 pt avant recalage) ;
+- **fumée noire** : `CoinSmoke` en palette `.dark`, celle qui avait été
+  composée exprès pour cette page ;
+- **son** : `CoinChime.chink(volume: 0,14, rate: 0,72)` — « un plus petit
+  bruit, élégant, très discret, premium » ;
+- un second tap, ou un doigt hors de la pièce, referme.
+
+### 14.6 bis ⚠️⚠️⚠️ LA TRANSITION DE LA LOUPE — « TROP CHEAP, ON VOIT QU'ELLE
+### SE TRANSFORME EN TRANSPARENCE »
+
+Le premier jet faisait grandir la pièce en **animant son `frame`**. C'était la
+faute, et elle a un nom :
+
+> **ANIMER LE `frame` D'UNE `Image`, CE N'EST PAS L'AGRANDIR.** SwiftUI ne sait
+> pas interpoler un rendu bitmap entre deux tailles : il **fond l'ancienne
+> image dans la nouvelle**. On voit donc deux pièces translucides se remplacer
+> — à l'aller comme au retour. Un `scaleEffect` est une transformation de
+> RENDU : même texture, matrice qui grandit, **aucune dissolution possible**.
+
+Le cadre du sprite est désormais **toujours celui de la loupe** (le plus grand)
+et c'est l'échelle qui travaille : au repos on descend en résolution au lieu de
+monter, ce qui est le bon sens de l'échantillonnage.
+
+**Les trois autres transparences, tuées avec :**
+1. **La voisine SORT PAR LE CÔTÉ** (`cx` → hors cadre, échelle −30 %) au lieu de
+   se dissoudre. Un objet qui devient translucide n'existe pas dans le monde ;
+   un objet qui sort du cadre, si. Elle ne perd que 34 % d'opacité.
+2. **Les textes ont leur PROPRE horloge** (`texteOp`) : ils partent en 0,16 s et
+   reviennent 0,30 s après la fermeture. Portés par `loupe`, ils se dissolvaient
+   pendant les 0,62 s du ressort — une page entière qui devient translucide sous
+   l'objet qui grandit, c'est exactement ce qu'on lit comme « cheap ».
+3. **L'ombre portée reste SERRÉE** (rayon 26 et non 40) : une auréole grise
+   large autour d'une pièce sur un sol clair se lit comme de la transparence,
+   pas comme du poids.
+
+**Et ce qui rend la transition spectaculaire**, enfin : la pièce fait **UN TOUR
+COMPLET** en montant (`tours[i] += 1` dans le MÊME `withAnimation` que `loupe` —
+un objet qui grossit sans tourner est un zoom, un objet qui tourne en venant est
+un objet qu'on vous montre ; un tour ENTIER et pas un demi, sinon elle finit sur
+la tranche), plus **le théâtre** : la chambre se retire dans l'ombre par les
+BORDS (ouverture radiale centrée sur la pièce, jamais un voile uniforme — un
+voile uniforme grise l'objet aussi).
+
+⚠️ Le tour ne s'anime que parce que `PieceSprite` est devenu `Animatable` (§14.3).
+
+### 14.7 La chambre recuite (« on voit tous les défauts »)
+
+`coffre-salle-loop.mp4` faisait **540 px** de large pour une card qui en
+demande **1206 au 3×** — 2,2 × d'agrandissement au repos, **3,0 ×** la loupe
+ouverte. Recuit en **1620 × 3518** (pixel pour pixel au repos, 1,0 × à la
+loupe), et `salle-poster` avec lui :
+
+```sh
+ffmpeg -y -i ~/Downloads/backgroundcoffre.mp4 \
+  -vf "crop=1768:3840:196:0,scale=1620:3518:flags=lanczos,format=yuv420p" \
+  -c:v libx264 -profile:v high -crf 21 -preset veryslow -movflags +faststart \
+  -an -color_range tv -colorspace bt709 -color_primaries bt709 -color_trc bt709 \
+  Woop/Media/coffre-salle-loop.mp4        # 3,0 Mo
+```
+
+Le `crop` reproduit exactement le recadrage d'origine (déduit de la barre :
+elle passe de x ∈ [0,1685 ; 0,8208] dans la source à [0,169 ; 0,821] ici).
+
+### 14.8 Le sens des deux pièces (la petite card de verre)
+
+| | Compte | Mot | Ligne de verre |
+|---|---|---|---|
+| OR | `coins` | coins earned | 20 coins for every set you finish. |
+| NOIRE | **0** | legendary coins | One opens a legendary card booster. |
+
+⚠️ Premier jet recalé d'un mot — *« ça fait trop cheap »* : étiquette en
+capitales, deux lignes, verre teinté à 42 %. Ce qui rend une mention premium,
+c'est ce qu'on lui ENLÈVE : plus de titre, **une seule ligne**, et la moitié de
+la matière du verre (teinte blanche 0,28, liseré noir 0,07). Les deux comptes
+et les deux lignes se croisent sur `page`, **à taille fixe** — deux cards
+montées/démontées au cran feraient sauter la mise en page.
+
+⚠️ Et l'économie n'est tranchée qu'à moitié : `CoffreFortPurse.perSeries = 20`
+dit ce qu'une série rapporte, **rien ne dit ce qu'une pièce achète**. Le prix
+du booster s'écrira dans `CoffreV2Page.compte(_:)`, et nulle part ailleurs.
+
+### 14.9 Ce qui reste ouvert
+
+1. **La pluie de petites pièces** — à filmer sur le téléphone avec
+   `-coffreTap` sous la main.
+2. Le prix d'un booster (le seul chiffre qui manque à la card de verre).
+3. Verdicts téléphone sur la loupe : taille, écart au néon, densité de fumée.
+
+---
+
+# §15. LE PODIUM ET LE PROJECTEUR — la chambre RETOURNÉE (plan, 26-08)
+
+> **CE CHAPITRE EST UN PLAN. RIEN N'EST CODÉ.** Tout ce qui suit est mesuré sur
+> `~/Desktop/podium.png` (la maquette de Kathryn), sur `coffre-salle-loop.mp4`
+> et sur les planches de sprites. Les images de travail :
+> `refs/podium-maquette-kathryn.jpg` (sa maquette) et `refs/podium-compositions.jpg`
+> (quatre montages de vérification, faits hors du projet).
+
+## 15.1 La demande, mot pour mot
+
+> « dans cet écran cela manque de mise en valeur, il faut mettre les pièces en
+> avant comme un podium et un spotlight, mais avec le fond gris j'ai pas
+> l'impression qu'on va y arriver »
+> « j'ai inversé le background, une grosse majorité est noir »
+> « il faut rajouter un spotlight au-dessus de la lune sélectionnée, sans la
+> grossir comme avant — je tap, elle grossit un peu mais pas trop »
+> « je te passe l'image du podium, il faudra que tu la crop pour pas perdre
+> l'animation néon en haut, et tu vas le fondre dans le noir »
+
+Et elle avait raison AVANT de savoir pourquoi : **un projecteur n'est pas de la
+lumière, c'est du NOIR.** Le sol de la chambre est mesuré à **L 148-152** sur
+toute la moitié basse. On ne peut pas éclairer ce qui est déjà éclairé — aucun
+faisceau, aucun halo, aucun liseré ne peut se lire là-dessus. Retourner la
+chambre n'est donc pas un goût, c'est la seule façon d'avoir de quoi allumer.
+
+## 15.2 ⚠️ LA MESURE QUI ÉCONOMISE UN FICHIER : SON FOND EST LA CHAMBRE ACTUELLE, RETOURNÉE
+
+Profil vertical au centre, autour de la barre, sa maquette contre un simple
+`vflip` de `coffre-salle-loop.mp4` :
+
+| Écart à la barre | Maquette Kathryn | `vflip` de la chambre |
+|---|---|---|
+| −0,20 H | (187, 161, 155) L 166 | (186, 172, 173) L 175 |
+| −0,12 H | (243, 151, 131) L 169 | (230, 172, 162) L 184 |
+| −0,06 H | (252, 112, 65) L 138 | (254, 137, 81) L 158 |
+| −0,02 H | (255, 100, 7) L 126 | (253, 119, 0) L 139 |
+| +0,02 H | (48, 7, 0) L 15 | (26, 0, 0) L 5 |
+| +0,05 H | (5, 0, 0) L 1,1 | (3, 0, 0) L 0,6 |
+
+**C'est la même rampe, la même loi maison (R à 254, le VERT qui monte, le BLEU
+à zéro), la même chute au noir.** Sa maquette n'est pas un nouveau décor : c'est
+le nôtre à l'envers. **Aucun nouveau rendu n'est nécessaire pour le fond** — un
+`vflip` à la cuisson suffit.
+
+La seule différence est le CADRAGE : elle met la barre à **0,344 H**, le
+retournement naturel la met à **0,507 H**.
+
+## 15.3 ⚠️⚠️ LE PODIUM SE COMPOSE EN ADDITIF — ET C'EST MESURÉ, PAS ASTUCIEUX
+
+« Tu vas le fondre dans le noir » : il n'y a **rien à fondre**, et c'est le
+cadeau de ces deux fichiers.
+
+| Sonde | Valeur |
+|---|---|
+| Le noir de la chambre retournée là où le podium se pose (y/H 0,60 → 0,95) | **moyenne 0,0000 · max 0,0 · p99,9 = 0,00** |
+| Le pourtour du podium dans sa maquette, à gauche du socle | moyenne 4,4 · p99 16,9 (c'est sa propre retombée de lumière, elle fait partie de l'objet) |
+| … à droite | moyenne 2,4 · p99 8,9 |
+| … sous le reflet | moyenne 1,2 · p99 3,5 |
+| … au-dessus du socle | moyenne 1,2 · p99 3,2 |
+
+➜ **Le podium se pose en `.blendMode(.plusLighter)` sur le noir de la chambre.**
+Son fond noir disparaît EXACTEMENT (zéro + presque-zéro = presque-zéro : au pire
+4/255 de voile dans les coins vides, invisible), et sa retombée de lumière au
+sol arrive avec lui. **Pas de masque à dessiner, pas d'alpha à détourer, pas de
+bord à raccorder.** Vérifié au montage (`refs/podium-compositions.jpg`).
+
+⚠️ Corollaire à ne pas rater : ça n'est vrai **que dans la zone noire**. Le
+podium ne doit jamais chevaucher la barre ni le mur — au-dessus de 0,50 H,
+l'additif éclaircirait le décor.
+
+## 15.4 Le découpage du podium (les cotes)
+
+Mesuré sur `podium.png` (941 × 1672, ratio 0,563) :
+
+| Grandeur | Fraction | px |
+|---|---|---|
+| Cœur de la barre | y/H **0,3417** | 571 |
+| Étendue de la barre | x ∈ [0,148 ; 0,845] | |
+| Cylindre du podium — largeur | **0,3932 W** | 370 |
+| Cylindre — haut (ellipse du dessus) | y/H **0,6471** | 1082 |
+| Cylindre — bas | y/H **0,7632** | 1276 |
+| Centre du cylindre | x/W **0,4984** (centré) | |
+| Le reflet meurt | vers y/H 0,86 | |
+
+**La découpe à faire** : `x ∈ [0,18 ; 0,82]`, `y ∈ [0,615 ; 0,90]` — on prend
+LARGE, parce que la retombée et le reflet **font partie de l'objet** ; les
+rogner, c'est reposer le socle sur une arête.
+
+⚠️ **RÉSOLUTION — la seule vraie limite.** Le cylindre ne fait que **370 px** de
+large dans son fichier. Pour un socle de 185 pt à l'écran il en faut **555 au
+3×** : on agrandirait de **1,5×**. Sur un objet sombre et doux ça passe (vérifié
+au montage), mais si elle peut ré-exporter la même image en **≥ 1400 px de
+large**, le socle devient net gratuitement. *À demander, pas bloquant.*
+
+## 15.5 Le cadrage — la seule vraie décision de composition
+
+On veut la barre plus haut que son retournement naturel (0,507 H) pour ouvrir
+du noir. **La forme juste est un décalage, pas une déformation** : le film garde
+sa taille et sa largeur d'écran, on le fait GLISSER vers le haut, et le bas
+découvert est du noir — celui de la card, exactement le même que celui du film.
+
+Coût mesuré de la remontée à 0,344 H (soit −145 pt) : la première ligne visible
+du mur passe de **L 157 à L 171**. C'est-à-dire qu'on perd les gris les plus
+pâles du haut, et **rien d'autre**. Le décalage est gratuit.
+
+| Variante | Barre | Noir disponible | |
+|---|---|---|---|
+| **A** | 0,344 H | 66 % | son cadrage, celui de sa maquette — **reco** |
+| B | 0,430 H | 57 % | compromis, on garde tout le mur |
+| C | 0,507 H | 49 % | le retournement nu ; **le podium et la barre se disputent la place** |
+
+## 15.6 L'anatomie proposée (à fouetter au banc, pas à croire sur parole)
+
+| Élément | Place | Cote |
+|---|---|---|
+| Barre néon | 0,344 H | (le film) |
+| **Le faisceau** | du bord haut jusqu'au socle | cône très diffus + flaque sur le socle |
+| Ellipse haute du podium | **0,660 H** | socle **0,46 W** = 185 pt |
+| La pièce, DEBOUT sur le socle | centre **0,578 H** | **0,36 W** = 145 pt |
+| Le compte + son mot | 0,800 H | |
+| La petite card de verre | 0,872 H | |
+
+⚠️ **DEUX CONSÉQUENCES QUI VONT MORDRE SI ON NE LES ÉCRIT PAS MAINTENANT :**
+
+1. **L'ENCRE S'INVERSE.** Aujourd'hui le compte et la card de verre sont en
+   **encre sombre sur le sol clair** (`encre = white 0,10`, verre teinté BLANC à
+   0,28 — la recette de JOUR de `ChipVerre`). Dans la chambre retournée, tout ce
+   texte tombe sur du **NOIR** : il faut la recette de NUIT (encre blanche,
+   verre teinté NOIR 0,5, liseré blanc 0,08). Les deux existent déjà dans
+   `ChipVerre` et se pilotent par `clarte` — **rien à inventer, tout à
+   rebrancher**.
+2. **LA PHRASE DU HAUT TOMBE DANS LA LUMIÈRE.** « Find what you worked for. »
+   vit à y 63…250, c'est-à-dire **en plein dans le mur éclairé**. Trois issues :
+   (a) elle descend sous le podium avec le reste du texte — **reco**, le haut
+   devient du décor pur et c'est ce que montrent ses deux réfs ; (b) elle passe
+   en encre sombre sur le mur ; (c) on redescend le mur, ce qui reprend le noir
+   qu'on vient de gagner. Le chevron, lui, reste en haut à gauche et bascule en
+   `ChipVerre(clarte: 1)` — la recette de jour, déjà écrite.
+
+## 15.7 Le projecteur
+
+**La loi** : il ne se dessine pas, il se **creuse**. Ce qui le fait exister,
+c'est le noir autour, pas le blanc dedans. Deux couches seulement (l'école déjà
+validée sur la robe `spotlight` de la reward card, §7a du plan des rewards) :
+- **le cône** — très diffus, du bord haut jusqu'au socle, ouverture ~30°,
+  opacité basse ; c'est du volume, pas un trait ;
+- **la flaque** — une ellipse écrasée sur le dessus du socle, plus vive que le
+  cône : c'est ELLE qui dit « la lumière touche ».
+
+Teinte : la rampe maison, **R à 1,00, le vert qui monte, le bleu à zéro** — le
+projecteur est de la même famille que la barre, jamais un blanc bleuté.
+
+**Il est FIXE et il désigne** : il reste au centre, et le manège fait passer les
+pièces dessous. C'est ce qui donne un sens à « la lune **sélectionnée** » — la
+sélectionnée, c'est celle qui est sous la lumière. (Un projecteur qui suit la
+pièce ne désigne plus rien : il devient un accessoire de la pièce.)
+
+Il pulse très légèrement au repos (±4 %, période ~5,5 s, hors phase avec la
+respiration de la barre) : une lampe de théâtre vit, elle n'est pas une découpe
+en carton.
+
+## 15.8 ⚠️ LA QUESTION OUVERTE : LA SECONDE PIÈCE A-T-ELLE SON SOCLE ?
+
+Aujourd'hui la voisine flotte au bord, floue. Sur du noir, **flotter se voit** :
+au montage elle a l'air suspendue. Trois formes, et il faut trancher :
+
+- **(a) UN SOCLE PAR PIÈCE — reco.** Une rangée de podiums qui défile ; celui du
+  centre est sous le faisceau, les autres sont dans l'ombre (plus petits, plus
+  sourds, plus flous). Le manège devient une **galerie**, et le projecteur
+  devient la sélection. C'est aussi ce que montre sa réf chinoise.
+- **(b) UN SEUL SOCLE, les pièces passent dessus.** Plus sobre, mais pendant le
+  geste il y a un instant où le socle est vide ou porte deux pièces.
+- **(c) La voisine reste sans socle**, simple invite au bord. Le moins de
+  travail, mais c'est le défaut d'aujourd'hui qu'on garde.
+
+⚠️ (a) suppose un socle **détouré**, pas la vignette entière — sinon les
+retombées de lumière des socles voisins s'additionnent en un tapis gris. Sa
+maquette donne un socle **au centre, avec sa lumière** : pour (a) il faudra soit
+qu'elle exporte le socle **seul sur noir, sans sa flaque**, soit qu'on ne
+compose la flaque que pour celui du centre.
+
+## 15.9 Le tap — « elle grossit un peu, mais pas trop »
+
+La loupe à **0,64 W** est recalée. Ce que le tap fait désormais :
+
+| | Repos | Ouverte |
+|---|---|---|
+| Diamètre | 145 pt | **~180 pt** (×1,25, et pas ×1,9) |
+| Hauteur | posée sur le socle | **décollée de ~16 pt** — elle LÉVITE |
+| Faisceau | nominal | **+45 %**, cône resserré |
+| Le reste de la scène | nominal | s'assombrit de ~35 % |
+| Fumée noire | — | comme aujourd'hui, mais autour du socle |
+
+**C'est la LUMIÈRE qui fait la mise en valeur, plus la taille.** Et ça règle du
+même coup le grief « trop gros / collé au néon » : à 180 pt le sommet de la
+pièce est à 0,49 H, soit **128 pt sous la barre**.
+
+⚠️ Tout ce qui a été payé le 26-08 reste valable et ne se rediscute pas : le
+cadre du sprite **ne bouge jamais** (c'est `scaleEffect` qui travaille, sinon
+SwiftUI fond les bitmaps → la « transparence cheap »), la voisine **sort par le
+côté**, les textes ont **leur propre horloge**, et le tour complet accompagne la
+montée.
+
+## 15.10 Ce qui MEURT dans la page actuelle
+
+- `CoffreV2Cotes.piecY = 0,615` → remplacé par la cote du socle.
+- **L'ombre de contact** (l'ellipse noire) : sur du noir, elle n'existe plus.
+  C'est le **reflet du socle** (qui vient avec l'image) et la flaque de lumière
+  qui font le contact.
+- **`loupeZoom` — la chambre qui remonte** : elle remontait pour dégager le sol
+  clair. Le noir est déjà là ; la chambre ne bouge plus.
+- **Le vignettage radial de la loupe** : il servait à assombrir un sol clair.
+  Remplacé par la baisse du décor et la montée du faisceau.
+- **`Atterrissage`** : la barre qui frappe et la nappe restent (elles sont
+  toujours au bon endroit) ; **l'onde au sol** doit passer **sur le socle**, où
+  il y a de la lumière — sur du noir, un anneau clair est un anneau qui flotte.
+- **`encre`** et la recette de la card de verre : voir §15.6, elles s'inversent.
+
+## 15.11 Les jalons
+
+| | | Verdict attendu |
+|---|---|---|
+| **P0** | Recuire la chambre **retournée** (`vflip`) + son image de pose. Une commande, zéro risque. | — |
+| **P1** | Le cadrage : banc `-coffreBarre 0.344 / 0.43 / 0.507`, page nue. | **le cadrage A/B/C** |
+| **P2** | Le podium en additif + la pièce debout dessus, sans faisceau. | les cotes du socle et de la pièce |
+| **P3** | Le faisceau (cône + flaque), fixe, avec sa pulsation. | **l'intensité** — c'est là que ça se joue |
+| **P4** | Le texte : inversion de l'encre, descente de la phrase, verre de nuit. | la lisibilité |
+| **P5** | La seconde pièce : trancher (a)/(b)/(c) et le socle qui va avec. | **sa décision** |
+| **P6** | Le tap ×1,25 + lévitation + faisceau qui monte. | |
+| **P7** | L'arrivée : le film + fondu au noir + **l'allumage devient l'allumage du PROJECTEUR**, pas de la chambre. Le noir tenu prend tout son sens : la scène est déjà noire, c'est le faisceau qui naît. | |
+
+⚠️ P7 est un cadeau du retournement : aujourd'hui l'allumage doit faire naître
+une chambre entière en 0,17 s. Sur une scène noire, il n'a plus qu'à **allumer
+une lampe sur un objet** — et c'est exactement le geste d'un projecteur de
+théâtre.
+
+## 15.12 Ce qu'il me faut d'elle
+
+1. **La décision §15.8** (un socle par pièce, un seul, ou aucun pour la voisine).
+2. *Si (a)* : le socle **seul sur noir, sans sa flaque de lumière**.
+3. *Optionnel, gratuit en qualité* : la même image de podium ré-exportée à
+   **≥ 1400 px de large** (aujourd'hui le cylindre ne fait que 370 px, on
+   agrandit de 1,5×).
+4. Le cadrage A/B/C — mais ça, le banc P1 le lui montrera mieux qu'une question.
+
+## 15.13 CE QUI EST CODÉ (26-08) — et les trois calages payés
+
+Assets recuits : `coffre-salle-loop.mp4` **retourné** (`vflip`, 1620 × 3518) ·
+`salle-poster` avec lui · `coffre-podium` découpé de sa maquette
+(`crop 603 × 360 à (169, 1028)`, fondu bas et latéral cuits dans l'image).
+
+Code : `SceneCoffre` (toute la géométrie sortie des `ViewBuilder`) ·
+`CoffreV2Podium` (les cotes mesurées du socle) · `Projecteur` (cône + flaque,
+pulsation 15 Hz) · `PiedCoffre` (le pied de page) · `MesuresPiece` réécrit
+autour de la MARCHE.
+
+**Le socle ne bouge pas, les pièces viennent dessus** (sa décision) : `mont =
+max(0, 1 − 2|e|)`. À mi-course les deux sont descendues et **l'estrade est
+LIBRE** — c'est le plus beau moment du geste. Avec `1 − |e|` on aurait eu deux
+demi-pièces en lévitation au-dessus du même socle.
+
+### Les trois calages, mesurés
+
+1. **« Le blanc prend tout le haut header de l'iPhone, et on voit toute la
+   démarcation de l'image. »** Le retournement avait cassé la **loi 2 de la
+   page** — le noir continu : le quart HAUT du fichier était à vrai zéro, et
+   c'est lui qui rendait le début de la card invisible. Retournée, la chambre
+   pose son mur ÉCLAIRÉ sous l'encoche.
+   *Remède :* un masque **en espace ÉCRAN** (jamais en espace vidéo) qui tue le
+   mur sur trois bords — le haut (noir plein jusqu'à 0,035 H, plein mur à
+   0,105) et les deux côtés (5,5 %). Pas de fondu en bas : il n'y a que du noir.
+   ⚠️ Et il ne porte QUE sur la chambre — le socle, la pièce et le texte sont
+   des couches à part. C'est la faute exacte de l'ancien `fonduBords`, qui
+   mangeait le haut et le bas de la pièce du film.
+   *Vérifié :* y/H 0 → 0,035 = **0,0 absolu** ; bords latéraux à **10-13 sur une
+   moyenne de 153**, soit 8 % du mur.
+   *Conséquence :* le chevron descend de 63 à **104** — à 63 il tombait dans le
+   fondu, et un chip de JOUR posé sur du gris à L 80 n'est lisible ni de jour
+   ni de nuit. Et la barre descend de 0,344 à **0,375 H** pour rendre sa place
+   au titre.
+
+2. **« Les pièces flottent légèrement par défaut au-dessus. »** Elles étaient
+   posées sur `cylHaut` — le bord **ARRIÈRE** de l'ellipse du dessus, c'est-à-dire
+   sur le vide derrière le socle. Mesuré au profil, la face du dessus va de
+   y 1082 à 1140 (sa lèvre avant, L 82,7) : le niveau de pose est son CENTRE,
+   **0,2306** du découpage — soit **13 pt plus bas**. `cylPose` existe pour ça,
+   et `yBas` s'en déduit.
+
+3. **« Le composant footer n'est pas assez travaillé. »** Il ne l'était pas :
+   un chiffre, un mot et une pilule posés l'un sous l'autre, ce sont trois
+   objets qui flottent au même endroit. `PiedCoffre` en fait **un** : une seule
+   dalle de verre de nuit, le compte et la phrase séparés par un filet, le mot
+   en petites capitales espacées, et **un liseré spéculaire en haut qui meurt à
+   ses deux bouts** — c'est lui qui donne l'épaisseur, et c'est la seule chose
+   qui sépare une dalle de verre d'un rectangle gris (un liseré qui va d'un
+   bord à l'autre ne l'éclaire pas, il le DESSINE).
+
+### Les cotes finales
+
+| | |
+|---|---|
+| Barre néon | 0,375 H |
+| Chevron / titre | 104 pt, **encre SOMBRE** (il vit sur le mur) |
+| Pose du socle | 0,665 H · cylindre 0,42 W |
+| Pièce au repos | 152 pt · sommet à **101 pt** sous la barre |
+| Pièce au tap | ×1,22 = 185 pt, +16 pt de lévitation · sommet à **52 pt** sous la barre |
+| Voisine | au PIED du socle, rail 0,38 W, −24 % de lumière |
+| Pied de page | dalle 352 × 86, centrée à `podFin + 58` |
+
+### Ce qui reste
+
+- La **pluie de petites pièces** au tap, toujours non identifiée (`-coffreTap`
+  est là pour la filmer).
+- Le prix d'un booster (le seul chiffre qui manque à `compte(_:)`).
+- Verdicts téléphone : intensité du faisceau, densité de la fumée, et le vide
+  noir entre la barre et le socle.
+
+## 15.14 Les quatre calages du soir (26-08) — et une leçon sur « fondu »
+
+**① « Je parlais de la démarcation de la PHOTO DU PODIUM, qui se voit quand
+l'écran s'éclaire. »** J'avais entendu « le mur » ; c'était le socle. La cause
+est mécanique : sa retombée de lumière va jusqu'à **x 0,05** de sa maquette
+(mesuré, L 4,4 de moyenne à gauche du cylindre), et mon premier découpage la
+TRANCHAIT. En `.plusLighter`, un bord tranché à L 4 est invisible sur du noir —
+mais **dès que la scène monte d'un cran, le rectangle de la photo apparaît**.
+*Remède :* on prend tout — `crop 884 × 493 à (28, 961)` — et les quatre bords
+meurent **en cosinus dans l'image elle-même** (13 % en haut, 20 % en bas, 15 %
+de chaque côté). Vérifié : les trois premiers pixels de chaque bord sont à
+**0,01 / 255**, et le saut maximal mesuré sur une ligne traversant le socle,
+écran allumé, est de **4,57 / 255** — et il tombe *dans* la retombée, pas sur un
+bord.
+
+**② « Je voulais pas que la partie grise soit FONDUE — elle prend juste bien
+tout l'écran iPhone, elle était coupée avant. »** Deux jets ratés pour un seul
+malentendu : le patron `GrandeCardExos` (marge 10 pt + quatre coins à 55)
+**coupait** le mur, et le masque en dégradé que j'ai posé ensuite le faisait
+**mourir** sous l'encoche. Elle ne voulait ni l'un ni l'autre : **plein cadre**.
+*Remède :* `FormeScene` — haut carré et à ras bord, bas arrondi, et elle garde
+le seul comportement qui compte (la card se raccourcit à la levée, sinon la
+lune est inatteignable). Vérifié : le mur touche les trois bords (L 93 aux
+arêtes latérales dès y/H 0,00). Et le chevron retrouve sa cote canonique de 63.
+
+> **LEÇON.** « Fondu » ne désigne pas le même objet selon qui parle. Deux
+> chantiers de suite ont été refaits parce que j'ai appliqué le remède au
+> mauvais calque. Avant de fondre quoi que ce soit : **demander QUEL bord**, ou
+> le montrer en capture.
+
+**③ « Les pièces étaient un peu plus au-dessus du podium, là elles sont trop
+collées. »** J'étais passé du vide (13 pt, `cylHaut` = le bord ARRIÈRE de
+l'ellipse) au contact franc (`cylPose`, mesuré). Elle voulait le milieu :
+`CoffreV2Cotes.vol = 8` — une pièce de verre qui **affleure** son socle. Ce
+n'est pas une erreur de pose, c'est la seule chose qui dise qu'elle est
+précieuse.
+
+**④ « La vidéo d'entrée, tu l'as coupée trop tôt. »** Le métrage ne peut pas
+être rallongé : au-delà de l'image 72 la pièce se met de champ et RECULE (§1.1),
+finir là-dessus c'est finir sur un objet qui s'en va. Ce qu'on rallonge, c'est
+le **temps de pose sur son sommet : 1,38 s au lieu de 0,68** (`terminer()` à
+3,25 s), et le fondu au noir passe de 0,34 à **0,44 s**, le noir tenu de 0,16 à
+**0,18**. C'est le temps qui fait exister une arrivée, pas le métrage.
+
+**⑤ La fluidité.** Le projecteur re-floutait un tracé **plein écran** douze fois
+par seconde. La pulsation ne touche désormais **que l'opacité** : le corps du
+faisceau est construit une fois, groupé en une seule passe de composition
+(`compositingGroup`), et l'horloge ne fait plus varier qu'un scalaire.
+
+## 15.15 « Ça sert à rien d'éclairer toute la page »
+
+Verdict : *« l'image se voit, une démarcation du background vs le bas sous la
+card coins earned… au pire insiste juste sur le spotlight au-dessus qui
+s'allume plus et qui bouge, là c'est trop discret. »*
+
+**La cause, mesurée.** La retombée de lumière du rendu de Kathryn baigne tout
+le sol : à l'écran ça faisait une nappe à **L 11-25 qui s'arrêtait à y/H 0,83**,
+avec du noir dessous. Et **une nappe qui s'arrête, on lit le bord de l'image**.
+
+> **LA LOI.** Le remède n'est jamais d'AGRANDIR la nappe pour qu'elle atteigne
+> les bords — c'est de **ne plus en avoir**. Un décor lavé de lumière trahit
+> toujours son cadre quelque part ; une lumière posée sur un OBJET, jamais.
+
+**Deux remèdes, et ils vont ensemble :**
+
+1. **Le socle éteint sa nappe lointaine.** Un facteur radial cuit dans l'asset
+   (`0,16 + 0,84·exp(−r²/0,62)`, métrique elliptique centrée sur le cylindre) :
+   le socle garde ses **L 209**, la nappe au sol tombe de **L 20 à L 2**.
+   Vérifié après coup à l'écran : la colonne hors du socle passe de 11-25 à
+   **0,2-2,7**, et elle meurt sans marche.
+2. **Le projecteur se resserre sur la pièce, et il BOUGE.** Trois foyers, tous
+   serrés, plus aucun lavage :
+   - **la COURONNE** sur le crâne de la pièce — c'est elle qu'elle a montrée en
+     gros plan, et c'est elle qu'on voit d'abord (mesuré à l'écran : pic
+     **L 107** pile sur le bord haut de la pièce) ;
+   - **le CÔNE**, court : de la barre au cœur de la pièce, plus jusqu'au sol ;
+   - **la FLAQUE** sur le socle, à 0,34 : juste de quoi dire que ça POSE.
+
+   ⚠️ **Il CHERCHE, il n'oscille pas** : deux harmoniques aux périodes
+   **premières** (7 s et 11 s) — leur somme ne se répète qu'au bout de 77 s,
+   donc l'œil n'y trouve jamais de cadence. Une seule sinusoïde se lit comme un
+   métronome en trois allers. (Loi reprise de la robe `spotlight` des rewards.)
+   Le balayage vaut ±0,045 W au sommet du cône, ±0,014 W sur la couronne.
+
+   ⚠️ Et il ne suit la pièce que **verticalement** (quand elle grandit et
+   lévite), jamais latéralement : le projecteur est FIXE, et c'est ce qui fait
+   qu'il DÉSIGNE (loi 3). Au tap il monte de **55 %**.
+
+**Et le vol de la pièce, troisième passe.** 13 pt de vide involontaire (pose sur
+le bord arrière de l'ellipse) → contact franc (`cylPose` mesuré) → **18 pt**,
+qui est la seule valeur qui ait été DEMANDÉE (« remonte un peu les pièces du
+podium, elles sont trop collées dessus »).
+
+---
+
+# §16. L'ÉVENTAIL, LA LÉVITATION ET LA FLUIDITÉ (plan + exécution, 26-08)
+
+Verdicts : *« réduis la taille de la pièce par défaut encore »* · *« le halo,
+travaille-le plus en effet spotlight comme les cards rewards, très joli, un peu
+triangulaire, élégant »* · *« la pièce flotte légèrement par défaut »* · *« c'est
+pas fluide pour passer d'une pièce à l'autre au drag »* · *« il y a toujours la
+démarcation, car tu as activé que toute la page devienne plus claire au tap :
+non, pas besoin »*.
+
+## 16.1 ⚠️ LA DÉMARCATION QUI RESTAIT — elle avait raison sur la cause
+
+Ce n'était **pas** le socle (celui-là est réglé, §15.15). C'était **`eclat`** :
+le doigt posé sur la pièce faisait monter `.brightness(0,10)` et
+`.saturation(1,14)` **sur toute la chambre**. Éclaircir un décor, c'est
+exactement ce qui fait apparaître ses bords — la loi du §15.15, deuxième
+application en deux heures.
+
+> **`eclat` MEURT.** Il datait de la loi 1 (« la pièce est l'interrupteur »),
+> écrite quand la page n'avait pas de projecteur. Maintenant qu'elle en a un,
+> **c'est le faisceau qui répond au doigt**, pas la pièce entière. Une seule
+> lampe (loi 3), et elle est locale.
+
+## 16.2 Le halo devient L'ÉVENTAIL des rewards
+
+La recette est déjà validée (`RewardCard.swift`, `LampeEventail` + `Eventail` +
+`balayageSpot`). On la PORTE, on ne la réinvente pas :
+
+- **DEUX ÉVENTAILS** — la nappe LARGE et douce (flou 13) et le CŒUR étroit et
+  plus vif (flou 9, écrasé à 0,55 en x). *« La lumière a un corps et une âme. »*
+- **Les flancs sont FONDUS** par un masque latéral : *« un trait à bord franc
+  sur du noir est de l'encre, pas de la lumière »*. C'est ça qui donne le
+  triangle ÉLÉGANT plutôt qu'un cône découpé.
+- **Le balayage** `sin(0,62 t)·0,78 + sin(0,29 t + 1,3)·0,30`, borné — deux
+  harmoniques aux périodes premières : le projecteur CHERCHE. Rotation **ancrée
+  à la source**, sur le bord haut de l'éventail.
+- Teinte : la rampe maison (R à 1,00, le vert monte, le bleu à zéro) — le
+  blanc pur des rewards deviendrait bleuté à côté du néon.
+
+La **couronne** (la lumière posée sur le crâne de la pièce, sa capture en gros
+plan) reste, mais s'efface derrière l'éventail. La **flaque** sur le socle
+reste, discrète : elle dit que ça pose.
+
+## 16.3 Les cotes qui rétrécissent
+
+| | avant | après |
+|---|---|---|
+| Pièce au repos | 152 | **130** |
+| Socle (cylindre) | 0,42 W | **0,393 W** — SA cote, mesurée sur sa maquette |
+| Vol au repos | 18 pt | 18 pt + **une lévitation de ±3,2 pt** |
+
+Écarts vérifiés : sommet de la pièce à **105 pt** sous la barre au repos, **61**
+ouverte.
+
+## 16.4 La lévitation
+
+Elle ne flotte pas d'une hauteur, elle **respire** : ±3,2 pt, période 4,7 s.
+
+⚠️ Écrite en `ViewModifier` avec un `TimelineView` dedans, comme `CarteLevee`
+des exos : `body(content:)` reçoit l'arbre **déjà construit**, donc le relire
+vingt fois par seconde ne reconstruit rien. Et l'ombre, elle, ne bouge PAS —
+c'est l'écart entre l'objet et son ombre qui fait la lévitation.
+
+## 16.5 ⚠️ LA FLUIDITÉ DU MANÈGE — quatre causes, toutes mesurables
+
+Le drag écrit `page` soixante fois par seconde, et **tout ce qui lit `page`
+se reconstruit soixante fois par seconde**. Ce qui coûtait :
+
+1. **DEUX DALLES DE VERRE en fondu croisé sur `page`.** `glassEffect` est un
+   matériau système : en croiser deux à chaque image du geste, c'est deux
+   passes de matériau par image, pour une information qui **ne change qu'au
+   cran**. ➜ Le pied lit un **index discret** (`piedIdx`), mis à jour au
+   passage du cran avec son propre fondu. Pendant le geste, il ne bouge plus
+   du tout.
+2. **Le décor et le projecteur se reconstruisaient** parce que la page entière
+   se ré-évalue. ➜ `SceneCoffre` devient `Equatable`, la chambre sort en
+   `SalleFond` et le projecteur passe en `.equatable()` : SwiftUI saute leur
+   corps tant que leurs entrées n'ont pas bougé.
+3. **`mont` avait un COUDE** à |e| = 0,5 (`max(0, 1−2|e|)`) : la pièce changeait
+   de direction d'un coup au milieu du voyage. ➜ Lissé en `smoothstep`.
+4. **Le flou par image.** `.blur` sur une `Image` force une passe hors écran à
+   chaque image. ➜ Rayon max 7 → **5**, et il meurt plus tôt.
+
+## 16.6 Ce qui ne change pas
+
+Le cadre du sprite ne bouge jamais (c'est `scaleEffect` qui travaille) · la
+voisine sort par le côté · les textes ont leur propre horloge · le tour complet
+au tap · le projecteur reste FIXE latéralement (il DÉSIGNE) · la scène est plein
+cadre, ni coupée ni fondue.
+
+---
+
+# §17. MINI-FIX (26-08) — le drag, le halo de trop, et la légèreté
+
+## 17.1 ⚠️ LE DRAG NE MARCHE QUE DANS UN SENS — trois causes, pas une
+
+*« J'arrive à drag quand je drag vers la gauche pour voir la pièce de droite,
+et inversement ça marche pas. »*
+
+**(a) LA ZONE DE PRISE DE LA PIÈCE MANGE LE MILIEU DE L'ÉCRAN.** `prise = d ×
+0,70` = **91 pt de rayon** autour du centre de la pièce, soit une fenêtre de
+182 pt de large (45 % de l'écran) et de 182 pt de haut, pile à la hauteur où le
+doigt passe pour faire défiler. Tout geste qui commence là **tourne la pièce**
+au lieu de pousser le manège — et comme la pièce tourne bien, on ne comprend pas
+pourquoi le manège ne bouge pas.
+➜ `d × 0,56` = 73 pt : le disque fait 130 pt de large, on garde 8 pt de marge
+autour de lui et pas 26.
+
+**(b) LE SENS EST INVERSÉ PAR RAPPORT AU GESTE NATUREL.** Le code portait
+« vers la DROITE amène la pièce noire » (sa demande d'alors) : le rail va donc
+à l'inverse du doigt. Elle décrit aujourd'hui la convention normale — *« je drag
+vers la gauche pour voir la pièce de droite »* — et c'est elle qui gagne : **le
+rail suit le doigt.**
+
+**(c) LE CRAN POUVAIT REFUSER UN GESTE FRANC.** `cible = (pagePrise + élan)
+.rounded()` : une course de 100 pt suivie d'un lâcher mou rend un arrondi qui
+**revient en arrière**. Un geste franc doit TOUJOURS commettre.
+➜ Au-delà d'un quart de course, on part du côté où le doigt allait
+(`ceil`/`floor`), sans discuter de l'arrondi.
+
+## 17.2 « Tu as le spotlight ET un gros halo, faut choisir »
+
+Deux sources dans la même scène, c'est une de trop — et c'est le contraire de
+la loi 3 (une seule lampe). **La COURONNE meurt** : cette ellipse posée sur le
+crâne de la pièce faisait une galette floue derrière l'objet. Il ne reste que
+l'éventail (qui éclaire) et la flaque sur le socle (qui dit que ça pose).
+
+## 17.3 « Le spotlight beaucoup plus premium et léger »
+
+Un faisceau premium **ne peint pas un coin de gris** : il suggère du volume et
+il MEURT avant d'arriver. Trois réglages, tous dans le même sens :
+
+| | avant | après |
+|---|---|---|
+| Nappe — opacité de tête | 0,30 | **0,16** |
+| Nappe — flou | 13 | **19** |
+| Cœur — opacité de tête | 0,46 | **0,26** |
+| Cœur — flou | 9 | **13** |
+| Où la lumière est éteinte | à 100 % de la course | **à 82 %** — elle arrive, elle ne repeint pas |
