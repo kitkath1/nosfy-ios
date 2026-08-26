@@ -1978,20 +1978,25 @@ struct HomeNuitPage: View {
     /// ne voyait plus le flou : « il faut que le retour soit aussi fluide ».
     private static let dureeFermeture: Double = 1.25
 
-    /// ⚠️ **L'ARÊTE DE SÉANCE DESCEND DE 20** (verdict 26-08 soir, screenshot
-    /// à l'appui : « la card de la home doit être 20px plus bas » — la home en
-    /// séance, player en dock). 874 − 120 = **754**, et la bande de séance se
-    /// répartit : 30 d'air sous l'arête · 76 de player · 14 jusqu'au bord.
+    /// ⚠️ **LA CARD ORANGE S'ALLONGE ENCORE** (26-08, deuxième verdict de la
+    /// soirée : « la card orange pas assez longue » — les 20 premiers points
+    /// étaient trop timides). L'arête de séance tombe à 852 − 104 = **748**
+    /// sur l'écran de son téléphone, et la bande se répartit au point près :
+    /// 14 d'air sous l'arête · 76 de player · 14 jusqu'au bord.
+    ///
+    /// Le mobilier NE SUIT PAS la levée (mesuré : l'arête du widget
+    /// « This week » reste à 657 quelle que soit la levée — seule l'ARÊTE de
+    /// la card bouge) : baisser la levée ne fait donc qu'ALLONGER la card, et
+    /// ouvre le strip où le palet du menu vit désormais (voir `placeDy` au
+    /// montage de `MenuHote`).
     ///
     /// ⚠️ Ce verdict ARBITRE celui du 22-08 (« une seule arête pour les deux
-    /// états », qui avait recollé 734 et 684) : les deux états diffèrent
-    /// désormais de 20 pt, PARCE QUE leurs bandes n'ont pas les mêmes besoins
-    /// — celle du tiroir est cotée au point près pour le slider et sa gerbe
-    /// de poudre (voir `leveeTiroir`), celle de la séance n'héberge qu'un
-    /// player de 76 qui n'a que faire de 50 pt d'air. Si l'arête unique
-    /// redevient la consigne, c'est la bande du tiroir qu'il faudra
-    /// re-répartir — pas la séance qu'il faut remonter.
-    private static var leveeSeance: CGFloat { 120 }
+    /// états ») : les bandes n'ont pas les mêmes besoins — celle du tiroir
+    /// est cotée au point près pour le slider et sa gerbe de poudre (voir
+    /// `leveeTiroir`). Si l'arête unique redevient la consigne, c'est la
+    /// bande du tiroir qu'il faudra re-répartir — pas la séance qu'il faut
+    /// remonter.
+    private static var leveeSeance: CGFloat { 104 }
     /// LA LEVÉE DU TIROIR — 140, SA cote (l'arête à 734) : le slider vit dans
     /// l'espace que le player ouvrirait, 20 pt plus haut que lui depuis le
     /// 26-08.
@@ -2095,18 +2100,31 @@ struct HomeNuitPage: View {
                          // le galet ne sait même pas que le menu a changé.
                          couronne: false,
                          onRange: { galetRange = $0 },
-                         // LE GALET S'EFFACE DÈS QUE LA BANDE PARLE. Tiroir
-                         // ouvert, la rangée du bas appartient au slider puis au
-                         // player : le galet s'encastre dans le mur, sinon il se
-                         // pose littéralement DESSUS (vu en capture).
-                         rangerDemande: enSeance || tiroirOuvert
+                         // LE GALET S'EFFACE QUAND LE SLIDER PARLE — hors
+                         // séance seulement. Tiroir ouvert, la rangée du bas
+                         // appartient au slider : le galet s'encastre dans le
+                         // mur, sinon il se pose littéralement DESSUS (vu en
+                         // capture).
+                         // ⚠️ EN SÉANCE, ON NE RANGE PLUS (26-08 soir, dit dix
+                         // fois : « le petit palet vit dans la card orange »).
+                         // Le rangement de séance posait le palet au coin — sur
+                         // le player — à chaque sortie de languette. Sa place
+                         // MONTE dans la card (`placeDy`), le coin appartient
+                         // au player, et il n'y a plus rien à ranger.
+                         rangerDemande: (tiroirOuvert && !enSeance)
                              || vitrineSlot != nil,
                          // Le slider est dans la bande : pendant qu'il est là, le
                          // galet ne dispute plus le doigt. Et pendant la
                          // vitrine, TOUT le bas se tait.
                          verrouille: (tiroirOuvert && !enSeance)
                              || vitrineSlot != nil,
-                         reculExterne: reculVitrine) {
+                         reculExterne: reculVitrine,
+                         // LA PLACE DE SÉANCE DU PALET : au milieu du strip que
+                         // la card allongée ouvre sous « This week » (657) —
+                         // centre (55, 702), soit 14 pt d'air de chaque côté et
+                         // 46 au-dessus de l'arête (748). MESURÉ au banc
+                         // `-homeSeance`, pas déduit. 763 − 702 = 61.
+                         placeDy: enSeance ? 61 : 0) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
@@ -2477,6 +2495,16 @@ struct HomeNuitPage: View {
     /// (le slider, le galet) gagnent sur lui.
     private func fondPage(_ e: Double) -> some View {
         ZStack(alignment: .topLeading) {
+                // LA SONDE DU LAG (`-fps`) — le seul juge fiable du « pas
+                // fluide » : un CADisplayLink compte les battements réellement
+                // servis et publie chaque seconde à la console. Elle ne
+                // dessine rien et n'existe pas hors banc. Montée ICI parce que
+                // le « ça lag » du 26-08 vise la home : les chiffres d'abord.
+                if CommandLine.arguments.contains("-fps") {
+                    SondeCadence(quoi: enSeance ? "home-seance" : "home")
+                        .frame(width: 1, height: 1)
+                        .allowsHitTesting(false)
+                }
                 // LE SECRET, tout au fond : la card le couvre au repos, et
                 // le tirage vers le bas le découvre.
                 VStack(spacing: 0) {

@@ -197,6 +197,11 @@ struct WorkoutPill: View {
         // Le player n'a rien à présenter : il DEMANDE. Un seul panneau, un
         // seul état, joignable de partout.
     private func demanderLaPause() {
+        // SONDE (26-08 : « ça marche toujours pas le bouton stop ») — elle
+        // tranche entre « le tap ne part jamais » et « le tap part, le
+        // panneau ne monte pas ». À lire à la console de l'appareil, à
+        // retirer une fois le verdict rendu.
+        print("[SONDE-STOP] tap stop reçu (docked=\(docked)) — pauseOuverte ← true")
         UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
         withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
             DepartEtat.shared.pauseOuverte = true

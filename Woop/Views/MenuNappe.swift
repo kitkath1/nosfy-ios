@@ -204,6 +204,41 @@ struct GaletMaison: View {
                                feu: max(appui ? 1 : 0, feuSup))
                 }
             }
+            // LE HALO ROUGE QUI RESPIRE (26-08 : « anime le halo rouge
+            // autour stp »). Une BRAISE, pas un ripple : rien ne s'étale
+            // depuis le bouton (la loi de l'anneau tient), elle couve SOUS
+            // lui et le verre la réfracte à son bord — même famille que le
+            // halo d'invite du galet play. Elle vit dans la TimelineView qui
+            // bat déjà pour le souffle d'échelle : zéro structure en plus.
+            // ⚠️ En `.background` : un enfant plus large que le galet dans
+            // son ZStack gonflerait son cadre de LAYOUT de 62 à ~112 et
+            // décalerait sa place (le piège du ZStack gonflé, payé) — le
+            // background déborde sans peser. Amplitude HAUTE exprès (0,55 ↔
+            // 1,0) : la leçon du +2,2 de luminance est payée, un souffle
+            // qu'on ne mesure pas n'existe pas.
+            .background {
+                if !range {
+                    let braise = reduceMotion ? 0.78
+                        : 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 2 * .pi / 3.4))
+                    Circle()
+                        .fill(RadialGradient(
+                            stops: [
+                                .init(color: Color(red: 1.00, green: 0.30,
+                                                   blue: 0.16)
+                                    .opacity(0.44 * braise), location: 0.22),
+                                .init(color: Color(red: 0.86, green: 0.15,
+                                                   blue: 0.10)
+                                    .opacity(0.18 * braise), location: 0.62),
+                                .init(color: .clear, location: 1.0),
+                            ],
+                            center: .center,
+                            startRadius: taille * 0.16,
+                            endRadius: taille * 0.92))
+                        .frame(width: taille * 1.85, height: taille * 1.85)
+                        .scaleEffect(0.95 + 0.06 * braise)
+                        .allowsHitTesting(false)
+                }
+            }
             .scaleEffect((appui ? 0.94 : 1) * souffle)
             // Un amortissement BAS : la compression est franche, et le
             // relâchement DÉPASSE (≈ 1,02) avant de se poser. Un bouton qui
@@ -976,6 +1011,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// (flou 7 + échelle 0,974 + extinction), sans dupliquer la pile.
     /// `retrait` est déjà un `max` : une entrée de plus, pas un mécanisme.
     var reculExterne: Double = 0
+    /// LA PLACE DU GALET PEUT MONTER (26-08 soir, dit dix fois : « le petit
+    /// palet vit dans la card orange »). En séance, la page remonte sa PLACE
+    /// au-dessus de l'arête de la card — il n'est plus rangé, il ne se pose
+    /// plus sur le player : il VIT là, plein galet, attrapable. En points,
+    /// vers le haut, depuis la place de repos (55 du bas). Tout le reste —
+    /// bornes, couronne, retours — lit la place à travers cet écart.
+    var placeDy: CGFloat = 0
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -1301,7 +1343,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                         }
                     }
                     .padding(.leading, 24)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 24 + placeDy)
+                    // Le voyage de la place (repos ↔ séance) est SCOPÉ à sa
+                    // valeur : rien d'autre de la pile n'hérite du ressort.
+                    .animation(.spring(response: 0.5, dampingFraction: 0.82),
+                               value: placeDy)
                     // ⚠️ LA PRISE DE LA NAVETTE — « parfois je suis bloquée,
                     // j'arrive plus à la tirer ». Deux causes, mesurables :
                     //  · la navette fait 84 pt de haut, le cadre du galet 62 :
@@ -1594,7 +1640,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// où l'objet se trouve, il n'a plus besoin de rentrer d'abord.
     private func galetPos(_ taille: CGSize) -> CGPoint {
         CGPoint(x: Self.centre + porte.width,
-                y: taille.height - Self.centre + porte.height)
+                y: taille.height - Self.centre - placeDy + porte.height)
     }
 
     private func charge(_ now: Date) -> Double {
@@ -1776,7 +1822,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// Le galet ne sort jamais de l'écran : 8 pt de garde tout autour.
     private func borne(_ t: CGSize, _ s: CGSize) -> CGSize {
         let r = Self.rayon, m: CGFloat = 8
-        let cx = 24 + r, cy = s.height - 24 - r
+        let cx = 24 + r, cy = s.height - 24 - placeDy - r
         return CGSize(
             width: min(max(t.width, m + r - cx), s.width - m - r - cx),
             height: min(max(t.height, m + r - cy), s.height - m - r - cy))
