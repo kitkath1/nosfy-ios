@@ -37,12 +37,8 @@ struct WorkoutPill: View {
     var doneSeries: Int = 0
     var exoCount: Int = 0
 
-    /// LE STOP POSE LA QUESTION (18-08) : le panneau « Terminer la
-    /// session ? » vit DANS la dalle — un seul câblage, tous les hôtes
-    /// (fiche exo, calendrier, page exercice) l'ont d'un coup.
-    /// `-stopSheet` l'ouvre à la naissance (captures).
-    @State private var stopAsk =
-        CommandLine.arguments.contains("-stopSheet")
+    /// `-stopSheet` ouvre le panneau de fin à la naissance (captures).
+    /// ⚠️ Il passe désormais par l'état GLOBAL : le panneau vit à la racine.
 
     private let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
     private let dockShape = UnevenRoundedRectangle(
@@ -91,9 +87,9 @@ struct WorkoutPill: View {
             // UN SEUL bouton, le stop (verdict 18-08 : « finalement il
             // n'y a que le stop ») — la pause-placeholder est morte.
             if docked {
-                medallionButton("stop.fill") { stopAsk = true }
+                medallionButton("stop.fill") { demanderLaPause() }
             } else {
-                roundButton("stop.fill") { stopAsk = true }
+                roundButton("stop.fill") { demanderLaPause() }
             }
         }
         .padding(.leading, docked ? 20 : 11)
@@ -175,44 +171,38 @@ struct WorkoutPill: View {
         .contentShape(docked ? AnyShape(dockShape) : AnyShape(shape))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Workout in progress — \(exercise.name)")
-        // LE PANNEAU DU STOP : un cover à fond CLAIR (jamais un sheet
-        // système — il recule la fenêtre, payé deux fois) ; l'entrée et
-        // la sortie sont jouées PAR le panneau, le cover reste muet.
-        .fullScreenCover(isPresented: $stopAsk) {
-            StopSessionSheet(
-                onEnd: {
-                    // LA VRAIE FIN DE SÉANCE, ENFIN BRANCHÉE (le trou
-                    // save() est comblé) : le panneau se retire, et la
-                    // racine joue toute la chaîne — clôture, retour
-                    // home, trophée, pièces qui volent, pop-up booster.
-                    print("[flow] stop onEnd → clôture demandée")
-                    fermerStop()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        DepartEtat.shared.clotureDemandee = true
-                    }
-                },
-                onContinue: { fermerStop() },
-                series: doneSeries,
-                exos: exoCount,
-                startedAt: startedAt)
-                .presentationBackground(.clear)
-        }
-        .transaction { t in
-            if stopAsk { t.disablesAnimations = true }
-        }
     }
 
-    /// La fermeture du cover, sans l'animation système — le panneau a
-    /// déjà joué sa descente.
-    private func fermerStop() {
-        var tx = Transaction()
-        tx.disablesAnimations = true
-        withTransaction(tx) { stopAsk = false }
+        // ⚠️ **LE STOP EST UN ÉTAT GLOBAL, PLUS UN COVER LOCAL** (26-08,
+        // verdict n° 1 : « le bouton Stop ne répond pas, je me retrouve
+        // bloquée dans une session active sans moyen fiable de la fermer »).
+        //
+        // Le panneau était un `fullScreenCover` porté par LA PASTILLE
+        // ELLE-MÊME. Trois conséquences, toutes vécues :
+        //   · chaque instance du player avait SON état — trois pastilles dans
+        //     l'app, trois `stopAsk` qui s'ignorent ;
+        //   · la fiche détail n'en monte AUCUNE (mesuré : zéro occurrence),
+        //     donc de là il n'existait littéralement aucun bouton pour finir ;
+        //   · et depuis une page déjà présentée dans un cover, présenter un
+        //     second cover depuis une vue enfouie ne mène nulle part.
+        //
+        // Or le panneau de fin EXISTE DÉJÀ à la racine (`PausePanneauHote`,
+        // WoopApp), au-dessus du TabView, câblé sur `terminerSeance()` — donc
+        // sur la vraie clôture, le trophée, les pièces et la pop-up booster.
+        // Le player n'a rien à présenter : il DEMANDE. Un seul panneau, un
+        // seul état, joignable de partout.
+    private func demanderLaPause() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+            DepartEtat.shared.pauseOuverte = true
+        }
     }
 
     /// LE SOUFFLE du halo de la lune — la grammaire du petit néon des
     /// lignes d'historique : UNE animation `repeatForever`, jamais une
     /// TimelineView de plus (le chrono en tient déjà une).
+    /// Le souffle de la lune et de la braise. ⚠️ En DOCK il ne souffle pas :
+    /// il naît DÉJÀ au maximum et n'en bouge plus (cf. `onAppear` plus bas).
     @State private var lueur = false
 
     /// LA LUNE DE LA SÉANCE : le glyphe de la maison (« il n'y a qu'UNE
@@ -260,8 +250,32 @@ struct WorkoutPill: View {
         // hauteur, et capturait la géométrie en vol de l'insertion — le
         // player « flottait » à 5,2 s. Elle ne couvre plus que la lune,
         // c'est-à-dire exactement ce que `lueur` touche.
-        .animation(.easeInOut(duration: 2.6)
-            .repeatForever(autoreverses: true), value: lueur)
+        .animation(docked ? nil
+                   : .easeInOut(duration: 2.6)
+                        .repeatForever(autoreverses: true),
+                   value: lueur)
+        // ⚠️ **EN DOCK, LA LUNE NE RESPIRE PLUS** (26-08, verdict n° 8 :
+        // « le logo Lune du player flotte, le bouton Stop flotte, ils
+        // remontent et redescendent légèrement — ils doivent être
+        // PARFAITEMENT fixes »).
+        //
+        // MESURÉ, et ça corrige mon diagnostic du lot 3. Huit captures de la
+        // page exercices, séance ouverte :
+        //   · le BORD HAUT de la dalle : **794,67 pt sur les huit** — la
+        //     géométrie ne bouge pas d'un pixel, mon correctif de scoping
+        //     tient ;
+        //   · mais le centroïde lumineux de la lune varie de 21 pt et celui du
+        //     médaillon de 45 pt, sur une période de ~2,6 s — l'horloge de
+        //     `lueur`.
+        // Ce n'est donc PAS un offset parasite : c'est le SOUFFLE lui-même.
+        // Un halo qui enfle et retombe sous un objet immobile se lit comme un
+        // objet qui monte et redescend — l'œil ne fait pas la différence entre
+        // une lumière qui bouge et une forme qui bouge.
+        //
+        // Le souffle a été dessiné pour la pastille FLOTTANTE, posée sur la
+        // nuit. En DOCK — une dalle encastrée, bord à bord, sous la card — il
+        // n'a plus de raison d'être : une dalle de sol ne respire pas. Elle
+        // garde sa lumière, à son maximum, immobile.
         .onAppear { lueur = true }
     }
 
@@ -400,8 +414,10 @@ struct WorkoutPill: View {
         .buttonStyle(.plain)
         // La même respiration que la lune, et RIEN d'autre : le médaillon lit
         // `lueur` pour ses deux liserés, il n'a aucune géométrie animée.
-        .animation(.easeInOut(duration: 2.6)
-            .repeatForever(autoreverses: true), value: lueur)
+        .animation(docked ? nil
+                   : .easeInOut(duration: 2.6)
+                        .repeatForever(autoreverses: true),
+                   value: lueur)
     }
 
     private func roundButton(_ symbol: String,
