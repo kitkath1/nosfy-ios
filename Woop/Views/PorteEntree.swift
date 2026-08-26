@@ -322,15 +322,24 @@ struct PorteEntree: View {
                 // ③ LE CONTENU — les textes qui défilent, les dots, le bouton.
                 contenu(W: W, H: H, hHeader: hHeader, encartBas: encartBas)
 
-                // ④ LA SORTIE — « LA FLAMME EMBRASE » (§ 7 du plan, tranché
-                // 22-08). Trois rampes sur la MÊME horloge, en fonction pure
-                // du temps : le header meurt par le haut (un MASQUE, jamais
-                // une frame animée), le foyer de la flamme enfle, l'habillage
-                // s'en va. La coupe à 2,10 s appartient à la racine, sous le
-                // nuage de braises — rien ici ne la connaît.
+                // ④ LA SORTIE — LE PORTAIL DE LA LUNE (26-08).
+                //
+                // ⚠️ **LE RIDEAU NOIR EST MORT.** Verdict de Kathryn : « une
+                // grosse bande noire descend, ça lag, on dirait deux écrans
+                // superposés — supprime complètement cet effet ». C'était
+                // exactement ça : un `Rectangle().fill(.black)` ancré au bord
+                // HAUT dont la hauteur croissait de 0 à 70 % de l'écran en
+                // 1,45 s. Une bande noire qui descend n'est pas une
+                // transition, c'est un store qu'on baisse.
+                //
+                // À la place, ce que le verdict demande : « la lune devient le
+                // point de transition — zoom vers la lune, accélération très
+                // douce, elle prend tout l'écran, blur, lumière, profondeur,
+                // puis la caméra traverse la lune et la Home se révèle
+                // derrière ». Le foyer de la flamme, lui, RESTE : c'est la
+                // chaleur qui monte du pied, elle n'a jamais été le problème.
                 if let sortie {
-                    PorteSortie(start: sortie, largeur: W, hauteur: H,
-                                hHeader: hHeader)
+                    PortailLune(start: sortie, largeur: W, hauteur: H)
                 }
             }
             .frame(width: W, height: H)
@@ -1107,41 +1116,132 @@ private struct PorteDots: View {
 /// Le rideau est un rectangle nu : sa frame peut vivre par image, ce n'est pas
 /// une couche vidéo. La vidéo du header, elle, ne bouge pas d'un pixel — elle
 /// est simplement recouverte, puis la racine coupe à 2,10 s sous les braises.
-private struct PorteSortie: View {
+/// LE PORTAIL DE LA LUNE — la sortie de la porte, et l'entrée de la maison.
+///
+/// ⚠️ **CE QUI A REMPLACÉ LA BANDE NOIRE** (26-08). L'ancienne sortie faisait
+/// descendre un rectangle noir depuis le bord haut sur 1,45 s. Verdict :
+/// « ça donne l'impression que deux écrans sont simplement superposés ». Et
+/// c'est littéralement ce que c'était.
+///
+/// LA PARTITION, en fonction pure du temps (aucun état, rien à annuler) :
+///   0,00 → 0,55   LA LUNE NAÎT — le croissant de la marque, minuscule au
+///                 centre, à peine allumé. C'est l'« accélération très
+///                 douce » : la course est en `pow(p, 2,4)`, donc le premier
+///                 tiers du temps ne consomme que 4 % de la course. On voit
+///                 la lune AVANT de la voir grandir.
+///   0,55 → 1,60   LA PLONGÉE — l'échelle part vers ×26 : le croissant sort
+///                 du cadre par tous les côtés, et son INTÉRIEUR prend
+///                 l'écran. C'est ça, « traverser la lune » — on ne fond pas
+///                 vers elle, on entre DEDANS.
+///   1,10 → 2,10   LA PROFONDEUR — le flou monte avec l'échelle (la mise au
+///                 point ne suit pas un objet qui arrive sur l'objectif), et
+///                 la nuit se referme derrière : à 2,10 s, l'instant de la
+///                 coupe, l'écran est SA lumière, plus la porte.
+///
+/// ⚠️ **LE CROISSANT EST VECTORIEL, ET C'EST LA CONDITION DE TOUT.**
+/// `GlypheLune` est le path des 18 cubiques du logo : à ×26, il reste net.
+/// Un bitmap ou une capture de la vidéo se rastériserait — la loi payée du
+/// zoom rastérisé, déjà écrite deux fois dans ce dépôt.
+///
+/// ⚠️ **PAS DE FLASH.** La lumière monte en `smoothstep` sur 1,05 s et
+/// plafonne à 0,88 : la maison a un détecteur de flash, et une transition qui
+/// claque au blanc est exactement ce qu'il attrape.
+private struct PortailLune: View {
     let start: Date
     let largeur: CGFloat
     let hauteur: CGFloat
-    let hHeader: CGFloat
 
     private func lisse(_ x: Double) -> Double {
         let c = min(max(x, 0), 1)
         return c * c * (3 - 2 * c)
     }
 
+    /// `-portailFige <s>` : la traversée figée à un instant donné. Une
+    /// transition de deux secondes ne se capture pas au simulateur (une
+    /// capture d'écran coûte ~0,9 s) : sans ce gel, elle n'est jugeable que
+    /// sur l'appareil — la loi des bancs de cette maison.
+    private static let fige: Double? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-portailFige"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return nil }
+        return max(0, v)
+    }()
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
-            let t = tl.date.timeIntervalSince(start)
-            let rideau = lisse(t / 1.45)
+            let t = Self.fige ?? tl.date.timeIntervalSince(start)
+            // LA COURSE : très lente d'abord, puis elle emporte tout.
+            let p = lisse(t / 1.60)
+            let course = pow(p, 2.4)
+            // Le corps de départ : une pastille, la taille du glyphe dans le
+            // cube de verre de la vidéo — la lune qu'on regardait.
+            let base = largeur * 0.17
+            let echelle = 1 + 25 * course
+            let nuit = lisse((t - 0.30) / 1.10)
+            // ⚠️ **LA TRAVERSÉE FINIT AU NOIR, ET C'EST UNE LOI DE LA MAISON.**
+            // Premier jet : la lumière restait à son plafond, et l'écran
+            // devenait un GRIS UNIFORME à 1,9 s — mesuré sur capture. La coupe
+            // de 2,10 s tombait donc du gris à la home, en une image. Or ce
+            // dépôt a déjà payé deux fois « la feuille système recule la
+            // fenêtre et révèle un FOND GRIS » : un aplat gris ne se lit jamais
+            // comme une transition, il se lit comme une panne.
+            //
+            // La partition d'origine le disait déjà, d'ailleurs :
+            // « LA COUPE : plein noir derrière le nuage suspendu » (`swapAt`).
+            // On est DEDANS la lune à 1,40 s ; de l'autre côté il fait nuit, et
+            // c'est sur cette nuit-là que la home se révèle.
+            let passage = lisse((t - 1.35) / 0.62)
+            let lumiere = 0.88 * lisse(t / 1.05) * (1 - passage)
+            let flou = 26 * lisse((t - 0.55) / 1.05)
             let foyer = lisse(t / 1.95)
-            Color.clear
-                // LE RIDEAU — collé au bord haut, il grandit vers le bas.
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(.black)
-                        .frame(width: largeur,
-                               height: max(hHeader * rideau, 1))
-                        .opacity(rideau > 0 ? 1 : 0)
-                }
-                // LE FOYER — ancré au bord bas ; son rayon vertical grandit.
-                .overlay(alignment: .bottom) {
-                    EllipticalGradient(
-                        colors: [Feu.lit.opacity(0.12 + 0.24 * foyer), .clear],
-                        center: UnitPoint(x: 0.5, y: 1.0),
-                        endRadiusFraction: 0.5)
-                        .frame(width: largeur * 1.4,
-                               height: 260 + 480 * foyer)
-                        .blendMode(.plusLighter)
-                }
+
+            ZStack {
+                // LA NUIT QUI SE REFERME DERRIÈRE ELLE — un fondu PLEIN CADRE,
+                // jamais une bande qui descend : c'est la profondeur de champ
+                // qui avale la porte, pas un store.
+                Color.black.opacity(min(1, nuit * 0.96 + passage))
+
+                // LE FOYER DE LA FLAMME — il survit au rideau : c'est la
+                // chaleur qui monte du pied, elle n'a jamais été le problème.
+                EllipticalGradient(
+                    colors: [Feu.lit.opacity(0.12 + 0.24 * foyer), .clear],
+                    center: UnitPoint(x: 0.5, y: 1.0),
+                    endRadiusFraction: 0.5)
+                    .frame(width: largeur * 1.4, height: 260 + 480 * foyer)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity,
+                           alignment: .bottom)
+                    .blendMode(.plusLighter)
+                    .opacity(1 - nuit)
+
+                // LE HALO — il arrive AVANT le croissant et le déborde : une
+                // lune qui grandit sans halo se lit comme un autocollant qui
+                // grossit ; avec, elle se lit comme une source qui s'approche.
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [Color.white.opacity(lumiere * 0.55),
+                                 Color.white.opacity(lumiere * 0.10), .clear],
+                        center: .center, startRadius: 0,
+                        endRadius: base * echelle * 1.5))
+                    .frame(width: base * echelle * 3.4,
+                           height: base * echelle * 3.4)
+                    .blendMode(.plusLighter)
+
+                // LE CROISSANT — vectoriel, donc net à toute échelle.
+                // ⚠️ `frame` CONSTANT + `scaleEffect` : la loi de la maison
+                // (« on transforme, on ne redimensionne jamais »). Un `frame`
+                // animé re-layouterait le path à chaque image.
+                GlypheLune()
+                    .fill(LinearGradient(
+                        colors: [Color.white.opacity(lumiere),
+                                 Color(white: 0.86).opacity(lumiere * 0.92)],
+                        startPoint: .top, endPoint: .bottom))
+                    .frame(width: base, height: base)
+                    .scaleEffect(echelle)
+                    .blur(radius: flou)
+                    .blendMode(.plusLighter)
+            }
+            .frame(width: largeur, height: hauteur)
+            .compositingGroup()
         }
         .allowsHitTesting(false)
     }
