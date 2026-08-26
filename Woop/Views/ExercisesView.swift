@@ -137,6 +137,18 @@ final class EtatExos {
     var pos: Double = 0
     var engaged = false
     var detent = 0
+    /// ⚠️ **LA VITESSE DU TAMBOUR, EN CRANS PAR SECONDE** (26-08). Verdict :
+    /// « la molette n'est pas assez sensible, je dois presque volontairement
+    /// pousser fort — je veux un comportement physique : je touche, la roue
+    /// commence à rouler ; inertie naturelle, pas de friction excessive ».
+    /// Elle n'avait AUCUNE physique : `relacher()` ne lisait jamais la vitesse,
+    /// il aimantait `pos.rounded()`. L'élan était simplement jeté.
+    var omega: Double = 0
+    /// L'horodatage du dernier événement, pour dériver la vitesse.
+    var tempsDrag: Date?
+    var derniereX: CGFloat = 0
+    /// La roue libre en cours. Elle meurt au prochain contact et au démontage.
+    @ObservationIgnored var inertie: Task<Void, Never>?
     /// Les horodatages du toucher : la fumée et l'onde en sont des fonctions
     /// pures recalculées par image — aucune mutation par frame.
     var touchStart: Date?
@@ -294,10 +306,27 @@ private struct TheatreToucher: ViewModifier {
     let etat: EtatExos
     func body(content: Content) -> some View {
         content
-            .blur(radius: etat.engaged ? 10 : 0)
-            .scaleEffect(etat.engaged ? 0.975 : 1.0)
+            // ⚠️ **LE THÉÂTRE EST BAISSÉ DES TROIS QUARTS** (26-08). Verdict :
+            // « le picker custom ressemble à un overlay posé au-dessus de tout
+            // et rend l'UI difficile à comprendre ».
+            //
+            // La molette n'est PAS un overlay — mais elle en a exactement la
+            // lecture, et c'est ce modificateur qui la lui donne : toucher la
+            // roue floutait la page de 10 pt, la reculait de 2,5 % et posait
+            // 30 % de noir dessus. Trois effets plein écran d'un coup : ce qu'on
+            // manipule n'a plus l'air de faire PARTIE de la page, il a l'air
+            // posé DEVANT. Et la page qu'on essaie justement de lire — les
+            // cartes de la section qu'on est en train de choisir — devenait
+            // illisible pendant tout le geste.
+            //
+            // Il reste un souffle : 3 pt de flou et 12 % de noir. Assez pour
+            // dire « la molette a la main », trop peu pour cacher la page. Le
+            // recul, lui, est mort — c'est lui qui faisait le « posé devant ».
+            // (Bénéfice de cadence en prime : un blur plein écran à 10 pt sur
+            // une page qui porte du verre natif, c'est deux passes hors écran.)
+            .blur(radius: etat.engaged ? 3 : 0)
             .overlay {
-                Color.black.opacity(etat.engaged ? 0.30 : 0)
+                Color.black.opacity(etat.engaged ? 0.12 : 0)
                     .allowsHitTesting(false)
             }
             .animation(.spring(response: 0.42, dampingFraction: 0.85),
@@ -478,6 +507,14 @@ struct ExercisesView: View {
                 })
             }
             .onAppear { arrivee() }
+            // La roue libre ne survit pas à la page : une tâche qui écrit
+            // `etat.pos` toutes les 16 ms sur un écran démonté, c'est le
+            // précédent du CADisplayLink retenu par la nappe du manège.
+            .onDisappear {
+                etat.inertie?.cancel()
+                etat.inertie = nil
+                etat.omega = 0
+            }
             // ⚠️ DANS UN `withAnimation` : l'état de séance est renseigné APRÈS
             // la première image (le `@Query` n'existe pas avant), donc la card
             // naît pleine hauteur et se raccourcit d'un coup. Portée par la
@@ -726,7 +763,12 @@ struct ExercisesView: View {
     /// Le verrou d'axe se décide UNE fois : le tester à chaque image le ferait
     /// osciller (la leçon du tiroir de la home).
     private var priseBasse: some Gesture {
-        DragGesture(minimumDistance: 8)
+        // ⚠️ **2 pt, ET NON 8** (26-08) : « au moindre geste, je touche et la
+        // roue commence à rouler ». Deux seuils de 8 pt EN SÉRIE se payaient
+        // avant que quoi que ce soit ne bouge — celui du reconnaisseur, puis
+        // celui de la décision d'axe : 16 pt de course morte, soit un sixième
+        // d'un cran entier. C'est ça, « je dois pousser fort ».
+        DragGesture(minimumDistance: 2)
             .onChanged { v in
                 if etat.debut != v.startLocation {
                     // Nouveau geste : on repart de zéro. Un geste ANNULÉ ne
@@ -744,9 +786,19 @@ struct ExercisesView: View {
                 case .aucune:
                     let dx = abs(v.translation.width)
                     let dy = abs(v.translation.height)
-                    guard max(dx, dy) > 8 else { return }
+                    guard max(dx, dy) > 3 else { return }
                     if dx > dy {
                         etat.prise = .molette
+                        // Le contact RATTRAPE la roue libre — capture nette,
+                        // l'école de la molette de l'iPod.
+                        if etat.inertie != nil {
+                            etat.inertie?.cancel()
+                            etat.inertie = nil
+                            UIImpactFeedbackGenerator(style: .soft)
+                                .impactOccurred(intensity: 0.30)
+                        }
+                        etat.omega = 0
+                        etat.tempsDrag = nil
                         etat.base = etat.pos
                         // La course morte du seuil : sans elle le tambour
                         // bondit d'un dixième de cran à l'accrochage.
@@ -778,10 +830,23 @@ struct ExercisesView: View {
     /// l'on veut faire venir la suite.
     private func tourner(_ v: DragGesture.Value) {
         let maxPos = Double(ArcDial.items.count - 1)
-        var p = etat.base - Double(v.translation.width - etat.morte) / 100.0
+        // ⚠️ **62 pt PAR CRAN, ET NON 100** (26-08). Cent points de glisse pour
+        // passer une section, c'est presque un tiers de la largeur de l'écran
+        // par cran : la roue était lourde, pas précise.
+        var p = etat.base - Double(v.translation.width - etat.morte) / Self.pasMolette
         // Élastique aux extrémités : le tambour résiste, il ne bute pas.
         if p < 0 { p *= 0.30 }
         if p > maxPos { p = maxPos + (p - maxPos) * 0.30 }
+        // LA VITESSE, LISSÉE — la recette exacte de la molette de l'iPod
+        // (`omega += (d/dt − omega) · 0,3`) : un lissage court suffit à ôter le
+        // bruit du doigt sans mentir sur l'élan.
+        let t = v.time
+        if let t0 = etat.tempsDrag {
+            let dt = max(t.timeIntervalSince(t0), 0.008)
+            let d = (p - etat.pos) / dt
+            etat.omega += (d - etat.omega) * 0.3
+        }
+        etat.tempsDrag = t
         etat.pos = p
         let d = Int(min(max(p, 0), maxPos).rounded())
         if d != etat.detent {
@@ -789,6 +854,9 @@ struct ExercisesView: View {
             ArcChime.shared.tick()
         }
     }
+
+    /// La glisse d'un cran, en points de pouce.
+    private static let pasMolette: Double = 62
 
     private func relacher() {
         etat.engaged = false
@@ -800,6 +868,56 @@ struct ExercisesView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             if etat.touchEnd == fin { etat.touchStart = nil; etat.touchEnd = nil }
         }
+        etat.tempsDrag = nil
+        // ⚠️ **LA ROUE LIBRE** (26-08). `relacher()` ne lisait JAMAIS la
+        // vitesse : il aimantait `pos.rounded()`, donc un lancer franc et une
+        // pose délicate donnaient exactement le même résultat — l'élan était
+        // jeté. La molette de l'iPod, elle, a une vraie roue libre depuis le
+        // jalon 17 : c'est sa physique qu'on recopie, décroissance
+        // exponentielle comprise (`ω ×= exp(−0,016/0,38)` à 16 ms), avec la
+        // même borne de 4 crans — une molette d'horloger, pas un jackpot.
+        if abs(etat.omega) > 1.2 {
+            rouleLibre()
+        } else {
+            etat.omega = 0
+            poserLaMolette()
+        }
+    }
+
+    /// L'élan s'égrène, les crans passent, et la roue se pose.
+    private func rouleLibre() {
+        etat.inertie?.cancel()
+        let maxPos = Double(ArcDial.items.count - 1)
+        etat.inertie = Task { @MainActor in
+            var parcourus = 0.0
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(16))
+                if Task.isCancelled { return }
+                etat.omega *= exp(-0.016 / 0.38)
+                let d = etat.omega * 0.016
+                parcourus += abs(d)
+                var p = etat.pos + d
+                if p < 0 { p = p * 0.30 }
+                if p > maxPos { p = maxPos + (p - maxPos) * 0.30 }
+                etat.pos = p
+                let c = Int(min(max(p, 0), maxPos).rounded())
+                if c != etat.detent {
+                    etat.detent = c
+                    ArcChime.shared.tick()
+                }
+                let borne = p <= 0 || p >= maxPos
+                if abs(etat.omega) < 0.35 || parcourus > 4 || borne {
+                    etat.omega = 0
+                    etat.inertie = nil
+                    poserLaMolette()
+                    return
+                }
+            }
+        }
+    }
+
+    /// L'aimant du cran, et le filtre qui suit.
+    private func poserLaMolette() {
         let maxPos = Double(ArcDial.items.count - 1)
         let snapped = min(max(etat.pos.rounded(), 0), maxPos)
         withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
@@ -1746,11 +1864,38 @@ private struct GrilleExos: View {
                         // scroll la remonte, avec le souffle et l'impact. Elle
                         // se pose 16 pt SOUS le bandeau — collée à son bord,
                         // elle arriverait dans le voile du haut, donc floutée.
+                        //
+                        // ⚠️ **MAIS SI LE SCROLL NE PEUT PAS AIDER, ON OUVRE**
+                        // (26-08). C'est ÇA, le verdict « dans la section Tout
+                        // je peux sélectionner les exercices, mais dans Abdos
+                        // le tap ne déclenche rien » — et c'est pour ça que ça
+                        // dépendait de la section.
+                        //
+                        // Dans une section COURTE (Abdos 10, Bas 4, Fessiers 5,
+                        // Cardio 3 — contre 28 pour Tout), le contenu tient
+                        // presque dans le viewport : la fin de course vaut zéro
+                        // ou presque. Une carte assise dans le voile du bas
+                        // demandait donc au scroll de la remonter… vers une
+                        // position qu'il occupe DÉJÀ. Rien ne bougeait, le
+                        // voile ne changeait pas, et le tap suivant retombait
+                        // exactement dans la même branche : la carte était
+                        // définitivement inatteignable. Dans « Tout », le
+                        // contenu est long, le scroll a toujours de la marge —
+                        // d'où l'impression que seule cette section marchait.
+                        //
+                        // La cible est bornée à la course RÉELLE. Si elle est
+                        // déjà atteinte, rejoindre n'a aucun sens : on ouvre.
+                        let cible = min(max(0, tete(i) - reserve - 16),
+                                        etat.finCourse)
+                        guard abs(cible - etat.scroll) > 2 else {
+                            deepLinked = exercise
+                            return
+                        }
                         etat.pulse += 1
                         ArcChime.shared.card()
                         withAnimation(.spring(response: 0.5,
                                               dampingFraction: 0.8)) {
-                            sp.scrollTo(y: max(0, tete(i) - reserve - 16))
+                            sp.scrollTo(y: cible)
                         }
                     }
                 } label: {
