@@ -149,6 +149,15 @@ final class EtatExos {
     var derniereX: CGFloat = 0
     /// La roue libre en cours. Elle meurt au prochain contact et au démontage.
     @ObservationIgnored var inertie: Task<Void, Never>?
+    /// LE CHIEN DE GARDE (26-08 : « quand je joue beaucoup avec la molette, ça
+    /// bug, j'arrive pas à scroller / revenir »). Un `DragGesture` tué en plein
+    /// vol — une rafale d'à-coups, une transition, l'entrée en séance — ne
+    /// reçoit JAMAIS son `onEnded` : `engaged` (le flou), `mainTient` (la card
+    /// figée qui coupe le scroll) et `prise` restent collés, et la page se lit
+    /// comme un blocage. La remise à plat sur `startLocation` ne guérit qu'au
+    /// prochain drag DU LIT ; ce chien-là guérit tout seul. Ré-armé à chaque
+    /// image du geste, annulé au lâcher : s'il aboie, le geste est mort.
+    @ObservationIgnored var chienDeGarde: DispatchWorkItem?
     /// Les horodatages du toucher : la fumée et l'onde en sont des fonctions
     /// pures recalculées par image — aucune mutation par frame.
     var touchStart: Date?
@@ -496,14 +505,15 @@ struct ExercisesView: View {
                 // AUSSI l'action réelle : le geste appris est le geste fait.
                 .simultaneousGesture(TapGesture().onEnded {
                     if tutoActif { eteindreTuto() }
-                    // LE FILET DES GESTES ANNULÉS. Un geste qui meurt sans
-                    // `onEnded` (l'app passe en arrière-plan, une transition
-                    // démarre) laisse la molette engagée — la scène éteinte
-                    // sous un tambour que plus personne ne tient — ou la
-                    // poignée « en main », et alors le rebond du scroll ne
-                    // récupère plus jamais la card.
-                    if etat.engaged, etat.prise != .molette { relacher() }
-                    if etat.mainTient { poigneeFin() }
+                    // LE FILET DES GESTES ANNULÉS — un tap sur la page réveille
+                    // et guérit. ⚠️ **PLUS DE GARDE `prise != .molette`**
+                    // (26-08) : c'était le TROU. Une molette tuée en plein vol
+                    // laisse `engaged` ET `prise == .molette` collés, et
+                    // l'ancienne garde REFUSAIT justement de la réparer — le
+                    // seul cas qu'on voulait guérir. Un tap ne survient jamais
+                    // pendant un vrai drag (le mouvement l'annule) : s'il
+                    // arrive engagé, le geste est bel et bien mort.
+                    if etat.engaged || etat.mainTient { arreterToutNet() }
                 })
             }
             .onAppear { arrivee() }
@@ -514,6 +524,10 @@ struct ExercisesView: View {
                 etat.inertie?.cancel()
                 etat.inertie = nil
                 etat.omega = 0
+                // Le chien ne survit pas à la page : sinon il aboierait sur
+                // une vue démontée.
+                etat.chienDeGarde?.cancel()
+                etat.chienDeGarde = nil
             }
             // ⚠️ DANS UN `withAnimation` : l'état de séance est renseigné APRÈS
             // la première image (le `@Query` n'existe pas avant), donc la card
@@ -530,9 +544,11 @@ struct ExercisesView: View {
                 // ENGAGÉE — la scène éteinte sous un tambour que plus
                 // personne ne tient — ou la poignée en main. Le filet des
                 // taps ne sauve que si un tap ARRIVE ; le départ, lui,
-                // relâche tout de suite.
-                if etat.engaged, etat.prise != .molette { relacher() }
-                if etat.mainTient { poigneeFin() }
+                // relâche tout de suite — et par l'arrêt NET (pas `relacher`,
+                // qui lancerait la roue libre sur un doigt absent), sans la
+                // garde `prise != .molette` qui laissait justement la molette
+                // du départ home→exercice collée.
+                if etat.engaged || etat.mainTient { arreterToutNet() }
             }
             // L'ACCESSIBILITÉ CHANGE DE SECTION : la molette est sourde au
             // doigt (son geste appartient à la page), VoiceOver passe donc par
@@ -826,13 +842,51 @@ struct ExercisesView: View {
                 case .tirage:
                     poignee(v)
                 }
+                // À CHAQUE IMAGE OÙ LE DOIGT PARLE, on repousse l'échéance :
+                // tant qu'il vit, le chien dort. Il n'aboie que si la parole
+                // se tait sans `onEnded` — le geste mort.
+                if etat.prise == .molette || etat.prise == .tirage {
+                    armerChienDeGarde()
+                }
             }
             .onEnded { _ in
+                etat.chienDeGarde?.cancel()
+                etat.chienDeGarde = nil
                 if etat.prise == .molette { relacher() }
                 if etat.prise == .tirage { poigneeFin() }
                 etat.prise = .aucune
                 etat.debut = nil
             }
+    }
+
+    /// Ré-arme le chien de garde : 0,6 s après le DERNIER mouvement, si rien
+    /// n'est venu (ni image ni `onEnded`), le geste est réputé mort et on
+    /// arrête tout NET. 0,6 et non 0,30 : la molette se TIENT parfois immobile
+    /// un instant sous le doigt — on ne veut pas défaire un geste vivant.
+    private func armerChienDeGarde() {
+        etat.chienDeGarde?.cancel()
+        let item = DispatchWorkItem { arreterToutNet() }
+        etat.chienDeGarde = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: item)
+    }
+
+    /// L'ARRÊT NET — le geste est mort, le doigt n'est plus là. On ARRÊTE, on
+    /// ne lance PAS d'inertie (ce serait la roue qui part seule). Tout est
+    /// remis à plat : le flou tombe, la card se repose, le scroll est rendu.
+    private func arreterToutNet() {
+        etat.chienDeGarde?.cancel()
+        etat.chienDeGarde = nil
+        etat.inertie?.cancel()
+        etat.inertie = nil
+        etat.omega = 0
+        etat.tempsDrag = nil
+        if etat.engaged {
+            etat.engaged = false
+            poserLaMolette()
+        }
+        if etat.mainTient { poigneeFin() }
+        etat.prise = .aucune
+        etat.debut = nil
     }
 
     /// LE TAMBOUR SUIT LE DOIGT : ~100 pt de glisse par cran. Vers la GAUCHE,
