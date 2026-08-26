@@ -517,3 +517,114 @@ struct SeriesCoinFlight: View {
         return s - floor(s)
     }
 }
+
+// MARK: - LA PILL DE GAIN, ET LE DÉCIDEUR DE FIN DE SÉRIE
+
+/// LA PILL DES PIÈCES — le comportement PAR DÉFAUT de la fin d'une série
+/// (`tools/rewards/CHANTIERS-UX.md` §3 : « les états Liquid Glass : +20, la
+/// pièce, +20 · 140 cette séance. Micro-animation, AUCUNE interruption »).
+///
+/// ⚠️ **ELLE N'INTERROMPT RIEN, ET C'EST TOUTE SA RAISON D'ÊTRE.** Soixante
+/// pour cent des séries ne méritent pas une pop-up : elles méritent qu'on
+/// dise merci et qu'on s'efface. Elle descend du haut, tient deux secondes,
+/// et repart — le doigt n'a jamais rien à faire, la fiche reste vivante
+/// dessous, et le panneau « Recommencer ? » arrive derrière elle.
+///
+/// Le verre est le NATIF, et sa taille est CONSTANTE (l'entrée se joue par
+/// `offset` + `opacity`) : un `glassEffect` redimensionné image par image
+/// rend un blur plat définitif — la loi payée du dépôt.
+struct PillGain: View {
+    /// Ce que la série vient de rapporter.
+    let gain: Int
+    /// Le cumul de la séance — « ce que ça fait au total », la seule façon de
+    /// donner du poids à un +20.
+    let total: Int
+
+    var body: some View {
+        HStack(spacing: 9) {
+            Image("piece-or-mini")
+                .resizable().scaledToFit()
+                .frame(width: 20, height: 20)
+            Text("+\(gain)")
+                .font(.inter(15, .semibold).monospacedDigit())
+                .foregroundStyle(Color.inkPrimary)
+            Text("·")
+                .font(.inter(13))
+                .foregroundStyle(Color(white: 1).opacity(0.28))
+            Text("\(total) this session")
+                .font(.inter(12.5).monospacedDigit())
+                .foregroundStyle(Color.inkSecondary)
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 16)
+        .frame(height: 44)
+        .background {
+            ZStack {
+                Color.clear.glassEffect(
+                    .regular.tint(Color.black.opacity(0.34)),
+                    in: Capsule(style: .continuous))
+                // Le noir AU-DESSUS du verre, sous l'encre — la loi de la
+                // maison : le verre pour l'ambiance, le noir pour lire.
+                Capsule(style: .continuous)
+                    .fill(Color.black.opacity(0.30))
+                Capsule(style: .continuous)
+                    .strokeBorder(LinearGradient(
+                        colors: [Color.white.opacity(0.18),
+                                 Color.white.opacity(0.04)],
+                        startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            }
+            .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.5), radius: 14, y: 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Plus \(gain) coins, \(total) this session")
+    }
+}
+
+/// CE QUI SE PASSE APRÈS UNE SÉRIE.
+///
+/// ⚠️ **C'EST UNE PLACE, PAS UN MOTEUR** (26-08). Le verdict demande la chaîne
+/// complète — pill / Moment / pop-up / vidéo — mais il demande AUSSI « pas de
+/// backend, pas de nouvelles règles complexes ». Les deux tiennent ensemble à
+/// une condition : câbler l'UI ENTIÈRE maintenant, et laisser le CHOIX derrière
+/// une seule fonction que le backend remplacera sans toucher à un pixel.
+///
+/// La règle ci-dessous est donc délibérément bête et DÉTERMINISTE (une page qui
+/// change d'avis à chaque relance ne se juge pas). Le vrai moteur — les faits,
+/// les probabilités, l'atmosphère, l'IA contextuelle — vit dans
+/// `tools/rewards/PLAN-REWARDS-BACKEND.md` et prendra cette place-ci.
+enum IssueSerie: Equatable {
+    /// Le cas normal (~60 %) : la pill, et rien d'autre.
+    case pill(gain: Int, total: Int)
+    /// Le cas contextuel : un MOMENT — une pop-up qui raconte un FAIT de la
+    /// séance en cours. ⚠️ Le fait est VRAI (il vient de la fiche), il n'est
+    /// pas inventé : c'est la seule chose qu'on puisse honnêtement raconter
+    /// sans backend.
+    case moment(titre: String, fait: String, style: RewardStyle)
+    /// Le cas reward, et le cas RARE (avec sa vidéo).
+    case reward(style: RewardStyle, video: String?)
+}
+
+enum DecideurSerie {
+    /// `serie` : le rang de la série qu'on vient de finir (1-based sur la
+    /// séance). `reps`/`kilos` : ce qu'elle a réellement pesé.
+    static func pour(serie: Int, gain: Int, total: Int,
+                     reps: Int, kilos: Double) -> IssueSerie {
+        // La série qui ferme une dizaine : le cas RARE, avec sa vidéo.
+        if serie % 10 == 0 {
+            return .reward(style: .fire, video: "reward-rare")
+        }
+        // Une série sur cinq : la pop-up de récompense.
+        if serie % 5 == 0 {
+            return .reward(style: .halo, video: nil)
+        }
+        // Une série sur trois : un MOMENT, et il dit quelque chose de VRAI.
+        if serie % 3 == 0 {
+            let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
+            return .moment(titre: "Set \(serie)",
+                           fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
+                           style: .galet)
+        }
+        return .pill(gain: gain, total: total)
+    }
+}

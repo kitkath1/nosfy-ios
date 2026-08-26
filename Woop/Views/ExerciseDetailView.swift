@@ -34,6 +34,13 @@ struct ExerciseDetailView: View {
     /// (FAKE, pour l'entraîner à l'œil sur la vraie page) — les vraies
     /// portes (fin d'exo ? fin de séance ?) ne sont pas tranchées.
     @State private var rewardShow = false
+    /// ⚠️ **LA CHAÎNE DE FIN DE SÉRIE** (26-08). Ce qui se montre après une
+    /// série, et la série qui l'a déclenchée — le panneau « Recommencer ? »
+    /// attend qu'elle se referme (verdict §12 : « une fois la pill ou la pop-up
+    /// Reward fermée, on affiche l'overlay avec la flamme »).
+    @State private var pillGain: (gain: Int, total: Int)?
+    @State private var issueEnCours: IssueSerie?
+    @State private var serieAPoser: FinishedSeries?
     /// Le variant montré — TOURNE à chaque ouverture (« des fois fais un
     /// autre variant ») : galet (le vrai verre saisissable sur le
     /// chiffre), puis néon (réf WWDC), puis halo (réf Apple). Part à 2 :
@@ -383,6 +390,13 @@ struct ExerciseDetailView: View {
     /// frame (un `withAnimation`, lui, ne l'évalue qu'UNE fois et anime
     /// le rendu : il ne mesure rien). La cadence se compte au film.
     private static let carteAuto = CommandLine.arguments.contains("-carteAuto")
+    /// `-serieFin <n>` — le banc de la chaîne de fin de série.
+    private static let serieFinBanc: Int? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-serieFin"), i + 1 < a.count,
+              let n = Int(a[i + 1]) else { return nil }
+        return max(1, n)
+    }()
     /// `-carteLourd` : la course SANS les allègements (parure et cadence
     /// pleines) — le témoin de l'A/B, la seule façon de prouver que les
     /// allègements servent à quelque chose sur une machine chargée.
@@ -435,6 +449,26 @@ struct ExerciseDetailView: View {
                                          isDone: k < 3))
                 }
             }
+        }
+        // ⚠️ LE BANC DE LA CHAÎNE DE FIN DE SÉRIE : `-serieFin <n>` rejoue
+        // l'issue de la n-ième série — 1 la pill, 3 le Moment, 5 la pop-up,
+        // 10 le cas rare avec sa vidéo. Le simulateur ne sait pas faire une
+        // série ; sans ce banc, la chaîne n'est jugeable que sur l'appareil.
+        if let n = Self.serieFinBanc {
+            try? await Task.sleep(for: .seconds(1.4))
+            if sets.isEmpty {
+                for k in 0..<max(n, 1) {
+                    sets.append(DraftSet(reps: 12, weight: 20, isDone: k < n - 1))
+                }
+            }
+            let f = FinishedSeries(index: max(n - 1, 0), reps: 12, kilos: 20,
+                                   rest: 60, seconds: 47)
+            serieAPoser = f
+            jouerIssue(DecideurSerie.pour(serie: n, gain: Self.gainParSerie,
+                                          total: n * Self.gainParSerie,
+                                          reps: f.reps, kilos: f.kilos), f,
+                       banc: true)
+            return
         }
         if CommandLine.arguments.contains("-restartFire") {
             try? await Task.sleep(for: .seconds(1.4))
@@ -945,6 +979,20 @@ struct ExerciseDetailView: View {
                 .allowsHitTesting(restartAsk != nil)
                 // LES PIÈCES DE LA SÉRIE — au-dessus de tout : la carte
                 // s'écrit en lumière pendant que le panneau descend.
+                // LA PILL DE GAIN — au-dessus de tout, sourde au doigt : elle
+                // n'interrompt rien, elle DIT. Elle descend du bord haut,
+                // tient deux secondes et repart toute seule ; la question
+                // « Recommencer ? » arrive derrière elle.
+                if let pg = pillGain {
+                    PillGain(gain: pg.gain, total: pg.total)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: .top)
+                        .transition(.move(edge: .top)
+                            .combined(with: .opacity))
+                        .allowsHitTesting(false)
+                        .zIndex(30)
+                }
                 if let at = coinsAt {
                     GeometryReader { g in
                         let og = g.frame(in: .global).origin
@@ -969,31 +1017,72 @@ struct ExerciseDetailView: View {
                 // plancher tant que le déclencheur est le fake du header
                 // (un count-up 0 → 0 n'apprendrait rien à l'œil).
                 if rewardShow {
+                    // ⚠️ **L'ISSUE PARLE QUAND ELLE EXISTE** (26-08). Cette
+                    // pop-up servait jusqu'ici l'ATELIER — le chip « … » qui
+                    // fait défiler les robes, et les bancs. Branchée sur la fin
+                    // de série, elle reçoit maintenant un vrai MOMENT (un fait
+                    // de la séance en cours) ou une vraie RÉCOMPENSE. Les deux
+                    // usages cohabitent : sans issue, l'atelier retrouve
+                    // exactement son comportement d'avant, à la ligne près.
+                    let iss = issueEnCours
+                    let robeIssue: RewardStyle? = {
+                        switch iss {
+                        case .moment(_, _, let st): return st
+                        case .reward(let st, _): return st
+                        default: return nil
+                        }
+                    }()
+                    let videoIssue: String? = {
+                        if case .reward(_, let v) = iss { return v }
+                        return nil
+                    }()
+                    let styleFinal = robeIssue ?? Self.rewardStyles[rewardVariant]
                     RewardPopup(
                         count: max(sets.filter(\.isDone).count, 4),
-                        title: Self.rewardStyles[rewardVariant] == .welcome
-                            ? "Welcome back" : "Training",
-                        subtitle: Self.rewardStyles[rewardVariant]
-                            == .welcome
-                            ? "Your next session is waiting for you."
-                            : "Congratulations, you've completed your training!",
+                        title: {
+                            if case .moment(let t, _, _) = iss { return t }
+                            return styleFinal == .welcome
+                                ? "Welcome back" : "Training"
+                        }(),
+                        subtitle: {
+                            // LE FAIT DU MOMENT EST VRAI : il vient de la
+                            // fiche (reps, charge, cumul), il n'est pas
+                            // inventé. C'est la seule chose qu'on puisse
+                            // honnêtement raconter sans backend.
+                            if case .moment(_, let fait, _) = iss { return fait }
+                            return styleFinal == .welcome
+                                ? "Your next session is waiting for you."
+                                : "Congratulations, you've completed your training!"
+                        }(),
                         unit: "Sets",
-                        style: Self.rewardStyles[rewardVariant],
+                        style: styleFinal,
                         robe: CommandLine.arguments
                             .contains("-welcomeTexte") ? .texte : .video,
-                        videoNom: Self.rewardStyles[rewardVariant]
-                            == .welcome
-                            ? "reward-welcome"
-                            : rewardVideoNomCourant
-                            ?? (CommandLine.arguments
-                                .contains("-rewardVideo")
-                                ? Self.rewardVideos[
-                                    rewardVideoTour
-                                    % Self.rewardVideos.count]
-                                : nil),
+                        videoNom: videoIssue
+                            ?? (styleFinal == .welcome
+                                ? "reward-welcome"
+                                : rewardVideoNomCourant
+                                ?? (CommandLine.arguments
+                                    .contains("-rewardVideo")
+                                    ? Self.rewardVideos[
+                                        rewardVideoTour
+                                        % Self.rewardVideos.count]
+                                    : nil)),
                         onClose: {
                             rewardShow = false
                             rewardVideoNomCourant = nil
+                            // ⚠️ UN SEUL CHEMIN VERS LE PANNEAU : c'est la
+                            // FERMETURE de ce qu'on montre qui pose la question
+                            // « Recommencer ? » (verdict §12). Deux chemins, et
+                            // on se retrouverait un jour avec la question
+                            // par-dessus une pop-up.
+                            if serieAPoser != nil {
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.26) {
+                                    poserLaQuestion()
+                                }
+                                return
+                            }
                             // La démo enchaînée : Close = la suivante.
                             if CommandLine.arguments
                                 .contains("-rewardDemo") {
@@ -2037,15 +2126,65 @@ struct ExerciseDetailView: View {
         posedLaunch = false
         // Le repos choisi devient celui de l'exercice.
         restSeconds = f.rest
-        // La fiche se découvre AVANT la question : sans ce souffle, le
-        // panneau « Recommencer ? » naissait par-dessus la lentille qui
-        // n'avait pas fini de tomber — deux plein-écrans empilés, et la
-        // coupe se voyait. La carte, elle, ne s'écrit toujours pas ici :
-        // l'écriture attend la sortie du panneau — les pièces et le compte
-        // se REGARDENT, et c'est le panneau qui descend qui les découvre.
+        // LA SÉRIE S'ÉCRIT ET LES PIÈCES VOLENT — ici, à l'air libre, avant
+        // que quoi que ce soit ne se pose dessus. (L'écriture attendait la
+        // sortie du panneau ; mais c'est la PILL qui annonce les pièces
+        // maintenant, et elle ne peut pas annoncer ce qui n'est pas écrit.)
+        settleSeries(f, coins: true)
+        serieAPoser = f
+        // LE DÉCIDEUR — le seul endroit où l'on choisit quoi montrer. La
+        // fiche se découvre d'abord (0,34 s) : sans ce souffle, tout naissait
+        // par-dessus la lentille qui n'avait pas fini de tomber.
+        let faites = sets.filter(\.isDone).count
+        let issue = DecideurSerie.pour(serie: max(faites, 1),
+                                       gain: Self.gainParSerie,
+                                       total: max(faites, 1) * Self.gainParSerie,
+                                       reps: f.reps, kilos: f.kilos)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-            restartAsk = f
+            jouerIssue(issue, f)
         }
+    }
+
+    /// LA RÈGLE DES 20 (l'économie de la maison : 20 pièces par série faite).
+    private static let gainParSerie = 20
+
+    /// Ce que l'issue montre, et ce qu'elle laisse derrière elle.
+    ///
+    /// ⚠️ **UN SEUL CHEMIN VERS LE PANNEAU** : quoi qu'on montre, c'est sa
+    /// fermeture qui pose la question « Recommencer ? ». Deux chemins, et on
+    /// se retrouverait un jour avec la question par-dessus une pop-up.
+    private func jouerIssue(_ issue: IssueSerie, _ f: FinishedSeries,
+                           banc: Bool = false) {
+        issueEnCours = issue
+        switch issue {
+        case .pill(let g, let t):
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                pillGain = (gain: g, total: t)
+            }
+            // ⚠️ AU BANC, LA PILL NE PART PAS. Elle ne vit que deux secondes,
+            // et cette page met plus longtemps que ça à peindre au simulateur
+            // (shaders + trois lecteurs) : sans ce gel, elle n'est jamais
+            // capturable, donc jamais jugeable autrement que sur l'appareil.
+            guard !banc else { return }
+            // Elle n'interrompt RIEN : elle tient deux secondes et s'efface,
+            // et la question arrive derrière elle sans qu'on ait rien tapé.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation(.easeIn(duration: 0.30)) { pillGain = nil }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                    poserLaQuestion()
+                }
+            }
+        case .moment, .reward:
+            rewardShow = true
+        }
+    }
+
+    /// La question de la fin de série — le panneau à la flamme.
+    private func poserLaQuestion() {
+        guard let f = serieAPoser else { return }
+        serieAPoser = nil
+        issueEnCours = nil
+        restartAsk = f
     }
 
     /// La sortie du panneau — les trois chemins (drag, « Non », « Lancer »)
