@@ -190,6 +190,47 @@ struct SalleVideo: UIViewRepresentable {
         coordinator.player = nil
     }
 }
+/// LES MESURES D'UNE PIÈCE, sorties de la vue.
+///
+/// ⚠️ **LE VÉRIFICATEUR DE TYPES SATURE SUR UNE VUE AUX MESURES INLINÉES** —
+/// piège déjà payé dans ce dépôt, et repayé ici : huit expressions mêlant
+/// `Double`, `CGFloat` et ternaires dans un `ViewBuilder` ont sorti
+/// « unable to type-check this expression in reasonable time ». La forme juste
+/// est un petit type calculé DEHORS, que la vue se contente de lire.
+private struct MesuresPiece {
+    let loin: Double
+    let actif: Bool
+    let prise: Double
+    let recul: Double
+    let diam: CGFloat
+    let cx: CGFloat
+    let cy: CGFloat
+
+    init(e: Double, r: Double, d: CGFloat, W: CGFloat, pas: CGFloat,
+         repos: CGPoint, depart: CGPoint, filmD: CGFloat,
+         prise: Double, recul: Double) {
+        self.loin = min(abs(e), 1)
+        self.actif = abs(e) < 0.5
+        self.prise = prise
+        self.recul = recul
+        let rr = CGFloat(r)
+        self.diam = actif ? d + (filmD - d) * rr : d
+        let base = W / 2 + CGFloat(e) * pas
+        self.cx = actif ? base + (depart.x - repos.x) * rr : base
+        self.cy = actif ? repos.y + (depart.y - repos.y) * rr : repos.y
+    }
+
+    /// Le flou dit « pas encore à toi » sans effacer l'objet : à 7 pt la
+    /// voisine cessait d'être une pièce pour devenir une tache.
+    var flou: CGFloat { CGFloat(4.5 * loin + 5.0 * recul) }
+    /// La tenue s'avance de 14 %, la voisine recule de 12 %. ⚠️ La profondeur
+    /// se joue À DEUX : grossir seul se lit comme un zoom, c'est le RECUL de
+    /// l'autre qui fabrique l'espace.
+    var echelle: CGFloat { CGFloat(1 - 0.16 * loin + 0.14 * prise - 0.12 * recul) }
+    var opacite: Double { (1 - 0.28 * loin) * (1 - 0.42 * recul) }
+    var ombre: Double { 0.80 * (1 - 0.55 * prise) }
+}
+
 // MARK: - La page
 
 struct CoffreV2Page: View {
@@ -205,10 +246,18 @@ struct CoffreV2Page: View {
     /// doigt fait monter la lampe d'un cran, et elle redescend au lâcher.
     @State private var eclat: Double = 0
 
-    /// Le tour de la pièce présentée, en tours (1 = un tour complet). Continu :
-    /// c'est le doigt qui l'écrit, et lui ne connaît pas les cases.
-    @State private var tour: Double = 0
+    /// ⚠️ **UNE ROTATION PAR PIÈCE, ET C'EST UN CORRECTIF** (verdict : « quand
+    /// je tourne une pièce l'autre tourne aussi »). Un seul `tour` était
+    /// partagé par les deux : elles n'étaient pas deux objets, elles étaient
+    /// un objet peint deux fois. Chacune garde désormais son angle — on
+    /// retrouve celle qu'on a laissée comme on l'a laissée.
+    @State private var tours: [Double] = [0, 0]
     @State private var tourPrise: Double = 0
+    /// Le dernier cran de rotation senti : le grain sous le doigt.
+    @State private var dernierGrain = 0
+
+    /// La pièce que le doigt tient (index du manège), ou `nil`.
+    @State private var tenue: Int?
 
     /// LE MANÈGE — deux pièces, un cran chacune. `page` est continue pendant
     /// le geste : c'est elle qui porte le flou et le voyage.
@@ -216,6 +265,11 @@ struct CoffreV2Page: View {
     @State private var pagePrise: Double = 0
     /// CE QUE LE DOIGT A DÉCIDÉ DE FAIRE, arrêté UNE fois au contact.
     @State private var cible: Cible?
+    /// Le dernier dixième de course franchi — le grain haptique du manège.
+    @State private var dernierCran = 0
+    /// LA PRISE, 0 → 1 : la pièce tenue s'avance, l'autre recule. C'est un
+    /// seul curseur, animé, jamais deux réglages qui se cherchent.
+    @State private var tenuP: Double = 0
 
     /// LE TIRAGE de la card — la levée découvre la lune, comme la home.
     @State private var tirage: CGFloat = 0
@@ -352,8 +406,18 @@ struct CoffreV2Page: View {
                         // la page qui s'allume à l'atterrissage.
                         .opacity(1 - raccord)
                     }
-                    .clipShape(CoffreV2Cotes.forme)
-                    .padding(.top, CoffreV2Cotes.margeHaut)
+                    // ⚠️⚠️ **LA CARD SE RACCOURCIT PAR LE BAS, ELLE NE FAIT
+                    // PAS QUE DESCENDRE.** C'est LE défaut qui rendait la lune
+                    // inatteignable : la forme était FIXE et le seul mouvement
+                    // était un `offset(y: max(tirage, 0))` — c'est-à-dire
+                    // RIEN quand on tire vers le HAUT, puisque `tirage` y est
+                    // négatif. On pouvait donc tirer autant qu'on voulait, la
+                    // card ne bougeait pas d'un pixel et la bande du bas ne
+                    // s'ouvrait jamais. `FormeCardExos` est faite pour ça, elle
+                    // est `Animatable` sur sa levée, et c'est la MÊME que la
+                    // home et les exos : un seul geste, une seule grammaire.
+                    .clipShape(FormeCardExos(levee: max(-tirage, 0),
+                                             haut: CoffreV2Cotes.margeHaut))
             )
             .frame(height: geo.size.height)
             .ignoresSafeArea()
@@ -451,7 +515,18 @@ struct CoffreV2Page: View {
         // Le raccord interpole TOUT en même temps : la taille, la place, et
         // rien d'autre. Une seule courbe, donc aucun décalage possible.
         let r = raccord * raccord * (3 - 2 * raccord)      // smoothstep
-        let pas = W * 0.86
+        // ⚠️ **LE PAS DU RAIL DIT SI LE GESTE EXISTE.** À 0,86 W la seconde
+        // pièce était hors cadre au repos : rien ne disait qu'elle était là,
+        // et personne ne devine un geste qu'aucun pixel n'annonce (verdict :
+        // « on ne comprend pas qu'on peut scroller »).
+        //
+        // ⚠️ ET 0,52 W NE SUFFISAIT PAS : mesuré, le centre de la voisine
+        // tombait à **8 pt hors de l'écran** — il restait un croissant de
+        // 58 pt collé à l'arête, flou de 7 pt, sur un sol clair : invisible.
+        // J'ai d'ailleurs cru le voir à gauche, c'était le VIGNETTAGE de la
+        // chambre. À 0,40 W son centre est à 362 pt : une bonne moitié de
+        // pièce entre dans le cadre, et l'invite devient l'objet lui-même.
+        let pas = W * 0.40
 
         ZStack {
             ForEach(Array(Self.manege.enumerated()), id: \.offset) { i, pl in
@@ -462,34 +537,38 @@ struct CoffreV2Page: View {
                 // |e| borné, et il tombe à zéro sur chaque cran — jamais la
                 // formule en |sin(2πu)| du plan, qui pique aux quarts et
                 // laisserait la pièce nette EN PLEIN VOYAGE.
-                let loin = min(abs(e), 1)
-                // La pièce présentée est la seule à jouer le raccord du film.
-                let actif = abs(e) < 0.5
-                let diam = actif ? d + (filmDiam(W) - d) * CGFloat(r) : d
-                let cx = W / 2 + CGFloat(e) * pas
-                    + (actif ? (depart.x - repos.x) * CGFloat(r) : 0)
-                let cy = repos.y + (actif ? (depart.y - repos.y) * CGFloat(r) : 0)
+                let m = MesuresPiece(e: e, r: r, d: d, W: W, pas: pas,
+                                     repos: repos, depart: depart,
+                                     filmD: filmDiam(W),
+                                     prise: (tenue == i) ? tenuP : 0,
+                                     recul: (tenue != nil && tenue != i)
+                                            ? tenuP : 0)
 
                 ZStack {
                     // L'OMBRE DE CONTACT — serrée et écrasée. Une flaque large
                     // ne pose rien, elle salit le sol. Elle meurt pendant le
                     // raccord : une pièce en vol n'a pas d'ombre au sol.
                     Ellipse()
-                        .fill(Color.black.opacity(0.80 * (actif ? (1 - r) : 1)))
+                        .fill(Color.black.opacity(m.ombre))
                         .frame(width: d * 1.04, height: d * 0.23)
                         .blur(radius: 18)
-                        .position(x: cx, y: repos.y + d * 0.40)
-                        .opacity(1 - loin)
+                        .position(x: m.cx, y: repos.y + d * 0.40)
+                        .opacity(1 - m.loin)
 
-                    PieceSprite(planche: pl, tour: tour, diametre: diam)
+                    PieceSprite(planche: pl, tour: tours[i], diametre: m.diam)
                         // ⚠️ Le flou et l'échelle sont LÉGAUX ICI : ce sont des
                         // IMAGES, pas du verre natif (l'interdit du §6.3 ne
                         // vaut que pour `glassEffect`). C'est ce que la voie
                         // « les rendus de Kathryn » a débloqué.
-                        .blur(radius: 7 * loin)
-                        .scaleEffect(1 - 0.16 * loin)
-                        .position(x: cx, y: cy)
-                        .opacity(1 - 0.35 * loin)
+                        .blur(radius: m.flou)
+                        .scaleEffect(m.echelle)
+                        .position(x: m.cx, y: m.cy)
+                        .opacity(m.opacite)
+                        // L'objet tenu DÉCOLLE : son ombre s'éloigne et se
+                        // dilue. C'est elle qui vend la profondeur, pas la
+                        // taille.
+                        .shadow(color: .black.opacity(0.45 * m.prise),
+                                radius: 22 * m.prise, y: 16 * m.prise)
                 }
             }
         }
@@ -530,10 +609,19 @@ struct CoffreV2Page: View {
                                   v.startLocation.y - centre.y)
                     if d < prise {
                         cible = .piece
-                        tourPrise = tour
+                        let i = Int(page.rounded())
+                        tenue = min(max(i, 0), tours.count - 1)
+                        tourPrise = tours[tenue!]
+                        dernierGrain = Int(tourPrise * 36)
                         UIImpactFeedbackGenerator(style: .soft)
                             .impactOccurred(intensity: 0.6)
                         withAnimation(.easeOut(duration: 0.26)) { eclat = 1 }
+                        // LA PROFONDEUR S'OUVRE en ressort : l'objet se lève
+                        // vers la main, il ne saute pas.
+                        withAnimation(.spring(response: 0.34,
+                                              dampingFraction: 0.72)) {
+                            tenuP = 1
+                        }
                     } else {
                         // Hors de la pièce, l'axe décide — et il ne se
                         // rediscute pas : un axe testé à chaque image oscille
@@ -547,14 +635,46 @@ struct CoffreV2Page: View {
                 }
                 switch cible {
                 case .piece:
+                    guard let t = tenue else { break }
                     // 320 pt de doigt = un tour complet.
-                    tour = tourPrise + Double(v.translation.width) / 320
+                    tours[t] = tourPrise + Double(v.translation.width) / 320
+                    // LE GRAIN DE LA ROTATION : un tic tous les 10° — la pièce
+                    // CRISSE sous le doigt. ⚠️ Jamais à chaque image : la trame
+                    // du moteur se sature et on ne sent plus rien.
+                    let g = Int(tours[t] * 36)
+                    if g != dernierGrain {
+                        dernierGrain = g
+                        UIImpactFeedbackGenerator(style: .light)
+                            .impactOccurred(intensity: 0.32)
+                    }
                 case .manege:
                     // ⚠️ **VERS LA DROITE AMÈNE LA PIÈCE NOIRE** (sa demande,
                     // mot pour mot) — l'inverse de la convention d'un
-                    // carrousel. 200 pt de doigt = un cran.
-                    page = min(max(pagePrise
-                                   + Double(v.translation.width) / 200, 0), 1)
+                    // carrousel.
+                    //
+                    // ⚠️ ET LA COURSE EST ÉLASTIQUE AUX DEUX BOUTS. Bornée sec
+                    // par un `min/max`, la pièce se COLLE au bord et le doigt
+                    // continue dans le vide : c'est ça qui se lit comme « pas
+                    // naturel ». En tanh, elle résiste et revient — la matière
+                    // répond au lieu de buter.
+                    let brut = pagePrise + Double(v.translation.width) / 230
+                    if brut < 0 {
+                        page = tanh(brut / 0.42) * 0.16
+                    } else if brut > 1 {
+                        page = 1 + tanh((brut - 1) / 0.42) * 0.16
+                    } else {
+                        page = brut
+                    }
+                    // LE GRAIN SOUS LE DOIGT : un tic chaque fois qu'on passe
+                    // un dixième de course. ⚠️ Jamais à chaque image — la
+                    // trame du moteur haptique se sature et on ne sent plus
+                    // rien (la leçon du grain de la pile swap).
+                    let cran = Int((page * 10).rounded())
+                    if cran != dernierCran {
+                        dernierCran = cran
+                        UIImpactFeedbackGenerator(style: .light)
+                            .impactOccurred(intensity: 0.42)
+                    }
                 case .card:
                     let t = v.translation.height
                     let net = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
@@ -580,6 +700,9 @@ struct CoffreV2Page: View {
                     // 0,26). Une lampe frappe et s'éteint doucement ;
                     // l'inverse se lit comme un bug d'affichage.
                     withAnimation(.easeInOut(duration: 0.62)) { eclat = 0 }
+                    tenue = nil
+                    withAnimation(.spring(response: 0.46,
+                                          dampingFraction: 0.82)) { tenuP = 0 }
                 case .manege:
                     // LE CRAN : on tombe sur la pièce la plus proche, élan
                     // compris. Une pièce ne s'immobilise pas entre deux faces.
@@ -664,8 +787,13 @@ struct CoffreV2Page: View {
         lecteur = p
         filmVisible = true
         p.play()
-        // 45 images à 24 i/s = 1,88 s : la ruée, puis la montée au sommet.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.86) { poser() }
+        // ⚠️ **2,85 s ET NON 1,86** (verdict : « l'entrée avec la vidéo
+        // d'accueil ne se voit pas »). Le film cuit fait 45 images ; à 1,86 s
+        // il était fini avant d'avoir été vu — et un doigt posé par réflexe
+        // le passait. On le laisse aller au bout, on tient son sommet une
+        // demi-seconde, ET la pose est plus lente (voir `poser`) : c'est le
+        // TEMPS qui fait exister une arrivée, pas son contenu.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.85) { poser() }
         if Self.skipAuto {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { passerDevant() }
         }
@@ -680,7 +808,7 @@ struct CoffreV2Page: View {
     }
 
     /// LA POSE — l'unique transition du film vers la page.
-    private func poser(duree: Double = 0.86) {
+    private func poser(duree: Double = 1.05) {
         guard !passe else { return }
         passe = true
         nee = true
