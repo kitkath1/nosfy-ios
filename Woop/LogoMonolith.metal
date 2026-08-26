@@ -1360,8 +1360,21 @@ static float lmStars(float2 pos, float t) {
         // Le halo SE CONTRACTE avec l'agonie : la lumière meurt, le cerne se
         // resserre — et les étoiles gagnent une seconde de présence, parce
         // que le ciel s'ouvre quand la lune faiblit.
-        float rr = rC / mix(150.0, 96.0, blood);
-        float moonGlow = pow(1.0 + rr * rr, -1.35) * (1.0 - 0.35 * blood);
+        // ⚠️ **LA NAPPE EST ÉPAISSIE ET ALLONGÉE (26-08)** — verdict : « le
+        // cercle rouge n'est pas assez diffus ». Trois réglages, tous mesurés
+        // sur le rendu (profil radial dans un secteur ANGULAIRE VIDE — pris
+        // depuis le centre de l'écran il est inexploitable, la source est un
+        // CROISSANT et sa géométrie fabrique de fausses bosses) :
+        //   · la contraction au sang passe de 96 à 124 pt — elle se resserre
+        //     encore, mais elle ne se rétracte plus sous l'anneau ;
+        //   · l'assombrissement de 0,35 à 0,22 ;
+        //   · l'exposant de Moffat de −1,35 à −1,15 : la queue s'allonge,
+        //     et c'est précisément ce que veut dire « diffus ».
+        // Mesuré avant : chute de 43,3 à 22,4 entre 55 et 60 pt, soit −48 %
+        // en CINQ POINTS. Une lueur diffuse ne perd pas la moitié de sa
+        // valeur en cinq points — c'était un bord, pas un fondu.
+        float rr = rC / mix(150.0, 124.0, blood);
+        float moonGlow = pow(1.0 + rr * rr, -1.15) * (1.0 - 0.22 * blood);
         float3 glowCol = mix(float3(1.00, 0.86, 0.62),
                              float3(0.50, 0.56, 0.68),
                              saturate(rC / 320.0));
@@ -1382,22 +1395,45 @@ static float lmStars(float2 pos, float t) {
         float yn0 = position.y / max(size.y, 1.0);
         float skyGrad = 0.85 + 0.30 * smoothstep(0.15, 0.95, yn0);
         float occ = 0.30 * cloud * night.x;
-        float skyE = moonGlow * (0.055 + 0.16 * cloud) * night.x * skyGrad;
+        // 0,055 → 0,095 : sur ciel CLAIR la nappe était quasi absente et
+        // c'était l'anneau qui tenait tout le champ. Elle doit porter le
+        // rayon 120 pt d'elle-même.
+        float skyE = moonGlow * (0.095 + 0.16 * cloud) * night.x * skyGrad;
         E = E * (1.0 - occ)
           + glowCol * skyE * (1.0 - bodyCov * body01);
 
-        // L'ANNEAU DE HALO — le cercle de glace des nuits froides, le
-        // 22 degrés des photographes de lune. Un cerne fin, à peine là,
-        // qui donne au ciel sa PROFONDEUR d'optique : la lumière ne fait
-        // pas que baigner, elle se réfracte.
-        float ringD = (rC - mix(172.0, 118.0, blood)) / mix(30.0, 22.0, blood);
-        float ring = exp(-ringD * ringD) * 0.032 * night.x
-                   * (1.0 + 0.6 * smoothstep(0.55, 0.90, blood));
-        // Au pic, le cerne se DÉDOUBLE — les deux halos concentriques des
-        // nuits de glace, le second à peine là.
-        float ring2D = (rC - mix(280.0, 192.0, blood)) / 34.0;
-        ring += exp(-ring2D * ring2D) * 0.013 * night.x
-              * smoothstep(0.50, 0.85, blood);
+        // L'ANNEAU DE HALO — le cercle de glace, le 22 degrés des
+        // photographes de lune. L'intention reste ; le RÉGLAGE était faux
+        // d'un facteur cinq.
+        //
+        // ⚠️ **VERDICT 26-08 : « les cercles ronds sont trop saccadés, le
+        // cercle rouge n'est pas assez diffus ».** Ce n'était pas un artefact
+        // de banding : ce cerne était DESSINÉ, et il dominait la nappe qu'il
+        // était censé ourler. Le calcul, au pic du sang et au rayon 118 pt :
+        //     halo diffus  skyE = 0,0103      ANNEAU au sommet = 0,0512
+        // soit **5,0× plus brillant que le halo**. Le commentaire disait « à
+        // peine là » ; le chiffre disait qu'il tenait tout le champ. Et la
+        // mesure à l'écran tombait au même endroit (sommet à 120 pt pour un
+        // anneau codé à 118, +60 % sur le creux voisin).
+        //
+        // ⚠️ **ET LE SANG L'AGGRAVAIT TROIS FOIS, TOUTES DANS LE MÊME SENS**
+        // — la nappe se contractait (×0,64), s'assombrissait (×0,65), et
+        // l'anneau S'ÉCLAIRAIT (×1,60) : le rapport anneau/nappe était
+        // multiplié par 4,5 entre l'état ① et l'état ③. Un cerne doit MOURIR
+        // avec la lumière qui le crée, jamais s'allumer quand elle s'éteint.
+        // La loi est donc renversée : le facteur DESCEND avec `blood`.
+        //
+        // Amplitude 0,032 → 0,018, largeur mix(30,22) → mix(70,60) : un trait
+        // de 22 pt lit « cercle », une bande de 60 pt lit « respiration du
+        // champ ». Rapport visé anneau/nappe ≈ 0,3 (contre 5,0) — présent,
+        // subordonné, et il se fond.
+        float ringD = (rC - mix(172.0, 118.0, blood)) / mix(70.0, 60.0, blood);
+        float ring = exp(-ringD * ringD) * 0.018 * night.x
+                   * (1.0 - 0.45 * smoothstep(0.55, 0.90, blood));
+        // ⚠️ LE SECOND CERNE EST SUPPRIMÉ (verdict : « oui, enlève »). Il
+        // n'apparaissait qu'au pic du sang — exactement quand la scène doit
+        // être la plus simple — et deux cernes concentriques sur un écran de
+        // téléphone lisent « cible », pas « nuit de glace ».
         E += glowCol * ring * (1.0 - bodyCov * body01);
 
         // LE LISERÉ ARGENTÉ : la lisière des nuages face à la lune brille —

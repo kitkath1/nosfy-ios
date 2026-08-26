@@ -83,10 +83,18 @@ struct LuneDeSangBeat {
     /// qu'une lumière qui tombe vers un noir sur lequel le film enchaîne.
     static let extinction = 0.70
 
-    /// Les zooms de la caméra : loin → posée → l'implosion rentre d'un cheveu.
+    /// Les zooms de la caméra : loin → posée → et ELLE NE BOUGE PLUS.
     static let zoomLoin: Float = 0.32
     static let zoomPose: Float = 1.20
-    static let zoomMort: Float = 1.26
+    /// ⚠️ **L'IMPLOSION FINALE EST MORTE (26-08)** : « la lune à la fin, elle
+    /// va VERS MOI sur le côté, j'aime pas ». La caméra rentrait de 1,20 à
+    /// 1,26 pendant l'extinction — l'idée était « elle ne s'éteint pas, elle
+    /// se referme », mais un zoom de +5 % sur un objet qui n'est pas au centre
+    /// exact du cadre le fait DÉRIVER latéralement en même temps qu'il
+    /// grandit : on lit une lune qui avance de biais, pas une lune qui se
+    /// referme. Égal à `zoomPose` : pendant l'extinction, plus rien ne bouge,
+    /// la lumière tombe et c'est tout.
+    static let zoomMort: Float = 1.20
 
     static var tPose: Double { naissance + plongee }      // 1,30 — le choc
     static var t1: Double { tPose }                       // début état ①
@@ -261,21 +269,27 @@ struct LuneDeSangBeat {
         // Le grésillement du néon posé : la lune ne doit jamais avoir l'air
         // ARRÊTÉE pendant les paliers.
         //
-        // ⚠️ **LA MICRO-VIE PASSE PAR LES UNIFORMES QUI EXISTENT DÉJÀ**
-        // (§5 du plan V7, salve 1 — « plus animé, plus de détail, genre 10
-        // fois plus »). La règle du chantier est que tout détail doit être
-        // peint dans une surface DÉJÀ payée : aucune couche de plus, aucune
-        // horloge de plus, aucun shader à recompiler. `idleLife` pilote déjà
-        // le grésillement du tube — on lui donne une respiration fine et
-        // IRRÉGULIÈRE (trois sinus de périodes premières entre elles, donc
-        // qui ne se rejoignent jamais) au lieu d'une valeur plate.
-        // ⚠️ Ça reste une fonction PURE du temps : les captures de
-        // `-luneSangFreeze` restent déterministes.
-        let vie = 1
-            + 0.16 * sin(t * 5.31)
-            + 0.09 * sin(t * 11.70 + 1.7)
-            + 0.05 * sin(t * 23.30 + 0.4)
-        b.idleLife = lisse((t - tPose) / 0.3) * Float(vie)
+        // ⚠️ **NE JAMAIS MODULER `idleLife` — IL PORTE LA GÉOMÉTRIE.**
+        //
+        // Verdict 26-08 : « la lune à la fin on dirait qu'elle se tord, elle
+        // va vers moi sur le côté ». C'était moi, le jour même. J'avais
+        // multiplié `idleLife` par une « micro-vie » de ±30 % sur trois sinus
+        // rapides (périodes 1,18 / 0,54 / 0,27 s), en croyant ne toucher que
+        // le grésillement du néon.
+        //
+        // Or `idleLife` pilote AUSSI le LACET ET LE TANGAGE de l'objet dans
+        // le shader (LogoMonolith.metal:443-447) : ±4,8° de lacet, « il
+        // tourne doucement sur lui-même, comme un objet suspendu ». Multiplier
+        // ce facteur, c'est faire fluctuer l'AMPLITUDE D'UNE ROTATION trois
+        // fois par seconde — la lune se tord, exactement comme le dit le
+        // verdict.
+        //
+        // La leçon : un uniforme peut porter deux rôles. Avant d'en moduler
+        // un, lire TOUS ses sites d'usage dans le shader — pas seulement
+        // celui qu'on a en tête. Le tube a d'ailleurs déjà sa propre vie
+        // là-bas (frissons aléatoires + deux sinus à 211 et 331) : ma couche
+        // était non seulement nuisible, elle était redondante.
+        b.idleLife = lisse((t - tPose) / 0.3)
         // ET LE HALO RESPIRE — très lentement, hors phase avec les états,
         // pour que la nuit elle-même ne soit jamais figée. ±3 % : on ne voit
         // pas l'atmosphère bouger, on voit qu'elle n'est pas morte.
@@ -306,7 +320,16 @@ struct LuneDeSangBeat {
             let chute = 1 - lisse(a / 0.8)
             b.reveal *= chute
             b.night.x *= chute
-            b.idleLife *= chute
+            // ⚠️ **`idleLife` NE TOMBE PLUS — MÊME CAUSE QUE LA TORSION.**
+            // Il porte le LACET de l'objet (±4,8°, LogoMonolith:443) : le
+            // faire descendre à zéro pendant l'extinction ne l'« éteint » pas,
+            // ça RAMÈNE la lune à son lacet de base — donc ça la fait pivoter
+            // pendant qu'elle meurt. Mesuré : +10 pt de dérive latérale du
+            // centre entre 3,60 et 3,90 s, alors que le zoom était déjà
+            // neutralisé.
+            // Le laisser constant ne coûte rien : ce qu'il module (le
+            // grésillement) passe par `neonGain`, qui meurt déjà avec
+            // `reveal`. La lumière tombe, la géométrie ne bouge pas.
             b.night.z *= 1 - lisse((a - 0.25) / 0.75)
             b.camera.z = Self.zoomPose
                 + (Self.zoomMort - Self.zoomPose) * lisse(a)
