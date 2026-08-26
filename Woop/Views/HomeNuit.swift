@@ -2165,6 +2165,12 @@ struct HomeNuitPage: View {
                     Chambre(p: arrivee) { a in
                         mobilierScene(geo, g, e, a)
                     }
+                    // ⚠️ MENU OUVERT, LE VERRE DES WIDGETS EST DÉMONTÉ (26-08 :
+                    // « on voit la card !! non !! »). L'extinction du menu ne
+                    // peut rien contre du verre natif — il ignore `.opacity` —
+                    // les carcasses des deux cards restaient lisibles sous le
+                    // voile. La doublure mate prend, le verre revient posé.
+                    .environment(\.verreDemonte, menuOuvert)
                     }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la

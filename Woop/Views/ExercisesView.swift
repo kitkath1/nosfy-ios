@@ -523,6 +523,16 @@ struct ExercisesView: View {
                 withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
                     etat.enSeance = v
                 }
+                // LE FILET DU DÉPART (26-08 : « la molette ne fonctionne pas
+                // pour trouver les exos »). La transition de séance est
+                // exactement le « geste qui meurt sans onEnded » que le filet
+                // des taps décrit plus haut : elle laissait la molette
+                // ENGAGÉE — la scène éteinte sous un tambour que plus
+                // personne ne tient — ou la poignée en main. Le filet des
+                // taps ne sauve que si un tap ARRIVE ; le départ, lui,
+                // relâche tout de suite.
+                if etat.engaged, etat.prise != .molette { relacher() }
+                if etat.mainTient { poigneeFin() }
             }
             // L'ACCESSIBILITÉ CHANGE DE SECTION : la molette est sourde au
             // doigt (son geste appartient à la page), VoiceOver passe donc par
@@ -1202,10 +1212,10 @@ private struct BandeauExos: View {
             VStack(spacing: 0) {
                 Color.clear.frame(height: haut)
                 HStack(spacing: 14) {
-                    // Le chevron : LE composant de la maison, aux cotes de la
-                    // maison (20 du bord physique, 4 au-dessus, 8 en dessous).
-                    ChipVerre(symbole: "chevron.left", label: "Retour",
-                              action: retour)
+                    // ⚠️ LES CHIPS SONT DES FANTÔMES DE PLACE — les vrais
+                    // vivent dans l'overlay, APRÈS le geste (voir en bas du
+                    // body). Ici, ils ne tiennent que la géométrie du titre.
+                    Color.clear.frame(width: 44, height: 44)
                     if cherche {
                         // LE MOT TAPÉ EST LE TITRE : mêmes cotes, même encre.
                         // On n'ouvre pas une barre de recherche par-dessus la
@@ -1230,12 +1240,7 @@ private struct BandeauExos: View {
                                 removal: .opacity.combined(with: .offset(y: -8))))
                         Spacer(minLength: 0)
                     }
-                    // LA LOUPE, au coin droit de la ligne du titre. Le même
-                    // galet de verre que le chevron : à cette place, tout autre
-                    // objet serait une pièce rapportée.
-                    ChipVerre(symbole: cherche ? "xmark" : "magnifyingglass",
-                              label: cherche ? "Fermer la recherche" : "Chercher",
-                              action: basculer)
+                    Color.clear.frame(width: 44, height: 44)
                 }
                 .padding(.horizontal, ExercisesView.encart)
                 .padding(.top, 4)
@@ -1265,6 +1270,30 @@ private struct BandeauExos: View {
                 }
                 .onEnded { _ in reposer() }
         )
+        // ⚠️ **LES CHIPS VIVENT AU-DESSUS DU GESTE, EN FRÈRES** (26-08 :
+        // « je peux pas revenir sur la homepage.. ça veut pas »). Le chevron
+        // et la loupe étaient des `Button` ENFANTS du bandeau — et le bandeau
+        // porte un `highPriorityGesture`, posé exprès pour battre le scroll
+        // de la grille, mais qui battait AUSSI ses propres boutons : dix
+        // points de tremblement vertical et le tap est annulé. C'est la
+        // maladie du stop (loi 1b), en pire — face à un geste d'ANCÊTRE
+        // prioritaire, même un tap prioritaire d'enfant perd. En `overlay`
+        // posé APRÈS le geste, les chips sont des FRÈRES du porteur, pas ses
+        // enfants : le doigt qui les touche ne rencontre jamais le drag, et
+        // le drag garde tout le reste du bandeau, titre compris.
+        .overlay(alignment: .topLeading) {
+            let haut = max(safeT - GrandeCardExos.margeHaut, 0)
+            HStack(spacing: 14) {
+                ChipVerre(symbole: "chevron.left", label: "Retour",
+                          action: retour)
+                Spacer(minLength: 0)
+                ChipVerre(symbole: cherche ? "xmark" : "magnifyingglass",
+                          label: cherche ? "Fermer la recherche" : "Chercher",
+                          action: basculer)
+            }
+            .padding(.horizontal, ExercisesView.encart)
+            .padding(.top, haut + 4)
+        }
     }
 
     /// Ouvre le champ, ou le ferme EN VIDANT le mot : une recherche qu'on

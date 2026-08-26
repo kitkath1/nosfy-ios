@@ -177,6 +177,26 @@ struct CardTrainee: View {
 /// de **3,45 % de la largeur**, avec son propre liseré (plus clair que
 /// l'extérieur sur le bord haut) et sa bavure vers l'intérieur.
 /// Aucune ombre portée, aucun halo ambiant : à 6 px du bord on est au fond.
+// MARK: - Le verre démonté (la scène du menu)
+
+/// LE MENU ÉTEINT LE MOBILIER — mais le verre natif IGNORE `.opacity` (la loi
+/// est écrite dix lignes plus bas, sur la chambre). À 12 % d'encre, les
+/// CARCASSES de verre des widgets restaient donc entières sous le voile
+/// (verdict 26-08 : « j'ai toujours ce design dégueu, on voit la card !!
+/// non !! »). On ne voile pas du verre : on le DÉMONTE — la card retombe sur
+/// sa doublure mate (`verre: false` existe depuis toujours) le temps que le
+/// menu tient la scène, et le verre revient posé.
+private struct VerreDemonteKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var verreDemonte: Bool {
+        get { self[VerreDemonteKey.self] }
+        set { self[VerreDemonteKey.self] = newValue }
+    }
+}
+
 struct CardCorps<Contenu: View>: View {
     /// Le rayon extérieur, en fraction de la largeur — CIRCULAIRE.
     var rayon: CGFloat = 0.152
@@ -189,6 +209,8 @@ struct CardCorps<Contenu: View>: View {
     /// est net, et une card de 170 pt n'est QUE de l'encre nette : on s'attend
     /// donc à un frost, pas à une lentille. Le banc est là pour le voir.
     var verre: Bool = false
+    /// La scène du menu démonte le verre (voir `VerreDemonteKey`).
+    @Environment(\.verreDemonte) private var verreDemonte
     /// LA CHAMBRE NOIRE, 0 → 1. Sous le doigt, le verre se FERME : une plaque
     /// noire tombe derrière l'encre et le fond vidéo cesse de passer.
     /// ⚠️ Ce n'est PAS le verre qu'on éteint — il ignore `.opacity`. On pose
@@ -266,7 +288,7 @@ struct CardCorps<Contenu: View>: View {
                         .frame(width: W, height: H)
                     }
                 }
-                if verre {
+                if verre, !verreDemonte {
                     GlassEffectContainer(spacing: 0) {
                         Color.clear
                             .frame(width: W, height: H)
@@ -284,7 +306,7 @@ struct CardCorps<Contenu: View>: View {
                     // |R−B| ≤ 0,7/255 partout, toute la chaleur de la card
                     // vient des reflets et du contenu, jamais du fond.
                     dedans.fill(Color(white: 0.012))
-                        .opacity(verre ? 0 : 1)
+                        .opacity(verre && !verreDemonte ? 0 : 1)
                     // Les deux lueurs de l'anti-diagonale survivent en mode
                     // verre, mais au TIERS : elles disent la lumière posée
                     // sans reboucher ce qu'on vient d'ouvrir.

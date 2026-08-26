@@ -110,6 +110,12 @@ struct GaletMaison: View {
     /// allongée, dont la moitié sort de l'écran : il ne reste qu'un bout de
     /// verre sur le bord, et c'est par ce bout qu'on le retire.
     var range: Bool = false
+    /// LE DOIGT LE TIENT — et le verre est DÉMONTÉ le temps du voyage. Loi
+    /// mesurée le 26-08 (60 → 14 img/s) : du verre natif qui BOUGE se re-rend
+    /// à chaque image, et c'est le « déplacer la pill pas fluide » du
+    /// verdict. Pendant le transport, une doublure tient son rôle ; posé, le
+    /// verre revient.
+    var transport: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Le nom du verre pour le MORPHISME natif : c'est `glassEffectID` qui
@@ -186,13 +192,47 @@ struct GaletMaison: View {
                 // LE VERRE, seul dans son conteneur. Rond quand il est de
                 // service, NAVETTE quand il est rangé — et c'est le même
                 // verre qui se déforme, pas deux objets qui se remplacent.
-                GlassEffectContainer(spacing: 0) {
-                    Color.clear
-                        .frame(width: largeur, height: hauteur)
-                        .glassEffect(.clear.interactive(),
-                                     in: range ? AnyShape(Capsule())
-                                               : AnyShape(Circle()))
-                        .glassEffectID("galet", in: verre)
+                if transport {
+                    // LA DOUBLURE DU TRANSPORT — le sosie mat du verre : la
+                    // grammaire de la navette (l'arête spéculaire qui dit
+                    // « verre », un souffle de clarté, jamais un lait). On ne
+                    // voile pas du verre en mouvement, on le DÉMONTE — il
+                    // ignore `.opacity`, et le déplacer coûte 60 → 14 img/s.
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.095),
+                                          location: 0.00),
+                                    .init(color: .white.opacity(0.040),
+                                          location: 0.50),
+                                    .init(color: .white.opacity(0.070),
+                                          location: 1.00),
+                                ],
+                                startPoint: .top, endPoint: .bottom))
+                        Circle()
+                            .stroke(LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.55),
+                                          location: 0.00),
+                                    .init(color: .white.opacity(0.12),
+                                          location: 0.45),
+                                    .init(color: .white.opacity(0.30),
+                                          location: 1.00),
+                                ],
+                                startPoint: .top, endPoint: .bottom),
+                                lineWidth: 0.9)
+                    }
+                    .frame(width: largeur, height: hauteur)
+                } else {
+                    GlassEffectContainer(spacing: 0) {
+                        Color.clear
+                            .frame(width: largeur, height: hauteur)
+                            .glassEffect(.clear.interactive(),
+                                         in: range ? AnyShape(Capsule())
+                                                   : AnyShape(Circle()))
+                            .glassEffectID("galet", in: verre)
+                    }
                 }
                 // L'ENCRE, au-dessus du conteneur. ⚠️ Le verre natif IGNORE
                 // `.opacity` — mais l'encre, elle, se DÉMONTE : rangé, le
@@ -1317,7 +1357,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 GaletFumee(start: porteStart, fin: porteEnd,
                            centre: galetPos(g.size))
                 GaletMaison(morph: morph, appui: appui, feuSup: feuChute,
-                            range: range)
+                            range: range, transport: enMain)
                     // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
                     // **DEUX `withAnimation` SUR LA MÊME VALEUR DANS LE MÊME
                     // TOUR NE JOUENT RIEN.** Écrire 0 → 1 puis 1 → 0 dans le
