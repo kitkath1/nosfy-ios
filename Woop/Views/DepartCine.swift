@@ -539,6 +539,19 @@ struct FondDeuxCalques: View {
 
     /// Le temps de la scène, en secondes.
     var e: Double
+    /// ⚠️ **L'ENTRÉE DE LA PILULE, 0 → 1** (26-08). Verdict : « la pill
+    /// apparaît après le reste, pas avant ».
+    ///
+    /// Elle apparaissait EN PREMIER, et pour une raison qu'on ne pouvait pas
+    /// deviner en cherchant un composant SwiftUI : **la pill rouge n'en est
+    /// pas un**, c'est le calque vidéo `home-fond-pilule` de ce fond. Elle
+    /// vivait donc dans la naissance de la card (easeOut 1,15 s dès t = 0),
+    /// c'est-à-dire 380 ms AVANT le premier mot de la phrase.
+    ///
+    /// Un fondu sur le calque, et rien d'autre : pas question de retarder son
+    /// LECTEUR (une vidéo qui démarre en retard se raccorde mal à la braise,
+    /// qui, elle, ne bouge jamais).
+    var pilule: Double = 1
 
     // ⚠️ L'ÉCHELLE DES DEUX CALQUES EST CONSTANTE, ET C'EST CELLE DU REPOS.
     // C'était LA deuxième cause du bug : `aspectFill` remplit par la HAUTEUR
@@ -640,6 +653,7 @@ struct FondDeuxCalques: View {
                             pose: "home-fond-pilule-poster",
                             rate: DepartCine.rate(e))
                     .frame(width: Self.pilL, height: Self.pilH)
+                    .opacity(pilule)
                     // Le calque est rogné : il se repose à SA place dans la card.
                     .padding(.top, Self.pilTop)
                     .rotation3DEffect(.degrees(DepartCine.roulisX(e)),

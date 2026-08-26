@@ -984,6 +984,9 @@ struct GrandeCardVideo: View {
     /// La naissance de la page, 0 → 1 : la card s'allume en fondu avec une
     /// approche imperceptible (1,015 → 1). Jamais un bounce (la spec).
     var naissance: Double = 1
+    /// L'entrée de la PILULE, séparée de la naissance de la card — elle
+    /// arrive en DERNIER (cf. `FondDeuxCalques.pilule`).
+    var pilule: Double = 1
     /// ⚠️ **LA CARD PREND TOUTE LA LARGEUR** (verdict 22-08 : « on voit trop les
     /// côtés noirs à droite et à gauche, elle doit prendre l'espace »).
     ///
@@ -1028,7 +1031,7 @@ struct GrandeCardVideo: View {
                 // et grossit au-dessus d'elle. Les images de pose sont rentrées
                 // DANS chaque calque : posées dehors, en additif, elles
                 // s'ajouteraient et on verrait deux pilules.
-                FondDeuxCalques(e: e)
+                FondDeuxCalques(e: e, pilule: pilule)
                 // ⚠️ LA CARD DESCEND JUSQU'AU BORD PHYSIQUE. La marge de
                 // nuit était appliquée aux QUATRE côtés : mesuré à la
                 // capture, 30 px = 10,0 pt de bande noire sous la card,
@@ -2040,7 +2043,34 @@ struct HomeNuitPage: View {
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
                 } contenu: {
-                    mobilierScene(geo, g, e)
+                    // ⚠️ **LE PONT ANIMATABLE, ENFIN BRANCHÉ** (26-08).
+                    // Verdict : « l'arrivée sur la home est trop statique — je
+                    // veux une micro-profondeur, un très léger décalage entre
+                    // les widgets, les mini-cards qui se mettent en place ».
+                    //
+                    // Les rangs d'apparition ÉTAIENT déjà écrits (`pose` de la
+                    // rangée à `(arrivee − 0,55)/0,30`, celui de la semaine à
+                    // `(arrivee − 0,70)/0,30`) — ils ne jouaient simplement
+                    // jamais. `CardsRangee` et `SemaineStrip` sont de simples
+                    // `View` : sous `withAnimation`, SwiftUI ne réévalue pas le
+                    // body à chaque pas, il interpole les MODIFICATEURS. Il
+                    // voyait donc une opacité aller de 0 à 1 et la menait
+                    // linéairement sur les 1,46 s, en écrasant la fenêtre —
+                    // tout ce qui n'est pas la phrase arrivait ENSEMBLE, sans
+                    // décalage ni profondeur. C'est le piège que le dépôt
+                    // documente lui-même (« les rampes sur p sous withAnimation
+                    // ne jouent qu'au doigt ; la forme robuste est une struct
+                    // View Animatable sur p ») — et le remède, `Chambre`, était
+                    // déjà écrit, déjà payé, déjà en production dans la vitrine.
+                    // Il n'a fallu inventer AUCUNE fenêtre : celles qui
+                    // existaient se remettent à jouer.
+                    //
+                    // ⚠️ PAS une `TimelineView` à la place : celle du body de
+                    // la home est volontairement pausée au repos, la réveiller
+                    // rejouerait le piège de la page ré-évaluée par image.
+                    Chambre(p: arrivee) { a in
+                        mobilierScene(geo, g, e, a)
+                    }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
                 // note sur `fondPage`. `.simultaneousGesture` et jamais
@@ -2389,6 +2419,13 @@ struct HomeNuitPage: View {
                         // pas un fond : c'est la PAGE, et c'est là que vit le
                         // slider.
                         GrandeCardVideo(naissance: naissance,
+                                        // LA PILULE EN DERNIER : elle n'entre
+                                        // qu'une fois la phrase posée et les
+                                        // widgets en place — fenêtre 0,80 →
+                                        // 1,00 de l'arrivée, la plus tardive
+                                        // de la partition (les widgets sont à
+                                        // 0,55, la semaine à 0,70).
+                                        pilule: PilP.entree(arrivee),
                                         levee: max(-tirage, 0),
                                         e: e)
                     }
@@ -2442,7 +2479,8 @@ struct HomeNuitPage: View {
     @ViewBuilder
     private func mobilierScene(_ geo: GeometryProxy,
                                _ g: Double,
-                               _ e: Double) -> some View {
+                               _ e: Double,
+                               _ arr: Double) -> some View {
         // ── CE QUE FAIT LE DOIGT, ET RIEN D'AUTRE ────────────────────────────
         // Le net décroche sous le pouce, et il finit tout seul au cran (ou fait
         // tout le chemin au TAP, qui n'a pas de doigt). D'où le `max` : les deux
@@ -2568,7 +2606,7 @@ struct HomeNuitPage: View {
                 .blur(radius: slid > 0.96 ? 0 : 7 * (1 - slid))
                 .allowsHitTesting(e > 1.88)
                 Group {
-                    PhraseVue(p: arrivee, flouDepart: cloche
+                    PhraseVue(p: arr, flouDepart: cloche
                                 + 3.5 * min(g / 0.37, 1),
                               params: phrase, rasant: rasant,
                               fragments: PhraseTexte.fragments(
@@ -2651,7 +2689,7 @@ struct HomeNuitPage: View {
                                 moisFaits: stats?.moisFaits,
                                 hiit: stats?.hiit ?? HiitPeakInfo(),
                                 peak: stats?.peak ?? PeakEffortInfo(),
-                                arrivee: arrivee, lisere: true, verre: true,
+                                arrivee: arr, lisere: true, verre: true,
                                 slots: slots,
                                 vides: widgetsVides,
                                 edition: editionP,
@@ -2685,7 +2723,7 @@ struct HomeNuitPage: View {
                     // flow ; aujourd'hui la card entière est la porte.
                     if verreMonte {
                     SemaineStrip(faits: faitsAffiche, prevus: prevus,
-                                 arrivee: arrivee,
+                                 arrivee: arr,
                                  materialises: materialises,
                                  lisere: true, verre: true)
                         .contentShape(RoundedRectangle(cornerRadius: 22))
@@ -2762,12 +2800,12 @@ struct HomeNuitPage: View {
                     // pendant toute la scène de départ et toute la séance, pour
                     // peindre du vide. (C'est exactement la leçon du `rate`
                     // resté à 2,2 et du verre jamais démonté.)
-                    if !enSeance, net < 0.02, arrivee > 0.4,
+                    if !enSeance, net < 0.02, arr > 0.4,
                        vitrineSlot == nil {
                         FumeeInvite()
                             .frame(maxWidth: .infinity, maxHeight: .infinity,
                                    alignment: .bottom)
-                            .opacity(arrivee)
+                            .opacity(arr)
                             .allowsHitTesting(false)
                     }
                     // ⚠️ **LA POIGNÉE DU PULL** (26-08). L'app désigne cette
@@ -2788,7 +2826,7 @@ struct HomeNuitPage: View {
                     }
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
-                        .opacity(enSeance ? 0 : arrivee * (1 - net))
+                        .opacity(enSeance ? 0 : arr * (1 - net))
                         .allowsHitTesting(!enSeance && !tiroirOuvert)
                         .onTapGesture {
                             // L'INVITE EST TAPABLE : sans ça le départ passe
@@ -2827,7 +2865,7 @@ struct HomeNuitPage: View {
                         // et elle naît avec la phrase.
                         .offset(y: 8 * net)
                         .blur(radius: 6 * net)
-                        .opacity((1 - net) * arrivee)
+                        .opacity((1 - net) * arr)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                         // Sourde dès que la page fait autre chose : le
                         // film, l'édition, la vitrine — un bouton qui
@@ -4053,5 +4091,21 @@ struct PoudreMini: View {
     private static func hachis(_ i: Int, _ k: Int) -> Double {
         let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
         return s - floor(s)
+    }
+}
+
+
+/// LA FENÊTRE D'ENTRÉE DE LA PILULE ROUGE.
+///
+/// ⚠️ Elle vit HORS de `mobilierScene` (donc hors de la `Chambre`) : la card
+/// vidéo est peinte par la couche de FOND, qui n'a pas de curseur interpolé.
+/// Le fondu est donc porté par `arrivee` directement — et c'est licite ici,
+/// précisément parce que c'est UNE opacité sur UNE vue : SwiftUI l'interpole
+/// de 0 à 1, et le retard vient de la fenêtre, pas d'un échelonnement à
+/// respecter. (Le piège des rampes échelonnées ne mord que s'il y a plusieurs
+/// fenêtres à tenir ensemble.)
+enum PilP {
+    static func entree(_ arrivee: Double) -> Double {
+        min(max((arrivee - 0.80) / 0.20, 0), 1)
     }
 }
