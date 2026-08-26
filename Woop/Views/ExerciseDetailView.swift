@@ -69,7 +69,10 @@ struct ExerciseDetailView: View {
         (.halo, "reward-piece-1"), (.halo, "reward-piece-2"),
         (.halo, "reward-piece-3"), (.halo, "reward-piece-4"),
         (.halo, "reward-piece-5"), (.halo, "reward-fire"),
-        (.halo, "reward-lune"), (.halo, "reward-rare")
+        (.halo, "reward-lune"), (.halo, "reward-rare"),
+        // Le combo demandé le 26-08 : la robe spotlight (matrice) AVEC
+        // une vidéo en header — pour juger le mariage.
+        (.spotlight, "reward-piece-3")
     ]
 
     private func ouvrirComboDemo() {
@@ -729,6 +732,14 @@ struct ExerciseDetailView: View {
             else { return }
             try? await Task.sleep(for: .seconds(1.0))
             ouvrirComboDemo()
+        }
+        // L'atelier « You Made It » (le variant 2 refait) : `-ymiLab`
+        // ouvre cette robe seule, sans fermeture auto.
+        .task {
+            guard CommandLine.arguments.contains("-ymiLab") else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 1
+            rewardShow = true
         }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.

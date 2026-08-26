@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import CoreText
 
 // MARK: - LA CARD REWARD — le pop-up noir du chiffre
 
@@ -149,6 +150,9 @@ private struct RewardScene: View, Animatable {
 
     /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
     @State private var videoRelance = 0
+    /// L'écart du doigt sur la card (CarteGyro l'écrit) — il nourrit le
+    /// tilt 3D ET la vie de la vidéo gelée.
+    @State private var penteCard = CGSize.zero
 
     var animatableData: Double {
         get { p }
@@ -191,7 +195,7 @@ private struct RewardScene: View, Animatable {
     // MARK: La card
 
     private func carte(largeur: CGFloat, hauteur: CGFloat) -> some View {
-        CarteGyro {
+        CarteGyro(pente: $penteCard) {
             ZStack {
                 // 1. LA DALLE NOIRE — la seule chose que le verre a sous
                 //    lui : la card naît noire (le fondu noir des cards
@@ -261,20 +265,21 @@ private struct RewardScene: View, Animatable {
                     chiffresFantomes(largeur: largeur)
                         .opacity(sstep(0.50, 0.82, p))
                 } else {
-                    // 4 bis. LE DISQUE DE LA NUIT (réf WWDC, néon seul) —
-                    //    la lune sombre derrière le chiffre : à peine plus
-                    //    claire que le noir, elle donne sa profondeur au
-                    //    bloom. La pill, elle, veut une scène nue.
+                    // 4 bis. LA ROBE « YOU MADE IT » (le variant 2 refait,
+                    //    T1 — la robe néon brume est MORTE) : le TEXTE
+                    //    GÉANT derrière, éclairé par la lampe-barrette et
+                    //    son éventail.
                     if style == .neon {
-                        disqueNuit(largeur: largeur, hauteur: hauteur)
+                        TexteGeant(naissance: naissance)
+                            .opacity(sstep(0.22, 0.55, p))
+                        LampeEventail(naissance: naissance)
+                            .opacity(sstep(0.10, 0.40, p))
                     }
-                    // Et le HALO DE SOL — monté d'un cran (verdict
-                    // « augmente le halo ») : la brume dans laquelle les
-                    // capitales couchées TREMPENT, en deux nappes.
-                    // (Pas en spotlight — la nuit y est totale — ni sous
-                    // une VIDÉO : le corps doit rester noir + lumière
-                    // chaude, les nappes le lavaient en gris, mesuré.)
-                    if style != .spotlight, videoNom == nil {
+                    // Et le HALO DE SOL — la brume du bas (galet seul :
+                    // la robe You-Made-It et le spotlight vivent en nuit
+                    // totale, et sous une VIDÉO les nappes lavaient le
+                    // corps en gris, mesuré).
+                    if style == .galet, videoNom == nil {
                     Self.forme.fill(
                         EllipticalGradient(
                             stops: [
@@ -305,13 +310,11 @@ private struct RewardScene: View, Animatable {
                 // 5 bis. LA POUDRE DE DIAMANT (verdict) — les grains
                 //    naissent dans le halo et scintillent TRANCHÉ, la
                 //    recette de PoudreBooster en monochrome lunaire.
-                //    (Pas en spotlight : la nuit y est nue, la matière
-                //    vit DANS le chiffre.)
-                if style != .spotlight {
-                    PoudreDiamant(largeur: largeur, hauteur: hauteur,
-                                  naissance: naissance)
-                        .opacity(sstep(0.35, 0.75, p))
-                }
+                //    Sur TOUTES les robes (verdict « au global je veux
+                //    plus de poudre de diamant »).
+                PoudreDiamant(largeur: largeur, hauteur: hauteur,
+                              naissance: naissance)
+                    .opacity(sstep(0.35, 0.75, p))
 
                 // 5 ter. LA VIDÉO DU HEADER — elle SORT de la matière
                 //    noire : fond noir vrai sur card noire, et un fondu
@@ -319,7 +322,8 @@ private struct RewardScene: View, Animatable {
                 //    joue UNE fois et gèle sur sa dernière frame.
                 if let nom = videoNom {
                     VStack(spacing: 0) {
-                        VideoReward(nom: nom, relance: videoRelance)
+                        VideoVivante(nom: nom, relance: videoRelance,
+                                     pente: penteCard)
                             .frame(height: hauteur * 0.42)
                             .overlay(
                                 LinearGradient(
@@ -355,7 +359,7 @@ private struct RewardScene: View, Animatable {
                             .init(color: .white.opacity(0.08), location: 1)
                         ],
                         startPoint: .top, endPoint: .bottom),
-                    lineWidth: 2)
+                    lineWidth: 1)
                     .opacity(sstep(0.12, 0.45, p))
 
                 // 7. L'ENCRE — au-dessus de tout.
@@ -429,40 +433,37 @@ private struct RewardScene: View, Animatable {
 
     private func encre(hauteur: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // LE BLOC DE TÊTE À L'APPLE (verdict) : titre plein blanc,
-            // sous-titre gris discret sur deux lignes, tout centré.
-            Text(title)
-                .font(.inter(20, .bold))
-                .tracking(0.2)
-                .foregroundStyle(WoopGradient.silverText)
-                .opacity(sstep(0.36, 0.58, p))
-                .offset(y: 5 * (1 - sstep(0.36, 0.62, p)))
-                // Avec vidéo, le bloc de tête descend SOUS elle — le
-                // titre se pose dans le fondu, comme la réf du plan.
-                .padding(.top, videoNom == nil ? 26 : hauteur * 0.40)
-            Text(subtitle)
-                .font(.inter(13.5))
-                .foregroundStyle(Color.white.opacity(0.55))
-                .multilineTextAlignment(.center)
-                .lineSpacing(2)
-                .padding(.horizontal, 34)
-                .padding(.top, 8)
-                .opacity(sstep(0.42, 0.64, p))
-                .offset(y: 5 * (1 - sstep(0.42, 0.68, p)))
+            // LE BLOC DE TÊTE À L'APPLE — SAUF dans la robe You-Made-It :
+            // là, LE TEXTE GÉANT EST LE MESSAGE, la tête meurt et seule
+            // la ligne calme du bas parle.
+            if style != .neon {
+                Text(title)
+                    .font(.inter(20, .bold))
+                    .tracking(0.2)
+                    .foregroundStyle(WoopGradient.silverText)
+                    .opacity(sstep(0.36, 0.58, p))
+                    .offset(y: 5 * (1 - sstep(0.36, 0.62, p)))
+                    // Avec vidéo, le bloc de tête descend SOUS elle — le
+                    // titre se pose dans le fondu, comme la réf du plan.
+                    .padding(.top, videoNom == nil ? 26 : hauteur * 0.40)
+                Text(subtitle)
+                    .font(.inter(13.5))
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .padding(.horizontal, 34)
+                    .padding(.top, 8)
+                    .opacity(sstep(0.42, 0.64, p))
+                    .offset(y: 5 * (1 - sstep(0.42, 0.68, p)))
+            }
             Spacer(minLength: 0)
             if style == .neon {
-                // UN SEUL BLOC centré : le chiffre S'ASSOIT sur les
-                // capitales couchées — pas d'air entre eux (un Spacer
-                // entre les deux les aurait écartés).
-                VStack(spacing: -30) {
-                    ChiffreNeon(valeur: valeurCourante,
-                                allume: sstep(0.30, 0.72, p))
-                        .opacity(sstep(0.26, 0.44, p))
-                    UnitePlate(texte: unit)
-                        .padding(.horizontal, 16)
-                        .opacity(sstep(0.44, 0.70, p))
-                        .offset(y: 8 * (1 - sstep(0.44, 0.74, p)))
-                }
+                // T2 : LE CHIFFRE DE VERRE — le glyphe en glassEffect
+                // natif, posé sur le texte qu'il réfracte, saisissable
+                // comme la pill.
+                ChiffreVerre(valeur: valeurCourante, naissance: naissance)
+                    .opacity(sstep(0.32, 0.55, p))
+                    .scaleEffect(0.92 + 0.08 * sstep(0.32, 0.62, p))
             } else if style == .spotlight {
                 // L'ARRIVÉE du chiffre (verdict « les chiffres s'animent
                 // à l'arrivée ») : il se pose d'un souffle pendant que le
@@ -487,9 +488,17 @@ private struct RewardScene: View, Animatable {
                     }
             }
             Spacer(minLength: 0)
-            // L'unité en blanc dans la fumée — halo ET pill (en néon elle
-            // vit couchée dans le bloc central).
-            if style != .neon {
+            if style == .neon {
+                // La ligne calme de la réf (« A new milestone has been
+                // reached. ») — le sous-titre, seul, en bas.
+                Text(subtitle)
+                    .font(.inter(13.5))
+                    .foregroundStyle(Color.white.opacity(0.60))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                    .opacity(sstep(0.48, 0.72, p))
+            } else {
+                // L'unité en blanc dans la fumée — halo et galet.
                 Text(unit)
                     .font(.inter(19, .semibold))
                     .foregroundStyle(Color.white.opacity(0.95))
@@ -532,7 +541,7 @@ private struct PoudreDiamant: View {
 
     /// 44 grains à 30 Hz : une broutille pour le Canvas, assez pour que
     /// la poudre existe.
-    private static let grains = 44
+    private static let grains = 72
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
@@ -547,7 +556,7 @@ private struct PoudreDiamant: View {
                     // Naît dans la fumée du bas et monte d'un souffle.
                     let cx = largeur / 2
                         + (Self.hash(i, 1) - 0.5) * largeur * 0.86
-                    let base = 0.60 + 0.36 * Self.hash(i, 3)
+                    let base = 0.50 + 0.46 * Self.hash(i, 3)
                     let cy = hauteur * base
                     let x = cx + sin(t * (0.35 + 0.5 * Self.hash(i, 8))
                                      + Self.hash(i, 9) * 6.28) * 8
@@ -559,7 +568,7 @@ private struct PoudreDiamant: View {
                     let s = sin(.pi * cyc)
                     let tw = 0.5 + 0.5 * sin(t * (7 + 12 * Self.hash(i, 4))
                                              + Self.hash(i, 6) * 6.28)
-                    let bas = 0.30 + 0.70 * (base - 0.60) / 0.36
+                    let bas = 0.30 + 0.70 * (base - 0.50) / 0.46
                     let a = s * s * (0.18 + 0.82 * tw * tw * tw) * bas
                     guard a > 0.02 else { continue }
                     let r = CGFloat(0.6 + 1.5 * Self.hash(i, 7))
@@ -875,7 +884,403 @@ private struct TrameMatrice: View {
     }
 }
 
-/// LE CHIFFRE NÉON (réf WWDC « 1 DAY TO GO ») — le tube blanc-chaud qui
+// MARK: - La robe « You Made It » (le variant 2 refait)
+
+/// LE BALAYAGE DU SPOT (verdict « il doit aller de droite à gauche ») —
+/// l'horloge PARTAGÉE du faisceau : la lampe penche son cône ET la
+/// lumière posée sur les lettres suivent la même sinusoïde, au même
+/// instant. Période ~9,7 s.
+private func balayageSpot(_ t: Double) -> Double {
+    // Deux harmoniques (périodes premières entre elles) : la course est
+    // large ET jamais mécanique — le projecteur CHERCHE.
+    let v = sin(t * 0.62) * 0.78 + sin(t * 0.29 + 1.3) * 0.30
+    return max(-1, min(1, v))
+}
+
+/// LE TEXTE GÉANT — les trois rangées qui remplissent la card, rognées
+/// par les flancs (jamais rétrécies), en argent sombre ÉCLAIRÉ PAR LA
+/// LAMPE : une copie sombre + une copie claire masquée par le champ de
+/// lumière qui descend de la barrette (la technique de la matrice — la
+/// trame ne se redessine pas, seule la lumière la révèle). Hors layout
+/// (la fente ne gonfle pas), le clip de la card rogne.
+private struct TexteGeant: View {
+    /// L'horloge du scintillement.
+    let naissance: Date
+
+    private static let mots: [(String, CGFloat)] = [
+        ("YOU", 106), ("MADE", 122), ("IT", 102)
+    ]
+
+    private var rangées: some View {
+        VStack(spacing: -16) {
+            ForEach(0..<Self.mots.count, id: \.self) { i in
+                Text(Self.mots[i].0)
+                    .font(.inter(Self.mots[i].1, .heavy))
+                    .tracking(-3)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+    }
+
+    var body: some View {
+        Color.clear
+            .overlay {
+                ZStack {
+                    // La base — l'argent qui meurt vers le bas, et
+                    // L'OMBRE CONTINUE (verdict) : chaque rangée porte
+                    // son ombre sur la suivante (elles se chevauchent),
+                    // le relief coule de haut en bas.
+                    rangées
+                        .foregroundStyle(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.40),
+                                          location: 0),
+                                    .init(color: .white.opacity(0.17),
+                                          location: 0.5),
+                                    .init(color: .white.opacity(0.06),
+                                          location: 1)
+                                ],
+                                startPoint: .top, endPoint: .bottom))
+                        .shadow(color: .black.opacity(0.85),
+                                radius: 9, y: 10)
+                    // La lumière de la lampe POSÉE sur les lettres — la
+                    // copie claire, masquée par le champ qui descend de
+                    // la barrette.
+                    // La lumière SUIT LE BALAYAGE du spot — même horloge
+                    // que le cône de la lampe (les rangées, statiques, ne
+                    // se redessinent pas : seul le masque glisse).
+                    TimelineView(.animation(
+                        minimumInterval: 1.0 / 30.0)) { tl in
+                        let b = balayageSpot(
+                            tl.date.timeIntervalSince(naissance))
+                        rangées
+                            .foregroundStyle(Color.white.opacity(0.65))
+                            .mask(
+                                EllipticalGradient(
+                                    stops: [
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white.opacity(0.35),
+                                              location: 0.45),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    center: UnitPoint(x: 0.5 - 0.42 * b,
+                                                      y: 0.02),
+                                    startRadiusFraction: 0,
+                                    endRadiusFraction: 0.85))
+                    }
+                    // LE SCINTILLEMENT (verdict) — des étoiles infimes
+                    // qui ne vivent QUE dans les lettres, plus denses là
+                    // où la lampe les touche.
+                    Scintilles(naissance: naissance)
+                        .mask(rangées)
+                }
+                // Le PIED SE NOIE avant la ligne du bas (la réf : la
+                // dernière rangée à demi avalée par le noir) — jamais de
+                // collision avec le sous-titre.
+                // LE FONDU MAJESTUEUX (verdict) : le texte se noie dans
+                // le noir vers le BAS…
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white, location: 0),
+                            .init(color: .white.opacity(0.92),
+                                  location: 0.42),
+                            .init(color: .white.opacity(0.45),
+                                  location: 0.66),
+                            .init(color: .white.opacity(0.12),
+                                  location: 0.82),
+                            .init(color: .clear, location: 0.92)
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                // …ET SUR LES CÔTÉS, franchement : les lettres sortent
+                // de la nuit au lieu d'être coupées par le bord.
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.30),
+                                  location: 0.12),
+                            .init(color: .white, location: 0.32),
+                            .init(color: .white, location: 0.68),
+                            .init(color: .white.opacity(0.30),
+                                  location: 0.88),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .leading, endPoint: .trailing))
+                .offset(y: 6)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+}
+
+/// L'éventail du plafonnier — le trapèze COURT et doux.
+private struct Eventail: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX - 30, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + 30, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + 118, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX - 118, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// LA LAMPE-BARRETTE (réf « You Made It ») — l'objet accroché au bord
+/// haut de la card, et son éventail de lumière : court, doux, flancs
+/// FONDUS (jamais d'arête franche — un trait à bord franc sur du noir
+/// est de l'encre, pas de la lumière).
+private struct LampeEventail: View {
+    /// L'horloge du balayage — la même que la lumière des lettres.
+    var naissance: Date
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            corps(balayage: balayageSpot(
+                tl.date.timeIntervalSince(naissance)))
+        }
+    }
+
+    private func corps(balayage: Double) -> some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                // L'éventail — dégradé qui meurt vite, flancs fondus.
+                // DEUX ÉVENTAILS (verdict « améliore le spotlight ») :
+                // la nappe LARGE et douce, et le CŒUR étroit plus vif —
+                // la lumière a un corps et une âme. LE FAISCEAU BALAIE
+                // de droite à gauche, ancré à sa source.
+                Group {
+                Eventail()
+                    .fill(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.33),
+                                      location: 0),
+                                .init(color: .white.opacity(0.10),
+                                      location: 0.5),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom))
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.04),
+                                .init(color: .white, location: 0.30),
+                                .init(color: .white, location: 0.70),
+                                .init(color: .clear, location: 0.96)
+                            ],
+                            startPoint: .leading, endPoint: .trailing))
+                    .blur(radius: 13)
+                    .frame(height: 196)
+                    .blendMode(.screen)
+                Eventail()
+                    .fill(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.50),
+                                      location: 0),
+                                .init(color: .white.opacity(0.15),
+                                      location: 0.4),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom))
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.22),
+                                .init(color: .white, location: 0.42),
+                                .init(color: .white, location: 0.58),
+                                .init(color: .clear, location: 0.78)
+                            ],
+                            startPoint: .leading, endPoint: .trailing))
+                    .blur(radius: 9)
+                    .frame(height: 148)
+                    .scaleEffect(x: 0.55, y: 1, anchor: .top)
+                    .blendMode(.screen)
+                }
+                .rotationEffect(.degrees(19 * balayage),
+                                anchor: UnitPoint(x: 0.5, y: 0.03))
+                // La bouche — le fin trait de lumière SOUS la barrette,
+                // discret : c'est l'éventail qui parle.
+                Capsule()
+                    .fill(Color.white.opacity(0.55))
+                    .frame(width: 44, height: 2)
+                    .blur(radius: 2)
+                    .offset(y: 9)
+                // (La barrette est MORTE — verdict « enlève la petite
+                // pillule » : la source est une simple ouverture de
+                // lumière au bord, l'objet n'existe plus.)
+            }
+            Spacer(minLength: 0)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// LE SCINTILLEMENT des lettres — la recette PoudreBooster réduite à
+/// l'infime : ~16 étoiles qui ne vivent que masquées PAR les glyphes,
+/// plus denses en crête (là où la lampe touche), l'additif au contexte.
+private struct Scintilles: View {
+    var naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            Canvas { ctx, size in
+                ctx.blendMode = .plusLighter
+                for i in 0 ..< 16 {
+                    let x = size.width * CGFloat(Self.hash(i, 1))
+                    let haut = Self.hash(i, 3)
+                    let y = size.height * CGFloat(haut)
+                    let tw = 0.5 + 0.5 * sin(t * (5 + 9 * Self.hash(i, 4))
+                                             + Self.hash(i, 6) * 6.28)
+                    // La crête scintille plus que le pied.
+                    let a = (0.9 - 0.6 * haut) * tw * tw * tw * 0.9
+                    guard a > 0.03 else { continue }
+                    let r = CGFloat(0.5 + 0.9 * Self.hash(i, 7))
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: x - r / 2, y: y - r / 2,
+                                               width: r, height: r)),
+                        with: .color(.white.opacity(a)))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
+    }
+}
+
+/// LA FORME DU GLYPHE — le contour réel du chiffre (CoreText), en
+/// SF Rounded black (la rondeur de la réf), ajusté dans son rect : la
+/// silhouette qui reçoit le VRAI verre.
+private struct FormeGlyphe: Shape {
+    let texte: String
+
+    func path(in rect: CGRect) -> Path {
+        // La fonte de l'APP (verdict « trop arrondie ») : Inter-Bold,
+        // le même dessin que tous les chiffres de la maison.
+        let police = UIFont(name: "Inter-Bold", size: 200)
+            ?? UIFont.systemFont(ofSize: 200, weight: .bold)
+        let ct = police as CTFont
+        let compose = CGMutablePath()
+        var avanceX: CGFloat = 0
+        for scalaire in texte.unicodeScalars {
+            var uc = UniChar(scalaire.value)
+            var glyphe = CGGlyph()
+            guard CTFontGetGlyphsForCharacters(ct, &uc, &glyphe, 1)
+            else { continue }
+            if let chemin = CTFontCreatePathForGlyph(ct, glyphe, nil) {
+                let tf = CGAffineTransform(translationX: avanceX, y: 0)
+                compose.addPath(chemin, transform: tf)
+            }
+            var avance = CGSize.zero
+            CTFontGetAdvancesForGlyphs(ct, .horizontal, &glyphe,
+                                       &avance, 1)
+            avanceX += avance.width
+        }
+        let boite = compose.boundingBoxOfPath
+        guard boite.width > 0, boite.height > 0 else { return Path() }
+        let echelle = min(rect.width / boite.width,
+                          rect.height / boite.height)
+        var t = CGAffineTransform.identity
+        t = t.translatedBy(x: rect.midX, y: rect.midY)
+        // CoreText vit y vers le HAUT : l'échelle négative retourne.
+        t = t.scaledBy(x: echelle, y: -echelle)
+        t = t.translatedBy(x: -boite.midX, y: -boite.midY)
+        guard let pose = compose.copy(using: &t) else { return Path() }
+        return Path(pose)
+    }
+}
+
+/// LE CHIFFRE DE VERRE (T2, réf « You Made It ») — le VRAI Liquid Glass
+/// coulé DANS la silhouette du chiffre : le texte géant derrière est
+/// réellement réfracté à travers lui. Et il se SAISIT comme la pill (la
+/// recette galet : dérive discrète + gyro, drag au doigt, haptique
+/// prise/lâcher, ressort au lâcher SUR LE MODIFICATEUR — la leçon).
+private struct ChiffreVerre: View {
+    let valeur: Int
+    var naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var prise = CGSize.zero
+    @State private var enMain = false
+    @State private var grab = 0
+    @State private var drop = 0
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            let tilt = SkyMotion.shared.tilt
+            let libre: CGFloat = enMain ? 0.25 : 1
+            let x = (sin(t * 0.50) * 24 + sin(t * 0.93 + 1.7) * 8) * libre
+                + 18 * tilt.dx
+            let y = (cos(t * 0.41 + 0.8) * 18 + sin(t * 0.77) * 6) * libre
+                + 12 * tilt.dy
+            verre.offset(x: x, y: y)
+        }
+        .offset(prise)
+        .gesture(saisie)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: grab)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7),
+                         trigger: drop)
+        .accessibilityLabel("\(valeur)")
+    }
+
+    private var verre: some View {
+        let forme = FormeGlyphe(texte: "\(valeur)")
+        return Color.clear
+            .frame(width: 192, height: 192)
+            .glassEffect(.clear.interactive(), in: forme)
+            .environment(\.colorScheme, .dark)
+            // Le fil qui dessine l'arête du verre sur le noir.
+            .overlay(
+                forme.stroke(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.30), location: 0),
+                            .init(color: .white.opacity(0.06), location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1))
+            .contentShape(forme)
+    }
+
+    private var saisie: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if !enMain {
+                    enMain = true
+                    grab += 1
+                }
+                prise = v.translation
+            }
+            .onEnded { _ in
+                enMain = false
+                drop += 1
+                withAnimation(.spring(response: 0.48,
+                                      dampingFraction: 0.68)) {
+                    prise = .zero
+                }
+            }
+    }
+}
+
+/// LE CHIFFRE NÉON (réf WWDC « 1 DAY TO GO ») — MORT (la robe brume est
+/// remplacée par « You Made It ») ; gardé le temps du ménage. — le tube blanc-chaud qui
 /// BLOOM : trois couches du même glyphe (le souffle d'or large, le corps
 /// chaud, le cœur blanc), l'allumage suit `allume` — le néon s'embrase
 /// pendant le count-up au lieu d'arriver déjà allumé.
@@ -1107,14 +1512,87 @@ private final class VideoRewardUIView: UIView {
 /// `clipsToBounds + masksToBounds` ; `AVPlayerLayer` ne coûte rien
 /// (mesure SondeCadence du 18-08) ; ressource NUE de `Woop/Media`,
 /// chargée par le bundle.
+/// LA VIE DE LA VIDÉO GELÉE (verdict : « quand on bouge la card en
+/// gyroscopique, la vidéo bouge en arrière — on a le sentiment que
+/// c'est vivant — et elle revient à la fin quand ça ne bouge plus ») :
+/// la feuille qui SEULE écoute le tilt (doigt + gyro) et le convertit
+/// en RECUL du playhead (≤ 2,4 s).
+private struct VideoVivante: View {
+    let nom: String
+    let relance: Int
+    let pente: CGSize
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let tilt = SkyMotion.shared.tilt
+        let force = reduceMotion ? 0 : min(1.0,
+            (abs(Double(pente.width)) + abs(Double(pente.height))) / 130.0
+            + (abs(tilt.dx) + abs(tilt.dy)) * 0.55)
+        VideoReward(nom: nom, relance: relance, recul: 2.4 * force)
+    }
+}
+
 private struct VideoReward: UIViewRepresentable {
     let nom: String
     /// Le compteur de RELANCE (verdict « quand j'appuie sur une vidéo,
     /// ça la relance ») : chaque incrément rembobine et rejoue.
     var relance: Int = 0
+    /// Le RECUL demandé par le tilt, en secondes en arrière de la fin.
+    /// ⚠️ LA LOI DU MANÈGE (« on ne seeke JAMAIS dans une vidéo au
+    /// doigt » — 4 295 img/s demandées contre 15-25 servies, mesuré et
+    /// mort) : ici les seeks sont CHAÎNÉS SUR COMPLÉTION — jamais plus
+    /// vite que le décodeur ne sert — cible LISSÉE par tiers, tolérances
+    /// ouvertes, et rien ne bouge tant que la lecture initiale n'est pas
+    /// GELÉE. Si le banc montre une saccade : le repli est la planche de
+    /// sprites du manège.
+    var recul: Double = 0
 
     final class Coordinateur {
         var derniereRelance = 0
+        weak var lecteur: AVPlayer?
+        var duree: Double = 0
+        var finie = false
+        var cible: Double = 0
+        var courant: Double = 0
+        var enSeek = false
+
+        /// La lecture initiale est-elle arrivée au gel ?
+        func verifierFinie() {
+            guard !finie, let lecteur,
+                  let item = lecteur.currentItem else { return }
+            let d = item.duration.seconds
+            guard d.isFinite, d > 0 else { return }
+            duree = d
+            if lecteur.rate == 0,
+               lecteur.currentTime().seconds > d - 0.15 {
+                courant = lecteur.currentTime().seconds
+                cible = courant
+                finie = true
+            }
+        }
+
+        func viser(_ t: Double) {
+            cible = t
+            avancer()
+        }
+
+        private func avancer() {
+            guard let lecteur, finie, !enSeek else { return }
+            let pas = cible - courant
+            guard abs(pas) > 0.03 else { return }
+            courant += pas * 0.35
+            enSeek = true
+            let tol = CMTime(seconds: 0.05, preferredTimescale: 600)
+            lecteur.seek(
+                to: CMTime(seconds: courant, preferredTimescale: 600),
+                toleranceBefore: tol, toleranceAfter: tol
+            ) { [weak self] _ in
+                guard let self else { return }
+                self.enSeek = false
+                DispatchQueue.main.async { self.avancer() }
+            }
+        }
     }
 
     func makeCoordinator() -> Coordinateur { Coordinateur() }
@@ -1133,20 +1611,30 @@ private struct VideoReward: UIViewRepresentable {
         let couche = v.layer as! AVPlayerLayer
         couche.player = lecteur
         couche.videoGravity = .resizeAspectFill
+        context.coordinator.lecteur = lecteur
         lecteur.play()
         return v
     }
 
     func updateUIView(_ v: VideoRewardUIView, context: Context) {
-        // La scène se ré-évalue à chaque frame de `p` : seule une VRAIE
-        // relance (le compteur qui change) rembobine.
-        guard context.coordinator.derniereRelance != relance,
-              let lecteur = (v.layer as? AVPlayerLayer)?.player
-        else { return }
-        context.coordinator.derniereRelance = relance
-        lecteur.seek(to: .zero, toleranceBefore: .zero,
-                     toleranceAfter: .zero)
-        lecteur.play()
+        let c = context.coordinator
+        // La RELANCE (le tap) — seule un VRAI changement du compteur
+        // rembobine, jamais les frames d'animation.
+        if c.derniereRelance != relance,
+           let lecteur = (v.layer as? AVPlayerLayer)?.player {
+            c.derniereRelance = relance
+            c.finie = false
+            c.courant = 0
+            lecteur.seek(to: .zero, toleranceBefore: .zero,
+                         toleranceAfter: .zero)
+            lecteur.play()
+            return
+        }
+        // LA VIE AU TILT — active seulement une fois la lecture gelée.
+        c.verifierFinie()
+        if c.finie {
+            c.viser(max(0, c.duree - 0.05 - recul))
+        }
     }
 }
 
@@ -1155,15 +1643,15 @@ private struct VideoReward: UIViewRepresentable {
 /// La nappe est une LUMIÈRE posée sur la face (l'effet, sur du noir, vient
 /// d'elle) ; l'inclinaison 3D reste un murmure.
 private struct CarteGyro<Contenu: View>: View {
-    @ViewBuilder var contenu: () -> Contenu
-
     /// LE TILT AU DOIGT (verdict « effet gyroscopique au drag de la
     /// pop-up ») : le drag couche la card en 3D — gauche/droite surtout,
     /// un souffle en vertical — et elle revient en ressort au lâcher.
     /// Le ressort vit sur la VALEUR animée du modificateur (la leçon) ;
     /// en `simultaneousGesture` : Close, le galet et le scrim gardent
-    /// leurs gestes.
-    @State private var pente = CGSize.zero
+    /// leurs gestes. L'écart vit CHEZ LA SCÈNE (binding) : la vie de la
+    /// vidéo gelée s'en nourrit aussi.
+    @Binding var pente: CGSize
+    @ViewBuilder var contenu: () -> Contenu
 
     private static var forme: RoundedRectangle {
         RoundedRectangle(cornerRadius: 36, style: .continuous)
@@ -1187,6 +1675,29 @@ private struct CarteGyro<Contenu: View>: View {
                                       y: 1.04 + 0.10 * tilt.dy),
                     startRadiusFraction: 0,
                     endRadiusFraction: 0.85)
+                    .blendMode(.plusLighter)
+                    .clipShape(Self.forme)
+                    .allowsHitTesting(false)
+            }
+            // LA LUMIÈRE DU TILT (verdict « un peu de lumière discrète
+            // quand il y a l'effet gyroscopique ») : une bande douce qui
+            // traverse la face quand la card se couche — éteinte au
+            // repos, un souffle au maximum, elle suit le côté levé.
+            .overlay {
+                let force = min(1.0,
+                    (abs(Double(pente.width))
+                     + abs(Double(pente.height))) / 130.0
+                    + (abs(tilt.dx) + abs(tilt.dy)) * 0.55)
+                let cx = 0.5 + max(-0.42, min(0.42,
+                    Double(pente.width) * 0.0035 + tilt.dx * 0.30))
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: max(0, cx - 0.30)),
+                        .init(color: .white.opacity(0.10 * force),
+                              location: cx),
+                        .init(color: .clear, location: min(1, cx + 0.30))
+                    ],
+                    startPoint: .leading, endPoint: .trailing)
                     .blendMode(.plusLighter)
                     .clipShape(Self.forme)
                     .allowsHitTesting(false)
