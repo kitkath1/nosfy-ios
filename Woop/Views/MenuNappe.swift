@@ -1273,7 +1273,14 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                           : ((couronne && !enTransition
                               && !MenuSonde.sansFlou) ? 7 * retrait : 0))
                     .scaleEffect(1 - 0.026 * retrait, anchor: .center)
-                    .opacity(1 - 0.88 * retrait)
+                    // ⚠️ EXTINCTION TOTALE (26-08, troisième fois : « je vois
+                    // la card dans le menu, regarde c'est dégueu »). À 12 %
+                    // d'encre, les chiffres, les points de la semaine et les
+                    // stickers restaient LISIBLES sous le voile — démonter le
+                    // verre n'avait tué que les cadres. Menu ouvert, il ne
+                    // reste que la scène (le fond vidéo) et le menu : zéro
+                    // mobilier, pas « presque ».
+                    .opacity(1 - retrait)
 
                 Color.black.opacity(0.20 * retrait)
                     .ignoresSafeArea()
