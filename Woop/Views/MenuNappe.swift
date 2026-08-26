@@ -1088,13 +1088,22 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// visibilité, c'est sa PRISE (invisible, 30 pt vers la droite et 34 en
     /// haut et en bas). Le dessin peut donc redevenir juste.
     private static var saillie: CGFloat { 0 }
-    /// LA HAUTEUR OÙ LA PAGE RANGE LE GALET. Au ras du bas (le défaut), la
-    /// languette tombait juste à côté du slider puis du player — deux objets
-    /// qui se disputent le même coin. Elle se pose à mi-hauteur : loin de la
-    /// rangée, loin de la phrase, et sous le pouce.
-    private static func hauteurRange(_ s: CGSize) -> CGFloat {
-        max(s.height * 0.42, 0)
-    }
+    /// LA HAUTEUR OÙ LA PAGE RANGE LE GALET. Deux places déjà payées : au ras
+    /// du bas (le défaut), la languette se disputait le coin avec le slider
+    /// puis le player ; à mi-hauteur (0,42 d'écran), elle flottait au milieu
+    /// du mur, sans rapport avec rien. Verdict du 26-08 soir, tracé au feutre
+    /// sur le screenshot : **sous le widget « This week »**, dans la bande que
+    /// la card libère en descendant.
+    ///
+    /// 72 est un ÉCART À LA PLACE DE REPOS (comme les bornes de `ranger`),
+    /// pas une fraction d'écran : la place et le player sont tous deux ancrés
+    /// au bas, la languette garde donc la même distance au player sur toutes
+    /// les hauteurs d'écran. Le centre RENDU tombe à
+    /// `place − 72 + 34 − padBas(20)` — MESURÉ au banc `-homeSeance` : 705,
+    /// soit le haut de la navette à 6 pt sous l'arête du widget (657) et son
+    /// bas à 15 pt du player. (Un premier réglage déduit à 112 rendait 641 :
+    /// le pad de prise décale le dessin, on mesure, on ne déduit pas.)
+    private static func hauteurRange(_ s: CGSize) -> CGFloat { 72 }
 
     private func fen(_ a: Double, _ b: Double) -> Double {
         min(max((p - a) / (b - a), 0), 1)
@@ -1318,7 +1327,16 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // 30 → 56 vers la droite (c'est le seul côté où il y a de
                     // l'écran : à gauche, c'est le bord), 34 → 44 en hauteur.
                     // Le dessin, lui, ne bouge pas d'un pixel.
-                    .padding(.vertical, range ? 44 : 0)
+                    // ⚠️ LE BAS DE LA PRISE EST PLUS COURT (26-08 soir, 20 au
+                    // lieu de 44) : la languette vit désormais sous
+                    // « This week », à 15 pt du player — une prise de 44 vers
+                    // le bas recouvrait le HAUT DU BOUTON LUNE et lui re-volait
+                    // le doigt qu'un `highPriorityGesture` vient de lui rendre.
+                    // Le doigt qui cherche la languette arrive d'en haut ou de
+                    // la droite, jamais d'en bas : ces 24 pt ne manquent à
+                    // personne, et il en reste 10 d'air au-dessus du bouton.
+                    .padding(.top, range ? 44 : 0)
+                    .padding(.bottom, range ? 20 : 0)
                     .padding(.trailing, range ? 56 : 0)
                     .offset(x: porte.width,
                             y: porte.height + (range ? 34 : 0))
@@ -1535,7 +1553,13 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     )
             }
             .coordinateSpace(.named(Self.espace))
-            .onChange(of: ouvert) { _, v in jouer(v) }
+            .onChange(of: ouvert) { _, v in
+                jouer(v)
+                if !v { rangerApresMenu(g.size) }
+            }
+            .onChange(of: cOuverte) { _, v in
+                if !v { rangerApresMenu(g.size) }
+            }
             .onChange(of: rangerDemande) { _, v in
                 if v, !range {
                     brut = CGSize(width: 0, height: -Self.hauteurRange(g.size))
@@ -1653,7 +1677,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
         // le doigt le tenait ; le menu refermé, il regagne son coin. C'est ce
         // qui réconcilie « ouvrir n'importe où » et « retour systématique au
         // coin gauche » : les deux sont vrais, mais pas au même moment.
-        if !range, porte != .zero {
+        // ⚠️ SAUF quand la page range (séance, tiroir levé) : le coin
+        // appartient au player, le retour va AU MUR — c'est `rangerApresMenu`
+        // qui l'y emmène, en un seul voyage, pas coin puis mur.
+        if !range, porte != .zero, !rangerDemande {
             withAnimation(.timingCurve(0.55, 0.0, 1.0, 0.45,
                                        duration: Self.chute)) {
                 porte = .zero
@@ -1813,6 +1840,21 @@ struct MenuHote<Fond: View, Contenu: View>: View {
         // Elle héritait d'une cérémonie qui n'est pas la sienne.
         retard = 0
         ouvert = true
+    }
+
+    /// LE RETOUR DE MENU QUAND LA PAGE RANGE (séance, tiroir levé) : le galet
+    /// ne regagne pas son coin — le coin appartient au player — il va AU MUR,
+    /// à la languette. C'était LE trou de l'état du 26-08 au soir : le
+    /// rangement ne parlait qu'à l'apparition et au basculement de
+    /// `rangerDemande` ; après une fermeture de menu, personne ne reparlait,
+    /// et le galet sorti campait sur le coin du player (screenshot à l'appui —
+    /// « la pillule home dans la card home dans le coin gauche avec le
+    /// player »). `fermerC` saute son retour-au-coin dans ce cas : UN voyage,
+    /// vers le mur, jamais coin puis mur.
+    private func rangerApresMenu(_ taille: CGSize) {
+        guard rangerDemande, !range, !enMain, !ouvert, !cOuverte else { return }
+        brut = CGSize(width: 0, height: -Self.hauteurRange(taille))
+        ranger(taille)
     }
 
     /// LE RANGEMENT. Poussé dans le bord gauche, le galet s'y ENCASTRE : il

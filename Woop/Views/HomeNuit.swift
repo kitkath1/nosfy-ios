@@ -1978,19 +1978,23 @@ struct HomeNuitPage: View {
     /// ne voyait plus le flou : « il faut que le retour soit aussi fluide ».
     private static let dureeFermeture: Double = 1.25
 
-    /// ⚠️ **UNE SEULE ARÊTE POUR LES DEUX ÉTATS** (verdict 22-08 : « la card doit
-    /// descendre comme quand on ouvre le player, même niveau, et le slider est
-    /// dans cet espace »). Elle avait raison au point près : mesuré, l'état
-    /// player posait l'arête à **734** et l'état tiroir à **684** — 50 pt
-    /// d'écart, parce que les deux cotes étaient réglées séparément ET que le
-    /// padding mentait de 34 (voir `GrandeCardVideo`).
+    /// ⚠️ **L'ARÊTE DE SÉANCE DESCEND DE 20** (verdict 26-08 soir, screenshot
+    /// à l'appui : « la card de la home doit être 20px plus bas » — la home en
+    /// séance, player en dock). 874 − 120 = **754**, et la bande de séance se
+    /// répartit : 30 d'air sous l'arête · 76 de player · 14 jusqu'au bord.
     ///
-    /// Un seul endroit, trois contenus : le secret, le slider, le player. C'était
-    /// déjà l'intention écrite dans le code, elle n'était pas tenue.
-    /// 874 − 140 = **734**.
-    private static var leveeSeance: CGFloat { 140 }
-    /// LA LEVÉE DU TIROIR — **la même que celle de la séance**, et c'est la
-    /// consigne : le slider vit dans l'espace que le player ouvrirait.
+    /// ⚠️ Ce verdict ARBITRE celui du 22-08 (« une seule arête pour les deux
+    /// états », qui avait recollé 734 et 684) : les deux états diffèrent
+    /// désormais de 20 pt, PARCE QUE leurs bandes n'ont pas les mêmes besoins
+    /// — celle du tiroir est cotée au point près pour le slider et sa gerbe
+    /// de poudre (voir `leveeTiroir`), celle de la séance n'héberge qu'un
+    /// player de 76 qui n'a que faire de 50 pt d'air. Si l'arête unique
+    /// redevient la consigne, c'est la bande du tiroir qu'il faudra
+    /// re-répartir — pas la séance qu'il faut remonter.
+    private static var leveeSeance: CGFloat { 120 }
+    /// LA LEVÉE DU TIROIR — 140, SA cote (l'arête à 734) : le slider vit dans
+    /// l'espace que le player ouvrirait, 20 pt plus haut que lui depuis le
+    /// 26-08.
     ///
     /// La bande fait 140 pt et se répartit ainsi, de haut en bas :
     ///   34 d'air au-dessus du slider · 62 de slider · 10 jusqu'à la safe area ·
@@ -2000,7 +2004,7 @@ struct HomeNuitPage: View {
     /// commit monte à `64,76 − h/2` = **33,8 pt** au-dessus du cadre du slider.
     /// En dessous, la poudre blanche se poserait sur l'arête de la card.
     /// Contrôle : 734 + 34 + 62 + 10 + 34 = 874.
-    private static var leveeTiroir: CGFloat { leveeSeance }
+    private static var leveeTiroir: CGFloat { 140 }
     /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué).
     ///
     /// ⚠️ **RECALÉ DE 95 À 52 LE 26-08** — verdict : « pas besoin d'atteindre
