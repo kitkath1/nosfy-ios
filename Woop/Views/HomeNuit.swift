@@ -1978,11 +1978,12 @@ struct HomeNuitPage: View {
     /// ne voyait plus le flou : « il faut que le retour soit aussi fluide ».
     private static let dureeFermeture: Double = 1.25
 
-    /// ⚠️ **LA CARD ORANGE S'ALLONGE ENCORE** (26-08, deuxième verdict de la
-    /// soirée : « la card orange pas assez longue » — les 20 premiers points
-    /// étaient trop timides). L'arête de séance tombe à 852 − 104 = **748**
-    /// sur l'écran de son téléphone, et la bande se répartit au point près :
-    /// 14 d'air sous l'arête · 76 de player · 14 jusqu'au bord.
+    /// ⚠️ **LA CARD ORANGE DESCEND JUSQU'AU PLAYER** (26-08, troisième verdict
+    /// de la soirée : « la card orange est pas assez basse avec le player » —
+    /// 104 était encore timide, et deux tours timides ont coûté « on régresse
+    /// trop j'en ai marre »). L'arête de séance tombe à 852 − 96 = **756** :
+    /// **6 pt** au-dessus du player — la card finit LÀ OÙ le player commence,
+    /// il ne reste qu'une couture. Bande : 6 d'air · 76 de player · 14.
     ///
     /// Le mobilier NE SUIT PAS la levée (mesuré : l'arête du widget
     /// « This week » reste à 657 quelle que soit la levée — seule l'ARÊTE de
@@ -1996,7 +1997,7 @@ struct HomeNuitPage: View {
     /// `leveeTiroir`). Si l'arête unique redevient la consigne, c'est la
     /// bande du tiroir qu'il faudra re-répartir — pas la séance qu'il faut
     /// remonter.
-    private static var leveeSeance: CGFloat { 104 }
+    private static var leveeSeance: CGFloat { 96 }
     /// LA LEVÉE DU TIROIR — 140, SA cote (l'arête à 734) : le slider vit dans
     /// l'espace que le player ouvrirait, 20 pt plus haut que lui depuis le
     /// 26-08.
@@ -2121,10 +2122,10 @@ struct HomeNuitPage: View {
                          reculExterne: reculVitrine,
                          // LA PLACE DE SÉANCE DU PALET : au milieu du strip que
                          // la card allongée ouvre sous « This week » (657) —
-                         // centre (55, 702), soit 14 pt d'air de chaque côté et
-                         // 46 au-dessus de l'arête (748). MESURÉ au banc
-                         // `-homeSeance`, pas déduit. 763 − 702 = 61.
-                         placeDy: enSeance ? 61 : 0) {
+                         // centre (55, 706), soit 18 pt d'air de chaque côté
+                         // de l'arête (756) et du widget. MESURÉ au banc
+                         // `-homeSeance`, pas déduit. 763 − 706 = 57.
+                         placeDy: enSeance ? 57 : 0) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)

@@ -1914,7 +1914,12 @@ struct MenuHote<Fond: View, Contenu: View>: View {
         // La navette fait 84 de haut : son centre doit rester à 52 pt des deux
         // bords. Les bornes sont exprimées en ÉCART à la place de repos, qui
         // est à 55 pt du bas.
-        let y = min(max(brut.height, 107 - taille.height), 3)
+        // ⚠️ LA BORNE BASSE SUIT LA PLACE (26-08 : « j'arrive plus à la
+        // ranger — on régresse ») : quand la place monte de `placeDy` en
+        // séance, un `3` nu interdisait tout le bas du mur — le galet
+        // refusait de se garer là où la main l'a toujours posé. `3 + placeDy`
+        // rend au mur sa course entière, 52 pt du bord en bas comme avant.
+        let y = min(max(brut.height, 107 - taille.height), 3 + placeDy)
         withAnimation(.spring(response: 0.36, dampingFraction: 0.74)) {
             range = true
             porte = CGSize(width: -Self.centre + Self.saillie, height: y)
