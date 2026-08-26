@@ -17,6 +17,62 @@ de bout en bout sur le téléphone sans bug.
 
 ---
 
+## ✅ ÉTAT LIVRÉ — 26-08-2026, fin de journée
+
+Huit commits, du lot 0 au lot 5d. Build vert, flow traversé au simulateur à
+chaque salve. **Tout ce qui suit est mesuré, pas affirmé.**
+
+| Lot | Commit | Ce qui est réparé |
+|-----|--------|-------------------|
+| — | `492a816` | Les 13 `dd-*` sortent de git : `git status` passe de **32 388 lignes à 19** |
+| 0 | `c9f4a21` | §13 player fantôme + home vide · §9 scroll des séries · §1 vidéo welcome · §11a BRAVO |
+| 1+2 | `65d87e9` | §4 le pull · §6 édition des widgets · §10 pill Rest · §12 les deux overlays |
+| 3 | `69b6848` | §8a flottement du player · §5 fumée/menu/navigation · le fourneau · le gyro |
+| 4 | `2f1c370` | §3 l'arrivée de la Home (échelonnement + pill en dernier) |
+| 5a | `0bb9c76` | §8c catégories · §8d molette · §8b le théâtre du picker |
+| 5b | `9c5ae34` | §7 les états de galets, le nœud-lune, la vraie mini-card |
+| 5c | `a97fb00` | §11 la chaîne pill / Moment / pop-up / vidéo |
+| 5d | `b5d9b9e` | §2 la bande noire → le portail de la lune |
+
+### Les mesures qui prouvent
+
+| Ce qu'on a réparé | Avant | Après |
+|---|---|---|
+| Dérive de la vidéo welcome (6 captures à 3 s) | ping-pong permanent | **\|Δ\| moyen 0,000 · max 0,0/255** |
+| Halo du galet actif (anneau, vs voisin) | +2,2 de luminance | **+32,9** |
+| Échelonnement de l'arrivée (banc `-phraseFige`) | tout ensemble | widgets à p≈0,62, pill à p≈0,88 |
+| Couverture du panneau sur la carte Training | la carte dépassait | **23 pt de couverture**, titre gardé (24 pt d'air) |
+| Fin du portail lune, à la coupe | gris uniforme | **0,0 de luminance** — noir absolu |
+| Course du pouce pour ouvrir le tiroir | 171 pt | **80 pt** |
+| Cible tactile d'une pastille Rest | 53 × 36 pt, 7 pt morts entre | **53 × 52 pt**, sans gouttière |
+| Délai tap → construction de la page | ~0,65 s | **0,18 s** |
+| `git status` | 32 388 lignes | **19** |
+
+### Les bancs neufs, pour rejuger sans moi
+
+- `-serieFin <n>` — l'issue de la n-ième série (1 pill · 3 Moment · 5 pop-up · 10 rare). Il **gèle** la pill.
+- `-portailFige <s>` — la traversée de la lune figée à un instant.
+
+### ⚠️ CE QUI N'EST PAS FAIT, ET QUI EST À TOI
+
+1. **§3 — les chiffres des widgets ne s'animent pas encore** (le volume est une
+   `String` : il demande un vrai compteur), et **le halo du fond reste éteint au
+   repos** (`foyer(0) = 0`).
+2. **§8b — le VRAI picker natif d'Apple n'est pas posé** (décision D4). J'ai fait
+   le pari minimal : rendre la molette sensible et cesser de la faire lire comme
+   un overlay. Si le verdict téléphone ne suit pas, le `Picker` natif est le lot
+   d'après — il ferait disparaître ensemble la molette, sa bande de prise de
+   156 pt et le théâtre.
+3. **§2 — la direction artistique du portail attend ton œil.** La mécanique est
+   juste et mesurée ; la matière du croissant en pleine course se règle sur
+   téléphone.
+4. **§14 — non touché, comme demandé.**
+5. **Le démo assumé** : les jours « faits » du parcours et le sticker de la
+   mini-card sont des motifs déterministes, pas une lecture des `Workout`
+   (décision D2). Et `DecideurSerie.pour` est **une place, pas un moteur**.
+
+---
+
 ## 0. LE VERDICT — ce ne sont pas 13 bugs, ce sont 5 causes
 
 Les treize points de l'audit remontent à cinq fautes, chacune écrite
