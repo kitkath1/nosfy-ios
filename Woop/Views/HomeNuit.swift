@@ -1213,6 +1213,72 @@ enum SemaineBanc {
 /// - les bounds de chaque verre sont CONSTANTS : la matérialisation est un
 ///   fondu de calques PAR-DESSUS (la plaque noire couvre le verre), jamais
 ///   un redimensionnement ni un démontage.
+/// LA MINI-CARD D'UN JOUR — LE composant, extrait de l'ardoise « This week »
+/// pour que le parcours puisse le RÉEMPLOYER au lieu de l'imiter.
+///
+/// ⚠️ **VERDICT DU 26-08** : « pour le petit overlay sous le galet, tu as pris
+/// le bon composant général, mais il faut reprendre LA VRAIE mini-card carrée
+/// utilisée sur la Home dans "Toute la semaine" — vraie mini-card, vraie date,
+/// vrai sticker flamme, même design que la Home. Pas une approximation. »
+/// C'est littéralement le même code qui rend les deux, maintenant : le jour
+/// où l'une bouge, l'autre bouge.
+///
+/// ⚠️ **LA DATE EST VRAIE, LE STICKER NE L'EST PAS ENCORE — ET C'EST ASSUMÉ.**
+/// Même sur la Home, le sticker est choisi par un modulo sur l'index : aucune
+/// séance ne le décide. Le câbler aux `Workout` est du backend, que le chantier
+/// a repoussé (décision D2 du plan). Réemployer le composant tel quel donne le
+/// bon design tout de suite ; le jour où la base parlera, c'est `sticker` qui
+/// changera de source, et rien d'autre.
+struct MiniCardJour: View {
+    let date: Date
+    let sticker: String
+    /// La journée est FAITE : le sticker est à pleine taille. Sinon il est
+    /// rentré à 70 % — la card se lit comme une place, pas comme un acquis.
+    var faite: Bool = true
+    var largeur: CGFloat = 70
+    var hauteur: CGFloat = 78
+
+    private var forme: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            forme.fill(LinearGradient(
+                colors: [Color(white: 0.060), Color(white: 0.030)],
+                startPoint: .top, endPoint: .bottom))
+            forme.strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05).blendMode(.overlay).clipShape(forme)
+            forme.fill(EllipticalGradient(
+                stops: [.init(color: .white.opacity(0.07), location: 0),
+                        .init(color: .clear, location: 1)],
+                center: UnitPoint(x: 0.25, y: 0.08),
+                startRadiusFraction: 0, endRadiusFraction: 1.0))
+                .blendMode(.plusLighter)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(SemaineStrip.jour(date))
+                    .font(.inter(10, .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                Text(SemaineStrip.mois(date))
+                    .font(.inter(5.5, .semibold)).tracking(0.7)
+                    .foregroundStyle(Color(white: 1).opacity(0.45))
+            }
+            .padding(7)
+            // Le sticker vit sous la date, CENTRÉ, et le bord bas de
+            // l'ardoise le tranche à mi-corps : on en devine le haut. C'est
+            // la loi de la pochette du bac — la coupe est un choix.
+            Image(sticker)
+                .resizable().scaledToFit()
+                .frame(width: 36, height: 36)
+                .position(x: largeur * 0.443, y: hauteur * 0.590)
+                .scaleEffect(faite ? 1 : 0.7)
+        }
+        .frame(width: largeur, height: hauteur)
+    }
+}
+
 struct SemaineStrip: View {
     var faits: Int
     var prevus: Int
@@ -1257,7 +1323,7 @@ struct SemaineStrip: View {
     // 70 × 78 la rapproche du carré sans lui rendre sa hauteur de
     // pochette — le bord bas de l'ardoise la tranche toujours.
     private let miniH: CGFloat = 78
-    private static let stickers = ["sticker-bras", "sticker-flamme",
+    fileprivate static let stickers = ["sticker-bras", "sticker-flamme",
                                    "sticker-basket", "sticker-abricot",
                                    "sticker-chocolat"]
 
@@ -1533,42 +1599,22 @@ struct SemaineStrip: View {
     /// La mini du bac, RÉDUITE (132 → 70 pt) : même ardoise noire (0,040 →
     /// 0,014), même cheveu blanc à 6 %, même grain, même lumière posée
     /// haut-gauche, même date bold + mois sourd, même sticker bas-gauche.
+    /// ⚠️ Le dessin vit dans `MiniCardJour` depuis le 26-08 : le parcours
+    /// devait RÉEMPLOYER cette card, pas l'imiter (« pas une approximation »).
+    /// Ici ne reste que ce qui appartient à l'ardoise — quelle date, quel
+    /// sticker, et si la place est encore vide.
     private func mini(_ i: Int) -> some View {
         let faite = i < solides
-        return ZStack(alignment: .topLeading) {
-            formeMini.fill(LinearGradient(
-                colors: [Color(white: 0.060), Color(white: 0.030)],
-                startPoint: .top, endPoint: .bottom))
-            formeMini.strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
-            GrainTexture.tuile
-                .resizable(resizingMode: .tile)
-                .opacity(0.05).blendMode(.overlay).clipShape(formeMini)
-            formeMini.fill(EllipticalGradient(
-                stops: [.init(color: .white.opacity(0.07), location: 0),
-                        .init(color: .clear, location: 1)],
-                center: UnitPoint(x: 0.25, y: 0.08),
-                startRadiusFraction: 0, endRadiusFraction: 1.0))
-                .blendMode(.plusLighter)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(Self.jour(date(i)))
-                    .font(.inter(10, .bold))
-                    .foregroundStyle(Color.inkPrimary)
-                Text(Self.mois(date(i)))
-                    .font(.inter(5.5, .semibold)).tracking(0.7)
-                    .foregroundStyle(Color(white: 1).opacity(0.45))
-            }
-            .padding(7)
-            // Le sticker vit sous la date, CENTRÉ, et le bord bas de
-            // l'ardoise le tranche à mi-corps : on en devine le haut. C'est
-            // la loi de la pochette du bac — la coupe est un choix.
-            Image(Self.stickers[i % Self.stickers.count])
-                .resizable().scaledToFit()
-                .frame(width: 36, height: 36)
-                .position(x: 31, y: 46)
-                .scaleEffect(faite ? 1 : 0.7)
-        }
-        .frame(width: miniL, height: miniH)
-        .opacity(faite ? 1 : 0)
+        return MiniCardJour(date: date(i),
+                            sticker: Self.stickers[i % Self.stickers.count],
+                            faite: faite,
+                            largeur: miniL, hauteur: miniH)
+            .opacity(faite ? 1 : 0)
+    }
+
+    /// Le sticker d'un rang — le parcours le lit pour choisir le même.
+    static func sticker(_ i: Int) -> String {
+        stickers[((i % stickers.count) + stickers.count) % stickers.count]
     }
 
     /// Les dates des faites : les derniers jours jusqu'à aujourd'hui — le

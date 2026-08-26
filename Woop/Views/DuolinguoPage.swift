@@ -154,9 +154,16 @@ struct EcranSpec: Equatable, Identifiable {
                 let jitter = sin(Double(id) * 12.9898) * 10
                 let dx = min(max(78 * sin(0.82 * Double(n) + phase)
                                  + jitter, -92), 92)
+                // ⚠️ **UN NŒUD-LUNE PAR CHAPITRE** (26-08). Verdict : « dans
+                // CHAQUE chapitre, il faut ajouter un galet spécial logo
+                // Lune ». Il n'y en avait qu'un dans tout le chemin — le
+                // nœud-trésor du 5e écran (`ecran == 4 && n == 9`). C'est le
+                // dernier galet de chaque écran : il FERME le chapitre, et
+                // c'est lui qui ouvrira un Booster Reward le jour du backend
+                // (« Moon Node unlocked → popup Open Booster »).
                 out.append(EtapeSpec(id: id, ecran: ecran,
                                      dx: CGFloat(dx), y: y,
-                                     tresor: ecran == 4 && n == 9))
+                                     tresor: n == 9))
             }
         }
         return out
@@ -217,6 +224,18 @@ struct EcranSpec: Equatable, Identifiable {
     var enGeste = false
     /// La naissance : les étapes déjà apparues (cascade d'ouverture).
     var nees: Set<Int> = []
+    /// ⚠️ **LES JOURS RÉELLEMENT FAITS** (26-08). Sans eux, un jour raté et un
+    /// jour réussi rendaient la même pastille : `etatDe()` ne savait dire que
+    /// « avant / égal / après ». Verdict : « il doit immédiatement être compris
+    /// que cette séance n'a pas été faite ».
+    ///
+    /// ⚠️ **C'EST DU DÉMO EN ATTENDANT LE BACKEND, ET C'EST ASSUMÉ.** Le
+    /// chemin n'a aucun lien avec les `Workout` : le câbler est du backend, que
+    /// le chantier a explicitement repoussé (décision D2 du plan). En attendant,
+    /// un motif déterministe — pas aléatoire : une page qui change d'avis à
+    /// chaque relance ne se juge pas. Le jour où la base parlera, cette seule
+    /// ligne devient une lecture de `Workout.endedAt`, et rien d'autre ne bouge.
+    var faits: Set<Int> = Set((0..<50).filter { $0 % 4 != 2 })
     /// §23 LE BRANCHEMENT — la page a un hôte : le tap de l'actif ouvre
     /// le panneau de départ au lieu d'avancer l'étape (le banc, lui, ne
     /// change pas d'un poil).
@@ -751,10 +770,18 @@ private struct CheminDuo: View {
                 let quel = etatDe(e)
                 // §22 réf 2 — LES PASTILLES : taille UNIQUE 62 (trésor 72), le
                 // chiffre repart à 1 à chaque écran-chapitre (la réf).
+                let d = dateDe(e)
+                // LE FUTUR NE PORTE PLUS UN RANG, IL PORTE UNE PROMESSE :
+                // « une petite flamme translucide très légère pour signaler
+                // à faire, sans donner l'impression que le contenu est déjà
+                // accessible » (verdict). Un chiffre d'étape se lit comme un
+                // contenu ; une flamme se lit comme une intention.
+                let futur = d == nil && !e.tresor
                 GaletEtape(etat: quel,
-                           numero: e.tresor ? nil : e.id % 10 + 1,
-                           glyphe: e.tresor ? "moon.fill" : nil,
-                           taille: e.tresor ? 72 : 62,
+                           numero: nil,
+                           glyphe: e.tresor ? "moon.fill"
+                                            : (futur ? "flame.fill" : nil),
+                           taille: e.tresor ? 78 : 62,
                            graine: Double(e.id),
                            // le budget verre : la lentille native ne vit
                            // que là où la VIDÉO passe dessous — les gouttes
@@ -764,6 +791,7 @@ private struct CheminDuo: View {
                            lentille: abs(e.ecran - etat.ecranCourant) <= 1
                                && (e.id % 10 <= 1 || e.id % 10 >= 8
                                    || e.tresor),
+                           date: d,
                            onTap: { tape(e) })
                     .scaleEffect(etat.nees.contains(e.id) ? 1 : 0.92)
                     .opacity(etat.nees.contains(e.id) ? 1 : 0)
@@ -816,11 +844,41 @@ private struct CheminDuo: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { onDemarrer() }
     }
 
+    /// ⚠️ **LES CINQ ÉTATS DU VERDICT, ET ILS N'EXISTAIENT PAS** (26-08).
+    /// `etatDe` ne connaissait que avant / égal / après : un jour RÉUSSI et un
+    /// jour RATÉ rendaient exactement la même pastille, et le chemin ne portait
+    /// aucune date. Désormais :
+    ///   · passé + fait      → `.accompli`, la date légèrement éclairée ;
+    ///   · passé + non fait  → `.rate`, l'encre presque fantôme ;
+    ///   · aujourd'hui       → `.actif`, halo blanc + la vraie date du jour ;
+    ///   · futur             → `.prochain` / `.verrouille`, la petite flamme ;
+    ///   · fin de chapitre   → `.lune(dispo:)`, plus gros, sombre ou illuminé.
     private func etatDe(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
-        if e.id < etat.etape { return .accompli }
+        if e.tresor {
+            // Le nœud-lune s'ouvre quand tout son chapitre est derrière.
+            return .lune(dispo: etat.etape >= e.id)
+        }
+        if e.id < etat.etape {
+            return etat.faits.contains(e.id) ? .accompli : .rate
+        }
         if e.id == etat.etape { return .actif }
         if e.id == etat.etape + 1 { return .prochain }
         return .verrouille
+    }
+
+    /// LA DATE D'UN GALET — le chemin est un CALENDRIER : l'étape courante est
+    /// aujourd'hui, chaque rang vaut un jour. Les galets passés portent donc
+    /// leur vraie date, et l'actif la date du jour.
+    ///
+    /// ⚠️ Seuls le PASSÉ et AUJOURD'HUI en portent une. Un jour futur qui
+    /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict
+    /// dit « ne pas donner l'impression que le contenu est déjà accessible ».
+    private func dateDe(_ e: EcranSpec.EtapeSpec) -> DateGalet? {
+        guard !e.tresor, e.id <= etat.etape else { return nil }
+        let jours = e.id - etat.etape
+        guard let d = Calendar.current.date(byAdding: .day, value: jours,
+                                            to: Date()) else { return nil }
+        return DateGalet.depuis(d)
     }
 
     /// LE PASSAGE D'ÉTAPE (partition §7) : l'adieu de l'actif, la bascule,
@@ -1336,39 +1394,25 @@ private struct PanneauDepartChemin: View {
         .shadow(color: .black.opacity(0.55), radius: 20, y: 10)
     }
 
-    /// LA MINI-CARD : double coque noire (l'école des minis de la
-    /// semaine), le sticker flamme laqué chaud, le jour en gros chiffre
-    /// métallique, le mois en petites capitales.
+    /// ⚠️ **LA VRAIE MINI-CARD DE LA HOME, PAS UNE APPROXIMATION** (26-08).
+    /// Verdict : « tu as pris le bon composant général, mais il faut reprendre
+    /// LA VRAIE mini-card carrée utilisée sur la Home dans "Toute la semaine" —
+    /// vraie mini-card, vraie date, vrai sticker flamme, même design que la
+    /// Home. Pas une approximation. »
+    ///
+    /// Et c'en était une : double coque à 15/13 pt de rayon contre 10 sur la
+    /// Home, un `flame.fill` système dégradé à la place du STICKER, le jour
+    /// centré à 24 pt au lieu d'être calé en haut à gauche à 10, aucun grain,
+    /// aucune nappe elliptique, 66 × 88 au lieu de 70 × 78. Deux objets qui se
+    /// ressemblaient, et qui divergeaient à chaque retouche de l'un des deux.
+    /// C'est littéralement le même code qui rend les deux maintenant.
     private var miniCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color(white: 0.055))
-            RoundedRectangle(cornerRadius: 13)
-                .fill(Color(red: 0.012, green: 0.012, blue: 0.012))
-                .padding(2)
-            RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-            VStack(spacing: 3) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(LinearGradient(
-                        colors: [Color(red: 1.0, green: 0.86, blue: 0.55),
-                                 Color(red: 0.98, green: 0.45, blue: 0.12)],
-                        startPoint: .top, endPoint: .bottom))
-                    .shadow(color: Color(red: 1, green: 0.5, blue: 0.1)
-                        .opacity(0.55), radius: 6)
-                Text(Self.jour)
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(LinearGradient(
-                        colors: [Color(white: 1.0), Color(white: 0.72)],
-                        startPoint: .top, endPoint: .bottom))
-                Text(Self.mois)
-                    .font(.system(size: 9, weight: .semibold))
-                    .kerning(1.4)
-                    .foregroundStyle(Color(white: 0.55))
-            }
-        }
-        .frame(width: 66, height: 88)
+        MiniCardJour(date: Date(),
+                     // Le sticker FLAMME, celui de la Home — lu dans sa table,
+                     // jamais recopié : `SemaineStrip.stickers[1]`.
+                     sticker: SemaineStrip.sticker(1),
+                     faite: true,
+                     largeur: 70, hauteur: 78)
     }
 }
 

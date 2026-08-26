@@ -23,6 +23,45 @@ enum EtapeEtat: Equatable {
     case actif               // la nacre respire
     case accompli            // la nacre calme
     case parfait             // le souffle d'or dans le liseré
+    /// ⚠️ **PASSÉ MAIS NON RÉALISÉ** (26-08). Verdict : « les chiffres doivent
+    /// être beaucoup plus éteints, presque fantômes — il doit immédiatement
+    /// être compris que cette séance n'a pas été faite ». Il n'existait AUCUN
+    /// état pour ça : `etatDe()` ne connaissait que avant / égal / après, donc
+    /// un jour raté et un jour réussi rendaient exactement la même pastille.
+    case rate
+    /// ⚠️ **LE NŒUD-LUNE DU CHAPITRE** (26-08). Verdict : « dans chaque
+    /// chapitre, un galet spécial logo Lune, un peu plus gros ; verrouillé il
+    /// est sombre et discret, disponible il s'illumine en blanc avec un halo
+    /// plus fort ». Il n'en existait qu'UN dans tout le chemin (le nœud-trésor
+    /// du 5e écran).
+    case lune(dispo: Bool)
+}
+
+/// LA DATE D'UN GALET — le jour en grand, le mois sur TROIS lettres.
+///
+/// ⚠️ Le chemin ne connaissait AUCUNE date : les galets portaient un numéro
+/// d'étape 1..10, et `etatDe()` comparait des index. Verdict : « le jour en
+/// grand, le mois en dessous, toujours sur 3 lettres » et « le galet en cours
+/// montre la vraie date actuelle ».
+struct DateGalet: Equatable {
+    let jour: Int
+    let mois: String
+
+    /// ⚠️ **LE MOIS EST LU CHEZ LA MINI-CARD, PAS REFORMATÉ ICI** — et c'est
+    /// un écart que j'ai créé puis mesuré à la capture : mon premier jet
+    /// formatait en `en_US`, et le galet affichait « 26 AUG » à dix points de
+    /// la mini-card du même jour qui affiche « 26. AOÛT ». Deux dates du même
+    /// jour, dans deux langues, sur le même écran.
+    ///
+    /// La leçon est celle de tout ce chantier : quand deux objets doivent
+    /// s'accorder, ils LISENT la même source — ils ne recopient pas la même
+    /// intention. `SemaineStrip.mois(_:)` est déjà LE formateur des mois de la
+    /// maison ; le jour où la maison passera à l'anglais, les deux suivront
+    /// ensemble.
+    static func depuis(_ d: Date) -> DateGalet {
+        DateGalet(jour: Calendar.current.component(.day, from: d),
+                  mois: SemaineStrip.mois(d))
+    }
 }
 
 // MARK: - La forme de la goutte
@@ -77,6 +116,9 @@ struct GaletEtape: View {
     /// — les cheveux peints portent la goutte. Coupée hors des écrans
     /// voisins (le budget verre).
     var lentille: Bool = true
+    /// LA DATE — quand elle est là, elle REMPLACE le numéro et le glyphe :
+    /// un galet qui porte une date ne porte plus un rang.
+    var date: DateGalet? = nil
     var onTap: () -> Void = {}
 
     /// L'écrasement de la goutte : plus large que haute, comme une goutte
@@ -103,7 +145,10 @@ struct GaletEtape: View {
     private var pad: CGFloat { 26 }
 
     var body: some View {
+        // Un nœud-lune VERROUILLÉ refuse comme un caillou : l'immobilité est
+        // la grammaire du refus dans cette maison.
         let verrouille = etat == .verrouille || etat == .prochain
+            || etat == .lune(dispo: false)
         // La timeline ne tourne que si quelque chose vit : la respiration
         // de l'actif, ou une rampe de press/refus en vol (± une seconde).
         TimelineView(.animation(minimumInterval: nil, paused: pauseTimeline)) { ctx in
@@ -152,6 +197,7 @@ struct GaletEtape: View {
     private var pauseTimeline: Bool {
         if reduceMotion { return true }
         if etat == .actif || etat == .parfait { return false }
+        if etat == .lune(dispo: true) { return false }
         if presseDepuis != nil { return false }
         let now = Date()
         return now.timeIntervalSince(relacheA) > 1.0
@@ -180,13 +226,53 @@ struct GaletEtape: View {
         let pressAmpl = verrouille ? 0.01 : 0.03
         let enfonce = 1 - pressAmpl * press
         // Le souffle de l'actif : la respiration asymétrique de la maison.
-        let vivant = (etat == .actif || etat == .parfait) && !reduceMotion
+        // Le nœud-lune DISPONIBLE respire lui aussi : c'est sa promesse.
+        let vivant = (etat == .actif || etat == .parfait
+                      || etat == .lune(dispo: true)) && !reduceMotion
         let souffle = vivant ? LaunchPebble.breath(t, lag: 0) : 0
         // Le flash froid du refus : une pente qui meurt en 0,12 s.
         let refus = max(0, 1 - Date(timeIntervalSinceReferenceDate: t)
             .timeIntervalSince(refusA) / 0.12)
 
+        // ⚠️ **LE HALO DE L'ACTIF, ET IL VIT DANS LE GALET** (26-08). Verdict :
+        // « le jour sélectionné doit être beaucoup plus identifiable — halo
+        // blanc élégant, lumière interne, petite réaction au tap ». Il n'avait
+        // AUCUN halo : le seul du chemin était posé par la page, et seulement
+        // quand le panneau de départ était ouvert. Entre deux galets, les gains
+        // du shader vont de 0,85 à 1,0 et l'encre de 0,85 à 1,0 : à l'œil, rien
+        // ne distinguait le jour d'aujourd'hui de la veille.
+        //
+        // Il vit ICI et pas dans la page, pour la même raison que la pastille
+        // vit dans sa card : un halo qui n'est pas DE l'objet se décale du sien
+        // au premier scroll. Il RESPIRE avec lui (la même horloge, aucune
+        // seconde), et il grossit sous le doigt — c'est ça, la réaction au tap.
+        // ⚠️ MESURÉ, PAS ESTIMÉ. Premier réglage à 0,30 : sonde sur capture,
+        // l'anneau de l'actif rendait 61,7 de luminance contre 59,5 et 52,7
+        // pour ses voisins accomplis — **+4 %**, c'est-à-dire rien. L'encre,
+        // elle, tranchait déjà (101,7 contre 62). Un halo « élégant » qui ne
+        // se mesure pas n'existe pas : il monte à 0,55, et son plancher de
+        // respiration passe de 0,62 à 0,78 — le souffle le fait vivre, il ne
+        // doit pas le faire disparaître entre deux battements.
+        let halo: Double = {
+            switch etat {
+            case .actif: return 0.55
+            case .lune(let dispo): return dispo ? 0.62 : 0
+            default: return 0
+            }
+        }()
         ZStack {
+            if halo > 0.001 {
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [.white.opacity(halo * (0.78 + 0.22 * souffle)),
+                                 .white.opacity(halo * 0.22), .clear],
+                        center: .center, startRadius: D * 0.14,
+                        endRadius: D * (1.05 + 0.12 * press)))
+                    .frame(width: D * 2.4, height: D * 2.4)
+                    .position(centre)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            }
             // Le reflet au sol : la goutte est POSÉE — à peine visible.
             // LE MIROIR DU SOL — la réf : sous chaque goutte, un reflet
             // doux étiré vers le bas sur la dalle noire.
@@ -269,6 +355,13 @@ struct GaletEtape: View {
         case .actif: return (1.0, 1.0, 0)
         case .accompli: return (0.95, 0.90, 0)
         case .parfait: return (0.95, 0.90, 0.5)
+        // Le raté ne MEURT pas — la photo reste la loi, la matière ne meurt
+        // jamais. Il s'éteint : c'est son ENCRE qui devient fantôme.
+        case .rate: return (0.80, 0.80, 0)
+        // Le nœud-lune verrouillé est le plus sombre du chemin ; disponible,
+        // il est le plus vif — c'est le seul galet qui a le droit d'être
+        // franchement plus lumineux que ses voisins.
+        case .lune(let dispo): return dispo ? (1.0, 1.0, 0) : (0.72, 0.72, 0)
         }
     }
 
@@ -293,10 +386,30 @@ struct GaletEtape: View {
             case .prochain: return 0.90
             case .actif: return 1.0
             case .accompli, .parfait: return 0.92
+            // ⚠️ **PRESQUE FANTÔME** : 0,22 contre 0,92 pour un jour réussi.
+            // C'est un rapport de QUATRE — au verdict, « beaucoup plus
+            // éteints » ne se joue pas sur une marge fine. La matière, elle,
+            // reste : ce n'est pas un trou dans le chemin, c'est un jour
+            // qu'on n'a pas rempli.
+            case .rate: return 0.22
+            case .lune(let dispo): return dispo ? 1.0 : 0.42
             }
         }()
         Group {
-            if let g = glyphe {
+            if let d = date {
+                // LE JOUR EN GRAND, LE MOIS SUR TROIS LETTRES DESSOUS.
+                // L'interlettrage du mois est la grammaire des sur-titres de
+                // la maison ; son corps est le tiers du jour, pas la moitié —
+                // c'est le JOUR qu'on lit à distance.
+                VStack(spacing: taille * 0.005) {
+                    Text("\(d.jour)")
+                        .font(.system(size: taille * 0.34, weight: .medium))
+                        .monospacedDigit()
+                    Text(d.mois)
+                        .font(.system(size: taille * 0.125, weight: .semibold))
+                        .tracking(taille * 0.014)
+                }
+            } else if let g = glyphe {
                 Image(systemName: g)
                     .font(.system(size: taille * 0.26, weight: .regular))
             } else if let n = numero {
