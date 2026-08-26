@@ -2150,7 +2150,20 @@ struct HomeNuitPage: View {
                 // slider, le galet, les cards et l'ardoise ; en simultané, il
                 // écoute par-dessus leur épaule et son verrou d'axe le fait
                 // sortir dès que le mouvement n'est pas le sien.
-                .simultaneousGesture(tirageGeste)
+                // ⚠️ **EN SÉANCE, LE TIRAGE SE TAIT** (26-08, verdict n° 1 :
+                // « le bouton Stop ne répond pas… je ne peux pas non plus
+                // ouvrir / drag le menu correctement »).
+                //
+                // Le tirage est page-large et son seuil est à 2 pt : en
+                // séance, la bande découverte porte LE PLAYER, et le menu
+                // vit juste au-dessus. Un drag d'ancêtre qui reconnaît au
+                // deuxième point ANNULE le bouton qu'il couvre et vole
+                // l'amorce du galet — le stop ne partait pas, le menu ne
+                // s'attrapait plus. Or en séance le tiroir est DÉJÀ ouvert
+                // (c'est le départ qui l'a levé) : le tirage n'a plus rien à
+                // faire, il ne peut que nuire. On le démonte, on ne remonte
+                // pas son seuil — la fluidité du pull a été payée en mesures.
+                .simultaneousGesture(enSeance ? nil : tirageGeste)
                 .overlay {
                     // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
                     // se charge). Le slider l'ouvre, « Commencer » le referme et

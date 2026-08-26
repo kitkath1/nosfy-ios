@@ -589,6 +589,35 @@ struct ExerciseDetailView: View {
                         .clipShape(Self.pageShape)
                 }
             }
+            // ⚠️ **LE PLAYER EST UN ÉTAT GLOBAL DE SÉANCE** (26-08, verdict
+            // n° 1 : « lorsque je reviens sur la partie détail exercice sous
+            // le galet, le player de session n'est plus visible —
+            // conséquence directe : je n'ai plus aucun moyen de terminer la
+            // session depuis cet écran »).
+            //
+            // Cette page n'en montait AUCUN (mesuré : zéro occurrence de
+            // `WorkoutPill` dans le fichier, alors que la home, la page des
+            // exercices, la card de réglage et l'ardoise en portent une).
+            // Il est POSÉ EN OVERLAY, pas dans le flux : la page a déjà
+            // deux `safeAreaInset` et une géométrie qu'on ne renégocie pas
+            // pour un dock. Il descend sous les chips du header.
+            //
+            // Il porte la pilule FLOTTANTE (`docked: false`) et non la dalle :
+            // ici il n'y a pas de bande découverte à habiter, et le verdict
+            // « séance = le galet néon SEUL » vaut pour la HOME — la fiche
+            // n'a pas de galet de séance à lui opposer.
+            .overlay(alignment: .top) {
+                if let w = active {
+                    WorkoutPill(exercise: exercise,
+                                startedAt: w.startedAt,
+                                docked: false)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.42, dampingFraction: 0.9),
+                       value: active != nil)
             // Le socle et la braise vivent en FOND, hors jeu de layout : la
             // carte-braise a déjà fait dérailler la largeur de la page une
             // fois — plus rien d'elle ne participe à la mise en page.

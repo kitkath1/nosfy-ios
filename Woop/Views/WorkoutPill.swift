@@ -91,6 +91,11 @@ struct WorkoutPill: View {
             } else {
                 roundButton("stop.fill") { demanderLaPause() }
             }
+            // ⚠️ Les deux boutons ci-dessus ne sont PLUS des `Button` : ils
+            // portent un `highPriorityGesture(TapGesture())`. Le pourquoi est
+            // écrit sur `medallionButton` — un `Button` posé sous un
+            // `DragGesture` d'ancêtre se fait ANNULER dès que le drag
+            // reconnaît, et le stop ne partait jamais.
         }
         .padding(.leading, docked ? 20 : 11)
         .padding(.trailing, docked ? 16 : 12)
@@ -354,9 +359,26 @@ struct WorkoutPill: View {
     /// le souffle de la lune. Play et stop en crème ; le pause en néon
     /// orange SOBRE (verdict : « orange plus sobre néon » — une seule
     /// ombre douce, plus les grandes lueurs).
+    /// ⚠️ **CE N'EST PLUS UN `Button`, ET C'EST LA CAUSE DU STOP QUI NE
+    /// RÉPONDAIT PAS** (26-08, deuxième verdict : « le bouton Stop ne répond
+    /// pas correctement, je me retrouve bloquée dans une session active »).
+    ///
+    /// Le câblage était bon — l'état est global, le panneau est monté à la
+    /// racine, il l'observe. Ce qui manquait, c'est que **le tap ne partait
+    /// jamais**. Un `Button` SwiftUI posé sous un `DragGesture` d'ancêtre se
+    /// fait annuler dès que le drag RECONNAÎT : exactement le bouton dans un
+    /// ScrollView qui perd son highlight au premier millimètre de défilement.
+    /// Or la home porte le tirage sur TOUTE la page (`HomeNuit`,
+    /// `.simultaneousGesture(tirageGeste)`) et son seuil est descendu à 2 pt
+    /// pour la fluidité du pull — deux points de tremblement de doigt
+    /// suffisaient donc à tuer l'action. Le player en dock vit dessous.
+    ///
+    /// Un `highPriorityGesture` PASSE DEVANT les gestes d'ancêtre : le stop
+    /// gagne, et la fluidité du tirage (mesurée 36,8 → 60,1 img/s sur
+    /// l'appareil) n'est pas re-vendue pour la payer.
     private func medallionButton(_ symbol: String, neon: Bool = false,
                                  action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Group {
             ZStack {
                 // Le disque laqué — la lumière prend en haut-gauche.
                 Circle()
@@ -411,7 +433,12 @@ struct WorkoutPill: View {
             }
             .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        // LA ZONE DE TAP passe le disque : 34 pt de médaillon, mais 44 pt de
+        // doigt (le minimum d'Apple). Elle est posée AVANT le geste, sinon le
+        // `contentShape` du disque la reprend.
+        .padding(8)
+        .contentShape(Circle())
+        .highPriorityGesture(TapGesture().onEnded { action() })
         // La même respiration que la lune, et RIEN d'autre : le médaillon lit
         // `lueur` pour ses deux liserés, il n'a aucune géométrie animée.
         .animation(docked ? nil
@@ -420,18 +447,19 @@ struct WorkoutPill: View {
                    value: lueur)
     }
 
+    /// Même loi que le médaillon : un tap PRIORITAIRE, jamais un `Button`
+    /// qu'un drag d'ancêtre annule.
     private func roundButton(_ symbol: String,
                              action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color.inkPrimary)
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(Color.white.opacity(0.10)))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.08),
-                                               lineWidth: 1))
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
+        Image(systemName: symbol)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Color.inkPrimary)
+            .frame(width: 34, height: 34)
+            .background(Circle().fill(Color.white.opacity(0.10)))
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.08),
+                                           lineWidth: 1))
+            .padding(8)
+            .contentShape(Circle())
+            .highPriorityGesture(TapGesture().onEnded { action() })
     }
 }

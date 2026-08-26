@@ -307,6 +307,35 @@ struct GaletEtape: View {
                 .frame(width: D + 2 * pad, height: D + 2 * pad)
                 .colorEffect(goutteShader(souffle: souffle,
                                           press: press, refus: refus))
+            // ⚠️ **LE LISERÉ D'ÉTAT — IL N'EXISTAIT PAS** (26-08, verdict
+            // n° 5 : « la différence entre accompli / actif / à venir n'est
+            // pas assez évidente… les galets futurs doivent avoir des
+            // bordures BEAUCOUP plus claires / visibles… on doit comprendre
+            // instantanément FAIT / EN COURS / À VENIR sans réfléchir »).
+            //
+            // Jusqu'ici l'état ne se disait QUE par une marge fine dans la
+            // matière (`gainsEtat` : 0,85 contre 0,92 contre 1,0 — trois
+            // pouièmes de lumière) et par l'encre. C'est illisible d'un
+            // coup d'œil, et c'était le verdict.
+            //
+            // Le liseré tranche parce qu'il change de NATURE, pas
+            // d'intensité :
+            //   · À VENIR  → un ANNEAU CLAIR ET CONTINU, la promesse d'un
+            //     bouton qu'on n'a pas encore ouvert — c'est le plus visible
+            //     des trois bords, exactement ce qu'elle demande ;
+            //   · EN COURS → pas d'anneau du tout : l'actif porte déjà son
+            //     HALO (il est le seul), deux marqueurs se battraient ;
+            //   · FAIT     → un trait fin, sourd, fermé : l'affaire est
+            //     classée, il ne réclame plus rien ;
+            //   · RATÉ     → rien, comme son encre fantôme ;
+            //   · LUNE     → l'or, et lui seul a le droit d'être coloré.
+            if let l = lisereEtat {
+                Circle()
+                    .stroke(l.teinte, lineWidth: l.trait)
+                    .frame(width: D + l.trait, height: D + l.trait)
+                    .position(centre)
+                    .blendMode(.plusLighter)
+            }
             // LE GLYPHE LAQUÉ — l'encre vit AU-DESSUS du verre peint.
             glypheVue
                 .position(x: centre.x, y: centre.y + 1)
@@ -362,6 +391,35 @@ struct GaletEtape: View {
         // il est le plus vif — c'est le seul galet qui a le droit d'être
         // franchement plus lumineux que ses voisins.
         case .lune(let dispo): return dispo ? (1.0, 1.0, 0) : (0.72, 0.72, 0)
+        }
+    }
+
+    /// LE LISERÉ D'ÉTAT — voir la note longue dans `corps`. `nil` = pas
+    /// d'anneau (l'actif, qui porte son halo ; le raté, qui s'efface).
+    ///
+    /// ⚠️ **Les valeurs sont hautes exprès.** La leçon du halo du 26-08 est
+    /// payée : un premier réglage « élégant » donnait +2,2 de luminance sur
+    /// ses voisins, c'est-à-dire RIEN, et il a fallu monter à 0,55 pour
+    /// atteindre +32,9. Un bord « à venir » à 0,18 se serait perdu de la même
+    /// façon sur une page qui porte du feu.
+    private var lisereEtat: (teinte: Color, trait: CGFloat)? {
+        switch etat {
+        // À VENIR : l'anneau le plus clair du chemin. Le prochain est un cran
+        // au-dessus du lointain — la promesse est plus proche.
+        case .prochain:   return (Color.white.opacity(0.72), taille * 0.032)
+        case .verrouille: return (Color.white.opacity(0.52), taille * 0.026)
+        // EN COURS : rien. Le halo blanc est déjà son signe, et il est le
+        // SEUL du chemin à en porter un.
+        case .actif:      return nil
+        // FAIT : un trait fin et sourd — la matière affirmée, le bord fermé.
+        case .accompli:   return (Color.white.opacity(0.30), taille * 0.018)
+        case .parfait:    return (FlammePalette.or.opacity(0.55), taille * 0.022)
+        // RATÉ : rien. Son encre est déjà fantôme ; un bord le rallumerait.
+        case .rate:       return nil
+        // LUNE : l'or, et lui seul a droit à la couleur.
+        case .lune(let dispo):
+            return dispo ? (FlammePalette.or.opacity(0.85), taille * 0.034)
+                         : (Color.white.opacity(0.30), taille * 0.020)
         }
     }
 
