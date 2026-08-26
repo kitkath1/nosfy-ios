@@ -152,13 +152,18 @@ enum CoffreV2Podium {
 /// temps mort, L 2,6 ». Sur la SOURCE, les deux pièces y sont parfaitement
 /// visibles et tournent lentement : c'est une approche, pas un vide.
 ///
-/// **LA COUPE JUSTE : 6 → 78**, soit 73 images et **3,04 s** (verdict : « trop
-/// coupé la vidéo d'arrivée, je sais qu'elle est plus longue ») —
-///   · 6-27  : les deux pièces approchent, lentes ;
+/// **ON PREND LE CYCLE ENTIER : 0 → 95**, soit 96 images et **4,00 s** — plus
+/// rien n'est coupé (le fichier en contient DEUX identiques, on en garde un).
+/// Trois verdicts successifs pour en arriver là (« l'entrée ne se voit pas »,
+/// « tu l'as coupée trop tôt », « pas assez longue, tu l'as trop coupée ») :
+/// à chaque fois j'ai rallongé d'un bout, il fallait rendre le film ENTIER.
+///   · 0-27  : les deux pièces approchent, lentes ;
 ///   · 28-31 : LA RUÉE, elles font irruption en flou de mouvement ;
 ///   · 32-75 : elles culbutent et grossissent jusqu'au SOMMET ;
 ///   · 76-78 : **la pièce se met sur la TRANCHE** — un galet de verre vu par
-///             le chant, rétroéclairé. C'est une FIN DE FILM, pas un rebut.
+///             le chant, rétroéclairé ;
+///   · 79-95 : elles REPARTENT dans la nuit — et c'est sur ce retrait que le
+///             fondu au noir vient se poser. Une sortie, pas une coupe.
 ///
 /// Recadré `crop=2214:2160:744:0` — symétrique autour du centre de la matière
 /// (mesuré sur les 73 images : union x ∈ [0,2057 ; 0,7583], y jusqu'à 0,9995,
@@ -681,6 +686,87 @@ struct Atterrissage: View {
     }
 }
 
+/// **LA GERBE DE PIÈCES** — au doigt sur la pièce, une poignée de petites
+/// s'échappe d'elle en éventail, tourne, retombe et s'éteint.
+///
+/// (C'est la réponse au dernier des quatre défauts du §13, et elle est venue
+/// par le bout qu'on n'attendait pas : « plein de petites pièces sortent »
+/// n'était pas un bug à trouver, c'était une envie à coder.)
+///
+/// ⚠️ **UN SEUL `Canvas`, ET LE SPRITE RÉSOLU UNE FOIS** — la loi
+/// `PoudreBooster`, reprise telle quelle de la gerbe de flammes des rewards.
+/// Empiler des vues par grain, ce serait une horloge par grain ; résoudre
+/// l'image par grain, ce serait un décodage par grain et par image. Ici :
+/// une horloge, une résolution, vingt-six tracés.
+///
+/// ⚠️ Et les trajectoires sont **déterministes par hash** — jamais un `random`
+/// par image, qui ferait grésiller la gerbe au lieu de la faire voler.
+struct GerbePieces: View {
+    let ne: Date
+    /// D'où elles sortent, dans l'espace de la page.
+    let centre: CGPoint
+    /// L'asset de la petite pièce (l'or ou la noire, selon celle qu'on touche).
+    let sprite: String
+    /// La page entière — le `Canvas` dessine en coordonnées de page.
+    let plein: CGSize
+
+    static let grains = 30
+    /// Au-delà, plus rien ne vit : le `Canvas` rend un tracé vide.
+    static let duree: Double = 2.2
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+            gerbe(age: tl.date.timeIntervalSince(ne))
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func gerbe(age: Double) -> some View {
+        Canvas { ctx, _ in
+            guard age < Self.duree else { return }
+            let img = ctx.resolve(Image(sprite))
+            for i in 0 ..< Self.grains {
+                let retard = Self.hash(i, 9) * 0.14
+                let u = age - retard
+                guard u > 0, u < 2.0 else { continue }
+                // L'ÉVENTAIL : vers le haut, ouvert de ±62°.
+                let angle = (-Double.pi / 2) + (Self.hash(i, 1) - 0.5) * 2.16
+                // ⚠️ **PLUS AMPLE QU'AU PREMIER JET.** À 150-480 pt/s sous une
+                // pesanteur de 560, l'apogée tombait à **40 pt** : les pièces
+                // ne quittaient jamais le disque et on ne voyait rien. À
+                // 280-620 sous 470 elles montent de 120 à 200 pt — elles
+                // SORTENT de la pièce, ce qui était toute la demande.
+                let vitesse = 280 + 340 * Self.hash(i, 2)
+                let x = centre.x + CGFloat(cos(angle) * vitesse * u)
+                // La pesanteur : elles retombent, elles ne s'envolent pas.
+                let y = centre.y + CGFloat(sin(angle) * vitesse * u
+                                           + 470 * u * u)
+                let taille = CGFloat(14 + 16 * Self.hash(i, 3))
+                let vie = 1.25 + 0.85 * Self.hash(i, 4)
+                let a = max(0, 1 - u / vie)
+                guard a > 0.02 else { continue }
+                var couche = ctx
+                couche.opacity = a
+                couche.translateBy(x: x, y: y)
+                couche.rotate(by: .radians((Self.hash(i, 5) - 0.5) * 5
+                                           + u * 4.2 * (Self.hash(i, 6) - 0.5)))
+                couche.draw(img, in: CGRect(x: -taille / 2, y: -taille / 2,
+                                            width: taille, height: taille))
+            }
+        }
+        // ⚠️ LE CADRE EST EXPLICITE : le `Canvas` dessine en coordonnées de
+        // PAGE, il lui faut donc la page entière et pas la taille que le
+        // ZStack voudra bien lui proposer.
+        .frame(width: plein.width, height: plein.height)
+        .position(x: plein.width / 2, y: plein.height / 2)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
+    }
+}
+
 // MARK: - La petite card de verre
 
 /// **LE PIED DE PAGE** — verdict du 26-08 : « le composant footer n'est pas
@@ -903,6 +989,9 @@ struct CoffreV2Page: View {
     @State private var loupeIdx = 0
     @State private var fumeeNe: Date?
     @State private var fumeeFin: Date?
+    /// L'horloge de la gerbe (`GerbePieces`), ou `nil` : au repos ce
+    /// sous-arbre n'existe pas.
+    @State private var gerbeNe: Date?
     /// ⚠️ **LES TEXTES ONT LEUR PROPRE HORLOGE** : portés par `loupe`, ils se
     /// dissolvaient pendant les 0,62 s du ressort — une page entière qui
     /// devient translucide sous l'objet, et c'est ça qu'on lit comme « cheap ».
@@ -1027,6 +1116,16 @@ struct CoffreV2Page: View {
                         .offset(y: bas)
                 }
                 contenu(sc).offset(y: bas)
+                // LA GERBE passe DEVANT : elle sort de la pièce, elle ne se
+                // cache pas derrière.
+                if let ne = gerbeNe {
+                    GerbePieces(ne: ne,
+                                centre: CGPoint(x: sc.W / 2,
+                                                y: piecePresY(sc)),
+                                sprite: Self.manege[loupeIdx].nom + "-mini",
+                                plein: CGSize(width: sc.W, height: sc.H))
+                        .offset(y: bas)
+                }
                 if filmVisible { film(sc) }
             }
             .contentShape(Rectangle())
@@ -1424,10 +1523,20 @@ struct CoffreV2Page: View {
         withAnimation(.easeOut(duration: 0.16)) { texteOp = 0 }
         fumeeNe = .now
         fumeeFin = nil
+        // ⚠️ LA GERBE. Elle part du centre de la pièce et vit 2,2 s ; passé ce
+        // délai on démonte le sous-arbre, mais SEULEMENT si personne n'a
+        // retapé entre-temps (le jeton, comme pour la fumée et le choc).
+        gerbeNe = .now
+        let jetonG = gerbeNe
+        DispatchQueue.main.asyncAfter(deadline: .now() + GerbePieces.duree) {
+            guard gerbeNe == jetonG else { return }
+            gerbeNe = nil
+        }
         // « Un plus petit bruit, élégant, très discret, premium » : le même
         // métal, mais bas et grave — un objet lourd qu'on approche.
         CoinChime.shared.chink(volume: 0.14, rate: 0.72)
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.75)
+        // Le boum de la gerbe : ferme, court. C'est une poignée qu'on lâche.
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.9)
     }
 
     private func fermerLoupe() {
@@ -1498,10 +1607,10 @@ struct CoffreV2Page: View {
         lecteur = p
         filmVisible = true
         p.play()
-        // Le film fait 73 images = 3,04 s (voir `CoffreV2Film.ratio` : la
-        // coupe a été rallongée des deux côtés). On tient sa dernière image —
-        // la pièce sur la TRANCHE — 0,41 s de plus, puis le fondu au noir.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.45) { terminer() }
+        // Le film fait 96 images = 4,00 s : le cycle ENTIER. On le laisse
+        // aller au bout — il finit sur les pièces qui repartent dans la nuit —
+        // puis le fondu au noir se pose sur ce retrait.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.05) { terminer() }
         if Self.skipAuto {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { passerDevant() }
         }
