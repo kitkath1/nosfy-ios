@@ -1900,7 +1900,8 @@ struct ExerciseDetailView: View {
             IntervalBlock(phases: $phases, repeatCount: $repeatCount)
         case .steady:
             SteadyBlock(seconds: $steadySeconds, speed: $steadySpeed,
-                        incline: $incline, isStairs: exercise.id == "escalier")
+                        incline: $incline, isStairs: exercise.id == "escalier",
+                        hasIncline: exercise.id != "piscine")
         }
     }
 

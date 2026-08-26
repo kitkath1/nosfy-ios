@@ -309,9 +309,14 @@ struct StoryCard: View {
         if titre.contains("fessier") || titre.contains("glute") {
             s.append(.abricot)
         }
-        // Le gabarit de secours — jamais une card sans stickers.
+        // Le gabarit de secours — jamais une card sans stickers. La nage
+        // fait exception : lui coller la basket ferait DEUX cardios sur
+        // une seule séance, et un sticker est un fait (le contrat en
+        // admet deux comme trois).
         if s.isEmpty { s = [.bras, .basket] }
-        if s.count == 1 { s.append(s[0] == .basket ? .abricot : .basket) }
+        if s.count == 1, s[0] != .piscine {
+            s.append(s[0] == .basket ? .abricot : .basket)
+        }
         // L'intensité couronne la séance (à confirmer par Kathryn).
         s.append(.flamme)
         return Array(s.prefix(3))

@@ -4656,7 +4656,7 @@ struct DemoSession: Identifiable {
             .replacingOccurrences(of: ".", with: "").capitalized
         return "\(dayNumber). \(mois)"
     }
-    var cardio: Bool { cat == .basket }
+    var cardio: Bool { cat == .basket || cat == .piscine }
     var id: Date { date }
 
     /// « Session du mardi 2 avril » — la date, rien d'autre (pas d'heure).
@@ -4731,11 +4731,12 @@ struct DemoSession: Identifiable {
 
 /// La typologie des stickers : la FLAMME marque toute séance (toujours
 /// présente sur un jour entraîné), la catégorie vient par-dessus —
-/// basket = cardio, abricot = fessiers, chocolat = abdos, bras = le
-/// reste de la muscu. Les PNG vivent dans le catalogue (`sticker-*`),
-/// liseré blanc sur fond transparent.
+/// basket = cardio, piscine = la goutte d'eau (nage), abricot =
+/// fessiers, jambes = bas du corps, chocolat = abdos, bras = le reste
+/// de la muscu. Les PNG vivent dans le catalogue (`sticker-*`), liseré
+/// blanc sur fond transparent.
 enum WoopSticker: String, CaseIterable {
-    case flamme, basket, abricot, chocolat, bras
+    case flamme, basket, abricot, chocolat, bras, jambes, piscine
 
     var asset: String { "sticker-\(rawValue)" }
 
@@ -4750,7 +4751,7 @@ enum WoopSticker: String, CaseIterable {
         let h = (d &* 2654435761 &+ m &* 40503 &+ y &* 69069) >> 4
         guard h % 7 < 2 else { return nil }
         return [WoopSticker.basket, .abricot, .chocolat,
-                .bras][(h >> 3) % 4]
+                .bras, .jambes, .piscine][(h >> 3) % 6]
     }
 }
 

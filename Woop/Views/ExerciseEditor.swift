@@ -203,6 +203,9 @@ struct SteadyBlock: View {
     @Binding var speed: Double
     @Binding var incline: Double
     let isStairs: Bool
+    /// L'escalier compte en niveaux de machine, la piscine n'a pas de
+    /// pente : seul le tapis a une inclinaison à saisir.
+    var hasIncline: Bool = true
 
     var body: some View {
         WoopCard(cornerRadius: 20, padding: 18) {
@@ -212,7 +215,7 @@ struct SteadyBlock: View {
                 DecimalStepper(label: isStairs ? "Niveau" : "Vitesse",
                                value: $speed, range: 0...25, step: 0.5,
                                unit: isStairs ? "" : "km/h")
-                if !isStairs {
+                if !isStairs, hasIncline {
                     DecimalStepper(label: "Inclinaison", value: $incline,
                                    range: 0...20, step: 0.5, unit: "%")
                 }

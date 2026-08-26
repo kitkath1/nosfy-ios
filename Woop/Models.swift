@@ -249,7 +249,13 @@ enum ExerciseCatalog {
             category: .cardio, equipment: .machine, tracking: .steady,
             muscle: "Endurance fondamentale",
             cue: "Allure conversationnelle, tenue longtemps.",
-            mistake: "Monter l'allure jusqu'à sortir de la zone d'endurance.")
+            mistake: "Monter l'allure jusqu'à sortir de la zone d'endurance."),
+        Exercise(
+            id: "piscine", name: "Piscine",
+            category: .cardio, equipment: .poidsDuCorps, tracking: .steady,
+            muscle: "Cardio-respiratoire et corps entier",
+            cue: "Allure régulière, corps aligné à la surface, la respiration calée sur le cycle de bras.",
+            mistake: "Lever la tête pour respirer : le bassin descend et les jambes se mettent à traîner.")
     ]
 
     static func exercises(in category: ExerciseCategory) -> [Exercise] {
