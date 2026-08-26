@@ -214,10 +214,8 @@ struct CoffreV2Page: View {
     /// le geste : c'est elle qui porte le flou et le voyage.
     @State private var page: Double = 0
     @State private var pagePrise: Double = 0
-    /// L'axe du geste, verrouillé au premier mouvement franc. ⚠️ Sans lui, un
-    /// glissement de manège nourrit AUSSI le tirage de la card : le moindre
-    /// soupçon de vertical fait sauter la page en plein voyage.
-    @State private var axeVertical: Bool?
+    /// CE QUE LE DOIGT A DÉCIDÉ DE FAIRE, arrêté UNE fois au contact.
+    @State private var cible: Cible?
 
     /// LE TIRAGE de la card — la levée découvre la lune, comme la home.
     @State private var tirage: CGFloat = 0
@@ -305,7 +303,7 @@ struct CoffreV2Page: View {
                 if filmVisible { film(geo) }
             }
             .contentShape(Rectangle())
-            .gesture(gestePage)
+            .gesture(gestePage(W, H))
         }
         .ignoresSafeArea()
         .statusBarHidden()
@@ -340,6 +338,19 @@ struct CoffreV2Page: View {
                         // pousse, pas une image qu'on éclaircit.
                         .brightness(0.10 * eclat)
                         .saturation(1 + 0.14 * eclat)
+                        // ⚠️⚠️ **LA SALLE N'EXISTE PAS PENDANT LE FILM**, et
+                        // c'est le correctif de « l'ouverture est horrible ».
+                        // Depuis que la chambre est allumée par défaut, le
+                        // film — une bande 16:9 sur fond noir — se posait
+                        // SUR un sol éclairé : un rectangle noir flottant au
+                        // milieu de la pièce. Personne ne peut sauver ça.
+                        //
+                        // Elle naît donc AVEC la pose, sur le même curseur :
+                        // les pièces culbutent dans le noir, l'une se pose,
+                        // **et la chambre s'allume autour d'elle**. L'arrivée
+                        // cesse d'être une vidéo posée sur une page : c'est
+                        // la page qui s'allume à l'atterrissage.
+                        .opacity(1 - raccord)
                     }
                     .clipShape(CoffreV2Cotes.forme)
                     .padding(.top, CoffreV2Cotes.margeHaut)
@@ -371,7 +382,7 @@ struct CoffreV2Page: View {
             }
             .padding(.leading, 22)
             .padding(.top, 63)
-            .opacity(nee ? 1 : 0)
+            .opacity(nee ? 1 - raccord : 0)
 
             piece(W: W, H: H)
 
@@ -480,84 +491,113 @@ struct CoffreV2Page: View {
                         .position(x: cx, y: cy)
                         .opacity(1 - 0.35 * loin)
                 }
-                .allowsHitTesting(actif)
             }
         }
-        .contentShape(Rectangle())
-        .gesture(gestePiece)
-        .allowsHitTesting(nee)
+        .allowsHitTesting(false)
     }
 
     // MARK: Les gestes
 
-    /// LE DOIGT SUR LA PIÈCE : il la fait tourner, et il pousse la lampe.
-    private var gestePiece: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { v in
-                if eclat < 0.02 {
-                    tourPrise = tour
-                    UIImpactFeedbackGenerator(style: .soft)
-                        .impactOccurred(intensity: 0.6)
-                }
-                withAnimation(.easeOut(duration: 0.26)) { eclat = 1 }
-                // 320 pt de doigt = un tour complet.
-                tour = tourPrise + Double(v.translation.width) / 320
-            }
-            .onEnded { _ in
-                // ⚠️ LA RETOMBÉE EST PLUS LENTE QUE LA MONTÉE (0,62 contre
-                // 0,26). Une lampe frappe et s'éteint doucement ; l'inverse se
-                // lit comme un bug d'affichage.
-                withAnimation(.easeInOut(duration: 0.62)) { eclat = 0 }
-            }
-    }
+    /// ⚠️⚠️ **UN SEUL GESTE POUR TOUTE LA PAGE, ET C'EST LA LEÇON DE CE
+    /// CHANTIER.** Il y en avait DEUX : un sur la pièce (rotation) et un sur
+    /// la page (manège + tirage). Celui de la pièce était posé sur un
+    /// conteneur qui, à cause des `.position()` de ses enfants, **prend tout
+    /// l'écran** — avec `minimumDistance: 0` il gagnait partout et avalait
+    /// tout le reste. Résultat, trois symptômes pour une seule cause : la
+    /// seconde pièce inatteignable, la card qui ne se soulève pas (donc pas
+    /// de lune), et le tap qui ne passait pas l'intro.
+    ///
+    /// Le remède n'est pas de border le premier geste et d'espérer que
+    /// SwiftUI arbitre comme on l'imagine — c'est de **ne plus rien avoir à
+    /// arbitrer** : un seul reconnaisseur, qui décide UNE FOIS d'après
+    /// l'endroit où le doigt s'est posé, et qui ne revient plus dessus. C'est
+    /// la loi déjà écrite ailleurs dans le dépôt (« un seul geste pour l'appui
+    /// ET le tap », payée sur le puits de l'iPod et le galet du menu).
+    private enum Cible { case piece, manege, card }
 
-    /// LE GESTE DE LA PAGE — un seul reconnaisseur, DEUX sens, et un axe
-    /// verrouillé au premier mouvement franc : vertical = la card se soulève
-    /// et la lune se découvre ; horizontal = le manège change de pièce.
-    private var gestePage: some Gesture {
-        DragGesture(minimumDistance: 14)
-            .onChanged { g in
-                if axeVertical == nil {
-                    let dx = abs(g.translation.width)
-                    let dy = abs(g.translation.height)
-                    guard max(dx, dy) > 10 else { return }
-                    axeVertical = dy > dx
-                    if axeVertical == false { pagePrise = page }
+    private func gestePage(_ W: CGFloat, _ H: CGFloat) -> some Gesture {
+        let centre = CGPoint(x: W / 2, y: H * CoffreV2Cotes.piecY)
+        // La prise de la pièce est GÉNÉREUSE (0,66 diamètre de rayon) : on
+        // attrape un objet, on ne vise pas une cible.
+        let prise = CoffreV2Cotes.piece * 0.66
+        return DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if cible == nil {
+                    // Pendant l'arrivée, la page n'écoute qu'une chose : le
+                    // raccourci. Rien d'autre ne doit répondre.
+                    guard passe else { return }
+                    let d = hypot(v.startLocation.x - centre.x,
+                                  v.startLocation.y - centre.y)
+                    if d < prise {
+                        cible = .piece
+                        tourPrise = tour
+                        UIImpactFeedbackGenerator(style: .soft)
+                            .impactOccurred(intensity: 0.6)
+                        withAnimation(.easeOut(duration: 0.26)) { eclat = 1 }
+                    } else {
+                        // Hors de la pièce, l'axe décide — et il ne se
+                        // rediscute pas : un axe testé à chaque image oscille
+                        // sous le doigt.
+                        let dx = abs(v.translation.width)
+                        let dy = abs(v.translation.height)
+                        guard max(dx, dy) > 10 else { return }
+                        cible = dy > dx ? .card : .manege
+                        if cible == .manege { pagePrise = page }
+                    }
                 }
-                if axeVertical == true {
-                    let t = g.translation.height
+                switch cible {
+                case .piece:
+                    // 320 pt de doigt = un tour complet.
+                    tour = tourPrise + Double(v.translation.width) / 320
+                case .manege:
+                    // ⚠️ **VERS LA DROITE AMÈNE LA PIÈCE NOIRE** (sa demande,
+                    // mot pour mot) — l'inverse de la convention d'un
+                    // carrousel. 200 pt de doigt = un cran.
+                    page = min(max(pagePrise
+                                   + Double(v.translation.width) / 200, 0), 1)
+                case .card:
+                    let t = v.translation.height
                     let net = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
                     tirage = CoffreV2Cotes.levee * CGFloat(tanh(Double(net) / 190))
-                } else {
-                    // ⚠️ **VERS LA DROITE AMÈNE LA PIÈCE NOIRE** (sa demande,
-                    // mot pour mot). C'est l'inverse de la convention d'un
-                    // carrousel — on suit la commande, pas l'habitude.
-                    // 200 pt de doigt = un cran ; la course est bornée : deux
-                    // pièces, pas un rouleau infini.
-                    let d = Double(g.translation.width) / 200
-                    page = min(max(pagePrise + d, 0), 1)
+                case nil:
+                    break
                 }
             }
-            .onEnded { g in
-                let vertical = axeVertical ?? true
-                axeVertical = nil
-                if vertical {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                        tirage = 0
-                    }
-                } else {
+            .onEnded { v in
+                let quoi = cible
+                cible = nil
+                // LE TAP : pas de cible décidée et le doigt n'a pas bougé.
+                // Pendant l'arrivée, c'est LUI qui passe l'intro — et il vaut
+                // sur tout l'écran, pas sur une bande.
+                if quoi == nil,
+                   hypot(v.translation.width, v.translation.height) < 10 {
+                    if !passe { passerDevant() }
+                    return
+                }
+                switch quoi {
+                case .piece:
+                    // ⚠️ LA RETOMBÉE EST PLUS LENTE QUE LA MONTÉE (0,62 contre
+                    // 0,26). Une lampe frappe et s'éteint doucement ;
+                    // l'inverse se lit comme un bug d'affichage.
+                    withAnimation(.easeInOut(duration: 0.62)) { eclat = 0 }
+                case .manege:
                     // LE CRAN : on tombe sur la pièce la plus proche, élan
                     // compris. Une pièce ne s'immobilise pas entre deux faces.
-                    let elan = Double(g.predictedEndTranslation.width) / 200
-                    let vise = (pagePrise + elan).rounded()
-                    let cible = min(max(vise, 0), 1)
-                    if cible != page.rounded() {
+                    let elan = Double(v.predictedEndTranslation.width) / 200
+                    let cible2 = min(max((pagePrise + elan).rounded(), 0), 1)
+                    if cible2 != page.rounded() {
                         UIImpactFeedbackGenerator(style: .rigid)
                             .impactOccurred(intensity: 0.7)
                     }
                     withAnimation(.spring(response: 0.46, dampingFraction: 0.86)) {
-                        page = cible
+                        page = cible2
                     }
+                case .card:
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        tirage = 0
+                    }
+                case nil:
+                    break
                 }
             }
     }
@@ -583,15 +623,6 @@ struct CoffreV2Page: View {
                 .opacity(raccord)
                 .allowsHitTesting(false)
 
-            // LA SURFACE DU RACCOURCI — TOUT L'ÉCRAN, et c'est délibéré. Sur
-            // la v1 elle était bornée à la bande vidéo ; ici la page n'a rien
-            // d'autre à écouter pendant l'arrivée, et un raccourci qu'on rate
-            // parce qu'on a tapé 40 pt trop bas n'est pas un raccourci.
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture { passerDevant() }
-                .accessibilityLabel("Passer l'introduction")
-                .accessibilityAddTraits(.isButton)
         }
     }
 
