@@ -740,6 +740,14 @@ struct ExerciseDetailView: View {
             rewardVariant = 4
             rewardShow = true
         }
+        // L'atelier WELCOME BACK robe TEXTE : `-welcomeTexte`.
+        .task {
+            guard CommandLine.arguments.contains("-welcomeTexte")
+            else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 5
+            rewardShow = true
+        }
         // L'atelier WELCOME BACK : `-welcomeLab`.
         .task {
             guard CommandLine.arguments.contains("-welcomeLab")
@@ -911,6 +919,8 @@ struct ExerciseDetailView: View {
                             : "Congratulations, you've completed your training!",
                         unit: "Sets",
                         style: Self.rewardStyles[rewardVariant],
+                        robe: CommandLine.arguments
+                            .contains("-welcomeTexte") ? .texte : .video,
                         videoNom: Self.rewardStyles[rewardVariant]
                             == .welcome
                             ? "reward-welcome"

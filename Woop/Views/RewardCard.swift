@@ -51,8 +51,18 @@ import CoreText
 ///   rouge, et au tap une gerbe de petites flammes orange.
 /// - `.welcome` : le retour de l'utilisateur — la vidéo chauve-souris
 ///   PORTRAIT fondue en header, et un bouton CLAIM de verre.
+/// LE RETOUR a DEUX robes (`RewardStyle.welcome` + `WelcomeRobe`) :
+/// - `.video` : la vidéo chauve-souris portrait en header (livrée) ;
+/// - `.texte` : le texte géant « YOU'RE / BACK » derrière, le spotlight
+///   du haut, la PASTILLE-LUNE au centre qui vit et s'allume, et la
+///   CHAUVE-SOURIS qui TIENT la card par son bord haut.
 enum RewardStyle {
     case halo, neon, galet, spotlight, fire, welcome
+}
+
+/// Les deux robes de la card Welcome Back.
+enum WelcomeRobe {
+    case video, texte
 }
 
 struct RewardPopup: View {
@@ -63,6 +73,8 @@ struct RewardPopup: View {
     /// L'unité sous le chiffre — le « Weeks » de la réf.
     let unit: String
     var style: RewardStyle = .halo
+    /// La robe du Welcome Back (ignorée par les autres styles).
+    var robe: WelcomeRobe = .video
     /// La vidéo du header (nom de ressource `Woop/Media`, sans
     /// extension) — le REWARD à mise en scène : elle SORT de la matière
     /// noire de la card, joue UNE fois, gèle sur sa dernière frame.
@@ -91,7 +103,8 @@ struct RewardPopup: View {
 
     var body: some View {
         RewardScene(p: p, count: count, title: title, subtitle: subtitle,
-                    unit: unit, style: style, videoNom: videoNom,
+                    unit: unit, style: style, robe: robe,
+                    videoNom: videoNom,
                     naissance: naissance, enSortie: enSortie,
                     posee: posee, fermer: fermer)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
@@ -148,6 +161,7 @@ private struct RewardScene: View, Animatable {
     let subtitle: String
     let unit: String
     let style: RewardStyle
+    let robe: WelcomeRobe
     let videoNom: String?
     let naissance: Date
     let enSortie: Bool
@@ -313,11 +327,23 @@ private struct RewardScene: View, Animatable {
                         // sous la vidéo — aucune zone plus claire, donc
                         // AUCUNE démarcation possible.
                         Self.forme.fill(Color.black)
+                        if robe == .texte {
+                            // LE TEXTE GÉANT DERRIÈRE (deux lignes) et
+                            // LE SPOTLIGHT DU HAUT — la grammaire de la
+                            // robe « You Made It ».
+                            TexteGeant(naissance: naissance,
+                                       lignes: ["YOU'RE", "BACK"])
+                                .opacity(sstep(0.22, 0.55, p))
+                            LampeEventail(naissance: naissance)
+                                .opacity(sstep(0.10, 0.42, p))
+                        }
                         // (La lampe du haut est morte en welcome : le
                         // projecteur monte DU BAS, sous « Later ».)
-                        // LE PROJECTEUR DU BAS (verdict) : il monte de
-                        // SOUS « Later » et balaie — la lumière lèche le
+                        // LE PROJECTEUR DU BAS : il monte de SOUS
+                        // « Later » et balaie (robe vidéo ; la robe
+                        // texte a SON spotlight en haut) — la lumière lèche le
                         // pied de la card, la scène naît d'en bas.
+                        if robe == .video {
                         TimelineView(.animation(
                             minimumInterval: 1.0 / 30.0)) { tl in
                             let b = balayageSpot(
@@ -339,6 +365,7 @@ private struct RewardScene: View, Animatable {
                         }
                         .opacity(sstep(0.18, 0.52, p))
                         .allowsHitTesting(false)
+                        }
                     }
                     if style == .neon {
                         TexteGeant(naissance: naissance)
@@ -399,7 +426,7 @@ private struct RewardScene: View, Animatable {
                 //    noire : fond noir vrai sur card noire, et un fondu
                 //    qui la scelle au corps (jamais une coupe). Elle
                 //    joue UNE fois et gèle sur sa dernière frame.
-                if let nom = videoNom {
+                if let nom = videoNom, robe == .video {
                     VStack(spacing: 0) {
                         VideoVivante(nom: nom, relance: videoRelance,
                                      pente: penteCard,
@@ -479,6 +506,18 @@ private struct RewardScene: View, Animatable {
             .clipShape(Self.forme)
         }
         .frame(width: largeur, height: hauteur)
+        // LA CHAUVE-SOURIS QUI TIENT LA CARD — « comme si elle était
+        // CACHÉE par la card » (verdict) : elle est montée devant
+        // (⚠️ en `background` elle n'apparaissait PAS DU TOUT), mais
+        // MASQUÉE sous la ligne du bord haut — la card la coupe net,
+        // son corps disparaît derrière la matière.
+        .overlay(alignment: .top) {
+            if style == .welcome, robe == .texte {
+                ChauveQuiTient(naissance: naissance, largeur: largeur)
+                    .opacity(sstep(0.30, 0.62, p))
+                    .allowsHitTesting(false)
+            }
+        }
         .scaleEffect(0.96 + 0.04 * sstep(0, 0.55, p))
         .opacity(sstep(0, 0.16, p))
         // L'ombre est BLANCHE et tombe vers le bas (verdict) : sur du noir
@@ -547,7 +586,7 @@ private struct RewardScene: View, Animatable {
             // LE BLOC DE TÊTE À L'APPLE — SAUF dans la robe You-Made-It :
             // là, LE TEXTE GÉANT EST LE MESSAGE, la tête meurt et seule
             // la ligne calme du bas parle.
-            if style != .neon {
+            if style != .neon, !(style == .welcome && robe == .texte) {
                 Text(title)
                     .font(.inter(20, .bold))
                     .tracking(0.2)
@@ -570,7 +609,13 @@ private struct RewardScene: View, Animatable {
             }
             Spacer(minLength: 0)
             if style == .welcome {
-                Color.clear.frame(height: 1)
+                if robe == .texte {
+                    PastilleLuneReward(naissance: naissance)
+                        .opacity(sstep(0.34, 0.60, p))
+                        .scaleEffect(0.88 + 0.12 * sstep(0.34, 0.68, p))
+                } else {
+                    Color.clear.frame(height: 1)
+                }
             } else if style == .fire {
                 // LA FLAMME NOIRE — le sticker laqué qui VIT, et dont le
                 // tap fait jaillir la gerbe orange.
@@ -1014,6 +1059,155 @@ private struct TrameMatrice: View {
     }
 }
 
+// MARK: - Welcome Back, robe TEXTE : la pastille et la chauve-souris
+
+/// LA PASTILLE-LUNE DE LA CARD REWARD (l'asset de Kathryn,
+/// détouré) — ⚠️ `PastilleLune` tout court existe déjà dans
+/// WidgetEdition : ne pas reprendre ce nom — on ne la retouche
+/// pas, ON L'ÉCLAIRE : elle flotte, s'incline au gyro, et son
+/// paillettage S'ALLUME au passage du faisceau (même horloge que le
+/// spotlight). La lune gravée prend son souffle chaud quand la lumière
+/// la traverse, et ses propres paillettes vivent DANS sa silhouette.
+private struct PastilleLuneReward: View {
+    let naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let cote: CGFloat = 124
+
+    var body: some View {
+        // 30 Hz : le flottement est LENT, 60 Hz coûtait le double pour
+        // rien (la card laguait).
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            let b = balayageSpot(t)
+            let tilt = SkyMotion.shared.tilt
+            // Elle FLOTTE — trois horloges premières, jamais une boucle.
+            let flotte = CGFloat(sin(t * 0.62) * 7 + sin(t * 1.13 + 0.9) * 3)
+            let derive = CGFloat(cos(t * 0.47 + 1.4) * 5)
+            let souffle = 1 + 0.022 * sin(t * 0.83)
+            Image("sticker-pastille-lune")
+                .resizable()
+                .scaledToFit()
+                .frame(width: Self.cote, height: Self.cote)
+                // ⚠️ UNE SEULE IMAGE (la cadence est payée ici) : la
+                // lumière est un DÉGRADÉ posé sur sa forme, jamais une
+                // deuxième copie du sticker en colorMultiply — trois
+                // copies à 60 Hz faisaient lager la card.
+                .overlay {
+                    RoundedRectangle(cornerRadius: Self.cote * 0.22,
+                                     style: .continuous)
+                        .fill(
+                            EllipticalGradient(
+                                stops: [
+                                    .init(color: .white.opacity(0.30),
+                                          location: 0),
+                                    .init(color: .white.opacity(0.07),
+                                          location: 0.45),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                center: UnitPoint(x: 0.5 - 0.55 * b,
+                                                  y: 0.22 + 0.10 * b),
+                                startRadiusFraction: 0,
+                                endRadiusFraction: 0.55))
+                        .blendMode(.screen)
+                        .padding(2)
+                        .allowsHitTesting(false)
+                }
+                // Le halo qui la décolle de la nuit.
+                .background(
+                    Circle()
+                        .fill(RadialGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.16),
+                                      location: 0),
+                                .init(color: .clear, location: 1)
+                            ],
+                            center: .center,
+                            startRadius: 0, endRadius: 130))
+                        .frame(width: 200, height: 200)
+                        .blur(radius: 14)
+                        .allowsHitTesting(false))
+                .scaleEffect(souffle)
+                // UNE seule rotation (deux coûtaient deux passes).
+                .rotation3DEffect(
+                    .degrees(7 * tilt.dx + Double(derive) * 0.5),
+                    axis: (x: 0, y: 1, z: 0))
+                .offset(x: derive, y: flotte)
+        }
+        .frame(height: 168)
+        .accessibilityHidden(true)
+    }
+}
+
+/// LA CHAUVE-SOURIS QUI TIENT LA CARD (l'asset détouré : le rectangle
+/// blanc effacé, LES GRIFFES gardées, le fond noir transparent). Elle
+/// se balance très lentement — elle porte un poids.
+private struct ChauveQuiTient: View {
+    let naissance: Date
+    let largeur: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            let balance = sin(t * 0.44) * 1.6 + sin(t * 0.77 + 1.2) * 0.6
+            let respire = CGFloat(sin(t * 0.61) * 2.5)
+            // La grammaire NOSFY : PETITE (~28 % de la card), PLEINE,
+            // POSÉE sur le bord haut — seules sa tête et ses griffes
+            // dépassent, le reste est masqué par la card. Le décalage
+            // se calcule sur SA PROPRE hauteur (l'image fait 1061×655,
+            // ratio 0,617) : elle remonte de 62 % d'elle-même.
+            let l = largeur * 0.30
+            let hauteurSticker = l * 0.617
+            Image("sticker-chauve-tient")
+                .resizable()
+                .scaledToFit()
+                .frame(width: l)
+                // ⚠️ ELLE EST NOIRE SUR LA NUIT : sans lumière, elle
+                // n'existe pas (seul le liseré de ses oreilles se
+                // voyait). Deux remèdes cumulés : une LUEUR derrière
+                // elle qui la détache du fond, et un souffle de
+                // clarté sur sa matière — c'est le spotlight de la
+                // card qui la prend à contre-jour.
+                // ⚠️ LE VRAI OBSTACLE (compris après dix essais de
+                // position) : elle est NOIRE sur une card NOIRE — ses
+                // griffes ne peuvent pas « se poser visiblement » sur
+                // du noir, quel que soit le calage. Chez Nosfy, les
+                // mains se détachent parce que la card est BLANCHE.
+                // Remède : on ÉCLAIRE ses pattes (le bas du sticker
+                // reçoit la lumière du spot) — la matière apparaît.
+                .background(
+                    Ellipse()
+                        .fill(RadialGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.20),
+                                      location: 0),
+                                .init(color: .white.opacity(0.06),
+                                      location: 0.5),
+                                .init(color: .clear, location: 1)
+                            ],
+                            center: .center,
+                            startRadius: 0, endRadius: l * 0.62))
+                        .frame(width: l * 1.25, height: l * 0.95)
+                        .blur(radius: 22)
+                        .allowsHitTesting(false))
+                .rotationEffect(.degrees(balance), anchor: .bottom)
+                // Le BAS du sticker — ses GRIFFES — tombe PILE sur la
+                // ligne du bord haut : elle est POSÉE sur la border,
+                // elle ne pend pas dedans (verdict). Aucun masque :
+                // dans l'asset, les oreilles sont en haut, la tête au
+                // milieu, les griffes en bas — un masque coupait sa
+                // tête.
+                .offset(y: respire - hauteurSticker * 1.30 - 22)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - La robe FIRE (variant 4) et le bouton CLAIM
 
 /// LA SECOUSSE — le tressaillement sec de la card : un aller-retour
@@ -1371,16 +1565,19 @@ private func balayageSpot(_ t: Double) -> Double {
 private struct TexteGeant: View {
     /// L'horloge du scintillement.
     let naissance: Date
+    /// LES MOTS — jamais en dur (contrat du plan backend : l'IA les
+    /// fournira). Le corps se calcule ICI, jamais côté IA : le Design
+    /// System décide de la typo. Deux lignes respirent plus que trois.
+    var lignes: [String] = ["YOU", "MADE", "IT"]
 
-    private static let mots: [(String, CGFloat)] = [
-        ("YOU", 106), ("MADE", 122), ("IT", 102)
-    ]
+    private var corps: CGFloat { lignes.count <= 2 ? 128 : 112 }
 
     private var rangées: some View {
-        VStack(spacing: -16) {
-            ForEach(0..<Self.mots.count, id: \.self) { i in
-                Text(Self.mots[i].0)
-                    .font(.inter(Self.mots[i].1, .heavy))
+        VStack(spacing: lignes.count <= 2 ? -12 : -16) {
+            ForEach(0..<lignes.count, id: \.self) { i in
+                Text(lignes[i])
+                    .font(.inter(corps * (lignes[i].count > 4 ? 0.88 : 1),
+                                 .heavy))
                     .tracking(-3)
                     .lineLimit(1)
                     .fixedSize()
