@@ -48,6 +48,55 @@ struct ExerciseDetailView: View {
         "reward-piece-1", "reward-piece-2", "reward-piece-3",
         "reward-piece-4", "reward-piece-5"
     ]
+    /// LE DÉCLENCHEUR PROVISOIRE (`-rewardFlow`) — l'avant-goût du vrai
+    /// moteur : chaque série RÉGLÉE sur la fiche (le chemin « Non » du
+    /// panneau — relancer direct ne montre rien, la philosophie du plan)
+    /// ouvre la robe suivante, une sur cinq porte une vidéo. JETABLE le
+    /// jour où le flow end-to-end branche le vrai moteur.
+    @State private var rewardFlowTour = -1
+    @State private var rewardVideoNomCourant: String?
+
+    /// LA DÉMO ENCHAÎNÉE (`-rewardDemo`) : chaque « Close » ouvre la
+    /// card SUIVANTE — les 4 robes nues puis halo avec chacune des 8
+    /// vidéos, en boucle. Pour montrer la famille entière en live.
+    /// Part à 4 : la démo OUVRE sur la chauve-souris à la pièce
+    /// (halo + reward-piece-1), puis Close déroule le reste.
+    @State private var rewardDemoTour = 4
+    /// (Le spotlight est SORTI du cycle — verdict « trop cheap » : sa
+    /// refonte complète est un chantier à part, il reste au `-spotLab`.)
+    private static let rewardDemoCombos: [(RewardStyle, String?)] = [
+        (.galet, nil), (.neon, nil), (.halo, nil),
+        (.halo, "reward-piece-1"), (.halo, "reward-piece-2"),
+        (.halo, "reward-piece-3"), (.halo, "reward-piece-4"),
+        (.halo, "reward-piece-5"), (.halo, "reward-fire"),
+        (.halo, "reward-lune"), (.halo, "reward-rare")
+    ]
+
+    private func ouvrirComboDemo() {
+        let c = Self.rewardDemoCombos[
+            rewardDemoTour % Self.rewardDemoCombos.count]
+        rewardVariant = Self.rewardStyles.firstIndex(of: c.0) ?? 2
+        rewardVideoNomCourant = c.1
+        rewardShow = true
+    }
+
+    private func declencherRewardFlow() {
+        guard CommandLine.arguments.contains("-rewardFlow") else { return }
+        rewardFlowTour += 1
+        let tour = rewardFlowTour
+        // Après la volée de pièces : la card arrive sur une fiche posée.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            if tour % 5 == 4 {
+                rewardVariant = 2
+                rewardVideoNomCourant = Self.rewardVideos[
+                    (tour / 5) % Self.rewardVideos.count]
+            } else {
+                rewardVariant = tour % Self.rewardStyles.count
+                rewardVideoNomCourant = nil
+            }
+            rewardShow = true
+        }
+    }
 
     // Le brouillon. Il vivait dans la feuille modale ; c'est désormais l'état de
     // la page elle-même. On part de ZÉRO série : la première naît du geste de
@@ -673,6 +722,14 @@ struct ExerciseDetailView: View {
             rewardVariant = 2
             rewardShow = true
         }
+        // La DÉMO ENCHAÎNÉE : `-rewardDemo` ouvre la première card, et
+        // chaque « Close » appelle la suivante (voir onClose).
+        .task {
+            guard CommandLine.arguments.contains("-rewardDemo")
+            else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            ouvrirComboDemo()
+        }
         // Le chevron du chip a remplacé la barre système : deux flèches de
         // retour seraient une de trop.
         .navigationBarBackButtonHidden(true)
@@ -824,12 +881,26 @@ struct ExerciseDetailView: View {
                         subtitle: "Congratulations, you've completed your training!",
                         unit: "Sets",
                         style: Self.rewardStyles[rewardVariant],
-                        videoNom: CommandLine.arguments
-                            .contains("-rewardVideo")
-                            ? Self.rewardVideos[
-                                rewardVideoTour % Self.rewardVideos.count]
-                            : nil,
-                        onClose: { rewardShow = false })
+                        videoNom: rewardVideoNomCourant
+                            ?? (CommandLine.arguments
+                                .contains("-rewardVideo")
+                                ? Self.rewardVideos[
+                                    rewardVideoTour
+                                    % Self.rewardVideos.count]
+                                : nil),
+                        onClose: {
+                            rewardShow = false
+                            rewardVideoNomCourant = nil
+                            // La démo enchaînée : Close = la suivante.
+                            if CommandLine.arguments
+                                .contains("-rewardDemo") {
+                                rewardDemoTour += 1
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.6) {
+                                    ouvrirComboDemo()
+                                }
+                            }
+                        })
                 }
             }
         }
@@ -1847,6 +1918,7 @@ struct ExerciseDetailView: View {
             }
         } else {
             settleSeries(f, coins: true)
+            declencherRewardFlow()
         }
     }
 
