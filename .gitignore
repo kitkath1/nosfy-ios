@@ -5,3 +5,8 @@
 
 # Sortie xcodebuild en ligne de commande (SYMROOT projet)
 build/
+
+# DerivedData Xcode des bancs (dd-booster, dd-duo, dd-exos…) — 8,7 Go et
+# 32 368 fichiers qui rendaient `git status` illisible entre deux sessions
+# et faisaient d'un `git add -A` une catastrophe.
+dd-*/
