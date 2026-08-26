@@ -205,7 +205,10 @@ struct PorteEntree: View {
     /// (verdict 23-08 : « encore plus spectaculaire »).
     /// ⚠️ La constante suit le FICHIER (`ffprobe -count_frames`), jamais le
     /// calcul : `minterpolate` ne rend pas exactement le compte théorique.
-    private static let arriveeT: Double = 274.0 / 30.0            // 9,133
+    /// ⚠️ Plus `private` : le four du manège la LIT pour ne plus se caler
+    /// sur une horloge murale (WoopApp) — une durée écrite deux fois
+    /// finit toujours par se dédire, et celle-ci s'était déjà dédite.
+    static let arriveeT: Double = 274.0 / 30.0            // 9,133
     /// La flamme s'allume à T − 1,2 (rampe de 0,8 s), l'habillage à T.
     private static let flammeA: Double = arriveeT - 1.2
 
@@ -464,6 +467,9 @@ struct PorteEntree: View {
         // oublier ferait APPARAÎTRE puis disparaître la barre d'état au raccord.
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // `-fps` : la sonde de cadence sur la PORTE — le seul juge du
+        // « l'animation lag ».
+        .sondeCadence("porte")
         .preferredColorScheme(.dark)
     }
 
@@ -966,6 +972,8 @@ private struct ReelPorte: View {
     @State private var cine: AVPlayer?
     @State private var retour: NSObjectProtocol?
     @State private var finObs: NSObjectProtocol?
+    /// L'observation de `.status` qui porte le pré-roulage.
+    @State private var pret: NSKeyValueObservation?
     /// Le film est arrivé au bout : la pose de tête n'a plus rien à couvrir,
     /// et surtout elle ne doit PAS reparaître sous une image gelée.
     @State private var posee = false
@@ -988,11 +996,10 @@ private struct ReelPorte: View {
     }
 
     private func demarre() {
-        guard cine == nil,
-              let urlM = Bundle.main.url(forResource: master,
-                                         withExtension: "mp4") else { return }
+        // ⚠️ L'ASSET VIENT DU CELLIER : chaud, il ne se re-parse pas au
+        // moment le plus chargé du lancement.
+        guard cine == nil, let item = AssetsVideo.item(master) else { return }
 
-        let item = AVPlayerItem(url: urlM)
         let p = AVPlayer(playerItem: item)
         p.isMuted = true
         p.automaticallyWaitsToMinimizeStalling = false
@@ -1037,7 +1044,25 @@ private struct ReelPorte: View {
                 posee = true
             }
 
-        p.play()
+        // ⚠️ **ON PRÉ-ROULE AVANT DE JOUER, ET JAMAIS AVANT `readyToPlay`.**
+        // C'est la loi payée le 21-08 : `preroll` appelé sur un lecteur qui
+        // n'est pas prêt lève une exception et TUE l'app — et nous sommes sur
+        // l'écran de lancement. Elle est donc ATTACHÉE à une observation de
+        // `.status`, exactement comme le faisait la boucle avant sa mort.
+        //
+        // Sans ce pré-roulage, `automaticallyWaitsToMinimizeStalling = false`
+        // fait partir le film à l'image zéro sans un octet d'avance : les
+        // premières secondes hoquettent. Avec, le décodeur a sa réserve et le
+        // film part net.
+        // ⚠️ KVO et le rappel de `preroll` n'arrivent PAS sur le fil
+        // principal : `play()` s'y remet explicitement.
+        pret = p.observe(\.status, options: [.initial, .new]) { lecteur, _ in
+            guard lecteur.status == .readyToPlay else { return }
+            lecteur.preroll(atRate: 1) { ok in
+                guard ok else { return }
+                DispatchQueue.main.async { lecteur.play() }
+            }
+        }
     }
 
     private func demonte() {
@@ -1045,6 +1070,7 @@ private struct ReelPorte: View {
         retour = nil
         if let finObs { NotificationCenter.default.removeObserver(finObs) }
         finObs = nil
+        pret?.invalidate(); pret = nil
         cine?.pause(); cine?.replaceCurrentItem(with: nil); cine = nil
     }
 }

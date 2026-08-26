@@ -2635,7 +2635,12 @@ struct HomeNuitPage: View {
         // geste finit soit fermé (net = 0, flou nul de toute façon), soit
         // ouvert (net = 1, opacité nulle). Et pendant le FILM — le moment où
         // l'on REGARDE la dissolution — la profondeur de champ joue en entier.
-        let enGeste = tirageDebut != nil
+        // `-flouAvant` : l'A/B sur le MÊME binaire — les deux flous
+        // reprennent leur comportement d'avant le 26-08. C'est comme ça qu'on
+        // mesure un avant/après sur l'appareil sans rebâtir l'histoire (le
+        // commit d'avant ne compile pas seul : du travail d'une autre session
+        // y manque).
+        let enGeste = tirageDebut != nil && !FlouBanc.avant
         let flouCards: CGFloat = enGeste ? 0 : coefSonde(5)
         let flouSemaine = coefSonde(6), flouPiece = coefSonde(7)
         // ── CE QUE FAIT L'HORLOGE ────────────────────────────────────────────
@@ -2974,7 +2979,14 @@ struct HomeNuitPage: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
                         .opacity(enSeance ? 0 : arr * (1 - net))
-                        .allowsHitTesting(!enSeance && !tiroirOuvert)
+                        // ⚠️ **VIVANTE MÊME TIROIR OUVERT** (26-08, second
+                        // tour). Elle était sourde dès que le tiroir s'ouvrait
+                        // — donc AU RETOUR il n'y avait plus aucune poignée là
+                        // où le pouce se pose. C'est l'autre moitié de « dans
+                        // le sens inverse, ça bug ». (Le slider vit PLUS BAS,
+                        // dans la bande découverte : les deux ne se disputent
+                        // rien.)
+                        .allowsHitTesting(!enSeance)
                         .onTapGesture {
                             // L'INVITE EST TAPABLE : sans ça le départ passe
                             // derrière un geste, et on ajoute une étape au
@@ -2983,7 +2995,11 @@ struct HomeNuitPage: View {
                             // promesse — que le tap donne LA MÊME scène que le
                             // tirage. (Le film refuse pendant l'édition.)
                             guard !edition, vitrineSlot == nil else { return }
-                            lancer(gDepart: 0)
+                            // La MÊME bande ouvre et referme : maintenant
+                            // qu'elle reste vivante tiroir ouvert, un tap
+                            // dessus doit faire le chemin inverse — sinon elle
+                            // rejouerait l'ouverture sur un tiroir déjà ouvert.
+                            if tiroirOuvert { fermer() } else { lancer(gDepart: 0) }
                         }
                         .animation(.spring(response: 0.42,
                                            dampingFraction: 0.84),
@@ -3079,13 +3095,13 @@ struct HomeNuitPage: View {
     /// ressort au lâcher. Les gestes des enfants gagnent (le panneau du
     /// galet garde son drag-loupe).
     private var tirageGeste: some Gesture {
-        // ⚠️ **6 pt, ET NON 14** (26-08). Le verrou d'axe se décidait « au
-        // premier mouvement franc », seuil 8 — mais le premier événement
-        // portait DÉJÀ les 14 pt de `minimumDistance` : la décision se prenait
-        // donc sur le bruit du contact, et un geste jugé horizontal était mort
-        // sans appel. À 6, le seuil de décision (8) est franchi APRÈS le
-        // premier événement, c'est-à-dire par un vrai mouvement.
-        DragGesture(minimumDistance: 6)
+        // ⚠️ **2 pt** (26-08, second tour). Verdict : « il faut qu'à peine
+        // j'effleure, je puisse drag ». Le chemin faisait DEUX seuils en
+        // série — 6 pt pour que le geste existe, puis 8 pt pour que l'axe se
+        // décide : rien ne bougeait avant ~8 pt de pouce. Le reconnaisseur
+        // descend à 2 et la décision d'axe à 4 (voir plus bas) : la card suit
+        // dès le premier point franchi.
+        DragGesture(minimumDistance: 2)
             .onChanged { g in
                 // ⚠️ **LE GESTE ANNULÉ NE LAISSE PLUS SON ÉTAT DERRIÈRE LUI**
                 // (26-08). Un drag qui meurt sans `onEnded` — l'app passe en
@@ -3111,7 +3127,7 @@ struct HomeNuitPage: View {
                 if axeVertical == nil {
                     let dx = abs(g.translation.width)
                     let dy = abs(g.translation.height)
-                    guard max(dx, dy) > 8 else { return }
+                    guard max(dx, dy) > 4 else { return }
                     axeVertical = dy > dx
                 }
                 guard axeVertical == true else { return }
@@ -3140,7 +3156,7 @@ struct HomeNuitPage: View {
                 // ⚠️ LE SEUIL DU GESTE EST DÉJÀ CONSOMMÉ : le premier événement
                 // porte les 6 pt de `minimumDistance`, donc la prise SAUTERAIT
                 // d'autant à l'instant du contact si on ne les retirait pas.
-                let net = t < 0 ? min(t + 6, 0) : max(t - 6, 0)
+                let net = t < 0 ? min(t + 2, 0) : max(t - 2, 0)
                 tirage = reposCard
                     + Self.leveeTiroir * CGFloat(tanh(Double(net) / 190))
                 // ⚠️ **LE RETOUR SUIT LE DOIGT, IL NE SE CONTENTE PAS DE GELER.**
@@ -3194,7 +3210,7 @@ struct HomeNuitPage: View {
                     luneSentie = false
                 }
             }
-            .onEnded { _ in
+            .onEnded { fin in
                 // Le geste s'est terminé PROPREMENT : le chien de garde n'a
                 // plus rien à surveiller.
                 tirageDebut = nil
@@ -3225,18 +3241,47 @@ struct HomeNuitPage: View {
                     }
                     return
                 }
-                if tirage < -Self.seuilCran {
+                // ⚠️ **LA DÉCISION SE PREND SUR LA COURSE DU GESTE ET SON
+                // SENS — PLUS SUR LA POSITION ABSOLUE DE LA CARD** (26-08,
+                // second tour). Et c'est une RÉGRESSION QUE J'AVAIS
+                // INTRODUITE le matin même, chiffrable :
+                //
+                //     OUVRIR   (la card part de 0)     163 pt → 80 pt   ✅
+                //     REFERMER (la card part de −140)  171 pt → 223 pt  ❌
+                //
+                // Parce que le seuil de fermeture se mesurait par rapport à
+                // ZÉRO alors que la card est à −140 quand elle est ouverte :
+                // BAISSER le seuil AUGMENTE la course à parcourir. Les deux
+                // sens n'étaient pas symétriques par construction, et j'ai
+                // optimisé l'un en aggravant l'autre. Verdict : « pareil dans
+                // le sens inverse, ça bug ».
+                //
+                // Désormais les deux sens lisent la MÊME grandeur — les points
+                // de pouce parcourus depuis le contact — et le même seuil.
+                // Un LANCER franc suffit aussi : au-delà de 420 pt/s le sens
+                // de la vitesse décide seul, sans distance à atteindre. C'est
+                // la grammaire des feuilles d'iOS, et c'est ce que veut le
+                // verdict « au moindre mouvement suffisamment intentionnel ».
+                let course = fin.translation.height
+                let vitesse = fin.velocity.height
+                let lance = abs(vitesse) > 420
+                let versLeHaut = lance ? vitesse < 0 : course < 0
+                let assez = lance || abs(course) >= Self.coursePouce
+                if !assez {
+                    // Pas assez : on RETOURNE à l'état d'où l'on vient.
+                    if tiroirOuvert { lancer(gDepart: g) } else { fermer() }
+                } else if versLeHaut {
                     lancer(gDepart: g)
-                } else if tirage > -Self.seuilFerme || !tiroirOuvert {
-                    fermer()
                 } else {
-                    // Dans l'hystérésis, tiroir déjà ouvert : on REJOUE vers
-                    // l'état conservé au lieu de se figer là où le doigt s'est
-                    // arrêté.
-                    lancer(gDepart: g)
+                    fermer()
                 }
             }
     }
+
+    /// LA COURSE DE POUCE QUI DÉCIDE — la même dans les deux sens, et c'est
+    /// tout l'intérêt. 80 pt : franc, intentionnel, et atteignable d'un pouce
+    /// qui ne lâche pas le téléphone.
+    private static var coursePouce: CGFloat { 80 }
 
     /// LE CHIEN DE GARDE DE PÉREMPTION. Un `DragGesture` peut mourir sans
     /// jamais appeler `onEnded` : l'app passe en arrière-plan, une présentation
@@ -4255,4 +4300,10 @@ enum PilP {
     static func entree(_ arrivee: Double) -> Double {
         min(max((arrivee - 0.80) / 0.20, 0), 1)
     }
+}
+
+
+/// `-flouAvant` — l'A/B des deux flous, sur le même binaire.
+enum FlouBanc {
+    static let avant = CommandLine.arguments.contains("-flouAvant")
 }

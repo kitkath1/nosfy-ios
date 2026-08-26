@@ -1113,8 +1113,24 @@ struct RootView: View {
                 while showSplash {
                     try? await Task.sleep(nanoseconds: 200_000_000)
                 }
-                // L'arrivée V2 (8,23 s) + la cascade, puis un souffle.
-                try? await Task.sleep(nanoseconds: 9_200_000_000)
+                // ⚠️ **LE FOUR NE SE CALE PLUS SUR UNE HORLOGE MURALE**
+                // (26-08). Il attendait « splash + 9,2 s » avec, en
+                // commentaire, « L'arrivée V2 (8,23 s) » — un chiffre périmé :
+                // le film d'arrivée dure 9,133 s depuis. Le four s'allumait
+                // donc **67 ms après la fin du film**, c'est-à-dire PILE sur
+                // l'habillage de la porte et la montée des flammes. Et ce
+                // qu'il allume n'est pas rien : une `BoosterScene` complète et
+                // un `SCNView` en `rendersContinuously` inséré dans la
+                // fenêtre pendant 1,8 seconde.
+                //
+                // C'est la faute C9 de l'audit — « la partition par horloge
+                // murale : 211 asyncAfter » — appliquée à elle-même. Il lit
+                // maintenant LA constante du film (`PorteEntree.arriveeT`, la
+                // seule source de cette durée) et prend une vraie marge
+                // derrière : le manège est à des minutes d'ici, le four peut
+                // cuire tard.
+                try? await Task.sleep(nanoseconds:
+                    UInt64((PorteEntree.arriveeT + 3.5) * 1_000_000_000))
                 guard let stage = BoosterScene(still: true, mylar: false,
                                                gallery: true),
                       let fenetre = UIApplication.shared.connectedScenes

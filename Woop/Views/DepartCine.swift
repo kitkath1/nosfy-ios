@@ -292,8 +292,19 @@ enum AssetsVideo {
     /// tout le dossier coûterait la mémoire de fichiers qu'on ne verra pas.
     static func chauffer() {
         Task.detached(priority: .utility) {
-            for nom in ["home-fond-loop", "home-fond-pilule",
-                        "home-fond-flamme", "exos-fond-loop"] {
+            // ⚠️ **LE FILM DE LA PORTE D'ABORD** (26-08, verdict « la vidéo
+            // lag alors qu'une 4K ne lag pas »). Il s'ouvrait À FROID au
+            // moment précis où le splash meurt : `AVPlayerItem(url:)` fait
+            // parser le fichier, et `automaticallyWaitsToMinimizeStalling =
+            // false` le fait partir SANS attendre son tampon. Le lecteur
+            // hoquetait pendant que la sonde de cadence, elle, affichait
+            // 60 img/s : le display link ne voit PAS un décodeur en retard.
+            // Il se charge maintenant pendant les 3,9 s du splash, qui ne
+            // coûtent qu'un shader.
+            for nom in ["onb-arrivee", "onb-lune-loop",
+                        "home-fond-flamme",
+                        "home-fond-loop", "home-fond-pilule",
+                        "exos-fond-loop"] {
                 guard let a = asset(nom) else { continue }
                 _ = try? await a.load(.tracks)
             }
