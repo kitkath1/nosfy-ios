@@ -185,6 +185,47 @@ contractuelles :
 - **Les tailles, graisses et couleurs restent au Design System** :
   l'IA choisit les MOTS et le variant, jamais la typo.
 
+### L'AUDIT DE CE QUI EST DÉJÀ PARAMÉTRABLE (26-08, mesuré dans le code)
+
+Question de Kathryn : « dans les autres variants c'est aussi
+paramétrable IA, sans toucher l'UI ? » — voici l'état RÉEL de
+`RewardPopup`, robe par robe.
+
+**Déjà des entrées (l'IA peut les remplir sans qu'on touche l'UI) :**
+`count` (le chiffre), `title`, `subtitle`, `unit`, `style` (le variant),
+`robe` (les deux cards Welcome), `videoNom` (la vidéo du header).
+`TexteGeant` accepte déjà ses `lignes` en paramètre.
+
+**Encore EN DUR — la dette à payer avant de brancher l'IA :**
+
+| ce qui est figé | où | ce qu'il faut |
+| --- | --- | --- |
+| « YOU'RE / BACK » | à l'appel de la robe texte | remonter jusqu'à `RewardPopup` : une entrée **`bigLines: [String]`** |
+| « YOU / MADE / IT » | valeur par défaut de `TexteGeant` | idem — la valeur par défaut ne doit servir qu'au banc |
+| « Claim », « Later », « Close » | les boutons | des entrées **`actionLabel` / `dismissLabel`** |
+| les stickers (flamme noire, pastille-lune, chauve-souris) | codés par robe | une entrée **`sticker:`** le jour où l'IA choisit l'objet montré |
+| les bribes de la matrice (`24KG`, `+20`, `17KMH`…) | liste figée dans `TrameMatrice` | elles doivent venir des **vrais faits** de la séance (§3) |
+
+**LA LOI, elle, ne change pas** : l'IA fournit les MOTS et le variant ;
+les tailles, graisses, couleurs, espacements, halos et animations
+restent au Design System. Une robe déclare sa **longueur maximale** par
+ligne ; au-delà le client TRONQUE, il ne rétrécit jamais.
+
+### Le contrat par CATÉGORIE (quand elles arriveront)
+
+Chaque catégorie du plan (Moment, Reward, Rare, Welcome Back) déclare :
+1. **les robes autorisées** (toutes ne conviennent pas : une pièce noire
+   ne se raconte pas sur la robe galet) ;
+2. **les champs attendus** (un Reward a un montant, un Moment n'en a
+   pas ; un Welcome Back a un bouton d'action, un Moment n'a que Close) ;
+3. **les vidéos autorisées** (§6) ;
+4. **l'atmosphère par défaut** (§5) ;
+5. **les longueurs maximales** de ses textes.
+
+C'est ce tableau — et lui seul — que l'IA reçoit : elle choisit DANS
+ce que la catégorie permet, jamais en dehors. Le jour où une catégorie
+naît, on ajoute une ligne au tableau : aucune UI à toucher.
+
 ### Les données personnelles pour l'IA (question du 25-08 : poids, taille, âge ?)
 
 Doctrine : **v1 SANS données corporelles.** Ce qui rend la narration

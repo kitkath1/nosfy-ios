@@ -1130,10 +1130,10 @@ private struct PastilleLuneReward: View {
                         .blur(radius: 14)
                         .allowsHitTesting(false))
                 .scaleEffect(souffle)
-                // UNE seule rotation (deux coûtaient deux passes).
-                .rotation3DEffect(
-                    .degrees(7 * tilt.dx + Double(derive) * 0.5),
-                    axis: (x: 0, y: 1, z: 0))
+                // ⚠️ PLUS AUCUNE ROTATION 3D : elle force une passe de
+                // rendu HORS ÉCRAN à chaque image — c'est elle qui
+                // faisait lager la card (verdict). Il ne reste que des
+                // TRANSFORMS plats : offset et scale, gratuits.
                 .offset(x: derive, y: flotte)
         }
         .frame(height: 168)
@@ -1148,63 +1148,18 @@ private struct ChauveQuiTient: View {
     let naissance: Date
     let largeur: CGFloat
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
+    /// ⚠️ ELLE NE BOUGE PAS, ET C'EST VOULU (verdict) : son
+    /// balancement imposait un TimelineView de plus sur la card — la
+    /// pastille laguait déjà. Une image STATIQUE ne coûte rien : elle
+    /// est simplement POSÉE, ses pattes sur la bordure.
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
-            let t = tl.date.timeIntervalSince(naissance)
-            let balance = sin(t * 0.44) * 1.6 + sin(t * 0.77 + 1.2) * 0.6
-            let respire = CGFloat(sin(t * 0.61) * 2.5)
-            // La grammaire NOSFY : PETITE (~28 % de la card), PLEINE,
-            // POSÉE sur le bord haut — seules sa tête et ses griffes
-            // dépassent, le reste est masqué par la card. Le décalage
-            // se calcule sur SA PROPRE hauteur (l'image fait 1061×655,
-            // ratio 0,617) : elle remonte de 62 % d'elle-même.
-            let l = largeur * 0.30
-            let hauteurSticker = l * 0.617
-            Image("sticker-chauve-tient")
-                .resizable()
-                .scaledToFit()
-                .frame(width: l)
-                // ⚠️ ELLE EST NOIRE SUR LA NUIT : sans lumière, elle
-                // n'existe pas (seul le liseré de ses oreilles se
-                // voyait). Deux remèdes cumulés : une LUEUR derrière
-                // elle qui la détache du fond, et un souffle de
-                // clarté sur sa matière — c'est le spotlight de la
-                // card qui la prend à contre-jour.
-                // ⚠️ LE VRAI OBSTACLE (compris après dix essais de
-                // position) : elle est NOIRE sur une card NOIRE — ses
-                // griffes ne peuvent pas « se poser visiblement » sur
-                // du noir, quel que soit le calage. Chez Nosfy, les
-                // mains se détachent parce que la card est BLANCHE.
-                // Remède : on ÉCLAIRE ses pattes (le bas du sticker
-                // reçoit la lumière du spot) — la matière apparaît.
-                .background(
-                    Ellipse()
-                        .fill(RadialGradient(
-                            stops: [
-                                .init(color: .white.opacity(0.20),
-                                      location: 0),
-                                .init(color: .white.opacity(0.06),
-                                      location: 0.5),
-                                .init(color: .clear, location: 1)
-                            ],
-                            center: .center,
-                            startRadius: 0, endRadius: l * 0.62))
-                        .frame(width: l * 1.25, height: l * 0.95)
-                        .blur(radius: 22)
-                        .allowsHitTesting(false))
-                .rotationEffect(.degrees(balance), anchor: .bottom)
-                // Le BAS du sticker — ses GRIFFES — tombe PILE sur la
-                // ligne du bord haut : elle est POSÉE sur la border,
-                // elle ne pend pas dedans (verdict). Aucun masque :
-                // dans l'asset, les oreilles sont en haut, la tête au
-                // milieu, les griffes en bas — un masque coupait sa
-                // tête.
-                .offset(y: respire - hauteurSticker * 1.30 - 12)
-        }
-        .accessibilityHidden(true)
+        let l = largeur * 0.34
+        Image("sticker-chauve-tient")
+            .resizable()
+            .scaledToFit()
+            .frame(width: l)
+            .offset(y: -l * 1.30 + 45)
+            .accessibilityHidden(true)
     }
 }
 
