@@ -327,6 +327,61 @@ séance) ; l'app le LIT, elle ne l'attend jamais. Pas de réponse
 stockée → gabarit déterministe (stickers des faits + bigWord par
 table + lignes gabarit).
 
+### 4 quater. LE VARIANT « TOP SESSION » — l'exception qui s'annonce
+### (ajouté le 26-08 au soir, brief Kathryn — le plan design est
+### ../rewards/PLAN-TOP-SESSION.md)
+
+Un NOUVEAU variant de `RewardPopup`, ET la première page de la story
+les jours d'exception : le layout Welcome v2 (texte géant +
+pastille) SANS la chauve-souris, la pastille portant LA PAILLETTE DU
+SPORT — `basket` (top cardio) ou `haltère` (top muscu) — le texte
+géant en ROUGE animé, un halo de page rouge/blanc pur, une pills
+énorme derrière, et une mini-card à NÉON VERT qui dépasse de la
+card avec LA stat qui justifie l'exception.
+
+**Le contrat** :
+
+```
+{ style: top, sport: cardio | muscu,
+  bigLines: [2 lignes, 3-9 signes]     — table de candidats §4 du
+                                          plan design, IA plus tard,
+  sousTexte: ≤ 40 signes               — la phrase du fait, VRAIE,
+  stat: { value, unit, label } (mini-card) — RECOPIÉE d'un fait,
+                                             jamais reformulée }
+```
+
+**Le déclencheur (moteur §2, jamais le client, jamais l'IA)** : le
+fait « MEILLEURE SÉANCE DE LA SEMAINE » par catégorie — muscu :
+volume max 7 j ; cardio : minutes ou densité max 7 j. Rare par
+construction (au plus 1/semaine/catégorie) ; priorité au-dessus de
+Reward, sous Rare ; en STORY il ne consomme pas le budget pop-ups
+(c'est une page, pas une interruption) ; en POP-REWARD il compte
+comme Reward et respecte tous les cooldowns.
+
+**Deux assets à détourer** (fond noir, PAS d'alpha — le pipeline
+PLAN-WELCOME-V2-DETOURAGE se rejoue) : `~/Desktop/paillete_basket.png`
+(1254×1254) et `~/Desktop/pailette_haltère.png` (1403×1121).
+
+### 4 quinquies. LA STORY V2 EST LA STORY (verdict 26-08 : « on
+### remplace l'ancienne par cette story »)
+
+L'ancienne story (lune néon, `StoryOne`/`StoryTwo`/`StoryThree` et
+leurs quatre mp4) est SUPPRIMÉE du dépôt. La story canonique est le
+flow v2 — trois pages, quatre les jours d'exception — et voici CE
+QUE LE BACKEND LUI DOIT, page par page, calculé AU RÈGLEMENT
+(`settle_session`) et STOCKÉ avec la séance (l'app LIT, elle
+n'attend jamais) :
+
+| page | ce que le backend fournit |
+| --- | --- |
+| SESSION ENDED (verrière + résumé) | les agrégats de séance : minutes, séries, exos, kcal (le calcul de dépense remplacera l'estimation minutes × 7) |
+| TOP SESSION (exception, à la place du résumé sur la page 0 — le résumé émigre en page 2) | le fait « meilleure séance de la semaine » par catégorie (§4 quater) + LA stat de la mini-card (minutes ou volume, RECOPIÉE) |
+| DÉTAILS | rien de neuf : la partition vient des séries persistées |
+| STORY CARD (analyse) | le payload `.story` du §4 ter : 2-3 stickers par catégories dominantes, `bigWord` par table de tiers, 6 lignes vraies |
+
+Gabarits déterministes de secours pour TOUT (déjà codés côté app) —
+l'IA est une couche qui se pose après, le moule ne change pas.
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT

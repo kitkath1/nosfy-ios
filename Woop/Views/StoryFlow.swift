@@ -16,6 +16,33 @@ struct StorySet: Identifiable {
     let coins: Int
 }
 
+/// LE SPORT D'UNE SÉANCE D'EXCEPTION (« TOP SESSION », 26-08 soir) :
+/// la meilleure séance de la semaine, cardio ou musculation. Le
+/// déclencheur VIENDRA du fact engine (plan backend §4 quater) — ici ne
+/// vit que la donnée, et le banc qui la force.
+enum TopSport {
+    case cardio, muscu
+
+    /// La pastille (les paillettes de Kathryn, détourées TS1).
+    var pastille: String {
+        self == .cardio ? "sticker-pastille-basket"
+                        : "sticker-pastille-haltere"
+    }
+    /// Les deux lignes géantes (le contrat bigLines : 3-9 signes —
+    /// gabarits du banc, l'IA remplira le même moule).
+    var bigLines: [String] {
+        self == .cardio ? ["TOP", "RUN"] : ["TOP", "LIFT"]
+    }
+    var sousTexte: String {
+        self == .cardio ? "Your best cardio this week."
+                        : "Your best lifting this week."
+    }
+    /// Le titre de la card — le registre des autres cards rewards.
+    var titre: String {
+        self == .cardio ? "Top Cardio" : "Top Lifting"
+    }
+}
+
 /// Le récit d'une séance, découplé de SwiftData pour que le banc puisse le
 /// fabriquer sans base.
 struct StorySession {
@@ -30,6 +57,9 @@ struct StorySession {
     /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
     /// petites flammes — à la place des cinq lignes plates.
     var groupes: [SlateGroupe] = []
+    /// L'EXCEPTION : quand la séance est la meilleure de la semaine, la
+    /// story ouvre sur la page TOP SESSION (4 pages ce jour-là).
+    var top: TopSport? = nil
 
     /// Les valeurs de la maquette — partition comprise, pour que le banc
     /// `-storyLab` montre la liste dépliable de la story 2.
@@ -216,12 +246,41 @@ struct StoryFlow: View {
     @State private var tapBeat = 0
     /// Le cadre de la partition de la story 2, dans le repère du flux :
     /// un tap né dedans appartient à la liste (il déplie), le chef ne
-    /// rend aucun verdict de page. Mesuré par StoryTwo, remis à zéro à
+    /// rend aucun verdict de page. Mesuré par la page qui la porte,
+    /// remis à zéro à
     /// chaque changement de page.
     @State private var partitionRect: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var paused: Bool { pausedAt != nil }
+
+    // MARK: La table des pages
+
+    /// Les rôles d'écran. L'ordre est LA grammaire : l'exception
+    /// s'insère AVANT le résumé (« la première vue de la story »).
+    enum PageRole { case ouverture, resume, details, analyse }
+
+    /// Trois pages les jours ordinaires (l'ouverture PORTE le résumé,
+    /// c'est son acte B) ; quatre les jours d'exception.
+    private var roles: [PageRole] {
+        session.top == nil
+            ? [.ouverture, .details, .analyse]
+            : [.ouverture, .resume, .details, .analyse]
+    }
+    private func pageRole(_ p: Int) -> PageRole {
+        roles[min(max(p, 0), roles.count - 1)]
+    }
+    private var dernier: Int { roles.count - 1 }
+    /// Les durées, par rôle — la page TOP garde le hold de l'ouverture,
+    /// le résumé seul se lit plus vite.
+    private func duree(_ p: Int) -> Double {
+        switch pageRole(p) {
+        case .ouverture: return StoryCine.hold[0]
+        case .resume: return 6.5
+        case .details: return StoryCine.hold[1]
+        case .analyse: return StoryCine.hold[2]
+        }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -234,29 +293,38 @@ struct StoryFlow: View {
                     let t = clock(now)
                     ZStack {
                         Group {
-                            switch page {
-                            // SESSION ENDED (la v2, 26-08). L'ancien
-                            // `StoryOne` (lune néon) attend le verdict de
-                            // Kathryn — rien n'est supprimé.
-                            case 0: StoryEnded(session: session, t: t,
-                                               now: now, size: geo.size,
-                                               paused: paused)
-                            // Pages 2-3 de la v2 (26-08) : « Détails »
-                            // (partition repliée sur le dôme macro) puis
-                            // la « Story card ». StoryTwo/StoryThree
-                            // attendent le verdict — rien n'est supprimé.
-                            case 1: StoryDetails(session: session, t: t,
-                                                 now: now, size: geo.size,
-                                                 paused: paused,
-                                                 onPartitionRect: {
-                                                     partitionRect = $0
-                                                 })
-                            default: StoryAnalyse(session: session, t: t,
-                                                  now: now, size: geo.size,
-                                                  paused: paused,
-                                                  onPartitionRect: {
-                                                      partitionRect = $0
-                                                  })
+                            // LA PAGINATION SUIT L'EXCEPTION : un jour
+                            // « top session », la verrière plonge dans
+                            // la page TOP (mode .top) et le résumé
+                            // devient SA page — quatre écrans. Les jours
+                            // ordinaires, trois. L'ancien `StoryOne`
+                            // (lune néon) attend le verdict — rien n'est
+                            // supprimé.
+                            switch pageRole(page) {
+                            case .ouverture:
+                                StoryEnded(session: session, t: t,
+                                           now: now, size: geo.size,
+                                           paused: paused,
+                                           mode: session.top == nil
+                                               ? .complet : .top)
+                            case .resume:
+                                StoryEnded(session: session, t: t,
+                                           now: now, size: geo.size,
+                                           paused: paused, mode: .resume)
+                            case .details:
+                                StoryDetails(session: session, t: t,
+                                             now: now, size: geo.size,
+                                             paused: paused,
+                                             onPartitionRect: {
+                                                 partitionRect = $0
+                                             })
+                            case .analyse:
+                                StoryAnalyse(session: session, t: t,
+                                             now: now, size: geo.size,
+                                             paused: paused,
+                                             onPartitionRect: {
+                                                 partitionRect = $0
+                                             })
                             }
                         }
                         .id(beat)
@@ -268,8 +336,8 @@ struct StoryFlow: View {
                         // pause.
                         VStack {
                             StoryProgress(
-                                count: 3, current: page,
-                                progress: t / StoryCine.hold[min(page, 2)])
+                                count: roles.count, current: page,
+                                progress: t / duree(page))
                                 .padding(.horizontal, 14)
                                 .padding(.top, 10)
                             Spacer()
@@ -315,7 +383,7 @@ struct StoryFlow: View {
     /// meurt tout seul quand la page change, et il respecte la pause sans
     /// avoir à jongler avec des invalidations.
     private func conduct() async {
-        let d = StoryCine.hold[min(page, StoryCine.hold.count - 1)]
+        let d = duree(page)
         while !Task.isCancelled {
             if pausedAt == nil, Date.now.timeIntervalSince(pageStart) >= d {
                 advance()
@@ -328,12 +396,12 @@ struct StoryFlow: View {
     // MARK: Le passage
 
     private func advance() {
-        if page >= 2 { onClose(); return }
+        if page >= dernier { onClose(); return }
         go(to: page + 1)
     }
 
     private func go(to p: Int) {
-        guard p >= 0, p <= 2 else { return }
+        guard p >= 0, p <= dernier else { return }
         tapBeat += 1
         pageStart = .now
         pausedAt = nil
@@ -535,6 +603,19 @@ struct StoryLab: View {
     /// tire jamais deux fois pareil.
     private static let auto = CommandLine.arguments.contains("-storyAuto")
 
+    /// L'EXCEPTION AU BANC : `-storyTop` force la page TOP SESSION
+    /// cardio, `-storyTopMuscu` la muscu — le vrai déclencheur viendra
+    /// du fact engine (backend §4 quater).
+    private static var demoSession: StorySession {
+        var s = StorySession.demo
+        if CommandLine.arguments.contains("-storyTopMuscu") {
+            s.top = .muscu
+        } else if CommandLine.arguments.contains("-storyTop") {
+            s.top = .cardio
+        }
+        return s
+    }
+
     var body: some View {
         GeometryReader { geo in
             let card = CGRect(
@@ -563,7 +644,7 @@ struct StoryLab: View {
                                 })
                 }
                 if showing {
-                    StoryPortal(from: card, session: .demo) {
+                    StoryPortal(from: card, session: Self.demoSession) {
                         showing = false
                         run += 1
                         if Self.auto {

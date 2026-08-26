@@ -656,6 +656,9 @@ private struct PoudreStory: View {
     /// card : les grains BRILLENT quand la lumière passe sur eux —
     /// « les paillettes ne vivent que dans la lumière ».
     var nappe: CGFloat
+    /// Le GAIN (verdict TOP : « il manque la poudre de diamant » — elle
+    /// y était, imperceptible). 1 = la story 3, inchangée.
+    var gain: Double = 1
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -688,7 +691,7 @@ private struct PoudreStory: View {
                     let lumiere = 0.45
                         + 0.55 * exp(-d * d / (2 * sigma * sigma))
                     let a = s * s * (0.18 + 0.82 * tw * tw * tw) * 0.8
-                        * lumiere
+                        * lumiere * gain
                     guard a > 0.02 else { continue }
                     let r = CGFloat(0.6 + 1.5 * Self.hash(i, 7))
                     let c = Self.hash(i, 10) < 0.4
@@ -723,5 +726,501 @@ private struct PoudreStory: View {
     private static func hash(_ i: Int, _ k: Int) -> Double {
         let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
         return s - floor(s)
+    }
+}
+
+// MARK: - La page TOP SESSION (l'exception)
+
+/// La partition de la page d'exception — tout depuis la coupe de la
+/// verrière (t = 4,4 sur la page), fonctions pures de `t`.
+enum TopCine {
+    /// Le reflux de la pills énorme vers son flanc droit.
+    static let poseFor = 0.9
+    /// LA PLONGÉE de la card : elle n'apparaît pas, elle ATTERRIT.
+    static let cardAt = 5.0, cardFor = 0.85
+    /// Le SLAM — l'instant où l'échelle touche 1.
+    static var slamAt: Double { cardAt + cardFor }
+    /// Le halo de page S'ALLUME sur l'impact, puis respire.
+    static let haloFor = 0.55
+    /// La mini-card néon arrive EN RETARD — le retard fait le wahou.
+    static let miniAt = 6.35, miniFor = 0.45
+    static let sousAt = 6.15
+}
+
+/// LA PAGE « TOP SESSION » (26-08 soir, plan
+/// ../rewards/PLAN-TOP-SESSION.md) : le layout Welcome v2 SANS la
+/// chauve-souris — la pastille porte LA PAILLETTE DU SPORT, le texte
+/// géant passe au ROUGE, tout le contour de l'écran s'embrase
+/// (rouge → blanc pur), une pills ÉNORME entre par la droite, et la
+/// mini-card au néon VERT dépasse de la card avec LA stat de
+/// l'exception. C'est la première vue de la story les grands jours.
+struct StoryTopScene: View {
+    let session: StorySession
+    let sport: TopSport
+    let t: Double
+    let size: CGSize
+    var paused: Bool = false
+
+    /// L'horloge murale de la poudre (l'école PoudreStory).
+    @State private var naissance = Date()
+
+    var body: some View {
+        ZStack {
+            Color.black
+
+            pills
+            halo
+            carte
+            miniNeon
+        }
+        .frame(width: size.width, height: size.height)
+        // LE SLAM de l'atterrissage — l'haptique la plus lourde : la
+        // card se pose, le halo s'allume dessus.
+        .onChange(of: t >= TopCine.slamAt) { _, pose in
+            if pose { SwapFeedback.shared.slam() }
+        }
+        // Le grain DOUX à la pose de la pastille (chirurgien D16) —
+        // trois événements, trois textures : le slam, la pose, le tick.
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45),
+                         trigger: t >= TopCine.slamAt + 0.40)
+    }
+
+    // MARK: La pills énorme
+
+    /// Le gabarit au repos : 1,5 écran de large, le corps qui SORT par
+    /// la droite. Fichier `story-pilule-top` (2648×1664, définition
+    /// native — l'école du « vrai 4K »).
+    private var pillsRepos: CGRect {
+        let w = size.width * 1.5
+        let h = w * 1664 / 2648
+        return CGRect(x: size.width - w * 0.72, y: size.height * 0.34 - h / 2,
+                      width: w, height: h)
+    }
+
+    private var pills: some View {
+        // Le reflux depuis le plein cadre — la même école que le résumé :
+        // transform seulement, arrivée à vitesse nulle.
+        let u = CGFloat(StoryCine.outLong(
+            min(max((t - EndedCine.cut) / TopCine.poseFor, 0), 1)))
+        let repos = pillsRepos
+        let k0 = size.height * 1.15 / repos.height
+        let k = k0 + (1 - k0) * u
+        let centre = CGPoint(x: repos.midX, y: repos.midY)
+        let dx = (size.width / 2 - centre.x) * (1 - u)
+        let dy = (size.height / 2 - centre.y) * (1 - u)
+        return CalqueVideo(nom: "story-pilule-top",
+                           pose: "story-pilule-top-poster",
+                           rate: paused ? 0 : 1)
+            .frame(width: repos.width, height: repos.height)
+            .scaleEffect(k, anchor: .center)
+            .offset(x: dx, y: dy)
+            .position(x: centre.x, y: centre.y)
+            .blendMode(.plusLighter)
+    }
+
+    // MARK: Le halo de page
+
+    /// TOUT le contour s'embrase : un lit ROUGE large et flouté vers
+    /// l'intérieur + une arête BLANC PUR fine — deux couches, jamais un
+    /// contour fermé d'épaisseur égale. Il s'allume SUR le slam et
+    /// respire ensuite. ⚠️ Anti-brun : le rouge est celui du feu de la
+    /// maison (R = 1, le vert désaturé), jamais un rouge neuf.
+    private var halo: some View {
+        let allume = StoryCine.sstep(TopCine.slamAt - 0.05,
+                                     TopCine.slamAt + TopCine.haloFor, t)
+        let souffle = t <= TopCine.slamAt ? 1.0
+            : 0.86 + 0.14 * sin((t - TopCine.slamAt) * 0.9)
+        let force = allume * souffle
+        // L'AMORCE ÉLECTRIQUE (chirurgien C13) : à l'impact, l'arête
+        // s'allume par DEUX à-coups — 60 ms d'extinction entre les
+        // deux — avant de tenir. Un néon réel s'amorce, il ne fade pas.
+        let s1 = TopCine.slamAt
+        let coup1 = StoryCine.sstep(s1 - 0.02, s1 + 0.02, t)
+            * (1 - StoryCine.sstep(s1 + 0.05, s1 + 0.08, t))
+        let coup2 = StoryCine.sstep(s1 + 0.11, s1 + 0.15, t)
+        let flash = max(coup1, coup2 * (1 - StoryCine.sstep(
+            s1 + 0.30, s1 + 0.55, t)))
+        let rouge = Color(red: 1.0, green: 0.20, blue: 0.05)
+        let forme = RoundedRectangle(cornerRadius: 52, style: .continuous)
+        return ZStack {
+            forme
+                .strokeBorder(rouge.opacity(0.55 * force), lineWidth: 30)
+                .blur(radius: 26)
+            forme
+                .strokeBorder(rouge.opacity(0.35 * force), lineWidth: 10)
+                .blur(radius: 8)
+            // L'arête blanc pur — « montrer que c'est important ».
+            // L'arête blanc pur — et son FLASH à l'impact : elle
+            // s'allume au-delà d'elle-même pendant 0,25 s puis se pose.
+            forme
+                .strokeBorder(Color.white.opacity(0.85 * force
+                    + 0.6 * flash), lineWidth: 2.2 + 2.4 * flash)
+                .blur(radius: 1.1 + flash)
+        }
+        .padding(2)
+        .blendMode(.plusLighter)
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
+    }
+
+    // MARK: La card
+
+    private static let forme = RoundedRectangle(cornerRadius: 36,
+                                                style: .continuous)
+
+    private var carte: some View {
+        let l = min(size.width * 0.80, 332)
+        let h = l * 1.32
+        // LA PLONGÉE : elle vient de l'avant — grande, floue — et se
+        // pose. Le flou se résout avec l'échelle (softBlur : sous
+        // 0,2 pt le modificateur est retiré de l'arbre).
+        let u = StoryCine.sstep(TopCine.cardAt,
+                                TopCine.cardAt + TopCine.cardFor, t)
+        let k = 1.6 - 0.6 * CGFloat(StoryCine.outLong(u, 3.0))
+        return ZStack {
+            // LA PASTILLE, AU CENTRE (verdict §9) — plus petite, un
+            // médaillon qui mord la traîne du mot.
+            pastille(l: l)
+            // DEUX LIGNES SEULEMENT, dans le tiers bas, assises sur la
+            // fin du fondu du mot (le kicker « BEST OF THE WEEK » est
+            // MORT — c'était la ligne de trop). Le titre prend LA
+            // taille de la story 3, pour la consistance.
+            VStack(spacing: 6) {
+                Text(sport.titre)
+                    .font(.system(size: 25, weight: .bold))
+                    .foregroundStyle(Color(white: 0.94))
+                    .opacity(StoryCine.sstep(TopCine.sousAt - 0.15,
+                                             TopCine.sousAt + 0.25, t))
+                Text(sport.sousTexte)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(white: 0.55))
+                    .opacity(StoryCine.sstep(TopCine.sousAt,
+                                             TopCine.sousAt + 0.4, t))
+            }
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, 34)
+        }
+        .frame(width: l, height: h)
+        // LA POUDRE DE DIAMANT — le micro-détail des grandes robes :
+        // elle vit dans la lumière de la pastille.
+        .overlay {
+            PoudreStory(largeur: l, hauteur: h, naissance: naissance,
+                        nappe: l / 2, gain: 1.7)
+                .opacity(StoryCine.sstep(TopCine.slamAt,
+                                         TopCine.slamAt + 0.6, t))
+        }
+        .background {
+            ZStack {
+                Self.forme.fill(
+                    LinearGradient(colors: [Color(white: 0.105),
+                                            Color(white: 0.05)],
+                                   startPoint: .top, endPoint: .bottom))
+                texteGeant(l: l, h: h)
+                // Le FIL ROUGE sous l'arête — l'écho du halo de page,
+                // discret : une arête ouverte, jamais un contour fermé.
+                Self.forme.strokeBorder(
+                    LinearGradient(
+                        stops: [.init(color: Color(red: 1.0, green: 0.30,
+                                                   blue: 0.10)
+                                          .opacity(0.35), location: 0),
+                                .init(color: .clear, location: 0.55)],
+                        startPoint: .bottomTrailing,
+                        endPoint: .topLeading),
+                    lineWidth: 1.4)
+                // LA CRÊTE ANGULAIRE (chirurgien A1) : une lampe FIXE
+                // dans la pièce dont la crête glisse de ±4° sur 11 s —
+                // l'objet respire sous la lumière, rien ne le traverse.
+                Self.forme.strokeBorder(
+                    AngularGradient(
+                        stops: [.init(color: .clear, location: 0),
+                                .init(color: .white.opacity(0.30),
+                                      location: 0.115),
+                                .init(color: .clear, location: 0.24),
+                                .init(color: .clear, location: 1)],
+                        center: .center,
+                        angle: .degrees(-56 + 4 * sin(t * 0.571))),
+                    lineWidth: 1.2)
+            }
+        }
+        .clipShape(Self.forme)
+        // LE SETTLE À MASSE (chirurgien C8) : un seul rebond MORT,
+        // sur-amorti — l'objet pèse.
+        .scaleEffect(k * (t <= TopCine.slamAt ? 1
+            : 1 - 0.006 * CGFloat(exp(-(t - TopCine.slamAt) / 0.16)
+                * sin((t - TopCine.slamAt) * 15))))
+        .modifier(SoftBlur(radius: (1 - CGFloat(u)) * 10))
+        .opacity(min(1, u * 2.2))
+        .position(x: size.width * 0.50, y: size.height * 0.55)
+    }
+
+    /// LE TEXTE GÉANT, en ROUGE — les deux lignes du contrat bigLines,
+    /// empilées derrière la pastille, fondues (l'école du mot argent de
+    /// la story card, recolorée au feu de la maison).
+    private func texteGeant(l: CGFloat, h: CGFloat) -> some View {
+        // LE MOT EN HAUT (layout §9) : la tête pleine au sommet de la
+        // card, la traîne qui FOND EN DESCENDANT — « le texte va dans
+        // le fondu de la card en bas ». La lame du glint est MORTE
+        // (« les balayages blancs, c'est trop cheap ») : la lumière du
+        // mot est DIFFUSE, elle naît partout dedans — la même recette
+        // que le mot argent de la story 3, pour la consistance.
+        let lignes = sport.bigLines
+        let corps = l * 1.16 / CGFloat(max(3, lignes.map(\.count).max() ?? 3))
+        let mots = VStack(spacing: -corps * 0.35) {
+            ForEach(Array(lignes.enumerated()), id: \.offset) { _, mot in
+                Text(mot)
+                    .font(.system(size: corps * 1.55, weight: .black))
+                    .tracking(-corps * 0.04)
+                    .fixedSize()
+            }
+        }
+        return ZStack {
+            mots
+                .foregroundStyle(LinearGradient(
+                    colors: [Color(red: 1.0, green: 0.34, blue: 0.10),
+                             Color(red: 0.62, green: 0.05, blue: 0.02)],
+                    startPoint: .top, endPoint: .bottom))
+            nappesTop(l: l)
+                .mask { mots }
+                .blendMode(.plusLighter)
+        }
+        .frame(width: l)
+        // « Plus fondu sur le côté et le bottom » (verdict) : les
+        // flancs mangent 18 % chacun, le pied meurt dès 0,86.
+        .mask {
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0),
+                        .init(color: .white, location: 0.18),
+                        .init(color: .white, location: 0.82),
+                        .init(color: .clear, location: 1)],
+                startPoint: .leading, endPoint: .trailing)
+        }
+        .mask {
+            LinearGradient(
+                stops: [.init(color: .white, location: 0),
+                        .init(color: .white.opacity(0.66), location: 0.44),
+                        .init(color: .white.opacity(0.16), location: 0.70),
+                        .init(color: .clear, location: 0.88)],
+                startPoint: .top, endPoint: .bottom)
+        }
+        .opacity(0.60 * StoryCine.sstep(TopCine.cardAt + 0.25,
+                                        TopCine.cardAt + 0.85, t))
+        .frame(width: l, height: h, alignment: .top)
+        // « Le texte un peu remonté » : collé au sommet, plus de coussin.
+        .padding(.top, 0)
+        .offset(y: -6)
+    }
+
+    /// La lumière DIFFUSE du mot — la recette des nappes de la story 3
+    /// (périodes premières, bosses étroites, dérive infime), calée sur
+    /// l'arrivée de la card.
+    private func nappesTop(l: CGFloat) -> some View {
+        let periodes: [Double] = [3.7, 5.3, 7.1, 4.3, 6.7, 9.1, 5.9]
+        return ZStack {
+            ForEach(0 ..< 7, id: \.self) { i in
+                let h1 = Self.hashTop(i, 1)
+                let h2 = Self.hashTop(i, 2)
+                let h3 = Self.hashTop(i, 3)
+                let u = (t / periodes[i] + h1)
+                    .truncatingRemainder(dividingBy: 1)
+                let bosse = pow(max(0, sin(.pi * u)), 6.0)
+                let derive = CGFloat(sin(t * (0.21 + 0.11 * h2)
+                    + h3 * 6.28))
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [Color.white.opacity(0.55), .clear],
+                        center: .center, startRadius: 0,
+                        endRadius: l * CGFloat(0.13 + 0.10 * h2)))
+                    .frame(width: l * CGFloat(0.30 + 0.24 * h2),
+                           height: l * CGFloat(0.24 + 0.18 * h3))
+                    .offset(x: l * (CGFloat(h1) - 0.5) * 1.05
+                            + derive * l * 0.03,
+                            y: l * (CGFloat(h3) - 0.5) * 0.85)
+                    .opacity(bosse)
+            }
+        }
+        .blur(radius: 6)
+        .opacity(StoryCine.sstep(TopCine.slamAt, TopCine.slamAt + 0.8, t))
+    }
+
+    private static func hashTop(_ i: Int, _ k: Int) -> Double {
+        let v = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return v - floor(v)
+    }
+
+    /// LA PASTILLE-PAILLETTE — la grammaire de `PastilleLuneReward`,
+    /// recopiée en fonctions pures de `t` (l'originale est private dans
+    /// RewardCard et porte sa propre horloge — ici la page EST
+    /// l'horloge) : une seule image, la lumière est un DÉGRADÉ balayé
+    /// posé sur sa forme, le halo derrière, flottement à trois horloges
+    /// premières, JAMAIS de rotation 3D (le verdict de la card qui
+    /// laguait).
+    private func pastille(l: CGFloat) -> some View {
+        let cote = l * 0.34
+        // TOUT EST PRÉ-TYPÉ (la loi du type-checker, payée une fois de
+        // plus ici même) : le pulse du catch-light se calcule AVANT le
+        // builder.
+        let vif: Double = Double(JaugeVent.flicker(Float(t), phase: 2.3))
+        let opCatch: Double = 0.24 + 0.06 * vif
+        let rayonCatch: CGFloat = cote * 0.22
+        // ⚠️ LE BUG DE NAISSANCE (verdict Kathryn) : la pastille
+        // naissait PENDANT l'atterrissage de la card — deux échelles se
+        // battaient (la plongée 1,6 → 1 ET son propre 0,86 → 1) et sa
+        // dérive partait en plein vol. Elle naît maintenant APRÈS le
+        // slam, et son flottement est GATÉ par la naissance : il part
+        // de zéro, pas du milieu d'une sinusoïde.
+        let naissance = StoryCine.sstep(TopCine.slamAt + 0.05,
+                                        TopCine.slamAt + 0.50, t)
+        let n = CGFloat(naissance)
+        let flotte = n * CGFloat(sin(t * 0.62) * 6
+            + sin(t * 1.13 + 0.9) * 2.5)
+        let derive = n * CGFloat(cos(t * 0.47 + 1.4) * 4)
+        let souffle = 1 + 0.022 * CGFloat(sin(t * 0.83)) * n
+        return Image(sport.pastille)
+            .resizable()
+            .scaledToFit()
+            .frame(width: cote, height: cote)
+            // LE CATCH-LIGHT (chirurgien A2) — le balayage est MORT :
+            // un point spéculaire FIXE en haut-gauche qui s'intensifie
+            // par pulses APÉRIODIQUES (bruit de valeur, jamais un sinus
+            // nu) : le verre ACCROCHE la lumière, rien ne le traverse.
+            .overlay {
+                RoundedRectangle(cornerRadius: rayonCatch,
+                                 style: .continuous)
+                    .fill(EllipticalGradient(
+                        stops: [.init(color: .white.opacity(opCatch),
+                                      location: 0),
+                                .init(color: .white.opacity(0.06),
+                                      location: 0.40),
+                                .init(color: .clear, location: 0.9)],
+                        center: UnitPoint(x: 0.30, y: 0.22),
+                        startRadiusFraction: 0,
+                        endRadiusFraction: 0.5))
+                    .blendMode(.screen)
+                    .padding(2)
+                    .allowsHitTesting(false)
+            }
+            .background(
+                Circle()
+                    .fill(RadialGradient(
+                        stops: [.init(color: .white.opacity(0.15),
+                                      location: 0),
+                                .init(color: .clear, location: 1)],
+                        center: .center,
+                        startRadius: 0, endRadius: cote))
+                    .frame(width: cote * 1.6, height: cote * 1.6)
+                    .blur(radius: 13)
+                    .allowsHitTesting(false))
+            // L'OMBRE VRAIE sous la pastille — elle respire avec le
+            // flottement : l'objet plane, il n'est pas collé.
+            .background(alignment: .bottom) {
+                Ellipse()
+                    .fill(Color.black.opacity(0.5 * naissance
+                        - Double(flotte) * 0.012))
+                    .frame(width: cote * 0.62 + flotte * 1.5,
+                           height: cote * 0.10)
+                    .blur(radius: 9)
+                    .offset(y: cote * 0.16)
+                    .allowsHitTesting(false)
+            }
+            // LA POSE (chirurgien C9) : elle DESCEND de 6 pt et
+            // s'écrase d'un souffle (squash 1,03/0,97 en cloche) — une
+            // pièce qui se pose, pas une image qui apparaît.
+            .scaleEffect(x: souffle * (0.94 + 0.06 * n)
+                * (1 + 0.03 * CGFloat(sin(.pi * naissance))),
+                         y: souffle * (0.94 + 0.06 * n)
+                * (1 - 0.03 * CGFloat(sin(.pi * naissance))))
+            .opacity(naissance)
+            .offset(x: derive, y: flotte - (1 - n) * 6)
+    }
+
+    // MARK: La mini-card néon
+
+    /// LA stat qui justifie l'exception — RECOPIÉE d'un fait, jamais
+    /// inventée : les minutes (cardio) ou le volume (muscu).
+    private var stat: (nombre: Int, unite: String) {
+        switch sport {
+        case .cardio:
+            return (session.minutes, "min")
+        case .muscu:
+            var v = 0
+            for g in session.groupes {
+                for r in g.rows { v += r.reps * Int(r.kilos) }
+            }
+            return (v, "kg")
+        }
+    }
+
+    /// Le wahou : elle DÉPASSE de la card (en overlay de la scène,
+    /// jamais dans le flux — le piège de la fente), arrive EN RETARD
+    /// par rotation depuis derrière l'arête, et son néon VERT est le
+    /// seul vert de la scène — il crie sur le rouge.
+    private var miniNeon: some View {
+        let l = min(size.width * 0.80, 332)
+        let h = l * 1.32
+        let m = StoryCine.sstep(TopCine.miniAt,
+                                TopCine.miniAt + TopCine.miniFor, t)
+        let vert = Color(red: 0.30, green: 1.0, blue: 0.45)
+        let ambre = Color(red: 1.0, green: 0.72, blue: 0.30)
+        let s = stat
+        // L'ODOMÈTRE (chirurgien C11) : le nombre ROULE de 0 à sa
+        // valeur en 0,7 s à sortie douce — et le néon S'AMORCE en deux
+        // temps (ambre faible 0,1 s, puis vert plein) : un tube réel
+        // s'allume, il ne fade pas.
+        let roule = Int(Double(s.nombre) * StoryCine.outLong(
+            min(max((t - TopCine.miniAt - 0.10) / 0.7, 0), 1), 2.6))
+        let phase = t - TopCine.miniAt
+        let encre: Color = phase < 0.10 ? Color(white: 0.35)
+            : (phase < 0.20 ? ambre.opacity(0.6) : vert)
+        let lueur: Color = phase < 0.20 ? ambre : vert
+        return VStack(alignment: .leading, spacing: 3) {
+            Text("Best week")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color(white: 0.52))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("\(roule)")
+                    .font(.system(size: 30, weight: .bold))
+                    .monospacedDigit()
+                    .contentTransition(.identity)
+                Text(s.unite)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(encre)
+            // LE NÉON : la lueur serrée + la nappe large — deux ombres
+            // sur une card STATIQUE, pas une par ligne de liste.
+            .shadow(color: lueur.opacity(0.95 * (phase < 0.20 ? 0.4 : 1)),
+                    radius: 3)
+            .shadow(color: lueur.opacity(0.55 * (phase < 0.20 ? 0.3 : 1)),
+                    radius: 12)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(colors: [Color(white: 0.15),
+                                              Color(white: 0.07)],
+                                     startPoint: .top, endPoint: .bottom))
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        stops: [.init(color: .white.opacity(0.22),
+                                      location: 0),
+                                .init(color: .white.opacity(0.04),
+                                      location: 0.5),
+                                .init(color: .clear, location: 1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                    lineWidth: 1)
+        }
+        .rotationEffect(.degrees(14 - 7 * m))
+        // Le POP : elle dépasse sa taille d'un souffle puis se pose —
+        // en cloche, jamais deux animations sur la même valeur.
+        .scaleEffect(1 + 0.10 * CGFloat(sin(.pi * m)))
+        .offset(x: CGFloat(1 - m) * -30)
+        .opacity(m)
+        .position(x: size.width * 0.50 + l * 0.44,
+                  y: size.height * 0.55 - h * 0.30)
+        // Le tick du wahou — un grain rigide quand elle claque.
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.7),
+                         trigger: t >= TopCine.miniAt + 0.25)
     }
 }

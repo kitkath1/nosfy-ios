@@ -63,12 +63,29 @@ enum EndedCine {
 // MARK: - L'écran
 
 struct StoryEnded: View {
+    /// LES TROIS VIES DE LA PAGE (26-08 soir, chantier TOP SESSION) :
+    /// `.complet` = la verrière puis le résumé (le jour ordinaire) ;
+    /// `.top` = la verrière plonge dans la page d'EXCEPTION (la card
+    /// aux paillettes, le halo de page) et le résumé émigre ;
+    /// `.resume` = le résumé SEUL, en page à lui — l'horloge est
+    /// REBASÉE (la pills est déjà posée, pas de re-plongeon) et les
+    /// haptiques de la coupe se taisent.
+    enum Mode { case complet, top, resume }
+
     let session: StorySession
     /// Le temps de page, pause déduite (l'horloge du chef d'orchestre).
     let t: Double
     let now: Date
     let size: CGSize
     var paused: Bool = false
+    var mode: Mode = .complet
+
+    /// L'horloge de l'acte B. En `.resume`, tout ce qui référence la
+    /// coupe est déjà passé : on décale pour que les rampes partent de
+    /// l'entrée de page (et le reflux est FORCÉ posé, voir `acteB`).
+    private var tB: Double {
+        mode == .resume ? t + EndedCine.cut + 0.15 : t
+    }
 
     /// Les cadres des deux mots dans le repère du composite — MESURÉS.
     @State private var motRects: [String: CGRect] = [:]
@@ -78,11 +95,26 @@ struct StoryEnded: View {
         ZStack {
             Color.black
 
-            // L'ACTE A vit jusqu'à la coupe ; l'ACTE B est monté dès le
-            // plongeon (sa vidéo décode en aveugle) et prend l'écran à la
-            // coupe, en une image.
-            if t < EndedCine.cut { acteA }
-            if t >= EndedCine.diveAt { acteB.opacity(t >= EndedCine.cut ? 1 : 0) }
+            // L'ACTE A vit jusqu'à la coupe ; l'acte suivant est monté
+            // dès le plongeon (sa vidéo décode en aveugle) et prend
+            // l'écran à la coupe, en une image. En `.resume`, pas de
+            // verrière : le résumé seul, horloge rebasée.
+            if mode != .resume, t < EndedCine.cut { acteA }
+            switch mode {
+            case .complet:
+                if t >= EndedCine.diveAt {
+                    acteB.opacity(t >= EndedCine.cut ? 1 : 0)
+                }
+            case .top:
+                if t >= EndedCine.diveAt {
+                    StoryTopScene(session: session,
+                                  sport: session.top ?? .cardio,
+                                  t: t, size: size, paused: paused)
+                        .opacity(t >= EndedCine.cut ? 1 : 0)
+                }
+            case .resume:
+                acteB
+            }
         }
         .frame(width: size.width, height: size.height)
         .clipped()
@@ -90,12 +122,13 @@ struct StoryEnded: View {
         // au départ du travelling puis un grain par mot qui passe ; LE
         // SLAM à la coupe — on rentre DANS la pills, c'est l'atterrissage
         // le plus lourd de la maison ; un impact doux quand la card se
-        // matérialise. ⚠️ Le sim est muet : verdict téléphone.
+        // matérialise. ⚠️ Le sim est muet : verdict téléphone. En
+        // `.resume`, la page est CALME : rien ne claque.
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
-                         trigger: beatTravel)
+                         trigger: mode == .resume ? 0 : beatTravel)
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5),
-                         trigger: t >= EndedCine.cardAt)
-        .onChange(of: t >= EndedCine.cut) { _, coupe in
+                         trigger: mode != .resume && t >= EndedCine.cardAt)
+        .onChange(of: mode != .resume && t >= EndedCine.cut) { _, coupe in
             if coupe { SwapFeedback.shared.slam() }
         }
     }
@@ -226,9 +259,12 @@ struct StoryEnded: View {
     }
 
     private var acteB: some View {
+        // L'horloge locale : en `.resume` elle est rebasée (voir `tB`).
+        let t = tB
         // Le reflux : sortie à traîne longue — la pilule arrive à vitesse
-        // NULLE dans son coin, aucune jonction anguleuse.
-        let u = CGFloat(StoryCine.outLong(
+        // NULLE dans son coin, aucune jonction anguleuse. En `.resume`
+        // la pills est DÉJÀ posée : pas de re-vol.
+        let u = mode == .resume ? 1 : CGFloat(StoryCine.outLong(
             min(max((t - EndedCine.cut) / EndedCine.poseFor, 0), 1)))
         let repos = piluleRepos
         // Au départ (u = 0) : la pilule couvre l'écran, centrée.
@@ -275,6 +311,7 @@ struct StoryEnded: View {
     /// ⚠️ Le prénom est en dur, comme le « Bonjour Kathryn » de la home —
     /// la même dette, au même endroit du backlog.
     private var phrase: some View {
+        let t = tB
         let blanc = Color(white: 0.96)
         let gris = Color(white: 0.52)
         let lignes: [(String, Color)] = [
@@ -311,6 +348,7 @@ struct StoryEnded: View {
     }
 
     private var eclair: some View {
+        let t = tB
         let n = StoryCine.sstep(EndedCine.eclairAt,
                                 EndedCine.eclairAt + EndedCine.eclairFor, t)
         let w = size.width * 0.36
@@ -354,6 +392,7 @@ struct StoryEnded: View {
         startPoint: .top, endPoint: .bottom)
 
     private var carte: some View {
+        let t = tB
         let l = min(size.width * 0.80, 332)
         let h = l * 1.32
         let voile = 1 - StoryCine.sstep(EndedCine.cardAt,
@@ -429,13 +468,13 @@ struct StoryEnded: View {
 
     private func ligne(_ i: Int) -> Double {
         let a = EndedCine.lignesAt + Double(i) * 0.11
-        return StoryCine.sstep(a - 0.30, a + 0.30, t)
+        return StoryCine.sstep(a - 0.30, a + 0.30, tB)
     }
 
     /// Le comptage, sortie douce — un compteur qui s'arrête net a l'air
     /// mécanique (l'école de StorySummaryCard).
     private func compte(_ valeur: Int, depuis a: Double) -> Int {
-        let u = StoryCine.outLong(min(max((t - a) / 0.95, 0), 1), 2.6)
+        let u = StoryCine.outLong(min(max((tB - a) / 0.95, 0), 1), 2.6)
         return Int((Double(valeur) * u).rounded())
     }
 }
