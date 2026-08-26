@@ -116,9 +116,9 @@ struct StoryLaunch: Identifiable {
 
 enum StoryCine {
     /// LES DURÉES D'ÉCRAN. La première porte l'intro cinématique EN PLUS de
-    /// son temps de lecture : 2,40 s de dézoom, puis les sept secondes qu'il
-    /// faut pour lire un titre, une date et quatre nombres qui comptent.
-    static let hold: [Double] = [9.5, 7.0, 7.0]
+    /// son temps de lecture : la verrière SESSION ENDED (zoom, défilement,
+    /// plongeon — 4,8 s), puis le résumé qui se lit (voir `EndedCine`).
+    static let hold: [Double] = [12.6, 7.0, 7.0]
 
     /// L'OUVERTURE DU PORTAIL — le rectangle de la carte devient l'écran.
     static let portal: Double = 0.62
@@ -231,14 +231,28 @@ struct StoryFlow: View {
                     ZStack {
                         Group {
                             switch page {
-                            case 0: StoryOne(session: session, t: t, now: now,
-                                             size: geo.size, paused: paused)
-                            case 1: StoryTwo(session: session, t: t, now: now,
-                                             size: geo.size, paused: paused,
-                                             onPartitionRect: {
-                                                 partitionRect = $0
-                                             })
-                            default: StoryThree(size: geo.size, paused: paused)
+                            // SESSION ENDED (la v2, 26-08). L'ancien
+                            // `StoryOne` (lune néon) attend le verdict de
+                            // Kathryn — rien n'est supprimé.
+                            case 0: StoryEnded(session: session, t: t,
+                                               now: now, size: geo.size,
+                                               paused: paused)
+                            // Pages 2-3 de la v2 (26-08) : « Détails »
+                            // (partition repliée sur le dôme macro) puis
+                            // la « Story card ». StoryTwo/StoryThree
+                            // attendent le verdict — rien n'est supprimé.
+                            case 1: StoryDetails(session: session, t: t,
+                                                 now: now, size: geo.size,
+                                                 paused: paused,
+                                                 onPartitionRect: {
+                                                     partitionRect = $0
+                                                 })
+                            default: StoryAnalyse(session: session, t: t,
+                                                  now: now, size: geo.size,
+                                                  paused: paused,
+                                                  onPartitionRect: {
+                                                      partitionRect = $0
+                                                  })
                             }
                         }
                         .id(beat)
@@ -360,7 +374,10 @@ struct StoryFlow: View {
                 // l'élastique : suivi franc sur 90 pt, puis 28 %. JAMAIS
                 // depuis la partition : en simultané, tirer la liste des
                 // séries vers le bas emporterait toute la story.
-                if page == 1, partitionRect.contains(v.startLocation) {
+                // Pages 1 ET 2 : la partition des Détails ET la story
+                // card (le tilt au drag vit dedans) — un drag né là ne
+                // tire pas la story vers le bas.
+                if page >= 1, partitionRect.contains(v.startLocation) {
                     fall = 0
                 } else {
                     let d = v.translation.height
@@ -401,7 +418,7 @@ struct StoryFlow: View {
                 // gauche → « je reviens à la première ».)
                 // `clock > 0,95` : la partition ne FOND qu'à ~1 s — son
                 // rect ne compte pas tant qu'elle est invisible.
-                if page == 1, clock(Date.now) > 0.95,
+                if page >= 1, clock(Date.now) > 0.95,
                    partitionRect.contains(v.startLocation) {
                     // L'horloge se PROLONGE sans rejouer l'entrée : recalée
                     // à 1,2 s (toutes les rampes d'entrée sont finies à

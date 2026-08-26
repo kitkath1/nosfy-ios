@@ -320,23 +320,55 @@ struct SlateListe: View, Equatable {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 4) {
-                ForEach(rangs) { r in
-                    SlateRang(groupe: r.groupe,
-                              depliee: r.depliee,
-                              onTap: { bascule(r.groupe.id) })
+        // ⚠️ L'HÔTE NE PREND JAMAIS LA LARGEUR DE SON CONTENU (le piège
+        // payé de la fente qui gonfle sa carte, re-payé ici le 26-08) :
+        // une ligne dépliée (`SetHistoryRow`) a une largeur MINIMALE
+        // incompressible — lune + « Set N » + les métriques en
+        // `fixedSize` + le gain ≈ 342 pt. Dans un hôte plus étroit (la
+        // liste de la story : ~310 pt), elle élargissait le ScrollView,
+        // donc la liste, donc la colonne de la page — que le parent
+        // RECENTRAIT : « quand je clique sur une ligne, ça se décale ».
+        // Le GeometryReader prend la largeur PROPOSÉE et ne la rend
+        // jamais : la largeur est désormais imposée au contenu, dans la
+        // story COMME dans l'ardoise du player.
+        GeometryReader { g in
+            ScrollView {
+                VStack(spacing: 4) {
+                    ForEach(rangs) { r in
+                        SlateRang(groupe: r.groupe,
+                                  depliee: r.depliee,
+                                  onTap: { bascule(r.groupe.id) })
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, basAir)
+                .frame(width: g.size.width)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height }
+                    action: { onContentHeight($0) }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, basAir)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height }
-                action: { onContentHeight($0) }
+            .frame(width: g.size.width, height: g.size.height)
+            .clipped()
         }
         .scrollIndicators(.hidden)
         .onAppear {
             if !seme { seme = true; deplies = [courant] }
+            // LA SONDE DE NON-RÉGRESSION : `-slateSonde` déplie tout
+            // seul la 2e rangée à +2 s puis la replie à +4 s — le tap
+            // ne s'injecte pas au simctl, et c'est elle qui a prouvé le
+            // décalage (26-08) puis sa mort : titre et rangées mesurés
+            // IMMOBILES au pixel pendant la bascule, dans la story
+            // comme dans l'ardoise.
+            if CommandLine.arguments.contains("-slateSonde"),
+               groupes.count > 1 {
+                let id = groupes[1].id
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    bascule(id)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    bascule(id)
+                }
+            }
         }
     }
 

@@ -250,6 +250,83 @@ dérive des ratios (`charge/poids_corps`) et l'IA ne voit que le ratio,
 comme n'importe quel autre fait. Les données corporelles sont des
 données SANTÉ : elles n'entrent pas en clair dans un prompt tiers.
 
+### 4 ter. LA STORY CARD `.story` — stickers de performance + analyse
+### (ajouté le 26-08 par le chantier story v2, voir
+### ../story/PLAN-STORY-V2-ENDED.md §6 sexies)
+
+Le flow story post-séance se termine sur un CINQUIÈME variant de la
+famille rewards : la **story card** (fond noir rewards, stickers
+animés + poudre de diamant + texte géant derrière + analyse). Son
+contrat :
+
+**LES STICKERS SONT DES FAITS, PAS DES DÉCORS.** Chaque sticker de la
+planche (`WoopSticker`, les PNG du calendrier) correspond à UNE
+catégorie de performance :
+
+| catégorie de la séance | sticker | statut |
+| --- | --- | --- |
+| haut du corps (muscu) | `bras` (le muscle) | tranché 26-08 |
+| cardio | `basket` | tranché 26-08 |
+| abdos | `chocolat` (la tablette) | tranché 26-08 |
+| bas du corps | `jambes` (le short) | tranché 26-08 (tour 2) |
+| piscine / nage | `piscine` (la goutte d'eau) | tranché 26-08 (tour 2) |
+| fessiers | `abricot` | à confirmer |
+| intensité / record / streak | `flamme` | à confirmer |
+
+⚠️ `abricot` portait « bas du corps » jusqu'au 26-08 : le short lui a
+pris la place (verdict Kathryn), l'abricot redescend sur les fessiers —
+la catégorie que le calendrier lui donnait déjà. La goutte d'eau entre
+avec l'exercice `piscine` du catalogue (`.cardio`, `.steady`,
+`poids du corps`) : la nage est un cardio, mais elle a SON sticker, pas
+la basket du tapis.
+
+Le fact engine (§3) calcule les VOLUMES PAR CATÉGORIE de la séance
+(séries × charge par groupe, minutes cardio) ; les **deux catégories
+dominantes** donnent les deux stickers. Le moteur choisit DANS la
+planche — l'IA ne choisit JAMAIS un sticker librement, elle reçoit
+les deux déjà tranchés (même doctrine que les nombres : recopiés des
+faits, jamais inventés).
+
+**LE PAYLOAD `.story`** (mêmes lois que le §4 : enums, bornes,
+gabarits de secours) — **amendé le 26-08 (tour 5)** :
+
+```
+{ stickers: [bras|basket|chocolat|jambes|piscine|abricot|flamme]
+            (2 ou 3),
+  bigWord: "KING" | "BOSS" | "SOLID" | … — 3 à 6 LETTRES, choisi
+           par TABLE de tiers de performance (volume / PR /
+           densité → tier → mot), jamais un choix libre,
+  lines: [ { words: [{text, gris: bool}] } ] — EXACTEMENT 6 LIGNES
+         (verdict Kathryn : « l'IA devra respecter 6 phrases »),
+         ≤ 20 signes par ligne, drapeaux gris PAR MOT }
+```
+
+**LES PHRASES SONT VRAIES** (verdict 26-08) : elles citent LE NOM
+DU CATALOGUE (`ExerciseCatalog`, tronqué au contrat) et LA
+PERFORMANCE (« 28 kg on bench », jamais « you did great »). Les
+faits v1 se calculent EN LOCAL du `StorySession` (meilleure série
+exo+charge, groupe dominant, volume total, densité, série la plus
+longue) — le fact engine serveur (§3) les remplacera avec ses
+fenêtres comparatives. **Une famille de gabarits de 6 lignes par
+catégorie dominante** (haut du corps / cardio / abdos / bas du
+corps / piscine / fessiers) à trous typés, ex. :
+`["Big push day.", "{kg} kg on", "{exo_court},", "your best set.",
+"{series} sets in {min} min.", "Keep pressing."]` — les nombres
+RECOPIÉS des faits (la loi du §4). L'IA, quand elle arrive,
+remplit LE MÊME MOULE : 6 lignes, la borne de signes, les drapeaux
+gris — jamais une forme neuve.
+
+Tailles, graisses, halo spotlight, poudre, animations des stickers :
+au Design System, JAMAIS à l'IA (la loi du §4 ne bouge pas).
+
+**LE MOMENT DU CALCUL** : la story se regarde APRÈS Terminer (ou
+depuis le calendrier, des jours plus tard) — le budget latence n'est
+pas celui du repos. Le payload `.story` se génère AU RÈGLEMENT
+(`settle_session` → `narrate-reward` en asynchrone → stocké avec la
+séance) ; l'app le LIT, elle ne l'attend jamais. Pas de réponse
+stockée → gabarit déterministe (stickers des faits + bigWord par
+table + lignes gabarit).
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT
