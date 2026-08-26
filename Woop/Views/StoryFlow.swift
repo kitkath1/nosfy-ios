@@ -48,9 +48,13 @@ struct StorySession {
         let all = ExerciseCatalog.all
         s.groupes = (0..<3).map { i in
             let exo = all[(i * 5) % all.count]
+            // 3, 4 puis SEPT séries : le troisième exercice couvre le cas
+            // « plus de cinq » de la rangée de flammes (cinq stickers et
+            // un « +2 »), qu'aucune donnée de démo ne montrait.
+            let combien = [3, 4, 7][i]
             return SlateGroupe(
                 id: "\(i)-\(exo.id)", exercise: exo,
-                rows: (0..<(3 + i % 2)).map { r in
+                rows: (0..<combien).map { r in
                     SlateLigne(reps: 12 - r, kilos: 20 + Double(r) * 2,
                                seconds: 52 + r * 9, done: true)
                 })

@@ -217,7 +217,8 @@ struct StorySetRow: View {
             // néon, c'est le MÉTAL qui reprend la main, et c'est lui qui porte
             // le relief.
             MoonCoinView(coinR: 13, draggable: false, yawOverride: 0.34,
-                         idleLife: 0, fps: 6, reveal: 0.34, matte: 1)
+                         idleLife: 0, fps: 6, reveal: 0.34, matte: 1,
+                         figee: true)
                 // LE DOUBLE CADRE est obligatoire : l'extérieur porte le bloom
                 // du shader (3,4 rayons), l'intérieur décide de
                 // l'encombrement. Rogner à la place couperait la lueur.

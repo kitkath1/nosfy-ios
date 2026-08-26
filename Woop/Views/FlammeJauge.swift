@@ -1193,49 +1193,168 @@ struct FlammeMedaillon: View {
 
 // MARK: - Les cinq petites flammes
 
-/// La rangée de droite : une flamme par série — les glyphes SF, ceux qui se
-/// lisent au premier regard. Les validées brûlent et DANSENT : penchement,
-/// respiration et tremblé propres à chacune (sa phase), jamais en chœur.
+/// La rangée de droite : une flamme par série.
+///
+/// **REFONTE DU 26-08 — LE STICKER À LA PLACE DU SYMBOLE.** Verdict de
+/// Kathryn : « les flammes sont pas assez fines, prends les stickers
+/// flamme rouge ». Les deux SF Symbols empilés (un ventre flouté + un
+/// contour à deux ombres) sont morts : c'était un TRAIT de symbole, et
+/// il coûtait **~3 passes offscreen par flamme allumée** — jusqu'à ~75
+/// pour une partition de cinq exercices, même immobiles. Le sticker en
+/// coûte ZÉRO.
+///
+/// ⚠️ L'ASSET EST ROGNÉ À SA BOÎTE UTILE (`sticker-flamme-serree`) :
+/// l'original perd **71 % de son canevas en marges transparentes**
+/// (384×384 pour une flamme de 180×234), donc à `.frame(16)` on ne
+/// voyait qu'une flamme de 7,5 pt — le piège déjà payé au menu (« à
+/// 34 pt la coupe mange la moitié du sticker »). Ici le cadre EST la
+/// flamme.
 struct FlammesRow: View {
     let done: Int
     let total: Int
     let t: Float
     let date: Date
     let igniteAt: Date?
+    /// La hauteur d'une flamme, en points. La largeur suit le ratio du
+    /// sticker rogné (184/238).
+    var corps: CGFloat = 19
+    /// LA RÈGLE COMPACTE (variante B) : UNE seule flamme et le compte à
+    /// côté, quel que soit le nombre de séries. Faux = la règle A
+    /// (jusqu'à cinq flammes, « +X » collé à la dernière).
+    var compacte: Bool = false
+    /// La cérémonie d'allumage — vraie sur la page détail exercice, où
+    /// une série qu'on valide DOIT se voir ; morte dans la partition,
+    /// qui n'est qu'un replay.
+    var ceremonie: Bool = true
 
-    /// CINQ FENTES, jamais plus (16-08). Au-delà, la dernière flamme cède
-    /// sa place à un petit « +N » : la rangée garde sa longueur quel que
-    /// soit le nombre de séries, et l'œil lit d'un coup « il y en a
-    /// d'autres ». N compte ce qui n'est PAS représenté par une flamme,
-    /// c'est-à-dire tout ce qui dépasse les quatre montrées.
-    private var fentes: Int { min(total, 5) }
-    private var reste: Int { total > 5 ? total - 4 : 0 }
+    /// Le ratio du sticker rogné : 184 × 238 px.
+    private var largeur: CGFloat { corps * 184 / 238 }
+
+    /// CINQ OBJETS AU PLUS, jamais plus (la loi du 16-08 tient). Ce qui
+    /// change : le « +X » ne prend plus la place d'une flamme, il se
+    /// COLLE à la dernière — « quand c'est plus de 5, sur la dernière
+    /// flamme tu mets +X ».
+    private var pleines: Int { compacte ? min(done, 1) : min(done, 5) }
+    private var reste: Int { done - pleines }
+    /// Les séries qui restent à faire : la MÊME flamme, très
+    /// transparente — la rangée dit le contrat autant que l'effort.
+    private var vides: Int {
+        compacte ? 0 : max(0, min(total - done, 5 - pleines))
+    }
 
     var body: some View {
-        HStack(spacing: 5) {
-            ForEach(0..<fentes, id: \.self) { i in
-                if reste > 0 && i == fentes - 1 {
-                    // Le chiffre, à la taille de la flamme, en dégradé
-                    // blanc — la même encre que le cheveu de la garde.
-                    Text("+\(reste)")
-                        .font(.inter(11, .semibold))
-                        .foregroundStyle(LinearGradient(
-                            colors: [Color.white.opacity(0.92),
-                                     Color.white.opacity(0.38)],
-                            startPoint: .top, endPoint: .bottom))
-                        .lineLimit(1)
-                        .fixedSize()
-                        .frame(minWidth: 14)
-                } else {
-                    PetiteFlamme(lit: i < done, t: t, phase: Float(i) * 4.7,
-                                 date: date,
-                                 igniteAt: i == done - 1 ? igniteAt : nil)
-                }
+        HStack(spacing: 2) {
+            ForEach(0..<pleines, id: \.self) { i in
+                StickerFlamme(corps: corps, largeur: largeur,
+                              eteinte: false, t: t, phase: Float(i) * 4.7,
+                              date: date,
+                              igniteAt: ceremonie && i == pleines - 1
+                                  ? igniteAt : nil)
+            }
+            if reste > 0 {
+                Text("+\(reste)")
+                    .font(.inter(11, .semibold))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color.white.opacity(0.92),
+                                 Color.white.opacity(0.38)],
+                        startPoint: .top, endPoint: .bottom))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.leading, 1)
+            }
+            ForEach(0..<vides, id: \.self) { i in
+                StickerFlamme(corps: corps, largeur: largeur,
+                              eteinte: true, t: t,
+                              phase: Float(pleines + i) * 4.7,
+                              date: date, igniteAt: nil)
             }
         }
     }
 }
 
+/// UNE flamme-sticker. Allumée : le sticker plein, qui penche et respire
+/// à peine sur SA phase (le tremblé du symbole est mort — un sticker qui
+/// vibre en permanence fait cheap). Éteinte : le même sticker à 0,16 —
+/// c'est la place vide qui se lit, pas un objet de plus.
+struct StickerFlamme: View {
+    let corps: CGFloat
+    let largeur: CGFloat
+    let eteinte: Bool
+    let t: Float
+    let phase: Float
+    let date: Date
+    let igniteAt: Date?
+
+    var body: some View {
+        let souffle = eteinte ? 0 : JaugeVent.souffle(t, phase: phase * 3.1)
+        let sway = eteinte ? 0 : JaugeVent.derive(t, phase: phase + 9.3)
+        // La cérémonie : le POP d'échelle du sticker, en cloche — un
+        // aller-retour ne se fait jamais en deux animations.
+        let e = igniteAt.map { date.timeIntervalSince($0) } ?? 99
+        let ceremonie = e >= 0 && e < 0.8
+        let pop = ceremonie
+            ? 1 + 0.18 * sin(.pi * min(1, e / 0.42)) : 0
+
+        Image("sticker-flamme-serree")
+            .resizable()
+            .scaledToFit()
+            .frame(width: largeur, height: corps)
+            .opacity(eteinte ? 0.16 : 1)
+            .rotationEffect(.degrees(eteinte ? 0 : Double(sway) * 3.4),
+                            anchor: .bottom)
+            .scaleEffect(eteinte ? 0.92
+                : 1 + 0.03 * CGFloat(souffle) + CGFloat(pop))
+            .animation(.spring(response: 0.34, dampingFraction: 0.55),
+                       value: eteinte)
+            // L'onde et la couronne de la cérémonie vivent AU-DESSUS du
+            // sticker, sans rien lui demander (elles sont déjà des
+            // couches SwiftUI indépendantes).
+            .overlay {
+                if ceremonie { CeremonieFlamme(e: e) }
+            }
+    }
+}
+
+/// LA CÉRÉMONIE, sortie de `PetiteFlamme` pour vivre au-dessus du
+/// sticker : l'onde et la couronne de six diamants. Le FLASH d'origine
+/// (un `flame.fill` surexposé) meurt avec le symbole — c'est le POP
+/// d'échelle du sticker qui porte désormais la naissance.
+struct CeremonieFlamme: View {
+    let e: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let q = min(1, e / 0.8)
+        let grandit = 1 - (1 - q) * (1 - q)
+        ZStack {
+            Circle()
+                .stroke(FlammePalette.or.opacity(0.50 * (1 - q)),
+                        lineWidth: 0.8)
+                .frame(width: 8 + 26 * grandit, height: 8 + 26 * grandit)
+                .blendMode(.plusLighter)
+            if !reduceMotion {
+                ForEach(0..<6, id: \.self) { k in
+                    let a = (Double(k) * 60 - 90 + 26 * q) * .pi / 180
+                    let r = 6 + 11 * grandit
+                    let bell = q < 0.22 ? q / 0.22 : 1 - (q - 0.22) / 0.78
+                    DiamantShape()
+                        .fill(LinearGradient(
+                            colors: [FlammePalette.blanc, FlammePalette.or],
+                            startPoint: .top, endPoint: .bottom))
+                        .frame(width: 3, height: 4.6)
+                        .scaleEffect(0.35 + 0.75 * bell)
+                        .opacity(bell)
+                        .offset(x: r * cos(a), y: r * sin(a))
+                        .blendMode(.plusLighter)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// L'ANCIENNE flamme-symbole. Plus appelée depuis le 26-08 (le sticker
+/// l'a remplacée) — gardée tant que le verdict n'est pas rendu.
 struct PetiteFlamme: View {
     let lit: Bool
     let t: Float

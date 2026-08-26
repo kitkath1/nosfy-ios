@@ -53,6 +53,17 @@ struct MoonCoinView: View {
     /// `DragGesture` a une distance minimale de 1 pt, donc un vrai tap ne la
     /// déclenche pas et tombe proprement sur le tap.
     var onTap: (() -> Void)? = nil
+    /// LA PIÈCE VRAIMENT GELÉE (26-08). ⚠️ `draggable: false` ne retire
+    /// que la `DragGesture` : l'horloge, elle, RESTE — et le commentaire
+    /// de `SetHistoryRow` croyait le contraire. Une liste de séries
+    /// portait donc une `TimelineView` (6 Hz) ET un dispatch shader PAR
+    /// LIGNE, plus un abonnement au `tilt` d'un `@Observable` qui
+    /// réévalue toutes les pièces au rythme du gyroscope — invisible au
+    /// simulateur (le tilt y reste nul), payé sur le téléphone.
+    /// Avec `figee`, l'horloge est en PAUSE et le tilt n'est pas lu :
+    /// pour une pièce déjà posée (`idleLife: 0` + `yawOverride`), le
+    /// rendu est IDENTIQUE au pixel — c'est du coût pur qui s'en va.
+    var figee: Bool = false
 
     /// Le débord de l'hôte. Le bloom large porte à ~0,9 rayon au-delà du
     /// métal, et le fondu d'hôte du shader en mange 12 de plus.
@@ -103,10 +114,13 @@ struct MoonCoinView: View {
     var body: some View {
         let side = coinR * Self.hostScale
         TimelineView(.animation(minimumInterval: 1.0 / fps,
-                                paused: reduceMotion && !dragging)) { tl in
+                                paused: figee
+                                    || (reduceMotion && !dragging))) { tl in
             let t = Float(tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900))
-            let tilt = SkyMotion.shared.tilt
+            // Gelée, la pièce NE LIT PAS le tilt : le lire abonnerait la
+            // vue à l'`@Observable` et le gyro la réveillerait quand même.
+            let tilt = figee ? .zero : SkyMotion.shared.tilt
             Rectangle()
                 .fill(.white)
                 .frame(width: side, height: side)

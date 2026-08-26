@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "sticker-flamme-serree.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "sticker-flamme-serree@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "sticker-flamme-serree@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

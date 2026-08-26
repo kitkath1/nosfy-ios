@@ -334,9 +334,11 @@ struct SlateListe: View, Equatable {
         GeometryReader { g in
             ScrollView {
                 VStack(spacing: 4) {
-                    ForEach(rangs) { r in
+                    ForEach(Array(rangs.enumerated()),
+                            id: \.element.id) { i, r in
                         SlateRang(groupe: r.groupe,
                                   depliee: r.depliee,
+                                  rang: i + 1,
                                   onTap: { bascule(r.groupe.id) })
                     }
                 }
@@ -411,38 +413,50 @@ private struct RangDonnee: Identifiable, Equatable {
 private struct SlateRang: View {
     let groupe: SlateGroupe
     let depliee: Bool
+    /// Le rang dans la séance, à partir de 1 — « 01 », « 02 »…
+    let rang: Int
     let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            ExercisePhoto(exercise: groupe.exercise)
-                .frame(width: 30, height: 30)
-                .clipShape(RoundedRectangle(cornerRadius: 9,
-                                            style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9,
-                                     style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08),
-                                      lineWidth: 1)
-                )
+        HStack(spacing: 14) {
+            // LE TRAIT — la lame verticale à dégradé de la molette
+            // (`SetEntrySheet`), en ARGENT. Il ne vit que sur la ligne
+            // OUVERTE, mais sa place est TOUJOURS réservée : rien ne
+            // doit glisser horizontalement quand l'actif change.
+            Capsule(style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color.white.opacity(0.95),
+                             Color.white.opacity(0.25)],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(width: 2.4, height: 30)
+                .opacity(depliee ? 1 : 0)
+
+            // LE NUMÉRO — deux positions, chiffres MONOSPACÉS : le
+            // layout ne respire pas entre 9 et 10.
+            Text(String(format: "%02d", rang))
+                .font(.inter(18, .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color.white.opacity(depliee ? 0.92 : 0.34))
+
             Text(groupe.exercise.name)
-                .font(.inter(14, .semibold))
-                .foregroundStyle(Color.white.opacity(0.92))
+                .font(.inter(15, .semibold))
+                .foregroundStyle(Color.white.opacity(depliee ? 0.94 : 0.52))
                 .lineLimit(1)
+
             Spacer(minLength: 8)
-            // Les flammes GELÉES : la pose de t = 0, pas d'horloge —
-            // cinq exercices n'allument pas vingt-cinq animations.
+
+            // Les flammes-stickers, GELÉES (t = 0, aucune horloge, aucune
+            // cérémonie) : la partition est un replay, pas une séance.
             FlammesRow(done: groupe.done, total: groupe.rows.count,
-                       t: 0, date: .distantPast, igniteAt: nil)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.30))
-                .rotationEffect(.degrees(depliee ? 0 : -90))
+                       t: 0, date: .distantPast, igniteAt: nil,
+                       corps: 22, ceremonie: false)
         }
+        // Le chevron et la vignette sont MORTS (26-08) : « les chevrons
+        // c'est pas fou », et la photo décodait 6,3 Mo pour 30 pt.
         .padding(.leading, 4)
         .padding(.trailing, 6)
-        .padding(.top, 14)
-        .padding(.bottom, 6)
+        .padding(.top, 18)
+        .padding(.bottom, 10)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
 

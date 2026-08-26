@@ -24,8 +24,12 @@ struct SetHistoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            moon
-
+            // LA LUNE EST MORTE (26-08, « enlève les lunes, c'est trop
+            // chargé à gauche »). Ce qui part avec elle : 32 pt de
+            // large, TROIS rastérisations de path (corps + liseré +
+            // néon, 18 cubiques chacune), un blur offscreen, et surtout
+            // une animation `repeatForever` PAR LIGNE, sans garde
+            // `reduceMotion`, qui maintenait le calque vivant à vie.
             Text("Set \(rank)")
                 .font(.inter(15, .medium))
                 .foregroundStyle(Color.white.opacity(done ? 0.94 : 0.55))
@@ -169,8 +173,17 @@ struct SetHistoryRow: View {
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.woopGold.opacity(0.92))
                     .monospacedDigit()
+                // ⚠️ `figee: true` — LA CORRECTION D'UN MENSONGE
+                // (26-08, mesuré). On croyait que `draggable: false`
+                // évitait « une TimelineView par pièce » : faux, il ne
+                // retire que la DragGesture. Chaque ligne faite portait
+                // une horloge à 6 Hz, un dispatch shader Metal et un
+                // abonnement au `tilt` du gyroscope — invisible au
+                // simulateur, payé sur le téléphone. Gelée, la pièce
+                // rend le MÊME pixel pour rien.
                 MoonCoinView(coinR: 13, draggable: false, yawOverride: 0.34,
-                             idleLife: 0, fps: 6, reveal: 0.34, matte: 1)
+                             idleLife: 0, fps: 6, reveal: 0.34, matte: 1,
+                             figee: true)
                     // Le double cadre : l'extérieur porte le bloom du
                     // shader, l'intérieur décide de l'encombrement.
                     .frame(width: 13 * MoonCoinView.hostScale,
