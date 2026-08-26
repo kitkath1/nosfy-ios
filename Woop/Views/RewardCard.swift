@@ -1202,7 +1202,7 @@ private struct ChauveQuiTient: View {
                 // dans l'asset, les oreilles sont en haut, la tête au
                 // milieu, les griffes en bas — un masque coupait sa
                 // tête.
-                .offset(y: respire - hauteurSticker * 1.30 - 22)
+                .offset(y: respire - hauteurSticker * 1.30 - 12)
         }
         .accessibilityHidden(true)
     }
