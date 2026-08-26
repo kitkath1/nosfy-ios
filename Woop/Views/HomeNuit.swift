@@ -1698,8 +1698,34 @@ struct HomeNuitPage: View {
     /// LA SÉANCE TOURNE. Tant qu'elle tourne, la card reste SOULEVÉE et
     /// refuse de se refermer : le player n'est pas un tiroir qu'on range,
     /// c'est l'état de la page.
-    @State private var enSeance = CommandLine.arguments.contains("-homeSeance")
-    @State private var debutSeance: Date?
+    ///
+    /// ⚠️ **DÉRIVÉ DE LA BASE, PLUS JAMAIS ÉCRIT À LA MAIN** (26-08). C'était
+    /// un `@State` local, mis à `true` par les deux départs et remis à
+    /// `false` **nulle part dans le dépôt** — la séance avait DEUX machines à
+    /// états qui ne se parlaient pas : `Workout.endedAt` en base (écrite par
+    /// `terminerSeance()`), et ce drapeau. D'où, après la clôture : le player
+    /// fantôme dont le chrono continuait de tourner, le menu rangé dans sa
+    /// pastille, l'invite de tirage éteinte, les curseurs cloués à zéro et le
+    /// geste de tirage qui sortait avant le cran — la home n'était pas
+    /// seulement mal peinte, elle était VERROUILLÉE. Il n'y a plus qu'une
+    /// machine à états, et c'est la base. Le patron est celui de la page
+    /// exercices (`ExercisesView.swift:361`), écrit quinze lignes à côté.
+    @Query(filter: #Predicate<Workout> { $0.endedAt == nil },
+           sort: \Workout.startedAt, order: .reverse)
+    private var seancesOuvertes: [Workout]
+
+    /// Le banc `-homeSeance` n'a aucune séance en base : son chrono part du
+    /// lancement. `static let` = évalué une fois, jamais dans le body.
+    private static let bancSeance =
+        CommandLine.arguments.contains("-homeSeance")
+    private static let bancDepart = Date()
+
+    private var enSeance: Bool {
+        Self.bancSeance || !seancesOuvertes.isEmpty
+    }
+    private var debutSeance: Date? {
+        Self.bancSeance ? Self.bancDepart : seancesOuvertes.first?.startedAt
+    }
 
     /// LE TIROIR EST VERROUILLÉ OUVERT. ⚠️ C'est le PRÉREQUIS du départ au
     /// tirage : sans lui on tire, le slider paraît, on lâche pour attraper le
@@ -2184,6 +2210,70 @@ struct HomeNuitPage: View {
             if !workoutsBruts.isEmpty {
                 stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
             }
+        }
+        // ⚠️ **LA HOME SE REMET DEBOUT À LA CLÔTURE** (26-08). Elle ne le
+        // faisait NULLE PART : après « Terminer », la racine écrivait bien
+        // `endedAt` en base, mais la page restait dans son état de séance —
+        // player fantôme, widgets démontés, tiroir ouvert, pull sorti avant
+        // le cran. Un SEUL `onChange`, une SEULE transaction.
+        .onChange(of: enSeance) { _, encore in
+            guard encore else { rendreLaHome(); return }
+            // LA SÉANCE TOURNAIT DÉJÀ AU LANCEMENT. Le `@Query` n'est
+            // renseigné qu'APRÈS la première image : la card naît basse, on
+            // apprend la séance à l'image d'après, et elle se lève.
+            // ⚠️ Pas de `initial: true` : au lancement sans séance, il ferait
+            // tourner `rendreLaHome()` avant même l'`onAppear`, et le banc
+            // `-tiroirOuvert` serait défait par sa propre page.
+            // ⚠️ Les gardes empêchent la DOUBLE levée : les deux départs
+            // lèvent déjà la card eux-mêmes (le tiroir est ouvert, ou la
+            // course est posée), et deux animations sur `tirage` se
+            // dévoreraient.
+            guard tirage == 0, !tiroirOuvert,
+                  depart == nil, ferme == nil else { return }
+            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
+                tirage = reposCard
+            }
+        }
+    }
+
+    /// LE RETOUR À L'ÉTAT POSÉ, après une séance qui vient de se clore.
+    ///
+    /// ⚠️ **CE N'EST PAS `fermer()`** : celle-là joue un film de 1,25 s à
+    /// rebours (elle défait une cinématique de départ qu'on est en train de
+    /// regarder). Ici il n'y a rien à défaire — on RETROUVE un état, on ne
+    /// rejoue pas une cérémonie. Un fondu court, et la page est là.
+    ///
+    /// ⚠️ **UN SEUL `withAnimation` SUR `tirage`** : deux au même tour sur la
+    /// même valeur ne jouent rien (la loi payée du dépôt), et un aller-retour
+    /// se ferait en keyframes — ce n'en est pas un.
+    private func rendreLaHome() {
+        // Les horloges du film d'abord, hors animation : elles ne se
+        // fondent pas, elles s'éteignent.
+        depart = nil
+        ferme = nil
+        eGele = nil
+        gCran = 0
+        // Le geste, remis à plat — sinon le premier tirage d'après hérite
+        // d'un axe et d'une course périmés (c'est le même trou que celui
+        // du geste annulé).
+        axeVertical = nil
+        cranSenti = false
+        luneSentie = false
+        // ⚠️ LE VERRE REMONTE, ET C'EST LUI QUI REND LES WIDGETS : les deux
+        // rangées ne sont montées que `if verreMonte`, que le film de départ
+        // avait posé à `false` et que SEULE `fermer()` remontait — jamais
+        // appelée sur le chemin slider → chemin → séance → fin. C'est la
+        // cause entière de la « home vide » du verdict.
+        verreMonte = true
+        withAnimation(.easeOut(duration: 0.34)) {
+            tiroirOuvert = false
+            tirage = 0
+            if PhraseHorloge.forceScroll == nil { scroll = 0 }
+        }
+        // La semaine vient de changer d'une séance : les widgets doivent le
+        // dire au retour, pas au prochain lancement.
+        if !workoutsBruts.isEmpty {
+            stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
         }
     }
 
@@ -3104,20 +3194,8 @@ struct HomeNuitPage: View {
     /// état que « Commencer » du slider — la card sera levée au retour),
     /// et la RED PAGE EXO arrive par-dessus le chemin.
     private func demarrerDepuisChemin() {
-        debutSeance = Date()
-        enSeance = true
+        ouvrirSeanceEnBase()
         tirage = reposCard
-        // LA VRAIE SÉANCE (même en démo) : le geste exact de
-        // startWorkout() — un Workout ouvert de plus serait inaffichable,
-        // donc jamais de doublon.
-        let ouverts = (try? modelContext.fetch(FetchDescriptor<Workout>(
-            predicate: #Predicate { $0.endedAt == nil }))) ?? []
-        if ouverts.isEmpty {
-            let seance = Workout()
-            modelContext.insert(seance)
-            try? modelContext.save()
-            WorkoutActivityController.ensure(seance)
-        }
         if exoParRoute {
             // le monde TabView : le chemin se replie, l'onglet exo prend
             // la scène avec la séance qui tourne.
@@ -3145,14 +3223,34 @@ struct HomeNuitPage: View {
     /// libérer la scène avant que la card ne bouge.
     private func commencer() {
         DepartEtat.shared.fermer()
-        debutSeance = Date()
+        // ⚠️ **LA SÉANCE S'OUVRE EN BASE, ICI AUSSI** (26-08). Ce chemin ne
+        // posait qu'un drapeau local : « Commencer » depuis le slider
+        // n'écrivait AUCUN `Workout`, et la page exercices — qui, elle, lit
+        // déjà la base — ne voyait donc aucune séance. Maintenant que la home
+        // dérive son état de la base comme elle, les deux départs doivent y
+        // écrire la même chose. C'est aussi ce qui permet à la clôture de
+        // ramener la home à son état normal : elle a quelque chose à fermer.
+        ouvrirSeanceEnBase()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            enSeance = true
             withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
                 tirage = reposCard
             }
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         }
+    }
+
+    /// LA VRAIE SÉANCE (même en démo) : le geste exact de `startWorkout()` —
+    /// un `Workout` ouvert de plus serait inaffichable, donc jamais de
+    /// doublon. C'est la SEULE écriture de l'état « en séance » : le drapeau
+    /// de la page en découle, il ne le décide pas.
+    private func ouvrirSeanceEnBase() {
+        let ouverts = (try? modelContext.fetch(FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt == nil }))) ?? []
+        guard ouverts.isEmpty else { return }
+        let seance = Workout()
+        modelContext.insert(seance)
+        try? modelContext.save()
+        WorkoutActivityController.ensure(seance)
     }
 
     /// Le banc de la matérialisation : 2,5 s après l'arrivée, le premier

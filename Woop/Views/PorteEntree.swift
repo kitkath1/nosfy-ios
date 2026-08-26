@@ -703,18 +703,27 @@ private struct PorteHeader: View {
         let p = etat.p
         let i = min(Int(p), pages.count - 1)
         let f = p - Double(i)
-        // LA PARALLAXE (V2) : le poignet (SkyMotion, ±6 pt — la dérive de
-        // caméra de la maison, recentrage 15 s) + le doigt (±6 pt, ressort au
-        // lâcher), sommés puis bornés à la marge. reduceMotion tue les deux —
-        // la double garde de l'école SkyMotion (le moteur refuse déjà de
-        // démarrer, mais un autre écran a pu le lancer).
-        let tilt = reduceMotion ? CGVector.zero : SkyMotion.shared.tilt
-        let doigt = reduceMotion ? .zero : etat.parallaxeDoigt
-        let par = CGSize(
-            width: max(-Self.margePar, min(Self.margePar,
-                tilt.dx * 6 + doigt.width * 0.6)),
-            height: max(-Self.margePar, min(Self.margePar,
-                tilt.dy * 6 + doigt.height * 0.6)))
+        // ⚠️ **LA PARALLAXE DE LA VIDÉO EST COUPÉE (26-08).** Verdict :
+        // « aucun mouvement flottant ou déplacement continu après son
+        // arrivée ». Le film gelé ne suffisait pas — `SkyMotion` est une
+        // DÉRIVE DE CAMÉRA (recentrage 15 s) : la vidéo continuait de glisser
+        // toute seule, poignet immobile.
+        //
+        // Deux bénéfices pour le prix d'un. Le body du header LISAIT
+        // `SkyMotion.shared.tilt`, publié à chaque échantillon (30 Hz) sans la
+        // moindre bande morte — alors que le plan de la porte l'exige en
+        // toutes lettres (PLAN-V2-VIVANT §2.3). Tout le ZStack des créneaux
+        // vidéo, l'overlay des décors et le masque du fondu de pied se
+        // réévaluaient donc trente fois par seconde dès que le téléphone
+        // bougeait d'un cheveu : le commentaire « le header ne se réévalue que
+        // pour p » était faux depuis la V2. Il redevient vrai.
+        //
+        // Les DÉCORS, eux, gardent leur vie (`PorteDecors` lit le gyro pour
+        // son compte) : c'est la VIDÉO qui devait se taire, pas la page.
+        // La marge `margePar` reste : les cadres sont surdimensionnés et
+        // centrés, donc figés au ras du repos — et le jour du zoom-portail,
+        // il n'y aura qu'un offset à rebrancher ici.
+        let par = CGSize.zero
         // La page du créneau A (paire) et celle du créneau B (impaire), parmi
         // les deux visibles (i, i+1).
         let iA = (i % 2 == 0) ? i : min(i + 1, pages.count - 1)
@@ -818,20 +827,24 @@ private struct PorteHeader: View {
         // qui bouge.
         let wPar = largeur + 2 * Self.margePar
         let hPar = hauteur + 2 * Self.margePar
-        if page.id == 0 && arrivee && !etat.arriveeFinie {
-            // LE FILM D'ARRIVÉE — le master joué une fois, puis la boucle qui
-            // prend le relais à l'image de raccord. Il EST le contenu du
-            // créneau pair : la règle pair/impair le protège comme n'importe
-            // quelle vidéo, et le démonte au même instant sûr.
-            // ⚠️ Le raccord 178@30 est IMPRIMÉ par `recuit_porte.sh` (il le
-            // calcule : total − 96). Le script et cette ligne changent
-            // ENSEMBLE — un recut qui déplace la fin sans qu'on relise ici
-            // casserait le seul raccord qui doit rester invisible.
-            ReelPorte(master: "onb-arrivee", boucle: "onb-lune-loop",
-                      imageRaccord: 178, baseTemps: 30,
-                      pose: "onb-arrivee-poster",
-                      poseBoucle: "onb-lune-loop-poster",
-                      largeur: wPar, hauteur: hPar)
+        if page.id == 0 {
+            // LE FILM D'ARRIVÉE — le master joué une fois, qui GÈLE sur sa
+            // dernière image. Il EST le contenu du créneau pair : la règle
+            // pair/impair le protège comme n'importe quelle vidéo, et le
+            // démonte au même instant sûr — c'est ce qui fait que revenir sur
+            // la page 1 REJOUE l'animation, comme le veut le verdict.
+            //
+            // ⚠️ **LES DEUX BRANCHES DE LA PAGE 0 SONT TRAITÉES ENSEMBLE**
+            // (26-08). Avant, `arrivee == false` (la porte déjà vue) ou un
+            // tap-saut faisaient tomber la page 0 dans le `else` générique,
+            // qui montait `CalqueVideo("onb-lune-loop")` — la MÊME boucle
+            // ping-pong, en lecture infinie. Figer le film seul aurait laissé
+            // la dérive intacte à tous les lancements suivants : c'était la
+            // seconde branche, et elle est fermée ici.
+            ReelPorte(master: "onb-arrivee",
+                      joue: arrivee && !etat.arriveeFinie,
+                      largeur: wPar, hauteur: hPar,
+                      pose: "onb-arrivee-poster")
         } else if page.id == 3 {
             // LA PAGE BOOSTER n'a PAS de vidéo : le VRAI manège 3D vit dans
             // son propre calque (voir l'overlay du body) — hors des créneaux,
@@ -852,28 +865,17 @@ private struct PorteHeader: View {
 
 // MARK: - Le film d'arrivée
 
-/// Le master joué UNE fois, et la boucle qui prend le relais à l'image de
-/// raccord. C'est la mécanique éprouvée de `StoryReel` (StoryVideo.swift:41),
-/// réécrite pour deux raisons qui ne se contournent pas : `StoryReel` code sa
-/// base de temps à 24 en dur (nos fichiers sont à 30 — l'image 60 y deviendrait
-/// la 75) et son débit à 1,25 (le nôtre est 1,0 : les fichiers sortent à
-/// 30 img/s, DEUX battements pleins à 60 Hz, le battement 3:2 n'existe pas).
+/// ⚠️ **ARCHIVE — LA MÉCANIQUE À DEUX LECTEURS EST MORTE LE 26-08.** Le film
+/// passait la main à `onb-lune-loop` à son image de raccord, et cette boucle
+/// est un ping-pong : la caméra repartait donc en arrière à l'instant même où
+/// l'arrivée se posait. Tout le détail (mesures ffmpeg comprises) est écrit
+/// sur `ReelPorte` plus bas. Ce qui reste vrai de l'ancienne page, et qui
+/// resservira le jour du zoom-portail : `preroll` doit être ATTACHÉ à une
+/// observation de `.status` — appelé avant `readyToPlay` il lève une exception
+/// et TUE l'app (payé le 21-08, et nous sommes sur l'écran de lancement) ; et
+/// un échange de couches se fait SEC, jamais en fondu croisé (la couche
+/// entrante n'a pas encore d'image, on composerait contre du noir).
 ///
-/// Les lois recopiées de l'original, aucune n'est décorative :
-///  · LA BOUCLE D'ABORD, montée et amorcée avant que le master parte — elle
-///    doit être à sa première image quand le relais tombe ;
-///  · `preroll` ATTACHÉ à une observation de `.status` — appelé avant
-///    `readyToPlay` il lève une exception et TUE l'app (payé le 21-08, et nous
-///    sommes sur l'écran de lancement) ;
-///  · L'ÉCHANGE EST SEC, jamais un fondu : les deux couches montrent la même
-///    image (la première de la boucle EST l'image 60 du master, écart mesuré
-///    0,42/255), donc un échange en une frame est invisible par construction —
-///    un fondu croisé, lui, composerait contre du noir pendant que la couche
-///    entrante n'a pas encore d'image ;
-///  · LE MASTER EST DÉMONTÉ 0,6 s après le relais : un lecteur en pause reste
-///    un décodeur vivant ;
-///  · l'image de pose SOUS les lecteurs — le trou du bouclage (1 à 3 images à
-///    chaque tour d'`AVPlayerLooper`) tombe sur elle, jamais sur du noir.
 /// L'hôte des couches du film : `AVPlayerLayer` en **remplissage**, borné.
 /// ⚠️ `CinematicPlayer` (aspect-FIT codé en dur) convenait quand le cadre
 /// collait au ratio du fichier à 7e-5 près ; depuis la marge de parallaxe
@@ -909,46 +911,65 @@ private struct ReelHote: UIViewRepresentable {
     }
 }
 
+/// LE FILM D'ARRIVÉE — le master, joué UNE fois, qui GÈLE sur sa dernière
+/// image. C'est la mécanique de `StoryReel` (StoryVideo.swift:41), réécrite
+/// pour deux raisons qui ne se contournent pas : `StoryReel` code sa base de
+/// temps à 24 en dur (nos fichiers sont à 30) et son débit à 1,25.
+///
+/// ⚠️ **LE RELAIS VERS LA BOUCLE EST MORT (26-08), ET C'ÉTAIT LUI, « LE LÉGER
+/// MOUVEMENT QUI CRÉE DES BUGS ».** Verdict de Kathryn : « la vidéo arrive,
+/// elle se place, elle reste ensuite COMPLÈTEMENT FIXE ».
+///
+/// Ce qu'on croyait être un flottement ajouté était la MÉCANIQUE du raccord,
+/// et la sonde (ffmpeg + numpy sur les fichiers) le dit sans appel :
+///   · `onb-arrivee.mp4` fait 274 images à 30 i/s = 9,133 s — exactement
+///     `arriveeT`, l'instant où la partition pose l'habillage ;
+///   · son image 178 est l'image 0 de `onb-lune-loop.mp4` (écart 0,56/255) ;
+///   · sa DERNIÈRE image (273) est l'image 95 de cette boucle (0,56) ;
+///   · or la boucle est un PING-PONG de 190 images (f0 ≈ f189 à 1,82 ;
+///     f47 ≈ f141 à 2,16) dont l'image 95 est le POINT DE RETOURNEMENT.
+/// Donc à la seconde PRÉCISE où le film se posait, la caméra repartait en
+/// arrière pour 3,13 s, puis revenait, à l'infini. Et le trou d'`AVPlayerLooper`
+/// (1 à 3 images vidées à chaque tour, tous les 6,33 s) découvrait la pose,
+/// prise à l'AUTRE extrémité de la course : un saut de cadrage, pas un flash —
+/// ce que le détecteur de flash du jalon O1 ne pouvait pas voir, les deux
+/// images ayant la même luminance (14,04 contre 14,94).
+///
+/// Le master porte déjà `actionAtItemEnd = .pause` : sans relais, il gèle tout
+/// seul sur son image 273, c'est-à-dire exactement la position finale de
+/// l'arrivée. Il n'y a plus de second lecteur, plus de boucle, plus d'observateur
+/// de temps — donc plus rien à vider.
 private struct ReelPorte: View {
     let master: String
-    let boucle: String
-    /// L'image de raccord, dans la base de temps du fichier.
-    let imageRaccord: Int64
-    let baseTemps: Int32
-    /// ⚠️ **DEUX FILETS, PAS UN** — le bug des « petits écrans noirs » (payé
-    /// 22-08 au soir, diagnostic mesuré). `AVPlayerLooper` vide sa couche 1 à
-    /// 3 images À CHAQUE TOUR de boucle ; le trou tombe sur la pose. Avec une
-    /// seule pose — celle du master, qui commence au NOIR (luminance 0,00) —
-    /// chaque tour clignotait noir, pile à l'instant où le ping-pong inverse
-    /// son sens : « ça bouge un peu et ça montre des petits écrans noirs ».
-    /// La loi de StoryReel : un filet PAR fichier, commuté par `onLoop` — le
-    /// trou montre alors la première image de la boucle, c'est-à-dire
-    /// exactement ce qu'on devait voir.
-    let pose: String
-    let poseBoucle: String
+    /// ⚠️ **`joue: false` = LA POSE DIRECTE.** Aux lancements suivants (la
+    /// porte déjà vue) et juste après le tap-saut, la page 0 montrait la
+    /// boucle ping-pong par un AUTRE chemin (`CalqueVideo`) : figer le film
+    /// seul n'aurait rien réglé pour elle. Ici le même fichier est simplement
+    /// AMENÉ à sa fin et mis en pause — aucune image de plus à cuire, et la
+    /// position est la même au pixel près que celle où le film se termine.
+    var joue = true
     let largeur: CGFloat
     let hauteur: CGFloat
+    /// La première image du master (elle commence au NOIR) : le filet le temps
+    /// que le décodeur présente. Inutile en pose directe — on y saute.
+    let pose: String
 
     @State private var cine: AVPlayer?
-    @State private var loop: AVQueuePlayer?
-    @State private var looper: AVPlayerLooper?
-    @State private var loopReady: NSKeyValueObservation?
-    @State private var handoff: Any?
     @State private var retour: NSObjectProtocol?
-    @State private var onLoop = false
+    @State private var finObs: NSObjectProtocol?
+    /// Le film est arrivé au bout : la pose de tête n'a plus rien à couvrir,
+    /// et surtout elle ne doit PAS reparaître sous une image gelée.
+    @State private var posee = false
 
     var body: some View {
         ZStack {
-            Image(onLoop ? poseBoucle : pose)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
+            if !posee {
+                Image(pose)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            }
             if let cine {
                 ReelHote(player: cine)
-                    .opacity(onLoop ? 0 : 1)
-            }
-            if let loop {
-                ReelHote(player: loop)
-                    .opacity(onLoop ? 1 : 0)
             }
         }
         .frame(width: largeur, height: hauteur)
@@ -960,69 +981,62 @@ private struct ReelPorte: View {
     private func demarre() {
         guard cine == nil,
               let urlM = Bundle.main.url(forResource: master,
-                                         withExtension: "mp4"),
-              let urlB = Bundle.main.url(forResource: boucle,
                                          withExtension: "mp4") else { return }
 
-        // La boucle, prête avant le départ du master.
-        let q = AVQueuePlayer()
-        q.isMuted = true
-        q.automaticallyWaitsToMinimizeStalling = false
-        looper = AVPlayerLooper(player: q, templateItem: AVPlayerItem(url: urlB))
-        loopReady = q.observe(\.status, options: [.initial, .new]) { p, _ in
-            guard p.status == .readyToPlay else { return }
-            p.preroll(atRate: 1) { _ in }
-        }
-        loop = q
-
-        let p = AVPlayer(playerItem: AVPlayerItem(url: urlM))
+        let item = AVPlayerItem(url: urlM)
+        let p = AVPlayer(playerItem: item)
         p.isMuted = true
         p.automaticallyWaitsToMinimizeStalling = false
+        // ⚠️ C'EST LUI QUI FIGE. Sans `.pause`, un `AVPlayer` rembobine à zéro
+        // en fin d'item et l'arrivée se rejouerait en boucle.
         p.actionAtItemEnd = .pause
         cine = p
 
-        handoff = p.addBoundaryTimeObserver(
-            forTimes: [NSValue(time: CMTime(value: imageRaccord,
-                                            timescale: baseTemps))],
-            queue: .main) { [weak p] in
-                loop?.play()
-                // Les 50 ms laissent au décodeur le temps de présenter sa
-                // première image ; se tromper d'une image ne coûte rien, elles
-                // sont identiques.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    onLoop = true
-                    p?.pause()
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    if let handoff { cine?.removeTimeObserver(handoff) }
-                    handoff = nil
-                    cine?.replaceCurrentItem(with: nil)
-                    cine = nil
-                }
+        guard joue else {
+            // LA POSE DIRECTE : on saute à la fin, et rien ne bouge jamais.
+            // La tolérance nulle est nécessaire — un `seek` approché
+            // atterrirait sur l'image clé la plus proche, c'est-à-dire
+            // potentiellement des secondes avant la fin.
+            posee = true
+            Task { @MainActor in
+                let fin = try? await item.asset.load(.duration)
+                guard let fin, fin.isNumeric else { return }
+                await p.seek(to: fin, toleranceBefore: .zero,
+                             toleranceAfter: .zero)
+                p.pause()
             }
+            return
+        }
 
-        // LA REPRISE APRÈS L'ARRIÈRE-PLAN — la loi de CalqueVideo, qu'une
-        // première version avait perdue : sans elle, une notification pendant
-        // le film laissait une image FIGÉE pour toujours. On ne relance que la
-        // couche VIVANTE : réveiller la boucle avant le relais l'avancerait en
-        // douce, et le raccord sauterait.
+        // LA REPRISE APRÈS L'ARRIÈRE-PLAN — la loi de CalqueVideo : sans elle,
+        // une notification pendant le film laisse une image FIGÉE pour
+        // toujours. ⚠️ On ne relance QUE si le film n'est pas déjà arrivé au
+        // bout : le réveiller posé le ferait rembobiner.
         retour = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil, queue: .main) { _ in
-                if onLoop { loop?.play() } else { cine?.play() }
+                guard !posee else { return }
+                cine?.play()
+            }
+
+        // La fin du film : on lève le drapeau, et la pose de tête se démonte.
+        // (`AVPlayerItemDidPlayToEndTime` plutôt qu'un observateur de temps :
+        // il ne peut pas manquer sa cible sur une image sautée.)
+        finObs = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification,
+            object: item, queue: .main) { _ in
+                posee = true
             }
 
         p.play()
     }
 
     private func demonte() {
-        if let handoff { cine?.removeTimeObserver(handoff) }
-        handoff = nil
         if let retour { NotificationCenter.default.removeObserver(retour) }
         retour = nil
-        loopReady?.invalidate(); loopReady = nil
+        if let finObs { NotificationCenter.default.removeObserver(finObs) }
+        finObs = nil
         cine?.pause(); cine?.replaceCurrentItem(with: nil); cine = nil
-        loop?.pause(); looper?.disableLooping(); looper = nil; loop = nil
     }
 }
 

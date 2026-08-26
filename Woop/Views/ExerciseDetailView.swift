@@ -40,7 +40,7 @@ struct ExerciseDetailView: View {
     /// la première ouverture avance sur 0 — le galet, la nouveauté d'abord.
     @State private var rewardVariant = 3
     private static let rewardStyles: [RewardStyle] =
-        [.galet, .neon, .halo, .spotlight]
+        [.galet, .neon, .halo, .spotlight, .fire, .welcome]
     /// Le tour des vidéos pièce au banc `-rewardVideo` — les 5 recuites
     /// de la famille défilent, une par ouverture.
     @State private var rewardVideoTour = 0
@@ -342,7 +342,6 @@ struct ExerciseDetailView: View {
     /// remporté en partant. Tant qu'il est non-nil, la page BRAVO est posée ;
     /// son retour écrit ces chiffres dans la carte — pas avant : la carte
     /// s'actualise sous les yeux, à l'air libre, jamais sous une page.
-    @State private var finished: FinishedSeries?
 
     private struct FinishedSeries {
         let index: Int
@@ -601,6 +600,12 @@ struct ExerciseDetailView: View {
             .overlay(alignment: .topLeading) {
                 if isStrength { carteSeries }
             }
+            // LA BANDE DE PRISE, posée APRÈS la carte pour gagner le doigt
+            // sur elle : la carte ouverte rend son scroll à la liste des
+            // séries, et sa tête reste l'endroit où on l'attrape.
+            .overlay(alignment: .top) {
+                if isStrength { priseCarteSeries }
+            }
             // Le HUD du banc — AU-DESSUS de tout, et lui SEUL est
             // touchable (la carte des séries reste sourde au doigt).
             .overlay(alignment: .top) {
@@ -658,10 +663,10 @@ struct ExerciseDetailView: View {
                             LaunchPebble(
                                 label: "Start exercise",
                                 flood: $flood,
-                                // BRAVO L'ENDORT AUSSI. Le sommeil du galet
-                                // ne connaissait que `running` — or
-                                // `startBravo` met justement `running` à nil
-                                // en montant BRAVO : le galet se RÉVEILLAIT à
+                                // LE PANNEAU L'ENDORT AUSSI. Le sommeil du
+                                // galet ne connaissait que `running` — or la
+                                // fin de série met justement `running` à nil
+                                // en rendant la fiche : le galet se RÉVEILLAIT à
                                 // l'instant exact où la page lance ses trois
                                 // lecteurs, et rejouait ses 4 s de renaissance
                                 // (quatre passes hors écran sur 2,23 Mpx à
@@ -672,7 +677,10 @@ struct ExerciseDetailView: View {
                                 // le ciel de la home tournait derrière le
                                 // splash, et le remède fut de ne pas monter,
                                 // jamais de masquer.
-                                asleep: running != nil || finished != nil,
+                                // (`finished` est mort avec la page BRAVO :
+                                // le panneau « Recommencer ? » ne couvre pas
+                                // le fond, il se pose dessus.)
+                                asleep: running != nil || restartAsk != nil,
                                 onDrive: { p, vy in driveMoved(p, vy) },
                                 onRelease: { p, vy in driveEnded(p, vy) },
                                 onLaunch: launch
@@ -810,8 +818,12 @@ struct ExerciseDetailView: View {
                         headline: exercise.name,
                         faceLabel: "SET \(series.id + 1)",
                         seriesNumber: series.id + 1,
+                        // ⚠️ **C'EST LE SEUL POINT OÙ L'ISSUE D'UNE SÉRIE
+                        // PART, ET IL PART UNE FOIS.** Le décideur de la
+                        // chaîne reward (pill / Moment / popup / vidéo) se
+                        // branchera ICI, jamais sur une minuterie de plus.
                         onFinish: { outcome in
-                            startBravo(series.id, outcome)
+                            finirSerie(series.id, outcome)
                         },
                         onCancel: {
                             running = nil
@@ -847,18 +859,18 @@ struct ExerciseDetailView: View {
                     // gestes (un drag bas, chez elle, ne fait rien).
                     .simultaneousGesture(returnDrag)
                 }
-                // LA PAGE BRAVO. Elle remplace le cadran à l'instant où la
-                // pastille a percé le bord haut — noir sur noir, la coupe
-                // est invisible, et sa pièce TOMBE du même bord : le raccord
-                // est dans le geste. Le cadran est DÉMONTÉ, pas caché : deux
-                // plein-écrans vivants empilés, c'est la cadence qui paie
-                // (la leçon mesurée de la page elle-même).
-                if let f = finished {
-                    BravoView(reps: f.reps,
-                              kilos: f.kilos,
-                              rest: f.rest,
-                              onFinish: { closeBravo(f) })
-                }
+                // ⚠️ **LA PAGE BRAVO EST SORTIE DU FLOW (26-08).** Verdict de
+                // Kathryn : « elle doit être considérée comme archivée et
+                // supprimée du flow actif ». Le nouveau parcours est
+                // FIN DE SÉRIE → REPOS → RETOUR À LA FICHE : le repos vit
+                // déjà DANS le cadran (l'envol de fin de repos, 7495c85),
+                // donc la sortie de la lentille rend directement la fiche.
+                // Ce qui vient ensuite — pill de pièces, Moment, pop-up
+                // reward, vidéo rare — se branchera sur `finirSerie`.
+                //
+                // ⚠️ LE FICHIER `BravoLab.swift` RESTE : `BravoPillView` y
+                // vit et `CoffreFortView` la consomme. Archiver n'est pas
+                // supprimer — et son banc `-bravoLab` la rejoue intacte.
                 // LE PANNEAU DU RETOUR — « Recommencer ? ». Le conteneur
                 // reste monté (transparent, sourd au doigt quand vide) :
                 // c'est lui qui joue l'entrée et la sortie du panneau.
@@ -1426,7 +1438,41 @@ struct ExerciseDetailView: View {
             }
             .offset(x: x, y: y)
         }
-        .allowsHitTesting(false)
+        // ⚠️ **HIT-TEST CONDITIONNEL, PLUS JAMAIS CONSTANT** (26-08). Ce
+        // `false` datait du 13-08 (cfe08e1), quand un ScrollView DE PAGE
+        // pilotait encore la carte. Ce ScrollView de page est mort le 15-08
+        // (bd848e7) et le ScrollView INTERNE des séries est arrivé le 16-08
+        // (8abe0e0) — dans un sous-arbre déjà sourd. Un `allowsHitTesting`
+        // faux sur un ancêtre ne se rouvre pas depuis un descendant : la
+        // liste des séries n'a JAMAIS été atteignable, et chaque doigt
+        // tombait sur le `Color.clear` plein écran de `carteDrag` — c'est
+        // exactement le verdict « je peux faire défiler le composant
+        // Training, mais pas les séries ». Le banc `-scrollBas` ne prouvait
+        // que le débordement du contenu, pas la joignabilité.
+        //
+        // La carte ne prend le doigt qu'OUVERTE (≥ 0,90) et à l'arrêt : en
+        // course, le geste appartient à la carte elle-même, sinon le scroll
+        // volerait la fin de l'ouverture. La FERMETURE reste possible par la
+        // bande de prise posée par-dessus (cf. `priseCarteSeries`).
+        .allowsHitTesting(carteP > 0.90 && !carteSaisie)
+    }
+
+    /// LA BANDE DE PRISE DE LA CARTE OUVERTE — la contrepartie du hit-test
+    /// rendu à la liste : sans elle, la carte ouverte n'aurait plus AUCUN
+    /// endroit où l'attraper pour la refermer (le scroll mangerait tout).
+    ///
+    /// Elle couvre le bandeau du haut — poignée, en-tête, ligne de contrat —
+    /// c'est-à-dire exactement l'endroit où l'on attrape une bannière. Elle
+    /// n'existe QUE carte ouverte : fermée, la surface plein écran de
+    /// `strengthPage` fait déjà tout le travail.
+    @ViewBuilder private var priseCarteSeries: some View {
+        if carteP > 0.02 {
+            Color.clear
+                .frame(height: Self.bande0 + carteFermeeH * 0.34 + 24)
+                .contentShape(Rectangle())
+                .gesture(carteDrag)
+                .ignoresSafeArea(edges: .top)
+        }
     }
 
     /// LE CALQUE de restauration : la référence de Kathryn étirée sur la
@@ -1918,15 +1964,22 @@ struct ExerciseDetailView: View {
         return "\(set.reps) reps · \(set.weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
     }
 
-    /// L'envol s'achève : le cadran rend la main, la page BRAVO prend la
-    /// scène. Le papier tombe en même temps que la lentille — on passe d'une
-    /// nuit à l'autre, le voile blanc n'a rien à faire entre les deux.
-    private func startBravo(_ index: Int, _ o: LiquidLensLab.SeriesOutcome) {
-        finished = FinishedSeries(index: index,
-                                  reps: o.reps,
-                                  kilos: o.kilos,
-                                  rest: o.restSeconds,
-                                  seconds: o.effortSeconds)
+    /// L'ENVOL S'ACHÈVE, ET LA FICHE REVIENT. Le cadran rend la main, le
+    /// papier tombe avec lui — on passe d'une nuit à l'autre, le voile blanc
+    /// n'a rien à faire entre les deux.
+    ///
+    /// ⚠️ **C'ÉTAIT `startBravo` : la page BRAVO est sortie du flow (26-08).**
+    /// Le parcours est désormais FIN DE SÉRIE → REPOS (il vit dans le cadran)
+    /// → RETOUR À LA FICHE, et c'est seulement ensuite que le contexte parle :
+    /// pill de pièces au cas normal, Moment, pop-up reward, vidéo au cas rare.
+    /// Ce point-ci est le SEUL endroit où l'issue d'une série est connue, et
+    /// il ne passe qu'une fois : c'est là que le décideur se branchera.
+    private func finirSerie(_ index: Int, _ o: LiquidLensLab.SeriesOutcome) {
+        let f = FinishedSeries(index: index,
+                               reps: o.reps,
+                               kilos: o.kilos,
+                               rest: o.restSeconds,
+                               seconds: o.effortSeconds)
         flood = 0
         running = nil
         lensHandoff = nil
@@ -1934,18 +1987,17 @@ struct ExerciseDetailView: View {
         lensShown = false
         summited = false
         posedLaunch = false
-    }
-
-    /// « Revenir à l'exercice » : BRAVO se retire, et la carte s'actualise —
-    /// avec les VRAIS chiffres de la feuille, pas les valeurs de départ. Le
-    /// repos choisi devient celui de l'exercice.
-    private func closeBravo(_ f: FinishedSeries) {
-        finished = nil
+        // Le repos choisi devient celui de l'exercice.
         restSeconds = f.rest
-        // La carte ne s'écrit PLUS ici : l'écriture attend la sortie du
-        // panneau « Recommencer ? » — les pièces et le compte se REGARDENT,
-        // et c'est le panneau qui descend qui les découvre.
-        restartAsk = f
+        // La fiche se découvre AVANT la question : sans ce souffle, le
+        // panneau « Recommencer ? » naissait par-dessus la lentille qui
+        // n'avait pas fini de tomber — deux plein-écrans empilés, et la
+        // coupe se voyait. La carte, elle, ne s'écrit toujours pas ici :
+        // l'écriture attend la sortie du panneau — les pièces et le compte
+        // se REGARDENT, et c'est le panneau qui descend qui les découvre.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            restartAsk = f
+        }
     }
 
     /// La sortie du panneau — les trois chemins (drag, « Non », « Lancer »)
