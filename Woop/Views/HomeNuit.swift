@@ -1325,7 +1325,8 @@ struct SemaineStrip: View {
     private let miniH: CGFloat = 78
     fileprivate static let stickers = ["sticker-bras", "sticker-flamme",
                                    "sticker-basket", "sticker-abricot",
-                                   "sticker-chocolat"]
+                                   "sticker-chocolat", "sticker-jambes",
+                                   "sticker-piscine"]
 
     /// LE LAYOUT, MESURÉ SUR SON WIREFRAME (verdict 21-08 : « le layout des
     /// mini cards c'est pas comme l'image, regarde bien »). Sonde numpy sur
@@ -3157,8 +3158,25 @@ struct HomeNuitPage: View {
                 // porte les 6 pt de `minimumDistance`, donc la prise SAUTERAIT
                 // d'autant à l'instant du contact si on ne les retirait pas.
                 let net = t < 0 ? min(t + 2, 0) : max(t - 2, 0)
+                // ⚠️ **L'ÉLASTIQUE COMMENCE À 1 : 1, ET C'ÉTAIT ÇA « À PEINE
+                // J'EFFLEURE »** (26-08, troisième tour).
+                //
+                // Le diviseur valait 190 pour une levée de 140 : la pente à
+                // l'origine était donc de **0,737 : 1**. La card ne suivait
+                // JAMAIS le doigt — même au premier millimètre elle résistait
+                // de 26 % :
+                //     doigt  5 pt → card 3,7    doigt 10 pt → card 7,4
+                //     doigt 40 pt → card 29,0
+                // Un élastique doit se sentir AU BOUT de la course, jamais au
+                // contact : on pose, ça colle ; on insiste, ça se retient.
+                //
+                // Diviseur = LEVÉE : la pente à l'origine vaut exactement 1,
+                // et la saturation reste à la levée. Une seule constante, et
+                // la relation devient lisible — « la card fait ce que fait le
+                // pouce, jusqu'à sa butée ».
                 tirage = reposCard
-                    + Self.leveeTiroir * CGFloat(tanh(Double(net) / 190))
+                    + Self.leveeTiroir
+                    * CGFloat(tanh(Double(net) / Double(Self.leveeTiroir)))
                 // ⚠️ **LE RETOUR SUIT LE DOIGT, IL NE SE CONTENTE PAS DE GELER.**
                 // Geler avait supprimé le saut, mais geler c'est ne rien faire :
                 // on tirait vers le bas et RIEN ne bougeait jusqu'au lâcher.

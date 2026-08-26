@@ -450,8 +450,15 @@ struct PorteEntree: View {
                         flammeAllumee = true
                     }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + Self.arriveeT) {
-                    withAnimation(.easeOut(duration: 0.4)) { habille = true }
+                // ⚠️ **1,1 s AVANT LA FIN DU FILM.** Attendre `arriveeT` pour
+                // commencer, c'était faire se succéder deux choses au lieu de
+                // les fondre : le film finissait, PUIS la page s'habillait. La
+                // dernière seconde du film est calme (la caméra est posée) —
+                // c'est exactement là que l'habillage doit naître pour qu'on
+                // ne voie aucune couture.
+                DispatchQueue.main.asyncAfter(
+                    deadline: .now() + Self.arriveeT - 1.1) {
+                    habille = true
                     // Le film a été vu en entier : les prochains lancements
                     // ouvrent la porte directement (en RELEASE — en debug la
                     // clé n'est jamais lue, le remède `tutoExosVu`).
@@ -550,7 +557,7 @@ struct PorteEntree: View {
                         .scrollDisabled(!habille)
                 }
             }
-            .reveal(habille, delay: 0.12)
+            .reveal(habille, delay: 0.34)
 
             // LES DOTS — juste sous l'arête du header, alignés à gauche sur la
             // même marge que le texte.
@@ -574,7 +581,7 @@ struct PorteEntree: View {
             }
             .padding(.horizontal, PorteMesures.margeCote)
             .padding(.bottom, PorteMesures.piedBouton + encartBas)
-            .reveal(habille, delay: 0.24)
+            .reveal(habille, delay: 0.62)
             // ⚠️ UNE OPACITÉ NULLE RESTE TAPPABLE. Pendant le film, le bouton
             // est invisible mais son rectangle existe : un tap dans sa zone
             // déclencherait la CÉRÉMONIE DE SORTIE en plein film d'arrivée, au
@@ -1668,7 +1675,19 @@ private struct Flotte: ViewModifier {
             // 4 pt sur 6 s. C'est exactement le précédent du liseré de
             // `CardCorps` (WidgetsCards.swift:236) : « une dérive de 3° sur
             // 9 s n'a aucun besoin de 60 images par seconde ».
-            TimelineView(.animation(minimumInterval: 1.0 / 12.0)) { tl in
+            // ⚠️ **12 → 30 Hz** (26-08). Verdict : « tout est haché, ça doit
+            // être plus fondu comme les haptiques ». Douze images par seconde
+            // sur un écran à 60, c'est une MARCHE toutes les cinq images — et
+            // rien d'autre ne bougeait à 60 sur cette page.
+            //
+            // Le 12 Hz n'était pas un choix esthétique, c'était une rançon :
+            // « un verre qui BOUGE force la recapture de son fond ; mesuré, la
+            // page passait de 60 à 14 img/s le jour où le flottement est
+            // arrivé ». C'est la MÊME maladie que le flou des widgets et celui
+            // du menu, tués aujourd'hui : on avait ralenti le mouvement pour
+            // survivre au coût au lieu de rendre le coût payable.
+            // Le budget de la page a changé — on remonte, et on mesure.
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate / periode + phase
                 let a = t * 2 * .pi
                 content
@@ -1753,10 +1772,24 @@ private extension View {
     /// L'entrée d'un bloc de l'habillage : il monte de 26 pt en fondu, avec son
     /// retard propre — la cascade dans la nuit. (Le même geste que le
     /// formulaire de l'auth ; son `reveal` est privé à AuthView.swift.)
+    /// ⚠️ **L'HABILLAGE NE CLAQUE PLUS, IL SE POSE** (26-08). Verdict : « tout
+    /// est long à arriver alors que ça doit être MAJESTUEUX ».
+    ///
+    /// Ce qui se passait : neuf secondes où rien n'arrive, puis TOUT en moins
+    /// d'une seconde — trois marches de 0,12 s sous un RESSORT qui dépasse et
+    /// revient. Le dépôt a déjà écrit la loi ailleurs, mot pour mot : « un
+    /// ressort dépasse et revient : sur un plan de cette lenteur c'est le seul
+    /// geste qui pourrait encore faire cheap ».
+    ///
+    /// Désormais : une courbe qui DÉCÉLÈRE (jamais de rebond), presque deux
+    /// fois plus longue, et une montée plus ample — un objet lourd se pose
+    /// lentement, c'est ce qui fait la majesté. Les retards sont étalés au
+    /// site d'appel, et l'habillage part AVANT la fin du film : il se fond
+    /// dans sa dernière seconde au lieu de lui succéder.
     func reveal(_ shown: Bool, delay: Double) -> some View {
         opacity(shown ? 1 : 0)
-            .offset(y: shown ? 0 : 26)
-            .animation(.spring(response: 0.65, dampingFraction: 0.85)
+            .offset(y: shown ? 0 : 34)
+            .animation(.timingCurve(0.16, 0.84, 0.22, 1, duration: 1.15)
                 .delay(delay), value: shown)
     }
 }

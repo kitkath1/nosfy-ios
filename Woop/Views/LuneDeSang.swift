@@ -217,6 +217,17 @@ struct LuneDeSangView: View {
     private static let freeze: Double? = UserDefaults.standard
         .string(forKey: "luneSangFreeze").flatMap(Double.init)
 
+    /// `-corbeauxEchelle <n>` : la taille de la volée, réglable au lancement.
+    /// Cette lune-ci fait ~200 pt quand l'archive en faisait 800 : la volée se
+    /// calibre à l'œil, sur l'appareil, pas au jugé dans le code.
+    private static let corbeauxOff =
+        CommandLine.arguments.contains("-corbeauxOff")
+
+    private static var echelleCorbeaux: CGFloat {
+        CGFloat(UserDefaults.standard.string(forKey: "corbeauxEchelle")
+            .flatMap(Double.init) ?? 2.4)
+    }
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -247,6 +258,60 @@ struct LuneDeSangView: View {
                                    soloNeon: 1,
                                    idleLife: b.idleLife,
                                    night: b.night)
+
+                    // ⚠️ **LES CORBEAUX SONT RENDUS AU SPLASH** (26-08).
+                    // Verdict : « il manque les corbeaux, cherche dans les
+                    // commits ». Ils n'avaient pas été supprimés — ils sont
+                    // partis SANS QUE PERSONNE NE LE DÉCIDE, le jour où le
+                    // plan-séquence de 13,95 s (`MoonSplashView`) a cédé la
+                    // place à la Lune de Sang : ils n'étaient montés que
+                    // là-bas, et le fichier `NightBirds.swift` est resté
+                    // intact dans le dossier, orphelin.
+                    //
+                    // Ils reprennent leur rôle d'origine à la lettre : six
+                    // silhouettes NOIRES, très loin, en contre-jour — elles ne
+                    // se voient que là où elles croisent la lueur de la lune.
+                    // « Un corbeau de près est un dessin animé ; six
+                    // battements d'ailes minuscules devant une lune, c'est du
+                    // film muet. »
+                    //
+                    // ⚠️ La lune est AU CENTRE : la caméra de cette partition
+                    // ne bouge que son `z` (le zoom), jamais sa cible — donc
+                    // le centre de l'écran EST le centre de la lune, et il n'y
+                    // a rien à recalculer.
+                    //
+                    // Ils partent 0,2 s AVANT la pose : le premier traverse
+                    // pendant que le croissant s'allume, les derniers pendant
+                    // les états tenus. La traversée dure ~3,4 s et l'écran
+                    // meurt au noir à 4,45 s : la queue de la volée s'éteint
+                    // avec le reste, exactement comme elle le faisait sous les
+                    // voiles de l'archive.
+                    // `-corbeauxOff` : la volée éteinte. C'est la SEULE
+                    // mesure propre — deux captures qui ne diffèrent QUE par
+                    // les oiseaux. (Les compter par leur couleur ne marche
+                    // pas : la lune de SANG en porte, et le filtre l'attrape.)
+                    if !reduceMotion, !Self.corbeauxOff {
+                        // ⚠️ **LA VOLÉE EST RESSERRÉE — ×1,7 SUR L'ÂGE.**
+                        // La partition d'origine étalait six départs sur 1,2 s
+                        // pour une traversée de 3,4 s chacun : sur les 13,95 s
+                        // du plan-séquence, la volée avait le temps de passer.
+                        // Ici l'écran meurt à 4,45 s — sonde `-corbeauxSonde`
+                        // (la volée peinte en ROUGE, parce que des silhouettes
+                        // noires sur une nuit noire ne se prouvent pas à
+                        // l'œil) : à mi-course, UN SEUL oiseau était à l'écran,
+                        // et au-dessus de la lueur. Accélérer l'âge resserre
+                        // les départs ET la traversée d'un seul coup, et les
+                        // ailes battent d'autant plus vite — ce qui est juste,
+                        // ce sont des oiseaux qui passent, pas qui planent.
+                        let age = (t - LuneDeSangBeat.tPose + 0.35) * 1.7
+                        if age >= 0 {
+                            NightBirds(age: age,
+                                       moon: CGPoint(x: size.width / 2,
+                                                     y: size.height / 2),
+                                       echelle: Self.echelleCorbeaux)
+                                .ignoresSafeArea()
+                        }
+                    }
                 }
                 // Le grain de la maison, à la dose du splash : les nappes
                 // sombres bandent sur OLED.

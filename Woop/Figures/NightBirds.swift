@@ -16,6 +16,19 @@ struct NightBirds: View {
     var age: Double
     /// Le centre de la lune à l'écran — les trajectoires passent dessous.
     var moon: CGPoint
+    /// L'ÉCHELLE DE LA VOLÉE. 1 = le réglage d'origine, calé sur la lune
+    /// PLEIN ÉCRAN du plan-séquence.
+    ///
+    /// ⚠️ La Lune de Sang, elle, fait ~200 pt de large : à l'échelle 1 les
+    /// oiseaux mesuraient 7 pt d'envergure pour un trait de 1,1 — mesuré à la
+    /// sonde, ils étaient bien dessinés et bien placés, mais indiscernables.
+    /// Ce n'est pas un défaut du composant : c'est une distance qui n'est plus
+    /// la même. Le réglage de l'archive n'est pas touché (défaut 1).
+    var echelle: CGFloat = 1
+    /// `-corbeauxSonde` : la volée en ROUGE, pour vérifier qu'elle est
+    /// dessinée et OÙ — des silhouettes noires sur une nuit noire ne se
+    /// prouvent pas à l'œil.
+    static let sonde = CommandLine.arguments.contains("-corbeauxSonde")
 
     var body: some View {
         Canvas(opaque: false, colorMode: .nonLinear,
@@ -41,7 +54,7 @@ struct NightBirds: View {
                 let y = moon.y + CGFloat(drift + bob)
 
                 // Le glyphe du lointain : deux courbes, les ailes qui battent.
-                let w = CGFloat(3.2 + 3.4 * h2)
+                let w = CGFloat(3.2 + 3.4 * h2) * echelle
                 let phase: Double = a * 2.0 * Double.pi * (2.6 + 1.6 * h1)
                 let flap = CGFloat(sin(phase + h3 * 6.3))
                 let tip: CGFloat = -w * (0.55 * flap + 0.15)
@@ -51,8 +64,10 @@ struct NightBirds: View {
                                control: CGPoint(x: x - w * 0.45, y: y + w * 0.22))
                 p.addQuadCurve(to: CGPoint(x: x + w, y: y + tip),
                                control: CGPoint(x: x + w * 0.45, y: y + w * 0.22))
-                ctx.stroke(p, with: .color(.black.opacity(0.92)),
-                           style: StrokeStyle(lineWidth: 1.1, lineCap: .round))
+                ctx.stroke(p, with: .color(NightBirds.sonde
+                                           ? .red : .black.opacity(0.92)),
+                           style: StrokeStyle(lineWidth: 1.1 * echelle,
+                                              lineCap: .round))
             }
         }
         .allowsHitTesting(false)

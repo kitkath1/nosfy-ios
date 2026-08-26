@@ -1012,6 +1012,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// rangement et la navette SE RECOLLAIT au lâcher — « je galère à la
     /// récupérer ». On ne peut pas ranger et déranger dans le même geste.
     @State private var sortiDuMur = false
+    /// LE MENU EST NÉ AU CONTACT de ce geste-ci. Il se rétracte si le doigt
+    /// se révèle porter le galet, et il dit au relâchement qu'il n'a plus rien
+    /// à basculer.
+    @State private var ouvertAuContact = false
     /// Le jeton de la POSE : il déclenche la piste de keyframes de
     /// l'écrasement. Un compteur, pas un booléen — deux chutes de suite
     /// doivent rejouer.
@@ -1173,9 +1177,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     //
                     // Il vit donc là où il sert : à son banc `-couronneLab`.
                     // Et même là, pas pendant la transition.
-                    .blur(radius: (couronne && !enTransition
-                                   && !MenuSonde.sansFlou)
-                          ? 7 * retrait : 0)
+                    .blur(radius: FlouBanc.avant
+                          ? 7 * retrait
+                          : ((couronne && !enTransition
+                              && !MenuSonde.sansFlou) ? 7 * retrait : 0))
                     .scaleEffect(1 - 0.026 * retrait, anchor: .center)
                     .opacity(1 - 0.88 * retrait)
 
@@ -1301,8 +1306,20 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // le geste LOIN du bord. Le pad vertical est symétrique
                     // mais le ZStack aligne en bas — d'où la compensation
                     // d'offset, sinon le galet remonterait de 26 pt.
-                    .padding(.vertical, range ? 34 : 0)
-                    .padding(.trailing, range ? 30 : 0)
+                    // ⚠️ **LA PRISE ÉLARGIE** (26-08, troisième tour). Le
+                    // fichier avait déjà tranché : ce qui rend la navette
+                    // saisissable n'est pas sa VISIBILITÉ (la sortir à 20 pt
+                    // fut essayé et refusé — « une forme tranchée par le cadre
+                    // est une POIGNÉE de tiroir »), c'est sa PRISE. Mais la
+                    // prise était encore trop courte : verdict « j'ai du mal à
+                    // la récupérer sur le côté », et le fichier porte déjà, à
+                    // dix lignes d'ici, la plainte jumelle « je galère à la
+                    // récupérer ».
+                    // 30 → 56 vers la droite (c'est le seul côté où il y a de
+                    // l'écran : à gauche, c'est le bord), 34 → 44 en hauteur.
+                    // Le dessin, lui, ne bouge pas d'un pixel.
+                    .padding(.vertical, range ? 44 : 0)
+                    .padding(.trailing, range ? 56 : 0)
                     .offset(x: porte.width,
                             y: porte.height + (range ? 34 : 0))
                     .contentShape(range ? AnyShape(Rectangle())
@@ -1331,6 +1348,34 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                     // meurt au relâcher.
                                     porteStart = Date()
                                     porteEnd = nil
+                                    // ⚠️ **LE MENU NAÎT AVEC LA FUMÉE, PAS AU
+                                    // RELÂCHEMENT** (26-08, troisième tour).
+                                    // Verdict : « la fumée apparaît, puis il y
+                                    // a un délai, puis le menu arrive trop
+                                    // tard — ils doivent faire partie de la
+                                    // MÊME transition ».
+                                    //
+                                    // Ils n'en faisaient pas partie : la fumée
+                                    // partait au doigt POSÉ (ici), le menu au
+                                    // doigt LEVÉ. Entre les deux il y avait,
+                                    // par construction, toute la durée de
+                                    // l'appui — et aucune partition ne rattrape
+                                    // ça. J'ai retiré le retard explicite au
+                                    // premier tour et réparé le gel au second ;
+                                    // il restait ce décalage-là, le vrai.
+                                    //
+                                    // ⚠️ ET IL SE RÉTRACTE SI LE DOIGT PART
+                                    // PORTER LE GALET (voir `enMain` plus
+                                    // bas) : on ouvre au contact, on annule si
+                                    // le geste se révèle être un port. Le
+                                    // contraire — attendre pour être sûr —
+                                    // c'est exactement ce qui faisait « trop
+                                    // tard ».
+                                    if !couronne, !range, !ouvert {
+                                        ouvertAuContact = true
+                                        retard = 0
+                                        ouvert = true
+                                    }
                                     depart = porte
                                     // Jamais de `brut` périmé d'un geste
                                     // précédent : il décide du rangement.
@@ -1356,8 +1401,20 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                 }
                                 let d = hypot(v.translation.width,
                                               v.translation.height)
-                                if d > 12, !enMain {
+                                // ⚠️ 5 pt et non 12 : on arrache la navette
+                                // du mur d'un frôlement. Le verrou
+                                // `sortiDuMur` empêche toujours de ranger et
+                                // déranger dans le même geste — c'est LUI qui
+                                // protège, pas ce seuil.
+                                if d > 5, !enMain {
                                     enMain = true
+                                    // Le geste se révèle être un PORT : le
+                                    // menu né au contact se rétracte.
+                                    if ouvertAuContact {
+                                        ouvertAuContact = false
+                                        retard = 0
+                                        ouvert = false
+                                    }
                                     // ON LE TIRE : dès qu'il quitte le mur,
                                     // la navette redevient galet. Un seul
                                     // geste, aucune poignée à viser.
@@ -1461,6 +1518,15 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                                 // cérémonie offerte à qui prend le temps.
                                 if couronne {
                                     ouvrirC()
+                                    return
+                                }
+                                // Le contact a DÉJÀ ouvert : le relâchement
+                                // n'a plus rien à décider — sinon il
+                                // refermerait aussitôt ce qu'on vient de voir
+                                // naître. Il ne reste au tap que le rôle
+                                // inverse : refermer un menu déjà ouvert.
+                                if ouvertAuContact {
+                                    ouvertAuContact = false
                                     return
                                 }
                                 retard = 0
