@@ -394,10 +394,55 @@ final class RocketHaptics {
 
     /// Coupe net — quand on passe le splash d'un toucher, le grondement ne
     /// doit pas continuer sous l'écran suivant.
-    func stop() {
+    /// ⚠️ `theme: false` ARRÊTE L'HAPTIQUE SEULE. Par défaut cette méthode
+    /// coupe aussi la musique — un couplage juste tant que les deux finissent
+    /// ensemble. Ils ne finissent plus ensemble : le thème de la Lune de Sang
+    /// dure 5,506 s pour un plan de 4,45, et sa dernière seconde ring out
+    /// EXPRÈS dans la couture noire. À la fin naturelle, le motif haptique est
+    /// déjà terminé de lui-même et il n'y a rien à couper — mais un `stop()`
+    /// nu emporterait la queue du thème avec lui.
+    func stop(theme: Bool = true) {
         try? player?.stop(atTime: CHHapticTimeImmediate)
         player = nil
-        MoonTheme.shared.stop()
+        if theme { MoonTheme.shared.stop() }
+    }
+
+    /// LE SOUFFLE — « RIEN N'EST FRAPPÉ, TOUT RESPIRE ».
+    ///
+    /// Verdict 26-08 : « l'haptique horrible ». `paliers` tire **trois impacts
+    /// transitoires** (intensité 1,0 / 0,85 / 0,85, netteté 0,30) calés pile
+    /// sur les trois états — l'haptique SOULIGNAIT donc les marches que tout
+    /// le reste du chantier s'emploie à fondre. Trois coups frappés en 4,45 s
+    /// sur une scène qui doit être « comme un film, doux, mélodieux ».
+    ///
+    /// Ici : **aucun transitoire**. Un seul événement continu qui couvre tout
+    /// le plan, dont l'intensité suit une courbe de contrôle — elle monte avec
+    /// la plongée, culmine à la pose sans jamais claquer, s'infléchit sur
+    /// chaque état, et meurt avec l'extinction. La main sent la lumière.
+    ///
+    /// ⚠️ Muet au simulateur : ça se juge sur l'appareil, uniquement.
+    func respire(duree: Double, points: [(t: Double, force: Float)],
+                 nettete: Float = 0.05) {
+        guard let engine, points.count >= 2 else { return }
+        let ev = CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [
+                .init(parameterID: .hapticIntensity, value: 1.0),
+                .init(parameterID: .hapticSharpness, value: nettete),
+            ],
+            relativeTime: 0, duration: duree)
+        let courbe = CHHapticParameterCurve(
+            parameterID: .hapticIntensityControl,
+            controlPoints: points.map {
+                .init(relativeTime: $0.t, value: $0.force)
+            },
+            relativeTime: 0)
+        guard let pattern = try? CHHapticPattern(events: [ev],
+                                                 parameterCurves: [courbe]),
+              let p = try? engine.makePlayer(with: pattern) else { return }
+        player = p
+        try? engine.start()
+        try? p.start(atTime: CHHapticTimeImmediate)
     }
 }
 
@@ -423,15 +468,26 @@ final class MoonTheme {
 
     private init() {}
 
-    func prepare() {
-        guard player == nil,
-              let url = Bundle.main.url(forResource: "MoonSplashTheme",
+    /// La piste chargée — deux splashs, deux montages du MÊME matériau.
+    ///
+    /// ⚠️ **`LuneSangTheme` EST UN RECUT, PAS UN AUTRE MORCEAU** : le thème
+    /// d'origine dure 15,556 s et son impact tombe à 6,300 — il a été composé
+    /// pour le plan-séquence de 13,95 s. La Lune de Sang fait 4,45 s et sa
+    /// pose est à 1,30. Joué tel quel, le son commenterait une image partie
+    /// depuis cinq secondes. `tools/porte/recuit_theme.sh` recale l'impact au
+    /// centième et pose le geste final sur l'extinction.
+    private var piste: String?
+
+    func prepare(_ nom: String = "MoonSplashTheme") {
+        guard piste != nom,
+              let url = Bundle.main.url(forResource: nom,
                                         withExtension: "m4a") else { return }
         try? AVAudioSession.sharedInstance()
             .setCategory(.ambient, options: [.mixWithOthers])
         player = try? AVAudioPlayer(contentsOf: url)
         player?.volume = 0.55
         player?.prepareToPlay()
+        piste = nom
     }
 
     func play() {

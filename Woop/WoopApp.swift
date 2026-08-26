@@ -1113,6 +1113,23 @@ struct RootView: View {
                 while showSplash {
                     try? await Task.sleep(nanoseconds: 200_000_000)
                 }
+                // ⚠️ **LE FOUR NE CUIT PAS SI LA PORTE EST LÀ (26-08), ET
+                // C'EST 129 ms RENDUS.** Mesuré à `-porteNeuve -fps` : le
+                // journal imprimait DEUX fois `[booster-bench] lune`, et deux
+                // trous derrière — 129 ms pour le four, 127 pour le manège.
+                //
+                // C'est du travail fait deux fois. `BoosterScene.init` décode
+                // ~36 Mo de textures (booster-color et booster-emiss en
+                // 2048², booster-normal en 1024²) SANS CACHE, à chaque
+                // construction ; et quand la porte est à l'écran, elle monte
+                // de toute façon un manège RÉEL qu'elle garde vivant toute la
+                // session (`PorteDecors`). Le four réchauffait donc pour un
+                // convive déjà servi.
+                //
+                // Hors porte (session déjà ouverte, `-skipAuth`), il reste
+                // seul à chauffer et il garde tout son sens : sans lui, la
+                // première ouverture du booster payait ~1,5 s de NOIR.
+                guard !showAuth else { return }
                 // ⚠️ **LE FOUR NE SE CALE PLUS SUR UNE HORLOGE MURALE**
                 // (26-08). Il attendait « splash + 9,2 s » avec, en
                 // commentaire, « L'arrivée V2 (8,23 s) » — un chiffre périmé :

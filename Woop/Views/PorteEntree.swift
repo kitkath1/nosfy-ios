@@ -200,15 +200,28 @@ struct PorteEntree: View {
     var arrivee: Bool = PorteEntree.porteArrivee
 
     /// La partition de l'arrivée, en secondes depuis l'apparition : le
-    /// fichier V3 fait **274** images à 30 img/s — fenêtre 1,20 s de la
-    /// source, ralenti ×1,35, et un serrage 1,16 → 1,00 CUIT par-dessus
-    /// (verdict 23-08 : « encore plus spectaculaire »).
+    /// fichier **V4** fait **164** images à 30 img/s — fenêtre 1,20 → 8,042 s
+    /// de la source, jouée à **×0,80** (donc plus VITE que tournée), et un
+    /// serrage **1,60 → 1,00** en rampe amortie, CUIT par-dessus.
+    ///
+    /// ⚠️ **LE RALENTI EST MORT, ET IL ÉTAIT LA MOITIÉ DU « ÇA LAGUE »**
+    /// (verdict 26-08 : « la vidéo lague, elle est trop lente… l'arrivée
+    /// n'est pas assez rapide et majestueuse, plus Zoom »). En V3, 164 images
+    /// source étaient étirées sur 274 par `minterpolate=blend` : **40 % du
+    /// film n'étaient pas des images** mais des fondus croisés — une image
+    /// double sur chaque mouvement de caméra. À ×0,80, 24 img/s tombe
+    /// EXACTEMENT sur 30 : une image de sortie par image source, aucune
+    /// fabriquée. Le détail et les mesures sont dans `recuit_porte.sh`.
+    ///
     /// ⚠️ La constante suit le FICHIER (`ffprobe -count_frames`), jamais le
-    /// calcul : `minterpolate` ne rend pas exactement le compte théorique.
+    /// calcul de durée — et le recuit VÉRIFIE désormais l'accord, parce que
+    /// la V3 se dédisait justement là-dessus (le script disait 9,236 s pour
+    /// un fichier de 9,133 : le zoom se figeait 6,4 % trop serré, donc à
+    /// côté de la maquette d'arrivée que la page habille).
     /// ⚠️ Plus `private` : le four du manège la LIT pour ne plus se caler
     /// sur une horloge murale (WoopApp) — une durée écrite deux fois
     /// finit toujours par se dédire, et celle-ci s'était déjà dédite.
-    static let arriveeT: Double = 274.0 / 30.0            // 9,133
+    static let arriveeT: Double = 164.0 / 30.0            // 5,467
     /// La flamme s'allume à T − 1,2 (rampe de 0,8 s), l'habillage à T.
     private static let flammeA: Double = arriveeT - 1.2
 
@@ -308,13 +321,24 @@ struct PorteEntree: View {
                 // puis poussée de `flammeBas` vers le bas. Elle est le calque du
                 // dessous : aucun blend, aucun masque, opacité 1 (la loi du pied
                 // de la home). Le header, opaque, lui coupera le haut.
-                PorteFlamme(largeur: W)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-                    .offset(y: Self.flammeBasBanc)
-                    // Pendant l'arrivée, la flamme n'existe pas encore : elle
-                    // s'allume à T − 1,2 s, en 0,8 s — le feu prend AVANT que
-                    // le texte se pose, c'est lui qui annonce la page.
-                    .opacity(flammeAllumee ? 1 : 0)
+                // ⚠️ **ELLE EST DÉMONTÉE, PLUS SEULEMENT TRANSPARENTE**
+                // (26-08). C'est la loi déjà écrite sur les créneaux du header
+                // — « un `AVPlayerLayer` à opacité nulle décode quand même » —
+                // que ce calque-ci n'avait jamais reçue : pendant les neuf
+                // secondes du film, un SECOND lecteur tournait derrière lui
+                // pour ne rien montrer.
+                //
+                // Le montage tombe donc à T − 1,2 s, dans la seconde CALME du
+                // film (la caméra est posée), et la pose intégrée de
+                // `CalqueVideo` tient l'image jusqu'à `isReadyForDisplay` : le
+                // fondu de 0,8 s ne voit jamais un trou. Hors arrivée,
+                // `flammeAllumee` est vrai dès l'`onAppear` — rien ne change.
+                if flammeAllumee {
+                    PorteFlamme(largeur: W)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .offset(y: Self.flammeBasBanc)
+                        .transition(.opacity)
+                }
 
                 // ② LE HEADER — la vidéo, plein bord, sous l'encoche, pilotée
                 // par `p` : le croisé pair/impair du § 4.3 du plan. En mode
@@ -474,9 +498,9 @@ struct PorteEntree: View {
         // oublier ferait APPARAÎTRE puis disparaître la barre d'état au raccord.
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        // `-fps` : la sonde de cadence sur la PORTE — le seul juge du
-        // « l'animation lag ».
-        .sondeCadence("porte")
+        // ⚠️ PAS DE SECONDE `sondeCadence` ICI : elle vivait en double dans ce
+        // même `body` (deux `CADisplayLink` sur le fil principal, et le
+        // journal imprimait chaque mesure deux fois). Celle du haut suffit.
         .preferredColorScheme(.dark)
     }
 
@@ -794,8 +818,8 @@ private struct PorteHeader: View {
             // type-check this expression in reasonable time », sans ligne
             // fautive utile. La loi maison de cette famille : casser
             // l'expression, hisser les scalaires pré-typés.
-            .overlay { PorteDecors(etat: etat, largeur: largeur,
-                                   hauteur: hauteur) }
+            .overlay { PorteDecors(etat: etat, arrivee: arrivee,
+                                   largeur: largeur, hauteur: hauteur) }
             // LE FILM REJOUE AU RETOUR (V3, verdict 23-08 : « quand on revient
             // sur la partie 1, l'écran login rejoue l'animation trop belle »).
             //
@@ -943,8 +967,13 @@ private struct ReelHote: UIViewRepresentable {
 /// elle se place, elle reste ensuite COMPLÈTEMENT FIXE ».
 ///
 /// Ce qu'on croyait être un flottement ajouté était la MÉCANIQUE du raccord,
-/// et la sonde (ffmpeg + numpy sur les fichiers) le dit sans appel :
-///   · `onb-arrivee.mp4` fait 274 images à 30 i/s = 9,133 s — exactement
+/// et la sonde (ffmpeg + numpy sur les fichiers) le dit sans appel.
+/// ⚠️ **LES COTES CI-DESSOUS SONT CELLES DU FICHIER V3** (274 images), celui
+/// qui portait le bug : elles sont gardées comme la PREUVE du diagnostic, pas
+/// comme une description du fichier d'aujourd'hui (V4, 164 images — voir
+/// `arriveeT`). Le remède, lui, ne dépend d'aucune de ces cotes : il n'y a
+/// plus de second lecteur du tout.
+///   · `onb-arrivee.mp4` faisait 274 images à 30 i/s = 9,133 s — exactement
 ///     `arriveeT`, l'instant où la partition pose l'habillage ;
 ///   · son image 178 est l'image 0 de `onb-lune-loop.mp4` (écart 0,56/255) ;
 ///   · sa DERNIÈRE image (273) est l'image 95 de cette boucle (0,56) ;
@@ -1297,6 +1326,10 @@ private struct PortailLune: View {
 /// sous le doigt — et jamais deux au même instant.
 private struct PorteDecors: View {
     let etat: EtatPorte
+    /// Le film d'arrivée est en jeu sur cette page. ⚠️ **IL COMMANDE LA
+    /// NAISSANCE DU MANÈGE**, et c'est la correction du 26-08 (voir
+    /// `delaiManege`).
+    let arrivee: Bool
     let largeur: CGFloat
     let hauteur: CGFloat
 
@@ -1304,6 +1337,42 @@ private struct PorteDecors: View {
     /// rejoue (`coordinator.rejoueLaPose()`).
     @State private var manegeHandle = BoosterHandle()
     @State private var dernierePose = Date.distantPast
+
+    /// LE DÉLAI DE NAISSANCE DU MANÈGE — ET C'EST LUI, « LA VIDÉO LAGUE ».
+    ///
+    /// ⚠️ **MESURÉ À LA SONDE, PAS DÉDUIT** (`-porteNeuve -fps`, banc
+    /// `kat-entree`). Le journal met les deux faits côte à côte :
+    ///
+    ///     [cadence] porte : 56,6 img/s (pire trou 111 ms)
+    ///     [booster-bench] lune: geo=false op=1.0          ← BoosterScene.init
+    ///     [booster-bench] scène : mylar=false env=booster-studio.hdr
+    ///     [cadence] porte : 53,0 img/s (pire trou 128 ms)
+    ///     [cadence] porte : 38,1 img/s (pire trou 224 ms)  ← LE TROU
+    ///     [cadence] porte : 59,4 img/s (pire trou 26 ms)   ← ça repart
+    ///
+    /// Un trou de 224 ms, c'est SEPT images de film à 30 i/s qui ne sont
+    /// jamais servies. Le fil principal était dans `BoosterScene.init` (le
+    /// mesh `.bin`, sept PNG sans cache, puis la compilation des pipelines
+    /// Metal), déclenché par `naisManegeApres(1.2)` — donc **1,2 s après le
+    /// début du film**, en plein dedans.
+    ///
+    /// Le calcul « on le paie page 1, pendant qu'on lit le welcome » (mesure
+    /// de la V2 : manège 1137 ms contre 396 pour la carte Sets) reste JUSTE —
+    /// mais il a été écrit pour la porte DÉJÀ VUE, celle qui naît habillée.
+    /// Au premier lancement il n'y a pas de welcome à lire à +1,2 s : il y a
+    /// un film. Le délai suit donc ce qui est réellement à l'écran.
+    ///
+    /// ⚠️ **ET IL ATTEND LE FOUR, PAS SEULEMENT LE FILM.** `WoopApp` allume
+    /// son four à `arriveeT + 3,5` et le laisse cuire 1,8 s : c'est LUI qui
+    /// compile les pipelines, pour que ce montage-ci ne les paie plus. Naître
+    /// avant sa sortie de four, c'était rendre le four inutile — le journal
+    /// montrait d'ailleurs `BoosterScene` construite DEUX fois. On se pose
+    /// donc derrière : `arriveeT + 5,6`.
+    ///
+    /// Hors film, rien ne change : 1,2 s, la valeur mesurée de la V2.
+    private var delaiManege: Double {
+        arrivee && !etat.arriveeFinie ? PorteEntree.arriveeT + 5.6 : 1.2
+    }
 
     var body: some View {
         let p = etat.p
@@ -1335,7 +1404,7 @@ private struct PorteDecors: View {
         .onChange(of: p < 0.02) { _, pose in
             guard pose else { return }
             if !etat.sertiNe { etat.sertiNe = true }
-            naisManegeApres(1.2)
+            naisManegeApres(delaiManege)
         }
         .onChange(of: p > 0.98 && p < 1.02) { _, pose in
             if pose && !etat.widgetsNes { etat.widgetsNes = true }
@@ -1363,7 +1432,7 @@ private struct PorteDecors: View {
             if p > 2.9 { etat.manegeNe = true }
             if p < 0.02 || p > 0.5 { etat.sertiNe = true }
             if p > 0.9 { etat.widgetsNes = true }
-            if p < 0.02 { naisManegeApres(1.2) }
+            if p < 0.02 { naisManegeApres(delaiManege) }
             // Les bancs `-portePage <n>` DÉMARRENT sur leur page : le
             // franchissement n'a jamais lieu, la naissance non plus.
         }
@@ -1666,27 +1735,34 @@ private struct Flotte: ViewModifier {
         if reduceMotion {
             content
         } else {
-            // ⚠️ **12 Hz, PAS 30 — ET C'EST CE QUI REND LA FLUIDITÉ.**
-            // Un verre qui BOUGE force la recapture de son fond à chaque
-            // déplacement : mesuré, la page 3 passait de **60 à 14 img/s** le
-            // jour où le flottement est arrivé. Ce n'est pas le flottement qui
-            // est cher, c'est sa CADENCE — à 30 Hz on demandait trente
-            // recaptures par seconde du composite vidéo, pour une dérive de
-            // 4 pt sur 6 s. C'est exactement le précédent du liseré de
-            // `CardCorps` (WidgetsCards.swift:236) : « une dérive de 3° sur
-            // 9 s n'a aucun besoin de 60 images par seconde ».
-            // ⚠️ **12 → 30 Hz** (26-08). Verdict : « tout est haché, ça doit
-            // être plus fondu comme les haptiques ». Douze images par seconde
-            // sur un écran à 60, c'est une MARCHE toutes les cinq images — et
-            // rien d'autre ne bougeait à 60 sur cette page.
+            // ⚠️ **30 Hz, ET LA MONTÉE À LA FRÉQUENCE DE L'ÉCRAN A ÉTÉ
+            // ESSAYÉE PUIS RÉVOQUÉE À LA MESURE (26-08).**
             //
-            // Le 12 Hz n'était pas un choix esthétique, c'était une rançon :
-            // « un verre qui BOUGE force la recapture de son fond ; mesuré, la
-            // page passait de 60 à 14 img/s le jour où le flottement est
-            // arrivé ». C'est la MÊME maladie que le flou des widgets et celui
-            // du menu, tués aujourd'hui : on avait ralenti le mouvement pour
-            // survivre au coût au lieu de rendre le coût payable.
-            // Le budget de la page a changé — on remonte, et on mesure.
+            // Verdict : « je veux garder le flottement, rends-le plus fluide,
+            // ça lag de fou ». J'ai remplacé cet échantillonnage par une
+            // animation DÉCLARATIVE (`repeatForever`), en pariant qu'une
+            // animation confiée au serveur de rendu serait à la fois plus
+            // lisse ET moins chère, puisque le corps de la vue cesse d'être
+            // réévalué. **Le pari est faux, et le chiffre est sans appel :
+            // la page 3 est tombée de 60,0 à 14,0 img/s** — exactement le
+            // « 60 → 14 » que l'histoire de ce fichier annonçait déjà.
+            //
+            // LA LEÇON, et elle vaut pour tout le dépôt : **déplacer du verre
+            // natif coûte PAR IMAGE, quel que soit QUI pilote le mouvement.**
+            // Le verre re-capture son fond à chaque position — ici un fond
+            // qui est une vidéo en train de jouer, le pire cas mesuré du
+            // dépôt. Doubler la cadence du mouvement double la note. Ce n'est
+            // donc pas la façon d'animer qu'il faut changer, c'est le fait
+            // que LA VITRE BOUGE.
+            //
+            // ⚠️ Et le « saccadé » ne vient probablement PAS d'ici : à ±4 pt
+            // sur 6 s, un pas de 1/30 s déplace **0,14 pt**, très en dessous
+            // du seuil de perception. Le vrai suspect est que la page entière
+            // perd des images sur l'appareil — le simulateur, lui, tenait 60.
+            // La seule sortie qui garde le flottement ET la cadence est de
+            // faire dériver le CONTENU en laissant la vitre immobile ; c'est
+            // écrit au § 4 de tools/porte/PLAN-V7-DOUCEUR.md, et ça touche
+            // `CardCorps`, partagé avec la home.
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate / periode + phase
                 let a = t * 2 * .pi

@@ -4,21 +4,31 @@ import simd
 // MARK: - LA LUNE DE SANG — le splash de la porte
 //
 // Jalon 4 de `tools/porte/PLAN-PORTE.md`. Trois états tenus, du plus clair au
-// plus éteint, puis le noir — 3,40 s en tout (l'arbitrage du 22-08 : version
-// courte). Le film d'arrivée de la porte commence au noir : la couture entre
-// les deux est noir-sur-noir, donc introuvable.
+// plus éteint, puis le noir — 4,45 s en tout. Le film d'arrivée de la porte
+// commence au noir : la couture entre les deux est noir-sur-noir, donc
+// introuvable (mesurée : luminance 0,00 sur les deux bords).
 //
-//   0,00 → 0,40   LA POSE       la lune arrive, reveal 0 → 1
-//   0,40 → 0,95   ÉTAT ①        halo ivoire large (r 150), tube or, étoiles
-//   0,95 → 1,20   fondu         night.w 0 → 0,52
-//   1,20 → 1,75   ÉTAT ②        halo orange serré (r ~123), bandes ambre
-//   1,75 → 2,00   fondu         night.w → 1,00 ; la braise s'allume (z 0,40)
-//   2,00 → 2,55   ÉTAT ③        lune de sang : halo r 96 à −35 %, tube sang
-//   2,55 → 3,40   EXTINCTION    tout meurt au noir
+// ⚠️ CE TABLEAU EST LA PARTITION RÉELLE, pas celle d'un plan périmé — il
+// s'était déjà dédit une fois (il décrivait encore la V1 sans plongée, en
+// 3,40 s). Les instants se LISENT des statiques ci-dessous, ils ne se
+// recopient pas.
+//
+//   0,00 → 0,45   NAISSANCE     la lueur minuscule au loin (night.x 0 → 1)
+//   0,45 → 1,30   PLONGÉE       la caméra fond sur elle (z 0,32 → 1,20),
+//                               le tube en veille, LA COMÈTE trace le croissant
+//   1,30          LA POSE       coup de frein, surtension du néon, choc haptique
+//   1,30 → 1,85   ÉTAT ①        halo ivoire large, tube or, étoiles
+//   1,85 → 2,25   fondu         night.w 0 → 0,52
+//   2,25 → 2,80   ÉTAT ②        halo orange serré, bandes ambre
+//   2,80 → 3,20   fondu         night.w → 1,00 ; la braise s'allume (z 0,40)
+//   3,20 → 3,75   ÉTAT ③        lune de sang : halo resserré, tube sang
+//   3,75 → 4,45   EXTINCTION    l'implosion douce, tout meurt au noir
 //
 // ⚠️ 0,55 s PAR PALIER EST UN PLANCHER, PAS UN CONFORT : en dessous, l'œil ne
 // lit plus trois états mais un dégradé continu. Si le verdict téléphone dit
-// que ça défile, c'est l'EXTINCTION qu'on raccourcit, jamais les paliers.
+// que ça défile, c'est l'EXTINCTION qu'on raccourcit, jamais les paliers —
+// et c'est exactement ce qu'on a fait le 26-08 pour payer des fondus plus
+// doux à durée totale constante (voir `fondu` et `extinction`).
 //
 // TOUT EST FONCTION PURE DU TEMPS — `LuneDeSangBeat.at(t:)` — jamais une
 // animation d'état : la scène se rejoue à l'identique image par image, la
@@ -60,8 +70,18 @@ struct LuneDeSangBeat {
     static let naissance = 0.45     // la lueur minuscule au loin
     static let plongee = 0.85       // la caméra fond sur elle
     static let palier = 0.55        // ⚠️ PLANCHER, jamais moins
-    static let fondu = 0.25
-    static let extinction = 1.00
+    /// ⚠️ **0,40 ET NON 0,25 (26-08) — « c'est trop saccadé ».** À 0,25 s, la
+    /// teinture bougeait de 0,52 : 2,1 par seconde en moyenne, 3,1 en pointe.
+    /// À 0,40 la pointe tombe à 1,95, et le smootherstep de `fondant` enlève
+    /// la cassure d'accélération qui restait aux deux bouts.
+    static let fondu = 0.40
+    /// ⚠️ **ET C'EST L'EXTINCTION QUI PAIE, PAS LES PALIERS.** La règle est
+    /// écrite en tête de ce fichier et elle tient : les deux fondus allongés
+    /// coûtent 0,30 s, l'extinction les rend (1,00 → 0,70). **Durée totale
+    /// INCHANGÉE : 4,45 s.** On adoucit sans rallonger le lancement — et
+    /// l'extinction est la seule partie du plan où il ne se passe plus rien
+    /// qu'une lumière qui tombe vers un noir sur lequel le film enchaîne.
+    static let extinction = 0.70
 
     /// Les zooms de la caméra : loin → posée → l'implosion rentre d'un cheveu.
     static let zoomLoin: Float = 0.32
@@ -77,14 +97,81 @@ struct LuneDeSangBeat {
 
     /// Les battements : FORT à la pose (la main reçoit le choc de l'arrivée),
     /// puis un par état.
+    /// ⚠️ **PLUS JOUÉ DEPUIS LE 26-08** — gardé pour l'archive et pour le
+    /// jour où l'on voudrait comparer. Voir `souffle`.
     static var battements: [(time: Double, fort: Bool)] {
         [(tPose, true), (t2, false), (t3, false)]
+    }
+
+    /// LE SOUFFLE HAPTIQUE — la courbe que la main suit, « rien n'est frappé ».
+    ///
+    /// Elle épouse la LUMIÈRE, pas la structure : elle monte pendant que la
+    /// caméra plonge, culmine à la pose (0,62 — un sommet, pas un choc), puis
+    /// s'infléchit doucement sur chaque état et meurt avec l'extinction.
+    /// Aucun point ne monte ni ne descend assez vite pour se lire comme un
+    /// coup — c'est la condition, et c'est ce qui la distingue de
+    /// `battements`.
+    static var souffle: [(t: Double, force: Float)] {
+        [(0.00, 0.00),
+         (naissance, 0.10),          // la lueur naît au loin
+         (tPose - 0.20, 0.34),       // la plongée pousse
+         (tPose, 0.62),              // LA POSE — le sommet
+         (tPose + 0.40, 0.28),       // il retombe, il ne claque pas
+         (t2, 0.38),                 // état ② : une inflexion
+         (t3, 0.46),                 // état ③ : le sang pèse un peu plus
+         (tMort, 0.26),
+         (total, 0.00)]              // l'implosion emporte tout
     }
 
     private static func lisse(_ x: Double) -> Float {
         let c = min(max(x, 0), 1)
         return Float(c * c * (3 - 2 * c))
     }
+
+    /// LE FONDU DES ÉTATS — et il n'est PAS `lisse`.
+    ///
+    /// Verdict 26-08 : « adoucir les transitions entre les différents états,
+    /// c'est trop saccadé ». Deux causes, cumulées :
+    ///
+    /// 1. `lisse` est un smoothstep : sa dérivée PREMIÈRE s'annule aux deux
+    ///    bouts, mais sa dérivée SECONDE y saute d'un coup. Sur une teinture
+    ///    qui bascule de 0,52 en un quart de seconde, cette cassure
+    ///    d'accélération est exactement ce que l'œil appelle « un à-coup » :
+    ///    la couleur ne se met pas en route, elle PART.
+    /// 2. Le fondu ne durait que 0,25 s — soit une vitesse moyenne de 2,1 par
+    ///    seconde et une pointe à 3,1. C'est une bascule, pas un fondu.
+    ///
+    /// `fondant` est un smootherstep (quintique de Perlin) : dérivées
+    /// première ET seconde nulles aux deux bouts. Rien ne démarre, rien ne
+    /// s'arrête — ça FOND. Réservé aux fondus d'état (`night.w`, `night.z`) :
+    /// la plongée, la pose et l'extinction gardent `lisse`, leur nervosité
+    /// est voulue.
+    private static func fondant(_ x: Double) -> Float {
+        let c = min(max(x, 0), 1)
+        return Float(c * c * c * (c * (c * 6 - 15) + 10))
+    }
+
+    /// LA PART DE COURANT — « les états, mais plus fondus, pas aussi coupés »
+    /// (verdict 26-08).
+    ///
+    /// ⚠️ **CECI RÉVOQUE UNE LOI ÉCRITE EN TÊTE DE CE FICHIER**, et la
+    /// révocation est délibérée : « 0,55 s par palier est un plancher : en
+    /// dessous, l'œil ne lit plus trois états mais un dégradé continu. » Cette
+    /// loi défendait la LISIBILITÉ des trois états. La demande vise la
+    /// FLUIDITÉ — « comme un film, doux, mélodieux ». Les deux ne peuvent pas
+    /// être maximales ensemble.
+    ///
+    /// Le compromis n'est PAS de raccourcir les paliers (ça, c'est toujours
+    /// interdit) : c'est de leur enlever leur immobilité. La teinture est
+    /// mélangée à une rampe continue qui traverse tout le plan, de sorte
+    /// qu'elle **RALENTIT sur chaque état au lieu de s'y arrêter**. Les trois
+    /// états restent lisibles par leur COULEUR (0 → 0,52 → 1,00, l'écart le
+    /// plus large possible), plus par un arrêt du mouvement.
+    ///
+    /// 0 = les marches d'avant. 1 = une rampe droite, plus d'états du tout.
+    /// 0,30 : mesuré comme le point où la vitesse ne tombe plus jamais à zéro
+    /// tout en gardant trois plages nettement plus lentes que les fondus.
+    static let courant: Float = 0.30
 
     /// La surtension de la pose : une décharge, pas un projecteur — montée en
     /// 60 ms, morte en 550 ms (la courbe exacte du boom de l'archive).
@@ -173,15 +260,43 @@ struct LuneDeSangBeat {
 
         // Le grésillement du néon posé : la lune ne doit jamais avoir l'air
         // ARRÊTÉE pendant les paliers.
-        b.idleLife = lisse((t - tPose) / 0.3)
+        //
+        // ⚠️ **LA MICRO-VIE PASSE PAR LES UNIFORMES QUI EXISTENT DÉJÀ**
+        // (§5 du plan V7, salve 1 — « plus animé, plus de détail, genre 10
+        // fois plus »). La règle du chantier est que tout détail doit être
+        // peint dans une surface DÉJÀ payée : aucune couche de plus, aucune
+        // horloge de plus, aucun shader à recompiler. `idleLife` pilote déjà
+        // le grésillement du tube — on lui donne une respiration fine et
+        // IRRÉGULIÈRE (trois sinus de périodes premières entre elles, donc
+        // qui ne se rejoignent jamais) au lieu d'une valeur plate.
+        // ⚠️ Ça reste une fonction PURE du temps : les captures de
+        // `-luneSangFreeze` restent déterministes.
+        let vie = 1
+            + 0.16 * sin(t * 5.31)
+            + 0.09 * sin(t * 11.70 + 1.7)
+            + 0.05 * sin(t * 23.30 + 0.4)
+        b.idleLife = lisse((t - tPose) / 0.3) * Float(vie)
+        // ET LE HALO RESPIRE — très lentement, hors phase avec les états,
+        // pour que la nuit elle-même ne soit jamais figée. ±3 % : on ne voit
+        // pas l'atmosphère bouger, on voit qu'elle n'est pas morte.
+        b.night.x *= Float(1 + 0.03 * sin(t * 1.63 + 0.9))
 
         // Le sang : deux marches lissées, tenues entre les fondus. Les
         // tremblements de l'agonie (drops, gasp) vivent DANS le shader sur
         // cette courbe — ils jouent tout seuls pendant les rampes.
-        b.night.w = 0.52 * lisse((t - (t1 + palier)) / fondu)
-                  + 0.48 * lisse((t - (t2 + palier)) / fondu)
-        // La braise du contour s'allume avec le second fondu.
-        b.night.z = 0.40 * lisse((t - (t2 + palier)) / fondu)
+        // LES MARCHES (ce qu'on avait) et LE COURANT (une seule rampe qui
+        // traverse tout le plan), mélangés : voir `courant`.
+        let marches = 0.52 * fondant((t - (t1 + palier)) / fondu)
+                    + 0.48 * fondant((t - (t2 + palier)) / fondu)
+        let flot = lisse((t - t1) / (tMort - t1))
+        b.night.w = marches * (1 - courant) + flot * courant
+        // La braise du contour s'allume avec le second fondu — même
+        // traitement, sinon elle réintroduirait la marche qu'on vient
+        // d'enlever, et c'est l'élément le plus visible des trois.
+        let braiseMarche = fondant((t - (t2 + palier)) / fondu)
+        let braiseFlot = lisse((t - (t2 - fondu)) / (tMort - t2 + fondu))
+        b.night.z = 0.40 * (braiseMarche * (1 - courant)
+                            + braiseFlot * courant)
 
         if t >= tMort {
             // L'IMPLOSION DOUCE : la lumière tombe PENDANT que la caméra
@@ -223,9 +338,15 @@ struct LuneDeSangView: View {
     private static let corbeauxOff =
         CommandLine.arguments.contains("-corbeauxOff")
 
+    /// ⚠️ **2,4 → 1,6 (26-08) : « plus petit ».** Le défaut de l'archive (1)
+    /// était calé sur une lune PLEIN ÉCRAN ; 2,4 avait été trouvé pour cette
+    /// lune-ci quand la volée était en ivoire et devait s'imposer. En noir et
+    /// sur douze individus, la même taille ferait un vol de corbeaux au
+    /// premier plan — l'effet que le fichier NightBirds décrit comme « un
+    /// dessin animé ». Réglable au lancement : `-corbeauxEchelle <n>`.
     private static var echelleCorbeaux: CGFloat {
         CGFloat(UserDefaults.standard.string(forKey: "corbeauxEchelle")
-            .flatMap(Double.init) ?? 2.4)
+            .flatMap(Double.init) ?? 1.6)
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -243,6 +364,17 @@ struct LuneDeSangView: View {
                         ?? start.map { tl.date.timeIntervalSince($0) } ?? 0
                     let b = LuneDeSangBeat.at(reduceMotion
                                               ? LuneDeSangBeat.t3 : t)
+                    // ⚠️ **LE `ZStack` EST OBLIGATOIRE, ET SON ABSENCE EST
+                    // EXACTEMENT POURQUOI LES CORBEAUX AVAIENT DISPARU**
+                    // (26-08). Le contenu de ce `TimelineView` était un
+                    // TupleView nu — deux vues sans conteneur de disposition :
+                    // le canvas du monolithe, puis la volée. Seule la PREMIÈRE
+                    // était posée. Mesuré : zéro pixel rouge à l'écran sous
+                    // `-corbeauxSonde`, alors que la partition place les six
+                    // oiseaux au centre exact (x 118-228 pt, y 410-494 pt à
+                    // t = 2,2 s). Ils n'étaient ni mal placés ni invisibles :
+                    // ils n'étaient pas DESSINÉS.
+                    ZStack {
                     // `soloNeon: 1` — LE PAVÉ N'EXISTE PAS : il n'y a que le
                     // croissant dans la nuit, comme sur la maquette (et comme
                     // la phase « nuit » de l'archive : solo 1 + night.x 1 =
@@ -303,14 +435,67 @@ struct LuneDeSangView: View {
                         // les départs ET la traversée d'un seul coup, et les
                         // ailes battent d'autant plus vite — ce qui est juste,
                         // ce sont des oiseaux qui passent, pas qui planent.
-                        let age = (t - LuneDeSangBeat.tPose + 0.35) * 1.7
+                        // ⚠️ **×1,25 ET NON ×1,7** : la volée passait TROP
+                        // VITE. Calculé sur la partition (6 trajectoires,
+                        // écran 402 pt) : à ×1,7 il ne reste plus un seul
+                        // oiseau en vol dès **t = 3,3 s**, alors que la lune
+                        // ne meurt qu'à 3,45 et l'écran à 4,45 — la volée
+                        // était partie avant la fin du plan. À ×1,25 elle
+                        // tient jusqu'à ~3,8 s et s'éteint AVEC la scène,
+                        // ce que le commentaire d'origine promettait déjà.
+                        //     t=      1,3  1,8  2,3  2,8  3,3  3,8
+                        //     ×1,70    2    6    6    6    0    0
+                        //     ×1,25    2    6    6    6    6    4
+                        let age = (t - LuneDeSangBeat.tPose + 0.35) * 1.25
                         if age >= 0 {
+                            // ⚠️ **LE CANVAS EST UN COULOIR, PAS UN ÉCRAN —
+                            // ET C'EST MESURÉ.** À douze individus en plein
+                            // écran, la lune tombait à 43,5 / 41,1 / 30,4
+                            // img/s là où elle tenait 60. Bissection à
+                            // `-corbeauxOff` : la micro-vie était INNOCENTE
+                            // (60 / 60 / 60 sans la volée), tout le coût
+                            // était le `Canvas`.
+                            //
+                            // Un `Canvas` SwiftUI re-rasterise TOUTE sa
+                            // surface à chaque image, qu'on y dessine six
+                            // traits ou zéro. Or les chauves-souris tiennent
+                            // dans une bande de 200 pt (`bande` −75…+20, plus
+                            // le battement ±9 et l'envergure) : on rasterisait
+                            // 874 pt de haut pour en peindre 200.
+                            // La hauteur est donc CLOUÉE, et `moon` passe en
+                            // coordonnées du couloir.
+                            let couloir: CGFloat = 200
                             NightBirds(age: age,
                                        moon: CGPoint(x: size.width / 2,
-                                                     y: size.height / 2),
-                                       echelle: Self.echelleCorbeaux)
-                                .ignoresSafeArea()
+                                                     y: couloir / 2),
+                                       echelle: Self.echelleCorbeaux,
+                                       // ⚠️ **NOIRES, ET C'EST LA CONSIGNE**
+                                       // (verdict 26-08, répété). L'ivoire de
+                                       // la veille est révoqué : ce sont des
+                                       // ombres chinoises, pas des lucioles.
+                                       //
+                                       // Une silhouette n'existe que contre de
+                                       // la lumière : elles ne se voient que
+                                       // pendant leur traversée du tiers
+                                       // central, ~1 s chacune (le profil
+                                       // mesuré est sur `NightBirds.bande`).
+                                       // D'où DOUZE : pour qu'à chaque instant
+                                       // l'une d'elles soit dans la lueur.
+                                       plumage: .black.opacity(0.88),
+                                       // Elles s'éteignent avec la lune.
+                                       lumiere: Double(b.reveal),
+                                       forme: .chauveSouris,
+                                       bande: -75 ... 20,
+                                       // La volée s'épaissit (§5, salve 1) :
+                                       // douze individus sur deux ou trois
+                                       // plans, dans le MÊME Canvas — pas une
+                                       // vue de plus, pas une horloge de plus.
+                                       nombre: 12,
+                                       profondeur: true)
+                                .frame(width: size.width, height: couloir)
+                                .allowsHitTesting(false)
                         }
+                    }
                     }
                 }
                 // Le grain de la maison, à la dose du splash : les nappes
@@ -323,12 +508,27 @@ struct LuneDeSangView: View {
         .contentShape(Rectangle())
         // La loi du splash : un tap termine à tout instant. Le callback fait
         // foi, jamais la durée nominale.
-        .onTapGesture { finish() }
+        .onTapGesture { finish(saute: true) }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
         .task {
             RocketHaptics.shared.prepare()
+            // ⚠️ **LE THÈME REVIENT (26-08), ET IL N'AVAIT JAMAIS ÉTÉ
+            // SUPPRIMÉ.** Verdict : « le son de la lune de sang ! avant il y
+            // avait quelque chose ! ». `MoonSplashTheme.m4a` et sa classe
+            // `MoonTheme` sont intacts dans le dépôt depuis toujours — mais
+            // `MoonSplashView` était son SEUL appelant, et le jour où cette
+            // vue-ci est devenue le splash, le thème est devenu orphelin.
+            // Le même sort que les corbeaux, à trois fichiers de distance.
+            //
+            // `LuneSangTheme` est son recut sur CETTE partition : l'impact du
+            // thème tombe à 1,300 s, c'est-à-dire sur `tPose` au centième
+            // (vérifié au RMS), et son geste final couvre l'extinction.
+            // ⚠️ Muet sous `-luneSangFreeze` : une capture doit être
+            // déterministe, et un son qui démarre sur une image figée n'a
+            // aucun sens.
+            if Self.freeze == nil { MoonTheme.shared.prepare("LuneSangTheme") }
             // La LUT se LIT du bundle (deux millisecondes) ; ce qui se chauffe
             // vraiment, c'est la compilation du shader. On attend quand même :
             // une horloge posée avant `isReady` mange le début du plan.
@@ -341,29 +541,53 @@ struct LuneDeSangView: View {
             }
             guard Self.freeze == nil else { return }
             if reduceMotion {
+                // La convention de la maison : reduceMotion réduit la
+                // cérémonie à un fondu. Pas de thème non plus — il est écrit
+                // POUR la cérémonie qu'on vient de supprimer.
                 try? await Task.sleep(nanoseconds: 1_200_000_000)
                 guard !Task.isCancelled else { return }
-                finish()
+                finish(saute: true)
                 return
             }
             start = .now
-            // Les battements partent D'UN BLOC au moteur — jamais cadencés
-            // par la boucle d'affichage. Le premier est FORT : le choc de la
-            // pose, quand la plongée s'arrête.
-            RocketHaptics.shared.paliers(LuneDeSangBeat.battements)
+            // ⚠️ LE SON ET L'HORLOGE PARTENT AU MÊME INSTANT, et c'est la
+            // condition du calage : tout le recut est construit sur
+            // « impact = tPose ». Un `play()` posé même 100 ms plus loin
+            // décollerait le son de l'image.
+            MoonTheme.shared.play()
+            // LE SOUFFLE part D'UN BLOC au moteur — jamais cadencé par la
+            // boucle d'affichage. Un seul événement continu qui suit la
+            // lumière, plus les trois coups frappés d'avant.
+            RocketHaptics.shared.respire(duree: LuneDeSangBeat.total,
+                                         points: LuneDeSangBeat.souffle)
             try? await Task.sleep(nanoseconds:
                 UInt64(LuneDeSangBeat.total * 1_000_000_000))
             // Une vue démontée ne déclare pas de fin : le callback appartient
             // à l'écran encore monté.
             guard !Task.isCancelled else { return }
-            finish()
+            finish(saute: false)
         }
     }
 
-    private func finish() {
+    /// ⚠️ `saute` DISTINGUE LES DEUX FINS, et le thème en dépend.
+    ///
+    /// Le plan dure 4,45 s, le thème 5,506 : sa dernière seconde ring out
+    /// EXPRÈS dans la couture noire, pendant que le film d'arrivée démarre —
+    /// c'est ce qui relie les deux écrans par le son quand l'image, elle, est
+    /// noire des deux côtés. Une fin naturelle ne doit donc RIEN couper.
+    ///
+    /// Un tap, lui, coupe : l'utilisatrice a demandé à passer, et le fondu de
+    /// 0,35 s de `MoonTheme.stop()` existe précisément pour que ça ne claque
+    /// pas.
+    private func finish(saute: Bool) {
         guard !finished else { return }
         finished = true
-        RocketHaptics.shared.stop()
+        // ⚠️ À LA FIN NATURELLE ON NE COUPE RIEN. Le souffle haptique s'est
+        // éteint tout seul (sa durée EST celle du plan) et le thème doit
+        // continuer : sa dernière seconde est écrite pour ring out dans la
+        // couture noire, pendant que le film d'arrivée démarre.
+        // `stop(theme:)` existe pour ça — un `stop()` nu emporterait la queue.
+        RocketHaptics.shared.stop(theme: saute)
         onFinish()
     }
 }

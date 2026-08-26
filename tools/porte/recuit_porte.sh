@@ -3,8 +3,14 @@
 #
 # Quatre fichiers pour l'entrée dans l'app, tous au MÊME canevas :
 #
-#   · onb-arrivee.mp4     le film d'arrivée, joué UNE fois (5,00 s)
-#   · onb-lune-loop.mp4   sa queue en ping-pong — prend le relais à l'image
+#   · onb-arrivee.mp4     le film d'arrivée, joué UNE fois (V4 : 5,47 s)
+#   · onb-lune-loop.mp4   sa queue en ping-pong — ⚠️ **PLUS PERSONNE NE LA
+#                         JOUE depuis le 26-08** : le relais est mort (c'était
+#                         lui, « le léger mouvement qui crée des bugs » — la
+#                         caméra repartait en arrière à la seconde où l'arrivée
+#                         se posait). Le master gèle seul sur sa dernière
+#                         image. Le fichier reste produit ici pour que le
+#                         recuit demeure entier, mais il ne va nulle part.
 #   · onb-exos-loop.mp4   le header de la page 2 (les trois pavés)
 #   · onb-track-loop.mp4  le header de la page 3 (le kettlebell, RELEVÉ)
 #
@@ -68,13 +74,30 @@ pingpong() {           # $1 = aller (fichier), $2 = sortie
 # splash_1 est en HEVC 10 BITS (yuv420p10le) — tout le reste du projet est en
 # yuv420p 8 bits. On convertit, on n'embarque pas tel quel.
 #
-# LA FENÊTRE V2 (l'arbitrage du 22-08 au soir : « la vidéo est trop belle, elle
-# doit durer plus longtemps ») : 1,60 → 8,042 s — on part à la NAISSANCE de la
-# lumière (mesurée : 8,5/255 de moyenne à 1,60 s), elle fait partie du
-# spectacle — PLUS un ralenti de 30 % (`setpts × 1,30`) : le recul devient un
-# glissement. C'est la recette éprouvée du fond de la home, qui tourne à
-# `setpts=3.0` + minterpolate blend sans que ça se voie ; 1,30 est très en
-# dessous. Sortie : 6,442 × 1,30 = 8,374 s = 251 images à 30.
+# ── LA FENÊTRE V4 (26-08) — « ELLE LAGUE, ELLE EST TROP LENTE » ─────────────
+# Verdict de Kathryn, deux fois dans la même phrase : « l'arrivée n'est pas
+# assez rapide et majestueuse, plus Zoom, c'est trop lent ». Le ralenti est
+# donc RETIRÉ, et remplacé par son contraire — mais le chiffre n'est pas
+# choisi au goût, il est CALCULÉ, et c'est tout l'intérêt :
+#
+#   la source est à 24 img/s, la sortie est à 30 :  24 × (1/0,80) = 30 EXACT.
+#
+# À `setpts × 0,80`, chaque image source tombe PILE sur la grille de 30 —
+# 164,2 images source → 164 images de sortie, ratio 1,0000. Donc :
+#
+#   ⚠️ **`minterpolate` DISPARAÎT, ET C'EST LA MOITIÉ DU « ÇA LAGUE ».** En
+#   V3, 164 images source étaient étirées sur 274 : **110 images sur 274,
+#   soit 40 % du film, n'étaient PAS des images** mais des fondus croisés
+#   fabriqués par `mi_mode=blend`. Un fondu croisé sur un mouvement de caméra,
+#   c'est une image double — le flou de bougé qu'on lit comme un à-coup.
+#   Ici il n'y a plus une seule image fabriquée : les 164 sont des vraies.
+#   (Mesuré à `mpdecimate` : 2 images quasi-identiques, toutes deux dans le
+#   fondu au noir de tête, contre 1 en V3 — équivalent.)
+#
+# La fenêtre ne bouge pas : 1,20 → 8,042 s, on part à la NAISSANCE de la
+# lumière (mesurée 8,5/255 de moyenne à 1,60 s), elle fait partie du
+# spectacle. Sortie : 6,8417 × 0,80 = 5,4667 s = 164 images à 30.
+# (V3 : 9,133 s. On rend 3,67 s au lancement.)
 #
 # ⚠️ LE FONDU D'ENTRÉE DE 0,45 s N'EST PAS COSMÉTIQUE. La lune de sang meurt au
 # noir ; à 1,60 s la source est déjà allumée (max 218), donc sans lui la
@@ -89,41 +112,82 @@ pingpong() {           # $1 = aller (fichier), $2 = sortie
 # contact : image 0 à une moyenne de 21,3/255 au lieu de 0. (Et `-ss` AVANT `-i`
 # ne sauve rien : il tombe sur le keyframe le plus proche et la fenêtre glisse.)
 # La seule forme juste : `trim` DANS le graphe, puis on remet l'horloge à zéro —
-# et le RALENTI s'écrit dans le même setpts : (PTS-STARTPTS)*1.30.
-# ── LE ZOOM CINÉMATIQUE, CUIT (V3, verdict 23-08 : « retravaille-la pareil »).
+# et la VITESSE s'écrit dans le même setpts : (PTS-STARTPTS)*0.80.
+# ── LE ZOOM CINÉMATIQUE, CUIT (V4 : « PLUS ZOOM »).
 # La source RECULE toute seule ; on ajoute un serrage qui se DESSERRE avec
-# elle : 1,16 → 1,00. Les deux mouvements vont dans le même sens, donc l'un
-# amplifie l'autre au lieu de le combattre — et l'arrivée se pose en
-# S'OUVRANT, ce qui est exactement ce que le plan avait relevé comme la bonne
-# mise en scène de ce plan-là.
+# elle. Les deux mouvements vont dans le même sens, donc l'un amplifie
+# l'autre au lieu de le combattre — et l'arrivée se pose en S'OUVRANT.
+#
+# **1,60 → 1,00**, soit 0,600 de course : ×3,75 celle de la V3 (0,160, qu'on
+# ne voyait tout simplement pas). Au plus serré on rend 2160/1,60 = 1350 px
+# sur 1080, donc encore ×1,25 de sur-échantillonnage : **pas une image du
+# film n'est ramollie** par ce zoom-là (c'est la borne à ne pas franchir —
+# au-delà de z = 2,0 on tirerait moins de 1080 px et ça se verrait).
+#
+# ⚠️ **ET LA RAMPE EST AMORTIE, PAS LINÉAIRE** — c'est elle, le
+# « majestueuse ». `1 − (1−u)²` : le serrage s'ouvre vite, puis SE POSE. À
+# 4,5 s sur 5,47 on est déjà à z = 1,019, c'est-à-dire immobile : la dernière
+# seconde du film est calme, et c'est exactement ce que la partition Swift
+# exige pour y fondre l'habillage (`arriveeT − 1,1`). Une rampe linéaire
+# arrivait encore en mouvement sous le texte qui se pose.
+#
+# ⚠️ **LE FILM DOIT FINIR SUR LA MAQUETTE, ET LA V3 N'Y ARRIVAIT PAS.** LOI 1
+# du plan : « la dernière image de splash_1.mp4 EST la maquette arrivée — la
+# vidéo ne bouge jamais, c'est la page qui s'habille autour d'elle. » Or
+# `ARR_T` était écrit 9,236 (la durée THÉORIQUE) pour un fichier qui sortait
+# à 9,133 : `ot/T` plafonnait à 0,988 et le film se figeait à z = 1,064,
+# **6,4 % trop serré**. Mesuré, en gris, contre la dernière image de la
+# source cadrée sans zoompan (témoin = deux images voisines du film, 1,134) :
+#     V3       écart moyen 2,523 / 255   → plus de DEUX images de dérive
+#     V4       écart moyen 0,948 / 255   → sous le témoin : indiscernable
+# D'où la règle : `ARR_T` se DÉDUIT du compte d'images (164/30), il ne se
+# recopie pas d'un calcul de durée.
 #
 # ⚠️ `zoompan` PUIS `scale`, jamais l'inverse : il travaille sur le canevas
 # PLEINE définition (2160 de large) et la réduction finale à 1080 divise par
 # deux son erreur d'arrondi — c'est ce qui tue le tremblement de sous-pixel
 # pour lequel ce filtre est connu.
 # ⚠️ `d=1` : une image par image d'entrée (sans quoi zoompan en fabrique 25).
-# ⚠️ **`minterpolate` RESTE, ET AVANT `zoompan`.** Payé : `setpts` ne change
-# que les HORODATAGES, il ne fabrique aucune image — et le `fps=30` de
-# zoompan ne fait que réétiqueter. Sans minterpolate, le fichier sortait à
-# 164 images / 5,47 s au lieu de 277 / 9,24 : le ralenti avait disparu et la
-# boucle, coupée plus loin que la fin, ne faisait plus que 16 images.
-# zoompan à `d=1` ne rééchantillonne PAS le temps : les deux cohabitent.
-# ⚠️ ET SON `fps=30` EST OBLIGATOIRE QUAND MÊME — payé juste après : sans lui
-# zoompan retombe sur son défaut de 25, et le fichier sortait à 274 images
-# pour 10,96 s (donc lu 20 % trop lent, et la partition Swift à côté).
+# ⚠️ **`minterpolate` EST PARTI (V4), ET LE PIÈGE QU'IL GARDAIT A CHANGÉ DE
+# SENS.** La note V3 disait vrai : `setpts` ne change que les HORODATAGES, il
+# ne fabrique aucune image — donc un RALENTI en exige un. Mais on ne ralentit
+# plus : à ×0,80 la grille de sortie est déjà celle de la source (24 → 30
+# exact), il n'y a aucune image à fabriquer, et en fabriquer serait
+# précisément le défaut qu'on vient corriger. Le compte le prouve dans les
+# deux sens : V3 sans minterpolate sortait 164 images là où il en fallait
+# 277 ; V4 en sort 164 là où il en faut 164.
+# ⚠️ SON `fps=30` À LUI RESTE OBLIGATOIRE — payé : sans lui zoompan retombe
+# sur son défaut de 25, et le fichier serait lu 20 % trop lent, la partition
+# Swift à côté.
 # ⚠️ La rampe se pilote à `ot` (le temps de SORTIE, en secondes) : `nb_frames`
 # n'existe pas dans le vocabulaire de zoompan — l'écrire fait ÉCHOUER le
 # graphe (« Undefined constant »), au moins bruyamment.
-# Durée de sortie = (8,041667 − 1,20) × 1,35 = 9,236 s.
-ARR_T=9.236
+# ⚠️ Et les virgules des expressions s'ÉCHAPPENT (`\,`) : nues, elles
+# sépareraient des filtres.
+#
+# Durée de sortie = 164 images / 30 = 5,466667 s.
+# ⚠️ CE CHIFFRE EST ÉCRIT DEUX FOIS : ici, et dans `PorteEntree.arriveeT`.
+# Le script VÉRIFIE l'accord plus bas — une durée qui se dédit, ça s'est déjà
+# vu (c'est la faute que la V3 traînait).
+ARR_T=5.466667
 ffmpeg -y -v error -i "$SRC/splash_1.mp4" \
-  -vf "trim=start=1.20:end=8.041667,setpts=(PTS-STARTPTS)*1.35,\
-crop=2160:3288:0:276,minterpolate=fps=30:mi_mode=blend,\
-zoompan=z='1.16-0.16*min(ot/$ARR_T\,1)':d=1:fps=30:s=2160x3288\
+  -vf "trim=start=1.20:end=8.041667,setpts=(PTS-STARTPTS)*0.80,\
+crop=2160:3288:0:276,\
+zoompan=z='1.60-0.60*(1-pow(1-min(ot/$ARR_T\,1)\,2))':d=1:fps=30:s=2160x3288\
 :x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)',\
 scale=1080:1644,fade=t=in:st=0:d=0.45,format=yuv420p" \
   "${X264[@]}" "$DEST/onb-arrivee.mp4"
-echo "arrivée → $DEST/onb-arrivee.mp4  ($(nbf "$DEST/onb-arrivee.mp4") images)"
+NARR=$(nbf "$DEST/onb-arrivee.mp4")
+echo "arrivée → $DEST/onb-arrivee.mp4  ($NARR images)"
+# LE GARDE-FOU DE LA CONSTANTE SWIFT. `PorteEntree.arriveeT` porte ce compte
+# d'images en toutes lettres ; s'il change, la partition (flamme à T−1,2,
+# habillage à T−1,1) se décale sans que rien ne le dise à l'écran.
+SWIFT=../../Woop/Views/PorteEntree.swift
+if ! grep -q "arriveeT: Double = $NARR.0 / 30.0" "$SWIFT"; then
+  echo "   ⚠️  DÉSACCORD : le film fait $NARR images, mais PorteEntree.swift dit :"
+  grep -n "arriveeT: Double" "$SWIFT" | sed 's/^/      /'
+  echo "      → corrige \`arriveeT\` à $NARR.0 / 30.0 avant de livrer."
+fi
 
 # ── ② LA BOUCLE DE LA PAGE 1 ────────────────────────────────────────────────
 # ⚠️ ELLE SE COUPE DANS LE FICHIER D'ARRIVÉE, JAMAIS DANS LA SOURCE. La première
