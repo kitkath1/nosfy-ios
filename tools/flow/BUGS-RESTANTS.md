@@ -147,7 +147,7 @@ SEUL » vaut pour la HOME, qui a une bande découverte ; la fiche n'en a pas.
 
 ---
 
-## 2. LA ZONE ORANGE DE LA HOME EN SÉANCE — **non fait**
+## 2. LA ZONE ORANGE DE LA HOME EN SÉANCE — **traité `dd94afb`, verdict attendu**
 
 > « la card / zone orange actuelle est trop courte. Le menu se retrouve trop
 > proche du widget `This Week`. Il faut allonger légèrement cette zone vers le
@@ -186,6 +186,35 @@ les bords au gradient numpy, régler, re-capturer. **On mesure la géométrie, o
 ne la déduit pas** — leçon déjà payée ce matin : une ancre de panneau déduite
 de `expandedHeader + 4` donnait 367 quand la sonde disait **500,7**, et le
 panneau mangeait le titre de l'exercice.
+
+### TRAITÉ (`dd94afb`, 26-08 ~19 h 50) — le screenshot au feutre vert a donné les cotes
+
+- « la card de la home doit être 20px plus bas » → `leveeSeance` **120**,
+  SÉPARÉ de `leveeTiroir` (140). Arêtes mesurées : séance **731,7** (cible
+  732), tiroir **711,7** — la bande du slider n'a pas bougé d'un point. Ça
+  ARBITRE « une seule arête » du 22-08 : si elle redevient la consigne, c'est
+  la bande du TIROIR qu'il faudra re-répartir, pas la séance qu'il faut
+  remonter.
+- « le petit languette pour tirer le bouton home sous la partie widget
+  semaine » → `hauteurRange` quitte la mi-hauteur (0,42 d'écran) pour un écart
+  FIXE de **72** à la place de repos (place et player sont tous deux ancrés au
+  bas). Centre rendu **704,2** : haut de navette à 5,7 pt sous l'arête du
+  widget (657,3), bas à 16,7 pt du player. ⚠️ Le premier réglage DÉDUIT (112)
+  rendait 641 — le pad de prise décale le dessin. Loi n° 3, encore.
+- « la pillule home dans la card home dans le coin gauche avec le player »
+  (l'état de son screenshot) → c'était LE RETOUR DE MENU : le rangement ne
+  parlait qu'à l'apparition et au `onChange(rangerDemande)` ; après une
+  fermeture de menu, personne ne reparlait et le galet sorti regagnait son
+  coin — posé sur le player. Toute fermeture (colonne comme couronne)
+  re-range AU MUR quand la page range (`rangerApresMenu`, `MenuNappe.swift`),
+  et `fermerC` saute son retour-au-coin dans ce cas : un voyage, pas deux.
+- La prise de la navette passe à **20 vers le bas** (44 conservé en haut et
+  56 en trailing) : posée à 15 pt du player, la prise pleine recouvrait le
+  haut du bouton lune et lui re-volait le doigt du correctif 1b.
+- ⚠️ **Le re-rangement après fermeture n'est pas exerçable au simulateur**
+  (aucun moyen de poser un doigt sur la languette) — à valider sur téléphone :
+  en séance, sortir le galet, ouvrir le menu, le refermer → la languette doit
+  revenir SOUS « This week », jamais au coin du player.
 
 ---
 
@@ -445,6 +474,7 @@ descendue sur les **deux seules vues qui lisent `lueur`**, et coupée en dock.
 
 | argument | ce qu'il ouvre |
 |---|---|
+| `-skipAuth` | court-circuite la porte/auth — **OBLIGATOIRE pour toute capture**, sinon on photographie l'onboarding |
 | `-homeSeance` | la home en séance, sans base |
 | `-pullAuto` | un doigt synthétique qui écrit `tirage` à 60 Hz |
 | `-pullSonde <1-7>` | isole le mobilier, la card vidéo, chaque flou |
@@ -455,6 +485,13 @@ descendue sur les **deux seules vues qui lisent `lueur`**, et coupée en dock.
 | `-portailFige <s>` | la traversée de la lune figée |
 | `-duoLab`, `-duoGalets`, `-homeChemin` | la route |
 | `-corbeauxEchelle <n>`, `-corbeauxOff` | les corbeaux du splash |
+
+⚠️ **`-demoData` sème une séance OUVERTE qui PERSISTE dans la base** (payé
+deux salves de captures le 26-08) : une fois passé, TOUT lancement suivant est
+en séance, même sans argument — `-tiroirOuvert` est gardé par `!enSeance` et
+ne fait alors rien, et « repos », « tiroir », « séance » mesurent trois fois
+la même chose. Le repos ne se retrouve qu'en désinstallant l'app
+(`simctl uninstall fr.kathryn.woop`) avant de relancer sans `-demoData`.
 
 Simulateurs : `kat-popup`, `kat-duo`, `kat-exos`, `kat-flow-15`.
 Appareil : « iPhone de Frédéric » — ⚠️ les arguments de `devicectl` se passent
