@@ -733,6 +733,21 @@ struct ExerciseDetailView: View {
             try? await Task.sleep(for: .seconds(1.0))
             ouvrirComboDemo()
         }
+        // L'atelier FIRE : `-fireLab` (+ `-fireAuto` tape la flamme).
+        .task {
+            guard CommandLine.arguments.contains("-fireLab") else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 4
+            rewardShow = true
+        }
+        // L'atelier WELCOME BACK : `-welcomeLab`.
+        .task {
+            guard CommandLine.arguments.contains("-welcomeLab")
+            else { return }
+            try? await Task.sleep(for: .seconds(1.0))
+            rewardVariant = 5
+            rewardShow = true
+        }
         // L'atelier « You Made It » (le variant 2 refait) : `-ymiLab`
         // ouvre cette robe seule, sans fermeture auto.
         .task {
@@ -888,11 +903,18 @@ struct ExerciseDetailView: View {
                 if rewardShow {
                     RewardPopup(
                         count: max(sets.filter(\.isDone).count, 4),
-                        title: "Training",
-                        subtitle: "Congratulations, you've completed your training!",
+                        title: Self.rewardStyles[rewardVariant] == .welcome
+                            ? "Welcome back" : "Training",
+                        subtitle: Self.rewardStyles[rewardVariant]
+                            == .welcome
+                            ? "Your next session is waiting for you."
+                            : "Congratulations, you've completed your training!",
                         unit: "Sets",
                         style: Self.rewardStyles[rewardVariant],
-                        videoNom: rewardVideoNomCourant
+                        videoNom: Self.rewardStyles[rewardVariant]
+                            == .welcome
+                            ? "reward-welcome"
+                            : rewardVideoNomCourant
                             ?? (CommandLine.arguments
                                 .contains("-rewardVideo")
                                 ? Self.rewardVideos[

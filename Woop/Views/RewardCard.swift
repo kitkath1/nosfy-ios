@@ -46,8 +46,13 @@ import CoreText
 ///   le glyphe LA MATRICE — une trame de micro-mots presque noirs qui
 ///   s'éclairent par vagues (plan fin : tools/rewards/PLAN-SPOTLIGHT-V4.md,
 ///   jalon S1 = la trame morte + un front figé).
+/// - `.fire` : le sticker FLAMME NOIRE au centre (l'asset de Kathryn),
+///   le chiffre géant DERRIÈRE que seule la lumière révèle, la braise
+///   rouge, et au tap une gerbe de petites flammes orange.
+/// - `.welcome` : le retour de l'utilisateur — la vidéo chauve-souris
+///   PORTRAIT fondue en header, et un bouton CLAIM de verre.
 enum RewardStyle {
-    case halo, neon, galet, spotlight
+    case halo, neon, galet, spotlight, fire, welcome
 }
 
 struct RewardPopup: View {
@@ -88,7 +93,7 @@ struct RewardPopup: View {
         RewardScene(p: p, count: count, title: title, subtitle: subtitle,
                     unit: unit, style: style, videoNom: videoNom,
                     naissance: naissance, enSortie: enSortie,
-                    fermer: fermer)
+                    posee: posee, fermer: fermer)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
             .onAppear {
@@ -146,10 +151,14 @@ private struct RewardScene: View, Animatable {
     let videoNom: String?
     let naissance: Date
     let enSortie: Bool
+    /// La card vient de se poser (fin du count-up) : elle TRESSAILLE.
+    let posee: Bool
     var fermer: () -> Void
 
     /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
     @State private var videoRelance = 0
+    /// LA SECOUSSE de la card — arrivée, et le feu qui part.
+    @State private var secousse = 0
     /// L'écart du doigt sur la card (CarteGyro l'écrit) — il nourrit le
     /// tilt 3D ET la vie de la vidéo gelée.
     @State private var penteCard = CGSize.zero
@@ -180,6 +189,11 @@ private struct RewardScene: View, Animatable {
         // Un MODAL pour VoiceOver : sans ce trait, la page reste
         // navigable et ACTIVABLE derrière le scrim (relecture adverse).
         .accessibilityAddTraits(.isModal)
+        // TOUTES LES CARDS TRESSAILLENT À L'ARRIVÉE (verdict) — le feu
+        // deux fois plus fort (voir le modificateur).
+        .onChange(of: posee) { _, pose in
+            if pose { secousse += 1 }
+        }
         // Le tick du cadran à CHAQUE chiffre qui monte — jamais à la
         // descente (le chiffre est figé en sortie de toute façon).
         .onChange(of: valeurCourante) { avant, apres in
@@ -195,7 +209,8 @@ private struct RewardScene: View, Animatable {
     // MARK: La card
 
     private func carte(largeur: CGFloat, hauteur: CGFloat) -> some View {
-        CarteGyro(pente: $penteCard) {
+        CarteGyro(pente: $penteCard,
+                  sansTilt: style == .welcome) {
             ZStack {
                 // 1. LA DALLE NOIRE — la seule chose que le verre a sous
                 //    lui : la card naît noire (le fondu noir des cards
@@ -269,6 +284,62 @@ private struct RewardScene: View, Animatable {
                     //    T1 — la robe néon brume est MORTE) : le TEXTE
                     //    GÉANT derrière, éclairé par la lampe-barrette et
                     //    son éventail.
+                    if style == .fire {
+                        // LA BRAISE DE LA SCÈNE — saturée et resserrée au
+                        // pied (⚠️ loi anti-brun : R à 1,00, le vert
+                        // désaturé ; un premier jet large virait terre).
+                        Self.forme.fill(
+                            EllipticalGradient(
+                                stops: [
+                                    .init(color: Color(red: 1.0, green: 0.22,
+                                                       blue: 0.04)
+                                        .opacity(0.34), location: 0),
+                                    .init(color: Color(red: 1.0, green: 0.16,
+                                                       blue: 0.02)
+                                        .opacity(0.09), location: 0.45),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                center: UnitPoint(x: 0.5, y: 0.98),
+                                startRadiusFraction: 0,
+                                endRadiusFraction: 0.46))
+                            .blendMode(.screen)
+                            .opacity(sstep(0.25, 0.62, p))
+                        ChiffreRevele(valeur: valeurCourante,
+                                      naissance: naissance)
+                            .opacity(sstep(0.20, 0.52, p))
+                    }
+                    if style == .welcome {
+                        // LA CARD TOUTE NOIRE (verdict) : du noir PLEIN
+                        // sous la vidéo — aucune zone plus claire, donc
+                        // AUCUNE démarcation possible.
+                        Self.forme.fill(Color.black)
+                        // (La lampe du haut est morte en welcome : le
+                        // projecteur monte DU BAS, sous « Later ».)
+                        // LE PROJECTEUR DU BAS (verdict) : il monte de
+                        // SOUS « Later » et balaie — la lumière lèche le
+                        // pied de la card, la scène naît d'en bas.
+                        TimelineView(.animation(
+                            minimumInterval: 1.0 / 30.0)) { tl in
+                            let b = balayageSpot(
+                                tl.date.timeIntervalSince(naissance))
+                            Self.forme.fill(
+                                EllipticalGradient(
+                                    stops: [
+                                        .init(color: .white.opacity(0.26),
+                                              location: 0),
+                                        .init(color: .white.opacity(0.08),
+                                              location: 0.42),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    center: UnitPoint(x: 0.5 - 0.26 * b,
+                                                      y: 1.06),
+                                    startRadiusFraction: 0,
+                                    endRadiusFraction: 0.66))
+                                .blendMode(.screen)
+                        }
+                        .opacity(sstep(0.18, 0.52, p))
+                        .allowsHitTesting(false)
+                    }
                     if style == .neon {
                         TexteGeant(naissance: naissance)
                             .opacity(sstep(0.22, 0.55, p))
@@ -307,6 +378,14 @@ private struct RewardScene: View, Animatable {
                     }
                 }
 
+                // ⚠️ LA VIDÉO SOUS LE BOUTON EST MORTE, ET C'EST UNE
+                //    LOI : une vidéo posée dans la card laisse TOUJOURS
+                //    voir son RECTANGLE sur le noir — masque radial,
+                //    masque vertical, plein largeur, en petit : quatre
+                //    essais, quatre démarcations (« c'est dégueulasse »).
+                //    Une vidéo ne se fond QUE si elle occupe un bord
+                //    entier de la card (le header). Ne pas réessayer.
+
                 // 5 bis. LA POUDRE DE DIAMANT (verdict) — les grains
                 //    naissent dans le halo et scintillent TRANCHÉ, la
                 //    recette de PoudreBooster en monochrome lunaire.
@@ -323,18 +402,48 @@ private struct RewardScene: View, Animatable {
                 if let nom = videoNom {
                     VStack(spacing: 0) {
                         VideoVivante(nom: nom, relance: videoRelance,
-                                     pente: penteCard)
-                            .frame(height: hauteur * 0.42)
+                                     pente: penteCard,
+                                     boucle: style == .welcome,
+                                     entier: style == .welcome)
+                            .frame(height: hauteur
+                                   * (style == .welcome ? 0.56 : 0.42))
                             .overlay(
                                 LinearGradient(
                                     stops: [
                                         .init(color: .clear, location: 0),
-                                        .init(color: .clear, location: 0.55),
-                                        .init(color: .black.opacity(0.85),
-                                              location: 0.88),
+                                        .init(color: .clear,
+                                              location: style == .welcome
+                                                  ? 0.14 : 0.55),
+                                        .init(color: .black.opacity(0.22),
+                                              location: style == .welcome
+                                                  ? 0.42 : 0.72),
+                                        .init(color: .black.opacity(0.72),
+                                              location: style == .welcome
+                                                  ? 0.62 : 0.88),
+                                        .init(color: .black, location: 0.80),
                                         .init(color: .black, location: 1)
                                     ],
                                     startPoint: .top, endPoint: .bottom))
+                            // ⚠️ LA VIDÉO WELCOME EST PORTRAIT : en
+                            // aspectFill elle est coupée NET sur les
+                            // flancs — ils se noient dans la matière.
+                            .mask(
+                                LinearGradient(
+                                    stops: style == .welcome ? [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white.opacity(0.28),
+                                              location: 0.15),
+                                        .init(color: .white, location: 0.35),
+                                        .init(color: .white, location: 0.65),
+                                        .init(color: .white.opacity(0.28),
+                                              location: 0.85),
+                                        .init(color: .clear, location: 1)
+                                    ] : [
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white, location: 1)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing))
                             // Le tap RELANCE la vidéo (verdict) — le
                             // drag de la card garde son geste (min 3 pt).
                             .contentShape(Rectangle())
@@ -377,6 +486,8 @@ private struct RewardScene: View, Animatable {
         // continue sous la card et la détache de la page.
         .shadow(color: .white.opacity(0.14 * sstep(0.25, 0.65, p)),
                 radius: 38, y: 30)
+        .modifier(Secousse(trigger: secousse,
+                           force: style == .fire ? 2 : 1))
     }
 
     /// La lune sombre du variant néon — une SCÈNE, pas un dégradé : son
@@ -445,7 +556,8 @@ private struct RewardScene: View, Animatable {
                     .offset(y: 5 * (1 - sstep(0.36, 0.62, p)))
                     // Avec vidéo, le bloc de tête descend SOUS elle — le
                     // titre se pose dans le fondu, comme la réf du plan.
-                    .padding(.top, videoNom == nil ? 26 : hauteur * 0.40)
+                    .padding(.top, videoNom == nil ? 26
+                             : hauteur * (style == .welcome ? 0.53 : 0.40))
                 Text(subtitle)
                     .font(.inter(13.5))
                     .foregroundStyle(Color.white.opacity(0.55))
@@ -457,7 +569,16 @@ private struct RewardScene: View, Animatable {
                     .offset(y: 5 * (1 - sstep(0.42, 0.68, p)))
             }
             Spacer(minLength: 0)
-            if style == .neon {
+            if style == .welcome {
+                Color.clear.frame(height: 1)
+            } else if style == .fire {
+                // LA FLAMME NOIRE — le sticker laqué qui VIT, et dont le
+                // tap fait jaillir la gerbe orange.
+                FlammeSticker(naissance: naissance,
+                              onJet: { secousse += 1 })
+                    .opacity(sstep(0.30, 0.58, p))
+                    .scaleEffect(0.86 + 0.14 * sstep(0.30, 0.66, p))
+            } else if style == .neon {
                 // T2 : LE CHIFFRE DE VERRE — le glyphe en glassEffect
                 // natif, posé sur le texte qu'il réfracte, saisissable
                 // comme la pill.
@@ -497,6 +618,8 @@ private struct RewardScene: View, Animatable {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
                     .opacity(sstep(0.48, 0.72, p))
+            } else if style == .welcome {
+                Color.clear.frame(height: 2)
             } else {
                 // L'unité en blanc dans la fumée — halo et galet.
                 Text(unit)
@@ -505,10 +628,17 @@ private struct RewardScene: View, Animatable {
                     .opacity(sstep(0.48, 0.70, p))
                     .offset(y: 5 * (1 - sstep(0.48, 0.74, p)))
             }
+            // LE BOUTON CLAIM (welcome) — la capsule de VRAI verre avec
+            // la pièce de la maison ; ailleurs, le lien nu.
+            if style == .welcome {
+                BoutonClaim(montant: count, action: fermer)
+                    .opacity(sstep(0.58, 0.86, p))
+                    .padding(.bottom, 6)
+            }
             // Le BOUTON LIEN (verdict « pour consistance ») : de l'encre
             // nue, pas de cadre — la zone de toucher reste large.
             Button(action: fermer) {
-                Text("Close")
+                Text(style == .welcome ? "Later" : "Close")
                     .font(.inter(15, .medium))
                     .foregroundStyle(Color.white.opacity(0.66))
                     .frame(height: 44)
@@ -881,6 +1011,341 @@ private struct TrameMatrice: View {
     private static func hash(_ i: Int, _ k: Int) -> Double {
         let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
         return min(s - floor(s), 0.999)
+    }
+}
+
+// MARK: - La robe FIRE (variant 4) et le bouton CLAIM
+
+/// LA SECOUSSE — le tressaillement sec de la card : un aller-retour
+/// amorti en KEYFRAMES (un aller-retour ne se fait JAMAIS en deux
+/// `withAnimation` sur la même valeur — la loi maison).
+private struct Secousse: ViewModifier {
+    let trigger: Int
+    /// 1 = l'arrivée de n'importe quelle card ; 2 = le feu (verdict :
+    /// « pour la flamme, deux fois plus forte »).
+    var force: CGFloat = 1
+
+    func body(content: Content) -> some View {
+        KeyframeAnimator(initialValue: CGSize.zero,
+                         trigger: trigger) { val in
+            content.offset(val)
+        } keyframes: { _ in
+            KeyframeTrack(\.width) {
+                SpringKeyframe(-19 * force, duration: 0.045)
+                SpringKeyframe(17 * force, duration: 0.06)
+                SpringKeyframe(-12 * force, duration: 0.06)
+                SpringKeyframe(8 * force, duration: 0.06)
+                SpringKeyframe(-4 * force, duration: 0.07)
+                SpringKeyframe(0, duration: 0.13)
+            }
+            KeyframeTrack(\.height) {
+                SpringKeyframe(11 * force, duration: 0.05)
+                SpringKeyframe(-8 * force, duration: 0.07)
+                SpringKeyframe(4 * force, duration: 0.07)
+                SpringKeyframe(0, duration: 0.18)
+            }
+        }
+    }
+}
+
+/// LE CHIFFRE RÉVÉLÉ — le chiffre ÉNORME qui prend TOUTE la card,
+/// presque invisible au repos : c'est LA LUMIÈRE qui le découvre, au
+/// balayage du spotlight. Son pied PLONGE dans le footer, coupé et
+/// fondu (flancs et bas) — l'effet majestueux. La technique de la
+/// matrice : le glyphe ne se redessine pas, le MASQUE glisse dessus.
+private struct ChiffreRevele: View {
+    let valeur: Int
+    let naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private func glyphe() -> Text {
+        Text("\(valeur)")
+            .font(.inter(430, .bold))
+            .monospacedDigit()
+            .tracking(-16)
+    }
+
+    /// Le métal : blanc franc en crête, et la BRAISE au pied — le rouge
+    /// reste saturé (loi anti-brun), il n'envahit jamais le blanc.
+    private var metal: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: .white, location: 0),
+                .init(color: .white.opacity(0.62), location: 0.30),
+                .init(color: .white.opacity(0.26), location: 0.58),
+                .init(color: Color(red: 1.0, green: 0.34, blue: 0.12)
+                    .opacity(0.22), location: 0.80),
+                .init(color: Color(red: 1.0, green: 0.20, blue: 0.04)
+                    .opacity(0.10), location: 1)
+            ],
+            startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let b = balayageSpot(tl.date.timeIntervalSince(naissance))
+            Color.clear
+                .overlay {
+                    ZStack {
+                        // La braise : ce qu'on devine du chiffre dans
+                        // l'ombre — presque rien (verdict « beaucoup
+                        // plus caché : c'est la lumière qui le découvre »).
+                        glyphe()
+                            .foregroundStyle(Color.white.opacity(0.028))
+                        // LE RÉVÉLÉ : le métal découpé par le faisceau.
+                        glyphe()
+                            .foregroundStyle(metal)
+                            .mask(
+                                EllipticalGradient(
+                                    stops: [
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white.opacity(0.62),
+                                              location: 0.30),
+                                        .init(color: .white.opacity(0.18),
+                                              location: 0.62),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    center: UnitPoint(x: 0.5 - 0.58 * b,
+                                                      y: 0.30 + 0.12 * b),
+                                    startRadiusFraction: 0,
+                                    endRadiusFraction: 0.60))
+                    }
+                    .fixedSize()
+                    // Les FLANCS se noient (il sort de la nuit).
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .white.opacity(0.35),
+                                      location: 0.10),
+                                .init(color: .white, location: 0.30),
+                                .init(color: .white, location: 0.70),
+                                .init(color: .white.opacity(0.35),
+                                      location: 0.90),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .leading, endPoint: .trailing))
+                    // …et LE PIED PLONGE AU FOOTER, déjà fondu.
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.55),
+                                      location: 0),
+                                .init(color: .white, location: 0.18),
+                                .init(color: .white.opacity(0.75),
+                                      location: 0.62),
+                                .init(color: .white.opacity(0.22),
+                                      location: 0.86),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top, endPoint: .bottom))
+                    .offset(y: 92)
+                }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// LA FLAMME NOIRE ET SA VOLÉE — le sticker laqué de Kathryn au centre,
+/// qui RESPIRE, se balance et vacille (trois horloges premières entre
+/// elles : jamais une boucle) ; au TAP — et une PREMIÈRE FOIS toute
+/// seule à l'arrivée — des dizaines de petits stickers flamme ORANGE
+/// jaillissent en gerbe et retombent.
+private struct FlammeSticker: View {
+    let naissance: Date
+    /// La scène est prévenue : elle SECOUE la card.
+    var onJet: () -> Void = {}
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var jet: Date?
+    @State private var boum = 0
+
+    /// « Des dizaines » de flammes par gerbe.
+    private static let grains = 42
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            // Elle VIT : respiration ample, balancement, vacillement.
+            let souffle = 1 + 0.075 * sin(t * 1.35)
+                + 0.030 * sin(t * 2.30 + 1.1)
+            let flotte = CGFloat(sin(t * 0.75) * 11
+                                 + sin(t * 1.62 + 0.7) * 4)
+            let balance = sin(t * 0.93 + 0.3) * 4.5 + sin(t * 1.71) * 1.8
+            ZStack {
+                if let jet {
+                    gerbe(age: tl.date.timeIntervalSince(jet))
+                }
+                Image("sticker-flamme-noir")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 158)
+                    .scaleEffect(x: souffle - 0.018 * sin(t * 1.35),
+                                 y: souffle, anchor: .bottom)
+                    .rotationEffect(.degrees(balance), anchor: .bottom)
+                    .offset(y: flotte)
+                    // La braise sous le sticker : il ne flotte pas dans
+                    // le vide, il COUVE.
+                    .background(
+                        Ellipse()
+                            .fill(RadialGradient(
+                                stops: [
+                                    .init(color: Color(red: 1, green: 0.30,
+                                                       blue: 0.06)
+                                        .opacity(0.44), location: 0),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                center: .center,
+                                startRadius: 0, endRadius: 90))
+                            .frame(width: 210, height: 150)
+                            .blur(radius: 18)
+                            .blendMode(.screen)
+                            .allowsHitTesting(false))
+            }
+        }
+        .frame(height: 250)
+        // Seule la flamme écoute le doigt (la gerbe est du décor).
+        .contentShape(Circle().inset(by: 40))
+        .onTapGesture {
+            jet = Date()
+            boum += 1
+            onJet()
+        }
+        .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
+                         trigger: boum)
+        .accessibilityLabel("Flamme")
+        // LA PREMIÈRE GERBE PART SEULE : la card arrive, le feu jaillit
+        // — l'utilisateur découvre le geste en le voyant.
+        .task {
+            try? await Task.sleep(for: .seconds(0.55))
+            jet = Date()
+            boum += 1
+            onJet()
+        }
+        // Le banc : `-fireAuto` tape la flamme tout seul.
+        .task {
+            guard CommandLine.arguments.contains("-fireAuto") else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3.4))
+                jet = Date()
+                boum += 1
+                onJet()
+            }
+        }
+    }
+
+    /// La gerbe : chaque grain part en éventail, tourne, retombe et
+    /// s'éteint — trajectoire déterministe par hash, le sprite résolu
+    /// UNE fois (jamais par grain — la loi PoudreBooster).
+    private func gerbe(age: Double) -> some View {
+        Canvas { ctx, size in
+            guard age < 2.6 else { return }
+            let sprite = ctx.resolve(Image("sticker-flamme"))
+            let cx = size.width / 2
+            let cy = size.height / 2
+            for i in 0 ..< Self.grains {
+                let retard = Self.hash(i, 9) * 0.22
+                let u = age - retard
+                guard u > 0, u < 2.4 else { continue }
+                let angle = (-Double.pi / 2)
+                    + (Self.hash(i, 1) - 0.5) * 2.1
+                let vitesse = 210 + 340 * Self.hash(i, 2)
+                let x = cx + CGFloat(cos(angle) * vitesse * u)
+                let y = cy + CGFloat(sin(angle) * vitesse * u
+                                     + 430 * u * u)
+                let taille = CGFloat(15 + 26 * Self.hash(i, 3))
+                let vie = 1.5 + 0.9 * Self.hash(i, 4)
+                let a = max(0, 1 - u / vie)
+                guard a > 0.02 else { continue }
+                var couche = ctx
+                couche.opacity = a
+                couche.translateBy(x: x, y: y)
+                couche.rotate(by: .radians(
+                    (Self.hash(i, 5) - 0.5) * 5 + u * 3.4
+                    * (Self.hash(i, 6) - 0.5)))
+                couche.draw(sprite,
+                            in: CGRect(x: -taille / 2, y: -taille / 2,
+                                       width: taille, height: taille))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
+    }
+}
+
+/// LE BOUTON CLAIM (robe welcome) — la capsule de VRAI verre qui porte
+/// le gain : le « +20 » à l'or de la maison et la PIÈCE 3D gelée
+/// (`MoonCoinView`, jamais une image — la recette de BRAVO).
+private struct BoutonClaim: View {
+    let montant: Int
+    var action: () -> Void
+
+    @State private var appuye = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Text("Claim")
+                    .font(.inter(16, .semibold))
+                    .foregroundStyle(Color.white.opacity(0.95))
+                Text("+\(montant)")
+                    .font(.inter(16, .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.woopGold.opacity(0.95))
+                MoonCoinView(coinR: 12, draggable: false,
+                             yawOverride: 0.34, idleLife: 0, fps: 6,
+                             reveal: 0.34, matte: 1)
+                    .frame(width: 12 * MoonCoinView.hostScale,
+                           height: 12 * MoonCoinView.hostScale)
+                    .frame(width: 26, height: 26)
+            }
+            .padding(.horizontal, 26)
+            .frame(height: 52)
+            .background {
+                // DU VERRE, PAS DU FROST (verdict) : `.clear` — la
+                // LENTILLE, celle qui PLIE ce qui passe dessous ; le
+                // `.regular` ne fait que dépolir. Dans un
+                // GlassEffectContainer à TAILLE CONSTANTE (le piège des
+                // bounds vivants). Ce qu'il réfracte : LA GROSSE
+                // PILULE NOIRE peinte juste dessous (voir `souffleVideo`
+                // dans la scène) — sans matière derrière lui, un verre
+                // sur du noir est un TROU.
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .glassEffect(.clear.interactive(), in: Capsule())
+                }
+                .environment(\.colorScheme, .dark)
+            }
+            .overlay(
+                Capsule().strokeBorder(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.42), location: 0),
+                            .init(color: .white.opacity(0.10), location: 0.55),
+                            .init(color: .white.opacity(0.24), location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                    lineWidth: 1))
+            .contentShape(Capsule())
+            .scaleEffect(appuye ? 0.96 : 1)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: appuye)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in appuye = true }
+                .onEnded { _ in appuye = false })
     }
 }
 
@@ -1521,6 +1986,13 @@ private struct VideoVivante: View {
     let nom: String
     let relance: Int
     let pente: CGSize
+    /// La vidéo tourne EN CONTINU (le welcome) au lieu de geler sur sa
+    /// dernière frame (les rewards).
+    var boucle: Bool = false
+    /// ⚠️ Le welcome est un PORTRAIT : en `aspectFill` son bas est
+    /// coupé et LA LUNE DU CUBE DISPARAÎT (verdict). Il s'affiche donc
+    /// entier (`aspectFit`) — le noir autour se fond dans la card.
+    var entier: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -1529,7 +2001,9 @@ private struct VideoVivante: View {
         let force = reduceMotion ? 0 : min(1.0,
             (abs(Double(pente.width)) + abs(Double(pente.height))) / 130.0
             + (abs(tilt.dx) + abs(tilt.dy)) * 0.55)
-        VideoReward(nom: nom, relance: relance, recul: 2.4 * force)
+        VideoReward(nom: nom, relance: relance,
+                    recul: boucle ? 0 : 2.4 * force, boucle: boucle,
+                    entier: entier)
     }
 }
 
@@ -1547,8 +2021,13 @@ private struct VideoReward: UIViewRepresentable {
     /// GELÉE. Si le banc montre une saccade : le repli est la planche de
     /// sprites du manège.
     var recul: Double = 0
+    /// En boucle, le lecteur repart de zéro à la fin (welcome).
+    var boucle: Bool = false
+    /// Vidéo entière (aspectFit) plutôt que remplie (aspectFill).
+    var entier: Bool = false
 
     final class Coordinateur {
+        var boucleArmee = false
         var derniereRelance = 0
         weak var lecteur: AVPlayer?
         var duree: Double = 0
@@ -1607,10 +2086,20 @@ private struct VideoReward: UIViewRepresentable {
         else { return v }
         let lecteur = AVPlayer(url: url)
         lecteur.isMuted = true
-        lecteur.actionAtItemEnd = .pause
+        lecteur.actionAtItemEnd = boucle ? .none : .pause
+        if boucle, !context.coordinator.boucleArmee {
+            context.coordinator.boucleArmee = true
+            NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: lecteur.currentItem, queue: .main) { [weak lecteur] _ in
+                    lecteur?.seek(to: .zero)
+                    lecteur?.play()
+                }
+        }
         let couche = v.layer as! AVPlayerLayer
         couche.player = lecteur
-        couche.videoGravity = .resizeAspectFill
+        couche.videoGravity = entier ? .resizeAspect
+                                     : .resizeAspectFill
         context.coordinator.lecteur = lecteur
         lecteur.play()
         return v
@@ -1630,6 +2119,8 @@ private struct VideoReward: UIViewRepresentable {
             lecteur.play()
             return
         }
+        // En boucle, rien à seeker : la vidéo vit d'elle-même.
+        guard !boucle else { return }
         // LA VIE AU TILT — active seulement une fois la lecture gelée.
         c.verifierFinie()
         if c.finie {
@@ -1651,6 +2142,8 @@ private struct CarteGyro<Contenu: View>: View {
     /// leurs gestes. L'écart vit CHEZ LA SCÈNE (binding) : la vie de la
     /// vidéo gelée s'en nourrit aussi.
     @Binding var pente: CGSize
+    /// La card porte un verre natif : pas de rotation 3D (voir plus bas).
+    var sansTilt: Bool = false
     @ViewBuilder var contenu: () -> Contenu
 
     private static var forme: RoundedRectangle {
@@ -1702,12 +2195,20 @@ private struct CarteGyro<Contenu: View>: View {
                     .clipShape(Self.forme)
                     .allowsHitTesting(false)
             }
+            // ⚠️ LE TILT EST COUPÉ quand la card porte un VERRE NATIF
+            // (le bouton claim) : sous un `rotation3DEffect`, le verre
+            // GROSSIT et se détache (bug vu et revu). Le correctif
+            // `compositingGroup` répare le verre mais tue sa
+            // réfraction : les deux sont incompatibles. Sur ces
+            // cards-là, le verre gagne — le gyro doux suffit.
             .rotation3DEffect(
-                .degrees(2.6 * tilt.dx
+                .degrees(sansTilt ? 0
+                         : 2.6 * tilt.dx
                          + max(-11, min(11, pente.width * 0.085))),
                 axis: (x: 0, y: 1, z: 0))
             .rotation3DEffect(
-                .degrees(-2.2 * tilt.dy
+                .degrees(sansTilt ? 0
+                         : -2.2 * tilt.dy
                          - max(-7, min(7, pente.height * 0.055))),
                 axis: (x: 1, y: 0, z: 0))
             .simultaneousGesture(
