@@ -21,6 +21,8 @@ struct StoryTwo: View {
     /// La hauteur réelle du contenu de la partition — la frame lui
     /// colle (plafonnée), plus de zone morte sous la dernière ligne.
     @State private var contentH: CGFloat = 0
+    /// LE DÉPLIAGE VIT CHEZ L'HÔTE — voir la note de `SlateListe`.
+    @State private var deplies: Set<String> = []
 
     var body: some View {
         // Le remplissage : la vidéo est plus large que l'écran à hauteur
@@ -70,7 +72,8 @@ struct StoryTwo: View {
                     SlateListe(groupes: session.groupes,
                                courant: session.groupes.first?.id ?? "",
                                basAir: 24,
-                               onContentHeight: { contentH = $0 })
+                               onContentHeight: { contentH = $0 },
+                               deplies: $deplies)
                         .equatable()
                         .frame(height: min(size.height * 0.52,
                                            contentH > 0 ? contentH

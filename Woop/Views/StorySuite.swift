@@ -19,6 +19,10 @@ struct StoryDetails: View {
     var onPartitionRect: (CGRect) -> Void = { _ in }
 
     @State private var contentH: CGFloat = 0
+    /// LE DÉPLIAGE VIT CHEZ L'HÔTE — voir la note de `SlateListe` : dans
+    /// une vue montée en `.equatable()`, un `@State` interne est
+    /// INVISIBLE à la comparaison, et le tap cesse d'ouvrir.
+    @State private var deplies: Set<String> = []
 
     var body: some View {
         // L'ARC DIAGONAL (tour 4, Frame …228) : la rotation est CUITE
@@ -73,7 +77,8 @@ struct StoryDetails: View {
                     SlateListe(groupes: session.groupes,
                                courant: "",
                                basAir: 24,
-                               onContentHeight: { contentH = $0 })
+                               onContentHeight: { contentH = $0 },
+                               deplies: $deplies)
                         .equatable()
                         .frame(height: min(size.height * 0.56,
                                            contentH > 0 ? contentH

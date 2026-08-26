@@ -45,6 +45,8 @@ struct SessionSlate: View {
     /// doigt (une fois par geste, panneau encore fermé) — jamais pendant
     /// le tirage.
     @State private var groupes: [SlateGroupe] = []
+    /// LE DÉPLIAGE VIT CHEZ L'HÔTE — voir la note de `SlateListe`.
+    @State private var deplies: Set<String> = []
 
     /// BANC : `-slateOpen` naît ouverte (le simulateur ne drague pas).
     private static let openLab = CommandLine.arguments.contains("-slateOpen")
@@ -127,7 +129,8 @@ struct SessionSlate: View {
             // bissection : sans cette liste, dérive zéro sur 7 s).
             if p > 0.02 {
                 SlateListe(groupes: groupes, courant: "courant",
-                           basAir: safeBottom + 24)
+                           basAir: safeBottom + 24,
+                           deplies: $deplies)
                     .equatable()
                     // Le contenu naît avec l'ouverture — fermé, l'ardoise
                     // n'est que sa dalle.
@@ -297,13 +300,30 @@ struct SlateListe: View, Equatable {
     /// fixe fabriquait des zones mortes qui avalaient les taps.
     var onContentHeight: (CGFloat) -> Void = { _ in }
 
-    /// Les groupes dépliés — l'état vit ICI : le parent peut se
-    /// réévaluer cent fois, le dépliement ne bronche pas.
-    @State private var deplies: Set<String> = []
+    /// LES GROUPES DÉPLIÉS — ET L'ÉTAT VIT CHEZ L'HÔTE (26-08, la
+    /// QUATRIÈME variante du piège du dépliage, celle-ci prouvée à la
+    /// console).
+    ///
+    /// Il était `@State` ICI, et cette liste est montée en
+    /// `.equatable()` : l'égalité ne compare que `courant` et les clés
+    /// des groupes — donc RIEN qui bouge quand on déplie. Mesuré :
+    /// l'état basculait bien quatre fois (`[] → [courant] → [] →
+    /// [courant]`) pendant que le corps n'était réévalué que TROIS
+    /// fois. `EquatableView` court-circuitait l'invalidation, la vue
+    /// restait sur son image, et le tap « n'ouvrait plus rien ».
+    ///
+    /// En le remontant à l'hôte et en le COMPARANT dans `==`, les deux
+    /// lois tiennent ensemble : pendant le tirage du panneau (60 images
+    /// par seconde), `deplies` ne change pas → l'égalité coupe la
+    /// réévaluation, la fluidité est sauve ; au tap, `deplies` change →
+    /// l'égalité est fausse → le corps se rejoue. Ne JAMAIS le
+    /// redescendre en `@State`.
+    @Binding var deplies: Set<String>
     @State private var seme = false
 
     static func == (l: Self, r: Self) -> Bool {
         l.courant == r.courant
+            && l.deplies == r.deplies
             && l.groupes.map(\.cle) == r.groupes.map(\.cle)
     }
 
@@ -315,8 +335,10 @@ struct SlateListe: View, Equatable {
     /// figées repliées). Ici la donnée elle-même porte `depliee` : tout
     /// changement de dépliage EST un changement de données.
     private var rangs: [RangDonnee] {
-        groupes.map { RangDonnee(groupe: $0,
-                                 depliee: deplies.contains($0.id)) }
+        groupes.enumerated().map { i, g in
+            RangDonnee(groupe: g, depliee: deplies.contains(g.id),
+                       rang: i + 1)
+        }
     }
 
     var body: some View {
@@ -334,11 +356,13 @@ struct SlateListe: View, Equatable {
         GeometryReader { g in
             ScrollView {
                 VStack(spacing: 4) {
-                    ForEach(Array(rangs.enumerated()),
-                            id: \.element.id) { i, r in
+                    // ⚠️ `ForEach(rangs)` NU — jamais `id:` par chemin de
+                    // clé : il remplacerait l'égalité de la donnée et
+                    // regèlerait les rangées (voir `RangDonnee.rang`).
+                    ForEach(rangs) { r in
                         SlateRang(groupe: r.groupe,
                                   depliee: r.depliee,
-                                  rang: i + 1,
+                                  rang: r.rang,
                                   onTap: { bascule(r.groupe.id) })
                     }
                 }
@@ -361,15 +385,19 @@ struct SlateListe: View, Equatable {
             // décalage (26-08) puis sa mort : titre et rangées mesurés
             // IMMOBILES au pixel pendant la bascule, dans la story
             // comme dans l'ardoise.
-            if CommandLine.arguments.contains("-slateSonde"),
-               groupes.count > 1 {
-                let id = groupes[1].id
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    bascule(id)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    bascule(id)
-                }
+        }
+        // LA SONDE VIT SUR L'ARRIVÉE DES DONNÉES, pas sur la naissance
+        // de la vue (26-08, payé) : l'ardoise du player monte sa liste
+        // AVANT que ses groupes soient construits, donc un `onAppear`
+        // trouvait un tableau vide et la sonde se taisait — pile là où
+        // le bug vivait. Elle bascule la PREMIÈRE rangée, quatre fois.
+        .task(id: groupes.first?.id) {
+            guard CommandLine.arguments.contains("-slateSonde"),
+                  let id = groupes.first?.id else { return }
+            for _ in 0..<4 {
+                try? await Task.sleep(for: .seconds(2))
+                if Task.isCancelled { return }
+                bascule(id)
             }
         }
     }
@@ -390,10 +418,20 @@ struct SlateListe: View, Equatable {
 private struct RangDonnee: Identifiable, Equatable {
     let groupe: SlateGroupe
     let depliee: Bool
+    /// LE RANG VIT DANS LA DONNÉE, LUI AUSSI (26-08, payé une fois de
+    /// plus). Il avait été pris d'un `ForEach(Array(rangs.enumerated()),
+    /// id: \.element.id)` — et ce `id:` par chemin de clé REMPLACE
+    /// l'identité `Identifiable` ET l'égalité de la donnée : le ForEach
+    /// ne voyait plus `depliee` changer, les rangées restaient gelées
+    /// sur leur image de naissance et le tap ne dépliait plus rien.
+    /// C'est LE piège du dépliage, dans sa troisième variante.
+    /// La seule forme robuste reste `ForEach(rangs)` — la donnée porte
+    /// TOUT ce qui peut changer l'affichage.
+    let rang: Int
     var id: String { groupe.id }
 
     static func == (l: Self, r: Self) -> Bool {
-        l.id == r.id && l.depliee == r.depliee
+        l.id == r.id && l.depliee == r.depliee && l.rang == r.rang
             && l.groupe.cle == r.groupe.cle
     }
 }
