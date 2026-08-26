@@ -190,52 +190,101 @@ struct SalleVideo: UIViewRepresentable {
         coordinator.player = nil
     }
 }
-
 // MARK: - La page
 
 struct CoffreV2Page: View {
     let coins: Int
     var onClose: () -> Void = {}
 
-    /// LE DOIGT SUR LA PIÈCE — la salle vit tant qu'il est là (loi 1).
-    @State private var allume: Double =
-        CommandLine.arguments.contains("-coffre2Allume") ? 1 : 0
-    /// Le tour de la pièce, en tours. Le doigt l'écrit ; il ne se remet
-    /// jamais à zéro, il continue.
+    /// ⚠️ **LA SALLE EST ALLUMÉE PAR DÉFAUT** (verdict Kathryn, 25-08 : « par
+    /// défaut le background est allumé, là l'écran est noir »). Le plan avait
+    /// tranché l'inverse — une chambre éteinte qu'on allume au doigt — et la
+    /// page livrée lui a donné tort en trois secondes : la première image
+    /// était un écran noir. On garde l'idée de l'interrupteur, mais **elle ne
+    /// commande plus l'existence de la lumière, seulement son ÉCLAT** : le
+    /// doigt fait monter la lampe d'un cran, et elle redescend au lâcher.
+    @State private var eclat: Double = 0
+
+    /// Le tour de la pièce présentée, en tours (1 = un tour complet). Continu :
+    /// c'est le doigt qui l'écrit, et lui ne connaît pas les cases.
     @State private var tour: Double = 0
     @State private var tourPrise: Double = 0
-    /// Laquelle des deux pièces est présentée. L'or = les pièces gagnées,
-    /// l'argent = celles à gagner (arbitrage 25-08).
-    @State private var orDevant = true
+
+    /// LE MANÈGE — deux pièces, un cran chacune. `page` est continue pendant
+    /// le geste : c'est elle qui porte le flou et le voyage.
+    @State private var page: Double = 0
+    @State private var pagePrise: Double = 0
+    /// L'axe du geste, verrouillé au premier mouvement franc. ⚠️ Sans lui, un
+    /// glissement de manège nourrit AUSSI le tirage de la card : le moindre
+    /// soupçon de vertical fait sauter la page en plein voyage.
+    @State private var axeVertical: Bool?
+
     /// LE TIRAGE de la card — la levée découvre la lune, comme la home.
     @State private var tirage: CGFloat = 0
-    /// L'arrivée : le film joue, puis la page naît. `passe` coupe court.
+
+    // ── L'ARRIVÉE
+    /// L'avancement de la phrase (en secondes de sa propre partition).
     @State private var arrivee: Double = 0
-    @State private var passe = false
+    /// LE RACCORD : 1 = la pièce est encore à la taille et à la place du
+    /// film ; 0 = elle est posée. C'est UN SEUL curseur, et c'est lui qui
+    /// fait la transition — pas un fondu croisé entre deux objets.
+    @State private var raccord: Double = 1
     @State private var lecteur: AVPlayer?
+    @State private var filmVisible = false
     @State private var nee = false
+    @State private var passe = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let sansFilm = CommandLine.arguments.contains("-coffreSansFilm")
-    /// `-coffre2Allume` : la salle est allumée d'emblée. Le simulateur ne sait
-    /// pas TENIR un doigt, et une lampe momentanée ne se juge qu'allumée —
-    /// sans ce banc, la loi 1 n'est vérifiable que sur le téléphone.
-    private static let allumeFixe = CommandLine.arguments.contains("-coffre2Allume")
-    /// `-coffreSkip` : le raccourci part seul à 2 s — le simulateur ne tape pas.
+    /// `-coffreSkip` : le raccourci part seul à 1,2 s — le simulateur ne tape
+    /// pas, et un raccourci qui n'est jamais filmé n'est pas vérifié.
     private static let skipAuto = CommandLine.arguments.contains("-coffreSkip")
+    /// `-coffreArgent` ouvre sur la pièce noire (capture du second cran).
+    private static let argentDabord = CommandLine.arguments.contains("-coffreArgent")
+    /// `-coffrePage <v>` FIGE le manège à mi-voyage. Le simulateur ne sait pas
+    /// glisser : sans ce banc, l'instant où LES DEUX pièces sont à l'écran —
+    /// c'est-à-dire tout le sujet du geste — n'est jamais vérifiable.
+    ///
+    /// ⚠️ **UN ARGUMENT DE LANCEMENT N'ARRIVE PAS TOUJOURS EN `NSNumber`.**
+    /// Le dépôt tient la règle inverse (« les arguments arrivent en NSNumber :
+    /// `as? Double` ÉCHOUE quand la valeur s'écrit sans décimale ») et elle
+    /// est INCOMPLÈTE : mesuré ici au `print`, `-coffrePage 0.35` rend
+    /// `Optional(0.35)` mais le `as? NSNumber` retourne **nil** — c'est une
+    /// `String`. Le banc s'appliquait donc jamais, et j'ai cru pendant trois
+    /// captures que le manège ne marchait pas alors qu'il n'était jamais figé.
+    /// **On lit les deux formes, toujours.**
+    private static let pageFigee: Double? = nombre("coffrePage")
 
-    /// L'encre du compte : blanche sur la nuit, presque noire sur le sol
-    /// éclairé. Une seule valeur, pilotée par la lampe.
-    private var encre: Color {
-        Color(white: 1 - 0.90 * allume)
+    static func nombre(_ cle: String) -> Double? {
+        let o = UserDefaults.standard.object(forKey: cle)
+        if let n = o as? NSNumber { return n.doubleValue }
+        if let t = o as? String { return Double(t) }
+        return nil
     }
 
-    /// La lune du secret : elle se découvre quand la card se soulève. Le
-    /// seuil et la course sont ceux de la home (`luneP`).
+    // MARK: Les grandeurs dérivées
+
+    /// La lune du secret : elle se découvre quand la card se soulève. Le seuil
+    /// et la course sont ceux de la home (`luneP`).
     private var luneP: Double {
         min(max((-Double(tirage) - 70) / 60, 0), 1)
     }
+
+    /// L'encre du compte. Il vit SUR le sol (L 152 allumé) : un blanc y est
+    /// illisible. Elle suit donc la lampe, comme tout le reste de la page.
+    private var encre: Color { Color(white: 0.10) }
+
+    /// ⚠️ **LA LOI COVER-FLOW DU PLAN NE S'APPLIQUE PAS ICI.** `|sin(2πu)|`
+    /// est NUL au milieu du voyage (la source le dit : « nette face caméra au
+    /// centre ») — juste pour un manège où l'objet se PRÉSENTE à mi-chemin
+    /// avant de repartir. Ici il n'y a que deux crans et le milieu n'est pas
+    /// une présentation, c'est le creux du geste : la mise au point suit donc
+    /// la DISTANCE au cran, et rien d'autre.
+
+    /// LES DEUX PIÈCES, dans l'ordre du manège : l'or (les pièces gagnées)
+    /// puis la noire (celles à gagner).
+    private static let manege: [PlanchePiece] = [.or, .argent]
 
     var body: some View {
         GeometryReader { geo in
@@ -251,21 +300,16 @@ struct CoffreV2Page: View {
                         .position(x: W / 2, y: H - 52)
                 }
 
-                carte(geo)
-                    .offset(y: max(tirage, 0))
-
-                contenu(geo)
-                    .offset(y: max(tirage, 0))
-
-                if !Self.sansFilm { film(geo) }
+                carte(geo).offset(y: max(tirage, 0))
+                contenu(geo).offset(y: max(tirage, 0))
+                if filmVisible { film(geo) }
             }
             .contentShape(Rectangle())
-            .gesture(tirageGeste)
+            .gesture(gestePage)
         }
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-
         .onAppear(perform: demarrer)
         .onDisappear { lecteur?.pause() }
     }
@@ -274,12 +318,11 @@ struct CoffreV2Page: View {
 
     @ViewBuilder
     private func carte(_ geo: GeometryProxy) -> some View {
-        let H = geo.size.height
-        // ⚠️ LE `Color.clear` TIENT LA TAILLE : `aspectRatio(.fill)` ne prend
-        // PAS la taille proposée (défaut mesuré sur les exos — la card se
-        // posait à 2,3 pt du bord au lieu de 10).
         Color.black
             .overlay(
+                // ⚠️ LE `Color.clear` TIENT LA TAILLE : `aspectRatio(.fill)` ne
+                // prend PAS la taille proposée (défaut mesuré sur les exos —
+                // la card se posait à 2,3 pt du bord au lieu de 10).
                 Color.clear
                     .overlay {
                         ZStack {
@@ -291,17 +334,17 @@ struct CoffreV2Page: View {
                                 .aspectRatio(contentMode: .fill)
                             SalleVideo()
                         }
-                        // ★ LOI 1 : LA CHAMBRE S'ALLUME SOUS LE DOIGT.
-                        // Le quart haut du film est à zéro absolu, donc ce
-                        // fondu n'agit QUE sur la barre et le sol — à l'œil,
-                        // c'est une lampe qui monte, pas une image qui
-                        // apparaît.
-                        .opacity(allume)
+                        // LA LAMPE MONTE D'UN CRAN SOUS LE DOIGT. Le quart
+                        // haut du film étant à zéro absolu, ce gain n'agit
+                        // que sur la barre et le sol : c'est une lampe qu'on
+                        // pousse, pas une image qu'on éclaircit.
+                        .brightness(0.10 * eclat)
+                        .saturation(1 + 0.14 * eclat)
                     }
                     .clipShape(CoffreV2Cotes.forme)
                     .padding(.top, CoffreV2Cotes.margeHaut)
             )
-            .frame(height: H)
+            .frame(height: geo.size.height)
             .ignoresSafeArea()
     }
 
@@ -312,19 +355,11 @@ struct CoffreV2Page: View {
         let H = geo.size.height
         let W = geo.size.width
         ZStack(alignment: .topLeading) {
-            // LA PHRASE — la grammaire de la home : Inter-SemiBold 30,
-            // tracking −0,4, spacing 2, tons alternés. Trois lignes, et la
-            // troisième EST l'invite (le mot invite, pas la lumière).
             // ⚠️ **LE CHEVRON ET LA PHRASE VIVENT DANS LE MÊME ESPACE**, et
-            // c'est le correctif d'un défaut vu DEUX FOIS (sur la maquette,
-            // puis en capture) : le chevron mangeait la première lettre.
-            // La cause n'était pas la cote mais le REPÈRE — posé en
-            // `.overlay(alignment: .topLeading)` sur une vue qui fuit la zone
-            // sûre, il partait quand même de l'encoche (~59 pt), donc son
-            // « top 63 » valait 122 à l'écran pendant que la phrase comptait
-            // depuis zéro. Deux origines, aucun calcul ne pouvait tomber
-            // juste. Ils sont maintenant empilés dans la MÊME colonne : l'air
-            // entre eux est un `spacing`, plus une soustraction.
+            // c'est le correctif d'un défaut vu DEUX FOIS (maquette, puis
+            // capture) : le chevron mangeait la première lettre. La cause
+            // n'était pas la cote mais le REPÈRE — posé en overlay sur une vue
+            // qui fuit la zone sûre, il partait quand même de l'encoche.
             VStack(alignment: .leading, spacing: 26) {
                 ChipVerre(symbole: "chevron.left", label: "Fermer",
                           action: onClose)
@@ -336,25 +371,17 @@ struct CoffreV2Page: View {
             }
             .padding(.leading, 22)
             .padding(.top, 63)
+            .opacity(nee ? 1 : 0)
 
-            // LA PIÈCE, posée sur le sol, avec son OMBRE DE CONTACT — c'est
-            // elle, et rien d'autre, qui sépare « posé » de « collé ».
             piece(W: W, H: H)
 
             // LA LÉGENDE DU COMPTE : un grand chiffre, un petit mot, PAS de
             // conteneur (la pastille est morte — trois objets ronds sur le
             // même axe, c'était l'autocollant à l'échelle de la page).
             VStack(spacing: 2) {
-                // ⚠️ **LE COMPTE CHANGE D'ENCRE AVEC LA LUMIÈRE.** Il vit à
-                // 0,68 H, c'est-à-dire SUR le sol — noir absolu quand la salle
-                // dort, **L 152** quand elle s'allume. Un blanc à 0,96 y
-                // devient illisible (vu en capture), et c'est la seule chose
-                // de la page qui traverse les deux régimes. Il bascule donc
-                // vers une encre SOMBRE à mesure que la lampe monte : la loi
-                // 3 dit qu'une seule lampe commande, et l'encre lui obéit.
                 Text("\(coins)")
                     .font(.inter(34, .semibold))
-                    .foregroundStyle(encre.opacity(0.96))
+                    .foregroundStyle(encre.opacity(0.92))
                     .contentTransition(.numericText())
                 Text("coins earned")
                     .font(.inter(13))
@@ -364,9 +391,8 @@ struct CoffreV2Page: View {
             .position(x: W / 2,
                       y: H * CoffreV2Cotes.piecY
                         + CoffreV2Cotes.piece * CoffreV2Cotes.marge / 2 + 44)
-            .opacity(nee ? 1 : 0)
+            .opacity(nee ? (1 - raccord) : 0)
         }
-        .opacity(nee ? 1 : 0)
     }
 
     private func ligne(_ texte: String, clair: Bool, i: Int) -> some View {
@@ -382,64 +408,156 @@ struct CoffreV2Page: View {
             .opacity(p)
     }
 
+    // MARK: La pièce et son manège
+
+    /// ⚠️ **LE RACCORD EST UNE POSE, PAS UN FONDU.** Au sommet du film la
+    /// pièce emplit la bande ; la pièce de la page NAÎT à cette taille et à
+    /// cette place, puis se pose. On ne voit donc pas deux objets se
+    /// remplacer : on voit le même, qui atterrit. Les cotes viennent de la
+    /// mesure du film (image 70 : bbox 0,94 de la hauteur de bande, centre à
+    /// x 0,47 / y 0,53), pas d'un réglage à l'œil.
+    private func filmDiam(_ W: CGFloat) -> CGFloat { W * 9 / 16 * 0.94 }
+    private func filmCentre(_ W: CGFloat, _ H: CGFloat) -> CGPoint {
+        CGPoint(x: W * 0.47, y: H * 0.42 + (0.53 - 0.5) * W * 9 / 16)
+    }
+
+    /// ⚠️ **LES DEUX PIÈCES SONT MONTÉES EN PERMANENCE, ET ELLES GLISSENT.**
+    /// Le premier jet n'en montrait qu'UNE et faisait « voyager » un objet qui
+    /// se remplaçait tout seul au passage du cran : on ne voyait donc jamais
+    /// la seconde ARRIVER, ce qui était pourtant toute la demande (« la
+    /// deuxième pièce noire qu'on peut voir au drag »). Ici chacune a sa
+    /// place sur un rail, `page` fait défiler le rail, et pendant tout le
+    /// geste **les deux sont à l'écran** — celle qui part et celle qui vient.
+    ///
+    /// Le pas du rail vaut 0,86 W : assez pour que la sortante soit hors du
+    /// cadre au cran, assez peu pour qu'on aperçoive l'entrante dès les
+    /// premiers points de doigt.
     @ViewBuilder
     private func piece(W: CGFloat, H: CGFloat) -> some View {
         let d = CoffreV2Cotes.piece
-        let cy = H * CoffreV2Cotes.piecY
-        ZStack {
-            // L'OMBRE DE CONTACT — serrée et écrasée. Une flaque large ne pose
-            // rien, elle salit le sol.
-            Ellipse()
-                .fill(Color.black.opacity(0.80 * allume))
-                .frame(width: d * 1.04, height: d * 0.23)
-                .blur(radius: 18)
-                .position(x: W / 2, y: cy + d * 0.40)
+        let repos = CGPoint(x: W / 2, y: H * CoffreV2Cotes.piecY)
+        let depart = filmCentre(W, H)
+        // Le raccord interpole TOUT en même temps : la taille, la place, et
+        // rien d'autre. Une seule courbe, donc aucun décalage possible.
+        let r = raccord * raccord * (3 - 2 * raccord)      // smoothstep
+        let pas = W * 0.86
 
-            PieceSprite(planche: orDevant ? .or : .argent, tour: tour)
-                .position(x: W / 2, y: cy)
-                .gesture(pieceGeste)
+        ZStack {
+            ForEach(Array(Self.manege.enumerated()), id: \.offset) { i, pl in
+                // L'écart au centre, en fraction de pas : 0 = présentée.
+                let e = Double(i) - page
+                // ⚠️ LE FLOU EST UNE MISE AU POINT, PAS UN EFFET : ce qui
+                // voyage est flou, ce qui est POSÉ est net. Il vaut donc
+                // |e| borné, et il tombe à zéro sur chaque cran — jamais la
+                // formule en |sin(2πu)| du plan, qui pique aux quarts et
+                // laisserait la pièce nette EN PLEIN VOYAGE.
+                let loin = min(abs(e), 1)
+                // La pièce présentée est la seule à jouer le raccord du film.
+                let actif = abs(e) < 0.5
+                let diam = actif ? d + (filmDiam(W) - d) * CGFloat(r) : d
+                let cx = W / 2 + CGFloat(e) * pas
+                    + (actif ? (depart.x - repos.x) * CGFloat(r) : 0)
+                let cy = repos.y + (actif ? (depart.y - repos.y) * CGFloat(r) : 0)
+
+                ZStack {
+                    // L'OMBRE DE CONTACT — serrée et écrasée. Une flaque large
+                    // ne pose rien, elle salit le sol. Elle meurt pendant le
+                    // raccord : une pièce en vol n'a pas d'ombre au sol.
+                    Ellipse()
+                        .fill(Color.black.opacity(0.80 * (actif ? (1 - r) : 1)))
+                        .frame(width: d * 1.04, height: d * 0.23)
+                        .blur(radius: 18)
+                        .position(x: cx, y: repos.y + d * 0.40)
+                        .opacity(1 - loin)
+
+                    PieceSprite(planche: pl, tour: tour, diametre: diam)
+                        // ⚠️ Le flou et l'échelle sont LÉGAUX ICI : ce sont des
+                        // IMAGES, pas du verre natif (l'interdit du §6.3 ne
+                        // vaut que pour `glassEffect`). C'est ce que la voie
+                        // « les rendus de Kathryn » a débloqué.
+                        .blur(radius: 7 * loin)
+                        .scaleEffect(1 - 0.16 * loin)
+                        .position(x: cx, y: cy)
+                        .opacity(1 - 0.35 * loin)
+                }
+                .allowsHitTesting(actif)
+            }
         }
+        .contentShape(Rectangle())
+        .gesture(gestePiece)
         .allowsHitTesting(nee)
     }
 
     // MARK: Les gestes
 
-    /// LE DOIGT SUR LA PIÈCE : il allume la salle ET la fait tourner.
-    private var pieceGeste: some Gesture {
+    /// LE DOIGT SUR LA PIÈCE : il la fait tourner, et il pousse la lampe.
+    private var gestePiece: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { v in
-                if allume < 0.02 {
+                if eclat < 0.02 {
                     tourPrise = tour
                     UIImpactFeedbackGenerator(style: .soft)
                         .impactOccurred(intensity: 0.6)
                 }
-                // ★ LA LAMPE MONTE VITE (elle frappe), et elle retombera
-                // lentement — jamais l'inverse.
-                withAnimation(.easeOut(duration: 0.26)) { allume = 1 }
+                withAnimation(.easeOut(duration: 0.26)) { eclat = 1 }
                 // 320 pt de doigt = un tour complet.
                 tour = tourPrise + Double(v.translation.width) / 320
             }
             .onEnded { _ in
-                guard !Self.allumeFixe else { return }
                 // ⚠️ LA RETOMBÉE EST PLUS LENTE QUE LA MONTÉE (0,62 contre
-                // 0,26). Une lampe frappe et s'éteint doucement ; l'inverse
-                // se lit comme un bug d'affichage.
-                withAnimation(.easeInOut(duration: 0.62)) { allume = 0 }
+                // 0,26). Une lampe frappe et s'éteint doucement ; l'inverse se
+                // lit comme un bug d'affichage.
+                withAnimation(.easeInOut(duration: 0.62)) { eclat = 0 }
             }
     }
 
-    /// LE TIRAGE de la card — l'élastique en tanh, la même loi que la home,
-    /// et le ressort au lâcher.
-    private var tirageGeste: some Gesture {
+    /// LE GESTE DE LA PAGE — un seul reconnaisseur, DEUX sens, et un axe
+    /// verrouillé au premier mouvement franc : vertical = la card se soulève
+    /// et la lune se découvre ; horizontal = le manège change de pièce.
+    private var gestePage: some Gesture {
         DragGesture(minimumDistance: 14)
             .onChanged { g in
-                let t = g.translation.height
-                let net = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
-                tirage = CoffreV2Cotes.levee * CGFloat(tanh(Double(net) / 190))
+                if axeVertical == nil {
+                    let dx = abs(g.translation.width)
+                    let dy = abs(g.translation.height)
+                    guard max(dx, dy) > 10 else { return }
+                    axeVertical = dy > dx
+                    if axeVertical == false { pagePrise = page }
+                }
+                if axeVertical == true {
+                    let t = g.translation.height
+                    let net = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
+                    tirage = CoffreV2Cotes.levee * CGFloat(tanh(Double(net) / 190))
+                } else {
+                    // ⚠️ **VERS LA DROITE AMÈNE LA PIÈCE NOIRE** (sa demande,
+                    // mot pour mot). C'est l'inverse de la convention d'un
+                    // carrousel — on suit la commande, pas l'habitude.
+                    // 200 pt de doigt = un cran ; la course est bornée : deux
+                    // pièces, pas un rouleau infini.
+                    let d = Double(g.translation.width) / 200
+                    page = min(max(pagePrise + d, 0), 1)
+                }
             }
-            .onEnded { _ in
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                    tirage = 0
+            .onEnded { g in
+                let vertical = axeVertical ?? true
+                axeVertical = nil
+                if vertical {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        tirage = 0
+                    }
+                } else {
+                    // LE CRAN : on tombe sur la pièce la plus proche, élan
+                    // compris. Une pièce ne s'immobilise pas entre deux faces.
+                    let elan = Double(g.predictedEndTranslation.width) / 200
+                    let vise = (pagePrise + elan).rounded()
+                    let cible = min(max(vise, 0), 1)
+                    if cible != page.rounded() {
+                        UIImpactFeedbackGenerator(style: .rigid)
+                            .impactOccurred(intensity: 0.7)
+                    }
+                    withAnimation(.spring(response: 0.46, dampingFraction: 0.86)) {
+                        page = cible
+                    }
                 }
             }
     }
@@ -450,7 +568,7 @@ struct CoffreV2Page: View {
     private func film(_ geo: GeometryProxy) -> some View {
         let W = geo.size.width
         let H = geo.size.height
-        if let lecteur, !passe {
+        if let lecteur {
             // LA BANDE 16:9 — le film est PAYSAGE et ses pièces occupent la
             // bande centrale : un crop portrait les couperait en deux
             // (mesuré). On le montre donc entier, en bande.
@@ -458,15 +576,21 @@ struct CoffreV2Page: View {
                 .frame(width: W, height: W * 9 / 16)
                 .mask(fonduBords)
                 .position(x: W / 2, y: H * 0.42)
-                .transition(.opacity)
+                // ⚠️ IL S'ÉTEINT PENDANT QUE LA PIÈCE SE POSE, pas avant : les
+                // deux partagent le MÊME curseur `raccord`. C'est ce qui fait
+                // que l'objet du film et celui de la page ne se croisent
+                // jamais — ils sont le même, une seule image durant.
+                .opacity(raccord)
                 .allowsHitTesting(false)
-            // LA SURFACE DU RACCOURCI — bornée à la bande, comme la v1.
+
+            // LA SURFACE DU RACCOURCI — TOUT L'ÉCRAN, et c'est délibéré. Sur
+            // la v1 elle était bornée à la bande vidéo ; ici la page n'a rien
+            // d'autre à écouter pendant l'arrivée, et un raccourci qu'on rate
+            // parce qu'on a tapé 40 pt trop bas n'est pas un raccourci.
             Color.clear
-                .frame(width: W, height: W * 9 / 16)
                 .contentShape(Rectangle())
-                .position(x: W / 2, y: H * 0.42)
                 .onTapGesture { passerDevant() }
-                .accessibilityLabel("Passer")
+                .accessibilityLabel("Passer l'introduction")
                 .accessibilityAddTraits(.isButton)
         }
     }
@@ -492,55 +616,70 @@ struct CoffreV2Page: View {
     }
 
     private func demarrer() {
-        guard !nee else { return }
+        guard !nee, !passe else { return }
+        // Le banc ouvre directement sur le second cran (capture de la noire).
+        if Self.argentDabord { page = 1 }
+        if let f = Self.pageFigee { page = f }
         // Sans film (ou sous Reduce Motion), la page est là tout de suite : on
         // ne fait jamais attendre devant une absence.
         guard !Self.sansFilm, !reduceMotion,
               let url = Bundle.main.url(forResource: "coffre-arrivee",
                                         withExtension: "mp4") else {
-            naitre(); return
+            poser(duree: 0.01); return
         }
         let p = AVPlayer(url: url)
         p.automaticallyWaitsToMinimizeStalling = false
         p.isMuted = true
         lecteur = p
+        filmVisible = true
         p.play()
         // 45 images à 24 i/s = 1,88 s : la ruée, puis la montée au sommet.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.88) {
-            guard !passe else { return }
-            naitre()
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.86) { poser() }
         if Self.skipAuto {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { passerDevant() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { passerDevant() }
         }
     }
 
     /// LE RACCOURCI. ⚠️ Il ne SAUTE pas : la home a déjà payé le saut (« de
-    /// 0,6 à 1,95 en UNE image » → verdict « pas assez fluide »). On pose la
-    /// scène en 0,28 s, et le lecteur s'arrête — inutile de décoder du 1080
-    /// sous une couche à opacité zéro.
+    /// 0,6 à 1,95 en UNE image » → verdict « pas assez fluide »). Il joue la
+    /// MÊME pose, en deux fois moins de temps.
     private func passerDevant() {
         guard !passe else { return }
-        passe = true
-        lecteur?.pause()
-        lecteur = nil
-        naitre(duree: 0.28)
+        poser(duree: 0.44)
     }
 
-    private func naitre(duree: Double = 0.55) {
-        guard !nee else { return }
-        withAnimation(.easeOut(duration: duree)) { nee = true; passe = true }
-        // La phrase s'écrit ensuite, ligne à ligne.
-        withAnimation(.linear(duration: 1.18).delay(duree * 0.4)) {
+    /// LA POSE — l'unique transition du film vers la page.
+    private func poser(duree: Double = 0.86) {
+        guard !passe else { return }
+        passe = true
+        nee = true
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.5)
+        // ⚠️ UNE SEULE COURBE POUR TOUT : la pièce rétrécit, descend, et le
+        // film s'éteint sur le même `raccord`. Deux animations parallèles
+        // auraient deux durées et l'objet se dédoublerait à l'œil.
+        withAnimation(.timingCurve(0.22, 0.72, 0.16, 1, duration: duree)) {
+            raccord = 0
+        }
+        // La phrase s'écrit DERRIÈRE la pose, jamais après : elle a le temps
+        // d'arriver pendant que la pièce descend.
+        withAnimation(.linear(duration: 1.18).delay(duree * 0.34)) {
             arrivee = 1.18
+        }
+        // Le lecteur s'arrête quand il n'est plus vu — inutile de décoder du
+        // 1080 sous une couche à opacité zéro.
+        DispatchQueue.main.asyncAfter(deadline: .now() + duree + 0.05) {
+            lecteur?.pause()
+            lecteur = nil
+            filmVisible = false
         }
     }
 }
 
 // MARK: - Le banc
 
-/// `-coffre2` : la page seule. `-coffre2Allume` la montre salle allumée (le
-/// simulateur ne sait pas tenir un doigt, et une lampe ne se juge qu'allumée).
+/// `-coffre2` : la page seule.
+/// `-coffreSansFilm` saute l'arrivée · `-coffreSkip` la passe à 1,2 s (le
+/// simulateur ne tape pas) · `-coffreArgent` ouvre sur la seconde pièce.
 struct CoffreV2Lab: View {
     var body: some View {
         CoffreV2Page(coins: 1240)
