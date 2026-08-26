@@ -2455,6 +2455,34 @@ private struct RespireEdition<C: View>: View {
 /// LE MODE ÉDITION vit ici : le zoom arrière de la zone, la respiration de
 /// chaque card, les pastilles lune. L'ÉTAT, lui, vit AU-DESSUS (la page) —
 /// tout `@State` posé ici serait perdu au démontage `verreMonte`.
+/// LE PORTE-DEMANDES DE LA RANGÉE — une RÉFÉRENCE stable, à la place de
+/// quatre closures.
+///
+/// ⚠️ Il n'existe que pour une raison, et elle est mesurée : une closure
+/// stockée en propriété rend une vue **inégalable**, donc re-rendue à chaque
+/// passage du parent. Sur ces cards-là — verre natif + gaussienne — ça
+/// coûtait la fluidité du geste de la home (36,8 img/s de médiane, des trous
+/// à 681 ms). Une classe se compare par identité : la rangée redevient
+/// prouvablement égale et SwiftUI ne l'appelle plus.
+///
+/// Elle ne PORTE pas les actions, elle les DEMANDE : l'hôte écoute `jeton`
+/// et exécute. Sans ça on aurait déplacé le problème, pas résolu — une
+/// closure capturée dans un objet capture aussi un `self` périmé.
+@Observable final class DemandesCards {
+    enum Demande: Equatable {
+        case edition(Int), pastille(Int), fantome(Int), sortieEdition
+    }
+    private(set) var derniere: Demande?
+    /// Il s'incrémente à chaque demande : deux demandes identiques d'affilée
+    /// doivent tout de même se voir.
+    private(set) var jeton = 0
+
+    func demander(_ d: Demande) {
+        derniere = d
+        jeton &+= 1
+    }
+}
+
 struct CardsRangee: View {
     var faites: Int = 4
     var prevues: Int = 5
@@ -2488,16 +2516,28 @@ struct CardsRangee: View {
     /// Le slot dont la card VOLE dans la vitrine : il garde sa place,
     /// vide (le clone est dans l'overlay).
     var masque: Int? = nil
-    var onEdition: ((Int) -> Void)? = nil
-    var onPastille: ((Int) -> Void)? = nil
-    var onFantome: ((Int) -> Void)? = nil
-    /// ⚠️ **UN TAP SUR UNE CARD SORT DU MODE ÉDITION** (26-08). Verdict :
-    /// « un simple tap sur un widget, ou sur une zone vide de l'écran, doit
-    /// quitter le mode édition — aujourd'hui ce comportement n'existe pas
-    /// correctement ». Il n'existait pas du tout sur la card : en édition elle
-    /// passe en `.inerte`, et `CardTouche` ne pose alors AUCUN geste. Le tap
-    /// sur le vide, lui, existait déjà (le rattrapeur de la page).
-    var onSortieEdition: (() -> Void)? = nil
+    /// ⚠️ **LES CLOSURES SONT DES ENTRÉES INSTABLES, ET C'ÉTAIT LE BUG DU
+    /// PULL** (26-08). Cette rangée recevait QUATRE closures. La loi n°3
+    /// d'`ExercisesView` le dit en toutes lettres depuis sa propre guérison :
+    /// « une closure en propriété suffit à les faire re-jouer à chaque passage
+    /// du parent : SwiftUI ne peut plus prouver l'égalité ». Conséquence
+    /// mesurée : à CHAQUE événement du doigt, SwiftUI re-rendait ces deux
+    /// cards — leur `glassEffect` NATIF **et** la gaussienne de 6 pt posée
+    /// dessus, c'est-à-dire deux passes hors écran chacune, soixante fois par
+    /// seconde. Sonde de cadence sur la home pendant un tirage : **36,8 img/s
+    /// de médiane, des trous jusqu'à 681 ms** — plus d'une demi-seconde sans
+    /// une image, pendant que le doigt bouge.
+    ///
+    /// Une RÉFÉRENCE de classe, elle, se compare par identité : la rangée
+    /// redevient prouvablement égale, et SwiftUI ne l'appelle plus du tout.
+    var demandes: DemandesCards? = nil
+    /// La rangée est éditable (l'hôte écoute les demandes). Remplace le
+    /// `onEdition == nil` d'avant, qui portait cette information dans la
+    /// présence d'une closure.
+    var editable: Bool = false
+    // (Le tap qui sort du mode édition passe lui aussi par `demandes` :
+    // il n'existait pas du tout sur la card — en édition elle passe en
+    // `.inerte`, et `CardTouche` ne pose alors aucun geste.)
 
     var body: some View {
         Chambre(p: edition) { ed in
@@ -2537,7 +2577,7 @@ struct CardsRangee: View {
                                 .onTapGesture {
                                     UIImpactFeedbackGenerator(style: .light)
                                         .impactOccurred(intensity: 0.5)
-                                    onSortieEdition?()
+                                    demandes?.demander(.sortieEdition)
                                 }
                         }
                     }
@@ -2546,7 +2586,7 @@ struct CardsRangee: View {
                         // 8 pt), elle suit la respiration de sa card : elle
                         // est DE la card. 70 ms d'écart entre les deux.
                         PastilleLune(p: pastilleP(i, ed)) {
-                            onPastille?(i)
+                            demandes?.demander(.pastille(i))
                         }
                         .offset(x: 8, y: -8)
                     }
@@ -2559,7 +2599,7 @@ struct CardsRangee: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    onFantome?(i)
+                    demandes?.demander(.fantome(i))
                 }
         }
     }
@@ -2569,8 +2609,11 @@ struct CardsRangee: View {
                        penche: Double) -> some View {
         let mode: CardMode = editionActive
             ? .inerte
-            : (onEdition.map { f in CardMode.home(onEdition: { f(slot) }) }
-               ?? .libre)
+            : (editable
+               ? CardMode.home(onEdition: {
+                   demandes?.demander(.edition(slot))
+                 })
+               : .libre)
         let mort = vides.contains(kind)
         switch kind {
         case .regularite:

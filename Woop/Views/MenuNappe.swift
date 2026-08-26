@@ -939,6 +939,13 @@ private struct GaletFumee: View {
 /// Chaque `asyncAfter` est une MARCHE ; quatre animations qui démarrent
 /// chacune de son côté ne peuvent pas couler. Une seule grandeur `p`,
 /// animée UNE fois, dont chaque pièce dérive son avancement.
+/// `-menuSonde` : le flou du retrait coupé (mesure de cadence).
+/// ⚠️ Hors de `MenuHote` : c'est un type GÉNÉRIQUE, et Swift n'y accepte pas
+/// de propriété statique stockée.
+enum MenuSonde {
+    static let sansFlou = CommandLine.arguments.contains("-menuSonde")
+}
+
 struct MenuHote<Fond: View, Contenu: View>: View {
     @Binding var ouvert: Bool
     var onChoix: (Int) -> Void = { _ in }
@@ -975,6 +982,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
 
     @State private var p: Double = 0
     @State private var appui = false
+@State private var enTransition = false
+    @State private var transJeton = 0
     @State private var choisi: Int?
     @State private var elu: Int?
     @State private var survol: Int?
@@ -1117,7 +1126,56 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // Reculer à 0,66 ne suffit pas : il faut que l'encre soit
                     // à la fois presque éteinte ET adoucie, pour que le verre
                     // n'ait plus que du doux à manger.
-                    .blur(radius: 7 * retrait)
+                    // ⚠️ **LE FLOU PAR MARCHES — ET C'ÉTAIT LUI, « LE MENU
+                    // ARRIVE TROP TARD »** (26-08).
+                    //
+                    // Ce flou est posé sur TOUT le mobilier, verre natif des
+                    // deux widgets compris : une gaussienne de 7 pt sur du
+                    // Liquid Glass, c'est deux passes hors écran, recalculées
+                    // à chaque image des 0,78 s de l'ouverture.
+                    //
+                    // SONDE DE CADENCE (banc `-fps -homeMenuAuto`) :
+                    //     avec le flou continu ..  25,0 img/s · min 4,4 · trou 943 ms
+                    //     sans le flou ..........  58,0       · min 38  · trou 364 ms
+                    // Un trou de 943 ms : le « délai » que Kathryn décrit
+                    // n'est pas un minuteur, c'est l'app qui S'ARRÊTE. Aucune
+                    // partition ne rattrape ça.
+                    //
+                    // ⚠️ LES MARCHES NE SUFFISENT PAS — MESURÉ : le rayon
+                    // quantifié en six paliers ne remonte qu'à 35,6 img/s
+                    // (trou 584 ms). Le coût n'est pas le nombre de
+                    // CHANGEMENTS de rayon, c'est la passe elle-même : le
+                    // sous-arbre flouté se re-rend à chaque image parce que
+                    // toute la scène est dans la transaction d'animation.
+                    //
+                    // LE REMÈDE : le flou ne vit PAS pendant la transition, il
+                    // vit une fois POSÉ. C'est là qu'il sert — empêcher le
+                    // verre du menu de lentiller l'encre nette derrière lui —
+                    // et là qu'il ne coûte rien, puisque plus rien ne bouge.
+                    // Pendant les 0,78 s, l'échelle et l'extinction portent le
+                    // recul à elles seules : elles sont gratuites.
+                    //
+                    // ⚠️ Le drapeau retombe à 80 % de la course, pas à 100 % :
+                    // le flou arrive donc pendant que le mobilier finit de
+                    // s'éteindre (il est déjà sous 15 % d'opacité) — sa
+                    // naissance est couverte par le mouvement qui reste. À
+                    // 100 % on verrait un pop sur une image immobile.
+                    // ⚠️ **ET IL N'APPARTENAIT MÊME PAS À CETTE FORME-LÀ.**
+                    // Relire le commentaire ci-dessus : ce flou a été écrit
+                    // pour LA COURONNE — « le gros rond c'est pas du liquid
+                    // glass mais du blur », son disque de verre lentillait
+                    // l'encre nette derrière lui et il fallait ne lui donner
+                    // que du doux à manger. La couronne est morte le 22-08
+                    // (« on remet le menu liste ») ; la COLONNE n'a pas de
+                    // disque, elle n'a rien à lentiller. Le flou est resté,
+                    // orphelin — et il coûtait, à lui seul, jusqu'à 943 ms
+                    // d'arrêt par ouverture.
+                    //
+                    // Il vit donc là où il sert : à son banc `-couronneLab`.
+                    // Et même là, pas pendant la transition.
+                    .blur(radius: (couronne && !enTransition
+                                   && !MenuSonde.sansFlou)
+                          ? 7 * retrait : 0)
                     .scaleEffect(1 - 0.026 * retrait, anchor: .center)
                     .opacity(1 - 0.88 * retrait)
 
@@ -1794,6 +1852,16 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// — c'est ce dernier tiers qui fait le luxe.
     private func jouer(_ v: Bool) {
         if v { choisi = nil }
+        // LE DRAPEAU DE TRANSITION — il éteint le flou du retrait le temps du
+        // mouvement (cf. la note sur `.blur` plus haut).
+        let duree = v ? 0.78 : 0.52
+        enTransition = true
+        transJeton &+= 1
+        let mien = transJeton
+        DispatchQueue.main.asyncAfter(deadline: .now() + duree * 0.8) {
+            guard transJeton == mien else { return }
+            enTransition = false
+        }
         // Le seul retard admis, et il n'est pas une marche : il décale le
         // DÉPART de l'unique animation, il ne la découpe pas.
         let r = v ? retard : 0

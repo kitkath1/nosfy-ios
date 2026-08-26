@@ -1796,6 +1796,23 @@ struct HomeNuitPage: View {
     /// Le jeton du chien de garde — l'école de `SliderObsidienne.stale` : une
     /// vérification différée n'agit que si elle est encore la dernière.
     @State private var tirageJeton = 0
+    /// LE PORTE-DEMANDES DE LA RANGÉE DE WIDGETS — créé UNE fois, jamais
+    /// recréé : c'est son identité qui rend la rangée prouvablement égale.
+    @State private var demandes = DemandesCards()
+
+    /// Le coefficient de la sonde : 0 éteint le flou visé, sous le doigt.
+    private func coefSonde(_ n: Int) -> CGFloat {
+        guard tirageDebut != nil else { return 1 }
+        return (Self.pullSonde == 4 || Self.pullSonde == n) ? 0 : 1
+    }
+
+    /// `-pullSonde <n>` — la bisection du coût du geste.
+    private static let pullSonde: Int = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-pullSonde"), i + 1 < a.count,
+              let n = Int(a[i + 1]) else { return 0 }
+        return n
+    }()
     // MARK: - LES DEUX CURSEURS (refonte 22-08 : « tu vas trop vite »)
     //
     // ⚠️ LE DÉFAUT N'ÉTAIT PAS UNE DURÉE, C'ÉTAIT UNE ARCHITECTURE. `scene`
@@ -2089,6 +2106,13 @@ struct HomeNuitPage: View {
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
                 } contenu: {
+                    // ⚠️ LA SONDE DU PULL (`-pullSonde <n>`) : elle éteint une
+                    // couche à la fois pour savoir laquelle coûte les trous de
+                    // 1,3 s mesurés sous le doigt. 1 = pas de mobilier,
+                    // 2 = pas de card vidéo, 3 = ni l'un ni l'autre.
+                    if Self.pullSonde == 1 || Self.pullSonde == 3 {
+                        Color.clear
+                    } else {
                     // ⚠️ **LE PONT ANIMATABLE, ENFIN BRANCHÉ** (26-08).
                     // Verdict : « l'arrivée sur la home est trop statique — je
                     // veux une micro-profondeur, un très léger décalage entre
@@ -2116,6 +2140,7 @@ struct HomeNuitPage: View {
                     // rejouerait le piège de la page ré-évaluée par image.
                     Chambre(p: arrivee) { a in
                         mobilierScene(geo, g, e, a)
+                    }
                     }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
@@ -2255,6 +2280,8 @@ struct HomeNuitPage: View {
         // système. Le vrai filet reste le chien de garde du geste : même volé,
         // le doigt ne doit plus laisser la page cassée derrière lui.
         .defersSystemGestures(on: .bottom)
+        // `-fps` : la sonde de cadence (le SEUL juge fiable du « ça lag »).
+        .sondeCadence("home")
         .onAppear {
             guard !deja else { return }
             deja = true
@@ -2305,6 +2332,22 @@ struct HomeNuitPage: View {
                     menuOuvert.toggle()
                 }
             }
+            // ⚠️ **LE BANC DU DOIGT** (`-pullAuto`) : il écrit `tirage` à 60 Hz
+            // exactement comme le ferait un pouce — aller-retour continu sur la
+            // course du tiroir. C'est le SEUL moyen de mesurer le régime qui
+            // lague : `simctl` ne sait pas poser un doigt, et un verdict « pas
+            // fluide » sans chiffre ne se répare pas, il se devine.
+            if CommandLine.arguments.contains("-pullAuto") {
+                let t0 = Date()
+                Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0,
+                                     repeats: true) { _ in
+                    let e = Date().timeIntervalSince(t0)
+                    // Un va-et-vient de 2,4 s sur toute la course.
+                    let u = (sin(e * 2 * .pi / 2.4) + 1) / 2
+                    tirageDebut = .zero          // le banc « pose le doigt »
+                    tirage = -CGFloat(u) * Self.leveeTiroir
+                }
+            }
             if CommandLine.arguments.contains("-departAuto") {
                 Timer.scheduledTimer(withTimeInterval: 5.5, repeats: true) { _ in
                     lancer(gDepart: 0)
@@ -2338,6 +2381,18 @@ struct HomeNuitPage: View {
         // `endedAt` en base, mais la page restait dans son état de séance —
         // player fantôme, widgets démontés, tiroir ouvert, pull sorti avant
         // le cran. Un SEUL `onChange`, une SEULE transaction.
+        // LES DEMANDES DE LA RANGÉE — elle ne porte plus les actions, elle les
+        // demande ; c'est ici qu'on exécute. Ce `onChange` ne se réveille qu'au
+        // TAP, jamais pendant un geste.
+        .onChange(of: demandes.jeton) { _, _ in
+            switch demandes.derniere {
+            case .edition: entrerEdition()
+            case .pastille(let i): ouvrirListe(i)
+            case .fantome(let i): ouvrirVitrine(i)
+            case .sortieEdition: sortirEdition()
+            case .none: break
+            }
+        }
         .onChange(of: enSeance) { _, encore in
             guard encore else { rendreLaHome(); return }
             // LA SÉANCE TOURNAIT DÉJÀ AU LANCEMENT. Le `@Query` n'est
@@ -2464,6 +2519,9 @@ struct HomeNuitPage: View {
                         // la page n'a plus d'objet. Le noir sous elle n'est
                         // pas un fond : c'est la PAGE, et c'est là que vit le
                         // slider.
+                        if Self.pullSonde == 2 || Self.pullSonde == 3 {
+                            Color(white: 0.05)
+                        } else {
                         GrandeCardVideo(naissance: naissance,
                                         // LA PILULE EN DERNIER : elle n'entre
                                         // qu'une fois la phrase posée et les
@@ -2474,6 +2532,7 @@ struct HomeNuitPage: View {
                                         pilule: PilP.entree(arrivee),
                                         levee: max(-tirage, 0),
                                         e: e)
+                        }
                     }
                 }
                 // Le tirage vers le BAS déplace toujours toute la home (« je
@@ -2539,6 +2598,46 @@ struct HomeNuitPage: View {
         // masqués ». (Le 6 est un plafond DUR : un blur sur du verre natif
         // empile deux passes.)
         let net = max(min(g / 0.45, 1), DepartCine.sstep(0, DepartCine.netFor, e))
+        // SONDE 4 : le mobilier reste MONTÉ, mais ses flous meurent sous le
+        // doigt. Elle tranche la question « est-ce la construction de l'arbre
+        // ou le RENDU des passes hors écran qui coûte ? ». Le banc `-pullAuto`
+        // pose lui aussi `tirageDebut` : sans ça la sonde ne verrait rien.
+        // ⚠️ **LE VERRE NE SE FLOUTE PAS PENDANT QU'ON LE DÉPLACE** (26-08) —
+        // et c'est LA cause du « gros problème de fluidité » du pull.
+        //
+        // Le fichier savait déjà que ce flou-là est cher : « un blur posé sur
+        // du VERRE NATIF empile deux passes — c'est l'opération la plus chère
+        // de la page ». Il l'avait plafonné à 6 pt. Il l'avait laissé VIVANT
+        // sous le doigt.
+        //
+        // SONDE DE CADENCE, home pendant un tirage (banc `-fps -pullAuto`,
+        // bisection `-pullSonde`) :
+        //     tout monté ................  36,8 img/s · min 6,5 · trou 681 ms
+        //     sans le mobilier ..........  60,0        · min 51  · trou 170 ms
+        //     flou des WIDGETS coupé ....  53,5        · min 39  · trou 359 ms
+        //     flou de la semaine coupé ..  35,6        · min 7,0 · trou 566 ms
+        //     flou de la pièce coupé ....  36,0        · min 7,3 · trou 563 ms
+        // Un trou de 681 ms, c'est plus d'une demi-seconde sans une image
+        // pendant que le doigt bouge : voilà « parfois rien ne se passe »,
+        // voilà pourquoi un TAP marchait mieux qu'un drag (un événement
+        // survit, soixante non), et voilà pourquoi le pouce glissait jusque
+        // dans la bande de la Reachability.
+        //
+        // ⚠️ ET ON FLOUTAIT DU VIDE : l'opacité vaut `1 − net`, donc au moment
+        // où le flou atteint son maximum la card est TRANSPARENTE. On payait
+        // deux passes hors écran pour flouter quelque chose d'invisible.
+        //
+        // La loi appliquée est celle de la maison, déjà écrite sur le bijou
+        // de la fiche exo : « EN COURSE, le bijou allège sa parure — la
+        // fluidité prime sur des détails que l'œil ne voit pas en mouvement ».
+        // Sous le doigt : pas de flou. Le recul se dit par l'opacité et
+        // l'offset, qui ne coûtent rien. Au lâcher il n'y a AUCUN pop : le
+        // geste finit soit fermé (net = 0, flou nul de toute façon), soit
+        // ouvert (net = 1, opacité nulle). Et pendant le FILM — le moment où
+        // l'on REGARDE la dissolution — la profondeur de champ joue en entier.
+        let enGeste = tirageDebut != nil
+        let flouCards: CGFloat = enGeste ? 0 : coefSonde(5)
+        let flouSemaine = coefSonde(6), flouPiece = coefSonde(7)
         // ── CE QUE FAIT L'HORLOGE ────────────────────────────────────────────
         let chute = DepartCine.chuteTexte(e)
         let flou = DepartCine.sstep(DepartCine.flouAt,
@@ -2741,10 +2840,12 @@ struct HomeNuitPage: View {
                                 edition: editionP,
                                 editionActive: edition,
                                 masque: vitrineSlot,
-                                onEdition: { _ in entrerEdition() },
-                                onPastille: { ouvrirListe($0) },
-                                onFantome: { ouvrirVitrine($0) },
-                                onSortieEdition: { sortirEdition() })
+                                // ⚠️ UNE RÉFÉRENCE STABLE, PLUS QUATRE
+                                // CLOSURES — voir `DemandesCards` : c'était
+                                // la cause mesurée des trous de 681 ms sous
+                                // le doigt.
+                                demandes: demandes,
+                                editable: true)
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.375)
@@ -2754,7 +2855,7 @@ struct HomeNuitPage: View {
                         // l'opération la plus chère de la page, et au-delà de
                         // 6 pt on ne distingue plus rien : on payait pour du
                         // vide, à chaque image du tirage.
-                        .blur(radius: 6 * net)
+                        .blur(radius: 6 * net * flouCards)
                         .opacity(1 - net)
                         // ⚠️ ELLES NE SONT PLUS SOURDES. Le `false` datait du
                         // temps où les cards n'étaient que du mobilier ; avec
@@ -2782,7 +2883,7 @@ struct HomeNuitPage: View {
                         // l'opération la plus chère de la page, et au-delà de
                         // 6 pt on ne distingue plus rien : on payait pour du
                         // vide, à chaque image du tirage.
-                        .blur(radius: 6 * net)
+                        .blur(radius: 6 * net * flouSemaine)
                         .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                     }
@@ -2910,7 +3011,7 @@ struct HomeNuitPage: View {
                         // cards (offset 8, flou plafonné 6, extinction) —
                         // et elle naît avec la phrase.
                         .offset(y: 8 * net)
-                        .blur(radius: 6 * net)
+                        .blur(radius: 6 * net * flouPiece)
                         .opacity((1 - net) * arr)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                         // Sourde dès que la page fait autre chose : le
