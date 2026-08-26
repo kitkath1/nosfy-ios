@@ -32,19 +32,23 @@ struct StopSessionSheet: View {
     @State private var camPosee = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Coins hauts seuls — le bas appartient à l'écran (le CADRE
-    /// FANTÔME est une faute déjà payée).
-    private static let shape = UnevenRoundedRectangle(
-        cornerRadii: .init(topLeading: 34, bottomLeading: 0,
-                           bottomTrailing: 0, topTrailing: 34),
-        style: .continuous)
+    /// La forme de la FAMILLE — lue, jamais recopiée.
+    private static var shape: UnevenRoundedRectangle { PanneauMesures.shape }
 
     var body: some View {
         GeometryReader { g in
-            // 0,47 : l'écart texte → boutons se resserre (verdict 18-08,
-            // « réduis l'écart ») — la coupe vient du Spacer, le bas
-            // reste ancré.
-            let panelH = g.size.height * 0.47
+            // ⚠️ **EXACTEMENT LES MÊMES COTES QUE LE PANNEAU-QUESTION**
+            // (26-08). Verdict : « le composant Stop doit avoir exactement les
+            // mêmes dimensions que l'overlay avec la flamme, les deux doivent
+            // appartenir à la même famille UI ». C'était impossible : celui-ci
+            // prenait 0,47 de l'écran PLEIN, l'autre 0,52 du SAFE — deux bases
+            // différentes ne coïncident sur aucun téléphone. Ils lisent
+            // maintenant la même fonction, au même endroit.
+            let panelH = PanneauMesures.hauteurAncree(
+                hauteurPleine: g.size.height
+                    + g.safeAreaInsets.top + g.safeAreaInsets.bottom,
+                ancre: PanneauMesures.ancreParDefaut(
+                    insetHaut: g.safeAreaInsets.top))
             ZStack(alignment: .bottom) {
                 // Le voile — un tap, c'est « non, je continue ».
                 Color.black.opacity(posee ? 0.50 : 0)
@@ -55,8 +59,11 @@ struct StopSessionSheet: View {
             }
             .frame(width: g.size.width, height: g.size.height,
                    alignment: .bottom)
+            // ⚠️ SUR LE CONTENU, JAMAIS SUR LE `GeometryReader` — l'école du
+            // calendrier. Posé sur le lecteur lui-même (ce qu'il faisait), il
+            // rend des insets NULS : la hauteur ne pouvait pas être ancrée.
+            .ignoresSafeArea()
         }
-        .ignoresSafeArea()
         .onAppear {
             withAnimation(.spring(response: 0.45,
                                   dampingFraction: 0.86)) { posee = true }
@@ -217,12 +224,13 @@ struct StopSessionSheet: View {
     }
 
     private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+        DragGesture(minimumDistance: PanneauMesures.dragMin,
+                    coordinateSpace: .local)
             .onChanged { v in
                 pull = max(0, v.translation.height)
             }
             .onEnded { _ in
-                if pull > 90 {
+                if pull > PanneauMesures.seuilRangement {
                     continuer()
                 } else {
                     withAnimation(.spring(response: 0.34,

@@ -2,6 +2,98 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
+// MARK: - LES MESURES DE LA FAMILLE DES PANNEAUX-QUESTION
+
+/// ⚠️ **LA FAMILLE, ENFIN ÉCRITE UNE FOIS** (26-08). Verdict de Kathryn : « le
+/// composant Stop doit avoir EXACTEMENT les mêmes dimensions que l'overlay avec
+/// la flamme — les deux doivent appartenir à la même famille UI ».
+///
+/// Ils n'y appartenaient pas, et c'était mécaniquement impossible : ils
+/// portaient déjà la même forme, le même verre, la même poignée et le même
+/// seuil de drag — copiés-collés — mais leurs HAUTEURS se calculaient sur deux
+/// bases différentes (0,47 de l'écran PLEIN pour le stop, 0,52 du SAFE pour la
+/// question), donc leurs cotes ne pouvaient coïncider sur aucun téléphone.
+/// Tout ce qui suit est désormais lu, jamais recopié.
+enum PanneauMesures {
+    /// Coins hauts seuls — le bas appartient à l'écran (le CADRE FANTÔME est
+    /// une faute déjà payée).
+    static let rayonHaut: CGFloat = 34
+    static let shape = UnevenRoundedRectangle(
+        cornerRadii: .init(topLeading: rayonHaut, bottomLeading: 0,
+                           bottomTrailing: 0, topTrailing: rayonHaut),
+        style: .continuous)
+
+    /// Le drag de rangement : 12 pt de course avant qu'il n'existe (les
+    /// boutons gardent leurs taps), 90 pt pour valider.
+    static let dragMin: CGFloat = 12
+    static let seuilRangement: CGFloat = 90
+
+    /// ⚠️ **LA MARGE DE HALO N'EST PAS UN CONFORT, C'EST UNE MESURE.** La
+    /// lumière de la carte des séries est peinte par `VerreGonfle` dans un
+    /// rectangle **28 pt plus grand** que la carte, et posé APRÈS le
+    /// `clipShape` : un panneau qui affleurerait pile le bord de la carte
+    /// laisserait donc fuir 28 pt de halo au-dessus de lui. C'est la bande
+    /// claire qu'on voit sur le screenshot de Kathryn.
+    /// 44 et non 28 : la marge doit DÉPASSER le halo pour que le bord du
+    /// panneau ne l'affleure pas — deux arêtes à 6 pt l'une de l'autre se
+    /// lisent comme un défaut, pas comme une couverture. Et pas plus de 44 :
+    /// au-delà le panneau mangerait le titre de l'exercice. Il recouvre LA
+    /// CARTE, pas la page. Mesuré : bord du panneau à 450 pt, halo de la carte
+    /// à 473, bas du titre à 426 — 23 pt de couverture, 24 pt d'air.
+    static let margeHalo: CGFloat = 44
+
+    /// L'ANCRE PAR DÉFAUT : le bord haut de la carte des séries, **mesuré**
+    /// depuis le haut de la zone sûre (sonde numpy sur capture : arête montante
+    /// la plus franche à y = 500,7 pt sur un écran de 852, safe top 59).
+    ///
+    /// ⚠️ **C'EST UNE MESURE, PAS UN CALCUL** — et le calcul est justement le
+    /// piège payé ici. J'avais déduit l'ancre de `expandedHeader + 4` (= 367) :
+    /// faux de 75 pt, parce que ce 367 vit dans le conteneur de l'overlay, qui
+    /// commence lui-même sous les chips. Le panneau montait 168 pt trop haut et
+    /// mangeait le titre de l'exercice. La règle du dépôt vaut aussi pour la
+    /// géométrie : on mesure, on ne déduit pas.
+    ///
+    /// Elle ne sert que de REPLI : quand la page connaît la vraie position de
+    /// sa carte (`seriesCardFrame`), c'est elle qui parle.
+    static let ancreDepuisSafe: CGFloat = 442
+
+    /// LA HAUTEUR ANCRÉE — celle des deux panneaux.
+    ///
+    /// ⚠️ **PLUS AUCUNE FRACTION.** L'ancienne `g.size.height * 0.52` était
+    /// calculée sur la hauteur SANS zone sûre alors que le panneau est posé
+    /// bord à bord : il manquait `0,52 × (haut + bas)` ≈ **48 pt** sur un
+    /// iPhone de 852. Et surtout, une fraction ne peut pas RECOUVRIR quelque
+    /// chose : le bord haut de la carte est à un offset FIXE (367 pt), donc
+    /// le panneau dépassait ou pas selon le modèle d'écran — sur un 932 pt il
+    /// manquait ~14 pt, et la carte se voyait derrière.
+    ///
+    /// ⚠️ **L'ANCRE EST EN ESPACE PHYSIQUE, ET LA HAUTEUR AUSSI.** Piège payé
+    /// au premier essai : j'ai d'abord soustrait l'ancre de la hauteur SÛRE, et
+    /// le panneau est monté 34 pt trop bas — la carte se voyait encore. Le bord
+    /// haut de la carte est posé dans un conteneur plein cadre (`367` depuis le
+    /// bord PHYSIQUE), pas depuis le haut de la zone sûre : mélanger les deux
+    /// origines, c'est perdre l'inset du haut (59 pt sur un iPhone 16).
+    ///
+    /// - `hauteurPleine` : du bord physique haut au bord physique bas. Depuis
+    ///   un `GeometryReader` qui RESPECTE la zone sûre (l'école du calendrier —
+    ///   c'est son contenu qui l'ignore, jamais lui) :
+    ///   `g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom`.
+    /// - `ancre` : le bord haut PHYSIQUE de ce qu'il faut recouvrir.
+    static func hauteurAncree(hauteurPleine: CGFloat,
+                              ancre: CGFloat) -> CGFloat {
+        // Le plancher : sur un très petit écran, le panneau garde de quoi
+        // respirer plutôt que d'écraser sa flamme.
+        max(380, hauteurPleine - ancre + margeHalo)
+    }
+
+    /// L'ancre de repli, quand rien n'a été mesuré (le panneau Stop, qui peut
+    /// s'ouvrir depuis une page sans carte). Même entrée, même sortie : les
+    /// deux panneaux de la famille ont alors LES MÊMES COTES au point près.
+    static func ancreParDefaut(insetHaut: CGFloat) -> CGFloat {
+        insetHaut + ancreDepuisSafe
+    }
+}
+
 // MARK: - Le panneau « Recommencer ? »
 
 /// AU RETOUR DE BRAVO, LA QUESTION. La fiche se réinstalle et un panneau de
@@ -27,12 +119,8 @@ struct RestartSheet: View {
     @State private var born: Date = .now
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Coins hauts seuls — le bas appartient à l'écran (le CADRE FANTÔME
-    /// est une faute déjà payée).
-    private static let shape = UnevenRoundedRectangle(
-        cornerRadii: .init(topLeading: 34, bottomLeading: 0,
-                           bottomTrailing: 0, topTrailing: 34),
-        style: .continuous)
+    /// La forme de la FAMILLE — lue, jamais recopiée.
+    private static var shape: UnevenRoundedRectangle { PanneauMesures.shape }
 
     var body: some View {
         GeometryReader { g in
@@ -126,14 +214,26 @@ struct RestartSheet: View {
 
     // MARK: La flamme et sa petite caméra
 
-    /// La caméra entre par la GÉOMÉTRIE du cadre (l'école BravoCine : le
-    /// lecteur redécode aux nouvelles bornes, jamais un zoom rastérisé) —
-    /// et la vidéo n'est JAMAIS fille d'un drawingGroup (le carré jaune).
+    /// ⚠️ **LA CAMÉRA EST UN TRANSFORM, PLUS UNE FRAME** (26-08). Ce header
+    /// re-cadrait son `AVPlayerLayer` **soixante fois par seconde**
+    /// (`.frame(width: … * z)` piloté par la TimelineView) — exactement la
+    /// faute que ses DEUX voisins documentent comme payée et corrigée :
+    /// « la caméra vivante par transformation (jamais la frame — un
+    /// AVPlayerLayer redimensionné 60×/s relayoute et re-rend chaque image) »
+    /// (DepartSeance:245), et la même chez StopSessionSheet. Le fichier disait
+    /// l'inverse (« le lecteur redécode aux nouvelles bornes ») : deux lois
+    /// contraires dans le même dépôt, c'est celle qui est MESURÉE qui gagne.
+    /// C'est ça, « leur animation doit être plus fluide ».
+    ///
+    /// Et l'horloge tombe à 30 Hz : la caméra se pose en 1,8 s sur une pente
+    /// qui meurt, la poussière boucle sur 2,6-4,8 s — rien là-dedans n'a
+    /// besoin de soixante images par seconde (la loi du Design System : jamais
+    /// de TimelineView nue, 30 fps bridés).
     private func flameHeader(W: CGFloat, slotH: CGFloat) -> some View {
         // L'horloge ne se met plus en pause : la poussière de diamants
         // rouges vit en continu (la caméra, elle, est posée depuis
         // longtemps — son terme est mort à ~2 s).
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
                                 paused: reduceMotion)) { tl in
             let e = tl.date.timeIntervalSince(born)
             // Posée en ~1,8 s, pente qui meurt : une présence, pas un plan.
@@ -147,8 +247,11 @@ struct RestartSheet: View {
                 // 1,28 : « je la voyais un peu plus grosse » (verdict
                 // Kathryn, round 3).
                 RestartFlameVideo()
-                    .frame(width: slotH * (4.0 / 3.0) * 1.28 * z,
-                           height: slotH * 1.28 * z)
+                    // Cadre CONSTANT — la couche vidéo ne bouge plus d'un
+                    // pixel ; c'est le `scaleEffect` qui fait la caméra.
+                    .frame(width: slotH * (4.0 / 3.0) * 1.28,
+                           height: slotH * 1.28)
+                    .scaleEffect(z)
                     .blendMode(.plusLighter)
                 // LA POUSSIÈRE DE DIAMANTS ROUGES — très très fine :
                 // des croix taillées de 0,8 à 2 pt qui montent en dérivant
@@ -228,12 +331,13 @@ struct RestartSheet: View {
     }
 
     private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+        DragGesture(minimumDistance: PanneauMesures.dragMin,
+                    coordinateSpace: .local)
             .onChanged { v in
                 pull = max(0, v.translation.height)
             }
             .onEnded { _ in
-                if pull > 90 {
+                if pull > PanneauMesures.seuilRangement {
                     onDismiss()
                 } else {
                     withAnimation(.spring(response: 0.34,

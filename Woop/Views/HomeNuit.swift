@@ -1738,6 +1738,15 @@ struct HomeNuitPage: View {
     /// galet rentrait au coin en plein milieu du geste. Un axe se décide UNE
     /// fois — le tester à chaque image le ferait osciller.
     @State private var axeVertical: Bool?
+    /// LE POINT DE DÉPART DU GESTE EN COURS. `nil` = aucun doigt. Il sert à
+    /// deux choses, et les deux réparent « parfois rien ne se passe » : repérer
+    /// qu'un NOUVEAU geste commence (donc remettre l'état à plat), et savoir
+    /// qu'un geste est encore censé être en cours (donc armer le chien de
+    /// garde).
+    @State private var tirageDebut: CGPoint?
+    /// Le jeton du chien de garde — l'école de `SliderObsidienne.stale` : une
+    /// vérification différée n'agit que si elle est encore la dernière.
+    @State private var tirageJeton = 0
     // MARK: - LES DEUX CURSEURS (refonte 22-08 : « tu vas trop vite »)
     //
     // ⚠️ LE DÉFAUT N'ÉTAIT PAS UNE DURÉE, C'ÉTAIT UNE ARCHITECTURE. `scene`
@@ -1925,11 +1934,24 @@ struct HomeNuitPage: View {
     /// En dessous, la poudre blanche se poserait sur l'arête de la card.
     /// Contrôle : 734 + 34 + 62 + 10 + 34 = 874.
     private static var leveeTiroir: CGFloat { leveeSeance }
-    /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué). Recalé sur
-    /// le POUCE, pas sur la card : 95 avec l'élastique à 156 demande 133 pt de
-    /// pouce, contre 132 pour l'ancien couple 90/150. L'invariant du geste est
-    /// conservé.
-    private static var seuilCran: CGFloat { 95 }
+    /// Le seuil du cran, mesuré sur le tirage RENDU (déjà élastiqué).
+    ///
+    /// ⚠️ **RECALÉ DE 95 À 52 LE 26-08** — verdict : « pas besoin d'atteindre
+    /// une distance énorme pour déclencher l'état, le drag doit fonctionner au
+    /// moindre mouvement suffisamment intentionnel ».
+    /// Le calcul, refait sur le POUCE : `tirage = 140·tanh(net/190)`, donc
+    /// franchir 95 demandait `atanh(95/140)·190 + 14` = **171 pt de pouce**
+    /// pour ouvrir (et 179 pour refermer). C'est plus de la moitié de la
+    /// hauteur utile d'un iPhone : le geste n'était pas exigeant, il était
+    /// hors de portée. À 52, il en demande **80** — franc, intentionnel, et
+    /// atteignable d'un pouce qui ne lâche pas le téléphone.
+    private static var seuilCran: CGFloat { 52 }
+    /// Le seuil de REFERMETURE, en hystérésis sous le cran (sinon il claque au
+    /// moindre frémissement). Recalé dans le même rapport : 42 → 26.
+    private static var seuilFerme: CGFloat { 26 }
+    /// LA POIGNÉE DU PULL — la hauteur de la bande qui prend le doigt au bas
+    /// de la card. Elle DÉBORDE le dessin de l'invite : on ne doit pas viser.
+    private static var poigneePull: CGFloat { 112 }
     /// LE REPOS DE LA CARD : zéro hors séance, la levée pendant. Tout le
     /// tirage se mesure PAR RAPPORT À LUI — sinon la card retomberait sur
     /// le player à chaque lâcher.
@@ -2020,6 +2042,13 @@ struct HomeNuitPage: View {
                 } contenu: {
                     mobilierScene(geo, g, e)
                 }
+                // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
+                // note sur `fondPage`. `.simultaneousGesture` et jamais
+                // `.gesture` : posé en exclusif sur la page, il AFFAMERAIT le
+                // slider, le galet, les cards et l'ardoise ; en simultané, il
+                // écoute par-dessus leur épaule et son verrou d'axe le fait
+                // sortir dès que le mouvement n'est pas le sien.
+                .simultaneousGesture(tirageGeste)
                 .overlay {
                     // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
                     // se charge). Le slider l'ouvre, « Commencer » le referme et
@@ -2133,6 +2162,23 @@ struct HomeNuitPage: View {
                 coffreOuvert = false
             }
         }
+        // ⚠️ **LE BORD BAS EST À NOUS D'ABORD** (26-08). Le screenshot où TOUT
+        // l'écran de l'iPhone descend — status bar et Dynamic Island comprises,
+        // chevron gris au-dessus — n'est pas un bug de Woop : c'est la
+        // REACHABILITY d'iOS. Vérifié : aucune feuille système sur le chemin de
+        // la home v2, aucune transformation de fenêtre, et le seul chevron de
+        // la page est blanc et en bas — le code ne peut pas produire cette
+        // image. Or le geste qu'on demande ici (tirer vers le bas) commence
+        // naturellement à 24-34 pt du bord bas, c'est-à-dire PILE dans la bande
+        // que le système se réserve.
+        //
+        // `defersSystemGestures` ne DÉSACTIVE pas la Reachability — aucune app
+        // ne le peut, et c'est un réglage d'accessibilité qui appartient à
+        // l'utilisatrice. Elle la DIFFÈRE : le premier glissement depuis ce
+        // bord revient à la page, il en faut un second pour réveiller le
+        // système. Le vrai filet reste le chien de garde du geste : même volé,
+        // le doigt ne doit plus laisser la page cassée derrière lui.
+        .defersSystemGestures(on: .bottom)
         .onAppear {
             guard !deja else { return }
             deja = true
@@ -2353,7 +2399,16 @@ struct HomeNuitPage: View {
                 .offset(y: max(tirage, 0))
         }
         .contentShape(Rectangle())
-        .gesture(tirageGeste)
+        // ⚠️ **LE GESTE N'EST PLUS ICI** (26-08). `fondPage` est la couche de
+        // FOND de `MenuHote` : elle vit SOUS tout le mobilier. Le tirage
+        // n'attrapait donc le doigt que sur les rares zones où rien n'est
+        // dessiné — cards, ardoise de la semaine, minis, galet, pièce et
+        // nombre de l'objectif se le prenaient les uns après les autres — et
+        // le retour, doigt posé sur la card, ne fonctionnait quasiment jamais.
+        // Il est monté d'un cran, en geste SIMULTANÉ sur le résultat de
+        // `MenuHote` : il couvre la page entière et cohabite avec les gestes
+        // des enfants au lieu de leur perdre le doigt (son verrou d'axe le
+        // rend inoffensif pour tout ce qui glisse à l'horizontale).
     }
 
     // ⚠️ `mobilier(_:)` et son `Chambre(p: scene)` sont MORTS. `Chambre` est
@@ -2604,7 +2659,8 @@ struct HomeNuitPage: View {
                                 masque: vitrineSlot,
                                 onEdition: { _ in entrerEdition() },
                                 onPastille: { ouvrirListe($0) },
-                                onFantome: { ouvrirVitrine($0) })
+                                onFantome: { ouvrirVitrine($0) },
+                                onSortieEdition: { sortirEdition() })
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.375)
@@ -2714,10 +2770,22 @@ struct HomeNuitPage: View {
                             .opacity(arrivee)
                             .allowsHitTesting(false)
                     }
-                    InviteTirage(actif: !tiroirOuvert)
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
-                        .padding(.bottom, 24)
+                    // ⚠️ **LA POIGNÉE DU PULL** (26-08). L'app désigne cette
+                    // bande au doigt (« pull to start ») — et elle ne portait
+                    // qu'un `onTapGesture`. C'est LA raison littérale du
+                    // verdict « un tap fonctionne mieux que le geste » : sur
+                    // la seule zone qu'on invite à tirer, seul le tap était
+                    // servi. La bande de prise déborde maintenant le dessin de
+                    // l'invite (112 pt) pour qu'on n'ait pas à viser.
+                    ZStack(alignment: .bottom) {
+                        Color.clear
+                            .frame(height: Self.poigneePull)
+                            .contentShape(Rectangle())
+                        InviteTirage(actif: !tiroirOuvert)
+                            .padding(.leading, 24)
+                            .padding(.trailing, 24)
+                            .padding(.bottom, 24)
+                    }
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)
                         .opacity(enSeance ? 0 : arrivee * (1 - net))
@@ -2773,6 +2841,12 @@ struct HomeNuitPage: View {
         // (les taps des enfants gagnent — le panneau garde les siens).
         // Et c'est aussi LA SORTIE du mode édition : tap n'importe où hors
         // des widgets — la liste d'abord, le mode ensuite.
+        // ⚠️ **AVEC SA FORME** (26-08). Sans `contentShape`, un `ZStack` dont
+        // les enfants sont posés en `.position`/`.frame(alignment:)` n'a de
+        // surface tactile QUE là où ses enfants dessinent : le « tap sur une
+        // zone vide » ne rattrapait donc rien du tout — la loi payée du
+        // dépôt (« une vue sans taille intrinsèque n'attrape pas les gestes »).
+        .contentShape(Rectangle())
         .onTapGesture {
             if listeSlot != nil { fermerListe(); return }
             if edition, vitrineSlot == nil { sortirEdition(); return }
@@ -2820,8 +2894,30 @@ struct HomeNuitPage: View {
     /// ressort au lâcher. Les gestes des enfants gagnent (le panneau du
     /// galet garde son drag-loupe).
     private var tirageGeste: some Gesture {
-        DragGesture(minimumDistance: 14)
+        // ⚠️ **6 pt, ET NON 14** (26-08). Le verrou d'axe se décidait « au
+        // premier mouvement franc », seuil 8 — mais le premier événement
+        // portait DÉJÀ les 14 pt de `minimumDistance` : la décision se prenait
+        // donc sur le bruit du contact, et un geste jugé horizontal était mort
+        // sans appel. À 6, le seuil de décision (8) est franchi APRÈS le
+        // premier événement, c'est-à-dire par un vrai mouvement.
+        DragGesture(minimumDistance: 6)
             .onChanged { g in
+                // ⚠️ **LE GESTE ANNULÉ NE LAISSE PLUS SON ÉTAT DERRIÈRE LUI**
+                // (26-08). Un drag qui meurt sans `onEnded` — l'app passe en
+                // arrière-plan, ou le SYSTÈME vole le geste au bord bas (la
+                // Reachability, cf. le screenshot où tout l'écran descend) —
+                // laissait `axeVertical` et la course périmés : le tirage
+                // suivant ne répondait plus, et la card pouvait rester bloquée
+                // à mi-chemin. C'était ça, « parfois ça marche, parfois rien ».
+                // La remise à plat se fait sur le CHANGEMENT DE `startLocation`,
+                // l'école déjà écrite dans ExercisesView (l. 731).
+                if tirageDebut != g.startLocation {
+                    tirageDebut = g.startLocation
+                    axeVertical = nil
+                    cranSenti = false
+                    luneSentie = false
+                }
+                armerChienDeGarde()
                 // LE MODE ÉDITION TIENT LA PAGE : un doigt qui dérive
                 // pendant l'édition (ou la vitrine) ne nourrit pas le
                 // tirage — sinon le wiggle et le film se disputent l'écran.
@@ -2857,11 +2953,11 @@ struct HomeNuitPage: View {
                     ferme = nil
                 }
                 // ⚠️ LE SEUIL DU GESTE EST DÉJÀ CONSOMMÉ : le premier événement
-                // porte les 14 pt de `minimumDistance`, donc la prise SAUTAIT
-                // de 14 pt à l'instant du contact.
-                let net14 = t < 0 ? min(t + 14, 0) : max(t - 14, 0)
+                // porte les 6 pt de `minimumDistance`, donc la prise SAUTERAIT
+                // d'autant à l'instant du contact si on ne les retirait pas.
+                let net = t < 0 ? min(t + 6, 0) : max(t - 6, 0)
                 tirage = reposCard
-                    + Self.leveeTiroir * CGFloat(tanh(Double(net14) / 190))
+                    + Self.leveeTiroir * CGFloat(tanh(Double(net) / 190))
                 // ⚠️ **LE RETOUR SUIT LE DOIGT, IL NE SE CONTENTE PAS DE GELER.**
                 // Geler avait supprimé le saut, mais geler c'est ne rien faire :
                 // on tirait vers le bas et RIEN ne bougeait jusqu'au lâcher.
@@ -2914,6 +3010,10 @@ struct HomeNuitPage: View {
                 }
             }
             .onEnded { _ in
+                // Le geste s'est terminé PROPREMENT : le chien de garde n'a
+                // plus rien à surveiller.
+                tirageDebut = nil
+                tirageJeton &+= 1
                 guard !edition, vitrineSlot == nil else {
                     axeVertical = nil
                     return
@@ -2942,7 +3042,7 @@ struct HomeNuitPage: View {
                 }
                 if tirage < -Self.seuilCran {
                     lancer(gDepart: g)
-                } else if tirage > -42 || !tiroirOuvert {
+                } else if tirage > -Self.seuilFerme || !tiroirOuvert {
                     fermer()
                 } else {
                     // Dans l'hystérésis, tiroir déjà ouvert : on REJOUE vers
@@ -2951,6 +3051,34 @@ struct HomeNuitPage: View {
                     lancer(gDepart: g)
                 }
             }
+    }
+
+    /// LE CHIEN DE GARDE DE PÉREMPTION. Un `DragGesture` peut mourir sans
+    /// jamais appeler `onEnded` : l'app passe en arrière-plan, une présentation
+    /// démarre, ou le SYSTÈME lui vole le doigt — c'est exactement ce qui se
+    /// passe quand la Reachability d'iOS se déclenche au bord bas, là où le
+    /// pouce commence naturellement ce geste-ci. Sans filet, la page restait
+    /// figée à mi-course, l'axe verrouillé, et le tirage suivant ne répondait
+    /// plus.
+    ///
+    /// Réarmé à chaque événement ; seule la dernière vérification agit (le
+    /// jeton). 0,30 s : plus long qu'un trou d'événements normal, plus court
+    /// qu'un blocage perceptible.
+    private func armerChienDeGarde() {
+        tirageJeton &+= 1
+        let mien = tirageJeton
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
+            guard tirageJeton == mien, tirageDebut != nil else { return }
+            tirageDebut = nil
+            axeVertical = nil
+            cranSenti = false
+            luneSentie = false
+            // On rejoint l'état STABLE le plus proche — jamais un état
+            // inventé : `reposCard` sait déjà lequel (séance, tiroir, repos).
+            guard depart == nil, ferme == nil, abs(tirage - reposCard) > 0.5
+            else { return }
+            withAnimation(.easeOut(duration: 0.26)) { tirage = reposCard }
+        }
     }
 
     /// LE DÉPART — **un seul site d'appel pour le cran ET pour le tap.** C'est

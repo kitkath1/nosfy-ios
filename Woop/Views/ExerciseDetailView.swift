@@ -274,7 +274,11 @@ struct ExerciseDetailView: View {
     /// maison : on anime en offset, jamais la place réservée).
     /// 118 : le bloc titre en consomme ~96 — le reste est l'air entre le
     /// sous-titre et la flamme (« espace plus », 14 août).
-    private static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
+    /// ⚠️ Plus `private` : `PanneauMesures.ancreCarteExo` la LIT pour ancrer
+    /// la hauteur des panneaux-question sur le bord haut de la carte des
+    /// séries. Un chiffre recopié là-bas et la couverture redeviendrait une
+    /// coïncidence de modèle d'iPhone.
+    static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
     /// `-headerFreeze <y>` : fige la course vue par le header (le
     /// simulateur ne drague pas) — les poses du dépliement se capturent.
     private static let headerFreeze: CGFloat? = {
@@ -875,9 +879,49 @@ struct ExerciseDetailView: View {
                 // reste monté (transparent, sourd au doigt quand vide) :
                 // c'est lui qui joue l'entrée et la sortie du panneau.
                 GeometryReader { g in
+                    // ⚠️ **LA HAUTEUR EST ANCRÉE, PLUS PROPORTIONNELLE**
+                    // (26-08). Verdict : « cet overlay est trop petit, le
+                    // composant Training derrière dépasse encore, il doit
+                    // recouvrir ENTIÈREMENT cette zone ». Une fraction ne peut
+                    // pas recouvrir un objet posé à un offset FIXE : le bord
+                    // haut de la carte est à `expandedHeader + 4` quel que soit
+                    // l'écran, le panneau était proportionnel — il dépassait ou
+                    // pas selon le modèle. Il monte maintenant JUSQU'À la carte,
+                    // plus la marge du halo qui déborde son clip.
+                    let plein = g.size.height
+                        + g.safeAreaInsets.top + g.safeAreaInsets.bottom
+                    // ⚠️ L'ANCRE EST MESURÉE, PAS DÉDUITE : la carte publie
+                    // déjà son cadre en coordonnées globales (`seriesCardFrame`,
+                    // posé pour la volée de pièces). On la lit — la couverture
+                    // devient exacte quel que soit l'écran ET le contenu de la
+                    // carte. Le repli ne sert qu'au tout premier layout.
+                    let h = PanneauMesures.hauteurAncree(
+                        hauteurPleine: plein,
+                        ancre: seriesCardFrame.minY > 1
+                            ? seriesCardFrame.minY
+                            : PanneauMesures.ancreParDefaut(
+                                insetHaut: g.safeAreaInsets.top))
                     ZStack(alignment: .bottom) {
                         Color.clear
                         if let ask = restartAsk {
+                            // LE VOILE — il éteint ce qui dépasse encore. La
+                            // lumière de la carte est peinte HORS de son clip
+                            // (28 pt) : même un panneau qui affleure pile son
+                            // bord laisse fuir ce halo. Un dégradé, jamais une
+                            // arête : le voile ne doit pas se lire comme un
+                            // second bord.
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black.opacity(0), location: 0),
+                                    .init(color: .black.opacity(0.86),
+                                          location: 0.62),
+                                    .init(color: .black.opacity(0.96),
+                                          location: 1)
+                                ],
+                                startPoint: .top, endPoint: .bottom)
+                                .frame(height: h + 96)
+                                .allowsHitTesting(false)
+                                .transition(.opacity)
                             RestartSheet(
                                 onLaunch: {
                                     exitRestart(ask, thenLaunch: true)
@@ -885,10 +929,14 @@ struct ExerciseDetailView: View {
                                 onDismiss: {
                                     exitRestart(ask, thenLaunch: false)
                                 })
-                                .frame(height: g.size.height * 0.52)
+                                .frame(height: h)
                                 .transition(.move(edge: .bottom))
                         }
                     }
+                    // ⚠️ SUR LE CONTENU, JAMAIS SUR LE `GeometryReader` —
+                    // l'école du calendrier. Posé sur le lecteur lui-même, il
+                    // rend des insets NULS et la hauteur ancrée perdrait
+                    // l'encart du bas.
                     .ignoresSafeArea()
                     .animation(.spring(response: 0.45,
                                        dampingFraction: 0.86),

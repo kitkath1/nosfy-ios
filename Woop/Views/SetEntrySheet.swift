@@ -173,21 +173,45 @@ struct SetEntrySheet: View {
                 .allowsHitTesting(false)
         }
         .offset(y: pull)
-        // LE RANGEMENT : tirer la feuille depuis son header. Les molettes et
-        // le galet gardent leurs gestes — le drag de rangement ne vit que
-        // sur la zone haute.
-        .gesture(dismissDrag)
+        // ⚠️ **LE RANGEMENT NE MANGE PLUS LES TAPS** (26-08). Verdict : « la
+        // pill Rest est difficile à activer, je dois parfois taper deux ou
+        // trois fois — un tap clair = activation immédiate ».
+        //
+        // La cause était ici, pas dans les pastilles. Ce drag était posé en
+        // `.gesture` EXCLUSIF sur toute la feuille, et son garde de zone
+        // (« seulement la bande haute ») vivait À L'INTÉRIEUR de la closure :
+        // le reconnaisseur se déclarait donc sur TOUTE la surface, pastilles
+        // comprises, puis ne faisait rien. Un doigt qui roule de 12 pt pendant
+        // le tap annulait le `Button`… et le drag ne bougeait pas non plus.
+        // Le panneau jumeau (`RestartSheet`) avait déjà payé exactement cette
+        // leçon et utilise `contentShape` + `simultaneousGesture` « pour que
+        // les deux boutons gardent leurs taps » ; celui-ci ne l'avait jamais
+        // reçue.
+        //
+        // Deux corrections, et elles vont ensemble : le geste devient
+        // SIMULTANÉ (il écoute par-dessus l'épaule des boutons au lieu de leur
+        // prendre le doigt), et sa zone est GÉOMÉTRIQUE — une bande haute
+        // réelle, pas un `guard` dans la closure.
+        .overlay(alignment: .top) {
+            Color.clear
+                .frame(height: Self.bandeRangement)
+                .contentShape(Rectangle())
+                .simultaneousGesture(dismissDrag)
+        }
     }
 
+    /// La bande haute où le rangement prend le doigt — poignée et titre. Sous
+    /// elle vivent les molettes et les pastilles : elles gardent tout.
+    private static let bandeRangement: CGFloat = 110
+
     private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+        DragGesture(minimumDistance: PanneauMesures.dragMin,
+                    coordinateSpace: .local)
             .onChanged { v in
-                guard v.startLocation.y < 110 else { return }
                 pull = max(0, v.translation.height)
             }
-            .onEnded { v in
-                guard v.startLocation.y < 110 else { return }
-                if pull > 90 {
+            .onEnded { _ in
+                if pull > PanneauMesures.seuilRangement {
                     onDismiss()
                 } else {
                     withAnimation(.spring(response: 0.34,
@@ -374,6 +398,17 @@ struct SetEntrySheet: View {
                             }
                     }
                 }
+                // ⚠️ **LA ZONE TACTILE DÉBORDE LE DESSIN** (26-08), et elle
+                // est posée APRÈS le fond : la capsule reste peinte sur le
+                // cadre de 36, seule la CIBLE grandit. La pastille mesurait
+                // ~53 × 36 pt — sous les 44 pt d'Apple sur la hauteur — et
+                // laissait 7 pt de gouttière MORTE entre chaque : six cibles
+                // sous-dimensionnées sur 353 pt de large. Verdict : « la zone
+                // tactile doit être beaucoup plus grande que la pill visuelle
+                // si nécessaire ». Elle passe à 52 pt de haut, gouttières
+                // comprises, sans qu'un seul pixel du dessin ne bouge.
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

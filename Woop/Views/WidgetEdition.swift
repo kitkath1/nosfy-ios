@@ -371,6 +371,14 @@ struct VitrineHote: View {
     /// La position au dernier événement du geste — le GRAIN CONTINU de la
     /// molette en dérive sa vitesse.
     @State private var roueAncien: Double = 0
+    /// L'axe du geste de la roue, verrouillé au premier mouvement franc.
+    private enum AxeRoue { case horizontal, vertical }
+    @State private var axeRoue: AxeRoue?
+    /// Le point de départ du geste en cours — la remise à plat des drags
+    /// annulés, la loi commune du dépôt.
+    @State private var roueDebut: CGPoint?
+    /// LA COURSE DE FERMETURE : le carrousel descend sous le doigt.
+    @State private var fermetureY: CGFloat = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -468,6 +476,11 @@ struct VitrineHote: View {
             nomMoyeu(off: off, pv: pv, moyeu: moyeu, rayon: rayon,
                      fracSigne: fracSigne)
         }
+        // LE DRAG VERS LE BAS EMPORTE TOUTE LA SCÈNE — la roue, le nom et le
+        // scrim descendent ensemble sous le doigt : ce n'est pas une fermeture
+        // qui se déclenche, c'est un panneau qu'on repousse.
+        .offset(y: fermetureY)
+        .opacity(1 - min(fermetureY / 260, 0.55))
         .simultaneousGesture(roueGeste(n: choix.count))
     }
 
@@ -644,10 +657,33 @@ struct VitrineHote: View {
         DragGesture(minimumDistance: 10)
             .onChanged { v in
                 guard p >= 0.999, !sortie else { return }
+                // ⚠️ **LE GESTE ANNULÉ NE LAISSE PLUS SA PRISE** (26-08) — la
+                // loi commune des drags du dépôt : un doigt qui meurt sans
+                // `onEnded` gardait `grab` posé, et la roue devenait sourde
+                // jusqu'au prochain remontage.
+                if roueDebut != v.startLocation {
+                    roueDebut = v.startLocation
+                    grab = nil
+                    axeRoue = nil
+                }
+                // ⚠️ **LE VERROU D'AXE DÉCIDE, IL NE REJETTE PLUS** (26-08).
+                // Avant, un geste vertical tombait simplement dans le vide :
+                // le carrousel n'avait AUCUNE sortie au doigt — `annuler()`
+                // n'avait qu'un seul site d'appel, le tap sur le scrim.
+                // Verdict : « possibilité de drag vers le bas pour fermer ».
+                if axeRoue == nil {
+                    let dx = abs(v.translation.width)
+                    let dy = abs(v.translation.height)
+                    guard max(dx, dy) > 8 else { return }
+                    axeRoue = dy > dx ? .vertical : .horizontal
+                }
+                if axeRoue == .vertical {
+                    // Vers le HAUT, rien : on ne referme pas par le haut, et
+                    // une résistance sèche se lit comme une panne.
+                    fermetureY = max(0, v.translation.height * 0.85)
+                    return
+                }
                 if grab == nil {
-                    // Le verrou d'axe : la roue se tourne à l'horizontale.
-                    guard abs(v.translation.width)
-                            > abs(v.translation.height) else { return }
                     grab = offset
                     roueAncien = offset
                 }
@@ -669,6 +705,23 @@ struct VitrineHote: View {
                 }
             }
             .onEnded { v in
+                let axe = axeRoue
+                roueDebut = nil
+                axeRoue = nil
+                if axe == .vertical {
+                    // 90 pt de course OU un lancer franc : la même grammaire
+                    // que les panneaux de la maison.
+                    if fermetureY > 90 || v.velocity.height > 700 {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        annuler()
+                    } else {
+                        withAnimation(.spring(response: 0.38,
+                                              dampingFraction: 0.84)) {
+                            fermetureY = 0
+                        }
+                    }
+                    return
+                }
                 guard let g0 = grab else { return }
                 grab = nil
                 RocketHaptics.shared.dragEnd()

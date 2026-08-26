@@ -2491,6 +2491,13 @@ struct CardsRangee: View {
     var onEdition: ((Int) -> Void)? = nil
     var onPastille: ((Int) -> Void)? = nil
     var onFantome: ((Int) -> Void)? = nil
+    /// ⚠️ **UN TAP SUR UNE CARD SORT DU MODE ÉDITION** (26-08). Verdict :
+    /// « un simple tap sur un widget, ou sur une zone vide de l'écran, doit
+    /// quitter le mode édition — aujourd'hui ce comportement n'existe pas
+    /// correctement ». Il n'existait pas du tout sur la card : en édition elle
+    /// passe en `.inerte`, et `CardTouche` ne pose alors AUCUN geste. Le tap
+    /// sur le vide, lui, existait déjà (le rattrapeur de la page).
+    var onSortieEdition: (() -> Void)? = nil
 
     var body: some View {
         Chambre(p: edition) { ed in
@@ -2518,6 +2525,22 @@ struct CardsRangee: View {
                            phase: i == 0 ? 0 : .pi) { angle in
                 carte(kind, slot: i, penche: angle)
                     .frame(width: 170, height: 170)
+                    // La sortie au tap. ⚠️ Elle n'existe QUE pendant l'édition :
+                    // posée en permanence, elle affamerait `CardTouche` (le
+                    // doigt qui incline la card, l'appui qui entre en édition).
+                    // Et elle passe AVANT la pastille, qui est un overlay :
+                    // celle-ci reste au-dessus et garde son propre tap.
+                    .overlay {
+                        if editionActive {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    UIImpactFeedbackGenerator(style: .light)
+                                        .impactOccurred(intensity: 0.5)
+                                    onSortieEdition?()
+                                }
+                        }
+                    }
                     .overlay(alignment: .topTrailing) {
                         // LA PASTILLE — posée SUR le coin (elle déborde de
                         // 8 pt), elle suit la respiration de sa card : elle
