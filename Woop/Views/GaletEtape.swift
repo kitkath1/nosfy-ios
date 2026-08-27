@@ -177,6 +177,9 @@ struct GaletEtape: View {
     /// Le pad du raster : le liseré, son halo et l'ombre vivent au bord —
     /// toute énergie meurt AVANT le bord du pad (le CADRE FANTÔME).
     private var pad: CGFloat { 26 }
+    /// `-jouetSonde` : la vie du port en console (contact, PRISE, port,
+    /// LÂCHER) — le sim ne pose pas de doigt, l'appareil dit la vérité.
+    private static let sondeJouet = CommandLine.arguments.contains("-jouetSonde")
 
     var body: some View {
         // Un nœud-lune VERROUILLÉ refuse comme un caillou : l'immobilité est
@@ -264,11 +267,26 @@ struct GaletEtape: View {
     /// RÉ-ÉMIS (le port a annulé le drag bas : sans ça tout tap tenu
     /// mourrait — « un LongPress vole le tap », payé trois fois).
     private var portGeste: some Gesture {
+        // ⚠️ COORDONNÉES GLOBALES (27-08, « je n'arrive pas à drag ») : en
+        // `.local`, le repère du drag est celui de la vue — or la vue BOUGE
+        // avec l'offset qu'il produit. Le doigt immobile paraît reculer, la
+        // translation se dévore elle-même (≈ 46 % de la course, et l'élastique
+        // finit de l'écraser). En global, le repère ne bouge jamais.
         LongPressGesture(minimumDuration: 0.20, maximumDistance: 10)
-            .sequenced(before: DragGesture(minimumDistance: 0))
+            .sequenced(before: DragGesture(minimumDistance: 0,
+                                           coordinateSpace: .global))
             .onChanged { valeur in
-                guard case .second(true, let drag) = valeur else { return }
+                guard case .second(true, let drag) = valeur else {
+                    if Self.sondeJouet, case .first(true) = valeur {
+                        print("[JOUET] contact (maintien en cours)")
+                    }
+                    return
+                }
+                if Self.sondeJouet {
+                    print("[JOUET] port  dx=\(Int(drag?.translation.width ?? 0)) dy=\(Int(drag?.translation.height ?? 0))")
+                }
                 if !enMain {
+                    if Self.sondeJouet { print("[JOUET] PRISE") }
                     enMain = true
                     // le port annule le drag bas sans onEnded : le press se
                     // libère ici (ceinture au @GestureState).
@@ -287,6 +305,7 @@ struct GaletEtape: View {
                                    drag.translation.height)
                 }
                 let etaitEnMain = enMain
+                if Self.sondeJouet { print("[JOUET] LÂCHER course=\(Int(course)) enMain=\(etaitEnMain)") }
                 enMain = false
                 withAnimation(reduceMotion
                               ? .easeOut(duration: 0.2)
@@ -377,15 +396,19 @@ struct GaletEtape: View {
         // doit pas le faire disparaître entre deux battements.
         let halo: Double = {
             switch etat {
-            case .actif: return 0.55
+            // aujourd'hui : le halo le plus fort du chemin (« je n'arrive pas
+            // à distinguer la session de today »)
+            case .actif: return 0.72
             case .lune(let dispo): return dispo ? 0.62 : 0
             case .piece(let dispo): return dispo ? 0.35 : 0
             default: return 0
             }
         }()
         // LE HALO EN POINTS ABSOLUS (27-08) : à ×1,5, un halo ∝ Ø couvrait
-        // trois voisins (223 pt) — l'inverse de « lumière contrôlée ».
-        let haloR: CGFloat = max(D * 0.62, 68) + 8 * press
+        // trois voisins (223 pt) — l'inverse de « lumière contrôlée ». L'actif
+        // porte le plus large (0,9 Ø ≈ 84 pt : il déborde sans couvrir).
+        let haloR: CGFloat = (etat == .actif ? D * 0.9 : max(D * 0.62, 68))
+            + 8 * press
         ZStack {
             if halo > 0.001 {
                 Circle()
@@ -549,10 +572,14 @@ struct GaletEtape: View {
         // le futur (« bordures plus visibles » sans anneau plein), par le
         // glyphe (date / flamme / croissant / pièce) et par le halo de
         // l'actif. L'anneau continu et épais du futur — c'était moi, pas elle.
+        // ⚠️ L'ACTIF EST L'EXCEPTION (27-08, « je n'arrive pas à distinguer la
+        // session de today ») : dans un chemin de cheveux rares, AUJOURD'HUI
+        // est le SEUL anneau plein — le bouton-bijou entier (plancher 0,45,
+        // lobes du bijou) — et il respire. Tout le reste est rare.
         switch etat {
-        case .verrouille:          return (0.10, 1, 0.52)
-        case .prochain:            return (0.16, 1, 0.52)
-        case .actif:               return (0.20, 1, 0.52)
+        case .verrouille:          return (0.08, 1, 0.52)
+        case .prochain:            return (0.12, 1, 0.52)
+        case .actif:               return (0.45, 0, 0.52)
         case .accompli, .parfait:  return (0, 1, 0.52)
         case .rate:                return (0, 1, 0.52)
         case .lune(let dispo):     return (dispo ? 0.14 : 0, 1, 0.52)

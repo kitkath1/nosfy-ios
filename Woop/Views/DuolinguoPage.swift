@@ -883,14 +883,14 @@ private struct CheminDuo: View {
                            portable: portable(quel),
                            onTap: { tape(e) },
                            onPort: { enMain in
-                               etat.porte = enMain ? e.id : nil
-                               // le panneau est ancré à la position de
-                               // spec : porter l'actif le laisserait sur
-                               // place — il se referme.
-                               if enMain, etat.departOuvert {
-                                   withAnimation(.easeOut(duration: 0.18)) {
-                                       etat.departOuvert = false
-                                   }
+                               // Le panneau est ancré à la position de spec :
+                               // porter l'actif le laisserait sur place — il
+                               // se referme. C'est la SEULE écriture partagée
+                               // du port, et elle n'a lieu que si le panneau
+                               // est ouvert (sinon : rien, le galet vit seul).
+                               guard enMain, etat.departOuvert else { return }
+                               withAnimation(.easeOut(duration: 0.18)) {
+                                   etat.departOuvert = false
                                }
                            })
                     .scaleEffect(nee ? 1 : 0.92)
@@ -903,9 +903,13 @@ private struct CheminDuo: View {
                     // opacité 0 n'est pas « absent » : un galet non né ne
                     // prend pas le doigt.
                     .allowsHitTesting(nee)
-                    // un galet soulevé passe DEVANT ses voisins (et le
-                    // panneau, zIndex 5) — le ZStack est ordonné par id.
-                    .zIndex(etat.porte == e.id ? 100 : 0)
+                    // ⚠️ AUCUNE LECTURE D'ÉTAT PARTAGÉ PENDANT LE PORT (27-08,
+                    // « je n'arrive pas à drag ») : un `.zIndex(etat.porte…)`
+                    // ferait rejouer les 45 galets à la PRISE, en plein geste
+                    // — et un sous-arbre reconstruit sous le doigt perd sa
+                    // séquence de touches. Le galet porté passe donc sous ses
+                    // voisins de rang supérieur : avec 30 pt d'air c'est
+                    // invisible, et ça vaut mieux qu'un jouet qui ne prend pas.
                     .position(x: largeur / 2 + e.dx,
                               y: (CGFloat(e.ecran) * 874 + e.y) * k)
             }
@@ -1267,11 +1271,7 @@ struct DuolinguoPage: View {
                             largeur: g.size.width,
                             decalageHaut: g.safeAreaInsets.top + 58 + 12)
                 }
-                // LE JOUET : pendant qu'un galet est porté, le scroll dort — légal
-        // ici SEULEMENT parce que le port est un geste PRIORITAIRE qui a
-        // déjà le doigt (une ceinture contre un second doigt, jamais posée
-        // depuis une horloge). Deux ré-évaluations par port, pas par image.
-        // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
+                // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
                 // sonde a une frame de retard : le galet glisserait contre
                 // ses écrans — la marche à la couture). Offset CONSTANT en
                 // coordonnées de contenu : le centre de chaque fenêtre sur
@@ -1387,7 +1387,10 @@ struct DuolinguoPage: View {
                 }
             }
             .scrollTargetBehavior(.paging)
-            .scrollDisabled(etat.porte != nil)
+            // (Pas de `.scrollDisabled` pendant le port : basculé en plein
+            // toucher il ANNULE la séquence de touches — le galet se soulevait
+            // et retombait aussitôt, « je n'arrive pas à drag ». Le geste
+            // prioritaire tient déjà le doigt ; le pan n'a jamais commencé.)
             .scrollIndicators(.hidden)
             .scrollPosition($ordre)
             .background(Color.black)
