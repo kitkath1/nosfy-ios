@@ -180,11 +180,29 @@ struct EcranSpec: Equatable, Identifiable {
             for n in 0..<parEcran {
                 let id = ecran * parEcran + n
                 let pas: CGFloat = (740 - 200) / CGFloat(parEcran - 1)
-                let jitterY = CGFloat(sin(Double(id) * 12.9898)) * 4
+                // ⚠️ Le jitter vit sur le RANG, pas sur l'id : les cinq
+                // chapitres partagent la géométrie (chacun garde sa graine de
+                // lumière et ses dates). Par id, chaque écran décalait le
+                // serpent et l'air tombait à 27,7 pt — mesuré.
+                let jitterY = CGFloat(sin(Double(n) * 12.9898)) * 4
                 let y: CGFloat = 740 - CGFloat(n) * pas + jitterY
+                // LE SERPENT (27-08, son verdict : « fais serpent, le 2 ») —
+                // l'alternance seule dessinait une ÉCHELLE : tous les galets à
+                // la même distance de l'axe, une régularité de barreaux. Deux
+                // irrégularités la cassent SANS rendre l'air :
+                //   · l'AMPLITUDE respire (±16 autour de 60, période ~3,7) —
+                //     aucun galet n'est à la même distance de l'axe ;
+                //   · l'AXE lui-même serpente (±18, période ~18) — le chemin
+                //     dérive doucement à gauche puis à droite.
+                // Mesuré sur les cinq chapitres : 31,0 pt d'air minimum entre
+                // TOUS les bords (l'échelle en donnait 30,4), irrégularité des
+                // |dx| de 17,0 contre 0. Les dx : +60 −70 +68 −30 +86 −55 +64
+                // −39 +80. ⚠️ Une phase par écran a été essayée : l'air tombe
+                // à 11 pt (trois phases seulement passent sur 120 testées).
                 let cote: CGFloat = n % 2 == 0 ? 1 : -1
-                let souffle = CGFloat(sin(Double(id) * 7.31 + 0.4)) * 1.5
-                let dx = cote * (60 + souffle)
+                let ampl = 60 + 16 * sin(1.7 * Double(n))
+                let derive = 18 * sin(0.35 * Double(n))
+                let dx = cote * CGFloat(ampl) + CGFloat(derive)
                 out.append(EtapeSpec(id: id, ecran: ecran, n: n,
                                      dx: dx, y: y,
                                      nature: composition[n]))
