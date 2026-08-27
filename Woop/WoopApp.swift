@@ -293,6 +293,8 @@ struct RootView: View {
     private let sacre = SacreEtat.shared
     /// LE DÉPART DE SÉANCE — le panneau du galet play (même école).
     private let depart = DepartEtat.shared
+    /// Banc de mesure (jalon 1) : la home démontée sous la route.
+    private static let cheminSeul = CommandLine.arguments.contains("-cheminSeul")
     /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
     /// dans la même transaction que le manège faisait tomber la
     /// désallocation de toute la home (~+0,7 s) EN PLEIN MILIEU de la
@@ -451,6 +453,25 @@ struct RootView: View {
         }
     }
 
+    /// « COMMENCER » DEPUIS LE CHEMIN (jalon 1) — la séance s'ouvre en base
+    /// (jamais un doublon : une seconde séance ouverte serait inaffichable),
+    /// la route PART, puis l'onglet Exercices prend la scène (deux mouvements
+    /// qui se suivent, jamais ensemble). ⚠️ Pas `startWorkout()` : il rouvre
+    /// la vieille feuille noire si une séance existe déjà. La home, elle,
+    /// lève sa card en voyant `enSeance` basculer.
+    private func demarrerDepuisChemin() {
+        if active == nil {
+            let workout = Workout()
+            modelContext.insert(workout)
+            try? modelContext.save()
+            WorkoutActivityController.ensure(workout)
+        }
+        depart.fermerChemin()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+            withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+        }
+    }
+
     private func startWorkout() {
         guard active == nil else {
             // Une séance est déjà ouverte : le galet la RAMÈNE au lieu d'en
@@ -466,7 +487,14 @@ struct RootView: View {
     }
 
     var body: some View {
-        if Self.splashTest {
+        // LE BANC DES CARDS REWARD, EN TÊTE DE CHAÎNE : la card seule sur
+        // du noir vrai, montée en deux secondes. Il passe avant tout le
+        // reste parce qu'il ne veut RIEN dessous — ni splash, ni porte, ni
+        // fiche exo (dont le halo orange traversait le scrim et polluait
+        // le jugement, constaté sur capture le 27-08).
+        if RewardBanc.actif {
+            RewardLab()
+        } else if Self.splashTest {
             splashBench
         } else if Self.moonSplashLab {
             moonSplashBench
@@ -674,7 +702,11 @@ struct RootView: View {
             // place se jouer sans la désallocation de la home dans les
             // pattes ; le remontage est SYNCHRONE à la fermeture : le
             // profil existe avant que l'arrivée (+0,45 s) soit posée.
-            if !showSplash && !showAuth && !homeEclipsee {
+            // `-cheminSeul` (banc de mesure, jalon 1) : la home DÉMONTÉE sous
+            // la route — isole le coût du résidu de la home de celui de la
+            // route dans la racine.
+            if !showSplash && !showAuth && !homeEclipsee
+                && !(Self.cheminSeul && depart.cheminOuvert) {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     // §23 LE BRANCHEMENT — LA HOME V2 ROUGE prend l'onglet
@@ -726,6 +758,9 @@ struct RootView: View {
             //
             // `toolbarVisibility` se pose sur le CONTENU de chaque onglet :
             // appliqué au TabView, il ne masque rien.
+            // LA HOME DORT SOUS LA ROUTE (jalon 1) : vidéos en pose, verre
+            // démonté — voir `\.dort` (DepartSeance.swift).
+            .environment(\.dort, depart.cheminOuvert)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 // Les pages Exercices et Profil sont IMMERSIVES : la barre
                 // se retire quand on y entre — leur chevron fait la sortie,
@@ -853,6 +888,50 @@ struct RootView: View {
             // carte flottante est morte deux fois, elle ne revient
             // pas). Le galet ramène la feuille ; son « Terminer
             // l'entraînement » ouvre le panneau ci-dessous.
+
+            // LE CHEMIN — LA ROUTE EN ARBRE (27-08, jalon 1 de
+            // tools/road/AUDIT-ROAD.md). Elle vivait dans un
+            // `fullScreenCover` de la home : tout ce qui est monté ici (la
+            // pop-up booster, la notif des pièces, la pause) passait DESSOUS —
+            // une lune qui appelait `proposer()` ouvrait la pop-up derrière la
+            // route, l'haptique jouait dans le vide. Montée / démontée
+            // (`if ouvert`, l'école du Manège), zIndex 4 : sous la pause (5),
+            // la pop-up (6), le Manège (7), la notif des pièces (9). La home
+            // reste rendue dessous — c'est le PRIX de la sortie du cover, à
+            // mesurer au banc `-homeChemin -fps` (étiquette « duo »).
+            if depart.cheminOuvert {
+                DuolinguoPage(etapeInitiale: depart.cheminEtape,
+                              faits: depart.cheminFaits,
+                              reclamees: depart.reclamees,
+                              onLune: { id in
+                                  // Le nœud s'est gravé dans la page ; la
+                                  // racine persiste, puis propose le
+                                  // booster — la pop-up existante, au-dessus
+                                  // de la route.
+                                  depart.reclamer(id)
+                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                      sacre.proposer()
+                                  }
+                              },
+                              onPiece: { id in
+                                  // « +40 pièces » : la capsule des pièces
+                                  // descend (zIndex 9, au-dessus de la route).
+                                  // La card reward robe `.piece` viendra avec
+                                  // son hôte racine (jalon 7 bis) ; le gain,
+                                  // lui, devra s'écrire dans `coin_ledger`.
+                                  depart.reclamer(id)
+                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                      withAnimation { depart.notifPieces = 40 }
+                                  }
+                                  DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+                                      withAnimation { depart.notifPieces = nil }
+                                  }
+                              },
+                              onRetour: { depart.fermerChemin() },
+                              onDemarrer: { demarrerDepuisChemin() })
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(4)
+            }
 
             // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
             // la séance — le trophée, la notif des pièces et la pop-up
@@ -1018,6 +1097,11 @@ struct RootView: View {
                 // en ligne de commande).
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 depart.proposer()
+            } else if CommandLine.arguments.contains("-cheminRetourAuto") {
+                // Le banc du RETOUR de la route (jalon 1) : elle se replie
+                // toute seule — le réveil de la home se mesure (`-fps`).
+                try? await Task.sleep(nanoseconds: 11_000_000_000)
+                depart.fermerChemin()
             } else if CommandLine.arguments.contains("-boosterPopup") {
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 sacre.proposer()
@@ -1060,6 +1144,10 @@ struct RootView: View {
         }
         .onChange(of: sacre.manegeOuvert) { _, ouvert in
             if ouvert {
+                // Le Manège est LA SORTIE DU PARCOURS : la route se replie
+                // sous lui (sa sortie ramène à la home ou au profil, jamais à
+                // la route — audit §4, accepté).
+                if depart.cheminOuvert { depart.fermerChemin() }
                 // Le FILET : si la mise en place ne publie jamais sa
                 // pose (banc -boosterCine sans galerie, chemin
                 // imprévu), la home s'éclipse quand même — tard, mais

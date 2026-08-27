@@ -179,7 +179,9 @@ struct GaletMaison: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
+        // LA HOME DORT SOUS LA ROUTE (jalon 1) : l'horloge se tait.
+        TimelineView(.animation(minimumInterval: 1.0 / 30,
+                                paused: DepartEtat.shared.cheminOuvert)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             let souffle = reduceMotion ? 1.0
                 : 1 + 0.02 * sin(t * 2 * .pi / 4.3)
@@ -357,7 +359,8 @@ struct MenuHalos: View {
     var body: some View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 24)) { ctx in
+            TimelineView(.animation(minimumInterval: 1.0 / 24,
+                                    paused: DepartEtat.shared.cheminOuvert)) { ctx in
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 ZStack {
                     LinearGradient(
@@ -927,7 +930,8 @@ private struct PanacheSection: View {
 
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
                 let now = tl.date
                 let age = now.timeIntervalSince(start)
                 let attack = min(age / 0.10, 1.0)
@@ -969,7 +973,8 @@ private struct GaletFumee: View {
 
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
                 let now = tl.date
                 let age = now.timeIntervalSince(start)
                 let attack = min(age / 0.10, 1.0)
@@ -1312,7 +1317,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 // l'appui tenu, c'est le geste du galet qui nourrit la
                 // sélection — un seul doigt, du premier contact au choix.
                 if couronne {
-                    TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
+                    TimelineView(.animation(minimumInterval: 1.0 / 60,
+                                            paused: DepartEtat.shared.cheminOuvert)) { ctx in
                         let now = ctx.date
                         let b = bloom(now)
                         let geo = CouronneGeo.calcule(
@@ -1364,7 +1370,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 GaletFumee(start: porteStart, fin: porteEnd,
                            centre: galetPos(g.size))
                 GaletMaison(morph: morph, appui: appui, feuSup: feuChute,
-                            range: range, transport: enMain)
+                            // en transport OU sous la route (jalon 1) : la
+                            // doublure mate, jamais du verre qu'on ne voit pas
+                            range: range,
+                            transport: enMain || DepartEtat.shared.cheminOuvert)
                     // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
                     // **DEUX `withAnimation` SUR LA MÊME VALEUR DANS LE MÊME
                     // TOUR NE JOUENT RIEN.** Écrire 0 → 1 puis 1 → 0 dans le

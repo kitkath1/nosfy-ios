@@ -206,7 +206,8 @@ struct HomeNuitFond: View {
     /// 30 Hz : c'est un fond qui respire sur 37 secondes, pas une cinématique.
     private var rasant: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
                 let t = Float(RasantHorloge.t(tl.date))
                 let dx = reduceMotion ? 0 : Float(tilt.value.x)
                 let dy = reduceMotion ? 0 : Float(tilt.value.y)
@@ -2170,7 +2171,11 @@ struct HomeNuitPage: View {
                     // peut rien contre du verre natif — il ignore `.opacity` —
                     // les carcasses des deux cards restaient lisibles sous le
                     // voile. La doublure mate prend, le verre revient posé.
-                    .environment(\.verreDemonte, menuOuvert)
+                    // … et SOUS LA ROUTE (jalon 1) : la home dort, son verre
+                    // aussi — du verre natif sur une vidéo vivante sous une
+                    // page opaque, c'était la moitié des 12-21 img/s mesurés.
+                    .environment(\.verreDemonte,
+                                  menuOuvert || DepartEtat.shared.cheminOuvert)
                     }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
@@ -2344,7 +2349,7 @@ struct HomeNuitPage: View {
             // (le film de l'arrivée + panneau sans doigt).
             if CommandLine.arguments.contains("-homeChemin") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    cheminOuvert = true
+                    ouvrirChemin()
                 }
             }
             if CommandLine.arguments.contains("-tiroirOuvert"), !enSeance {
@@ -2454,6 +2459,16 @@ struct HomeNuitPage: View {
             // lèvent déjà la card eux-mêmes (le tiroir est ouvert, ou la
             // course est posée), et deux animations sur `tirage` se
             // dévoreraient.
+            // LA SÉANCE VIENT DU CHEMIN (jalon 1) : la route s'est ouverte
+            // depuis le tiroir (le slider), la home est restée tiroir ouvert,
+            // card basse — sans cette branche elle revenait ainsi (la
+            // famille exacte de la « home vide »). La card se lève.
+            if tiroirOuvert, tirage != reposCard, depart == nil, ferme == nil {
+                withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
+                    tirage = reposCard
+                }
+                return
+            }
             guard tirage == 0, !tiroirOuvert,
                   depart == nil, ferme == nil else { return }
             withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
@@ -2898,7 +2913,9 @@ struct HomeNuitPage: View {
                                 moisFaits: stats?.moisFaits,
                                 hiit: stats?.hiit ?? HiitPeakInfo(),
                                 peak: stats?.peak ?? PeakEffortInfo(),
-                                arrivee: arr, lisere: true, verre: true,
+                                arrivee: arr, lisere: true,
+                                // le verre dort sous la route (jalon 1)
+                                verre: !DepartEtat.shared.cheminOuvert,
                                 slots: slots,
                                 vides: widgetsVides,
                                 edition: editionP,
@@ -2936,7 +2953,8 @@ struct HomeNuitPage: View {
                     SemaineStrip(faits: faitsAffiche, prevus: prevus,
                                  arrivee: arr,
                                  materialises: materialises,
-                                 lisere: true, verre: true)
+                                 lisere: true,
+                                 verre: !DepartEtat.shared.cheminOuvert)
                         .contentShape(RoundedRectangle(cornerRadius: 22))
                         .onTapGesture { ouvrirChemin() }
                         .padding(.leading, 24)
@@ -3618,7 +3636,16 @@ struct HomeNuitPage: View {
     }
 
     /// §23 — LA PORTE DU CHEMIN (le slider validé, ou la card semaine).
+    /// Jalon 1 (27-08) : dans l'app (`exoParRoute`), la route vit EN ARBRE
+    /// à la racine — la porte lui donne l'état dérivé des séances et
+    /// l'ouvre par l'état partagé. Le cover ne survit que pour le banc
+    /// `-homeV2` (HomeNuitLab, sans racine).
     private func ouvrirChemin() {
+        if exoParRoute {
+            let chemin = cheminEtat
+            DepartEtat.shared.ouvrirChemin(etape: chemin.etape, faits: chemin.faits)
+            return
+        }
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         cheminDemonte = false
         cheminOuvert = true
@@ -4073,7 +4100,9 @@ struct VerreGaletDur: View {
     var body: some View {
         let w = pan.width + 2 * Self.pad
         let h = cote + descente + pan.height + 2 * Self.pad
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { tl in
+        // LA HOME DORT SOUS LA ROUTE (jalon 1) : le shader du verre se tait.
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+                                paused: DepartEtat.shared.cheminOuvert)) { tl in
             let t = Float(RasantHorloge.t(tl.date))
             Rectangle()
                 // JAMAIS `.clear` sous un `colorEffect` : l'alpha nul de
@@ -4208,7 +4237,8 @@ private struct FumeeInvite: View {
 
     var body: some View {
         if !reduceMotion {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
                 // ⚠️ DEUX PÉRIODES INCOMMENSURABLES (7,3 s et 11,7 s). Un seul
@@ -4245,7 +4275,8 @@ struct InviteTirage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
+        TimelineView(.animation(minimumInterval: 1.0 / 30,
+                                paused: DepartEtat.shared.cheminOuvert)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             VStack(spacing: 3) {
                 chevron(souffle(t, 0))
@@ -4323,7 +4354,8 @@ struct PoudreMini: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: salves.isEmpty || reduceMotion)) { tl in
+                                paused: salves.isEmpty || reduceMotion
+                                    || DepartEtat.shared.cheminOuvert)) { tl in
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
                 for s in salves { dessiner(s, ctx: &ctx, quand: tl.date) }

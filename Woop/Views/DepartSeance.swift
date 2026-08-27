@@ -30,6 +30,61 @@ final class DepartEtat {
     /// Le tuto de la page exercices est demandé (posé par « Commencer »,
     /// consommé par la page à son apparition).
     var tutoDemande = false
+    /// LE PANNEAU DE PAUSE (le stop de la page exercices) — voir
+    /// PlayerSeance.swift.
+    var pauseOuverte = false
+    /// LA CLÔTURE DEMANDÉE par le player (le « Terminer » du panneau
+    /// stop de l'ardoise) : la racine l'exécute — elle seule tient la
+    /// séance, la bascule d'onglet et la chaîne de fin.
+    var clotureDemandee = false
+    /// La notif des pièces à l'arrivée home post-clôture : le gain à
+    /// annoncer, nil = rien. La chaîne de fin de séance l'orchestre
+    /// (trophée → pièces → pop-up booster).
+    var notifPieces: Int?
+
+    // MARK: LE CHEMIN EN ARBRE (27-08, jalon 1 de tools/road/AUDIT-ROAD.md)
+    //
+    // La route quitte le `fullScreenCover` de la home pour un hôte à la
+    // RACINE (zIndex 4, sous la pause, la pop-up booster et le Manège) :
+    // un cover cachait tout ce qui vit à la racine — une lune qui appelait
+    // `SacreEtat.proposer()` ouvrait la pop-up DERRIÈRE la route. Même
+    // école que le panneau du galet : un état partagé, un seul hôte.
+
+    /// La route est ouverte.
+    var cheminOuvert = false
+    /// L'état du chemin au moment de l'ouverture — dérivé des séances par
+    /// la home (`EcranSpec.etapeEtFaits`), lu par la racine pour monter la
+    /// page. La racine ne connaît pas les séances finies : la porte les lui
+    /// donne.
+    var cheminEtape = 0
+    var cheminFaits: Set<Int> = []
+    /// Les nœuds spéciaux (lune, trésor, pièce) déjà RÉCLAMÉS — persistés
+    /// tant que la source des rewards (`coin_ledger`, `user_boosters`) n'est
+    /// pas là : sans ça, une lune re-tapable à chaque lancement = boosters
+    /// infinis. Le jour du backend, cette clé devient une lecture serveur.
+    var reclamees: Set<Int> = Set(UserDefaults.standard
+        .array(forKey: "chemin.reclamees") as? [Int] ?? []) {
+        didSet {
+            UserDefaults.standard.set(Array(reclamees).sorted(),
+                                      forKey: "chemin.reclamees")
+        }
+    }
+
+    func ouvrirChemin(etape: Int, faits: Set<Int>) {
+        guard !cheminOuvert else { return }
+        cheminEtape = etape
+        cheminFaits = faits
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.88)) {
+            cheminOuvert = true
+        }
+    }
+
+    func fermerChemin() {
+        withAnimation(.easeInOut(duration: 0.34)) { cheminOuvert = false }
+    }
+
+    func reclamer(_ id: Int) { reclamees.insert(id) }
 
     func proposer() {
         guard !panneauOuvert else { return }
@@ -41,6 +96,29 @@ final class DepartEtat {
 
     func fermer() {
         withAnimation(.easeOut(duration: 0.22)) { panneauOuvert = false }
+    }
+}
+
+// MARK: - Le sommeil de la home (jalon 1)
+
+/// `\.dort` — LA HOME DORT SOUS LA ROUTE. Le `fullScreenCover` retirait la
+/// vue présentante gratuitement ; en arbre, SwiftUI rend un frère occulté —
+/// mesuré au sim : home seule 50-59 img/s, route seule 59-60, les deux
+/// ensemble 12-21 (cinq décodeurs vidéo, le verre natif de la home qui
+/// recapture une vidéo vivante sous une route opaque). Le sommeil est le
+/// PRIX de la sortie du cover : verre démonté (`verreDemonte`), vidéos en
+/// POSE (l'image, pas le lecteur — `CalqueVideo` ignore `rate` par trois
+/// chemins et un réveil 0→1 flushe la couche), horloges qui peuvent se taire.
+/// La home reste MONTÉE : elle est là au premier point du doigt quand la
+/// route sortira au geste, sans rejouer son arrivée.
+private struct DortKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var dort: Bool {
+        get { self[DortKey.self] }
+        set { self[DortKey.self] = newValue }
     }
 }
 

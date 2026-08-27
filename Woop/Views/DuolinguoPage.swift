@@ -834,6 +834,10 @@ private struct CheminDuo: View {
     /// L'étape suivante vit sur un autre écran → la page défile d'une pose.
     /// §23 — le panneau confirmé (la page transmet à son hôte).
     var onDemarrer: () -> Void = {}
+    /// Les nœuds spéciaux disponibles, tapés : la page ne connaît ni le
+    /// booster ni les pièces — elle transmet l'id à son hôte (la racine).
+    var onLune: ((Int) -> Void)? = nil
+    var onPiece: ((Int) -> Void)? = nil
     var onEcranSuivant: (Int) -> Void = { _ in }
 
     var body: some View {
@@ -1039,11 +1043,21 @@ private struct CheminDuo: View {
     /// l'aimant re-happerait).
     private func tape(_ e: EcranSpec.EtapeSpec) {
         // Les nœuds spéciaux AVANT la garde de l'actif (audit §4 : le cas
-        // lune tombait dans l'avancement). Disponibles, ils ouvriront la
-        // pop-up booster / la card reward — depuis une route EN ARBRE
-        // (jalon 1) ; depuis le cover d'aujourd'hui la pop-up serait
-        // invisible (jalon 7 / 7 bis). D'ici là : rien.
-        if e.special { return }
+        // lune tombait dans l'avancement). Disponible et pas encore réclamé,
+        // le nœud se GRAVE et transmet à l'hôte — HORS de la transaction du
+        // geste (un geste annulé garde son état) : la racine ouvre la pop-up
+        // booster (lune) ou fait descendre le gain (pièce), au-dessus de la
+        // route en arbre.
+        if e.special {
+            guard etat.etape > e.id, !etat.reclamees.contains(e.id) else { return }
+            let cible: ((Int) -> Void)? = e.moon ? onLune : onPiece
+            guard let cible else { return }
+            withAnimation(.easeInOut(duration: 0.45)) {
+                etat.reclamees.insert(e.id)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { cible(e.id) }
+            return
+        }
         // §23 : branchée, l'étape courante ne s'avance plus au tap — elle
         // PROPOSE (le panneau de départ). L'avance viendra de la séance.
         if etat.branchee, e.id == etat.etape {
@@ -1215,6 +1229,12 @@ struct DuolinguoPage: View {
     /// D2 (jalon 0) — les séances FAITES, données par l'hôte depuis la base
     /// (`EcranSpec.etapeEtFaits`). nil = le motif démo du banc.
     var faits: Set<Int>? = nil
+    /// Les nœuds spéciaux déjà réclamés (l'hôte les persiste).
+    var reclamees: Set<Int>? = nil
+    /// Jalon 1 : les nœuds spéciaux disponibles, tapés — l'hôte ouvre le
+    /// booster (lune) ou fait descendre les pièces (pièce). nil = le banc.
+    var onLune: ((Int) -> Void)? = nil
+    var onPiece: ((Int) -> Void)? = nil
     var gel = false
     var auto = false
     /// §18 P0.1 — `-duoAutoLent` : le même aller-retour, durée ×3 (les
@@ -1356,7 +1376,8 @@ struct DuolinguoPage: View {
                 .overlay(alignment: .top) {
                     CheminDuo(etat: etat, hauteur: hauteur,
                               largeur: g.size.width,
-                              onDemarrer: { onDemarrer?() }) { ecran in
+                              onDemarrer: { onDemarrer?() },
+                              onLune: onLune, onPiece: onPiece) { ecran in
                         withAnimation(.easeInOut(duration: 0.7)) {
                             ordre.scrollTo(y: CGFloat(ecran) * hauteur)
                         }
@@ -1417,6 +1438,7 @@ struct DuolinguoPage: View {
                 etat.etape = min(max(etapeInitiale, 0),
                                  EcranSpec.etapes.count - 1)
                 if let faits { etat.faits = faits }
+                if let reclamees { etat.reclamees = reclamees }
                 // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
                 // d'abord (les lecteurs de la cible sont réveillés avant
                 // le premier rendu), puis un scrollTo NON animé — jamais un

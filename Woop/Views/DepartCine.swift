@@ -563,6 +563,9 @@ struct FondDeuxCalques: View {
     /// LECTEUR (une vidéo qui démarre en retard se raccorde mal à la braise,
     /// qui, elle, ne bouge jamais).
     var pilule: Double = 1
+    /// LA HOME DORT SOUS LA ROUTE (jalon 1) : les deux lecteurs cèdent la
+    /// place à leur pose.
+    @Environment(\.dort) private var dort
 
     // ⚠️ L'ÉCHELLE DES DEUX CALQUES EST CONSTANTE, ET C'EST CELLE DU REPOS.
     // C'était LA deuxième cause du bug : `aspectFill` remplit par la HAUTEUR
@@ -639,9 +642,21 @@ struct FondDeuxCalques: View {
             // ① LA BRAISE — collée par son arête basse à l'arête de la card.
             // Elle ne bouge pas d'un pixel : elle EST le bas de la card.
             .overlay(alignment: .bottom) {
-                CalqueVideo(nom: "home-fond-flamme",
-                            pose: "home-fond-flamme-poster")
-                    .frame(width: Self.braL, height: Self.braH)
+                // LA HOME DORT (jalon 1 de la route en arbre) : sous la route,
+                // le lecteur cède la place à sa POSE — pas un rate 0 (ce
+                // lecteur l'ignore par trois chemins, et le réveil flushe la
+                // couche) : l'image, montée à la place du calque. Au réveil le
+                // lecteur renaît derrière sa pose, comme à l'arrivée.
+                if dort {
+                    Image("home-fond-flamme-poster")
+                        .resizable().scaledToFill()
+                        .frame(width: Self.braL, height: Self.braH)
+                        .clipped()
+                } else {
+                    CalqueVideo(nom: "home-fond-flamme",
+                                pose: "home-fond-flamme-poster")
+                        .frame(width: Self.braL, height: Self.braH)
+                }
             }
             // ② LE FOYER — la braise REÇOIT, sans bouger. Un foyer LOCAL, pas un
             // lift global : mesuré, la zone chaude varie de ×3 d'une image à
@@ -660,10 +675,19 @@ struct FondDeuxCalques: View {
             // ⚠️ ORDRE : scaleEffect PUIS offset. L'inverse (S·T) multiplierait
             // le déplacement par k, soit 62 pt de course parasite.
             .overlay(alignment: .top) {
-                CalqueVideo(nom: "home-fond-pilule",
-                            pose: "home-fond-pilule-poster",
-                            rate: DepartCine.rate(e))
-                    .frame(width: Self.pilL, height: Self.pilH)
+                Group {
+                    if dort {
+                        Image("home-fond-pilule-poster")
+                            .resizable().scaledToFill()
+                            .frame(width: Self.pilL, height: Self.pilH)
+                            .clipped()
+                    } else {
+                        CalqueVideo(nom: "home-fond-pilule",
+                                    pose: "home-fond-pilule-poster",
+                                    rate: DepartCine.rate(e))
+                            .frame(width: Self.pilL, height: Self.pilH)
+                    }
+                }
                     .opacity(pilule)
                     // Le calque est rogné : il se repose à SA place dans la card.
                     .padding(.top, Self.pilTop)

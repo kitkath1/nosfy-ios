@@ -458,13 +458,9 @@ struct GaletEtape: View {
             //     classée, il ne réclame plus rien ;
             //   · RATÉ     → rien, comme son encre fantôme ;
             //   · LUNE     → l'or, et lui seul a le droit d'être coloré.
-            if let l = lisereEtat {
-                Circle()
-                    .stroke(l.teinte, lineWidth: l.trait)
-                    .frame(width: D + l.trait, height: D + l.trait)
-                    .position(centre)
-                    .blendMode(.plusLighter)
-            }
+            // (Plus aucun anneau SwiftUI par-dessus le shader — 27-08, sa
+            // référence : « moins de liseré parfait partout ». L'or de la
+            // lune vit dans les cheveux du shader, `chaud` ≥ 0,9.)
             // LE GLYPHE LAQUÉ — l'encre vit AU-DESSUS du verre peint.
             glypheVue
                 .position(x: centre.x, y: centre.y + 1)
@@ -508,24 +504,26 @@ struct GaletEtape: View {
         // le cheveu RARE (gain 0,6, profil resserré), le futur l'anneau
         // CONTINU (plancher haut). Les gains seuls ne pouvaient rien (ils
         // multiplient tout uniformément) : c'est `profilEtat` qui tranche.
+        // rim = la clarté des arcs : le futur CLAIR (1,0), le passé SOURD
+        // (0,6), le raté presque éteint (0,35). chaud ≥ 0,9 = les cheveux
+        // eux-mêmes passent à l'or (la lune disponible, le réclamé) — plus
+        // aucun anneau SwiftUI ne s'ajoute par-dessus.
         switch etat {
-        case .verrouille: return (0.92, 0.85, 0)
-        case .prochain: return (0.95, 0.92, 0)
+        case .verrouille: return (0.90, 0.85, 0)
+        case .prochain: return (1.0, 0.92, 0)
         case .actif: return (1.0, 1.0, 0)
         case .accompli: return (0.60, 0.90, 0)
         case .parfait: return (0.60, 0.90, 0.5)
         // Le raté ne MEURT pas — la photo reste la loi, la matière ne meurt
         // jamais. Il s'éteint : c'est son ENCRE qui devient fantôme.
         case .rate: return (0.35, 0.80, 0)
-        // Le nœud-lune verrouillé est le plus sombre du chemin ; disponible,
-        // il est le plus vif — c'est le seul galet qui a le droit d'être
-        // franchement plus lumineux que ses voisins.
-        case .lune(let dispo): return dispo ? (1.0, 1.0, 0) : (0.55, 0.72, 0)
-        // La pièce : la même famille que la lune — mais son or vit dans le
-        // glyphe (le disque), jamais dans la nappe.
-        case .piece(let dispo): return dispo ? (1.0, 1.0, 0) : (0.55, 0.72, 0)
-        // Réclamé : la matière calme, un souffle d'or éteint dans la nappe.
-        case .reclame: return (0.85, 0.85, 0.3)
+        // La lune verrouillée est la plus sombre du chemin ; disponible, ses
+        // cheveux sont d'OR — le seul galet coloré, l'or en anneau.
+        case .lune(let dispo): return dispo ? (1.0, 1.0, 1.0) : (0.45, 0.72, 0)
+        // La pièce : cheveux blancs (l'or vit dans le disque du glyphe).
+        case .piece(let dispo): return dispo ? (1.0, 1.0, 0) : (0.45, 0.72, 0)
+        // Réclamé : l'or éteint dans les cheveux.
+        case .reclame: return (0.45, 0.85, 1.0)
         }
     }
 
@@ -537,28 +535,6 @@ struct GaletEtape: View {
     /// ses voisins, c'est-à-dire RIEN, et il a fallu monter à 0,55 pour
     /// atteindre +32,9. Un bord « à venir » à 0,18 se serait perdu de la même
     /// façon sur une page qui porte du feu.
-    private var lisereEtat: (teinte: Color, trait: CGFloat)? {
-        // 27-08 : l'état se dit dans le SHADER (plancher et profil par état,
-        // `profilEtat`), plus par un anneau SwiftUI posé par-dessus — le
-        // trait ∝ taille du 26-08 aurait épaissi ×1,5 (le « prochain » à
-        // 3 pt), et pour le passé il était un SECOND anneau régulier collé
-        // au premier (mesuré au fouet : ils fusionnent). Ne restent que les
-        // liserés COLORÉS, en points absolus : l'or de la lune et du
-        // parfait, l'or éteint du réclamé.
-        switch etat {
-        case .prochain, .verrouille, .actif, .accompli, .rate: return nil
-        case .parfait:    return (FlammePalette.or.opacity(0.55), 1.2)
-        // LUNE : l'or, et lui seul a droit à la couleur.
-        case .lune(let dispo):
-            return dispo ? (FlammePalette.or.opacity(0.85), 1.6) : nil
-        // PIÈCE : jamais d'anneau d'or (l'or en disque contre l'or en
-        // anneau) — le cheveu blanc du shader suffit.
-        case .piece:      return nil
-        // RÉCLAMÉ : l'or éteint.
-        case .reclame:    return (FlammePalette.or.opacity(0.30), 1.2)
-        }
-    }
-
     /// LE PROFIL DE L'ANNEAU PAR ÉTAT : (plancher, resserré) et la fumée
     /// du dôme — ce que le shader lit pour dire « continu » ou « rare ».
     ///   · futur      → plancher 0,55 (lointain) / 0,70 (prochain), fumée
@@ -566,17 +542,22 @@ struct GaletEtape: View {
     ///   · passé      → plancher 0, resserré : le cheveu rare ;
     ///   · actif, spéciaux → le bijou (0,45 / 0,52).
     private var profilEtat: (plancher: Float, serre: Float, fumee: Float) {
+        // SA RÉFÉRENCE VAUT POUR TOUS LES ÉTATS (27-08, « plus fin, moins de
+        // liseré parfait partout ») : le cheveu RARE partout (resserré = 1),
+        // le verre sombre partout (fumée 0,52). L'état se dit par la CLARTÉ
+        // des arcs (`gainsEtat`), par un FILET de continuité à peine là pour
+        // le futur (« bordures plus visibles » sans anneau plein), par le
+        // glyphe (date / flamme / croissant / pièce) et par le halo de
+        // l'actif. L'anneau continu et épais du futur — c'était moi, pas elle.
         switch etat {
-        case .verrouille:          return (0.55, 0, 0.20)
-        case .prochain:            return (0.70, 0, 0.20)
-        case .actif:               return (0.45, 0, 0.52)
+        case .verrouille:          return (0.10, 1, 0.52)
+        case .prochain:            return (0.16, 1, 0.52)
+        case .actif:               return (0.20, 1, 0.52)
         case .accompli, .parfait:  return (0, 1, 0.52)
         case .rate:                return (0, 1, 0.52)
-        // Verrouillés, la lune et la pièce sont LES PLUS SOMBRES du chemin
-        // (mesuré : à 0,30 de plancher ils rendaient encore µ 183-194).
-        case .lune(let dispo):     return (dispo ? 0.45 : 0.14, 0, 0.52)
-        case .piece(let dispo):    return (dispo ? 0.45 : 0.14, 0, 0.52)
-        case .reclame:             return (0.20, 1, 0.52)
+        case .lune(let dispo):     return (dispo ? 0.14 : 0, 1, 0.52)
+        case .piece(let dispo):    return (dispo ? 0.14 : 0, 1, 0.52)
+        case .reclame:             return (0.06, 1, 0.52)
         }
     }
 

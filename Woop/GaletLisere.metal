@@ -420,9 +420,13 @@ static float hauteurPill(float r, float R, float bev) {
     float lignes = annExt + annInt + fond;
     float l = 1.0 - exp(-lignes * 1.7);
     float3 or3 = float3(1.0, 0.84, 0.58);
-    float3 teinte = mix(float3(1.0),
-                        mix(float3(1.0), or3, graine.y),
-                        lignes > 0.0 ? fond / max(lignes, 1e-4) : 0.0);
+    // `chaud` (graine.y) < 0,9 : l'or ne vit que dans la nappe basse (le
+    // parfait, 0,5). chaud ≥ 0,9 : LES CHEVEUX EUX-MÊMES sont d'or — la lune
+    // disponible, le réclamé (27-08 : plus d'anneau d'or SwiftUI par-dessus,
+    // « moins de liseré parfait partout »).
+    float partFond = lignes > 0.0 ? fond / max(lignes, 1e-4) : 0.0;
+    float tOr = graine.y >= 0.9 ? 0.92 : graine.y * partFond;
+    float3 teinte = mix(float3(1.0), or3, tOr);
     // l'ombre d'encastrement : le dôme est ENFONCÉ dans la bague —
     // un voile qui n'assombrit que ce qui passe dessous (vidéo), sous
     // l'arc haut interne.
