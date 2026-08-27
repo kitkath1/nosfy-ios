@@ -1,7 +1,33 @@
 # AUDIT — LA ROUTE (« le chemin de feu »), le geste, la flamme
 
-État au **27-08-2026, 00 h 20**. Analyse seule, **rien n'est codé** (consigne :
-« ne code pas, analyse »). Simulateur dédié `kat-road`
+## ÉTAT DU CHANTIER — 27-08, 10 h 40 : CODÉ SUR SON « GO », TROIS COMMITS
+
+Sur son « go » (et deux verdicts : « en mode jouet », « point A »), les
+jalons ont été codés dans l'ordre du § 10, chacun mesuré au sim
+`kat-road`, aucun validé par elle :
+
+| jalon | commit | état | mesuré |
+|---|---|---|---|
+| 0 — `etape` lit les séances, banc branchée + étape > 0 | `3f862a9` | **codé** | `-homeChemin -duoEtape n` montre les 5 états + panneau |
+| 2 — ×1,5, 9/écran alterné ±60, ids contigus, point A `S1 S2 ¢ S3 S4 ☾ S5 S6 ☾`, pt absolus | `3f862a9` | **codé** | 30,4 pt d'air min ; trésor à 15 pt sous la dalle |
+| 3 — les matières, **sa référence pour TOUS les états** (cheveu rare partout, plus de stroke SwiftUI, or dans les cheveux) | `3f862a9` + `a339141` | **codé** | fait µ 69 CV 0,77-0,80 FWHM 1,1-1,3 ; futur µ 118-145 ; lune verr. µ 60 |
+| 4 — le panneau naît du galet (ancre, dessous sur le passé, scale ancré colonne, halo étiré, projecteur, conditionné) | `3f862a9` | **codé** | plus de glissement caché ; couvre le passé éteint |
+| 6 — le jouet + `@GestureState` (bug latent) | `3f862a9` | **codé** | téléphone seulement |
+| 1 — `CheminHote` en arbre, lune → booster, pièce → capsule +40, **sommeil de la home** | `a339141` | **codé** | route+home dormante ≈ home seule (machine chargée) ; réveil propre au retour |
+| 5 — le geste vers la droite (enveloppeur mince, verrou d'axe, 28 % / élan) | `e2bc04f` | **codé** | téléphone seulement ; reste le tirage au sommet |
+| 7 bis — la card reward robe `.piece` + `RewardHote` + `coin_ledger` | — | **à faire** | la capsule `PiecesNotif` tient lieu |
+| 8 — la famille de stickers | — | **à faire** (contenu) | — |
+
+Ce que le code a appris en plus de l'audit : **la sortie du cover coûte** —
+home seule 50-59 img/s, route seule 59-60, ensemble **12-21** (machine
+calme) ; le sommeil (`\.dort`, `paused:` sur 14 horloges, vidéos en pose,
+verre démonté sur les widgets, l'ardoise et le galet du menu) ramène
+route+home au niveau de la home seule sous la même charge. **À remesurer
+sur machine calme et sur le téléphone.** Bancs neufs : `-homeChemin
+-duoEtape n`, `-cheminSeul` (home démontée, isole la route), `-cheminRetourAuto`.
+
+État au **27-08-2026, 00 h 20** de l'analyse ci-dessous (elle reste la
+référence de conception). Simulateur dédié `kat-road`
 (`E6A4E963-E90F-4534-AAF5-059657408D7D`, iPhone 17 Pro), DerivedData
 `dd-road/`, build du 26-08 21 h 25 (`EXIT=0`). Les captures et les sondes
 vivent ici : `tools/road/shots/`, `tools/road/mesure_etats.py`,
