@@ -35,6 +35,16 @@ enum EtapeEtat: Equatable {
     /// plus fort ». Il n'en existait qu'UN dans tout le chemin (le nœud-trésor
     /// du 5e écran).
     case lune(dispo: Bool)
+    /// LE NŒUD PIÈCE (27-08, audit §4 bis) : l'or en DISQUE — la lune porte
+    /// l'or en anneau, la pièce ne porte JAMAIS d'anneau d'or : sa face est
+    /// or, son bord reste le cheveu blanc de la famille. Disponible, elle
+    /// ouvre la card reward (« +40 pièces ») ; verrouillée, la pièce est en
+    /// creux.
+    case piece(dispo: Bool)
+    /// Un nœud spécial RÉCLAMÉ (lune, trésor ou pièce) : l'or s'éteint, le
+    /// glyphe se grave — sinon « Moon Node unlocked » se déclencherait à
+    /// chaque lancement (boosters / pièces infinis, audit §4).
+    case reclame
 }
 
 /// LA DATE D'UN GALET — le jour en grand, le mois sur TROIS lettres.
@@ -119,7 +129,16 @@ struct GaletEtape: View {
     /// LA DATE — quand elle est là, elle REMPLACE le numéro et le glyphe :
     /// un galet qui porte une date ne porte plus un rang.
     var date: DateGalet? = nil
+    /// LE JOUET (27-08, point 7 tranché « en mode jouet : on peut les
+    /// déplacer partout et ils reviennent à leur place ») : le galet se
+    /// porte après un MAINTIEN, suit le doigt au bout d'un élastique, et
+    /// revient en ressort au lâcher. `portable` = actif, fait, spécial
+    /// disponible — un verrouillé refuse par l'immobilité.
+    var portable: Bool = false
     var onTap: () -> Void = {}
+    /// La prise et le lâcher, pour le parent (zIndex devant, scroll qui
+    /// dort, panneau qui se ferme) — deux appels par port, jamais par image.
+    var onPort: (Bool) -> Void = { _ in }
 
     /// L'écrasement de la goutte : plus large que haute, comme une goutte
     /// posée (la réf « CHAPITRE 1 » : ~0,72), jitté par graine — aucune
@@ -138,6 +157,21 @@ struct GaletEtape: View {
     /// sort de la fumée ») — horodatée, fonction pure du temps.
     @State private var fumeeA: Date = .distantPast
     @State private var doigt: CGPoint = .zero
+    /// LE PORT : l'écart à SA place (repart toujours de zéro), et « en
+    /// main ». Un @State du galet SEUL — écrit par image pendant le port,
+    /// il ne rejoue que cette vue, jamais les 45 autres (la page
+    /// ré-évaluée par image).
+    @State private var porte: CGSize = .zero
+    @State private var enMain = false
+    /// LE CHIEN DE GARDE DU PRESS (bug latent confirmé au fouet du 27-08) :
+    /// un drag ANNULÉ par le scroll — ou par le port prioritaire — n'appelle
+    /// jamais `onEnded`, et `presseDepuis` restait posé : galet enfoncé,
+    /// tilté, TimelineView à vie. Un minuteur ne convient pas (un press est
+    /// immobile, un DragGesture ne rappelle pas un doigt immobile) : un
+    /// `@GestureState` retombe à `false` quand le geste finit OU est annulé
+    /// — c'est sa raison d'être. Zéro horloge.
+    @GestureState private var tenu = false
+    @State private var debutDrag: CGPoint? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Le pad du raster : le liseré, son halo et l'ombre vivent au bord —
@@ -148,7 +182,7 @@ struct GaletEtape: View {
         // Un nœud-lune VERROUILLÉ refuse comme un caillou : l'immobilité est
         // la grammaire du refus dans cette maison.
         let verrouille = etat == .verrouille || etat == .prochain
-            || etat == .lune(dispo: false)
+            || etat == .lune(dispo: false) || etat == .piece(dispo: false)
         // La timeline ne tourne que si quelque chose vit : la respiration
         // de l'actif, ou une rampe de press/refus en vol (± une seconde).
         TimelineView(.animation(minimumInterval: nil, paused: pauseTimeline)) { ctx in
@@ -157,13 +191,33 @@ struct GaletEtape: View {
             corps(t: t, press: press, verrouille: verrouille)
         }
         .frame(width: taille + 2 * pad, height: taille + 2 * pad)
-        // les pastilles se frôlent (pas 58 / Ø 62) : la zone de tap
-        // colle au bouton, sinon elle vole le doigt du voisin.
+        // LE JOUET : soulevé (×1,06) et déplacé — posés AVANT contentShape
+        // et les gestes (l'ordre du galet du menu), sinon le repère du drag
+        // voyage avec la vue qu'il porte.
+        .scaleEffect(enMain ? 1.06 : 1)
+        .offset(x: porte.width, y: porte.height)
+        .animation(.spring(response: 0.32, dampingFraction: 0.7), value: enMain)
+        // la zone de tap colle au bouton (Ø + 4) : à 30 pt d'air elle ne
+        // vole pas le doigt du voisin.
         .contentShape(Circle().inset(by: pad - 2))
+        // LE PORT — prioritaire, mais il ne reconnaît qu'APRÈS le maintien :
+        // un swipe rapide né sur le galet reste un scroll (le LongPress
+        // échoue au-delà de 10 pt avant t), un tap court reste un tap
+        // (le drag bas). `.subviews` pour un galet non portable — jamais
+        // `.none`, qui éteindrait aussi le drag bas.
+        .highPriorityGesture(portGeste, including: portable ? .all : .subviews)
         .gesture(
             DragGesture(minimumDistance: 0)
+                .updating($tenu) { _, tenu, _ in tenu = true }
                 .onChanged { g in
                     doigt = g.location
+                    // remise à plat : un nouveau toucher (startLocation
+                    // différent) repart propre même si le précédent est mort
+                    // sans onEnded.
+                    if debutDrag != g.startLocation {
+                        debutDrag = g.startLocation
+                        presseDepuis = nil
+                    }
                     if presseDepuis == nil {
                         presseDepuis = Date()
                         if !verrouille {
@@ -192,12 +246,79 @@ struct GaletEtape: View {
                     }
                 }
         )
+        // le geste est fini OU annulé (scroll, port) : le press se libère
+        // sans horloge.
+        .onChange(of: tenu) { _, encore in
+            if !encore, presseDepuis != nil {
+                presseDepuis = nil
+                relacheA = Date()
+            }
+        }
+    }
+
+    /// LE PORT : maintien 0,20 s (0,14 était sous tous les seuils de la
+    /// maison et dans la durée d'un tap appuyé), puis le doigt emmène le
+    /// galet au bout d'un élastique. Le premier rappel `.second(true, nil)`
+    /// = « porté, translation zéro » : la prise. Au lâcher : ressort à UN
+    /// dépassement — et si la course est restée courte, le TAP est
+    /// RÉ-ÉMIS (le port a annulé le drag bas : sans ça tout tap tenu
+    /// mourrait — « un LongPress vole le tap », payé trois fois).
+    private var portGeste: some Gesture {
+        LongPressGesture(minimumDuration: 0.20, maximumDistance: 10)
+            .sequenced(before: DragGesture(minimumDistance: 0))
+            .onChanged { valeur in
+                guard case .second(true, let drag) = valeur else { return }
+                if !enMain {
+                    enMain = true
+                    // le port annule le drag bas sans onEnded : le press se
+                    // libère ici (ceinture au @GestureState).
+                    presseDepuis = nil
+                    relacheA = Date()
+                    UIImpactFeedbackGenerator(style: .medium)
+                        .impactOccurred(intensity: 0.9)
+                    onPort(true)
+                }
+                if let drag { porte = elastique(drag.translation) }
+            }
+            .onEnded { valeur in
+                var course: CGFloat = 0
+                if case .second(true, let drag) = valeur, let drag {
+                    course = hypot(drag.translation.width,
+                                   drag.translation.height)
+                }
+                let etaitEnMain = enMain
+                enMain = false
+                withAnimation(reduceMotion
+                              ? .easeOut(duration: 0.2)
+                              : .spring(response: 0.55, dampingFraction: 0.58)) {
+                    porte = .zero
+                }
+                if etaitEnMain {
+                    UIImpactFeedbackGenerator(style: .soft)
+                        .impactOccurred(intensity: 0.6)
+                    onPort(false)
+                    // le tap tenu : une seule ouverture, jamais perdue.
+                    if course < 12 { onTap() }
+                }
+            }
+    }
+
+    /// L'élastique : 0,85 × d jusqu'à 120 pt, puis une compression
+    /// logarithmique — il va « partout », mais il résiste.
+    private func elastique(_ t: CGSize) -> CGSize {
+        let d = hypot(t.width, t.height)
+        guard d > 0.5 else { return .zero }
+        let r: CGFloat = d <= 120
+            ? 0.85 * d
+            : 0.85 * 120 + 60 * log(1 + (d - 120) / 60)
+        return CGSize(width: t.width / d * r, height: t.height / d * r)
     }
 
     private var pauseTimeline: Bool {
         if reduceMotion { return true }
+        if enMain { return false }
         if etat == .actif || etat == .parfait { return false }
-        if etat == .lune(dispo: true) { return false }
+        if etat == .lune(dispo: true) || etat == .piece(dispo: true) { return false }
         if presseDepuis != nil { return false }
         let now = Date()
         return now.timeIntervalSince(relacheA) > 1.0
@@ -228,7 +349,8 @@ struct GaletEtape: View {
         // Le souffle de l'actif : la respiration asymétrique de la maison.
         // Le nœud-lune DISPONIBLE respire lui aussi : c'est sa promesse.
         let vivant = (etat == .actif || etat == .parfait
-                      || etat == .lune(dispo: true)) && !reduceMotion
+                      || etat == .lune(dispo: true)
+                      || etat == .piece(dispo: true)) && !reduceMotion
         let souffle = vivant ? LaunchPebble.breath(t, lag: 0) : 0
         // Le flash froid du refus : une pente qui meurt en 0,12 s.
         let refus = max(0, 1 - Date(timeIntervalSinceReferenceDate: t)
@@ -257,9 +379,13 @@ struct GaletEtape: View {
             switch etat {
             case .actif: return 0.55
             case .lune(let dispo): return dispo ? 0.62 : 0
+            case .piece(let dispo): return dispo ? 0.35 : 0
             default: return 0
             }
         }()
+        // LE HALO EN POINTS ABSOLUS (27-08) : à ×1,5, un halo ∝ Ø couvrait
+        // trois voisins (223 pt) — l'inverse de « lumière contrôlée ».
+        let haloR: CGFloat = max(D * 0.62, 68) + 8 * press
         ZStack {
             if halo > 0.001 {
                 Circle()
@@ -267,8 +393,8 @@ struct GaletEtape: View {
                         colors: [.white.opacity(halo * (0.78 + 0.22 * souffle)),
                                  .white.opacity(halo * 0.22), .clear],
                         center: .center, startRadius: D * 0.14,
-                        endRadius: D * (1.05 + 0.12 * press)))
-                    .frame(width: D * 2.4, height: D * 2.4)
+                        endRadius: haloR))
+                    .frame(width: haloR * 2.3, height: haloR * 2.3)
                     .position(centre)
                     .blendMode(.plusLighter)
                     .allowsHitTesting(false)
@@ -293,7 +419,10 @@ struct GaletEtape: View {
             // LA LENTILLE NATIVE — sous le peint : elle plie la vidéo qui
             // passe derrière la goutte (taille CONSTANTE, jamais animée —
             // la loi des bounds vivants).
-            if lentille {
+            // Coupée pendant le port : le verre qui bouge coûte 60 → 14 img/s
+            // (la loi mesurée sur le galet du menu, qui troque son verre
+            // contre une doublure en transport).
+            if lentille && !enMain {
                 Color.clear
                     .glassEffect(.clear, in: GoutteForme(graine: graine,
                                                          aspect: aspectGoutte))
@@ -375,22 +504,28 @@ struct GaletEtape: View {
     /// l'état se dit par l'intensité de la lumière, jamais par la couleur
     /// (l'or du parfait excepté, dans la nappe basse seulement).
     private var gainsEtat: (rim: Float, pool: Float, chaud: Float) {
-        // LA PHOTO EST LA LOI : la matière ne meurt jamais — les états
-        // ne jouent que sur une marge fine (le chemin se lit au chiffre
-        // et à la respiration de l'actif).
+        // UNE MATIÈRE PAR ÉTAT (27-08) — rare contre continu : le passé porte
+        // le cheveu RARE (gain 0,6, profil resserré), le futur l'anneau
+        // CONTINU (plancher haut). Les gains seuls ne pouvaient rien (ils
+        // multiplient tout uniformément) : c'est `profilEtat` qui tranche.
         switch etat {
-        case .verrouille: return (0.85, 0.85, 0)
-        case .prochain: return (0.92, 0.92, 0)
+        case .verrouille: return (0.92, 0.85, 0)
+        case .prochain: return (0.95, 0.92, 0)
         case .actif: return (1.0, 1.0, 0)
-        case .accompli: return (0.95, 0.90, 0)
-        case .parfait: return (0.95, 0.90, 0.5)
+        case .accompli: return (0.60, 0.90, 0)
+        case .parfait: return (0.60, 0.90, 0.5)
         // Le raté ne MEURT pas — la photo reste la loi, la matière ne meurt
         // jamais. Il s'éteint : c'est son ENCRE qui devient fantôme.
-        case .rate: return (0.80, 0.80, 0)
+        case .rate: return (0.35, 0.80, 0)
         // Le nœud-lune verrouillé est le plus sombre du chemin ; disponible,
         // il est le plus vif — c'est le seul galet qui a le droit d'être
         // franchement plus lumineux que ses voisins.
-        case .lune(let dispo): return dispo ? (1.0, 1.0, 0) : (0.72, 0.72, 0)
+        case .lune(let dispo): return dispo ? (1.0, 1.0, 0) : (0.55, 0.72, 0)
+        // La pièce : la même famille que la lune — mais son or vit dans le
+        // glyphe (le disque), jamais dans la nappe.
+        case .piece(let dispo): return dispo ? (1.0, 1.0, 0) : (0.55, 0.72, 0)
+        // Réclamé : la matière calme, un souffle d'or éteint dans la nappe.
+        case .reclame: return (0.85, 0.85, 0.3)
         }
     }
 
@@ -403,23 +538,45 @@ struct GaletEtape: View {
     /// atteindre +32,9. Un bord « à venir » à 0,18 se serait perdu de la même
     /// façon sur une page qui porte du feu.
     private var lisereEtat: (teinte: Color, trait: CGFloat)? {
+        // 27-08 : l'état se dit dans le SHADER (plancher et profil par état,
+        // `profilEtat`), plus par un anneau SwiftUI posé par-dessus — le
+        // trait ∝ taille du 26-08 aurait épaissi ×1,5 (le « prochain » à
+        // 3 pt), et pour le passé il était un SECOND anneau régulier collé
+        // au premier (mesuré au fouet : ils fusionnent). Ne restent que les
+        // liserés COLORÉS, en points absolus : l'or de la lune et du
+        // parfait, l'or éteint du réclamé.
         switch etat {
-        // À VENIR : l'anneau le plus clair du chemin. Le prochain est un cran
-        // au-dessus du lointain — la promesse est plus proche.
-        case .prochain:   return (Color.white.opacity(0.72), taille * 0.032)
-        case .verrouille: return (Color.white.opacity(0.52), taille * 0.026)
-        // EN COURS : rien. Le halo blanc est déjà son signe, et il est le
-        // SEUL du chemin à en porter un.
-        case .actif:      return nil
-        // FAIT : un trait fin et sourd — la matière affirmée, le bord fermé.
-        case .accompli:   return (Color.white.opacity(0.30), taille * 0.018)
-        case .parfait:    return (FlammePalette.or.opacity(0.55), taille * 0.022)
-        // RATÉ : rien. Son encre est déjà fantôme ; un bord le rallumerait.
-        case .rate:       return nil
+        case .prochain, .verrouille, .actif, .accompli, .rate: return nil
+        case .parfait:    return (FlammePalette.or.opacity(0.55), 1.2)
         // LUNE : l'or, et lui seul a droit à la couleur.
         case .lune(let dispo):
-            return dispo ? (FlammePalette.or.opacity(0.85), taille * 0.034)
-                         : (Color.white.opacity(0.30), taille * 0.020)
+            return dispo ? (FlammePalette.or.opacity(0.85), 1.6) : nil
+        // PIÈCE : jamais d'anneau d'or (l'or en disque contre l'or en
+        // anneau) — le cheveu blanc du shader suffit.
+        case .piece:      return nil
+        // RÉCLAMÉ : l'or éteint.
+        case .reclame:    return (FlammePalette.or.opacity(0.30), 1.2)
+        }
+    }
+
+    /// LE PROFIL DE L'ANNEAU PAR ÉTAT : (plancher, resserré) et la fumée
+    /// du dôme — ce que le shader lit pour dire « continu » ou « rare ».
+    ///   · futur      → plancher 0,55 (lointain) / 0,70 (prochain), fumée
+    ///     0,20 : le verre VIDE à l'anneau continu, la vidéo au travers ;
+    ///   · passé      → plancher 0, resserré : le cheveu rare ;
+    ///   · actif, spéciaux → le bijou (0,45 / 0,52).
+    private var profilEtat: (plancher: Float, serre: Float, fumee: Float) {
+        switch etat {
+        case .verrouille:          return (0.55, 0, 0.20)
+        case .prochain:            return (0.70, 0, 0.20)
+        case .actif:               return (0.45, 0, 0.52)
+        case .accompli, .parfait:  return (0, 1, 0.52)
+        case .rate:                return (0, 1, 0.52)
+        // Verrouillés, la lune et la pièce sont LES PLUS SOMBRES du chemin
+        // (mesuré : à 0,30 de plancher ils rendaient encore µ 183-194).
+        case .lune(let dispo):     return (dispo ? 0.45 : 0.14, 0, 0.52)
+        case .piece(let dispo):    return (dispo ? 0.45 : 0.14, 0, 0.52)
+        case .reclame:             return (0.20, 1, 0.52)
         }
     }
 
@@ -451,6 +608,20 @@ struct GaletEtape: View {
             // qu'on n'a pas rempli.
             case .rate: return 0.22
             case .lune(let dispo): return dispo ? 1.0 : 0.42
+            case .piece(let dispo): return dispo ? 1.0 : 0.42
+            case .reclame: return 0.45
+            }
+        }()
+        // L'or du glyphe : la lune disponible et la pièce disponible sont
+        // les seuls glyphes colorés du chemin ; réclamé, l'or est sourd.
+        let or = LinearGradient(
+            colors: [FlammePalette.or, FlammePalette.or.opacity(0.72)],
+            startPoint: .top, endPoint: .bottom)
+        let dore: Bool = {
+            switch etat {
+            case .lune(let d), .piece(let d): return d
+            case .reclame: return true
+            default: return false
             }
         }()
         Group {
@@ -468,33 +639,47 @@ struct GaletEtape: View {
                         .tracking(taille * 0.014)
                 }
             } else if let g = glyphe {
+                // le contour `flame` du futur est un CHEVEU : poids ultra-
+                // léger, alpha bas — « translucide mais identifiable ».
+                let contour = g == "flame"
                 Image(systemName: g)
-                    .font(.system(size: taille * 0.26, weight: .regular))
+                    .font(.system(size: taille * 0.26,
+                                  weight: contour ? .ultraLight : .regular))
+                    .opacity(contour ? 0.45 : 1)
             } else if let n = numero {
                 Text("\(n)")
                     .font(.system(size: taille * 0.27, weight: .regular))
             }
         }
-        .foregroundStyle(laque)
+        .foregroundStyle(dore ? or : laque)
         .opacity(alpha)
     }
 
-    /// `goutteVerre` — 6 × float2 + 1 float, l'arité au float près (page
-    /// BLANCHE sinon). Ra.x est la DEMI-largeur ; la forme vient de la
-    /// graine, les états ne jouent que sur les gains de lumière.
+    /// `goutteVerre` — 8 × float2, l'arité au float près (page BLANCHE
+    /// sinon). Ra.x est la DEMI-largeur ; la forme vient de la graine, les
+    /// états jouent sur les gains ET sur le profil de l'anneau (plancher,
+    /// resserré, fumée — `profilEtat`).
     private func goutteShader(souffle: Double, press: Double,
                               refus: Double) -> Shader {
         let R = Float(taille / 2)
         let c = Float(pad + taille / 2)
         let g = gainsEtat
+        let p = profilEtat
+        // ⚠️ ARITÉ : 8 × float2, exactement celle du shader (page BLANCHE
+        // sans erreur sinon).
         return ShaderLibrary.goutteVerre(
             .float2(c, c),
             .float2(R, Float(aspectGoutte)),
             .float2(Float(graine), g.chaud),
             .float2(g.rim, g.pool),
             .float2(Float(press), Float(souffle)),
-            .float2(Float(refus), 0),
-            .float(1.0))
+            // divers.y = LA LARGEUR DU CHEVEU EN POINTS (27-08) : 0,55 pt
+            // (= le 0,53 pt d'aujourd'hui à Ø 62, figé) — à ×1,5 une largeur
+            // en rr aurait épaissi tout le chemin. Le shader garde son repli
+            // 0,017·rr quand il reçoit 0.
+            .float2(Float(refus), 0.55),
+            .float2(p.plancher, p.serre),
+            .float2(p.fumee, 1.0))
     }
 }
 
@@ -812,11 +997,21 @@ struct GaletEtapeLab: View {
             ZStack(alignment: .topLeading) {
                 Color.black
                 ForEach(EcranSpec.etapes.filter { $0.ecran == 3 }) { e in
-                    let n = e.id % 10
-                    GaletEtape(etat: etatMire(n),
-                               numero: n + 1,
-                               taille: 62,
+                    // « la mire EST la vérité » : les mêmes tailles, les
+                    // mêmes glyphes que la route (dates, flamme, croissant,
+                    // pièce) — plus des numéros qu'elle ne rend pas.
+                    let quel = etatMire(e)
+                    GaletEtape(etat: quel,
+                               numero: nil,
+                               glyphe: e.moon ? "moon.fill"
+                                   : (e.piece ? "circle.inset.filled"
+                                      : (quel == .prochain || quel == .verrouille
+                                         ? "flame" : nil)),
+                               taille: e.moon ? 117 : (e.piece ? 80 : 93),
                                graine: Double(e.id),
+                               date: dateMire(e, quel),
+                               portable: quel == .actif || quel == .accompli
+                                   || quel == .parfait,
                                onTap: { actifTape += 1 })
                         .position(x: geo.size.width / 2 + e.dx,
                                   y: e.y * k)
@@ -828,13 +1023,29 @@ struct GaletEtapeLab: View {
         .environment(\.colorScheme, .dark)
     }
 
-    private func etatMire(_ n: Int) -> EtapeEtat {
-        switch n {
-        case 0, 1, 2: return .accompli
+    /// S1 S2 ¢ S3 S4 ☾ S5 S6 ☾ — faits, pièce disponible, parfait, actif,
+    /// lune fermée, prochain, verrouillé, trésor fermé.
+    private func etatMire(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
+        switch e.n {
+        case 0, 1: return .accompli
+        case 2: return .piece(dispo: true)
         case 3: return .parfait
         case 4: return .actif
-        case 5: return .prochain
+        case 5: return .lune(dispo: false)
+        case 6: return .prochain
+        case 8: return .lune(dispo: false)
         default: return .verrouille
+        }
+    }
+
+    private func dateMire(_ e: EcranSpec.EtapeSpec, _ quel: EtapeEtat) -> DateGalet? {
+        guard !e.special else { return nil }
+        switch quel {
+        case .accompli, .parfait, .actif, .rate:
+            let jours = [0: -3, 1: -2, 3: -1, 4: 0][e.n] ?? 0
+            let d = Calendar.current.date(byAdding: .day, value: jours, to: Date())!
+            return DateGalet.depuis(d)
+        default: return nil
         }
     }
 }

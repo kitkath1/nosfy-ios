@@ -313,8 +313,12 @@ static float hauteurPill(float r, float R, float bev) {
                                  float2 graine,   // graine d'arcs, chaud (or)
                                  float2 gains,    // gainRim, gainPool (l'état)
                                  float2 vie,      // press 0-1, souffle 0-1
-                                 float2 divers,   // refus 0-1, réserve
-                                 float gain) {
+                                 float2 divers,   // refus 0-1, largeur du cheveu en pt (0 = 0,017·rr)
+                                 float2 profil,   // plancher de l'anneau, resserré 0/1 (le passé)
+                                 float2 finition) { // fumée du dôme, gain
+    // ⚠️ ARITÉ : 8 × float2 + rien — l'appel Swift (GaletEtape.goutteShader)
+    // DOIT passer exactement ces huit float2 (page BLANCHE sans erreur sinon).
+    float gain = finition.y;
     // ================================================================
     // LA PASTILLE-BIJOU (réf 2, « à partir de maintenant ») : un ROND
     // parfait, l'effet BOUTON à DEUX bordures — l'anneau externe vif,
@@ -342,25 +346,54 @@ static float hauteurPill(float r, float R, float bev) {
     // un lobe naît, culmine, meurt — le liseré fin de la maison.
     float thLampe = -1.85 + 0.25 * sin(s * 1.7);
     float thContre = 1.25 + 0.30 * sin(s * 2.3 + 1.1);
-    float lobeL = pow(max(cos(th - thLampe), 0.0), 3.5);
-    float lobeC = pow(max(cos(th - thContre), 0.0), 4.0);
+    // LE PASSÉ, « très fin et pas régulier » (27-08, audit §5 bis, calculé
+    // au fouet) : retirer le plancher ne suffit pas — le soft-clip aplatit
+    // les lobes larges (cos^3,5 / cos^4) en plateaux, 73 % du périmètre
+    // reste allumé. Resserré (`profil.y` = 1) : lampe cos^12, contre-arc
+    // cos^14, et les deux étincelles HARMONIQUES (sin 2θ / sin 3θ = perles
+    // à 180° / 120°, un motif périodique — l'inverse de « pas régulier »)
+    // meurent pour UNE perle à angle seedé. Mesuré : CV ≥ 1,05 sur toutes
+    // les graines, 30-38 % du périmètre au-dessus de L 60.
+    float serre = clamp(profil.y, 0.0, 1.0);
+    float pL = mix(3.5, 12.0, serre);
+    float pC = mix(4.0, 14.0, serre);
+    float lobeL = pow(max(cos(th - thLampe), 0.0), pL);
+    float lobeC = pow(max(cos(th - thContre), 0.0), pC);
     float et1 = pow(0.5 + 0.5 * sin(2.0 * th + s * 5.1), 10.0);
     float et2 = pow(0.5 + 0.5 * sin(3.0 * th + s * 7.7 + 2.1), 12.0);
+    float thPerle = s * 3.3 + 0.7;
+    float perle = pow(max(cos(th - thPerle), 0.0), 40.0);
+    // les étincelles du bijou, ou la perle seule du passé
+    float etincelles = mix(0.55 * et1 + 0.40 * et2, 0.45 * perle, serre);
 
-    // L'ANNEAU EXTERNE — vif, métallique : un plancher partout (le
-    // bijou), les lobes par-dessus.
-    float profExt = 0.45 + 0.85 * lobeL + 0.42 * lobeC
-                  + 0.55 * et1 + 0.40 * et2;
-    float annExt = exp(-pow((rr - 0.960) / 0.017, 2.0)) * profExt
+    // LA LARGEUR DU CHEVEU EN POINTS ABSOLUS (27-08, audit §3/§5 bis) :
+    // `divers.y` = w en pt (0,55 = le 0,53 pt d'aujourd'hui à Ø 62, figé) —
+    // en rr, ×1,5 aurait épaissi tout le chemin. La gaussienne est
+    // exp(-(x/w)²) : l'épaisseur VISIBLE vaut ~2,1·w. ⚠️ REPLI OBLIGATOIRE :
+    // un appelant qui passe 0 (la mire, l'ancien Swift) garde 0,017·rr —
+    // sans repli, w = 0 → division par zéro → anneau MORT partout, sans
+    // erreur (l'école de la page blanche).
+    float wExt = divers.y > 0.0 ? divers.y / R : 0.017;
+    float wInt = divers.y > 0.0 ? (divers.y * 0.82) / R : 0.014;
+
+    // L'ANNEAU EXTERNE — LE PLANCHER EST L'ANNEAU RÉGULIER (la seule
+    // composante indépendante de θ) : il vit par état (`profil.x`) —
+    // 0,45 le bijou, 0,55 / 0,70 le futur « bordures beaucoup plus
+    // claires », 0 le passé (rare contre continu).
+    float plancher = max(profil.x, 0.0);
+    float profExt = plancher + 0.85 * lobeL + 0.42 * lobeC + etincelles;
+    float annExt = exp(-pow((rr - 0.960) / wExt, 2.0)) * profExt
                  * 1.7 * gRim;
 
     // L'INTERSTICE NOIR (0,87-0,93) : rien — c'est lui, l'effet bouton.
 
     // L'ANNEAU INTERNE — discret, ses arcs légèrement tournés (organique).
-    float lobeL2 = pow(max(cos(th - thLampe - 0.45), 0.0), 3.0);
+    // Resserré : un seul cheveu — l'interne s'éteint presque (0,25 · lampe).
+    float lobeL2 = pow(max(cos(th - thLampe - 0.45), 0.0), mix(3.0, 12.0, serre));
     float lobeC2 = pow(max(cos(th - thContre + 0.35), 0.0), 4.0);
-    float profInt = 0.32 + 0.55 * lobeL2 + 0.30 * lobeC2 + 0.30 * et2;
-    float annInt = exp(-pow((rr - 0.885) / 0.014, 2.0)) * profInt
+    float profIntBijou = plancher * 0.71 + 0.55 * lobeL2 + 0.30 * lobeC2 + 0.30 * et2;
+    float profInt = mix(profIntBijou, 0.25 * lobeL2, serre);
+    float annInt = exp(-pow((rr - 0.885) / wInt, 2.0)) * profInt
                  * 1.25 * gRim;
 
     // LE DÔME — verre fumé sombre : un souffle de ciel en haut, une
@@ -380,7 +413,10 @@ static float hauteurPill(float r, float R, float bev) {
         return half4(half3(g * gain), 0.0h);
     }
 
-    float fumee = 0.52;
+    // LA FUMÉE DU DÔME par état (`finition.x`) : 0,52 le bijou, 0,20 le
+    // futur — le disque est CREUX, la vidéo passe au travers (le verre vide
+    // de ce qui vient). Repli 0,52 si l'appelant passe 0.
+    float fumee = finition.x > 0.0 ? finition.x : 0.52;
     float lignes = annExt + annInt + fond;
     float l = 1.0 - exp(-lignes * 1.7);
     float3 or3 = float3(1.0, 0.84, 0.58);

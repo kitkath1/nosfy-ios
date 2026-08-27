@@ -2276,7 +2276,13 @@ struct HomeNuitPage: View {
                 if cheminDemonte {
                     Color.black.ignoresSafeArea()
                 } else {
-                    DuolinguoPage(onRetour: { cheminOuvert = false },
+                    // D2 (27-08, jalon 0) : le chemin LIT les séances — l'étape
+                    // du jour et les jours faits viennent de la base, pas
+                    // d'un motif démo.
+                    let chemin = cheminEtat
+                    DuolinguoPage(etapeInitiale: chemin.etape,
+                                  faits: chemin.faits,
+                                  onRetour: { cheminOuvert = false },
                                   onDemarrer: { demarrerDepuisChemin() })
                 }
             }
@@ -3616,6 +3622,28 @@ struct HomeNuitPage: View {
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         cheminDemonte = false
         cheminOuvert = true
+    }
+
+    /// D2 (27-08, jalon 0 de tools/road/AUDIT-ROAD.md) — L'ÉTAT DU CHEMIN
+    /// DÉRIVÉ DES SÉANCES : le jour 0 est la première séance terminée,
+    /// aujourd'hui est l'étape, chaque jour où une séance s'est terminée est
+    /// fait. En production `etape` valait 0 et n'avançait jamais : aucun
+    /// accompli, aucune lune disponible n'existait dans l'app.
+    ///
+    /// Banc : `-duoEtape n` force la n-ième séance comme étape (branchée,
+    /// avec panneau) — c'est LE banc qui manquait pour juger les états
+    /// ensemble (audit §0) ; les jours d'avant suivent le motif démo.
+    private var cheminEtat: (etape: Int, faits: Set<Int>) {
+        let finies = workoutsBruts.compactMap(\.endedAt)
+        var r = EcranSpec.etapeEtFaits(seancesFinies: finies)
+        let a = CommandLine.arguments
+        if let i = a.firstIndex(of: "-duoEtape"), i + 1 < a.count,
+           let n = Int(a[i + 1]) {
+            r.etape = EcranSpec.id(pourJour: n)
+            r.faits = Set(EcranSpec.seances.prefix(max(n, 0)).enumerated()
+                .filter { $0.offset % 4 != 2 }.map { $0.element.id })
+        }
+        return r
     }
 
     /// §23 — le panneau du galet a confirmé : la séance démarre (le même

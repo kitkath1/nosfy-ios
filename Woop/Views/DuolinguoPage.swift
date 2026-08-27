@@ -130,44 +130,106 @@ struct EcranSpec: Equatable, Identifiable {
     /// La dernière est LE NŒUD-TRÉSOR (« le chest Duolingo, c'est le
     /// booster de Woop ») : plus grand, il porte la lune, il promet.
     struct EtapeSpec: Equatable, Identifiable {
+        /// La NATURE d'un nœud (27-08, audit tools/road/AUDIT-ROAD.md §4,
+        /// §4 bis) : une séance, ou l'un des trois nœuds spéciaux du
+        /// chapitre — la PIÈCE (l'or en disque, ouvre la card reward), la
+        /// LUNE du milieu et le TRÉSOR de fin (l'or en anneau, ouvrent le
+        /// booster).
+        enum Nature: Equatable { case seance, piece, lune, tresor }
         let id: Int
         let ecran: Int
-        let dx: CGFloat        // écart à l'axe (serpentin ±62)
+        /// Le RANG dans l'écran (0…8). ⚠️ Les ids sont des INDEX : quatre
+        /// sites indexent `etapes[etat.etape]` — ils restent CONTIGUS
+        /// (`ecran × 9 + n`), et c'est `n` qu'on lit pour le rang, jamais
+        /// `id % 10` (l'ancienne base 10 est morte avec les 10 par écran).
+        let n: Int
+        let dx: CGFloat        // écart à l'axe (serpentin alterné ±60)
         let y: CGFloat         // dans l'écran, base 874
-        var tresor = false
+        let nature: Nature
+        var tresor: Bool { nature == .tresor }
+        var lune: Bool { nature == .lune }
+        /// Les deux nœuds à croissant — la lune du milieu et le trésor.
+        var moon: Bool { nature == .lune || nature == .tresor }
+        var piece: Bool { nature == .piece }
+        /// Tout ce qui n'est pas une séance : ni date, ni jour du calendrier.
+        var special: Bool { nature != .seance }
     }
 
-    /// §22 LES GOUTTES — 10 galets PAR ÉCRAN (la réf « CHAPITRE 1 ») : le
-    /// chemin GRIMPE dans chaque écran, le 1 en bas près du monument, le
-    /// 10 en haut sous la dalle. Le serpentin est une sinusoïde lente
-    /// déphasée par écran + un jitter déterministe — organique, jamais un
-    /// zigzag. Le dernier galet du dernier écran est le nœud-trésor.
+    /// LE CHAPITRE (27-08, point A tranché par Kathryn) : **9 nœuds par
+    /// écran** — `S1 S2 ¢ S3 S4 ☾ S5 S6 ☾` : six séances, la pièce au rang 2
+    /// (la petite récompense rapide, après deux séances), la lune avant la
+    /// 5e séance, le trésor qui ferme le chapitre.
+    ///
+    /// Pourquoi neuf, et pourquoi ALTERNÉ (mesuré, `tools/road/layout_x15.py`) :
+    /// à ×1,5 (Ø 93, lunes 117), dix nœuds par écran ne tiennent pas (15 à
+    /// 23 pt d'air), et une sinusoïde lente donne de −22 à −38 pt — les
+    /// galets se chevauchent. Le serpentin ALTERNÉ (dx = ±60, amplitude
+    /// ≥ 58,5 obligatoire) au pas 67,5 (y 740 → 200) donne **30,0 pt d'air
+    /// minimum entre TOUTES les paires** — et c'est le PAS qui fixe ce
+    /// minimum (2 × 67,5 − 105), pas l'amplitude. L'organique vient du
+    /// jitter en y (±4) et d'un souffle de ±1,5 sur dx, jamais de
+    /// l'amplitude (la moduler à 0,8 fait tomber l'air à 15 pt).
+    static let parEcran = 9
+    static let composition: [EtapeSpec.Nature] = [
+        .seance, .seance, .piece, .seance, .seance, .lune, .seance, .seance,
+        .tresor,
+    ]
     static let etapes: [EtapeSpec] = {
         var out: [EtapeSpec] = []
         for ecran in 0..<5 {
-            for n in 0..<10 {
-                let id = ecran * 10 + n
-                // la réf : le chemin est SERRÉ (pas 50) et vit AU-DESSUS
-                // du monument — jamais dessus.
-                let y: CGFloat = 700 - CGFloat(n) * 58
-                let phase = 1.1 + 1.9 * Double(ecran)
-                let jitter = sin(Double(id) * 12.9898) * 10
-                let dx = min(max(78 * sin(0.82 * Double(n) + phase)
-                                 + jitter, -92), 92)
-                // ⚠️ **UN NŒUD-LUNE PAR CHAPITRE** (26-08). Verdict : « dans
-                // CHAQUE chapitre, il faut ajouter un galet spécial logo
-                // Lune ». Il n'y en avait qu'un dans tout le chemin — le
-                // nœud-trésor du 5e écran (`ecran == 4 && n == 9`). C'est le
-                // dernier galet de chaque écran : il FERME le chapitre, et
-                // c'est lui qui ouvrira un Booster Reward le jour du backend
-                // (« Moon Node unlocked → popup Open Booster »).
-                out.append(EtapeSpec(id: id, ecran: ecran,
-                                     dx: CGFloat(dx), y: y,
-                                     tresor: n == 9))
+            for n in 0..<parEcran {
+                let id = ecran * parEcran + n
+                let pas: CGFloat = (740 - 200) / CGFloat(parEcran - 1)
+                let jitterY = CGFloat(sin(Double(id) * 12.9898)) * 4
+                let y: CGFloat = 740 - CGFloat(n) * pas + jitterY
+                let cote: CGFloat = n % 2 == 0 ? 1 : -1
+                let souffle = CGFloat(sin(Double(id) * 7.31 + 0.4)) * 1.5
+                let dx = cote * (60 + souffle)
+                out.append(EtapeSpec(id: id, ecran: ecran, n: n,
+                                     dx: dx, y: y,
+                                     nature: composition[n]))
             }
         }
         return out
     }()
+
+    /// LES SÉANCES SEULES, dans l'ordre du chemin — le calendrier ne compte
+    /// que celles-là : un nœud spécial n'est pas un jour (le « jour
+    /// fantôme » de l'audit, quand `etape` tombait sur une lune et
+    /// qu'aucun galet n'était actif ce jour-là).
+    static let seances: [EtapeSpec] = etapes.filter { !$0.special }
+    /// Le rang-jour d'une séance (nil pour un nœud spécial).
+    static func jour(deId id: Int) -> Int? {
+        seances.firstIndex { $0.id == id }
+    }
+    /// L'id de la k-ième séance, bornée au chemin.
+    static func id(pourJour k: Int) -> Int {
+        seances[min(max(k, 0), seances.count - 1)].id
+    }
+
+    /// D2 — LE CHEMIN LIT LES SÉANCES (27-08, jalon 0 de l'audit). Le
+    /// jour 0 du chemin est le jour de la PREMIÈRE séance terminée ;
+    /// aujourd'hui est `etape` ; chaque jour où une séance s'est terminée
+    /// est FAIT. Tant qu'aucune séance n'existe, le chemin commence
+    /// aujourd'hui. Le chemin est borné à sa dernière séance (30 jours pour
+    /// cinq écrans) — le jour où le backend dérivera les chapitres, cette
+    /// fonction changera de source, rien d'autre.
+    static func etapeEtFaits(seancesFinies: [Date],
+                             aujourdhui: Date = Date()) -> (etape: Int, faits: Set<Int>) {
+        let cal = Calendar.current
+        let jours = seancesFinies.map { cal.startOfDay(for: $0) }
+        let today = cal.startOfDay(for: aujourdhui)
+        guard let j0 = jours.min(), j0 <= today else {
+            return (id(pourJour: 0), [])
+        }
+        func rang(_ d: Date) -> Int {
+            cal.dateComponents([.day], from: j0, to: d).day ?? 0
+        }
+        let etape = id(pourJour: rang(today))
+        let faits = Set(jours.map { id(pourJour: rang($0)) }
+                            .filter { $0 < etape })
+        return (etape, faits)
+    }
 
     /// LES FRONTIÈRES (2e salve : « ça doit être le même élément ») — une
     /// fenêtre pleine capsule à cheval sur chaque couture de verre, et
@@ -235,7 +297,18 @@ struct EcranSpec: Equatable, Identifiable {
     /// un motif déterministe — pas aléatoire : une page qui change d'avis à
     /// chaque relance ne se juge pas. Le jour où la base parlera, cette seule
     /// ligne devient une lecture de `Workout.endedAt`, et rien d'autre ne bouge.
-    var faits: Set<Int> = Set((0..<50).filter { $0 % 4 != 2 })
+    var faits: Set<Int> = Set(EcranSpec.seances.enumerated()
+        .filter { $0.offset % 4 != 2 }.map { $0.element.id })
+    /// Les nœuds spéciaux (lune, trésor, pièce) déjà RÉCLAMÉS — mémoire de
+    /// session en attendant la source des rewards (`coin_ledger`,
+    /// `user_boosters`) ; sans elle, une lune re-tapable à chaque
+    /// lancement = boosters infinis (audit §4).
+    var reclamees: Set<Int> = []
+    /// LE JOUET (27-08, point 7 tranché « en mode jouet ») : l'id du galet
+    /// PORTÉ au doigt, ou nil. Écrit deux fois par port (prise / lâcher),
+    /// jamais par image : le parent le lit pour le `zIndex` (un galet
+    /// soulevé passe DEVANT) et pour couper le scroll pendant le port.
+    var porte: Int? = nil
     /// §23 LE BRANCHEMENT — la page a un hôte : le tap de l'actif ouvre
     /// le panneau de départ au lieu d'avancer l'étape (le banc, lui, ne
     /// change pas d'un poil).
@@ -768,33 +841,67 @@ private struct CheminDuo: View {
         ZStack(alignment: .topLeading) {
             ForEach(EcranSpec.etapes) { e in
                 let quel = etatDe(e)
-                // §22 réf 2 — LES PASTILLES : taille UNIQUE 62 (trésor 72), le
-                // chiffre repart à 1 à chaque écran-chapitre (la réf).
+                // ×1,5 (27-08, audit §3) : séance 93, nœuds à croissant 117,
+                // pièce 80 — spéciale, mais la lune reste l'événement.
                 let d = dateDe(e)
                 // LE FUTUR NE PORTE PLUS UN RANG, IL PORTE UNE PROMESSE :
                 // « une petite flamme translucide très légère pour signaler
                 // à faire, sans donner l'impression que le contenu est déjà
                 // accessible » (verdict). Un chiffre d'étape se lit comme un
-                // contenu ; une flamme se lit comme une intention.
-                let futur = d == nil && !e.tresor
+                // contenu ; une flamme se lit comme une intention. Le
+                // contour `flame` (pas `flame.fill`) : le cheveu seul, le
+                // fantôme d'une flamme — le levier gratuit mesuré au fouet
+                // (`hierarchical` sur flame.fill est un no-op).
+                let futur = d == nil && !e.special
+                let glyphe: String? = e.moon ? "moon.fill"
+                    : (e.piece ? "circle.inset.filled"
+                       : (futur ? "flame" : nil))
+                let nee = etat.nees.contains(e.id)
                 GaletEtape(etat: quel,
                            numero: nil,
-                           glyphe: e.tresor ? "moon.fill"
-                                            : (futur ? "flame.fill" : nil),
-                           taille: e.tresor ? 78 : 62,
+                           glyphe: glyphe,
+                           taille: e.moon ? 117 : (e.piece ? 80 : 93),
                            graine: Double(e.id),
                            // le budget verre : la lentille native ne vit
                            // que là où la VIDÉO passe dessous — les gouttes
                            // de bord (monuments et coutures de feu) des
                            // écrans voisins. Au cœur du noir, le natif ne
-                           // fait qu'un voile gris (mesuré v11).
+                           // fait qu'un voile gris (mesuré v11). Panneau
+                           // ouvert, le verre des autres se coupe (le natif
+                           // ignore l'opacité du projecteur).
                            lentille: abs(e.ecran - etat.ecranCourant) <= 1
-                               && (e.id % 10 <= 1 || e.id % 10 >= 8
-                                   || e.tresor),
+                               && (e.n <= 1 || e.n >= 7 || e.special)
+                               && !(etat.departOuvert && e.id != etat.etape),
                            date: d,
-                           onTap: { tape(e) })
-                    .scaleEffect(etat.nees.contains(e.id) ? 1 : 0.92)
-                    .opacity(etat.nees.contains(e.id) ? 1 : 0)
+                           // LE JOUET : seuls l'actif, les faits et les
+                           // spéciaux disponibles se portent — un verrouillé
+                           // refuse par l'immobilité (la loi du refus).
+                           portable: portable(quel),
+                           onTap: { tape(e) },
+                           onPort: { enMain in
+                               etat.porte = enMain ? e.id : nil
+                               // le panneau est ancré à la position de
+                               // spec : porter l'actif le laisserait sur
+                               // place — il se referme.
+                               if enMain, etat.departOuvert {
+                                   withAnimation(.easeOut(duration: 0.18)) {
+                                       etat.departOuvert = false
+                                   }
+                               }
+                           })
+                    .scaleEffect(nee ? 1 : 0.92)
+                    // LE PROJECTEUR : panneau ouvert, la route s'éteint
+                    // autour du couple galet + panneau (0,45).
+                    .opacity(nee ? (etat.departOuvert && e.id != etat.etape
+                                    ? 0.45 : 1) : 0)
+                    .animation(.easeInOut(duration: 0.35),
+                               value: etat.departOuvert)
+                    // opacité 0 n'est pas « absent » : un galet non né ne
+                    // prend pas le doigt.
+                    .allowsHitTesting(nee)
+                    // un galet soulevé passe DEVANT ses voisins (et le
+                    // panneau, zIndex 5) — le ZStack est ordonné par id.
+                    .zIndex(etat.porte == e.id ? 100 : 0)
                     .position(x: largeur / 2 + e.dx,
                               y: (CGFloat(e.ecran) * 874 + e.y) * k)
             }
@@ -805,19 +912,32 @@ private struct CheminDuo: View {
                                              EcranSpec.etapes.count - 1)]
                 let px = largeur / 2 + e.dx
                 let py = (CGFloat(e.ecran) * 874 + e.y) * k
+                // LE PANNEAU NAÎT DU GALET (27-08, audit §6) : ancré sur
+                // px (clampé aux marges — le clamp n'absorbe que ±45 pt,
+                // le halo et la naissance portent le reste), offsets × k,
+                // au-dessus ou au-dessous selon le tiers d'écran.
+                // Dessous dès que l'actif n'est plus tout en bas : le
+                // panneau couvre alors des nœuds PASSÉS (éteints par le
+                // projecteur), jamais la suite du chemin ni la dalle.
+                let dessous = e.y < 600
+                let xp = min(max(px, 148 + 12), largeur - 148 - 12)
+                let yp = dessous ? py + 138 * k : py - 130 * k
+                // LA LUMIÈRE PARTAGÉE : le halo de l'actif s'étire jusqu'à
+                // l'arête du panneau — un dégradé PEINT, sous le verre
+                // (jamais faire respirer le verre lui-même).
                 Circle()
                     .fill(RadialGradient(
-                        colors: [.white.opacity(0.16), .clear],
-                        center: .center, startRadius: 0, endRadius: 72))
-                    .frame(width: 150, height: 150)
+                        colors: [.white.opacity(0.22), .white.opacity(0.06),
+                                 .clear],
+                        center: .center, startRadius: 0, endRadius: 150))
+                    .frame(width: 320, height: 320)
                     .position(x: px, y: py)
+                    .blendMode(.plusLighter)
                     .opacity(etat.departOuvert ? 1 : 0)
                     .animation(.easeInOut(duration: 0.35),
                                value: etat.departOuvert)
                     .allowsHitTesting(false)
                 if etat.departOuvert {
-                    // au-dessus du galet — ou dessous s'il vit dans le
-                    // tiers haut de son écran.
                     PanneauDepartChemin(
                         onCommencer: { fermerEtDemarrer() },
                         onPlusTard: {
@@ -825,10 +945,18 @@ private struct CheminDuo: View {
                                 etat.departOuvert = false
                             }
                         })
-                        .position(x: largeur / 2,
-                                  y: e.y < 320 ? py + 124 : py - 116)
+                        .position(x: xp, y: yp)
+                        // LA NAISSANCE : le panneau GRANDIT depuis le galet.
+                        // ⚠️ Posée APRÈS `.position`, la transition enveloppe
+                        // le frame du PARENT — la colonne entière (largeur ×
+                        // 5 h) : l'ancre s'exprime dans CE frame (mesuré au
+                        // fouet : l'ancien `.scale(0,88)` centré glissait de
+                        // ~200 pt, caché par l'opacité 0).
                         .transition(.opacity.combined(
-                            with: .scale(scale: 0.88)))
+                            with: .scale(scale: 0.6,
+                                         anchor: UnitPoint(
+                                            x: px / largeur,
+                                            y: py / (hauteur * 5)))))
                         .zIndex(5)
                 }
             }
@@ -854,16 +982,36 @@ private struct CheminDuo: View {
     ///   · futur             → `.prochain` / `.verrouille`, la petite flamme ;
     ///   · fin de chapitre   → `.lune(dispo:)`, plus gros, sombre ou illuminé.
     private func etatDe(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
-        if e.tresor {
-            // Le nœud-lune s'ouvre quand tout son chapitre est derrière.
-            return .lune(dispo: etat.etape >= e.id)
+        // Les nœuds spéciaux : PASSIFS (audit §4, « on ne m'impose rien ») —
+        // disponibles dès que le chemin les a dépassés, réclamables une
+        // fois. `etape` n'est jamais un id spécial (le calendrier ne compte
+        // que les séances), donc « dépassé » = `etape > id`.
+        if e.special {
+            if etat.reclamees.contains(e.id) { return .reclame }
+            let dispo = etat.etape > e.id
+            return e.piece ? .piece(dispo: dispo) : .lune(dispo: dispo)
         }
         if e.id < etat.etape {
             return etat.faits.contains(e.id) ? .accompli : .rate
         }
         if e.id == etat.etape { return .actif }
-        if e.id == etat.etape + 1 { return .prochain }
+        // le prochain = la séance suivante (pas le nœud suivant : un
+        // spécial peut s'intercaler).
+        if let j = EcranSpec.jour(deId: etat.etape),
+           EcranSpec.id(pourJour: j + 1) == e.id, e.id != etat.etape {
+            return .prochain
+        }
         return .verrouille
+    }
+
+    /// LE JOUET : ce qui se porte. Un verrouillé, un prochain, un spécial
+    /// fermé refusent par l'immobilité (la grammaire du refus du galet).
+    private func portable(_ etat: EtapeEtat) -> Bool {
+        switch etat {
+        case .actif, .accompli, .parfait: return true
+        case .lune(let dispo), .piece(let dispo): return dispo
+        default: return false
+        }
     }
 
     /// LA DATE D'UN GALET — le chemin est un CALENDRIER : l'étape courante est
@@ -874,8 +1022,12 @@ private struct CheminDuo: View {
     /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict
     /// dit « ne pas donner l'impression que le contenu est déjà accessible ».
     private func dateDe(_ e: EcranSpec.EtapeSpec) -> DateGalet? {
-        guard !e.tresor, e.id <= etat.etape else { return nil }
-        let jours = e.id - etat.etape
+        guard !e.special, e.id <= etat.etape,
+              let jE = EcranSpec.jour(deId: e.id),
+              let jA = EcranSpec.jour(deId: etat.etape) else { return nil }
+        // le calendrier compte les SÉANCES, pas les nœuds : un spécial
+        // entre deux séances n'est pas un jour.
+        let jours = jE - jA
         guard let d = Calendar.current.date(byAdding: .day, value: jours,
                                             to: Date()) else { return nil }
         return DateGalet.depuis(d)
@@ -886,6 +1038,12 @@ private struct CheminDuo: View {
     /// la page défile vers sa POSE aimantée (jamais une mi-course que
     /// l'aimant re-happerait).
     private func tape(_ e: EcranSpec.EtapeSpec) {
+        // Les nœuds spéciaux AVANT la garde de l'actif (audit §4 : le cas
+        // lune tombait dans l'avancement). Disponibles, ils ouvriront la
+        // pop-up booster / la card reward — depuis une route EN ARBRE
+        // (jalon 1) ; depuis le cover d'aujourd'hui la pop-up serait
+        // invisible (jalon 7 / 7 bis). D'ici là : rien.
+        if e.special { return }
         // §23 : branchée, l'étape courante ne s'avance plus au tap — elle
         // PROPOSE (le panneau de départ). L'avance viendra de la séance.
         if etat.branchee, e.id == etat.etape {
@@ -895,8 +1053,10 @@ private struct CheminDuo: View {
             return
         }
         guard e.id == etat.etape,
-              etat.etape + 1 < EcranSpec.etapes.count else { return }
-        let suivant = etat.etape + 1
+              let j = EcranSpec.jour(deId: etat.etape),
+              j + 1 < EcranSpec.seances.count else { return }
+        // l'avance saute les nœuds spéciaux : la séance suivante.
+        let suivant = EcranSpec.id(pourJour: j + 1)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 etat.etape = suivant
@@ -1048,8 +1208,13 @@ struct DuolinguoPage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Options du banc, lues DANS la vue (jamais dans RootView).
+    /// `ecranInitial` 0 = DÉRIVÉ de l'étape (une source : le panneau ne
+    /// naît plus hors écran quand l'actif vit sur un autre chapitre).
     var ecranInitial: Int = 0
     var etapeInitiale: Int = 0
+    /// D2 (jalon 0) — les séances FAITES, données par l'hôte depuis la base
+    /// (`EcranSpec.etapeEtFaits`). nil = le motif démo du banc.
+    var faits: Set<Int>? = nil
     var gel = false
     var auto = false
     /// §18 P0.1 — `-duoAutoLent` : le même aller-retour, durée ×3 (les
@@ -1082,7 +1247,11 @@ struct DuolinguoPage: View {
                             largeur: g.size.width,
                             decalageHaut: g.safeAreaInsets.top + 58 + 12)
                 }
-                // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
+                // LE JOUET : pendant qu'un galet est porté, le scroll dort — légal
+        // ici SEULEMENT parce que le port est un geste PRIORITAIRE qui a
+        // déjà le doigt (une ceinture contre un second doigt, jamais posée
+        // depuis une horloge). Deux ré-évaluations par port, pas par image.
+        // LES FRONTIÈRES — DANS le scroll (hors du scroll, la
                 // sonde a une frame de retard : le galet glisserait contre
                 // ses écrans — la marche à la couture). Offset CONSTANT en
                 // coordonnées de contenu : le centre de chaque fenêtre sur
@@ -1197,6 +1366,7 @@ struct DuolinguoPage: View {
                 }
             }
             .scrollTargetBehavior(.paging)
+            .scrollDisabled(etat.porte != nil)
             .scrollIndicators(.hidden)
             .scrollPosition($ordre)
             .background(Color.black)
@@ -1244,10 +1414,19 @@ struct DuolinguoPage: View {
             .onAppear {
                 etat.branchee = onDemarrer != nil
                 etat.gel = gel || reduceMotion
-                etat.etape = etapeInitiale
-                etat.piloter(y: CGFloat(ecranInitial) * hauteur, hauteur: hauteur)
-                if ecranInitial > 0 {
-                    ordre.scrollTo(y: CGFloat(ecranInitial) * hauteur)
+                etat.etape = min(max(etapeInitiale, 0),
+                                 EcranSpec.etapes.count - 1)
+                if let faits { etat.faits = faits }
+                // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
+                // d'abord (les lecteurs de la cible sont réveillés avant
+                // le premier rendu), puis un scrollTo NON animé — jamais un
+                // scroll animé à la naissance (la phase tombe, la dalle se
+                // démonte, un balayage réveille des lecteurs en vol).
+                let ecranDepart = ecranInitial > 0
+                    ? ecranInitial : EcranSpec.etapes[etat.etape].ecran
+                etat.piloter(y: CGFloat(ecranDepart) * hauteur, hauteur: hauteur)
+                if ecranDepart > 0 {
+                    ordre.scrollTo(y: CGFloat(ecranDepart) * hauteur)
                 }
                 if auto { lancerAuto(hauteur: hauteur) }
                 naissance()
@@ -1282,12 +1461,25 @@ struct DuolinguoPage: View {
         }
         // §23 — L'ARRIVÉE PROPOSE : branchée, une fois la cascade posée,
         // le galet courant s'illumine et le panneau naît (haptique douce).
+        // Conditionnée à « la page est posée sur l'écran de l'actif, sans
+        // geste » — sinon un scroll pendant la cascade faisait naître le
+        // panneau hors écran ; elle réessaie au repos suivant.
         if etat.branchee {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
-                    etat.departOuvert = true
+            func proposerQuandPose(essai: Int) {
+                let ecranActif = EcranSpec.etapes[etat.etape].ecran
+                if !etat.enGeste, etat.ecranCourant == ecranActif {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                        etat.departOuvert = true
+                    }
+                } else if essai < 20 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        proposerQuandPose(essai: essai + 1)
+                    }
                 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
+                proposerQuandPose(essai: 0)
             }
             // banc : `-duoAutoDepart` — le primary se confirme seul à
             // +3,8 s (le film du départ sans doigt).
@@ -1333,21 +1525,9 @@ private struct PanneauDepartChemin: View {
     var onCommencer: () -> Void
     var onPlusTard: () -> Void
 
-    /// La date du jour, figée à la naissance du panneau (jamais un Date()
-    /// par image — la loi de la page ré-évaluée).
-    private static let jour: String = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
-        f.dateFormat = "d"
-        return f.string(from: Date())
-    }()
-    private static let mois: String = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
-        f.dateFormat = "MMM"
-        return f.string(from: Date()).uppercased()
-            .replacingOccurrences(of: ".", with: "")
-    }()
+    // (Les `static let jour/mois` d'ici étaient du code MORT au commentaire
+    // trompeur — la date vient de `MiniCardJour(date: Date())`, vivante,
+    // même source que le galet. Retirés au fouet du 27-08.)
 
     var body: some View {
         HStack(spacing: 14) {
