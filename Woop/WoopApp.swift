@@ -472,6 +472,139 @@ struct RootView: View {
         }
     }
 
+    /// LE CHEMIN EN ARBRE (jalon 1) — la route quitte le `fullScreenCover` de
+    /// la home pour vivre à la racine, zIndex 4 : sous la pause (5), la pop-up
+    /// booster (6), le Manège (7) et la notif des pièces (9). Un cover cachait
+    /// tout ce qui est monté ici — une lune qui appelait `proposer()` ouvrait
+    /// la pop-up DERRIÈRE la route. Enveloppée dans `CheminHote` : le geste
+    /// qui la tire vers la droite au doigt.
+    @ViewBuilder private var cheminEnArbre: some View {
+        if depart.cheminOuvert {
+            CheminHote(onSortie: { depart.fermerChemin(sansAnimation: true) }) {
+                DuolinguoPage(etapeInitiale: depart.cheminEtape,
+                              faits: depart.cheminFaits,
+                              reclamees: depart.reclamees,
+                              onLune: cheminLune,
+                              onPiece: cheminPiece,
+                              onRetour: { depart.fermerChemin() },
+                              onDemarrer: { demarrerDepuisChemin() })
+            }
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .zIndex(4)
+        }
+    }
+
+    /// Le nœud-lune s'est gravé dans la page ; la racine persiste, puis
+    /// propose le booster — la pop-up existante, au-dessus de la route.
+    private func cheminLune(_ id: Int) {
+        depart.reclamer(id)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            sacre.proposer()
+        }
+    }
+
+    /// « +40 pièces » : la capsule des pièces descend (zIndex 9, au-dessus de
+    /// la route). La card reward robe `.piece` viendra avec son hôte racine
+    /// (jalon 7 bis) ; le gain, lui, devra s'écrire dans `coin_ledger`.
+    private func cheminPiece(_ id: Int) {
+        depart.reclamer(id)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation { depart.notifPieces = 40 }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+            withAnimation { depart.notifPieces = nil }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // ⚠️ **CE QUI SUIT SORT DU `ViewBuilder`, ET C'EST VITAL** (27-08).
+    //
+    // `mainBody` était devenu une seule expression que le type-checker de
+    // Swift n'arrivait plus à résoudre : **l'app ne compilait plus depuis un
+    // état PROPRE** — ni sur l'appareil, ni au simulateur (« unable to
+    // type-check this expression in reasonable time »). Les builds Xcode
+    // quotidiens ne le voyaient pas : ils sont INCRÉMENTAUX et réutilisent le
+    // cache. Concrètement, ni archive, ni TestFlight, ni un autre Mac ne
+    // pouvaient construire Woop — c'est ce qui a bloqué le premier build
+    // téléphone de la route.
+    //
+    // ⚠️ Le défaut est ANTÉRIEUR à la route : vérifié en reconstruisant
+    // `WoopApp.swift` tel qu'il était avant (3f862a9) — même échec. Aucun
+    // réglage du compilateur n'y fait (seuils de temps, de mémoire, de
+    // portée ; mode fichier par fichier) : il faut DÉCOUPER.
+    //
+    // Rien ne change de comportement : le même code, sous un nom. La règle à
+    // tenir désormais — **le corps d'une vue est une addition de vues
+    // NOMMÉES, pas d'expressions imbriquées** : toute fermeture de plus de
+    // deux lignes posée dans un appel du corps rapproche du mur.
+    // ════════════════════════════════════════════════════════════════════
+
+    /// La barre bijou est MORTE (la home v2 n'a plus de nav bar) : cette
+    /// condition vaut toujours `false`, le code reste pour l'archive de la v1.
+    private var barreBijouVisible: Bool {
+        selection != .exercises && selection != .profile
+            && selection != .progress && selection != .home
+    }
+
+    /// Le menu de la home route vers un onglet.
+    private func routerVers(_ dest: WoopTab) {
+        withAnimation(.easeOut(duration: 0.3)) { selection = dest }
+    }
+
+    /// Le chevron d'une page immersive rend la main à la home.
+    private func retourHome() {
+        withAnimation(.easeOut(duration: 0.3)) { selection = .home }
+    }
+
+    /// Le galet play : séance ouverte, il RAMÈNE à la page exercices où vit
+    /// le player (jamais la vieille feuille noire, morte au verdict) ; sinon
+    /// il ouvre le panneau du départ.
+    private func galetPlayTape() {
+        if active != nil {
+            withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+        } else {
+            DepartEtat.shared.proposer()
+        }
+    }
+
+    /// Le STOP universel : l'appui tenu sur le galet en séance ouvre
+    /// « Terminer la séance ? ».
+    private func galetPlayTenu() {
+        guard active != nil else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+            depart.pauseOuverte = true
+        }
+    }
+
+    /// La feuille de séance. « Annuler cette séance » la supprime pendant que
+    /// la feuille se referme : on ne lit pas un objet déjà sorti de la base.
+    @ViewBuilder private func feuilleSeance(_ workout: Workout) -> some View {
+        if !workout.isDeleted {
+            ActiveWorkoutSheet(workout: workout,
+                               onAddExercise: {
+                                   // on referme la feuille, on ouvre la
+                                   // bibliothèque.
+                                   sheetWorkout = nil
+                                   selection = .exercises
+                               },
+                               onStopViaPause: {
+                                   // LE STOP DU PLAYER : la feuille se
+                                   // retire, le panneau de pause monte —
+                                   // « Terminer » y déclenche toute la
+                                   // chaîne de fin (trophée, pièces,
+                                   // booster).
+                                   sheetWorkout = nil
+                                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                       withAnimation(.spring(response: 0.42,
+                                                             dampingFraction: 0.88)) {
+                                           depart.pauseOuverte = true
+                                       }
+                                   }
+                               })
+        }
+    }
+
     private func startWorkout() {
         guard active == nil else {
             // Une séance est déjà ouverte : le galet la RAMÈNE au lieu d'en
@@ -714,12 +847,7 @@ struct RootView: View {
                     // route (onRoute), son slider ouvre LE CHEMIN, le
                     // chemin démarre la séance et route vers Exercices.
                     // L'ancienne home (HomeAuroraView) reste en archive.
-                    HomeNuitPage(onRoute: { dest in
-                                     withAnimation(.easeOut(duration: 0.3)) {
-                                         selection = dest
-                                     }
-                                 },
-                                 exoParRoute: true)
+                    HomeNuitPage(onRoute: routerVers, exoParRoute: true)
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
@@ -735,11 +863,7 @@ struct RootView: View {
                     // Progression (18-08) : page immersive — la barre
                     // bijou se retire, le chevron ramène à la home (la
                     // grammaire d'Exercices et du Profil).
-                    CalendarStickersPage(onBack: {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            selection = .home
-                        }
-                    }, ouvreIpod: true)
+                    CalendarStickersPage(onBack: retourHome, ouvreIpod: true)
                     .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
@@ -772,39 +896,11 @@ struct RootView: View {
                 // §23 : la home v2 n'a PLUS de nav bar (sa loi — le menu
                 // route) : la barre bijou ne se montre plus nulle part,
                 // le code reste pour l'archive de la v1.
-                if selection != .exercises && selection != .profile
-                    && selection != .progress && selection != .home {
+                if barreBijouVisible {
                     JewelTabBar(items: Self.tabItems, selection: tabIndex,
                                 play: PlayParams(),
-                                onPlay: {
-                                    // Séance déjà ouverte : le galet
-                                    // RAMÈNE À LA SÉANCE — la page
-                                    // exercices, où vit LE player
-                                    // (l'ardoise de la fiche exo).
-                                    // JAMAIS la vieille feuille noire
-                                    // (le sheet à la comète est mort —
-                                    // verdict). Sinon : le panneau du
-                                    // départ.
-                                    if active != nil {
-                                        withAnimation(.easeOut(duration: 0.3)) {
-                                            selection = .exercises
-                                        }
-                                    } else {
-                                        DepartEtat.shared.proposer()
-                                    }
-                                },
-                                onPlayHold: {
-                                    // Le STOP universel : l'appui tenu
-                                    // sur le galet en séance ouvre
-                                    // « Terminer la séance ? ».
-                                    guard active != nil else { return }
-                                    UIImpactFeedbackGenerator(style: .medium)
-                                        .impactOccurred()
-                                    withAnimation(.spring(response: 0.42,
-                                                          dampingFraction: 0.88)) {
-                                        depart.pauseOuverte = true
-                                    }
-                                },
+                                onPlay: galetPlayTape,
+                                onPlayHold: galetPlayTenu,
                                 invitePulse: invitePulseAt,
                                 // Une séance ouverte : le triangle du galet se
                                 // referme en cercle de néon. Le même bouton la
@@ -844,29 +940,7 @@ struct RootView: View {
             .sheet(item: $sheetWorkout) { workout in
                 // « Annuler cette séance » la supprime pendant que la feuille
                 // se referme : on ne lit pas un objet déjà sorti de la base.
-                if !workout.isDeleted {
-                    ActiveWorkoutSheet(workout: workout,
-                        onAddExercise: {
-                            // « Ajouter un exercice » : on referme la
-                            // feuille et on ouvre la bibliothèque.
-                            sheetWorkout = nil
-                            selection = .exercises
-                        },
-                        onStopViaPause: {
-                            // LE STOP DU PLAYER : la feuille se retire,
-                            // le panneau de pause de la maison monte —
-                            // « Terminer » y déclenche toute la chaîne
-                            // de fin (trophée, pièces, booster).
-                            sheetWorkout = nil
-                            DispatchQueue.main.asyncAfter(
-                                deadline: .now() + 0.4) {
-                                withAnimation(.spring(response: 0.42,
-                                                      dampingFraction: 0.88)) {
-                                    depart.pauseOuverte = true
-                                }
-                            }
-                        })
-                }
+                feuilleSeance(workout)
             }
             }
 
@@ -899,44 +973,14 @@ struct RootView: View {
             // la pop-up (6), le Manège (7), la notif des pièces (9). La home
             // reste rendue dessous — c'est le PRIX de la sortie du cover, à
             // mesurer au banc `-homeChemin -fps` (étiquette « duo »).
-            if depart.cheminOuvert {
-                // LE GESTE (jalon 5) : l'enveloppeur mince qui tire la route
-                // vers la droite au doigt et la démonte sans rejouer sa
-                // transition (voir `CheminHote`, DepartSeance.swift).
-                CheminHote(onSortie: { depart.fermerChemin(sansAnimation: true) }) {
-                DuolinguoPage(etapeInitiale: depart.cheminEtape,
-                              faits: depart.cheminFaits,
-                              reclamees: depart.reclamees,
-                              onLune: { id in
-                                  // Le nœud s'est gravé dans la page ; la
-                                  // racine persiste, puis propose le
-                                  // booster — la pop-up existante, au-dessus
-                                  // de la route.
-                                  depart.reclamer(id)
-                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                      sacre.proposer()
-                                  }
-                              },
-                              onPiece: { id in
-                                  // « +40 pièces » : la capsule des pièces
-                                  // descend (zIndex 9, au-dessus de la route).
-                                  // La card reward robe `.piece` viendra avec
-                                  // son hôte racine (jalon 7 bis) ; le gain,
-                                  // lui, devra s'écrire dans `coin_ledger`.
-                                  depart.reclamer(id)
-                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                      withAnimation { depart.notifPieces = 40 }
-                                  }
-                                  DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
-                                      withAnimation { depart.notifPieces = nil }
-                                  }
-                              },
-                              onRetour: { depart.fermerChemin() },
-                              onDemarrer: { demarrerDepuisChemin() })
-                }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(4)
-            }
+            // LE CHEMIN — la route en arbre (jalon 1). ⚠️ EXTRAIT dans sa
+            // propre vue : posé ici en entier, avec ses quatre fermetures,
+            // il faisait basculer `mainBody` au-delà de ce que le
+            // type-checker résout (« unable to type-check in reasonable
+            // time ») — tout build DEVICE échouait, alors que
+            // l'incrémental du simulateur passait. Le corps géant doit
+            // rester une addition de vues NOMMÉES, pas d'expressions.
+            cheminEnArbre
 
             // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
             // la séance — le trophée, la notif des pièces et la pop-up
