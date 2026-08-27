@@ -382,6 +382,40 @@ n'attend jamais) :
 Gabarits déterministes de secours pour TOUT (déjà codés côté app) —
 l'IA est une couche qui se pose après, le moule ne change pas.
 
+### 4 sexies. LA PAGE « WIN » ET LA RÈGLE DES BOOSTERS (ajouté le
+### 26-08 nuit — le plan design est ../story/PLAN-STORY-WIN.md)
+
+La story gagne une 4ᵉ page de base : LE BUTIN — la pièce du coffre
+en header, « WIN » derrière, le compteur de pièces qui roule, et
+UN BOOSTER PLAQUÉ à chaque 100 pièces. La règle :
+
+- **1 booster = 100 pièces, conversion CUMULÉE avec report** : au
+  `settle_session`, `booster_progress` (0-99, par user) + pièces de
+  la séance → `n` boosters crédités + nouveau report. Rien ne se
+  perd à l'arrondi. Crédit idempotent par `session_uuid` (la story
+  rejouée ne recrédite JAMAIS) — la réserve rejoint le pipeline
+  Sacre existant (`claim_booster` inchangé pour l'OUVERTURE).
+- **« Vu = pris en compte »** : l'affichage n'accorde rien — le
+  crédit est déjà au ledger. Il ENREGISTRE (`reward_events`, kind
+  `booster_grant_shown`) pour ne jamais remontrer la cérémonie.
+- **Le PROFIL montre le solde ouvrable** : boosters crédités −
+  boosters ouverts (solde dérivé, jamais une colonne à la main).
+- **Le front recopie** : la page WIN montre les pièces RÉELLES de
+  la séance (séries × 20 aujourd'hui, le ledger demain) et les
+  boosters DE LA SÉANCE ; le profil montre le TOTAL.
+
+```sql
+-- l'état de conversion, par user :
+create table booster_progress (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  reste int not null default 0 check (reste between 0 and 99),
+  updated_at timestamptz not null default now()
+);
+-- le crédit au settle : n lignes de réserve booster
+-- (la table des boosters du Sacre, origine = 'pieces'),
+-- clé d'idempotence (user_id, session_uuid, 'booster_conversion').
+```
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT

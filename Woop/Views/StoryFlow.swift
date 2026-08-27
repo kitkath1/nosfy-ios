@@ -258,14 +258,14 @@ struct StoryFlow: View {
 
     /// Les rôles d'écran. L'ordre est LA grammaire : l'exception
     /// s'insère AVANT le résumé (« la première vue de la story »).
-    enum PageRole { case ouverture, resume, details, analyse }
+    enum PageRole { case ouverture, resume, details, analyse, butin }
 
     /// Trois pages les jours ordinaires (l'ouverture PORTE le résumé,
     /// c'est son acte B) ; quatre les jours d'exception.
     private var roles: [PageRole] {
         session.top == nil
-            ? [.ouverture, .details, .analyse]
-            : [.ouverture, .resume, .details, .analyse]
+            ? [.ouverture, .details, .analyse, .butin]
+            : [.ouverture, .resume, .details, .analyse, .butin]
     }
     private func pageRole(_ p: Int) -> PageRole {
         roles[min(max(p, 0), roles.count - 1)]
@@ -279,6 +279,9 @@ struct StoryFlow: View {
         case .resume: return 6.5
         case .details: return StoryCine.hold[1]
         case .analyse: return StoryCine.hold[2]
+        // Le butin : la chorégraphie (pièce, compteur, plaquages) puis
+        // la lecture.
+        case .butin: return 8.0
         }
     }
 
@@ -325,6 +328,14 @@ struct StoryFlow: View {
                                              onPartitionRect: {
                                                  partitionRect = $0
                                              })
+                            // LE BUTIN (26-08 nuit) : la pièce du
+                            // coffre, le compteur, les boosters.
+                            case .butin:
+                                StoryWin(session: session, t: t,
+                                         size: geo.size, paused: paused,
+                                         onCardRect: {
+                                             partitionRect = $0
+                                         })
                             }
                         }
                         .id(beat)

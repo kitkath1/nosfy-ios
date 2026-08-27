@@ -1224,3 +1224,776 @@ struct StoryTopScene: View {
                          trigger: t >= TopCine.miniAt + 0.25)
     }
 }
+
+// MARK: - La page « WIN » (le butin)
+
+/// La partition du butin — tout en fonctions pures de `t`.
+enum WinCine {
+    static let cardAt = 0.15, cardFor = 0.6
+    /// La pièce SE POSE (l'école de la pièce du calendrier).
+    static let pieceAt = 0.85
+    static let compteurAt = 1.3, compteurFor = 2.2
+    static let titreAt = 4.3
+}
+
+/// LA PAGE « WIN », tour 2 (tools/story/PLAN-STORY-WIN.md §7) : la
+/// pills CÔTÉ OR qui monte du bas ; la card ALIGNÉE sur la story 3
+/// (même gabarit, même centre) ; « WIN » EN OR, gros, très fondu ;
+/// LA PIÈCE DU PODIUM (`piece-or-mini` — la vidéo est MORTE, « big
+/// beug ») qui se pose, FLOTTE, et SE DÉPLACE au doigt ; le compteur
+/// qui roule ; et LES BOOSTERS DANS LA CARD — animés comme les
+/// stickers, saisissables eux aussi, et leur déplacement SOULÈVE DE
+/// LA POUDRE DE DIAMANT (la poudre naît DU mouvement).
+struct StoryWin: View {
+    let session: StorySession
+    let t: Double
+    let size: CGSize
+    var paused: Bool = false
+    /// Le cadre de la card, remonté au chef : bouger un objet ne ferme
+    /// pas la story et ne change pas de page.
+    var onCardRect: (CGRect) -> Void = { _ in }
+
+    /// LES PLACEMENTS LIBRES : clé 0 = la pièce, 1…5 = les boosters.
+    /// Les objets RESTENT où on les pose (tranché §6) — l'état survit
+    /// aux ré-évaluations de l'horloge.
+    @State private var placements: [Int: CGSize] = [:]
+    @State private var prises: [Int: CGSize] = [:]
+    /// LA POUDRE DU DOIGT : les grains nés du déplacement.
+    @State private var grains: [(pos: CGPoint, naissance: Date)] = []
+    @State private var naissance = Date()
+    /// Les objets TENUS par le doigt (le liseré holo s'allume) et le
+    /// compte des prises (une haptique légère à chaque saisie).
+    /// Banc `-winHolo` : le premier booster est tenu allumé, pour
+    /// filmer la frise sans doigt.
+    @State private var tenus: Set<Int> =
+        ProcessInfo.processInfo.arguments.contains("-winHolo") ? [1] : []
+    @State private var saisies = 0
+
+    private var pieces: Int { session.series * 20 }
+    private var boosters: Int { pieces / 100 }
+
+    private var roule: Int {
+        let u = StoryCine.outLong(min(max(
+            (t - WinCine.compteurAt) / WinCine.compteurFor, 0), 1), 2.6)
+        return Int(Double(pieces) * u)
+    }
+
+    var body: some View {
+        let l = min(size.width * 0.80, 332)
+        let h = l * 1.32
+        // MÊME CENTRE que la card de la story 3 (« elle est pas la
+        // même hauteur que la card précédente » — mesuré : 0,47 contre
+        // 0,53, c'était ça).
+        let centre = CGPoint(x: size.width * 0.50, y: size.height * 0.53)
+
+        ZStack {
+            Color.black
+
+            pillsOr
+
+            carte(l: l, h: h)
+                .position(centre)
+
+            // LES OBJETS — par-dessus la card, bornés à son intérieur.
+            objets(l: l, h: h, centre: centre)
+
+            // LA POCHE : les boosters vivent DANS la card — coupés par
+            // sa forme, vus de moitié au bord bas, et libres au doigt
+            // dedans (verdict : « dans la card, on les voit de moitié »).
+            poche(l: l, h: h, centre: centre)
+
+            // LA POUDRE DU DOIGT, au-dessus de tout — MONTÉE seulement
+            // quand il y a des grains : une Canvas à 30 Hz qui ne
+            // dessine rien reste une horloge qui coûte (le lag mesuré
+            // à 58 img/s sur la card, contre 82 sur Détails).
+            if !grains.isEmpty {
+                PoudreDoigt(grains: grains)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .clipped()
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.6),
+                         trigger: saisies)
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.65),
+                         trigger: beatPlaques)
+        // Le rect du chef : toute la zone de la card + objets.
+        .onGeometryChange(for: CGRect.self) { proxy in
+            CGRect(x: centre.x - l / 2 - 20, y: centre.y - h / 2 - 20,
+                   width: l + 40, height: h + 40)
+                .offsetBy(dx: proxy.frame(in: .named("storyFlow")).minX
+                    - proxy.frame(in: .local).minX,
+                          dy: proxy.frame(in: .named("storyFlow")).minY
+                    - proxy.frame(in: .local).minY)
+        } action: { onCardRect($0) }
+    }
+
+    // MARK: La pills or
+
+    private var pillsOr: some View {
+        let mw = size.width * 1.15
+        let mh = mw * 1352 / 1500
+        // « La vidéo n'est pas fondue, on a un gros bloc noir » : les
+        // bords de COUPE du fichier faisaient un rectangle. Le fondu est
+        // CUIT dans `story-macro-or` (un scrim numpy : le haut et les
+        // flancs s'éteignent à zéro — l'école recuit_calques) : aucun
+        // masque par image sur une couche vidéo, la cadence est sauve.
+        return CalqueVideo(nom: "story-macro-or",
+                           pose: "story-macro-or-poster",
+                           rate: paused ? 0 : 1)
+            .frame(width: mw, height: mh)
+            .frame(width: size.width, height: size.height,
+                   alignment: .bottom)
+            .offset(y: mh * 0.42)
+            .blendMode(.plusLighter)
+            .opacity(StoryCine.sstep(0.05, 0.65, t))
+    }
+
+    // MARK: La card
+
+    private static let forme = RoundedRectangle(cornerRadius: 36,
+                                                style: .continuous)
+
+    private func carte(l: CGFloat, h: CGFloat) -> some View {
+        let u = StoryCine.sstep(WinCine.cardAt,
+                                WinCine.cardAt + WinCine.cardFor, t)
+        // « Enlève "pièces" à côté, rajoute un sous-titre dessous, et
+        // baisse un peu le texte » : le nombre SEUL en titre, le
+        // sous-titre gris à la taille des autres cards, la couronne
+        // en dessous, plus discrète.
+        let compteurU = StoryCine.sstep(WinCine.compteurAt - 0.2,
+                                        WinCine.compteurAt + 0.2, t)
+        let titreU = StoryCine.sstep(WinCine.titreAt,
+                                     WinCine.titreAt + 0.4, t)
+        return VStack(spacing: 2) {
+            Text("+\(roule)")
+                .font(.system(size: 44, weight: .bold))
+                .monospacedDigit()
+                .contentTransition(.identity)
+                .foregroundStyle(Color(white: 0.96))
+                .opacity(compteurU)
+            Text("pièces gagnées")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color(white: 0.55))
+                .opacity(compteurU)
+            Text(couronne)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.55)
+                    .opacity(0.72))
+                .padding(.top, 6)
+                .opacity(titreU)
+        }
+        .frame(maxHeight: .infinity, alignment: .center)
+        .offset(y: h * 0.07)
+        .frame(width: l, height: h)
+        .background {
+            ZStack {
+                // « Plus dégradé, gris → noir » (verdict) : le fond va du
+                // gris du haut au noir du pied, en trois paliers.
+                Self.forme.fill(
+                    LinearGradient(
+                        stops: [.init(color: Color(white: 0.145),
+                                      location: 0),
+                                .init(color: Color(white: 0.075),
+                                      location: 0.55),
+                                .init(color: Color(white: 0.02),
+                                      location: 1)],
+                        startPoint: .top, endPoint: .bottom))
+                // LE FILAMENT (verdict) : un fin liseré halo rouge/blanc
+                // qui passe DERRIÈRE le mot — un néon POSÉ, jamais un
+                // balayage. Il vit à sa propre lumière (dans le bloc du
+                // mot il héritait de l'opacité 0,46 et se noyait).
+                filament(l: l, h: h)
+                motOr(l: l, h: h)
+                Self.forme.strokeBorder(
+                    LinearGradient(
+                        stops: [.init(color: .white.opacity(0.18),
+                                      location: 0),
+                                .init(color: .white.opacity(0.05),
+                                      location: 0.38),
+                                .init(color: .clear, location: 1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                    lineWidth: 1)
+            }
+        }
+        .clipShape(Self.forme)
+        .scaleEffect(0.96 + 0.04 * CGFloat(u))
+        .opacity(min(1, u * 2))
+    }
+
+    private func filament(l: CGFloat, h: CGFloat) -> some View {
+        // TOUT EST PRÉ-TYPÉ (la loi du type-checker, re-payée ici).
+        let tq: Double = (t * 20).rounded() / 20
+        let rouge = Color(red: 1.0, green: 0.22, blue: 0.08)
+        let souffle: Double = 0.62 + 0.16 * sin(tq * 0.61)
+        let entree: Double = StoryCine.sstep(WinCine.cardAt + 0.5,
+                                             WinCine.cardAt + 1.1, t)
+        let alpha: Double = souffle * entree
+        // « Le filament rouge qui bouge, s'anime aussi » : son POINT DE
+        // LUMIÈRE glisse le long du fil (le courant dans un néon — pas
+        // un balayage sur le mot), le fil ondule (deux horloges) et
+        // bascule doucement.
+        let pic: Double = 0.5 + 0.26 * sin(tq * 0.47 + 0.6)
+        let gauche: Double = max(0.03, pic - 0.30)
+        let droite: Double = min(0.97, pic + 0.30)
+        let dy: CGFloat = l * 0.31 + CGFloat(sin(tq * 0.37)) * 5
+            + CGFloat(sin(tq * 0.83 + 1.1)) * 2
+        let tilt: Double = -6 + 2.6 * sin(tq * 0.29)
+        let stops: [Gradient.Stop] = [
+            .init(color: .clear, location: 0),
+            .init(color: rouge.opacity(0.95), location: gauche),
+            .init(color: .white, location: pic),
+            .init(color: rouge.opacity(0.95), location: droite),
+            .init(color: .clear, location: 1)
+        ]
+        return Capsule()
+            .fill(LinearGradient(stops: stops,
+                                 startPoint: .leading, endPoint: .trailing))
+            .frame(width: l * 0.98, height: 1.8)
+            .shadow(color: rouge.opacity(0.9), radius: 8)
+            .shadow(color: .white.opacity(0.55), radius: 1.6)
+            .rotationEffect(.degrees(tilt))
+            .blendMode(.plusLighter)
+            .opacity(alpha)
+            .frame(width: l, height: h, alignment: .top)
+            .offset(y: dy)
+    }
+
+    private var couronne: String {
+        switch boosters {
+        case 0: return "Steady grind."
+        case 1...2: return "Nice haul."
+        case 3...4: return "Big win."
+        default: return "Jackpot."
+        }
+    }
+
+    /// « WIN » EN OR — tour 2 : PLUS GROS (toute la largeur, la
+    /// maquette) et PLUS FONDU (la traîne meurt à ~0,58 : le mot
+    /// irrigue la moitié de la card).
+    /// « WIN PLUS MAJESTUEUX, PLUS CHIRURGIEN » (verdict tour 3) :
+    /// le mot est GRAVÉ (l'ombre interne sous l'encre — imprimé, pas
+    /// posé), des NAPPES D'OR naissent dedans (périodes premières,
+    /// jamais un balayage), des SCINTILLES apériodiques piquent les
+    /// lettres, un halo d'or très doux respire derrière — et la
+    /// traîne FOND DANS LE GRIS de la card (une queue longue, morte à
+    /// 0,86, sur le graphite — jamais une coupe).
+    private func motOr(l: CGFloat, h: CGFloat) -> some View {
+        // L'HORLOGE QUANTIFIÉE (20 Hz) : le mot porte deux masques et
+        // des nappes qui dérivent LENTEMENT — les recomposer à 60 Hz
+        // coûtait la cadence (41 img/s mesuré). À 20 pas par seconde,
+        // ses entrées ne changent qu'une image sur trois : le rendu
+        // ne se refait qu'à ces instants.
+        let t = (t * 20).rounded() / 20
+        let glyphe = Text("WIN")
+            .font(.system(size: l * 0.52, weight: .black))
+            .tracking(-l * 0.018)
+            .fixedSize()
+        // « PLUS TRAVAILLÉ DANS L'OR » : l'encre est un MÉTAL — six
+        // paliers (champagne, or, une BANDE de reflet étroite qui
+        // dérive lentement, ambre, bronze au pied) — sous un BISEAU
+        // champagne qui affleure au bord haut des lettres.
+        let bande: Double = 0.40 + 0.05 * sin(t * 0.31)
+        let metal: [Gradient.Stop] = [
+            .init(color: Color(red: 1.0, green: 0.90, blue: 0.62),
+                  location: 0),
+            .init(color: Color(red: 1.0, green: 0.78, blue: 0.38),
+                  location: max(0.08, bande - 0.16)),
+            .init(color: Color(red: 1.0, green: 0.93, blue: 0.68),
+                  location: bande),
+            .init(color: Color(red: 0.98, green: 0.70, blue: 0.26),
+                  location: min(0.82, bande + 0.14)),
+            .init(color: Color(red: 0.92, green: 0.44, blue: 0.06),
+                  location: 0.86),
+            .init(color: Color(red: 0.62, green: 0.30, blue: 0.05),
+                  location: 1)
+        ]
+        return ZStack {
+            // Le halo d'or, très doux, qui respire derrière le mot.
+            Ellipse()
+                .fill(RadialGradient(
+                    colors: [Color(red: 1.0, green: 0.80, blue: 0.42)
+                        .opacity(0.13 + 0.03 * sin(t * 0.53)), .clear],
+                    center: .center, startRadius: 0,
+                    endRadius: l * 0.45))
+                .frame(width: l * 1.1, height: l * 0.55)
+                .blendMode(.plusLighter)
+            // LA GRAVURE : l'ombre interne d'abord, le biseau, l'encre.
+            glyphe
+                .foregroundStyle(Color.black.opacity(0.45))
+                .offset(y: 1.8)
+            glyphe
+                .foregroundStyle(Color(red: 1.0, green: 0.94, blue: 0.76)
+                    .opacity(0.85))
+                .offset(y: -1.3)
+            glyphe
+                .foregroundStyle(LinearGradient(
+                    stops: metal, startPoint: .top, endPoint: .bottom))
+            // LES NAPPES D'OR — la lumière naît DANS les lettres.
+            nappesOr(l: l)
+                .mask { glyphe }
+                .blendMode(.plusLighter)
+        }
+        .frame(width: l)
+        .mask {
+            // « Fondu aussi sur les côtés » : les flancs mangent 26 % —
+            // le mot sort de la matière, il n'est pas posé dessus.
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0),
+                        .init(color: .white, location: 0.30),
+                        .init(color: .white, location: 0.70),
+                        .init(color: .clear, location: 1)],
+                startPoint: .leading, endPoint: .trailing)
+        }
+        .mask {
+            // LA TRAÎNE LONGUE — « encore plus fondu » : elle fond DANS
+            // le gris dès le tiers, cinq paliers, morte à 0,80.
+            LinearGradient(
+                stops: [.init(color: .white, location: 0),
+                        .init(color: .white.opacity(0.92),
+                              location: 0.14),
+                        .init(color: .white.opacity(0.58),
+                              location: 0.30),
+                        .init(color: .white.opacity(0.26),
+                              location: 0.48),
+                        .init(color: .white.opacity(0.08),
+                              location: 0.66),
+                        .init(color: .clear, location: 0.80)],
+                startPoint: .top, endPoint: .bottom)
+        }
+        // « Un peu plus fond de carte » : le mot RECULE dans la matière
+        // — il est du fond, pas un objet posé dessus.
+        .opacity(0.42 * StoryCine.sstep(WinCine.cardAt + 0.25,
+                                        WinCine.cardAt + 0.80, t))
+        .frame(width: l, height: h, alignment: .top)
+        .offset(y: 6)
+    }
+
+    /// Les nappes d'or + les scintilles du mot — périodes premières,
+    /// bosses étroites, dérive infime ; les scintilles sont des
+    /// piqûres (enveloppe puissance 12, une pointe rare).
+    private func nappesOr(l: CGFloat) -> some View {
+        let t = (t * 20).rounded() / 20
+        let periodes: [Double] = [3.7, 5.3, 7.1, 4.3, 6.7, 5.9, 8.3]
+        return ZStack {
+            ForEach(0 ..< 7, id: \.self) { i in
+                let h1 = Self.hashWin(i, 1)
+                let h2 = Self.hashWin(i, 2)
+                let h3 = Self.hashWin(i, 3)
+                let u = (t / periodes[i] + h1)
+                    .truncatingRemainder(dividingBy: 1)
+                let bosse = pow(max(0, sin(.pi * u)), 6.0)
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [Color(red: 1.0, green: 0.90,
+                                       blue: 0.62).opacity(0.50),
+                                 .clear],
+                        center: .center, startRadius: 0,
+                        endRadius: l * CGFloat(0.10 + 0.08 * h2)))
+                    .frame(width: l * CGFloat(0.24 + 0.20 * h2),
+                           height: l * CGFloat(0.16 + 0.12 * h3))
+                    .offset(x: l * (CGFloat(h1) - 0.5) * 0.95,
+                            y: l * (CGFloat(h3) - 0.5) * 0.30)
+                    .opacity(bosse)
+            }
+            // Les scintilles : neuf piqûres d'or blanc, rares.
+            ForEach(0 ..< 9, id: \.self) { i in
+                let h1 = Self.hashWin(i, 7)
+                let h2 = Self.hashWin(i, 8)
+                let u = (t / (2.9 + 2.3 * h1) + h2)
+                    .truncatingRemainder(dividingBy: 1)
+                let pointe = pow(max(0, sin(.pi * u)), 12.0)
+                Circle()
+                    .fill(Color(red: 1.0, green: 0.97, blue: 0.88))
+                    .frame(width: 2.4, height: 2.4)
+                    .offset(x: l * (CGFloat(h1) - 0.5) * 0.90,
+                            y: l * (CGFloat(h2) - 0.5) * 0.26)
+                    .opacity(pointe * 0.9)
+            }
+        }
+    }
+
+    private static func hashWin(_ i: Int, _ k: Int) -> Double {
+        let v = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return v - floor(v)
+    }
+
+    // MARK: Les objets saisissables
+
+    private var beatPlaques: Int {
+        (1...max(1, boosters)).filter { roule >= $0 * 100 + 15 }.count
+    }
+
+    /// La pièce (clé 0) + les boosters (clés 1…5) : chacun a sa place
+    /// de naissance, son animation, sa prise — et RESTE où on le pose.
+    private func objets(l: CGFloat, h: CGFloat,
+                        centre: CGPoint) -> some View {
+        return ZStack {
+            // LA PIÈCE DU PODIUM — elle se pose, flotte, se saisit.
+            objet(cle: 0, centre: centre, l: l, h: h,
+                  base: CGPoint(x: 0, y: -h * 0.24)) {
+                let pose = StoryCine.sstep(WinCine.pieceAt,
+                                           WinCine.pieceAt + 0.35, t)
+                // « FAIS UN TRUC PLUS PREMIUM, ET D'ELLE SORTENT DES
+                // PETITES POUDRES DE DIAMANT » : la pièce ne nage plus
+                // comme un sticker — elle PLANE sur une courbe de
+                // Lissajous (deux horloges premières, jamais un
+                // aller-retour), à peine inclinée, un souffle d'échelle,
+                // un halo d'or qui respire dessous, et LA POUSSIÈRE qui
+                // naît d'elle et la suit au doigt.
+                let n = CGFloat(pose)
+                let px = CGFloat(sin(t * 0.53)) * 5.5 * n
+                let py = -(CGFloat(sin(t * 0.62)) * 7
+                    + CGFloat(sin(t * 1.13 + 0.9)) * 2.5) * n
+                let tilt = sin(t * 0.31 + 0.7) * 2.2 * pose
+                let souffle = 1 + 0.02 * CGFloat(sin(t * 0.83)) * n
+                let halo = 0.20 + 0.06 * sin(t * 0.71)
+                ZStack {
+                    Circle()
+                        .fill(RadialGradient(
+                            colors: [Color(red: 1.0, green: 0.80,
+                                           blue: 0.42).opacity(halo),
+                                     .clear],
+                            center: .center, startRadius: 0,
+                            endRadius: 78))
+                        .frame(width: 160, height: 160)
+                        .blendMode(.plusLighter)
+                    PoudrePiece(naissance: naissance)
+                        .frame(width: 220, height: 220)
+                        .blendMode(.plusLighter)
+                    Image("piece-or-mini")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                        .rotationEffect(.degrees(tilt))
+                        .scaleEffect(x: souffle * (0.92 + 0.08 * n)
+                            * (1 + 0.03 * CGFloat(sin(.pi * pose))),
+                                     y: souffle * (0.92 + 0.08 * n)
+                            * (1 - 0.03 * CGFloat(sin(.pi * pose))))
+                }
+                .opacity(pose)
+                .offset(x: px, y: py - (1 - n) * 6)
+            }
+
+        }
+    }
+
+    /// LA POCHE DES BOOSTERS (verdict : « ils sont dans la card, on les
+    /// voit de moitié, et ils bougent — là ils sont juste plaqués ») :
+    /// une couche COUPÉE par la forme de la card, le centre de chaque
+    /// booster posé SUR le bord bas — la moitié basse vit sous la
+    /// coupe, comme des cartes dans une poche. Chacun MONTE de la
+    /// poche à son franchissement de 100, puis NAGE (deux fois plus
+    /// ample qu'avant : ±12 pt, la part visible respire), et se tire
+    /// au doigt jusqu'en haut de la card — jamais plus bas que la
+    /// moitié.
+    private func poche(l: CGFloat, h: CGFloat,
+                       centre: CGPoint) -> some View {
+        let montres = min(boosters, 5)
+        // « Grossis-les un peu, monte-les un peu » : 116 → 130 pt, le
+        // centre 12 % au-dessus du bord bas. « Toujours un qui dépasse
+        // un peu plus que les autres » : LE HÉROS (celui du milieu)
+        // sort de 16 % de plus.
+        let hb: CGFloat = 130
+        let wb = hb * 794 / 1278
+        let basesB: [(x: CGFloat, deg: Double)] = [
+            (-0.24, -9), (0.03, 6), (0.27, -4), (-0.09, 11), (0.15, -12)
+        ]
+        let heros = montres >= 2 ? 1 : 0
+        let origine = CGPoint(x: l / 2, y: h / 2)
+        let bornes = Bornes(x: l / 2 - wb * 0.45,
+                            haut: -h / 2 + hb * 0.62, bas: h / 2)
+        return ZStack {
+            ForEach(0 ..< montres, id: \.self) { i in
+                let seuil = Double((i + 1) * 100)
+                let pose = min(max((Double(roule) - seuil) / 30.0, 0), 1)
+                let montee = StoryCine.outLong(pose, 3.0)
+                let phi = Double(i) * 2.1
+                let n = CGFloat(montee)
+                // LA NAGE — trois horloges premières, dérive, balancement
+                // lent et profond ; jamais un tremblé. « De base ils
+                // bougent davantage » (verdict) : ±18 pt de houle, ±6 de
+                // dérive, ±4,5° — la part visible respire franchement.
+                let flotte = (CGFloat(sin(t * 0.62 + phi)) * 14
+                    + CGFloat(sin(t * 1.13 + phi + 0.9)) * 4) * n
+                let derive = CGFloat(cos(t * 0.47 + phi + 1.4)) * 6 * n
+                let sway = sin(t * 0.43 + phi) * 4.5 * montee
+                let souffle = 1 + 0.018
+                    * CGFloat(sin(t * 0.83 + phi)) * n
+                // LA MONTÉE : il sort de la poche (caché sous la coupe)
+                // et se cale, avec un petit dépassement de ressort.
+                let sortie = (1 - n) * hb * 0.62
+                let tenu = tenus.contains(i + 1)
+                let prise = prises[i + 1] ?? .zero
+                // LE HOLO S'ALLUME (verdict) : la frise irisée du
+                // sticker, extraite par saturation, colorée d'un
+                // dégradé irisé dont la TEINTE TOURNE AVEC LE DOIGT —
+                // comme un vrai holo qu'on incline — et qui luit.
+                let tq: Double = (t * 20).rounded() / 20
+                let teinte: Double = Double(prise.width) * 1.1
+                    + Double(prise.height) * 0.7 + tq * 24
+                let repos: CGFloat = h / 2 - hb * (i == heros ? 0.28 : 0.12)
+                objet(cle: i + 1, centre: origine, l: l, h: h,
+                      base: CGPoint(x: basesB[i].x * l, y: repos),
+                      bornes: bornes, revient: true) {
+                    ZStack(alignment: .topTrailing) {
+                        Image("sticker-booster")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: wb, height: hb)
+                            .overlay {
+                                holo(wb: wb, hb: hb, teinte: teinte)
+                                    .opacity(tenu ? 1 : 0)
+                                    .animation(.easeOut(duration: 0.28),
+                                               value: tenu)
+                            }
+                        if i == 4 && boosters > 5 {
+                            Text("×\(boosters)")
+                                .font(.inter(13, .semibold))
+                                .foregroundStyle(LinearGradient(
+                                    colors: [Color(red: 1.0, green: 0.94,
+                                                   blue: 0.80),
+                                             Color(red: 1.0, green: 0.78,
+                                                   blue: 0.38)],
+                                    startPoint: .top,
+                                    endPoint: .bottom))
+                                .offset(x: 8, y: -6)
+                        }
+                    }
+                    .rotationEffect(.degrees(basesB[i].deg + sway))
+                    .scaleEffect(souffle * (1 + 0.06 * CGFloat(sin(.pi * montee))))
+                    .opacity(min(1, pose * 2.5))
+                    .offset(x: derive, y: -flotte + sortie)
+                }
+                .zIndex(Double(i))
+            }
+        }
+        .frame(width: l, height: h)
+        .clipShape(Self.forme)
+        .position(centre)
+    }
+
+    /// LA FRISE HOLO ALLUMÉE : le masque `sticker-booster-holo` porte
+    /// un dégradé irisé (cyan → magenta → or → cyan) tourné par la
+    /// teinte, en deux couches — le trait net, et sa lueur (flou 3).
+    private func holo(wb: CGFloat, hb: CGFloat, teinte: Double)
+        -> some View {
+        // MESURÉ au film : à pleine intensité le plusLighter SATURE AU
+        // BLANC sur la frise (déjà claire) — l'irisation meurt. Des
+        // couleurs SATURÉES et une intensité retenue : le holo colore.
+        let irise = AngularGradient(
+            colors: [Color(red: 0.05, green: 0.85, blue: 1.0),
+                     Color(red: 1.0, green: 0.25, blue: 0.85),
+                     Color(red: 1.0, green: 0.78, blue: 0.15),
+                     Color(red: 0.20, green: 1.0, blue: 0.45),
+                     Color(red: 0.05, green: 0.85, blue: 1.0)],
+            center: .center, angle: .degrees(teinte))
+        return ZStack {
+            Image("sticker-booster-holo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: wb, height: hb)
+                .foregroundStyle(irise)
+                .blur(radius: 3.5)
+                .opacity(0.55)
+            Image("sticker-booster-holo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: wb, height: hb)
+                .foregroundStyle(irise)
+                .opacity(0.62)
+        }
+        .blendMode(.plusLighter)
+    }
+
+    /// Les bornes d'un objet saisissable, autour de son origine.
+    private struct Bornes {
+        let x: CGFloat
+        let haut: CGFloat
+        let bas: CGFloat
+    }
+
+    /// UN objet saisissable : sa place = base + placement libre,
+    /// CLAMPÉE à l'intérieur de la card ; la prise est un geste
+    /// d'ENFANT (le chef d'orchestre y renonce via le rect) ; le
+    /// déplacement SOULÈVE la poudre.
+    private func objet<V: View>(cle: Int, centre: CGPoint, l: CGFloat,
+                                h: CGFloat, base: CGPoint,
+                                bornes: Bornes? = nil,
+                                revient: Bool = false,
+                                @ViewBuilder _ contenu: () -> V)
+        -> some View {
+        let pose = placements[cle] ?? .zero
+        let prise = prises[cle] ?? .zero
+        let dx = pose.width + prise.width
+        let dy = pose.height + prise.height
+        // Les bornes : l'intérieur de la card par défaut (la pièce), ou
+        // celles qu'on impose (la poche des boosters).
+        let b = bornes ?? Bornes(x: l / 2 - 30, haut: -h / 2 + 40,
+                                 bas: h / 2 - 30)
+        let x = min(max(base.x + dx, -b.x), b.x)
+        let y = min(max(base.y + dy, b.haut), b.bas)
+        return contenu()
+            .position(x: centre.x + x, y: centre.y + y)
+            .gesture(
+                DragGesture(minimumDistance: 2,
+                            coordinateSpace: .named("storyFlow"))
+                    .onChanged { v in
+                        if !tenus.contains(cle) {
+                            tenus.insert(cle)
+                            saisies += 1
+                        }
+                        prises[cle] = v.translation
+                        // LA POUDRE NAÎT DU MOUVEMENT — un grain par
+                        // pas de doigt, jamais un tapis permanent.
+                        if grains.count < 90 {
+                            grains.append((pos: v.location,
+                                           naissance: Date()))
+                        }
+                    }
+                    .onEnded { v in
+                        tenus.remove(cle)
+                        if revient {
+                            // « Ils reviennent à leur place ensuite, dans
+                            // le pied de la card » : un ressort de retour
+                            // vers la poche — la place n'est jamais gardée.
+                            withAnimation(.spring(response: 0.62,
+                                                  dampingFraction: 0.58)) {
+                                prises[cle] = .zero
+                            }
+                        } else {
+                            var p = placements[cle] ?? .zero
+                            p.width += v.translation.width
+                            p.height += v.translation.height
+                            placements[cle] = p
+                            prises[cle] = .zero
+                        }
+                        // Le ménage des grains morts, une fois par
+                        // lâcher — jamais par image.
+                        grains.removeAll {
+                            Date().timeIntervalSince($0.naissance) > 1
+                        }
+                    })
+    }
+}
+
+// MARK: - La poudre du doigt
+
+/// LES GRAINS NÉS DU MOUVEMENT (l'école de la gerbe du coffre + la
+/// poudre de diamant) : chaque grain vit ~0,8 s — il monte, scintille
+/// TRANCHÉ et meurt. Une seule horloge pour tout le champ.
+private struct PoudreDoigt: View {
+    let grains: [(pos: CGPoint, naissance: Date)]
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+            Canvas { ctx, _ in
+                ctx.blendMode = .plusLighter
+                for (i, g) in grains.enumerated() {
+                    let age = tl.date.timeIntervalSince(g.naissance)
+                    guard age >= 0, age < 0.8 else { continue }
+                    let u = age / 0.8
+                    let h1 = Self.hash(i, 1), h2 = Self.hash(i, 2)
+                    let x = g.pos.x + CGFloat(h1 - 0.5) * 26
+                    let y = g.pos.y + CGFloat(h2 - 0.5) * 20
+                        - CGFloat(u) * 22
+                    let tw = 0.5 + 0.5 * sin(age * (9 + 10 * h1)
+                        + h2 * 6.28)
+                    let a = (1 - u) * (0.25 + 0.75 * tw * tw)
+                    guard a > 0.03 else { continue }
+                    let r = CGFloat(0.8 + 1.6 * Self.hash(i, 3))
+                    var etoile = Path()
+                    etoile.move(to: CGPoint(x: -r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: -r * 0.24))
+                    etoile.addLine(to: CGPoint(x: r, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r * 0.24))
+                    etoile.closeSubpath()
+                    etoile.move(to: CGPoint(x: 0, y: -r))
+                    etoile.addLine(to: CGPoint(x: r * 0.24, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: r))
+                    etoile.addLine(to: CGPoint(x: -r * 0.24, y: 0))
+                    etoile.closeSubpath()
+                    ctx.fill(etoile.applying(
+                        CGAffineTransform(translationX: x, y: y)),
+                             with: .color(Color(red: 0.95, green: 0.97,
+                                                blue: 1.0)
+                                 .opacity(a * 0.9)))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let v = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return v - floor(v)
+    }
+}
+
+// MARK: - La poussière de la pièce
+
+/// LA POUDRE QUI SORT DE LA PIÈCE : des grains qui naissent à son
+/// bord, montent et s'écartent, scintillent TRANCHÉ et meurent — une
+/// seule horloge, 30 Hz, l'école PoudreStory. Elle vit dans le cadre de
+/// la pièce, donc elle la SUIT au doigt.
+private struct PoudrePiece: View {
+    let naissance: Date
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let grains = 26
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            Canvas { ctx, size in
+                ctx.blendMode = .plusLighter
+                let c = CGPoint(x: size.width / 2, y: size.height / 2)
+                for i in 0 ..< Self.grains {
+                    let vie = 1.4 + 1.4 * Self.hash(i, 2)
+                    let cyc = (t / vie + Self.hash(i, 5))
+                        .truncatingRemainder(dividingBy: 1)
+                    let ang = Self.hash(i, 1) * 6.2832
+                    // Naît au bord de la pièce (r 44-52), s'écarte de
+                    // 22 pt et monte de 16 pendant sa vie.
+                    let r0 = 44 + 8 * Self.hash(i, 3)
+                    let r = r0 + 22 * cyc
+                    let x = c.x + CGFloat(cos(ang) * r)
+                        + CGFloat(sin(t * (0.6 + 0.5 * Self.hash(i, 8))
+                                      + Self.hash(i, 9) * 6.28)) * 3
+                    let y = c.y + CGFloat(sin(ang) * r) - CGFloat(cyc) * 16
+                    let s = sin(.pi * cyc)
+                    let tw = 0.5 + 0.5 * sin(t * (7 + 10 * Self.hash(i, 4))
+                                             + Self.hash(i, 6) * 6.28)
+                    let a = s * s * (0.15 + 0.85 * tw * tw * tw)
+                    guard a > 0.03 else { continue }
+                    let rr = CGFloat(0.7 + 1.5 * Self.hash(i, 7))
+                    let col = Self.hash(i, 10) < 0.5
+                        ? Color.white
+                        : Color(red: 1.0, green: 0.93, blue: 0.72)
+                    var etoile = Path()
+                    etoile.move(to: CGPoint(x: -rr, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: -rr * 0.24))
+                    etoile.addLine(to: CGPoint(x: rr, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: rr * 0.24))
+                    etoile.closeSubpath()
+                    etoile.move(to: CGPoint(x: 0, y: -rr))
+                    etoile.addLine(to: CGPoint(x: rr * 0.24, y: 0))
+                    etoile.addLine(to: CGPoint(x: 0, y: rr))
+                    etoile.addLine(to: CGPoint(x: -rr * 0.24, y: 0))
+                    etoile.closeSubpath()
+                    ctx.fill(etoile.applying(
+                        CGAffineTransform(translationX: x, y: y)),
+                             with: .color(col.opacity(a * 0.9)))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let v = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return v - floor(v)
+    }
+}
