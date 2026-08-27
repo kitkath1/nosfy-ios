@@ -1244,6 +1244,13 @@ enum WinCine {
 /// qui roule ; et LES BOOSTERS DANS LA CARD — animés comme les
 /// stickers, saisissables eux aussi, et leur déplacement SOULÈVE DE
 /// LA POUDRE DE DIAMANT (la poudre naît DU mouvement).
+/// LES DEUX ROBES DU BUTIN (27-08, plan ../story/PLAN-WIN-RENVERSE.md)
+/// — `.poche` : les boosters montent d'une poche au bord bas, le mot
+/// et la pièce sont en haut (la robe validée) ; `.renverse` : les
+/// paquets PENDENT au plafond et tombent, la pièce et le mot se posent
+/// au SOL, le mot passe au chrome irisé et le laser à l'or.
+enum RobeWin { case poche, renverse }
+
 struct StoryWin: View {
     let session: StorySession
     let t: Double
@@ -1252,6 +1259,13 @@ struct StoryWin: View {
     /// Le cadre de la card, remonté au chef : bouger un objet ne ferme
     /// pas la story et ne change pas de page.
     var onCardRect: (CGRect) -> Void = { _ in }
+    /// La robe. Le moteur tranchera (backend §4 nonies) ; au banc,
+    /// `-winRenverse`.
+    var robe: RobeWin =
+        ProcessInfo.processInfo.arguments.contains("-winRenverse")
+            ? .renverse : .poche
+
+    private var renverse: Bool { robe == .renverse }
 
     /// LES PLACEMENTS LIBRES : clé 0 = la pièce, 1…5 = les boosters.
     /// Les objets RESTENT où on les pose (tranché §6) — l'état survit
@@ -1384,7 +1398,10 @@ struct StoryWin: View {
                 .opacity(titreU)
         }
         .frame(maxHeight: .infinity, alignment: .center)
-        .offset(y: h * 0.07)
+        // AU SOL, le mot occupe tout le bas : le compteur REMONTE
+        // (mesuré : sinon le mot le recouvrait sur 64 pt et la pièce
+        // écrasait la couronne — plan §7.3).
+        .offset(y: renverse ? -h * 0.10 : h * 0.07)
         .frame(width: l, height: h)
         .background {
             ZStack {
@@ -1425,7 +1442,13 @@ struct StoryWin: View {
     private func filament(l: CGFloat, h: CGFloat) -> some View {
         // TOUT EST PRÉ-TYPÉ (la loi du type-checker, re-payée ici).
         let tq: Double = (t * 20).rounded() / 20
-        let rouge = Color(red: 1.0, green: 0.22, blue: 0.08)
+        // « OUI C'EST LASER ! » (verdict) — et il change de couleur avec
+        // le mot : quand WIN passe au chrome, le laser prend l'OR.
+        // C'est l'ÉCHANGE des registres, ce qui rend la robe lisible
+        // d'un coup d'œil.
+        let rouge = renverse
+            ? Color(red: 1.0, green: 0.78, blue: 0.38)
+            : Color(red: 1.0, green: 0.22, blue: 0.08)
         let souffle: Double = 0.62 + 0.16 * sin(tq * 0.61)
         let entree: Double = StoryCine.sstep(WinCine.cardAt + 0.5,
                                              WinCine.cardAt + 1.1, t)
@@ -1447,17 +1470,51 @@ struct StoryWin: View {
             .init(color: rouge.opacity(0.95), location: droite),
             .init(color: .clear, location: 1)
         ]
+        // La réflexion court en sens INVERSE (son point de lumière
+        // remonte quand celui du fil descend).
+        let picBas: Double = 1 - pic
         return Capsule()
             .fill(LinearGradient(stops: stops,
                                  startPoint: .leading, endPoint: .trailing))
             .frame(width: l * 0.98, height: 1.8)
             .shadow(color: rouge.opacity(0.9), radius: 8)
             .shadow(color: .white.opacity(0.55), radius: 1.6)
-            .rotationEffect(.degrees(tilt))
+            .rotationEffect(.degrees(renverse ? -tilt : tilt))
             .blendMode(.plusLighter)
             .opacity(alpha)
-            .frame(width: l, height: h, alignment: .top)
-            .offset(y: dy)
+            // AU SOL : il descend avec le mot et suit la pente
+            // inverse. Plus SA RÉFLEXION — deux fois plus fine, deux
+            // fois plus sourde, décalée de 9 pt et d'une phase : un
+            // laser réel se reflète.
+            .overlay {
+                if renverse {
+                    Capsule()
+                        .fill(LinearGradient(
+                            stops: Self.stopsLaser(pic: picBas,
+                                                   or: rouge),
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: l * 0.94, height: 0.9)
+                        .shadow(color: rouge.opacity(0.5), radius: 5)
+                        .rotationEffect(.degrees(-tilt * 0.8))
+                        .opacity(alpha * 0.45)
+                        .offset(y: 9)
+                }
+            }
+            .frame(width: l, height: h,
+                   alignment: renverse ? .bottom : .top)
+            .offset(y: renverse ? -dy : dy)
+    }
+
+    /// Les stops d'un laser : le point de lumière BLANC glisse entre
+    /// deux bornes colorées — partagé par le fil et sa réflexion.
+    static func stopsLaser(pic: Double, or: Color) -> [Gradient.Stop] {
+        let g = max(0.03, pic - 0.30)
+        let d = min(0.97, pic + 0.30)
+        return [.init(color: .clear, location: 0),
+                .init(color: or.opacity(0.95), location: g),
+                .init(color: .white, location: pic),
+                .init(color: or.opacity(0.95), location: d),
+                .init(color: .clear, location: 1)]
     }
 
     private var couronne: String {
@@ -1494,42 +1551,93 @@ struct StoryWin: View {
         // paliers (champagne, or, une BANDE de reflet étroite qui
         // dérive lentement, ambre, bronze au pied) — sous un BISEAU
         // champagne qui affleure au bord haut des lettres.
+        // EN ROBE RENVERSÉE : « CHROME IRISÉ STP » (verdict) — le mot
+        // est fait de la MATIÈRE DES PAQUETS qui pleuvent sur lui. Un
+        // socle de métal FROID (l'irisation seule ferait une flaque
+        // d'essence — il faut du métal dessous pour que ça reste un
+        // mot), et par-dessus l'arc-en-ciel qui tourne LENTEMENT.
         let bande: Double = 0.40 + 0.05 * sin(t * 0.31)
-        let metal: [Gradient.Stop] = [
-            .init(color: Color(red: 1.0, green: 0.90, blue: 0.62),
-                  location: 0),
-            .init(color: Color(red: 1.0, green: 0.78, blue: 0.38),
-                  location: max(0.08, bande - 0.16)),
-            .init(color: Color(red: 1.0, green: 0.93, blue: 0.68),
-                  location: bande),
-            .init(color: Color(red: 0.98, green: 0.70, blue: 0.26),
-                  location: min(0.82, bande + 0.14)),
-            .init(color: Color(red: 0.92, green: 0.44, blue: 0.06),
-                  location: 0.86),
-            .init(color: Color(red: 0.62, green: 0.30, blue: 0.05),
-                  location: 1)
-        ]
+        // Les deux bornes de la bande irisée qui DESCEND (sens inverse
+        // de l'arc angulaire) — pré-typées, la loi du type-checker.
+        let irise1: Double = 0.26 + 0.16 * sin(t * 0.23 + 1.1)
+        let irise2: Double = min(0.94, irise1 + 0.30)
+        let chaudHalo = Color(red: 1.0, green: 0.80, blue: 0.42)
+        let froidHalo = Color(red: 0.72, green: 0.86, blue: 1.0)
+        let haloTeinte: Color = renverse ? froidHalo : chaudHalo
+        let haloBase: Double = renverse ? 0.085 : 0.13
+        let haloAlpha: Double = haloBase + 0.03 * sin(t * 0.53)
+        let biseau: Color = renverse
+            ? Color(red: 0.90, green: 0.95, blue: 1.0)
+            : Color(red: 1.0, green: 0.94, blue: 0.76)
+        let dGrav: CGFloat = renverse ? -1.8 : 1.8
+        let dBis: CGFloat = renverse ? 1.3 : -1.3
+        let metal: [Gradient.Stop] = Self.metalStops(bande: bande,
+                                                     froid: renverse)
         return ZStack {
-            // Le halo d'or, très doux, qui respire derrière le mot.
+            // Le halo, très doux, qui respire derrière le mot — froid
+            // en robe renversée, et RETENU : une couleur froide en
+            // additif sature au blanc bien plus vite qu'un or.
             Ellipse()
                 .fill(RadialGradient(
-                    colors: [Color(red: 1.0, green: 0.80, blue: 0.42)
-                        .opacity(0.13 + 0.03 * sin(t * 0.53)), .clear],
+                    colors: [haloTeinte.opacity(haloAlpha), .clear],
                     center: .center, startRadius: 0,
                     endRadius: l * 0.45))
                 .frame(width: l * 1.1, height: l * 0.55)
                 .blendMode(.plusLighter)
             // LA GRAVURE : l'ombre interne d'abord, le biseau, l'encre.
+            // EN ROBE RENVERSÉE le mot est CREUSÉ DANS LE SOL : la
+            // gravure s'inverse (l'ombre passe au-dessus, le biseau
+            // dessous) — une lettre creusée dans un sol est éclairée
+            // par le haut. Garder l'ordre donnerait un mot en RELIEF.
             glyphe
                 .foregroundStyle(Color.black.opacity(0.45))
-                .offset(y: 1.8)
+                .offset(y: dGrav)
             glyphe
-                .foregroundStyle(Color(red: 1.0, green: 0.94, blue: 0.76)
-                    .opacity(0.85))
-                .offset(y: -1.3)
+                .foregroundStyle(biseau.opacity(0.85))
+                .offset(y: dBis)
             glyphe
                 .foregroundStyle(LinearGradient(
                     stops: metal, startPoint: .top, endPoint: .bottom))
+            // L'IRISATION DU CHROME : un arc-en-ciel qui tourne à
+            // 6 °/s (le holo au doigt tourne à 24 : un mot n'est pas
+            // un objet qu'on incline), masqué par le glyphe, retenu à
+            // 0,45 — la loi du plusLighter qui sature au blanc.
+            if renverse {
+                // MESURÉ au film : à 0,45, multipliée par l'opacité
+                // finale du mot (0,28), l'irisation ne pesait que 0,13
+                // — le mot rendait GRIS. Deux passes CROISÉES : l'arc
+                // angulaire qui tourne, et une bande LINÉAIRE qui
+                // descend en sens inverse. C'est leur croisement qui
+                // fait le chrome (une seule nappe fait un dégradé).
+                Rectangle()
+                    .fill(AngularGradient(
+                        colors: [Color(red: 0.05, green: 0.85, blue: 1.0),
+                                 Color(red: 1.0, green: 0.25, blue: 0.85),
+                                 Color(red: 1.0, green: 0.78, blue: 0.15),
+                                 Color(red: 0.20, green: 1.0, blue: 0.45),
+                                 Color(red: 0.05, green: 0.85, blue: 1.0)],
+                        center: .center, angle: .degrees(t * 6)))
+                    .frame(width: l * 1.2, height: l * 0.7)
+                    .mask { glyphe }
+                    .blendMode(.plusLighter)
+                    .opacity(0.95)
+                Rectangle()
+                    .fill(LinearGradient(
+                        stops: [.init(color: .clear, location: 0),
+                                .init(color: Color(red: 0.35, green: 0.95,
+                                                   blue: 1.0)
+                                    .opacity(0.55), location: irise1),
+                                .init(color: Color(red: 1.0, green: 0.45,
+                                                   blue: 0.95)
+                                    .opacity(0.45), location: irise2),
+                                .init(color: .clear, location: 1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing))
+                    .frame(width: l * 1.2, height: l * 0.7)
+                    .mask { glyphe }
+                    .blendMode(.plusLighter)
+                    .opacity(0.8)
+            }
             // LES NAPPES D'OR — la lumière naît DANS les lettres.
             nappesOr(l: l)
                 .mask { glyphe }
@@ -1549,6 +1657,10 @@ struct StoryWin: View {
         .mask {
             // LA TRAÎNE LONGUE — « encore plus fondu » : elle fond DANS
             // le gris dès le tiers, cinq paliers, morte à 0,80.
+            // AU SOL elle se RETOURNE : pleine au pied, dissoute en
+            // montant — sans quoi le mot serait à pleine encre contre
+            // le palier le plus noir du fond, et le fondu marcherait
+            // à l'envers.
             LinearGradient(
                 stops: [.init(color: .white, location: 0),
                         .init(color: .white.opacity(0.92),
@@ -1560,14 +1672,57 @@ struct StoryWin: View {
                         .init(color: .white.opacity(0.08),
                               location: 0.66),
                         .init(color: .clear, location: 0.80)],
-                startPoint: .top, endPoint: .bottom)
+                startPoint: renverse ? .bottom : .top,
+                endPoint: renverse ? .top : .bottom)
         }
         // « Un peu plus fond de carte » : le mot RECULE dans la matière
         // — il est du fond, pas un objet posé dessus.
-        .opacity(0.42 * StoryCine.sstep(WinCine.cardAt + 0.25,
-                                        WinCine.cardAt + 0.80, t))
-        .frame(width: l, height: h, alignment: .top)
-        .offset(y: 6)
+        // ⚠️ MESURÉ : le fond de la card va de 0,145 en haut à 0,02 en
+        // bas — le MÊME 0,42 rendrait le mot ~6× plus contrasté au sol
+        // (rapport 20× contre 3,3×). D'où 0,22 en robe renversée : deux
+        // fois plus présent qu'en haut (c'est l'intention d'un mot
+        // GRAVÉ dans le sol), pas six.
+        .opacity((renverse ? 0.28 : 0.42)
+            * StoryCine.sstep(WinCine.cardAt + 0.25,
+                              WinCine.cardAt + 0.80, t))
+        .frame(width: l, height: h,
+               alignment: renverse ? .bottom : .top)
+        .offset(y: renverse ? -8 : 6)
+    }
+
+    /// LES SIX PALIERS DU MÉTAL — deux tables, chacune PRÉ-TYPÉE dans
+    /// sa propre fonction (la loi du type-checker : un ternaire entre
+    /// deux littéraux de six `Gradient.Stop` fait exploser la
+    /// vérification — le build est parti à plus de dix minutes).
+    static func metalStops(bande: Double, froid: Bool) -> [Gradient.Stop] {
+        let g: Double = max(0.08, bande - 0.16)
+        let d: Double = min(0.82, bande + 0.14)
+        if froid {
+            let c0 = Color(white: 0.96)
+            let c1 = Color(red: 0.72, green: 0.75, blue: 0.82)
+            let c2 = Color(white: 1.0)
+            let c3 = Color(red: 0.56, green: 0.60, blue: 0.70)
+            let c4 = Color(red: 0.32, green: 0.35, blue: 0.44)
+            let c5 = Color(red: 0.16, green: 0.18, blue: 0.24)
+            return [.init(color: c0, location: 0),
+                    .init(color: c1, location: g),
+                    .init(color: c2, location: bande),
+                    .init(color: c3, location: d),
+                    .init(color: c4, location: 0.86),
+                    .init(color: c5, location: 1)]
+        }
+        let c0 = Color(red: 1.0, green: 0.90, blue: 0.62)
+        let c1 = Color(red: 1.0, green: 0.78, blue: 0.38)
+        let c2 = Color(red: 1.0, green: 0.93, blue: 0.68)
+        let c3 = Color(red: 0.98, green: 0.70, blue: 0.26)
+        let c4 = Color(red: 0.92, green: 0.44, blue: 0.06)
+        let c5 = Color(red: 0.62, green: 0.30, blue: 0.05)
+        return [.init(color: c0, location: 0),
+                .init(color: c1, location: g),
+                .init(color: c2, location: bande),
+                .init(color: c3, location: d),
+                .init(color: c4, location: 0.86),
+                .init(color: c5, location: 1)]
     }
 
     /// Les nappes d'or + les scintilles du mot — périodes premières,
@@ -1575,6 +1730,10 @@ struct StoryWin: View {
     /// piqûres (enveloppe puissance 12, une pointe rare).
     private func nappesOr(l: CGFloat) -> some View {
         let t = (t * 20).rounded() / 20
+        let teinteNappe: Color = renverse
+            ? Color(red: 0.86, green: 0.94, blue: 1.0)
+            : Color(red: 1.0, green: 0.90, blue: 0.62)
+        let alphaNappe: Double = renverse ? 0.34 : 0.50
         let periodes: [Double] = [3.7, 5.3, 7.1, 4.3, 6.7, 5.9, 8.3]
         return ZStack {
             ForEach(0 ..< 7, id: \.self) { i in
@@ -1586,8 +1745,7 @@ struct StoryWin: View {
                 let bosse = pow(max(0, sin(.pi * u)), 6.0)
                 Ellipse()
                     .fill(RadialGradient(
-                        colors: [Color(red: 1.0, green: 0.90,
-                                       blue: 0.62).opacity(0.50),
+                        colors: [teinteNappe.opacity(alphaNappe),
                                  .clear],
                         center: .center, startRadius: 0,
                         endRadius: l * CGFloat(0.10 + 0.08 * h2)))
@@ -1632,7 +1790,8 @@ struct StoryWin: View {
         return ZStack {
             // LA PIÈCE DU PODIUM — elle se pose, flotte, se saisit.
             objet(cle: 0, centre: centre, l: l, h: h,
-                  base: CGPoint(x: 0, y: -h * 0.24)) {
+                  base: CGPoint(x: 0,
+                                y: renverse ? h * 0.14 : -h * 0.24)) {
                 let pose = StoryCine.sstep(WinCine.pieceAt,
                                            WinCine.pieceAt + 0.35, t)
                 // « FAIS UN TRUC PLUS PREMIUM, ET D'ELLE SORTENT DES
@@ -1659,6 +1818,25 @@ struct StoryWin: View {
                             endRadius: 78))
                         .frame(width: 160, height: 160)
                         .blendMode(.plusLighter)
+                    // AU SOL : la pièce ÉCLAIRE la gravure sous elle —
+                    // une flaque qui respire avec sa hauteur. Une pièce
+                    // qui plane au-dessus d'un sol gravé doit éclairer
+                    // ce sol.
+                    if renverse {
+                        let orFlaque = Color(red: 1.0, green: 0.84,
+                                             blue: 0.50)
+                        let aFlaque: Double = 0.10
+                            + 0.04 * sin(t * 0.71) - Double(py) * 0.004
+                        Ellipse()
+                            .fill(RadialGradient(
+                                colors: [orFlaque.opacity(aFlaque),
+                                         .clear],
+                                center: .center, startRadius: 0,
+                                endRadius: l * 0.24))
+                            .frame(width: l * 0.46, height: l * 0.12)
+                            .offset(y: 62 - py * 0.5)
+                            .blendMode(.plusLighter)
+                    }
                     PoudrePiece(naissance: naissance)
                         .frame(width: 220, height: 220)
                         .blendMode(.plusLighter)
@@ -1702,28 +1880,56 @@ struct StoryWin: View {
         ]
         let heros = montres >= 2 ? 1 : 0
         let origine = CGPoint(x: l / 2, y: h / 2)
-        let bornes = Bornes(x: l / 2 - wb * 0.45,
-                            haut: -h / 2 + hb * 0.62, bas: h / 2)
+        // AU PLAFOND, tout est miroir. ⚠️ MESURÉ : sans retourner AUSSI
+        // les bornes, le clamp écrasait la pose 44,2 pt plus bas et les
+        // paquets ne dépassaient JAMAIS du bord haut.
+        let bornes = renverse
+            ? Bornes(x: l / 2 - wb * 0.45,
+                     haut: -h / 2, bas: h / 2 - hb * 0.62)
+            : Bornes(x: l / 2 - wb * 0.45,
+                     haut: -h / 2 + hb * 0.62, bas: h / 2)
         return ZStack {
             ForEach(0 ..< montres, id: \.self) { i in
                 let seuil = Double((i + 1) * 100)
                 let pose = min(max((Double(roule) - seuil) / 30.0, 0), 1)
-                let montee = StoryCine.outLong(pose, 3.0)
+                // LA CHUTE (robe renversée) : il TOMBE du plafond et
+                // REBONDIT — une arrivée molle serait un vol, pas une
+                // chute. Sinon : la montée douce de la poche.
+                let chute: Double = 1 - pow(1 - pose, 2)
+                let rebond: Double = 0.09
+                    * sin(.pi * min(1, pose * 1.6)) * exp(-pose * 4)
+                let montee: Double = renverse
+                    ? min(1, chute + rebond)
+                    : StoryCine.outLong(pose, 3.0)
                 let phi = Double(i) * 2.1
                 let n = CGFloat(montee)
                 // LA NAGE — trois horloges premières, dérive, balancement
                 // lent et profond ; jamais un tremblé. « De base ils
                 // bougent davantage » (verdict) : ±18 pt de houle, ±6 de
-                // dérive, ±4,5° — la part visible respire franchement.
-                let flotte = (CGFloat(sin(t * 0.62 + phi)) * 14
-                    + CGFloat(sin(t * 1.13 + phi + 0.9)) * 4) * n
-                let derive = CGFloat(cos(t * 0.47 + phi + 1.4)) * 6 * n
-                let sway = sin(t * 0.43 + phi) * 4.5 * montee
+                // dérive, ±4,5°.
+                // SUSPENDU, ce n'est plus une nage mais un PENDULE : un
+                // objet accroché par le haut a un point d'attache — la
+                // rotation s'amplifie, la translation se réduit, et
+                // l'oscillation tient en UN terme (un pendule est en
+                // sin, pas en Lissajous).
+                let pendule: CGFloat = CGFloat(sin(t * 1.85 + phi))
+                let houle: CGFloat = CGFloat(sin(t * 0.62 + phi)) * 14
+                    + CGFloat(sin(t * 1.13 + phi + 0.9)) * 4
+                let flotte: CGFloat = renverse
+                    ? pendule * 4 * n : houle * n
+                let deriveP: CGFloat = CGFloat(sin(t * 1.85 + phi + 0.4))
+                let deriveH: CGFloat = CGFloat(cos(t * 0.47 + phi + 1.4))
+                let derive: CGFloat = renverse
+                    ? deriveP * 7 * n : deriveH * 6 * n
+                let sway: Double = renverse
+                    ? sin(t * 1.85 + phi) * 7 * montee
+                    : sin(t * 0.43 + phi) * 4.5 * montee
                 let souffle = 1 + 0.018
                     * CGFloat(sin(t * 0.83 + phi)) * n
                 // LA MONTÉE : il sort de la poche (caché sous la coupe)
                 // et se cale, avec un petit dépassement de ressort.
-                let sortie = (1 - n) * hb * 0.62
+                // Au plafond, le signe s'inverse : il DESCEND de là-haut.
+                let sortie = (renverse ? -(1 - n) : (1 - n)) * hb * 0.62
                 let tenu = tenus.contains(i + 1)
                 let prise = prises[i + 1] ?? .zero
                 // LE HOLO S'ALLUME (verdict) : la frise irisée du
@@ -1733,7 +1939,9 @@ struct StoryWin: View {
                 let tq: Double = (t * 20).rounded() / 20
                 let teinte: Double = Double(prise.width) * 1.1
                     + Double(prise.height) * 0.7 + tq * 24
-                let repos: CGFloat = h / 2 - hb * (i == heros ? 0.28 : 0.12)
+                let repos: CGFloat = renverse
+                    ? -h / 2 + hb * (i == heros ? 0.28 : 0.12)
+                    : h / 2 - hb * (i == heros ? 0.28 : 0.12)
                 objet(cle: i + 1, centre: origine, l: l, h: h,
                       base: CGPoint(x: basesB[i].x * l, y: repos),
                       bornes: bornes, revient: true) {
@@ -1764,6 +1972,26 @@ struct StoryWin: View {
                     .rotationEffect(.degrees(basesB[i].deg + sway))
                     .scaleEffect(souffle * (1 + 0.06 * CGFloat(sin(.pi * montee))))
                     .opacity(min(1, pose * 2.5))
+                    // L'OMBRE PORTÉE — la seule de la page : quand un
+                    // paquet descend vers le mot, il l'assombrit. C'est
+                    // ce qui PROUVE qu'il est au-dessus.
+                    .background {
+                        if renverse {
+                            let bas = max(0, Double(repos - flotte
+                                + prise.height) / Double(h * 0.34))
+                            // Un DÉGRADÉ, jamais un `blur` : trois
+                            // flous par image coûtaient 14 img/s
+                            // (42 contre 56 mesurés).
+                            Ellipse()
+                                .fill(RadialGradient(
+                                    colors: [Color.black.opacity(
+                                        0.45 * min(1, bas)), .clear],
+                                    center: .center, startRadius: 0,
+                                    endRadius: wb * 0.62))
+                                .frame(width: wb * 1.5, height: hb * 0.5)
+                                .offset(y: hb * 0.42)
+                        }
+                    }
                     .offset(x: derive, y: -flotte + sortie)
                 }
                 .zIndex(Double(i))
@@ -1807,39 +2035,80 @@ struct StoryWin: View {
         .blendMode(.plusLighter)
     }
 
-    /// Les bornes d'un objet saisissable, autour de son origine.
-    private struct Bornes {
-        let x: CGFloat
-        let haut: CGFloat
-        let bas: CGFloat
-    }
 
-    /// UN objet saisissable : sa place = base + placement libre,
-    /// CLAMPÉE à l'intérieur de la card ; la prise est un geste
-    /// d'ENFANT (le chef d'orchestre y renonce via le rect) ; le
-    /// déplacement SOULÈVE la poudre.
+    /// UN objet saisissable de CETTE page — l'enveloppe qui passe les
+    /// cinq états à la pièce partagée `ObjetSaisissable` (extraite pour
+    /// que la story card puisse s'en servir : une seule vérité).
     private func objet<V: View>(cle: Int, centre: CGPoint, l: CGFloat,
                                 h: CGFloat, base: CGPoint,
                                 bornes: Bornes? = nil,
                                 revient: Bool = false,
-                                @ViewBuilder _ contenu: () -> V)
+                                @ViewBuilder _ contenu: @escaping () -> V)
         -> some View {
+        ObjetSaisissable(cle: cle, centre: centre,
+                         bornes: bornes ?? Bornes(x: l / 2 - 30,
+                                                  haut: -h / 2 + 40,
+                                                  bas: h / 2 - 30),
+                         base: base, revient: revient,
+                         placements: $placements, prises: $prises,
+                         tenus: $tenus, grains: $grains,
+                         saisies: $saisies, contenu: contenu)
+    }
+
+}
+
+// MARK: - L'objet qu'on prend dans la main
+
+/// LES BORNES d'un objet saisissable, autour de son origine.
+struct Bornes {
+    let x: CGFloat
+    let haut: CGFloat
+    let bas: CGFloat
+}
+
+/// L'OBJET SAISISSABLE — extrait de la page WIN (27-08) pour que la
+/// story card s'en serve : une seule vérité, pas deux qui divergent.
+/// Sa place = base + placement gardé + prise en cours, CLAMPÉE ; la
+/// prise est un geste d'ENFANT à `minimumDistance: 2` (un tap franc
+/// retombe chez le chef d'orchestre, qui renonce via le rect de la
+/// card) ; le déplacement SOULÈVE la poudre de diamant.
+struct ObjetSaisissable<Contenu: View>: View {
+    let cle: Int
+    let centre: CGPoint
+    let bornes: Bornes
+    let base: CGPoint
+    /// `true` = un RESSORT le ramène au lâcher (les boosters, la
+    /// colonne de la story card) ; `false` = il RESTE où on le pose
+    /// (la pièce du butin).
+    var revient: Bool = false
+    /// La saisie ne s'arme qu'après cette date de page — avant ~1 s,
+    /// le chef d'orchestre tourne la page sur n'importe quel tap
+    /// (garde `clock > 0.95`), et un objet qui vient d'atterrir n'est
+    /// pas encore un objet qu'on prend.
+    var armeA: Double = 0
+    var horloge: Double = .infinity
+
+    @Binding var placements: [Int: CGSize]
+    @Binding var prises: [Int: CGSize]
+    @Binding var tenus: Set<Int>
+    @Binding var grains: [(pos: CGPoint, naissance: Date)]
+    @Binding var saisies: Int
+    @ViewBuilder var contenu: () -> Contenu
+
+    var body: some View {
         let pose = placements[cle] ?? .zero
         let prise = prises[cle] ?? .zero
         let dx = pose.width + prise.width
         let dy = pose.height + prise.height
-        // Les bornes : l'intérieur de la card par défaut (la pièce), ou
-        // celles qu'on impose (la poche des boosters).
-        let b = bornes ?? Bornes(x: l / 2 - 30, haut: -h / 2 + 40,
-                                 bas: h / 2 - 30)
-        let x = min(max(base.x + dx, -b.x), b.x)
-        let y = min(max(base.y + dy, b.haut), b.bas)
+        let x = min(max(base.x + dx, -bornes.x), bornes.x)
+        let y = min(max(base.y + dy, bornes.haut), bornes.bas)
         return contenu()
             .position(x: centre.x + x, y: centre.y + y)
             .gesture(
                 DragGesture(minimumDistance: 2,
                             coordinateSpace: .named("storyFlow"))
                     .onChanged { v in
+                        guard horloge >= armeA else { return }
                         if !tenus.contains(cle) {
                             tenus.insert(cle)
                             saisies += 1
@@ -1847,17 +2116,27 @@ struct StoryWin: View {
                         prises[cle] = v.translation
                         // LA POUDRE NAÎT DU MOUVEMENT — un grain par
                         // pas de doigt, jamais un tapis permanent.
+                        // ⚠️ LE MÉNAGE VIT ICI AUSSI : avec le seul
+                        // ménage du lâcher, un drag de ~1,5 s saturait
+                        // le plafond de 90 et la poudre MOURAIT en
+                        // cours de geste (défaut mesuré au plan).
+                        if grains.count >= 90 {
+                            let n = Date()
+                            grains.removeAll {
+                                n.timeIntervalSince($0.naissance) > 0.9
+                            }
+                        }
                         if grains.count < 90 {
                             grains.append((pos: v.location,
                                            naissance: Date()))
                         }
                     }
                     .onEnded { v in
+                        guard horloge >= armeA else { return }
                         tenus.remove(cle)
                         if revient {
-                            // « Ils reviennent à leur place ensuite, dans
-                            // le pied de la card » : un ressort de retour
-                            // vers la poche — la place n'est jamais gardée.
+                            // La place n'est jamais gardée : un
+                            // ressort le remet où il était.
                             withAnimation(.spring(response: 0.62,
                                                   dampingFraction: 0.58)) {
                                 prises[cle] = .zero
@@ -1869,8 +2148,6 @@ struct StoryWin: View {
                             placements[cle] = p
                             prises[cle] = .zero
                         }
-                        // Le ménage des grains morts, une fois par
-                        // lâcher — jamais par image.
                         grains.removeAll {
                             Date().timeIntervalSince($0.naissance) > 1
                         }

@@ -520,6 +520,53 @@ déterministe derrière (l'app ne l'attend jamais — calculé au settle,
 stocké avec la séance). Un mot qui ne rentre pas dans le gabarit est
 REJETÉ, pas tronqué : la mise en page est un fait, pas une négociation.
 
+### 4 nonies. LES ROBES — deux variants de plus, et qui choisit
+### (ajouté le 27-08 ; les plans design sont ../story/PLAN-STORY-CARD-
+### COLONNE.md et ../story/PLAN-WIN-RENVERSE.md)
+
+Deux pages de la story gagnent un DEUXIÈME habillage. Ce ne sont pas
+de nouveaux faits, pas de nouveaux contrats : **le payload ne change
+pas d'un signe** — c'est la même donnée, portée autrement.
+
+```
+robes:
+  story_card: rangee | colonne
+  butin:      poche  | renverse
+```
+
+- **story card `.colonne`** : les stickers passent en COLONNE sur le
+  flanc gauche et deviennent SAISISSABLES (on les prend dans la
+  main, ils reviennent à leur place), le texte s'ancre en bas et
+  ÉMERGE de la nuit, le mot géant descend derrière. Payload `.story`
+  du §4 ter inchangé — une seule attention pour l'IA : dans cette
+  robe la DERNIÈRE des six lignes est la seule qui reste pleinement
+  lumineuse (c'est la chute), le gabarit doit continuer d'y mettre
+  l'impératif, jamais un chiffre.
+- **butin `.renverse`** : les boosters PENDENT au bord haut et
+  tombent du ciel, la pièce et le mot se posent au sol (traîne et
+  gravure inversées), le mot change de métal et le filament change
+  de couleur. Règle des boosters du §4 sexies inchangée.
+
+**QUI CHOISIT — le moteur, jamais le client.** La robe est calculée
+au `settle_session` et STOCKÉE avec la séance, comme le reste. Deux
+exigences :
+
+1. **elle est STABLE pour une séance donnée** — la story rejouée
+   montre la même robe ; une robe qui change à la relecture se lit
+   comme un bug, pas comme une surprise ;
+2. **elle ne dépend jamais de l'appareil** (ni horloge locale, ni
+   aléa client) : un hash du `session_uuid`, une alternance
+   persistée, ou un FAIT.
+
+Règle de choix à trancher par Kathryn (Q5 des deux plans) :
+alternance stricte, tirage stable par hash, ou un fait — par exemple
+le butin `.renverse` les jours où la séance rapporte ≥ 3 boosters
+(le ciel s'ouvre quand il y a beaucoup à donner), et la story card
+`.colonne` quand la séance porte 3 stickers pleins.
+
+L'IA n'entre pas ici : **une robe n'est pas un mot.** Elle écrit ce
+qui se lit, jamais ce qui se montre.
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT
