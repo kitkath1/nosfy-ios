@@ -82,7 +82,9 @@ struct RewardPopup: View {
     var onClose: () -> Void
 
     /// L'unique progrès de l'entrée [0,1] — toutes les rampes en dérivent.
-    @State private var p: Double = 0
+    /// `-rewardFreeze <p>` le CLOUE : deux tours de fouettage se comparent
+    /// enfin au même instant de la rampe (1,45 s d'entrée, tout y bouge).
+    @State private var p: Double = RewardBanc.fige ?? 0
     /// La sortie est engagée : le chiffre reste FIGÉ (un odomètre qui
     /// rejoue 4 → 0 en 0,3 s à l'envers, mesuré au film, fait cheap).
     @State private var enSortie = false
@@ -92,7 +94,10 @@ struct RewardPopup: View {
     /// Close en pleine entrée fermait la card, figeait le chiffre en plein
     /// count-up, et la completion jouait quand même boum + arpège dans la
     /// sortie. Le verrou est ce drapeau, posé par la completion.
-    @State private var posee = false
+    /// (Sous `-rewardFreeze`, la card naît DÉJÀ posée — et posée d'entrée,
+    /// donc `onChange(of: posee)` ne voit aucun changement : pas de
+    /// tressaillement dans une capture censée être immobile.)
+    @State private var posee = RewardBanc.fige != nil
     /// L'horloge de la poudre — posée UNE fois au montage (la scène, elle,
     /// renaît à chaque frame de `p` : une Date prise là-bas gèlerait tout).
     @State private var naissance = Date()
@@ -111,6 +116,9 @@ struct RewardPopup: View {
                              trigger: boum)
             .onAppear {
                 SkyMotion.shared.start(reduceMotion: reduceMotion)
+                // La card figée ne joue RIEN : ni rampe, ni tick, ni
+                // arpège — une capture de réglage, pas une arrivée.
+                guard RewardBanc.fige == nil else { return }
                 // La petite musique (verdict « premium Apple-like ») parle
                 // la langue sonore DÉJÀ dans la maison : le tick du cadran
                 // par chiffre (dans la scène), l'arpège de cristal à
@@ -130,7 +138,10 @@ struct RewardPopup: View {
             // Au banc (`-rewardAuto`), la card se referme seule par SA
             // sortie — l'aller-retour filmé est le vrai.
             .task {
-                guard CommandLine.arguments.contains("-rewardAuto")
+                // (Au banc `-rewardLab`, c'est LUI qui mène le balayage :
+                // deux horloges sur la même card se marcheraient dessus.)
+                guard CommandLine.arguments.contains("-rewardAuto"),
+                      !RewardBanc.actif
                 else { return }
                 try? await Task.sleep(for: .seconds(3.6))
                 fermer()
@@ -184,6 +195,16 @@ private struct RewardScene: View, Animatable {
 
     private static let forme = RoundedRectangle(cornerRadius: 36,
                                                 style: .continuous)
+
+    /// LE NOMBRE EN TOUTES LETTRES pour le texte géant.
+    /// ⚠️ Il se calcule ICI, côté app — jamais côté IA, comme le corps de
+    /// la typo (la loi du contrat backend : l'IA fournit les MOTS d'un
+    /// message, jamais la mise en forme d'une donnée).
+    private static func enLettres(_ n: Int) -> String {
+        let mots = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX",
+                    "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE"]
+        return n >= 0 && n < mots.count ? mots[n] : "\(n)"
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -298,6 +319,154 @@ private struct RewardScene: View, Animatable {
                     //    T1 — la robe néon brume est MORTE) : le TEXTE
                     //    GÉANT derrière, éclairé par la lampe-barrette et
                     //    son éventail.
+                    if style == .spotlight {
+                        // LA CARD N'EST PLUS NOIRE : GRIS EN TÊTE, NOIR
+                        // AU PIED (« la card est trop noire, fais gris to
+                        // noir »). Un fill OPAQUE, pas un noir à alpha :
+                        // c'est la matière de la card qui change, pas un
+                        // voile de plus. ⚠️ Il remplace le dégradé de noir
+                        // que j'avais posé AU-DESSUS de la pluie — celui-là
+                        // assombrissait la tête, soit exactement l'inverse.
+                        // ⚠️ LE BORD HAUT REPART DU NOIR. Le premier jet
+                        // posait 0,165 dès la location 0 : ça faisait une
+                        // PLAQUE GRISE PLATE au sommet, sur laquelle le
+                        // texte géant se détachait au lieu de s'y fondre
+                        // (« le background du haut doit être plus fondu,
+                        // ça jure »). Le gris culmine maintenant un peu
+                        // PLUS BAS, et la crête de la card retourne au
+                        // noir — c'est dans ce noir que le mot se noie.
+                        Self.forme.fill(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: Color(white: 0.012),
+                                          location: 0),
+                                    .init(color: Color(white: 0.062),
+                                          location: 0.09),
+                                    .init(color: Color(white: 0.125),
+                                          location: 0.26),
+                                    .init(color: Color(white: 0.098),
+                                          location: 0.44),
+                                    .init(color: Color(white: 0.045),
+                                          location: 0.68),
+                                    .init(color: Color(white: 0.010),
+                                          location: 0.90),
+                                    .init(color: .black, location: 1)
+                                ],
+                                startPoint: .top, endPoint: .bottom))
+
+                        // LA VIDÉO DE FOND — sa pluie de chiffres à elle
+                        // (`fond_paliette`, recuite en ping-pong CUIT :
+                        // aller + retour dans le fichier, jamais un seek
+                        // qui rebrousse — le décodeur ne suit pas).
+                        // Elle a REMPLACÉ 579 lignes de pluie codée à la
+                        // main, archivées dans
+                        // tools/rewards/archive/pluie-codee.swift.txt.
+                        //
+                        // ⚠️ BORD À BORD, c'est la seule pose légale :
+                        // « une vidéo posée ailleurs qu'en bord de card
+                        // laisse TOUJOURS voir son rectangle » (4 essais,
+                        // 4 démarcations, 26-08). Son noir est vrai
+                        // (médiane 5 à 18, 5e centile 2) : les fondus
+                        // n'ont qu'à éteindre les colonnes de bord, il
+                        // n'y a aucun rectangle clair à cacher.
+                        VideoReward(nom: "fond-matrice-loop",
+                                    relance: 0, boucle: true, entier: false)
+                            .frame(width: largeur, height: hauteur)
+                            .clipShape(Self.forme)
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white.opacity(0.55),
+                                              location: 0.13),
+                                        .init(color: .white, location: 0.30),
+                                        .init(color: .white, location: 0.74),
+                                        .init(color: .white.opacity(0.42),
+                                              location: 0.90),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom))
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white, location: 0.15),
+                                        .init(color: .white, location: 0.85),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing))
+                            .opacity(sstep(0.10, 0.46, p))
+                            .allowsHitTesting(false)
+
+                        // LE TEXTE GÉANT DU HEADER — le composant du
+                        // variant 2, monté ici avec le NOMBRE EN TOUTES
+                        // LETTRES. Il remplace « Training » et sa ligne de
+                        // félicitations, morts par verdict. Posé HAUT : le
+                        // chiffre matrice descend pour lui faire place.
+                        TexteGeant(naissance: naissance,
+                                   lignes: [Self.enLettres(count)])
+                            // PLUS GROS (verdict) — et s'il se coupe dans
+                            // les fondus des côtés et du bas, « pas
+                            // grave » : ce sont eux qui le mangent, pas
+                            // le cadre.
+                            .scaleEffect(0.96)
+                            // TOUT EN HAUT (« fais FOUR en haut »).
+                            .offset(y: -hauteur * 0.355)
+                            // SA LUMIÈRE VIENT DU HAUT DE LA CARD : la
+                            // source est au-dessus de lui, hors card —
+                            // donc il est CLAIR EN CRÊTE et s'éteint en
+                            // descendant. ⚠️ Le sens est l'INVERSE du tour
+                            // précédent (où la crête se noyait) : c'est
+                            // maintenant le PIED qui meurt dans le noir.
+                            .overlay(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .white.opacity(0.30),
+                                              location: 0),
+                                        .init(color: .white.opacity(0.10),
+                                              location: 0.34),
+                                        .init(color: .clear, location: 0.70)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom)
+                                    .blendMode(.plusLighter)
+                                    .allowsHitTesting(false))
+                            // PLUS FONDU — MAIS SUR LES CÔTÉS ET LE BAS,
+                            // pas partout (« je disais plutôt juste sur
+                            // les côtés et le bas, là c'est trop »). Un
+                            // voile général et un fondu du HAUT l'avaient
+                            // éteint : le mot doit rester franc au cœur,
+                            // et se dissoudre en s'approchant des bords.
+                            // Deux masques imbriqués multiplient leurs
+                            // alphas — flancs d'abord, pied ensuite.
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white, location: 0.24),
+                                        .init(color: .white, location: 0.76),
+                                        .init(color: .clear, location: 1)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing))
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        // LE PIED SE NOIE DANS LE NOIR
+                                        // (« après, le bas du gros texte
+                                        // en fondu noir ») — la crête
+                                        // reste pleine, c'est de là que
+                                        // vient sa lumière.
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white, location: 0.34),
+                                        .init(color: .white.opacity(0.46),
+                                              location: 0.66),
+                                        .init(color: .clear, location: 0.94)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom))
+                            .opacity(sstep(0.20, 0.52, p))
+                            .allowsHitTesting(false)
+                    }
                     if style == .fire {
                         // LA BRAISE DE LA SCÈNE — saturée et resserrée au
                         // pied (⚠️ loi anti-brun : R à 1,00, le vert
@@ -499,7 +668,7 @@ private struct RewardScene: View, Animatable {
                     .opacity(sstep(0.12, 0.45, p))
 
                 // 7. L'ENCRE — au-dessus de tout.
-                encre(hauteur: hauteur)
+                encre(largeur: largeur, hauteur: hauteur)
             }
             // Le clip qui ROGNE les fantômes sur les flancs — constant
             // (le verre garde des bounds immobiles, la loi est sauve).
@@ -581,12 +750,13 @@ private struct RewardScene: View, Animatable {
             .accessibilityHidden(true)
     }
 
-    private func encre(hauteur: CGFloat) -> some View {
+    private func encre(largeur: CGFloat, hauteur: CGFloat) -> some View {
         VStack(spacing: 0) {
-            // LE BLOC DE TÊTE À L'APPLE — SAUF dans la robe You-Made-It :
-            // là, LE TEXTE GÉANT EST LE MESSAGE, la tête meurt et seule
-            // la ligne calme du bas parle.
-            if style != .neon, !(style == .welcome && robe == .texte) {
+            // LE BLOC DE TÊTE À L'APPLE — SAUF dans la robe You-Made-It
+            // ET dans la matrice : là, LE TEXTE GÉANT EST LE MESSAGE, la
+            // tête meurt (« enlève le titre Training, Congratulations »).
+            if style != .neon, style != .spotlight,
+               !(style == .welcome && robe == .texte) {
                 Text(title)
                     .font(.inter(20, .bold))
                     .tracking(0.2)
@@ -634,10 +804,35 @@ private struct RewardScene: View, Animatable {
                 // L'ARRIVÉE du chiffre (verdict « les chiffres s'animent
                 // à l'arrivée ») : il se pose d'un souffle pendant que le
                 // count-up tourne — transform, jamais un resize.
+                // ⚠️ LE CHIFFRE A SA PROPRE VIE, ET ELLE EST VALIDÉE.
+                // Il ne reçoit AUCUNE lumière du halo global : les deux
+                // backgrounds (celui du chiffre, celui de la card) sont
+                // deux animations INDÉPENDANTES. Les avoir branchées sur
+                // la même lumière est ce qui a emporté toute la card.
                 ChiffreMatrice(valeur: valeurCourante,
                                naissance: naissance)
                     .opacity(sstep(0.26, 0.44, p))
-                    .scaleEffect(0.94 + 0.06 * sstep(0.26, 0.58, p))
+                    // PLUS GROS (verdict du verre) — l'échelle vit sur la
+                    // MATRICE, jamais sur le verre : une transform sur un
+                    // glassEffect natif coupe son échantillonnage du fond
+                    // (loi payée). L'arrivée d'époque (0,94 → 1) est
+                    // absorbée dans la rampe.
+                    .scaleEffect(1.22 * (0.94 + 0.06 * sstep(0.26, 0.58, p)))
+                    // LE VERRE PAR-DESSUS — le vrai Liquid Glass coulé
+                    // dans la silhouette du 4 : il réfracte la matrice, la
+                    // pluie et le halo qui passent derrière. Posé en
+                    // overlay APRÈS l'échelle : lui n'est jamais
+                    // transformé, sa taille vient de son frame.
+                    .overlay {
+                        VerreQuatre(valeur: valeurCourante,
+                                    naissance: naissance)
+                            .opacity(sstep(0.42, 0.68, p))
+                    }
+                    // LE CHIFFRE DESCEND (« tu dois aussi baisser un peu
+                    // le chiffre au milieu de la carte pour laisser place
+                    // à ce magnifique texte »). Son composant ne change
+                    // pas d'une ligne : seule sa POSITION bouge.
+                    .offset(y: 46 * sstep(0.26, 0.58, p))
             } else {
                 ChiffreReward(valeur: valeurCourante,
                               corps: videoNom == nil ? 190 : 118)
@@ -977,6 +1172,116 @@ private struct ChiffreMatrice: View {
                 startRadiusFraction: 0,
                 endRadiusFraction: 0.45)
         }
+    }
+}
+
+/// LE 4 DE VERRE (card matrice) — le vrai Liquid Glass coulé dans la
+/// silhouette du chiffre, par-dessus SA matrice (validée, intouchée) :
+/// c'est elle, la pluie et le halo qu'il réfracte. Et LES NUANCES ROUGE
+/// ET BLANC (verdict « avec des nuances de rouge et blanc, trop beau »),
+/// PEINTES PAR-DESSUS le verre — la loi du galet : jamais d'ombre
+/// dessous, jamais de transform ; toute la vie passe par l'offset et par
+/// ce qu'on peint dessus.
+private struct VerreQuatre: View {
+    let valeur: Int
+    var naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var prise = CGSize.zero
+    @State private var enMain = false
+    @State private var grab = 0
+    @State private var drop = 0
+
+    /// Le rouge de la maison — anti-brun : R à 1, le vert désaturé.
+    private static let braise = Color(red: 1.0, green: 0.18, blue: 0.03)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                paused: reduceMotion)) { tl in
+            let t = tl.date.timeIntervalSince(naissance)
+            let tilt = SkyMotion.shared.tilt
+            let libre: CGFloat = enMain ? 0.25 : 1
+            // Dérive COURTE (la loi du galet, cause 3) : le verre doit
+            // rester sur sa matrice — c'est elle qu'il réfracte, au-delà
+            // il n'a plus rien à plier.
+            let x = (sin(t * 0.50) * 7 + sin(t * 0.93 + 1.7) * 3) * libre
+                + 8 * tilt.dx
+            let y = (cos(t * 0.41 + 0.8) * 5 + sin(t * 0.77) * 2) * libre
+                + 5 * tilt.dy
+            verre.offset(x: x, y: y)
+        }
+        .offset(prise)
+        .gesture(saisie)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: grab)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7),
+                         trigger: drop)
+        .accessibilityLabel("\(valeur)")
+    }
+
+    private var verre: some View {
+        let forme = FormeGlyphe(texte: "\(valeur)")
+        return Color.clear
+            // La taille vit ICI, dans le frame — jamais dans une échelle.
+            .frame(width: 126, height: 158)
+            .glassEffect(.clear.interactive(), in: forme)
+            .environment(\.colorScheme, .dark)
+            // Le fil d'arête — BLANC en crête, BRAISE au pied : la
+            // première des deux nuances.
+            .overlay(
+                forme.stroke(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.55), location: 0),
+                            .init(color: .white.opacity(0.10),
+                                  location: 0.55),
+                            .init(color: Self.braise.opacity(0.85),
+                                  location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1.1))
+            // La nappe interne — la seconde nuance : un souffle blanc en
+            // crête, la braise qui monte du pied. En .screen, opacités
+            // BASSES : des nuances, jamais une teinte qui repeint (et
+            // jamais le laiteux).
+            .overlay(
+                forme.fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.14), location: 0),
+                            .init(color: .clear, location: 0.40),
+                            .init(color: Self.braise.opacity(0.26),
+                                  location: 0.72),
+                            .init(color: Self.braise.opacity(0.55),
+                                  location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                    .blendMode(.screen)
+                    .allowsHitTesting(false))
+            .contentShape(forme)
+    }
+
+    private var saisie: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if !enMain {
+                    enMain = true
+                    grab += 1
+                }
+                prise = v.translation
+            }
+            .onEnded { _ in
+                enMain = false
+                drop += 1
+                // Le ressort vit sur le MODIFICATEUR `.offset(prise)` —
+                // la leçon payée : une valeur modèle lue dans le calcul
+                // par frame sauterait à sa cible sous withAnimation.
+                withAnimation(.spring(response: 0.48,
+                                      dampingFraction: 0.68)) {
+                    prise = .zero
+                }
+            }
     }
 }
 

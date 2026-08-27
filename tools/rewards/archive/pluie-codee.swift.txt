@@ -1,0 +1,615 @@
+// ARCHIVE — L'EFFET MATRICE CODÉ À LA MAIN (27-08-2026)
+//
+// Retiré de Woop/Views/RewardCard.swift sur verdict de Kathryn :
+// « enlève les chiffres […] prends cette vidéo en background, trop
+// belle, fond_paliette […] et archive ton effet ».
+// Remplacé par Woop/Media/fond-matrice-loop.mp4 (ping-pong cuit).
+//
+// CE QU'IL Y A DEDANS, et ce que ça a coûté à trouver :
+//  - HaloReward : le halo qui part du centre et se diffuse. DISQUE PLEIN
+//    (le centre reste allumé pendant que le bord gagne) — la coquille qui
+//    migre a été recalée. DEUX ondes décalées d'un demi-cycle qui se
+//    relaient : sans ça, 1,6 s de nuit totale entre deux passages.
+//  - PluieCard : la pluie plein card. Grille bâtie DROITE, CONTENEUR
+//    tourné une fois (jamais par image), boîte couvrante calculée pour
+//    qu'aucun coin ne se vide. Fondus top/left/right + creux local
+//    derrière les textes (jamais un fondu de bord en bas, sinon « Sets »
+//    et « Close » meurent).
+//  - TrameCard : la grille de caractères en Canvas, `ctx.resolve` MIS EN
+//    CACHE (186 résolutions réutilisées 1 700 fois) et surtout
+//    `Equatable` — sans ce trait, RewardScene étant Animatable sur `p`,
+//    le Canvas redessinait 1 700 glyphes 60 fois par seconde.
+//  - AccentsMatrice : neuf caractères poussés au blanc pur, chacun sur sa
+//    propre période première, qui tombent AVEC la trame.
+//
+// LES LOIS PAYÉES ICI (elles valent au-delà de ce fichier) :
+//  - la lumière se fait par des POINTS, des TRAITS FINS et du CONTRASTE,
+//    jamais par des nappes de blanc opaque (le « laiteux », recalé) ;
+//  - un rayon de halo qui dépasse la card réduit la traversée visible à
+//    3 s sur 10 — le reste n'est plus qu'un variateur ;
+//  - une force qui chute en (1-u)^1,5 éteint la lumière AVANT qu'elle
+//    n'atteigne les bords : il faut un PLATEAU pendant le voyage.
+//
+// Ce fichier n'est PAS compilé. Pour le ressusciter : le recoller dans
+// RewardCard.swift et remonter `PluieCard` dans la robe .spotlight.
+
+// MARK: - La lumière de la card (jalon 2)
+
+/// LE HALO — LA SEULE LUMIÈRE DE CETTE ROBE, et elle est PARTAGÉE : la
+/// pluie du fond et la matrice du chiffre s'éclairent à la même nappe,
+/// au même instant, depuis le même centre. Deux lumières indépendantes
+/// se seraient contredites (le chiffre brillant pendant que le fond
+/// s'éteint) — c'est le genre de faute qu'on ne voit pas en codant et
+/// qui saute aux yeux sur la card.
+///
+/// Sa forme, dictée le 27-08 : *« simplement un halo blanc part du centre
+/// de la carte derrière le chiffre et éclaire de manière douce et
+/// diffuse »*. Donc AUCUN front, AUCUN anneau, AUCUNE arête — une nappe
+/// large qui respire. (Le premier jet était une coquille qui voyageait
+/// vers les bords : recalé net.)
+enum HaloReward {
+    /// LE ROND QUI S'AGRANDIT. Trois durées, et elles portent tout :
+    /// il grandit, il s'atténue en grandissant, puis la card se repose.
+    /// ⚠️ RALENTIE PAR VERDICT (« que cette animation soit plus
+    /// progressive, plus lente ») : 3,4 s se lisait comme un FLASH. Dix
+    /// secondes de traversée — la lumière doit avoir déjà changé avant
+    /// qu'on s'en aperçoive.
+    static let croissance: Double = 10.0
+    static let repos: Double = 1.6
+    static var cycle: Double { croissance + repos }
+
+    /// `rayon` en fraction de `rayonMax` ; `force` en [0,1].
+    ///
+    /// - le rayon part de 0,26 (déjà LARGE : un rond qui naît en point
+    ///   fait un cerceau quand il grandit, un rond qui naît large fait
+    ///   une lueur qui gagne du terrain) et va à 1,28 ;
+    /// - la force monte en 0,4 s, puis retombe jusqu'à ZÉRO — « puis
+    ///   s'atténue » : la lumière meurt en s'étalant, elle ne se coupe
+    ///   pas ;
+    /// - `repos` est la nuit entre deux ronds, celle qu'elle veut voir
+    ///   « quasiment noire ».
+
+    /// L'état de la coquille : son RAYON, son ÉPAISSEUR et sa FORCE.
+    ///
+    /// ⚠️ MESURÉ SUR SES DEUX RÉFS (27-08) — c'est une **coquille qui
+    /// migre**, et le CENTRE SE VIDE derrière elle. Pourcentage de pixels
+    /// lumineux par anneau, frame 1 → frame 2 :
+    ///   0-60 px : 100 % → 29 %   (le cœur retombe)
+    ///   180-240 :   3 % → 62 %   (la couronne s'allume)
+    /// Un disque qui grandit en restant allumé au centre ne ressemble
+    /// donc PAS à sa réf. Les grains PARTENT.
+    ///
+    /// Et « pas de cercle » ne veut pas dire « pas de coquille » : ça veut
+    /// dire pas de cercle TRACÉ. L'anneau doit être l'endroit où les
+    /// grains se trouvent, jamais un trait.
+    static func etat(_ t: Double,
+                     decalage: Double) -> (rayon: Double,
+                                           epaisseur: Double,
+                                           force: Double) {
+        let tt = (t + decalage * cycle)
+            .truncatingRemainder(dividingBy: cycle)
+        guard tt <= croissance else { return (0.98, 0.55, 0) }
+        let u = min(max(tt / croissance, 0), 1)
+        // Le rayon va de presque rien au BORD DE LA CARD — jamais plus
+        // loin (mesuré : un rayonMax hors card réduisait la traversée
+        // visible à 3 s sur 10, le reste n'était qu'un variateur).
+        let rayon = 0.04 + 0.94 * pow(u, 0.62)
+        // L'épaisseur s'étale en route : la coquille naît serrée, meurt
+        // large et clairsemée (sa frame 2).
+        let epaisseur = 0.16 + 0.42 * u
+        // La force tient un PLATEAU pendant la traversée et ne meurt
+        // qu'à la toute fin — l'ancienne chute en (1-u)^1,5 éteignait la
+        // lumière avant qu'elle n'atteigne les bords (0,09 aux trois
+        // quarts, mesuré), le contraire de « les éclaire jusqu'aux
+        // bords, puis s'atténue ».
+        let montee = u < 0.14 ? sstepU(u / 0.14) : 1
+        let fin = u > 0.72 ? 1 - sstepU((u - 0.72) / 0.28) : 1
+        return (rayon, epaisseur, montee * fin)
+    }
+
+    private static func sstepU(_ x: Double) -> Double {
+        let t = min(max(x, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+
+    /// LA NAPPE — LE DISQUE PLEIN QUI S'AGRANDIT, revenu par verdict
+    /// (« tu avais réussi tout à l'heure : une lumière part du centre et
+    /// se diffuse sur tout le background — regarde tes anciens tests »).
+    /// Le centre RESTE allumé pendant que le bord gagne du terrain, et
+    /// toute la card finit éclairée avant que la lumière ne meure. Les
+    /// arrêts sont MOUS : aucun bord, jamais.
+    /// (La coquille au centre qui se vide a vécu un tour : c'était une
+    /// lecture de sa réf, pas sa demande. Les GRAINS, eux, gardent la
+    /// migration — c'est leur rôle.)
+    static func nappe(t: Double, decalage: Double = 0, centre: UnitPoint,
+                      rayonMax: CGFloat,
+                      force k: Double = 1) -> RadialGradient {
+        let e = etat(t, decalage: decalage)
+        let f = min(e.force * k, 1)
+        return RadialGradient(
+            stops: [
+                .init(color: .white.opacity(f), location: 0),
+                .init(color: .white.opacity(f * 0.88), location: 0.34),
+                .init(color: .white.opacity(f * 0.58), location: 0.62),
+                .init(color: .white.opacity(f * 0.24), location: 0.84),
+                .init(color: .clear, location: 1)
+            ],
+            center: centre,
+            startRadius: 0,
+            endRadius: rayonMax * max(e.rayon, 0.001))
+    }
+}
+
+// MARK: - La pluie PLEIN CARD (jalon 1)
+
+/// LA PLUIE DE LA CARD — la trame de caractères sur TOUTE la surface.
+///
+/// Deux grains, deux fonctions (l'arbitrage du plan, § 1) :
+/// - ICI, au fond : des CARACTÈRES ISOLÉS en grille serrée. C'est de la
+///   MATIÈRE — elle doit être illisible par nature ;
+/// - dans le glyphe (`ChiffreMatrice`) : des MOTS et les bribes réelles
+///   de sa séance. C'est là qu'une vague donne à attraper quelque chose
+///   de vrai.
+/// La différence de grain n'est pas décorative : c'est elle qui aide le
+/// chiffre à tenir sur son propre fond.
+///
+/// LA DIAGONALE (« en fait c'est travers ») : la grille est bâtie
+/// DROITE, et c'est le CONTENEUR qu'on tourne — une fois, jamais par
+/// image. Il est surdimensionné à la boîte couvrante du rectangle
+/// tourné, sinon les coins de la card se vident.
+///
+/// LES LETTRES SONT FIXES par défaut (ses mots sur l'onde : « les
+/// lettres restent fixes »). `-pluieChute` leur rend la chute Matrix —
+/// les deux se jugent sur deux captures, pas en discutant.
+private struct PluieCard: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    let naissance: Date
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// `-pluieAngle <deg>` — l'inclinaison de la pluie (défaut 16°).
+    private static let angle = RewardBanc.number(after: "-pluieAngle") ?? 16
+    /// `-pluieDensite <n>` — le pas de la grille (1 = le défaut ; 1,3 =
+    /// plus aéré, 0,8 = plus serré). Se règle sur capture, pas au jugé.
+    private static let densite = RewardBanc.number(after: "-pluieDensite")
+        ?? 1.0
+    /// `-pluieChute` — la pluie TOMBE (l'autre lecture de son brief).
+    private static let chute = CommandLine.arguments.contains("-pluieChute")
+
+    /// Le pas de la grille — la colonne un peu plus large que la rangée :
+    /// c'est ce qui fait lire des COLONNES, pas un damier.
+    private var pas: CGSize {
+        CGSize(width: 12 * Self.densite, height: 11 * Self.densite)
+    }
+
+    /// LA BOÎTE COUVRANTE du rectangle tourné : W = l·cos + h·sin,
+    /// H = l·sin + h·cos, plus 4 % de marge. Sans elle, les quatre coins
+    /// de la card se retrouvent vides sous la rotation.
+    private var couvrante: CGSize {
+        let a = Self.angle * .pi / 180
+        return CGSize(
+            width: (largeur * cos(a) + hauteur * sin(a)) * 1.04,
+            height: (largeur * sin(a) + hauteur * cos(a)) * 1.04)
+    }
+
+    var body: some View {
+        Group {
+            if reduceMotion {
+                // Pas d'onde : la trame se pose à mi-clarté, lisible et
+                // immobile. Le chemin doit rester beau, pas seulement
+                // fonctionnel.
+                grille(t: 0).opacity(0.42)
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    scene(t: RewardBanc.horloge(
+                        tl.date.timeIntervalSince(naissance)))
+                }
+            }
+        }
+        .frame(width: largeur, height: hauteur)
+        // LES TROIS FONDUS DEMANDÉS (top / left / right), en masques
+        // EMPILÉS : deux masques imbriqués multiplient leurs alphas, donc
+        // chaque bord garde sa propre longueur de fondu.
+        .mask(fonduHaut)
+        .mask(fonduCotes)
+        // Et le CREUX qu'elle n'a pas demandé mais que la card impose :
+        // « Sets » et « Close » doivent rester lisibles. Pas de fondu de
+        // bord en bas (sa capture montre la pluie qui descend jusqu'en
+        // bas) — une nappe locale derrière les textes, et eux seuls.
+        .mask(creuxDesTextes)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    // MARK: L'ONDE RADIALE (jalon 2)
+
+    /// LA SCÈNE — trois couches sur LA MÊME grille, qui ne se redessine
+    /// jamais : seuls les masques bougent.
+    ///
+    /// Son verdict du 27-08 : *« de base on voit pas autant le
+    /// background, c'est noir, quasiment on le devine — et la lumière qui
+    /// se propage dans le background leur donne vie. »* C'est la loi de
+    /// cette robe : au repos la trame est à 13 %, elle EXISTE à peine ;
+    /// tout ce qu'on lit d'elle, c'est l'onde qui le donne.
+    private func scene(t: Double) -> some View {
+        let g = grille(t: t)
+        return ZStack {
+            // 1. LE REPOS — quasiment noir. On le devine, rien de plus.
+            g.opacity(0.10)
+
+            // 2. LE HALO — la MÊME trame, pleine clarté, révélée par une
+            //    NAPPE douce et diffuse depuis le centre, derrière le
+            //    chiffre. ⚠️ Ce n'est PAS une coquille qui voyage : ce
+            //    premier jet a été recalé (« t'as pas compris — simplement
+            //    un halo blanc part du centre de la carte derrière le
+            //    chiffre et éclaire de manière douce et diffuse »). Un
+            //    front qui se déplace fait un anneau ; elle veut une
+            //    lumière POSÉE, qui respire.
+            g.mask(lumiere(t: t))
+
+            // 2 ter. LE HALO LUI-MÊME — le souffle de lumière VISIBLE
+            //    dans le noir, qui se diffuse du centre avec le front
+            //    (« il manque le halo qui se diffuse dans le background,
+            //    qui part du centre »). Jusqu'ici la lumière n'existait
+            //    que PAR les lettres ; ici elle existe AUSSI entre elles.
+            //    ⚠️ La même forme que la nappe (aucun bord), en .screen,
+            //    et TRÈS basse (0,13 au pic) : un cran de plus et c'est
+            //    le laiteux qui revient.
+            lumiere(t: t, force: 0.13)
+                .blendMode(.screen)
+
+            // 3. LES PARTICULES — LE SUJET. Le brillant vient des GRAINS,
+            //    jamais du blanc : ses deux réfs montrent un champ de
+            //    fines particules très lumineuses sur du sombre.
+            particules(t: t)
+
+            // ⚠️ AUCUN CERCLE. Les quatre anneaux et le noyau central
+            //    sont MORTS par verdict (« enlève les cercles », « aucun
+            //    cercle réel »). Le bloom et les rayons aussi (le
+            //    laiteux). Il ne reste que la nappe qui traverse — celle
+            //    qu'elle valide — et les grains.
+        }
+    }
+
+    /// LE CHAMP DE PARTICULES — des GRAINS, dessinés un par un.
+    ///
+    /// Il s'étend avec les anneaux : le rayon du champ suit la course de
+    /// l'onde, la densité tombe vers l'extérieur (`pow(u, 0.55)` sème
+    /// serré au centre), et chaque grain scintille sur sa propre période.
+    /// 190 points par image : le coût est nul, et c'est la seule façon de
+    /// faire de la lumière sans nappe.
+    /// LA LUMIÈRE EN CONTINU — DEUX ondes décalées d'un DEMI-CYCLE qui se
+    /// relaient.
+    ///
+    /// Le cycle simple laissait **1,6 s de nuit totale** entre deux
+    /// passages (mesuré : force = 0 de t=10 à t=11,6), et chaque tour
+    /// était une naissance visible. Avec le chevauchement, la seconde
+    /// onde naît au centre pendant que la première meurt aux bords : il y
+    /// a TOUJOURS de la lumière, le centre se rallume avant que le bord ne
+    /// s'éteigne, et on ne voit plus ni départ ni fin — juste un flux qui
+    /// sort du centre en permanence.
+    ///
+    /// `.screen` dans un `compositingGroup` : les deux nappes s'AJOUTENT
+    /// au lieu de se recouvrir — sans quoi la plus récente masquerait
+    /// l'autre et le relais se verrait.
+    private func lumiere(t: Double, force: Double = 1) -> some View {
+        ZStack {
+            HaloReward.nappe(t: t, centre: centre,
+                             rayonMax: rayonNappe, force: force)
+            HaloReward.nappe(t: t, decalage: 0.5, centre: centre,
+                             rayonMax: rayonNappe, force: force)
+                .blendMode(.screen)
+        }
+        .compositingGroup()
+    }
+
+    /// LES GRAINS MIGRENT — la recette mesurée sur ses deux réfs :
+    /// chaque grain VOYAGE du centre vers l'extérieur avec la coquille
+    /// (le centre se vide derrière eux), il est QUASI BLANC (le contraste
+    /// de sa réf est 19:1 — grains ~230 sur fond ~12, les nôtres étaient
+    /// à 2:1 et c'est pour ça que rien ne brillait), et PETIT : le blanc
+    /// n'est jamais une surface, toujours un point.
+    private func particules(t: Double) -> some View {
+        Canvas(rendersAsynchronously: false) { ctx, size in
+            let cx = size.width * 0.5
+            let cy = size.height * Self.centreY
+            // Les grains se relaient EUX AUSSI : une moitié sur l'onde A,
+            // l'autre sur l'onde B décalée d'un demi-cycle. Sans ça le
+            // champ s'éteindrait entre deux ondes pendant que la lumière,
+            // elle, resterait continue — et le relais se verrait.
+            let ondes = [HaloReward.etat(t, decalage: 0),
+                         HaloReward.etat(t, decalage: 0.5)]
+            guard ondes.contains(where: { $0.force > 0.02 }) else { return }
+            for i in 0..<300 {
+                let e = ondes[i % 2]
+                guard e.force > 0.02 else { continue }
+                let a = Self.hash(i, 1) * 2 * .pi
+                // La position du grain DANS l'épaisseur de la coquille :
+                // spread ∈ [-1,1], serré au front (les grains voyagent
+                // groupés, quelques traînards derrière).
+                let s = Self.hash(i, 2)
+                let spread = (pow(s, 1.6) * 2 - 1)
+                let u = e.rayon + spread * e.epaisseur * 0.75
+                guard u > 0.01 else { continue }
+                let r = rayonMax * u
+                // L'ellipse de la card : le champ suit la forme portrait.
+                let px = cx + cos(a) * r * 0.86
+                let py = cy + sin(a) * r
+                guard px > 6, px < size.width - 6,
+                      py > 6, py < size.height - 6 else { continue }
+                let d = 0.7 + 1.4 * Self.hash(i, 3)
+                let scint = 0.30 + 0.70 * sin(
+                    t * (1.1 + Self.hash(i, 4) * 2.2)
+                    + Self.hash(i, 5) * 6.283)
+                // Les traînards du sillage pâlissent, le front est vif.
+                let front = 1 - abs(spread) * 0.55
+                let al = e.force * front * max(scint, 0)
+                guard al > 0.03 else { continue }
+                ctx.opacity = min(al, 1)
+                ctx.fill(
+                    Path(ellipseIn: CGRect(x: px - d / 2, y: py - d / 2,
+                                           width: d, height: d)),
+                    with: .color(.white))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return min(s - floor(s), 0.999)
+    }
+
+    /// Le centre de l'onde : DERRIÈRE LE CHIFFRE, pas au centre de la
+    /// card (sa capture 2 : la lumière sort de dedans le 4).
+    /// `-ondeY <v>` le règle sur capture.
+    private static let centreY = RewardBanc.number(after: "-ondeY") ?? 0.47
+    private var centre: UnitPoint { UnitPoint(x: 0.5, y: Self.centreY) }
+    /// LE rayon de la traversée — LA DISTANCE DU CENTRE AU COIN de la
+    /// card, pas plus (mesuré : un rayon hors card réduisait la traversée
+    /// visible à 3 s sur 10, le reste n'était qu'un variateur). Grains et
+    /// nappe partagent la même échelle : la lumière EST les grains.
+    private var rayonMax: CGFloat { hypot(largeur / 2, hauteur * 0.53) }
+    private var rayonNappe: CGFloat { rayonMax }
+
+    /// La grille tournée. `t` ne sert QUE sous `-pluieChute`.
+    private func grille(t: Double) -> some View {
+        let c = couvrante
+        // La chute se fait le long de l'axe TOURNÉ (la grille glisse dans
+        // son propre sens) : c'est pour ça que l'offset est posé AVANT la
+        // rotation, sur la trame elle-même.
+        let dy = Self.chute
+            ? CGFloat((t * 9.0).truncatingRemainder(
+                dividingBy: Double(pas.height * 2)))
+            : 0
+        return TrameCard(taille: c, pas: pas)
+            .equatable()
+            .offset(y: dy)
+            .frame(width: c.width, height: c.height)
+            .rotationEffect(.degrees(Self.angle))
+    }
+
+    /// Le fondu du HAUT — long (26 % de la hauteur) : la pluie naît du
+    /// bord, elle n'y est jamais coupée net.
+    private var fonduHaut: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .white.opacity(0.45), location: 0.13),
+                .init(color: .white, location: 0.30)
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
+
+    /// Les fondus LATÉRAUX — symétriques, 16 % de part et d'autre.
+    private var fonduCotes: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .white, location: 0.17),
+                .init(color: .white, location: 0.83),
+                .init(color: .clear, location: 1)
+            ],
+            startPoint: .leading, endPoint: .trailing)
+    }
+
+    /// LE CREUX derrière l'encre — deux nappes douces qui percent l'alpha
+    /// (`destinationOut`) là où le texte doit rester net : le bloc de
+    /// tête, et le pied « Sets / Close ». Le BORD de la card reste plein.
+    private var creuxDesTextes: some View {
+        Rectangle().fill(Color.white)
+            .overlay {
+                EllipticalGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.92), location: 0),
+                        .init(color: .black.opacity(0.55), location: 0.55),
+                        .init(color: .clear, location: 1)
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.10),
+                    startRadiusFraction: 0,
+                    endRadiusFraction: 0.42)
+                    .blendMode(.destinationOut)
+            }
+            .overlay {
+                EllipticalGradient(
+                    stops: [
+                        .init(color: .black.opacity(0.90), location: 0),
+                        .init(color: .black.opacity(0.50), location: 0.55),
+                        .init(color: .clear, location: 1)
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.90),
+                    startRadiusFraction: 0,
+                    endRadiusFraction: 0.38)
+                    .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+    }
+}
+
+
+/// LES ACCENTS BLANCS — *« éclaircir à l'intérieur de lui-même quelques
+/// éléments en blanc, les accentuer »*.
+///
+/// Neuf caractères, pas plus : au-delà ce n'est plus un accent, c'est un
+/// deuxième calque de trame. Chacun s'allume et retombe sur SA propre
+/// période (des nombres premiers entre eux — aucun clignotement commun,
+/// donc aucun rythme perceptible), et ils descendent avec la chute, sur
+/// la même grille et le même défilé que la trame : un accent doit tomber
+/// SUR un caractère, pas à côté.
+///
+/// Neuf glyphes par image : le coût est nul. C'est pour ça que ceux-ci
+/// peuvent vivre par frame quand la trame, elle, ne le peut pas.
+private struct AccentsMatrice: View {
+    let taille: CGSize
+    let pas: CGSize
+    let hGrille: CGFloat
+    let t: Double
+
+    private static let periodes: [Double] = [
+        1.7, 2.3, 2.9, 3.7, 4.1, 4.3, 5.9, 6.7, 7.3
+    ]
+
+    var body: some View {
+        Canvas(rendersAsynchronously: false) { ctx, size in
+            let cols = max(1, Int(size.width / pas.width) + 1)
+            let rows = max(1, Int(hGrille / pas.height) + 1)
+            let defile = CGFloat((t * 13.0)
+                .truncatingRemainder(dividingBy: Double(hGrille)))
+            for (i, periode) in Self.periodes.enumerated() {
+                // La phase de CET accent — il monte vite et retombe long.
+                let u = (t / periode).truncatingRemainder(dividingBy: 1)
+                let a = u < 0.14 ? u / 0.14 : pow(1 - (u - 0.14) / 0.86, 2.2)
+                guard a > 0.02 else { continue }
+                // Sa case, tirée par hash et changée à chaque passage :
+                // un accent qui revient toujours au même endroit devient
+                // un voyant.
+                let tour = Int(t / periode)
+                let g = i &* 977 &+ tour &* 31
+                let c = Int(Self.hash(g, 3) * Double(cols))
+                let r = Int(Self.hash(g, 5) * Double(rows))
+                let ch = Self.alphabet[
+                    Int(Self.hash(g, 9) * Double(Self.alphabet.count))]
+                let resolu = ctx.resolve(
+                    Text(String(ch))
+                        .font(.system(size: max(7, pas.height * 0.86),
+                                      weight: .bold, design: .monospaced))
+                        .foregroundColor(.white))
+                // Deux passages du défilé, pour que l'accent existe aussi
+                // quand sa case est dans la copie du haut.
+                for k in [0, -1] {
+                    let y = (Double(r) + 0.5) * pas.height
+                        + Double(defile) + Double(k) * Double(hGrille)
+                    guard y > -pas.height, y < size.height + pas.height
+                    else { continue }
+                    ctx.opacity = a
+                    ctx.draw(resolu,
+                             at: CGPoint(x: (Double(c) + 0.5) * pas.width,
+                                         y: y),
+                             anchor: .center)
+                }
+            }
+        }
+        .frame(width: taille.width, height: taille.height)
+        .allowsHitTesting(false)
+    }
+
+    private static let alphabet = Array("0123456789")
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return min(s - floor(s), 0.999)
+    }
+}
+
+/// LA GRILLE DE CARACTÈRES — dessinée UNE SEULE FOIS.
+///
+/// Deux garde-fous, et ils sont la condition pour que ça tienne les
+/// 60 img/s (≈ 1 700 glyphes sur la card) :
+/// 1. `Canvas` + `ctx.resolve` MIS EN CACHE — 62 caractères × 3 blancs =
+///    186 résolutions au plus, réutilisées 1 700 fois (la recette de
+///    `PoudreDiamant` et de la gerbe) ;
+/// 2. `Equatable` — `RewardScene` est `Animatable` sur `p` : SANS ce
+///    trait, son body se ré-évalue à chaque image de l'entrée et le
+///    Canvas se redessinerait 1 700 glyphes × 60 fois par seconde. Il
+///    n'a aucun `@State` (le piège de la vue `.equatable()` ne s'applique
+///    donc pas) : ses deux `let` de géométrie SUFFISENT à le décrire.
+private struct TrameCard: View, Equatable {
+    let taille: CGSize
+    let pas: CGSize
+    /// 0 = le FOND de la card (des gris discrets) ; 1 = l'INTÉRIEUR du
+    /// chiffre (« alterne avec des nuances de blanc et gris » — plus
+    /// contrasté, parce que c'est lui qu'on doit lire).
+    var gamme: Int = 0
+
+    static func == (a: TrameCard, b: TrameCard) -> Bool {
+        a.taille == b.taille && a.pas == b.pas && a.gamme == b.gamme
+    }
+
+    /// À dominante CHIFFRES (sa capture 2 en est presque uniquement
+    /// faite), quelques lettres pour casser la régularité.
+    private static let alphabet = Array(
+        "0123456789012345678901234567890123456789ABCDEFHJKLMNPRSTUVWXYZ")
+
+    /// DES NUANCES DE BLANC, rien d'autre — le violet est mort par
+    /// verdict, et la couleur n'entre pas par la porte du fond.
+    /// ⚠️ CES NIVEAUX SONT LE SUJET, pas un détail de réglage.
+    /// Mesuré : la card était NOIRE parce que les lettres ÉCLAIRÉES
+    /// plafonnaient au même niveau que les lettres au repos. La gamme du
+    /// fond monte donc jusqu'au BLANC PUR — c'est le halo qui décide
+    /// combien on en voit, pas la trame.
+    private static let gammes: [[Color]] = [
+        // Le FOND, à pleine lumière : gris franc → blanc pur.
+        [.white.opacity(0.46), .white.opacity(0.74), .white],
+        // DANS LE CHIFFRE : la face est CLAIRE, donc « alterner blanc et
+        // gris » exige des caractères SOMBRES autant que des clairs — en
+        // n'empilant que du blanc sur du blanc, on n'obtient aucune
+        // alternance, juste une face un peu plus laiteuse. Le premier
+        // niveau est donc du NOIR : c'est lui qui creuse les caractères
+        // gris, les deux autres qui poussent les blancs.
+        [.black.opacity(0.46), .white.opacity(0.26), .white.opacity(0.62)]
+    ]
+
+    var body: some View {
+        Canvas(rendersAsynchronously: false) { ctx, size in
+            let cols = max(1, Int(size.width / pas.width) + 1)
+            let rows = max(1, Int(size.height / pas.height) + 1)
+            var cache: [Int: GraphicsContext.ResolvedText] = [:]
+            let corps = max(7.0, pas.height * 0.86)
+            for r in 0..<rows {
+                for c in 0..<cols {
+                    let graine = r &* 131 &+ c
+                    let i = Int(Self.hash(graine, 7)
+                                * Double(Self.alphabet.count))
+                    let n = Self.hash(graine, 11)
+                    let niveau = n < 0.58 ? 0 : (n < 0.88 ? 1 : 2)
+                    let cle = i &* 3 &+ niveau
+                    let resolu: GraphicsContext.ResolvedText
+                    if let d = cache[cle] {
+                        resolu = d
+                    } else {
+                        resolu = ctx.resolve(
+                            Text(String(Self.alphabet[i]))
+                                .font(.system(size: corps, weight: .semibold,
+                                              design: .monospaced))
+                                .foregroundColor(
+                                    Self.gammes[gamme][niveau]))
+                        cache[cle] = resolu
+                    }
+                    ctx.draw(resolu,
+                             at: CGPoint(
+                                x: (Double(c) + 0.5) * pas.width,
+                                y: (Double(r) + 0.5) * pas.height),
+                             anchor: .center)
+                }
+            }
+        }
+        .frame(width: taille.width, height: taille.height)
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return min(s - floor(s), 0.999)
+    }
+}
+

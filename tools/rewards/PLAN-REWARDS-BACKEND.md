@@ -206,6 +206,33 @@ paramétrable IA, sans toucher l'UI ? » — voici l'état RÉEL de
 | les stickers (flamme noire, pastille-lune, chauve-souris) | codés par robe | une entrée **`sticker:`** le jour où l'IA choisit l'objet montré |
 | les bribes de la matrice (`24KG`, `+20`, `17KMH`…) | liste figée dans `TrameMatrice` | elles doivent venir des **vrais faits** de la séance (§3) |
 
+### ⚠️ LA CARD MATRICE A **DEUX** RENDUS DU MÊME NOMBRE (27-08)
+
+Verdict de Kathryn : *« on est d'accord, il y a deux 4 ! donc pour l'IA
+il faudra adapter les 2, chiffre et texte du haut »*.
+
+Sur cette robe, `count` sort **deux fois**, sous deux formes :
+
+| Où | Forme | Composant |
+| --- | --- | --- |
+| le texte géant du header | **le nombre EN TOUTES LETTRES** (`FOUR`) | `TexteGeant(lignes:)` |
+| le chiffre au centre | **le chiffre** (`4`), en verre | `VerreQuatre` + `ChiffreMatrice` |
+
+**La règle qui en découle : UNE seule donnée, DEUX rendus.** L'IA (ou le
+backend) n'envoie jamais deux valeurs qui pourraient diverger — elle
+envoie `count`, et le client en dérive les deux écritures.
+`RewardScene.enLettres(_:)` fait déjà la conversion **côté app**, et
+c'est sa place : mettre un nombre en lettres est de la mise en forme
+d'une donnée, donc du Design System — même loi que le corps de la typo.
+
+⚠️ Deux dettes qui sortent de là :
+1. `enLettres` s'arrête à douze. Au-delà elle rend les chiffres — à
+   étendre, ou à borner par contrat (une card qui annonce « 14 » a
+   peut-être un autre message à porter).
+2. **La langue.** Le jour où l'app parle français, `FOUR` doit devenir
+   `QUATRE` : la table est côté client, donc localisable — mais elle
+   n'est pas encore branchée sur la locale.
+
 **LA LOI, elle, ne change pas** : l'IA fournit les MOTS et le variant ;
 les tailles, graisses, couleurs, espacements, halos et animations
 restent au Design System. Une robe déclare sa **longueur maximale** par
