@@ -900,6 +900,10 @@ struct RootView: View {
             // reste rendue dessous — c'est le PRIX de la sortie du cover, à
             // mesurer au banc `-homeChemin -fps` (étiquette « duo »).
             if depart.cheminOuvert {
+                // LE GESTE (jalon 5) : l'enveloppeur mince qui tire la route
+                // vers la droite au doigt et la démonte sans rejouer sa
+                // transition (voir `CheminHote`, DepartSeance.swift).
+                CheminHote(onSortie: { depart.fermerChemin(sansAnimation: true) }) {
                 DuolinguoPage(etapeInitiale: depart.cheminEtape,
                               faits: depart.cheminFaits,
                               reclamees: depart.reclamees,
@@ -929,6 +933,7 @@ struct RootView: View {
                               },
                               onRetour: { depart.fermerChemin() },
                               onDemarrer: { demarrerDepuisChemin() })
+                }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .zIndex(4)
             }

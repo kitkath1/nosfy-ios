@@ -80,8 +80,16 @@ final class DepartEtat {
         }
     }
 
-    func fermerChemin() {
-        withAnimation(.easeInOut(duration: 0.34)) { cheminOuvert = false }
+    /// `sansAnimation` : la page est DÉJÀ sortie au doigt (le geste l'a
+    /// emmenée hors écran) — la transition de l'hôte ne doit pas la rejouer.
+    func fermerChemin(sansAnimation: Bool = false) {
+        if sansAnimation {
+            var tx = Transaction()
+            tx.disablesAnimations = true
+            withTransaction(tx) { cheminOuvert = false }
+        } else {
+            withAnimation(.easeInOut(duration: 0.34)) { cheminOuvert = false }
+        }
     }
 
     func reclamer(_ id: Int) { reclamees.insert(id) }
@@ -119,6 +127,122 @@ extension EnvironmentValues {
     var dort: Bool {
         get { self[DortKey.self] }
         set { self[DortKey.self] = newValue }
+    }
+}
+
+// MARK: - L'hôte de la route, et LE GESTE (jalon 5)
+
+/// LE GESTE « COMME SPOTIFY » (verdict 26-08 : « quitter l'écran sans le
+/// chevron, très sensible ») : la route se TIRE vers la droite, de
+/// n'importe où — le jumeau gestuel du `chevron.left`. Sur les chapitres
+/// 2 à 5 le vertical appartient au paging : « au milieu de l'écran » =
+/// l'horizontal, ou rien.
+///
+/// Les lois, toutes payées ailleurs dans la maison :
+/// - `.simultaneousGesture`, jamais `.gesture` (exclusif, il perdrait contre
+///   les 45 drags des galets) ni `.highPriorityGesture` (il tuerait le scroll
+///   de ce toucher sans pouvoir échouer sur la direction) — l'école du
+///   `tirageGeste` de la home ;
+/// - le VERROU D'AXE se décide UNE fois, au premier point reconnu (12 pt —
+///   jamais moins : le chevron et les boutons du panneau sont des `Button`
+///   nus sous ce drag) ;
+/// - l'offset s'écrit par image sur CET enveloppeur mince, en
+///   `visualEffect` (post-layout) — jamais un `@State` de la page (ré-évaluée
+///   par image), jamais un `.offset` du conteneur (le ScrollView hors écran
+///   re-négocie ses insets) ;
+/// - un geste peut mourir sans `onEnded` (Reachability, arrière-plan) :
+///   remise à plat sur `startLocation` + chien de garde à jeton (0,6 s — un
+///   doigt qui marque un temps n'est pas un geste mort) ;
+/// - la home dort dessous (`\.dort`) : elle est là au premier point du
+///   doigt, sous un voile noir qui s'ouvre avec la course.
+struct CheminHote<Contenu: View>: View {
+    /// La page est sortie au doigt : l'hôte la démonte SANS animation.
+    var onSortie: () -> Void
+    @ViewBuilder var contenu: () -> Contenu
+
+    @State private var tirage: CGFloat = 0
+    /// 0 indécis · 1 horizontal (à nous) · −1 vertical (au scroll)
+    @State private var axe = 0
+    @State private var debut: CGPoint? = nil
+    @State private var seuilFranchi = false
+    @State private var jeton = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        GeometryReader { g in
+            let L = max(g.size.width, 1)
+            let p = min(max(tirage / L, 0), 1)
+            ZStack {
+                // le voile sur la home endormie : 0,35 → 0 avec la course
+                Color.black.opacity(0.35 * (1 - p))
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                contenu()
+                    .visualEffect { [tirage] c, _ in c.offset(x: tirage) }
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 12, coordinateSpace: .local)
+                    .onChanged { v in
+                        if debut != v.startLocation {
+                            debut = v.startLocation
+                            axe = 0
+                            seuilFranchi = false
+                        }
+                        if axe == 0 {
+                            let dx = v.translation.width, dy = v.translation.height
+                            axe = (abs(dx) > 1.4 * abs(dy) && dx > 0) ? 1 : -1
+                        }
+                        guard axe == 1 else { return }
+                        tirage = max(0, v.translation.width)
+                        armerChienDeGarde()
+                        if !seuilFranchi, tirage > 0.28 * L {
+                            seuilFranchi = true
+                            UIImpactFeedbackGenerator(style: .light)
+                                .impactOccurred(intensity: 0.7)
+                        }
+                    }
+                    .onEnded { v in
+                        defer { axe = 0; debut = nil }
+                        guard axe == 1 else { return }
+                        jeton += 1
+                        // « très sensible » : 28 % de la largeur, OU l'élan
+                        // (la course prédite dépasse 60 %).
+                        let sort = tirage > 0.28 * L
+                            || v.predictedEndTranslation.width > 0.60 * L
+                        if sort {
+                            UIImpactFeedbackGenerator(style: .soft)
+                                .impactOccurred(intensity: 0.6)
+                            withAnimation(reduceMotion
+                                          ? .easeOut(duration: 0.12)
+                                          : .easeOut(duration: 0.26)) {
+                                tirage = L * 1.02
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) {
+                                onSortie()
+                            }
+                        } else {
+                            withAnimation(.spring(response: 0.38,
+                                                  dampingFraction: 0.86)) {
+                                tirage = 0
+                            }
+                        }
+                    })
+        }
+    }
+
+    /// Le geste meurt sans `onEnded` : à 0,6 s sans nouvelle, la page rejoint
+    /// l'état stable le plus proche — sa place.
+    private func armerChienDeGarde() {
+        jeton += 1
+        let j = jeton
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            guard jeton == j, axe == 1 else { return }
+            axe = 0
+            debut = nil
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                tirage = 0
+            }
+        }
     }
 }
 
