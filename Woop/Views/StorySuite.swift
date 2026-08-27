@@ -1997,3 +1997,606 @@ private struct PoudrePiece: View {
         return v - floor(v)
     }
 }
+
+// MARK: - La page « ×2 » (deux séances le même jour)
+
+/// La partition de la page ×2 — l'école TopCine, plus LE SECOND COUP :
+/// le premier battement ×2 est l'atterrissage lui-même (plan
+/// ../rewards/PLAN-VARIANT-X2.md §4).
+enum DoubleCine {
+    static let poseFor = 0.9
+    static let cardAt = 5.0, cardFor = 0.85
+    static var slamAt: Double { cardAt + cardFor }
+    /// 0,28 s après le slam — le halo s'allume SUR celui-là, pas sur le
+    /// premier (le retard fait le wahou).
+    static var coup2At: Double { slamAt + 0.28 }
+    static let haloFor = 0.55
+    static let fumeeFor = 1.2
+    static let miniAt = 6.75, miniFor = 0.45
+    static let sousAt = 6.55
+    /// LE RYTHME ×2 : deux coups à 0,28 s, puis le repos — période
+    /// 2,46 s. Jamais un sinus nu : c'est le rythme qui dit « deux ».
+    static let periode = 2.46, ecart = 0.28
+    static func battement(_ t: Double) -> Double {
+        guard t >= 0 else { return 0 }
+        let phi = t.truncatingRemainder(dividingBy: periode)
+        func pulse(_ x: Double) -> Double { exp(-(x / 0.09) * (x / 0.09)) }
+        return min(1, pulse(phi) + pulse(phi - ecart))
+    }
+}
+
+/// LA PAGE « ×2 » (27-08, plan ../rewards/PLAN-VARIANT-X2.md) : le moule
+/// de TOP SESSION, re-costumé en NOIR ET BLANC — le rouge n'existe qu'en
+/// trois points (le x2 de la pastille et sa braise, la fumée, le halo de
+/// page). La pills énorme entre par la GAUCHE, le mot géant est ARGENT,
+/// le halo de page est noir / orange / rouge et PULSE sur le rythme ×2,
+/// le footer de la card FUME (rouge, noir, blanc — un shader borné), et
+/// la mini-card, à gauche, dit les DEUX HEURES en néon blanc.
+struct StoryDoubleScene: View {
+    let session: StorySession
+    let t: Double
+    let size: CGSize
+    var paused: Bool = false
+
+    @State private var naissance = Date()
+
+    /// Les interrupteurs du banc de cadence (A/B au mpdecimate) :
+    /// `-x2SansFumee`, `-x2SansHalo`.
+    private static let sansFumee = CommandLine.arguments.contains("-x2SansFumee")
+    private static let sansHalo = CommandLine.arguments.contains("-x2SansHalo")
+
+    private var fait: DoubleFait {
+        session.double ?? DoubleFait(heures: ["--:--", "--:--"],
+                                     minutes: session.minutes)
+    }
+    /// Le battement partagé par tout (halo, braise, fumée) — il part du
+    /// slam : le premier coup EST l'atterrissage.
+    private var bat: Double {
+        t >= DoubleCine.slamAt ? DoubleCine.battement(t - DoubleCine.slamAt) : 0
+    }
+    private var l: CGFloat { min(size.width * 0.80, 332) }
+    private var h: CGFloat { l * 1.32 }
+    private var centre: CGPoint {
+        CGPoint(x: size.width * 0.50, y: size.height * 0.55)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black
+
+            pills
+            if !Self.sansHalo { halo }
+            carte
+            miniHeures
+        }
+        .frame(width: size.width, height: size.height)
+        .onChange(of: t >= DoubleCine.slamAt) { _, pose in
+            if pose { SwapFeedback.shared.slam() }
+        }
+        // LE SECOND COUP — rigide, plus court que le slam.
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.7),
+                         trigger: t >= DoubleCine.coup2At)
+        // Le grain doux de la pose de la pastille (D16).
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.45),
+                         trigger: t >= DoubleCine.coup2At + 0.45)
+    }
+
+    // MARK: La pills énorme — par la GAUCHE
+
+    private var pillsRepos: CGRect {
+        let w = size.width * 1.5
+        let hh = w * 1664 / 2648
+        return CGRect(x: -w * 0.28, y: size.height * 0.34 - hh / 2,
+                      width: w, height: hh)
+    }
+
+    private var pills: some View {
+        let u = CGFloat(StoryCine.outLong(
+            min(max((t - EndedCine.cut) / DoubleCine.poseFor, 0), 1)))
+        let repos = pillsRepos
+        let k0 = size.height * 1.15 / repos.height
+        let k = k0 + (1 - k0) * u
+        let c = CGPoint(x: repos.midX, y: repos.midY)
+        let dx = (size.width / 2 - c.x) * (1 - u)
+        let dy = (size.height / 2 - c.y) * (1 - u)
+        // Le MIROIR : la même vidéo que TOP, retournée — le corps sort
+        // par la gauche. Transform seul, jamais un redimensionnement.
+        return CalqueVideo(nom: "story-pilule-top",
+                           pose: "story-pilule-top-poster",
+                           rate: paused ? 0 : 1)
+            .frame(width: repos.width, height: repos.height)
+            .scaleEffect(x: -k, y: k, anchor: .center)
+            .offset(x: dx, y: dy)
+            .position(x: c.x, y: c.y)
+            .blendMode(.plusLighter)
+    }
+
+    // MARK: Le halo de page — noir, rouge, orange, qui pulse plus fort
+
+    private var halo: some View {
+        let allume = StoryCine.sstep(DoubleCine.coup2At - 0.05,
+                                     DoubleCine.coup2At + DoubleCine.haloFor, t)
+        // Amplitude 0,30 (TOP : 0,14) — sur le rythme ×2.
+        let force = allume * (0.70 + 0.30 * bat)
+        let orange = Color(red: 1.0, green: 0.55, blue: 0.10)
+        let rouge = Color(red: 1.0, green: 0.20, blue: 0.05)
+        let forme = RoundedRectangle(cornerRadius: 52, style: .continuous)
+        // CADENCE (MESURÉ : 39 img/s complet contre 53 sans halo — trois
+        // flous plein écran recalculés par image). Le contenu est
+        // CONSTANT : on le RASTERISE une fois (`drawingGroup`) et seule
+        // l'opacité bouge. Deux groupes — le noir et les chauds n'ont
+        // pas la même rampe.
+        return ZStack {
+            // LE NOIR : l'écran s'ÉTEINT au bord — une vignette, pas une
+            // couleur qui s'ajoute.
+            forme
+                .strokeBorder(Color.black.opacity(0.70), lineWidth: 44)
+                .blur(radius: 34)
+                .drawingGroup()
+                .opacity(allume)
+            ZStack {
+                forme
+                    .strokeBorder(orange.opacity(0.50), lineWidth: 26)
+                    .blur(radius: 22)
+                forme
+                    .strokeBorder(rouge.opacity(0.45), lineWidth: 12)
+                    .blur(radius: 8)
+            }
+            .drawingGroup()
+            .blendMode(.plusLighter)
+            .opacity(force)
+        }
+        .padding(2)
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
+    }
+
+    // MARK: La card
+
+    private static let forme = RoundedRectangle(cornerRadius: 36,
+                                                style: .continuous)
+
+    private var carte: some View {
+        let u = StoryCine.sstep(DoubleCine.cardAt,
+                                DoubleCine.cardAt + DoubleCine.cardFor, t)
+        let k = 1.6 - 0.6 * CGFloat(StoryCine.outLong(u, 3.0))
+        // LE SECOND COUP : une cloche d'échelle de 2,5 % — la card
+        // re-frappe 0,28 s après s'être posée.
+        let u2 = min(max((t - DoubleCine.coup2At) / 0.16, 0), 1)
+        let coup = 1 + 0.025 * CGFloat(sin(.pi * u2))
+        let settle: CGFloat = t <= DoubleCine.slamAt ? 1
+            : 1 - 0.006 * CGFloat(exp(-(t - DoubleCine.slamAt) / 0.16)
+                * sin((t - DoubleCine.slamAt) * 15))
+        let rouge = Color(red: 1.0, green: 0.30, blue: 0.10)
+        return ZStack {
+            projecteur
+            pastille
+            VStack(spacing: 6) {
+                Text("Double day")
+                    .font(.system(size: 25, weight: .bold))
+                    .foregroundStyle(Color(white: 0.97))
+                    .opacity(StoryCine.sstep(DoubleCine.sousAt - 0.15,
+                                             DoubleCine.sousAt + 0.25, t))
+                Text("Two sessions today.")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(white: 0.62))
+                    .opacity(StoryCine.sstep(DoubleCine.sousAt,
+                                             DoubleCine.sousAt + 0.4, t))
+            }
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, 34)
+        }
+        .frame(width: l, height: h)
+        .overlay {
+            PoudreStory(largeur: l, hauteur: h, naissance: naissance,
+                        nappe: l / 2, gain: 1.4)
+                .opacity(StoryCine.sstep(DoubleCine.coup2At,
+                                         DoubleCine.coup2At + 0.6, t))
+        }
+        .background {
+            ZStack {
+                // Plus noir que TOP : dark/white, aucun gris tiède.
+                Self.forme.fill(
+                    LinearGradient(colors: [Color(white: 0.07),
+                                            Color(white: 0.015)],
+                                   startPoint: .top, endPoint: .bottom))
+                texteGeant
+                if !Self.sansFumee { fumee }
+                // Le fil rouge d'arête — l'écho du halo, discret.
+                Self.forme.strokeBorder(
+                    LinearGradient(
+                        stops: [.init(color: rouge.opacity(0.30),
+                                      location: 0),
+                                .init(color: .clear, location: 0.55)],
+                        startPoint: .bottomTrailing, endPoint: .topLeading),
+                    lineWidth: 1.4)
+                // La crête angulaire (A1), en BLANC plus franc — la seule
+                // lumière froide de la scène.
+                Self.forme.strokeBorder(
+                    AngularGradient(
+                        stops: [.init(color: .clear, location: 0),
+                                .init(color: .white.opacity(0.42),
+                                      location: 0.115),
+                                .init(color: .clear, location: 0.24),
+                                .init(color: .clear, location: 1)],
+                        center: .center,
+                        angle: .degrees(-56 + 4 * sin(t * 0.571))),
+                    lineWidth: 1.2)
+            }
+        }
+        .clipShape(Self.forme)
+        .scaleEffect(k * settle * coup)
+        .modifier(SoftBlur(radius: (1 - CGFloat(u)) * 10))
+        .opacity(min(1, u * 2.2))
+        .position(centre)
+    }
+
+    // MARK: Le projecteur — la mini-card ÉCLAIRE le ×2
+
+    /// « Un effet spotlight sur le x2, au niveau de Twice today »
+    /// (verdict) : la mini-card n'est plus posée à côté — elle est la
+    /// SOURCE. Un éventail descend de son bord (l'école `LampeEventail`
+    /// de la robe spotlight : deux nappes, la large et le cœur, flancs
+    /// FONDUS — jamais d'arête franche, un trait net sur du noir est de
+    /// l'encre, pas de la lumière), incliné vers le centre, et il
+    /// s'AVIVE au battement ×2.
+    private var projecteur: some View {
+        let m = StoryCine.sstep(DoubleCine.miniAt + 0.10,
+                                DoubleCine.miniAt + 0.70, t)
+        // La source : le coin bas-droit de la mini-card (elle est à
+        // gauche, la pastille est au centre) — le faisceau part de là.
+        let source = CGPoint(x: l * 0.50 - l * 0.27 + l * 0.10,
+                             y: h * 0.50 - h * 0.30 + 26)
+        let vif: Double = 0.72 + 0.28 * bat
+        let large = EventailX2()
+            .fill(LinearGradient(
+                stops: [.init(color: .white.opacity(0.30), location: 0),
+                        .init(color: .white.opacity(0.09), location: 0.5),
+                        .init(color: .clear, location: 1)],
+                startPoint: .top, endPoint: .bottom))
+            .mask(LinearGradient(
+                stops: [.init(color: .clear, location: 0.04),
+                        .init(color: .white, location: 0.30),
+                        .init(color: .white, location: 0.70),
+                        .init(color: .clear, location: 0.96)],
+                startPoint: .leading, endPoint: .trailing))
+            .blur(radius: 14)
+            .frame(width: l * 0.86, height: h * 0.52)
+        let coeur = EventailX2()
+            .fill(LinearGradient(
+                stops: [.init(color: .white.opacity(0.46), location: 0),
+                        .init(color: .white.opacity(0.13), location: 0.4),
+                        .init(color: .clear, location: 1)],
+                startPoint: .top, endPoint: .bottom))
+            .mask(LinearGradient(
+                stops: [.init(color: .clear, location: 0.22),
+                        .init(color: .white, location: 0.42),
+                        .init(color: .white, location: 0.58),
+                        .init(color: .clear, location: 0.78)],
+                startPoint: .leading, endPoint: .trailing))
+            .blur(radius: 10)
+            .frame(width: l * 0.60, height: h * 0.42)
+        return ZStack(alignment: .top) {
+            large
+            coeur
+        }
+        .compositingGroup()
+        .opacity(m * vif)
+        .blendMode(.screen)
+        // Le faisceau est ANCRÉ à sa source et penche vers le centre.
+        .rotationEffect(.degrees(19), anchor: .top)
+        .position(x: source.x, y: source.y)
+        .frame(width: l, height: h)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: La fumée du footer
+
+    /// « Une alternance de fumée rouge, noire et blanche » : le shader
+    /// `fumeeX2` BORNÉ à la bande basse de la card (0,36·h), trois
+    /// panaches dont la TEINTE glisse rouge → noir → blanc sur 14 s,
+    /// décalées d'un tiers — à tout instant les trois couleurs
+    /// coexistent. Le noir se lit parce qu'il ASSOMBRIT ; le blanc et le
+    /// rouge sont retenus (jamais saturés). Elle MONTE du bord bas après
+    /// le second coup — la card se pose, puis elle fume.
+    private var fumee: some View {
+        let bande = h * 0.44
+        let monte = StoryCine.sstep(DoubleCine.coup2At + 0.15,
+                                    DoubleCine.coup2At + 0.15
+                                        + DoubleCine.fumeeFor, t)
+        // L'HORLOGE À 30 Hz : le shader ne se recalcule qu'une image sur
+        // deux (la fumée est lente — personne ne voit 30 contre 60).
+        let tq: Double = (t * 30).rounded() / 30
+        let batq: Double = (bat * 20).rounded() / 20
+        let teintes: [Color] = (0 ..< 3).map { k in
+            Self.teinteFumee(phase: (tq / 14 + Double(k) / 3)
+                .truncatingRemainder(dividingBy: 1))
+        }
+        return ZStack(alignment: .bottom) {
+            // LA BRUME CLAIRE AU PIED : la fumée NOIRE ne se lit que sur
+            // du non-noir — un voile gris chaud que le noir CREUSE.
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0),
+                        .init(color: Color(red: 0.16, green: 0.13,
+                                           blue: 0.12), location: 1)],
+                startPoint: .top, endPoint: .bottom)
+                .frame(width: l, height: bande)
+            Rectangle()
+                .fill(Color.black)
+                .frame(width: l, height: bande)
+                .colorEffect(ShaderLibrary.fumeeX2(
+                    .float2(Float(l), Float(bande)),
+                    .float(Float(tq)),
+                    .float(Float(batq)),
+                    .color(teintes[0]),
+                    .color(teintes[1]),
+                    .color(teintes[2])))
+        }
+            .mask {
+                LinearGradient(
+                    stops: [.init(color: .clear, location: 0),
+                            .init(color: .white, location: 0.38),
+                            .init(color: .white, location: 1)],
+                    startPoint: .top, endPoint: .bottom)
+            }
+            .offset(y: (1 - CGFloat(monte)) * bande * 0.6)
+            .opacity(monte)
+            .frame(width: l, height: h, alignment: .bottom)
+    }
+
+    /// La partition des teintes : rouge (0-⅓) → noir (⅓-⅔) → blanc
+    /// (⅔-1), fondus triangulaires — l'alpha porte l'intensité de chaque
+    /// matière (le noir plus dense, le blanc retenu).
+    private static func teinteFumee(phase: Double) -> Color {
+        func poids(_ c: Double) -> Double {
+            var d = abs(phase - c)
+            d = min(d, 1 - d)
+            return max(0, 1 - d * 3)
+        }
+        let wr = poids(1.0 / 6), wn = poids(0.5), wb = poids(5.0 / 6)
+        let s = max(0.001, wr + wn + wb)
+        let r = (1.00 * wr + 0.00 * wn + 0.96 * wb) / s
+        let g = (0.16 * wr + 0.00 * wn + 0.94 * wb) / s
+        let b = (0.05 * wr + 0.00 * wn + 0.92 * wb) / s
+        let a = (0.66 * wr + 0.90 * wn + 0.52 * wb) / s
+        return Color(red: r, green: g, blue: b, opacity: a)
+    }
+
+    // MARK: Le texte géant — ARGENT
+
+    private var texteGeant: some View {
+        let lignes = ["TWICE", "TODAY"]
+        let corps = l * 1.16 / 5
+        let mots = VStack(spacing: -corps * 0.35) {
+            ForEach(lignes.indices, id: \.self) { i in
+                Text(lignes[i])
+                    .font(.system(size: corps * 1.55, weight: .black))
+                    .tracking(-corps * 0.04)
+                    .fixedSize()
+            }
+        }
+        return ZStack {
+            mots
+                .foregroundStyle(LinearGradient(
+                    colors: [Color(white: 0.98),
+                             Color(red: 0.78, green: 0.79, blue: 0.84),
+                             Color(white: 0.40)],
+                    startPoint: .top, endPoint: .bottom))
+            nappesBlanches
+                .mask { mots }
+                .blendMode(.plusLighter)
+        }
+        .frame(width: l)
+        .mask {
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0),
+                        .init(color: .white, location: 0.18),
+                        .init(color: .white, location: 0.82),
+                        .init(color: .clear, location: 1)],
+                startPoint: .leading, endPoint: .trailing)
+        }
+        .mask {
+            LinearGradient(
+                stops: [.init(color: .white, location: 0),
+                        .init(color: .white.opacity(0.66), location: 0.44),
+                        .init(color: .white.opacity(0.16), location: 0.70),
+                        .init(color: .clear, location: 0.88)],
+                startPoint: .top, endPoint: .bottom)
+        }
+        .opacity(0.55 * StoryCine.sstep(DoubleCine.cardAt + 0.25,
+                                        DoubleCine.cardAt + 0.85, t))
+        .frame(width: l, height: h, alignment: .top)
+        .offset(y: -6)
+    }
+
+    private var nappesBlanches: some View {
+        let periodes: [Double] = [3.7, 5.3, 7.1, 4.3, 6.7, 9.1, 5.9]
+        return ZStack {
+            ForEach(0 ..< 7, id: \.self) { i in
+                let h1 = Self.hashX2(i, 1)
+                let h2 = Self.hashX2(i, 2)
+                let h3 = Self.hashX2(i, 3)
+                let u = (t / periodes[i] + h1)
+                    .truncatingRemainder(dividingBy: 1)
+                let bosse = pow(max(0, sin(.pi * u)), 6.0)
+                let derive = CGFloat(sin(t * (0.21 + 0.11 * h2)
+                    + h3 * 6.28))
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [Color.white.opacity(0.55), .clear],
+                        center: .center, startRadius: 0,
+                        endRadius: l * CGFloat(0.13 + 0.10 * h2)))
+                    .frame(width: l * CGFloat(0.30 + 0.24 * h2),
+                           height: l * CGFloat(0.24 + 0.18 * h3))
+                    .offset(x: l * (CGFloat(h1) - 0.5) * 1.05
+                            + derive * l * 0.03,
+                            y: l * (CGFloat(h3) - 0.5) * 0.85)
+                    .opacity(bosse)
+            }
+        }
+        .blur(radius: 6)
+        .opacity(StoryCine.sstep(DoubleCine.slamAt,
+                                 DoubleCine.slamAt + 0.8, t))
+    }
+
+    private static func hashX2(_ i: Int, _ k: Int) -> Double {
+        let v = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return v - floor(v)
+    }
+
+    // MARK: La pastille ×2 et sa braise
+
+    private var pastille: some View {
+        let cote = l * 0.34
+        // TOUT EST PRÉ-TYPÉ (la loi du type-checker).
+        let vif: Double = Double(JaugeVent.flicker(Float(t), phase: 2.3))
+        let opCatch: Double = 0.24 + 0.06 * vif
+        let rayonCatch: CGFloat = cote * 0.22
+        let nais = StoryCine.sstep(DoubleCine.coup2At + 0.05,
+                                   DoubleCine.coup2At + 0.50, t)
+        let n = CGFloat(nais)
+        let flotte = n * CGFloat(sin(t * 0.62) * 6
+            + sin(t * 1.13 + 0.9) * 2.5)
+        let derive = n * CGFloat(cos(t * 0.47 + 1.4) * 4)
+        let souffle = 1 + 0.022 * CGFloat(sin(t * 0.83)) * n
+        // LA BRAISE ×2 : le x2 gravé s'éclaire de l'intérieur et BAT —
+        // 0,16 au repos, 0,46 au coup ; et une lueur qui déborde de la
+        // pastille à chaque battement.
+        let braise: Double = 0.16 + 0.30 * bat
+        let deborde: Double = 0.12 * bat
+        let rouge = Color(red: 1.0, green: 0.22, blue: 0.06)
+        return Image("sticker-pastille-fois2")
+            .resizable()
+            .scaledToFit()
+            .frame(width: cote, height: cote)
+            .overlay {
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [rouge.opacity(braise), .clear],
+                        center: .center, startRadius: 0,
+                        endRadius: cote * 0.34))
+                    .frame(width: cote * 0.68, height: cote * 0.46)
+                    .offset(x: cote * 0.02, y: -cote * 0.02)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: rayonCatch,
+                                 style: .continuous)
+                    .fill(EllipticalGradient(
+                        stops: [.init(color: .white.opacity(opCatch),
+                                      location: 0),
+                                .init(color: .white.opacity(0.06),
+                                      location: 0.40),
+                                .init(color: .clear, location: 0.9)],
+                        center: UnitPoint(x: 0.30, y: 0.22),
+                        startRadiusFraction: 0,
+                        endRadiusFraction: 0.5))
+                    .blendMode(.screen)
+                    .padding(2)
+                    .allowsHitTesting(false)
+            }
+            .background(
+                Circle()
+                    .fill(RadialGradient(
+                        stops: [.init(color: rouge.opacity(deborde),
+                                      location: 0),
+                                .init(color: .white.opacity(0.10),
+                                      location: 0.35),
+                                .init(color: .clear, location: 1)],
+                        center: .center,
+                        startRadius: 0, endRadius: cote))
+                    .frame(width: cote * 1.7, height: cote * 1.7)
+                    .blur(radius: 13)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false))
+            .background(alignment: .bottom) {
+                Ellipse()
+                    .fill(Color.black.opacity(0.5 * nais
+                        - Double(flotte) * 0.012))
+                    .frame(width: cote * 0.62 + flotte * 1.5,
+                           height: cote * 0.10)
+                    .blur(radius: 9)
+                    .offset(y: cote * 0.16)
+                    .allowsHitTesting(false)
+            }
+            .scaleEffect(x: souffle * (0.94 + 0.06 * n)
+                * (1 + 0.03 * CGFloat(sin(.pi * nais))),
+                         y: souffle * (0.94 + 0.06 * n)
+                * (1 - 0.03 * CGFloat(sin(.pi * nais))))
+            .opacity(nais)
+            .offset(x: derive, y: flotte - (1 - n) * 6)
+    }
+
+    // MARK: La mini-card des deux heures — néon BLANC, à gauche
+
+    private var miniHeures: some View {
+        let m = StoryCine.sstep(DoubleCine.miniAt,
+                                DoubleCine.miniAt + DoubleCine.miniFor, t)
+        let phase = t - DoubleCine.miniAt
+        let blanc = Color(white: 0.98)
+        // Le néon S'AMORCE en deux temps (gris 0,1 s, puis blanc plein).
+        let encre: Color = phase < 0.10 ? Color(white: 0.35)
+            : (phase < 0.20 ? Color(white: 0.62) : blanc)
+        let plein: Double = phase < 0.20 ? 0.3 : 1
+        let heures = fait.heures.prefix(2).joined(separator: " · ")
+        return VStack(alignment: .leading, spacing: 3) {
+            Text("Twice today")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color(white: 0.52))
+            Text(heures)
+                .font(.system(size: 21, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(encre)
+                .shadow(color: blanc.opacity(0.90 * plein), radius: 3)
+                .shadow(color: blanc.opacity(0.45 * plein), radius: 12)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(colors: [Color(white: 0.13),
+                                              Color(white: 0.05)],
+                                     startPoint: .top, endPoint: .bottom))
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        stops: [.init(color: .white.opacity(0.26),
+                                      location: 0),
+                                .init(color: .white.opacity(0.04),
+                                      location: 0.5),
+                                .init(color: .clear, location: 1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                    lineWidth: 1)
+        }
+        .rotationEffect(.degrees(-14 + 7 * m))
+        .scaleEffect(1 + 0.10 * CGFloat(sin(.pi * m)))
+        .offset(x: CGFloat(1 - m) * 30)
+        .opacity(m)
+        // MESURÉ au film : à 0,44·l elle sortait de l'écran (elle est
+        // plus large que « 42 min ») — 0,27·l, ~55 % dedans.
+        .position(x: size.width * 0.50 - l * 0.27,
+                  y: size.height * 0.55 - h * 0.30)
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.6),
+                         trigger: t >= DoubleCine.miniAt + 0.25)
+    }
+}
+
+/// L'ÉVENTAIL DU PROJECTEUR ×2 — le cône de la lampe, PROPORTIONNEL (la
+/// forme de la robe spotlight est `private` dans RewardCard et calée en
+/// points fixes ; ici la card change de taille). Col étroit à la source,
+/// ouverture large au pied.
+private struct EventailX2: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let col = r.width * 0.09
+        let pied = r.width * 0.50
+        p.move(to: CGPoint(x: r.midX - col, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + col, y: r.minY))
+        p.addLine(to: CGPoint(x: r.midX + pied, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.midX - pied, y: r.maxY))
+        p.closeSubpath()
+        return p
+    }
+}

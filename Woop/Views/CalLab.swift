@@ -1212,6 +1212,16 @@ private struct StickerDayCell: View {
                     .frame(width: s * 0.34, height: s * 0.34)
                     .rotationEffect(.degrees(12))
                     .position(x: s * 0.70, y: s * 0.54)
+                // LE ×2 — la troisième place, par-dessus : c'est
+                // l'exception du jour.
+                if WoopSticker.demoDouble(for: day, calendar: calendar) {
+                    Image(WoopSticker.fois2.asset)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: s * 0.38, height: s * 0.38)
+                        .rotationEffect(.degrees(-10))
+                        .position(x: s * 0.30, y: s * 0.66)
+                }
             }
             Text("\(calendar.component(.day, from: day))")
                 .font(.inter(s * 0.27, isToday ? .bold : .medium))
@@ -4737,8 +4747,25 @@ struct DemoSession: Identifiable {
 /// blanc sur fond transparent.
 enum WoopSticker: String, CaseIterable {
     case flamme, basket, abricot, chocolat, bras, jambes, piscine
+    /// « ×2 » (27-08) : le sticker de FAIT — deux séances le même jour.
+    /// Il ne remplace ni la catégorie ni la flamme : il s'AJOUTE, à la
+    /// troisième place de la case (plan ../rewards/PLAN-VARIANT-X2.md §6).
+    case fois2
 
     var asset: String { "sticker-\(rawValue)" }
+
+    /// La démo du jour DOUBLE : ~1 jour entraîné sur 4 — en attendant le
+    /// vrai compte (`count ≥ 2` par jour, que le calendrier réel a déjà).
+    static func demoDouble(for day: Date, calendar: Calendar) -> Bool {
+        guard demoCategory(for: day, calendar: calendar) != nil else {
+            return false
+        }
+        let d = calendar.component(.day, from: day)
+        let m = calendar.component(.month, from: day)
+        let y = calendar.component(.year, from: day)
+        let h = (d &* 2654435761 &+ m &* 40503 &+ y &* 69069) >> 4
+        return (h >> 7) % 4 == 0
+    }
 
     /// La catégorie de démonstration : déterministe (même mois, mêmes
     /// stickers), ~2 jours sur 7 entraînés — en attendant les vraies

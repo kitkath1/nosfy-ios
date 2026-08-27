@@ -416,6 +416,110 @@ create table booster_progress (
 -- clé d'idempotence (user_id, session_uuid, 'booster_conversion').
 ```
 
+### 4 septies. LE VARIANT « ×2 » — deux séances le même jour (ajouté
+### le 27-08 nuit — le plan design est ../rewards/PLAN-VARIANT-X2.md)
+
+Un NOUVEAU variant d'exception, frère de TOP SESSION (§4 quater) :
+quand l'utilisateur va DEUX FOIS à la salle le même jour, la story de
+la deuxième séance ouvre sur la page « ×2 » (pastille ×2, univers
+dark/white, fumée rouge/noir/blanc, halo noir/rouge/orange), et le
+calendrier pose le sticker `fois2` AVEC les autres stickers du jour.
+
+**Le contrat** :
+
+```
+{ style: double,
+  sessions: [ { session_uuid, started_at (local), minutes,
+                categorie } × 2 ]          — les DEUX séances du jour,
+                                             RECOPIÉES (la mini-card
+                                             montre leurs heures),
+  bigLines: [2 lignes, 3-9 signes]         — table §5 du plan design,
+  sousTexte: ≤ 40 signes                   — « Two sessions today. »,
+  stat: { value, unit, label }             — total minutes du jour,
+                                             ou les deux heures (Q4) }
+```
+
+**Le déclencheur (moteur §2, jamais le client, jamais l'IA)** : le
+fait « DEUXIÈME SÉANCE VALIDE RÉGLÉE LE MÊME JOUR LOCAL ». Le jour est
+celui de l'UTILISATEUR — la timezone du device part avec le
+`settle_session` (nouveau champ `tz`), jamais UTC (une séance à 23 h
+et une à 1 h ne font pas un ×2, deux séances à 7 h et 19 h en font
+un). « Valide » = le seuil de séance du streak (Q5 du plan design).
+S'allume UNE fois par jour, au 2ᵉ settle ; un 3ᵉ settle ne rallume
+rien (Q2). Priorité : au-dessus de Reward, au niveau de TOP ; si TOP
+et ×2 tombent le même jour, les deux pages existent (ordre : Q3). En
+STORY il ne consomme pas le budget pop-ups (une page) ; en
+POP-REWARD (`RewardStyle.double`, à coder avec `.top`) il compte
+comme Reward et respecte les cooldowns.
+
+**Le sticker `fois2` est un FAIT dérivé, pas un état** : `count(
+séances valides du jour local) ≥ 2` — calculé à la lecture (le
+calendrier groupe déjà par jour), rétroactif de fait, AUCUNE table
+catalogue ni migration (mémoire Supabase : ajouter un sticker ne
+demande rien au schéma). Idempotence : le fait est une fonction des
+séances, il n'a pas de ledger propre ; l'AFFICHAGE de la page ×2
+s'enregistre (`reward_events`, kind `double_shown`, clé
+`(user_id, jour_local)`) pour ne jamais remontrer la cérémonie.
+
+**Deux assets à détourer** (RGB, pas d'alpha) :
+`~/Desktop/PAILETE_FOIS_2.png` (1254², fond noir — recette squircle
+analytique de `detoure_pastilles_top.py`) et `~/Desktop/
+STICKER_FOIS_2.png` (1254², fond BLANC + ombre portée — recette
+NOUVELLE « cœur + couronne analytique », le liseré n'étant pas
+séparable du fond par la luminance : mesuré).
+
+### 4 octies. LA STORY, TOUS SES VARIANTS ET LEUR ORDRE (ajouté le
+### 27-08 sur le verdict de Kathryn — la loi de composition)
+
+Verbatim : « si cardio de fou ou muscu de fou pendant la semaine ⇒ on
+affiche en premier le rewards muscu ou cardio (si la DEUXIÈME séance
+est la meilleure, on affiche avant la card fois 2) puis le reste
+jusqu'au booster ⇒ booster apparaît SYSTÉMATIQUEMENT ».
+
+#### La table des pages (l'état au 27-08)
+
+| # | page | quand | contrat backend | l'IA complète |
+| --- | --- | --- | --- | --- |
+| 0a | **SESSION ENDED** (verrière + résumé) | TOUJOURS, sauf si une exception prend l'ouverture | agrégats : minutes, séries, exos, kcal | non (des nombres) |
+| 0b | **TOP SESSION** (`style: top`, §4 quater) | fait « meilleure séance de la semaine » (cardio ou muscu) | `{sport, bigLines, sousTexte, stat}` | OUI : `bigLines` + `sousTexte` (gabarit déterministe d'abord) |
+| 0c | **×2** (`style: double`, §4 septies) | 2ᵉ séance valide du même jour LOCAL | `{sessions × 2, bigLines, sousTexte, stat}` | OUI : `bigLines` + `sousTexte` |
+| 1 | **RÉSUMÉ** (page à lui) | seulement si une exception a pris l'ouverture | les mêmes agrégats | non |
+| 2 | **DÉTAILS** (partition) | TOUJOURS | rien de neuf (les séries persistées) | non |
+| 3 | **STORY CARD** (`.story`, §4 ter) | TOUJOURS | 2-3 stickers, `bigWord`, 6 lignes VRAIES | OUI : les 6 lignes + le `bigWord` |
+| 4 | **WIN — le butin** (§4 sexies) | **TOUJOURS — systématique** | pièces de la séance, boosters crédités, report | OUI (facultatif) : la couronne (« Big win. ») |
+
+#### L'ORDRE, la loi
+
+1. **L'ouverture appartient à l'exception**, quand il y en a une —
+   c'est le wahou, il ne se mérite pas deux fois : la page
+   d'exception REMPLACE l'acte B de SESSION ENDED, et le résumé
+   émigre en page 1.
+2. **Entre deux exceptions le même jour** : TOP passe d'abord (le
+   fait de la SEMAINE prime) — **SAUF si c'est la deuxième séance du
+   jour qui EST la meilleure de la semaine** : alors ×2 s'affiche
+   AVANT TOP (la nouvelle prime sur le palmarès : c'est la séance
+   qu'on vient de finir qui a tout fait). Les deux pages existent,
+   dans cet ordre ; le résumé les suit.
+3. **Puis le reste, toujours dans le même ordre** : Résumé (s'il a
+   émigré) → Détails → Story card.
+4. **WIN FERME TOUJOURS LA STORY** — le butin est systématique, même
+   à 0 booster (la couronne dit alors « Steady grind. »). Une story
+   ne se termine jamais sans dire ce qu'elle a rapporté.
+
+Donc : 4 pages ordinaires, 5 avec une exception, **6 avec les deux**.
+Le moteur ne rend qu'une LISTE de rôles ordonnée — le client ne
+décide de rien, il monte ce qu'on lui donne.
+
+#### Ce que l'IA a le droit de faire (le wahou dans le cadre)
+
+L'IA COMPLÈTE, elle ne décide pas : le déclencheur, les nombres et
+l'ordre sont au moteur. Elle écrit les MOTS, dans le moule (§5, « le
+contrat Design System ») : `bigLines` 2 × 3-9 signes, `sousTexte`
+≤ 40 signes, les 6 lignes de la story card. Toujours un gabarit
+déterministe derrière (l'app ne l'attend jamais — calculé au settle,
+stocké avec la séance). Un mot qui ne rentre pas dans le gabarit est
+REJETÉ, pas tronqué : la mise en page est un fait, pas une négociation.
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT

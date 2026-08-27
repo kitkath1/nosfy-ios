@@ -70,7 +70,7 @@ struct StoryEnded: View {
     /// `.resume` = le résumé SEUL, en page à lui — l'horloge est
     /// REBASÉE (la pills est déjà posée, pas de re-plongeon) et les
     /// haptiques de la coupe se taisent.
-    enum Mode { case complet, top, resume }
+    enum Mode { case complet, top, double, resume }
 
     let session: StorySession
     /// Le temps de page, pause déduite (l'horloge du chef d'orchestre).
@@ -110,6 +110,13 @@ struct StoryEnded: View {
                     StoryTopScene(session: session,
                                   sport: session.top ?? .cardio,
                                   t: t, size: size, paused: paused)
+                        .opacity(t >= EndedCine.cut ? 1 : 0)
+                }
+            case .double:
+                // LA PAGE « ×2 » (27-08) : même plongeon, autre monde.
+                if t >= EndedCine.diveAt {
+                    StoryDoubleScene(session: session, t: t, size: size,
+                                     paused: paused)
                         .opacity(t >= EndedCine.cut ? 1 : 0)
                 }
             case .resume:

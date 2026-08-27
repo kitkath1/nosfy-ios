@@ -43,6 +43,15 @@ enum TopSport {
     }
 }
 
+/// LE FAIT « ×2 » : les deux séances du jour local, RECOPIÉES (la
+/// mini-card montre leurs heures — jamais inventées, backend §4 septies).
+struct DoubleFait {
+    /// Les heures de début des deux séances, « HH:mm », dans l'ordre.
+    var heures: [String]
+    /// Le total des minutes du jour.
+    var minutes: Int
+}
+
 /// Le récit d'une séance, découplé de SwiftData pour que le banc puisse le
 /// fabriquer sans base.
 struct StorySession {
@@ -60,6 +69,11 @@ struct StorySession {
     /// L'EXCEPTION : quand la séance est la meilleure de la semaine, la
     /// story ouvre sur la page TOP SESSION (4 pages ce jour-là).
     var top: TopSport? = nil
+    /// L'AUTRE EXCEPTION (27-08, plan ../rewards/PLAN-VARIANT-X2.md) :
+    /// la DEUXIÈME séance du même jour — la story ouvre sur la page
+    /// « ×2 ». Si TOP et ×2 tombent le même jour, ×2 prend la page
+    /// d'ouverture (c'est le jour ; la semaine attendra — Q3 du plan).
+    var double: DoubleFait? = nil
 
     /// Les valeurs de la maquette — partition comprise, pour que le banc
     /// `-storyLab` montre la liste dépliable de la story 2.
@@ -263,9 +277,16 @@ struct StoryFlow: View {
     /// Trois pages les jours ordinaires (l'ouverture PORTE le résumé,
     /// c'est son acte B) ; quatre les jours d'exception.
     private var roles: [PageRole] {
-        session.top == nil
+        exception == nil
             ? [.ouverture, .details, .analyse, .butin]
             : [.ouverture, .resume, .details, .analyse, .butin]
+    }
+    /// La page d'ouverture d'exception, s'il y en a une : ×2 d'abord
+    /// (le jour), TOP sinon (la semaine).
+    private var exception: StoryEnded.Mode? {
+        if session.double != nil { return .double }
+        if session.top != nil { return .top }
+        return nil
     }
     private func pageRole(_ p: Int) -> PageRole {
         roles[min(max(p, 0), roles.count - 1)]
@@ -308,8 +329,7 @@ struct StoryFlow: View {
                                 StoryEnded(session: session, t: t,
                                            now: now, size: geo.size,
                                            paused: paused,
-                                           mode: session.top == nil
-                                               ? .complet : .top)
+                                           mode: exception ?? .complet)
                             case .resume:
                                 StoryEnded(session: session, t: t,
                                            now: now, size: geo.size,
@@ -623,6 +643,11 @@ struct StoryLab: View {
             s.top = .muscu
         } else if CommandLine.arguments.contains("-storyTop") {
             s.top = .cardio
+        }
+        // `-storyDouble` : la deuxième séance du jour — la page « ×2 ».
+        if CommandLine.arguments.contains("-storyDouble") {
+            s.double = DoubleFait(heures: ["07:12", "19:40"],
+                                  minutes: s.minutes + 54)
         }
         return s
     }
