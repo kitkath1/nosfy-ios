@@ -179,6 +179,16 @@ struct CheminHote<Contenu: View>: View {
                     .allowsHitTesting(false)
                 contenu()
                     .visualEffect { [tirage] c, _ in c.offset(x: tirage) }
+                    // ⚠️ **LA ZONE TACTILE SUIT LE DÉPLACEMENT** (27-08, cause
+                    // CONFIRMÉE du gel de TOUTE l'app). `visualEffect` déplace
+                    // les PIXELS hors écran, PAS le hit-test : la page du
+                    // chemin, poussée à droite (`tirage` grand, sortie ou
+                    // geste en cours), restait plein cadre au toucher et
+                    // MANGEAIT tous les touchers de l'app (menu, stop, molette,
+                    // clic, chevron) — invisible, jusqu'au kill. Dès qu'elle
+                    // n'est plus à sa place, elle cesse de prendre le doigt ;
+                    // au repos (tirage ~ 0) elle reste pleinement interactive.
+                    .allowsHitTesting(tirage < 2)
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 12, coordinateSpace: .local)
@@ -231,7 +241,15 @@ struct CheminHote<Contenu: View>: View {
     }
 
     /// Le geste meurt sans `onEnded` : à 0,6 s sans nouvelle, la page rejoint
-    /// l'état stable le plus proche — sa place.
+    /// l'état stable le plus proche.
+    ///
+    /// ⚠️ **IL COMMET LA SORTIE, PAS SEULEMENT `tirage = 0`** (27-08). Avant, un
+    /// geste mort au-delà du seuil (le doigt volé au bord bas, EXACTEMENT là où
+    /// vit ce tirage) se contentait de ramener `tirage = 0` — la page revenait
+    /// pleine à l'écran mais `cheminOuvert` restait `true`, montée au-dessus du
+    /// TabView : la route « encore là alors que je crois être rentrée ». Si le
+    /// seuil de sortie était franchi, on FERME franchement (`onSortie` →
+    /// `fermerChemin`, démontage) ; sinon seulement on revient à sa place.
     private func armerChienDeGarde() {
         jeton += 1
         let j = jeton
@@ -239,8 +257,12 @@ struct CheminHote<Contenu: View>: View {
             guard jeton == j, axe == 1 else { return }
             axe = 0
             debut = nil
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
-                tirage = 0
+            if seuilFranchi {
+                onSortie()
+            } else {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                    tirage = 0
+                }
             }
         }
     }
