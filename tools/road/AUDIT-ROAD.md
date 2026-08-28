@@ -1,5 +1,124 @@
 # AUDIT — LA ROUTE (« le chemin de feu »), le geste, la flamme
 
+## POUR LE BACKEND — LA RÈGLE DES RÉCOMPENSES DU CHEMIN (27-08, dictée)
+
+> « On a **une lune par chapitre à la fin**, et **des fois au milieu**, et une
+> **pastille pièce** aussi. **Deux récompenses par chapitre maximum.** »
+
+**Ce que le serveur devra dire, et que le front ne doit pas inventer :**
+
+| ce qui se décide | valeur aujourd'hui (front, en dur) | ce qu'il faudra |
+|---|---|---|
+| taille d'un chapitre | 9 nœuds : **7 séances + 2 récompenses** | le serveur donne la liste des nœuds d'un chapitre |
+| récompense de FIN | toujours une **lune** (rang 8) | idem, mais c'est le serveur qui la crée |
+| récompense du MILIEU | **rang 3**, alternée : pièce sur les chapitres impairs, lune sur les pairs | c'est **« des fois »** : le serveur décide s'il y en a une, et laquelle |
+| plafond | 2 par chapitre, jamais 3 | **règle dure côté serveur** |
+| ce qu'une lune donne | `SacreEtat.proposer()` → un booster | une ligne `user_boosters`, origine `chemin_lune` |
+| ce qu'une pièce donne | « +40 » affiché par la capsule | une ligne **`coin_ledger`**, raison `chemin_piece`, **montant décidé au serveur** (+20/+30/+40, plafond de séance) |
+| « déjà réclamée » | `UserDefaults` (`chemin.reclamees`) | **la source de vérité est le ledger** : sans lui, une récompense se re-réclame à chaque lancement (boosters et pièces infinis) |
+| clé d'idempotence | — | **(user, chapitre, rang)** — surtout PAS `session_uuid` : le chemin n'est pas une séance |
+
+⚠️ **Le rang 3 n'est pas cosmétique** : il place la récompense du milieu
+**après trois séances**, ce qui la laisse éteinte tant que la troisième est en
+cours. Une récompense se mérite ; elle ne s'offre pas à l'ouverture du
+chapitre.
+
+⚠️ **Le calendrier compte les SÉANCES, pas les nœuds** : une récompense
+glissée entre deux séances n'est pas un jour (sans quoi il existe des « jours
+fantômes » où aucun galet n'est actif).
+
+---
+
+## POUR LE BACKEND — LA RÈGLE DES JOURS : UN JOUR N'EXISTE QUE QUAND IL EST FAIT (28-08, dictée)
+
+> « Quand c'est **à venir**, on ne voit pas les jours, c'est une **flamme**.
+> Car les jours **apparaissent le jour où le user a terminé / fait sa
+> séance**. »
+
+**La date n'est pas une position dans le chemin, c'est un ESTAMPILLAGE.**
+
+| | avant | maintenant (codé 28-08) |
+|---|---|---|
+| date d'un galet FAIT | `Date() + (rang − rang_actif)` jours | **son estampille**, remontée avec lui (`Workout.endedAt` → `EtatDuo.datesFaites`) |
+| date d'un galet À VENIR | déjà `nil` — flamme seule ✅ | inchangé : **le serveur n'en renvoie aucune**, elle n'existe pas encore |
+| date du galet ACTIF | dérivée du rang | **aujourd'hui, calculé à l'affichage** — le jour où le user est connecté ; elle ne se FIGE qu'à la complétion |
+| date d'un jour RATÉ | dérivée du rang | dérivée du rang — **et c'est juste** (voir ci-dessous) : il n'a pas d'estampille, mais c'est un jour PASSÉ et il doit dire lequel |
+
+⚠️ **PRÉCISION, parce que la première version de cette note accusait trop
+large.** La formule par le rang n'était pas fausse *en soi* : dans la
+dérivation réelle (`-cheminReel`), `rang(d) = jours écoulés depuis la
+première séance`, donc **le rang EST le calendrier** et `aujourd'hui +
+(rang − rang_actif)` retombe exactement sur le bon jour. Le mensonge venait
+de la **DÉMO** : elle pose `étape = jour 2` et `faits = {jour 0, jour 1}`
+quels que soient les vrais `endedAt`. L'axe des rangs y est **fabriqué** —
+donc deux séances réellement faites les 22 et 26 s'affichaient « avant-hier »
+et « hier ».
+
+La table d'estampilles reste le bon dessin pour les deux raisons qui
+comptent : **c'est ce que le serveur enverra** (une date par nœud fait, pas
+un axe à reconstituer), et elle **survit à n'importe quel axe de rangs** —
+le jour où un chapitre ne sera plus « un rang = un jour », la formule, elle,
+tombe.
+
+**Ce que le serveur renvoie par nœud** : `rang`, `nature`, `statut`
+(`fait` / `actif` / `a_venir`), et **`completed_at` UNIQUEMENT si `fait`**.
+Le front n'invente aucune date pour l'avenir.
+
+---
+
+## POUR LE BACKEND ET LE FRONT — LE SENS DU CHEMIN : ON DESCEND (28-08, dictée)
+
+> « Au-dessus du jour marqué **today**, il devrait y avoir soit une **lune
+> accomplie**, soit des **jours faits** — et pas d'état empty, **le chemin a
+> déjà été fait**. Au contraire, **sous** le jour marqué avec le halo, les
+> autres galets à venir sont des flammes ou des lunes. »
+
+**Le passé est EN HAUT, l'avenir EN BAS.** Aujourd'hui est la charnière.
+
+Le front faisait l'inverse (`y = 740 − rang × 67,5` : le rang MONTE), alors
+que les chapitres, eux, s'empilent vers le BAS (`ecran × 874`). Le chemin
+grimpait à l'intérieur d'un chapitre puis se téléportait au bas du suivant
+pour regrimper : **cinq échelles empilées, lues vers le haut, dans un
+document lu vers le bas**. Aucune continuité lisible — et c'est la vraie
+cause du verdict « on ne comprend rien à la continuité », que le serpentin
+seul ne pouvait pas régler.
+
+Conséquences, toutes mécaniques :
+- l'air minimum ne bouge pas (**31,6 pt**) — un miroir vertical ne change
+  aucune distance ;
+- le **trésor** (rang 8) passe du haut au bas du chapitre : sa garde sous la
+  dalle est à remesurer ;
+- le panneau `dessous` s'inverse : il était posé pour couvrir le **passé**,
+  qui sera désormais **au-dessus** ;
+- l'ordre des rangs, les ids contigus, l'aimant de chapitre et le calendrier
+  des séances sont inchangés.
+
+⚠️ **Règle de lecture qui en découle, et qui vaut pour le serveur** : un
+nœud placé AU-DESSUS de l'actif ne peut pas être `a_venir`. Si le serveur
+renvoie un tel état, c'est une incohérence de données, pas un cas
+d'affichage.
+
+---
+
+## LE PANNEAU FERMÉ NE CHANGE RIEN (28-08, dictée)
+
+> « Si je ferme l'overlay qui demande de commencer la session, le jour J
+> reste toujours en mode **halo**, et quand je retape dessus je revois
+> l'overlay. »
+
+Le halo appartient à l'**état** du galet (`.actif`), pas au panneau :
+`fermerPanneau()` n'écrit que `panneauSur = nil`, `etape` n'est pas touché.
+Fermer est donc sans effet sur le chemin — **« Plus tard » n'est pas un
+refus, c'est un report**. Rien à écrire côté serveur : aucune trace, aucun
+compteur, aucun cooldown.
+
+⚠️ Une seule condition dans le code : `etat.branchee`. **Débranchée**, le tap
+sur l'étape courante l'AVANCE au lieu de rouvrir le panneau — comportement de
+banc, à ne jamais laisser fuiter en production.
+
+---
+
+
 ## ÉTAT DU CHANTIER — 27-08, 10 h 40 : CODÉ SUR SON « GO », TROIS COMMITS
 
 Sur son « go » (et deux verdicts : « en mode jouet », « point A »), les
@@ -657,7 +776,7 @@ marqué.
 | **verrouillé** (lointain) | futur, > 1 rang après l'actif | verre creux (lentille native, fumée 0,20) · anneau **continu**, plancher 0,55, double cheveu w 0,55 / 0,45 pt | flamme **contour** `flame` .ultraLight, alpha 0,35 | aucune ; immobile | **refuse** : liseré froid 0,12 s, haptique `.rigid`, rien ne bouge (existant) | non — un caillou |
 | **prochain** | le rang juste après l'actif | idem, plancher **0,70**, + un catch-light | flamme contour alpha 0,45 | aucune ; immobile | refuse (existant) | non |
 | **actif** (aujourd'hui) | `etape == id` | nacre : fumée 0,52, anneau continu plancher 0,45 (existant) | **la date du jour** — jour 0,98 à 32 pt, mois 0,60 à 11,6 (existant, rescalé) | **halo blanc 0,55 qui respire** (`LaunchPebble.breath`, mesuré +32,9) en **pt absolus ~150** ; taille ×1,08 | **ouvre le panneau** (§6), press → fumée + `.medium` (existant) | oui — ressort au lâcher |
-| **accompli** (fait) | passé + `faits` | verre sombre : fumée 0,52, **plancher 0**, lobes cos¹²/cos¹⁴ + **une perle seedée**, gain 0,6, w 0,55 pt absolu — OU `galetLisere` (σ 0,60 pt, cos θ 44°→110°) | **sa date** — jour 0,92, mois 0,60 | **aucun halo**, aucun anneau SwiftUI ; corps L ≈ 7 entre les cheveux | ouvre **sa story** (la séance passée — à brancher, D2) ; press existant | oui |
+| **accompli** (fait) | passé + `faits` | verre sombre : fumée 0,52, **plancher 0,13** (28-08 — voir ci-dessous), lobes cos¹²/cos¹⁴ + **une perle seedée**, gain 1,0, w 0,55 pt absolu | **sa date** — jour 0,92, mois 0,60 | **aucun halo**, aucun anneau SwiftUI ; corps L ≈ 7 entre les cheveux | ouvre **sa story** (la séance passée — à brancher, D2) ; press existant | oui |
 | **raté** | passé + non fait | idem accompli, lobes à 0,35 | sa date en **fantôme 0,22** (existant) | rien | rien (ou la story vide « pas de séance ce jour ») | oui, plus lourd (0,6·d) ? — question |
 | **parfait** (record) | jamais rendu aujourd'hui (`.parfait` mort dans `etatDe`) | accompli + **le souffle d'or** dans la nappe basse (`chaud 0,5`, existant) | sa date | rien | sa story | oui |
 
@@ -698,6 +817,41 @@ marqué.
 continu**, le passé **rare et fin**, l'aujourd'hui **respire**, l'or n'existe
 qu'en anneau (lune) ou en disque (pièce), et **rien ne bouge sans le doigt**
 sauf le halo de l'actif et le catch-light des nœuds disponibles.
+
+### 5 quinquies. L'ANNEAU DU PASSÉ SE FERME — « les faites font trop EMPTY » (28-08)
+
+À `plancher = 0`, un jour fait n'avait **que** deux lobes et une perle posés
+sur du vide : mesuré, le creux de son anneau tombait **SOUS le fond**
+(−16 et −6) — le galet lisait comme un TROU, pas comme une pierre, alors que
+le catalogue promettait un « corps L ≈ 7 entre les cheveux ».
+
+Le remède n'est pas de rendre le bord plus clair (ça le rend RÉGULIER, et sa
+loi du 26-08 à 22 h 30 dit « très fin et **pas** régulier »), c'est de le
+**fermer très bas**. Trois valeurs mesurées, pic et creux exprimés en écart
+au fond, CV = irrégularité le long de l'anneau :
+
+| plancher | pic | creux (l'anneau se ferme ?) | CV |
+|---|---|---|---|
+| **0** | 94 / 103 | **−16 / −6** — un trou | 0,55 / 0,82 |
+| 0,22 | 109 / 106 | +51 / +48 | **0,25** — presque lisse, mord sur l'actif |
+| **0,13** ✅ | 107 / 105 | **+34 / +30** | **0,41 / 0,37** |
+
+L'échelle complète à 0,13, et elle est monotone sur les TROIS grandeurs :
+
+| | actif | fait | à venir | lune éteinte |
+|---|---|---|---|---|
+| pic (clarté) | 151 | 107 / 105 | 77 / 73 | 62 |
+| creux (l'objet existe) | 125 | 34 / 30 | 8 / 1 | −14 |
+| CV (irrégularité) | **0,04** plein | 0,37-0,41 | 0,68-0,89 rare | 1,00 |
+
+⚠️ **C'est le CV qui protège l'actif** : aujourd'hui reste le SEUL anneau
+plein du chemin (0,04). Le passé s'en tient à dix fois plus d'irrégularité —
+il existe, il ne prétend pas.
+
+⚠️ **RESTE PRÉVU ET JAMAIS RENDU** : `.parfait` et son **souffle d'or** —
+`etatDe` ne le renvoie jamais (`faits.contains ? .accompli : .rate`). C'est le
+levier « plus voyant » encore disponible pour le passé, et il attend une
+source : qu'est-ce qu'un record ?
 
 ---
 

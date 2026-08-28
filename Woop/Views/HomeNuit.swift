@@ -207,7 +207,7 @@ struct HomeNuitFond: View {
     private var rasant: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                    paused: DepartEtat.shared.homeDort)) { tl in
                 let t = Float(RasantHorloge.t(tl.date))
                 let dx = reduceMotion ? 0 : Float(tilt.value.x)
                 let dy = reduceMotion ? 0 : Float(tilt.value.y)
@@ -2175,7 +2175,7 @@ struct HomeNuitPage: View {
                     // aussi — du verre natif sur une vidéo vivante sous une
                     // page opaque, c'était la moitié des 12-21 img/s mesurés.
                     .environment(\.verreDemonte,
-                                  menuOuvert || DepartEtat.shared.cheminOuvert)
+                                  menuOuvert || DepartEtat.shared.homeDort)
                     }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
@@ -2287,6 +2287,7 @@ struct HomeNuitPage: View {
                     let chemin = cheminEtat
                     DuolinguoPage(etapeInitiale: chemin.etape,
                                   faits: chemin.faits,
+                                  dates: chemin.dates,
                                   onRetour: { cheminOuvert = false },
                                   onDemarrer: { demarrerDepuisChemin() })
                 }
@@ -2915,7 +2916,7 @@ struct HomeNuitPage: View {
                                 peak: stats?.peak ?? PeakEffortInfo(),
                                 arrivee: arr, lisere: true,
                                 // le verre dort sous la route (jalon 1)
-                                verre: !DepartEtat.shared.cheminOuvert,
+                                verre: !DepartEtat.shared.homeDort,
                                 slots: slots,
                                 vides: widgetsVides,
                                 edition: editionP,
@@ -2953,10 +2954,31 @@ struct HomeNuitPage: View {
                     SemaineStrip(faits: faitsAffiche, prevus: prevus,
                                  arrivee: arr,
                                  materialises: materialises,
+                                 // ⚠️ **LA PORTE PASSE PAR LE `onTap` DE
+                                 // L'ARDOISE** (27-08 : « je n'arrive pas à
+                                 // activer la route en cliquant sur le widget
+                                 // This week »). Chaque mini-card FAITE porte
+                                 // son propre `DragGesture(minimumDistance: 0)`
+                                 // : l'enfant prend le doigt et appelle
+                                 // `onTap(i)` — que personne n'écoutait. Le
+                                 // `.onTapGesture` posé sur le PARENT ne voyait
+                                 // donc jamais un tap sur une date ; seul le
+                                 // fond vide de la card ouvrait le chemin.
+                                 // C'est la loi de la maison : un enfant qui a
+                                 // un geste bat le tap de son parent.
+                                 // (Le jour où une mini ouvrira la story de SA
+                                 // séance, c'est ici que l'index servira.)
+                                 onTap: { i in
+                                     print("[SONDE-CHEMIN] tap mini-card \(i)")
+                                     ouvrirChemin()
+                                 },
                                  lisere: true,
-                                 verre: !DepartEtat.shared.cheminOuvert)
+                                 verre: !DepartEtat.shared.homeDort)
                         .contentShape(RoundedRectangle(cornerRadius: 22))
-                        .onTapGesture { ouvrirChemin() }
+                        .onTapGesture {
+                            print("[SONDE-CHEMIN] tap fond de l'ardoise")
+                            ouvrirChemin()
+                        }
                         .padding(.leading, 24)
                         .padding(.top, geo.size.height * 0.620)
                         .offset(y: 8 * net)
@@ -3124,15 +3146,50 @@ struct HomeNuitPage: View {
         // surface tactile QUE là où ses enfants dessinent : le « tap sur une
         // zone vide » ne rattrapait donc rien du tout — la loi payée du
         // dépôt (« une vue sans taille intrinsèque n'attrape pas les gestes »).
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if listeSlot != nil { fermerListe(); return }
-            if edition, vitrineSlot == nil { sortirEdition(); return }
-            guard reglageOuvert else { return }
-            withAnimation(.spring(response: 0.40,
-                                  dampingFraction: 0.84)) {
-                reglageOuvert = false
-            }
+        // ⚠️ **LE RATTRAPEUR N'OCCLUT PLUS LE STOP EN SÉANCE** (27-08, cause
+        // confirmée du « stop mort sur la home »). Cette surface plein écran
+        // vit dans `contenu`, DEVANT le player docké qui vit dans `fond`
+        // (ZStack de MenuHote : fond derrière, contenu devant). En séance elle
+        // occultait le bouton Stop — un frère plein écran devant lui, que le
+        // `highPriorityGesture` du stop ne peut pas battre (il ne bat que les
+        // ANCÊTRES) — et elle avalait le tap même sans rien à fermer (elle
+        // `return` sans le rendre). En séance elle ne prend donc le doigt QUE
+        // si elle a réellement quelque chose à fermer.
+        //
+        // ⚠️⚠️ **ET CETTE INERTIE NE DOIT TOMBER QUE SUR ELLE** (28-08, la
+        // cause CONFIRMÉE du « la home est bloquée, le player répond pas et la
+        // page non plus »). Le `.allowsHitTesting` était posé sur le ZStack
+        // ENTIER du mobilier (2745 → 3148) : or il éteint la vue ET TOUTE SA
+        // DESCENDANCE. Pendant qu'une séance était ouverte, le slider
+        // « COMMENCER », `CardsRangee`, le bouton coffre et surtout
+        // **`SemaineStrip` — la porte de la route** — étaient morts au doigt.
+        // Seuls la tab bar, le galet-menu et le player docké répondaient
+        // encore. C'était aussi la SECONDE cause, indépendante, du widget
+        // « This week » qui n'ouvrait plus le chemin.
+        //
+        // Le rattrapeur descend donc en `.background` : DERRIÈRE le mobilier
+        // (les taps des enfants gagnent, comme avant — un fond ne les vole
+        // pas), avec sa forme à lui, et son inertie à lui. Le mobilier, lui,
+        // garde son hit-testing en toutes circonstances.
+        .background {
+            Color.clear
+                // Sans `contentShape`, une vue sans taille intrinsèque
+                // n'attrape pas les gestes (la loi payée du dépôt).
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // SONDE (27-08) : si ce print sort quand tu tapes STOP en
+                    // séance, le rattrapeur a volé le tap du player.
+                    print("[SONDE-RATTRAPEUR] tap avalé — enSeance=\(enSeance) liste=\(listeSlot != nil) edition=\(edition) reglage=\(reglageOuvert)")
+                    if listeSlot != nil { fermerListe(); return }
+                    if edition, vitrineSlot == nil { sortirEdition(); return }
+                    guard reglageOuvert else { return }
+                    withAnimation(.spring(response: 0.40,
+                                          dampingFraction: 0.84)) {
+                        reglageOuvert = false
+                    }
+                }
+                .allowsHitTesting(!enSeance || listeSlot != nil
+                                  || edition || reglageOuvert)
         }
     }
 
@@ -3641,9 +3698,12 @@ struct HomeNuitPage: View {
     /// l'ouvre par l'état partagé. Le cover ne survit que pour le banc
     /// `-homeV2` (HomeNuitLab, sans racine).
     private func ouvrirChemin() {
+        print("[SONDE-CHEMIN] ouvrirChemin() appelé — exoParRoute=\(exoParRoute)")
         if exoParRoute {
             let chemin = cheminEtat
-            DepartEtat.shared.ouvrirChemin(etape: chemin.etape, faits: chemin.faits)
+            DepartEtat.shared.ouvrirChemin(etape: chemin.etape,
+                                           faits: chemin.faits,
+                                           dates: chemin.dates)
             return
         }
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -3660,7 +3720,7 @@ struct HomeNuitPage: View {
     /// Banc : `-duoEtape n` force la n-ième séance comme étape (branchée,
     /// avec panneau) — c'est LE banc qui manquait pour juger les états
     /// ensemble (audit §0) ; les jours d'avant suivent le motif démo.
-    private var cheminEtat: (etape: Int, faits: Set<Int>) {
+    private var cheminEtat: (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
         let finies = workoutsBruts.compactMap(\.endedAt)
         var r = EcranSpec.etapeEtFaits(seancesFinies: finies)
         let a = CommandLine.arguments
@@ -3669,6 +3729,15 @@ struct HomeNuitPage: View {
             r.etape = EcranSpec.id(pourJour: n)
             r.faits = Set(EcranSpec.seances.prefix(max(n, 0)).enumerated()
                 .filter { $0.offset % 4 != 2 }.map { $0.element.id })
+            // Le banc fabrique aussi les estampilles, sinon les jours faits
+            // n'auraient plus de date (elle vient de la complétion, pas du
+            // rang) : rang k = aujourd'hui − (n − k) jours.
+            r.dates = [:]
+            for (k, e) in EcranSpec.seances.prefix(max(n, 0)).enumerated()
+            where r.faits.contains(e.id) {
+                r.dates[e.id] = Calendar.current.date(byAdding: .day,
+                                                      value: k - n, to: Date())
+            }
         }
         return r
     }
@@ -3682,6 +3751,16 @@ struct HomeNuitPage: View {
         if exoParRoute {
             // le monde TabView : le chemin se replie, l'onglet exo prend
             // la scène avec la séance qui tourne.
+            // ⚠️ **C'EST LE DRAPEAU PARTAGÉ QU'IL FAUT BAISSER** (28-08,
+            // « je n'arrive plus à déclencher la route en cliquant sur le
+            // widget this week »). Dans le monde TabView, la route est montée
+            // à la RACINE depuis `DepartEtat.shared.cheminOuvert` ; le
+            // `cheminOuvert` local de la home ne pilote que le cover du banc.
+            // On baissait donc le mauvais : lancer une séance depuis la route
+            // laissait le drapeau partagé VRAI à vie, et chaque `ouvrirChemin`
+            // suivant tombait sur son `guard !cheminOuvert`. Un seul départ de
+            // séance condamnait le widget pour toute la session.
+            DepartEtat.shared.fermerChemin(sansAnimation: true)
             cheminOuvert = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 onRoute(.exercises)
@@ -4102,7 +4181,7 @@ struct VerreGaletDur: View {
         let h = cote + descente + pan.height + 2 * Self.pad
         // LA HOME DORT SOUS LA ROUTE (jalon 1) : le shader du verre se tait.
         TimelineView(.animation(minimumInterval: 1.0 / 20.0,
-                                paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                paused: DepartEtat.shared.homeDort)) { tl in
             let t = Float(RasantHorloge.t(tl.date))
             Rectangle()
                 // JAMAIS `.clear` sous un `colorEffect` : l'alpha nul de
@@ -4238,7 +4317,7 @@ private struct FumeeInvite: View {
     var body: some View {
         if !reduceMotion {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                    paused: DepartEtat.shared.homeDort)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
                 // ⚠️ DEUX PÉRIODES INCOMMENSURABLES (7,3 s et 11,7 s). Un seul
@@ -4276,7 +4355,7 @@ struct InviteTirage: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30,
-                                paused: DepartEtat.shared.cheminOuvert)) { ctx in
+                                paused: DepartEtat.shared.homeDort)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             VStack(spacing: 3) {
                 chevron(souffle(t, 0))
@@ -4355,7 +4434,7 @@ struct PoudreMini: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
                                 paused: salves.isEmpty || reduceMotion
-                                    || DepartEtat.shared.cheminOuvert)) { tl in
+                                    || DepartEtat.shared.homeDort)) { tl in
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
                 for s in salves { dessiner(s, ctx: &ctx, quand: tl.date) }

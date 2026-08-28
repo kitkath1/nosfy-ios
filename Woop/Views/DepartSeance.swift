@@ -58,6 +58,25 @@ final class DepartEtat {
     /// donne.
     var cheminEtape = 0
     var cheminFaits: Set<Int> = []
+    /// Les dates de complétion des séances faites (`Workout.endedAt`) — 28-08,
+    /// sa règle : « les jours apparaissent le jour où le user a terminé sa
+    /// séance ». Elles voyagent AVEC les faits : un galet fait porte SA date.
+    var cheminDates: [Int: Date] = [:]
+    /// ⚠️ **UN GALET EST AU DOIGT** (28-08) — le seul but de ce drapeau est de
+    /// faire taire le geste de sortie de `CheminHote` pendant le port. Il est
+    /// écrit deux fois par port (prise / lâcher) et **lu uniquement dans la
+    /// fermeture du geste**, jamais dans un `body` : sans ça, chaque image du
+    /// port reconstruirait la route sous le doigt et tuerait la séquence.
+    var galetPorte = false
+    /// ⚠️ **LE SOMMEIL DE LA HOME ARRIVE APRÈS LA TRANSITION** (28-08, « on
+    /// voit un lag à l'arrivée »). `\.dort` lisait `cheminOuvert` : la home
+    /// s'endormait À L'INSTANT du basculement — 14 horloges mises en pause,
+    /// vidéos posées, verre démonté — c'est-à-dire EN PLEIN MILIEU de la
+    /// course de la route. Le coût du sommeil se payait sur les images de la
+    /// transition (le piège de la vue lourde pendant un film, déjà payé ici).
+    /// Elle s'endort maintenant une fois la route arrivée, et se RÉVEILLE
+    /// immédiatement à la fermeture — le réveil, lui, doit précéder la sortie.
+    var homeDort = false
     /// Les nœuds spéciaux (lune, trésor, pièce) déjà RÉCLAMÉS — persistés
     /// tant que la source des rewards (`coin_ledger`, `user_boosters`) n'est
     /// pas là : sans ça, une lune re-tapable à chaque lancement = boosters
@@ -70,19 +89,33 @@ final class DepartEtat {
         }
     }
 
-    func ouvrirChemin(etape: Int, faits: Set<Int>) {
+    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:]) {
+        print("[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? \(cheminOuvert)")
         guard !cheminOuvert else { return }
         cheminEtape = etape
         cheminFaits = faits
+        cheminDates = dates
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.88)) {
+        // ⚠️ EASE, PAS RESSORT (28-08) : un ressort à 0,88 d'amortissement
+        // dépasse puis revient, et ce retour se lisait comme un décalage. Sur
+        // un fondu il n'y a rien à faire dépasser — la courbe doit juste
+        // arriver et s'arrêter.
+        withAnimation(.easeOut(duration: 0.40)) {
             cheminOuvert = true
+        }
+        // le fondu dure 0,40 s : on endort après, jamais pendant.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) { [weak self] in
+            guard let self, self.cheminOuvert else { return }
+            self.homeDort = true
         }
     }
 
     /// `sansAnimation` : la page est DÉJÀ sortie au doigt (le geste l'a
     /// emmenée hors écran) — la transition de l'hôte ne doit pas la rejouer.
     func fermerChemin(sansAnimation: Bool = false) {
+        // Le réveil PRÉCÈDE la sortie : la home doit être vivante quand elle
+        // réapparaît, pas la rattraper une demi-seconde plus tard.
+        homeDort = false
         if sansAnimation {
             var tx = Transaction()
             tx.disablesAnimations = true
@@ -191,12 +224,33 @@ struct CheminHote<Contenu: View>: View {
                     .allowsHitTesting(tirage < 2)
             }
             .simultaneousGesture(
-                DragGesture(minimumDistance: 12, coordinateSpace: .local)
+                // ⚠️ **24 pt, PAS 12** (28-08, « je clique n'importe où dans
+                // l'écran et ça se ferme »). Ce n'était pas l'overlay qui se
+                // fermait : c'était TOUTE LA ROUTE qui partait. À 12 pt, un
+                // pouce qui roule en tapant suffit à armer le geste, et le
+                // verrou d'axe ne demande qu'un dx positif.
+                DragGesture(minimumDistance: 24, coordinateSpace: .local)
                     .onChanged { v in
                         if debut != v.startLocation {
                             debut = v.startLocation
                             axe = 0
                             seuilFranchi = false
+                        }
+                        // ⚠️ LE JOUET PASSE AVANT LA SORTIE : un galet au
+                        // doigt gèle ce geste pour toute la durée de la
+                        // course (`axe = -1` le condamne jusqu'au prochain
+                        // `startLocation`), et la page rentre si elle avait
+                        // déjà glissé. Sans ça, porter un galet vers la
+                        // droite faisait sortir de la route.
+                        if DepartEtat.shared.galetPorte {
+                            axe = -1
+                            if tirage > 0 {
+                                withAnimation(.spring(response: 0.38,
+                                                      dampingFraction: 0.86)) {
+                                    tirage = 0
+                                }
+                            }
+                            return
                         }
                         if axe == 0 {
                             let dx = v.translation.width, dy = v.translation.height
@@ -217,8 +271,19 @@ struct CheminHote<Contenu: View>: View {
                         jeton += 1
                         // « très sensible » : 28 % de la largeur, OU l'élan
                         // (la course prédite dépasse 60 %).
+                        // ⚠️ **L'ÉLAN EXIGE MAINTENANT UNE COURSE RÉELLE**
+                        // (28-08). `predictedEndTranslation` extrapole la
+                        // VITESSE : un pouce qui roule de 12-20 pt en tapant
+                        // prédit plus de 240 pt, donc franchissait les 60 % à
+                        // lui seul — et la route sortait sur un TAP. C'est le
+                        // seul chemin du code qui produise une disparition
+                        // sèche (`fermerChemin(sansAnimation:)`), et c'est ce
+                        // qu'elle prenait pour « l'overlay se ferme tout seul ».
+                        // Le flick reste servi, mais il doit avoir vraiment
+                        // parcouru 12 % de la largeur.
                         let sort = tirage > 0.28 * L
-                            || v.predictedEndTranslation.width > 0.60 * L
+                            || (tirage > 0.12 * L
+                                && v.predictedEndTranslation.width > 0.60 * L)
                         if sort {
                             UIImpactFeedbackGenerator(style: .soft)
                                 .impactOccurred(intensity: 0.6)

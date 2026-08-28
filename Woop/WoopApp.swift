@@ -480,16 +480,58 @@ struct RootView: View {
     /// qui la tire vers la droite au doigt.
     @ViewBuilder private var cheminEnArbre: some View {
         if depart.cheminOuvert {
+            // ⚠️ **LE NOIR ARRIVE AVANT LA ROUTE** (28-08, « on voit le fond
+            // rouge de la home à l'arrivée sur le chapitre 1 »). La route
+            // GLISSE depuis le bas : tant qu'elle n'a pas fini sa course, le
+            // haut de l'écran montre encore la home — son aurore rouge. Ce
+            // plan noir, lui, est monté SANS transition : il est là dès la
+            // première image, et la route glisse sur du noir.
+            Color.black
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                // ⚠️ `.identity`, SANS QUOI IL FOND LUI AUSSI. La transition
+                // par défaut de SwiftUI est un fondu : ce plan serait arrivé
+                // en fondu (donc translucide pendant que la route arrive) et
+                // surtout il serait REPARTI en fondu — la home réapparaissant
+                // au travers pendant que la route glisse. Il doit être opaque
+                // dès la première image et jusqu'à la dernière.
+                .transition(.identity)
+                .zIndex(3.5)
             CheminHote(onSortie: { depart.fermerChemin(sansAnimation: true) }) {
                 DuolinguoPage(etapeInitiale: depart.cheminEtape,
                               faits: depart.cheminFaits,
+                              dates: depart.cheminDates,
                               reclamees: depart.reclamees,
                               onLune: cheminLune,
                               onPiece: cheminPiece,
                               onRetour: { depart.fermerChemin() },
                               onDemarrer: { demarrerDepuisChemin() })
+                    .onAppear { print("[SONDE-CHEMIN] la page du chemin est MONTÉE") }
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            // ⚠️ **L'ARRIVÉE EST UN FONDU, LA SORTIE UN GLISSEMENT** (28-08,
+            // « on voit encore un petit décalage qui vient du bas, l'animation
+            // d'arrivée n'est pas assez fluide »).
+            //
+            // Le `.move(edge: .bottom)` translatait sur TOUTE la hauteur de
+            // l'écran un sous-arbre qui porte 5 lecteurs vidéo et 45 galets à
+            // lentille native : chaque image forçait la recomposition de tout
+            // ça. Et le ressort qui le jouait (amortissement 0,88) DÉPASSE
+            // puis revient — ce retour, c'était le « décalage ».
+            //
+            // Un fondu ne change AUCUNE géométrie : rien à remettre en page,
+            // rien à ré-échantillonner. Il est légal ici depuis que le plan
+            // noir opaque est posé dessous (c'est l'absence de ce plan, pas le
+            // fondu, qui laissait fuir l'aurore rouge de la home).
+            //
+            // La SORTIE, elle, reste un glissement : opaque par construction,
+            // elle ne peut jamais laisser transparaître la home.
+            //
+            // Et la beauté de l'arrivée ne vient pas du mouvement de la page —
+            // elle vient de la CASCADE des galets, qui démarre à +0,5 s, juste
+            // après la fin du fondu : noir, le décor se matérialise, les neuf
+            // galets tombent.
+            .transition(.asymmetric(insertion: .opacity,
+                                    removal: .move(edge: .bottom)))
             .zIndex(4)
         }
     }
@@ -884,7 +926,9 @@ struct RootView: View {
             // appliqué au TabView, il ne masque rien.
             // LA HOME DORT SOUS LA ROUTE (jalon 1) : vidéos en pose, verre
             // démonté — voir `\.dort` (DepartSeance.swift).
-            .environment(\.dort, depart.cheminOuvert)
+            // ⚠️ `homeDort`, PAS `cheminOuvert` (28-08) : le sommeil arrive
+            // APRÈS la course de la route, jamais pendant — voir DepartSeance.
+            .environment(\.dort, depart.homeDort)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 // Les pages Exercices et Profil sont IMMERSIVES : la barre
                 // se retire quand on y entre — leur chevron fait la sortie,

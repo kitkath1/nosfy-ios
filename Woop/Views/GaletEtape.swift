@@ -171,6 +171,13 @@ struct GaletEtape: View {
     /// `@GestureState` retombe à `false` quand le geste finit OU est annulé
     /// — c'est sa raison d'être. Zéro horloge.
     @GestureState private var tenu = false
+    /// ⚠️ **LA MÊME CEINTURE, POUR LE PORT** (28-08). Le port lève un drapeau
+    /// PARTAGÉ (`DepartEtat.galetPorte`) qui fait taire le geste de sortie de
+    /// la route. Un geste peut mourir sans `onEnded` — la loi de la maison —
+    /// et le drapeau serait alors resté levé À VIE : le geste Spotify condamné
+    /// jusqu'au relancement. Un `@GestureState` retombe seul, geste fini OU
+    /// annulé ; c'est lui qui garantit le `onPort(false)`.
+    @GestureState private var portTenu = false
     @State private var debutDrag: CGPoint? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -209,6 +216,20 @@ struct GaletEtape: View {
         // (le drag bas). `.subviews` pour un galet non portable — jamais
         // `.none`, qui éteindrait aussi le drag bas.
         .highPriorityGesture(portGeste, including: portable ? .all : .subviews)
+        // LA CEINTURE DU PORT : le `@GestureState` retombe même quand le geste
+        // est ANNULÉ (là où `onEnded` ne vient jamais). Si le galet se croyait
+        // encore en main, on referme tout ici — le ressort du retour, et
+        // surtout le `onPort(false)` qui rend son geste de sortie à la route.
+        .onChange(of: portTenu) { _, enCours in
+            guard !enCours, enMain else { return }
+            enMain = false
+            withAnimation(reduceMotion
+                          ? .easeOut(duration: 0.2)
+                          : .spring(response: 0.55, dampingFraction: 0.58)) {
+                porte = .zero
+            }
+            onPort(false)
+        }
         .gesture(
             DragGesture(minimumDistance: 0)
                 .updating($tenu) { _, tenu, _ in tenu = true }
@@ -272,9 +293,19 @@ struct GaletEtape: View {
         // avec l'offset qu'il produit. Le doigt immobile paraît reculer, la
         // translation se dévore elle-même (≈ 46 % de la course, et l'élastique
         // finit de l'écraser). En global, le repère ne bouge jamais.
-        LongPressGesture(minimumDuration: 0.20, maximumDistance: 10)
+        // ⚠️ 0,13 s (28-08, deuxième passe : « tu peux encore réduire »).
+        // 0,20 → 0,16 → 0,13. On mord désormais sur la durée d'un tap appuyé,
+        // et c'était la raison d'écarter 0,14 au premier tour ; le filet
+        // existe et il tient : si la course reste sous 12 pt, le TAP est
+        // ré-émis au lâcher (voir `onEnded`), donc un tap un peu tenu ouvre
+        // quand même son overlay. Et `maximumDistance: 10` laisse le scroll
+        // gagner dès qu'on part en glissant.
+        LongPressGesture(minimumDuration: 0.13, maximumDistance: 10)
             .sequenced(before: DragGesture(minimumDistance: 0,
                                            coordinateSpace: .global))
+            .updating($portTenu) { valeur, etatGeste, _ in
+                if case .second(true, _) = valeur { etatGeste = true }
+            }
             .onChanged { valeur in
                 guard case .second(true, let drag) = valeur else {
                     if Self.sondeJouet, case .first(true) = valeur {
@@ -404,11 +435,11 @@ struct GaletEtape: View {
             default: return 0
             }
         }()
-        // LE HALO EN POINTS ABSOLUS (27-08) : à ×1,5, un halo ∝ Ø couvrait
-        // trois voisins (223 pt) — l'inverse de « lumière contrôlée ». L'actif
-        // porte le plus large (0,9 Ø ≈ 84 pt : il déborde sans couvrir).
-        let haloR: CGFloat = (etat == .actif ? D * 0.9 : max(D * 0.62, 68))
-            + 8 * press
+        // LE HALO — proportionnel de nouveau (les galets sont revenus à Ø 62 :
+        // le plancher absolu de 68 pt, posé quand ils faisaient 93, dominait
+        // désormais la pierre). L'actif porte le plus large : il déborde sans
+        // couvrir ses voisins (44 pt d'air).
+        let haloR: CGFloat = (etat == .actif ? D * 0.95 : D * 0.68) + 6 * press
         ZStack {
             if halo > 0.001 {
                 Circle()
@@ -531,15 +562,23 @@ struct GaletEtape: View {
         // (0,6), le raté presque éteint (0,35). chaud ≥ 0,9 = les cheveux
         // eux-mêmes passent à l'or (la lune disponible, le réclamé) — plus
         // aucun anneau SwiftUI ne s'ajoute par-dessus.
+        // ⚠️ **LE FAIT EST AFFIRMÉ, LE FUTUR EST VIDE** (27-08, sa capture :
+        // « t'as pas écouté… et l'état »). En appliquant « cheveu rare
+        // partout » j'avais ÉTEINT le passé et laissé le futur clair —
+        // mesuré à la mire : fait µ 69 contre futur µ 118-145, l'inverse
+        // exact de sa demande. Un jour FAIT se voit (« impression que
+        // l'étape a réellement été validée ») ; un jour à venir est en
+        // MODE EMPTY : le verre creux, la flamme fantôme, et rien d'autre.
+        // La rareté du cheveu ne change pas — c'est sa CLARTÉ qui dit l'état.
         switch etat {
-        case .verrouille: return (0.90, 0.85, 0)
-        case .prochain: return (1.0, 0.92, 0)
+        case .verrouille: return (0.42, 0.85, 0)
+        case .prochain: return (0.58, 0.92, 0)
         case .actif: return (1.0, 1.0, 0)
-        case .accompli: return (0.60, 0.90, 0)
-        case .parfait: return (0.60, 0.90, 0.5)
+        case .accompli: return (1.0, 0.90, 0)
+        case .parfait: return (1.0, 0.90, 0.5)
         // Le raté ne MEURT pas — la photo reste la loi, la matière ne meurt
         // jamais. Il s'éteint : c'est son ENCRE qui devient fantôme.
-        case .rate: return (0.35, 0.80, 0)
+        case .rate: return (0.55, 0.80, 0)
         // La lune verrouillée est la plus sombre du chemin ; disponible, ses
         // cheveux sont d'OR — le seul galet coloré, l'or en anneau.
         case .lune(let dispo): return dispo ? (1.0, 1.0, 1.0) : (0.45, 0.72, 0)
@@ -577,10 +616,28 @@ struct GaletEtape: View {
         // est le SEUL anneau plein — le bouton-bijou entier (plancher 0,45,
         // lobes du bijou) — et il respire. Tout le reste est rare.
         switch etat {
-        case .verrouille:          return (0.08, 1, 0.52)
-        case .prochain:            return (0.12, 1, 0.52)
+        // À VENIR = MODE EMPTY : le disque est CREUX (fumée 0,20, la vidéo
+        // passe au travers) et son bord n'est qu'un filet — c'est une place,
+        // pas un objet.
+        case .verrouille:          return (0.05, 1, 0.20)
+        case .prochain:            return (0.08, 1, 0.20)
         case .actif:               return (0.45, 0, 0.52)
-        case .accompli, .parfait:  return (0, 1, 0.52)
+        // FAIT = la pierre pleine au cheveu rare : la matière est là, la
+        // lumière est rare mais CLAIRE.
+        // ⚠️ **L'ANNEAU DU PASSÉ SE FERME** (28-08 : « les séances faites font
+        // trop EMPTY, t'avais pas prévu un design plus voyant ? »). À
+        // `plancher = 0` il n'existait QUE deux lobes et une perle posés sur
+        // du vide : sur un fond noir, un jour fait lisait comme un TROU, et le
+        // catalogue promettait pourtant un « corps L ≈ 7 entre les cheveux ».
+        // Le filet rend l'OBJET sans rendre l'anneau : la pierre EXISTE entre
+        // ses éclats, mais le bord reste « très fin et PAS RÉGULIER » (sa loi
+        // du 26-08 à 22 h 30). ⚠️ **0,22 était trop** — mesuré : le filet
+        // montait à +51 sur le fond et le CV tombait de 0,82 à 0,25, un anneau
+        // presque lisse, qui mordait sur la signature de l'actif (CV 0,03, le
+        // SEUL anneau plein du chemin). À 0,13 le trou reste bouché et
+        // l'irrégularité revient. Il tient toujours au-dessus du filet du
+        // futur (0,05) : la hiérarchie ne bouge pas.
+        case .accompli, .parfait:  return (0.13, 1, 0.52)
         case .rate:                return (0, 1, 0.52)
         case .lune(let dispo):     return (dispo ? 0.14 : 0, 1, 0.52)
         case .piece(let dispo):    return (dispo ? 0.14 : 0, 1, 0.52)
@@ -1015,7 +1072,7 @@ struct GaletEtapeLab: View {
                                    : (e.piece ? "circle.inset.filled"
                                       : (quel == .prochain || quel == .verrouille
                                          ? "flame" : nil)),
-                               taille: e.moon ? 117 : (e.piece ? 80 : 93),
+                               taille: e.moon ? 78 : (e.piece ? 53 : 62),
                                graine: Double(e.id),
                                date: dateMire(e, quel),
                                portable: quel == .actif || quel == .accompli
