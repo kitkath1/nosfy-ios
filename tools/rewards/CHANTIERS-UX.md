@@ -56,16 +56,114 @@ la dernière frame, titre/sous-titre dessous. Layout paysage (6 vidéos)
 ET layout portrait (`chauve_welcome_back`). La couche halo/âme de
 RewardPopup est déjà le slot prévu.
 
-## 7. Le WALLET à deux monnaies
+## 7. Le WALLET à deux monnaies — LE FLOW (revu le 28-08)
 
-La pièce noire a besoin d'une existence dans le coffre : compteur
-`blackCoins` distinct, son animation d'incrément, et l'entrée vers le
-booster légendaire.
+*Le détail du composant et ses mesures :
+[../coffre-v2/PLAN-PIED-COFFRE.md](../coffre-v2/PLAN-PIED-COFFRE.md).*
+
+**Le principe** : ce qu'on récolte se lit à DEUX endroits, et jamais
+autrement — **le coffre** (la page entière, une pièce par écran) et **le
+profil** (deux pills, en résumé). Le même nombre, une seule source.
+
+### Le parcours
+
+```
+        SÉANCE                         TIRAGE SERVEUR (rare)
+     20 pièces / série                p ≈ 1/30 séances
+           │                                   │
+           ▼                                   ▼
+     ┌───────────┐                       ┌───────────┐
+     │ PIÈCE OR  │  100 pièces = 1       │  PIÈCE    │  1 pièce = 1
+     │           │  booster ORANGE       │ LEGENDARY │  booster NOIR
+     └─────┬─────┘  (report cumulé)      └─────┬─────┘  (garanti légendaire)
+           │                                   │
+           ▼                                   ▼
+   COFFRE page 1                        COFFRE page 2
+   solde · règle · 62/100 · sachets      solde · règle · sachets
+           │                                   │
+           └──────────────┬────────────────────┘
+                          ▼
+                PROFIL : deux pills (orange, noire)
+                          │
+                          ▼
+                 MANÈGE de la robe correspondante
+```
+
+### Ce que chaque page du coffre montre
+
+| | page OR | page LEGENDARY |
+| --- | --- | --- |
+| le SOLDE | pièces **disponibles** (plus « earned ») | pièces disponibles |
+| la RÈGLE | « 20 par série. 100 pour un booster. » | « Elle tombe rarement. Elle ouvre une légendaire, garantie. » |
+| la PROGRESSION | **oui** — 62/100 vers le prochain | **non**, et c'est voulu |
+| les BOOSTERS | le sachet ORANGE + le nombre d'ouvrables | le sachet NOIR + le nombre (= le solde) |
+
+### Les trois règles qui tiennent ce flow
+
+1. **« Earned » n'est pas « disponible ».** Dès qu'une pièce s'achète quelque
+   chose, le total gagné cesse d'être le solde. C'est le pivot du §0 de
+   [PLAN-REWARDS-BACKEND.md](PLAN-REWARDS-BACKEND.md), et le coffre est le
+   premier écran où il se voit.
+2. **Les deux pages ne sont pas symétriques, et il ne faut pas les forcer.**
+   L'or s'accumule (une progression a du sens) ; la legendary tombe (il n'y a
+   rien à accumuler). Une jauge sur la page legendary obligerait à exposer le
+   *pity timer* — **jamais** : il deviendrait farmable, et la rareté est toute
+   la valeur de cette pièce.
+3. **Un nombre montré à deux endroits n'existe qu'une fois dans le code.**
+   Aujourd'hui le coffre et le profil lisent DEUX maquettes indépendantes
+   (`CoffreFortPurse.coins` calculée, `SacreEtat.boostersEnAttente` en
+   mémoire) : elles peuvent déjà se contredire à l'écran.
+
+### L'état au 28-08
+
+- la **deuxième pill du profil est POSÉE** (noire + orange, côte à côte) ;
+- la page argent du coffre **existe** (`manege = [.or, .argent]`), mais son
+  compte est écrit **en dur à « 0 »** ;
+- le pied (`PiedCoffre`) porte trois chaînes ; il doit porter **une donnée**
+  (solde, règle, progression optionnelle, sachet + compte) ;
+- le back-end lui doit `etat_coffre()` et la table `booster_progress`, qui
+  **n'a pas été créée** par la migration du 28-08 (§4 undecies).
 
 ## 8. WELCOME BACK
 
 Les deux variantes (la pleine avec vidéo portrait + une simple), le
 bouton Claim, la pill qui s'anime après le claim.
+
+### 8bis. CE QUE LE WELCOME BACK DONNE : **10 PIÈCES** (28-08)
+
+Verdict : *« quand tu te connectes, à chaque connexion tu manges 10 pièces —
+faudra le lier à la pop-up welcome back (les deux variants) et dans le
+backend »*.
+
+Le Welcome Back cesse donc d'être une politesse : **c'est un versement.** Il
+avait déjà tout ce qu'il faut pour le dire — `RewardPopup(count:unit:)` —, il
+passait juste `4 / "Sets"`. Il passera `10 / "Coins"`, dans les DEUX robes
+(`WelcomeRobe.video` et `.texte`), et le bouton Claim devient le geste qui
+encaisse.
+
+⚠️ **UNE QUESTION À TRANCHER, ET ELLE N'EST PAS COSMÉTIQUE : « à chaque
+connexion » est FARMABLE.** Tuer l'app et la relancer est une connexion ;
+littéralement appliqué, dix pièces se gagnent en trois secondes, en boucle, et
+toute l'économie du coffre (100 pièces = un booster) tombe. La règle qui
+tient, et que je recommande : **une fois par JOUR CALENDAIRE**, au premier
+lancement du jour. C'est ce que « je me connecte » veut dire pour un humain,
+et c'est aussi ce qui rend le retour quotidien désirable.
+
+⚠️ **ET LE CLAIM EST SERVEUR, PAS LOCAL.** Un compteur dans les préférences se
+remet à zéro en réinstallant l'app. L'idempotence se pose au même endroit et
+avec le même outil que le booster noir : un **index unique partiel** sur
+(user, jour) dans `coin_ledger`. Deux appareils le même matin ne créditent
+alors qu'une fois — sans verrou, sans transaction longue.
+
+**Conséquence sur la page des gains** (`CoffreV2.pageGains`) : elle dérive
+aujourd'hui des SÉANCES (`séries × 20`). Un versement de connexion n'est pas
+une séance : il n'y apparaîtrait jamais. **C'est le fait qui force la
+bascule** déjà annoncée au §17 du plan coffre — l'historique doit être lu du
+`coin_ledger`, pas reconstruit depuis les entraînements. Une ligne « Retour
+quotidien · +10 » avec sa date, à côté des « 12 séries · +240 ».
+
+Et le solde du pied du coffre (`variantes`, `dispo`) doit inclure ces pièces —
+même remarque, même remède : une seule source, le ledger.
 
 ## 9. Le sort de BRAVO (décision produit en attente)
 

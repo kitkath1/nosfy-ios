@@ -30,11 +30,17 @@ enum ForgeServeur {
     /// le flow réel appelle juste `tirer(jwt:workoutId:)`.
     static func tirer(jwt: String, workoutId: String? = nil,
                       famille: String? = nil,
-                      forceNeuf: Bool = false) async throws -> LuneForge.Carte {
+                      forceNeuf: Bool = false,
+                      boosterId: String? = nil) async throws -> LuneForge.Carte {
         var corps: [String: Any] = [:]
         if let workoutId { corps["workout_id"] = workoutId }
         if let famille { corps["famille"] = famille }
         if forceNeuf { corps["force_new"] = true }
+        // LE BOOSTER NOIR : on envoie l'id de SA réserve, JAMAIS une rareté.
+        // C'est le serveur qui relit `user_boosters.origine` et impose le
+        // registre légendaire — une rareté demandée par le client serait la
+        // faille de tout le système (§4 decies de la note backend).
+        if let boosterId { corps["booster_id"] = boosterId }
 
         var req = URLRequest(url: base.appending(path: "functions/v1/forge-card"))
         req.httpMethod = "POST"

@@ -47,11 +47,40 @@ final class SacreEtat {
     /// (les lignes à `opened_at is null`) qui donnera ce nombre, et c'est
     /// la seule façon qu'il survive à la fermeture de l'app.
     var boostersEnAttente = 1
+    /// LA DEUXIÈME RÉSERVE : les boosters NOIRS, ceux qu'une pièce noire
+    /// ouvre et qui rendent une légendaire (`tools/sacre/PLAN-BOOSTER-NOIR.md`).
+    ///
+    /// Deux réserves qui ne se croisent JAMAIS — verdict Kathryn : « on
+    /// n'aura jamais les deux ensemble ». Deux compteurs, deux portes, deux
+    /// manèges. Côté serveur ce sera le même `user_boosters`, filtré sur
+    /// `origine = 'legendaire'` (§4 decies de la note backend).
+    /// Le banc `-sacreNoir` en sème un.
+    var boostersNoirsEnAttente = SacreEtat.bancNoir ? 1 : 0
+    /// La robe que le manège doit porter à sa prochaine ouverture — posée
+    /// par la proposition ou par la pill, jamais devinée par la vue.
+    var robeCourante: RobeBooster = SacreEtat.bancNoir ? .noire : .lune
+
+    /// `-sacreNoir` : le parcours du booster NOIR de bout en bout, sans
+    /// backend — une réserve noire semée, et la proposition de fin de séance
+    /// (comme le bouton d'essai de la home) qui offre le noir. Tant que la
+    /// pièce noire n'est pas servie par le serveur, c'est la seule façon de
+    /// juger la porte.
+    static let bancNoir = CommandLine.arguments.contains("-sacreNoir")
+    /// Une proposition arrivée pendant un manège ouvert : elle repart
+    /// à la fermeture (jamais perdue).
+    var propositionEnAttente = false
 
     /// La proposition (aujourd'hui le bouton d'essai de la home ; demain
     /// la fin de séance).
-    func proposer() {
-        guard !manegeOuvert else { return }
+    func proposer(robe: RobeBooster = .lune) {
+        // Un manège déjà ouvert : la proposition ATTEND au lieu de se
+        // perdre — elle repart à la fermeture (la pill du profil
+        // n'était qu'un filet, pas une réponse).
+        if manegeOuvert {
+            propositionEnAttente = true
+            return
+        }
+        robeCourante = Self.bancNoir ? .noire : robe
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
             popupOuverte = true
@@ -65,8 +94,11 @@ final class SacreEtat {
     /// manège payait son warm-up SceneKit PENDANT la sortie du panneau
     /// (vidéo + verre + poudre encore vivants) — le carrousel naissait
     /// en saccades. Le panneau sort d'abord, la scène se monte ensuite.
-    func ouvrirManege() {
+    func ouvrirManege(robe: RobeBooster? = nil) {
         guard !manegeOuvert else { return }
+        // La pill du profil dit QUELLE réserve elle ouvre ; la pop-up, elle,
+        // a déjà posé la robe en proposant. Rien ne la devine.
+        if let robe { robeCourante = robe }
         manegePose = false
         let panneauSort = popupOuverte
         withAnimation(.easeOut(duration: 0.22)) { popupOuverte = false }
@@ -93,6 +125,13 @@ final class SacreEtat {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         manegePose = false
         withAnimation(.easeInOut(duration: 0.32)) { manegeOuvert = false }
+        // La proposition mise en attente reprend la parole.
+        if propositionEnAttente {
+            propositionEnAttente = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+                self.proposer()
+            }
+        }
     }
 }
 
@@ -151,6 +190,20 @@ final class BoosterLoopLayerView: UIView {
 /// 12/255, et le fond est à 0,00 exactement), il ne reste que les
 /// sachets et leur fumée.
 struct BoosterLoopVideo: UIViewRepresentable {
+    /// LA ROBE CHANGE LE PLAN. Le panneau noir montrait les sachets ORANGE
+    /// du set Lune : il promettait la mauvaise chose avant même le premier
+    /// mot. `booster-loop-noir.mp4` est le MÊME plan (même caméra, même
+    /// fumée, même ping-pong — tout ce qui a été payé plus haut reste vrai),
+    /// dégradé au froid hors ligne : saturation 0,10 et une pointe de bleu.
+    /// Mesuré sur une image du milieu, l'écart R−B des pixels clairs passe
+    /// de **+55 (l'orange) à −2 (neutre)**.
+    ///
+    /// ⚠️ Ce que ce dégradé NE FAIT PAS : les sachets filmés gardent le
+    /// DESSIN du set Lune (leur liseré, leur croissant). De près on voit
+    /// des sachets du set Lune éteints, pas des sachets noirs. Un vrai plan
+    /// noir demande un rendu, pas un étalonnage.
+    var robe: RobeBooster = .lune
+
     final class Coordinator {
         var player: AVQueuePlayer?
         // Relâché, la boucle s'arrête au premier tour et le plan se fige.
@@ -166,7 +219,8 @@ struct BoosterLoopVideo: UIViewRepresentable {
         // Le cadre qu'on lui donne est au ratio EXACT du fichier (1,45) :
         // rien n'est recadré, toute la scène recuisinée est à l'écran.
         v.playerLayer.videoGravity = .resizeAspectFill
-        guard let url = Bundle.main.url(forResource: "booster-loop",
+        let plan = robe == .noire ? "booster-loop-noir" : "booster-loop"
+        guard let url = Bundle.main.url(forResource: plan,
                                         withExtension: "mp4") else {
             // Sans le fichier, le panneau reste le panneau : son verre et
             // sa nuit. On ne pose jamais un rectangle noir « en attendant ».
@@ -203,6 +257,7 @@ struct BoosterLoopVideo: UIViewRepresentable {
 /// descente n'aurait jamais lieu.
 struct BoosterPopupHote: View {
     var ouverte: Bool
+    var robe: RobeBooster = .lune
     var onOuvrir: () -> Void = {}
     var onFermer: () -> Void = {}
 
@@ -222,7 +277,7 @@ struct BoosterPopupHote: View {
                     // La largeur descend d'ICI : le panneau doit connaître
                     // sa taille AVANT d'entrer — un panneau qui monte du
                     // bas ne peut pas se mesurer en chemin.
-                    BoosterPopup(W: g.size.width,
+                    BoosterPopup(W: g.size.width, robe: robe,
                                  onOuvrir: onOuvrir, onFermer: onFermer)
                         .transition(.move(edge: .bottom))
                 }
@@ -242,8 +297,26 @@ struct BoosterPopupHote: View {
 /// CADRE FANTÔME au ras d'un bord est une faute déjà payée).
 struct BoosterPopup: View {
     var W: CGFloat
+    var robe: RobeBooster = .lune
     var onOuvrir: () -> Void = {}
     var onFermer: () -> Void = {}
+
+    /// LES MOTS APPARTIENNENT À LA ROBE. Le noir ne promet pas « une carte
+    /// du set Lune » : il promet CE QU'IL EST, une légendaire garantie —
+    /// c'est la seule certitude que l'app vende, elle a le droit de se dire.
+    private var titre: String {
+        robe == .noire ? "Un booster NOIR t'attend." : "Un booster t'attend !"
+    }
+
+    private var sousTitre: String {
+        robe == .noire
+            ? "Une carte LÉGENDAIRE dort à l'intérieur."
+            : "Une carte du set Lune dort à l'intérieur."
+    }
+
+    /// La fumée du diamant suit le monde : braise sur le set Lune, presque
+    /// froide sur le noir (la palette du manège noir, tenue jusqu'ici).
+    private var chaleurFumee: Float { robe == .noire ? 0.12 : 0.55 }
 
     /// Le drag de rangement — sur TOUTE la surface : le geste SIMULTANÉ
     /// laisse les deux boutons garder leurs taps (12 pt de course avant
@@ -333,13 +406,13 @@ struct BoosterPopup: View {
             // dès 46 % de sa hauteur), le texte ne lui marche pas dessus.
             Color.clear.frame(height: slotH + 34)
 
-            Text("Un booster t'attend !")
+            Text(titre)
                 .font(.inter(20, .semibold))
                 .foregroundStyle(Color.inkPrimary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 30)
-            Text("Une carte du set Lune dort à l'intérieur.")
+            Text(sousTitre)
                 .font(.inter(12.5))
                 .foregroundStyle(Color.inkMuted)
                 .multilineTextAlignment(.center)
@@ -351,7 +424,7 @@ struct BoosterPopup: View {
             Spacer(minLength: 0)
 
             DiamondPrimaryButton(title: "Ouvrir un Booster",
-                                 smokeWarmth: 0.55) {
+                                 smokeWarmth: chaleurFumee) {
                 onOuvrir()
             }
             .padding(.horizontal, 26)
@@ -463,7 +536,7 @@ struct BoosterPopup: View {
                     let dy: CGFloat = fige ? 0
                         : 5 * CGFloat(sin(e * 2 * .pi / 29.0))
                     if !Self.sansPlan {
-                    BoosterLoopVideo()
+                    BoosterLoopVideo(robe: robe)
                         // POSÉE UNE FOIS. Elle ne bouge plus jamais.
                         .frame(width: slotH * Self.ratioVideo,
                                height: slotH)
@@ -627,21 +700,39 @@ struct PoudreBooster: View {
 struct SachetVignette: View {
     var largeur: CGFloat
     var hauteur: CGFloat
+    var robe: RobeBooster = .lune
 
-    private static let image: UIImage? = Bundle.main
-        .path(forResource: "booster-pill", ofType: "png")
-        .flatMap { UIImage(contentsOfFile: $0) }
+    private static let lune: UIImage? = charger("booster-pill")
+    /// **LES DEUX VIGNETTES SONT JUMELLES DEPUIS LE 28-08.**
+    ///
+    /// La noire était mon bake du dessin À PLAT : posée à côté du rendu 3D
+    /// orange, elle lisait « autocollant » — mesuré, 0,3 % de pixels
+    /// spéculaires contre 3,45 %, et il fallait un alpha et un mode de
+    /// composition à elle. Les deux viennent maintenant des rendus de
+    /// Kathryn, même studio, même cadrage, même échelle
+    /// (`tools/coffre-v2/bake_vignettes.py`) : plus qu'un seul mode, plus
+    /// d'alpha à entretenir, et 2,52 % contre 1,87 % de spéculaires.
+    private static let noire: UIImage? = charger("booster-pill-noir")
+
+    private static func charger(_ nom: String) -> UIImage? {
+        Bundle.main.path(forResource: nom, ofType: "png")
+            .flatMap { UIImage(contentsOfFile: $0) }
+    }
 
     var body: some View {
-        if let ui = Self.image {
+        if let ui = robe == .noire ? Self.noire : Self.lune {
             Image(uiImage: ui)
                 .resizable()
                 .scaledToFit()
                 .frame(width: largeur, height: hauteur)
-                // Le sachet vit sur du noir : `plusLighter` efface son
-                // fond et ne laisse que ses néons — pas de découpe alpha
-                // à entretenir.
-                .blendMode(.plusLighter)
+        // ⚠️ COMPOSITION NORMALE, ET PLUS ADDITIVE. Le sachet vivait en
+        // `plusLighter` : sur la pill, posé sur du noir, personne ne voyait
+        // qu'il était TRANSLUCIDE. À cheval sur la plaque du coffre, on
+        // voyait le coin arrondi de la carte À TRAVERS lui — un objet qu'on
+        // doit pouvoir prendre en main ne peut pas être un fantôme. Les deux
+        // vignettes portent donc un alpha (silhouette mesurée au bake,
+        // `tools/coffre-v2/bake_vignettes.py` : la luminance ne SAIT PAS
+        // séparer le sachet de son halo, ils sont à la même valeur).
         }
     }
 }
@@ -657,6 +748,7 @@ struct SachetVignette: View {
 /// perd jamais un sachet, et cette pill est la porte pour y revenir.
 struct PillBooster: View {
     var nombre: Int
+    var robe: RobeBooster = .lune
     var action: () -> Void
 
     @State private var kick: CGFloat = 0
@@ -671,7 +763,7 @@ struct PillBooster: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { action() }
         } label: {
             HStack(spacing: 7) {
-                SachetVignette(largeur: 15, hauteur: 26)
+                SachetVignette(largeur: 15, hauteur: 26, robe: robe)
                     .frame(width: 20, height: 24)
                     .rotationEffect(.degrees(Double(kick) * -10))
                 Text("\(nombre)")
@@ -687,6 +779,8 @@ struct PillBooster: View {
             .scaleEffect(1 + 0.10 * kick)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(nombre) booster — ouvrir le manège")
+        .accessibilityLabel(robe == .noire
+            ? "\(nombre) booster noir — ouvrir le manège des légendaires"
+            : "\(nombre) booster — ouvrir le manège")
     }
 }

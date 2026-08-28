@@ -284,10 +284,21 @@ enum LuneForge {
     /// L'HABILLAGE — partagé entre la forge locale et ForgeServeur :
     /// l'illustration nue (du peintre ou du pool) devient une carte du
     /// set (cadre + lunes de rareté) avec sa depth v0.
+    /// LE CADRE DES LÉGENDAIRES (28-08, verdict Kathryn : « pour les cartes
+    /// légendaires pas de bordure orangée, c'est full noir avec un peu de
+    /// blanc, très très premium »). Même forme au pixel près — le cadre est
+    /// mesuré à la fenêtre d'illustration et au placement des lunes —, la
+    /// braise seulement remplacée par un argent froid, cuit hors ligne par
+    /// `tools/sacre/bake_cadre_legendaire.py`.
+    static func nomDuCadre(_ rarete: String) -> String {
+        rarete == "legendary" ? "carte-cadre-legendaire" : "carte-cadre"
+    }
+
     static func habiller(illustration: UIImage,
                          rarete: String) throws -> (art: UIImage, depth: UIImage) {
-        guard let cadre = UIImage(named: "carte-cadre")
-                ?? Bundle.main.path(forResource: "carte-cadre", ofType: "png")
+        let nom = nomDuCadre(rarete)
+        guard let cadre = UIImage(named: nom)
+                ?? Bundle.main.path(forResource: nom, ofType: "png")
                     .flatMap(UIImage.init(contentsOfFile:))
         else { throw Erreur.cadre }
         return (composer(illustration: illustration, cadre: cadre,
@@ -474,7 +485,12 @@ enum LuneForge {
         let n = lunesRarete[rarete] ?? 1
         let r: CGFloat = 7
         let y: CGFloat = 1316
-        let braise = UIColor(red: 1.0, green: 0.55, blue: 0.18, alpha: 0.92)
+        // Les lunes suivent le CADRE, jamais l'inverse : une légendaire au
+        // liseré d'argent qui garderait trois croissants de braise aurait
+        // l'air d'un montage. Blanc froid, même valeur, même halo.
+        let braise = rarete == "legendary"
+            ? UIColor(red: 0.93, green: 0.95, blue: 1.0, alpha: 0.92)
+            : UIColor(red: 1.0, green: 0.55, blue: 0.18, alpha: 0.92)
         ctx.saveGState()
         ctx.setShadow(offset: .zero, blur: 4,
                       color: braise.withAlphaComponent(0.55).cgColor)

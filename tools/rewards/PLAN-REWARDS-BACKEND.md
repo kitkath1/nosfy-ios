@@ -594,6 +594,175 @@ le butin `.renverse` les jours où la séance rapporte ≥ 3 boosters
 L'IA n'entre pas ici : **une robe n'est pas un mot.** Elle écrit ce
 qui se lit, jamais ce qui se montre.
 
+### 4 decies. LE BOOSTER NOIR — la pièce noire ouvre les LÉGENDAIRES
+### (ajouté le 28-08 sur le brief de Kathryn ; le plan design est
+### ../sacre/PLAN-BOOSTER-NOIR.md)
+
+Verbatim : *« un variant booster noir qui permettra d'ouvrir les
+légendaires : si l'user collecte une pièce noire il peut ouvrir ce
+fameux booster — donc même expérience que le carrousel de base, mais
+noir »*.
+
+**LA RÈGLE, en une ligne : 1 PIÈCE D'ARGENT = 1 BOOSTER NOIR = 1 CARTE
+LÉGENDAIRE, garantie.** C'est la seule monnaie de l'app qui achète une
+certitude — tout le reste est du hasard mis en scène.
+
+> ⚠️ **LA MONNAIE S'APPELLE ARGENT, ET PLUS « NOIRE » (28-08, verdict « il
+> faudrait le même nom »).** Elle portait trois noms — `.argent` dans l'app,
+> « pièce noire » dans les plans, `black` en base. **Le dessin a tranché** :
+> la planche `piece-argent` mesure `186 · 170 · 153` sur ses hautes lumières,
+> un métal PÂLE — une pièce qui ressemble à ça ne peut pas s'appeler noire.
+> Le sachet, lui, garde son nom : **la pièce d'argent ouvre le booster
+> noir**. Deux objets, deux noms — c'est la tautologie qu'on évite.
+> En base : `currency in ('yellow','silver')`, `solde_argent()`. Renommé le
+> jour même, tables VIDES — le moment le moins cher de la vie du projet.
+> Les mentions de « pièce noire » plus bas dans ce document désignent cette
+> pièce d'argent.
+
+#### Ce que ça N'EST PAS
+
+Ce n'est pas un deuxième parcours : le manège, l'engagement, la charge
+au maintien, la découpe de braise, le Sacre et l'accueil au profil sont
+**le même code**. Le variant est une **ROBE** (les textures du sachet)
+plus une **PORTE** (la pièce noire au lieu des 20 pièces jaunes).
+Aucune UI de cérémonie à réécrire, aucun fait neuf au fact engine.
+
+#### La chaîne, de la pièce à la carte
+
+| étape | qui décide | la garantie |
+| --- | --- | --- |
+| **le gain de la pièce noire** | `roll_rare` au `settle_session` — RNG **serveur** : p = 1/30 séances, pity garanti à la 45ᵉ, cooldown dur 10 séances (§2) | jamais un `Double.random` client, jamais farmable en rejouant l'UI — **le seul événement infalsifiable de l'app** (§8) |
+| **le solde noir** | une ligne `coin_ledger` `currency = 'black'`, `delta = +1` | solde DÉRIVÉ (somme des deltas), jamais une colonne à la main — la loi du §0 |
+| **l'annonce** | `RewardPopup`, atmosphère **RARE**, vidéo `reward-rare.mp4` (déjà recuite) | « vu = pris en compte » : la ligne est au ledger AVANT la cérémonie, l'affichage n'accorde rien |
+| **la réserve** | `claim_booster_legendaire()` : débit `delta = -1, currency = 'black', raison = 'ouverture_booster_noir'` + une ligne `user_boosters` `origine = 'legendaire'` | la garde `claim_booster` réutilisée **telle quelle** — verrou `for update skip locked`, retour idempotent si déjà scellée : un double tap, un réseau qui coupe ou un retour arrière ne tirent JAMAIS deux légendaires |
+| **le tirage** | `forge-card`, **pool `legendary` forcé côté serveur** en lisant `origine` sur la ligne réservée (patch écrit le 28-08, non déployé) | le client ne demande JAMAIS une rareté : il n'envoie que le `booster_id` de SA réserve — un paramètre `rarete` accepté de l'app serait la faille de tout le système |
+
+**Le booster noir ne coûte AUCUNE pièce jaune** — *tranché le 28-08 par
+Kathryn : « le prix, une pièce noire, pas plus »*. Le jaune se paie 20
+jaunes à l'ouverture (`claim_booster`), le noir se paie **1 noire, et
+rien d'autre** : deux monnaies, deux portes. Le §9.2 est clos sur ce
+point.
+
+**Le manège noir est SÉPARÉ** (verdict du même jour : « on n'aura jamais
+les deux ensemble ») et **la cérémonie garde la braise** — donc, côté
+backend, **deux réserves qui ne se croisent jamais** et aucune notion de
+robe à servir : le sachet noir est une texture, pas une donnée.
+
+#### ⚠️ LA MIGRATION — ET LA CORRECTION DU 28-08
+
+Ce paragraphe annonçait « une migration de la contrainte `origine` », en
+supposant la table déployée. **Vérifié en l'écrivant : elle ne l'est pas.**
+`supabase/migrations/` ne contient que `workouts`, `logged_exercises`,
+`strength_sets`, `cardio_phases`, `syntheses`, `cards` et `user_cards` :
+**`user_boosters` et `coin_ledger` n'existent nulle part** — le SQL de
+SUPABASE-PIPELINE.md est écrit, jamais passé. Le J3 du booster noir n'est
+donc pas un `alter`, c'est la CRÉATION des deux tables, avec ce que le noir
+demande dès le départ.
+
+**Le fichier est écrit et NON APPLIQUÉ** :
+`supabase/migrations/20260828120000_booster_noir.sql` — les deux tables aux
+schémas exacts du pipeline, plus : `origine` qui accepte `'legendaire'`, la
+colonne `currency` (`yellow`/`black`), les raisons `piece_noire` et
+`ouverture_booster_noir`, la fonction `claim_booster_legendaire()` et
+`solde_noir()`. Il porte aussi les `alter` défensifs pour l'autre monde —
+si le SQL du pipeline a été passé avant lui, les `create if not exists`
+sauteraient EN SILENCE et la contrainte resterait fausse.
+
+> Rien ne part sans Kathryn, et par la CLI (`supabase db push`), jamais par
+> le MCP de session.
+
+#### Les deux réserves ne se mélangent pas
+
+Le manège jaune lit `user_boosters where origine <> 'legendaire' and
+opened_at is null` ; le manège noir lit `origine = 'legendaire' and
+opened_at is null`. **Deux compteurs, deux pills, deux anneaux** — un
+anneau MIXTE (des sachets noirs au milieu des jaunes) demanderait une
+matière par clone et une rareté qui suit le slot engagé : c'est un autre
+chantier (Q1 du plan design).
+
+#### ⚠️ LE TROU QUE LE BOOSTER NOIR REND GRAVE (trouvé le 28-08)
+
+`forge-card` accepte deux manettes d'atelier du CLIENT : `famille` et
+`force_new`. **N'importe quel compte peut donc demander « La lune
+souveraine » à volonté, sans pièce noire.** Le défaut existe depuis le
+premier jour et ne se voyait pas : tant que toutes les cartes se valaient,
+tricher ne rapportait qu'une image. Une légendaire GARANTIE n'a de valeur
+que si elle ne s'obtient pas autrement.
+
+Le patch les réserve au compte d'atelier, nommé au déploiement
+(`FORGE_DEV_USER`) ; non renseigné, elles sont fermées pour tout le monde.
+**Conséquence à assumer** : le banc `CarteLuneLab` perd ses leviers tant
+que la variable n'est pas posée.
+
+Deux autres bornes du même patch :
+- **la garantie tient sur les DEUX chemins.** Le tirage saute le pool dans
+  35 % des cas et forgeait alors une famille prise au hasard dans les 25 —
+  donc une commune, avec une pièce noire. La rareté imposée borne
+  maintenant le pool ET la forge neuve.
+- **l'idempotence est au sachet.** Un `booster_id` déjà scellé rend SA
+  carte ; le scellement (`user_boosters.card_id`) est écrit après l'insert
+  dans `user_cards`. Double tap, réseau coupé, retour arrière : jamais deux
+  légendaires pour une pièce.
+
+#### Ce que l'IA a le droit d'en dire
+
+Rien de plus qu'ailleurs : les MOTS de la card d'annonce (§4, atmosphère
+RARE, gabarit déterministe derrière). **Ni la rareté, ni le tirage, ni
+la robe** — la pièce noire est un fait serveur, et une légendaire est
+une promesse : elle ne se raconte pas au conditionnel.
+
+### 4 undecies. CE QUE LE COFFRE ATTEND — le wallet à deux monnaies
+### (ajouté le 28-08 ; l'analyse du composant est
+### ../coffre-v2/PLAN-PIED-COFFRE.md, le flow ../rewards/CHANTIERS-UX.md §7)
+
+Le pied du coffre doit montrer, **par page**, quatre faits : le solde
+DISPONIBLE, la règle, la progression vers le prochain booster, et le nombre
+de sachets ouvrables. Ce qu'il demande au serveur :
+
+**✅ TOUT CECI EST EN LIGNE depuis le 28-08**
+(`20260828160000_wallet_coffre.sql`, appliquée et vérifiée) :
+
+| ce qu'il affiche | d'où ça vient |
+| --- | --- |
+| solde or | `etat_coffre() → solde_or` |
+| solde argent | `etat_coffre() → solde_argent` (ou `solde_argent()` seule) |
+| 62/100 vers le prochain booster | `booster_progress.reste` — **table créée** |
+| sachets orange ouvrables | `etat_coffre() → boosters_or` |
+| sachets noirs ouvrables | **= le solde argent** (le sachet naît au claim) |
+| les PRIX | `reward_rules` — **sortis du code** |
+
+**UN SEUL APPEL, PAS QUATRE** : `etat_coffre()` rend
+`{ solde_or, solde_argent, boosters_or, reste, prix_booster,
+pieces_par_serie }`. Ce n'est pas qu'une économie d'allers-retours : c'est
+**la garantie que le coffre et le profil ne peuvent pas afficher deux
+vérités** — un nombre montré à deux endroits n'a le droit d'exister qu'une
+fois. Vérifié en ligne le 28-08 :
+`{"reste":0,"solde_or":0,"boosters_or":0,"prix_booster":100,"solde_argent":0,"pieces_par_serie":20}`.
+
+**Trois lois de ce wallet, à ne pas perdre :**
+
+1. **Le solde est DÉRIVÉ, toujours** (`sum(delta)` filtré par monnaie) —
+   jamais une colonne tenue à la main. C'est déjà la forme de `solde_noir()`.
+2. **Les deux monnaies ne se ressemblent pas.** L'or s'ACCUMULE (100 = 1
+   booster, report cumulé) ; la legendary TOMBE (RNG serveur, 1 = 1 booster).
+   Le back-end ne doit donc pas exposer de progression pour la seconde —
+   **et surtout jamais le *pity timer*** : rendu visible, il devient
+   farmable, et la rareté est toute la valeur de cette pièce (§8, anti-abus).
+3. ~~Le prix du booster orange n'existe nulle part dans le code~~ →
+   **✅ LES PRIX SONT EN BASE** (`reward_rules`, 28-08, sur le verdict « le
+   prix, écris-le aussi dans Supabase ») :
+
+   | clé | valeur | ce que ça dit |
+   | --- | --- | --- |
+   | `pieces_par_serie` | 20 | ce qu'une série RAPPORTE (la loi des 20) |
+   | `prix_booster` | 100 | ce qu'une pièce ACHÈTE (report cumulé, §4 sexies) |
+   | `prix_booster_legendaire` | 1 | une pièce d'argent, et rien d'autre |
+
+   **L'app les LIT, elle ne les connaît pas.** `claim_booster_legendaire()`
+   lit déjà son prix dans la table plutôt qu'en constante — le jour où
+   l'économie bouge, rien à redéployer. C'est la table de configuration du
+   §2 : seuils, budgets, cooldowns et probabilités la rejoindront.
+
 ---
 
 ## 5. Le contrat Design System — CE QU'ELLE A LE DROIT
@@ -755,7 +924,8 @@ absence + cooldown serveur, crédite, idempotente),
 `claim_booster_legendaire()` (débite 1 `black`, réserve un booster
 `origine='legendaire'` — la garde `claim_booster` réutilisée telle
 quelle ; nécessite que le pool légendaire de `forge-card` soit
-adressable directement).
+adressable directement, **et la migration de la contrainte
+`user_boosters.origine`** — voir §4 decies).
 
 ---
 
@@ -783,9 +953,10 @@ tapant 28 au lieu de 24. Doctrine :
    oui ; la recycler comme UNE mise en scène de Moment « fin d'exo »,
    ou la tuer tout à fait ?
 2. **Les montants** : bonus performance (+40 ? +30 ?), plafond par
-   séance, valeur d'échange de la pièce noire (1 noire = 1 légendaire
-   direct — confirme), et le prix du booster jaune du Sacre reste-t-il
-   cohérent avec l'inflation des bonus ?
+   séance, et le prix du booster jaune du Sacre reste-t-il cohérent avec
+   l'inflation des bonus ? — ~~la valeur d'échange de la pièce noire~~
+   **TRANCHÉE le 28-08 : 1 noire = 1 booster noir = 1 légendaire, et
+   rien d'autre à payer** (§4 decies).
 3. ~~La rareté réelle~~ — **TRANCHÉ le 25-08 par délégation** (« fais
    une probabilité, je te laisse faire ») : les nombres de départ sont
    au §2, dans `reward_rules`, modifiables sans redéployer.
@@ -817,3 +988,207 @@ tapant 28 au lieu de 24. Doctrine :
   bout + `claim_booster_legendaire`.
 - **J5 — Welcome Back** (état serveur + claim + les deux variantes).
 - **J6 — l'IA** : `narrate-reward`, gabarits de secours, log rejouable.
+
+---
+
+## §4 duodecies — LE VERSEMENT DE CONNEXION (10 pièces), 28-08
+
+Verdict de Kathryn : *« quand tu te connectes, à chaque connexion tu manges
+10 pièces — faudra le lier à la pop-up welcome back (les deux variants) et
+dans le backend »*.
+
+Le Welcome Back devient un **versement**, pas une politesse. UX au §8bis de
+`CHANTIERS-UX.md`.
+
+### La règle
+
+| | |
+|---|---|
+| montant | **10 pièces jaunes** |
+| déclencheur | le premier lancement d'un **jour calendaire** |
+| annonce | `RewardPopup(style: .welcome)`, les deux robes, `count: 10`, `unit: "Coins"` |
+| encaissement | le bouton **Claim** de la pop-up |
+
+⚠️ **« À CHAQUE CONNEXION » NE PEUT PAS ÊTRE PRIS AU MOT — C'EST FARMABLE.**
+Tuer l'app et la relancer EST une connexion : dix pièces toutes les trois
+secondes, en boucle, et l'économie du coffre (100 pièces = un booster) ne veut
+plus rien dire. **Une fois par jour calendaire** est la seule lecture qui
+tienne, et c'est aussi celle qui correspond à ce qu'un humain appelle « je me
+connecte ».
+
+✅ **TRANCHÉ PAR KATHRYN LE 28-08 : « oui, une fois par jour calendaire ».**
+
+### Le schéma — rien de neuf, une raison de plus et un index
+
+`coin_ledger` existe déjà (migration `20260828160000_wallet_coffre.sql`). Il
+suffit d'ajouter la raison à la contrainte :
+
+```sql
+alter table public.coin_ledger drop constraint if exists coin_ledger_raison_check;
+alter table public.coin_ledger add constraint coin_ledger_raison_check
+  check (raison in ('serie_faite', 'ouverture_booster', 'doublon',
+                    'cadeau', 'annulation', 'retour_quotidien', …));
+```
+
+Le prix vit dans `reward_rules`, comme `pieces_par_serie` et `prix_booster` —
+**l'app le LIT, elle ne le connaît pas** :
+
+```sql
+insert into public.reward_rules (cle, valeur)
+values ('pieces_retour_quotidien', 10) on conflict (cle) do update …;
+```
+
+⚠️ **L'IDEMPOTENCE SE POSE COMME CELLE DU BOOSTER NOIR : UN INDEX UNIQUE
+PARTIEL.** Pas un compteur applicatif — il se remet à zéro à la réinstallation
+— et pas un verrou.
+
+```sql
+create unique index if not exists coin_ledger_retour_jour_unique
+  on public.coin_ledger (user_id, (created_at at time zone 'UTC')::date)
+  where raison = 'retour_quotidien';
+```
+
+Deux appareils le même matin ne créditent alors qu'une fois, et le second
+appel rend simplement « déjà pris » au lieu d'échouer.
+
+⚠️ **LE FUSEAU EST UNE DÉCISION, PAS UN DÉTAIL.** En UTC, quelqu'un qui ouvre
+l'app à 1 h du matin à Paris touche le versement de la veille. Deux options :
+UTC (simple, faux aux marges) ou le fuseau déclaré du profil (juste, une
+colonne de plus). ⚠️ Ce qu'il ne faut SURTOUT pas, c'est le fuseau envoyé par
+le client à chaque appel : il se change dans les réglages du téléphone, et
+c'est le farm par voyage dans le temps.
+
+### La fonction
+
+`claim_retour_quotidien()` — `security definer`, sur le modèle exact de
+`claim_booster_legendaire()` : elle lit son montant dans `reward_rules`,
+insère dans `coin_ledger`, laisse l'index trancher les doublons, et renvoie
+`(credite boolean, montant int, solde int)`. La pop-up n'a rien à décider ;
+elle affiche ce qu'on lui répond.
+
+### ⚠️ CE QUE ÇA FORCE AILLEURS
+
+**La page des gains du coffre doit basculer sur le ledger.** Elle dérive
+aujourd'hui des SÉANCES (`séries × 20`, `CoffreFortFlow`). Un versement de
+connexion n'est pas une séance : **il n'y apparaîtrait jamais**. C'est ce
+besoin-ci qui rend la bascule obligatoire, et non plus seulement souhaitable
+(annoncée au §17 du plan coffre). Même chose pour le solde du pied
+(`variantes`, `dispo`) : une seule source, le ledger.
+
+---
+
+## §4 terdecies — LES BOOSTERS DU CHEMIN, ET CELUI DE CHAQUE SÉANCE (28-08)
+
+Verdict : *« dans les gains il y a aussi les gains booster issus des rewards
+du Duolingo, note-le — et à la fin de chaque séance on gagne automatiquement
+un booster basique »*.
+
+### 1. CE QUI EXISTE DÉJÀ — le chemin donne des boosters, et c'est commité
+
+Deux commits, à relire avant de toucher à quoi que ce soit :
+
+- **`a339141`** — la route sort du cover et monte à la racine ; la lune du
+  chemin appelait `SacreEtat.proposer()` et la pièce faisait descendre une
+  capsule « +40 ». Le commit dit lui-même : *« la card reward robe `.piece` et
+  **l'écriture `coin_ledger`** viendront avec leur hôte, jalon 7 bis »* — donc
+  l'écriture au ledger était DÉJÀ notée comme manquante.
+- **`5ac641f`** — la card à gratter : les deux galets spéciaux ouvrent la même
+  card, et *« le montant, la monnaie et la combinaison de boosters viennent du
+  TIRAGE fait AU CLAIM »*.
+
+Le tirage vit dans `RewardChemin.swift` (`TirageRecompense.tirer`) et rend,
+côté boosters :
+
+| tirage | ce qu'on gagne | taux de base |
+|---|---|---|
+| commun | `[.orange, .orange]` | le reste |
+| rare | `[.orange, .legendaryBlack]` | 11 % |
+| légendaire | `[.legendaryBlack, .legendaryBlack]` | 1 % |
+
+⚠️ **Avec pitié** : après 12 nœuds communs d'affilée, le taux rare DOUBLE à
+chaque nœud jusqu'à ce qu'il tombe. Le compteur vit par utilisateur ET par
+piste — **et il devra vivre côté serveur, sinon il est falsifiable** (déjà
+écrit dans le fichier).
+
+**Un nœud de chemin peut donc rapporter jusqu'à DEUX boosters d'un coup**, et
+aucun de ces boosters n'apparaît aujourd'hui dans l'historique des gains.
+
+### 2. LA RÈGLE NOUVELLE — un booster basique à CHAQUE fin de séance
+
+⚠️ **ET LE SCHÉMA L'AVAIT DÉJÀ ANTICIPÉE.** Rien à migrer côté boosters :
+`user_boosters` (migration `20260828120000_booster_noir.sql`) porte déjà
+
+```sql
+origine text not null default 'seance'
+        check (origine in ('seance', 'achat', 'cadeau', 'legendaire')),
+workout_id uuid,                          -- la séance qui l'a gagné
+create unique index user_boosters_seance_unique
+  on public.user_boosters (user_id, workout_id) where workout_id is not null;
+```
+
+`'seance'` est la valeur PAR DÉFAUT, et l'index unique sur (user, séance)
+**garantit qu'une re-synchro ne crédite jamais deux fois**. La règle demandée
+n'a donc besoin que de son appel : à la clôture d'une séance, une ligne
+`user_boosters(origine: 'seance', workout_id: …)`.
+
+⚠️ **CE QU'IL MANQUE, C'EST `'chemin'`** — les boosters du Duolingo n'ont pas
+d'origine à eux et se rangeraient sous `'cadeau'`, ce qui rend l'historique
+illisible. Une valeur de plus dans la contrainte, et le nœud en référence :
+
+```sql
+alter table public.user_boosters drop constraint if exists user_boosters_origine_check;
+alter table public.user_boosters add constraint user_boosters_origine_check
+  check (origine in ('seance', 'achat', 'cadeau', 'legendaire', 'chemin'));
+alter table public.user_boosters add column if not exists noeud_id integer;
+create unique index if not exists user_boosters_chemin_unique
+  on public.user_boosters (user_id, noeud_id) where origine = 'chemin';
+```
+
+Même outil que partout ailleurs : **un index unique partiel**, pas un
+compteur. La leçon `chemin.reclamees` (« une lune se re-réclame à chaque
+lancement, boosters infinis ») est aujourd'hui tenue par des `UserDefaults` —
+elle se remet à zéro à la réinstallation.
+
+### 3. ⚠️ CE QUE ÇA COÛTE À L'ÉCONOMIE — à trancher, pas à supposer
+
+Aujourd'hui : **20 pièces la série, 100 pièces le booster.** Une séance de
+5 séries rapporte 100 pièces, soit un booster.
+
+Si chaque séance donne EN PLUS un booster automatique, **une séance en
+rapporte deux**, et le prix de 100 pièces ne décide plus de grand-chose pour
+quelqu'un de régulier. Ce n'est pas un bug — c'est peut-être exactement
+l'intention (« la séance est toujours récompensée »). Mais il faut le savoir
+et choisir :
+
+1. **On assume** — le booster de séance est le socle, les pièces servent aux
+   boosters EN PLUS (recommandé si le but est que finir une séance soit
+   toujours payant).
+2. **On monte le prix** du booster acheté (150-200) pour que l'achat garde un
+   sens à côté du don.
+3. **On distingue les robes** — le booster de séance est un `orange` ; ce que
+   les pièces achètent devient autre chose.
+
+Le prix vit dans `reward_rules`, donc ce choix se change sans toucher au code.
+
+### 4. LA CONSÉQUENCE, POUR LA TROISIÈME FOIS
+
+Trois sources de gains ne passent pas par les séances comptées :
+**le versement de connexion (§4 duodecies), les boosters du chemin, et le
+booster de fin de séance.** L'historique du coffre les rate tous les trois.
+
+⚠️ **La bascule de `pageGains` sur `coin_ledger` + `user_boosters` n'est plus
+une amélioration, c'est la condition pour que la page dise la vérité.** Elle
+affiche aujourd'hui `séances × séries × 20`, une reconstruction — pas un
+journal. Une ligne par ÉVÉNEMENT, avec son origine :
+
+| ligne | origine |
+|---|---|
+| « 12 séries · +240 » | `coin_ledger / serie_faite` |
+| « Retour quotidien · +10 » | `coin_ledger / retour_quotidien` |
+| « Séance terminée · 1 booster » | `user_boosters / seance` |
+| « Chemin · 2 boosters » | `user_boosters / chemin` |
+| « Chemin · +150 » | `coin_ledger / chemin` |
+
+C'est aussi ce qui donnera enfin des lignes AVEC UNE IMAGE DE SACHET dans
+l'historique : `GainCoffre.robe` est aujourd'hui toujours `nil`, donc chaque
+ligne montre la pièce d'or — je l'avais signalé en livrant la page.

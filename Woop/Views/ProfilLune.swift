@@ -532,10 +532,24 @@ struct ProfilLuneView: View {
             // elle ouvre le Manège DIRECTEMENT (pas de détour).
             .overlay(alignment: .bottomTrailing) {
                 HStack(spacing: 8) {
+                    // LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe
+                    // devant : deux réserves qui ne se mélangent jamais
+                    // (verdict 28-08) — une pastille sur la pill jaune
+                    // aurait dit « des boosters, dont des noirs », alors
+                    // que ce sont deux portes et deux manèges.
+                    if SacreEtat.shared.boostersNoirsEnAttente > 0 {
+                        PillBooster(
+                            nombre: SacreEtat.shared.boostersNoirsEnAttente,
+                            robe: .noire) {
+                            SacreEtat.shared.ouvrirManege(robe: .noire)
+                        }
+                        .transition(.scale(scale: 0.7)
+                            .combined(with: .opacity))
+                    }
                     if SacreEtat.shared.boostersEnAttente > 0 {
                         PillBooster(
                             nombre: SacreEtat.shared.boostersEnAttente) {
-                            SacreEtat.shared.ouvrirManege()
+                            SacreEtat.shared.ouvrirManege(robe: .lune)
                         }
                         .transition(.scale(scale: 0.7)
                             .combined(with: .opacity))
@@ -544,6 +558,8 @@ struct ProfilLuneView: View {
                 }
                 .animation(.spring(response: 0.42, dampingFraction: 0.8),
                            value: SacreEtat.shared.boostersEnAttente)
+                .animation(.spring(response: 0.42, dampingFraction: 0.8),
+                           value: SacreEtat.shared.boostersNoirsEnAttente)
                 .padding(.trailing, 14)
                 .padding(.bottom, 14)
             }

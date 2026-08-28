@@ -477,11 +477,16 @@ final class BoosterSFX {
 ///   `-boosterMylar` charge la recette matière « mylar métallisé »
 ///     (par défaut : « laque noire ») ;
 ///   `-boosterTear <s>` fige une déchirure entamée à s (0…1) ;
-///   `-boosterOpen` démarre sachet ouvert, carte présentée.
+///   `-boosterOpen` démarre sachet ouvert, carte présentée ;
+///   `-boosterNoir` habille le sachet de la ROBE NOIRE (le manège des
+///     légendaires — même expérience, même braise, un autre dessin).
 struct BoosterLab: View {
     private static let still = CommandLine.arguments.contains("-boosterStill")
     private static let dos = CommandLine.arguments.contains("-boosterDos")
     private static let mylar = CommandLine.arguments.contains("-boosterMylar")
+    /// `-boosterNoir` : LE MANÈGE DES LÉGENDAIRES — le même carrousel, la
+    /// robe noire (le plan est `tools/sacre/PLAN-BOOSTER-NOIR.md`).
+    private static let noir = CommandLine.arguments.contains("-boosterNoir")
     private static let gallery = CommandLine.arguments.contains("-boosterGallery")
     /// L'invite au-dessus de la carte : chevron de poussière par défaut,
     /// `-boosterInvite feux` pour les feux de piste (les deux candidates
@@ -504,6 +509,11 @@ struct BoosterLab: View {
     /// forcée, pas de bouton rejouer, et l'envol REND la carte à l'hôte
     /// (le raccord d'accueil : auto-scroll, descente, fumée).
     var appMode = false
+    /// LA ROBE DU MANÈGE — `.noire` monte le carrousel des légendaires
+    /// (§3 du plan : deux réserves, deux portes, deux manèges ; ils ne se
+    /// mélangent JAMAIS, verdict Kathryn). Le banc `-boosterNoir` la force.
+    var robe: RobeBooster = .lune
+    private var robeEffective: RobeBooster { Self.noir ? .noire : robe }
     /// LE CHEVRON DE SORTIE — il rend la main à la HOME depuis les deux
     /// escales où l'on a le droit de partir : le MANÈGE (avant
     /// l'engagement) et le RÉSULTAT (la carte posée). Jamais pendant la
@@ -548,7 +558,9 @@ struct BoosterLab: View {
                                      && !Self.cine,
                                  cine: Self.cine,
                                  handle: handle,
-                                 forge: appMode)
+                                 forge: appMode,
+                                 robe: robeEffective,
+                                 cadreDecoupe: true)
                         .ignoresSafeArea()
                         // Recognizers désactivés ≠ hit-test désactivé :
                         // sans ça le SCNView avale les touches destinées
@@ -1248,6 +1260,14 @@ struct BoosterStage: UIViewRepresentable {
     /// Sur un écran d'entrée, la musique du manège n'a rien à faire — et la
     /// porte-nappe de `placingStep` est satisfaite par l'horloge seule.
     var muet: Bool = false
+    /// LA ROBE du sachet (`.lune` par défaut : la porte, le géant du profil
+    /// et le four ne changent pas). `.noire` = le manège des légendaires.
+    var robe: RobeBooster = .lune
+    /// LE CADRAGE DE DÉCOUPE dès la pose, pour le banc SANS anneau (le
+    /// sachet y est déjà « présenté »). Dans le flow, c'est l'engagement qui
+    /// l'installe. Le géant du profil et le décor de la porte ne le
+    /// demandent pas : ils gardent leur cadrage.
+    var cadreDecoupe: Bool = false
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
@@ -1268,7 +1288,8 @@ struct BoosterStage: UIViewRepresentable {
         context.coordinator.forgeActive = forge
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
-                                   gallery: gallery, muet: muet)
+                                   gallery: gallery, muet: muet, robe: robe,
+                                   cadreDecoupe: cadreDecoupe)
         context.coordinator.handle = handle
         handle?.coordinator = context.coordinator
         // La poignée arrive APRÈS `attach` : le `didSet` du mode a déjà
@@ -1398,6 +1419,14 @@ struct BoosterStage: UIViewRepresentable {
         private var mylar = false
         private var yawDeg: Float?
         private var galleryOn = false
+        /// La robe portée par la scène en place — le rejeu (`replay`, le tap
+        /// de réarmement) reconstruit une scène : sans mémoire, il repasserait
+        /// au sachet du set Lune au milieu d'un manège noir.
+        private var robe: RobeBooster = .lune
+        /// Le banc l'a demandé (sans anneau), et il est POSÉ en ce moment :
+        /// `finishTear` ne rend le cadrage canonique que s'il l'a pris.
+        private var cadreDecoupeDemande = false
+        private var cadreDecoupeActif = false
         /// La forge serveur ne tire que dans le FLOW APP (les bancs
         /// rejouent la cérémonie à volonté — pas un tirage par replay).
         var forgeActive = false
@@ -1674,19 +1703,25 @@ struct BoosterStage: UIViewRepresentable {
 
         func attach(to view: SCNView, still: Bool, dos: Bool = false,
                     mylar: Bool = false, yawDeg: Float? = nil,
-                    gallery: Bool = false, muet: Bool = false) {
+                    gallery: Bool = false, muet: Bool = false,
+                    robe: RobeBooster = .lune,
+                    cadreDecoupe: Bool = false) {
             self.view = view
             self.still = still
             self.dos = dos
             self.mylar = mylar
             self.yawDeg = yawDeg
             self.galleryOn = gallery
+            self.robe = robe
+            self.cadreDecoupeDemande = cadreDecoupe
+            self.cadreDecoupeActif = false
             stopSpin()
             stopScroll()
             stopInvite()
             stopGalleryGyro()
             guard let stage = BoosterScene(still: still, mylar: mylar,
-                                           gallery: gallery) else { return }
+                                           gallery: gallery,
+                                           robe: robe) else { return }
             self.stage = stage
             // Le re-gate AVANT la pose de la scène (chaque scène neuve
             // attend SA première frame rendue), et le delegate ici —
@@ -1701,6 +1736,15 @@ struct BoosterStage: UIViewRepresentable {
             yawVel = 0
             pitch = 0
             applyPose()
+            // Le banc SANS anneau montre l'état « présenté » : il porte donc
+            // le cadrage de découpe dès la pose. Dans le flow, c'est
+            // l'engagement qui l'installe (et `finishTear` qui le rend).
+            if cadreDecoupe, !gallery {
+                stage.cameraNode.position = SCNVector3(
+                    0, Self.cadreDechirure.y, 2.05)
+                stage.cameraNode.camera?.fieldOfView = Self.cadreDechirure.fov
+                cadreDecoupeActif = true
+            }
             if gallery {
                 offset = 0
                 scrollTarget = 0
@@ -2287,6 +2331,42 @@ struct BoosterStage: UIViewRepresentable {
         /// (z ET champ ensemble : une pure approche) vers le cadrage
         /// cérémonie. Le vrai sachet a pris la place du clone centré —
         /// identiques, personne ne voit l'échange.
+        /// LE CADRAGE DE LA DÉCHIRURE — le sachet EN GROS, LE BAS COUPÉ par
+        /// le bord de l'écran (verdict Kathryn du 28-08, référence Pokémon
+        /// Pocket en main) : le pouce doit pouvoir TIRER la bande, et on ne
+        /// tire pas confortablement sur un objet posé au milieu du vide.
+        ///
+        /// Le grossissement se prend à l'OBJECTIF, jamais en avançant la
+        /// caméra : à distance égale (z 2,05) le champ passe de 60° à 49°,
+        /// soit ×1,28 — un rapprochement l'aurait grossi en le déformant (le
+        /// sachet est presque plat face à l'objectif, une courte focale lui
+        /// creuse les flancs). La caméra MONTE ensuite de 0,57 : le sujet
+        /// descend d'autant, et **on n'en voit plus que 85 %** — le pied est
+        /// dans la main, hors cadre. Le sachet fait 0,536 d'écran de haut ;
+        /// 85 % de lui = 0,456, son bord haut se pose donc à 54,4 %. (Deux
+        /// crans essayés avant : 100 % visible « beaucoup trop », 70 % trop
+        /// bas — la fraction VISIBLE est le réglage, pas la position.)
+        ///
+        /// **LES CHIFFRES SONT RELEVÉS SUR LA RÉFÉRENCE, PAS ESTIMÉS.** Sur
+        /// la capture Pokémon Pocket de Kathryn : le sachet fait **74 % de la
+        /// largeur**, son bord haut est à **46 % de la hauteur**, son pied
+        /// sort par le bas. Deux essais au jugé ont été refusés avant de la
+        /// mesurer — ×2 (champ 30°) donne 116 % de largeur, donc coupé SUR
+        /// LES FLANCS, ce que la référence ne fait jamais ; ×1,55 posait
+        /// encore le bord haut au tiers, « beaucoup trop ».
+        ///
+        /// La géométrie qui les relie, une fois pour toutes : à champ 60° le
+        /// sachet occupe 0,999 unité de haut sur 0,631 de large, et l'écran
+        /// en montre 2,367 × 1,089. D'où ×1,28 (74 % de large), et la caméra
+        /// à 0,43 pour poser le bord haut à 47 % — le pied tombe alors à
+        /// 100,5 %, coupé d'un cheveu, exactement comme la référence.
+        ///
+        /// ⚠️ Il ne vaut QUE pour la cérémonie engagée. Il est rendu au
+        /// cadrage canonique (0 · 0 · 2,05, champ 60°) dès `finishTear` —
+        /// tout l'aval (la sortie de carte, le dolly 1,86, le recouvrement
+        /// même-image de `CarteVivante`) est calé dessus et ne bouge pas.
+        private static let cadreDechirure: (y: Float, fov: CGFloat) = (0.57, 49)
+
         private func commitGallery(slot: Int) {
             guard let stage else { return }
             mode = .committing
@@ -2358,14 +2438,16 @@ struct BoosterStage: UIViewRepresentable {
 
             // Le dolly-zoom avec un souffle d'overshoot : il dépasse d'un
             // cheveu (2,02) puis se pose (2,05) — l'arrivée se voit ET se
-            // sent (accent haptique au même instant).
+            // sent (accent haptique au même instant). Il atterrit sur LE
+            // CADRAGE DE LA DÉCHIRURE (voir `cadreDechirure`).
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.62
             SCNTransaction.animationTimingFunction =
                 CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
-            stage.cameraNode.position.z = 2.02
-            stage.cameraNode.camera?.fieldOfView = 60
+            stage.cameraNode.position = SCNVector3(0, Self.cadreDechirure.y, 2.02)
+            stage.cameraNode.camera?.fieldOfView = Self.cadreDechirure.fov
             SCNTransaction.commit()
+            cadreDecoupeActif = true
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) { [weak self] in
                 guard let self, self.mode == .committing,
@@ -2419,8 +2501,12 @@ struct BoosterStage: UIViewRepresentable {
             SCNTransaction.animationDuration = 0.45
             SCNTransaction.animationTimingFunction =
                 CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
-            stage.cameraNode.position.z = 4.0
+            // La position ENTIÈRE, pas seulement z : le cadrage de découpe
+            // a monté la caméra (Self.cadreDechirure) — un retour qui ne
+            // rendrait que z laisserait l'anneau décentré vers le bas.
+            stage.cameraNode.position = SCNVector3(0, 0, 4.0)
             stage.cameraNode.camera?.fieldOfView = 42
+            cadreDecoupeActif = false
             stage.floorNode.opacity = 1
             stage.applyGallery(offset: offset)
             SCNTransaction.commit()
@@ -2555,7 +2641,8 @@ struct BoosterStage: UIViewRepresentable {
                 // comprise) se rejoue à volonté — la méthode maison pour
                 // juger un enchaînement.
                 attach(to: view, still: still, dos: dos, mylar: mylar,
-                       yawDeg: yawDeg, gallery: galleryOn)
+                       yawDeg: yawDeg, gallery: galleryOn, robe: robe,
+                       cadreDecoupe: cadreDecoupeDemande)
             case .galleryIdle, .galleryFly:
                 // Tap sur le sachet qui se présente : l'engagement. Tap
                 // ailleurs sur l'anneau : le manège tourne (par le chemin
@@ -2655,7 +2742,23 @@ struct BoosterStage: UIViewRepresentable {
                     haptics.bedStart()
                     if sfx == nil, !still { sfx = BoosterSFX() }
                     tick.prepare()
-                } else if packHit != nil {
+                } else if packHit != nil, !cadreDecoupeActif {
+                    // PAS DE ROTATION QUAND LE SACHET EST PRÉSENTÉ (verdict
+                    // Kathryn, 28-08) : il est là pour être DÉCHIRÉ, et un
+                    // objet qu'on fait tourner sous le pouce n'invite pas à
+                    // tirer dessus — pire, la moitié des gestes de traction
+                    // le mettaient en rotation au lieu d'ouvrir.
+                    //
+                    // LA GARDE EST LE CADRAGE, PAS LE MANÈGE. Première
+                    // version : `!galleryOn` — elle laissait le sachet
+                    // tourner sur le banc sans anneau, c'est-à-dire
+                    // exactement là où Kathryn le jugeait (« on peut pas
+                    // faire de rotation, il est fixe ! genre le faire
+                    // tourner à 360 degrés »). `cadreDecoupeActif` dit LA
+                    // chose qui compte : le sachet est présenté pour être
+                    // ouvert. Le géant de la page profil ne le porte jamais,
+                    // il garde sa pichenette entière.
+                    //
                     // Attraper le sachet — y compris en plein vol : la main
                     // vole l'élan, le tour reprend sous le doigt. La
                     // charge en cours meurt AVEC le changement
@@ -2792,6 +2895,21 @@ struct BoosterStage: UIViewRepresentable {
         private func finishTear() {
             guard let stage else { return }
             mode = .opening
+            // LE CADRAGE REND LA MAIN : la découpe est finie, la carte va
+            // sortir — on revient au cadrage canonique (champ 60°, caméra à
+            // hauteur d'axe) sur lequel TOUTE la suite est calée. Le
+            // mouvement se fond dans le grand RRRIP : un recul qui ouvre
+            // l'espace au moment exact où quelque chose en sort.
+            if cadreDecoupeActif {
+                cadreDecoupeActif = false
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.55
+                SCNTransaction.animationTimingFunction =
+                    CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1)
+                stage.cameraNode.position = SCNVector3(0, 0, 2.05)
+                stage.cameraNode.camera?.fieldOfView = 60
+                SCNTransaction.commit()
+            }
             // L'ENVOL part à t=0 et AVANT setTear(1) : sa rampe de tearU
             // doit partir de la valeur vivante (un saut 0,82→1
             // téléporterait un demi-tour de rouleau). Accroche 0→0,30 s,
@@ -3143,7 +3261,8 @@ struct BoosterStage: UIViewRepresentable {
             view.rendersContinuously = true
             view.gestureRecognizers?.forEach { $0.isEnabled = true }
             attach(to: view, still: still, dos: dos, mylar: mylar,
-                   yawDeg: yawDeg, gallery: galleryOn)
+                   yawDeg: yawDeg, gallery: galleryOn, robe: robe,
+                   cadreDecoupe: cadreDecoupeDemande)
             if CommandLine.arguments.contains("-boosterCine") {
                 autoCeremony(after: 1.0)
             }

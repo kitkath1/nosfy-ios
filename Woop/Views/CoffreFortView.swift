@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import AVFoundation
 import UIKit
 
@@ -505,9 +506,44 @@ struct CoffreFortView: View {
 /// plein écran et son grain. Les monter d'avance ferait tourner tout ça
 /// derrière le coffre-fort, invisible et payé plein tarif — la leçon déjà
 /// payée sur la home, dont le ciel tournait derrière le splash.
+/// UNE LIGNE DE L'HISTORIQUE DES GAINS.
+///
+/// ⚠️ **LA DONNÉE EXISTE DÉJÀ EN LOCAL, et c'est pour ça que cette page peut
+/// vivre avant le back-end** : chaque séance terminée porte sa date
+/// (`endedAt`) et ses séries faites (`completedSets`), et la loi des 20 fait
+/// le reste. Le jour où `coin_ledger` est branché, c'est cette liste qu'il
+/// remplace — chaque ligne aura alors sa VRAIE raison (série, bonus, cadeau,
+/// pièce d'argent) au lieu d'être déduite d'une séance.
+struct GainCoffre: Identifiable {
+    let id: UUID
+    let date: Date
+    let montant: Int
+    /// Ce qu'on a gagné — l'image de la ligne le dit sans un mot.
+    let robe: RobeBooster?
+    let titre: String
+}
+
 struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
+
+    /// ⚠️ La requête vit ICI, pas chez les quatre appelants : « la refonte
+    /// remplace ce qu'il y a DERRIÈRE, jamais la poignée ». La signature de
+    /// `CoffreFortFlow` ne bouge pas d'un caractère.
+    @Query(sort: \Workout.startedAt, order: .reverse) private var seances: [Workout]
+
+    private var gains: [GainCoffre] {
+        seances.filter { !$0.isActive }.compactMap { w in
+            let series = (w.exercises ?? []).reduce(0) { $0 + $1.completedSets }
+            guard series > 0 else { return nil }
+            return GainCoffre(
+                id: w.remoteID,
+                date: w.endedAt ?? w.startedAt,
+                montant: series * CoffreFortPurse.perSeries,
+                robe: nil,
+                titre: series == 1 ? "1 série" : "\(series) séries")
+        }
+    }
 
     /// `-coffreV1` rejoue l'ANCIENNE page (le film du coffre, la pastille) —
     /// elle reste montable, c'est la règle de l'archive.
@@ -528,7 +564,7 @@ struct CoffreFortFlow: View {
         if Self.v1 {
             ancienne
         } else {
-            CoffreV2Page(coins: coins, onClose: onClose)
+            CoffreV2Page(coins: coins, gains: gains, onClose: onClose)
         }
     }
 

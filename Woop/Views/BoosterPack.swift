@@ -1,5 +1,6 @@
 import SceneKit
 import SwiftUI
+import os
 
 // MARK: - Le maillage du booster (`booster.bin`)
 
@@ -286,6 +287,139 @@ enum BoosterShader {
     """
 }
 
+// MARK: - La robe du sachet
+
+/// LA ROBE : le variant du sachet, et RIEN D'AUTRE qu'un jeu de textures.
+///
+/// Le booster noir (28-08, `tools/sacre/PLAN-BOOSTER-NOIR.md`) est « la même
+/// expérience, mais noire » : le manège, l'engagement, la charge au maintien,
+/// la découpe de braise et le Sacre sont LE MÊME CODE. Le studio ne bouge pas
+/// non plus — verdict de Kathryn, « le noir garde la braise » : ni lumière,
+/// ni poudre, ni sol à teinter. Une robe ne change que le DESSIN plaqué.
+///
+/// La normal map est COMMUNE aux deux : elle décrit les plis du maillage, pas
+/// le dessin — même sachet, mêmes froissures (et la laque lit la même image
+/// en `clearCoatNormal` : deux fichiers pourraient diverger).
+enum RobeBooster {
+    /// Le sachet du set Lune : néons orange dessinés, liseré qui ÉMET.
+    case lune
+    /// Le sachet des légendaires : encre, liseré IRISÉ (un foil, il
+    /// réfléchit), croissant débossé. Textures baked par
+    /// `tools/sacre/bake_booster_noir.py`.
+    case noire
+
+    var color: String {
+        switch self {
+        case .lune: return "booster-color"
+        case .noire: return "booster-noir-color"
+        }
+    }
+
+    var emiss: String {
+        switch self {
+        case .lune: return "booster-emiss"
+        case .noire: return "booster-noir-emiss"
+        }
+    }
+
+    /// LE TELL — la fente qui fuit. Sur le noir il ne demande pas de
+    /// drapeau (le sachet des légendaires SAIT ce qu'il abrite), mais il ne
+    /// s'allume QUE dans la cérémonie : **au manège, verdict Kathryn du
+    /// 28-08, « la fente trop moche, enlève »** — dix sachets qui fuient par
+    /// le sertissage, ça fait dix lampes de poche dans une nuit qu'on veut
+    /// noire. C'est l'appelant qui applique la réserve (`!gallery`).
+    var tellPermanent: Bool { self == .noire }
+
+    /// LA PALETTE DU STUDIO — la lumière du monde, pas celle de la découpe.
+    ///
+    /// Kathryn, 28-08, devant le premier rendu noir : *« pas de halo orange
+    /// mais noir stp très dark, il est trop orange — mets noir un peu violet
+    /// si tu veux, et blanc »*, puis *« les boosters doivent être noirs et
+    /// l'écosystème aussi »*. La braise du set Lune repeignait le sachet noir
+    /// en ambre : un albédo d'encre ne rend que ce qu'on lui envoie.
+    ///
+    /// Ce qui reste ORANGE sur la robe noire : **la découpe**. Le feu de la
+    /// déchirure vit dans le shader (`ember`, `burn`, `heat`) et n'appartient
+    /// pas au studio — un monde froid où la coupure est la seule braise, c'est
+    /// le contraste qu'on cherche.
+    struct PaletteStudio {
+        /// La directionnelle (260) — la lumière qui sculpte les plis.
+        let cle: UIColor
+        /// L'omni du bas : la braise du jaune, l'améthyste du noir.
+        let bas: UIColor
+        /// L'échelle de cette omni — le noir la veut BASSE (« très dark »).
+        let basEchelle: CGFloat
+        /// Le `multiply` du sol : il teinte le reflet des sachets.
+        let sol: UIColor
+        /// La poussière de l'anneau, et les bouffées du cran.
+        let poudre: UIColor
+        /// L'horizon de l'environnement HDR (les barres blanches ne bougent
+        /// pas : c'est le « et blanc » du verdict).
+        let horizonHDR: SIMD3<Float>
+        /// Sa force, et celle de sa reprise au sol. Le noir les veut BASSES :
+        /// sans art lumineux dessiné dans le bas du sachet (le jaune a son
+        /// lac de braise), le moindre feu rasant fait une TACHE au lieu d'un
+        /// horizon — c'est ce halo-là que le verdict chasse.
+        let horizonForce: Float
+        let solForce: Float
+    }
+
+    /// LA MATIÈRE — la laque du set Lune, le MAT du sachet noir.
+    ///
+    /// Kathryn, 28-08 : *« plus d'effet mat sur le booster dans le noir »*.
+    /// Le vernis épais (clearCoat 1,0 à rugosité 0,04) est ce qui fait le
+    /// sachet laqué du set Lune ; sur une encre sans néon dessiné, il ne
+    /// rend qu'une vitre grise. Le noir garde un vernis MINCE — assez pour
+    /// que le foil du liseré vive, trop peu pour que la grande face brille.
+    struct Matiere {
+        let rugosite: CGFloat
+        let vernis: CGFloat
+        let vernisRugosite: CGFloat
+    }
+
+    var matiere: Matiere {
+        switch self {
+        case .lune: return Matiere(rugosite: 0.35, vernis: 1.0,
+                                   vernisRugosite: 0.04)
+        case .noire: return Matiere(rugosite: 0.62, vernis: 0.30,
+                                    vernisRugosite: 0.32)
+        }
+    }
+
+    var palette: PaletteStudio {
+        switch self {
+        case .lune:
+            return PaletteStudio(
+                cle: UIColor(red: 1.0, green: 0.93, blue: 0.85, alpha: 1),
+                bas: UIColor(red: 1.0, green: 0.45, blue: 0.15, alpha: 1),
+                basEchelle: 1.0,
+                sol: UIColor(red: 1.0, green: 0.80, blue: 0.65, alpha: 1),
+                poudre: UIColor(red: 1.0, green: 0.92, blue: 0.78, alpha: 1),
+                horizonHDR: SIMD3<Float>(1.0, 0.45, 0.14),
+                horizonForce: 0.4, solForce: 0.12)
+        case .noire:
+            return PaletteStudio(
+                // Blanc à peine bleuté : le foil irisé rend TOUTES les
+                // couleurs qu'on lui donne — une clé neutre le laisse
+                // arc-en-ciel au lieu de le teindre.
+                cle: UIColor(red: 0.90, green: 0.93, blue: 1.0, alpha: 1),
+                // LE VIOLET EST UN SOUPÇON, PAS UNE COULEUR (« violet plus
+                // discret », 28-08) : désaturé et à un cinquième de la
+                // braise — il ne se nomme qu'au bord des plis.
+                bas: UIColor(red: 0.55, green: 0.48, blue: 0.88, alpha: 1),
+                basEchelle: 0.12,
+                sol: UIColor(red: 0.88, green: 0.90, blue: 1.0, alpha: 1),
+                // LA POUDRE EST NOIR ET BLANC (verdict du même jour) :
+                // blanc pur, et son grain perd son halo braise
+                // (`pearlDotBlanche`) — sinon la poussière rallume en or ce
+                // que le studio vient d'éteindre.
+                poudre: .white,
+                horizonHDR: SIMD3<Float>(0.34, 0.28, 0.72),
+                horizonForce: 0.09, solForce: 0.02)
+        }
+    }
+}
+
 // MARK: - La scène
 
 /// Le sachet noir laqué dans son studio : la matière de la référence vient
@@ -329,16 +463,23 @@ final class BoosterScene {
     /// .constant ignore les lumières, et une omni = le cube noir).
     let floorGlowNode = SCNNode()
     private let still: Bool
+    /// La robe et sa palette : lues par le studio (les lumières, le sol, la
+    /// poudre) et par les régies qui rallument (`dim`, `celebrate`).
+    private let robe: RobeBooster
+    private let palette: RobeBooster.PaletteStudio
     private let keyLight = SCNLight()
     private let embers = SCNLight()
 
     /// La progression de déchirure, 0…1, monotone (on ne recolle pas).
     private(set) var tearProgress: Float = 0
 
-    init?(still: Bool, mylar: Bool = false, gallery: Bool = false) {
+    init?(still: Bool, mylar: Bool = false, gallery: Bool = false,
+          robe: RobeBooster = .lune) {
         guard let mesh = BoosterBin.load() else { return nil }
         yTear = mesh.yTear
         self.still = still
+        self.robe = robe
+        self.palette = robe.palette
 
         // ---- la matière commune, corps et bande ----
         // Deux recettes au banc. L'ancienne (metalness 0,45 sur albédo noir)
@@ -356,12 +497,16 @@ final class BoosterScene {
         func material(modifier: String, geometry: String? = nil) -> SCNMaterial {
             let m = SCNMaterial()
             m.lightingModel = .physicallyBased
-            m.diffuse.contents = Self.image("booster-color")
-            m.emission.contents = Self.image("booster-emiss")
+            m.diffuse.contents = Self.image(robe.color)
+            m.emission.contents = Self.image(robe.emiss)
             // 0,6 : la recette VALIDÉE. Le piège de la lanterne a été payé
             // DEUX fois maintenant : à 1,9, les nappes douces de la carte
             // emiss (lac, halo du croissant) font du sachet un verre ambré.
             // Les néons n'ont pas besoin de bloomer — ils sont dessinés.
+            // La robe noire n'a pas SA valeur : son émissive est CALIBRÉE au
+            // bake sur le profil du jaune (moyenne 0,81 · p99 33, contre 0,80
+            // et 38) — sinon un foil irisé, qui couvre bien plus de surface
+            // qu'un fil de néon, sortait trois fois plus chaud que lui.
             m.emission.intensity = 0.6
             m.normal.contents = Self.image("booster-normal")
             m.normal.intensity = 0.8
@@ -372,9 +517,9 @@ final class BoosterScene {
                 m.clearCoatRoughness.contents = 0.10
             } else {
                 m.metalness.contents = 0.0
-                m.roughness.contents = 0.35
-                m.clearCoat.contents = 1.0
-                m.clearCoatRoughness.contents = 0.04
+                m.roughness.contents = robe.matiere.rugosite
+                m.clearCoat.contents = robe.matiere.vernis
+                m.clearCoatRoughness.contents = robe.matiere.vernisRugosite
             }
             m.clearCoatNormal.contents = Self.image("booster-normal")
             m.clearCoatNormal.intensity = 1.1
@@ -409,7 +554,12 @@ final class BoosterScene {
         // rareté servie par la forge) : avant même le doigt, la fente
         // FUIT de la lumière — le fil d'or de la lèvre pulse lentement.
         // Le joueur SAIT qu'il se passe quelque chose, sans un mot d'UI.
-        if Self.shinyTell {
+        // Sur la robe noire il n'est plus un drapeau de banc — le sachet des
+        // légendaires abrite TOUJOURS une légendaire —, mais **jamais au
+        // manège** : dix sachets qui fuient par le sertissage, ça fait dix
+        // lampes de poche dans une nuit qu'on veut noire (verdict Kathryn,
+        // 28-08 : « la fente trop moche dans le manège, enlève »).
+        if Self.shinyTell || (robe.tellPermanent && !gallery) {
             for node in [bodyNode, capNode] {
                 guard let m = node.geometry?.firstMaterial else { continue }
                 let leak = CABasicAnimation(keyPath: "lipGlow")
@@ -614,7 +764,7 @@ final class BoosterScene {
         let fm = SCNMaterial()
         fm.lightingModel = .constant
         fm.diffuse.contents = UIColor(white: 0.004, alpha: 1)
-        fm.multiply.contents = UIColor(red: 1.0, green: 0.80, blue: 0.65, alpha: 1)
+        fm.multiply.contents = palette.sol
         floor.materials = [fm]
         floorNode = SCNNode(geometry: floor)
         floorNode.position = SCNVector3(0, -0.52, 0)
@@ -628,7 +778,7 @@ final class BoosterScene {
         let gm = SCNMaterial()
         gm.lightingModel = .constant
         gm.diffuse.contents = UIColor.black
-        gm.emission.contents = Self.pearlDot()
+        gm.emission.contents = Self.grainDePoudre(robe)
         gm.blendMode = .add
         gm.writesToDepthBuffer = false
         glowPlane.materials = [gm]
@@ -665,22 +815,23 @@ final class BoosterScene {
 
         keyLight.type = .directional
         keyLight.intensity = 260
-        keyLight.color = UIColor(red: 1.0, green: 0.93, blue: 0.85, alpha: 1)
+        keyLight.color = palette.cle
         let keyNode = SCNNode()
         keyNode.light = keyLight
         keyNode.eulerAngles = SCNVector3(-0.5, 0.4, 0)
         scene.rootNode.addChildNode(keyNode)
 
         embers.type = .omni
-        embers.intensity = 38
-        embers.color = UIColor(red: 1.0, green: 0.45, blue: 0.15, alpha: 1)
+        embers.intensity = 38 * palette.basEchelle
+        embers.color = palette.bas
         embers.attenuationEndDistance = 3
         let emberNode = SCNNode()
         emberNode.light = embers
         emberNode.position = SCNVector3(0, -0.9, 0.7)
         scene.rootNode.addChildNode(emberNode)
 
-        scene.lightingEnvironment.contents = Self.hdrStudio ?? Self.studioEnvironment()
+        let env = robe == .noire ? Self.hdrStudioNoire : Self.hdrStudio
+        scene.lightingEnvironment.contents = env ?? Self.studioEnvironment()
         scene.lightingEnvironment.intensity = 1.0
         // Fond TRANSPARENT (15-08, page profil : le sachet flotte nu sur
         // la page — l'éclairage vient de lightingEnvironment, pas d'ici ;
@@ -813,7 +964,7 @@ final class BoosterScene {
     private func armGalleryDust() {
         guard !CommandLine.arguments.contains("-boosterNoDust") else { return }
         let dust = galleryDust
-        dust.particleImage = Self.pearlDot()
+        dust.particleImage = Self.grainDePoudre(robe)
         dust.birthRate = 9
         // Le voile est DÉJÀ là à la première image de l'arrivée (les
         // grains attrapent la première lumière) — jamais un plateau vide.
@@ -829,8 +980,7 @@ final class BoosterScene {
         dust.spreadingAngle = 16
         dust.particleSize = 0.006
         dust.particleSizeVariation = 0.0035
-        dust.particleColor = UIColor(red: 1.0, green: 0.92, blue: 0.78,
-                                     alpha: 0.28)
+        dust.particleColor = palette.poudre.withAlphaComponent(0.28)
         dust.particleColorVariation = SCNVector4(0, 0.03, 0.05, 0.08)
         dust.blendMode = .additive
         dust.isLightingEnabled = false
@@ -842,7 +992,7 @@ final class BoosterScene {
         // coordinateur, calées sur l'haptique de détente. VISIBLES :
         // la poudre de la vidéo de l'overlay, pas un soupçon.
         for puff in cranPuffs {
-            puff.particleImage = Self.pearlDot()
+            puff.particleImage = Self.grainDePoudre(robe)
             puff.birthRate = 420
             puff.emissionDuration = 0.12
             puff.loops = false
@@ -857,8 +1007,7 @@ final class BoosterScene {
             puff.spreadingAngle = 40
             puff.particleSize = 0.0075
             puff.particleSizeVariation = 0.0035
-            puff.particleColor = UIColor(red: 1.0, green: 0.9, blue: 0.72,
-                                         alpha: 0.42)
+            puff.particleColor = palette.poudre.withAlphaComponent(0.42)
             puff.blendMode = .additive
             puff.isLightingEnabled = false
         }
@@ -887,7 +1036,7 @@ final class BoosterScene {
     func setGalleryStudio(_ k: Float) {
         let c = CGFloat(min(max(k, 0), 1))
         keyLight.intensity = 260 * c
-        embers.intensity = 38 * c
+        embers.intensity = 38 * c * palette.basEchelle
         scene.lightingEnvironment.intensity = 1.0 * c
     }
 
@@ -1112,7 +1261,7 @@ final class BoosterScene {
         SCNTransaction.animationDuration = 0.4
         scene.lightingEnvironment.intensity = on ? 0.55 : 1.0
         keyLight.intensity = on ? 110 : 260
-        embers.intensity = on ? 60 : 38
+        embers.intensity = (on ? 60 : 38) * palette.basEchelle
         SCNTransaction.commit()
     }
 
@@ -1123,7 +1272,7 @@ final class BoosterScene {
         SCNTransaction.animationDuration = 0.5
         scene.lightingEnvironment.intensity = 1.5
         keyLight.intensity = 320
-        embers.intensity = 140
+        embers.intensity = 140 * palette.basEchelle
         SCNTransaction.commit()
     }
 
@@ -1132,7 +1281,7 @@ final class BoosterScene {
     /// sachet — sinon elles le repeignent en rouge-orangé pendant la
     /// chute (audit v5). k = 1 pleine braise, 0 éteintes.
     func setEmberLights(_ k: CGFloat) {
-        embers.intensity = 60 * k
+        embers.intensity = 60 * k * palette.basEchelle
         tearLightSource?.intensity = 10 * k
     }
 
@@ -1245,9 +1394,31 @@ final class BoosterScene {
         return CGFloat(UserDefaults.standard.double(forKey: key))
     }
 
+    /// LE CACHE DES TEXTURES — deux robes ne décodent pas deux fois.
+    ///
+    /// Une `BoosterScene` décode ~36 Mo à chaque construction (color et emiss
+    /// en 2048², normal en 1024²), et il s'en construit plusieurs par session :
+    /// le four, la porte, le géant du profil, le manège. C'est la dépense
+    /// MESURÉE de `WoopApp` (129 ms rendus, « le four réchauffait pour un
+    /// convive déjà servi »). Une seconde robe la doublait ; le cache la
+    /// paie une fois pour toutes.
+    ///
+    /// Rien à purger : trois fichiers par robe, et `UIImage` ne garde ici que
+    /// le décodé d'images que TOUTE la session réutilise. Sérialisé par le
+    /// verrou — `attach` vit sur le fil principal, mais le four cuit, lui,
+    /// depuis une file de fond.
+    private static let cacheImages = OSAllocatedUnfairLock(
+        initialState: [String: UIImage]())
+
     private static func image(_ name: String) -> UIImage? {
-        guard let path = Bundle.main.path(forResource: name, ofType: "png") else { return nil }
-        return UIImage(contentsOfFile: path)
+        cacheImages.withLock { cache in
+            if let deja = cache[name] { return deja }
+            guard let path = Bundle.main.path(forResource: name,
+                                              ofType: "png"),
+                  let ui = UIImage(contentsOfFile: path) else { return nil }
+            cache[name] = ui
+            return ui
+        }
     }
 
     /// La POUDRE DE DIAMANT : elle ne jaillit pas, elle COULE — vitesse
@@ -1358,6 +1529,33 @@ final class BoosterScene {
         }
     }
 
+    /// Le grain que porte la robe : la perle braise, ou sa sœur blanche.
+    private static func grainDePoudre(_ robe: RobeBooster) -> UIImage {
+        robe == .noire ? pearlDotBlanche() : pearlDot()
+    }
+
+    /// LA MÊME PERLE, SANS SA BRAISE — le grain de la poudre noire.
+    /// Un grain additif garde SA couleur quoi qu'on fasse du studio : tant
+    /// que son halo est or, la poussière du manège noir rallume en or ce
+    /// que les lumières viennent d'éteindre (« la poudre doit être noir et
+    /// blanche »). Mêmes rayons, mêmes paliers : seule la teinte tombe.
+    private static func pearlDotBlanche() -> UIImage {
+        let side = 64.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
+        return renderer.image { ctx in
+            let colors = [UIColor.white.cgColor,
+                          UIColor(white: 1, alpha: 0.75).cgColor,
+                          UIColor(white: 0.92, alpha: 0.28).cgColor,
+                          UIColor.clear.cgColor] as CFArray
+            let grad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                  colors: colors, locations: [0, 0.18, 0.45, 1])!
+            ctx.cgContext.drawRadialGradient(grad,
+                startCenter: CGPoint(x: side / 2, y: side / 2), startRadius: 0,
+                endCenter: CGPoint(x: side / 2, y: side / 2), endRadius: side / 2,
+                options: [])
+        }
+    }
+
     /// La perle : cœur blanc fusion, halo braise généreux — la comète.
     private static func pearlDot() -> UIImage {
         let side = 64.0
@@ -1412,9 +1610,14 @@ final class BoosterScene {
     /// la préfiltre pas — vérifié aux sondes : texture vivante, rendu
     /// inchangé au pixel près). Un fichier Radiance `.hdr` écrit dans les
     /// caches et tendu par URL, lui, est préfiltré comme il faut.
-    static let hdrStudio: URL? = makeHDRStudio()
+    static let hdrStudio: URL? = makeHDRStudio(robe: .lune)
+    /// Le même studio, l'horizon passé à l'améthyste — les barres blanches
+    /// ne bougent pas : c'est ce qui donne au foil ses éclats. Cuit à la
+    /// PREMIÈRE scène noire (le four de `WoopApp` ne réchauffe que le jaune :
+    /// une cuisson est un 1024×512 CPU + une écriture disque).
+    static let hdrStudioNoire: URL? = makeHDRStudio(robe: .noire)
 
-    private static func makeHDRStudio() -> URL? {
+    private static func makeHDRStudio(robe: RobeBooster) -> URL? {
         let cal = CommandLine.arguments.contains("-boosterEnvCal")
         print("[booster-bench] makeHDRStudio: envCal=\(cal)")
         let W = 1024, H = 512
@@ -1488,7 +1691,9 @@ final class BoosterScene {
             }
         }
         let white = SIMD3<Float>(1.0, 0.96, 0.90)
-        let warm = SIMD3<Float>(1.0, 0.45, 0.14)
+        // L'horizon : braise sur le set Lune, améthyste sur le noir (« pas
+        // de halo orange… noir un peu violet et blanc »).
+        let warm = robe.palette.horizonHDR
         let tall = runY(0.10, 0.78, 40)
         // `-boosterEnvCal` : la mire d'azimut — huit barres de couleurs
         // distinctes à u = i/8. Une capture, et on LIT quelle tranche de
@@ -1522,13 +1727,16 @@ final class BoosterScene {
                  color: SIMD3<Float>(0.80, 0.86, 1.0), peak: 3.0),
             // l'horizon braise, aminci (un blob gras grise le noir)
             Glow(gx: gaussX(0.5, 0.30 * Float(W)), gy: gaussY(0.66, 0.06 * Float(H)),
-                 color: warm, peak: 0.4),
+                 color: warm, peak: robe.palette.horizonForce),
             // la braise au sol, discrète (elle noyait le bas du VERSO,
             // qui n'a pas de lac dessiné pour l'excuser)
             Glow(gx: gaussX(0.5, 0.20 * Float(W)), gy: gaussY(0.97, 0.05 * Float(H)),
-                 color: warm, peak: 0.12),
+                 color: warm, peak: robe.palette.solForce),
         ]
-        return build(glows, name: "booster-studio.hdr", W: W, H: H)
+        return build(glows,
+                     name: robe == .noire ? "booster-studio-noir.hdr"
+                                          : "booster-studio.hdr",
+                     W: W, H: H)
     }
 
     /// L'ancien studio 8 bits, gardé en secours si Metal manque à l'appel.

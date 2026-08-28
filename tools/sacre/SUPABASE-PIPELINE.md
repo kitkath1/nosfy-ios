@@ -37,6 +37,39 @@ solde, ni lecture de collection.
 
 ---
 
+## ⚠️ ÉTAT AU 28-08-2026 — DEUX DES TROIS TABLES SONT EN LIGNE
+
+Ce document a été écrit le 15-08 comme du SQL **à passer**. Il ne l'avait
+jamais été : au 28-08 la base ne contenait que `cards` et `user_cards`.
+
+Depuis, **deux migrations sont appliquées et vérifiées** :
+
+| migration | ce qu'elle a créé |
+| --- | --- |
+| `20260828120000_booster_noir.sql` | **`user_boosters`** et **`coin_ledger`** aux schémas ci-dessous, plus `origine = 'legendaire'`, la colonne `currency`, `claim_booster_legendaire()` et l'index unique partiel qui interdit deux réserves ouvertes |
+| `20260828160000_wallet_coffre.sql` | **`booster_progress`** (le report 0-99), **`reward_rules`** (les prix), `solde_argent()`, `etat_coffre()` |
+
+**Deux amendements aux schémas écrits plus bas**, tenus par ces migrations :
+
+1. `user_boosters.origine` accepte **`'legendaire'`** (le sachet du booster
+   noir, créé au claim et non à la séance) ;
+2. `coin_ledger` porte une colonne **`currency in ('yellow','silver')`** —
+   deux monnaies, une colonne, deux soldes dérivés. La deuxième s'appelle
+   **argent** (le dessin a tranché : la planche `piece-argent` mesure
+   186 · 170 · 153 sur ses hautes lumières) et elle ouvre **le booster
+   noir** — deux objets, deux noms.
+
+**LE PRIX EST TRANCHÉ ET IL VIT EN BASE**, plus dans le code :
+`reward_rules` porte `pieces_par_serie = 20`, `prix_booster = 100`,
+`prix_booster_legendaire = 1`. La question ouverte du §2 ci-dessous est donc
+close. `claim_booster` (le jaune) devra lire son prix là, comme le fait déjà
+`claim_booster_legendaire`.
+
+Reste à écrire de ce document : `gagner_booster`, `claim_booster` (le jaune),
+`sceller_booster`, et la table `families`.
+
+---
+
 ## LES TROIS TABLES À ÉCRIRE
 
 ### 1. `user_boosters` — les sachets gagnés, en attente, ouverts
@@ -112,8 +145,10 @@ create policy "chacun lit son grand livre"
     solde = select coalesce(sum(delta), 0)
               from coin_ledger where user_id = auth.uid()
 
-**À trancher ensemble** : le prix d'un booster (20 pièces dans la
-maquette actuelle) et si un doublon rembourse quelque chose.
+~~**À trancher ensemble** : le prix d'un booster~~ → **TRANCHÉ le 28-08 et
+posé en base** : `reward_rules.prix_booster = 100` (conversion cumulée avec
+report, §4 sexies de la note rewards), `prix_booster_legendaire = 1` pièce
+d'argent. Reste ouvert : **si un doublon rembourse quelque chose**.
 
 ### 3. `families` — la source unique des 25 familles
 

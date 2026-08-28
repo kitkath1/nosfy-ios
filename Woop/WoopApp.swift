@@ -64,6 +64,8 @@ struct WoopApp: App {
         Fourneau.chauffer()
     }
 
+    @Environment(\.scenePhase) private var phase
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -71,6 +73,20 @@ struct WoopApp: App {
                 .tint(.woopViolet)
         }
         .modelContainer(container)
+        // ⚠️ **LE VIDAGE DE L'OUTBOX SE FAIT AU RETOUR AU PREMIER PLAN, ET
+        // NULLE PART AILLEURS.** C'est le seul instant où trois choses sont
+        // vraies à la fois : l'app est vivante, le réseau a eu une chance de
+        // revenir, et l'utilisatrice ne regarde encore rien de précis. Le
+        // faire au lancement seulement raterait le cas le plus courant —
+        // séance finie dans le métro, app revenue à la surface deux stations
+        // plus loin sans jamais avoir été tuée.
+        .onChange(of: phase) { _, nouvelle in
+            guard nouvelle == .active else { return }
+            Task {
+                await OutboxGains.semer()          // banc `-outboxSemer`
+                await OutboxGains.shared.vider()
+            }
+        }
     }
 }
 
@@ -442,7 +458,25 @@ struct RootView: View {
         withAnimation(.easeOut(duration: 0.3)) { selection = .home }
         // L'envoi part en fond — jamais le droit de bloquer la chaîne.
         let snapshot = a.snapshot()
-        Task.detached { await SupabaseSync.shared.push([snapshot]) }
+        // ⚠️ **ÉTAPE 1 DU BRANCHEMENT DU COFFRE : ON ÉCRIT, PERSONNE NE LIT.**
+        // `cloturer_seance` inscrit les pièces (séries × 20, le taux venant
+        // du serveur) ET le sachet de fin de séance — forfaitaire, un par
+        // session complète quel que soit le nombre de séries (28-08).
+        //
+        // ⚠️ **RIEN NE CHANGE À L'ÉCRAN**, et c'est le but : la notif « +240 »
+        // et la proposition du sachet, juste en dessous, restent locales. On
+        // remplit le journal avant de s'en servir — si c'est faux, rien ne
+        // casse visiblement, et les écritures sont idempotentes.
+        //
+        // ⚠️ **APRÈS la synchro de la séance, dans la MÊME tâche** : l'ordre
+        // n'est pas indifférent le jour où `workout_id` prendra une clé
+        // étrangère. Deux `Task.detached` ne garantiraient aucun ordre.
+        let seance = a.remoteID
+        let series = a.setCount
+        Task.detached {
+            await SupabaseSync.shared.push([snapshot])
+            await SacreServeur.reglerFinDeSeance(seance, series: series)
+        }
         if gain > 0 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                 withAnimation { depart.notifPieces = gain }
@@ -1074,6 +1108,7 @@ struct RootView: View {
                 .zIndex(5)
             BoosterPopupHote(
                 ouverte: sacre.popupOuverte,
+                robe: sacre.robeCourante,
                 onOuvrir: { sacre.ouvrirManege() },
                 onFermer: {
                     withAnimation(.spring(response: 0.45,
@@ -1087,6 +1122,10 @@ struct RootView: View {
                 .sondeCadence(sacre.popupOuverte ? "panneau" : "home")
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
+                           // La robe posée par la porte qu'on a prise (la
+                           // proposition ou la pill) — deux manèges, jamais
+                           // mélangés.
+                           robe: sacre.robeCourante,
                            // Le chevron de la maison, aux deux escales du
                            // Sacre (le manège, le résultat) : il rend la
                            // main à la HOME, jamais à la page d'où l'on
@@ -1110,8 +1149,18 @@ struct RootView: View {
                                // pouvoir se rejouer à l'infini (pop-up,
                                // pill, tirage du géant). `user_boosters`
                                // portera le vrai compte.
-                               sacre.boostersEnAttente =
-                                   max(1, sacre.boostersEnAttente - 1)
+                               //
+                               // C'EST LA RÉSERVE OUVERTE QUI SE DÉCOMPTE,
+                               // pas « la » réserve : un booster noir ouvert
+                               // qui retirait un jaune aurait fait fondre la
+                               // mauvaise pile sous les yeux de l'utilisateur.
+                               if sacre.robeCourante == .noire {
+                                   sacre.boostersNoirsEnAttente =
+                                       max(1, sacre.boostersNoirsEnAttente - 1)
+                               } else {
+                                   sacre.boostersEnAttente =
+                                       max(1, sacre.boostersEnAttente - 1)
+                               }
                                selection = .profile
                                DispatchQueue.main.asyncAfter(
                                    deadline: .now() + 0.45) {

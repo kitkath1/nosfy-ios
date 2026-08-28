@@ -147,13 +147,66 @@ Deno.serve(async (req) => {
     const corps = await req.json().catch(() => ({}));
     const workoutId = corps.workout_id ?? null;
 
+    // ⚠️ LES MANETTES D'ATELIER SONT UNE PORTE OUVERTE, et le booster noir
+    // la rend grave. `famille` et `force_new` laissent LE CLIENT choisir sa
+    // carte : « La lune souveraine », à volonté, sans pièce noire. Le défaut
+    // existe depuis le premier jour et ne se voyait pas — une légendaire
+    // garantie n'a de valeur que si elle ne s'obtient pas autrement.
+    //
+    // Elles ne répondent donc plus qu'au compte d'ATELIER, nommé au
+    // déploiement. `FORGE_DEV_USER` non renseigné = manettes fermées pour
+    // tout le monde (et le banc `CarteLuneLab` perd ses leviers : c'est le
+    // prix, et il se rend en une variable d'environnement).
+    if (user.id !== Deno.env.get("FORGE_DEV_USER")) {
+      delete corps.famille;
+      delete corps.force_new;
+    }
+
+    // ── LE BOOSTER NOIR : la rareté vient du SERVEUR, jamais du client ──
+    //
+    // Le client envoie l'`id` de la réserve que `claim_booster_legendaire()`
+    // vient de lui créer — RIEN D'AUTRE. C'est la fonction qui relit la
+    // ligne, vérifie qu'elle appartient bien à l'appelant, et déduit de son
+    // `origine` qu'il faut servir le registre légendaire. Un paramètre
+    // `rarete` accepté du client serait la faille de tout le système : une
+    // légendaire garantie est la seule certitude que l'app vende.
+    //
+    // Sans `booster_id`, RIEN NE CHANGE : la table peut ne pas exister
+    // encore (migration 20260828120000 non appliquée), on ne l'interroge pas.
+    const boosterId = typeof corps.booster_id === "string" ? corps.booster_id : null;
+    let rareteImposee: string | null = null;
+    if (boosterId) {
+      const { data: b } = await admin.from("user_boosters")
+        .select("id, origine, card_id")
+        .eq("id", boosterId).eq("user_id", user.id).maybeSingle();
+      if (!b) return Response.json({ error: "booster inconnu" }, { status: 404 });
+      // IDEMPOTENCE : un sachet DÉJÀ scellé rend SA carte. Un double tap, un
+      // réseau qui coupe, un retour arrière ne tirent jamais une deuxième
+      // carte — c'est la garde de `claim_booster`, appliquée à la forge.
+      if (b.card_id) {
+        const { data: dejaLa } = await admin.from("cards")
+          .select("*").eq("id", b.card_id).maybeSingle();
+        if (dejaLa) {
+          const { data: pubDeja } = admin.storage.from("cards")
+            .getPublicUrl(dejaLa.art_path);
+          return Response.json({
+            card: {
+              id: dejaLa.id, famille: dejaLa.famille, rarete: dejaLa.rarete,
+              scene: dejaLa.scene, art_url: pubDeja.publicUrl, fraiche: false,
+            },
+          });
+        }
+      }
+      if (b.origine === "legendaire") rareteImposee = "legendary";
+    }
+
     // ── Pool ou neuf ?
     let carte: { id: string; famille: string; rarete: string; scene: string; art_path: string } | null = null;
     let fraiche = false;
     const forceNeuf = corps.force_new === true || typeof corps.famille === "string";
 
     if (!forceNeuf && Math.random() >= PART_NEUF) {
-      const rarete = tireRarete();
+      const rarete = rareteImposee ?? tireRarete();
       const { data } = await admin.from("cards").select("*").eq("rarete", rarete);
       if (data && data.length > 0) carte = data[Math.floor(Math.random() * data.length)];
       // Pool vide pour cette rareté → on forgera une neuve de cette rareté.
@@ -161,6 +214,15 @@ Deno.serve(async (req) => {
         const du = FAMILLES.filter((f) => f.rarete === rarete);
         corps.famille = du[Math.floor(Math.random() * du.length)].nom;
       }
+    }
+
+    // LA GARANTIE TIENT AUSSI SUR LE CHEMIN « NEUVE ». Sans cette ligne, le
+    // tirage 35 % qui saute le pool forgeait une famille prise AU HASARD
+    // dans les 25 — donc une commune, avec une pièce noire. La rareté
+    // imposée doit borner LES DEUX chemins, pas seulement celui du pool.
+    if (!carte && rareteImposee && typeof corps.famille !== "string") {
+      const du = FAMILLES.filter((f) => f.rarete === rareteImposee);
+      corps.famille = du[Math.floor(Math.random() * du.length)].nom;
     }
 
     if (!carte) {
@@ -198,6 +260,14 @@ Deno.serve(async (req) => {
     const uc = await admin.from("user_cards")
       .insert({ user_id: user.id, card_id: carte!.id, workout_id: workoutId });
     if (uc.error) throw uc.error;
+
+    // LE SCELLEMENT : le sachet porte désormais SA carte. C'est ce qui rend
+    // l'idempotence ci-dessus vraie — sans lui, un rejeu retirerait.
+    if (boosterId) {
+      await admin.from("user_boosters")
+        .update({ card_id: carte!.id })
+        .eq("id", boosterId).eq("user_id", user.id).is("card_id", null);
+    }
 
     const { data: pub } = admin.storage.from("cards").getPublicUrl(carte!.art_path);
     return Response.json({
