@@ -439,8 +439,19 @@ struct GaletEtape: View {
             // aujourd'hui : le halo le plus fort du chemin (« je n'arrive pas
             // à distinguer la session de today »)
             case .actif: return 0.72
-            case .lune(let dispo): return dispo ? 0.62 : 0
-            case .piece(let dispo): return dispo ? 0.35 : 0
+            // ⚠️ **LES DEUX RÉCOMPENSES ONT LE MÊME HALO** (28-08 : « un halo
+            // subtil autour de la lune, dans le même esprit que celui de la
+            // session en cours »). Depuis qu'elles portent le MÊME logo lune,
+            // deux intensités différentes (0,62 et 0,35) n'avaient plus de
+            // sens. Elles respirent déjà à la même horloge que le jour en
+            // cours (`vivant`, plus haut) ; ce qui reste plus faible, c'est le
+            // RAYON (0,68 Ø contre 0,95) — c'est lui qui empêche « trop
+            // lumineux » et qui laisse aujourd'hui rester le point le plus
+            // fort du chemin.
+            //
+            // Ce halo EST l'état `available` : il s'allume exactement quand la
+            // récompense peut être réclamée, et sur rien d'autre.
+            case .lune(let dispo), .piece(let dispo): return dispo ? 0.62 : 0
             default: return 0
             }
         }()

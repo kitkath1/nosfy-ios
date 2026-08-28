@@ -29,6 +29,126 @@ fantômes » où aucun galet n'est actif).
 
 ---
 
+## POUR LE BACKEND — LA RÉCOMPENSE : LE SERVEUR TIRE, LE FRONT RÉVÈLE (28-08, dictée)
+
+> « La récompense doit être déterminée côté backend **avant ou au moment du
+> claim**, pas générée arbitrairement par l'animation front. Le scratch et les
+> animations ne font que **révéler une récompense déjà attribuée**. »
+
+C'est la règle qui commande toute l'architecture de la card. Elle interdit trois
+choses d'un coup : un tirage au front, un rejeu qui redonne, et une divergence
+entre ce que l'écran montre et ce que le compte porte.
+
+**Le flux complet :**
+
+`galet disponible` → `halo` → `Claim` → `card lune` → `on range Nosfy` →
+`on gratte la lune` → `révélation` → `Coins OU Boosters` → `créditée` → `claimed`
+
+### Les quatre états
+
+| état | ce que ça veut dire | ce que le front en fait |
+|---|---|---|
+| `locked` | les séances d'avant ne sont pas toutes faites | glyphe éteint, **pas de halo**, le tap ouvre le panneau « Reach this step… » |
+| `available` | réclamable | **le halo respire** (0,62, rayon 0,68 Ø — voir § 5 sexies), bouton `Claim` |
+| `claiming` | l'aller-retour serveur | le bouton attend ; **un échec REVIENT à `available`**, jamais un galet mort |
+| `claimed` | créditée | glyphe sourd, la card se rouvre **sans se re-gratter** |
+
+### Le payload
+
+```
+GET  /chemin/recompense/{chapitre}/{rang}
+  etat          locked | available | claiming | claimed
+  claimable     bool
+  card_opened   bool      ← la card a déjà été ouverte
+  reveal_played bool      ← l'animation de révélation a déjà été jouée
+  credited      bool      ← réellement portée au compte
+
+POST /chemin/recompense/{chapitre}/{rang}/claim
+  clé d'idempotence : (user, chapitre, rang)     ← surtout PAS session_uuid
+  rend le payload DÉJÀ TIRÉ :
+    reward_type              coins | boosters
+    · coins    → coin_type   standard | black
+                 amount
+                 is_legendary_currency
+    · boosters → boosters    [orange | legendary_black, …]   ← une LISTE
+    rarity                   common | rare | legendary
+```
+
+⚠️ **`boosters` est une LISTE, jamais « 2 orange » en dur.** Le front compose la
+scène à partir du résultat : `[orange, orange]`, `[orange, legendary_black]`,
+`[legendary_black, legendary_black]`, et tout ce qu'on ajoutera ensuite.
+
+### Trois conséquences que le front tient déjà
+
+1. **`credited` bascule AU CLAIM**, pas à la fin du grattage. Tuer l'app en
+   plein scratch ne coûte pas la récompense.
+2. **`reveal_played`** rouvre une card déjà grattée dans son état révélé —
+   sinon on redemande le travail, ou pire, on laisse croire à un second tirage.
+3. **`claiming`** existe pour le réseau : sans lui, un échec laisse un galet
+   dans un état qu'aucun geste ne rattrape.
+
+### LE VARIANT « WIN » DE LA REWARD CARD — ce qui vient du serveur (28-08)
+
+C'est un **nouveau variant**, monté sur les pièces de la robe « YOU MADE IT »
+(`TexteGeant` + `LampeEventail`, sorties de `private` — visibilité seulement,
+cinq lignes, aucun comportement touché). **La robe existante n'est pas
+modifiée.**
+
+**Deux choses seulement varient, et elles viennent du backend :**
+
+| ce qui varie | où ça s'affiche | champ |
+|---|---|---|
+| **le NOMBRE** | la **deuxième des trois lignes géantes** (`WIN` / `2` / `BOOSTERS`) | `boosters.count` |
+| **les BOOSTERS montrés** | la **poche, au pied de la card** — un sachet par entrée, avec sa robe | `boosters: [orange \| legendary_black, …]` |
+
+Tout le reste est fixe : les mots « WIN » et « BOOSTERS », la lampe, le
+dégradé, la lèvre de la poche.
+
+⚠️ **La liste commande le rendu, jamais un compteur seul.** Le front lit
+`boosters` et compose : deux orange, un orange + un légendaire, deux
+légendaires, et tout ce qu'on ajoutera. Un `count` sans la liste ne dirait pas
+QUELS sachets montrer.
+
+⚠️ **Le nombre affiché est `boosters.count`, jamais un champ séparé.** Deux
+sources pour la même vérité divergent à la première retouche : si le serveur
+envoie trois sachets et un `count` de 2, la card ment.
+
+⚠️ **Trois sachets au plus sont montrés** (la poche en contient trois poses).
+Au-delà, c'est un cas à trancher — pas encore rencontré, pas encore codé.
+
+### Les taux, et la pitié
+
+| piste | résultat | taux |
+|---|---|---|
+| **pièces** | `standard`, 100-200 | **94 %** |
+| | `black` × 1 | **6 %** |
+| **boosters** | `[orange, orange]` | **88 %** |
+| | `[orange, legendary_black]` | **11 %** |
+| | `[legendary_black, legendary_black]` | **1 %** |
+
+Deux récompenses par chapitre, donc cinq nœuds de chaque sur les cinq
+chapitres. À 6 %, une pièce noire tombe tous les ~17 nœuds — tous les trois
+chapitres et demi : assez rare pour être un événement, assez fréquente pour
+qu'une joueuse régulière en voie une. Le légendaire cumulé à 12 % tombe tous
+les ~8 nœuds. Le double légendaire à 1 % est celui qu'on raconte.
+
+⚠️ **LA PITIÉ EST CE QUI MOTIVE**, plus que le taux lui-même : après **12 nœuds
+communs d'affilée** sur une piste, le taux rare **DOUBLE à chaque nœud suivant**
+jusqu'à ce qu'il tombe, puis se remet à zéro. Sans elle, une série sèche
+ressemble à une punition ; avec elle, à une montée. Le compteur vit **par
+utilisateur ET par piste** (`pity_counter`), et **côté serveur** — sinon il est
+falsifiable.
+
+### La monnaie noire
+
+`coin_type: black` est la monnaie rare, liée aux récompenses et cartes
+légendaires. Son visuel n'est pas à créer : c'est **`piece-argent`**, la planche
+du coffre (`CoffreV2.swift`, 72 cases, cerclage chrome froid). Elle est jouée
+par `PieceSprite`, donc elle **TOURNE** à la révélation — l'or, lui, reste posé.
+C'est la différence qui se lit sans légende.
+
+---
+
 ## POUR LE BACKEND — LA RÈGLE DES JOURS : UN JOUR N'EXISTE QUE QUAND IL EST FAIT (28-08, dictée)
 
 > « Quand c'est **à venir**, on ne voit pas les jours, c'est une **flamme**.

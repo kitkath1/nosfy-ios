@@ -1149,16 +1149,20 @@ private struct CheminDuo: View {
                     .allowsHitTesting(false)
                 PanneauDepartChemin(
                     date: dateReelle(e) ?? Date(),
+                    // ⚠️ TOUT EN ANGLAIS (28-08). C'est la MÊME coque qui porte
+                    // « Nosfy has something for you » et le panneau de séance :
+                    // un panneau moitié français moitié anglais se voit
+                    // immédiatement.
                     titre: e.special ? "Nosfy has something for you"
-                        : (cEst ? "Session du jour" : "Séance faite"),
+                        : (cEst ? "Today's session" : "Session done"),
                     cta: e.special
-                        ? (recompensePrete ? "Réclamer" : nil)
-                        : (cEst ? "Commencer" : "Voir"),
+                        ? (recompensePrete ? "Claim" : nil)
+                        : (cEst ? "Start" : "View"),
                     sousTitre: !e.special || recompensePrete ? nil
-                        : (prise ? "Récompense déjà réclamée"
-                           : "Une fois que vous arrivez à ce niveau, une récompense vous attend"),
+                        : (prise ? "Reward already claimed"
+                           : "Reach this step to unlock your reward"),
                     nosfy: e.special,
-                    secondaire: e.special ? "Fermer" : "Plus tard",
+                    secondaire: e.special ? "Close" : "Later",
                     // ⚠️ **LE HALO DE L'OVERLAY** (27-08 : « celui en cours,
                     // avec l'overlay session du jour, doit avoir un halo ») —
                     // il ne vit QUE sur le jour même : c'est ce qui distingue

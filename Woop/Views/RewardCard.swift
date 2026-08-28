@@ -902,7 +902,7 @@ private struct RewardScene: View, Animatable {
 /// l'additif demandé AU CONTEXTE, jamais à la vue), passée au monochrome :
 /// des facettes blanches et bleu-glace qui ne vivent que dans le halo du
 /// bas et scintillent TRANCHÉ.
-private struct PoudreDiamant: View {
+struct PoudreDiamant: View {
     var largeur: CGFloat
     var hauteur: CGFloat
     var naissance: Date
@@ -1182,7 +1182,7 @@ private struct ChiffreMatrice: View {
 /// PEINTES PAR-DESSUS le verre — la loi du galet : jamais d'ombre
 /// dessous, jamais de transform ; toute la vie passe par l'offset et par
 /// ce qu'on peint dessus.
-private struct VerreQuatre: View {
+struct VerreQuatre: View {
     let valeur: Int
     var naissance: Date
 
@@ -1809,7 +1809,7 @@ private struct BoutonClaim: View {
 /// l'horloge PARTAGÉE du faisceau : la lampe penche son cône ET la
 /// lumière posée sur les lettres suivent la même sinusoïde, au même
 /// instant. Période ~9,7 s.
-private func balayageSpot(_ t: Double) -> Double {
+func balayageSpot(_ t: Double) -> Double {
     // Deux harmoniques (périodes premières entre elles) : la course est
     // large ET jamais mécanique — le projecteur CHERCHE.
     let v = sin(t * 0.62) * 0.78 + sin(t * 0.29 + 1.3) * 0.30
@@ -1822,7 +1822,7 @@ private func balayageSpot(_ t: Double) -> Double {
 /// lumière qui descend de la barrette (la technique de la matrice — la
 /// trame ne se redessine pas, seule la lumière la révèle). Hors layout
 /// (la fente ne gonfle pas), le clip de la card rogne.
-private struct TexteGeant: View {
+struct TexteGeant: View {
     /// L'horloge du scintillement.
     let naissance: Date
     /// LES MOTS — jamais en dur (contrat du plan backend : l'IA les
@@ -1939,7 +1939,7 @@ private struct TexteGeant: View {
 }
 
 /// L'éventail du plafonnier — le trapèze COURT et doux.
-private struct Eventail: Shape {
+struct Eventail: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
         p.move(to: CGPoint(x: r.midX - 30, y: r.minY))
@@ -1955,7 +1955,7 @@ private struct Eventail: Shape {
 /// haut de la card, et son éventail de lumière : court, doux, flancs
 /// FONDUS (jamais d'arête franche — un trait à bord franc sur du noir
 /// est de l'encre, pas de la lumière).
-private struct LampeEventail: View {
+struct LampeEventail: View {
     /// L'horloge du balayage — la même que la lumière des lettres.
     var naissance: Date
 
@@ -2046,7 +2046,7 @@ private struct LampeEventail: View {
 /// LE SCINTILLEMENT des lettres — la recette PoudreBooster réduite à
 /// l'infime : ~16 étoiles qui ne vivent que masquées PAR les glyphes,
 /// plus denses en crête (là où la lampe touche), l'additif au contexte.
-private struct Scintilles: View {
+struct Scintilles: View {
     var naissance: Date
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

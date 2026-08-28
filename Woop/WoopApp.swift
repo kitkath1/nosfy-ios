@@ -293,6 +293,10 @@ struct RootView: View {
     private let sacre = SacreEtat.shared
     /// LE DÉPART DE SÉANCE — le panneau du galet play (même école).
     private let depart = DepartEtat.shared
+    /// LES RÉCOMPENSES DU CHEMIN — la card à gratter, à la RACINE comme la
+    /// route : montée dans un cover, elle masquerait la route et la pop-up
+    /// booster (la loi payée au jalon 1).
+    private let recompenses = RewardCheminEtat.shared
     /// Banc de mesure (jalon 1) : la home démontée sous la route.
     private static let cheminSeul = CommandLine.arguments.contains("-cheminSeul")
     /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
@@ -538,24 +542,22 @@ struct RootView: View {
 
     /// Le nœud-lune s'est gravé dans la page ; la racine persiste, puis
     /// propose le booster — la pop-up existante, au-dessus de la route.
+    // ⚠️ **LES DEUX RÉCOMPENSES PASSENT PAR LA MÊME CARD À GRATTER** (28-08,
+    // jalon 7 bis enfin posé). Avant, la lune ouvrait la pop-up booster et la
+    // pièce faisait descendre une capsule « +40 » — deux mises en scène
+    // différentes, et un montant EN DUR.
+    //
+    // Maintenant les deux ouvrent la même card : on range Nosfy, on gratte la
+    // lune, la récompense se révèle. Le montant, la monnaie et la combinaison
+    // de boosters viennent du TIRAGE fait AU CLAIM — jamais de l'animation.
     private func cheminLune(_ id: Int) {
         depart.reclamer(id)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            sacre.proposer()
-        }
+        recompenses.reclamer(id, pieces: false)
     }
 
-    /// « +40 pièces » : la capsule des pièces descend (zIndex 9, au-dessus de
-    /// la route). La card reward robe `.piece` viendra avec son hôte racine
-    /// (jalon 7 bis) ; le gain, lui, devra s'écrire dans `coin_ledger`.
     private func cheminPiece(_ id: Int) {
         depart.reclamer(id)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation { depart.notifPieces = 40 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
-            withAnimation { depart.notifPieces = nil }
-        }
+        recompenses.reclamer(id, pieces: true)
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -1025,6 +1027,10 @@ struct RootView: View {
             // l'incrémental du simulateur passait. Le corps géant doit
             // rester une addition de vues NOMMÉES, pas d'expressions.
             cheminEnArbre
+            // LA CARD À GRATTER — au-dessus de la route (elle en sort), sous
+            // le Sacre. Elle se monte et se démonte seule sur son état.
+            RewardCheminHote(etat: recompenses)
+                .zIndex(12)
 
             // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
             // la séance — le trophée, la notif des pièces et la pop-up
