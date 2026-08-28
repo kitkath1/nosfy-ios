@@ -339,6 +339,11 @@ struct CheminHote<Contenu: View>: View {
 /// booster : `AVPlayerLooper` (jamais un seek sur didPlayToEndTime),
 /// looper RETENU, muet, et le démontage qui rend tout.
 struct DepartLoopVideo: UIViewRepresentable {
+    /// Le fichier joué. Défaut : la lune du départ — c'est son premier
+    /// habitant. 28-08 : la fente du panneau de récompense y met Nosfy, au
+    /// même moteur (une seule école de boucle dans la maison).
+    var nom: String = "start-entrainement-loop"
+
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
@@ -352,7 +357,7 @@ struct DepartLoopVideo: UIViewRepresentable {
         v.isUserInteractionEnabled = false
         v.playerLayer.videoGravity = .resizeAspectFill
         guard let url = Bundle.main.url(
-            forResource: "start-entrainement-loop",
+            forResource: nom,
             withExtension: "mp4") else {
             // Sans le fichier, le panneau reste le panneau — jamais un
             // rectangle noir « en attendant ».

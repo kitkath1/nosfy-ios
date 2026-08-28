@@ -115,6 +115,15 @@ struct GaletEtape: View {
     /// pour les jalons — jamais les glyphes Duolingo.
     var numero: Int? = nil
     var glyphe: String? = nil
+    /// ⚠️ **SON LOGO LUNE, PAS UN SYMBOLE SYSTÈME** (28-08 : « tu mets le logo
+    /// lune, et tu mets MON logo lune, pas un artificiel »). Les deux nœuds de
+    /// récompense portaient des SF Symbols — `moon.fill` et
+    /// `circle.inset.filled`. `GlypheLune` est la forme de la maison (les
+    /// courbes de `MoonGlyph`), celle du profil, de la home, de la porte et du
+    /// calendrier ; l'audit la spécifiait déjà pour la route, le code ne l'a
+    /// jamais suivie. Elle passe devant `glyphe` quand elle est demandée, et
+    /// hérite du même traitement : alphas d'état, or à la disponibilité.
+    var glypheLune: Bool = false
     /// La LARGEUR de la goutte (§22 : 60 au repos, 66 pour l'actif, 82
     /// pour le nœud-trésor) — la hauteur en découle par l'écrasement.
     var taille: CGFloat = 60
@@ -703,6 +712,13 @@ struct GaletEtape: View {
                         .font(.system(size: taille * 0.125, weight: .semibold))
                         .tracking(taille * 0.014)
                 }
+            } else if glypheLune {
+                // Le croissant de la maison. Il se dimensionne comme le
+                // faisait `moon.fill` (0,26 de la taille) et se remplit du
+                // même style — donc l'or de la disponibilité l'atteint sans
+                // qu'on ait rien à câbler.
+                GlypheLune()
+                    .frame(width: taille * 0.30, height: taille * 0.30)
             } else if let g = glyphe {
                 // le contour `flame` du futur est un CHEVEU : poids ultra-
                 // léger, alpha bas — « translucide mais identifiable ».

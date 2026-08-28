@@ -1017,13 +1017,20 @@ private struct CheminDuo: View {
                 // fantôme d'une flamme — le levier gratuit mesuré au fouet
                 // (`hierarchical` sur flame.fill est un no-op).
                 let futur = d == nil && !e.special
-                let glyphe: String? = e.moon ? "moon.fill"
-                    : (e.piece ? "circle.inset.filled"
-                       : (futur ? "flame" : nil))
+                // ⚠️ **LES DEUX RÉCOMPENSES PORTENT SON LOGO LUNE** (28-08 :
+                // « dans la route tu as mis un icône pièce — non, on va
+                // toujours mettre un logo lune, et MON logo lune, pas un
+                // artificiel ; les deux ouvriront un reward »). Le nœud du
+                // milieu garde sa taille plus petite (Ø 53) — « même si le
+                // galet est plus petit, c'est très bien » — seul le glyphe
+                // change. Ce qu'ils DONNENT reste distinct sous le même
+                // signe : des pièces au milieu, un booster à la fin.
+                let glyphe: String? = e.special ? nil : (futur ? "flame" : nil)
                 let nee = etat.nees.contains(e.id)
                 GaletEtape(etat: quel,
                            numero: nil,
                            glyphe: glyphe,
+                           glypheLune: e.special,
                            taille: e.moon ? 78 : (e.piece ? 53 : 62),
                            graine: Double(e.id),
                            // le budget verre : la lentille native ne vit
@@ -1119,6 +1126,18 @@ private struct CheminDuo: View {
                 // l'arête du panneau — un dégradé PEINT, sous le verre
                 // (jamais faire respirer le verre lui-même).
                 let cEst = e.id == etat.etape
+                // ⚠️ **LES QUATRE CAS DU PANNEAU** (28-08). Même coque, même
+                // verre, même liseré ; seuls la fente de gauche, le titre et
+                // l'action changent.
+                //   · séance du jour   → mini-card · « Commencer »
+                //   · séance faite     → mini-card · « Voir »
+                //   · récompense prête → Nosfy · « Réclamer »
+                //   · récompense loin  → Nosfy · PAS de bouton, une promesse
+                //   · récompense prise → Nosfy · PAS de bouton (sans ce cas,
+                //     retaper une lune éteinte n'ouvrirait plus rien)
+                let dispo = etat.etape > e.id
+                let prise = etat.reclamees.contains(e.id)
+                let recompensePrete = e.special && dispo && !prise
                 Circle()
                     .fill(RadialGradient(
                         colors: [.white.opacity(0.22), .white.opacity(0.06),
@@ -1130,17 +1149,29 @@ private struct CheminDuo: View {
                     .allowsHitTesting(false)
                 PanneauDepartChemin(
                     date: dateReelle(e) ?? Date(),
-                    titre: cEst ? "Session du jour" : "Séance faite",
-                    cta: cEst ? "Commencer" : "Voir",
+                    titre: e.special ? "Nosfy has something for you"
+                        : (cEst ? "Session du jour" : "Séance faite"),
+                    cta: e.special
+                        ? (recompensePrete ? "Réclamer" : nil)
+                        : (cEst ? "Commencer" : "Voir"),
+                    sousTitre: !e.special || recompensePrete ? nil
+                        : (prise ? "Récompense déjà réclamée"
+                           : "Une fois que vous arrivez à ce niveau, une récompense vous attend"),
+                    nosfy: e.special,
+                    secondaire: e.special ? "Fermer" : "Plus tard",
                     // ⚠️ **LE HALO DE L'OVERLAY** (27-08 : « celui en cours,
                     // avec l'overlay session du jour, doit avoir un halo ») —
                     // il ne vit QUE sur le jour même : c'est ce qui distingue
                     // « en cours » de « déjà fait », et le halo respire à la
                     // MÊME horloge que celui du galet (fonction pure de t :
                     // deux vues qui la lisent sont en phase, gratuitement).
-                    halo: cEst,
+                    // 28-08 : une récompense PRÊTE l'allume aussi — le liseré
+                    // n'appelle que là où il y a quelque chose à faire, jamais
+                    // sur une promesse hors de portée.
+                    halo: cEst || recompensePrete,
                     onCTA: {
-                        if cEst { fermerEtDemarrer() }
+                        if e.special { reclamer(e) }
+                        else if cEst { fermerEtDemarrer() }
                         // « Voir » : la story de cette séance — à brancher
                         // quand elle le dira. D'ici là, le panneau se ferme.
                         else { fermerPanneau() }
@@ -1166,6 +1197,21 @@ private struct CheminDuo: View {
 
     private func fermerPanneau() {
         withAnimation(.easeOut(duration: 0.22)) { etat.panneauSur = nil }
+    }
+
+    /// LA RÉCLAMATION — l'ancien corps du tap sur un nœud spécial, déplacé sur
+    /// le bouton « Réclamer ». Le nœud se GRAVE et transmet à l'hôte HORS de
+    /// la transaction du geste (un geste annulé garde son état) : la racine
+    /// ouvre la pop-up booster (lune de fin) ou fait descendre le gain (le
+    /// nœud du milieu). Les deux portent le même logo lune ; ce qu'ils
+    /// DONNENT reste distinct.
+    private func reclamer(_ e: EcranSpec.EtapeSpec) {
+        guard etat.etape > e.id, !etat.reclamees.contains(e.id) else { return }
+        guard let cible: (Int) -> Void = e.moon ? onLune : onPiece else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        fermerPanneau()
+        withAnimation(.easeInOut(duration: 0.45)) { etat.reclamees.insert(e.id) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { cible(e.id) }
     }
 
     /// §23 — le PRIMARY : l'haptique, le panneau LIBÈRE la scène (0,15 s,
@@ -1281,23 +1327,20 @@ private struct CheminDuo: View {
         // une récompense éteinte) doit refermer le panneau comme le vide.
         // Un galet-séance, lui, ne le ferme pas : il le DÉMÉNAGE chez lui.
         if etat.panneauSur != nil, etat.panneauSur != e.id,
-           e.special || e.id > etat.etape {
+           !e.special, e.id > etat.etape {
             fermerPanneau()
         }
-        // Les nœuds spéciaux AVANT la garde de l'actif (audit §4 : le cas
-        // lune tombait dans l'avancement). Disponible et pas encore réclamé,
-        // le nœud se GRAVE et transmet à l'hôte — HORS de la transaction du
-        // geste (un geste annulé garde son état) : la racine ouvre la pop-up
-        // booster (lune) ou fait descendre le gain (pièce), au-dessus de la
-        // route en arbre.
+        // ⚠️ **UNE RÉCOMPENSE PROPOSE, ELLE NE SE DÉCLENCHE PLUS SOUS LE
+        // DOIGT** (28-08). Avant, le même tap faisait deux choses opposées :
+        // disponible il réclamait IMMÉDIATEMENT, sans overlay ; sinon il ne
+        // faisait rien. Elle veut l'écran dans les DEUX cas. Un nœud de
+        // récompense ouvre donc toujours son panneau — c'est la grammaire du
+        // reste de la route (tout galet tapé propose, rien ne se déclenche
+        // sous le doigt), et la réclamation part du bouton « Réclamer ».
         if e.special {
-            guard etat.etape > e.id, !etat.reclamees.contains(e.id) else { return }
-            let cible: ((Int) -> Void)? = e.moon ? onLune : onPiece
-            guard let cible else { return }
-            withAnimation(.easeInOut(duration: 0.45)) {
-                etat.reclamees.insert(e.id)
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                etat.panneauSur = e.id
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { cible(e.id) }
             return
         }
         // §23 : branchée, l'étape courante ne s'avance plus au tap — elle
@@ -1756,8 +1799,18 @@ struct DuolinguoPage: View {
                 let ecranActif = EcranSpec.etapes[etat.etape].ecran
                 if !etat.enGeste, etat.ecranCourant == ecranActif {
                     UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    // banc `-duoPanneau n` : le panneau naît sur le nœud n au
+                    // lieu de l'actif — c'est LE banc qui manquait pour juger
+                    // les cas de RÉCOMPENSE, qu'aucun doigt ne peut ouvrir au
+                    // simulateur.
+                    let a = CommandLine.arguments
+                    let sur: Int = {
+                        if let i = a.firstIndex(of: "-duoPanneau"), i + 1 < a.count,
+                           let n = Int(a[i + 1]) { return n }
+                        return etat.etape
+                    }()
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
-                        etat.panneauSur = etat.etape
+                        etat.panneauSur = sur
                     }
                 // ⚠️ **QUATRE ESSAIS, PAS VINGT** (28-08). Vingt essais à
                 // 0,5 s font DIX SECONDES de guet : toucher l'écran pendant
@@ -1822,8 +1875,21 @@ private struct PanneauDepartChemin: View {
     /// composant de la home, jamais une approximation.
     var date: Date = Date()
     var titre: String = "Session du jour"
-    /// « Commencer » aujourd'hui · « Voir » sur une séance faite.
-    var cta: String = "Commencer"
+    /// « Commencer » aujourd'hui · « Voir » sur une séance faite · « Réclamer »
+    /// sur une récompense atteinte. ⚠️ **`nil` = PAS DE BOUTON** : une
+    /// récompense hors de portée n'a rien à proposer, elle ANNONCE (28-08).
+    var cta: String? = "Commencer"
+    /// Ce qui remplace le bouton quand il n'y en a pas.
+    var sousTitre: String? = nil
+    /// ⚠️ **LA FENTE DE GAUCHE CHANGE D'HABITANT** (28-08 : « à la place de
+    /// l'image avec le mini calendrier à gauche, tu mets en boucle les 3
+    /// premières secondes de cette vidéo de Nosfy »). Séance → la vraie
+    /// mini-card de la home ; récompense → Nosfy en boucle, au même gabarit
+    /// (70 × 78) et au même rayon.
+    var nosfy: Bool = false
+    /// « Plus tard » sur une séance · « Fermer » sur une récompense (on ne
+    /// remet pas à plus tard une récompense qu'on ne peut pas prendre).
+    var secondaire: String = "Plus tard"
     /// Le halo — RÉSERVÉ au jour en cours (27-08 : « celui en cours avec
     /// l'overlay session du jour doit avoir un halo »). C'est lui qui
     /// distingue « en cours » de « déjà fait », et il respire à la MÊME
@@ -1837,24 +1903,34 @@ private struct PanneauDepartChemin: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            miniCard
+            if nosfy { nosfyBoucle } else { miniCard }
             VStack(alignment: .leading, spacing: 9) {
                 Text(titre)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(LinearGradient(
                         colors: [Color(white: 1.0), Color(white: 0.84)],
                         startPoint: .top, endPoint: .bottom))
-                Button(action: onCTA) {
-                    Text(cta)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color(white: 0.06))
-                        .padding(.horizontal, 20)
-                        .frame(height: 34)
-                        .background(Capsule().fill(Color(white: 0.96)))
+                if let cta {
+                    Button(action: onCTA) {
+                        Text(cta)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color(white: 0.06))
+                            .padding(.horizontal, 20)
+                            .frame(height: 34)
+                            .background(Capsule().fill(Color(white: 0.96)))
+                    }
+                    .buttonStyle(.plain)
+                } else if let sousTitre {
+                    // L'ANNONCE : elle prend la place du bouton, au même
+                    // corps que le secondaire, sur deux lignes au plus —
+                    // c'est une promesse, pas une action.
+                    Text(sousTitre)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.plain)
                 Button(action: onPlusTard) {
-                    Text("Plus tard")
+                    Text(secondaire)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
                         .contentShape(Rectangle())
@@ -1958,6 +2034,31 @@ private struct PanneauDepartChemin: View {
     /// aucune nappe elliptique, 66 × 88 au lieu de 70 × 78. Deux objets qui se
     /// ressemblaient, et qui divergeaient à chaque retouche de l'un des deux.
     /// C'est littéralement le même code qui rend les deux maintenant.
+    /// NOSFY EN BOUCLE — la fente de la mini-card, au même gabarit et au même
+    /// rayon, occupée par les 3 premières secondes de `duo-nosfy-reward.mp4`.
+    ///
+    /// Le fichier est cuit au ratio de la fente (70 × 78 → 1600 × 1784 croppé
+    /// sur le sujet, puis 210 × 234) : la loi de la maison veut que le RATIO
+    /// FICHIER soit celui de la FENÊTRE, sinon `resizeAspectFill` rogne ce
+    /// qu'il veut. La découpe des 3 s se fait DANS le graphe (`trim` +
+    /// `setpts`) — un `-ss` ne coupe pas le graphe, les traitements
+    /// s'appliqueraient aux images jetées. Et la boucle est un PALINDROME
+    /// (aller + retour amputé de ses deux images de bord) : couture zéro par
+    /// construction, là où un raccord franc se verrait à chaque tour.
+    ///
+    /// ⚠️ `clipsToBounds` ET `masksToBounds` vivent dans `DepartLoopVideo` :
+    /// SwiftUI ne rattrape pas UIKit sur le débordement d'une couche vidéo.
+    private var nosfyBoucle: some View {
+        DepartLoopVideo(nom: "duo-nosfy-reward")
+            .frame(width: 70, height: 78)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(.white.opacity(0.10), lineWidth: 0.5)
+            }
+            .allowsHitTesting(false)
+    }
+
     private var miniCard: some View {
         MiniCardJour(date: date,
                      // Le sticker FLAMME, celui de la Home — lu dans sa table,
