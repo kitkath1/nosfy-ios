@@ -215,6 +215,36 @@ enum SacreServeur {
                                                      series: series))
     }
 
+    /// LE VERSEMENT DE CONNEXION — appelé au retour au premier plan.
+    ///
+    /// ⚠️⚠️ **JUSQU'AU 29-08, PERSONNE NE POSTAIT CE CAS.** La fonction
+    /// serveur était déployée et vérifiée le 28-08, le cas `.retourQuotidien`
+    /// existait dans l'outbox et y était traité — mais aucune ligne de l'app
+    /// ne l'y mettait. Du code mort des deux côtés d'un tuyau complet.
+    ///
+    /// ⚠️ **LE MARQUEUR LOCAL N'EST PAS L'IDEMPOTENCE.** Celle-ci est côté
+    /// serveur, dans un index unique partiel sur (user, jour) — un marqueur de
+    /// préférences se remet à zéro à la réinstallation, la loi est écrite. Il
+    /// n'est ici que par POLITESSE : sans lui, on posterait un RPC à CHAQUE
+    /// bascule d'application, et il y en a beaucoup.
+    ///
+    /// ⚠️ **ET IL COMPTE LE JOUR EN UTC**, comme la fonction serveur
+    /// (`(now() at time zone 'UTC')::date`). Un marqueur en heure locale et un
+    /// index en UTC ne changent pas de jour au même instant : à Paris, entre
+    /// minuit et 1 h, le local dirait « nouveau jour » quand le serveur dirait
+    /// « déjà pris » — ou l'inverse, et on sauterait un versement. Le jour où
+    /// le fuseau du profil sera tranché, ces deux lignes-là changent ensemble.
+    static func reglerRetourQuotidien() async {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        let jour = utc.startOfDay(for: Date()).timeIntervalSince1970
+        let cle = "woop.retour.dernierJourUTC"
+        let vu = UserDefaults.standard.double(forKey: cle)
+        guard vu != jour else { return }
+        UserDefaults.standard.set(jour, forKey: cle)
+        await OutboxGains.shared.poster(.retourQuotidien)
+    }
+
     /// UN NŒUD DU CHEMIN RÉCLAMÉ — pièces et/ou boosters.
     ///
     /// ⚠️ Le TIRAGE reste au front (`RewardChemin.TirageRecompense`) et cet

@@ -1192,3 +1192,133 @@ journal. Une ligne par ÉVÉNEMENT, avec son origine :
 C'est aussi ce qui donnera enfin des lignes AVEC UNE IMAGE DE SACHET dans
 l'historique : `GainCoffre.robe` est aujourd'hui toujours `nil`, donc chaque
 ligne montre la pièce d'or — je l'avais signalé en livrant la page.
+
+---
+
+## §4 quaterdecies — LES ANNONCES : UNE SEULE PAR ÉVÉNEMENT (29-08)
+
+Verdicts de Kathryn du 29-08 : *« notification et pop-up rewards sont
+liées »*, puis, sur la question posée : **« oui une seule annonce par
+événement je suis d'accord »**.
+
+L'analyse complète (neuf composants, quatre formules, l'ordre de branchement)
+vit dans [PLAN-ANNONCES.md](PLAN-ANNONCES.md). Les deux fiches écran :
+`docs/screens/notification.md` et `docs/screens/reward-popup.md`.
+
+### 1. LA RÈGLE
+
+> **Toute annonce d'un gain passe par la même famille, et un gain ne se dit
+> qu'UNE FOIS.** Il n'y a pas « les notifications » et « les pop-ups » : il y
+> a **une décision — annoncer, et comment — qui rend l'un de trois formats.**
+
+| Format | Ce qu'il coûte | Quand |
+|---|---|---|
+| **le silence** | rien | ~60 % des séries (un RÉSULTAT, pas un paramètre) |
+| **la NOTIFICATION** (4 robes) | rien : elle traverse, on ne la tape pas | le cas courant d'un gain |
+| **la POP-UP** (6 robes) | l'écran, un scrim, un geste | quand il y a un FAIT à raconter |
+
+⚠️ **La pop-up REMPLACE la dalle, elle ne s'y ajoute pas.** Aujourd'hui la fin
+de séance en enchaîne DEUX (la capsule à +1,6 s, la pop-up booster à +5,2 s) —
+c'est exactement ce que cette règle interdit. La clé
+`annonce_une_par_evenement` la porte en base.
+
+### 2. LE CONSTAT QUI L'A RENDUE NÉCESSAIRE (mesuré le 29-08)
+
+**Neuf composants annoncent un gain**, et **quatre formules indépendantes
+recalculent le même nombre** :
+
+```
+WoopApp.swift:442              a.setCount * 20
+ExerciseDetailView.swift:2171  max(faites,1) * gainParSerie
+StorySuite.swift:1489          session.series * 20
+CoffreFortPurse                séries × 20
+```
+
+Ce ne sont pas deux composants liés : c'est **une seule fonction manquante —
+annoncer un gain — réimplémentée neuf fois.** Deux d'entre eux sont d'ailleurs
+morts sans qu'on l'ait vu (la page BRAVO, le vol de pièces de la home).
+
+⚠️ **ET CE QUI DÉCIDE AUJOURD'HUI EST CE QUE LE §2 INTERDIT** :
+`DecideurSerie.pour` tient en trois modulos (`% 10`, `% 5`, `% 3`), là où le
+§2 écrit « aucun déclencheur du type "série 5/10/15" ». Pire, la règle ne tient
+même pas sa promesse : `settleSeries` diffère son écriture de 0,55 s alors que
+le rang est lu tout de suite — **le MOMENT tombe à la 4ᵉ série, la pop-up à la
+6ᵉ, la vidéo rare à la 11ᵉ**, et la pill sous-compte de 20 pièces.
+
+### 3. QUI DÉCIDE QUOI
+
+| Décision | Où | Pourquoi pas ailleurs |
+|---|---|---|
+| annoncer ou se taire | **serveur** (`reward_rules`) | le pacing n'est pas un dé, et une règle client est falsifiable |
+| quel FORMAT | **serveur** | c'est le budget d'attention, la ressource rare |
+| quelle ROBE | **client**, rotation déterministe | elle s'affiche AVANT toute réponse ; la demander au serveur, c'est l'attendre |
+| le MONTANT | client d'abord, **serveur qui rattrape** | §1 : « l'UI affiche le gain tout de suite, le ledger rattrape » |
+| la RARETÉ | **serveur, toujours** | un RNG client se rejoue jusqu'à la légendaire |
+
+### 4. CE QUI EST FAIT — ✅ DÉPLOYÉ ET VÉRIFIÉ LE 29-08
+
+`20260829120000_annonces.sql` + `20260829130000_roll_rare_prive.sql`
+
+| # | Quoi | Pourquoi |
+|---|---|---|
+| 1 | **`reste` devient DÉRIVÉ** (`solde_or mod prix_booster`) dans `etat_coffre()` | `booster_progress.reste` était créé, lu, **et écrit par personne** : la jauge du coffre et celle de la notification affichaient **0/100 en permanence**. Et un solde stocké viole la loi n° 1 |
+| 2 | **`roll_rare(uuid)`** — p = 1/30, pity 45, cooldown 10, **compteur DÉRIVÉ du journal** | la pièce d'argent **ne pouvait pas être gagnée** : solde bloqué à 0 → booster noir inatteignable → toute la robe noire du Sacre hors du jeu |
+| 3 | **`cloturer_seance` tire au règlement** et rend `argent`, `reste`, `prix_booster` | une seule annonce suppose **une seule réponse** : tout ce que la dalle doit dire est là, plus rien à redemander |
+| 4 | **17 clés de rythme** dans `reward_rules` + `annonce_une_par_evenement` | le rythme se règle **sans redéployer l'app** — c'est toute la raison d'être de la table |
+| 5 | **`regles_annonces()`** — un appel, toutes les règles agrégées | une règle ajoutée demain ne demande **aucun changement de client** |
+
+⚠️ **Les trois clés de rareté sont RETIRÉES de `regles_annonces()`** : un pity
+timer visible est farmable. Mais la table reste en lecture publique pour
+`authenticated` — **la vraie protection serait une table à part sans policy de
+lecture**. C'est noté, pas résolu.
+
+⚠️ **Ce que la migration NE tranche PAS** : la conversion automatique des
+pièces en sachets (§4 sexies). `claim_booster()` débite déjà 100 pièces ;
+convertir EN PLUS au règlement paierait deux fois le même travail. C'est la
+question d'économie ouverte du §6.7 de la fiche coffre, et elle appartient à
+Kathryn. La migration rend seulement la jauge **honnête**.
+
+### 5. CÔTÉ APP — les deux tuyaux morts, branchés
+
+Les deux existaient **des deux côtés** (fonction serveur déployée le 28-08,
+cas d'outbox écrit et traité) et **personne ne les postait** :
+
+- **`.noeudChemin`** — `RewardCheminEtat.reclamer` n'écrivait que
+  `UserDefaults` pendant que la card affichait « **Added to your balance** ».
+  L'écran mentait. Elle poste maintenant le tirage NEUF (jamais une relecture
+  du journal), **après** l'ouverture de la card.
+- **`.retourQuotidien`** — posté au retour au premier plan, **avant** le
+  vidage (s'il échoue, le vidage le rejoue dans la foulée). Le marqueur local
+  compte le jour **en UTC**, comme la fonction serveur : deux fuseaux
+  différents feraient sauter un versement.
+
+### 6. CE QUI RESTE, DANS L'ORDRE
+
+1. ⚠️ **Le ménage** — le décalage d'un rang, le plancher `max(…, 4)`, le chip
+   « … » qui ouvre une récompense fausse, le Claim qui annonce des séries au
+   lieu de pièces.
+2. **Le grain de la série dans l'outbox** — elle n'a ni `serie_index` ni
+   `facts` ; le crédit ne part qu'à la clôture, en bloc.
+3. **Un seul point d'annonce** — `DecideurSerie` sort de la fiche exo et
+   devient le passage obligé des cinq chaînes.
+4. **Le fact engine** (§3), puis les vrais faits dans la matrice du
+   `.spotlight` — qui affiche aujourd'hui des performances inventées.
+5. **`narrate-reward`** (§4) — **en dernier**, et le §9.6 le recommande
+   lui-même : « gabarits d'abord ». ⚠️ Aucune IA n'a jamais écrit un texte
+   affiché dans cette app : `weekly-synthesis` est du code mort (sa vue n'est
+   montée nulle part) et le texte de `forge-card` est un prompt pour le
+   peintre. Et **l'IA n'a nulle part où écrire** : les mots géants sont câblés
+   en dur, `RewardPopup` ne remonte jamais `lignes`.
+
+### 7. À TRANCHER
+
+1. ⚠️ **Une notification consomme-t-elle le budget des 4 pop-ups ?** Posé à
+   `false` avec son propre plafond (`notifs_max_seance` = 6) — **en attente de
+   son verdict**.
+2. **L'écart minimal** : « 3 séries **OU** 6 min » (doctrine) ou « **ET** »
+   (table v1) ? Posé à `ET` (`ecart_exige_les_deux`), bascule sans build.
+3. **La conversion automatique** pièces → sachets (§4, ci-dessus).
+4. ⚠️ `claim_booster_legendaire()` rend toujours **500** sur un refus métier
+   (`P0002`) là où `claim_booster()` rend **200** avec un motif. Non alignée
+   ici : sa signature (`returns public.user_boosters`) est consommée par
+   `SacreServeur.claimLegendaire`, le changement touche les deux côtés.

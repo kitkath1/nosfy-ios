@@ -148,7 +148,16 @@ enum TirageRecompense {
     /// LE CLAIM — tire (ou relit) et CRÉDITE, puis ouvre la card. Le crédit
     /// est ici, pas à la fin du grattage : tuer l'app en plein scratch ne doit
     /// pas coûter la récompense.
+    ///
+    /// ⚠️⚠️ **JUSQU'AU 29-08, « CRÉDITE » ÉTAIT FAUX.** Cette fonction
+    /// n'écrivait que `UserDefaults` — aucun appel serveur — pendant que la
+    /// card affichait « Added to your balance ». L'écran mentait : le solde ne
+    /// bougeait pas, et une réinstallation rendait tous les nœuds
+    /// re-réclamables. Le tuyau existait pourtant des DEUX côtés
+    /// (`OutboxGains.noeudChemin`, `reclamer_noeud_chemin` déployée le 28-08) :
+    /// il ne manquait que cet appel.
     func reclamer(_ id: Int, pieces: Bool) {
+        var neuf: RecompenseTiree? = nil
         if let deja = journal[id] {
             tirage = deja
             revele = vues.contains(id)
@@ -159,9 +168,39 @@ enum TirageRecompense {
             poserSecs(t.rarete == .common ? n + 1 : 0, pieces: pieces)
             tirage = t
             revele = false
+            neuf = t
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.easeOut(duration: 0.34)) { ouverte = id }
+        // ⚠️ **ON NE POSTE QUE LE TIRAGE NEUF.** Relire le journal n'est pas
+        // un gain : le serveur le refuserait (l'index tient), mais une file
+        // qu'on remplit pour rien est une file qui se bouche. Et l'envoi part
+        // APRÈS l'ouverture de la card — l'écran n'attend jamais le réseau
+        // (la loi du §1 : « l'UI affiche le gain tout de suite, le ledger
+        // rattrape »).
+        if let t = neuf { poster(noeud: id, t) }
+    }
+
+    /// L'ENREGISTREMENT DU NŒUD — par l'outbox, donc jamais perdu et jamais
+    /// doublé (l'index `user_boosters_chemin_unique` / `coin_ledger_chemin_unique`
+    /// sur (user, nœud) tient l'idempotence côté serveur ; c'est la SEULE
+    /// raison pour laquelle rejouer la file est sûr).
+    ///
+    /// ⚠️ Le tirage reste au front, et il est donc falsifiable — comme la
+    /// pitié. Cette étape n'y change rien : elle ENREGISTRE ce que le client a
+    /// tiré. Ce qui est déjà garanti, lui, c'est **qu'un nœud ne paie qu'une
+    /// fois**, quoi que raconte l'app. La remontée du tirage au serveur est la
+    /// cible, pas cette étape.
+    private func poster(noeud: Int, _ t: RecompenseTiree) {
+        // Les robes attendues par la base : `check (robe in ('lune','noire'))`.
+        let robes = t.boosters.map { $0 == .legendaryBlack ? "noire" : "lune" }
+        let montant = t.type == .coins ? t.montant : 0
+        let monnaie = t.coinType == .black ? "silver" : "yellow"
+        Task.detached {
+            await OutboxGains.shared.poster(
+                .noeudChemin(noeud: noeud, pieces: montant,
+                             monnaie: monnaie, boosters: robes))
+        }
     }
 
     /// LE BANC — `-rewardChemin <cas>` ouvre la card sur un tirage FORCÉ.

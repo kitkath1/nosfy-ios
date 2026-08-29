@@ -40,6 +40,11 @@ struct ExerciseDetailView: View {
     /// Reward fermée, on affiche l'overlay avec la flamme »).
     @State private var pillGain: (gain: Int, total: Int)?
     @State private var issueEnCours: IssueSerie?
+    /// LE RANG de la série qui a produit l'issue en cours — mémorisé au
+    /// moment de la décision, jamais relu dans `sets` (l'écriture est
+    /// différée de 0,55 s : une relecture changerait de valeur sous la card).
+    /// `nil` quand la pop-up est ouverte par l'ATELIER et non par le jeu.
+    @State private var rangIssue: Int?
     @State private var serieAPoser: FinishedSeries?
     /// Le variant montré — TOURNE à chaque ouverture (« des fois fais un
     /// autre variant ») : galet (le vrai verre saisissable sur le
@@ -464,6 +469,12 @@ struct ExerciseDetailView: View {
             let f = FinishedSeries(index: max(n - 1, 0), reps: 12, kilos: 20,
                                    rest: 60, seconds: 47)
             serieAPoser = f
+            // ⚠️ **LE BANC DOIT PORTER LE RANG, LUI AUSSI.** Sans cette ligne
+            // il retombait sur le plancher d'atelier (4) et n'aurait pas
+            // montré le vrai compte — un banc qui ne reproduit pas le jeu ne
+            // peut rien en révéler, et c'est exactement ce qui a laissé vivre
+            // le décalage d'un rang (voir `finirSerie`).
+            rangIssue = n
             jouerIssue(DecideurSerie.pour(serie: n, gain: Self.gainParSerie,
                                           total: n * Self.gainParSerie,
                                           reps: f.reps, kilos: f.kilos), f,
@@ -1067,7 +1078,19 @@ struct ExerciseDetailView: View {
                     }()
                     let styleFinal = robeIssue ?? Self.rewardStyles[rewardVariant]
                     RewardPopup(
-                        count: max(sets.filter(\.isDone).count, 4),
+                        // ⚠️ **LE PLANCHER DE 4 EST UNE BÉQUILLE D'ATELIER**
+                        // (« un count-up 0 → 0 n'apprendrait rien à l'œil ») et
+                        // il n'avait rien à faire dans le jeu : aux séries 1, 2
+                        // et 3, la card annonçait « 4 ». Il ne vaut plus que
+                        // pour l'atelier, là où il a été écrit. Quand le jeu
+                        // parle, `rangIssue` dit le vrai rang — et il est
+                        // MÉMORISÉ, donc immunisé contre l'écriture différée.
+                        // ⚠️ Le welcome annonce des PIÈCES, pas des séries
+                        // (§4 duodecies : 10, une fois par jour calendaire) —
+                        // sinon « Claim +4 » sur une card qui donne 10 pièces.
+                        count: styleFinal == .welcome
+                            ? Self.piecesRetourQuotidien
+                            : (rangIssue ?? max(sets.filter(\.isDone).count, 4)),
                         title: {
                             if case .moment(let t, _, _) = iss { return t }
                             return styleFinal == .welcome
@@ -1083,7 +1106,7 @@ struct ExerciseDetailView: View {
                                 ? "Your next session is waiting for you."
                                 : "Congratulations, you've completed your training!"
                         }(),
-                        unit: "Sets",
+                        unit: styleFinal == .welcome ? "Coins" : "Sets",
                         style: styleFinal,
                         robe: CommandLine.arguments
                             .contains("-welcomeTexte") ? .texte : .video,
@@ -1839,14 +1862,34 @@ struct ExerciseDetailView: View {
     /// redevenue du verre FUMÉ, donc le fond sous les chips est sombre —
     /// ils gardent leur verre de nuit et leur glyphe blanc. Le mécanisme
     /// de bascule reste dans `ChipVerre`, prêt pour un fond clair.)
+    /// ⚠️⚠️ **LE « … » ÉTAIT EXPÉDIÉ EN PRODUCTION, ET IL MENTAIT.** Le geste
+    /// est PRÊTÉ à la card reward le temps de l'atelier — son vrai rôle (date,
+    /// heure) attend toujours — mais il était monté **sans aucun drapeau** :
+    /// dans l'app livrée, deux taps ouvraient une récompense entièrement
+    /// FAUSSE (robe tirée au tourniquet, « Training », « Congratulations,
+    /// you've completed your training! », compte planché à 4), et **deux taps
+    /// suffisaient à atteindre le Welcome Back** — une card de retour
+    /// d'absence, au milieu d'une séance.
+    ///
+    /// ⚠️ Pire, il empruntait une conséquence du JEU : tapé pendant la pill,
+    /// `serieAPoser` est encore posé, donc la fermeture de cette card
+    /// d'atelier **ouvrait le panneau « Recommencer ? »**. L'atelier
+    /// commandait une étape du parcours.
+    ///
+    /// Il vit désormais derrière `-rewardAtelier`. Le jour où le « … » prend
+    /// son vrai rôle, c'est ici qu'il le reprend.
+    private static let chipAtelier =
+        CommandLine.arguments.contains("-rewardAtelier")
+
     private var headerChips: some View {
         RangeeChips(retour: { dismiss() }) {
-            // Le geste du « … » est PRÊTÉ à la card reward le temps de
-            // l'atelier — son vrai rôle (date, heure) attend toujours.
-            ChipVerre(symbole: "ellipsis", label: "Options") {
-                rewardVariant = (rewardVariant + 1) % Self.rewardStyles.count
-                rewardVideoTour += 1
-                rewardShow = true
+            if Self.chipAtelier {
+                ChipVerre(symbole: "ellipsis", label: "Options") {
+                    rewardVariant =
+                        (rewardVariant + 1) % Self.rewardStyles.count
+                    rewardVideoTour += 1
+                    rewardShow = true
+                }
             }
         }
     }
@@ -2165,10 +2208,33 @@ struct ExerciseDetailView: View {
         // LE DÉCIDEUR — le seul endroit où l'on choisit quoi montrer. La
         // fiche se découvre d'abord (0,34 s) : sans ce souffle, tout naissait
         // par-dessus la lentille qui n'avait pas fini de tomber.
-        let faites = sets.filter(\.isDone).count
-        let issue = DecideurSerie.pour(serie: max(faites, 1),
+        //
+        // ⚠️⚠️ **LE RANG NE PEUT PAS SE LIRE DANS `sets` À CET INSTANT.**
+        // `settleSeries` juste au-dessus DIFFÈRE son écriture de 0,55 s (le
+        // temps que les pièces volent) : la série qu'on vient de finir n'est
+        // PAS encore `isDone`. Lu tel quel, le compteur donnait le rang de la
+        // série PRÉCÉDENTE, et toute la table de rendez-vous glissait d'un
+        // cran — le MOMENT tombait à la 4ᵉ série au lieu de la 3ᵉ, la pop-up
+        // à la 6ᵉ, la vidéo rare à la 11ᵉ. Pire, la pill SOUS-COMPTAIT de 20
+        // pièces : « 20 coins this session » sur la 2ᵉ série.
+        //
+        // ⚠️ Et aucun banc ne pouvait le révéler : `-serieFin` passe son rang
+        // EN DUR, donc il ne reproduit pas le décalage. Un bug qu'aucun banc
+        // ne voit est un bug qui vit longtemps — celui-ci a vécu.
+        //
+        // La série en cours compte pour elle-même, sauf si elle était déjà
+        // écrite (auquel cas `settleSeries` est sorti par sa garde et le
+        // compte l'inclut déjà).
+        let ecrites = sets.filter(\.isDone).count
+        let dejaEcrite = sets.indices.contains(f.index) && sets[f.index].isDone
+        let rang = max(dejaEcrite ? ecrites : ecrites + 1, 1)
+        // Le rang est MÉMORISÉ, pas relu : entre la naissance de la pop-up
+        // (+0,34 s) et l'écriture (+0,55 s), une lecture de `sets` changerait
+        // de valeur SOUS la card — le compteur sauterait en pleine montée.
+        rangIssue = rang
+        let issue = DecideurSerie.pour(serie: rang,
                                        gain: Self.gainParSerie,
-                                       total: max(faites, 1) * Self.gainParSerie,
+                                       total: rang * Self.gainParSerie,
                                        reps: f.reps, kilos: f.kilos)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
@@ -2177,6 +2243,19 @@ struct ExerciseDetailView: View {
 
     /// LA RÈGLE DES 20 (l'économie de la maison : 20 pièces par série faite).
     private static let gainParSerie = 20
+
+    /// Le versement de connexion (§4 duodecies : 10 pièces, une fois par jour
+    /// calendaire).
+    ///
+    /// ⚠️ **UNE CONSTANTE SWIFT QUI DOUBLE UNE RÈGLE SERVEUR EST UNE BOMBE À
+    /// RETARDEMENT** — la loi du back-end est « l'app LIT les prix, elle ne
+    /// les connaît pas », et celui-ci vit déjà en base
+    /// (`reward_rules.pieces_retour_quotidien`). Il est ici parce que la robe
+    /// welcome n'a **aucune porte de production** aujourd'hui : elle ne sert
+    /// que l'atelier, et un atelier qui annonce « +4 Sets » sur une card de
+    /// versement ment aussi. Il disparaît au branchement de
+    /// `regles_annonces()`.
+    private static let piecesRetourQuotidien = 10
 
     /// Ce que l'issue montre, et ce qu'elle laisse derrière elle.
     ///
@@ -2214,6 +2293,9 @@ struct ExerciseDetailView: View {
         guard let f = serieAPoser else { return }
         serieAPoser = nil
         issueEnCours = nil
+        // Le rang s'efface AVEC son issue : sans ça, la prochaine ouverture
+        // d'atelier hériterait du compte de la dernière série jouée.
+        rangIssue = nil
         restartAsk = f
     }
 

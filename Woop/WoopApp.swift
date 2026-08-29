@@ -84,6 +84,11 @@ struct WoopApp: App {
             guard nouvelle == .active else { return }
             Task {
                 await OutboxGains.semer()          // banc `-outboxSemer`
+                // ⚠️ LE VERSEMENT DE CONNEXION D'ABORD, LE VIDAGE ENSUITE :
+                // `poster` tente l'envoi tout de suite et ne met en file qu'en
+                // cas d'échec — s'il échoue, le vidage qui suit le rejoue dans
+                // la foulée au lieu d'attendre la prochaine bascule.
+                await SacreServeur.reglerRetourQuotidien()
                 await OutboxGains.shared.vider()
             }
         }
@@ -705,6 +710,11 @@ struct RootView: View {
         // le jugement, constaté sur capture le 27-08).
         if RewardBanc.actif {
             RewardLab()
+        } else if NotifBanc.actif {
+            // LE BANC DES NOTIFICATIONS — les deux dalles noires empilées
+            // sur du noir vrai. Même raison que le banc reward : il ne veut
+            // rien dessous.
+            NotifLab()
         } else if Self.splashTest {
             splashBench
         } else if Self.moonSplashLab {

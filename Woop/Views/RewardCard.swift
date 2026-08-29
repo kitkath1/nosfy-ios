@@ -2334,8 +2334,20 @@ private struct UnitePlate: View {
 /// du Timeline rendrait la valeur MODÈLE (la garde morte, déjà payée) et
 /// le galet CLAQUERAIT au lieu de revenir. `reduceMotion` : la dérive se
 /// pose, le doigt garde la main.
-private struct GaletVerre: View {
+/// ⚠️ `internal` depuis le 29-08 : la notification « La Châsse » le
+/// réutilise TEL QUEL. Le dépôt a déjà payé la copie d'une recette
+/// (`PoudreDiamant`, dupliquée dans `StorySuite` faute d'accès) et son
+/// propre commentaire dit « le jour où l'arbre est calme, l'une des deux
+/// meurt ». Une recette, un endroit.
+struct GaletVerre: View {
     var naissance: Date
+    /// Le diamètre du galet. 152 est la valeur de la card reward ; une
+    /// dalle de notification en veut ~92.
+    var diametre: CGFloat = 152
+    /// L'échelle de la DÉRIVE. À 1 le galet promène ±46 pt en x et ±34 en
+    /// y — la course d'une card portrait. Sur une dalle de 138 pt de haut
+    /// il sortirait du cadre : la notification la rentre.
+    var amplitude: CGFloat = 1
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -2354,10 +2366,11 @@ private struct GaletVerre: View {
             let tilt = SkyMotion.shared.tilt
             // La dérive se fait discrète sous le doigt : la main commande.
             let libre: CGFloat = enMain ? 0.25 : 1
-            let x = (sin(t * 0.55) * 46 + sin(t * 1.07 + 1.7) * 11) * libre
-                + 22 * tilt.dx
-            let y = (cos(t * 0.43 + 0.8) * 34 + sin(t * 0.83) * 7) * libre
-                + 15 * tilt.dy
+            let a = amplitude
+            let x = ((sin(t * 0.55) * 46 + sin(t * 1.07 + 1.7) * 11) * libre
+                + 22 * tilt.dx) * a
+            let y = ((cos(t * 0.43 + 0.8) * 34 + sin(t * 0.83) * 7) * libre
+                + 15 * tilt.dy) * a
             galet
                 .offset(x: x, y: y)
         }
@@ -2376,7 +2389,7 @@ private struct GaletVerre: View {
     /// crête épais + son écho intérieur — jamais une nappe pleine (frost).
     private var galet: some View {
         Color.clear
-            .frame(width: 152, height: 152)
+            .frame(width: diametre, height: diametre)
             .glassEffect(.clear.interactive(), in: Circle())
             .environment(\.colorScheme, .dark)
             // L'anneau de verre : la crête épaisse qui prend la lumière…
