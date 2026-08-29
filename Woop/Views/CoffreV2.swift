@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import SwiftUI
 import UIKit
 
@@ -69,14 +70,18 @@ enum CoffreV2Cotes {
     /// descendaient jusqu'à 235 pt, et il vit sur le mur ÉCLAIRÉ (encre
     /// sombre) — la barre passée au-dessus, il tombait dans le noir et
     /// devenait illisible. Le titre a donc rapetissé (voir `ligne`).
-    static let barreY: CGFloat = 0.225
-    /// Où elle est DANS LE FICHIER retourné (mesuré, pic de gradient).
-    static let barreSalle: CGFloat = 0.5071
-    /// Son étendue : elle a des bouts visibles, c'est un objet dans la pièce.
-    static let barreX0: CGFloat = 0.169
-    static let barreX1: CGFloat = 0.821
-    /// largeur / hauteur du fichier (1620 × 3518).
-    static let ratioSalle: CGFloat = 1620.0 / 3518.0
+    ///
+    /// ⚠️⚠️ **TOUT CE PARAGRAPHE EST DE L'HISTOIRE : LA BARRE N'EXISTE PLUS**
+    /// (28-08, « on passe en mode sombre noir »). La salle éclairée et son
+    /// néon sont remplacés par un fond de SPOTLIGHT (`SalleFond`), et il n'y
+    /// a plus rien à faire tomber sur une cote : la lumière descend du haut
+    /// de l'écran. Le raisonnement reste écrit parce qu'il explique pourquoi
+    /// le socle est là où il est — pas parce qu'il vaut encore.
+    ///
+    /// `barreSalle`, `barreX0/X1` et `ratioSalle` sont morts avec le film :
+    /// c'étaient des cotes MESURÉES DANS UN FICHIER (pic de gradient à
+    /// 0,5071). Ne jamais recaler une mise en page sur un pixel de vidéo.
+    static let sourceY: CGFloat = 0.012
 
     // ── LE SOCLE
     /// L'ellipse du DESSUS du socle, en fraction de hauteur d'écran. C'est le
@@ -97,7 +102,16 @@ enum CoffreV2Cotes {
     /// ⚠️ Puis **+10 px** à sa demande (0,545 → 0,5564 sur un écran de
     /// 874 pt) — rendus gratuitement par le titre passé à un seul mot, qui
     /// ne descend plus que jusqu'à 155 pt.
-    static let podiumY: CGFloat = 0.5564
+    ///
+    /// ⚠️ **0,5564 → 0,6064 (29-08) : LA COTE N'EST PLUS UN CHOIX.** Le socle
+    /// vit dans le fond (`coffre-arche`) ; sa surface de pose tombe où elle
+    /// tombe. Mesurée au liseré : 0,742 de l'image, remontée de 130 px pour
+    /// que le pied retrouve son air (voir `bake_arche.py`). Toucher à ce
+    /// nombre, c'est décoller les objets de leur socle.
+    ///
+    /// ⚠️ **CETTE COTE N'EST PLUS À NOUS : elle est cuite dans le fond.** Elle
+    /// et `MONTE` dans le bake doivent bouger ENSEMBLE.
+    static let podiumY: CGFloat = 0.5569
     /// La largeur du CYLINDRE, en fraction de largeur d'écran. ⚠️ C'est SA
     /// cote, mesurée sur sa maquette (0,3932) : le socle n'est pas un réglage,
     /// c'est un objet qu'elle a dessiné. Il ne doit pas dominer la pièce.
@@ -215,35 +229,61 @@ struct SceneCoffre: Equatable {
 
     // ── La chambre : elle garde sa taille, on la fait GLISSER pour que sa
     //    barre tombe où on veut. Jamais une déformation.
-    var hSalle: CGFloat { W / CoffreV2Cotes.ratioSalle }
-    var ySalle: CGFloat {
-        CoffreV2Cotes.barreY * H - CoffreV2Cotes.barreSalle * hSalle + hSalle / 2
-    }
 
-    /// La barre néon, dans l'espace de la page.
+    /// ⚠️⚠️ **LA SOURCE DE LA LUMIÈRE — ET ELLE N'EST PLUS UNE BARRE.**
+    ///
+    /// Elle s'appelait `barre` et c'était le néon de la salle éclairée : tout
+    /// le décor GLISSAIT pour que le néon du film tombe dessus. La salle est
+    /// morte (§20), mais **deux vues partaient de là** et ne peuvent pas
+    /// rester orphelines : `Projecteur` (le faisceau qui désigne l'objet) et
+    /// `Atterrissage` (l'onde du choc). Elles gardent donc leur ancre — c'est
+    /// maintenant **le haut de l'écran**, d'où descend le spot.
+    ///
+    /// C'est plus simple que ce qu'on remplace : une constante au lieu d'un
+    /// calage sur un pixel du film (`barreSalle = 0,5071`, mesuré au pic de
+    /// gradient — voilà ce qu'on ne fera plus jamais).
     var barre: CGRect {
-        let y = CoffreV2Cotes.barreY * H
-        let l = (CoffreV2Cotes.barreX1 - CoffreV2Cotes.barreX0) * W
-        let cx = W / 2 + ((CoffreV2Cotes.barreX0 + CoffreV2Cotes.barreX1) / 2 - 0.5) * W
-        return CGRect(x: cx - l / 2, y: y - 1, width: l, height: 2)
+        CGRect(x: W * 0.30, y: CoffreV2Cotes.sourceY * H - 1,
+               width: W * 0.40, height: 2)
     }
 
     // ── Le socle
-    /// La largeur de l'IMAGE (le cylindre n'en occupe que 61 %).
-    var podL: CGFloat { W * CoffreV2Cotes.podiumW / CoffreV2Podium.cylLarge }
-    var podH: CGFloat { podL / CoffreV2Podium.ratio }
-    /// LE DESSUS DU SOCLE — la surface où une pièce TOUCHE (voir `cylPose`).
+    //
+    // ⚠️⚠️ **LE SOCLE VIT MAINTENANT DANS LE FOND** (29-08, « non, enlève le
+    // nôtre »). `coffre-podium.png` a disparu de la page : c'est celui de
+    // l'arche qui porte les objets. Ces cotes ne se déduisent donc plus des
+    // proportions d'un PNG (`CoffreV2Podium`) mais de mesures faites SUR LE
+    // FOND, au liseré orange saturé — la luminance ne pouvait pas servir, les
+    // caustiques du sol traversent toute la largeur.
+    //
+    // Tout le reste de la page continue de s'y raccrocher sans une ligne de
+    // changement : la pose des objets, la MARCHE entre le dessus et le sol des
+    // voisins, l'atterrissage, la gerbe, le pied. C'était le pari du §20.1 —
+    // il tient, à condition que ces quatre cotes disent la vérité.
+
+    /// La largeur du plateau, mesurée : 0,447 de la largeur d'écran.
+    var podL: CGFloat { W * 0.447 }
+    /// De la surface de pose à la base : 0,742 → 0,860 de l'image, laquelle
+    /// couvre 0,8173 de l'écran → 0,0965 H.
+    var podH: CGFloat { H * 0.0965 }
+    /// LE DESSUS DU SOCLE — la surface où un objet TOUCHE.
     var yHaut: CGFloat { CoffreV2Cotes.podiumY * H }
-    /// LE PIED DU SOCLE — le sol de celle qui attend à côté, dans le noir.
-    var yBas: CGFloat {
-        yHaut + (CoffreV2Podium.cylBas - CoffreV2Podium.cylPose) * podH
-    }
-    var podCentre: CGPoint {
-        CGPoint(x: W / 2 + (0.5 - CoffreV2Podium.cylCX) * podL,
-                y: yHaut - CoffreV2Podium.cylPose * podH + podH / 2)
-    }
-    /// Où le reflet du socle a fini de mourir : le texte commence après.
-    var podFin: CGFloat { podCentre.y + podH / 2 }
+    /// LE PIED DU SOCLE — le sol de celui qui attend à côté, dans le noir.
+    var yBas: CGFloat { yHaut + podH }
+    /// ⚠️ Son plateau n'est PAS centré : 0,506 W, mesuré. Un objet posé à
+    /// W/2 flotterait de 7 pt à côté de son axe — invisible seul, criant
+    /// quand la flaque l'éclaire.
+    var podCentre: CGPoint { CGPoint(x: W * 0.506, y: yHaut + podH / 2) }
+    /// ⚠️ **OÙ LE DÉCOR MEURT — ET CE N'EST PAS OÙ LE SOCLE POSE.** Mesuré
+    /// sur l'image cuite, la luminance de la bande centrale tombe à zéro
+    /// seulement à **0,715 H** : les anneaux du socle et leur lueur
+    /// descendent bien plus bas que sa base (0,653). Déduit de `yBas`, le
+    /// pied remontait de 60 pt et **la barre de crans se posait SUR le
+    /// socle** — vu sur capture, deux fois.
+    ///
+    /// Une empreinte VISUELLE ne se déduit pas d'une cote de géométrie : elle
+    /// se mesure sur l'image qu'on affiche.
+    var podFin: CGFloat { H * 0.715 }
 
     /// ⚠️ **LE PAS DU RAIL DIT SI LE GESTE EXISTE.** À 0,42 W la voisine
     /// tombait à moitié hors du cadre et, assombrie, elle n'était plus qu'une
@@ -363,22 +403,104 @@ struct PieceSprite: View, Animatable {
 /// 0,375 H et le fichier la porte à 0,507 : le film garde donc sa taille et sa
 /// largeur d'écran, et on le fait remonter. Le bas découvert est du noir —
 /// exactement le même que celui du film.
+/// ⚠️⚠️ **LES FONDS VIVENT DANS `Woop/Media`, DONC `Image(nom)` NE LES TROUVE
+/// PAS.** Ce sont des ressources NUES du bundle, pas des entrées de catalogue :
+/// `Image("coffre-arche")` cherche dans `Assets.xcassets`, ne trouve rien, et
+/// **ne dit rien** — la vue est simplement vide. La loi est déjà écrite sur
+/// `SachetVignette` ; elle m'a repris ici.
+///
+/// ⚠️ Ce que ça a caché : `Image("coffre-spot")` échouait AUSSI depuis le
+/// début. L'image de pose du spotlight — celle dont j'ai écrit qu'elle était
+/// OBLIGATOIRE parce que le décodeur du simulateur rate des images — n'a
+/// jamais été affichée une seule fois. Un filet de sécurité qu'on croit posé
+/// et qui n'existe pas est pire que pas de filet.
+///
+/// ⚠️ Et elles sont RETENUES : un `UIImage(contentsOfFile:)` par image de
+/// geste rechargerait 3 Mo de PNG à chaque tour de doigt.
+enum FondCoffre {
+    private static let cache = OSAllocatedUnfairLock(initialState: [String: Image]())
+
+    static func image(_ nom: String) -> Image? {
+        cache.withLock { c in
+            if let deja = c[nom] { return deja }
+            guard let chemin = Bundle.main.path(forResource: nom, ofType: "png"),
+                  let ui = UIImage(contentsOfFile: chemin) else { return nil }
+            let im = Image(uiImage: ui)
+            c[nom] = im
+            return im
+        }
+    }
+}
+
 struct SalleFond: View, Equatable {
     let scene: SceneCoffre
     let clarte: Double
 
+    /// largeur / hauteur de `coffre-spot-loop.mp4` (1206 × 1608).
+    ///
+    /// ⚠️ Elle change avec la COUPE du bake : couper plus haut raccourcit le
+    /// fichier. Les deux doivent bouger ENSEMBLE — une vue qui garde
+    /// l'ancienne cote étire la vidéo sans rien dire.
+    static let ratio: CGFloat = 1206.0 / 1608.0
+
+    /// ⚠️⚠️ **LA SALLE ÉCLAIRÉE EST MORTE ; LE SPOT PREND SA PLACE, EN
+    /// MOUVEMENT** (28-08 « on passe en mode sombre noir », puis 29-08
+    /// « t'as pas utilisé la vidéo, t'as mis un vieux spotlight »).
+    ///
+    /// ⚠️ **LE PREMIER JET PARTAIT DU MAUVAIS RENDU, ET LA MESURE LE DIT** :
+    /// `spotlight .png` porte **514 pixels de braise** pour une luminance
+    /// moyenne de 8,5, là où la vidéo en porte **3 738** pour 20,3. Sept fois
+    /// plus d'étincelles. J'avais comparé les deux SUR LA TEINTE (V−B : +9
+    /// contre +8) et conclu que c'était le même rendu — **deux mesures qui
+    /// concordent sur une couleur ne disent rien du dessin.**
+    ///
+    /// La boucle est cuite par `tools/coffre-v2/bake_spot.py` : socle coupé
+    /// (il reste un PNG à part, les flaques le prennent comme MASQUE), mise
+    /// en **ping-pong** parce que le travelling de la source est monotone et
+    /// ne boucle pas, et recuite à 1206 de large — décoder 2160 pour un
+    /// écran qui en demande 1206, c'est quatre fois trop de pixels par image.
+    ///
+    /// ⚠️ **AJUSTÉE À LA LARGEUR, POSÉE EN HAUT — PAS ÉTIRÉE.** Un
+    /// `aspectFill` rognerait 31 % de la largeur pour rien. Ici le spot
+    /// couvre le haut jusqu'à ~0,69 H, et le bas reste noir : c'est
+    /// exactement là que vivent le socle (0,556 H) et son sol. Son bord bas
+    /// est éteint EN COSINUS **dans le fichier** — un `.mask` sur une couche
+    /// vidéo forcerait une passe hors écran à chaque image.
+    ///
+    /// ⚠️ **L'IMAGE DE POSE EST OBLIGATOIRE, ET C'EST UNE LEÇON PAYÉE** : le
+    /// décodeur du simulateur est LOGICIEL, il rate des images, et sans elle
+    /// le raté DEVIENT un glitch noir plein écran.
+    /// ⚠️ `-coffreSpot` ramène le spotlight en boucle — le fond d'avant, gardé
+    /// pour comparer les deux SUR LES QUATRE PAGES. C'est là que ce décor se
+    /// juge : sous la pièce d'argent (froide) et le booster noir (violet),
+    /// une arche franchement ORANGE est un pari, pas un réglage.
+    static let spot = CommandLine.arguments.contains("-coffreSpot")
+
     var body: some View {
-        ZStack {
-            // L'IMAGE DE POSE, dessous : le filet du fond. Le décodage du
-            // simulateur est LOGICIEL et rate des frames ; sans elle, un raté
-            // peint tout en NOIR.
-            Image("salle-poster")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-            SalleVideo()
+        Group {
+            if SalleFond.spot {
+                let h = scene.W / SalleFond.ratio
+                ZStack {
+                    FondCoffre.image("coffre-spot")?
+                        .resizable().interpolation(.high)
+                    SpotVideo()
+                }
+                .frame(width: scene.W, height: h)
+                .position(x: scene.W / 2, y: h / 2)
+            } else {
+                // ⚠️ Cuite EXACTEMENT à la taille de l'écran (1206 × 2622) :
+                // le glissement, le fondu des bords et l'extinction du bas
+                // vivent dans le fichier, pas ici. Une vue qui recadre un
+                // décor est une vue qui peut le décaler d'un demi-point sans
+                // que personne ne le voie — et ici un demi-point décale le
+                // SOCLE, donc tous les objets.
+                FondCoffre.image("coffre-arche")?
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: scene.W, height: scene.H)
+                    .position(x: scene.W / 2, y: scene.H / 2)
+            }
         }
-        .frame(width: scene.W, height: scene.hSalle)
-        .position(x: scene.W / 2, y: scene.ySalle)
         // LE DÉCOR SE RETIRE quand on ouvre la pièce : c'est le théâtre, et il
         // se fait en BAISSANT le reste, jamais en posant un voile (un voile
         // grise l'objet aussi). ⚠️ Et il ne MONTE jamais : éclaircir un décor
@@ -387,17 +509,17 @@ struct SalleFond: View, Equatable {
     }
 }
 
-/// LA CHAMBRE, en boucle. L'école exacte des exos et de la home :
-/// `AVPlayerLooper` (jamais un seek sur `didPlayToEndTime`), looper RETENU par
-/// le coordinateur, muet, et **le fond de la couche TRANSPARENT** — c'est
-/// l'image de pose dessous qui doit se voir quand le décodeur rate une frame,
-/// sinon le raté DEVIENT le glitch noir.
+/// LA BOUCLE DU SPOT. L'école exacte des exos et de la home : `AVPlayerLooper`
+/// (**jamais** un seek sur `didPlayToEndTime`), looper RETENU par le
+/// coordinateur, muet, et **le fond de la couche TRANSPARENT** — c'est l'image
+/// de pose dessous qui doit se voir quand le décodeur rate une image, sinon le
+/// raté DEVIENT le glitch noir.
 ///
-/// ⚠️ **LE FICHIER EST RETOURNÉ ET RECUIT EN 1620 × 3518.** Retourné parce que
-/// la scène a besoin de noir en bas (§15) ; recuit parce qu'il faisait 540 px
-/// de large pour une card qui en demande 1206 au 3× — verdict « quand c'est
-/// gros on voit tous les défauts ».
-struct SalleVideo: UIViewRepresentable {
+/// ⚠️ Elle remplace `SalleVideo`, supprimée hier avec le mur éclairé. Elle est
+/// plus simple : plus de glissement pour faire tomber un néon sur une cote,
+/// plus de calage sur un pixel du film (`barreSalle = 0,5071` restera l'exemple
+/// de ce qu'on ne refait pas). Elle se pose, et c'est tout.
+struct SpotVideo: UIViewRepresentable {
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
@@ -413,13 +535,13 @@ struct SalleVideo: UIViewRepresentable {
         v.isUserInteractionEnabled = false
         v.playerLayer.videoGravity = .resizeAspectFill
         v.playerLayer.backgroundColor = UIColor.clear.cgColor
-        // ⚠️ `resizeAspectFill` DÉBORDE SES BORNES : un `CALayer` ne masque
-        // pas ses enfants, et le `clipShape` de SwiftUI ne rattrape pas une
-        // couche UIKit. Les deux masques, pas un seul.
+        // ⚠️ `resizeAspectFill` DÉBORDE SES BORNES : un `CALayer` ne masque pas
+        // ses enfants, et le `clipShape` de SwiftUI ne rattrape pas une couche
+        // UIKit. Les deux masques, pas un seul.
         v.clipsToBounds = true
         v.playerLayer.masksToBounds = true
 
-        guard let url = Bundle.main.url(forResource: "coffre-salle-loop",
+        guard let url = Bundle.main.url(forResource: "coffre-spot-loop",
                                         withExtension: "mp4") else { return v }
         let item = AVPlayerItem(url: url)
         let p = AVQueuePlayer(playerItem: item)
@@ -874,24 +996,132 @@ struct HautDeListe: PreferenceKey {
     }
 }
 
+/// LA PILL DE PRIX — et elle EST la jauge.
+///
+/// ⚠️⚠️ **UNE BARRE EST PLATE PAR NATURE : ON NE LA REND PAS PREMIUM, ON LA
+/// REMPLACE.** J'ai réglé la précédente quatre fois — plus épaisse, un
+/// dégradé, un rail plus sombre, une braise plus grosse — et chaque tour a
+/// produit un autre défaut : le dégradé l'a rendue GRISE (l'œil lit un
+/// dégradé par son arrêt le plus SOMBRE), la braise en a fait un SLIDER (un
+/// disque plein au bout d'une barre, c'est un pouce — ça invite à tirer).
+/// Je réglais des symptômes.
+///
+/// Le premium de cette maison, c'est du verre noir, un cheveu de liseré, et
+/// **une lumière qui vient de DEDANS**. Un rectangle rempli n'a ni dedans, ni
+/// épaisseur, ni matière — il n'a qu'une longueur. Aucun réglage ne lui
+/// donnera ce qu'il n'a pas.
+///
+/// Ici, **le remplissage vit DANS la capsule**, comme un liquide qui monte :
+/// la capsule a une épaisseur, un liseré, un dedans. C'est la même
+/// information, dans une forme qui peut être belle.
+///
+/// ⚠️ La grammaire est la même sur les quatre pages, et c'est ce qui règle
+/// les deux anatomies du §25.3 — **sans inventer de prix là où il n'y en a
+/// pas** : c'est le « / » qui apparaît ou non.
+///
+///     pièce d'or ....... 🪙 1 140        (rien à atteindre)
+///     booster orange ... 🪙 40 / 100
+///     pièce d'argent ... 🪙 0
+///     booster noir ..... 🪙 0 / 1        ← ce qui manquait à la légendaire
+struct PillPrix: View {
+    struct Contenu {
+        let courant: Int
+        /// nil = il n'y a rien à atteindre : pas de « / », pas de jauge.
+        let cible: Int?
+        let argent: Bool
+    }
+
+    let c: Contenu
+    let lueur: Color
+    /// 0 → 1 : le remplissage monte à l'arrivée, comme l'ancienne jauge.
+    var remplie: Double = 1
+
+    private var part: Double {
+        guard let cible = c.cible, cible > 0 else { return 0 }
+        return min(max(Double(c.courant) / Double(cible), 0), 1) * remplie
+    }
+
+    var body: some View {
+        HStack(spacing: 9) {
+            // ⚠️ Le sprite de la pièce, pas un glyphe SF : c'est LA pièce de
+            // l'app, et elle dit de quelle monnaie on parle sans un mot.
+            // Ses cases font 320 × 320 px — de quoi tenir 22 pt sans mollir.
+            PieceSprite(planche: c.argent ? .argent : .or, tour: 0, diametre: 22)
+            Text(mot)
+                .font(.inter(17, .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.95))
+                .contentTransition(.numericText())
+        }
+        .padding(.leading, 13)
+        .padding(.trailing, 17)
+        .frame(height: 44)
+        .background {
+            ZStack(alignment: .leading) {
+                // LE DEDANS : le liquide, borné à la capsule.
+                GeometryReader { g in
+                    Capsule()
+                        .fill(LinearGradient(
+                            colors: [lueur.opacity(0.55), lueur.opacity(0.22)],
+                            startPoint: .leading, endPoint: .trailing))
+                        .frame(width: g.size.width * part)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                }
+            }
+            .clipShape(Capsule())
+        }
+        // ⚠️ `.clear` et pas `.regular` : le givré laiteux est interdit, et
+        // ce qui passe dessous est le décor de l'arche — du contenu doux.
+        .glassEffect(.clear, in: .capsule)
+        .overlay(Capsule().strokeBorder(.white.opacity(0.13), lineWidth: 1))
+        .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
+    }
+
+    private var mot: String {
+        if let cible = c.cible { return "\(c.courant) / \(cible)" }
+        return "\(c.courant)"
+    }
+}
+
 struct PiedVariante {
     let solde: Int
     let mot: String
-    /// UNE ligne. La règle de cette page, en note de bas de page.
-    let regle: String
-    let progression: Progression?
+    /// ⚠️ **LA RÈGLE ET LA PROGRESSION ONT FUSIONNÉ, ET ELLES ONT QUITTÉ LE
+    /// PIED** (29-08 : *« faut mixer 100 coins et 60 to go, c'est pas clair,
+    /// avec une mini pièce »*). C'étaient **une seule phrase coupée en deux**
+    /// — ce que ça coûte d'un côté, ce qui manque de l'autre — et il fallait
+    /// faire la soustraction soi-même pour savoir qu'on est à 40.
+    ///
+    /// Le fait unique est « 40 / 100 », et il vit maintenant dans une pill
+    /// de verre AU-DESSUS de l'objet : une étiquette de prix se lit en
+    /// regardant l'objet, pas sous le socle.
+    let pill: PillPrix.Contenu?
     /// Non-nil = c'est une page de BOOSTER : elle porte le bouton d'ouverture.
     let robe: RobeBooster?
+    /// LA DESCRIPTION — une phrase qui dit d'où vient l'objet et à quoi il
+    /// sert (29-08 : *« rajoute une phrase de description sous les éléments,
+    /// on comprend pas »*). C'est la règle du §12, *le pied décrit l'objet
+    /// posé*, enfin dite en mots et non en chiffres. ⚠️ Sans tirets dans le
+    /// texte affiché : verdict explicite.
+    let description: String
+    /// ⚠️ **LE BOUTON N'EXISTE QUE LÀ OÙ ON PEUT AGIR** (revu le 29-08).** Verdict : *« pour moi c'est pas assez clair »*. Les quatre
+    /// pages faisaient DEUX anatomies — avec jauge et bouton, ou rien — et
+    /// alors le pied s'arrêtait après deux lignes en laissant 40 % de l'écran
+    /// vide. Il n'avait pas l'air d'avoir deux états, il avait l'air AMPUTÉ.
+    ///
+    /// Là où l'on ne peut rien faire, le bouton **dit ce qui manque**. C'est
+    /// la 5ᵉ loi d'Opal (§17.3) : *le verrouillé se dit par la MATIÈRE, pas
+    /// par un cadenas* — même place, même taille, verre mat au lieu du bijou.
+    /// Les pages de PIÈCES n'en ont plus : « 60 COINS TO GO » doublait la
+    /// pill, « A RARE DROP » était une description déguisée en bouton. C'est
+    /// la description qui donne maintenant son poids au pied.
+    let bouton: (mot: String, actif: Bool)?
     /// ⚠️ LA COULEUR DE L'OBJET POSÉ SUR LE SOCLE — la même que sa flaque
     /// (`ObjetSocle.lueur`), et pour la même raison : la braise de la jauge et
     /// l'aura du bouton doivent appartenir à la page, sinon ce sont deux
     /// systèmes de couleur sur un même écran.
     let lueur: Color
 
-    struct Progression {
-        let reste: Int
-        let palier: Int
-    }
 }
 
 struct PiedCoffre: View {
@@ -919,38 +1149,32 @@ struct PiedCoffre: View {
     /// pas »* venait de les avoir mis CÔTE À CÔTE : un nombre posé à droite
     /// d'une barre se lit comme une légende d'axe. Sous elle, il se lit comme
     /// sa valeur.
-    static let taille = CGSize(width: 320, height: 146)
+    /// ⚠️ **UNE SEULE GRILLE POUR LES QUATRE PAGES.** 146 → 196 : le bouton
+    /// primaire fait 58 de haut, et il est là sur TOUTES les pages. La
+    /// hauteur ne dépend donc plus de ce que la page a à dire — c'est ce qui
+    /// fait qu'on lit un composant à deux états et non deux composants.
+    ///
+    /// ⚠️ Et le bouton est ANCRÉ EN BAS, pas empilé : sur les pages sans
+    /// jauge il reste à la même hauteur qu'ailleurs. Un bouton qui se déplace
+    /// d'une page à l'autre se cherche à chaque fois.
+    static let taille = CGSize(width: 320, height: 196)
 
-    /// 0 → 1 : la jauge se REMPLIT en arrivant (voir `jauge`).
-    @State private var remplie: Double = 0
-    /// Le nombre qui DESCEND — animé, sinon `.numericText()` ne joue rien.
-    @State private var restant: Int = 0
-    /// 0 → 1 en boucle : la position du lustre sur la partie remplie.
-    @State private var balaie: Double = 0
     /// 0 → 1 en boucle : la respiration du bouton, quand il a la parole.
     @State private var appel: Double = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            // ⚠️ LE SOURD ET L'ENTENDANT SONT SÉPARÉS ICI, ET PAS PLUS HAUT :
-            // un `allowsHitTesting(false)` posé sur le bloc entier tuerait
-            // aussi le bouton (l'ancienne version le rattrapait par un
-            // `overlay` posé APRÈS le modificateur — plus de plaque, plus
-            // d'overlay, il faut le dire explicitement).
-            VStack(spacing: 0) {
-                haut
-                regle.padding(.top, 4)
-                if let p = v.progression { jauge(p).padding(.top, 12) }
-            }
-            .allowsHitTesting(false)
+            // ⚠️ Le pied ne porte plus que DEUX choses : le compte, et le
+            // bouton. La règle et la progression sont montées dans la pill,
+            // avec l'objet (§27). Cinq lignes en sont devenues deux — c'est
+            // là que « plus clair » se gagne.
+            haut.allowsHitTesting(false)
+            description.padding(.top, 8).allowsHitTesting(false)
+            Spacer(minLength: 0)
             bouton
         }
         .frame(width: Self.taille.width, height: Self.taille.height,
                alignment: .top)
-        // ⚠️ L'INSCRIPTION EST SUR DU NOIR, SANS NAPPE : il lui faut donc
-        // son propre décollement, sinon la lueur du socle la mange. Une
-        // ombre portée noire et LARGE ne se voit pas — elle creuse juste ce
-        // qu'il faut sous les lettres.
         .shadow(color: .black.opacity(0.55), radius: 14, y: 2)
     }
 
@@ -960,126 +1184,33 @@ struct PiedCoffre: View {
     // inlinées (payé deux fois). Chaque bloc sort en propriété.
 
     private var haut: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
+            // ⚠️ **30 → 44.** Quatre des cinq lignes du pied vivaient dans le
+            // registre des LÉGENDES d'iOS (Caption 1 et 2, 11 à 13 pt) —
+            // fait pour de la densité, pas pour un écran héros où il n'y a
+            // que cinq lignes à lire. Verdict : *« certaines polices sont
+            // trop petites, c'est pas Apple style »*.
             Text("\(v.solde)")
-                .font(.inter(30, .semibold))
+                .font(.inter(40, .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.96))
                 .contentTransition(.numericText())
-            Text(v.mot)
-                .font(.inter(13, .medium))
-                .foregroundStyle(.white.opacity(0.50))
+            Text(v.mot.uppercased())
+                // ⚠️⚠️ **CE N'ÉTAIT PAS LA POLICE, C'ÉTAIT L'APPARIEMENT**
+                // (« la police que tu as mise est bizarre »). À 44 contre 17
+                // sur une ligne de base commune, le mot tombe au pied d'un
+                // chiffre trois fois plus haut : il a l'air DÉCROCHÉ, pas
+                // petit. Deux corrections, et aucune ne touche à Inter —
+                // le rapport passe de 2,6 à 2,7 mais le mot devient une
+                // ÉTIQUETTE : capitales espacées, comme sur le bouton. Des
+                // capitales tracées à 15 ont la présence d'un bas de casse à
+                // 18, et surtout elles se lisent comme une UNITÉ accolée au
+                // nombre, pas comme un mot qui a glissé.
+                .font(.inter(15, .semibold))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.58))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-        }
-    }
-
-    /// La règle de CETTE page — une ligne, grise. Elle ne parle que de
-    /// l'objet posé sur le socle, donc elle n'a plus rien à démêler.
-    private var regle: some View {
-        Text(v.regle)
-            .font(.inter(12, .medium))
-            .foregroundStyle(.white.opacity(0.44))
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-    }
-
-    /// LA JAUGE, ET CE QUI RESTE **SOUS** ELLE.
-    ///
-    /// ⚠️ **« la jauge et 60 to go, on comprend pas » — la cause était la
-    /// mise en page, pas les mots.** Les deux vivaient CÔTE À CÔTE, et un
-    /// nombre posé à droite d'une barre se lit comme une légende d'axe : on
-    /// cherche à quoi il se rapporte. Opal met le sien DESSOUS et centré
-    /// (« 1/3 jours ») — là, il ne peut être que la valeur de la barre. Rien
-    /// d'autre n'a changé.
-    /// ⚠️⚠️ **CE QUI LUI MANQUAIT, C'ÉTAIT L'APRÈS** (verdict : *« pour la
-    /// partie booster avec la jauge, anime-la davantage »*). Elle se
-    /// remplissait une fois à l'arrivée, puis elle était morte — et une page
-    /// où plus rien ne bouge n'a plus rien à dire. Trois vies lui sont
-    /// rendues, dans cet ordre d'utilité :
-    ///
-    /// 1. **LE NOMBRE COMPTE.** « 60 to go » apparaissait ; il DESCEND
-    ///    maintenant de 100 à 60 en même temps que la barre se remplit. Un
-    ///    chiffre qui bouge se lit comme une mesure, un chiffre qui apparaît
-    ///    se lit comme une étiquette. (`contentTransition(.numericText())`
-    ///    sur une valeur qu'on anime vraiment — sans ça il ne se passe rien.)
-    /// 2. **LA TÊTE PORTE UNE BRAISE**, dans la couleur de la page : elle dit
-    ///    où ça avance, et elle relie la jauge à l'objet posé sur le socle.
-    /// 3. **UN LUSTRE PASSE** sur la partie REMPLIE, toutes les 3,2 s. Lent et
-    ///    faible — c'est ce qui distingue « en cours » de « figé ».
-    ///    ⚠️ En `repeatForever` sur un `@State` lu par un `offset`, PAS en
-    ///    `TimelineView` : le premier anime un MODIFICATEUR, le second
-    ///    ré-évalue un corps à chaque image (coût mesuré ailleurs dans la
-    ///    maison).
-    private func jauge(_ p: PiedVariante.Progression) -> some View {
-        let part = min(max(Double(p.reste) / Double(max(p.palier, 1)), 0), 1)
-        return VStack(spacing: 7) {
-            GeometryReader { g in
-                rail(g.size.width, part: part)
-                    .onAppear { demarrer(p) }
-            }
-            .frame(width: 196, height: 3)
-            Text("\(restant) to go")
-                .font(.inter(11, .semibold))
-                .monospacedDigit()
-                .contentTransition(.numericText(countsDown: true))
-                .foregroundStyle(.white.opacity(0.50))
-                .fixedSize()
-        }
-        // ⚠️ **LA PASSATION.** Quand un sachet attend déjà, la jauge n'est
-        // plus le sujet : c'est le bouton. Une page ne doit jamais avoir deux
-        // choses qui appellent en même temps — elle s'efface d'un tiers et
-        // laisse la lumière à « Ouvrir » (voir `bouton`).
-        .opacity(v.solde > 0 ? 0.62 : 1)
-    }
-
-    private func rail(_ largeur: CGFloat, part: Double) -> some View {
-        let plein = max(largeur * part * remplie, 2)
-        return ZStack(alignment: .leading) {
-            Capsule().fill(Color.white.opacity(0.09))
-            Capsule()
-                .fill(Color.white.opacity(0.80))
-                // ⚠️ **ELLE SE REMPLIT À L'ARRIVÉE**, elle n'est pas déjà
-                // pleine. Le ressort dépasse d'un cheveu et se pose : une
-                // jauge qui arrive sec se lit comme une valeur figée, pas
-                // comme une avancée.
-                .frame(width: plein)
-                .overlay(alignment: .leading) { lustre(plein) }
-            braise.offset(x: plein - 2)
-        }
-    }
-
-    /// Le lustre : une bande claire qui traverse la partie remplie. Elle est
-    /// masquée par la capsule pleine, donc elle ne déborde jamais dessus.
-    private func lustre(_ plein: CGFloat) -> some View {
-        LinearGradient(colors: [.clear, .white.opacity(0.85), .clear],
-                       startPoint: .leading, endPoint: .trailing)
-            .frame(width: 46)
-            .offset(x: -46 + (plein + 46) * balaie)
-            .clipped()
-            .allowsHitTesting(false)
-    }
-
-    /// La braise de tête — dans la couleur de l'objet posé sur le socle.
-    private var braise: some View {
-        Circle()
-            .fill(v.lueur)
-            .frame(width: 5, height: 5)
-            .shadow(color: v.lueur.opacity(0.9), radius: 4)
-            .shadow(color: v.lueur.opacity(0.5), radius: 9)
-            .opacity(remplie)
-    }
-
-    private func demarrer(_ p: PiedVariante.Progression) {
-        restant = p.palier
-        withAnimation(.spring(response: 0.75,
-                              dampingFraction: 0.72).delay(0.25)) {
-            remplie = 1
-            restant = max(p.palier - p.reste, 0)
-        }
-        withAnimation(.linear(duration: 3.2).repeatForever(autoreverses: false)
-                        .delay(0.9)) {
-            balaie = 1
         }
     }
 
@@ -1087,37 +1218,52 @@ struct PiedCoffre: View {
     /// posé sur un ANCÊTRE qui couvre tout l'écran, et un bouton d'enfant s'y
     /// fait AFFAMER dès que le drag reconnaît — la loi payée sur le stop du
     /// player. La priorité haute passe devant.
+    private var description: some View {
+        Text(v.description)
+            .font(.inter(15, .medium))
+            .foregroundStyle(.white.opacity(0.62))
+            .multilineTextAlignment(.center)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 300)
+    }
+
     @ViewBuilder
     private var bouton: some View {
-        if v.robe != nil, v.solde > 0, let onOuvrir {
-            // ⚠️ **LARGE ET SOUS LE TEXTE, PAS UNE PASTILLE DANS UN COIN.**
-            // Dans la plaque, il était collé en haut à droite : un bouton
-            // logé dans l'angle d'une carte se lit comme une commande de la
-            // carte. Posé pleine largeur SOUS ce qu'il concerne, il se lit
-            // comme la conclusion de la page — c'est la place qu'Opal donne
-            // à « Verrouillée » et à « Gem actuelle ».
-            Text("Ouvrir")
-                .font(.inter(14.5, .semibold))
-                .foregroundStyle(.black.opacity(0.88))
-                .frame(width: 216, height: 44)
-                .background(Capsule().fill(.white.opacity(0.94)))
-                // ⚠️ **IL RESPIRE PARCE QUE LA JAUGE S'EST TUE.** C'est la
-                // passation : la jauge dit « il te manque encore », le bouton
-                // dit « celui-là est à toi ». Quand les deux existent, un seul
-                // a le droit d'appeler. Une aura dans la couleur de la page,
-                // et pas un changement de taille : un bouton qui grossit et
-                // rétrécit sous le doigt devient une cible mouvante.
-                .shadow(color: v.lueur.opacity(0.30 + 0.34 * appel),
-                        radius: 12 + 12 * appel)
-                .padding(.top, 16)
+        if let b = v.bouton, b.actif, let onOuvrir {
+            // ⚠️⚠️ **LE PRIMAIRE DE LA MAISON, ET IL FAUT LE PRENDRE EN
+            // PRIORITÉ HAUTE.** `DiamondPrimaryButton` est bâti sur un
+            // `Button` ; le geste de la page est posé sur un ANCÊTRE plein
+            // écran avec `minimumDistance: 0`. Un `Button` d'enfant s'y fait
+            // AFFAMER dès que le drag reconnaît — la panne payée sur le stop
+            // du player, et déjà sur l'ancien « Ouvrir » de ce fichier.
+            //
+            // On lui passe donc une action VIDE et c'est notre tap prioritaire
+            // qui commet l'ouverture : deux chemins vers la même action
+            // risqueraient de l'ouvrir deux fois.
+            DiamondPrimaryButton(title: b.mot) {}
+                .allowsHitTesting(false)
                 .contentShape(Capsule())
                 .highPriorityGesture(TapGesture().onEnded { onOuvrir() })
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 1.5)
-                                    .repeatForever(autoreverses: true)) {
-                        appel = 1
-                    }
-                }
+        } else if let b = v.bouton {
+            // ⚠️ **LE VERROUILLÉ SE DIT PAR LA MATIÈRE** (5ᵉ loi d'Opal,
+            // §17.3) : même place, même hauteur, le bijou en moins. Du verre
+            // mat et un mot qui dit ce qui manque — jamais un cadenas seul,
+            // jamais un bouton grisé qui a l'air cassé.
+            //
+            // ⚠️ `glassEffect(.clear)` et pas `.regular` : le givré laiteux
+            // est interdit, et ce qui passe dessous est du décor DOUX.
+            Text(b.mot)
+                .font(.inter(15, .semibold))
+                .tracking(1.6)
+                .foregroundStyle(.white.opacity(0.55))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .glassEffect(.clear, in: .capsule)
+                .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
+                .allowsHitTesting(false)
         }
     }
 }
@@ -1313,7 +1459,28 @@ struct CoffreV2Page: View {
     /// qu'au cran. Il lit donc un index discret, avec son propre fondu.
     @State private var piedIdx = 0
     /// La page des gains est montée par-dessus la scène.
+    /// 0 → 1 : le liquide de la pill MONTE à l'arrivée. ⚠️ C'est la seule
+    /// chose qui bouge sur la page une fois posée : l'œil y va, donc il va
+    /// sur la progression — l'animation fait le travail d'une explication.
+    @State private var remplie: Double = 0
     @State private var gainsOuverts = false
+
+    // ── L'HISTOIRE D'UN BOOSTER (29-08) : la vidéo, puis la page.
+    /// La robe dont l'histoire est ouverte ; nil = fermée.
+    @State private var histoire: RobeBooster?
+    /// true pendant la cinématique, false une fois sur la page.
+    @State private var histoireFilm = false
+    @State private var histoireLecteur: AVPlayer?
+    /// 0 → 1 : la cascade d'arrivée de la page (titre, corps, pièce).
+    @State private var histoireApparue: Double = 0
+    /// « Passer » n'apparaît qu'après une seconde : un geste ne s'annonce pas,
+    /// mais une porte doit finir par être visible.
+    @State private var passerVisible = false
+    @State private var tireHistoire: CGFloat = 0
+    @State private var tirHistNe: Date?
+    @State private var finFilm: NSObjectProtocol?
+    /// 0 → 360 en boucle : la position du reflet qui court autour des anneaux.
+    @State private var tourNeon: Double = 0
     /// 0 → 1 : la cascade d'arrivée de la page des gains (titre puis lignes).
     @State private var apparu: Double = 0
     /// De combien la page des gains est tirée vers le bas, en points.
@@ -1344,6 +1511,20 @@ struct CoffreV2Page: View {
     /// `-coffreGains` : la page des gains ouverte d'entrée (le simulateur ne
     /// fabrique pas de doigt).
     private static let gainsAuto = CommandLine.arguments.contains("-coffreGains")
+    /// `-coffreStory noir|lune` : la cinématique puis la page, d'entrée.
+    ///
+    /// ⚠️ **UN DRAPEAU À VALEUR SE LIT DANS `UserDefaults`, PAS DANS
+    /// `CommandLine.arguments`** — et la maison l'avait déjà payé sur
+    /// `-coffrePage` (voir `nombre(_:)` juste en dessous, dont le commentaire
+    /// dit « mesuré au print »). iOS parse les paires `-clé valeur` de la
+    /// ligne de commande dans le domaine d'arguments de `UserDefaults` ;
+    /// chercher « -coffreStory » dans `arguments` ne trouve rien, **et ne dit
+    /// rien**. Ma page ne s'ouvrait pas, sans la moindre erreur.
+    private static let storyAuto: RobeBooster? = {
+        guard let v = UserDefaults.standard.string(forKey: "coffreStory")
+        else { return nil }
+        return v == "noir" ? .noire : .lune
+    }()
 
     static func nombre(_ cle: String) -> Double? {
         let o = UserDefaults.standard.object(forKey: cle)
@@ -1365,7 +1546,6 @@ struct CoffreV2Page: View {
     /// l'encre sombre de la maison. Le compte et la card vivent sur le NOIR
     /// ABSOLU : il leur faut du blanc. Le même écran, deux régimes, et la barre
     /// néon est la frontière.
-    private var encreMur: Color { Color(white: 0.10) }
 
     /// CE QU'ON POSE SUR LE SOCLE — et le coffre en a QUATRE, plus deux.
     ///
@@ -1489,6 +1669,14 @@ struct CoffreV2Page: View {
                         // titre vit sur le mur ÉCLAIRÉ ; cette page-ci est
                         // noire, c'est le sens pour lequel il a été fait.
                         .foregroundStyle(WoopGradient.titleFade)
+                        // ⚠️ **ALIGNÉ À GAUCHE, SUR LA MARGE DE LA PAGE**
+                        // (29-08). Il était calé sur la COLONNE DE TEXTE des
+                        // lignes (54 de plus) pour donner un seul axe
+                        // vertical — mais quand la liste est VIDE il n'y a
+                        // plus de colonne à quoi s'aligner : il ne reste
+                        // qu'un titre qui a l'air poussé vers la droite sans
+                        // raison. Un alignement qui dépend d'un contenu
+                        // absent n'est pas un alignement.
                         // ⚠️⚠️ **ALIGNÉ SUR L'ENCRE, PAS SUR LA BOÎTE.**
                         // Verdict : *« le titre n'est pas aligné sur le côté
                         // gauche, il est décalé bizarre »*. Les deux boîtes de
@@ -1503,7 +1691,7 @@ struct CoffreV2Page: View {
                         // proche pour qu'on lise « ça devrait être aligné »,
                         // assez loin pour qu'on voie que ça ne l'est pas. Un
                         // décalage franc se lirait comme une intention.
-                        .padding(.leading, Self.colonne - Self.talon)
+                        .padding(.leading, 0)
                         .padding(.top, 72)
                         .padding(.bottom, 18)
                         .modifier(ArriveeFloue(p: apparu, rang: 0))
@@ -1511,13 +1699,30 @@ struct CoffreV2Page: View {
                         Text("Rien encore. Une série faite, vingt pièces.")
                             .font(.inter(13))
                             .foregroundStyle(.white.opacity(0.44))
-                            .padding(.leading, Self.colonne)
                             .modifier(ArriveeFloue(p: apparu, rang: 1))
                     } else {
                         listeGains
                     }
                     Spacer(minLength: 0)
                 }
+                // ⚠️⚠️ **SANS CE `maxWidth`, LE BLOC SE CENTRE — ET C'EST CE
+                // QUI FAISAIT « Mes gains toujours pas à gauche ».** Le
+                // `ZStack` est en `alignment: .top` : verticalement il colle
+                // en haut, mais HORIZONTALEMENT il centre. Un `VStack` prend
+                // la largeur de son plus large enfant, donc :
+                //
+                //   · liste PLEINE  → le `ScrollView` s'étale, le bloc fait
+                //     toute la largeur, le titre tombe à 26 du bord ✓
+                //   · liste VIDE    → il ne reste qu'un titre et une phrase,
+                //     le bloc se rétracte à leur largeur… et se centre ✗
+                //
+                // J'avais « corrigé » en mettant le padding du titre à zéro :
+                // ça ne pouvait rien y faire, le décalage ne venait pas d'un
+                // padding mais de l'ABSENCE DE LARGEUR. C'est le piège maison
+                // de la vue sans taille intrinsèque, deuxième fois sur cette
+                // page — et deuxième fois que c'est l'état VIDE qui le
+                // révèle.
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 26)
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1624,6 +1829,282 @@ struct CoffreV2Page: View {
         tireGains = 0
     }
 
+    // MARK: - L'HISTOIRE D'UN BOOSTER — la vidéo, puis la page (29-08)
+
+    /// ⚠️⚠️ **LA DEUXIÈME SOUS-PAGE DU COFFRE**, après celle des gains, et les
+    /// mêmes lois : en OVERLAY (le coffre est un `fullScreenCover`, une
+    /// `sheet` dessus donne la poignée grise), la garde sur `gestePage` (sans
+    /// elle un doigt ici ferait tourner le manège derrière — le bug du §19.4,
+    /// déjà payé), la fermeture au chevron ET au doigt avec son chien de garde.
+    ///
+    /// Deux temps : la CINÉMATIQUE (8 s, passable d'un tap — verdict : « à
+    /// chaque fois mais passable ; si c'est lourd, vue une fois la saute »),
+    /// puis la PAGE : le sachet fondu au noir en header, un texte à la Apple,
+    /// la pièce qui déborde du coin.
+    @ViewBuilder
+    private func pageHistoire(_ sc: SceneCoffre) -> some View {
+        if let robe = histoire {
+            ZStack(alignment: .top) {
+                Color.black.ignoresSafeArea()
+                if histoireFilm, let p = histoireLecteur {
+                    filmHistoire(sc, p).transition(.opacity)
+                } else {
+                    contenuHistoire(sc, robe)
+                }
+            }
+            .frame(width: sc.W, height: sc.H)
+            .transition(.opacity)
+            .offset(y: tireHistoire)
+            .highPriorityGesture(gesteFermerHistoire)
+            // ⚠️ Déplacer des pixels ne déplace pas la zone tactile : une page
+            // tirée hors de sa place ne doit plus rien prendre (le gel
+            // app-wide de `CheminHote`, mot pour mot).
+            .allowsHitTesting(tireHistoire < 2)
+        }
+    }
+
+    /// LA CINÉMATIQUE — plein cadre, et un tap n'importe où la passe.
+    ///
+    /// ⚠️ `CinematicPlayer` est en `resizeAspect` CODÉ EN DUR : il ne convient
+    /// qu'à un cadre au ratio exact du fichier. Le fichier est recuit à
+    /// 1206 × 2622 (`bake_story.py`), le ratio de l'écran — ça colle à 1e-4.
+    private func filmHistoire(_ sc: SceneCoffre, _ p: AVPlayer) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            CinematicPlayer(player: p)
+                .frame(width: sc.W, height: sc.H)
+            // ⚠️ **PAS DE BOUTON « PASSER »** (verdict du 29-08 : « enlève le
+            // bouton passer car on peut tap dessus et ça enlève »). J'en
+            // avais mis un au nom de « une porte doit être visible » — mais
+            // ici la porte, c'est TOUT L'ÉCRAN : n'importe quel tap passe. Un
+            // bouton qui double un geste déjà universel n'ajoute qu'un objet
+            // à regarder pendant un film.
+            EmptyView()
+        }
+        .contentShape(Rectangle())
+        // ⚠️ Le drag de fermeture est posé sur le parent en priorité haute ;
+        // les deux s'arbitrent par la distance — un tap ne bouge pas de 12 pt,
+        // le drag échoue, le tap passe. C'est le patron de la croix des gains.
+        .highPriorityGesture(TapGesture().onEnded { passerHistoire() })
+    }
+
+    /// LA PAGE — le header fixe, et le récit qui défile dessous.
+    ///
+    /// Cotes relevées sur sa maquette Figma : chevron à 0,06 H, sachet de
+    /// 0,12 à 0,37 H fondu vers le noir, titre à 0,45 H, corps dessous, la
+    /// pièce en bas à droite coupée par le bord.
+    ///
+    /// ⚠️ **LE HEADER NE DÉFILE PAS, LE TEXTE OUI** (29-08 : « fais un scroll
+    /// blur très premium »). Un sachet qui monterait avec le texte
+    /// redeviendrait une illustration d'article ; fixe, il reste l'objet dont
+    /// on parle, et le texte passe DESSOUS. C'est ce passage sous le fondu
+    /// qui fait le « premium » — pas un effet ajouté, une profondeur.
+    private func contenuHistoire(_ sc: SceneCoffre, _ robe: RobeBooster) -> some View {
+        ZStack(alignment: .topLeading) {
+            // LA PIÈCE — entière dans un coin elle fait vignette, débordante
+            // elle fait décor. Cases de 320 px : elle tient à 230 pt.
+            // ⚠️ **ELLE DÉBORDE LARGEMENT, ET ELLE EST EN SOURDINE.** Posée à
+            // 0,90 / 0,94 en pleine lumière, elle passait DERRIÈRE le
+            // troisième paragraphe et le rendait illisible : ses anneaux
+            // clairs traversaient le gris du texte. Une pièce entière dans un
+            // coin fait vignette ; une pièce à moitié sortie du cadre et
+            // baissée fait décor. Le texte défile, donc la collision était
+            // certaine à un moment ou à un autre — il fallait qu'elle cesse
+            // d'être un objet pour devenir une lueur.
+            PieceSprite(planche: robe == .noire ? .argent : .or,
+                        tour: 0, diametre: 230)
+                .modifier(Levitation(force: 1))
+                .position(x: sc.W * 1.02, y: sc.H * 1.02)
+                .opacity(0.5)
+                .modifier(ArriveeFloue(p: histoireApparue, rang: 5))
+                .allowsHitTesting(false)
+
+            recitHistoire(sc, robe)
+            enteteHistoire(sc, robe)
+
+            // LE CHEVRON — la règle des trois ronds du coffre : 44, à 63 du
+            // haut, 22 du bord. ⚠️ `ChipVerre` est un `Button` sous le drag du
+            // parent : on le rend sourd et c'est notre tap prioritaire qui
+            // ferme — la loi payée sur le stop du player.
+            ChipVerre(symbole: "chevron.left", label: "Retour", clarte: 0) {}
+                .allowsHitTesting(false)
+                .contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { fermerHistoire() })
+                .padding(.leading, 22)
+                .padding(.top, 63)
+        }
+    }
+
+    /// LE HEADER : le sachet qui se FOND dans le noir. ⚠️ Un masque en
+    /// dégradé, pas un `.blur` — un flou poserait un voile uniforme sur tout
+    /// le rectangle de l'hôte (loi de la maison, payée).
+    private func enteteHistoire(_ sc: SceneCoffre, _ robe: RobeBooster) -> some View {
+        SachetVignette(largeur: 210 * 84 / 145, hauteur: 210, robe: robe)
+            .mask {
+                LinearGradient(stops: [.init(color: .white, location: 0),
+                                       .init(color: .white, location: 0.52),
+                                       .init(color: .clear, location: 1.0)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .position(x: sc.W / 2, y: sc.H * 0.245)
+            .allowsHitTesting(false)
+    }
+
+    /// LE RÉCIT — quatre paragraphes qui défilent, chacun arrivant dans le
+    /// flou (`ArriveeFloue`, le vocabulaire de la maison : rayon 9 → 0,
+    /// décalage 9 → 0, un rang de retard par bloc).
+    ///
+    /// ⚠️ **LE FONDU DU HAUT EST UN MASQUE, ET IL EST OBLIGATOIRE** : sans
+    /// lui, la première ligne de texte apparaît d'un coup au bord du header,
+    /// comme coupée au couteau. Avec, elle naît du noir.
+    ///
+    /// ⚠️ Le rayon de flou retombe à ZÉRO exact quand l'arrivée est finie :
+    /// un `.blur` même minuscule force une passe hors écran à chaque image,
+    /// et sur un `ScrollView` c'est à chaque image de DÉFILEMENT.
+    private func recitHistoire(_ sc: SceneCoffre, _ robe: RobeBooster) -> some View {
+        let t = robe == .noire ? Self.recitNoir : Self.recitLune
+        return ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 22) {
+                Text(t.titre)
+                    .font(.inter(34, .semibold))
+                    .tracking(-0.4)
+                    .foregroundStyle(.white.opacity(0.96))
+                    .lineSpacing(2)
+                    .modifier(ArriveeFloue(p: histoireApparue, rang: 0))
+                ForEach(Array(t.corps.enumerated()), id: \.offset) { i, para in
+                    Text(para)
+                        .font(.inter(17))
+                        .foregroundStyle(.white.opacity(i == 0 ? 0.72 : 0.52))
+                        .lineSpacing(5)
+                        .modifier(ArriveeFloue(p: histoireApparue, rang: i + 1))
+                }
+                Color.clear.frame(height: 190)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 26)
+            .padding(.top, sc.H * 0.42)
+        }
+        .mask {
+            LinearGradient(stops: [.init(color: .clear, location: 0),
+                                   .init(color: .white, location: 0.30),
+                                   .init(color: .white, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+        }
+    }
+
+    struct RecitBooster { let titre: String; let corps: [String] }
+
+    /// ⚠️ Sans tirets dans le texte affiché (verdict explicite du 29-08). Et
+    /// sans chiffre que le serveur ne garantit pas : le nombre de cartes d'un
+    /// sachet n'est écrit nulle part, on ne l'invente pas ici.
+    static let recitNoir = RecitBooster(
+        titre: "Legendary\nbooster",
+        corps: [
+            "A black booster always holds one legendary card. Not a chance at one. One, guaranteed.",
+            "It opens with a single silver coin. You cannot buy that coin, and you cannot earn it by training. It falls, rarely, somewhere along the path, and when it does, this is where it goes.",
+            "Inside, the card comes from the sealed registry: the pieces that exist in few copies, forged once and never again. The moon on the wrapper is the only thing that tells you which one waits.",
+            "Nothing else in the vault works this way. Everything else is patience. This one is luck, and it is meant to feel like it.",
+        ])
+    static let recitLune = RecitBooster(
+        titre: "The Lune\nbooster",
+        corps: [
+            "Every session you finish earns one. No condition, no streak to keep. You train, it arrives.",
+            "A hundred coins buy another, and coins come twenty at a time, one set after the next. That is the whole economy: the work you already do, counted.",
+            "Inside waits a hand from the Lune set, drawn when you tear it open and not a moment before. Most of them are common. Some are not.",
+            "It is the booster you will open the most, and the one the vault was built around.",
+        ])
+
+
+    private func ouvrirHistoire(_ robe: RobeBooster) {
+        fermerLoupe()
+        histoire = robe
+        histoireApparue = 0
+        tireHistoire = 0
+        passerVisible = false
+        // ⚠️ LE SON RESPECTE L'INTERRUPTEUR SILENCIEUX. Toutes les boucles de
+        // l'app sont muettes ; cette cinématique a une piste, et elle est
+        // légitime — mais `.ambient` et jamais `.playback`, sinon un coffre
+        // ouvert dans le métro fait du bruit.
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .moviePlayback)
+        let nom = robe == .noire ? "story-booster-noir" : "story-booster-lune"
+        guard !reduceMotion,
+              let url = Bundle.main.url(forResource: nom, withExtension: "mp4") else {
+            // Sans film, la page est là tout de suite : on ne fait jamais
+            // attendre devant une absence.
+            histoireFilm = false
+            withAnimation(.easeOut(duration: 0.62)) { histoireApparue = 1 }
+            return
+        }
+        let p = AVPlayer(url: url)
+        p.automaticallyWaitsToMinimizeStalling = false
+        histoireLecteur = p
+        histoireFilm = true
+        p.play()
+        // ⚠️ On écoute la fin du FILM — jamais un seek dessus. Un observateur
+        // par lecture, retiré à la fin.
+        finFilm = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime, object: p.currentItem,
+            queue: .main) { _ in finirFilmHistoire() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation(.easeOut(duration: 0.3)) { passerVisible = true }
+        }
+    }
+
+    private func passerHistoire() { finirFilmHistoire() }
+
+    /// La fin du film — au bout, ou passée d'un tap : le même chemin.
+    private func finirFilmHistoire() {
+        guard histoireFilm else { return }
+        if let f = finFilm { NotificationCenter.default.removeObserver(f); finFilm = nil }
+        withAnimation(.easeInOut(duration: 0.34)) { histoireFilm = false }
+        histoireLecteur?.pause()
+        histoireLecteur = nil
+        withAnimation(.easeOut(duration: 0.70).delay(0.10)) { histoireApparue = 1 }
+    }
+
+    private func fermerHistoire() {
+        if let f = finFilm { NotificationCenter.default.removeObserver(f); finFilm = nil }
+        histoireLecteur?.pause()
+        histoireLecteur = nil
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        withAnimation(.easeInOut(duration: 0.30)) { histoire = nil }
+        tireHistoire = 0
+        tirHistNe = nil
+    }
+
+    /// Tirer la page vers le bas la ferme — et ⚠️ un drag peut mourir sans
+    /// `onEnded` (doigt volé au bord, appel entrant) : le chien de garde
+    /// COMMET la sortie si le seuil était franchi, sinon on récupère une page
+    /// à moitié tirée et jamais fermée.
+    private var gesteFermerHistoire: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { v in
+                tirHistNe = Date()
+                tireHistoire = v.translation.height > 0
+                    ? v.translation.height : v.translation.height * 0.18
+                let ne = tirHistNe
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                    guard histoire != nil, tirHistNe == ne, tirHistNe != nil else { return }
+                    if tireHistoire > 120 { fermerHistoire() }
+                    else {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            tireHistoire = 0
+                        }
+                    }
+                    tirHistNe = nil
+                }
+            }
+            .onEnded { v in
+                tirHistNe = nil
+                if tireHistoire > 120 || v.predictedEndTranslation.height > 260 {
+                    fermerHistoire()
+                } else {
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                        tireHistoire = 0
+                    }
+                }
+            }
+    }
+
     /// L'axe vertical de la page : le titre, les intitulés, les dates.
     /// (26 de marge + 40 de vignette + 14 d'écart, mesuré sur `ligneGain`.)
     private static let colonne: CGFloat = 54
@@ -1719,8 +2200,10 @@ struct CoffreV2Page: View {
         return [
             // ① la pièce d'or : ce qu'elle vaut, ce qui la gagne.
             PiedVariante(solde: dispo, mot: "coins",
-                         regle: "20 coins for every set you finish.",
-                         progression: nil, robe: nil,
+                         pill: .init(courant: dispo, cible: nil, argent: false),
+                         robe: nil,
+                         description: "20 coins for every set you finish.",
+                         bouton: nil,
                          lueur: Self.manege[0].lueur),
             // ② le booster orange : combien j'en ai, ce qu'il coûte, et
             //    COMBIEN IL M'EN MANQUE — la jauge est enfin sur la page de
@@ -1728,24 +2211,38 @@ struct CoffreV2Page: View {
             PiedVariante(solde: sacre.boostersEnAttente,
                          mot: sacre.boostersEnAttente == 1
                             ? "booster" : "boosters",
-                         regle: "100 coins open one.",
-                         progression: .init(reste: dispo % Self.prixBooster,
-                                            palier: Self.prixBooster),
-                         robe: .lune, lueur: Self.manege[1].lueur),
+                         pill: .init(courant: dispo % Self.prixBooster,
+                                     cible: Self.prixBooster, argent: false),
+                         robe: .lune,
+                         description: "Won after every session, or bought for 100 coins.",
+                         bouton: sacre.boostersEnAttente > 0
+                            ? ("OUVRIR", true)
+                            : ("\(Self.prixBooster - dispo % Self.prixBooster) COINS TO GO",
+                               false),
+                         lueur: Self.manege[1].lueur),
             // ③ la pièce d'argent : elle ne s'accumule pas, elle TOMBE.
             PiedVariante(solde: sacre.boostersNoirsEnAttente,
                          mot: sacre.boostersNoirsEnAttente == 1
                             ? "silver coin" : "silver coins",
-                         regle: "A rare drop, never earned.",
-                         progression: nil, robe: nil,
+                         pill: .init(courant: sacre.boostersNoirsEnAttente,
+                                     cible: nil, argent: true),
+                         robe: nil,
+                         description: "A rare drop from the path. Never earned, never bought.",
+                         bouton: nil,
                          lueur: Self.manege[2].lueur),
             // ④ le booster noir : pas de jauge (rien à accumuler), et son
             //    compte EST le solde d'argent — le sachet naît au claim.
             PiedVariante(solde: sacre.boostersNoirsEnAttente,
-                         mot: sacre.boostersNoirsEnAttente == 1
-                            ? "legendary booster" : "legendary boosters",
-                         regle: "One silver coin opens it.",
-                         progression: nil, robe: .noire,
+                         // « legendary boosters » était trop long en titre : le
+                         // sachet est sur le socle, il n'a pas besoin qu'on lui
+                         // dise qu'il est un booster.
+                         mot: "legendary",
+                         pill: .init(courant: sacre.boostersNoirsEnAttente,
+                                     cible: 1, argent: true),
+                         robe: .noire,
+                         description: "One silver coin opens it. A legendary card, guaranteed.",
+                         bouton: sacre.boostersNoirsEnAttente > 0
+                            ? ("OUVRIR", true) : ("LOCKED", false),
                          lueur: Self.manege[3].lueur),
         ]
     }
@@ -1868,13 +2365,29 @@ struct CoffreV2Page: View {
                 }
 
                 carte(sc).offset(y: bas)
-                socle(sc).offset(y: bas)
+                neonSocle(sc).offset(y: bas)
                 flaques(sc).offset(y: bas)
                 poudre(sc).offset(y: bas)
+                // ⚠️⚠️ **DEUX FAISCEAUX SE SONT ADDITIONNÉS.** Le fond
+                // porte maintenant SON spot ; celui-ci descendait par-dessus.
+                // Mesuré sur la bande centrale, le vert dépassait le bleu de
+                // **+17 à +20 dans l'app contre +8 dans sa référence** — la
+                // crème du Projecteur (V 0,80 · B 0,55) s'ajoutait en
+                // `plusLighter` et virait le faisceau au kaki.
+                //
+                // Il ne disparaît pas pour autant : il fait deux choses que
+                // l'image ne saura jamais faire — il SUIT l'objet, et il
+                // FORCE au tap. Il perd donc les deux tiers de sa force au
+                // repos et garde toute sa réponse au geste.
                 Projecteur(scene: sc,
                            piece: piecePresD,
                            pieceY: piecePresY(sc),
-                           force: pageOp * (1 + 0.55 * loupe + 0.18 * presse))
+                           // ⚠️ **REMONTÉ DE 0,34 À 0,86** : il avait été
+                           // baissé parce que le fond portait SON faisceau
+                           // (§20.8). L'arche n'en a pas — elle éclaire par
+                           // ses liserés, latéralement. Sans ce projecteur,
+                           // plus rien ne DÉSIGNE l'objet posé.
+                           force: pageOp * (0.86 + 0.55 * loupe + 0.18 * presse))
                     .equatable()
                     .offset(y: bas)
                 if let ne = chocNe {
@@ -1917,9 +2430,10 @@ struct CoffreV2Page: View {
                 boutonGains
                     .position(x: sc.W - 22 - Self.chip / 2,
                               y: 63 + Self.chip / 2)
-                    .opacity(pageOp * (gainsOuverts ? 0 : 1))
+                    .opacity(pageOp * (gainsOuverts || histoire != nil ? 0 : 1))
                 if filmVisible { film(sc) }
                 pageGains(sc)
+                pageHistoire(sc)
             }
             .contentShape(Rectangle())
             .gesture(gestePage(sc))
@@ -1927,7 +2441,11 @@ struct CoffreV2Page: View {
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .onAppear(perform: demarrer)
+        .onAppear {
+            demarrer()
+            withAnimation(.spring(response: 0.80, dampingFraction: 0.75)
+                            .delay(0.45)) { remplie = 1 }
+        }
         .onDisappear { lecteur?.pause() }
     }
 
@@ -1994,6 +2512,121 @@ struct CoffreV2Page: View {
         .allowsHitTesting(false)
     }
 
+    /// ⚠️⚠️ **LES NÉONS DU SOCLE — ET C'EST L'IDENTITÉ QU'ILS RÉPARENT.**
+    ///
+    /// Le §23.8 avait mesuré la casse : avec le spotlight, l'écart de teinte
+    /// entre les quatre pages était de **101 points** ; avec l'arche, de
+    /// **23**. Un décor a sa couleur, et il gagnait contre la flaque.
+    ///
+    /// Or les pixels saturés de l'arche portent **35,9 % de la lumière totale
+    /// de l'image**, dont 28,8 % dans la bande du socle. Les sortir du décor,
+    /// c'est reprendre la main sur ce tiers-là — au bon endroit.
+    ///
+    /// ⚠️ **CE QUI REND ÇA POSSIBLE EST UNE SOUSTRACTION, PAS UNE
+    /// SUPERPOSITION** (`bake_neon.py`). Poser un néon coloré sur l'image
+    /// intacte, c'est ajouter à de l'orange déjà là : on peut le surcharger,
+    /// jamais le faire virer au bleu. La base a donc son socle ÉTEINT
+    /// (saturation R−B 21,9 → 8,9 dans la bande, −44 % de luminance), et
+    /// c'est cette couche-ci qui le rallume, dans la couleur de la page.
+    ///
+    /// ⚠️ Seuls les néons DU SOCLE sortent : ceux de l'arche restent dans la
+    /// base (mesuré : R−B 3,4 → 3,4 hors bande). Toute la scène qui change de
+    /// couleur à chaque page serait trop fort — le décor garde son identité,
+    /// l'objet garde la sienne.
+    @ViewBuilder
+    private func neonSocle(_ sc: SceneCoffre) -> some View {
+        if !SalleFond.spot {
+            FondCoffre.image("coffre-arche-neon")?
+                .resizable()
+                .interpolation(.high)
+                .frame(width: sc.W, height: sc.H)
+                .position(x: sc.W / 2, y: sc.H / 2)
+                // ⚠️ `colorMultiply` sur un GRIS : le noir n'ajoute rien, le
+                // gris prend la teinte. C'est pour ça que le bake sort les
+                // anneaux en niveaux de gris et non en orange.
+                .colorMultiply(teinteNeon)
+                .blendMode(.plusLighter)
+                // ② L'ÉCLAT À LA POSE — une RÉPONSE, pas une boucle : elle ne
+                // joue que quand l'objet touche, donc elle ne s'use pas.
+                .opacity(pageOp * (1 + 0.75 * chocForce))
+                .allowsHitTesting(false)
+            balayage(sc)
+        }
+    }
+
+    /// ③ LE BALAYAGE ANGULAIRE — un reflet qui court autour des anneaux.
+    ///
+    /// C'est ce qui fait « néon allumé » plutôt que « néon peint ». ⚠️ Et
+    /// c'est **la seule des trois qui peut lasser** : elle joue en permanence,
+    /// là où la teinte est une transition et l'éclat une réponse. Elle est
+    /// donc tenue court — un sur-éclat de +30 %, une révolution en 7 s, et
+    /// une SEULE crête (pas deux, pas quatre : un phare, pas un gyrophare).
+    ///
+    /// ⚠️ Le centre du dégradé est celui du SOCLE, pas de l'écran : sinon le
+    /// reflet ne tourne pas autour des anneaux, il balaie la page.
+    ///
+    /// ⚠️ **COÛT NON MESURÉ, ET IL EST RÉEL** : un `.mask` animé sur une image
+    /// plein écran force une passe hors écran à CHAQUE image. Le simulateur
+    /// est aveugle à ça (loi de la maison) — il faut la sonde sur le
+    /// téléphone, et `./tools/charge.sh` avant.
+    @ViewBuilder
+    private func balayage(_ sc: SceneCoffre) -> some View {
+        FondCoffre.image("coffre-arche-neon")?
+            .resizable()
+            .interpolation(.high)
+            .frame(width: sc.W, height: sc.H)
+            .position(x: sc.W / 2, y: sc.H / 2)
+            .colorMultiply(teinteNeon)
+            // ⚠️⚠️ **ON TOURNE LA VUE, PAS L'ANGLE DU DÉGRADÉ — ET C'EST LE
+            // PIÈGE MAISON DES RAMPES SOUS `withAnimation`.** Premier jet :
+            // `AngularGradient(angle: .degrees(tourNeon))`. Un
+            // `AngularGradient` est un `ShapeStyle`, pas un modificateur :
+            // SwiftUI **ne l'interpole jamais**. Il évalue le corps une fois,
+            // à la valeur d'arrivée — et 360° est identique à 0°, donc rien
+            // ne bougeait. Mesuré : l'écart de luminance gauche/droite restait
+            // à −4,7 pendant 5 secondes, immobile.
+            //
+            // `rotationEffect`, lui, EST un modificateur. Le dégradé est donc
+            // figé dans un carré qu'on fait tourner autour du centre du socle.
+            // Le carré doit couvrir l'écran depuis ce centre, d'où la
+            // diagonale doublée.
+            .mask {
+                AngularGradient(
+                    stops: [.init(color: .clear, location: 0.00),
+                            .init(color: .white, location: 0.12),
+                            .init(color: .clear, location: 0.26),
+                            .init(color: .clear, location: 1.00)],
+                    center: .center, angle: .zero)
+                    .frame(width: hypot(sc.W, sc.H) * 2,
+                           height: hypot(sc.W, sc.H) * 2)
+                    .rotationEffect(.degrees(tourNeon))
+                    .position(sc.podCentre)
+            }
+            .blendMode(.plusLighter)
+            .opacity(pageOp * 0.30)
+            .allowsHitTesting(false)
+            .onAppear {
+                // ⚠️ `repeatForever` sur un `@State` lu par un MODIFICATEUR :
+                // ça anime un modificateur, pas un corps. Un `TimelineView`
+                // ré-évaluerait la vue à chaque image.
+                withAnimation(.linear(duration: 7).repeatForever(autoreverses: false)) {
+                    tourNeon = 360
+                }
+            }
+    }
+
+    /// La couleur du néon, INTERPOLÉE entre les deux pages voisines : elle
+    /// vire pendant le voyage, elle ne saute pas au cran. Le socle annonce
+    /// donc l'objet qui arrive avant qu'il ne soit posé — la même idée que la
+    /// poudre du passage.
+    private var teinteNeon: Color {
+        let p = min(max(page, 0), Self.dernierePage)
+        let i = Int(p)
+        let j = min(i + 1, Self.manege.count - 1)
+        return Self.manege[min(i, Self.manege.count - 1)].lueur
+            .mix(with: Self.manege[j].lueur, by: p - Double(i))
+    }
+
     /// LA POUDRE DE PAILLETTE DU PASSAGE — et elle FAIT un travail.
     ///
     /// ⚠️⚠️ **ELLE EST ÉMISE PAR CELUI QUI PART, DANS LA COULEUR DE CELUI QUI
@@ -2054,7 +2687,16 @@ struct CoffreV2Page: View {
         let sens: CGFloat = page > page.rounded() ? -1 : 1
         let x0 = scene.W / 2
         let y0 = scene.yHaut - CoffreV2Cotes.vol
-        for k in 0..<70 {
+        // ⚠️⚠️ **70 → 340, ET C'EST LA MOITIÉ DE LA LEÇON.** Passer au grain
+        // fin (0,30-0,95 au lieu de 0,8-2,2) sans toucher au NOMBRE a divisé
+        // l'encre totale par **9** — 338 pt² avant, 37 après. Verdict : « je
+        // vois rien ». Une poudre fine n'est pas une poudre grosse en plus
+        // petit : **c'est plus de grains**. La poudre du grattage en met 90
+        // sur la largeur d'un pouce ; la nôtre traverse tout l'écran.
+        //
+        // 340 rend 64 % de l'ancienne encre avec des grains 2,3× plus fins :
+        // le même poids à l'œil, sans le confetti.
+        for k in 0..<340 {
             // Graine déterministe : le grain k est TOUJOURS le même grain.
             let a = Double(k) * 2.3999632
             let r = (sin(Double(k) * 12.9898) * 43758.5453)
@@ -2068,11 +2710,29 @@ struct CoffreV2Page: View {
                      + sens * CGFloat(t) * scene.W * 0.20
             let dy = -CGFloat(t) * (58 + 96 * CGFloat(h)) + CGFloat(t * t) * 34
             let p = CGPoint(x: x0 + dx * CGFloat(t), y: y0 + dy)
-            let rayon = CGFloat(0.8 + 1.4 * h) * (1 - CGFloat(t) * 0.35)
-            // ⚠️ LA COULEUR VIRE EN COURS DE VOL : chaque grain part de la
-            // teinte de l'objet qui s'en va et arrive dans celle de l'autre.
-            let teinte = t < 0.5 ? depart : arrivee
-            let al = vie * (0.35 + 0.65 * f)
+            // ⚠️⚠️ **LE RÉGIME DIAMANT DE LA MAISON, PAS LE MIEN.** Mes grains
+            // faisaient 0,8 à 2,2 pt — verdict : *« les petites particules
+            // sont trop grosses, prends la petite poussière de diamant des
+            // pop-up »*. Elle avait raison, et la maison avait déjà payé la
+            // leçon : `PoudreGrattage` note « le grain le plus gros reste SOUS
+            // le point ; avant, le plus petit faisait déjà 1,2 ».
+            //
+            // Ce qui compte n'est d'ailleurs pas la taille moyenne mais le
+            // RÉGIME : des grains presque tous sourds, quelques-uns qui
+            // éclatent. Une taille uniforme donne du grouillement ; c'est de
+            // la poussière, pas du diamant. Les trois cotes viennent
+            // maintenant d'un seul endroit — deux poudres dans une app, ce
+            // sont deux vérités sur ce qu'est une paillette.
+            let eclat = PoudreGrattage.eclat(Double(k) * 12.9898 + t * 9)
+            let rayon = PoudreGrattage.rayon(eclat)
+            // ⚠️ LA COULEUR VIRE EN COURS DE VOL, mais LÉGÈREMENT : le grain
+            // reste du diamant (blanc, un sur cinq vers le froid) et ne prend
+            // qu'un tiers de la couleur de la page. Le passage de témoin —
+            // partir dans la teinte de celui qui s'en va, arriver dans celle
+            // de l'autre — survit sans que la poudre vire à l'orange.
+            let teinte = PoudreGrattage.teinte(k)
+                .mix(with: t < 0.5 ? depart : arrivee, by: 0.34)
+            let al = vie * (0.35 + 0.65 * eclat) * (0.45 + 0.55 * f)
             ctx.fill(Path(ellipseIn: CGRect(x: p.x - rayon, y: p.y - rayon,
                                             width: rayon * 2,
                                             height: rayon * 2)),
@@ -2114,11 +2774,20 @@ struct CoffreV2Page: View {
                               center: foyer,
                               startRadius: 0, endRadius: sc.podL * 0.58)
             .frame(width: sc.podL, height: sc.podH)
+            // ⚠️⚠️ **LE MASQUE CHANGE DE SOURCE, PAS DE PRINCIPE.** La loi du
+            // §18 tient : *la lumière se masque par la MATIÈRE* — c'est elle
+            // qui sépare « une lumière » d'« un calque ». Seulement la matière
+            // n'est plus un PNG de socle : c'est le socle DU FOND.
+            //
+            // ⚠️ Le masque est donc l'image de fond ENTIÈRE, à sa place
+            // exacte. C'est légal parce que le dégradé est déjà borné au
+            // plateau par son `frame` + `position` : hors de là il vaut zéro,
+            // et le reste de l'arche ne peut rien allumer.
             .mask {
-                Image("coffre-podium")
+                FondCoffre.image("coffre-arche")?
                     .resizable()
                     .interpolation(.high)
-                    .frame(width: sc.podL, height: sc.podH)
+                    .frame(width: sc.W, height: sc.H)
                     .luminanceToAlpha()
             }
             .position(sc.podCentre)
@@ -2184,21 +2853,6 @@ struct CoffreV2Page: View {
             .opacity(pageOp * max(0.22 + 0.42 * m.mont - 0.20 * m.sort, 0))
     }
 
-    /// LE SOCLE. Voir `CoffreV2Podium` : il se compose en ADDITIF, et son fond
-    /// noir disparaît de lui-même parce que le noir de la scène est à zéro
-    /// exact. Aucun masque, aucun alpha, aucun bord à raccorder.
-    @ViewBuilder
-    private func socle(_ sc: SceneCoffre) -> some View {
-        Image("coffre-podium")
-            .resizable()
-            .interpolation(.high)
-            .frame(width: sc.podL, height: sc.podH)
-            .position(sc.podCentre)
-            .blendMode(.plusLighter)
-            .opacity(pageOp * (1 - 0.30 * loupe))
-            .allowsHitTesting(false)
-    }
-
     // MARK: Le contenu
 
     @ViewBuilder
@@ -2225,8 +2879,15 @@ struct CoffreV2Page: View {
             // cote à entretenir. Place vérifiée : chevron de 22 à 66, titre
             // ≈ 130 pt, la pill commence à 343 — 147 pt de marge.
             HStack(alignment: .center, spacing: 14) {
+                // ⚠️ `clarte: 0` DEPUIS LE PASSAGE AU NOIR. Le composant
+                // porte déjà la loi : 0 = la nuit (verre fumé noir, glyphe
+                // blanc), 1 = une lumière (verre transparent, glyphe à
+                // l'encre sombre). Le coffre lui disait encore « lumière »
+                // parce que le mur était éclairé — mesuré sur la capture, le
+                // chevron ressortait à **65 de luminance contre 18 pour la
+                // pill des gains** : une dalle grise posée sur la nuit.
                 ChipVerre(symbole: "chevron.left", label: "Fermer",
-                          clarte: 1, action: onClose)
+                          clarte: 0, action: onClose)
                 titre
             }
             .padding(.leading, 22)
@@ -2237,6 +2898,21 @@ struct CoffreV2Page: View {
             .opacity(pageOp * texteOp)
 
             piece(sc)
+
+            // ⚠️ **L'ÉTIQUETTE DE PRIX VIT AVEC L'OBJET, PAS SOUS LE SOCLE**
+            // (§27) : on lit « ce sachet coûte 100 pièces » en regardant le
+            // sachet. Elle est posée à une cote FIXE et ne suit pas l'objet —
+            // une étiquette qui monte et descend avec ce qu'elle décrit se
+            // lit comme un ballon de BD.
+            if let c = variantes[min(piedIdx, variantes.count - 1)].pill {
+                PillPrix(c: c,
+                         lueur: variantes[min(piedIdx, variantes.count - 1)].lueur,
+                         remplie: remplie)
+                    .id(piedIdx)
+                    .transition(.opacity)
+                    .position(x: sc.W / 2, y: sc.H * 0.222)
+                    .opacity(pageOp * texteOp)
+            }
 
             // LE PIED : un seul objet, et les deux pièces s'y croisent à
             // taille FIXE. Deux dalles montées/démontées au cran feraient
@@ -2278,21 +2954,17 @@ struct CoffreV2Page: View {
         return Text("Rewards")
             .font(.inter(30, .bold))
             .tracking(-0.4)
-            .foregroundStyle(Self.encreFade)
+            // ⚠️⚠️ **LE PASSAGE AU NOIR A TUÉ SON ENCRE.** « Rewards » était
+            // un dégradé NOIR (`encreFade`) pour une seule raison : il vivait
+            // sur le mur ÉCLAIRÉ. Le mur est mort (§20) — sur le fond
+            // spotlight il n'existait tout simplement plus. Il reprend le
+            // VRAI `titleFade`, le blanc, celui pour lequel il a été fait.
+            .foregroundStyle(WoopGradient.titleFade)
             .blur(radius: p > 0.995 ? 0 : 9 * (1 - p))
             .offset(y: 9 * (1 - p))
             .opacity(p)
     }
 
-    /// Le miroir noir de `WoopGradient.titleFade`.
-    private static let encreFade = LinearGradient(
-        stops: [
-            .init(color: .black.opacity(0.92), location: 0.0),
-            .init(color: .black.opacity(0.82), location: 0.32),
-            .init(color: .black.opacity(0.52), location: 0.68),
-            .init(color: .black.opacity(0.22), location: 1.0)
-        ],
-        startPoint: .topLeading, endPoint: .bottomTrailing)
 
     // MARK: La pièce et la marche
 
@@ -2437,7 +3109,7 @@ struct CoffreV2Page: View {
                 // ⚠️ La garde ne suffit pas à faire marcher le geste de la
                 // page des gains, et le `highPriorityGesture` de celle-ci ne
                 // suffit pas à protéger le manège : il faut les DEUX.
-                guard !gainsOuverts else { return }
+                guard !gainsOuverts, histoire == nil else { return }
                 if cible == nil {
                     // Pendant l'arrivée, la page n'écoute qu'une chose : le
                     // raccourci. Rien d'autre ne doit répondre.
@@ -2545,7 +3217,17 @@ struct CoffreV2Page: View {
                     withAnimation(.spring(response: 0.46,
                                           dampingFraction: 0.82)) { tenuP = 0 }
                     if immobile, let t {
-                        if loupe > 0.5 { fermerLoupe() } else { ouvrirLoupe(t) }
+                        // ⚠️ **PREMIER TAP : LA LOUPE. DEUXIÈME TAP : L'HISTOIRE**
+                        // (verdict du 29-08). Le même geste ne change pas de
+                        // sens selon la page — il va PLUS LOIN : on regarde de
+                        // près, puis on entre. Sur une pièce, le deuxième tap
+                        // referme la loupe, comme avant : une pièce n'a pas
+                        // d'histoire à raconter.
+                        if loupe > 0.5 {
+                            if case .booster(let robe) = Self.manege[loupeIdx] {
+                                ouvrirHistoire(robe)
+                            } else { fermerLoupe() }
+                        } else { ouvrirLoupe(t) }
                     }
                 case .manege:
                     // LE CRAN : on tombe sur la pièce la plus proche, élan
@@ -2688,6 +3370,14 @@ struct CoffreV2Page: View {
         // cran 2. `-coffrePage <n>` reste le moyen d'ouvrir n'importe où.
         if Self.argentDabord { page = 2; piedIdx = 2 }
         if let f = Self.pageFigee { page = f; piedIdx = Int(f.rounded()) }
+        // `-coffreStory noir|lune` : l'histoire d'un booster d'entrée.
+        if let robe = Self.storyAuto {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                page = robe == .noire ? 3 : 1
+                piedIdx = Int(page)
+                ouvrirHistoire(robe)
+            }
+        }
         if Self.gainsAuto {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 gainsOuverts = true

@@ -1657,3 +1657,1470 @@ de SwiftUI.
 **Reste à juger au doigt** (le simulateur ne peut pas) : le seuil de 120 pt,
 la résistance vers le haut, et que le défilement de la liste ne ferme jamais
 la page par accident.
+
+---
+
+## 20. v12 — PLAN : LE FOND PASSE AU NOIR, LE MUR ÉCLAIRÉ MEURT
+
+Verdict du 28-08 : *« enlève la vidéo blanche avec néon, on passe en mode
+sombre noir : un rendu spotlight qui se reflète sur le podium comme cette
+image. Le reste du flow ne bouge pas, je veux juste le background. Il faudra
+plus de noir sur les côtés. Je pense que pour les effets de scroll, c'est bien
+que le podium soit une image à part de la vidéo du spotlight. »*
+
+Assets : `~/Desktop/spotlight .png` (852 × 1846, **le faisceau SEUL**) ·
+`~/Desktop/background_podium.png` (la référence complète) ·
+`~/Downloads/video_crop.mp4` (2160 × 3840, HEVC 10 bits, 8 s, 24 i/s).
+
+### 20.1 Le podium reste une image à part — et c'est une CONTRAINTE, pas un goût
+
+Son intuition est juste, et plus forte qu'elle ne le dit. Tout est accroché à
+`podCentre` / `yHaut` / `yBas` : la pose des objets, la lévitation, la MARCHE
+entre le dessus du socle et le sol des voisins, l'atterrissage, la gerbe — et
+depuis le §18, **les flaques masquées par la LUMINANCE de l'image du socle**.
+Un socle cuit dans une vidéo devrait être suivi image par image pour que tout
+ça reste vrai.
+
+### 20.2 La vidéo ne peut PAS être recadrée telle quelle — mesuré
+
+Largeur du socle, image par image :
+
+| t | 0 s | 2 s | 4 s | 6 s | 7,9 s |
+|---|---|---|---|---|---|
+| largeur / W | 0,690 | 0,720 | 0,757 | 0,794 | **0,836** |
+
+**+21 % de façon monotone, et ça ne revient jamais.** Conséquences :
+
+1. ⚠️ **ELLE NE BOUCLE PAS.** Un `AVPlayerLooper` ferait SAUTER le décor de
+   21 % toutes les 8 secondes. C'est une coupe franche, pas un raccord.
+2. ⚠️ **Même recadrée au faisceau seul, le problème reste** : le cône
+   s'élargit avec le travelling, donc il respire puis SAUTE.
+3. ⚠️ **Elle est en 9:16 (0,5625) quand l'iPhone est en 0,4600** — il faudrait
+   rogner **18 % de la largeur**, c'est-à-dire précisément les bords sombres
+   qu'elle veut garder pour le fondu.
+
+Deux remèdes existent — un **ping-pong** (aller + retour = 16 s qui bouclent
+sans raccord, et le travelling devient une respiration au lieu d'un saut), ou
+un contre-zoom qui stabilise. Le ping-pong est le bon : il SE SERT du mouvement
+au lieu de le combattre.
+
+### 20.3 Mais `spotlight .png` est déjà meilleur que tout ça
+
+Le faisceau seul, sans podium, sur noir, **et déjà au bon format** (0,4615
+contre 0,4600 pour l'écran — rien à rogner). Pour un fond qui doit rester
+IMMOBILE derrière une scène qui se feuillette, une image bat une vidéo sur
+tous les tableaux :
+
+- **zéro décodage par image** — la vidéo actuelle est une couche `AVPlayer`
+  plein écran, et la maison a déjà mesuré ce que coûte une couche plein écran ;
+- **aucun raccord de boucle**, donc aucun saut ;
+- **pas d'image de pose à entretenir** — `SalleFond` ne porte `salle-poster`
+  que parce que le décodeur du simulateur rate des images et peint du NOIR ;
+- elle se masque, se teinte et se décale librement.
+
+Le seul avantage de la vidéo, c'est **la poussière qui dérive**. Il est réel.
+Mais cette page a déjà de la lumière qui bouge : les flaques, la poudre au
+changement de page, la lévitation, le lustre de la jauge. Une boucle de
+particules permanente coûte de la cadence pour quelque chose que l'œil cesse
+de voir en trois secondes.
+
+> **Recommandation : le PNG.** Et si la poussière manque, on l'anime nous-mêmes
+> ensuite — mais en la MESURANT avant de la garder.
+
+### 20.4 ⚠️ CE QUE LE PASSAGE AU NOIR CASSE — à savoir AVANT
+
+1. ⚠️⚠️ **LE TITRE DISPARAÎT.** « Rewards » est un dégradé **noir**
+   (`encreFade`) précisément parce qu'il vit sur le mur ÉCLAIRÉ. Sur du noir,
+   il n'existe plus. Il repasse au vrai `WoopGradient.titleFade`, le blanc —
+   une ligne, mais dans le même souffle.
+2. ⚠️⚠️ **LA BARRE NÉON EST L'ANCRE DE TOUTE LA SCÈNE.** `ySalle` fait
+   GLISSER le décor pour que le néon tombe sur `barreY` ; et surtout
+   `Projecteur` **et** `Atterrissage` partent de `scene.barre.midY`. Plus de
+   néon → cette ancre doit être remplacée. La nouvelle ancre naturelle est le
+   HAUT DE L'ÉCRAN (la source du spot), ce qui est plus simple qu'aujourd'hui.
+3. ⚠️ **DEUX FAISCEAUX.** `Projecteur` dessine DÉJÀ un faisceau qui descend
+   sur l'objet présenté. Un faisceau photographique derrière lui en ferait
+   deux. Il faut trancher : je garderais `Projecteur` pour ce qu'il sait faire
+   et que l'image ne saura jamais — il SUIT l'objet, il force au tap — et je
+   laisserais le fond ne porter que l'ambiance et le sol.
+4. ⚠️ **`SalleFond.clarte`** éteint le décor quand on ouvre un objet (le
+   théâtre). Sur un décor déjà presque noir, il n'y a plus rien à éteindre :
+   cet effet devra passer sur les flaques.
+5. ⚠️ **LE VERRE.** Le chevron et la pill sont en `glassEffect(.clear)`. Sur
+   un mur clair ils se lisent ; sur du quasi-noir ils peuvent s'évanouir. **À
+   mesurer, pas à supposer** — et `.regular` reste interdit.
+
+### 20.5 Le fondu des bords
+
+Sa demande (« plus de noir sur les côtés »). Le PNG y arrive presque seul : il
+est déjà sur fond noir et au bon rapport. Il suffit d'un masque radial doux
+qui éteint les bords et le bas, posé sur l'image — **pas un `.blur`**, qui
+poserait un voile uniforme sur tout le rectangle de l'hôte.
+
+### 20.6 Ce qui reste à trancher
+
+1. **La poussière** : PNG immobile (recommandé), ou vidéo en ping-pong ?
+   ⚠️ Si vidéo : elle devra être **régénérée sans podium**, ou stabilisée —
+   celle d'aujourd'hui coûte 18 % de largeur au recadrage.
+2. **Le faisceau** : celui de l'image, celui du `Projecteur`, ou les deux avec
+   des rôles séparés ?
+
+### 20.7 « Je n'arrive pas à régénérer la vidéo » — on n'en a pas besoin
+
+⚠️ **ET JE CORRIGE UNE DE MES AFFIRMATIONS DU §20.2.** J'avais écrit que le
+recadrage au format iPhone coûterait « précisément les bords sombres qu'elle
+veut garder ». **C'est faux, mesuré.** Un `aspectFill` garde x 0,090 → 0,910 ;
+le faisceau vit entre 0,13 et 0,78 selon la hauteur. Il tient. Une seule ligne
+déborde à 0,926 à t = 7,9 s, et c'est une braise isolée, pas le cône.
+
+Trois routes, aucune ne demande de régénérer quoi que ce soit :
+
+**① LE PNG SEUL — disponible tout de suite, coût nul.**
+`spotlight .png` est déjà le bon asset, au bon format. Pas d'animation. C'est
+ce que je recommande pour voir la page en noir DÈS CE SOIR, quitte à ajouter
+du mouvement après.
+
+**② SA VIDÉO, RECADRÉE ET MISE EN PING-PONG — ffmpeg seul.**
+- couper le bas au-dessus du socle (il commence à **0,78 H**) → plus de podium,
+  et la contradiction du §20.1 disparaît ;
+- `aspectFill` pour le format : 18 % de largeur perdus, **et le faisceau
+  tient** (mesuré ci-dessus) ;
+- **ping-pong** (aller + retour) : la boucle devient sans raccord, et le
+  travelling de +21 % devient une RESPIRATION au lieu d'un saut.
+⚠️ Coût à mesurer : une couche `AVPlayer` plein écran. `./tools/charge.sh`
+d'abord — la charge machine invalide toute mesure de cadence.
+
+**③ FABRIQUER LA BOUCLE DEPUIS LE PNG — ffmpeg aussi, et c'est le plus propre.**
+Son image fixe + une poussière qui dérive, composée en ffmpeg sur une
+trajectoire **sinusoïdale de période égale à la durée** : la boucle est alors
+sans raccord PAR CONSTRUCTION, pas par chance. On garde son image exacte, au
+bon format, sans podium, et le fichier pèse ce qu'on veut.
+
+**Ordre proposé : ① tout de suite, puis ③ si le fond paraît trop mort.** ②
+n'est utile que si la poussière de SON rendu est irremplaçable — c'est le seul
+truc que ③ ne copiera pas à l'identique.
+
+### 20.8 CODÉ — la salle éclairée est morte
+
+**Route ① prise.** `bake_spot.py` cuit `spotlight .png` en `coffre-spot.png`
+(1206 × 2622, ×1,42), avec un fondu des bords et du bas **en cosinus et pas
+linéaire** : une rampe droite laisse une ARÊTE là où elle commence (la dérivée
+saute), et sur un fond aussi sombre l'œil la voit tout de suite.
+
+`SalleFond` n'est plus qu'une `Image` posée plein cadre. Ce qui disparaît avec
+elle : la couche `AVPlayer` plein écran, `salle-poster` (qui n'existait que
+parce que le décodeur du simulateur rate des images et peint du noir), et
+**`SalleVideo` — 59 lignes de code mort supprimées**. ⚠️ `BoosterLoopLayerView`
+est GARDÉ : cinq autres vues s'en servent.
+
+**Les cotes du néon sont mortes avec le film.** `barreSalle = 0,5071` était une
+cote MESURÉE DANS UN FICHIER, au pic de gradient — on ne recalera plus jamais
+une mise en page sur un pixel de vidéo. `barre` devient `sourceY = 0,012` : la
+lumière descend du haut de l'écran, et `Projecteur`/`Atterrissage` gardent leur
+ancre.
+
+**Les cinq conséquences, traitées — et deux se sont vues à la mesure :**
+
+1. **Le titre** repasse au vrai `titleFade` blanc. `encreFade` et `encreMur`
+   supprimés : ils n'avaient de sens que sur un mur éclairé.
+2. ⚠️ **LES DEUX FAISCEAUX S'ADDITIONNAIENT.** Mesuré sur la bande centrale,
+   l'excès de vert sur le bleu :
+
+   | y/H | avant | après | sa référence |
+   |---|---|---|---|
+   | 0,06 | **+19** | +8 | +8 |
+   | 0,12 | **+20** | +7 | +7 |
+   | 0,20 | **+18** | +7 | +7 |
+
+   La crème du `Projecteur` (V 0,80 · B 0,55) s'ajoutait en `plusLighter` et
+   virait le faisceau au KAKI. Il tombe à 0,34 au repos et garde toute sa
+   réponse au geste — il fait deux choses que l'image ne saura jamais faire :
+   il SUIT l'objet, et il FORCE au tap.
+3. ⚠️ **LE VERRE DU CHEVRON ÉTAIT UNE DALLE GRISE.** Mesuré : **65 de
+   luminance contre 18 pour la pill**. `ChipVerre` portait déjà la loi —
+   `clarte` 0 = la nuit, 1 = une lumière — et le coffre lui disait encore
+   « lumière ». Passé à 0 : **11 contre 18**, ils sont enfin de la même
+   famille.
+4. **`clarte`** garde son rôle : elle éteint le spot à l'ouverture d'un objet.
+5. **Le fondu des bords** est dans le bake, pas au runtime.
+
+⚠️ **PIÈGE DE BANC, ET IL M'A COÛTÉ DEUX CAPTURES FAUSSES** : le simulateur
+booté n'était plus le mien. J'ai capturé une build périmée sur l'un, puis le
+BANC DES NOTIFICATIONS de l'autre session sur l'autre. **Vérifier sur quel
+appareil on installe ET on lance** — `simctl list devices booted` ment moins
+que l'habitude.
+
+**Reste** : la poussière ne bouge plus (route ③ si le fond paraît mort), et
+tous les verdicts au doigt.
+
+---
+
+## 21. v13 — PLAN : LE BON SPOTLIGHT, C'EST LA VIDÉO
+
+Verdict du 29-08 : *« mais t'as pas utilisé la vidéo, t'as mis un vieux
+spotlight »*.
+
+### 21.1 ⚠️ MON ERREUR, ET ELLE EST NETTE
+
+J'ai comparé le PNG à sa référence **sur la TEINTE** (V−B : +9 contre +8) et
+j'en ai conclu que c'était le même rendu. **Je n'ai jamais comparé le
+CONTENU.** Mesuré maintenant, au même cadrage et à la même échelle :
+
+| | pixels de braise | luminance moyenne |
+|---|---|---|
+| `spotlight .png` (20 h 08) | **514** | 8,5 |
+| `video_crop.mp4` (21 h 12) | **3 738** | 20,3 |
+
+**7× plus de braises, 2,4× la luminance.** Et l'horodatage le dit aussi : la
+vidéo est POSTÉRIEURE aux deux PNG. Le PNG est un rendu antérieur, plus pâle,
+presque sans étincelles — son faisceau est une colonne douce là où celui de la
+vidéo est un cône avec de la matière dedans.
+
+**Deux mesures qui concordent sur une couleur ne disent rien du dessin.**
+
+### 21.2 Le cadrage — et je corrige une deuxième cote
+
+⚠️ **J'avais dit que le socle commençait à 0,78 H. C'est faux** : 0,78 était
+son LISERÉ éclairé. Le haut réel du socle est à **0,855 → 0,875 H** selon
+l'instant (il monte en grossissant). On coupe donc à **0,845 H** — et on garde
+7 points de hauteur de plus que ce que j'annonçais, donc moins à rogner sur les
+côtés.
+
+**Le corps du faisceau survit au recadrage, mesuré aux deux bouts du clip :**
+
+| | t = 0 | t = 7,9 s |
+|---|---|---|
+| y = 0,10 | 0,356 → 0,606 | 0,282 → 0,674 |
+| y = 0,30 | 0,319 → 0,620 | 0,255 → 0,655 |
+| y = 0,70 | 0,301 → 0,627 | 0,218 → 0,748 |
+
+Tout tient dans 0,157 → 0,843. Ce qui débordait dans ma mesure précédente,
+c'étaient des **braises isolées** au seuil 14 — invisibles si on les perd.
+
+**Deux façons de le poser, et je recommande la seconde :**
+
+- **`aspectFill`** — on rogne ~31 % de la largeur. Le faisceau tient, mais on
+  jette de la matière pour rien.
+- **AJUSTÉ À LA LARGEUR** — rien n'est rogné. La vidéo couvre alors le haut
+  jusqu'à ~0,69 H, et le bas reste noir : c'est exactement là que vivent notre
+  socle (0,556 H) et son sol. Il faut juste **éteindre son bord bas en fondu**,
+  sinon la fin de l'image fait une arête horizontale.
+
+### 21.3 La boucle — le ping-pong n'est pas un pis-aller
+
+Rappel mesuré : le socle passe de 0,690 à 0,836 de la largeur, **de façon
+monotone**. La vidéo ne boucle pas ; un `AVPlayerLooper` la ferait sauter de
+21 % toutes les 8 secondes.
+
+**Aller + retour = 16 s sans raccord**, et le travelling devient une
+RESPIRATION. Ce n'est pas contourner le défaut, c'est lire le matériau pour ce
+qu'il est : un spot qui s'approche et s'éloigne, c'est ce qu'on aurait demandé
+si on avait su le demander.
+
+### 21.4 ⚠️ CE QUE ÇA REND, ET QU'ON VENAIT DE GAGNER
+
+On remet exactement ce qu'on a retiré hier, et il faut le savoir :
+
+1. **Une couche `AVPlayer` plein écran.** C'est le coût qu'on venait
+   d'économiser. ⚠️ **À MESURER, pas à supposer** — et `./tools/charge.sh`
+   d'abord, la charge machine invalide toute cadence.
+2. **L'image de pose revient**, obligatoire : le décodeur du simulateur est
+   LOGICIEL, il rate des images, et sans poster dessous le raté DEVIENT un
+   glitch noir plein écran. (C'est pour ça que `salle-poster` existait.)
+3. **`SalleVideo` revient**, mais plus simple : plus de glissement, plus de
+   calage sur un pixel (`barreSalle` reste mort et enterré).
+4. **Le ré-encodage** : 2160 × 3840 HEVC 10 bits pour un écran qui en demande
+   1206 de large, c'est décoder quatre fois trop de pixels par image. On recuit
+   à la taille d'affichage — et sur une image presque noire, le fichier tombe.
+
+### 21.5 LES DEUX ROUTES
+
+**①bis — UNE IMAGE FIXE, MAIS TIRÉE DE LA VIDÉO.**
+Corrige exactement son reproche (« un vieux spotlight ») **à coût nul** : on
+garde l'architecture d'hier, on change juste la source du bake. Disponible
+tout de suite. Ce qu'on n'a pas : les braises qui dérivent.
+
+**② — LA VIDÉO, recadrée + ping-pong.**
+Le rendu qu'elle veut, en mouvement. Coût : une couche vidéo plein écran, un
+poster, et une mesure de cadence.
+
+> **Ma recommandation : ①bis d'abord, ce soir, et ② dans la foulée si la
+> poussière manque.** Parce que ①bis règle le vrai grief (le mauvais rendu) et
+> que ② n'ajoute que le mouvement — deux questions séparées, qu'on avait
+> mélangées.
+
+### 21.6 Ce que ça ne change PAS
+
+Les cinq corrections du §20.8 tiennent quelle que soit la route : le titre en
+blanc, le `Projecteur` à 0,34 (les deux faisceaux s'additionnaient), le
+chevron en `clarte: 0`, le fondu des bords, l'ancre au haut de l'écran. Elles
+ne dépendent pas de la source, seulement du fait que le fond est noir.
+
+### 21.7 CODÉ — la vidéo est en place
+
+`bake_spot.py` part maintenant de `video_crop.mp4` et rend **deux** fichiers :
+`coffre-spot-loop.mp4` et son image de pose `coffre-spot.png`.
+
+| | |
+|---|---|
+| sortie | 1206 × 1608, H.264 High, yuv420p |
+| durée | 16,08 s (ping-pong), 386 images |
+| débit | 1,18 Mb/s · **2,4 Mo** |
+| raccord de boucle | écart moyen **0,61 / 255** — contre 5,65 entre deux images éloignées |
+
+⚠️⚠️ **LA COUPE S'EST FAITE EN DEUX TEMPS, ET LA PREMIÈRE ÉTAIT FAUSSE.**
+J'ai d'abord cherché le socle par sa LUMIÈRE (« une large bande claire ») et
+trouvé 0,855 → 0,875 H. Coupé à 0,845, **un fantôme d'ellipse restait visible
+à l'écran**, sous notre propre socle : le verre sombre du socle commence bien
+plus haut que sa partie éclairée.
+
+Cherché par son **ARÊTE** (un saut vertical de luminance sur plus de 30 % de
+la largeur), il apparaît à 0,832 H au début et **remonte à 0,775 H à la fin du
+travelling** — c'est ce minimum-là qui commande. Coupé à 0,75, le fantôme a
+disparu.
+
+> **Chercher un objet par sa lumière trouve sa partie éclairée, pas l'objet.**
+
+⚠️ Et la cote du fichier a changé avec la coupe (1810 → 1608) : `SalleFond
+.ratio` doit bouger AVEC elle, sinon la vue étire la vidéo sans rien dire.
+
+`SpotVideo` remplace `SalleVideo` : même école (`AVPlayerLooper`, jamais un
+seek), mais sans glissement ni calage sur un pixel. Ajustée à la largeur,
+posée en haut, bord bas éteint **dans le fichier** — un `.mask` sur une couche
+vidéo forcerait une passe hors écran à chaque image.
+
+**RESTE, ET C'EST LA SEULE CHOSE QUI MANQUE :** la cadence n'est pas mesurée.
+On vient de remettre une couche `AVPlayer` plein écran, exactement ce qu'on
+avait économisé. ⚠️ `./tools/charge.sh` AVANT toute mesure — la charge machine
+invalide les cadences, et c'est déjà payé.
+
+---
+
+## 22. PLUS DE ROUGE DANS LE HALO ? — mesuré (29-08)
+
+Question de Kathryn : *« tu peux rajouter plus de rouge au niveau du halo
+orange, ou c'est chaud pour ne pas être différent de notre univers ? »*
+
+### 22.1 Ce n'est pas chaud du tout — l'univers va déjà bien plus loin
+
+Teinte de la palette chaude de la maison (0° = rouge pur, 36° = or) :
+
+| | R V B | teinte | saturation |
+|---|---|---|---|
+| rouge profond (`StorySuite`) | 255 · 51 · 13 | **9,4°** | 1,00 |
+| braise sombre | 255 · 46 · 8 | **9,2°** | 1,00 |
+| liseré de la fiche exo | 255 · 107 · 33 | 20,0° | 1,00 |
+| **braise du booster** (`.lune`) | 255 · 125 · 43 | **23,2°** | 1,00 |
+| braise de la maison | 255 · 143 · 51 | 27,1° | 1,00 |
+| or du coffre (`.or`) | 255 · 189 · 87 | 36,4° | 1,00 |
+
+**Notre halo est à 23,1°, au MILIEU de la bande.** La maison utilise déjà du
+9° — il reste **14 degrés de marge** avant d'atteindre son propre rouge le
+plus profond. Et sa référence à elle est à **19,2°**, donc plus rouge que ce
+qu'on affiche : aller vers le rouge, c'est aller vers sa maquette.
+
+Trois crans possibles, tous à saturation pleine :
+
+| | R V B | teinte |
+|---|---|---|
+| un cran | 1,00 · 0,42 · 0,14 | 19,5° ← sa référence |
+| deux crans | 1,00 · 0,36 · 0,12 | 16,4° |
+| trois crans | 1,00 · 0,30 · 0,10 | 13,3° |
+
+### 22.2 ⚠️ LE DANGER N'EST PAS LA TEINTE, C'EST LA SATURATION
+
+**Rouge + saturation qui baisse = BRUN.** C'est la loi anti-brun, payée
+partout dans ce dépôt (`FlammeJauge` : « sur toute la rampe orange, la
+saturation ne se perd JAMAIS en descendant »).
+
+    (1,00 · 0,36 · 0,12)  → 16,4°  sat 1,00   ✓
+    (0,72 · 0,34 · 0,22)  → 14,4°  sat 0,53   ✗ brun
+
+Donc : **R reste à 1,00, on ne descend QUE le vert et le bleu.** C'est
+exactement la recette de l'harmonisation rouge de la page exo.
+
+### 22.3 ⚠️ MAIS OÙ ? — et là il y a un vrai piège
+
+Deux endroits possibles, et ils n'ont pas du tout le même effet :
+
+**① LA FLAQUE de la page booster orange** (`ObjetSocle.lueur` pour `.lune`).
+N'affecte QUE cette page. Sans risque. C'est ce que je recommande.
+
+**② LE FAISCEAU DU FOND** (une étalonnage dans le bake).
+⚠️ **Le fond est le MÊME pour les quatre pages.** Le rougir le rougit aussi
+sous la pièce d'ARGENT (identité froide, bleu) et sous le booster NOIR
+(violet). On se battrait contre les deux identités qu'on vient d'installer au
+§18 — et la mesure du §18 disait justement que c'est la flaque qui porte
+l'identité, pas le décor.
+
+> **Si le fond doit changer, c'est dans l'autre sens : le DÉSATURER vers le
+> neutre**, pour que chaque flaque puisse le colorer. C'est le principe du
+> §18 poussé au bout — la lumière appartient à l'objet.
+
+### 22.4 Ce que je propose
+
+1. **La flaque `.lune` passe à 19,5°** (1,00 · 0,42 · 0,14) — la teinte exacte
+   de sa référence, saturation pleine.
+2. **On regarde**, et on descend d'un cran de plus si elle en veut (16,4°).
+3. **On ne touche pas au fond** tant que les quatre pages n'ont pas été jugées
+   côte à côte.
+
+⚠️ Et une chose à vérifier en même temps : le halo mesuré à l'écran est à
+**saturation 0,55** contre **0,67** pour sa référence. Il est donc déjà un peu
+LAVÉ — possible que ce qu'elle lit comme « pas assez rouge » soit en partie un
+manque de saturation, pas de teinte. Les deux se règlent, mais ce n'est pas le
+même réglage.
+
+### 21.8 « ELLE RESPIRE TROP » — mesuré et calmé (29-08)
+
+⚠️ **D'ABORD, LA MESURE ÉTAIT MAUVAISE.** J'ai voulu quantifier la respiration
+par la LARGEUR du faisceau : elle donnait 81 → 80 → 89 → 100 → 107, une suite
+non monotone qui tremblait de ±8 % sans que rien ne bouge — les braises
+traversent le seuil et faussent tout. La bonne mesure est **l'AIRE ÉCLAIRÉE**,
+qui varie comme le carré du zoom et ne tremble pas.
+
+| | amplitude | vitesse |
+|---|---|---|
+| avant (toute la source, demi-période 8 s) | **+26,5 %** | 3,32 %/s |
+| après (0 → 3 s, ralenti ×2, demi-période 6 s) | **+10,0 %** | **1,67 %/s** |
+
+**Amplitude ÷2,6, vitesse ÷2,0.** Le fichier tombe à 1,4 Mo, 144 images.
+
+Deux réglages nommés, qui ne font pas la même chose :
+`FIN` coupe l'AMPLITUDE (on ne garde que le début du travelling) ·
+`LENT` étale la VITESSE.
+
+⚠️ **RALENTIR N'AJOUTE PAS DE SACCADE, ET C'EST CONTRE-INTUITIF.** Le
+déplacement PAR IMAGE SOURCE ne dépend que de `FIN` — c'est la même image
+suivante, montrée plus tard (0,14 % dans les deux cas). `LENT` ne change que
+la FRÉQUENCE des mises à jour : le pas ne grandit pas, il revient moins
+souvent.
+
+⚠️ `trim` + `setpts` **dans le graphe**, jamais `-ss` : `-ss` positionne la
+lecture sans couper le graphe, et `reverse` embarquerait les images d'avant.
+Piège déjà payé dans cette maison.
+
+**Ce que je n'ai pas pu mesurer** : la saccade elle-même. On est passé de 24 à
+12 mises à jour par seconde ; les chiffres disent que le pas ne grossit pas,
+mais seul l'œil dira si les braises stroboscopent.
+
+### 22.5 LA POUDRE DU PASSAGE — le régime diamant de la maison (29-08)
+
+Verdict : *« les petites particules sont trop grosses, prends la petite
+poussière de diamant présente sur les pop-up de l'app »*.
+
+Elle avait raison, **et la maison avait déjà payé exactement cette leçon.**
+`PoudreGrattage` (la card à gratter du chemin) porte ce commentaire :
+*« 0,30 → 0,95 pt : le grain le plus gros reste SOUS le point. Avant, le plus
+petit faisait déjà 1,2. »* Mes grains faisaient **0,8 à 2,2 pt** — deux fois
+et demie les siens.
+
+⚠️ **ET CE N'EST PAS QU'UNE QUESTION DE TAILLE : C'EST LE RÉGIME.** Ce qui
+fait « diamant » plutôt que « grouillement », c'est la RARETÉ des crêtes —
+des grains presque tous sourds, quelques-uns qui éclatent (`sin⁴`). Une taille
+uniforme donne de la semoule. Plus le détail qui fait tout : **une paillette
+sur cinq tire vers le froid**, et c'est ce qui fait diamant plutôt que craie.
+
+Les trois cotes sortent en `static` sur `PoudreGrattage` — `eclat`, `rayon`,
+`teinte`. **Deux poudres dans une app, ce sont deux vérités sur ce qu'est une
+paillette ;** il n'y en a plus qu'une, et le coffre l'appelle.
+
+Mesuré à l'écran, en plein vol : pixels de grain **3 721 → 2 110** (−43 %).
+
+⚠️⚠️ **ET J'AI RATÉ LA MOITIÉ DE LA LEÇON — « je vois rien ».** Passer au
+grain fin sans toucher au NOMBRE a divisé l'encre totale par **9** (338 pt²
+avant, 37 après, calculé sur ma propre formule). **Une poudre fine n'est pas
+une poudre grosse en plus petit : c'est PLUS DE GRAINS.** La poudre du
+grattage en met 90 sur la largeur d'un pouce ; la mienne traverse tout
+l'écran avec 70. Passée à **340**, elle rend 64 % de l'ancienne encre avec des
+grains 2,3× plus fins — le même poids à l'œil, sans le confetti.
+
+⚠️ **CE QUE J'AI GARDÉ, ET QU'ELLE PEUT REFUSER** : le passage de témoin. Le
+grain reste du diamant (blanc, un sur cinq froid) et ne prend qu'**un tiers**
+de la couleur de la page — il part dans la teinte de l'objet qui s'en va et
+arrive dans celle de l'autre, sans virer à l'orange. Si elle veut la poudre
+strictement blanche comme dans les pop-up, c'est le `0.34` qui tombe à zéro.
+
+---
+
+## 23. v14 — PLAN : `test-Backgorund.png`, l'arche de verre noir (29-08)
+
+Verdict : *« essaie avec le background finalement `test-Backgorund` sur mon
+bureau, il faut que ça fasse un peu fondu noir bien sûr pour que ça passe dans
+l'écran d'iPhone et qu'on voit le bas avec les boutons et la progress bar »*.
+
+### 23.1 Ce que c'est — et ce n'est pas un spotlight
+
+941 × 1672, rapport **0,5628** (l'écran est à 0,4600). Une **arche de verre
+noir** à liseré orange, des gouttes suspendues sur les montants, un sol
+réfléchissant à caustiques… **et son propre socle.**
+
+Mesuré :
+
+| | |
+|---|---|
+| sommet de SON socle | **0,701 H** |
+| largeur de son socle | 59 % de la largeur |
+| ouverture de l'arche | x 0,26 → 0,72, jusqu'à ~0,55 H où elle se referme |
+| le bas (0,80 → 1,00 H) | L moyenne **20,8** — c'est le plus clair de l'image |
+
+C'est un changement de nature, pas de réglage : le spotlight était un
+ÉCLAIRAGE (une lumière qui tombe), ceci est un **DÉCOR** (une architecture qui
+encadre). Les deux ne se règlent pas pareil.
+
+### 23.2 ⚠️ LA CONTRADICTION À RÉGLER EN PREMIER
+
+**Son image est composée avec sa lumière EN BAS ; notre page a besoin que le
+bas soit noir.** Le pied — compte, règle, jauge, bouton « Ouvrir » — vit entre
+0,75 et 0,95 H, exactement là où cette image est la plus claire (L 20,8, son
+maximum). Un fondu noir à cet endroit **éteint son point focal**.
+
+Trois sorties, et la troisième est la bonne :
+
+1. **Fondre le bas** — on garde le cadrage, on perd le sol à caustiques et le
+   socle. Il ne reste que l'arche, coupée aux genoux.
+2. **Descendre le pied** — impossible, il est déjà à 0,95 H au plus bas.
+3. ⚠️ **FAIRE GLISSER L'IMAGE VERS LE HAUT** pour que SON socle tombe là où
+   vit LE NÔTRE (0,556 H). L'arche encadre alors notre socle, le sol à
+   caustiques passe derrière notre pied, et il reste du noir en dessous. C'est
+   le même geste que faisait l'ancienne salle (`ySalle` glissait pour poser le
+   néon sur `barreY`) — sauf qu'on glisse sur un socle, pas sur un pixel.
+
+### 23.3 ⚠️ ET SON SOCLE ? — la question qui décide de tout
+
+Elle en a un, nous aussi. **Notre socle ne peut pas partir** : `podCentre`,
+`yHaut`, `yBas`, la pose des objets, la MARCHE des voisins, l'atterrissage, la
+gerbe — et depuis le §18 **les flaques le prennent comme MASQUE de luminance**.
+C'est la contrainte du §20.1, inchangée.
+
+Donc deux socles à l'écran, sauf si :
+
+- **(a)** on efface le sien (fondu local au-dessus de 0,70 H) et on pose le
+  nôtre dans l'ouverture de l'arche — **recommandé** ;
+- **(b)** on les superpose au pixel près — fragile, et son socle est vu d'un
+  autre angle que le nôtre ;
+- **(c)** on adopte le sien et on refait toute la géométrie — c'est le
+  chantier entier, pas un fond.
+
+### 23.4 Le format
+
+0,5628 contre 0,4600 : **18 % de largeur en trop**. Mais ici, contrairement au
+spotlight, **les bords PORTENT le sujet** — les montants de l'arche et les
+gouttes vivent à x 0,05-0,26 et 0,72-0,95. Un `aspectFill` les couperait.
+
+→ **Ajusté à la largeur**, comme la vidéo : rien n'est rogné, l'image couvre
+le haut, et le bas reste noir pour le pied. Ses bords sont déjà sombres (L 2,1
+et 2,7) : le fondu latéral est presque gratuit.
+
+### 23.5 ⚠️ CE QUE ÇA REND CADUC
+
+- **Le faisceau.** `Projecteur` a été baissé à 0,34 parce que le fond en
+  portait un (§20.8). Ici il n'y a **plus de faisceau du tout** dans le fond —
+  il faut le remonter, sinon l'objet n'est plus désigné par rien.
+- **La flaque du socle.** L'arche éclaire par ses liserés orange, latéralement.
+  Notre flaque, elle, vient du dessus. À vérifier qu'elles ne se contredisent
+  pas.
+- **La page ARGENT et la page NOIRE.** L'arche est franchement ORANGE. Sous la
+  pièce d'argent (froide) et le booster noir (violet), c'est le même conflit
+  qu'au §22.3 — sauf qu'ici il est bien plus fort qu'un simple halo.
+  **⚠️ C'est le vrai risque de ce fond, et il ne se voit pas sur la page 2.**
+
+### 23.6 L'ordre
+
+1. Cuire le fond : glissé pour que son socle tombe sur le nôtre, son socle
+   effacé, bords et bas éteints en cosinus.
+2. Remonter `Projecteur`.
+3. **Regarder les QUATRE pages** avant de garder quoi que ce soit — c'est là
+   que ce fond se jugera, pas sur la page orange.
+
+### 23.7 CODÉ — l'arche est le décor, et son socle est LE socle
+
+Verdict : *« non, enlève le nôtre »*. `coffre-podium.png` a quitté la page.
+`bake_arche.py` cuit `test-Backgorund.png` à la taille exacte de l'écran, avec
+les bords et le bas éteints en cosinus. `-coffreSpot` ramène le spotlight.
+
+**La géométrie s'est raccrochée à un socle qui vit dans le FOND** — c'était le
+pari du §20.1, et il tient : `podL`, `podH`, `yHaut`, `yBas`, `podCentre` sont
+maintenant des mesures faites sur l'image, plus des proportions de PNG. Le
+masque des flaques prend l'image de fond au lieu du socle. La pose des objets,
+la marche des voisins, l'atterrissage, la gerbe : rien d'autre n'a bougé.
+
+⚠️ **TROIS COTES ONT DÛ ÊTRE MESURÉES AU LIEU D'ÊTRE DÉDUITES, ET CHACUNE
+M'AVAIT EU :**
+
+1. **Le socle se mesure au LISERÉ ORANGE, pas à la luminance** — les
+   caustiques du sol traversent toute la largeur et rendent toute mesure de
+   « bande claire » fausse (0,897 de largeur à 0,66 H, ce qui ne veut rien
+   dire).
+2. **L'image a dû REMONTER de 130 px.** Posée en haut, sa surface de pose
+   tombait 50 points plus bas que notre ancien socle : la barre de crans se
+   posait SUR le socle et « Ouvrir » finissait à 37 pt du bord.
+3. ⚠️ **`podFin` N'EST PAS `yBas`.** L'empreinte VISUELLE du socle (ses
+   anneaux, leur lueur) descend à **0,715 H** quand sa base est à 0,653.
+   Déduit, le pied remontait de 60 pt — et la barre de crans retombait sur le
+   socle une deuxième fois. **Une empreinte visuelle se mesure sur l'image
+   qu'on affiche, elle ne se déduit pas d'une cote de géométrie.**
+
+⚠️⚠️ **ET LE PIÈGE MAISON M'A REPRIS EN PLEIN.** `Woop/Media` sont des
+ressources NUES : `Image("coffre-arche")` cherche dans le catalogue, ne trouve
+rien, **et ne dit rien**. Le fond était simplement absent, et ce que je
+regardais était notre `Projecteur` sur du noir. Pire, ça a révélé que
+`Image("coffre-spot")` échouait DEPUIS LE DÉBUT : **l'image de pose du
+spotlight — celle dont j'avais écrit qu'elle était OBLIGATOIRE — n'a jamais
+été affichée une seule fois.** Un filet qu'on croit posé et qui n'existe pas
+est pire que pas de filet. Le chargement passe maintenant par le bundle
+(`FondCoffre`), avec cache.
+
+### 23.8 ⚠️ LE COÛT, MESURÉ : L'IDENTITÉ DES PAGES S'EST EFFONDRÉE
+
+C'est le risque annoncé au §23.5, et il est chiffré. Teinte du plateau (R−B) :
+
+| page | fond spotlight | **fond arche** |
+|---|---|---|
+| pièce d'or | +100 | +47 |
+| booster lune | +114 | +50 |
+| pièce d'argent | **+13** | **+28** |
+| booster noir | +13 (violet) | +27 |
+| **écart entre les extrêmes** | **101** | **23** |
+
+**Les quatre pages tiennent maintenant dans 23 points au lieu de 101 : le
+signal d'identité est quatre fois plus faible.** L'arche est un DÉCOR, elle a
+sa couleur, et elle gagne contre la flaque. Le spotlight était un ÉCLAIRAGE :
+il se laissait teinter.
+
+Trois sorties, à trancher au regard :
+1. **Monter la force des flaques** (0,11 + 0,40 → plus) — le moins cher.
+2. **Désaturer l'arche vers le neutre** dans le bake, pour qu'elle redevienne
+   un support de couleur au lieu d'une couleur.
+3. **Assumer** : un seul décor, et l'identité se dit par l'objet et le texte,
+   plus par la lumière.
+
+---
+
+## 24. PLAN : ANIMER LES NÉONS DU SOCLE (29-08)
+
+Verdict : *« en vrai c'est très beau, tu peux animer dessus des néons qui sont
+dans le podium ? »*
+
+### 24.1 Ce qu'on peut en tirer — mesuré
+
+En isolant les pixels saturés (R−B > 40) de `coffre-arche.png` :
+
+| bande | % de pixels néon | L moyenne |
+|---|---|---|
+| 0,4 → 0,5 H | 5,7 % | 16,5 |
+| **0,5 → 0,6 H** | **21,5 %** | **37,9** |
+| 0,6 → 0,7 H | 9,9 % | 20,8 |
+| 0,7 → 1,0 H | ~0 % | ~0 |
+
+> **Les néons portent 35,9 % de la lumière TOTALE de l'image**, dont 28,8 %
+> dans la seule bande du socle. Les anneaux vivent entre **0,500 et 0,690 H**.
+
+Autrement dit : les animer, ce n'est pas ajouter un effet — **c'est prendre la
+main sur plus d'un tiers de l'image, exactement là où il faut.**
+
+### 24.2 ⚠️ CE QUE CETTE ANIMATION DOIT FAIRE, ET PAS SEULEMENT ÊTRE
+
+Deux lois de la maison s'appliquent, et elles pointent au même endroit :
+
+- *« un mouvement qui rejoue à chaque arrivée devient du bruit en trois
+  visites »* (§17.5) — cette page a déjà les flaques, la poudre, la
+  lévitation, le lustre de la jauge et la respiration du bouton ;
+- **et le §23.8 vient de mesurer que l'identité des pages s'est effondrée** :
+  101 points d'écart entre les extrêmes avec le spotlight, **23** avec
+  l'arche. Le décor a gagné contre la flaque.
+
+> **La meilleure animation possible ici est donc celle qui RÉPARE l'identité.**
+> Le néon est l'objet le plus lumineux de l'écran ; s'il prend la couleur de la
+> page, ce n'est plus de la décoration, c'est le signal.
+
+### 24.3 Trois animations, classées par ce qu'elles font
+
+**① LA TEINTE PAR PAGE — la seule qui travaille.**
+Le néon du socle vire à l'or, à la braise, à l'argent froid, au violet en
+traversant. C'est le §18 (*la lumière appartient à l'objet*) appliqué à ce qui
+éclaire le plus. Ce n'est pas une boucle : c'est une TRANSITION, donc elle ne
+peut pas devenir du bruit. **Elle devrait ramener l'écart bien au-delà de 23.**
+
+**② L'ÉCLAT À LA POSE — une réponse, pas une boucle.**
+L'anneau encaisse quand l'objet se pose (flash court, ~0,25 s, puis retour) et
+quand la jauge finit de se remplir. Elle ne joue que quand il se passe quelque
+chose — donc elle ne s'use pas.
+
+**③ LE BALAYAGE ANGULAIRE — la vie, et le seul risque.**
+Un reflet qui court autour de l'anneau, une révolution en ~6 s. C'est ce qui
+fait « néon allumé » plutôt que « néon peint ». ⚠️ Permanent, donc c'est celle
+qui peut lasser : à garder FAIBLE (un sur-éclat de +25 %, pas un phare), et à
+juger en dernier.
+
+> **Ordre : ① puis ②, et ③ seulement si la page paraît figée.**
+
+### 24.4 La technique — et le point délicat est la SOUSTRACTION
+
+**Au bake, deux fichiers au lieu d'un :**
+
+- `coffre-arche-neon.png` — les liserés seuls. ⚠️ **Alpha = une RAMPE sur la
+  saturation, jamais un seuil** : un seuil binaire dessine un escalier sur un
+  dégradé, et tout ici est dégradé (leçon du détourage, §18.5).
+- `coffre-arche.png` — l'arche **PRIVÉE de ses néons**.
+
+⚠️⚠️ **C'EST CETTE SOUSTRACTION QUI DÉCIDE DE TOUT.** Si on se contente de
+SUPERPOSER un néon coloré sur l'image intacte, on ajoute à de l'orange qui est
+déjà là : on peut le SURCHARGER, jamais le faire virer au bleu. Pour qu'un
+socle devienne froid sur la page d'argent, **il faut d'abord lui retirer son
+orange**. Les néons étant de la lumière ADDITIVE dans le rendu, les retirer
+est une soustraction, et elle se mesure : la base doit retomber à la luminance
+du verre nu là où l'anneau passait.
+
+**Au runtime :**
+
+```
+fond            Image(coffre-arche)                     — statique
+néon            Image(coffre-arche-neon) en plusLighter — teinté par la page
+balayage (③)    le même, masqué par un AngularGradient en rotation
+```
+
+### 24.5 ⚠️ LES PIÈGES, NOMMÉS D'AVANCE
+
+1. ⚠️ **`FondCoffre`, pas `Image(nom)`.** Les fichiers vivent dans
+   `Woop/Media` : ce sont des ressources NUES, `Image("coffre-arche-neon")`
+   ne trouvera rien **et ne dira rien**. Le piège vient de me reprendre.
+2. ⚠️ **Deux images plein écran au lieu d'une** : la mémoire double (≈3 → 6 Mo
+   décodés). Acceptable, mais c'est un fait à connaître.
+3. ⚠️ **La teinte ne doit pas désaturer** — loi anti-brun : R reste haut, on
+   descend V et B. Un néon désaturé est un néon éteint.
+4. ⚠️ **Le balayage coûte une passe hors écran par image** (`.mask` animé sur
+   une image plein écran). Il ne se monte que pendant qu'il tourne, et se
+   mesure — `./tools/charge.sh` d'abord.
+5. ⚠️ **Faut-il que l'ARCHE vire aussi, ou seulement le SOCLE ?** Toute la
+   scène qui change de couleur par page, c'est très fort — peut-être trop.
+   **Je propose deux masques : le socle vire, l'arche reste orange.** Le décor
+   garde son identité, l'objet garde la sienne.
+
+### 24.6 L'ordre
+
+1. Le bake à deux fichiers, avec la soustraction — et **vérifier sur damier**
+   que la base n'a plus de liseré (le noir cache tout, §18.5).
+2. ① la teinte par page, puis **remesurer l'écart R−B des quatre pages** :
+   c'est le chiffre qui dira si ça a marché.
+3. ② l'éclat à la pose.
+4. ③ le balayage, en dernier, faible, et mesuré à la cadence.
+
+### 24.7 CODÉ — et l'identité est plus forte qu'elle ne l'a JAMAIS été
+
+`bake_neon.py` sort deux fichiers de `coffre-arche.png` : les anneaux seuls en
+niveaux de gris, et la base **socle éteint**. Mesuré sur la bande du socle :
+saturation R−B **21,9 → 8,9**, luminance −44 %. Et hors bande : **R−B 3,4 →
+3,4** — l'arche n'a pas bougé d'un point, comme voulu.
+
+Au runtime, une couche en `plusLighter`, teintée au `colorMultiply` par une
+couleur **interpolée entre les deux pages voisines** : le socle vire pendant le
+voyage, il ne saute pas au cran — il annonce l'objet qui arrive avant qu'il ne
+soit posé. Plus l'éclat à la pose (+75 % sur `chocForce`).
+
+**Teinte des anneaux (les 8 % les plus clairs de la bande) :**
+
+| page | R V B | R−B |
+|---|---|---|
+| pièce d'or | 185 · 148 · 97 | **+88** |
+| booster lune | 187 · 126 · 82 | **+105** |
+| pièce d'argent | 153 · 155 · **162** | **−9** |
+| booster noir | 147 · 115 · **164** | **−16** |
+
+| | écart entre les extrêmes |
+|---|---|
+| spotlight | 101 |
+| arche seule | **23** |
+| **arche + néon** | **121** |
+
+⚠️ **Et l'argent et le noir passent en NÉGATIF** — le bleu dépasse le rouge.
+Ce n'était jamais arrivé : même le spotlight n'avait pu descendre qu'à +13. Le
+socle est franchement froid sur la page d'argent, franchement violet sur la
+noire. **C'est la soustraction qui l'a permis**, pas la superposition.
+
+⚠️ **ET MA PREMIÈRE MESURE DISAIT 28.** J'échantillonnais le PLATEAU (la
+surface de verre), pas les ANNEAUX — c'est-à-dire tout sauf l'endroit où le
+néon vit. Sur les mêmes pixels, avant le néon : 23 ; après : 121. **Mesurer au
+mauvais endroit donne un chiffre juste sur une question qu'on ne se posait
+pas.**
+
+**Reste** : ③ le balayage angulaire, à ne poser que si la page paraît figée —
+et à mesurer à la cadence, parce qu'un `.mask` animé sur une image plein écran
+coûte une passe hors écran par image.
+
+### 24.8 CODÉ — ③ le balayage angulaire
+
+⚠️⚠️ **LE PREMIER JET NE TOURNAIT PAS, ET C'EST LE PIÈGE MAISON DES RAMPES
+SOUS `withAnimation`.** J'avais écrit `AngularGradient(angle: .degrees(tour))`
+avec `tour` animé en `repeatForever`. Un `AngularGradient` est un
+`ShapeStyle`, **pas un modificateur** : SwiftUI ne l'interpole jamais. Il
+évalue le corps une fois, à la valeur d'arrivée — et 360° est identique à 0°.
+Mesuré : l'écart de luminance gauche/droite des anneaux restait à **−4,7
+pendant 5 secondes**, parfaitement immobile.
+
+Remède : le dégradé est FIGÉ dans un carré qu'on fait tourner par
+`rotationEffect`, qui est un modificateur. Mesuré après : l'écart passe de
+**−4,9 à +2,9** sur 5,6 s — le reflet court.
+
+Réglages tenus court, parce que c'est la seule des trois qui joue en
+permanence : une SEULE crête (un phare, pas un gyrophare), +30 %, une
+révolution en 7 s.
+
+⚠️ **COÛT NON MESURÉ** : un `.mask` animé sur une image plein écran force une
+passe hors écran par image. Le simulateur est aveugle à ça — il faut la sonde
+sur le téléphone, `./tools/charge.sh` d'abord.
+
+---
+
+## 25. PLAN : LE PIED, LA JAUGE ET LES POLICES (29-08)
+
+Verdict : *« pour moi c'est pas assez clair · la progress doit être en blanc
+dégradé très premium, le gris ça fait cheap, ça donne pas envie · et certaines
+polices sont trop petites, c'est pas Apple style avec les polices claires et
+identifiables · comment améliorer les composants ? »*
+
+### 25.1 Les polices — elle a raison, et c'est chiffrable
+
+Ce que le pied porte aujourd'hui, contre l'échelle iOS :
+
+| | taille | opacité | équivalent Apple |
+|---|---|---|---|
+| le compte (« 1 140 ») | 30 | 0,96 | Title 1 (28) ✓ |
+| le mot (« coins ») | **13** | **0,50** | Footnote |
+| la règle | **12** | **0,44** | Caption 1 |
+| « 60 to go » | **11** | **0,50** | **Caption 2** — le plus petit d'iOS |
+| « Ouvrir » | **14,5** | — | entre Subhead et Callout |
+
+**Quatre des cinq lignes vivent dans le registre des LÉGENDES.** Caption 1 et
+2 sont faits pour de la densité — une liste, un tableau —, pas pour un écran
+héros où il n'y a que cinq lignes à lire. Et à 0,44 d'opacité sur du noir, la
+règle est deux fois moins contrastée que le compte.
+
+**Proposition — on monte d'un cran et demi, et on remonte les opacités :**
+
+| | avant | **après** | pourquoi |
+|---|---|---|---|
+| le compte | 30 · 0,96 | **44 · 1,00** | c'est LE nombre : il doit se lire de loin |
+| le mot | 13 · 0,50 | **17 · 0,62** | Body — la plus petite taille qu'Apple appelle « lisible » |
+| la règle | 12 · 0,44 | **15 · 0,58** | Subheadline |
+| le reste | 11 · 0,50 | **13 · 0,66** | Footnote, et il porte un chiffre |
+| le bouton | 14,5 | **17 · semibold** | Body : un bouton se lit, il ne se devine pas |
+
+### 25.2 La jauge — le gris fait cheap parce que c'est un gris
+
+Aujourd'hui : rail `blanc 0,09`, remplissage `blanc 0,80` **plat**, **3 pt**
+de haut, 196 de large.
+
+Trois choses la rendent pauvre, et aucune n'est la couleur :
+
+1. ⚠️ **Elle est PLATE.** Un aplat de blanc à 0,80 ne dit rien ; ce qui fait
+   « premium », c'est qu'une barre ait une LUMIÈRE — donc un dégradé le long
+   du remplissage, franc à la tête, plus doux à la queue. Une barre éclairée
+   se lit comme de l'énergie ; une barre peinte, comme un rectangle.
+2. ⚠️ **Elle est trop FINE.** 3 pt, c'est la moitié d'une `ProgressView`
+   Apple. À cette épaisseur, un dégradé ne peut même pas se voir.
+   → **5 pt**, en capsule.
+3. **Le rail est trop clair.** 0,09 de blanc sur un fond qui n'est plus noir
+   (l'arche a de la lumière partout) : il se noie. → un rail plus SOMBRE que
+   le fond, pas plus clair — c'est un creux, pas un trait.
+
+**Proposition** : rail `noir 0,45` cerclé d'un liseré blanc 0,08 · remplissage
+en dégradé blanc `1,00 → 0,72` de la tête vers la queue · 5 pt · et la braise
+de tête garde la couleur de la page — c'est le seul point coloré, donc c'est
+lui qui relie la jauge à l'objet.
+
+### 25.3 ⚠️ LE VRAI DÉFAUT : LES DEUX VARIANTES NE SONT PAS LE MÊME COMPOSANT
+
+C'est ça, « pas assez clair ». Les quatre pages font **deux anatomies** :
+
+- **avec** jauge et bouton (booster orange) ;
+- **sans** ni l'un ni l'autre (or, argent, et noir à zéro) — et alors le pied
+  s'arrête après deux lignes, laissant **40 % de l'écran vide** sous lui.
+
+Sa capture de la page argent le montre : le texte, puis un trou noir jusqu'en
+bas. Le composant n'a pas l'air d'avoir deux états, il a l'air **amputé**.
+
+> **Remède : le bouton EXISTE TOUJOURS.** Sur les pages où l'on ne peut rien
+> faire, il dit ce qui manque au lieu de disparaître.
+
+| page | bouton |
+|---|---|
+| pièce d'or | **« 60 coins to go »** — verre mat, inactif |
+| booster orange | **« Ouvrir »** — capsule blanche, actif |
+| pièce d'argent | **« A rare drop »** — verre mat, inactif |
+| booster noir (0) | **« Locked »** — verre mat, inactif |
+| booster noir (≥1) | **« Ouvrir »** — actif |
+
+C'est la 5ᵉ loi d'Opal, déjà écrite au §17.3 : *le verrouillé se dit par la
+MATIÈRE, pas par un cadenas*. Un bouton mat, non éclairé, à la même place et
+de la même taille que l'actif — et le mot dit pourquoi.
+
+**Bénéfice second, et il est gros : les quatre pages retrouvent la MÊME
+ANATOMIE**, donc la même hauteur, donc plus de trou. Une grille, quatre pages,
+deux états — c'est la loi du §12 (« le pied décrit toujours l'objet posé »)
+menée à son terme.
+
+### 25.4 Et la jauge sur les pages sans progression ?
+
+Elle reste absente — mais son ESPACE ne l'est pas : le bouton remonte à sa
+place. Le bloc garde donc une hauteur unique (compte · règle · [jauge] ·
+bouton), et c'est le bouton qui absorbe la différence.
+
+### 25.5 L'ordre
+
+1. Les polices et les opacités (§25.1) — le moins risqué, le plus visible.
+2. La jauge (§25.2), et **remesurer son contraste contre le fond de l'arche**.
+3. Le bouton toujours présent (§25.3) — c'est celui qui change la structure,
+   donc le dernier, et à juger sur les quatre pages côte à côte.
+
+### 25.6 CODÉ — une grille, quatre pages, deux états
+
+**Les polices quittent le registre des légendes.** Le compte 30 → **44**, le
+mot 13 → **17** (Body), la règle 12 → **15** (Subheadline), le reste 11 →
+**13** (Footnote — c'était Caption 2, le plus petit corps d'iOS, et il porte
+un chiffre). Les opacités montent avec : 0,50 → 0,62 · 0,44 → 0,58 · 0,50 →
+0,66.
+
+**La jauge.** Ce n'était pas la couleur, c'était trois choses :
+un remplissage **PLAT** (un aplat ne fait pas premium, une lumière oui →
+dégradé blanc 0,72 → 1,00 vers la tête) · **3 pt**, la moitié d'une
+`ProgressView` Apple, où un dégradé ne peut même pas se voir (→ **5 pt**) ·
+et un rail en blanc 0,09 qui se noyait sur un fond qui n'est plus noir
+(→ **un creux** : noir 0,45 cerclé d'un cheveu blanc). La braise de tête
+grossit à 7 pt et garde la couleur de la page — c'est le seul point coloré,
+donc c'est lui qui relie la jauge à l'objet.
+
+**Le bouton est le primaire de la maison** (`DiamondPrimaryButton`), et il
+**existe sur les quatre pages** :
+
+| page | bouton |
+|---|---|
+| pièce d'or | « 60 COINS TO GO » — verre mat |
+| booster orange | **« OUVRIR »** — le bijou |
+| pièce d'argent | « A RARE DROP » — verre mat |
+| booster noir (0) | « LOCKED » — verre mat |
+
+⚠️ **IL FAUT LE PRENDRE EN PRIORITÉ HAUTE.** `DiamondPrimaryButton` est bâti
+sur un `Button`, et le geste de la page vit sur un ancêtre plein écran avec
+`minimumDistance: 0` : un `Button` d'enfant s'y fait AFFAMER dès que le drag
+reconnaît. On lui passe une action VIDE et c'est le tap prioritaire qui commet
+l'ouverture — deux chemins vers la même action l'ouvriraient deux fois.
+
+⚠️ **ET LE BOUTON EST ANCRÉ EN BAS, PAS EMPILÉ.** Le bloc passe à 196 de haut
+et garde cette hauteur sur les quatre pages : sur celles sans jauge, c'est le
+`Spacer` qui absorbe, pas le bouton qui remonte. Un bouton qui se déplace
+d'une page à l'autre se cherche à chaque fois.
+
+**Reste** : le bouton primaire est posé tel quel — *« on va le retravailler
+plus tard »*. Et sa hauteur (58) + son débord de halo (34) n'ont pas été
+mesurés contre le bas de l'écran sur un petit iPhone.
+
+---
+
+## 26. PLAN : LA POLICE, LA RÈGLE, ET LA BARRE (29-08)
+
+Verdict : *« 60 to go c'est pas clair · le 100 coins opens one devrait être
+dans une pill liquid glass au-dessus du booster comme pour le booster
+légendaire · et la progress bar est pas belle du tout · et c'est pas la font
+Apple aussi · tu vas trop vite »*.
+
+### 26.1 La police — le fait, et il n'est pas celui que je croyais
+
+J'ai d'abord cru à un bug : les cinq `.otf` d'Inter sont dans le bundle, et
+**`UIAppFonts` est absent partout** — ni dans le pbxproj, ni dans l'Info.plist
+généré. Sans cette clé, iOS n'enregistre rien et `Font.custom` retombe
+silencieusement sur SF Pro. J'allais l'annoncer.
+
+⚠️ **C'était faux, et j'ai bien fait de continuer à chercher.**
+`WoopApp.init()` les enregistre À LA MAIN :
+
+```swift
+for url in Bundle.main.urls(forResourcesWithExtension: "otf", …) {
+    CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+}
+```
+
+**L'app est donc bien en Inter, et elle a raison : ce n'est pas la police
+d'Apple.**
+
+Le levier est **une seule fonction** — `WoopFont.inter(_:_:)`, dans
+`Theme.swift`, appelée **270 fois**. La faire rendre
+`.system(size:weight:)` bascule toute l'app d'un caractère.
+
+⚠️⚠️ **MAIS LA PORTÉE N'EST PAS LE COFFRE : C'EST L'APP ENTIÈRE**, et une
+autre session travaille sur d'autres écrans en ce moment. Ce n'est pas un
+réglage à glisser dans un lot « pied du coffre ».
+
+**Trois questions à trancher, et elles sont produit :**
+1. **Toute l'app, ou le coffre seul ?** Deux polices dans une app, c'est deux
+   voix — je déconseille.
+2. **SF Pro Text/Display ou SF Rounded ?** L'app est sombre, précieuse,
+   métallique : SF Pro (pas Rounded).
+3. Si on bascule, **le nom `inter` devient un mensonge** sur 270 sites : il
+   faut renommer, sinon la prochaine personne cherchera une police qui n'est
+   plus là.
+
+### 26.2 « 60 to go » — la vraie cause est une REDONDANCE que j'ai créée
+
+Ce n'est pas la formulation. C'est que **le même nombre est écrit deux fois,
+à 40 pt l'un de l'autre** :
+
+```
+        ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+             60 to go              ← sous la barre
+      [   60 COINS TO GO   ]       ← sur le bouton (§25.3, ajouté par moi)
+```
+
+L'œil lit deux fois, cherche la différence, n'en trouve pas — et doute des
+deux. C'est moi qui l'ai introduit hier en mettant l'état sur le bouton.
+
+> **Remède : la barre perd son étiquette.** Une barre à moitié pleine sous un
+> bouton qui dit « 60 COINS TO GO » n'a besoin de rien de plus. Une ligne en
+> moins, et chaque chose dite une fois.
+
+### 26.3 La règle monte dans une pill de verre, au-dessus de l'objet
+
+Sa demande, et elle est juste : *« 100 coins open one » devrait être dans une
+pill liquid glass au-dessus du booster*.
+
+Ce que ça change, et c'est plus qu'un déplacement : **la règle cesse d'être
+une note de bas de page et devient une ÉTIQUETTE DE PRIX**, accrochée à
+l'objet. On lit « ce sachet coûte 100 pièces » en regardant le sachet, pas en
+lisant sous le socle.
+
+| page | la pill dit |
+|---|---|
+| pièce d'or | *(aucune — une pièce n'a pas de prix)* |
+| booster orange | **100 COINS** |
+| pièce d'argent | *(aucune)* |
+| booster noir | **1 SILVER COIN** |
+
+⚠️ **`glassEffect(.clear)`, jamais `.regular`** : le givré laiteux est
+interdit, et ce qui passe dessous est le décor de l'arche — du contenu doux,
+donc exactement le cas où `.clear` est légitime.
+
+⚠️ **Et le pied perd une ligne.** Il reste : le compte, la barre, le bouton.
+Trois choses au lieu de cinq — c'est ça, « plus clair ».
+
+⚠️ **Question ouverte** : les pages SANS prix (les deux pièces) n'ont alors
+pas de pill. On retombe sur le problème du §25.3 — deux anatomies. Soit la
+pill y dit autre chose (« RARE DROP » pour l'argent ?), soit on assume que
+seul un objet ACHETABLE porte un prix. **Je penche pour la deuxième** : un
+prix ne s'invente pas pour faire symétrie.
+
+### 26.4 La barre — pourquoi elle est laide, et c'est moi
+
+Vue de près, le diagnostic est net et il y a **trois causes** :
+
+1. ⚠️⚠️ **ELLE RESSEMBLE À UN SLIDER.** La braise de tête est un DISQUE PLEIN
+   posé au bout du remplissage : c'est exactement le pouce d'un `Slider` iOS.
+   Une barre de progression n'a pas de pouce — et celle-ci invite à la tirer.
+   **C'est le défaut principal, et il est fonctionnel avant d'être esthétique.**
+2. ⚠️ **LE DÉGRADÉ L'A RENDUE GRISE.** J'ai mis `blanc 0,72 → 1,00` en croyant
+   faire « premium ». Mais **l'œil lit un dégradé par son arrêt le plus
+   SOMBRE** : les deux tiers de la barre sont à 0,72, donc elle est grise. J'ai
+   produit exactement ce qu'elle reprochait, en essayant de le corriger.
+3. **Le rail a disparu.** Noir 0,45 sur un fond noir : on ne voit plus « le
+   chemin qui reste ». Une jauge sans son reste ne montre pas une progression,
+   elle montre un trait.
+
+**Trois remèdes, classés :**
+
+**A — LA BARRE HONNÊTE (recommandé, tout de suite).**
+Remplissage **blanc PLEIN** (1,00, aucun dégradé dans la matière) · **pas de
+pouce** — la tête est une LUEUR diffuse dans la couleur de la page, sans
+contour, qui déborde de la barre au lieu de s'y poser · rail **visible**
+(blanc 0,12) · 4 pt, 240 de long. C'est la `ProgressView` d'Apple, en plus
+lumineux. Le « premium » vient de la lueur, pas d'un dégradé dans le blanc.
+
+**B — LES SEGMENTS.**
+Dix capsules, une par tranche de 10 pièces. On lit « il en manque trois » sans
+compter. Plus clair que tout le reste, moins précieux.
+
+**C — L'ANNEAU DU SOCLE DEVIENT LA JAUGE.** *(l'ambition)*
+Le néon qu'on vient d'extraire se remplit sur son pourtour. Spectaculaire,
+natif à la scène, et **la couche existe déjà** (`coffre-arche-neon`). ⚠️ Mais
+la lecture est imprécise sur une ellipse en perspective, et le chiffre est
+loin. À garder pour quand l'anatomie sera figée.
+
+### 26.5 L'ordre
+
+1. **A** — la barre honnête, et la braise cesse d'être un pouce.
+2. **La pill de prix** au-dessus de l'objet, et le pied perd sa ligne de règle.
+3. **L'étiquette sous la barre disparaît** (la redondance du §26.2).
+4. **La police** : à trancher séparément, parce que c'est l'app entière.
+
+---
+
+## 27. ⚠️ POURQUOI JE TOURNE EN ROND — et ce qui casse la boucle (29-08)
+
+Verdict : *« ou sinon faut mixer 100 coins et 60 to go, c'est pas clair, avec
+une mini pièce jaune — pareil pour la légendaire, c'est pas clair — et la
+progress bar pas belle du tout, tu vas trop vite, je voulais quelque chose
+d'archi premium, tu tournes en rond »*.
+
+Elle a raison sur les deux points, et le second explique le premier.
+
+### 27.1 Le diagnostic que je n'avais pas fait
+
+J'ai réglé cette barre **quatre fois** : plus épaisse, un dégradé, un rail plus
+sombre, une braise plus grosse. Chaque tour a produit un autre défaut — le
+dégradé l'a rendue GRISE, la braise en a fait un SLIDER. Je réglais les
+symptômes.
+
+> ⚠️⚠️ **UNE BARRE EST PLATE PAR NATURE. ON NE REND PAS UNE BARRE PREMIUM :
+> ON LA REMPLACE.**
+>
+> Le premium de cette maison, c'est du verre noir, un cheveu de liseré, et une
+> lumière qui vient de DEDANS. Un rectangle rempli n'a ni dedans, ni
+> épaisseur, ni matière — il n'a qu'une longueur. Aucun réglage ne lui donnera
+> ce qu'il n'a pas.
+
+C'est ça, tourner en rond : chercher dans un objet une qualité que sa forme
+interdit.
+
+### 27.2 Et « 100 coins » + « 60 to go » sont UNE SEULE PHRASE coupée en deux
+
+Sa proposition — les mixer, avec une mini pièce — est la bonne, et elle dit
+pourquoi c'était confus :
+
+```
+   « 100 coins open one. »     ← ce que ça COÛTE
+   « 60 to go »                ← ce qu'il MANQUE
+```
+
+Deux lignes, deux endroits, et il faut faire la soustraction soi-même pour
+comprendre qu'on est à 40. **Le fait unique, c'est : « 40 sur 100 ».** Le prix
+et le reste sont la même information vue de deux côtés.
+
+### 27.3 LA PROPOSITION : la pill EST la jauge
+
+Un seul objet remplace la règle, la barre et son étiquette :
+
+```
+        ╭───────────────────────────────╮
+        │ 🪙   40 / 100                 │   ← capsule de verre
+        ╰───────────────────────────────╯
+          ▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░     le remplissage EST le fond
+```
+
+- **une capsule de verre** (`glassEffect(.clear)`) — de la matière, pas un
+  trait ; elle a une épaisseur, un liseré, un dedans ;
+- **le remplissage vit DANS la capsule**, comme un liquide qui monte : c'est
+  la lumière qui vient de l'intérieur, la seule chose que la maison appelle
+  premium ;
+- **la mini pièce** à gauche (le sprite existe : `piece-or`, cases de
+  320 × 320 px — largement de quoi tenir 20 pt) dit de quelle monnaie on
+  parle sans un mot ;
+- **« 40 / 100 »** dit le prix ET le reste d'un coup.
+
+**Et elle règle le §26.2 :** plus d'étiquette sous une barre, plus de
+redondance avec le bouton — il ne reste qu'un objet.
+
+**Pour la légendaire, la même grammaire, et ça la rend claire :**
+
+| page | la pill |
+|---|---|
+| pièce d'or | 🪙 **1 140** *(pas de « / » : rien à atteindre)* |
+| booster orange | 🪙 **40 / 100** |
+| pièce d'argent | 🪙 argent **0** |
+| booster noir | 🪙 argent **0 / 1** |
+
+⚠️ **« 0 / 1 » est exactement ce qui manquait à la légendaire.** « One silver
+coin opens it » demandait de savoir combien on en a ; « 0 / 1 » le dit et
+donne le prix dans le même geste. Et **la même forme pour les quatre pages**
+règle enfin les deux anatomies du §25.3 — sans inventer de prix là où il n'y
+en a pas : c'est le « / » qui apparaît ou non.
+
+### 27.4 Où elle vit — et c'est sa demande du message précédent
+
+**Au-dessus de l'objet**, flottant dans la scène, pas sous le socle. C'est une
+ÉTIQUETTE DE PRIX : on la lit en regardant l'objet.
+
+⚠️ Conséquence : **le pied ne porte plus que deux choses** — le compte en
+grand, et le bouton. C'est là que « plus clair » se gagne : cinq lignes
+deviennent deux, et la troisième information est montée avec l'objet.
+
+⚠️ **À vérifier avant de coder** : la pill au-dessus du sachet tombe entre
+0,30 et 0,38 H, c'est-à-dire **en plein dans le faisceau de l'arche**. Du
+verre `.clear` sur une zone claire peut disparaître. Il faudra le MESURER, pas
+l'espérer — et c'est exactement le genre de chose qui m'a déjà eu deux fois
+sur cette page (le chevron, l'image de pose).
+
+### 27.5 Ce que je ne fais PAS
+
+- Je ne retouche plus la barre : elle disparaît.
+- Je ne garde pas « 60 to go ».
+- Je ne touche pas à la police avant qu'elle ait tranché (§26.1) : c'est
+  l'app entière, 270 appels, et une autre session travaille dessus.
+
+### 27.6 CODÉ — la pill remplace la règle, la barre et son étiquette
+
+La barre a disparu, avec son rail, son lustre, sa braise-pouce et son
+étiquette : **6 300 caractères de code retirés**. À leur place, une capsule de
+verre au-dessus de l'objet, la mini pièce à gauche, et le remplissage qui vit
+DEDANS.
+
+| page | la pill |
+|---|---|
+| pièce d'or | 🪙 1 140 |
+| booster orange | 🪙 **40 / 100** |
+| pièce d'argent | 🪙 0 |
+| booster noir | 🪙 **0 / 1** |
+
+Le pied ne porte plus que **deux choses** : le compte, et le bouton.
+
+⚠️ **« LA POLICE EST BIZARRE » — CE N'ÉTAIT PAS LA POLICE.** Vu de près, le
+défaut était l'APPARIEMENT : à 44 contre 17 sur une ligne de base commune, le
+mot tombe au pied d'un chiffre trois fois plus haut — il a l'air DÉCROCHÉ, pas
+petit. Corrigé sans toucher à Inter : le nombre à 40, et le mot devient une
+**étiquette en capitales espacées** (15, tracking 1,5) — comme sur le bouton.
+Des capitales tracées se lisent comme une UNITÉ accolée au nombre, pas comme
+un mot qui a glissé. ✅ **Et la police reste Inter** : elle a tranché.
+
+⚠️⚠️ **UN DÉFAUT MESURÉ QUI RESTE : LES DEUX PIÈCES NE SE DISTINGUENT PAS À
+22 pt.** Leur cerclage donne R−B **+20** pour l'or et **+1** pour l'argent —
+la différence existe mais elle est faible, et surtout **le croissant orange à
+l'intérieur est IDENTIQUE sur les deux**. Or toute la raison d'être de cette
+mini pièce est de dire DE QUELLE MONNAIE on parle. Trois remèdes possibles :
+grossir la pièce (22 → 28), poser un anneau de couleur derrière elle, ou
+teinter le verre de la pill par la monnaie. **À trancher au regard.**
+
+⚠️ **Et le pied a l'air vide sur les pages sans jauge** : le compte, puis
+180 px de noir, puis le bouton ancré en bas. C'est le prix de la grille
+unique (§25.3) — le bouton ne se déplace pas d'une page à l'autre. À juger :
+soit on assume, soit le bloc se resserre quand il n'y a que deux lignes, et on
+perd l'ancrage.
+
+---
+
+## 28. PLAN : LA DESCRIPTION, LES BOUTONS EN MOINS, ET LA PAGE DU BOOSTER NOIR (29-08)
+
+Verdict : *« rajoute une phrase de description sous les éléments, on comprend
+pas · enlève les boutons "60 coins to go" sous la pièce orange et celle argent
+· "legendary booster" c'est trop long en titre · quand on clique sur le
+booster noir, ça lance une vidéo (qu'on peut passer) puis on arrive sur une
+page : header avec un booster fondu noir, un chevron pour revenir au coffre,
+sous le header un texte à la Apple assez grosse police, et une grosse pièce
+silver dans un coin »*.
+
+### 28.1 LE PIED — la description prend la place du bouton
+
+**La description.** Une phrase sous le compte, qui dit d'où vient l'objet et à
+quoi il sert. C'est la règle du §12 (*le pied décrit l'objet posé*) enfin
+dite en mots, pas en chiffres :
+
+| page | compte | description |
+|---|---|---|
+| pièce d'or | 1 140 **COINS** | *20 coins for every set you finish.* |
+| booster orange | 1 **BOOSTER** | *Won after every session — or 100 coins.* |
+| pièce d'argent | 0 **SILVER** | *A rare drop from the path. Never earned, never bought.* |
+| booster noir | 0 **LEGENDARY** | *One silver coin opens it. A legendary card, guaranteed.* |
+
+Corps 15, opacité 0,62, centrée, deux lignes maximum — c'est la ligne qu'on
+avait retirée au §27, qui revient avec un VRAI contenu et non un doublon du
+prix.
+
+**Les boutons mats disparaissent** sur les deux pages de pièces. « 60 COINS TO
+GO » sous la pièce d'or était un doublon de la pill « 40 / 100 » ; « A RARE
+DROP » était une description déguisée en bouton. ⚠️ On revient donc à **deux
+anatomies** (compte + description · compte + description + bouton) — mais
+c'est la description qui donne maintenant son poids au pied, plus le bouton.
+Le vide du §27.6 se règle par du SENS, pas par un objet de remplissage.
+
+**Le titre** : « LEGENDARY BOOSTERS » → **« LEGENDARY »**. Le sachet est sur
+le socle, il n'a pas besoin qu'on lui dise qu'il est un booster.
+
+### 28.2 LA VIDÉO — mesurée, et trois faits qui comptent
+
+`~/Downloads/video_booster-nooir.mp4` : 2160 × 3840, HEVC 10 bits, 24 i/s,
+**8,04 s**, **19 Mo** à 19,5 Mb/s. Quatre temps : le sachet dans les étoiles →
+il grossit → macro sur le croissant → **il se dissout en poussière d'étoiles**.
+
+1. ⚠️ **ELLE A DU SON** (AAC). Toutes les boucles de l'app sont muettes ;
+   celle-ci est une cinématique, le son est légitime — mais il doit respecter
+   l'interrupteur silencieux (`AVAudioSession` en `.ambient`, jamais
+   `.playback`). Sinon un coffre ouvert dans le métro fait du bruit.
+2. **Elle ne boucle pas, et c'est voulu** : c'est un film à sens unique, qui
+   finit dans un fondu. Ça tombe bien — **sa dernière image EST la transition
+   vers la page** : le sachet qui se dissout en poudre laisse place au sachet
+   « fondu noir » du header. Il faut caler la coupe là, pas avant.
+3. **Elle est en 9:16**, l'écran en 0,46. Le sachet est centré et la macro
+   remplit le cadre : un `aspectFill` qui rogne 18 % de largeur ne perd rien.
+   Recuite à 1206 × 2622 en H.264 (`crf 20`, tramage pour le 10 bits) —
+   estimation **4 à 6 Mo** au lieu de 19.
+
+**Le lecteur existe déjà** : `CinematicPlayer` + `film(sc)` + `passerDevant()`
++ `terminer(fondu:noir:)` — c'est l'intro du coffre. Même mécanique : **un tap
+n'importe où passe**, et une mention « Passer » discrète apparaît après ~1 s
+(un geste ne s'annonce pas, une porte doit être visible).
+
+### 28.3 LA PAGE — ce que sa maquette dit
+
+Relevé sur sa capture Figma :
+
+| zone | y (fraction) | ce qu'il y a |
+|---|---|---|
+| chevron | 0,06 | en haut à gauche, 44 pt — la règle des trois ronds |
+| sachet | 0,12 → 0,37 | centré, ~30 % de la largeur, **fondu vers le noir en bas** |
+| titre | 0,45 → 0,52 | deux lignes, blanc, ~34 pt |
+| corps | 0,55 → 0,78 | gris, ~17 pt |
+| pièce d'argent | 0,85 → hors cadre | **en bas à DROITE**, coupée par le bord |
+
+⚠️ **Elle écrit « coin gauche » ; sa maquette la met à DROITE.** Je suis la
+maquette (le dessin est plus fiable qu'un mot tapé vite) — à confirmer.
+
+**Le header.** Pas la scène 3D : une `SCNView` dans une page, c'est le lag
+lui-même (loi de la maison). `SachetVignette(.noire)` en grand, avec un
+**masque en dégradé** blanc → transparent sur son tiers bas : c'est ça, le
+« fondu noir ». ⚠️ Un masque, pas un `.blur` — un flou poserait un voile
+uniforme sur tout le rectangle de l'hôte.
+
+**Le texte.** « À la Apple » : titre `inter(34, .semibold)` blanc plein sur
+deux lignes, corps `inter(17)` à 0,58. On garde **Inter** (tranché). Arrivée
+en `ArriveeFloue`, titre puis corps, comme la page des gains.
+
+**La pièce.** `PieceSprite(.argent)` à ~220 pt, ancrée en bas à droite et
+**coupée par le bord** — une pièce entière posée dans un coin fait vignette,
+une pièce qui déborde fait décor. Cases de 320 px : elle tient. Immobile, ou
+la `Levitation` de la maison ; pas de rotation permanente (bruit).
+
+**Le retour.** Le chevron **et** le drag vers le bas — la même fermeture que
+la page des gains (`gesteFermer` : armé, chien de garde, plus de zone tactile
+une fois fermée). Retour au coffre **sur la page noire**, sans rejouer la
+vidéo.
+
+### 28.4 ⚠️ CE QUE ÇA CHANGE DANS L'ARCHITECTURE DE LA PAGE
+
+1. **Le tap sur l'objet change de sens sur une page.** Aujourd'hui, taper
+   l'objet ouvre la LOUPE (il grossit, lévite). Sur la page noire, le même
+   geste ouvrirait la vidéo. **Même geste, deux résultats selon la page** —
+   c'est le genre d'incohérence qu'on paie en confusion. Deux options :
+   - **(a)** sur la page noire, le tap = l'histoire, et la loupe n'y existe
+     pas (le sachet fermé n'a rien à montrer de près) — **recommandé** ;
+   - **(b)** un point d'entrée dédié (la pill de prix devient tapable, ou un
+     petit ⓘ) et la loupe reste partout.
+2. **C'est la première SOUS-PAGE du coffre.** Comme la page des gains : en
+   OVERLAY, pas en `sheet` (le coffre est un `fullScreenCover`, une feuille
+   dessus donne la poignée grise), avec **la garde sur `gestePage`** — sans
+   elle, un doigt sur la page ferait tourner le manège derrière (le bug du
+   §19.4, déjà payé une fois).
+3. **La vidéo, une fois ou à chaque fois ?** Une cinématique de 8 s à chaque
+   tap devient un péage dès la troisième visite. Recommandation : **à chaque
+   fois, mais passable d'un tap** — et si on la trouve lourde, un « vue une
+   fois » en `UserDefaults` la saute d'office ensuite. À trancher au doigt.
+4. **Le booster orange** n'a pas cette page. Il pourrait l'avoir plus tard
+   avec `video_booster.mp4` (déjà dans les téléchargements) — la structure
+   doit accepter une robe en paramètre dès le départ, pas être écrite pour le
+   noir seul.
+
+### 28.5 L'ORDRE
+
+1. Le pied : descriptions, boutons retirés, titre court — **sans risque**.
+2. Recuire la vidéo (format, poids, son en `.ambient`), et vérifier sur
+   quelle image elle se coupe.
+3. La page (header fondu, texte, pièce, chevron, drag) — en overlay, avec la
+   garde.
+4. Le tap sur l'objet noir → vidéo → page, avec « Passer ».
+5. Banc `-coffreStoryNoir` pour arriver directement sur la page.
+6. **Juger au doigt** : le passage vidéo → page, la pièce coupée, la
+   lisibilité du header sur l'arche.
+
+### 28.6 CODÉ — le pied, la cinématique, la page
+
+**Le pied.** Une DESCRIPTION sous le compte, une phrase par page, sans tirets
+(verdict explicite). Les boutons mats des deux pages de PIÈCES disparaissent :
+« 60 COINS TO GO » doublait la pill, « A RARE DROP » était une description
+déguisée en bouton. Et « legendary boosters » devient **« legendary »** — le
+sachet est sur le socle, il n'a pas besoin qu'on lui dise ce qu'il est.
+
+**Les cinématiques.** `bake_story.py` recuit les deux sources à la taille de
+l'écran :
+
+| | source | recuit |
+|---|---|---|
+| noir | 2160 × 3840 · 19 Mo | 1206 × 2622 · **7,9 Mo** |
+| lune | 2160 × 3840 · 16 Mo | 1206 × 2622 · **5,7 Mo** |
+
+⚠️ **La piste audio est CONSERVÉE** (copiée, jamais ré-encodée) : toutes les
+boucles de l'app sont muettes, une cinématique peut parler. Mais
+`AVAudioSession` en **`.ambient`** et jamais `.playback` — sinon un coffre
+ouvert dans le métro fait du bruit.
+
+**Le deuxième tap.** Verdict : *« à la tap il peut ouvrir une loupe de base,
+c'est à la deuxième tap »*. Premier tap la loupe, deuxième l'histoire. Le même
+geste ne change pas de sens selon la page : **il va plus loin**. Sur une
+pièce, le deuxième tap referme la loupe comme avant — une pièce n'a pas
+d'histoire à raconter.
+
+⚠️⚠️ **PIÈGE PAYÉ : UN DRAPEAU À VALEUR NE SE LIT PAS DANS
+`CommandLine.arguments`.** `-coffreStory noir` ne s'est jamais déclenché, et
+**sans la moindre erreur** : iOS parse les paires `-clé valeur` dans le
+domaine d'arguments de `UserDefaults`. La maison l'avait déjà payé sur
+`-coffrePage` (d'où le helper `nombre(_:)`) et je ne l'ai pas relu. La page ne
+s'ouvrait pas, le drapeau était nil, rien ne le disait.
+
+### 28.7 CODÉ — le récit qui défile, et le bouton en moins
+
+Verdict du 29-08 : *« dans la page de détail des boosters : fais un texte à
+apparition Apple cinématique blur, rajoute plus de texte, et fais un scroll
+blur très premium · pareil pour la page détail booster Lune · et enlève le
+bouton passer, car on peut taper dessus et ça enlève »*.
+
+**Le header ne défile pas, le texte oui.** Un sachet qui monterait avec le
+texte redeviendrait une illustration d'article ; fixe, il reste l'objet dont
+on parle, et le texte passe DESSOUS. ⚠️ **C'est ce passage sous le fondu qui
+fait le premium — pas un effet ajouté, une profondeur.**
+
+Quatre paragraphes par robe, chacun arrivant dans le flou (`ArriveeFloue`, un
+rang de retard par bloc). ⚠️ Le masque du haut est OBLIGATOIRE : sans lui la
+première ligne apparaît d'un coup au bord du header, comme coupée au couteau.
+⚠️ Et le rayon retombe à **zéro exact** — un `.blur` même minuscule force une
+passe hors écran à chaque image, et sur un `ScrollView` c'est à chaque image
+de DÉFILEMENT.
+
+**Le bouton « Passer » disparaît.** Je l'avais mis au nom de « une porte doit
+être visible ». Mais ici **la porte, c'est tout l'écran** : n'importe quel tap
+passe. Un bouton qui double un geste déjà universel n'ajoute qu'un objet à
+regarder pendant un film.
+
+**« Mes gains » repasse à gauche.** Il était calé sur la colonne de texte des
+lignes pour donner un seul axe vertical — mais **quand la liste est vide il
+n'y a plus de colonne à quoi s'aligner** : il ne reste qu'un titre poussé vers
+la droite sans raison. ⚠️ *Un alignement qui dépend d'un contenu absent n'est
+pas un alignement.*
+
+### 28.8 VÉRIFIÉ — et deux mesures m'ont retenu de « corriger » du vide
+
+**Les deux pages marchent**, cinématique comprise. Séquence mesurée sur le
+banc `-coffreStory lune` (luminance du haut et du bas de l'écran) :
+
+| | haut | bas | |
+|---|---|---|---|
+| +9 s | 24,3 | 19,0 | le coffre |
+| +12 s | 1,2 | 1,8 | **la cinématique** |
+| +15 s | 2,5 | 11,3 | **la page** |
+
+⚠️ **MA PREMIÈRE CAPTURE MONTRAIT UN TEXTE FANTÔME, ET CE N'ÉTAIT PAS UN
+BUG** — les mots se chevauchaient parce que j'avais capturé PENDANT la
+cascade d'arrivée. Vérifié en comparant deux captures à trois secondes
+d'écart : l'écart tombe à **2,0 sur 255**, la page est posée et le texte est
+net. J'ai failli aller « réparer » une animation qui marchait.
+
+⚠️ **ET UNE CAPTURE À 24 s MONTRAIT LE COFFRE AU LIEU DE LA PAGE** — un
+enchaînement `terminate` + `launch` trop serré, pas un défaut de l'app. La
+séquence mesurée ci-dessus le prouve. **Une capture qui contredit une mesure
+est d'abord suspecte elle-même.**
+
+**Ce qui était un vrai défaut : la pièce mordait sur le texte.** Posée à
+0,90 / 0,94 en pleine lumière, ses anneaux clairs traversaient le gris du
+troisième paragraphe. Comme le texte DÉFILE, la collision était certaine à un
+moment ou à un autre : il fallait qu'elle cesse d'être un objet pour devenir
+une lueur. Reculée à 1,02 / 1,02 et baissée à 0,5 :
+
+| | L moyenne du coin | pixels > 120 |
+|---|---|---|
+| avant | 36,1 | 30 827 |
+| après | **14,5** | **11 806** |
+
+Deux fois et demie moins de lumière sur la zone de lecture.

@@ -316,6 +316,31 @@ struct PoudreGrattage: View {
     /// 0,7 s : plus court qu'avant (0,9). Une paillette ne traîne pas.
     private static let vie: Double = 0.7
 
+    // MARK: - LE RÉGIME DIAMANT — la seule définition de l'app
+    //
+    // ⚠️ Sorti en `static` le 29-08, parce qu'une DEUXIÈME poudre était née
+    // dans le coffre avec ses propres cotes — grains de 0,8 à 2,2 pt, soit
+    // deux fois et demie ceux-ci. Verdict : *« les petites particules sont
+    // trop grosses, prends la petite poussière de diamant des pop-up »*.
+    // Deux poudres dans une app, c'est deux vérités sur ce qu'est une
+    // paillette. Il n'y en a plus qu'une, et elle est ici.
+
+    /// ⚠️ **LE RÉGIME AVANT LA TAILLE.** Ce qui fait « diamant » plutôt que
+    /// « grouillement », ce n'est pas la moyenne, c'est la RARETÉ des crêtes :
+    /// des grains presque tous sourds, quelques-uns qui éclatent. La
+    /// puissance 4 est ce qui creuse entre les deux.
+    static func eclat(_ phase: Double) -> Double { pow(abs(sin(phase)), 4) }
+
+    /// 0,30 → 0,95 pt. **Le grain le plus gros reste SOUS le point** — avant,
+    /// le plus petit faisait déjà 1,2 et ça se lisait comme de la semoule.
+    static func rayon(_ eclat: Double) -> CGFloat { CGFloat(0.30 + 0.65 * eclat) }
+
+    /// Une paillette sur cinq tire vers le FROID : c'est ce qui fait
+    /// « diamant » plutôt que « craie ».
+    static func teinte(_ i: Int) -> Color {
+        i % 5 == 0 ? Color(red: 0.82, green: 0.92, blue: 1.0) : .white
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { tl in
             Canvas { ctx, _ in
@@ -328,18 +353,13 @@ struct PoudreGrattage: View {
                     let fondu = (1 - u) * (1 - u)
                     // LE RÉGIME : crêtes rares, fond sourd.
                     let phase = Double(i) * 12.9898 + age * 13
-                    let eclat = pow(abs(sin(phase)), 4)
-                    // 0,30 → 0,95 pt : le grain le plus gros reste sous le
-                    // point. Avant, le plus petit faisait déjà 1,2.
-                    let r = CGFloat(0.30 + 0.65 * eclat)
+                    let eclat = Self.eclat(phase)
+                    let r = Self.rayon(eclat)
                     let a = fondu * (0.22 + 0.78 * eclat)
                     // une dérive latérale propre à chaque grain
                     let d = CGFloat(sin(Double(i) * 7.13)) * monte * 0.45
                     let p = CGPoint(x: g.pos.x + d, y: g.pos.y - monte)
-                    // une paillette sur cinq tire vers le froid : c'est ce qui
-                    // fait « diamant » plutôt que « craie ».
-                    let teinte: Color = i % 5 == 0
-                        ? Color(red: 0.82, green: 0.92, blue: 1.0) : .white
+                    let teinte = Self.teinte(i)
                     ctx.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r,
                                                     width: r * 2, height: r * 2)),
                              with: .color(teinte.opacity(a)))
