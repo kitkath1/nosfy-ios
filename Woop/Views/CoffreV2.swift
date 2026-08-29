@@ -1801,24 +1801,14 @@ struct CoffreV2Page: View {
             - CoffreV2Cotes.levit * CGFloat(loupe) - piecePresD / 2
     }
 
-    /// CE QUE CHAQUE PAGE DIT — quatre faits, et une seule source par nombre.
+    /// CE QUE CHAQUE PAGE DIT — quatre faits, et **une seule source pour
+    /// tous**, depuis le 29-08.
     ///
-    /// ⚠️ **« EARNED » N'EST PAS « DISPONIBLE ».** Le pied affichait
-    /// `séries × 20`, un total GAGNÉ que rien ne débitait : tant qu'aucune
-    /// pièce ne s'achetait quelque chose, les deux mots désignaient le même
-    /// nombre. **Le booster à 100 pièces les sépare.** Le solde retranche donc
-    /// ce que les sachets déjà en réserve ont coûté.
-    ///
-    /// ⚠️ **UN NOMBRE MONTRÉ À DEUX ENDROITS N'EXISTE QU'UNE FOIS.** Les
-    /// sachets ouvrables sont lus dans `SacreEtat` — LA source des pills du
-    /// profil. Deux maquettes indépendantes se contrediraient à l'écran avant
-    /// même que le serveur n'arrive.
-    ///
-    /// ⚠️ Maquette assumée jusqu'au ledger : le jour où `etat_coffre()` est
-    /// branché (il est DÉPLOYÉ, `SacreServeur.etatCoffre`), ces six nombres
-    /// viennent d'un seul appel et ce corps-ci disparaît — la vue, elle, ne
-    /// bouge pas d'une ligne.
-    private static let prixBooster = 100
+    /// ⚠️ Le prix vivait ici, en dur, à 100 — pendant que `ProfilLune.prix`
+    /// disait 20. Deux écrans enchaînés depuis la même page, deux prix pour le
+    /// même objet. Il est maintenant lu (`etat_coffre().prix_booster`), et la
+    /// constante a disparu : c'est la seule façon qu'elle ne réapparaisse pas.
+    private var economie: EconomieWoop { EconomieWoop.shared }
 
     /// LA PAGE DES GAINS — noire, un dégradé, et une ligne par gain.
     ///
@@ -2375,55 +2365,69 @@ struct CoffreV2Page: View {
 
     /// QUATRE PAGES, QUATRE DESCRIPTIONS — dans l'ordre du manège.
     /// Chacune ne parle que de l'objet posé sur son socle.
+    ///
+    /// ⚠️⚠️ **LA DÉPENSE SIMULÉE EST MORTE, ET ELLE FAISAIT MENTIR DEUX
+    /// ÉCRANS.** Le pied calculait `dispo = coins − boostersEnAttente × 100`
+    /// — une retenue pour des sachets que personne n'avait achetés. Mesuré :
+    /// la pastille du profil disait 1240, on la tapait, le coffre s'ouvrait
+    /// par-dessus et la MÊME grandeur y devenait 1140, sans qu'aucune
+    /// transaction ait eu lieu. Le solde n'a plus qu'une source
+    /// (`EconomieWoop`), et un solde ne se corrige pas à l'affichage : il se
+    /// débite au serveur ou il ne bouge pas.
+    ///
+    /// ⚠️ Cette propriété est CALCULÉE et appelée six fois par passe de corps
+    /// (dont une dans une boucle de quatre) : elle ne fait QUE lire
+    /// l'observable. Jamais un appel réseau ici.
     private var variantes: [PiedVariante] {
-        let sacre = SacreEtat.shared
-        let depense = sacre.boostersEnAttente * Self.prixBooster
-        let dispo = max(coins - depense, 0)
+        let e = economie
+        let prix = max(e.prixBooster, 1)
         return [
             // ① la pièce d'or : ce qu'elle vaut, ce qui la gagne.
-            PiedVariante(solde: dispo, mot: "coins",
-                         pill: .init(courant: dispo, cible: nil, argent: false),
+            PiedVariante(solde: e.or, mot: "coins",
+                         pill: .init(courant: e.or, cible: nil, argent: false),
                          robe: nil,
-                         description: "20 coins for every set you finish.",
+                         // ⚠️ Le taux vient du serveur (`pieces_par_serie`) :
+                         // ce texte était la neuvième copie du 20.
+                         description: "\(e.piecesParSerie) coins for every set you finish.",
                          bouton: nil,
                          lueur: Self.manege[0].lueur),
             // ② le booster orange : combien j'en ai, ce qu'il coûte, et
             //    COMBIEN IL M'EN MANQUE — la jauge est enfin sur la page de
             //    l'objet dont elle parle.
-            PiedVariante(solde: sacre.boostersEnAttente,
-                         mot: sacre.boostersEnAttente == 1
-                            ? "booster" : "boosters",
-                         pill: .init(courant: dispo % Self.prixBooster,
-                                     cible: Self.prixBooster, argent: false),
+            PiedVariante(solde: e.boosters,
+                         mot: e.boosters == 1 ? "booster" : "boosters",
+                         // ⚠️ `reste` est DÉRIVÉ PAR LE SERVEUR
+                         // (`solde_or mod prix_booster`) depuis le 29-08 : il
+                         // lisait avant une table que personne n'écrivait, et
+                         // la jauge affichait 0/100 quel que soit le solde.
+                         pill: .init(courant: e.reste, cible: prix, argent: false),
                          robe: .lune,
-                         description: "Won after every session, or bought for 100 coins.",
-                         bouton: sacre.boostersEnAttente > 0
+                         description: "Won after every session, or bought for \(prix) coins.",
+                         bouton: e.boosters > 0
                             ? ("OUVRIR", true)
-                            : ("\(Self.prixBooster - dispo % Self.prixBooster) COINS TO GO",
-                               false),
+                            : ("\(prix - e.reste) COINS TO GO", false),
                          lueur: Self.manege[1].lueur),
             // ③ la pièce d'argent : elle ne s'accumule pas, elle TOMBE.
-            PiedVariante(solde: sacre.boostersNoirsEnAttente,
-                         mot: sacre.boostersNoirsEnAttente == 1
-                            ? "silver coin" : "silver coins",
-                         pill: .init(courant: sacre.boostersNoirsEnAttente,
-                                     cible: nil, argent: true),
+            //    ⚠️ Et elle ne pouvait PAS tomber avant le 29-08 : `roll_rare`
+            //    était nommée dans les commentaires et n'existait pas.
+            PiedVariante(solde: e.argent,
+                         mot: e.argent == 1 ? "silver coin" : "silver coins",
+                         pill: .init(courant: e.argent, cible: nil, argent: true),
                          robe: nil,
                          description: "A rare drop from the path. Never earned, never bought.",
                          bouton: nil,
                          lueur: Self.manege[2].lueur),
             // ④ le booster noir : pas de jauge (rien à accumuler), et son
             //    compte EST le solde d'argent — le sachet naît au claim.
-            PiedVariante(solde: sacre.boostersNoirsEnAttente,
+            PiedVariante(solde: e.boostersNoirs,
                          // « legendary boosters » était trop long en titre : le
                          // sachet est sur le socle, il n'a pas besoin qu'on lui
                          // dise qu'il est un booster.
                          mot: "legendary",
-                         pill: .init(courant: sacre.boostersNoirsEnAttente,
-                                     cible: 1, argent: true),
+                         pill: .init(courant: e.boostersNoirs, cible: 1, argent: true),
                          robe: .noire,
                          description: "One silver coin opens it. A legendary card, guaranteed.",
-                         bouton: sacre.boostersNoirsEnAttente > 0
+                         bouton: e.boostersNoirs > 0
                             ? ("OUVRIR", true) : ("LOCKED", false),
                          lueur: Self.manege[3].lueur),
         ]
@@ -2523,10 +2527,39 @@ struct CoffreV2Page: View {
         variantes[min(piedIdx, variantes.count - 1)].robe
     }
 
+    /// ⚠️⚠️ **CE BOUTON PROMETTAIT « bought for 100 coins » ET NE DÉBITAIT
+    /// RIEN.** Il fermait le coffre et posait l'état partagé — c'est tout.
+    /// Pire, sa garde (`boostersEnAttente > 0`) ne pouvait JAMAIS être
+    /// fausse : le compteur naissait à 1 et son décompte était plafonné par
+    /// `max(1, n − 1)`. Une porte toujours ouverte avec un cadenas peint
+    /// dessus.
+    ///
+    /// ⚠️ **UN SACHET EN RÉSERVE S'OUVRE GRATUITEMENT** — c'est le sens de
+    /// l'avoir gagné. Le débit ne part que pour un sachet qu'on n'a pas, et
+    /// **seulement pour la robe LUNE** : le noir ne s'achète pas, il se paie
+    /// d'une pièce d'argent qui tombe (`claim_booster_legendaire`), et cette
+    /// porte-là est déjà tenue par le solde d'argent.
     private func ouvrirManege(_ robe: RobeBooster) {
-        onClose()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            SacreEtat.shared.ouvrirManege(robe: robe)
+        if robe == .noire || economie.boosters > 0 {
+            onClose()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                SacreEtat.shared.ouvrirManege(robe: robe)
+            }
+            return
+        }
+        Task {
+            let sort = await economie.acheterBooster()
+            guard case .obtenu = sort else {
+                // Le pied dit déjà « N COINS TO GO » sur la même page : il n'y
+                // a rien à annoncer de plus, et il se met à jour tout seul
+                // (le solde vient d'être relu par l'achat refusé).
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                return
+            }
+            onClose()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                SacreEtat.shared.ouvrirManege(robe: robe)
+            }
         }
     }
 
@@ -3752,6 +3785,17 @@ struct CoffreV2Lab: View {
             } else {
                 CoffreFortFlow(coins: 1240)
             }
+        }
+        // ⚠️⚠️ **LE BANC DOIT SEMER LA MAQUETTE LUI-MÊME DEPUIS LE
+        // BRANCHEMENT.** La page ne lit plus ses arguments : elle lit
+        // `EconomieWoop`. Sans cette ligne le banc afficherait 0 pièce et
+        // « Rien encore » — et je jugerais un pied vide en croyant juger le
+        // pied. C'est le même faux négatif que celui déjà payé ici (« monté
+        // en direct, le banc affichait Rien encore alors que la base était
+        // pleine »), sous sa deuxième forme.
+        .onAppear {
+            EconomieWoop.shared.poserMaquette(or: 1240,
+                                              journal: Self.echantillon)
         }
         .preferredColorScheme(.dark)
     }

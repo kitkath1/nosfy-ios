@@ -195,17 +195,31 @@ actor OutboxGains {
                 print("[coffre] séance réglée : +\(r.pieces) pièces "
                       + "(créditées \(r.piecesCreditees)) · sachet "
                       + (r.boosterNeuf ? "NEUF" : "déjà acquis")
-                      + " · solde \(r.solde)")
+                      + " · solde \(r.solde) · reste \(r.reste)"
+                      + (r.argent ? " · PIÈCE D'ARGENT" : ""))
+                // ⚠️ **LA RÉPONSE EST LA LECTURE.** `cloturer_seance` rend le
+                // solde, le reste, la pièce d'argent et le prix : redemander
+                // `etat_coffre()` juste après, ce serait payer un
+                // aller-retour pour ce qu'on tient déjà — et recréer le
+                // défaut que cette réponse a été élargie pour supprimer.
+                await MainActor.run { EconomieWoop.shared.appliquer(r) }
             case .retourQuotidien:
                 let r = try await SacreServeur.claimRetourQuotidien(jwt: jwt)
                 print("[coffre] retour quotidien : "
                       + (r.credite ? "+\(r.montant)" : "déjà pris aujourd'hui")
                       + " · solde \(r.solde)")
+                await MainActor.run { EconomieWoop.shared.appliquer(r) }
             case .noeudChemin(let n, let p, let m, let b):
                 let neuf = try await SacreServeur.reclamerNoeudChemin(
                     n, pieces: p, monnaie: m, boosters: b, jwt: jwt)
                 print("[coffre] nœud \(n) : "
                       + (neuf ? "réclamé" : "déjà réclamé"))
+                // ⚠️ Celui-ci ne rend qu'un booléen — il faut donc RELIRE.
+                // C'est le seul des trois qui paie un aller-retour, et c'est
+                // la raison pour laquelle les deux autres n'en paient pas :
+                // une réponse qui porte le solde s'applique, une réponse qui
+                // ne le porte pas se relit.
+                if neuf { await EconomieWoop.shared.rafraichir() }
             }
             return .reussi
         } catch let e as SacreServeur.Erreur {

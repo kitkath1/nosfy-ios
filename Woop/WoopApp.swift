@@ -90,6 +90,11 @@ struct WoopApp: App {
                 // la foulée au lieu d'attendre la prochaine bascule.
                 await SacreServeur.reglerRetourQuotidien()
                 await OutboxGains.shared.vider()
+                // ⚠️ **APRÈS le vidage, jamais avant.** La file peut porter
+                // une clôture de séance faite hors ligne : relire le solde
+                // avant de la jouer, ce serait afficher l'ancien — et le
+                // corriger sous les yeux de quelqu'un une seconde plus tard.
+                await EconomieWoop.shared.rafraichir()
             }
         }
     }
@@ -444,9 +449,16 @@ struct RootView: View {
             withAnimation(.easeOut(duration: 0.3)) { selection = .home }
             return
         }
-        let gain = a.setCount * 20
+        // ⚠️⚠️ **`setCount` COMPTAIT LES SÉRIES PRÉVUES, ET LE COFFRE LES
+        // FAITES.** Sur une séance à 5 séries dont 4 cochées, cette ligne
+        // disait 100 et le solde comptait 80. La définition est tranchée dans
+        // `Workout.seriesPayantes` — un seul endroit, une seule règle.
+        // ⚠️ Et le taux vient du serveur : ce `20` était l'une des huit copies
+        // de `reward_rules.pieces_par_serie`.
+        let series = a.seriesPayantes
+        let gain = series * EconomieWoop.shared.piecesParSerie
         print("[flow] terminerSeance : exos=\(a.exerciseCount) "
-              + "séries=\(a.setCount) gain=\(gain)")
+              + "séries=\(series) gain=\(gain)")
         withAnimation(.easeOut(duration: 0.22)) {
             depart.pauseOuverte = false
         }
@@ -476,8 +488,11 @@ struct RootView: View {
         // ⚠️ **APRÈS la synchro de la séance, dans la MÊME tâche** : l'ordre
         // n'est pas indifférent le jour où `workout_id` prendra une clé
         // étrangère. Deux `Task.detached` ne garantiraient aucun ordre.
+        // ⚠️ **LE MÊME `series` QUE L'ANNONCE**, et c'est le fond du sujet :
+        // le serveur ne doit pas recevoir une définition du gain que l'écran
+        // n'a pas dite. Il lisait `setCount` (les prévues) pendant que le
+        // solde comptait les faites.
         let seance = a.remoteID
-        let series = a.setCount
         Task.detached {
             await SupabaseSync.shared.push([snapshot])
             await SacreServeur.reglerFinDeSeance(seance, series: series)
@@ -1094,8 +1109,15 @@ struct RootView: View {
             StopCardHote(
                 ouverte: depart.pauseOuverte,
                 duree: dureeSeanceTexte,
-                series: active?.setCount ?? 0,
-                gain: (active?.setCount ?? 0) * 20,
+                // ⚠️⚠️ **ELLE ANNONÇAIT LE TRAVAIL PRÉVU, PAS LE TRAVAIL
+                // FAIT.** `setCount` compte toutes les lignes de séries
+                // existantes ; la pill de la fiche, à deux centimètres,
+                // comptait les cochées. Deux composants du même écran, deux
+                // définitions du même gain. Et le `20` était en dur : il vient
+                // maintenant du serveur, comme partout ailleurs.
+                series: active?.seriesPayantes ?? 0,
+                gain: (active?.seriesPayantes ?? 0)
+                    * EconomieWoop.shared.piecesParSerie,
                 onTerminer: { terminerSeance() },
                 onContinuer: {
                     // La card a DÉJÀ joué sa sortie avant d'appeler : on ne
@@ -1169,22 +1191,36 @@ struct RootView: View {
                                withAnimation(.easeOut(duration: 0.4)) {
                                    sacre.manegeOuvert = false
                                }
-                               // DÉMO : jamais à sec — la boucle doit
-                               // pouvoir se rejouer à l'infini (pop-up,
-                               // pill, tirage du géant). `user_boosters`
-                               // portera le vrai compte.
+                               // ⚠️⚠️ **LE `max(1, …)` RENDAIT LE COMPTEUR
+                               // INVARIANT.** Écrit comme un filet de démo
+                               // (« jamais à sec, la boucle doit pouvoir se
+                               // rejouer »), il était en fait le SEUL
+                               // écrivain d'un compteur né à 1 : la réserve
+                               // ne montait jamais, ne descendait jamais, et
+                               // la pill du profil affichait « 1 » à vie.
                                //
                                // C'EST LA RÉSERVE OUVERTE QUI SE DÉCOMPTE,
                                // pas « la » réserve : un booster noir ouvert
                                // qui retirait un jaune aurait fait fondre la
                                // mauvaise pile sous les yeux de l'utilisateur.
-                               if sacre.robeCourante == .noire {
+                               // La règle survit — elle passe côté serveur,
+                               // dans le `case` d'`ouvrir_booster`.
+                               let noir = sacre.robeCourante == .noire
+                               if noir {
                                    sacre.boostersNoirsEnAttente =
-                                       max(1, sacre.boostersNoirsEnAttente - 1)
+                                       max(0, sacre.boostersNoirsEnAttente - 1)
                                } else {
                                    sacre.boostersEnAttente =
-                                       max(1, sacre.boostersEnAttente - 1)
+                                       max(0, sacre.boostersEnAttente - 1)
                                }
+                               // ⚠️ **ET LE SERVEUR APPREND ENFIN QU'UN
+                               // SACHET A ÉTÉ OUVERT** : `opened_at` n'était
+                               // mis à jour par aucune ligne du dépôt, donc
+                               // la pile ne pouvait que croître. Ça part en
+                               // fond et n'a le droit de rien bloquer — la
+                               // carte, elle, est déjà envolée.
+                               Task { await EconomieWoop.shared
+                                   .consommerBooster(legendaire: noir) }
                                selection = .profile
                                DispatchQueue.main.asyncAfter(
                                    deadline: .now() + 0.45) {

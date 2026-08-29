@@ -341,6 +341,26 @@ final class Workout {
         orderedExercises.reduce(0) { $0 + $1.orderedSets.count }
     }
 
+    /// ⚠️⚠️ **CE QUE LA SÉANCE PAIE — ET C'EST LA DÉFINITION, PAS UN
+    /// RACCOURCI.** L'audit du 29-08 a mesuré que le même gain se calculait
+    /// de deux façons opposées : la card STOP et la clôture comptaient
+    /// `setCount` (les séries PRÉVUES, toutes les lignes existantes), le
+    /// solde du coffre comptait `completedSets` (les séries FAITES). Sur une
+    /// séance à 5 séries dont 4 faites, l'un dit 100 et l'autre 80.
+    ///
+    /// Ce n'était pas une duplication de code — c'était un désaccord de
+    /// DÉFINITION, qui aurait survécu à n'importe quelle factorisation. Il
+    /// est tranché ici, en un seul endroit : **on paie ce qui a été FAIT.**
+    /// Une série écrite mais jamais cochée ne vaut rien ; l'argent suit le
+    /// travail, pas l'intention.
+    ///
+    /// ⚠️ C'est LA ligne à changer si la règle bouge — et il n'y en a qu'une.
+    /// Les trois consommateurs (`gain` de fin de séance, la card STOP, le
+    /// `p_series` envoyé à `cloturer_seance`) lisent tous celle-ci.
+    var seriesPayantes: Int {
+        orderedExercises.reduce(0) { $0 + $1.completedSets }
+    }
+
     /// Volume total (charge × répétitions) de la séance.
     var totalVolume: Double {
         orderedExercises.reduce(0) { $0 + $1.volume }

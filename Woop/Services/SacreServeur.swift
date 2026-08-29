@@ -158,12 +158,26 @@ enum SacreServeur {
     /// ⚠️ Idempotente : la rappeler sur la même séance ne crédite rien de
     /// plus et rend le sachet déjà gagné (`boosterNeuf == false`). C'est ce
     /// qui la rend sûre à appeler depuis un `onAppear` ou une reprise.
+    /// ⚠️⚠️ **ELLE PORTE HUIT CHAMPS ET N'EN LISAIT QUE CINQ.** La migration
+    /// des annonces (29-08) a élargi la réponse — `argent`, `reste`,
+    /// `prix_booster` — précisément pour qu'« une seule annonce par
+    /// événement » ait *une seule réponse* à lire. Le décodeur, lui, n'avait
+    /// pas suivi : le serveur tendait de quoi composer la dalle entière et
+    /// Swift le laissait tomber par terre.
     struct ClotureSeance {
         let pieces: Int
         let piecesCreditees: Bool
         let boosterId: String?
         let boosterNeuf: Bool
         let solde: Int
+        /// La pièce d'argent est-elle tombée sur cette séance (`roll_rare`,
+        /// p = 1/30, pitié 45, cooldown 10 — tiré au RÈGLEMENT, jamais au
+        /// client). ⚠️ Faux sur un rejeu : l'index d'unicité l'interdit.
+        let argent: Bool
+        /// Où en est la jauge APRÈS ce gain (0…prix−1).
+        let reste: Int
+        /// Le prix du sachet, tel que la base le dit à cet instant.
+        let prixBooster: Int
     }
 
     static func cloturerSeance(_ workout: UUID, series: Int,
@@ -177,7 +191,10 @@ enum SacreServeur {
                                 ?? false,
                              boosterId: j["booster_id"] as? String,
                              boosterNeuf: (j["booster_neuf"] as? Bool) ?? false,
-                             solde: (j["solde"] as? Int) ?? 0)
+                             solde: (j["solde"] as? Int) ?? 0,
+                             argent: (j["argent"] as? Bool) ?? false,
+                             reste: (j["reste"] as? Int) ?? 0,
+                             prixBooster: (j["prix_booster"] as? Int) ?? 100)
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
@@ -292,6 +309,30 @@ enum SacreServeur {
     /// sachet de fin de séance n'y apparaissent jamais. C'est aussi ce qui
     /// donnera enfin des lignes AVEC UN SACHET (`GainCoffre.robe` est
     /// toujours `nil` aujourd'hui, donc chaque ligne montre la pièce d'or).
+    /// OUVRIR UN SACHET — la seule écriture d'`opened_at` de tout le système.
+    ///
+    /// ⚠️⚠️ **PERSONNE NE L'ÉCRIVAIT.** `grep "opened_at" supabase/` ne rend
+    /// que sa déclaration, un index, des `select`, et deux `insert` qui la
+    /// posent à la NAISSANCE d'une ligne légendaire. Aucun `update` nulle
+    /// part : côté serveur, ouvrir un booster ne se voyait pas, la pile ne
+    /// pouvait que croître, et `etat_coffre().boosters_or` aurait compté
+    /// toutes les séances jamais faites sans jamais rien retirer.
+    ///
+    /// ⚠️ **ELLE REND L'ID DU SACHET CONSOMMÉ**, parce que c'est lui que la
+    /// forge doit sceller : une carte tirée sans sachet, c'est une carte que
+    /// rien ne relie à ce qu'on a ouvert.
+    ///
+    /// ⚠️ **MIGRATION `20260829150000_ouvrir_booster.sql` — NON DÉPLOYÉE.**
+    /// Rien ne part vers Supabase sans elle, et jamais par le MCP.
+    static func ouvrirBooster(legendaire: Bool,
+                              jwt: String) async throws -> String? {
+        let data = try await rpc("ouvrir_booster", jwt: jwt,
+                                 corps: ["p_legendaire": legendaire])
+        guard let j = try JSONSerialization.jsonObject(with: data)
+                as? [String: Any] else { throw Erreur.reponse }
+        return j["booster_id"] as? String
+    }
+
     struct LigneGain {
         let quand: Date
         /// `coins` ou `booster`.

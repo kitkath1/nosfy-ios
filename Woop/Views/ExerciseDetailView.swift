@@ -30,6 +30,12 @@ struct ExerciseDetailView: View {
 
     @State private var confirmation: String?
 
+    /// LE BLOC DE CE PASSAGE — le `LoggedExercise` où s'ancrent les séries de
+    /// cette visite. ⚠️ Il ne se retrouve PAS par recherche dans la séance :
+    /// deux passages sur le même exercice sont deux blocs, et une recherche
+    /// par `exerciseID` les fusionnerait sans rien dire.
+    @State private var bloc: LoggedExercise?
+
     /// LA CARD REWARD au banc vivant : le « … » du header la déclenche
     /// (FAKE, pour l'entraîner à l'œil sur la vraie page) — les vraies
     /// portes (fin d'exo ? fin de séance ?) ne sont pas tranchées.
@@ -475,8 +481,8 @@ struct ExerciseDetailView: View {
             // peut rien en révéler, et c'est exactement ce qui a laissé vivre
             // le décalage d'un rang (voir `finirSerie`).
             rangIssue = n
-            jouerIssue(DecideurSerie.pour(serie: n, gain: Self.gainParSerie,
-                                          total: n * Self.gainParSerie,
+            jouerIssue(DecideurSerie.pour(serie: n, gain: gainParSerie,
+                                          total: n * gainParSerie,
                                           reps: f.reps, kilos: f.kilos), f,
                        banc: true)
             return
@@ -2233,16 +2239,22 @@ struct ExerciseDetailView: View {
         // de valeur SOUS la card — le compteur sauterait en pleine montée.
         rangIssue = rang
         let issue = DecideurSerie.pour(serie: rang,
-                                       gain: Self.gainParSerie,
-                                       total: rang * Self.gainParSerie,
+                                       gain: gainParSerie,
+                                       total: rang * gainParSerie,
                                        reps: f.reps, kilos: f.kilos)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
         }
     }
 
-    /// LA RÈGLE DES 20 (l'économie de la maison : 20 pièces par série faite).
-    private static let gainParSerie = 20
+    /// CE QU'UNE SÉRIE RAPPORTE — **lu, plus deviné.**
+    ///
+    /// ⚠️ Il valait `20` en dur, et c'était l'une des HUIT copies de
+    /// `reward_rules.pieces_par_serie` côté app. Il vient maintenant
+    /// d'`etat_coffre()`, avec le même 20 en défaut tant que le serveur n'a
+    /// pas parlé — la loi du back-end : l'app LIT les prix, elle ne les
+    /// connaît pas.
+    private var gainParSerie: Int { EconomieWoop.shared.piecesParSerie }
 
     /// Le versement de connexion (§4 duodecies : 10 pièces, une fois par jour
     /// calendaire).
@@ -2318,6 +2330,29 @@ struct ExerciseDetailView: View {
 
     /// L'écriture de la série, et sa lumière : la volée de pièces part
     /// d'abord, la carte s'allume quand elles se posent.
+    ///
+    /// ⚠️⚠️ **ELLE N'ÉCRIVAIT QUE DANS UN `@State`, ET C'ÉTAIT LA RACINE DE
+    /// TOUTE L'ÉCONOMIE MORTE** (audit du 29-08). `sets` est un tableau de
+    /// VALEURS (`[DraftSet]`, une `struct`) : une série finie vivait dans la
+    /// vue et mourait avec elle. Les cinq seules écritures SwiftData de ce
+    /// fichier sont dans `add(_:)`, atteignable par le seul `save()`, appelé
+    /// par le seul `primaryAction` — **qui est le bas d'écran du CARDIO**
+    /// (il vit dans le `else` de `if isStrength`). En musculation il n'y a
+    /// pas de bouton « Enregistrer », il y a le galet : `save()` n'était
+    /// jamais atteint.
+    ///
+    /// La cascade, mesurée : aucun `StrengthSet` créé → `Workout.setCount`
+    /// vaut 0 → `gain = setCount × 20` vaut 0 → pas de notification, pas de
+    /// trophée, pas de proposition de sachet (`guard gain > 0`), et
+    /// `reglerFinDeSeance` sortait sur sa garde **sans jamais appeler
+    /// `cloturer_seance`**. Le tuyau serveur était juste, et aucune séance
+    /// réelle ne le déclenchait. Le solde du coffre, lui, comptait
+    /// `completedSets` : zéro, à vie.
+    ///
+    /// ⚠️ **ET C'EST `-demoData` QUI L'A CACHÉ** : la démo sème des
+    /// `StrengthSet` (WoopApp:1745). Le banc avait des séries, l'app n'en
+    /// avait pas — le seul régime où le bug ne se voit pas est celui où on
+    /// juge.
     private func settleSeries(_ f: FinishedSeries, coins: Bool) {
         guard sets.indices.contains(f.index), !sets[f.index].isDone
         else { return }
@@ -2328,6 +2363,12 @@ struct ExerciseDetailView: View {
                 sets[f.index].isDone = true
                 sets[f.index].durationSeconds = f.seconds
             }
+            // ⚠️ **APRÈS le brouillon, jamais avant** : c'est le brouillon qui
+            // porte la garde d'unicité (`!sets[f.index].isDone` en tête de
+            // cette fonction). Ancrer d'abord, ce serait ouvrir la porte à
+            // deux séries pour un seul geste si l'écriture différée était
+            // rejouée.
+            ancrerSerie(f.index)
         }
         if coins {
             coinsAt = .now
@@ -2336,6 +2377,79 @@ struct ExerciseDetailView: View {
         } else {
             write()
         }
+    }
+
+    /// L'ANCRAGE — la série du brouillon devient une série de la SÉANCE.
+    ///
+    /// C'est le pont qui manquait entre `@State sets` et SwiftData. Il est
+    /// INCRÉMENTAL, là où `add(_:)` est un dépôt en bloc : en musculation il
+    /// n'y a pas de moment « j'enregistre l'exercice », il y a une suite de
+    /// séries qui tombent une à une. Chacune s'écrit à l'instant où elle est
+    /// faite — donc une app tuée en pleine séance ne perd que la série en
+    /// cours, pas la séance.
+    ///
+    /// ⚠️ **UN PASSAGE DANS LA FICHE = UN BLOC**, et c'est exactement la
+    /// règle d'`add(_:)` (qui crée toujours un `LoggedExercise` neuf). Le bloc
+    /// est retenu dans `bloc` pour la durée de la vue : les séries suivantes
+    /// s'y ajoutent. Ressortir et revenir sur le même exercice ouvre un
+    /// second bloc — c'est voulu, deux passages sont deux passages.
+    ///
+    /// ⚠️ **LA SÉANCE PEUT NE PAS EXISTER**, et on la crée alors, exactement
+    /// comme `add(_:)` : ouvrir une fiche et faire une série DÉMARRE une
+    /// séance. Ne pas le faire, ce serait perdre le travail de quelqu'un qui
+    /// s'est mis à sa barre sans passer par la home.
+    ///
+    /// ⚠️ **LA SÉRIE ARRIVE COCHÉE.** Elle a été faite au compteur, pas
+    /// prévue — c'est la loi déjà écrite dans `StrengthSet.isDone` et dans
+    /// `add(_:)`. C'est aussi ce qui réconcilie les deux définitions du gain :
+    /// `setCount` (les prévues) et `completedSets` (les faites) ne peuvent
+    /// plus diverger sur ce qui vient d'ici.
+    private func ancrerSerie(_ index: Int) {
+        guard isStrength, sets.indices.contains(index) else { return }
+        let d = sets[index]
+
+        let seance: Workout
+        if let active {
+            seance = active
+        } else {
+            seance = Workout()
+            context.insert(seance)
+        }
+
+        let logged: LoggedExercise
+        if let deja = bloc, deja.workout === seance {
+            logged = deja
+        } else {
+            logged = LoggedExercise(exerciseID: exercise.id,
+                                    order: seance.exerciseCount,
+                                    restSeconds: restSeconds)
+            logged.workout = seance
+            context.insert(logged)
+            bloc = logged
+        }
+
+        let entry = StrengthSet(reps: d.reps, weight: d.weight,
+                                order: logged.orderedSets.count,
+                                isDone: true,
+                                durationSeconds: d.durationSeconds)
+        entry.loggedExercise = logged
+        context.insert(entry)
+        try? context.save()
+        // ⚠️ **CETTE TRACE EST LA PREUVE, ET ELLE RESTE.** Le défaut qu'elle
+        // surveille est INVISIBLE à l'écran : la pill affichait « +20 » et la
+        // séance restait vide. Un compte qui monte ici est la seule façon de
+        // savoir que la série a touché le disque — et `-demoData` sème des
+        // séries, donc le banc ne peut pas révéler l'absence tout seul.
+        print("[flow] série ancrée : exo=\(exercise.id) "
+              + "bloc=\(logged.orderedSets.count) "
+              + "séance=\(seance.seriesPayantes) payantes "
+              + "(\(seance.setCount) écrites)")
+
+        // L'orbe de la Live Activity avance à chaque série — c'est le geste
+        // que `ActiveWorkoutView` faisait, dans la vue qui n'est montée nulle
+        // part.
+        WorkoutActivityController.ensure(seance)
+        WorkoutActivityController.sync(seance)
     }
 
     /// LA PORTE POSÉE : le cadran naît directement à demeure — pas de

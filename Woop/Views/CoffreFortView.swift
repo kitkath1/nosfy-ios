@@ -506,35 +506,38 @@ struct CoffreFortView: View {
 /// plein écran et son grain. Les monter d'avance ferait tourner tout ça
 /// derrière le coffre-fort, invisible et payé plein tarif — la leçon déjà
 /// payée sur la home, dont le ciel tournait derrière le splash.
-/// UNE LIGNE DE L'HISTORIQUE DES GAINS.
-///
-/// ⚠️ **LA DONNÉE EXISTE DÉJÀ EN LOCAL, et c'est pour ça que cette page peut
-/// vivre avant le back-end** : chaque séance terminée porte sa date
-/// (`endedAt`) et ses séries faites (`completedSets`), et la loi des 20 fait
-/// le reste. Le jour où `coin_ledger` est branché, c'est cette liste qu'il
-/// remplace — chaque ligne aura alors sa VRAIE raison (série, bonus, cadeau,
-/// pièce d'argent) au lieu d'être déduite d'une séance.
-struct GainCoffre: Identifiable {
-    let id: UUID
-    let date: Date
-    let montant: Int
-    /// Ce qu'on a gagné — l'image de la ligne le dit sans un mot.
-    let robe: RobeBooster?
-    let titre: String
-}
-
+/// ⚠️ `GainCoffre` a QUITTÉ CE FICHIER le 29-08 pour `Services/EconomieWoop.swift`,
+/// pour la raison qui avait déjà sorti `CoffreFortPurse` : le journal des gains
+/// n'appartient pas à l'écran qui l'affiche, et laisser l'économie dans le
+/// fichier d'une page qu'on démonte fait dépendre les autres du sort d'un écran.
 struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
 
-    /// ⚠️ La requête vit ICI, pas chez les quatre appelants : « la refonte
-    /// remplace ce qu'il y a DERRIÈRE, jamais la poignée ». La signature de
-    /// `CoffreFortFlow` ne bouge pas d'un caractère.
+    /// ⚠️⚠️ **LA REQUÊTE N'EST PLUS LA VÉRITÉ, ELLE EST LE REPLI.** Elle vit
+    /// toujours ICI et pas chez les quatre appelants (« la refonte remplace ce
+    /// qu'il y a DERRIÈRE, jamais la poignée » — la signature de
+    /// `CoffreFortFlow` ne bouge toujours pas d'un caractère). Mais depuis le
+    /// branchement, elle ne sert qu'à `EconomieWoop` : sans compte connecté,
+    /// c'est elle qui parle ; dès que le serveur a répondu, elle se tait.
     @Query(sort: \Workout.startedAt, order: .reverse) private var seances: [Workout]
 
-    private var gains: [GainCoffre] {
+    /// ⚠️ CALCULÉE, jamais stockée : une propriété stockée `private` rend le
+    /// constructeur mémberwise privé, et cette struct a quatre appelants hors
+    /// fichier. « La signature de `CoffreFortFlow` ne bouge pas d'un
+    /// caractère » — pas même par accident.
+    private var economie: EconomieWoop { EconomieWoop.shared }
+
+    /// LA MAQUETTE — ce que l'app sait dire sans serveur.
+    ///
+    /// ⚠️ **ELLE NE PEUT PAS MONTRER UN BOOSTER, ET C'EST STRUCTUREL** :
+    /// `robe: nil` en dur, parce qu'une séance ne sait pas quels sachets elle
+    /// a valus. C'est ce qui rendait la demande du 29-08 (« les gains booster
+    /// issus du chemin doivent apparaître ») impossible à satisfaire ici —
+    /// alors que `historique_gains()` les rend tous depuis le 28.
+    private var maquette: [GainCoffre] {
         seances.filter { !$0.isActive }.compactMap { w in
-            let series = (w.exercises ?? []).reduce(0) { $0 + $1.completedSets }
+            let series = w.seriesPayantes
             guard series > 0 else { return nil }
             return GainCoffre(
                 id: w.remoteID,
@@ -561,11 +564,29 @@ struct CoffreFortFlow: View {
         // la lune — les deux ne pouvaient pas coexister sur le même geste.
         // `HaloDawnLab` n'est pas supprimée pour autant, elle n'est
         // simplement plus atteignable d'ici (son banc la monte toujours).
-        if Self.v1 {
-            ancienne
-        } else {
-            CoffreV2Page(coins: coins, gains: gains, onClose: onClose)
+        Group {
+            if Self.v1 {
+                ancienne
+            } else {
+                // ⚠️ **LES DEUX NOMBRES VIENNENT DE LA MÊME SOURCE, ET C'EST
+                // TOUT L'OBJET DU CHANTIER.** Avant, l'en-tête recevait
+                // `coins` calculé par l'appelant et les lignes étaient
+                // reconstruites ici : l'en-tête pouvait donc cesser d'être la
+                // somme de ses lignes. Désormais `EconomieWoop` sert les deux,
+                // et sa maquette est celle-ci.
+                CoffreV2Page(coins: economie.or,
+                             gains: economie.journal,
+                             onClose: onClose)
+            }
         }
+        // ⚠️ **LE REPLI EST POSÉ AVANT LA PREMIÈRE IMAGE**, jamais après :
+        // `onAppear` court avant l'affichage, `task` non. Sans ça la page
+        // s'ouvre sur 0 et la roulette de `contentTransition(.numericText())`
+        // fait défiler le solde depuis zéro à chaque ouverture du coffre.
+        .onAppear { economie.poserMaquette(or: coins, journal: maquette) }
+        // Et le journal complet ne se demande QUE si on ouvre la page qui
+        // l'affiche — 60 lignes ne servent nulle part ailleurs.
+        .task { await economie.rafraichir(avecJournal: true) }
     }
 
     private var ancienne: some View {

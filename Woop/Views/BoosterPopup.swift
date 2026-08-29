@@ -43,19 +43,47 @@ final class SacreEtat {
     /// Le compteur des sachets non ouverts — la pill du profil et le
     /// nombre de tours du manège.
     ///
-    /// MAQUETTE tant que Supabase n'est pas là : c'est `user_boosters`
-    /// (les lignes à `opened_at is null`) qui donnera ce nombre, et c'est
-    /// la seule façon qu'il survive à la fermeture de l'app.
-    var boostersEnAttente = 1
+    /// ⚠️⚠️ **IL A ÉTÉ UNE CONSTANTE PENDANT TOUT L'ÉTÉ, ET ÇA NE SE VOYAIT
+    /// PAS.** `= 1`, en mémoire, jamais persisté ; son SEUL écrivain était
+    /// `WoopApp:1185`, `max(1, n − 1)` — un plancher qui le rendait
+    /// **invariant**. Un sachet gagné en fin de séance (réellement inséré
+    /// dans `user_boosters` côté serveur) n'apparaissait nulle part, et un
+    /// sachet ouvert ne retirait rien. La pill du profil affichait « 1 » à
+    /// vie, avec le bouton OUVRIR toujours allumé.
+    ///
+    /// ⚠️ **DÉSORMAIS IL LIT `user_boosters`** (`etat_coffre().boosters_or`,
+    /// les lignes à `opened_at is null`) dès que le serveur a parlé. La
+    /// valeur locale reste dessous, et elle ne sert plus qu'à deux choses :
+    /// les bancs (`-sacreNoir`), et l'app sans compte connecté.
+    /// ⚠️ `@MainActor` sur la PROPRIÉTÉ, pas sur la classe : `SacreEtat` est
+    /// lu depuis des contextes non isolés (le coordinateur du manège), et
+    /// l'isoler entièrement propagerait la contrainte à tout le parcours
+    /// booster. Ce nombre-ci, lui, ne se lit que dans des corps de vue.
+    @MainActor
+    var boostersEnAttente: Int {
+        get { EconomieWoop.shared.boosters }
+        set { EconomieWoop.shared.maquetteBoosters = max(newValue, 0) }
+    }
+
     /// LA DEUXIÈME RÉSERVE : les boosters NOIRS, ceux qu'une pièce noire
     /// ouvre et qui rendent une légendaire (`tools/sacre/PLAN-BOOSTER-NOIR.md`).
     ///
     /// Deux réserves qui ne se croisent JAMAIS — verdict Kathryn : « on
     /// n'aura jamais les deux ensemble ». Deux compteurs, deux portes, deux
-    /// manèges. Côté serveur ce sera le même `user_boosters`, filtré sur
-    /// `origine = 'legendaire'` (§4 decies de la note backend).
-    /// Le banc `-sacreNoir` en sème un.
-    var boostersNoirsEnAttente = SacreEtat.bancNoir ? 1 : 0
+    /// manèges. Côté serveur c'est le même `user_boosters`, filtré sur
+    /// `origine = 'legendaire'` (§4 decies de la note backend) — et sur la
+    /// page argent, **solde et sachets ouvrables sont LE MÊME NOMBRE**, le
+    /// sachet noir naissant au claim.
+    ///
+    /// ⚠️ Il ne pouvait pas monter avant le 29-08 : `roll_rare` n'existait
+    /// pas, donc aucune pièce d'argent ne tombait, donc toute la robe noire
+    /// du Sacre — ses textures bakées, sa card légendaire — était
+    /// inatteignable par le jeu. Le banc `-sacreNoir` en sème un.
+    @MainActor
+    var boostersNoirsEnAttente: Int {
+        get { EconomieWoop.shared.boostersNoirs }
+        set { EconomieWoop.shared.maquetteNoirs = max(newValue, 0) }
+    }
     /// La robe que le manège doit porter à sa prochaine ouverture — posée
     /// par la proposition ou par la pill, jamais devinée par la vue.
     var robeCourante: RobeBooster = SacreEtat.bancNoir ? .noire : .lune

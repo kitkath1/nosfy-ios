@@ -106,8 +106,23 @@ struct ProfilLuneView: View {
         return t * t * (3 - 2 * t)
     }
 
-    /// Le trésor : la règle de la maison, 20 pièces par série faite.
-    private var pieces: Int {
+    private var economie: EconomieWoop { EconomieWoop.shared }
+
+    /// LE TRÉSOR — servi par `etat_coffre()`, avec la maquette en repli.
+    ///
+    /// ⚠️⚠️ **CETTE PAGE ET LE COFFRE AFFICHAIENT DEUX NOMBRES DIFFÉRENTS,
+    /// EN PERMANENCE.** Ici le solde BRUT ; là-bas le même moins une dépense
+    /// SIMULÉE (`boostersEnAttente × 100`). On tapait la pastille, le coffre
+    /// s'ouvrait par-dessus, et la grandeur perdait 100 pièces sans qu'aucune
+    /// transaction ait eu lieu. Les deux lisent maintenant le même objet.
+    private var pieces: Int { economie.or }
+
+    /// LE REPLI — recalculé depuis SwiftData, et poussé à l'arbitre.
+    ///
+    /// ⚠️ Il n'est plus lu par la vue : c'est `EconomieWoop` qui décide s'il
+    /// sert. Cinq écrans qui choisissaient chacun leur vérité, c'était cinq
+    /// vérités.
+    private var maquette: Int {
         let finies = workouts.filter { !$0.isActive }
         let series = finies.flatMap { $0.exercises ?? [] }
             .reduce(0) { $0 + $1.completedSets }
@@ -279,6 +294,13 @@ struct ProfilLuneView: View {
         .fullScreenCover(isPresented: $showCoffre) {
             CoffreFortFlow(coins: pieces, onClose: { showCoffre = false })
         }
+        // ⚠️ **LE REPLI EST POSÉ AVANT LA PREMIÈRE IMAGE.** La pastille porte
+        // `contentTransition(.numericText())` : si le solde arrivait de zéro
+        // en async, on verrait la roulette défiler à chaque ouverture de la
+        // page. `onAppear` court avant l'affichage, `task` non.
+        .onAppear { economie.poserMaquette(or: maquette) }
+        // Les six nombres seulement — le journal ne sert qu'au coffre.
+        .task { await economie.rafraichir() }
         .onAppear {
             if Self.reglagesNow { showReglages = true }
             // LE FILET DE L'ONGLET PARESSEUX : quand l'envol bascule sur
@@ -918,8 +940,18 @@ struct TirageBooster: View {
     /// (pas de hit-test : on ne déterre rien sous une carte ouverte).
     /// Jamais persisté, contrairement à `enterre`.
     var planque: Bool = false
-    /// Le prix d'un booster — la règle actée du 15-08.
-    static let prix = 20
+
+    /// ⚠️⚠️ **`static let prix = 20` A VÉCU ICI, ET IL CONTREDISAIT LE
+    /// COFFRE.** Mesuré le 29-08 : ce panneau disait « Utiliser 20 pièces
+    /// pour ouvrir un booster ? » pendant que la page Rewards, atteignable
+    /// d'un tap depuis la même page, annonçait « bought for 100 coins ». Deux
+    /// écrans de la même app, deux prix pour le même objet — et aucun des
+    /// deux ne lisait `reward_rules.prix_booster`, qui dit 100 depuis le 28.
+    ///
+    /// La loi du back-end était pourtant écrite : **l'app LIT les prix, elle
+    /// ne les connaît pas.**
+    private var economie: EconomieWoop { EconomieWoop.shared }
+    private var prix: Int { max(economie.prixBooster, 1) }
 
     @State private var ouvert =
         CommandLine.arguments.contains("-profilTirage")
@@ -1210,9 +1242,44 @@ struct TirageBooster: View {
         }
     }
 
+    /// LA PORTE DU MANÈGE — et c'est ici que l'argent change de main.
+    ///
+    /// ⚠️ **UN SACHET EN RÉSERVE S'OUVRE GRATUITEMENT.** C'est tout l'intérêt
+    /// de l'avoir gagné : un booster de fin de séance ne se rachète pas.
+    /// Le débit ne part que pour un sachet qu'on n'a pas.
+    ///
+    /// ⚠️ **ON N'OUVRE LA CÉRÉMONIE QU'APRÈS LA RÉPONSE.** Monter le manège
+    /// puis débiter, ce serait ouvrir un sachet qu'on n'a peut-être pas — et
+    /// il n'y a pas de marche arrière une fois la roue posée. La demi-seconde
+    /// d'attente est le prix de ne jamais mentir.
+    private func ouvrirOuAcheter() {
+        if economie.boosters > 0 {
+            // Le Manège se monte à la RACINE : on pose l'état partagé,
+            // personne n'a besoin d'écouter (la leçon de l'onglet paresseux
+            // — cf. `BoosterPopup.swift`).
+            SacreEtat.shared.ouvrirManege()
+            fermer()
+            return
+        }
+        Task {
+            let sort = await economie.acheterBooster()
+            guard case .obtenu = sort else {
+                // ⚠️ Un refus ne DIT rien pour l'instant, et c'est assumé :
+                // le panneau affiche déjà « Il te manque N pièces » sous la
+                // question, et ce texte lit le même solde. Une alerte
+                // par-dessus une cérémonie serait un troisième canal pour un
+                // fait déjà à l'écran.
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                return
+            }
+            SacreEtat.shared.ouvrirManege()
+            fermer()
+        }
+    }
+
     private func sheet(W: CGFloat) -> some View {
         let forme = RoundedRectangle(cornerRadius: 28, style: .continuous)
-        let manque = Self.prix - pieces
+        let manque = prix - pieces
         return VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
@@ -1236,14 +1303,14 @@ struct TirageBooster: View {
                     .combined(with: .opacity))
                 .frame(height: 250)
                 .padding(.top, 2)
-                Text("Utiliser \(Self.prix) pièces\npour ouvrir un booster ?")
+                Text("Utiliser \(prix) pièces\npour ouvrir un booster ?")
                     .font(.inter(20, .bold))
                     .tracking(-0.2)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Color.inkPrimary)
                 Text(manque > 0
                      ? "Il te manque \(manque) pièces."
-                     : "Il t'en restera \(pieces - Self.prix).")
+                     : "Il t'en restera \(pieces - prix).")
                     .font(.inter(13, .regular))
                     .foregroundStyle(Color.inkMuted)
 
@@ -1252,16 +1319,18 @@ struct TirageBooster: View {
                 // maison en secondaire.
                 DiamondPrimaryButton(title: "OUVRIR",
                                      smokeWarmth: 0.6) {
-                    // Le Manège se monte à la RACINE : on pose l'état
-                    // partagé, personne n'a besoin d'écouter (la leçon
-                    // de l'onglet paresseux — cf. `BoosterPopup.swift`).
-                    SacreEtat.shared.ouvrirManege()
-                    fermer()
+                    ouvrirOuAcheter()
                 }
-                // DÉMO : le verrou des pièces NE FERME JAMAIS la porte
-                // (ses vraies données sont sous le prix — « je peux pas
-                // relancer le manège »). L'économie verrouillera pour de
-                // vrai avec Supabase (`user_boosters`/`coin_ledger`).
+                // ⚠️⚠️ **LE VERROU EXISTE ENFIN.** Le commentaire qui vivait
+                // ici disait « DÉMO : le verrou des pièces NE FERME JAMAIS la
+                // porte » — et c'était vrai à la lettre : ce bouton posait
+                // l'état partagé et rien d'autre. Aucun débit, aucune garde.
+                // On pouvait ouvrir des sachets à l'infini avec zéro pièce
+                // pendant que l'écran promettait « Utiliser N pièces ».
+                //
+                // Il ne débite QUE s'il n'y a pas déjà un sachet en réserve :
+                // un booster gagné en fin de séance s'ouvre gratuitement,
+                // c'est tout l'intérêt de l'avoir gagné.
                 .padding(.horizontal, 24)
                 // Le retour en LIEN nu — pas de fond (verdict).
                 Button(action: fermer) {
