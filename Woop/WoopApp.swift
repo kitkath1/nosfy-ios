@@ -803,6 +803,11 @@ struct RootView: View {
             CalLab()
         } else if Self.duoLab {
             DuoLab()
+        } else if StopBanc.actif {
+            // Banc de la card STOP : `-stopLab`, la card SEULE sur du noir.
+            // Ses prises vivent avec elle (`StopBanc`, dans StopCard.swift) —
+            // pas de doublon de drapeau ici.
+            StopLab()
         } else {
             mainBody
         }
@@ -1076,21 +1081,30 @@ struct RootView: View {
             RewardCheminHote(etat: recompenses)
                 .zIndex(12)
 
-            // LE PANNEAU DE PAUSE (le stop du player) : « Terminer » clôt
-            // la séance — le trophée, la notif des pièces et la pop-up
-            // booster s'enchaînent derrière (terminerSeance).
-            PausePanneauHote(
+            // LA CARD STOP (le stop du player) : le slider clôt la séance —
+            // le trophée, la notif des pièces et la pop-up booster
+            // s'enchaînent derrière (terminerSeance). Elle a REMPLACÉ le
+            // panneau qui montait du bas, à signature identique.
+            //
+            // zIndex 13 (et non plus 5) : un stop peut être demandé PENDANT
+            // la card à gratter (12) ou la notif des pièces (9) — une
+            // question modale se pose au-dessus. Elle reste sous MoonDust
+            // (20). La chaîne de clôture n'est jamais recouverte : la card
+            // a fini sa sortie AVANT que `onTerminer` ne parte.
+            StopCardHote(
                 ouverte: depart.pauseOuverte,
                 duree: dureeSeanceTexte,
                 series: active?.setCount ?? 0,
                 gain: (active?.setCount ?? 0) * 20,
                 onTerminer: { terminerSeance() },
                 onContinuer: {
-                    withAnimation(.easeOut(duration: 0.22)) {
-                        depart.pauseOuverte = false
-                    }
+                    // La card a DÉJÀ joué sa sortie avant d'appeler : on ne
+                    // fait que baisser le drapeau. Pas de `withAnimation`
+                    // ici — il n'animerait plus rien et ouvrirait une
+                    // transaction sur de l'état voisin.
+                    depart.pauseOuverte = false
                 })
-                .zIndex(5)
+                .zIndex(13)
 
             // LA NOTIF DES PIÈCES — la mini capsule liquid glass qui
             // descend à l'arrivée home, le compte qui roule.

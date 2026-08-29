@@ -43,6 +43,15 @@ struct SliderObsidienne: View {
     /// BANC : rejoue le geste tout seul, en boucle. Le simulateur ne drague
     /// pas — sans ça, la traînée ne se filme pas.
     var auto: Bool = false
+    /// Le mot au CENTRE DE LA PISTE, au lieu du centre de la course libre.
+    ///
+    /// Par défaut `false` — le composant décale son mot pour qu'aucune lettre
+    /// ne dorme sous le pouce au repos (voir `texte`). Mais posé dans une
+    /// card, sous un lien centré, ce décalage se LIT comme un défaut
+    /// d'alignement : les deux mots doivent tomber sur le même axe (verdict
+    /// Kathryn, 29-08, la card STOP). À n'activer que pour un mot COURT, qui
+    /// tient dans la course libre sans toucher le pouce.
+    var labelCentre: Bool = false
     /// Le veto. `false` ⇒ la course est REFUSÉE : grenat, deux coups secs.
     var validate: () -> Bool = { true }
     var onConfirm: () -> Void = {}
@@ -333,8 +342,15 @@ struct SliderObsidienne: View {
         // on lit son mot amputé de sa première lettre avant d'avoir touché à
         // soit. Il se centre donc entre le bord de fuite du pouce au repos et
         // le bout de la capsule, et il se resserre s'il n'y tient pas.
-        let libre = max(W - medalW - 2 * encart - 16, 40)
-        let centre = (medalW + encart + (W - encart)) / 2
+        // `labelCentre` : le mot se centre sur la PISTE (l'axe de la card), et
+        // sa largeur utile se prend alors SYMÉTRIQUEMENT — la même marge des
+        // deux côtés, sinon un mot long viendrait mourir sous le pouce.
+        let libre = labelCentre
+            ? max(W - 2 * (medalW + encart) - 16, 40)
+            : max(W - medalW - 2 * encart - 16, 40)
+        let centre = labelCentre
+            ? W / 2
+            : (medalW + encart + (W - encart)) / 2
 
         return ZStack {
             encre
