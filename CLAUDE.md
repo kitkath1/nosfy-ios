@@ -9,9 +9,39 @@ n'existe pas* — et si c'est dans le téléphone ou dans Supabase.
 
 - **On le lit AVANT de demander l'état de quelque chose.** Il évite de
   re-auditer ce qui l'a déjà été.
-- **On le met à jour dans le MÊME geste que le code.** Quand une pastille
-  change (🟢 branché · 🟡 local · 🔵 serveur seul · ⚪ absent · 🔴 ment), on
-  change la pastille.
+
+### ⚠️ TOUTE MODIFICATION BACKEND MET LE SITE À JOUR, DANS LE MÊME COMMIT
+
+**Sans qu'on te le demande.** Ce n'est pas une politesse de fin de tâche :
+c'est la seule chose qui empêche ce site de devenir un mensonge de plus. Une
+doc qui décrit l'état d'hier est pire qu'une doc absente — elle se lit comme
+une mesure.
+
+**Ce qui compte comme « modification backend »** — au moins un de ces cas :
+
+- une migration écrite, posée ou modifiée ;
+- une fonction serveur ou une edge function ajoutée, changée ou supprimée ;
+- un **site d'appel** ajouté ou retiré côté app (c'est ça qui fait passer une
+  brique de 🔵 à 🟢, et c'est le changement le plus facile à oublier) ;
+- une valeur qui passe d'une constante Swift à `reward_rules`, ou l'inverse ;
+- un défaut trouvé, corrigé, ou simplement **constaté** (🔴).
+
+**Le geste, à chaque fois :**
+
+1. `docs/site/index.html` — changer la ou les **pastilles** touchées
+   (🟢 branché · 🟡 local · 🔵 serveur seul · ⚪ absent · 🔴 ment), dans
+   l'onglet du domaine **et** dans la carte du serveur.
+2. Ajouter la ligne si c'est une table, une fonction, un index ou une règle
+   nouvelle — la carte du serveur doit rester **exhaustive**.
+3. Republier au **même lien** (l'URL ne bouge jamais) :
+   <https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026>
+4. Le fichier part dans **le commit du changement**, pas dans un commit de
+   documentation à part. Un site mis à jour plus tard n'est jamais mis à jour.
+
+⚠️ **Un état se VÉRIFIE avant d'être écrit.** On ne repeint pas une pastille en
+vert parce qu'on vient d'écrire le code : on la repeint quand l'appel a été
+fait et la réponse lue. Tant que ça n'a pas été mesuré, la pastille ne bouge
+pas et on **dit** que ça n'a pas été mesuré.
 - ⚠️ **Un état se VÉRIFIE, il ne se déduit pas.** Chaque pastille est posée
   après lecture du code (`fichier:ligne`) ou appel réel au serveur. Une
   pastille posée à vue est pire qu'une case vide : elle se lit comme une

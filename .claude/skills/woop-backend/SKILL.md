@@ -259,7 +259,41 @@ séance (versement quotidien, boosters du chemin, sachet de fin de séance).
 
 ---
 
-## 8. La check-list avant de dire « c'est fait »
+## 8. La doc se met à jour AVEC le back-end, jamais après
+
+**`docs/site/index.html` est le site de documentation du projet** — il dit,
+pour chaque brique, si elle est branchée, locale, serveur-seule, absente ou
+mensongère. Il est écrit à la main, donc **rien ne le désynchronise en silence
+— sauf nous.**
+
+⚠️⚠️ **UNE MODIFICATION BACKEND QUI NE TOUCHE PAS LE SITE EST UNE MODIFICATION
+INACHEVÉE**, et le site part dans **le commit du changement**, pas dans un
+commit de doc à part. Un site mis à jour « plus tard » ne l'est jamais.
+
+Déclencheurs — au moins un suffit :
+
+| ce que tu viens de faire | ce qui bouge dans le site |
+|---|---|
+| une migration posée | la carte du serveur : la fonction, la table, l'index |
+| une fonction ajoutée / changée | sa ligne, et son état |
+| **un site d'appel ajouté côté app** | la brique passe 🔵 → 🟢 — *le plus oublié* |
+| un site d'appel retiré | elle repasse 🔵, et on dit pourquoi |
+| une constante Swift qui part en `reward_rules` | la table des règles, et l'onglet qui la citait |
+| un défaut trouvé, même non corrigé | une pastille 🔴 et sa phrase |
+
+⚠️ **On ne repeint pas une pastille en 🟢 parce qu'on vient d'écrire le code.**
+On la repeint quand l'appel a été fait et la réponse LUE (§6). Tant que ça n'a
+pas été mesuré, la pastille ne bouge pas — et on écrit que ça n'a pas été
+mesuré. C'est la même loi que partout ici : *un état se vérifie, il ne se
+déduit pas.*
+
+Republier au même lien après modification :
+<https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026>
+Mode d'emploi complet : `docs/site/README.md`.
+
+---
+
+## 9. La check-list avant de dire « c'est fait »
 
 - [ ] La migration nomme le verdict qu'elle applique et pointe vers l'analyse.
 - [ ] Chaque `check` recopié depuis **la dernière** migration, pas la première.
@@ -274,3 +308,5 @@ séance (versement quotidien, boosters du chemin, sachet de fin de séance).
 - [ ] Corps d'erreur **lus**, pas devinés.
 - [ ] Bout en bout sur le compte de test, **rejeu compris**.
 - [ ] Ce qui n'a pas pu être mesuré est **dit**, pas supposé.
+- [ ] **`docs/site/index.html` est à jour et part dans CE commit** (§8), et le
+      site est republié au même lien.

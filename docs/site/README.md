@@ -53,10 +53,32 @@ Deux corollaires payés :
 ## Le tenir à jour
 
 Il est écrit à la main, et c'est volontaire — rien ne le génère, donc rien ne
-peut le désynchroniser en silence. **Quand une pastille change, on change la
-pastille**, dans le même geste que le code.
+peut le désynchroniser en silence. **Sauf nous.**
 
-Après toute modification :
+### ⚠️ Toute modification backend met le site à jour, dans le MÊME commit
+
+La règle est inscrite à deux endroits pour qu'elle ne se rate pas :
+`CLAUDE.md` (lu à chaque démarrage) et `.claude/skills/woop-backend/SKILL.md`
+§8 (lu avant d'écrire une migration). Elle s'applique **sans qu'on la demande**.
+
+| ce qu'on vient de faire | ce qui bouge ici |
+|---|---|
+| une migration posée | la carte du serveur : fonction, table, index |
+| une fonction ajoutée ou changée | sa ligne, et son état |
+| **un site d'appel ajouté côté app** | la brique passe 🔵 → 🟢 — *le plus oublié* |
+| un site d'appel retiré | elle repasse 🔵, et on dit pourquoi |
+| une constante Swift qui part en `reward_rules` | la table des règles, et l'onglet qui la citait |
+| un défaut trouvé, même non corrigé | une pastille 🔴 et sa phrase |
+
+⚠️ **On ne repeint pas une pastille en 🟢 parce qu'on vient d'écrire le code.**
+On la repeint quand l'appel a été fait et la réponse **lue**. Tant que ça n'a
+pas été mesuré, la pastille ne bouge pas — et on écrit que ça n'a pas été
+mesuré.
+
+⚠️ **Le fichier part dans le commit du changement**, jamais dans un commit de
+documentation à part. Un site mis à jour « plus tard » ne l'est jamais.
+
+### Le geste
 
     ./docs/site/voir.sh          # relire dans le navigateur
 
