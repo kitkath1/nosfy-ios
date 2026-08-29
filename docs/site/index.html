@@ -1,0 +1,1175 @@
+<title>Documentation Woop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   LA CHAMBRE DES MACHINES — doc interne Woop
+   Parti pris : une seule robe, la nuit. C'est un cahier d'atelier
+   qu'on ouvre à côté du code, pas une page qui suit le thème de
+   qui la lit. Tout est donc peint explicitement.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --sol:#0A090E;          /* le noir, avec une pointe de violet */
+  --panneau:#131119;
+  --panneau2:#1B1824;
+  --trait:#2A2634;
+  --trait-vif:#3A3448;
+  --encre:#EDEAF2;
+  --encre-2:#9B94AC;
+  --encre-3:#6B6480;
+
+  --platine:#C9D1E0;      /* l'accent : structure, liens, onglet actif */
+  --or:#E8A33D;           /* réservé à la MATIÈRE or du jeu */
+  --argent:#B8C4D4;       /* réservé à la MATIÈRE argent du jeu */
+
+  --ok:#5FC98C;           /* 🟢 branché */
+  --loc:#E3B341;          /* 🟡 local */
+  --srv:#5AA9E6;          /* 🔵 serveur seul */
+  --abs:#7A748A;          /* ⚪ absent */
+  --men:#E56A6A;          /* 🔴 ment */
+
+  --rail:260px;
+  --lire:74ch;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--sol); color:var(--encre);
+  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ── charpente ─────────────────────────────────────────────── */
+.cadre{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);min-height:100vh}
+
+.rail{
+  position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+  border-right:1px solid var(--trait); background:var(--panneau);
+  padding:26px 18px 40px; display:flex; flex-direction:column; gap:26px;
+}
+.marque{display:flex;flex-direction:column;gap:3px}
+.marque b{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;
+  font-weight:800; font-size:19px; letter-spacing:-.02em; line-height:1.15;
+  text-wrap:balance;
+}
+.marque span{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--encre-3);
+}
+
+.menu{display:flex;flex-direction:column;gap:2px}
+.menu-titre{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--encre-3); padding:0 10px; margin:14px 0 6px;
+}
+.menu a{
+  display:flex; gap:10px; align-items:baseline;
+  padding:8px 10px; border-radius:7px; text-decoration:none;
+  color:var(--encre-2); font-size:14.5px; line-height:1.35;
+  border:1px solid transparent; transition:background .14s,color .14s,border-color .14s;
+}
+.menu a .n{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11px; color:var(--encre-3); min-width:1.3em;
+}
+.menu a:hover{background:var(--panneau2);color:var(--encre)}
+.menu a:focus-visible{outline:2px solid var(--platine);outline-offset:2px}
+.menu a.on{background:var(--panneau2);color:var(--encre);border-color:var(--trait-vif)}
+.menu a.on .n{color:var(--platine)}
+
+.corps{padding:44px 48px 120px;min-width:0}
+.page{display:none;animation:entre .22s ease-out}
+.page.on{display:block}
+@keyframes entre{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── typographie ───────────────────────────────────────────── */
+h1{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800;
+  font-size:clamp(30px,3.4vw,44px); line-height:1.06; letter-spacing:-.032em;
+  margin:0 0 10px; text-wrap:balance;
+}
+h2{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700;
+  font-size:24px; line-height:1.2; letter-spacing:-.02em;
+  margin:52px 0 14px; text-wrap:balance;
+  padding-top:22px; border-top:1px solid var(--trait);
+}
+h2:first-of-type{border-top:0;padding-top:0;margin-top:34px}
+h3{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:600;
+  font-size:17.5px; letter-spacing:-.012em; margin:30px 0 8px; text-wrap:balance;
+}
+p,li{max-width:var(--lire)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 16px;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+a{color:var(--platine);text-underline-offset:3px;text-decoration-thickness:1px}
+a:focus-visible{outline:2px solid var(--platine);outline-offset:2px;border-radius:3px}
+strong{color:#fff;font-weight:600}
+.chapo{font-size:18px;color:var(--encre-2);max-width:66ch;margin-bottom:26px}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.86em}
+code{background:var(--panneau2);border:1px solid var(--trait);border-radius:4px;padding:1px 5px;color:var(--platine)}
+
+/* ── pastilles d'état ──────────────────────────────────────── */
+.p{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 8px;border-radius:99px;border:1px solid;white-space:nowrap;vertical-align:middle;
+}
+.p-ok {color:var(--ok); border-color:color-mix(in srgb,var(--ok) 38%,transparent); background:color-mix(in srgb,var(--ok) 10%,transparent)}
+.p-loc{color:var(--loc);border-color:color-mix(in srgb,var(--loc) 38%,transparent);background:color-mix(in srgb,var(--loc) 10%,transparent)}
+.p-srv{color:var(--srv);border-color:color-mix(in srgb,var(--srv) 38%,transparent);background:color-mix(in srgb,var(--srv) 10%,transparent)}
+.p-abs{color:var(--abs);border-color:color-mix(in srgb,var(--abs) 38%,transparent);background:color-mix(in srgb,var(--abs) 10%,transparent)}
+.p-men{color:var(--men);border-color:color-mix(in srgb,var(--men) 38%,transparent);background:color-mix(in srgb,var(--men) 10%,transparent)}
+.p-cx {color:var(--encre-2);border-color:var(--trait-vif);background:var(--panneau2)}
+
+/* ── la légende, toujours sous la main ─────────────────────── */
+.legende{
+  position:sticky; top:0; z-index:20; margin:-44px -48px 30px;
+  padding:12px 48px; background:color-mix(in srgb,var(--sol) 88%,transparent);
+  backdrop-filter:blur(12px); border-bottom:1px solid var(--trait);
+  display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center;
+}
+.legende .t{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--encre-3);margin-right:2px;
+}
+
+/* ── panneaux ──────────────────────────────────────────────── */
+.bloc{
+  background:var(--panneau); border:1px solid var(--trait);
+  border-radius:12px; padding:20px 22px; margin:0 0 18px;
+}
+.bloc h3{margin-top:0}
+.bloc.chaud{border-color:color-mix(in srgb,var(--men) 34%,var(--trait))}
+.bloc.froid{border-color:color-mix(in srgb,var(--srv) 30%,var(--trait))}
+
+.grille{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-bottom:20px}
+.grille .bloc{margin:0}
+
+.idee{display:flex;gap:14px;align-items:flex-start}
+.idee .em{font-size:26px;line-height:1.1;flex:none}
+.idee p{margin:0;font-size:14.5px;color:var(--encre-2)}
+.idee b{display:block;color:var(--encre);font-size:15px;margin-bottom:3px}
+
+/* ── schémas ───────────────────────────────────────────────── */
+figure{margin:22px 0 26px}
+.plan{
+  background:var(--panneau); border:1px solid var(--trait); border-radius:12px;
+  padding:18px 14px 6px; overflow-x:auto;
+}
+.plan pre.mermaid{margin:0;text-align:center;min-width:min-content}
+figcaption{
+  margin-top:9px; font-size:13px; color:var(--encre-3);
+  font-family:"JetBrains Mono",ui-monospace,monospace; line-height:1.5;
+  max-width:var(--lire);
+}
+figcaption b{color:var(--encre-2);font-weight:500}
+
+/* ── tables ────────────────────────────────────────────────── */
+.tw{overflow-x:auto;border:1px solid var(--trait);border-radius:12px;margin:0 0 22px;background:var(--panneau)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--trait);vertical-align:top}
+th{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--encre-3);
+  background:var(--panneau2);white-space:nowrap;
+}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace}
+td b{color:#fff}
+
+/* ── lien Supabase ─────────────────────────────────────────── */
+.sb{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;
+  padding:2px 8px;border-radius:6px;text-decoration:none;
+  color:var(--platine);border:1px solid var(--trait-vif);background:var(--panneau2);
+  transition:border-color .14s,color .14s;white-space:nowrap;
+}
+.sb:hover{border-color:var(--platine);color:#fff}
+.sb::before{content:"↗";font-size:10px;opacity:.7}
+
+/* ── la barre des liens Supabase ───────────────────────────── */
+.quai{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px}
+
+/* ── verdict / à trancher ──────────────────────────────────── */
+.verdict{
+  border-left:2px solid var(--or); padding:2px 0 2px 16px; margin:20px 0;
+  color:var(--encre-2); font-size:15px; max-width:var(--lire);
+}
+.verdict b{color:var(--or);font-weight:600}
+.trancher{border-left-color:var(--men)}
+.trancher b{color:var(--men)}
+
+/* ── les prompts du set ────────────────────────────────────── */
+details.bloc{padding:0}
+details.bloc summary{
+  cursor:pointer;padding:15px 20px;list-style:none;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  font-size:15px;border-radius:12px;
+}
+details.bloc summary::-webkit-details-marker{display:none}
+details.bloc summary::before{content:"▸";color:var(--encre-3);transition:transform .15s;display:inline-block}
+details.bloc[open] summary::before{transform:rotate(90deg)}
+details.bloc summary:hover{background:var(--panneau2)}
+details.bloc summary:focus-visible{outline:2px solid var(--platine);outline-offset:-2px}
+dl.prompts{margin:0;padding:0 20px 18px;display:flex;flex-direction:column;gap:14px}
+dl.prompts dt{
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:600;
+  font-size:14.5px;color:var(--or);letter-spacing:-.01em;
+}
+dl.prompts dd{margin:3px 0 0;max-width:var(--lire)}
+dl.prompts dd{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;
+  line-height:1.55;color:var(--encre-2);
+}
+dl.prompts dd span{
+  display:block;margin-top:5px;padding-left:11px;
+  border-left:1px solid var(--trait-vif);
+  font-family:"Instrument Sans",system-ui,sans-serif;font-size:13px;color:var(--encre-3);
+}
+
+.pied{
+  margin-top:70px;padding-top:20px;border-top:1px solid var(--trait);
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;color:var(--encre-3);
+}
+
+@media (max-width:900px){
+  .cadre{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--trait)}
+  .corps{padding:28px 20px 90px}
+  .legende{margin:-28px -20px 24px;padding:10px 20px}
+}
+</style>
+
+<div class="cadre">
+
+<nav class="rail">
+  <div class="marque">
+    <span>La chambre des machines</span>
+    <b>Documentation Woop</b>
+    <span>29 août 2026</span>
+  </div>
+
+  <div class="menu">
+    <div class="menu-titre">Comprendre</div>
+    <a href="#six" data-p="six"><span class="n">◇</span> Le back-end en 6 dessins</a>
+    <a href="#carte" data-p="carte"><span class="n">◇</span> La carte du serveur</a>
+
+    <div class="menu-titre">Les cinq domaines</div>
+    <a href="#flow" data-p="flow" class="on"><span class="n">1</span> Le flow</a>
+    <a href="#regles" data-p="regles"><span class="n">2</span> Coffre, notifs, pop-ups</a>
+    <a href="#forge" data-p="forge"><span class="n">3</span> La forge</a>
+    <a href="#histoire" data-p="histoire"><span class="n">4</span> Historicité &amp; stories</a>
+    <a href="#porte" data-p="porte"><span class="n">5</span> Onboarding &amp; compte</a>
+
+    <div class="menu-titre">Cas d'erreur</div>
+    <a href="#manege" data-p="manege"><span class="n">🧨</span> Le manège interrompu</a>
+  </div>
+</nav>
+
+<main class="corps">
+
+<div class="legende">
+  <span class="t">Se lit ainsi</span>
+  <span class="p p-ok">🟢 branché</span>
+  <span class="p p-loc">🟡 local</span>
+  <span class="p p-srv">🔵 serveur seul</span>
+  <span class="p p-abs">⚪ absent</span>
+  <span class="p p-men">🔴 ment</span>
+  <span class="p p-cx">⏱️ 1 h</span>
+  <span class="p p-cx">⏳ 1 j</span>
+  <span class="p p-cx">🧗 chantier</span>
+</div>
+
+<!-- ═══════════════════════════════════════════ 6 DESSINS ═══ -->
+<section class="page" id="six">
+  <h1>Le back-end en six dessins</h1>
+  <p class="chapo">Six idées, et tout le reste du site en découle. Aucune ne demande de savoir écrire du SQL.</p>
+
+  <div class="grille">
+    <div class="bloc"><div class="idee"><div class="em">📒</div><div>
+      <b>1 · Le carnet</b>
+      <p>Ton solde n'est rangé nulle part. Il y a un carnet où chaque gain et chaque dépense s'écrit une ligne — et <strong>on n'efface jamais</strong>. Le solde, c'est l'addition du carnet, refaite à chaque fois. Un carnet ne peut pas se tromper ; un compteur, si.</p>
+    </div></div></div>
+
+    <div class="bloc"><div class="idee"><div class="em">🚪</div><div>
+      <b>2 · Le videur</b>
+      <p>Comment garantir qu'une séance ne paie qu'une fois ? Un <em>index unique</em> : un videur à l'entrée du carnet qui refuse une deuxième ligne pour la même séance. Il ne s'oublie pas, ne se réinstalle pas, ne se remet pas à zéro.</p>
+    </div></div></div>
+
+    <div class="bloc"><div class="idee"><div class="em">🔁</div><div>
+      <b>3 · Idempotent</b>
+      <p>Le gros mot le plus utile du site. Ça veut dire : <strong>tu peux sonner dix fois, il n'ouvre qu'une porte.</strong> Le téléphone peut renvoyer la même demande autant qu'il veut, le serveur ne crédite qu'une fois.</p>
+    </div></div></div>
+
+    <div class="bloc"><div class="idee"><div class="em">📬</div><div>
+      <b>4 · La file d'attente</b>
+      <p>Tu finis ta séance dans le métro. La demande ne part pas — elle <strong>attend dans le téléphone</strong> et repart toute seule au retour du réseau. Ça n'est sûr <em>que</em> grâce au point 3.</p>
+    </div></div></div>
+
+    <div class="bloc"><div class="idee"><div class="em">🔒</div><div>
+      <b>5 · RLS</b>
+      <p>La clé de l'app est publique — elle est dans le binaire, n'importe qui peut la lire. Ce qui protège tes données, c'est une règle côté serveur : <strong>chacun ne voit que ses lignes.</strong></p>
+    </div></div></div>
+
+    <div class="bloc"><div class="idee"><div class="em">🏷️</div><div>
+      <b>6 · Les prix vivent en base</b>
+      <p>« 20 pièces par série », « 100 pièces le booster » : ces nombres sont dans une <strong>table que tu peux éditer toi-même</strong>. Les changer ne demande pas de sortir une version de l'app.</p>
+    </div></div></div>
+  </div>
+
+  <h2>Ce que ça donne pour une seule série finie</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','secondaryColor':'#131119','tertiaryColor':'#0A090E','fontFamily':'JetBrains Mono, monospace','fontSize':'13px'}}}%%
+flowchart LR
+  A["🏋️ tu finis<br/>une série"] --> B["📱 le téléphone<br/>l'écrit tout de suite"]
+  B --> C{"📶 réseau ?"}
+  C -- oui --> D["☁️ le carnet<br/>reçoit +20"]
+  C -- non --> E["📬 ça attend<br/>dans la file"]
+  E -.->|au retour| D
+  D --> F["🧮 solde = addition<br/>du carnet"]
+  F --> G["🏆 le coffre<br/>affiche le solde"]
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  class A,B,E loc
+  class D,F,G ok
+    </pre></div>
+    <figcaption><b>Le point à retenir :</b> l'écran n'attend jamais le réseau. Il affiche le gain tout de suite ; le carnet rattrape.</figcaption>
+  </figure>
+
+  <div class="verdict">
+    <b>La règle qui commande tout le reste :</b> un solde se <em>dérive</em>, il ne se stocke pas. Chaque fois que tu verras un nombre stocké quelque part dans ce site, c'est un bug en attente.
+  </div>
+
+  <h2>⛔ Mais rien de tout ça ne tourne aujourd'hui</h2>
+  <div class="bloc chaud">
+    <p><strong>L'app n'est jamais connectée en production.</strong> La clé de session s'appelle <code>woop.phone</code>. Elle n'est écrite que si la porte d'entrée renvoie un numéro à 10 chiffres — et depuis la refonte, la porte renvoie toujours une chaîne <strong>vide</strong>. Aucune autre ligne du dépôt ne l'écrit.</p>
+    <p>Conséquence en chaîne : pas de <code>woop.phone</code> → pas de session → <code>auth.uid()</code> est nul → le serveur ne peut rien rendre → l'app bascule sur la maquette locale <strong>sans le dire</strong>. Les six dessins ci-dessus décrivent une machine juste, déployée, vérifiée… et débranchée à la prise.</p>
+    <p><a href="#porte" data-saut="porte">Voir l'onglet 5 →</a> <span class="p p-men">🔴</span> <span class="p p-cx">⏱️</span> pour la remise en marche minimale.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ CARTE ═══ -->
+<section class="page" id="carte">
+  <h1>La carte du serveur</h1>
+  <p class="chapo">Tout ce qui existe côté Supabase, à quoi ça sert en français, et si l'app s'en sert. Chaque ligne est cliquable vers le tableau de bord.</p>
+
+  <div class="quai">
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/editor" target="_blank" rel="noopener">Tables</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/database/functions" target="_blank" rel="noopener">Fonctions</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/database/indexes" target="_blank" rel="noopener">Index</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/auth/users" target="_blank" rel="noopener">Comptes</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/functions" target="_blank" rel="noopener">Edge functions</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/logs/explorer" target="_blank" rel="noopener">Journaux</a>
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/sql/new" target="_blank" rel="noopener">Éditeur SQL</a>
+  </div>
+
+  <h2>Les onze tables</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+erDiagram
+  workouts ||--o{ logged_exercises : contient
+  logged_exercises ||--o{ strength_sets : "séries"
+  logged_exercises ||--o{ cardio_phases : "phases cardio"
+  workouts ||--o{ coin_ledger : "paie"
+  workouts ||--o{ user_boosters : "offre 1 sachet"
+  coin_ledger }o--|| reward_rules : "lit les prix"
+  user_boosters ||--o| user_cards : "ouvre en"
+  cards ||--o{ user_cards : "modèle de"
+  workouts ||--o{ syntheses : "résume"
+    </pre></div>
+    <figcaption><b>À lire ainsi :</b> une séance porte des exercices, qui portent des séries. Une séance écrit dans le carnet <b>et</b> donne un sachet. Un sachet ouvert devient une carte.</figcaption>
+  </figure>
+
+  <div class="tw"><table>
+    <thead><tr><th>Table</th><th>À quoi ça sert</th><th>État</th></tr></thead>
+    <tbody>
+      <tr><td class="mono"><b>coin_ledger</b></td><td>Le carnet. Une ligne par gain ou dépense, jamais effacée. Le solde en est l'addition.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono"><b>user_boosters</b></td><td>Tes sachets. Une ligne par sachet gagné ou acheté ; <code>opened_at</code> dit s'il est ouvert.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono"><b>reward_rules</b></td><td>Les 22 règles du jeu : prix, taux, budget d'annonces. <strong>Éditable à la main.</strong></td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">workouts</td><td>Tes séances, synchronisées depuis le téléphone.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">logged_exercises</td><td>Les exercices d'une séance.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">strength_sets</td><td>Les séries de muscu. <strong>Écrites depuis aujourd'hui seulement</strong> — voir l'onglet 1.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">cardio_phases</td><td>Les phases de cardio.</td><td><span class="p p-abs">⚪ à retravailler</span></td></tr>
+      <tr><td class="mono">cards</td><td>Le catalogue des cartes du set, écrit par la forge.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono"><b>user_cards</b></td><td>Ta collection. <strong>Elle se remplit à chaque tirage — et aucune ligne de l'app ne la lit.</strong> Le mur du profil compte en mémoire et repart à zéro.</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">syntheses</td><td>Le bilan hebdomadaire (edge function).</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">booster_progress</td><td><strong>Morte.</strong> Elle portait la jauge ; personne ne l'écrivait, donc la jauge affichait 0/100 en permanence. Remplacée par un calcul.</td><td><span class="p p-abs">⚪</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Les treize fonctions</h2>
+  <p>Une fonction = un <em>acte</em>, pas une table. « Clôturer une séance » écrit dans deux tables d'un coup : deux appels séparés laisseraient un état à moitié réglé.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Fonction</th><th>Ce qu'elle fait</th><th>Appelée par l'app ?</th></tr></thead>
+    <tbody>
+      <tr><td class="mono"><b>cloturer_seance</b></td><td>Fin de séance : crédite les pièces, donne <strong>un</strong> sachet forfaitaire, tire la pièce d'argent, et rend tout ce qu'il faut pour l'annonce.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono"><b>etat_coffre</b></td><td>Les six nombres du coffre en un appel : or, argent, sachets, jauge, prix, taux.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono"><b>historique_gains</b></td><td>Le journal, pièces <strong>et</strong> boosters mélangés, du plus récent au plus ancien.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono"><b>claim_booster</b></td><td>Acheter un sachet : débite 100 pièces et pose le sachet dans la même transaction.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono"><b>ouvrir_booster</b></td><td>Consommer un sachet. Prend le plus ancien de la bonne pile. <strong>Posée aujourd'hui.</strong> ⚠️ Marche sur la pile jaune ; <strong>ne peut jamais matcher sur la noire</strong> — voir la fiche 🧨.</td><td><span class="p p-ok">🟢 jaune</span></td></tr>
+      <tr><td class="mono"><b>claim_retour_quotidien</b></td><td>+10 pièces à la connexion, une fois par jour calendaire.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono"><b>reclamer_noeud_chemin</b></td><td>Enregistre la récompense d'un nœud du chemin.</td><td><span class="p p-ok">🟢 oui</span></td></tr>
+      <tr><td class="mono">roll_rare</td><td>Le tirage de la pièce d'argent, 1 chance sur 30. <strong>Privée</strong> — appelée par la clôture seulement.</td><td><span class="p p-ok">🟢 interne</span></td></tr>
+      <tr><td class="mono">solde_or</td><td>L'addition du carnet en jaune.</td><td><span class="p p-ok">🟢 interne</span></td></tr>
+      <tr><td class="mono">regles_annonces</td><td>Les 22 règles de rythme, en un appel.</td><td><span class="p p-srv">🔵 non</span></td></tr>
+      <tr><td class="mono">solde_argent</td><td>L'addition du carnet en argent.</td><td><span class="p p-srv">🔵 non</span></td></tr>
+      <tr><td class="mono">claim_booster_legendaire</td><td>Échange une pièce d'argent contre un sachet noir.</td><td><span class="p p-srv">🔵 non</span></td></tr>
+      <tr><td class="mono">solde_noir</td><td>Ancien nom d'<code>solde_argent</code>, gardé par prudence.</td><td><span class="p p-abs">⚪</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Les six videurs</h2>
+  <p>Chacun empêche exactement un double-paiement. C'est <em>eux</em>, et rien d'autre, qui rendent la file d'attente sûre.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Index</th><th>Il empêche</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">coin_ledger_gain_unique</td><td>Qu'une même séance crédite deux fois des pièces.</td></tr>
+      <tr><td class="mono">user_boosters_seance_unique</td><td>Qu'une même séance donne deux sachets.</td></tr>
+      <tr><td class="mono">coin_ledger_retour_jour_unique</td><td>Qu'on prenne le versement quotidien deux fois le même jour <em>(compté en UTC)</em>.</td></tr>
+      <tr><td class="mono">coin_ledger_chemin_unique</td><td>Qu'un nœud du chemin paie deux fois en pièces.</td></tr>
+      <tr><td class="mono">user_boosters_chemin_unique</td><td>Qu'un nœud du chemin donne deux sachets.</td></tr>
+      <tr><td class="mono">user_boosters_noir_ouvert_unique</td><td>Qu'on ait deux sachets noirs en attente à la fois.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Les 22 règles que tu peux changer sans nous</h2>
+  <p><a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/editor" target="_blank" rel="noopener">Ouvrir reward_rules</a> — change une valeur, l'app la lit au prochain lancement. <strong>Aucune version à sortir.</strong></p>
+  <div class="tw"><table>
+    <thead><tr><th>Clé</th><th>Valeur</th><th>Ce que ça règle</th><th>Lue ?</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">pieces_par_serie</td><td class="num">20</td><td>Ce qu'une série rapporte</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">prix_booster</td><td class="num">100</td><td>Ce qu'un sachet coûte</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">prix_booster_legendaire</td><td class="num">1</td><td>Pièces d'argent pour un sachet noir</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">pieces_retour_quotidien</td><td class="num">10</td><td>Le versement de connexion</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">popups_max_seance</td><td class="num">4</td><td>Budget d'attention par séance</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">reward_monetaire_max_seance</td><td class="num">1</td><td>Une seule récompense en pièces</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">video_max_seance</td><td class="num">1</td><td>Une seule vidéo</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">notifs_max_seance</td><td class="num">6</td><td>Plafond des dalles</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">notif_consomme_budget</td><td class="num">false</td><td>Une dalle mange-t-elle un pop-up ?</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">ecart_min_series</td><td class="num">3</td><td>Écart mini entre deux annonces</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">ecart_min_minutes</td><td class="num">6</td><td>… et en minutes</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">ecart_exige_les_deux</td><td class="num">true</td><td>Les deux, ou l'un des deux</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">bonus_fort / progres / surprise</td><td class="num">40 / 30 / 20</td><td>Les trois bonus</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">bonus_plafond_seance</td><td class="num">60</td><td>Plafond des bonus</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">meme_fait_max_seance / semaine</td><td class="num">1 / 2</td><td>Anti-ressassage</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">welcome_absence_jours</td><td class="num">4</td><td>Absence qui déclenche le Welcome Back</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">welcome_cooldown_jours</td><td class="num">14</td><td>Pause entre deux Welcome</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">welcome_max_mois</td><td class="num">2</td><td>Maximum par mois</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">annonce_une_par_evenement</td><td class="num">true</td><td>Un gain ne se dit qu'une fois</td><td><span class="p p-srv">🔵</span></td></tr>
+      <tr><td class="mono">rare_* (3 clés)</td><td class="num">cachées</td><td>La rareté de la pièce d'argent — <strong>jamais exposées au client</strong>, sinon elle devient farmable.</td><td><span class="p p-ok">🟢 interne</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Les deux edge functions</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Fonction</th><th>Ce qu'elle fait</th><th>État</th></tr></thead>
+    <tbody>
+      <tr><td class="mono"><b>forge-card</b></td><td>Tire une carte : soit une déjà peinte du pool commun (~1 s), soit une neuve forgée à l'IA (60-90 s). <strong>La rareté est décidée ici</strong>, jamais par le téléphone.</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td class="mono">weekly-synthesis</td><td>Le bilan hebdomadaire.</td><td><span class="p p-srv">🔵</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="verdict">
+    <b>Ce que la carte raconte :</b> l'argent est branché, le <em>rythme</em> ne l'est pas, et la <em>collection</em> non plus. Les 17 règles d'annonces sont posées en base et l'app décide encore toute seule avec trois modulos ; <code>user_cards</code> se remplit fidèlement et personne ne la lit.
+  </div>
+
+  <div class="verdict trancher">
+    <b>Et rien de tout ça ne tourne sans session.</b> Toutes les fonctions ci-dessus s'appuient sur <code>auth.uid()</code>. Aujourd'hui l'app n'écrit plus sa clé de session — voir l'onglet 5.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ 1 · FLOW ═══ -->
+<section class="page on" id="flow">
+  <h1>1 · Le flow</h1>
+  <p class="chapo">Deux entrées : celle qui passe par une séance, et celle où tu te balades et récupères ce que tu avais oublié.</p>
+
+  <h2>Entrée A — la séance</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'13px'}}}%%
+flowchart TD
+  A["🏠 Home<br/>slider en bas"] --> B["🛣️ atterrissage<br/>sur le CHEMIN"]
+  B --> C["▶️ début de séance"]
+  C --> D["🏋️ set en cours"]
+  D --> E["⏱️ récupération<br/>+ notification"]
+  E --> F["🎁 re-pop-up rewards<br/>selon difficulté"]
+  F --> D
+  D --> G["🛑 pop-up STOP"]
+  G --> H["✅ Terminer"]
+  H --> I["📖 STORY 2"]
+  I --> J["🛣️ retour CHEMIN"]
+  J --> K["🎉 pop-up<br/>ouvrir un booster"]
+  K --> L["🏆 LE COFFRE<br/>gains + bouton ouvrir"]
+  L --> M["🎡 LE MANÈGE"]
+  M --> N["👤 PROFIL<br/>la carte collectée"]
+
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef abs fill:#1A1922,stroke:#7A748A,color:#AAA4B8,stroke-dasharray:4 3
+  class A,B,C,D,E,F,G,K loc
+  class H,L,M ok
+  class I,J,N abs
+    </pre></div>
+    <figcaption><b>Trait plein</b> = existe · <b>trait pointillé</b> = à faire. Aujourd'hui le code fait <b>Terminer → HOME</b> : ni la STORY 2, ni le retour au chemin, ni le profil ne sont dans la chaîne.</figcaption>
+  </figure>
+
+  <div class="bloc chaud">
+    <h3>🔴 Les cinq écarts entre ce parcours et le code</h3>
+    <ul>
+      <li><strong>La STORY 2 n'a aucun point d'entrée en fin de séance</strong> — elle ne se lance que depuis le calendrier. <span class="p p-abs">⚪</span> <span class="p p-cx">⏳</span></li>
+      <li><strong>Le retour au CHEMIN n'existe pas</strong> : après « Terminer », on atterrit sur la home. <span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></li>
+      <li><strong>Le coffre n'est pas dans le parcours</strong> — la pop-up booster part directement au manège. <span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></li>
+      <li><strong>La pop-up booster est un overlay</strong> monté sur la home, à +5,2 s. Refacto prévue. <span class="p p-loc">🟡</span> <span class="p p-cx">⏳</span></li>
+      <li><strong>Deux annonces s'enchaînent</strong> à la fin (la capsule des pièces à +1,6 s, la pop-up à +5,2 s) — ce que la règle « une annonce par événement » interdit. <span class="p p-men">🔴</span> <span class="p p-cx">⏱️</span></li>
+    </ul>
+  </div>
+
+  <h2>Entrée B — hors séance</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'13px'}}}%%
+flowchart LR
+  A["🚶 je me balade<br/>aucune séance"] --> B["🛣️ CHEMIN"]
+  B --> C["🎁 Claim<br/>sur un nœud"]
+  C --> D["🎫 card à gratter"]
+  D --> E["🍞 toaster<br/>des gains"]
+  E --> F["🏆 LE COFFRE<br/>immédiatement"]
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef abs fill:#1A1922,stroke:#7A748A,color:#AAA4B8,stroke-dasharray:4 3
+  class A,B,C,D,E loc
+  class F abs
+    </pre></div>
+    <figcaption>Le claim <b>écrit bien au serveur</b> depuis ce matin. Ce qui manque, c'est le dernier saut : après le toaster, on ne va pas au coffre.</figcaption>
+  </figure>
+
+  <h2>Le même parcours, vu du serveur</h2>
+  <p>Ce diagramme dit <em>à quel moment</em> chaque appel part. Il n'y en a que trois dans toute une séance.</p>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px','actorBkg':'#1B1824','actorBorder':'#3A3448','actorTextColor':'#EDEAF2','signalColor':'#9B94AC','signalTextColor':'#C9D1E0','noteBkgColor':'#2A2410','noteTextColor':'#F6E9C4','noteBorderColor':'#E3B341'}}}%%
+sequenceDiagram
+  participant U as 👤 toi
+  participant A as 📱 l'app
+  participant S as ☁️ Supabase
+
+  U->>A: je finis une série
+  A->>A: 💾 la série s'écrit (SwiftData)
+  Note over A: rien ne part encore
+  U->>A: je finis une autre série
+  A->>A: 💾 idem
+
+  U->>A: 🛑 STOP puis Terminer
+  A->>S: 📤 push de la séance
+  A->>S: 🎯 cloturer_seance(séance, séries)
+  S-->>A: +60 pièces · 1 sachet · solde · jauge · pièce d'argent ?
+  Note over A,S: une seule réponse porte tout ce que l'annonce doit dire
+
+  U->>A: je rouvre l'app plus tard
+  A->>S: 🎁 claim_retour_quotidien()
+  S-->>A: +10 ou déjà pris
+  A->>S: 📖 etat_coffre()
+  S-->>A: les six nombres
+    </pre></div>
+    <figcaption>Une séance entière = <b>trois appels</b>. Tout le reste est local, et c'est voulu : l'écran ne doit jamais attendre le réseau.</figcaption>
+  </figure>
+
+  <div class="bloc froid">
+    <h3>🟢 Ce qui a été réparé aujourd'hui, et pourquoi c'était grave</h3>
+    <p>En musculation, <strong>une série finie n'était écrite nulle part</strong>. Elle vivait dans la vue et mourait avec elle. Le seul chemin vers la base passait par un bouton qui n'existe que dans le cardio.</p>
+    <figure>
+      <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+  A["❌ aucune série<br/>enregistrée"] --> B["setCount = 0"]
+  B --> C["gain = 0 × 20 = 0"]
+  C --> D["🔇 pas de notif"]
+  C --> E["🔇 pas de trophée"]
+  C --> F["🔇 pas de sachet"]
+  C --> G["🔇 cloturer_seance<br/>jamais appelée"]
+  C --> H["💰 solde = 0<br/>à vie"]
+  classDef bad fill:#2A1618,stroke:#E56A6A,color:#F6D6D6
+  class A,B,C,D,E,F,G,H bad
+      </pre></div>
+      <figcaption>Et <b>-demoData l'a caché tout l'été</b> : la démo sème des séries. Le banc en avait, l'app n'en avait pas — le seul régime où le défaut ne se voit pas est celui où l'on juge.</figcaption>
+    </figure>
+  </div>
+
+  <div class="verdict trancher">
+    <b>À trancher :</b> l'ordre exact que tu décris (Terminer → STORY 2 → CHEMIN → pop-up → COFFRE → MANÈGE → PROFIL) demande de reprendre la chaîne de fin de séance en entier. C'est <span class="p p-cx">🧗</span> — et c'est le seul chantier de cet onglet qui en soit un.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ 2 · RÈGLES ═══ -->
+<section class="page" id="regles">
+  <h1>2 · Coffre, notifications, pop-ups</h1>
+  <p class="chapo">Quand on parle, combien de fois, et avec quel nombre. C'est la partie où l'app décide encore toute seule alors que les règles sont posées en base.</p>
+
+  <h2>La ligne de vie d'une séance</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+  S1["série 1<br/>💬 pill"] --> S2["série 2<br/>·"]
+  S2 --> S3["série 3<br/>✨ moment"]
+  S3 --> S4["série 4<br/>·"]
+  S4 --> S5["série 5<br/>🎁 pop-up"]
+  S5 --> S6["série 6<br/>·"]
+  S6 --> S9["série 9<br/>✨ moment"]
+  S9 --> S10["série 10<br/>🎬 rare + vidéo"]
+  classDef dit fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef mut fill:#141220,stroke:#2A2634,color:#6B6480
+  class S1,S3,S5,S9,S10 dit
+  class S2,S4,S6 mut
+    </pre></div>
+    <figcaption><b>Le rythme actuel vient de trois modulos</b> — série % 10, % 5, % 3. Résultat : jusqu'à <b>six interruptions</b> dans une séance de 20 séries, dont deux d'affilée aux rangs 9 et 10.</figcaption>
+  </figure>
+
+  <div class="bloc chaud">
+    <h3>🔵 Le rythme est en base, et personne ne le lit</h3>
+    <p>Les 17 clés de rythme sont posées dans <code>reward_rules</code> et <code>regles_annonces()</code> les rend en un appel — pour que tu puisses régler le tempo <strong>sans sortir de version</strong>. Aucune ligne de l'app ne les demande. <span class="p p-srv">🔵</span> <span class="p p-cx">⏳</span></p>
+  </div>
+
+  <h2>Qui a le droit de parler, et quand</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  A["🏋️ une série vient<br/>d'être finie"] --> B{"budget<br/>déjà épuisé ?"}
+  B -- "4 pop-ups faits" --> Z["🤫 rien"]
+  B -- non --> C{"écart depuis<br/>la dernière ?"}
+  C -- "moins de 3 séries<br/>ET 6 minutes" --> Z
+  C -- ok --> D{"un fait<br/>à raconter ?"}
+  D -- "déjà dit cette séance" --> E["💬 pill simple<br/>+20"]
+  D -- oui --> F{"quel genre ?"}
+  F --> G["✨ moment<br/>un fait vrai"]
+  F --> H["🎁 reward<br/>bonus en pièces"]
+  F --> I["🎬 rare<br/>+ vidéo"]
+  classDef dit fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef mut fill:#141220,stroke:#2A2634,color:#6B6480
+  class E,G,H,I dit
+  class Z mut
+    </pre></div>
+    <figcaption>C'est le rythme <b>voulu</b>. Aujourd'hui l'app saute toutes ces questions et regarde seulement le rang de la série.</figcaption>
+  </figure>
+
+  <h2>Le Welcome Back</h2>
+  <div class="grille">
+    <div class="bloc"><div class="idee"><div class="em">📆</div><div><b>Quand</b><p>Absence de 4 jours, pause de 14 jours entre deux, maximum 2 par mois.</p></div></div></div>
+    <div class="bloc"><div class="idee"><div class="em">🪙</div><div><b>Ce qu'il donne</b><p>+10 pièces, <strong>une seule fois par jour calendaire</strong> — compté en UTC des deux côtés.</p></div></div></div>
+    <div class="bloc"><div class="idee"><div class="em">🚪</div><div><b>Ce qui manque</b><p>La card existe et <strong>n'a aucune porte de production</strong> : elle ne sert que l'atelier. <span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></p></div></div></div>
+  </div>
+  <p>Le versement, lui, <strong>part vraiment</strong> à chaque retour au premier plan, et l'index l'empêche de compter deux fois. C'est la card qui manque, pas l'argent. <span class="p p-ok">🟢</span></p>
+
+  <h2>Les quatre pages du coffre</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+  E["☁️ etat_coffre()"] --> P1["🪙 pièce d'or<br/>solde_or"]
+  E --> P2["🎁 booster<br/>boosters_or + jauge"]
+  E --> P3["🥈 pièce d'argent<br/>solde_argent"]
+  E --> P4["🖤 légendaire<br/>solde_argent"]
+  H["☁️ historique_gains()"] --> G["📜 Mes gains<br/>pièces ET boosters"]
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  class E,H,P1,P2,P3,P4,G ok
+    </pre></div>
+    <figcaption>Tout vient d'un seul objet depuis aujourd'hui. Avant : le même nombre était calculé à <b>neuf endroits</b>, et le prix d'un sachet valait <b>20 sur le profil, 100 dans le coffre</b>.</figcaption>
+  </figure>
+
+  <h2>Le profil — ce qui manque en UI</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Élément</th><th>Aujourd'hui</th><th>Voulu</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><b>🎁 Booster orange</b></td><td>Pill visible si &gt; 0</td><td>Idem</td><td><span class="p p-ok">🟢</span></td></tr>
+      <tr><td><b>🖤 Booster noir</b></td><td>Pill cachée quand 0</td><td><strong>Toujours visible, même à 0</strong> — sinon on ne sait pas qu'il existe</td><td><span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></td></tr>
+      <tr><td><b>🪙 Pièce d'or</b></td><td>Pastille en bas</td><td>Une vraie place, comme les sachets</td><td><span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></td></tr>
+      <tr><td><b>🥈 Pièce d'argent</b></td><td>Nulle part</td><td>Visible, même à 0</td><td><span class="p p-abs">⚪</span> <span class="p p-cx">⏱️</span></td></tr>
+      <tr><td><b>🗿 Le géant</b></td><td>Le sachet planté dans le sol</td><td>Manquant dans l'inventaire affiché</td><td><span class="p p-abs">⚪</span> <span class="p p-cx">⏳</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="verdict">
+    <b>Le fil rouge de cet onglet :</b> montrer un objet à 0 vaut mieux que le cacher. Une pile cachée n'apprend rien ; une pile à zéro apprend qu'elle existe et donne envie de la remplir.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ 3 · FORGE ═══ -->
+<section class="page" id="forge">
+  <h1>3 · La forge</h1>
+  <p class="chapo">Comment un sachet devient une carte. C'est le prochain gros morceau de back-end.</p>
+
+  <h2>Le cycle de vie d'un sachet</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+stateDiagram-v2
+  [*] --> Gagne: fin de séance 🟢
+  [*] --> Achete: 100 pièces 🟢
+  [*] --> Chemin: nœud du chemin 🟢
+  Gagne --> EnAttente
+  Achete --> EnAttente
+  Chemin --> EnAttente
+  EnAttente --> Ouvert: ouvrir_booster() 🟢
+  Ouvert --> Carte: la forge tire 🔵
+  Carte --> [*]: rangée dans la collection 🔵
+    </pre></div>
+    <figcaption>Les trois premières flèches et l'ouverture sont branchées depuis aujourd'hui. <b>Les deux dernières ne le sont pas.</b></figcaption>
+  </figure>
+
+  <h2>La bonne surprise : la forge est déjà là</h2>
+  <p>Contrairement au reste, ce domaine n'est <strong>pas</strong> à écrire. Une edge function <code>forge-card</code> est déployée et fait déjà le travail difficile :</p>
+  <div class="grille">
+    <div class="bloc"><div class="idee"><div class="em">🎲</div><div><b>La rareté est décidée au serveur</b><p>Poids <span class="mono">60 / 27 / 10 / 3</span> pour common / rare / epic / legendary. Le client n'a pas le droit d'envoyer une rareté — la porte est fermée explicitement. <span class="p p-ok">🟢</span></p></div></div></div>
+    <div class="bloc"><div class="idee"><div class="em">🖼️</div><div><b>Deux vitesses</b><p>Soit une carte déjà peinte du pool commun (~1 s), soit une carte neuve forgée à l'IA (60-90 s) — la latence se cache derrière la cérémonie. <span class="p p-ok">🟢</span></p></div></div></div>
+    <div class="bloc"><div class="idee"><div class="em">🔏</div><div><b>Elle sait sceller et garantir</b><p>Si on lui passe l'identifiant du sachet, elle scelle la carte dessus <strong>et</strong> impose « legendary » quand le sachet est noir. Ce code existe et est déployé. <span class="p p-srv">🔵</span></p></div></div></div>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>🔴 Le trou du milieu : l'app ne dit jamais quel sachet elle ouvre</h3>
+    <p>Le manège appelle la forge <strong>sans identifiant de sachet</strong>. Le paramètre existe des deux côtés — dans le client comme dans l'edge function — il n'est simplement jamais rempli. Trois conséquences :</p>
+    <ul>
+      <li>Rien ne relie la carte au sachet qui l'a produite.</li>
+      <li>Aucune idempotence de tirage : rien n'empêche deux cartes pour un sachet.</li>
+      <li><strong>La garantie « légendaire » du booster noir n'est jamais armée.</strong> Le manège noir tire exactement comme le jaune — poids ordinaires, 3 % de légendaire — malgré ses textures bakées et sa cérémonie entière.</li>
+    </ul>
+    <p>Depuis aujourd'hui, <code>ouvrir_booster()</code> <strong>rend</strong> l'identifiant du sachet consommé, précisément pour qu'on le passe à la forge. Mais l'app le jette. Une ligne. <span class="p p-cx">⏱️</span></p>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>🔴 La collection repart vide à chaque lancement</h3>
+    <p>Le serveur sait, <strong>pour toujours</strong>, quelles cartes t'appartiennent : chaque tirage insère une ligne dans <code>user_cards</code>. <strong>Aucune ligne de l'app ne lit cette table.</strong></p>
+    <p>La collection du profil vit dans un dictionnaire <em>en mémoire</em>. Le mur affiche « 2 / 11 » avec ses dos vides — et au relancement suivant il affiche 0 partout, alors que la base contient les cartes. L'écran affirme une collection permanente qui n'existe pas.</p>
+    <p>Le compteur « ×N » des doublons est dans le même cas : il compte en mémoire, et côté base rien ne dédoublonne — chaque tirage insère une ligne de plus, même pour une carte déjà possédée.</p>
+  </div>
+
+  <h2>Où en est chaque pièce</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Pièce</th><th>État</th><th>Chantier</th><th>Coût</th></tr></thead>
+    <tbody>
+      <tr><td>Le tirage, la rareté, le pool de cartes</td><td><span class="p p-ok">🟢</span></td><td>—</td><td>—</td></tr>
+      <tr><td><code>user_cards</code> se remplit à chaque tirage</td><td><span class="p p-ok">🟢</span></td><td>—</td><td>—</td></tr>
+      <tr><td>Passer <code>booster_id</code> à la forge</td><td><span class="p p-abs">⚪</span></td><td>Sceller la carte sur le sachet</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Garantie légendaire du sachet noir</td><td><span class="p p-srv">🔵</span></td><td>S'allume toute seule avec la ligne du dessus</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Lire <code>user_cards</code> — la vraie collection</td><td><span class="p p-srv">🔵</span></td><td>Une fonction <code>ma_collection()</code> + le mur qui la lit</td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Le mur du profil (« N / 4 »)</td><td><span class="p p-men">🔴</span></td><td>Il ment tant qu'il lit la mémoire</td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Les doublons comptés en base</td><td><span class="p p-abs">⚪</span></td><td>La raison <code>doublon</code> existe dans le carnet et rien ne l'écrit</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Le set défini à un seul endroit</td><td><span class="p p-men">🔴</span></td><td>Il vit en <strong>deux listes dupliquées</strong> (Swift + edge function) plus les totaux en dur : trois éditions pour ajouter une famille</td><td><span class="p p-cx">⏳</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="verdict">
+    <b>L'ordre le moins cher :</b> passer le <code>booster_id</code> d'abord. Une ligne, et elle allume <em>trois</em> choses d'un coup — le scellement, l'idempotence, et la garantie légendaire qui dort déjà côté serveur.
+  </div>
+
+  <h2>🎴 Les prompts du set — accès rapide</h2>
+  <p>Les 25 familles du set, telles qu'elles partent au modèle. <strong>Une famille = un brief court + ses contraintes dures</strong> ; la rareté choisit ensuite un <em>registre de mise en scène</em>, jamais le niveau de finition.</p>
+
+  <div class="quai">
+    <a class="sb" href="https://supabase.com/dashboard/project/ytnnyjkramgiqyxdrkcu/functions" target="_blank" rel="noopener">Edge function forge-card</a>
+    <span class="p p-cx mono">Woop/Services/LuneForge.swift</span>
+    <span class="p p-cx mono">tools/carte-lune/PROMPTS.md</span>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>⚠️ Le set est écrit DEUX fois</h3>
+    <p>La même liste vit dans <code>LuneForge.swift</code> (le banc) <strong>et</strong> dans l'edge function (la production). Ajouter une famille demande trois éditions : les deux listes, plus les totaux en dur du profil. Le jour où les deux divergent, le banc montrera un set que le jeu ne tire pas.</p>
+  </div>
+
+  <h3>La consigne qui enveloppe chaque famille</h3>
+  <div class="bloc">
+    <p style="font-size:14.5px;color:var(--encre-2)">« Palette en <strong>duo</strong> : gris de nuit profonds et noirs chauds, tissés de nuances <strong>braise</strong> sombres — dans le ventre des nuages, sur un horizon, dans un reflet. Jamais néon, jamais jaune, jamais un voile orange. Réalisme de <em>matte painting</em> cinématographique : silhouettes nettes, ombres sculptées. Aucun cartoon, aucun kitsch. <strong>Chaque registre est peint au même niveau de maîtrise</strong> — la rareté change ce qui est mis en scène, jamais la qualité. Vertical 2:3, rien d'important dans les 12 % extérieurs ni dans le médaillon en haut à gauche. »</p>
+    <p style="font-size:14px;color:var(--encre-3);margin:0">Puis : <em>invente UNE scène surprenante et précise dans cette famille, décrite plan par plan — premier plan, plan moyen, lointain — matière et lumière pour chacun, puis place le croissant du logo et dis où la braise respire.</em></p>
+  </div>
+
+  <details class="bloc">
+    <summary><b>⚫ COMMON</b> — la nuit ordinaire du set <span class="p p-cx">4 cartes</span></summary>
+    <dl class="prompts">
+      <dt>Forêt de pins</dt><dd>A very dark pine forest at night, dense black conifers, near-monochrome.<span>Trois étages de profondeur séparés par une brume faible ; braise autorisée uniquement dans la lune et un fil d'horizon lointain.</span></dd>
+      <dt>Vallée noire</dt><dd>A black valley almost entirely drowned in night, relief barely readable.<span>Chaque crête une bande plus sombre ; brume au fond ; au plus un murmure de braise au loin.</span></dd>
+      <dt>Petite lune perdue</dt><dd>An extremely small orange moon lost in an immense pitch-black night.<span>Le croissant MINUSCULE et pourtant net comme un rasoir ; le vide reste lumineux, jamais plat.</span></dd>
+      <dt>Montagnes invisibles</dt><dd>Mountains almost invisible in darkness, only the faintest ridge lines.<span>Crêtes affleurant par la valeur seule, mates ; croissant à demi voilé par un nuage.</span></dd>
+    </dl>
+  </details>
+
+  <details class="bloc">
+    <summary><b>🔵 RARE</b> — la nuit + UNE présence remarquable <span class="p p-cx">11 cartes</span></summary>
+    <dl class="prompts">
+      <dt>Zoom sur la lune</dt><dd>A very graphic extreme close-up of an orange crescent moon, almost abstract, logo-like purity.<span>Le croissant ÉNORME, son crochet barbelé net, surface en métal de braise brossé.</span></dd>
+      <dt>Lune néon sur ciel noir</dt><dd>An entirely black sky with only an orange moon whose light barely reflects somewhere below.<span>Le croissant seule source de lumière ; son reflet est le seul écho. Rien d'autre.</span></dd>
+      <dt>Lac noir</dt><dd>A black lake with a subtle moon reflection, everything else darkness.<span>Miroir immobile ; le reflet brisé par exactement UNE ride.</span></dd>
+      <dt>Corbeaux</dt><dd>A few hyperrealistic black crows, only the faintest sheen on their feathers.<span>Un à trois corbeaux, texture des plumes lisible en lumière froide rasante ; fond entièrement peint.</span></dd>
+      <dt>Chauves-souris au ciel</dt><dd>Very elegant bat silhouettes crossing the night sky.<span>Membranes des ailes ourlées de lumière ; croissant entre les nuages.</span></dd>
+      <dt>Rangée de chauves-souris</dt><dd>A small row of black bats perched close together, almost invisible in an extremely deep night.<span>Oreilles et griffes lisibles ; fond peint en étages.</span></dd>
+      <dt>Démon aux yeux d'ambre</dt><dd>A small entirely-black wolf-dog demon hidden in darkness — practically only its thin yellow-orange eyes are visible.<span>Museau, oreilles, épaules suggérés par un liseré froid ; les yeux d'ambre SONT la braise.</span></dd>
+      <dt>Lumière seule</dt><dd>The landscape almost completely disappears; only the moon's light structures the composition.<span>La lumière comme architecte : puits et flaques structurant un paysage dissous.</span></dd>
+      <dt>Forêt aux nuages</dt><dd>A sea of sculpted dark clouds resting on black pine tops.<span>Trois étages de nuages minimum, avec volume réel et éclairage par en dessous.</span></dd>
+      <dt>Rivière de braise</dt><dd>A tiered night valley where a thin river catches the only ember-orange thread of a distant horizon.<span>La braise vit UNIQUEMENT dans la rivière, l'horizon et la lune.</span></dd>
+      <dt>Dragon des ténèbres</dt><dd>A great pitch-black fire dragon almost swallowed by the night — smooth-skinned, bat-winged, only its flame-tipped tail truly glowing.<span>Morphologie du starter de feu classique : bipède, peau LISSE, ventre rond, deux cornes, grandes ailes de chauve-souris, flamme au bout de la queue.</span></dd>
+    </dl>
+  </details>
+
+  <details class="bloc">
+    <summary><b>🟣 EPIC</b> — le ciel entre en scène <span class="p p-cx">4 cartes</span></summary>
+    <dl class="prompts">
+      <dt>Ciel de sang</dt><dd>A blood-red sky above a black forest.<span>Rouge sombre en dégradé avec volumes de nuages sculptés — jamais un rouge plat, jamais de noir pur dans le ciel.</span></dd>
+      <dt>Oiseau de braise</dt><dd>An immense black legendary bird of prey, phoenix-like silhouette, a few ember-orange nuances caught in its feathers.<span>Bords d'ailes lisibles plume par plume ; le paysage écrasé en dessous.</span></dd>
+      <dt>Lune de sang</dt><dd>A huge blood-red moon dominating the composition.<span>TOUJOURS la silhouette du croissant barbelé du logo — une éclipse de sang du glyphe.</span></dd>
+      <dt>Vallée de la lune</dt><dd>The mother family — the style anchor itself: a stacked night valley, tiered pine ridges descending to a misty river.<span>La recette de l'ancre, mot pour mot. Rien de moins dense que l'ancre.</span></dd>
+    </dl>
+  </details>
+
+  <details class="bloc">
+    <summary><b>🟠 LEGENDARY</b> — le FULL ART, l'opéra du set <span class="p p-cx">6 cartes</span></summary>
+    <dl class="prompts">
+      <dt>Le démon en majesté</dt><dd>The black wolf-dog demon staged in majesty WITHIN its landscape, risen on a ridge of the anchor valley.<span>Yeux d'ambre brûlant au loin ; la vallée en étages de brume tout autour ; nuages monumentaux.</span></dd>
+      <dt>La vallée souveraine</dt><dd>The anchor valley pushed to its summit: the most sumptuous stacked landscape of the set.<span>Cinq étages de profondeur minimum ; la lune touche chaque plan.</span></dd>
+      <dt>L'oiseau souverain</dt><dd>The immense black bird of prey in full majesty above the anchor valley, wings spanning the sky.<span>Envergure entière en travers du ciel, plumage détaillé ; les nuages s'ouvrent dans son sillage.</span></dd>
+      <dt>Le dragon de braise</dt><dd>A mighty fire dragon in full majesty over the anchor valley.<span>Peau LISSE, obsidienne laquée, BRILLANTE, micro-reflets irisés et liseré de braise qui glisse ; gorge et ventre chauffés de l'intérieur. Farouche mais SIMPLE de forme.</span></dd>
+      <dt>Le cerf d'obsidienne</dt><dd>A great black stag of obsidian standing in the anchor valley, the tips of its antlers glowing like embers.<span>Pelage d'obsidienne laquée ; pointes des bois en braise. Majestueux et discrètement inquiétant, zéro conte de fées.</span></dd>
+      <dt>La lune souveraine</dt><dd>The moon ITSELF as the character: the logo crescent colossal and shiny, clouds parting around it like a cathedral.<span>Matière laquée de braise, texture de surface lisible ; l'exact opposé de la petite lune perdue.</span></dd>
+    </dl>
+  </details>
+
+  <div class="verdict">
+    <b>La loi du set, en une phrase :</b> « la finition somptueuse est le <em>plancher</em> ; le registre ne change que ce qui est mis en scène, jamais la qualité de la peinture. »
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ 4 · HISTOIRE ═══ -->
+<section class="page" id="histoire">
+  <h1>4 · Historicité &amp; stories</h1>
+  <p class="chapo">Le calendrier, et les variants de story selon ce que la séance a été.</p>
+
+  <h2>Comment on choisit un variant</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  A["📖 une séance finie<br/>veut sa story"] --> B{"deux séances<br/>le même jour ?"}
+  B -- oui --> V2["✌️ variant ×2<br/>noir et blanc"]
+  B -- non --> C{"record<br/>de charge ?"}
+  C -- oui --> VR["🏋️ record muscu"]
+  C -- non --> D{"record<br/>cardio ?"}
+  D -- oui --> VC["🏃 record cardio"]
+  D -- non --> E{"meilleure séance<br/>de la semaine ?"}
+  E -- oui --> VT["👑 TOP SESSION"]
+  E -- non --> VS["📄 SESSION ENDED<br/>la robe de base"]
+  classDef fait fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef abs fill:#1A1922,stroke:#7A748A,color:#AAA4B8,stroke-dasharray:4 3
+  class V2,VT,VS fait
+  class VR,VC abs
+    </pre></div>
+    <figcaption><b>Trait plein</b> = le variant est codé. Ce qui manque n'est pas le dessin, c'est <b>la détection</b> : rien ne calcule aujourd'hui un record de charge ou de cardio.</figcaption>
+  </figure>
+
+  <div class="bloc chaud">
+    <h3>🔴 Le moteur de faits n'existe pas — et deux variants sont inatteignables</h3>
+    <p>Les pages sont peintes, elles sont belles, et <strong>rien ne les déclenche</strong>. Le variant TOP n'est écrit que par un drapeau de banc : ni le calendrier ni la home ne le renseignent, donc <strong>la page TOP SESSION est inatteignable dans l'app</strong>. Les records de charge et de cardio n'ont même pas de page — et surtout, <strong>rien ne les calcule</strong>.</p>
+    <p>Ce qui manque n'est pas le dessin : c'est le <em>moteur de faits</em>. Aucune table, aucune fonction ne dit « c'est ta meilleure séance de la semaine » ou « c'est ton record de charge ». Toute la story est locale — <strong>aucun appel réseau nulle part</strong>.</p>
+  </div>
+
+  <div class="verdict trancher">
+    <b>La règle à trancher :</b> le variant doit-il être choisi <strong>au serveur et mémorisé</strong> (une séance a sa robe pour toujours), ou retiré à chaque ouverture ? Si c'est le client qui choisit, la même séance peut raconter deux histoires différentes à deux jours d'écart — et un record « battu » peut redevenir un jour ordinaire.
+  </div>
+
+  <h2>Ce que le calendrier lit</h2>
+  <p>Les stickers et l'historicité sont posés sur les séances <strong>locales</strong>. La question ouverte : à la première réinstallation ou au deuxième téléphone, l'historique doit venir du serveur — les séances y sont déjà, ce sont les <em>faits</em> qui manquent.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Chantier</th><th>État</th><th>Coût</th></tr></thead>
+    <tbody>
+      <tr><td><b>Un moteur de faits</b> — « record », « meilleure semaine », « deux fois aujourd'hui »</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">🧗</span></td></tr>
+      <tr><td>Brancher le variant TOP sur ce moteur (la page existe déjà)</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Les pages record muscu / record cardio</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Le choix du variant décidé et mémorisé au serveur</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Point d'entrée de la story en fin de séance</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>L'historique du calendrier survit à une réinstallation</td><td><span class="p p-loc">🟡</span></td><td><span class="p p-cx">🧗</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ═══════════════════════════════════════════ 5 · PORTE ═══ -->
+<section class="page" id="porte">
+  <h1>5 · Onboarding &amp; compte</h1>
+  <p class="chapo">Le point le plus important du site : <strong>sans compte, tout le back-end rend zéro.</strong></p>
+
+  <div class="bloc chaud">
+    <h3>⛔ Le trou principal : plus rien n'écrit la clé de session</h3>
+    <p>La session tient à une seule clé, <code>woop.phone</code>. La racine ne l'écrit que si la porte lui rend un numéro à 10 chiffres. <strong>Depuis la refonte de la porte, elle rend toujours une chaîne vide.</strong> Aucun autre écrivain n'existe dans le dépôt.</p>
+    <p>Donc : toute installation neuve tourne <strong>sans session</strong>. Tout ce qu'on a branché aujourd'hui — le carnet, les sachets, l'historique — retombe silencieusement sur la maquette locale. Les écritures partent dans la file d'attente et y restent.</p>
+    <p><strong>C'est la première chose à réparer, et c'est la moins chère du site.</strong> <span class="p p-cx">⏱️</span></p>
+  </div>
+
+  <h2>Ce que la porte fait vraiment</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  A["🌑 splash lune de sang<br/>3,4 s · 1er lancement"] --> B["🚪 LA PORTE<br/>4 pages d'onboarding"]
+  B --> C["🍎 bouton SE CONNECTER<br/>avec le logo Apple"]
+  C --> D["📤 il renvoie une<br/>chaîne VIDE"]
+  D --> E{"digits.count == 10 ?"}
+  E -- non --> F["❌ woop.phone<br/>jamais écrit"]
+  F --> G["🙈 aucune session"]
+  E -. "jamais atteint" .-> H["✅ session"]
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef bad fill:#2A1618,stroke:#E56A6A,color:#F6D6D6
+  classDef abs fill:#1A1922,stroke:#7A748A,color:#AAA4B8,stroke-dasharray:4 3
+  class A,B loc
+  class C,D,F,G bad
+  class H abs
+    </pre></div>
+    <figcaption><b>Il y a bien un onboarding</b> — 4 pages, WELCOME / EXERCISES / PROGRESS / BOOSTERS, en anglais, avec un film d'arrivée de 5,47 s. Ce qui manque, c'est ce qui vient <b>après</b> le bouton.</figcaption>
+  </figure>
+
+  <div class="bloc chaud">
+    <h3>🔴 Le bouton porte le logo Apple et ne s'authentifie contre rien</h3>
+    <p>« Sign in with Apple » n'existe nulle part : aucune trace dans le code, et surtout <strong>aucun fichier d'entitlements</strong> — la capability n'est même pas déclarée. Ce n'est donc pas un branchement, c'est un vrai passage par Xcode. <span class="p p-cx">🧗</span></p>
+    <p>Et la connexion par numéro qui marchait avant est <strong>archivée derrière un drapeau de banc</strong>. L'ancien écran qui écrivait la clé n'est plus atteignable.</p>
+  </div>
+
+  <h2>Comment on se connecte quand ça marche</h2>
+  <div class="bloc chaud">
+    <p>Par un <strong>numéro de téléphone écrit en dur</strong>. Deux numéros sont connus, et <strong>le mot de passe est calculé à partir du numéro</strong> par une formule dans le binaire. Quiconque lit le binaire peut se connecter aux deux comptes.</p>
+    <p>Il n'y a <strong>aucune création de compte</strong> : pas de <code>signup</code>, pas d'OTP, pas de magic link. Les deux comptes ont été créés à la main. Une troisième utilisatrice est aujourd'hui <strong>impossible</strong> sans éditer le code.</p>
+    <p>Le jeton de session, lui, vit dans les préférences et non dans le Keychain — il part donc dans les sauvegardes non chiffrées.</p>
+  </div>
+
+  <h2>Pourquoi ça commande tout le reste</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  A["📱 j'ouvre l'app"] --> B{"session ?"}
+  B -- non --> C["🙈 auth.uid() est nul"]
+  C --> D["☁️ le serveur ne peut<br/>rien rendre"]
+  D --> E["🟡 maquette locale<br/>séries × 20"]
+  E --> F["⚠️ perdu à la<br/>réinstallation"]
+  B -- oui --> G["🟢 le carnet répond"]
+  G --> H["✅ solde, sachets,<br/>historique réels"]
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef bad fill:#2A1618,stroke:#E56A6A,color:#F6D6D6
+  class C,D,E loc
+  class F bad
+  class G,H ok
+    </pre></div>
+    <figcaption>La maquette locale n'est pas une paresse : c'est ce qui fait tourner l'app <b>sans compte</b>. Mais tout ce qu'elle affiche disparaît à la réinstallation.</figcaption>
+  </figure>
+
+  <h2>Le parcours cible</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+  A["🌑 splash"] --> B["👋 onboarding<br/>3 écrans"]
+  B --> C["🍎 Sign in<br/>with Apple"]
+  C --> D["👤 compte créé<br/>côté Supabase"]
+  D --> E["🔑 session"]
+  E --> F["💰 l'économie<br/>devient réelle"]
+  classDef abs fill:#1A1922,stroke:#7A748A,color:#AAA4B8,stroke-dasharray:4 3
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  class A,B,C,D abs
+  class E,F ok
+    </pre></div>
+    <figcaption>Tout ce qui est en pointillé reste à faire. Le splash existe ; l'onboarding et Apple, non.</figcaption>
+  </figure>
+
+  <div class="tw"><table>
+    <thead><tr><th>Chantier</th><th>État</th><th>Coût</th></tr></thead>
+    <tbody>
+      <tr><td><b>Redonner une porte qui écrit la session</b> — même provisoire</td><td><span class="p p-men">🔴</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Onboarding — les 4 pages existent</td><td><span class="p p-ok">🟢</span></td><td>—</td></tr>
+      <tr><td>Sign in with Apple — capability + entitlements + provider Supabase</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">🧗</span></td></tr>
+      <tr><td>Création de compte réelle</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Sortir les identifiants et la formule de mot de passe du binaire</td><td><span class="p p-men">🔴</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Le jeton dans le Keychain, pas dans les préférences</td><td><span class="p p-men">🔴</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td><b>« Supprimer mon compte » ne supprime rien</b> — bloquant App Store</td><td><span class="p p-men">🔴</span></td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>« Se déconnecter » est une porte à sens unique — plus aucun écran pour rentrer</td><td><span class="p p-men">🔴</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Une table de profil (nom, avatar, fuseau) — « Kathryn » et « Level 1 » sont en dur dans trois fichiers</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Dire à l'écran qu'on n'est pas connectée</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Migrer la maquette locale vers le compte à la première connexion</td><td><span class="p p-abs">⚪</span></td><td><span class="p p-cx">🧗</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="verdict trancher">
+    <b>Deux décisions t'attendent ici.</b><br>
+    ① <strong>L'app doit-elle dire qu'elle n'est pas connectée ?</strong> Aujourd'hui elle affiche un solde de maquette exactement comme un solde réel — rien ne les distingue à l'écran. Bandeau, pastille, ou on assume le mode invité en silence ?<br>
+    ② <strong>« Se déconnecter » reste-t-il actif</strong> tant qu'il n'existe aucun écran pour se reconnecter ? Aujourd'hui la seule sortie est la réinstallation.
+  </div>
+
+  <div class="verdict">
+    <b>Et l'ordre qui compte :</b> une porte qui écrit la session <em>d'abord</em> — sinon tout le back-end reste théorique. Apple ensuite. La migration en dernier : sortir Apple sans elle, c'est demander à quelqu'un de perdre ses pièces le jour où il se connecte.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ MANÈGE ═══ -->
+<section class="page" id="manege">
+  <h1>🧨 Le manège interrompu</h1>
+  <p class="chapo">Tu ouvres un booster, la cérémonie démarre, et tu quittes l'app. Que se passe-t-il ? C'est le seul endroit du jeu où on peut perdre quelque chose de réel.</p>
+
+  <h2>Les instants</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  T0["⏱️ t0 · je tape OUVRIR"] --> T1["🎡 la roue se monte<br/>rien n'est réservé"]
+  T1 --> T2["🔨 la forge tire<br/>et INSCRIT la carte<br/>dans user_cards"]
+  T2 --> T3["✨ la carte est révélée"]
+  T3 --> T4["🕊️ la carte s'envole"]
+  T4 --> T5["✅ ouvrir_booster()<br/>consomme le sachet"]
+
+  T2 -.->|"💥 je quitte"| X1["🔴 carte acquise<br/>sachet PAS consommé"]
+  T3 -.->|"💥 je quitte"| X1
+  T3 -.->|"↩️ chevron retour"| X1
+  T4 -.->|"💥 je quitte"| X1
+
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef bad fill:#2A1618,stroke:#E56A6A,color:#F6D6D6
+  classDef loc fill:#2A2410,stroke:#E3B341,color:#F6E9C4
+  class T0,T2,T3,T4,T5 ok
+  class T1 loc
+  class X1 bad
+    </pre></div>
+    <figcaption>La consommation du sachet est <b>la toute dernière étape</b>, et c'est volontaire — on ne dépense qu'après avoir livré. Mais ça crée l'inverse du problème qu'on craignait.</figcaption>
+  </figure>
+
+  <div class="bloc chaud">
+    <h3>Ce qui se passe vraiment, et ce n'est pas ce qu'on croit</h3>
+    <p>On imagine « le sachet est parti et la carte est perdue ». <strong>C'est l'inverse.</strong> La carte est tirée <em>et inscrite dans ta collection serveur</em> dès le début de la cérémonie ; le sachet n'est consommé qu'à l'envol, tout à la fin. Donc si tu quittes au milieu :</p>
+    <ul>
+      <li>✅ <strong>tu as la carte</strong> — elle est déjà dans <code>user_cards</code>, mais <em>tu ne l'as jamais vue</em> ;</li>
+      <li>⚠️ <strong>tu as toujours le sachet</strong> — tu peux le rouvrir et obtenir une <em>deuxième</em> carte.</li>
+    </ul>
+    <p>Ce n'est donc pas une perte, c'est une <strong>duplication</strong> — et une cérémonie qu'on ne t'a jamais montrée. Aujourd'hui, <strong>rien ne détecte cet état</strong> : aucun marqueur, aucune reprise, aucune pop-up au retour. <span class="p p-abs">⚪</span></p>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>🔴 Et il existe une deuxième fuite, sans même quitter l'app</h3>
+    <p>Au moment du résultat, on peut <strong>sortir par le chevron</strong>. La carte est posée dans la collection, elle est déjà inscrite côté serveur — et ce chemin n'appelle jamais la consommation du sachet. Même résultat qu'une interruption, en tapant simplement « retour ».</p>
+    <p>La cause est la même dans les deux cas : <strong>rien ne réserve le sachet à l'entrée de la cérémonie.</strong> Le seul garde-fou est un <code>if</code> côté téléphone sur un nombre affiché.</p>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>🔴 Un défaut que j'ai posé aujourd'hui, et qu'il faut dire</h3>
+    <p>La consommation du <strong>sachet noir</strong> ne peut jamais aboutir. La fonction cherche un sachet légendaire <em>non ouvert</em> — or la seule ligne légendaire du système naît <strong>déjà marquée ouverte</strong>. Le filtre ne matche donc jamais : l'appel répond « aucun sachet », l'app avale la réponse, et la pile noire ne descend pas côté serveur.</p>
+    <p>Deux corrections possibles : soit la fonction cesse d'exiger <code>opened_at is null</code> pour la pile noire, soit la réservation légendaire cesse de naître ouverte. La seconde est la plus propre — <strong>un sachet ne devrait pas naître consommé</strong>. <span class="p p-cx">⏱️</span></p>
+  </div>
+
+  <div class="bloc chaud">
+    <h3>🔴 Et la pièce d'argent n'est jamais dépensée</h3>
+    <p>L'écran dit qu'une pièce d'argent ouvre un booster noir. La porte est ouverte <strong>sur le solde</strong>, sans rien débiter : la fonction qui échange la pièce contre un sachet existe, est déployée, et <strong>n'a aucun appelant</strong>. Le solde d'argent ne bouge donc jamais — on peut ouvrir le manège noir autant de fois qu'on veut avec la même pièce. <span class="p p-cx">⏱️</span></p>
+  </div>
+
+  <h2>Ce que je propose</h2>
+  <figure>
+    <div class="plan"><pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#1B1824','primaryTextColor':'#EDEAF2','primaryBorderColor':'#3A3448','lineColor':'#6B6480','fontFamily':'JetBrains Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+  A["⏱️ je tape OUVRIR"] --> B["🔖 on pose un marqueur<br/>cérémonie en cours"]
+  B --> C["🎡 la cérémonie joue"]
+  C --> D{"elle va<br/>au bout ?"}
+  D -- oui --> E["🧹 marqueur effacé<br/>sachet consommé"]
+  D -- "💥 non" --> F["🔖 le marqueur survit<br/>au kill"]
+  F --> G["📱 au lancement suivant"]
+  G --> H["🙋 pop-up<br/>ta dernière ouverture<br/>a été interrompue"]
+  H --> I["🎡 Relancer le manège"]
+  I --> J["✨ la MÊME carte<br/>est rejouée"]
+  J --> E
+  classDef ok fill:#12251B,stroke:#5FC98C,color:#D8F3E4
+  classDef bad fill:#2A1618,stroke:#E56A6A,color:#F6D6D6
+  classDef neuf fill:#152233,stroke:#5AA9E6,color:#D3E7F8
+  class A,C,E ok
+  class F,G bad
+  class B,H,I,J neuf
+    </pre></div>
+    <figcaption><b>Le point clé :</b> on rejoue <b>la carte déjà tirée</b>, jamais un nouveau tirage. Sinon on offre une deuxième chance de légendaire à qui coupe l'app au bon moment.</figcaption>
+  </figure>
+
+  <div class="bloc froid">
+    <h3>🔵 La moitié du remède dort déjà côté serveur</h3>
+    <p>L'edge function sait déjà faire l'essentiel : si on lui redonne le <strong>même identifiant de sachet</strong>, elle relit ce sachet, voit qu'il porte déjà une carte, et <strong>rend cette carte-là</strong> au lieu d'en tirer une neuve. C'est exactement le comportement d'une reprise.</p>
+    <p>Elle n'a jamais été atteinte parce que l'app ne lui envoie pas l'identifiant. La même ligne manquante que dans l'onglet 3 résout donc <em>aussi</em> ce cas d'erreur.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Pièce</th><th>Où</th><th>Coût</th></tr></thead>
+    <tbody>
+      <tr><td><b>Réserver le sachet À L'ENTRÉE</b> plutôt qu'à la sortie</td><td>Appeler l'ouverture avant la forge et garder l'identifiant</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Passer cet identifiant à la forge</td><td>Une ligne — et l'idempotence de reprise s'allume</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Marqueur « cérémonie en cours » qui survit au kill</td><td>Dans les préférences, avec l'identifiant du sachet</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Pop-up de reprise au lancement</td><td>À la racine, comme la proposition de sachet</td><td><span class="p p-cx">⏱️</span></td></tr>
+      <tr><td>Le manège sait rejouer une carte au lieu d'en tirer une</td><td>Le manège</td><td><span class="p p-cx">⏳</span></td></tr>
+      <tr><td>Fermer la sortie par le chevron</td><td>Le même appel que l'envol</td><td><span class="p p-cx">⏱️</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="verdict">
+    <b>Le renversement à retenir :</b> aujourd'hui on <em>livre puis on encaisse</em>. Il faut <em>encaisser puis livrer</em> — réserver le sachet à l'entrée. Comme la carte est déjà scellée dessus, une interruption ne coûte alors plus rien : on rejoue, on retrouve la même carte, et on ne peut pas en avoir deux.
+  </div>
+
+  <div class="verdict trancher">
+    <b>À trancher :</b> à ton retour, on te propose de <strong>relancer la cérémonie</strong> (tu vois enfin ta carte) ou on te dit simplement <strong>« tu as gagné cette carte »</strong> sans rejouer le manège ? Le premier est plus beau, le second est plus honnête quand ça arrive trois fois de suite.
+  </div>
+</section>
+
+<p class="pied">
+  Woop · <span class="mono">ytnnyjkramgiqyxdrkcu</span> · doc tenue à la main, dernière passe le 29 août 2026.<br>
+  Les états sont vérifiés dans le code et par appel réel au serveur, pas déduits.
+</p>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var liens = Array.prototype.slice.call(document.querySelectorAll('.menu a'));
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  function montrer(id, pousser){
+    var trouve = false;
+    pages.forEach(function(p){
+      var on = p.id === id;
+      p.classList.toggle('on', on);
+      if (on) trouve = true;
+    });
+    if (!trouve) return false;
+    liens.forEach(function(a){ a.classList.toggle('on', a.dataset.p === id); });
+    if (pousser) { try { history.replaceState(null, '', '#' + id); } catch(e){} }
+    document.querySelector('.corps').scrollTop = 0;
+    window.scrollTo(0, 0);
+    return true;
+  }
+  liens.forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      montrer(a.dataset.p, true);
+    });
+  });
+  // Les renvois d'une page à l'autre dans le corps du texte.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-saut]'), function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      montrer(a.dataset.saut, true);
+    });
+  });
+  var depart = (location.hash || '').replace('#','');
+  if (!depart || !montrer(depart, false)) montrer('flow', false);
+})();
+</script>
