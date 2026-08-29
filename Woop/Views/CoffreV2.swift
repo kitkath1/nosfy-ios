@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreMotion
 import os
 import SwiftUI
 import UIKit
@@ -430,6 +431,187 @@ enum FondCoffre {
             return im
         }
     }
+}
+
+/// ⚠️⚠️ **LE GYROSCOPE — ET CE N'EST PAS « BOUGER LE FOND ».**
+///
+/// Sa demande (29-08) : *« mets l'image de fond en mode gyroscope ? »*. Le
+/// piège est entier dans la géométrie de cette page : **le socle vit DANS le
+/// fond** depuis l'arche (§24). Bouger l'image seule, c'est faire glisser
+/// l'estrade sous l'objet posé dessus — la pièce se retrouve dans le vide.
+///
+/// Le mouvement est donc celui d'un **diorama**, pas d'un calque :
+///
+///   • le décor (arche + socle + néons + flaques) glisse de ±7 pt,
+///   • ce qui est POSÉ dessus (l'objet, son faisceau, la poudre) de ±10 pt,
+///   • le CHROME (chevron, titre, pill, crans, pied) ne bouge JAMAIS.
+///
+/// Les 3 pt d'écart sont la parallaxe : l'objet lévite au-dessus du socle,
+/// il balaie donc un peu plus que lui quand la boîte tourne. C'est assez pour
+/// donner la profondeur, assez peu pour qu'il reste sur son estrade.
+///
+/// ⚠️ **L'ATTITUDE DE RÉFÉRENCE DÉRIVE, ET C'EST OBLIGATOIRE.** Figer le
+/// neutre sur le premier échantillon, c'est condamner la page à la posture
+/// qu'on avait à l'ouverture : couché sur une table puis relevé, tout est en
+/// butée. La référence suit donc l'attitude courante avec une constante de
+/// ~4 s : la page réagit au MOUVEMENT, et se recentre dès qu'on tient droit.
+///
+/// ⚠️ **LE SIMULATEUR N'A PAS DE GYROSCOPE, ET C'EST LE PIÈGE À NON-
+/// RÉGRESSION.** `isDeviceMotionAvailable` y est faux. Si le sur-cadrage
+/// (`echelle`) s'appliquait quand même, tous les bancs `-coffre*` rendraient
+/// un décor zoomé de 5 % **pour rien** — et je jugerais des captures qui ne
+/// sont pas ce que le téléphone affiche. D'où `actif` : sans capteur, la
+/// modification est l'IDENTITÉ, au pixel près.
+@MainActor
+final class GyroFond: ObservableObject {
+    static let shared = GyroFond()
+
+    /// Inclinaison normalisée dans [−1, 1] sur chaque axe. `.zero` = neutre.
+    @Published private(set) var incl: CGSize = .zero
+    /// Vrai seulement quand le capteur tourne VRAIMENT (téléphone, page
+    /// ouverte). C'est lui qui autorise le sur-cadrage.
+    @Published private(set) var actif = false
+
+    /// ⚠️ `-coffreSansGyro` l'éteint — indispensable pour mesurer la cadence :
+    /// une sonde qui compare deux régimes doit pouvoir figer celui-ci.
+    private static let coupe = CommandLine.arguments.contains("-coffreSansGyro")
+
+    private let mm = CMMotionManager()
+    private var refRoll = 0.0
+    private var refPitch = 0.0
+    private var amorce = false
+    private var abonnes = 0
+
+    /// ±17° de course utile. Au-delà, on est en butée : on ne regarde plus
+    /// l'écran, on le montre à quelqu'un.
+    private let plage = 0.30
+    /// Suivi de la référence : 0,004 à 60 Hz ≈ 4,2 s de constante de temps.
+    private let derive = 0.004
+    /// Lissage de la sortie. Sans lui, le bruit du capteur fait vibrer le
+    /// décor de 1 pt en permanence — c'est visible, et ça se lit comme un bug.
+    private let lisse = 0.10
+
+    private init() {}
+
+    /// ⚠️⚠️ **LE BANC DE L'INCLINAISON — ET IL N'EST PAS UN CONFORT.** Le
+    /// simulateur n'a pas de gyroscope : sans ce drapeau, **la seule chose que
+    /// je ne peux PAS voir est justement celle qui casse** — le bord noir
+    /// découvert par le décalage, et l'objet qui glisse de son socle en butée.
+    /// Les deux ne se voient qu'à l'extrême, et l'extrême ne se produit jamais
+    /// tout seul.
+    ///
+    ///     -coffreIncl 1,m1        // droite en butée, bas en butée
+    ///     -coffreIncl m1,0        // gauche en butée, à plat
+    ///
+    /// ⚠️ C'est une paire `-clé valeur` : elle vit dans le domaine d'arguments
+    /// de `UserDefaults`, **pas** dans `CommandLine.arguments` (piège payé deux
+    /// fois sur cette page).
+    ///
+    /// ⚠️⚠️ **ET `m` VEUT DIRE MOINS, PARCE QUE LE TIRET EST INTERDIT ICI —
+    /// PAYÉ AU BANC, ET C'EST UN FAUX NÉGATIF PARFAIT.** `-coffreIncl -1,-1`
+    /// s'est lancé sans une erreur et a rendu une capture… identique au
+    /// neutre : `NSUserDefaults` lit tout jeton commençant par un tiret comme
+    /// une NOUVELLE CLÉ, jamais comme la valeur de la précédente. La moitié
+    /// négative de la course était donc intestable **en se présentant comme
+    /// testée** — et c'est justement le côté où le bord se découvre.
+    private static let force: CGSize? = {
+        guard let t = UserDefaults.standard.string(forKey: "coffreIncl")
+        else { return nil }
+        let p = t.split(separator: ",")
+            .map { Double($0.replacingOccurrences(of: "m", with: "-")) ?? 0 }
+        guard !p.isEmpty else { return nil }
+        return CGSize(width: p[0], height: p.count > 1 ? p[1] : 0)
+    }()
+
+    func demarrer() {
+        abonnes += 1
+        guard abonnes == 1, !Self.coupe else { return }
+        if let f = Self.force { actif = true; incl = f; return }
+        guard mm.isDeviceMotionAvailable, !mm.isDeviceMotionActive else { return }
+        mm.deviceMotionUpdateInterval = 1.0 / 60.0
+        mm.startDeviceMotionUpdates(to: .main) { [weak self] m, _ in
+            guard let self, let m else { return }
+            self.echantillon(roll: m.attitude.roll, pitch: m.attitude.pitch)
+        }
+        actif = true
+    }
+
+    func arreter() {
+        abonnes = max(abonnes - 1, 0)
+        guard abonnes == 0 else { return }
+        mm.stopDeviceMotionUpdates()
+        actif = false
+        amorce = false
+        incl = .zero
+    }
+
+    private func echantillon(roll: Double, pitch: Double) {
+        if !amorce { refRoll = roll; refPitch = pitch; amorce = true }
+        refRoll += (roll - refRoll) * derive
+        refPitch += (pitch - refPitch) * derive
+        func borne(_ v: Double) -> Double { min(max(v / plage, -1), 1) }
+        // ⚠️ SIGNE : le décor part À L'OPPOSÉ de l'inclinaison, comme le fond
+        // d'écran d'iOS. Pencher à droite, c'est regarder la scène par la
+        // droite : on découvre son flanc droit, donc le contenu file à gauche.
+        let cx = -borne(roll - refRoll)
+        let cy = -borne(pitch - refPitch)
+        incl = CGSize(width: incl.width + (cx - incl.width) * lisse,
+                      height: incl.height + (cy - incl.height) * lisse)
+    }
+}
+
+/// ⚠️ **UN `ViewModifier`, PAS UN `@State` DANS LA PAGE — ET C'EST LA LOI DE
+/// LA MAISON** (« la page qui se ré-évalue par image »). Un `@State`
+/// d'inclinaison écrit 60 fois par seconde sur `CoffreV2` rejouerait le corps
+/// ENTIER de la page à chaque échantillon : les quatre objets, leurs flaques,
+/// le pied, la pill. Ici l'abonnement vit dans le modificateur : seul son
+/// `body(content:)` — deux modificateurs de géométrie sur un contenu opaque —
+/// est réévalué.
+struct Parallaxe: ViewModifier {
+    @ObservedObject private var gyro = GyroFond.shared
+    let ampl: CGSize
+    /// Sur-cadrage. ⚠️ **IL EST OBLIGATOIRE DÈS QUE LE FOND BOUGE** : l'arche
+    /// est cuite EXACTEMENT à la taille de l'écran, la décaler d'un point
+    /// découvre un point de noir sur le bord opposé.
+    var echelle: CGFloat = 1
+    /// ⚠️ **L'ANCRE EST LE SOCLE, JAMAIS LE CENTRE DE L'ÉCRAN.** Agrandir
+    /// autour du centre déplacerait la surface de pose de 9 pt — c'est-à-dire
+    /// exactement le décollage qu'on cherche à éviter. Ancré sur le socle,
+    /// `yHaut` est INVARIANT : seul le décor autour respire.
+    var ancre: UnitPoint = .center
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(gyro.actif ? echelle : 1, anchor: ancre)
+            .offset(x: gyro.incl.width * ampl.width,
+                    y: gyro.incl.height * ampl.height)
+    }
+}
+
+extension View {
+    func parallaxe(_ ampl: CGSize, echelle: CGFloat = 1,
+                   ancre: UnitPoint = .center) -> some View {
+        modifier(Parallaxe(ampl: ampl, echelle: echelle, ancre: ancre))
+    }
+}
+
+/// Les deux amplitudes du diorama, et le sur-cadrage qui les rend possibles.
+enum CoffreParallaxe {
+    /// Le décor : arche, socle, néons, flaques.
+    static let fond = CGSize(width: 7, height: 4)
+    /// Ce qui est POSÉ dessus : l'objet, son faisceau, la poudre du passage.
+    static let objets = CGSize(width: 10, height: 5.5)
+    /// ⚠️ **1,05 N'EST PAS UN GOÛT, C'EST LA MARGE DE `fond`.** Ancré au socle
+    /// (x 0,506 · y 0,5569) sur un écran de 402 × 874, il découvre 9,9 pt à
+    /// droite, 10,2 à gauche, 24 en haut et 19 en bas — soit ≥ 7 et ≥ 4
+    /// partout. Le baisser, c'est laisser apparaître le bord noir.
+    ///
+    /// ⚠️ Ce qu'il ROGNE a été vérifié sur l'image : 24 pt en haut, où l'arche
+    /// n'a que ses tubes verticaux qui sortaient DÉJÀ du cadre, et 19 pt en
+    /// bas, où `bake_arche.py` a effacé au noir pur (mesuré : max = 0 sur les
+    /// 222 dernières lignes). Rien de dessiné n'est perdu.
+    static let echelle: CGFloat = 1.05
+    static let ancre = UnitPoint(x: 0.506, y: CoffreV2Cotes.podiumY)
 }
 
 struct SalleFond: View, Equatable {
@@ -2365,9 +2547,28 @@ struct CoffreV2Page: View {
                 }
 
                 carte(sc).offset(y: bas)
-                neonSocle(sc).offset(y: bas)
-                flaques(sc).offset(y: bas)
-                poudre(sc).offset(y: bas)
+                // ⚠️ **LES NÉONS SONT LA MÊME IMAGE QUE L'ARCHE** : ils
+                // prennent le mouvement du décor au pixel près, sur-cadrage
+                // compris. Un point d'écart et les anneaux allumés sortent de
+                // leurs anneaux.
+                neonSocle(sc)
+                    .parallaxe(CoffreParallaxe.fond,
+                               echelle: CoffreParallaxe.echelle,
+                               ancre: CoffreParallaxe.ancre)
+                    .offset(y: bas)
+                // ⚠️ **ET LES FLAQUES AUSSI, POUR UNE RAISON QU'ON NE VOIT
+                // PAS DANS LEUR CODE** : `contact` se masque par l'IMAGE DE
+                // FOND entière. Fond sur-cadré et masque non sur-cadré, la
+                // lumière de contact se décale de 5 % — elle allumerait le sol
+                // à côté du socle.
+                flaques(sc)
+                    .parallaxe(CoffreParallaxe.fond,
+                               echelle: CoffreParallaxe.echelle,
+                               ancre: CoffreParallaxe.ancre)
+                    .offset(y: bas)
+                // La poudre vit dans l'air, pas sur le socle : amplitude des
+                // objets, et pas de sur-cadrage (elle n'a pas de bord).
+                poudre(sc).parallaxe(CoffreParallaxe.objets).offset(y: bas)
                 // ⚠️⚠️ **DEUX FAISCEAUX SE SONT ADDITIONNÉS.** Le fond
                 // porte maintenant SON spot ; celui-ci descendait par-dessus.
                 // Mesuré sur la bande centrale, le vert dépassait le bleu de
@@ -2389,6 +2590,7 @@ struct CoffreV2Page: View {
                            // plus rien ne DÉSIGNE l'objet posé.
                            force: pageOp * (0.86 + 0.55 * loupe + 0.18 * presse))
                     .equatable()
+                    .parallaxe(CoffreParallaxe.objets)
                     .offset(y: bas)
                 if let ne = chocNe {
                     Atterrissage(ne: ne,
@@ -2397,6 +2599,7 @@ struct CoffreV2Page: View {
                                  barre: sc.barre,
                                  plein: geo.size,
                                  force: chocForce)
+                        .parallaxe(CoffreParallaxe.objets)
                         .offset(y: bas)
                 }
                 // LA FUMÉE NOIRE de la pièce ouverte — le shader `coinSmoke`
@@ -2407,6 +2610,7 @@ struct CoffreV2Page: View {
                                               y: sc.yHaut - CoffreV2Cotes.piece / 2),
                               radius: CoffreV2Cotes.piece * 0.62,
                               start: ne, end: fumeeFin, palette: .dark)
+                        .parallaxe(CoffreParallaxe.objets)
                         .offset(y: bas)
                 }
                 contenu(sc).offset(y: bas)
@@ -2419,6 +2623,7 @@ struct CoffreV2Page: View {
                                 sprite: (Self.manege[loupeIdx].planche?.nom
                                          ?? PlanchePiece.or.nom) + "-mini",
                                 plein: CGSize(width: sc.W, height: sc.H))
+                        .parallaxe(CoffreParallaxe.objets)
                         .offset(y: bas)
                 }
                 // ⚠️ **ALIGNÉE SUR LE CHEVRON, ET DE LA MÊME TAILLE QUE LUI.**
@@ -2443,10 +2648,18 @@ struct CoffreV2Page: View {
         .persistentSystemOverlays(.hidden)
         .onAppear {
             demarrer()
+            // ⚠️ LE CAPTEUR NE TOURNE QUE PAGE OUVERTE. Un `CMMotionManager`
+            // laissé en marche continue de réveiller le processeur à 60 Hz
+            // depuis n'importe quel autre écran — c'est de la batterie brûlée
+            // pour un décor que personne ne regarde.
+            GyroFond.shared.demarrer()
             withAnimation(.spring(response: 0.80, dampingFraction: 0.75)
                             .delay(0.45)) { remplie = 1 }
         }
-        .onDisappear { lecteur?.pause() }
+        .onDisappear {
+            lecteur?.pause()
+            GyroFond.shared.arreter()
+        }
     }
 
     // MARK: La card et la chambre
@@ -2462,6 +2675,14 @@ struct CoffreV2Page: View {
                         SalleFond(scene: sc,
                                   clarte: pageOp * (1 - 0.45 * loupe))
                             .equatable()
+                            // ⚠️ **DEDANS, PAS SUR `carte`.** Le décor bouge ;
+                            // le `clipShape(FormeScene)` qui donne à la card
+                            // son bord bas arrondi, LUI, ne doit jamais
+                            // bouger — sinon le coin de la card se promène
+                            // sur l'écran quand on penche le téléphone.
+                            .parallaxe(CoffreParallaxe.fond,
+                                       echelle: CoffreParallaxe.echelle,
+                                       ancre: CoffreParallaxe.ancre)
                     }
                     // ⚠️⚠️ **LE MUR PREND TOUT L'ÉCRAN — NI COUPÉ, NI FONDU**
                     // (verdict : « je voulais pas que la partie grise soit
@@ -2897,7 +3118,12 @@ struct CoffreV2Page: View {
             .padding(.top, 63)
             .opacity(pageOp * texteOp)
 
-            piece(sc)
+            // ⚠️⚠️ **SEUL L'OBJET PREND LE MOUVEMENT DANS CETTE PILE.** Tout
+            // le reste de `contenu` est du CHROME — chevron, titre, pill,
+            // crans, pied. Du chrome qui dérive au gyroscope, ce n'est plus une
+            // scène qui respire, c'est une interface qui glisse : on ne sait
+            // plus si le bouton qu'on vise est là où on le voit.
+            piece(sc).parallaxe(CoffreParallaxe.objets)
 
             // ⚠️ **L'ÉTIQUETTE DE PRIX VIT AVEC L'OBJET, PAS SOUS LE SOCLE**
             // (§27) : on lit « ce sachet coûte 100 pièces » en regardant le
