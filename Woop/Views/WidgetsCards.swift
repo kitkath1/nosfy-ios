@@ -435,6 +435,16 @@ struct ArdoiseFond: View {
     /// fond vidéo bouge dessous, et c'est ce qu'on veut voir.
     var verre: Bool = false
     var lisere: Bool = true
+    /// ⚠️ **LA LUEUR DU BORD, 0 → 1** (30-08 : « les bordures s'illuminent
+    /// légèrement autour du widget quand on scrolle »). C'est une OPACITÉ
+    /// posée sur le liseré qui existe déjà — jamais une taille, jamais un
+    /// `.blur` de plus : ce qui bouge par image ne doit pas re-layouter, et un
+    /// flou par objet coûte 27 img/s ici.
+    ///
+    /// Elle reste discrète par construction : le liseré angulaire est le même,
+    /// on ne fait que le rendre une fois de plus, un peu plus large et très
+    /// transparent. Un objet qu'on touche s'allume ; il ne change pas de robe.
+    var lueur: Double = 0
 
     private var forme: RoundedRectangle {
         RoundedRectangle(cornerRadius: rayon, style: .continuous)
@@ -476,6 +486,15 @@ struct ArdoiseFond: View {
                 forme.stroke(cardLisereConique, lineWidth: 4.4)
                     .blur(radius: 2.4)
                     .opacity(0.46)
+                // LA LUEUR : le MÊME liseré, une passe de plus, montée à
+                // l'opacité. Elle n'existe pas au repos (`lueur` = 0 → rien
+                // n'est composé), donc elle ne coûte que pendant le geste.
+                if lueur > 0.01 {
+                    forme.stroke(cardLisereConique, lineWidth: 2.2)
+                        .opacity(0.55 * lueur)
+                    forme.stroke(Color.white.opacity(0.30), lineWidth: 1)
+                        .opacity(lueur)
+                }
             }
         }
         .frame(width: largeur, height: hauteur)

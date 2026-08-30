@@ -204,6 +204,14 @@ struct CardRoute: View {
 
     private var apercu: EcranSpec.Apercu { EcranSpec.apercu(lecture) }
 
+    /// LE DOIGT EST SUR LA BANDE — 0 au repos, 1 pendant le geste. Il allume
+    /// le bord de la card, et rien d'autre.
+    @State private var defile = false
+    /// ⚠️ Le banc force la lueur : elle ne dure que le temps d'un geste, et
+    /// ni `simctl` ni `osascript` ne posent un doigt sur cette machine. Sans
+    /// ce drapeau, son intensité ne serait jugeable que sur l'appareil.
+    var lueurForcee: Bool = false
+
     /// `-colonne` : l'ancienne composition à TROIS pierres empilées, gardée
     /// pour la comparaison. La bande des neuf est le défaut depuis le 29-08.
     private static let colonneSeule =
@@ -212,7 +220,8 @@ struct CardRoute: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ArdoiseFond(largeur: Self.L, hauteur: geo.hauteur, rayon: 26,
-                        verre: verre, lisere: lisere)
+                        verre: verre, lisere: lisere,
+                        lueur: (defile || lueurForcee) ? 1 : 0)
             texte
             if Self.colonneSeule {
                 colonne
@@ -365,6 +374,29 @@ struct CardRoute: View {
                     proxy.scrollTo(id, anchor: .center)
                 }
             }
+            // ⚠️ **LE CHEMIN REVIENT À AUJOURD'HUI QUAND ON LÂCHE** (30-08 :
+            // « quand on scrolle et qu'on arrête, ça revient au jour
+            // actuel »). La card n'est pas un explorateur : elle dit où on en
+            // est. On peut regarder ailleurs, mais elle se remet en place.
+            //
+            // ⚠️ **ET SEULEMENT APRÈS UN GESTE HUMAIN.** Le recentrage est
+            // lui-même une animation, donc il repasse par `.animating` puis
+            // `.idle` : sans la garde sur l'ancienne phase, il se
+            // redéclencherait sur sa propre retombée — une boucle qui ne
+            // s'arrête jamais. On ne recentre qu'en sortant de `.tracking`,
+            // `.interacting` ou `.decelerating`.
+            .onScrollPhaseChange { avant, apres in
+                let auDoigt = avant == .tracking || avant == .interacting
+                    || avant == .decelerating
+                withAnimation(.easeOut(duration: 0.22)) {
+                    defile = apres != .idle
+                }
+                guard apres == .idle, auDoigt else { return }
+                withAnimation(.spring(response: 0.55,
+                                      dampingFraction: 0.88)) {
+                    proxy.scrollTo(apercu.actif.id, anchor: .center)
+                }
+            }
         }
     }
 
@@ -487,6 +519,9 @@ struct RouteCardLab: View {
     /// l'animation d'avancée serait du code qu'on ne peut pas regarder.
     /// Le chemin avance d'une séance toutes les 2,6 s.
     private static let avance = CommandLine.arguments.contains("-avance")
+    /// `-bandeLueur` : la card comme si un doigt était en train de la faire
+    /// défiler — le seul moyen de juger l'intensité de la lueur sans appareil.
+    private static let lueur = CommandLine.arguments.contains("-bandeLueur")
     @State private var pas = 0
     @State private var horloge: Timer?
 
@@ -514,7 +549,8 @@ struct RouteCardLab: View {
                         VStack(spacing: 4) {
                             CardRoute(lecture: Self.lecture(Self.cas,
                                                             decalage: pas),
-                                      geo: g)
+                                      geo: g,
+                                      lueurForcee: Self.lueur)
                                 // LE FANTÔME DE L'ARDOISE — 354 × 128, la
                                 // taille de « This week ». Une card qui dit
                                 // « à peine plus grande » doit le PROUVER,
