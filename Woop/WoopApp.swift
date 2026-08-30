@@ -1178,7 +1178,16 @@ struct RootView: View {
             // `sacre.robeCourante` reste lu ailleurs dans le parcours.
             BoosterCardHote(
                 ouverte: sacre.popupOuverte,
-                onOuvrir: { sacre.ouvrirManege() },
+                // `morsure` : la profondeur déchirée par le GLISSEMENT (nil
+                // sur un tap) — le manège reprend là. Et `popupOuverte` tombe
+                // ICI : la card a déjà joué sa sortie, `ouvrirManege` n'a plus
+                // à attendre 0,32 s qu'une feuille sorte (c'était un trou noir
+                // de 0,32 s entre la card partie et le Sacre qui monte).
+                onOuvrir: { morsure in
+                    sacre.morsureCard = morsure
+                    sacre.popupOuverte = false
+                    sacre.ouvrirManege()
+                },
                 onFermer: {
                     // La card a DÉJÀ joué sa sortie avant d'appeler : on ne
                     // fait que baisser le drapeau (comme la card STOP).
@@ -1190,11 +1199,11 @@ struct RootView: View {
                 .sondeCadence(sacre.popupOuverte ? "panneau" : "home")
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
-                           // LA MORSURE de la card (BoosterCard.swift) : le
-                           // sachet arrive au manège déjà déchiré à 0,30 —
-                           // le doigt reprend là où la card l'a laissé, il
-                           // ne recommence pas (PLAN-BOOSTER-CARD §13).
-                           dechirureDepart: 0.30,
+                           // LA MORSURE de la card (BoosterCard.swift) : si
+                           // le sachet a été déchiré au GLISSEMENT, le manège
+                           // reprend à cette profondeur ; nil pour toute
+                           // autre porte (pills, coffre, tap) — intact.
+                           dechirureDepart: sacre.morsureCard,
                            // La robe posée par la porte qu'on a prise (la
                            // proposition ou la pill) — deux manèges, jamais
                            // mélangés.
@@ -1210,6 +1219,9 @@ struct RootView: View {
                                }
                            },
                            onCarteEnvolee: { carte in
+                               // La morsure a servi : le prochain manège
+                               // repart d'un sachet intact.
+                               sacre.morsureCard = nil
                                // L'envol accompli : le noir du Sacre
                                // s'efface, l'onglet profil prend la main,
                                // PUIS la carte redescend chez elle — la

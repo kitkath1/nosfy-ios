@@ -575,3 +575,42 @@ CLOUÉES par `-boosterMainPhase`, la seule façon de comparer deux robes) :
 - **Le sim ment sur une chose** : les captures figées par `-boosterMainPhase`
   ont été prises pendant que Kathryn tirait sur le sachet — main éteinte,
   déchirure ouverte. Une planche se lit en sachant qui a le doigt sur le sim.
+
+## 18. LA RELECTURE ADVERSE DU COMMIT fc473c9 — seize findings, un bloquant
+
+Trois lentilles (manège, geste, lois) sur le diff commité. Corrigé dans le
+commit suivant :
+
+1. **BLOQUANT — `dechirureDepart: 0.30` était une CONSTANTE sur le seul
+   manège de la racine** : toutes ses portes (pills lune ET noire du profil,
+   coffre, bancs, et même le TAP sur la card qui n'a rien déchiré) recevaient
+   un sachet mordu. → **la morsure est portée par l'état** :
+   `SacreEtat.morsureCard: Float?`, écrite par le GLISSEMENT seul
+   (`onOuvrir(Float?)`, nil sur un tap), lue par WoopApp
+   (`dechirureDepart: sacre.morsureCard`), effacée dans `fermerManege()` et à
+   `onCarteEnvolee`.
+2. **Un trou de 0,32 s** entre la card partie et le manège : `ouvrirManege`
+   lisait `popupOuverte` encore vrai et attendait la sortie d'une feuille
+   déjà partie. → la racine baisse `popupOuverte` dans `onOuvrir` (0,06 s).
+3. **Le commit claquait** : `prise = 0` à l'image même de l'envol — fente
+   éteinte, lueur retombée, capuchon redescendu PENDANT qu'il part. → sur la
+   branche seuil, `prise` reste au seuil ; c'est la sortie de la card qui
+   éteint tout.
+4. **Le chien de garde refermait le sachet SOUS un doigt immobile** (un
+   `DragGesture` n'émet rien tant que le doigt ne bouge pas ; le cas exact du
+   verdict « si j'arrête le drag, ça redescend ?? »). → plus de minuteur :
+   `@GestureState doigtPose`, que SwiftUI remet à faux lui-même quand le
+   geste finit OU meurt sans `onEnded` — c'est LE chien de garde juste.
+5. **Cinq gardes `tearProgress == 0` mouraient** dans le manège dès que le
+   sachet naissait mordu (retour à l'anneau, charge au maintien, invite,
+   shiny leak, tell de rareté). → `morsureHeritee` dans le coordinateur,
+   comparée à la place de 0 : « rien de plus que ce que la card a fait » =
+   sachet intact du point de vue du manège.
+6. La charnière du capuchon était 22 pt SOUS la lèvre (rotation posée après
+   l'offset) → rotation d'abord. Deux haptiques au même tick du commit →
+   une seule. La main cachée gardait quatre flous gelés → retirée, pas
+   cachée. Deux tailles bougeaient par image (lueur, fente) → des transforms.
+   `-boosterPrise` cloue vraiment (le geste est désactivé au banc).
+
+Preuve de non-régression : `vignettes/manege-intact.png` — sans geste de card
+(`-boosterManege -boosterCine`), le sachet arrive **intact** au manège.

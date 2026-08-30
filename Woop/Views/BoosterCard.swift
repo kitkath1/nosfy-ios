@@ -28,7 +28,9 @@ import SwiftUI
 /// sous `withAnimation` le modèle saute à la cible dès la première image.
 struct BoosterCardHote: View {
     var ouverte: Bool
-    var onOuvrir: () -> Void = {}
+    /// `Float?` : la profondeur déchirée par le GLISSEMENT (le manège la
+    /// reprend), nil sur un tap — un sachet non mordu arrive intact.
+    var onOuvrir: (Float?) -> Void = { _ in }
     var onFermer: () -> Void = {}
 
     @State private var p: Double = 0
@@ -46,7 +48,7 @@ struct BoosterCardHote: View {
             Color.clear
             if montee {
                 BoosterCard(p: p, envol: envol, naissance: naissance,
-                            onOuvrir: commettre,
+                            onOuvrir: { commettre(morsure: $0) },
                             onFermer: { fermer(puis: onFermer) })
             }
         }
@@ -100,20 +102,21 @@ struct BoosterCardHote: View {
     /// il monte et se dissout), PUIS la card s'en va, PUIS le manège s'ouvre.
     /// Le geste doit avoir une conséquence visible avant que l'écran change,
     /// sinon on croit avoir raté son toucher.
-    private func commettre() {
+    private func commettre(morsure: Float?) {
         guard montee, posee, !enSortie else { return }
         enSortie = true
         // Le RRRIP se SENT : l'haptique de commit de la maison (celle du
         // slider), pas un simple impact — « haptique fort » (verdict).
+        // (Pas de `boum` ici : deux haptiques au même tick se superposent.
+        // `boum` signe la POSE de la card, dans la completion de `ouvrir`.)
         CommitHaptic.play()
-        boum += 1
         withAnimation(.easeIn(duration: 0.42)) { envol = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             withAnimation(.easeOut(duration: 0.30)) {
                 p = 0
             } completion: {
                 montee = false
-                onOuvrir()
+                onOuvrir(morsure)
             }
         }
     }
@@ -136,6 +139,9 @@ private enum CoteBooster {
     static let ligneDechirure: CGFloat = 62.0 / 1334.0
     /// Au-delà de cette montée, le sachet est parti — on ouvre.
     static let seuilGlisse: CGFloat = 64
+    /// La profondeur à laquelle le manège REPREND la déchirure faite ici
+    /// (`BoosterStage.dechirureDepart`) — jamais sur un tap.
+    static let morsureManege: Float = 0.30
     /// L'orange du set Lune — la seule couleur autorisée du parcours booster.
     /// La braise dorée de `PoudreBooster`, à l'identique (BoosterPopup:685).
     static let orange = Color(red: 1.00, green: 0.62, blue: 0.26)
@@ -149,7 +155,7 @@ struct BoosterCard: View, Animatable {
     var p: Double
     var envol: Bool
     var naissance: Date
-    var onOuvrir: () -> Void
+    var onOuvrir: (Float?) -> Void
     var onFermer: () -> Void
 
     /// La main a touché le sachet (écrit UNE fois, par `SachetVivant`) : la
@@ -347,7 +353,7 @@ private struct SachetVivant: View {
     var naissance: Date
     var largeur: CGFloat
     var hauteur: CGFloat
-    var onOuvrir: () -> Void
+    var onOuvrir: (Float?) -> Void
     /// Appelé UNE fois, au premier contact — la légende de la card baisse.
     var onTouche: () -> Void
 
@@ -357,12 +363,18 @@ private struct SachetVivant: View {
     @State private var prise: CGFloat = BoosterCardBanc.priseFige ?? 0
     /// La main a touché : l'indice n'a plus rien à apprendre, il s'éteint.
     @State private var touche = false
-    /// Le jeton du chien de garde (voir `armerChienDeGarde`).
-    @State private var jeton = 0
-    /// LES CRANS — un tic léger tous les 12 pt de déchirure (la grammaire des
+    /// LE DOIGT EST-IL POSÉ ? Un `@GestureState` : SwiftUI le remet à `false`
+    /// LUI-MÊME quand le geste finit OU meurt sans `onEnded` (arrière-plan,
+    /// présentation, doigt volé). C'est le chien de garde de la maison — sans
+    /// minuteur : un minuteur ne sait pas si le doigt est encore là, et un
+    /// `DragGesture` n'émet RIEN tant que le doigt est immobile — l'ancien
+    /// chien (0,6 s) refermait le sachet SOUS un doigt qui s'était arrêté
+    /// pour regarder (relecture adverse, 30-08).
+    @GestureState private var doigtPose = false
+    /// LES CRANS — un tic lourd tous les 12 pt de déchirure (la grammaire des
     /// crans du slider). Le sim ne vibre pas : verdict téléphone.
     @State private var cran = 0
-    @State private var dernierCran = 0
+    @State private var dernierCran = Int((BoosterCardBanc.priseFige ?? 0) / 12)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -383,13 +395,16 @@ private struct SachetVivant: View {
         let d = Double(min(1, prise / CoteBooster.seuilGlisse))
         // « Le halo derrière s'allume très fort » (verdict, troisième tour) :
         // de 0,55 à 1,0 sur la déchirure, et il s'élargit.
+        // ⚠️ Une TRANSFORM, jamais une taille qui bouge par image (règle 5) :
+        // le cadre et le rayon sont constants, c'est `scaleEffect` qui
+        // l'élargit (× 1,21 = le 2,3 / 1,9 du plan).
         return Ellipse()
             .fill(RadialGradient(
                 colors: [CoteBooster.orange.opacity(0.42),
                          CoteBooster.orange.opacity(0)],
-                center: .center, startRadius: 0,
-                endRadius: w * (0.95 + 0.25 * d)))
-            .frame(width: w * (1.9 + 0.4 * d), height: w * (2.1 + 0.4 * d))
+                center: .center, startRadius: 0, endRadius: w * 0.95))
+            .frame(width: w * 1.9, height: w * 2.1)
+            .scaleEffect(1 + 0.21 * d)
             .offset(y: -prise * 0.3)
             .opacity((0.55 + 0.45 * d) * sstepB(0.30, 0.70, p))
             // Centrée 12 pt sous le centre du sachet.
@@ -420,7 +435,12 @@ private struct SachetVivant: View {
             // L'arrivée : il tombe dans la lumière APRÈS elle.
             .opacity(sstepB(0.34, 0.72, p))
             .scaleEffect(0.88 + 0.12 * sstepB(0.34, 0.80, p))
-            .overlay { indice }
+            // La main est RETIRÉE au premier contact, pas cachée : une vue à
+            // opacité 0 garde ses quatre flous gelés à rayon non nul pour
+            // toute la vie de la card. Sa sortie joue en 0,28 s, puis elle —
+            // et ses flous — n'existe plus (relecture adverse, 30-08).
+            .overlay { if !touche { indice.transition(.opacity) } }
+            .animation(.easeOut(duration: 0.28), value: touche)
             // « Haptique fort » (verdict) : les crans sont LOURDS — on
             // déchire du plastique, pas du papier.
             .sensoryFeedback(.impact(weight: .heavy, intensity: 0.9),
@@ -431,7 +451,20 @@ private struct SachetVivant: View {
             // un tap sur le titre, ou juste sous la card, ouvrait le booster
             // (relecture adverse, 30-08). ~146 × 200 pt : bien au-delà des 44.
             .contentShape(Rectangle().inset(by: -12))
-            .gesture(geste)
+            // Un geste de banc ne vit que sur son banc : sous `-boosterPrise`
+            // la déchirure est CLOUÉE, le doigt ne l'écrase pas.
+            .gesture(geste, isEnabled: BoosterCardBanc.priseFige == nil)
+            // LE DOIGT SE LÈVE — ou le geste MEURT : les deux passent ici.
+            .onChange(of: doigtPose) { _, pose in
+                guard !pose, prise > 0 else { return }
+                dernierCran = 0
+                if prise >= CoteBooster.seuilGlisse {
+                    onOuvrir(CoteBooster.morsureManege)
+                } else {
+                    withAnimation(.spring(response: 0.34,
+                                          dampingFraction: 0.7)) { prise = 0 }
+                }
+            }
             .frame(width: largeur, height: hauteur, alignment: .top)
             .offset(y: CoteBooster.centreSachet - CoteBooster.hauteurSachet / 2)
     }
@@ -468,7 +501,9 @@ private struct SachetVivant: View {
                 // Une FENTE, pas une lampe (v8 : 20 pt de haut, flou 6, 0,95
                 // — un nuage blanc au-dessus du sachet) : fine, contenue dans
                 // la largeur du corps, et elle ne dépasse jamais l'écart.
-                .frame(width: w * 0.80, height: 2 + 8 * d)
+                // Cadre constant, la hauteur est une TRANSFORM (règle 5).
+                .frame(width: w * 0.80, height: 10)
+                .scaleEffect(x: 1, y: (2 + 8 * d) / 10)
                 .blur(radius: d > 0.01 ? 4 : 0)
                 .blendMode(.plusLighter)
                 .offset(y: fenteY - levee / 2)
@@ -477,12 +512,15 @@ private struct SachetVivant: View {
                 .resizable()
                 .scaledToFit()
                 .frame(height: h)
-                .offset(y: -levee)
-                // Il bascule vers l'arrière, charnière sur la ligne de déchirure.
+                // Il bascule vers l'arrière, charnière sur la ligne de
+                // déchirure — la ROTATION D'ABORD, dans son propre cadre :
+                // posée après l'offset, l'ancre restait 22 pt SOUS la lèvre
+                // levée (un offset ne déplace pas les bounds) — relecture.
                 .rotation3DEffect(.degrees(-14 * d), axis: (x: 1, y: 0, z: 0),
                                   anchor: UnitPoint(x: 0.5,
                                                     y: CoteBooster.ligneDechirure),
                                   perspective: 0.6)
+                .offset(y: -levee)
                 .offset(y: envol ? -40 : 0)
                 .opacity(envol ? 0 : 1)
         }
@@ -490,6 +528,9 @@ private struct SachetVivant: View {
 
     private var geste: some Gesture {
         DragGesture(minimumDistance: 0)
+            // Tant que le geste vit, le doigt est posé ; SwiftUI remet ce
+            // drapeau à faux à la fin OU à la mort du geste (voir `doigtPose`).
+            .updating($doigtPose) { _, pose, _ in pose = true }
             .onChanged { v in
                 if !touche {
                     touche = true
@@ -503,44 +544,29 @@ private struct SachetVivant: View {
                     dernierCran = c
                     cran += 1
                 }
-                armerChienDeGarde()
             }
             .onEnded { v in
-                jeton += 1                      // désarme le chien de garde
                 dernierCran = 0
                 let monte = -v.translation.height * 0.62
                 let court = abs(v.translation.height) < 10
                     && abs(v.translation.width) < 10
-                if court || monte >= CoteBooster.seuilGlisse {
-                    prise = 0
-                    onOuvrir()
+                if court {
+                    // Un TAP : le sachet n'a pas été mordu — il arrive
+                    // intact au manège.
+                    onOuvrir(nil)
+                } else if monte >= CoteBooster.seuilGlisse {
+                    // ⚠️ LA DÉCHIRURE TIENT : `prise` reste au seuil — le
+                    // capuchon part depuis sa position levée, la fente et la
+                    // lueur restent allumées ; c'est la sortie de la card
+                    // (p → 0) qui éteint tout. `prise = 0` ici claquait tout
+                    // à l'image même de l'envol (relecture adverse, 30-08).
+                    prise = CoteBooster.seuilGlisse
+                    onOuvrir(CoteBooster.morsureManege)
                 } else {
                     withAnimation(.spring(response: 0.34,
                                           dampingFraction: 0.7)) { prise = 0 }
                 }
             }
-    }
-
-    /// LE CHIEN DE GARDE — un `DragGesture` peut mourir sans `onEnded`
-    /// (arrière-plan, appel, présentation ; la loi du geste annulé). Sans lui,
-    /// le sachet resterait levé et la lueur allumée jusqu'au prochain toucher,
-    /// et un seuil franchi ne commettrait jamais. Réarmé à chaque image ; il ne
-    /// tire que si le doigt s'est tu 0,6 s — un doigt qui TIENT le sachet en
-    /// l'air si longtemps sans bouger est rare, et au-dessus du seuil c'est un
-    /// commit, pas une perte.
-    private func armerChienDeGarde() {
-        jeton += 1
-        let j = jeton
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            guard j == jeton, prise > 0 else { return }
-            if prise >= CoteBooster.seuilGlisse {
-                prise = 0
-                onOuvrir()
-            } else {
-                withAnimation(.spring(response: 0.34,
-                                      dampingFraction: 0.7)) { prise = 0 }
-            }
-        }
     }
 
     /// LA MAIN v3 — « Apple, full dégradé blanc, un filament qui glisse
@@ -579,8 +605,7 @@ private struct SachetVivant: View {
                             part: 1 - sstepB(0.62, 0.76, c))
             }
         }
-        .opacity(touche ? 0 : sstepB(0.72, 1.0, p))
-        .animation(.easeOut(duration: 0.28), value: touche)
+        .opacity(sstepB(0.72, 1.0, p))
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

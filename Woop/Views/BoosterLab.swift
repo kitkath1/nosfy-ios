@@ -1409,6 +1409,14 @@ struct BoosterStage: UIViewRepresentable {
             }
         }
         private var stage: BoosterScene?
+        /// LA MORSURE HÉRITÉE de la card (`reprendreDechirure`) : « rien de
+        /// plus que ce que la card a fait » = un sachet encore INTACT du point
+        /// de vue du manège. Les gardes `tearProgress == 0` (l'invite, la
+        /// charge au maintien, le retour à l'anneau, le tell de rareté, le
+        /// soupir) comparent à ELLE, sinon elles meurent toutes dès que le
+        /// sachet naît mordu (relecture adverse, 30-08). Remise à 0 à chaque
+        /// `attach`.
+        private var morsureHeritee: Float = 0
         /// La poignée du raccord CarteVivante (nil hors handoff).
         weak var handle: BoosterHandle?
         /// La paire pan/hold — la SEULE autorisée à se reconnaître
@@ -1494,12 +1502,14 @@ struct BoosterStage: UIViewRepresentable {
             let timer = Timer(fire: Date().addingTimeInterval(1.4),
                               interval: 4.2, repeats: true) { [weak self] _ in
                 guard let self, let stage = self.stage else { return }
-                guard self.mode == .idle, stage.tearProgress == 0,
+                guard self.mode == .idle,
+                      stage.tearProgress <= self.morsureHeritee,
                       self.restingFront else {
                     // SENTINELLE : un sweep sauté pour cause de
                     // non-recto était invisible — c'est ce silence qui
                     // a rendu « impossible de déchirer » indéchiffrable.
-                    if self.mode == .idle, stage.tearProgress == 0 {
+                    if self.mode == .idle,
+                       stage.tearProgress <= self.morsureHeritee {
                         print("[booster] sweep sauté : non-recto yaw=\(self.yaw)")
                     }
                     return
@@ -1528,7 +1538,8 @@ struct BoosterStage: UIViewRepresentable {
             switch g.state {
             case .began:
                 guard mode == .idle, restingFront,
-                      stage.tearProgress == 0, holdLink == nil else { return }
+                      stage.tearProgress <= morsureHeritee,
+                      holdLink == nil else { return }
                 let hits = view.hitTest(g.location(in: view),
                                         options: [.ignoreHiddenNodes: true])
                 guard hits.contains(where: { $0.node === stage.bodyNode
@@ -1597,7 +1608,9 @@ struct BoosterStage: UIViewRepresentable {
             haptics.bedStop()
             if mode == .idle { startInvite() }
             // Le soupir rend son tell au sachet intact.
-            if stage?.tearProgress == 0 { stage?.poserShinyLeak() }
+            if let stage, stage.tearProgress <= morsureHeritee {
+                stage.poserShinyLeak()
+            }
         }
 
         /// La découpe prend le relais du maintien : le plancher de
@@ -1719,6 +1732,7 @@ struct BoosterStage: UIViewRepresentable {
                     robe: RobeBooster = .lune,
                     cadreDecoupe: Bool = false) {
             self.view = view
+            morsureHeritee = 0
             self.still = still
             self.dos = dos
             self.mylar = mylar
@@ -2301,7 +2315,8 @@ struct BoosterStage: UIViewRepresentable {
                             .contains(carte.famille.rarete) {
                             let calme = self.mode == .idle
                                 && self.holdLink == nil
-                                && (self.stage?.tearProgress ?? 1) == 0
+                                && (self.stage?.tearProgress ?? 1)
+                                    <= self.morsureHeritee
                             self.stage?.setTell(discret: !calme)
                             // La respiration ×1,5 du tell ne peut PAS
                             // s'appliquer à une respiration déjà en
@@ -2591,7 +2606,8 @@ struct BoosterStage: UIViewRepresentable {
         /// `tornGlow` — le fil d'or sur un sachet intact.
         func reprendreDechirure(depuis s: Float) {
             guard let stage, s > 0 else { return }
-            stage.setTear(min(s, 0.75), sparking: false)
+            morsureHeritee = min(s, 0.75)
+            stage.setTear(morsureHeritee, sparking: false)
         }
 
         func jumpToOpen() {
@@ -2856,7 +2872,7 @@ struct BoosterStage: UIViewRepresentable {
                     applyCloneSpin()
                 case .maybeBack:
                     if g.translation(in: view).y > 90,
-                       stage.tearProgress == 0 {
+                       stage.tearProgress <= morsureHeritee {
                         backOutGallery()
                     }
                 default:

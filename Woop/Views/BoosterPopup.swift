@@ -35,6 +35,14 @@ final class SacreEtat {
     /// la compilation Metal décale la roue, et un « +2 s » fixe faisait
     /// tomber la désallocation de la home EN PLEIN dévissage.
     var manegePose = false
+    /// LA MORSURE DE LA CARD — la profondeur à laquelle la card 2D a déchiré
+    /// le sachet (BoosterCard.swift, le glissement). Le manège la reprend
+    /// (`BoosterLab.dechirureDepart`). ⚠️ nil pour toute autre porte (les
+    /// pills du profil, le coffre, un TAP sur la card) : un sachet qui n'a
+    /// pas été mordu arrive intact. Effacée à la fermeture du manège et à
+    /// l'envol de la carte — jamais une constante à la racine (relecture
+    /// adverse, 30-08 : « 0,30 pour tout le monde, tout le temps »).
+    var morsureCard: Float? = nil
     /// La carte que la page profil doit ACCUEILLIR (l'envol accompli).
     /// Elle est posée APRÈS la bascule d'onglet : la page doit exister
     /// pour l'entendre — et son `onAppear` la relit en filet de sécurité.
@@ -152,6 +160,7 @@ final class SacreEtat {
     func fermerManege() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         manegePose = false
+        morsureCard = nil
         withAnimation(.easeInOut(duration: 0.32)) { manegeOuvert = false }
         // La proposition mise en attente reprend la parole.
         if propositionEnAttente {
