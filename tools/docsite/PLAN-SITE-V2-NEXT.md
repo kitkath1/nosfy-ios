@@ -1,6 +1,6 @@
 # PLAN v2 — Le site de doc devient une app Next.js : hero de domaine, schémas obsidienne, structure Linear, animations Apple
 
-> Plan écrit le 30-08-2026 ; **J0 → J4 livrés le même jour** (Next.js compilateur,
+> Plan écrit le 30-08-2026 ; **J0 → J4 livrés le même jour** (commits b4d721c, puis a74f2de pour les faits mesurés du pair — 127 pastilles) (Next.js compilateur,
 > source typée `content/`, 7 pages, hero de domaine à teinte mesurée, schémas
 > obsidienne pré-rendus, animations, loi réécrite, `npm run verif` vert). Restent **J5**
 > (les 8 captures manquantes : un build, attend son feu vert) et **J6** (ses verdicts
