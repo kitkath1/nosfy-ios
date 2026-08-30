@@ -138,7 +138,10 @@ renvoyer et la dalle l'honorera **si elle est là** — sinon la rotation.
 ### B3. Ce que le backend doit garantir (inchangé du V8, et vérifié depuis)
 
 - **L'UI affiche le gain tout de suite.** C'est la loi du §1 du plan backend
-  et c'est déjà ce que fait `terminerSeance` : la notif part à +1,6 s, l'appel
+  et c'est déjà ce que fait `terminerSeance` : ~~la notif part à +1,6 s~~
+  **périmé depuis 8e8a0cc (30-08)** — la story part à +2,0 s, puis la capsule
+  à **+0,3 s après la fermeture de la story** (`WoopApp.swift:543-556`,
+  `enchainerApresStory`) ; l'appel
   `cloturer_seance` vit dans une tâche détachée qui **ne propage jamais son
   échec** (`SacreServeur.reglerFinDeSeance`).
 - **Le règlement est idempotent** et passe par l'outbox (`OutboxGains`, un

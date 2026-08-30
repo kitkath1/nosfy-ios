@@ -33,10 +33,10 @@ moment, son z-index et **son propre calcul du gain** :
 | 1 | `PillGain` | `RestartSheet.swift:536` | +0,34 s après une série ordinaire, vit 2 s | production |
 | 2 | `RewardPopup` (6 robes) | `RewardCard.swift:68` | séries de rang 3/5/10, ou **le chip « … »** | production |
 | 3 | `SeriesCoinFlight` | `RestartSheet.swift:417` | à **chaque** série | production |
-| 4 | `PiecesNotif` | `PlayerSeance.swift:260` | clôture (+1,6 s) et card à gratter (+0,3 s) | production |
+| 4 | `PiecesNotif` | `PlayerSeance.swift:260` | ~~clôture (+1,6 s)~~ **périmé depuis 8e8a0cc : capsule +0,3 s après la fermeture de la story** (`WoopApp.swift:543-556`) — et card à gratter (+0,3 s) | production |
 | 5 | `VolDePieces` | `PlayerSeance.swift:206` | sur `notifPieces` | ⚠️ **en archive** (`HomeAuroraView` n'est montée nulle part) |
 | 6 | `CardRecompense` | `RewardCheminCard.swift:20` | claim d'un nœud du chemin | production |
-| 7 | `BoosterPopup` | `BoosterPopup.swift:298` | clôture (+5,2 s) | production — ⚠️ le « bouton d'essai » qu'on lui prête vit dans `HomeAuroraView`, donc en **archive** (voir ligne 5) |
+| 7 | `BoosterPopup` | `BoosterPopup.swift:298` | ~~clôture (+5,2 s)~~ **périmé depuis 8e8a0cc : card +3,4 s après la fermeture de la story** (`WoopApp.swift:553-554`, `SacreEtat.shared.proposer()`) | production — ⚠️ le « bouton d'essai » qu'on lui prête vit dans `HomeAuroraView`, donc en **archive** (voir ligne 5) |
 | 8 | `StoryWin` | `StorySuite.swift:1457` | la page « butin » de la story | production |
 | 9 | Les trois **robes de notification** | `NotifCard.swift`, `NotifChasse.swift` | — | ⚠️ **banc seulement** (`-notifLab`) |
 
@@ -208,7 +208,15 @@ en a le budget**.
 
 ### 3.1 Le fact engine n'existe pas
 
-Aucune structure `{id, kind, value, unit, comparison, window, rank}`, aucune
+⚠️ **PÉRIMÉ en partie depuis 6557a90 (30-08 11:56)** : la table
+`workout_facts` et `poser_faits_seance(uuid, date, jsonb)` **existent et sont
+déployées** (`20260830100000_moteur_faits.sql` ; sondé le 30-08 :
+`rpc/poser_faits_seance` sans corps → 400 P0001, témoin inventé → 404).
+Ce qui reste vrai : **personne ne les appelle** (grep Swift : 0 site), et ses
+faits sont de **séance** (`top_muscu`, `top_cardio`, `double_jour`), pas de
+série — le grain que ce § réclame n'y est pas.
+
+Ce qui était vrai au 29-08 : aucune structure `{id, kind, value, unit, comparison, window, rank}`, aucune
 des 9 détections v1, **aucun fetch des références historiques** que le §3
 décrit pourtant comme *« un seul fetch, petit, cacheable »*.
 
@@ -262,7 +270,7 @@ sachets — tranché : card **et** dalle, robe pièces ou booster (plan §0, §5
 
 ### 3.4 Et le serveur, lui, n'avait pas non plus tout (état du 29-08 matin)
 
-⚠️ **PÉRIMÉ depuis 97cf6d9 (29-08 soir) — gardé pour l'histoire, corrigé au
+⚠️ **PÉRIMÉ depuis 97cf6d9 (29-08 midi, 13:09) — gardé pour l'histoire, corrigé au
 §10.** Ce qui était vrai au matin :
 
 `cloturer_seance(p_workout, p_series)` faisait **deux écritures** : les pièces
@@ -510,7 +518,7 @@ est le même »*.
   n'existent nulle part** — et `welcome_state` n'existera pas : sa question
   (« disponible aujourd'hui ? ») devient la clé `retour_disponible` de
   `etat_coffre()` (plan §4 M1.7, J1). `roll_rare`, elle, **existe depuis le
-  29-08 au soir** (97cf6d9, §10) — la ligne d'origine la comptait parmi les
+  29-08 à midi** (97cf6d9, 13:09, §10) — la ligne d'origine la comptait parmi les
   absents, c'était vrai le matin.
 
 ---

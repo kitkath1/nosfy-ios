@@ -1379,8 +1379,10 @@ morts sans qu'on l'ait vu (la page BRAVO, le vol de pièces de la home).
 coffre-annonces §3). Ce que `DecideurSerie.pour` (`RestartSheet.swift:608-630`)
 fait de faux n'est donc plus le principe, c'est le reste : ses trois modulos
 (`% 10`, `% 5`, `% 3`) servent **tous les multiples** (6, 9, 12, 15…), sans
-hasard, sans budget, sans horloge, sans serveur — et les 22 clés de rythme de
-`reward_rules` (`annonces.sql:96-152`) ne sont lues par personne. Et la règle
+hasard, sans budget, sans horloge, sans serveur — et les 21 clés de rythme de
+`reward_rules` (`annonces.sql:96-152`, comptées une à une le 30-08 soir ;
+`regles_annonces()` en rend 18, les trois `rare_*` retirées) ne sont lues par
+personne. Et la règle
 ne tient même pas sa promesse (mesuré le 29-08, le code est le même au 30-08 :
 `ExerciseDetailView.swift:2356-2375`) : `settleSeries` diffère son écriture de
 0,55 s alors que le rang est lu tout de suite — **le MOMENT tombe à la 4ᵉ
@@ -1406,7 +1408,7 @@ série, la pop-up à la 6ᵉ, la vidéo rare à la 11ᵉ**, et la pill sous-comp
 | 1 | **`reste` devient DÉRIVÉ** (`solde_or mod prix_booster`) dans `etat_coffre()` | `booster_progress.reste` était créé, lu, **et écrit par personne** : la jauge du coffre et celle de la notification affichaient **0/100 en permanence**. Et un solde stocké viole la loi n° 1 |
 | 2 | **`roll_rare(uuid)`** — p = 1/30, pity 45, cooldown 10, **compteur DÉRIVÉ du journal** | la pièce d'argent **ne pouvait pas être gagnée** : solde bloqué à 0 → booster noir inatteignable → toute la robe noire du Sacre hors du jeu |
 | 3 | **`cloturer_seance` tire au règlement** et rend `argent`, `reste`, `prix_booster` | une seule annonce suppose **une seule réponse** : tout ce que la dalle doit dire est là, plus rien à redemander |
-| 4 | **17 clés de rythme** dans `reward_rules` + `annonce_une_par_evenement` | le rythme se règle **sans redéployer l'app** — c'est toute la raison d'être de la table |
+| 4 | **21 clés de rythme** dans `reward_rules` (dont `annonce_une_par_evenement` ; comptées une à une le 30-08 soir, `annonces.sql:98-151`) | le rythme se règle **sans redéployer l'app** — c'est toute la raison d'être de la table |
 | 5 | **`regles_annonces()`** — un appel, toutes les règles agrégées | une règle ajoutée demain ne demande **aucun changement de client** |
 
 ⚠️ **Les trois clés de rareté sont RETIRÉES de `regles_annonces()`** : un pity

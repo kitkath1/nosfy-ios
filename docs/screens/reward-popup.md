@@ -245,7 +245,8 @@ vidéo se recuit de mémoire, et le piège du `-ss` se repaie.
 > §3 faits, §4 IA, §5 contrat design) et l'analyse du couple dans
 > `tools/rewards/PLAN-ANNONCES.md`. ⚠️ **Ce que ces deux plans disent du
 > rythme est périmé depuis le 30-08** : le §2 du plan rewards interdit « tout
-> déclencheur à position fixe (série 5/10/15) » (`:79`) — Kathryn a tranché
+> déclencheur à position fixe (série 5/10/15) » (`PLAN-REWARDS-BACKEND.md:93-95`
+> — **barrée depuis le J0**, 1233a0c, avec le verdict écrit à côté) — Kathryn a tranché
 > **des rangs fixes 3 / 5 / 10, puis du hasard** (`PLAN-COFFRE-ANNONCES.md`
 > §0, §1 Q1-Q2, §2.7). La référence des décisions est ce dernier plan.
 

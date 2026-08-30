@@ -265,7 +265,7 @@ témoin (elle rend bien 400) :
 | table | colonnes vérifiées |
 |---|---|
 | `coin_ledger` | `jour` ✓ `noeud_id` ✓ `raison` ✓ `currency` ✓ `workout_id` ✓ `booster_id` ✓ |
-| `user_boosters` | `noeud_id` ✓ `robe` ✓ `origine` ✓ `opened_at` ✓ (+ `card_id` depuis 9ef6da1) |
+| `user_boosters` | `noeud_id` ✓ `robe` ✓ `origine` ✓ `opened_at` ✓ `card_id` ✓ (la colonne existe depuis `20260828120000_booster_noir.sql:35` ; ce que 9ef6da1 a changé, c'est que `forge-card` l'**écrit** — le scellement) |
 | `reward_rules` | `key` ✓ `value` ✓ |
 
 **Les règles sont peuplées** — `etat_coffre()` rend
@@ -349,7 +349,7 @@ de `reste` **ne change pas** : la conversion la rend vraie par construction.
 
 **`historique_gains(p_limite)`** — le journal, une ligne par ÉVÉNEMENT, la plus
 récente d'abord : `quand · genre (coins/booster) · motif · montant · monnaie ·
-robe` (`SacreServeur.swift:368-400`). **Périmé depuis le 29-08 :** « la page
+robe` (`SacreServeur.swift:377-409` — `LigneGain` :377-388, `historique(jwt:limite:)` :390-409, relevé le 30-08 soir après le commentaire :293-310). **Périmé depuis le 29-08 :** « la page
 reconstruit l'historique depuis les séances ; `GainCoffre.robe` est toujours
 `nil` ». Le journal serveur est lu (§3 A4) et une ligne `booster` porte sa
 robe (`EconomieWoop.swift:318-324` : `noire` ou `lune`) — le versement

@@ -293,7 +293,13 @@ dalle a besoin de lire ou de déclencher existe et répond — rien à migrer po
 les notifications ». **Faux depuis les décisions du 30-08** : la pile a besoin
 de `sachets_convertis` (conversion automatique à 100), d'un `cloturer_seance`
 rejouée qui rend le stocké, de `retour_disponible` et du jour Paris pour le
-Welcome Back — la migration **M1** du plan §4, **pas écrite** au 30-08 soir.
+Welcome Back — la migration **M1** du plan §4, ~~pas écrite au 30-08 soir~~
+**écrite, posée le 30-08 à 18:48 et prouvée à 18:49**
+(`supabase/migrations/20260830210000_conversion_jour_flamme.sql` ;
+`tools/annonces/verif_backend_coffre.py` → TOUT EST VERT, 47 preuves :
+`sachets_convertis` et `rejeu` rendus par `cloturer_seance`,
+`retour_disponible` / `retour_prochain` / `flamme` dans `etat_coffre`, jour
+Paris dans `claim_retour_quotidien`). Côté serveur, la dalle a désormais tout.
 Ce qui manque **dans l'app** reste vrai : aucune robe booster ni argent, un
 seul créneau `notifPieces`, aucune porte de production pour le Welcome Back,
 `argent` et `booster_neuf` reçus et jamais annoncés.

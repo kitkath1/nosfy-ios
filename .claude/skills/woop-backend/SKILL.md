@@ -147,7 +147,10 @@ peut alors pas distinguer un refus légitime d'un serveur cassé.
 > (`20260830160000_sachet_scelle_et_tirage.sql:55-127` — jsonb,
 > `{ouvert:false, raison:'argent_insuffisant'}` en `:96-100`), **sondée** le
 > 30-08 14:35 sur le compte de test (`tools/sacre/verif_backend_sachet.py` :
-> ×2 → 200, le même `booster_id` au rejeu, `reprise:true`). Les deux portes
+> ×2 → 200, le même `booster_id` au rejeu, `reprise:true`). ⚠️ La sonde a
+> observé le **succès** ; le **refus** `{ouvert:false, raison:'argent_insuffisant'}`
+> est **lu** dans la migration (`:96-100`), jamais mesuré — il faudrait un
+> compte à 0 pièce d'argent. Les deux portes
 > du même coffre répondent enfin dans la même langue — et c'est la langue de
 > toutes les suivantes.
 

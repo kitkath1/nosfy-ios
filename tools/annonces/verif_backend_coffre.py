@@ -67,12 +67,18 @@ def j(b):
 
 
 ok = True
+N_OK = 0
+N_KO = 0
 
 
 def verdict(cond, msg):
-    global ok
+    global ok, N_OK, N_KO
     print(("  ✓ " if cond else "  ✗ ") + msg)
     ok = ok and cond
+    if cond:
+        N_OK += 1
+    else:
+        N_KO += 1
 
 
 def coffre(jwt):
@@ -270,5 +276,5 @@ print("\n[6] le témoin")
 st6, b6 = call("/rest/v1/rpc/fonction_inventee_temoin", {}, jwt); print("   :", st6, b6[:120])
 verdict(st6 == 404 and "PGRST202" in b6, "la fonction inventée rend 404 / PGRST202 : les 403 ci-dessus sont bien des refus, pas des absences")
 
-print("\n" + ("TOUT EST VERT" if ok else "✗ AU MOINS UNE PREUVE MANQUE"))
+print(f"\n{N_OK} ✓ · {N_KO} ✗ — " + ("TOUT EST VERT" if ok else "✗ AU MOINS UNE PREUVE MANQUE"))
 sys.exit(0 if ok else 1)

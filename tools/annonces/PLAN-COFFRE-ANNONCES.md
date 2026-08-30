@@ -95,8 +95,9 @@ entre parenthèses ; « go » sans commentaire = le défaut.
 - Textes **en dur** (`ExerciseDetailView.swift:1097-1115`) ; `RewardPopup` n'a pas d'entrée pour des
   lignes géantes (`RewardCard.swift:68-82`), `Text(title)` sans `lineLimit` (:760-778) — l'IA n'a
   nulle part où écrire, un titre long casse la card.
-- Les **22 clés de rythme** sont en base (`annonces.sql:96-152`) et `regles_annonces()` les rend
-  (:174-181) : **personne ne les lit** (grep : un commentaire, `ExerciseDetailView.swift:2269`).
+- Les **21 clés de rythme** sont en base (`annonces.sql:96-152`, comptées une à une — le « 22 » du 30-08 18:35
+  était un faux compte) et `regles_annonces()` en rend **18** (:174-181, les trois `rare_*` retirées) :
+  **personne ne les lit** (grep : un commentaire, `ExerciseDetailView.swift:2269`).
 - `narrate-reward` : **n'existe pas** — sondé le 30-08 : `functions list` → `forge-card` seule
   (ACTIVE v4, `verify_jwt` true) ; `POST /functions/v1/narrate-reward` → 404 ; `weekly-synthesis`
   → 404 aussi (écrite, jamais déployée, jamais montée).
@@ -306,7 +307,7 @@ le rejeu doit rendre le même texte — pas au J1).
 | jalon | livre | porte de sortie (MESURÉE, compte de test, rejeu compris) | temps |
 |---|---|---|---|
 | **J0** | ce plan · les fiches périmées réécrites (§2.7) · le site aligné (§7) | `npm run verif` vert ; son go | ½ j |
-| **J1 — M1** ✔ **posée le 30-08 à 18:48, sonde TOUT EST VERT (47 preuves)** — 20260830210000 : conversion (stock d'avant converti à la pose : 1 536 → 15 sachets + 36) · jour Paris · `flamme()` · `etat_coffre` +4 clés · clôture rejouée rend le stocké (`argent_seance`) · `claim_booster` fermée (403) | `migration list` avant/après ; `cloturer_seance` ×2 : #1 `sachets_convertis` ≥ 0 et `solde` < 100, #2 `rejeu:true` + le MÊME `pieces/argent/booster_id` ; `claim_retour_quotidien` ×2 : `jour` = date Paris (lu dans le carnet), #2 `credite:false` ; `etat_coffre` : `retour_disponible` false après, `flamme` cohérent avec `workouts` ; `rpc/claim_booster` → 401/403 ; témoin `rpc/fonction_inventee` → 404 ; `-demoData` sans `-syncNow` n'écrit rien | 1 j |
+| **J1 — M1** ✔ **posée le 30-08 à 18:48, sonde TOUT EST VERT (elle imprime son compte de ✓)** — 20260830210000 : conversion (stock d'avant converti à la pose : 1 536 → 15 sachets + 36) · jour Paris · `flamme()` · `etat_coffre` +4 clés · clôture rejouée rend le stocké (`argent_seance`) · `claim_booster` fermée (403) | `migration list` avant/après ; `cloturer_seance` ×2 : #1 `sachets_convertis` ≥ 0 et `solde` < 100, #2 `rejeu:true` + le MÊME `pieces/argent/booster_id` ; `claim_retour_quotidien` ×2 : `jour` = date Paris (lu dans le carnet), #2 `credite:false` ; `etat_coffre` : `retour_disponible` false après, `flamme` cohérent avec `workouts` ; `rpc/claim_booster` → 401/403 ; témoin `rpc/fonction_inventee` → 404 ; `-demoData` sans `-syncNow` n'écrit rien | 1 j |
 | **J2 — app coffre + Welcome** | file d'annonces + robes booster/argent · conversion affichée · achat retiré · Welcome : porte + Claim → outbox → dalle · profil à 0 · dalle du chemin | sim : Claim → carnet +10 **au tap seulement** ; 100 pièces → « 1 » qui apparaît, or retombé ; profil à 0 ; capture avant/après | 1,5 j |
 | **J3 — la fin de séance** | page noire (pile, borne 4 s, repli) · atterrir sur le chemin · animation route · « Ouvrir » après | sim : clôture → story → pile (pièces, sachet, argent forcé au banc) → chemin animé → « Ouvrir » ; kill entre clôture et pile → relance relit le stocké ; hors ligne → repli « local » dit tel quel ; cadence mesurée (`tools/charge.sh` avant) | 2 j |
 | **J4 — M2 + décideur** | clés des rangs · `reglesAnnonces` · décideur à budget · gabarits par fait · `RewardPopup` borné | banc : 30 séries → pop-ups à 3, 5, 10 puis 15-18, 21-26… ; jamais 6/9/12 ; ≤ 4 ; une vidéo ; écart tenu | 1 j |
