@@ -158,6 +158,9 @@ struct RootView: View {
     /// se replie au scroll de la liste des sessions. `-calAuto` : boucle
     /// vidéo ; `-calTune` (ou double-tap) : la console du verre.
     private static let calLab = CommandLine.arguments.contains("-calLab")
+    /// Banc de la page PROGRESS v2 : `-progressLab` — la page seule (le plan
+    /// `tools/progress/PLAN-PROGRESS-V2.md`, ses drapeaux dans `ProgressBanc`).
+    private static let progressLab = CommandLine.arguments.contains("-progressLab")
     /// Banc de la Duolinguo_page « LE CHEMIN DE FEU » : `-duoLab`, la colonne
     /// des cinq écrans seule. `-duoEcran <1-5>`, `-duoFreeze`, `-duoAuto`
     /// sont lus dans la vue (tools/duolingo/PLAN-DUOLINGUO.md).
@@ -895,6 +898,8 @@ struct RootView: View {
             LogoLab()
         } else if Self.navLab {
             NavLab()
+        } else if Self.progressLab {
+            ProgressLab()
         } else if Self.calLab {
             CalLab()
         } else if Self.duoLab {
@@ -1048,11 +1053,14 @@ struct RootView: View {
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
-                    // LE CALENDRIER À STICKERS a pris la place de
-                    // Progression (18-08) : page immersive — la barre
-                    // bijou se retire, le chevron ramène à la home (la
-                    // grammaire d'Exercices et du Profil).
-                    CalendarStickersPage(onBack: retourHome, ouvreIpod: true)
+                    // PROGRESS v2 (30-08, plan tools/progress/PLAN-PROGRESS-V2.md) :
+                    // on n'atterrit plus sur l'iPod — une page (header, This
+                    // week, calendrier) ; l'iPod est une destination (« Voir
+                    // dans le lecteur »). Page immersive — la barre bijou se
+                    // retire, le chevron ramène à la home (la grammaire
+                    // d'Exercices et du Profil). L'ancienne page calendrier
+                    // (18-08) vit sous `-calLab`.
+                    ProgressPage(onBack: retourHome)
                     .toolbarVisibility(.hidden, for: .tabBar)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {

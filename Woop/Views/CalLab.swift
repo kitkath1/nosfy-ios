@@ -772,7 +772,7 @@ struct CalendarStickersPage: View {
 /// Ce qu'il faut pour ouvrir l'iPod : le mois, le rectangle écran de
 /// la card d'où le portail s'ouvre (.zero = banc, sans portail), et
 /// le mois PRÉCÉDENT (nom + compte) pour la phrase de comparaison.
-private struct MoisLaunch: Identifiable {
+struct MoisLaunch: Identifiable {
     let month: DemoMonth
     let rect: CGRect
     var precedentNom: String?
@@ -785,7 +785,7 @@ private struct MoisLaunch: Identifiable {
 
 /// Ce qu'il faut pour ouvrir la story depuis la page : le récit, et le
 /// rectangle écran d'où le portail s'ouvre.
-private struct CalStoryLaunch: Identifiable {
+struct CalStoryLaunch: Identifiable {
     let id = UUID()
     let rect: CGRect
     let session: StorySession
@@ -901,7 +901,7 @@ private struct CalGeo {
 
 // MARK: - Une case posée dans la grille du mois
 
-private struct CalSlot: Identifiable {
+struct CalSlot: Identifiable {
     let day: Date
     let col: Int
     let row: Int
@@ -1172,7 +1172,14 @@ private struct CardMorph: View, Animatable {
 /// chevauche son coin (la flamme dit « séance », toujours présente).
 /// Aujourd'hui : le liseré angulaire des médaillons du player + la bague,
 /// sur le halo chaud que le verre réfracte.
-private struct StickerDayCell: View {
+/// Ce qu'une case SAIT d'un jour quand une vraie séance le dit (30-08,
+/// page Progress) : la catégorie (nil = jour sans séance) et le ×2.
+struct JourCase: Equatable {
+    var categorie: WoopSticker?
+    var double: Bool = false
+}
+
+struct StickerDayCell: View {
     var day: Date
     var size: CGFloat
     var isToday: Bool
@@ -1182,9 +1189,18 @@ private struct StickerDayCell: View {
     /// Le tap (jours entraînés seulement) : rend le rect ÉCRAN de la
     /// case, le portail de la story s'ouvre depuis lui.
     var onTap: ((CGRect) -> Void)? = nil
+    /// LA VRAIE DONNÉE DU JOUR. `nil` = la démo décide (le hash de la page
+    /// calendrier d'origine, intacte) ; une valeur = la séance réelle.
+    var jour: JourCase? = nil
 
     var body: some View {
         let s = size
+        let cat: WoopSticker? = jour != nil
+            ? jour!.categorie
+            : WoopSticker.demoCategory(for: day, calendar: calendar)
+        let deux: Bool = jour != nil
+            ? jour!.double
+            : WoopSticker.demoDouble(for: day, calendar: calendar)
         let forme = RoundedRectangle(cornerRadius: s * 0.28,
                                      style: .continuous)
         ZStack {
@@ -1199,8 +1215,7 @@ private struct StickerDayCell: View {
                     startRadius: 2, endRadius: s * 0.62))
                     .blendMode(.plusLighter)
             }
-            if let cat = WoopSticker.demoCategory(for: day,
-                                                  calendar: calendar) {
+            if let cat = cat {
                 Image(cat.asset)
                     .resizable()
                     .scaledToFit()
@@ -1214,7 +1229,7 @@ private struct StickerDayCell: View {
                     .position(x: s * 0.70, y: s * 0.54)
                 // LE ×2 — la troisième place, par-dessus : c'est
                 // l'exception du jour.
-                if WoopSticker.demoDouble(for: day, calendar: calendar) {
+                if deux {
                     Image(WoopSticker.fois2.asset)
                         .resizable()
                         .scaledToFit()
@@ -2304,7 +2319,7 @@ private struct OndeNoire: View, Animatable {
 /// sur la molette, chaque cran (~40°) passe une session avec le CLIC
 /// du vrai iPod ; ⏮ ⏭ tapent aussi. Le bouton central : la story de
 /// la session (plus tard).
-private struct MoisIpod: View {
+struct MoisIpod: View {
     let month: DemoMonth
     let calendar: Calendar
     /// Le rect de la card d'où la page NAÎT (.zero = pas de portail).
@@ -4078,7 +4093,7 @@ final class BacMotion: ObservableObject {
 /// de tri, la plus récente ne serait plus devant, EN SILENCE). `id`
 /// stable (1er du mois) : ForEach ne rejoue une row que si SES données
 /// changent.
-private struct DemoMonth: Identifiable {
+struct DemoMonth: Identifiable {
     /// Le 1er jour du mois — l'identité de la card (et du flash au tap).
     let start: Date
     /// Les séances du mois, récentes → anciennes (l'ordre de .recent).
@@ -4658,6 +4673,10 @@ struct DemoSession: Identifiable {
     let reps: Int
     let weekdayLabel: String
     let dayNumber: Int
+    /// LA VRAIE SÉANCE (30-08, page Progress) : quand elle est là, la
+    /// partition et le récit viennent d'elle (`StorySession(workout:)`),
+    /// plus du hash. `nil` = la démo d'origine, intacte.
+    var workout: Workout? = nil
 
     var coins: Int { series * 20 }
     /// « 18. Août » — le label de la pochette.
@@ -4701,6 +4720,7 @@ struct DemoSession: Identifiable {
     /// La partition de démonstration : deux-trois exercices du catalogue,
     /// leurs séries faites — la matière de la story 2 et de l'ardoise.
     var groupes: [SlateGroupe] {
+        if let w = workout { return StorySession(workout: w).groupes }
         let n = dayNumber
         let all = ExerciseCatalog.all
         return (0..<(2 + n % 2)).map { i in
@@ -4718,6 +4738,7 @@ struct DemoSession: Identifiable {
 
     /// Le récit que la story raconte, fabriqué depuis la démo.
     var storySession: StorySession {
+        if let w = workout { return StorySession(workout: w) }
         let g = groupes
         let toutes = g.flatMap(\.rows)
         var s = StorySession(

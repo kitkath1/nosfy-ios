@@ -1231,19 +1231,44 @@ enum SemaineBanc {
 /// bon design tout de suite ; le jour où la base parlera, c'est `sticker` qui
 /// changera de source, et rien d'autre.
 struct MiniCardJour: View {
-    let date: Date
+    /// La date — `nil` pour une PLACE VIDE : la loi du futur de la route,
+    /// « un jour futur qui afficherait sa date promettrait un contenu qu'on
+    /// n'a pas » (DuolinguoPage, `dateReelle` rend nil).
+    let date: Date?
     let sticker: String
     /// La journée est FAITE : le sticker est à pleine taille. Sinon il est
     /// rentré à 70 % — la card se lit comme une place, pas comme un acquis.
     var faite: Bool = true
+    /// LA PLACE VIDE (30-08, page Progress, plan tools/progress) : le MODE
+    /// EMPTY des galets du chemin transposé à la mini — « le verre creux, la
+    /// flamme fantôme, et rien d'autre ». L'état se dit par la CLARTÉ,
+    /// jamais par la couleur : une plaque à peine là, un filet au plancher
+    /// du futur (0,05), et le contour SF `flame` en `ultraLight` à 0,45 —
+    /// le cheveu d'une flamme. Pas de date, pas de sticker.
+    /// ⚠️ Ce n'est PAS un verre `.clear` : à jeun sur l'ardoise sombre il
+    /// rendait un rectangle gris (les fantômes tués le 22-08, `18f57a6`).
+    var vide: Bool = false
     var largeur: CGFloat = 70
     var hauteur: CGFloat = 78
+
+    /// `-progressFlammeSticker` : l'A/B de la flamme vide — le sticker
+    /// `sticker-flamme-serree` à 0,16 (la jauge de séries, `StickerFlamme`)
+    /// au lieu du contour SF des galets.
+    static let flammeSticker =
+        CommandLine.arguments.contains("-progressFlammeSticker")
 
     private var forme: RoundedRectangle {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
     }
 
     var body: some View {
+        ZStack(alignment: .topLeading) {
+            if vide { corpsVide } else { corpsFaite }
+        }
+        .frame(width: largeur, height: hauteur)
+    }
+
+    private var corpsFaite: some View {
         ZStack(alignment: .topLeading) {
             forme.fill(LinearGradient(
                 colors: [Color(white: 0.060), Color(white: 0.030)],
@@ -1259,10 +1284,10 @@ struct MiniCardJour: View {
                 startRadiusFraction: 0, endRadiusFraction: 1.0))
                 .blendMode(.plusLighter)
             VStack(alignment: .leading, spacing: 0) {
-                Text(SemaineStrip.jour(date))
+                Text(SemaineStrip.jour(date ?? Date()))
                     .font(.inter(10, .bold))
                     .foregroundStyle(Color.inkPrimary)
-                Text(SemaineStrip.mois(date))
+                Text(SemaineStrip.mois(date ?? Date()))
                     .font(.inter(5.5, .semibold)).tracking(0.7)
                     .foregroundStyle(Color(white: 1).opacity(0.45))
             }
@@ -1276,8 +1301,39 @@ struct MiniCardJour: View {
                 .position(x: largeur * 0.443, y: hauteur * 0.590)
                 .scaleEffect(faite ? 1 : 0.7)
         }
-        .frame(width: largeur, height: hauteur)
     }
+
+    private var corpsVide: some View {
+        let laque = LinearGradient(
+            colors: [Color(white: 0.92), Color(white: 0.74)],
+            startPoint: .top, endPoint: .bottom)
+        return ZStack {
+            // Le disque CREUX : la plaque à peine là, le filet du futur.
+            forme.fill(Color.white.opacity(0.020))
+            forme.strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
+            if Self.flammeSticker {
+                Image("sticker-flamme-serree")
+                    .resizable().scaledToFit()
+                    .frame(width: 26, height: 26)
+                    .opacity(0.16)
+                    .position(x: largeur * 0.5, y: hauteur * 0.46)
+            } else {
+                Image(systemName: "flame")
+                    .font(.system(size: 18, weight: .ultraLight))
+                    .foregroundStyle(laque)
+                    .opacity(0.45 * 0.85)
+                    .position(x: largeur * 0.5, y: hauteur * 0.46)
+            }
+        }
+    }
+}
+
+/// Un jour FAIT de la semaine : sa date et son sticker (30-08, la page
+/// Progress lit les VRAIES séances ; la home au banc garde son compte).
+struct SemaineJour: Identifiable, Equatable {
+    let date: Date
+    let sticker: String
+    var id: Date { date }
 }
 
 struct SemaineStrip: View {
@@ -1298,7 +1354,22 @@ struct SemaineStrip: View {
     /// vidéo bouge dessous, et c'est ce qu'on veut voir.
     var verre: Bool = false
     /// Le sous-titre gris, au registre des légendes des cards.
-    var sousTitre: String = "Your last sessions" 
+    var sousTitre: String = "Your last sessions"
+    /// LES VRAIS JOURS (30-08, page Progress) : les séances faites de la
+    /// semaine, en ordre chronologique. `nil` = l'ancien compte (`faits`) et
+    /// ses dates inventées — la home au banc `-thisWeek`, intacte.
+    var jours: [SemaineJour]? = nil
+    /// Les places VIDES se voient (la flamme éteinte de `MiniCardJour`) au
+    /// lieu d'être à opacité 0. Progress = true ; la home = false.
+    var videsVisibles: Bool = false
+    /// Le tas de cartes se PORTE au doigt (poudre, ressort, haptique).
+    /// `false` = tap seul, en priorité haute : sur une page qu'on DRAG, un
+    /// enfant qui a un geste bat le drag du parent.
+    var jouet: Bool = true
+    /// L'arrivée floue de l'ENCRE (titre, minis), 0 → 1 — la coquille, elle,
+    /// suit `arrivee` (opacité + montée : un blur sur du verre natif empile
+    /// deux passes). Progress la pilote ; la home la laisse à 1.
+    var flou: Double = 1
 
     /// La mini sous le doigt. Une seule à la fois : on ne presse pas deux
     /// cartes.
@@ -1311,8 +1382,9 @@ struct SemaineStrip: View {
     @State private var derniere: CGPoint = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var n: Int { max(prevus, 1) }
-    private var solides: Int { min(faits + materialises, n) }
+    /// `n = max(objectif, faites)` : on ne cache jamais une séance faite.
+    private var n: Int { max(prevus, jours?.count ?? 0, 1) }
+    private var solides: Int { min((jours?.count ?? faits) + materialises, n) }
 
     private let forme = RoundedRectangle(cornerRadius: 26, style: .continuous)
     private let formeMini = RoundedRectangle(cornerRadius: 10,
@@ -1345,7 +1417,10 @@ struct SemaineStrip: View {
     /// tournée gonfle son layout : le piège payé de l'éventail).
     private func angle(_ i: Int) -> Double { i % 2 == 0 ? 0 : 6 }
     private func slotX(_ i: Int) -> CGFloat {
-        let pas: CGFloat = 51
+        // LE PAS S'ADAPTE (30-08) : à sept places, 51 ferait 376 > 354 et
+        // les deux minis du bord seraient tranchées par le clip. Le groupe
+        // tient dans l'ardoise moins ses marges (2 × 22) : 40 à sept.
+        let pas: CGFloat = min(51, (L - 44 - miniL) / CGFloat(max(n - 1, 1)))
         let groupe = CGFloat(n - 1) * pas + miniL
         return (L - groupe) / 2 + miniL / 2 + CGFloat(i) * pas
     }
@@ -1388,6 +1463,7 @@ struct SemaineStrip: View {
                     .foregroundStyle(CardTon.encreDouce)
             }
             .padding(.top, 16).padding(.leading, 22)
+            .modifier(ArriveeFloue(p: flou, rang: 0))
             ZStack {
                 ForEach(0..<n, id: \.self) { i in
                     mini(i)
@@ -1423,53 +1499,16 @@ struct SemaineStrip: View {
                         // ⚠️ UN SEUL GESTE pour l'appui ET le tap : un
                         // `onLongPressGesture`, même à 0,01 s, VOLE le tap
                         // qui le suit (la loi payée sur le puits de l'iPod
-                        // et sur le galet du menu).
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { v in
-                                    if presse != i {
-                                        presse = i
-                                        derniere = v.location
-                                        semer(i)
-                                        UIImpactFeedbackGenerator(style: .soft)
-                                            .impactOccurred()
-                                    }
-                                    porte = borneMini(v.translation, i)
-                                    // LA POUDRE SE SÈME À LA DISTANCE, jamais
-                                    // au temps : un doigt qui s'arrête se
-                                    // tait. C'est ça qui fait croire à la
-                                    // matière.
-                                    Paillettes.shared.travel(
-                                        hypot(v.location.x - derniere.x,
-                                              v.location.y - derniere.y),
-                                        level: 0.45)
-                                    derniere = v.location
-                                }
-                                .onEnded { v in
-                                    let d = hypot(v.translation.width,
-                                                  v.translation.height)
-                                    Paillettes.shared.end()
-                                    // ELLE SE REPLACE TOUTE SEULE — l'aimant
-                                    // de son emplacement. Un ressort peu
-                                    // amorti : elle revient et se pose en
-                                    // dépassant à peine.
-                                    withAnimation(.spring(response: 0.44,
-                                                          dampingFraction: 0.70)) {
-                                        porte = .zero
-                                    }
-                                    presse = nil
-                                    if d > 24 {
-                                        semer(i)
-                                        UIImpactFeedbackGenerator(style: .soft)
-                                            .impactOccurred()
-                                    } else {
-                                        onTap(i)
-                                    }
-                                }
-                        )
+                        // et sur le galet du menu). Sur une page qu'on DRAG
+                        // (Progress), le tas n'est plus un jouet : un enfant
+                        // qui a un geste bat le drag du parent → tap seul.
+                        .gesture(dragMini(i), isEnabled: jouet)
+                        .highPriorityGesture(TapGesture().onEnded { onTap(i) },
+                                             isEnabled: !jouet)
                 }
             }
             .frame(width: L, height: H)
+            .modifier(ArriveeFloue(p: flou, rang: 0))
 
             // LA POUDRE FINE — celle du calendrier, pas la grosse gerbe
             // (verdict 22-08 : « pas les grosses paillettes, les MINI
@@ -1487,6 +1526,49 @@ struct SemaineStrip: View {
             SkyMotion.shared.start(reduceMotion: reduceMotion)
             Paillettes.shared.prepare()
         }
+    }
+
+    /// LE GESTE DU JOUET : l'appui, le port, la poudre, et le tap au lâcher
+    /// court. Sorti du corps pour que la chaîne du `ForEach` reste courte —
+    /// le mur du type-checker.
+    private func dragMini(_ i: Int) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                if presse != i {
+                    presse = i
+                    derniere = v.location
+                    semer(i)
+                    UIImpactFeedbackGenerator(style: .soft)
+                        .impactOccurred()
+                }
+                porte = borneMini(v.translation, i)
+                // LA POUDRE SE SÈME À LA DISTANCE, jamais au temps : un
+                // doigt qui s'arrête se tait. C'est ça qui fait croire à la
+                // matière.
+                Paillettes.shared.travel(
+                    hypot(v.location.x - derniere.x,
+                          v.location.y - derniere.y),
+                    level: 0.45)
+                derniere = v.location
+            }
+            .onEnded { v in
+                let d = hypot(v.translation.width, v.translation.height)
+                Paillettes.shared.end()
+                // ELLE SE REPLACE TOUTE SEULE — l'aimant de son emplacement.
+                // Un ressort peu amorti : elle revient et se pose en
+                // dépassant à peine.
+                withAnimation(.spring(response: 0.44,
+                                      dampingFraction: 0.70)) {
+                    porte = .zero
+                }
+                presse = nil
+                if d > 24 {
+                    semer(i)
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                } else {
+                    onTap(i)
+                }
+            }
     }
 
     /// Une salve de poudre au-dessus de la mini `i`, qui s'oublie toute seule.
@@ -1563,11 +1645,16 @@ struct SemaineStrip: View {
     /// sticker, et si la place est encore vide.
     private func mini(_ i: Int) -> some View {
         let faite = i < solides
-        return MiniCardJour(date: date(i),
-                            sticker: Self.stickers[i % Self.stickers.count],
+        // La vraie séance du rang `i` quand la page la connaît, sinon la
+        // date inventée et le sticker du modulo (la home au banc).
+        let j: SemaineJour? = (jours != nil && i < jours!.count) ? jours![i] : nil
+        return MiniCardJour(date: faite ? (j?.date ?? date(i)) : nil,
+                            sticker: j?.sticker
+                                ?? Self.stickers[i % Self.stickers.count],
                             faite: faite,
+                            vide: !faite && videsVisibles,
                             largeur: miniL, hauteur: miniH)
-            .opacity(faite ? 1 : 0)
+            .opacity(faite || videsVisibles ? 1 : 0)
     }
 
     /// Le sticker d'un rang — le parcours le lit pour choisir le même.

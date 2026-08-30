@@ -303,7 +303,7 @@ enum AssetsVideo {
             // coûtent qu'un shader.
             for nom in ["onb-arrivee", "onb-lune-loop",
                         "home-fond-flamme",
-                        "home-fond-loop", "home-fond-pilule",
+                        "home-fond-pilule", "story-pilule-droite",
                         "exos-fond-loop"] {
                 guard let a = asset(nom) else { continue }
                 _ = try? await a.load(.tracks)
