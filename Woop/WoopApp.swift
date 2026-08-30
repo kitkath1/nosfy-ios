@@ -129,6 +129,9 @@ struct RootView: View {
     private static let cometTest = CommandLine.arguments.contains("-cometTest")
     /// Banc d'essai du bouton CONNEXION : `-buttonLab`, page noire nue.
     private static let buttonLab = CommandLine.arguments.contains("-buttonLab")
+    /// Banc du bouton primaire NOIR (30-08) : `-boutonLab` — repos, appui
+    /// forcé, glyphe, et le diamant d'avant pour comparer.
+    private static let boutonLab = CommandLine.arguments.contains("-boutonLab")
     /// Banc d'essai de la carte Objectif : `-cardLab`, page noire nue.
     private static let cardLab = CommandLine.arguments.contains("-cardLab")
     /// Banc d'essai du DOUBLON obsidienne de la carte Objectif :
@@ -832,6 +835,8 @@ struct RootView: View {
             BoosterLab()
         } else if Self.carnetLab {
             CarnetLab()
+        } else if Self.boutonLab {
+            BoutonLab()
         } else if Self.buttonLab {
             ConnexionButtonLab()
         } else if Self.cardLab {

@@ -40,6 +40,14 @@
 >   le remède est dans le composant partagé — une horloge qui DORT au repos
 >   (10 Hz, ou en pause hors appui), pas sur cette page. Banc :
 >   `-progressSansBouton` / `-progressSansVerre`.
+>   **RÉSOLU le soir même** : sur son screenshot d'inspiration (« Appliquer le
+>   thème »), le primaire est devenu **`BoutonPrimaire`** (`Woop/Views/
+>   BoutonPrimaire.swift`, banc `-boutonLab`, 8 tours au sim avec ses
+>   verdicts : plus de capitales, capsule 58 du « locked », noir, nappe
+>   blanc-gris au pied, souffle du texte à peine là, **poudre des cards au tap
+>   seulement** — `PoudreMini`, horloge qui dort) ; `DiamondPrimaryButton` est
+>   une coquille dessus → tous les sites l'ont pris sans une ligne. Mesuré :
+>   **Progress 60,0 img/s**.
 >
 > **Option B** cuite (`recuit_pill_bas.sh` → `progress-pill-bas.mp4`, 1206 ×
 > 2592, 30 i/s palindrome, **11 Mo**) : la pill verticale prend toute la card,

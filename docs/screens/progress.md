@@ -133,12 +133,11 @@ films dans `tools/progress/films/`.
   les ‹ ›, « Aujourd'hui », le bouton, le chevron — prouvés par les drapeaux
   `-progressStory` / `-progressLecteur`, pas par un doigt.
 - **La cadence sur le téléphone** (le sim est aveugle aux gels Metal). Au sim,
-  même run, machine calme : la home 37 img/s · **Progress 15,8** · sans verre
-  16,2 · **sans le bouton diamant 60,0** — le `colorEffect` du
-  `DiamondPrimaryButton` tourne à 30 Hz en permanence, même au repos
-  (`ConnexionButtonLab.swift:200-217`). Le coffre, la porte et les sheets
-  portent le même bouton ; **?** si le téléphone confirme, le remède est une
-  horloge qui dort au repos DANS le composant partagé, pas sur cette page.
+  même run, machine calme : la home 37 img/s · Progress **15,8 avec le bouton
+  diamant** (un `colorEffect` à 30 Hz permanent) · **60,0 avec le bouton
+  NOIR** (`BoutonPrimaire`, 30-08 : ni shader ni horloge — `DiamondPrimaryButton`
+  n'est plus qu'une coquille dessus, partout). Résolu au sim ; le téléphone
+  reste le juge.
 - **La réfraction du verre sur la pill** et le rendu OLED du feu.
 - La story d'une **mini** part sans rect (le filet de `StoryPortal` : la carte
   centrale), pas depuis la mini — **?** la mini saura le dire.

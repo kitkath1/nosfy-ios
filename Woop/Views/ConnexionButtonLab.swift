@@ -142,120 +142,23 @@ struct DiamondInputField: View {
 
 // MARK: - Bouton
 
-/// LE bouton primaire du système — un bijou d'obsidienne. Tout l'écrin (fumée
-/// noire qui dérive, liseré hairline à accents inégaux qui respire, halos
-/// débordants, poussières-particules) vit dans DiamondButton.metal ; ici,
-/// seulement le texte en dégradé de blanc et la flèche.
-///
-/// Né « CONNEXION » sur le banc `-buttonLab`, il porte désormais tous les
-/// appels à l'action majeurs de l'app — d'où le titre en paramètre.
+/// LE BOUTON PRIMAIRE DU SYSTÈME — depuis le 30-08, une COQUILLE : il rend
+/// `BoutonPrimaire` (le bouton NOIR, `BoutonPrimaire.swift`) et garde son API,
+/// donc les douze sites (porte, coffre, sheets, booster, Progress…) l'ont pris
+/// sans qu'une ligne ne bouge. Le bijou d'obsidienne au shader — un
+/// `colorEffect` à 30 Hz en permanence, mesuré 60 → 16 img/s au sim sur la
+/// page Progress — est mort avec son verdict (« trop cheap »). Le shader
+/// `diamondButton` reste dans DiamondButton.metal, plus appelé.
 struct DiamondPrimaryButton: View {
-    /// Le libellé, GRAVÉ : capitales espacées. Une phrase longue rétrécit un
-    /// peu plutôt que de passer sous la flèche (`minimumScaleFactor`) — le
-    /// registre tient jusqu'à environ trente signes.
     var title: String = "CONNEXION"
-    /// Un glyphe SF posé À GAUCHE, dans la gouttière déjà réservée (le texte
-    /// garde son `padding(.horizontal, 38)` des deux côtés, donc son centrage).
-    /// Quand il est là, LA FLÈCHE DISPARAÎT : un logo à gauche plus une flèche
-    /// à droite, c'est deux signaux pour une seule action. Né pour le
-    /// « SE CONNECTER » + pomme de la porte (22-08).
     var glyph: String? = nil
-    /// Le banc force l'état tap (1 = pressé en continu) ; nil = interaction
-    /// réelle, l'écrin suit le doigt.
     var benchPress: Float? = nil
-    /// La teinte de la fumée d'échappée au tap : 0 = blanc pur (partout dans
-    /// l'app), monter vers 1 la dore — la page aurora lui donne un or léger.
     var smokeWarmth: Float = 0
     var action: () -> Void = {}
 
-    /// Marge de débordement : halos et particules vivent hors du bouton.
-    private static let pad: CGFloat = 34
-
-    /// La transition du tap s'anime à la main (un paramètre de shader ne
-    /// s'interpole pas seul) : on horodate le contact et le TimelineView
-    /// fait la rampe — 0,30 s à l'allumage, 0,55 s au relâcher — plus
-    /// l'onde du toucher qui s'évase en ~0,3 s.
-    @State private var pressEdge: Date = .distantPast
-    @State private var isPressed = false
-
     var body: some View {
-        Button(action: action) {
-            content
-                .frame(height: 58)
-                .frame(maxWidth: .infinity)
-                .background { ecrin }
-        }
-        .buttonStyle(DiamondPressStyle { p in
-            guard p != isPressed else { return }
-            pressEdge = .now
-            isPressed = p
-        })
-    }
-
-    /// L'hôte du shader, agrandi de `pad` de chaque côté — le rendu hors du
-    /// bouton n'existe qu'en alpha (halos, particules), jamais en aplat.
-    private var ecrin: some View {
-        GeometryReader { geo in
-            let w = geo.size.width + Self.pad * 2
-            let h = geo.size.height + Self.pad * 2
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                let t = Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
-                let since = tl.date.timeIntervalSince(pressEdge)
-                let raw = min(max(since / (isPressed ? 0.30 : 0.55), 0), 1)
-                let eased = Float(raw * raw * (3 - 2 * raw))
-                let press = benchPress ?? (isPressed ? eased : 1 - eased)
-                let burst = (benchPress == nil && isPressed)
-                    ? Float(exp(-since / 0.30)) : 0
-                Rectangle()
-                    .fill(.white)
-                    .frame(width: w, height: h)
-                    .colorEffect(ShaderLibrary.diamondButton(
-                        .float2(w, h), .float(t),
-                        .float(Float(Self.pad)), .float(19),
-                        .float(press), .float(burst),
-                        .float(smokeWarmth)))
-            }
-            .offset(x: -Self.pad, y: -Self.pad)
-        }
-        .allowsHitTesting(false)
-    }
-
-    // MARK: Texte
-
-    private var content: some View {
-        Text(title.uppercased())
-            .font(.system(size: 13.5, weight: .medium))
-            .tracking(4.6)
-            .padding(.leading, 4.6)
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-            .foregroundStyle(LinearGradient(stops: [
-                .init(color: .white, location: 0.0),
-                .init(color: .white.opacity(0.86), location: 0.45),
-                .init(color: .white.opacity(0.54), location: 1.0)
-            ], startPoint: .top, endPoint: .bottom))
-            // La gouttière de la flèche est RÉSERVÉE, des DEUX côtés : sans
-            // elle un libellé long vient se glisser sous la flèche ; réservée
-            // d'un seul côté, le texte cesse d'être centré.
-            .padding(.horizontal, 38)
-            .frame(maxWidth: .infinity)
-            .overlay(alignment: .trailing) {
-                if glyph == nil {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundStyle(Color.white.opacity(0.82))
-                        .padding(.trailing, 22)
-                }
-            }
-            .overlay(alignment: .leading) {
-                if let glyph {
-                    Image(systemName: glyph)
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.92))
-                        .padding(.leading, 22)
-                }
-            }
+        BoutonPrimaire(title: title, glyph: glyph, benchPress: benchPress,
+                       smokeWarmth: smokeWarmth, action: action)
     }
 }
 
