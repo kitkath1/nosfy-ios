@@ -1435,7 +1435,8 @@ struct PiedCoffre: View {
             //
             // ⚠️ `glassEffect(.clear)` et pas `.regular` : le givré laiteux
             // est interdit, et ce qui passe dessous est du décor DOUX.
-            Text(b.mot)
+            // La casse des boutons (30-08, « même pour locked ») : une phrase.
+            Text(b.mot.enPhrase)
                 .font(.inter(15, .semibold))
                 .tracking(1.6)
                 .foregroundStyle(.white.opacity(0.55))

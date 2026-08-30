@@ -153,7 +153,7 @@ struct BoutonPrimaire: View {
     /// ni interlettrage, ni flèche. Blanc, avec un souffle à peine là (v6,
     /// « trop de néon ») qui ne monte qu'au tap.
     private var texte: some View {
-        Text(title)
+        Text(title.enPhrase)
             .font(.inter(18, .semibold))
             .tracking(-0.2)
             .foregroundStyle(.white.opacity(0.96))
@@ -170,6 +170,17 @@ struct BoutonPrimaire: View {
                         .padding(.leading, 22)
                 }
             }
+    }
+}
+
+/// LA CASSE DES BOUTONS (30-08, sa règle : « la première lettre en majuscule
+/// et le reste en minuscules, normal quoi — même pour locked ») : la règle
+/// vit DANS les composants, pas dans les sites d'appel — « OUVRIR », « Ouvrir
+/// un Booster », « SE CONNECTER » rendent tous une phrase.
+extension String {
+    var enPhrase: String {
+        guard let premiere = first else { return self }
+        return String(premiere).uppercased() + dropFirst().lowercased()
     }
 }
 

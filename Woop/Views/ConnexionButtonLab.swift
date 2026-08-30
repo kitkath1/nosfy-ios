@@ -228,7 +228,8 @@ struct DiamondSecondaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            // La casse des boutons (30-08) : une phrase, comme le primaire.
+            Text(title.enPhrase)
                 .font(.system(size: 13.5, weight: .medium))
                 .tracking(4.6)
                 .padding(.leading, 4.6)
