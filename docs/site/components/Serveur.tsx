@@ -34,7 +34,7 @@ export function Serveur() {
       </div>
       <div className="reveal">
         <h2>Ce que la carte raconte</h2>
-        <Liste page="serveur" etats={['men', 'loc', 'srv', 'abs']} />
+        <Liste page="serveur" etats={['men', 'loc', 'srv', 'abs', 'ok']} />{/* ok aussi : un symptôme repeint par une mesure reste une ligne (b-compteur-descend, 30-08) */}
         <Schema id="carte-1-les-douze-tables" legende="Une séance porte des exercices, qui portent des séries. Une séance écrit dans le carnet et donne un sachet ; un sachet ouvert devient une carte." />
       </div>
       <div className="reveal">
