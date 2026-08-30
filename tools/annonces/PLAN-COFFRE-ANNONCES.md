@@ -191,19 +191,26 @@ nomme son verdict en tête et pointe ce plan ; `security definer`, `set search_p
    DERNIÈRE liste : seance, achat, cadeau, legendaire, chemin, + conversion), même transaction ;
    rend le nombre converti. Témoin d'idempotence = le solde lui-même : un rejeu ne crédite rien,
    donc ne convertit rien.
-4. Appelée **à la fin** de `cloturer_seance`, `claim_retour_quotidien`, `tirer_noeud_chemin`
-   (piste pièces) ; leurs réponses gagnent `sachets_convertis` et `solde` **après** conversion.
+4. Appelée par un **déclencheur** sur tout crédit jaune du carnet (clôture, retour, chemin,
+   cadeau — et les crédits de demain), sauf `annulation` ; les trois réponses gagnent
+   `sachets_convertis` (porté par la transaction) et `solde` **après** conversion ;
+   `tirer_noeud_chemin` devient `_brut` derrière une enveloppe du même nom. **Le stock d'avant
+   est converti à la pose** (« les pièces retombent » vaut pour ce qui est en poche). *(Forme
+   réelle, relue le 30-08 soir : plan §4 M1 disait trois appels explicites.)*
    Conséquence par construction : `reste = solde_or % prix` est enfin vrai (solde < 100),
    `boosters_or` compte les convertis — `etat_coffre` ne change pas de formule.
 5. **`cloturer_seance` rejouée rend le STOCKÉ**, pas des zéros : sur `unique_violation`, relire la
-   ligne `serie_faite` du workout (pieces), l'existence d'une `piece_argent` du workout (argent),
-   le sachet (`booster_id`), et rendre `rejeu: true` + `solde_argent`. C'est ce qui permet à la
-   page noire de se relire après un kill.
+   ligne `serie_faite` du workout (pieces), le sachet (`booster_id`), et rendre `rejeu: true` +
+   `solde_argent` + **`argent_seance`** (la pièce est-elle tombée pour cette séance) — `argent`
+   garde son sens « tombée à CET appel », parce que l'app l'incrémente (`EconomieWoop.swift:211`).
+   C'est ce qui permet à la page noire de se relire après un kill.
 6. **`flamme()`** → `{jours, aujourdhui_fait}` : dates distinctes de `workouts.ended_at` (dans
    `fuseau_jour`) pour `auth.uid()`, jours consécutifs en remontant depuis aujourd'hui (ou hier
    si aujourd'hui n'est pas fait). **Dérivée, jamais stockée, zéro écriture, zéro clé de bonus.**
-7. **`etat_coffre()`** gagne trois clés : `retour_disponible` (= pas de `retour_quotidien` à
-   `jour_courant()`), `flamme`, `flamme_aujourdhui` — un seul appel au retour au premier plan.
+7. **`etat_coffre()`** gagne quatre clés : `jour` (la date de la maison), `retour_disponible`
+   (= pas de `retour_quotidien` à `jour_courant()`), `retour_prochain` (le prochain minuit dans le
+   fuseau, timestamptz — l'horloge du +10), `flamme` = `{jours, aujourdhui_fait}` — un seul appel
+   au retour au premier plan. *(Forme réelle de la migration, relue le 30-08 soir.)*
 8. **`claim_booster()`** : `revoke execute from authenticated` (Q9, défaut) — la porte reste en
    base, fermée ; la fonction passe ⚪ « sans appelant, fermée » sur la carte.
 
@@ -299,7 +306,7 @@ le rejeu doit rendre le même texte — pas au J1).
 | jalon | livre | porte de sortie (MESURÉE, compte de test, rejeu compris) | temps |
 |---|---|---|---|
 | **J0** | ce plan · les fiches périmées réécrites (§2.7) · le site aligné (§7) | `npm run verif` vert ; son go | ½ j |
-| **J1 — M1** | conversion · jour Paris · `flamme()` · `etat_coffre` +3 clés · clôture rejouée rend le stocké · `claim_booster` fermée | `migration list` avant/après ; `cloturer_seance` ×2 : #1 `sachets_convertis` ≥ 0 et `solde` < 100, #2 `rejeu:true` + le MÊME `pieces/argent/booster_id` ; `claim_retour_quotidien` ×2 : `jour` = date Paris (lu dans le carnet), #2 `credite:false` ; `etat_coffre` : `retour_disponible` false après, `flamme` cohérent avec `workouts` ; `rpc/claim_booster` → 401/403 ; témoin `rpc/fonction_inventee` → 404 ; `-demoData` sans `-syncNow` n'écrit rien | 1 j |
+| **J1 — M1** ✔ **posée le 30-08 à 18:48, sonde TOUT EST VERT (47 preuves)** — 20260830210000 : conversion (stock d'avant converti à la pose : 1 536 → 15 sachets + 36) · jour Paris · `flamme()` · `etat_coffre` +4 clés · clôture rejouée rend le stocké (`argent_seance`) · `claim_booster` fermée (403) | `migration list` avant/après ; `cloturer_seance` ×2 : #1 `sachets_convertis` ≥ 0 et `solde` < 100, #2 `rejeu:true` + le MÊME `pieces/argent/booster_id` ; `claim_retour_quotidien` ×2 : `jour` = date Paris (lu dans le carnet), #2 `credite:false` ; `etat_coffre` : `retour_disponible` false après, `flamme` cohérent avec `workouts` ; `rpc/claim_booster` → 401/403 ; témoin `rpc/fonction_inventee` → 404 ; `-demoData` sans `-syncNow` n'écrit rien | 1 j |
 | **J2 — app coffre + Welcome** | file d'annonces + robes booster/argent · conversion affichée · achat retiré · Welcome : porte + Claim → outbox → dalle · profil à 0 · dalle du chemin | sim : Claim → carnet +10 **au tap seulement** ; 100 pièces → « 1 » qui apparaît, or retombé ; profil à 0 ; capture avant/après | 1,5 j |
 | **J3 — la fin de séance** | page noire (pile, borne 4 s, repli) · atterrir sur le chemin · animation route · « Ouvrir » après | sim : clôture → story → pile (pièces, sachet, argent forcé au banc) → chemin animé → « Ouvrir » ; kill entre clôture et pile → relance relit le stocké ; hors ligne → repli « local » dit tel quel ; cadence mesurée (`tools/charge.sh` avant) | 2 j |
 | **J4 — M2 + décideur** | clés des rangs · `reglesAnnonces` · décideur à budget · gabarits par fait · `RewardPopup` borné | banc : 30 séries → pop-ups à 3, 5, 10 puis 15-18, 21-26… ; jamais 6/9/12 ; ≤ 4 ; une vidéo ; écart tenu | 1 j |
