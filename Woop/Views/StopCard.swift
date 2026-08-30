@@ -175,9 +175,11 @@ struct StopCard: View, Animatable {
             //    d'autre. Elle occupe la card entière : aucun bord de
             //    rectangle à voir, aucun masque sur la couche (la loi).
             //    La bête ENTRE DANS LA LUMIÈRE (fondu).
-            VideoBoucle(nom: "stop-bat-loop")
-                .frame(width: l, height: h)
-                .opacity(sstep(0.30, 0.60, p))
+            if !StopBanc.sansVideo {
+                VideoBoucle(nom: "stop-bat-loop")
+                    .frame(width: l, height: h)
+                    .opacity(sstep(0.30, 0.60, p))
+            }
 
             // 3. LE MUR — ce qui vit DERRIÈRE la bête (le fond gris → noir
             //    et le mot), troué à sa silhouette. C'est ainsi qu'elle est
@@ -356,7 +358,10 @@ struct StopCard: View, Animatable {
 
 // MARK: - La couche vidéo
 
-private final class BoucleLayerView: UIView {
+// ⚠️ INTERNAL, plus private (30-08) : la card booster monte la même couche
+// (`booster-dot-loop`). Le type de vue doit suivre — un `makeUIView` qui
+// rend un type privé depuis une struct interne ne compile pas.
+final class BoucleLayerView: UIView {
     override static var layerClass: AnyClass { AVPlayerLayer.self }
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 }
@@ -367,7 +372,7 @@ private final class BoucleLayerView: UIView {
 /// et le `clipShape` SwiftUI ne rattrape pas une couche UIKit). Fond NOIR
 /// sous le décodeur : le sim décode en logiciel et rate des images — sur la
 /// dalle noire, un raté est invisible.
-private struct VideoBoucle: UIViewRepresentable {
+struct VideoBoucle: UIViewRepresentable {
     let nom: String
 
     final class Coordinator {
@@ -428,6 +433,15 @@ enum StopBanc {
     static let sliderAuto = CommandLine.arguments.contains("-stopSliderAuto")
     /// `-fps` — la sonde de cadence (`simctl launch --console-pty`).
     static let fps = CommandLine.arguments.contains("-fps")
+
+    /// `-stopSansVideo` — SONDE : la card sans sa couche vidéo, tout le reste
+    /// identique. Elle ne sert qu'à ATTRIBUER un gel : le film du 29-08 montre
+    /// que l'app se fige ~0,7 s à chaque montage de la card, ce qui avale
+    /// l'entrée de 0,60 s (elle saute en 10 ms). Le suspect est la naissance
+    /// de l'`AVPlayer`. Filmer le banc avec ET sans ce drapeau, et comparer
+    /// les trous d'horodatage, tranche la question — un juge qui affirme ne
+    /// remplace pas une sonde qui mesure.
+    static let sansVideo = CommandLine.arguments.contains("-stopSansVideo")
 
     /// `-stopT <s>` — les horloges (balayage du spot, scintilles, poudre)
     /// NAISSENT à l'instant `s` : la card se monte avec `naissance` reculée

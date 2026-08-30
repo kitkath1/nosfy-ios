@@ -1170,15 +1170,19 @@ struct RootView: View {
                 },
                 onFermer: { depart.fermer() })
                 .zIndex(5)
-            BoosterPopupHote(
+            // LA CARD BOOSTER (variant B, « le sachet est le bouton ») —
+            // elle a remplacé la feuille qui montait du bas.
+            //
+            // ⚠️ `robe:` ne descend PLUS : la card montre TOUJOURS le sachet
+            // ORANGE (verdict Kathryn, 30-08), le noir a son propre manège.
+            // `sacre.robeCourante` reste lu ailleurs dans le parcours.
+            BoosterCardHote(
                 ouverte: sacre.popupOuverte,
-                robe: sacre.robeCourante,
                 onOuvrir: { sacre.ouvrirManege() },
                 onFermer: {
-                    withAnimation(.spring(response: 0.45,
-                                          dampingFraction: 0.86)) {
-                        sacre.popupOuverte = false
-                    }
+                    // La card a DÉJÀ joué sa sortie avant d'appeler : on ne
+                    // fait que baisser le drapeau (comme la card STOP).
+                    sacre.popupOuverte = false
                 })
                 .zIndex(6)
                 // La sonde de cadence (`-fps`) : elle dit l'état RÉEL de
@@ -1186,6 +1190,11 @@ struct RootView: View {
                 .sondeCadence(sacre.popupOuverte ? "panneau" : "home")
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
+                           // LA MORSURE de la card (BoosterCard.swift) : le
+                           // sachet arrive au manège déjà déchiré à 0,30 —
+                           // le doigt reprend là où la card l'a laissé, il
+                           // ne recommence pas (PLAN-BOOSTER-CARD §13).
+                           dechirureDepart: 0.30,
                            // La robe posée par la porte qu'on a prise (la
                            // proposition ou la pill) — deux manèges, jamais
                            // mélangés.

@@ -509,6 +509,9 @@ struct BoosterLab: View {
     /// forcée, pas de bouton rejouer, et l'envol REND la carte à l'hôte
     /// (le raccord d'accueil : auto-scroll, descente, fumée).
     var appMode = false
+    /// La morsure que la card 2D a faite (BoosterCard.swift, la déchirure
+    /// au drag), reprise par le manège — mode app seulement.
+    var dechirureDepart: Float? = nil
     /// LA ROBE DU MANÈGE — `.noire` monte le carrousel des légendaires
     /// (§3 du plan : deux réserves, deux portes, deux manèges ; ils ne se
     /// mélangent JAMAIS, verdict Kathryn). Le banc `-boosterNoir` la force.
@@ -546,6 +549,7 @@ struct BoosterLab: View {
             GeometryReader { geo in
                 ZStack {
                     BoosterStage(still: Self.still, frozenTear: Self.tear,
+                                 dechirureDepart: appMode ? dechirureDepart : nil,
                                  startOpen: Self.open, startDos: Self.dos,
                                  mylar: Self.mylar, frozenYawDeg: Self.yawDeg,
                                  // En mode app le manège précède la
@@ -1237,6 +1241,12 @@ struct CourantAscendant: View {
 struct BoosterStage: UIViewRepresentable {
     var still: Bool
     var frozenTear: Float?
+    /// LA DÉCHIRURE HÉRITÉE de la card 2D (BoosterCard.swift) : le sachet
+    /// arrive au manège DÉJÀ MORDU à s (0…1) — l'état « entamé, pas fini » de
+    /// `pan(.ended)`, que le doigt reprend là où la card l'a laissé. nil =
+    /// sachet intact. Les réglages de banc (`frozenTear`, `startOpen`)
+    /// gardent la priorité.
+    var dechirureDepart: Float? = nil
     var startOpen: Bool
     var startDos: Bool = false
     var mylar: Bool = false
@@ -1302,6 +1312,8 @@ struct BoosterStage: UIViewRepresentable {
             context.coordinator.freezeTear(at: s)
         } else if startOpen {
             context.coordinator.jumpToOpen()
+        } else if let s = dechirureDepart {
+            context.coordinator.reprendreDechirure(depuis: s)
         }
         let pan = UIPanGestureRecognizer(target: context.coordinator,
                                          action: #selector(Coordinator.pan(_:)))
@@ -2563,6 +2575,23 @@ struct BoosterStage: UIViewRepresentable {
             // poudre ne juge rien (le rendu tourne en continu, elle vit).
             stage?.setTear(s, sparking: true)
             stage?.dim(true)
+        }
+
+        /// LA REPRISE — la card 2D a mordu le sachet à s, le manège continue.
+        /// Le front est POSÉ à s, et rien d'autre : ni `dim` (la pénombre
+        /// vient avec le doigt — `pan(.began)` — et se lève au lâcher), ni
+        /// poudre (le sachet dort caché dans l'anneau jusqu'à l'engagement),
+        /// ni mode (`attach` l'a écrit). `setTear` est monotone : la découpe
+        /// ne redescendra jamais sous s — c'est le contrat. Le pan reprend
+        /// tout seul : `tearStartProgress = stage.tearProgress` au `.began`,
+        /// et le mapping du doigt est absolu sur la largeur du sachet.
+        /// ⚠️ Plafond 0,75 : au-delà de 0,82 un simple toucher-lâcher sur le
+        /// sachet passerait le seuil du RRRIP — une cérémonie sur un tap.
+        /// ⚠️ `s == 0` reste un no-op : `setTear(0)` allumerait quand même
+        /// `tornGlow` — le fil d'or sur un sachet intact.
+        func reprendreDechirure(depuis s: Float) {
+            guard let stage, s > 0 else { return }
+            stage.setTear(min(s, 0.75), sparking: false)
         }
 
         func jumpToOpen() {
