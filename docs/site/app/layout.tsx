@@ -4,6 +4,7 @@ import './styles/robe.css'
 import './styles/v2.css'
 import { Sprite } from '@/components/Sprite'
 import { Rail, Barre } from '@/components/Rail'
+import { Boot } from '@/components/Boot'
 
 // Inter, la police de l'app (Woop/Fonts/), auto-hébergée : le sous-ensemble latin de la
 // variable (opsz + wght), 100 Ko — zéro requête réseau, la même Inter hors ligne.
@@ -22,13 +23,16 @@ export const metadata = {
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" className={inter.variable}>
+    // suppressHydrationWarning : public/site.js pose `js` sur <html> et `entree` sur <body>
+    // AVANT que React ne compare le HTML servi au DOM (script `defer`) — sans ça, le mode dev
+    // affiche « 1 Issue » sur la page de référence pour un décalage voulu.
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="dark" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Sprite />
         <div className="cadre">
           <Rail />
@@ -38,6 +42,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </main>
         </div>
         <script src="/site.js" defer />
+        <Boot />
       </body>
     </html>
   )

@@ -5,6 +5,7 @@
    de l'obsidienne, l'arrivée (une fois), et le témoin du compte.
    ───────────────────────────────────────────────────────────── */
 (function () {
+  function init() {
   var q = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
   document.documentElement.classList.add('js');
 
@@ -111,4 +112,15 @@
   /* ── l'amorce ─────────────────────────────────────────────── */
   var depart = (location.hash || '').replace('#', '');
   if (!depart || !montrer(depart, false)) montrer('etat', false);
+  }
+
+  /* ── le départ : une fois, et JAMAIS avant l'hydratation de React ──
+     Quand Next est présent (next dev, out/), React compare le HTML servi au DOM ; un
+     `.in` ou un `.on` posé avant lui = un décalage signalé. components/Boot.tsx appelle
+     window.woopInit après l'hydratation. Dans le fichier unique, l'inliner a retiré tout
+     script Next : on démarre tout de suite. */
+  function demarrer() { if (demarrer.fait) return; demarrer.fait = true; init(); }
+  var next = !!window.__next_f || !!document.querySelector('script[src*="_next/"]')  /* sans barre initiale : cette chaîne-là est interdite dans le livrable (inliner) */;
+  if (next) { window.woopInit = demarrer; if (window.__woopHydrate) demarrer(); }
+  else demarrer();
 })();
