@@ -84,9 +84,15 @@ final class EconomieWoop {
     private(set) var boostersServeur = 0
     var maquetteBoosters = 1
 
-    /// Les sachets NOIRS ouvrables. ⚠️ Côté serveur, solde d'argent et
-    /// sachets noirs sont LE MÊME NOMBRE : le sachet noir naît au claim.
-    var boostersNoirs: Int { serveur ? argent : maquetteNoirs }
+    /// Les sachets NOIRS ouvrables. ⚠️ Côté serveur, c'est le solde d'argent
+    /// (le sachet noir naît au claim) PLUS le noir déjà payé, ouvert et pas
+    /// encore scellé (`noirs_ouverts`, au plus un). Sans ce second terme
+    /// (relecture adverse 30-08) : la pièce débitée, la forge qui ne scelle
+    /// pas (app tuée pendant la peinture, 500, timeout), le compte à 0, la
+    /// porte du manège FERMÉE — et la reprise que le serveur sait faire
+    /// n'était plus jamais déclenchée. Le sachet payé restait dans le vide.
+    var boostersNoirs: Int { serveur ? argent + noirsOuverts : maquetteNoirs }
+    private(set) var noirsOuverts = 0
     var maquetteNoirs = SacreEtat.bancNoir ? 1 : 0
     /// Où en est la jauge vers le prochain sachet, en pièces (0…prix−1).
     /// ⚠️ Dérivé côté serveur (`solde_or mod prix_booster`) depuis le 29-08 :
@@ -181,7 +187,11 @@ final class EconomieWoop {
     private func appliquer(_ e: SacreServeur.EtatCoffre) {
         or = e.soldeOr
         argent = e.soldeArgent
+        // `boosters_or` compte AUSSI l'orange ouvert non scellé des six
+        // dernières heures (la fenêtre de reprise d'`ouvrir_booster`) : la
+        // porte reste ouverte, l'engagement suivant retombe sur le même id.
         boostersServeur = e.boostersOr
+        noirsOuverts = e.noirsOuverts
         reste = e.reste
         prixBooster = e.prixBooster
         piecesParSerie = e.piecesParSerie
@@ -282,8 +292,19 @@ final class EconomieWoop {
         guard Self.possible else { return nil }
         do {
             let jwt = try await SupabaseSession.shared.token()
-            let id = try await SacreServeur.ouvrirBooster(legendaire: legendaire,
+            // ⚠️ DEUX PILES, DEUX PORTES (30-08). Le NOIR se consomme par
+            // `claim_booster_legendaire` — elle débite la pièce d'argent et
+            // crée le sachet OUVERT ; `ouvrir_booster(true)` exigeait
+            // `opened_at is null` et ne matchait donc JAMAIS un légendaire :
+            // la pile noire ne se consommait pas, la pièce d'argent n'était
+            // jamais débitée (la fonction n'avait aucun appelant).
+            let id: String?
+            if legendaire {
+                id = try await SacreServeur.claimLegendaire(jwt: jwt)
+            } else {
+                id = try await SacreServeur.ouvrirBooster(legendaire: false,
                                                           jwt: jwt)
+            }
             await rafraichir()
             return id
         } catch {

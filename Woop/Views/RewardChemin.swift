@@ -28,6 +28,29 @@ enum TypeBooster: String, Codable { case orange, legendaryBlack }
 
 enum RareteRecompense: String, Codable { case common, rare, legendary }
 
+extension RecompenseTiree {
+    /// LE TIRAGE, TEL QUE LE SERVEUR L'A RENDU (`tirer_noeud_chemin`) : le
+    /// front ne fait que le traduire — jamais le corriger.
+    static func depuisServeur(_ j: [String: Any]) -> RecompenseTiree? {
+        guard let type = j["type"] as? String else { return nil }
+        let rarete = RareteRecompense(rawValue: (j["rarete"] as? String) ?? "")
+            ?? .common
+        if type == "coins" {
+            let monnaie = (j["monnaie"] as? String) ?? "yellow"
+            return RecompenseTiree(type: .coins,
+                                   coinType: monnaie == "silver" ? .black : .standard,
+                                   montant: (j["montant"] as? Int) ?? 0,
+                                   rarete: rarete)
+        }
+        let robes = (j["robes"] as? [String]) ?? []
+        return RecompenseTiree(type: .boosters,
+                               boosters: robes.map {
+                                   $0 == "noire" ? .legendaryBlack : .orange
+                               },
+                               rarete: rarete)
+    }
+}
+
 /// LE PAYLOAD — exactement les champs du contrat backend.
 struct RecompenseTiree: Codable, Equatable {
     var type: TypeRecompense
@@ -156,11 +179,27 @@ enum TirageRecompense {
     /// re-réclamables. Le tuyau existait pourtant des DEUX côtés
     /// (`OutboxGains.noeudChemin`, `reclamer_noeud_chemin` déployée le 28-08) :
     /// il ne manquait que cet appel.
-    func reclamer(_ id: Int, pieces: Bool) {
-        var neuf: RecompenseTiree? = nil
+    /// ⚠️ **DEPUIS LE 30-08, LE TIRAGE VIT AU SERVEUR** (`tirer_noeud_chemin`)
+    /// : le client dit le nœud et la piste, le serveur tire, dérive la pitié
+    /// de SON journal, écrit, et rend le résultat — rejoué, il rend le même.
+    /// L'appel est synchrone : la révélation a besoin du résultat, c'est le
+    /// prix de l'anti-triche, et l'état machine le prévoyait (« un échec
+    /// REVIENT à available, jamais un galet mort ») : `false` = rien n'est
+    /// réclamé, la card ne s'ouvre pas, le galet reste disponible. Sans
+    /// serveur (maquette, `-demoData`) : le tirage local d'hier, dit comme tel.
+    @discardableResult
+    func reclamer(_ id: Int, pieces: Bool) async -> Bool {
         if let deja = journal[id] {
             tirage = deja
             revele = vues.contains(id)
+        } else if EconomieWoop.possible {
+            guard let t = await tirerAuServeur(id, pieces: pieces) else {
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                return false
+            }
+            journal[id] = t
+            tirage = t
+            revele = false
         } else {
             let n = secs(pieces: pieces)
             let t = TirageRecompense.tirer(pieces: pieces, secs: n)
@@ -168,40 +207,38 @@ enum TirageRecompense {
             poserSecs(t.rarete == .common ? n + 1 : 0, pieces: pieces)
             tirage = t
             revele = false
-            neuf = t
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.easeOut(duration: 0.34)) { ouverte = id }
-        // ⚠️ **ON NE POSTE QUE LE TIRAGE NEUF.** Relire le journal n'est pas
-        // un gain : le serveur le refuserait (l'index tient), mais une file
-        // qu'on remplit pour rien est une file qui se bouche. Et l'envoi part
-        // APRÈS l'ouverture de la card — l'écran n'attend jamais le réseau
-        // (la loi du §1 : « l'UI affiche le gain tout de suite, le ledger
-        // rattrape »).
-        if let t = neuf { poster(noeud: id, t) }
+        // ⚠️ **LA MAQUETTE N'ÉCRIT RIEN, NULLE PART** (relecture adverse
+        // 30-08). Elle postait son tirage local dans l'outbox « pour plus
+        // tard » ; sous `-demoData` la file GARDAIT l'entrée, et un lancement
+        // suivant sans `-demoData` sur la même installation la vidait vers le
+        // serveur — un tirage fait au client, sur des données de démo, écrit
+        // sur le compte réel. Le serveur tire lui-même quand il est là ;
+        // sans lui, on montre, et c'est tout.
+        return true
     }
 
-    /// L'ENREGISTREMENT DU NŒUD — par l'outbox, donc jamais perdu et jamais
-    /// doublé (l'index `user_boosters_chemin_unique` / `coin_ledger_chemin_unique`
-    /// sur (user, nœud) tient l'idempotence côté serveur ; c'est la SEULE
-    /// raison pour laquelle rejouer la file est sûr).
-    ///
-    /// ⚠️ Le tirage reste au front, et il est donc falsifiable — comme la
-    /// pitié. Cette étape n'y change rien : elle ENREGISTRE ce que le client a
-    /// tiré. Ce qui est déjà garanti, lui, c'est **qu'un nœud ne paie qu'une
-    /// fois**, quoi que raconte l'app. La remontée du tirage au serveur est la
-    /// cible, pas cette étape.
-    private func poster(noeud: Int, _ t: RecompenseTiree) {
-        // Les robes attendues par la base : `check (robe in ('lune','noire'))`.
-        let robes = t.boosters.map { $0 == .legendaryBlack ? "noire" : "lune" }
-        let montant = t.type == .coins ? t.montant : 0
-        let monnaie = t.coinType == .black ? "silver" : "yellow"
-        Task.detached {
-            await OutboxGains.shared.poster(
-                .noeudChemin(noeud: noeud, pieces: montant,
-                             monnaie: monnaie, boosters: robes))
+    /// L'aller-retour : le tirage serveur, puis la relecture des soldes.
+    private func tirerAuServeur(_ id: Int, pieces: Bool) async -> RecompenseTiree? {
+        do {
+            let jwt = try await SupabaseSession.shared.token()
+            let j = try await SacreServeur.tirerNoeudChemin(id, pieces: pieces,
+                                                            jwt: jwt)
+            await EconomieWoop.shared.rafraichir()
+            return RecompenseTiree.depuisServeur(j)
+        } catch {
+            print("[chemin] tirage serveur échoué : \(error)")
+            return nil
         }
     }
+
+    // `poster(noeud:)` — l'enregistrement d'un tirage CLIENT par l'outbox —
+    // est mort le 30-08 : plus aucun émetteur. `OutboxGains.noeudChemin`
+    // reste pour vider les entrées déjà en file d'une version antérieure ;
+    // au serveur, `reclamer_noeud_chemin` ne croit plus ses montants (elle
+    // délègue à `tirer_noeud_chemin`).
 
     /// LE BANC — `-rewardChemin <cas>` ouvre la card sur un tirage FORCÉ.
     /// Sans lui, ces écrans ne se jugent qu'au doigt sur un galet disponible,

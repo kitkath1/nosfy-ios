@@ -499,6 +499,11 @@ struct BoosterLab: View {
         .string(forKey: "boosterYaw").flatMap(Float.init)
     private static let open = CommandLine.arguments.contains("-boosterOpen")
     private static let cine = CommandLine.arguments.contains("-boosterCine")
+    /// `-boosterScelle` : le banc du SCELLEMENT (30-08) — la forge tourne
+    /// aussi hors app, et consomme un sachet du compte de test avec le jwt
+    /// du banc (voir `lancerForge`). La seule preuve jouable au sim que « le
+    /// sachet consommé porte sa carte » ; jamais par défaut.
+    private static let scelle = CommandLine.arguments.contains("-boosterScelle")
     /// `-boosterEnvol` : la carte s'envole seule après le registre — le
     /// balayage est le seul geste qu'un film au simulateur ne sait pas
     /// jouer, et sans lui la chaîne s'arrête juste avant l'accueil.
@@ -562,7 +567,7 @@ struct BoosterLab: View {
                                      && !Self.cine,
                                  cine: Self.cine,
                                  handle: handle,
-                                 forge: appMode,
+                                 forge: appMode || Self.scelle,
                                  robe: robeEffective,
                                  cadreDecoupe: true)
                         .ignoresSafeArea()
@@ -2272,18 +2277,71 @@ struct BoosterStage: UIViewRepresentable {
         private func lancerForge() {
             guard forgeActive, !forgeLancee else { return }
             forgeLancee = true
+            let noir = robe == .noire
             Task { @MainActor [weak self] in
                 do {
                     // La session du compte si elle existe ; sinon le
                     // user de TEST du banc (dev — les vrais comptes
                     // arriveront avec « Connexion avec Apple »).
                     let jwt: String
+                    let session: Bool
                     if let t = try? await SupabaseSession.shared.token() {
                         jwt = t
+                        session = true
                     } else {
                         jwt = try await ForgeServeur.jwtBanc()
+                        session = false
                     }
-                    let carte = try await ForgeServeur.tirer(jwt: jwt)
+                    // ⚠️ LE SACHET D'ABORD, LA FORGE AVEC SON ID (30-08).
+                    // `forge-card` sait sceller (`card_id`), imposer la
+                    // légendaire si le sachet est noir, et rendre la MÊME
+                    // carte sur un rejeu — il ne lui manquait que l'id que
+                    // le manège n'envoyait pas. La consommation vivait à
+                    // l'ENVOL, après le tirage : un quit entre les deux
+                    // laissait une carte en base et un sachet intact, et la
+                    // garantie du noir n'était jamais armée.
+                    // Sans id (réseau) : PAS de forge serveur — le repli
+                    // carte-lune-1 joue, le sachet reste ; jamais une carte
+                    // serveur « gratuite ». Au banc (pas de session) : la
+                    // forge du user de test, sans sachet, comme avant.
+                    // ⚠️ Deux raisons de ne PAS avoir d'id, à ne pas
+                    // confondre (relecture adverse 30-08) : la garde
+                    // `-demoData` (`EconomieWoop.possible == false` — on ne
+                    // touche pas à l'argent, la forge du banc tourne sans
+                    // sachet, comme avant) et le REFUS du serveur (là, pas
+                    // de forge du tout). La preuve du scellement se joue
+                    // donc SANS `-demoData`, ou avec `-syncNow`.
+                    var boosterId: String? = nil
+                    if session && EconomieWoop.possible {
+                        boosterId = await EconomieWoop.shared
+                            .consommerBooster(legendaire: noir)
+                        guard boosterId != nil else {
+                            print("[sacre] sachet refusé par le serveur : "
+                                  + "pas de forge serveur, repli")
+                            return
+                        }
+                    } else if !session,
+                              CommandLine.arguments.contains("-boosterScelle") {
+                        // LE BANC DU SCELLEMENT : sans session (le sim n'a
+                        // pas de `woop.phone`), la seule façon de PROUVER
+                        // « le sachet consommé porte sa carte » est de
+                        // consommer sur le compte de test avec son jwt —
+                        // sur demande explicite, jamais par défaut (le banc
+                        // ordinaire ne touche pas à ses 46 sachets).
+                        boosterId = noir
+                            ? try await SacreServeur.claimLegendaire(jwt: jwt)
+                            : try await SacreServeur.ouvrirBooster(
+                                legendaire: false, jwt: jwt)
+                        guard boosterId != nil else {
+                            print("[sacre] banc scellement : aucun sachet, "
+                                  + "pas de forge")
+                            return
+                        }
+                        print("[sacre] banc scellement : sachet "
+                              + (boosterId ?? "?"))
+                    }
+                    let carte = try await ForgeServeur.tirer(jwt: jwt,
+                                                             boosterId: boosterId)
                     guard let self, let handle = self.handle,
                           !handle.flown else {
                         // Le Sacre est déjà démonté (envol accompli,
@@ -2645,6 +2703,12 @@ struct BoosterStage: UIViewRepresentable {
                 // son plancher de charge.
                 self.adoptHoldIntoTear()
                 self.mode = .tearing
+                // Le banc du SCELLEMENT (`-boosterScelle`, 30-08) : la
+                // cinématique n'engage pas (pas de galerie), donc la forge
+                // ne partait jamais d'ici — c'est elle qu'on veut prouver.
+                // `lancerForge` est gardée par `forgeActive` : sans le
+                // drapeau, rien ne change.
+                if self.forgeActive { self.lancerForge() }
                 stage.dim(true)
                 if self.sfx == nil, !self.still { self.sfx = BoosterSFX() }
                 self.haptics.bedStart()

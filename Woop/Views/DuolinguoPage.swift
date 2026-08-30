@@ -1184,9 +1184,10 @@ private struct CheminDuo: View {
     /// §23 — le panneau confirmé (la page transmet à son hôte).
     var onDemarrer: () -> Void = {}
     /// Les nœuds spéciaux disponibles, tapés : la page ne connaît ni le
-    /// booster ni les pièces — elle transmet l'id à son hôte (la racine).
-    var onLune: ((Int) -> Void)? = nil
-    var onPiece: ((Int) -> Void)? = nil
+    /// booster ni les pièces — elle transmet l'id à son hôte (la racine),
+    /// qui RÉPOND (`false` = pas réclamé, le galet se dégrave).
+    var onLune: ((Int) async -> Bool)? = nil
+    var onPiece: ((Int) async -> Bool)? = nil
     var onEcranSuivant: (Int) -> Void = { _ in }
 
     var body: some View {
@@ -1425,11 +1426,21 @@ private struct CheminDuo: View {
     /// DONNENT reste distinct.
     private func reclamer(_ e: EcranSpec.EtapeSpec) {
         guard etat.etape > e.id, !etat.reclamees.contains(e.id) else { return }
-        guard let cible: (Int) -> Void = e.moon ? onLune : onPiece else { return }
+        guard let cible: (Int) async -> Bool = e.moon ? onLune : onPiece else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         fermerPanneau()
         withAnimation(.easeInOut(duration: 0.45)) { etat.reclamees.insert(e.id) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { cible(e.id) }
+        // ⚠️ LE GALET SE DÉGRAVE SUR UN ÉCHEC (relecture adverse 30-08). Le
+        // tirage vit au serveur ; s'il ne répond pas, l'hôte rend `false` et
+        // le nœud REDEVIENT disponible — jamais un galet gravé et mort
+        // jusqu'au remontage de la route. La gravure au tap reste : c'est
+        // la sensation, et la garde du double tap.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.24))
+            if await cible(e.id) == false {
+                withAnimation(.easeInOut(duration: 0.30)) { etat.reclamees.remove(e.id) }
+            }
+        }
     }
 
     /// §23 — le PRIMARY : l'haptique, le panneau LIBÈRE la scène (0,15 s,
@@ -1702,8 +1713,10 @@ struct DuolinguoPage: View {
     var reclamees: Set<Int>? = nil
     /// Jalon 1 : les nœuds spéciaux disponibles, tapés — l'hôte ouvre le
     /// booster (lune) ou fait descendre les pièces (pièce). nil = le banc.
-    var onLune: ((Int) -> Void)? = nil
-    var onPiece: ((Int) -> Void)? = nil
+    /// ⚠️ Elles RENDENT le verdict du serveur (30-08) : `false` = le nœud
+    /// n'est pas réclamé, la page le dégrave.
+    var onLune: ((Int) async -> Bool)? = nil
+    var onPiece: ((Int) async -> Bool)? = nil
     var gel = false
     var auto = false
     /// §18 P0.1 — `-duoAutoLent` : le même aller-retour, durée ×3 (les

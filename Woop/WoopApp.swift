@@ -658,14 +658,23 @@ struct RootView: View {
     // Maintenant les deux ouvrent la même card : on range Nosfy, on gratte la
     // lune, la récompense se révèle. Le montant, la monnaie et la combinaison
     // de boosters viennent du TIRAGE fait AU CLAIM — jamais de l'animation.
-    private func cheminLune(_ id: Int) {
-        depart.reclamer(id)
-        recompenses.reclamer(id, pieces: false)
+    // ⚠️ LE NŒUD N'EST MARQUÉ RÉCLAMÉ QU'APRÈS LE SERVEUR (30-08) : le tirage
+    // vit chez lui, et un échec réseau doit laisser le galet DISPONIBLE, pas
+    // un galet mort marqué réclamé pour rien. Elles RENDENT donc le verdict
+    // à la page (relecture adverse) : la page grave le galet au tap pour la
+    // sensation, et le DÉGRAVE sur `false` — sans ce retour, un échec
+    // laissait un galet gravé, injoignable jusqu'au remontage de la route
+    // (sa copie locale de `reclamees` ne se relit qu'à la naissance).
+    private func cheminLune(_ id: Int) async -> Bool {
+        let ok = await recompenses.reclamer(id, pieces: false)
+        if ok { depart.reclamer(id) }
+        return ok
     }
 
-    private func cheminPiece(_ id: Int) {
-        depart.reclamer(id)
-        recompenses.reclamer(id, pieces: true)
+    private func cheminPiece(_ id: Int) async -> Bool {
+        let ok = await recompenses.reclamer(id, pieces: true)
+        if ok { depart.reclamer(id) }
+        return ok
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -1310,14 +1319,12 @@ struct RootView: View {
                                    sacre.boostersEnAttente =
                                        max(0, sacre.boostersEnAttente - 1)
                                }
-                               // ⚠️ **ET LE SERVEUR APPREND ENFIN QU'UN
-                               // SACHET A ÉTÉ OUVERT** : `opened_at` n'était
-                               // mis à jour par aucune ligne du dépôt, donc
-                               // la pile ne pouvait que croître. Ça part en
-                               // fond et n'a le droit de rien bloquer — la
-                               // carte, elle, est déjà envolée.
-                               Task { await EconomieWoop.shared
-                                   .consommerBooster(legendaire: noir) }
+                               // Le sachet a été consommé À L'ENGAGEMENT
+                               // (BoosterLab.lancerForge : consommer, PUIS
+                               // forger avec son id — c'est ce qui scelle
+                               // « un sachet = une carte »). Ici on ne fait
+                               // que RELIRE le serveur, en fond.
+                               Task { await EconomieWoop.shared.rafraichir() }
                                selection = .profile
                                DispatchQueue.main.asyncAfter(
                                    deadline: .now() + 0.45) {

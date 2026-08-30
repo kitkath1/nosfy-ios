@@ -67,6 +67,10 @@ enum SacreServeur {
         let soldeOr: Int
         let soldeArgent: Int
         let boostersOr: Int
+        /// Le noir déjà payé, ouvert, pas encore scellé (au plus un) — il
+        /// tient la porte du manège ouverte jusqu'à la reprise. Absent des
+        /// bases d'avant la migration 20260830160000 : 0.
+        let noirsOuverts: Int
         /// 0-99 : le report de la conversion 100 pièces = 1 booster.
         let reste: Int
         let prixBooster: Int
@@ -81,6 +85,7 @@ enum SacreServeur {
         return EtatCoffre(soldeOr: n("solde_or", 0),
                           soldeArgent: n("solde_argent", 0),
                           boostersOr: n("boosters_or", 0),
+                          noirsOuverts: n("noirs_ouverts", 0),
                           reste: n("reste", 0),
                           prixBooster: n("prix_booster", 100),
                           piecesParSerie: n("pieces_par_serie", 20))
@@ -104,16 +109,39 @@ enum SacreServeur {
         throw Erreur.reponse
     }
 
-    /// Débite une pièce noire, réserve le sachet, rend son `id`.
-    static func claimLegendaire(jwt: String) async throws -> String {
-        let data = try await rpc("claim_booster_legendaire", jwt: jwt)
-        let json = try JSONSerialization.jsonObject(with: data)
-        // `returns public.user_boosters` : une ligne, seule ou dans un tableau
-        // selon la version de PostgREST — les deux formes sont acceptées.
-        let ligne = (json as? [String: Any])
-            ?? (json as? [[String: Any]])?.first
-        guard let id = ligne?["id"] as? String else { throw Erreur.reponse }
-        return id
+    /// LA CONSOMMATION DU BOOSTER NOIR : débite une pièce d'argent, crée le
+    /// sachet légendaire OUVERT (non scellé), rend son `id` — ou le sachet
+    /// déjà ouvert non scellé s'il en existe un (idempotente : un quit entre
+    /// la consommation et la forge ne coûte pas une seconde pièce).
+    /// Depuis la migration 20260830160000 elle répond en jsonb, 200 avec un
+    /// motif sur un refus (`argent_insuffisant`) — plus jamais un 500 pour
+    /// « pas assez d'argent ». `nil` = refusé.
+    ///
+    /// ⚠️ **DEUX DIALECTES, PAR CONSTRUCTION.** L'app se déploie sur l'iPhone
+    /// par un acte, la base par un autre : tant que la migration n'est pas
+    /// posée, l'ANCIENNE fonction répond une ligne `user_boosters` (`{id,
+    /// origine, …}`, sans `ouvert`) — et elle a DÉJÀ débité la pièce. Ne
+    /// lire que la forme neuve rendait `nil` = « refusé » sur un sachet payé,
+    /// et le rejeu rendait la même ligne : la pièce coincée jusqu'au push.
+    /// Ici, seul un `ouvert: false` EXPLICITE est un refus.
+    static func claimLegendaire(jwt: String) async throws -> String? {
+        let j = try await objet("claim_booster_legendaire", jwt: jwt)
+        if (j["ouvert"] as? Bool) == false {
+            print("[sacre] booster noir refusé : "
+                  + ((j["raison"] as? String) ?? "?"))
+            return nil
+        }
+        return (j["booster_id"] as? String) ?? (j["id"] as? String)
+    }
+
+    /// LE TIRAGE DU CHEMIN, AU SERVEUR (30-08) : le client dit le NŒUD et la
+    /// PISTE, le serveur tire, dérive la pitié de son journal, écrit, et rend
+    /// `{deja_reclame, type, montant, monnaie, robes, rarete, solde,
+    /// solde_argent}`. Rejoué : le même résultat, jamais un second tirage.
+    static func tirerNoeudChemin(_ noeud: Int, pieces: Bool,
+                                 jwt: String) async throws -> [String: Any] {
+        try await objet("tirer_noeud_chemin", jwt: jwt,
+                        corps: ["p_noeud": noeud, "p_pieces": pieces])
     }
 
     // MARK: - LES TROIS SOURCES QUI NE SONT PAS DES SÉRIES (28-08)

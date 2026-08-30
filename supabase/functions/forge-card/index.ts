@@ -256,18 +256,43 @@ Deno.serve(async (req) => {
       fraiche = true;
     }
 
+    // LE SCELLEMENT D'ABORD, LA COLLECTION ENSUITE (relecture adverse
+    // 30-08). Deux forges sur le même sachet non scellé (un quit pendant
+    // la peinture de 60-90 s, puis la reprise qui rend le MÊME id pendant
+    // que la première tourne encore) inséraient DEUX `user_cards` — un
+    // sachet, deux cartes ; pour le noir, deux légendaires pour une pièce.
+    // `is('card_id', null)` est la réservation : une seule forge la gagne.
+    // La perdante relit la carte scellée par l'autre et la rend, sans
+    // rien insérer.
+    if (boosterId) {
+      const scel = await admin.from("user_boosters")
+        .update({ card_id: carte!.id })
+        .eq("id", boosterId).eq("user_id", user.id).is("card_id", null)
+        .select("id");
+      if (scel.error) throw scel.error;
+      if (!scel.data || scel.data.length === 0) {
+        const { data: b2 } = await admin.from("user_boosters")
+          .select("card_id").eq("id", boosterId).maybeSingle();
+        const { data: dejaLa } = b2?.card_id
+          ? await admin.from("cards").select("*").eq("id", b2.card_id).maybeSingle()
+          : { data: null };
+        if (dejaLa) {
+          const { data: pubDeja } = admin.storage.from("cards").getPublicUrl(dejaLa.art_path);
+          return Response.json({
+            card: {
+              id: dejaLa.id, famille: dejaLa.famille, rarete: dejaLa.rarete,
+              scene: dejaLa.scene, art_url: pubDeja.publicUrl, fraiche: false,
+            },
+          });
+        }
+        return Response.json({ error: "sachet déjà scellé, carte introuvable" }, { status: 409 });
+      }
+    }
+
     // La carte entre dans la collection — pour toujours.
     const uc = await admin.from("user_cards")
       .insert({ user_id: user.id, card_id: carte!.id, workout_id: workoutId });
     if (uc.error) throw uc.error;
-
-    // LE SCELLEMENT : le sachet porte désormais SA carte. C'est ce qui rend
-    // l'idempotence ci-dessus vraie — sans lui, un rejeu retirerait.
-    if (boosterId) {
-      await admin.from("user_boosters")
-        .update({ card_id: carte!.id })
-        .eq("id", boosterId).eq("user_id", user.id).is("card_id", null);
-    }
 
     const { data: pub } = admin.storage.from("cards").getPublicUrl(carte!.art_path);
     return Response.json({
