@@ -14,8 +14,12 @@ export type Etat = 'ok' | 'loc' | 'srv' | 'abs' | 'men'
 /** Les sept domaines de l'accueil (les cards) — indépendants des pages. */
 export type Domaine = 'eco' | 'chemin' | 'stories' | 'annonces' | 'forge' | 'compte' | 'sync'
 
-/** Les sept pages du site (v2). */
-export type Page = 'etat' | 'serveur' | 'flow' | 'regles' | 'forge' | 'histoire' | 'porte'
+/**
+ * Les huit pages du site (v2). Le 30-08, « Économie & annonces » (id `regles`) est devenue
+ * DEUX pages : `coffre` (pièces, sachets, argent, profil) et `annonces` (dalles, pop-ups,
+ * Welcome Back, le rythme) — tools/annonces/PLAN-COFFRE-ANNONCES.md §7.
+ */
+export type Page = 'etat' | 'serveur' | 'flow' | 'coffre' | 'annonces' | 'forge' | 'histoire' | 'porte'
 
 /** ⏱️ une heure · ⏳ une journée · 🧗 un chantier */
 export type Cout = '1 h' | '1 j' | 'chantier'

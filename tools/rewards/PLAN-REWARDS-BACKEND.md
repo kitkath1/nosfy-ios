@@ -9,6 +9,15 @@ n'est codé ; c'est la doctrine à trancher puis à construire.
 > **RÈGLE ABSOLUE (héritée du Sacre)** — rien ne se fait sur Supabase
 > sans Kathryn. CLI, jamais le MCP (le MCP de session pointe AxioSense).
 
+> **MISE À JOUR DU 30-08.** Kathryn a tranché le coffre et les annonces
+> (ses mots, les dix questions, le contrat par catégorie, les jalons) dans
+> [../annonces/PLAN-COFFRE-ANNONCES.md](../annonces/PLAN-COFFRE-ANNONCES.md).
+> Ce document reste le plan-mère : les paragraphes qu'elle contredit sont
+> marqués **« périmé »** avec la date et le commit, et le nouvel état est
+> écrit à côté — rien n'est effacé. Ce qui est dit du code a été relu le
+> 30-08 (`fichier:ligne`) ; les numéros de `WoopApp.swift` bougent, une
+> autre session l'édite.
+
 Le principe produit, en une ligne :
 
 > La plupart du temps RIEN (une pill discrète) ; parfois l'app a
@@ -68,17 +77,35 @@ arrivent PENDANT la séance, sur l'état local. Donc :
 paquets (trois pop-ups d'affilée) et des déserts. Le « ~60 % de séries
 silencieuses » est un RÉSULTAT, pas un paramètre. Le moteur :
 
-- **Budget de séance** : max N pop-ups par séance (défaut 3-4 pour ~20
-  séries, dont ≤ 1 Reward monétaire, ≤ 1 vidéo), rechargé par séance.
+- **Budget de séance** : max N pop-ups par séance — **tranché le 30-08 :
+  4 pop-ups, dont ≤ 1 Reward monétaire, ≤ 1 vidéo, et 6 dalles hors
+  budget** (une dalle ne consomme pas le budget, `notif_consomme_budget
+  = false`) — rechargé par séance.
 - **Écart minimal** : jamais deux pop-ups à moins de K séries / M
-  minutes (défaut 3 séries ou 6 min).
+  minutes — ~~défaut 3 séries ou 6 min~~ → **tranché le 30-08 : 3 séries
+  ET 6 min** (`ecart_exige_les_deux = true`, Q5), et l'écart **ne
+  s'applique qu'aux rangs tirés au hasard** — pas aux rangs fixes
+  ci-dessous (Q1 du plan coffre-annonces, défaut accepté).
 - **File de priorité** : Rare > Reward > Moment. Un fait « notable »
   qui arrive pendant un cooldown est ABANDONNÉ ou rétrogradé en pill
   enrichie (`+20 · meilleure série`) — jamais mis en file d'attente
   pour tomber mécaniquement plus tard.
-- **Interdiction des positions fixes** : aucun déclencheur du type
+- ~~**Interdiction des positions fixes** : aucun déclencheur du type
   « série 5/10/15 » ; les triggers sont des FAITS (fin d'exo, PR,
-  volume, densité), pas des compteurs.
+  volume, densité), pas des compteurs.~~ **PÉRIMÉ — tranché le 30-08
+  dans l'autre sens** (plan coffre-annonces §0, §1 Q1-Q2, §3) : **des
+  rangs FIXES 3 / 5 / 10, puis un rang au hasard toutes les 5 à 8
+  séries** (15±, 21±…), la vidéo une seule fois au rang 10, le tout sous
+  le budget 4 / 1 / 1 / 6 et l'écart 3 séries ET 6 min pour les rangs
+  tirés. Le hasard est **déterministe par séance** (`hash(workout_id,
+  rang)`) et les rangs vivent dans `reward_rules` (M2 : `popup_rangs_fixes`,
+  `popup_rang_video`, `popup_hasard_ecart_min/max`, `popup_hasard_apres`).
+  Les FAITS ne décident plus du QUAND — ils nourrissent le QUOI (§3, §4) :
+  au rang venu, l'IA choisit de quel fait parler. **Ce que le code fait
+  au 30-08** (relu) : `DecideurSerie.pour` (`RestartSheet.swift:608-630`)
+  sert **tous les multiples** de 3 et de 5 (3, 5, 6, 9, 10, 12, 15…) —
+  sans hasard, sans budget, sans horloge, sans serveur ; c'est le J4 du
+  plan coffre-annonces qui le remplace.
 - **La rareté vit CÔTÉ SERVEUR** : le tirage de la pièce noire (et de
   tout drop) est un RNG serveur avec *pity timer* (garantie douce après
   X séances) et cooldown dur — jamais un `Double.random` client, jamais
@@ -100,7 +127,7 @@ modifiables sans app) :**
 | bonus monétaire                         | +40 (fort) / +30 (progrès) / +20 (surprise), plafond 60/séance |
 | même type de fait                       | 1 fois / séance, 2 fois / semaine |
 | **pièce noire** (RNG serveur, au settle)| p = 1/30 séances, pity garanti à la 45ᵉ sans drop, cooldown dur 10 séances après un drop |
-| Welcome Back                            | absence ≥ 4 jours, cooldown 14 jours, max 2/mois, claim +20 |
+| Welcome Back                            | ~~absence ≥ 4 jours, cooldown 14 jours, max 2/mois, claim +20~~ → **périmé** : **0 jour d'absence, 0 jour de pause, 31 / mois (= une par jour), claim +10** — en base depuis `20260830090000_welcome_chaque_connexion.sql` (`welcome_absence_jours` 0 · `welcome_cooldown_jours` 0 · `welcome_max_mois` 31) et `pieces_retour_quotidien` = 10 (`gains_coffre.sql:98`, tranché le 28-08). Le jour est celui de **Paris** (30-08, §4 duodecies) |
 | Moment « fin d'exo »                    | max 2 / séance, jamais deux exercices consécutifs |
 
 ---
@@ -159,10 +186,18 @@ un seul fetch, petit, cacheable).
   série ; la réponse a 30-90 s pour arriver avant le retour fiche. Pas
   de réponse à temps → **gabarits déterministes de secours** (un par
   kind de fait) — l'utilisateur ne voit jamais un spinner de pop-up.
+  **Précisé le 30-08** (plan coffre-annonces §0, §5.2.8) : la réponse
+  préparée à la série N sert **la PROCHAINE pop-up** (N+1) — on ne
+  l'attend jamais, pas même le temps du repos ; ce qui est prêt se lit,
+  sinon le gabarit. Borne serveur 10 s (`AbortController`), `ms` mesuré
+  dans la réponse (E1).
 - **Langue : ANGLAIS** (le parcours est passé EN, commit 9603dc8). Les
   exemples FR du plan produit sont des maquettes, pas des chaînes.
 - **Où elle tourne** : edge function `narrate-reward` (même famille que
   `forge-card`), qui logge `{facts_in, json_out}` pour rejouabilité.
+  ⚠️ **Elle n'existe pas au 30-08** — sondé : `functions list` →
+  `forge-card` seule, `POST /functions/v1/narrate-reward` → 404. C'est
+  l'E1 du plan coffre-annonces (J5, en dernier).
 - Les « petites surprises de composition » (§5 du plan produit) sont
   l'enum `layout` + micro-options typées (chiffre décentré : bool,
   halo bas/haut : enum, mini-stats : liste de fact_ids) — **jamais du
@@ -416,12 +451,28 @@ La story gagne une 4ᵉ page de base : LE BUTIN — la pièce du coffre
 en header, « WIN » derrière, le compteur de pièces qui roule, et
 UN BOOSTER PLAQUÉ à chaque 100 pièces. La règle :
 
-- **1 booster = 100 pièces, conversion CUMULÉE avec report** : au
-  `settle_session`, `booster_progress` (0-99, par user) + pièces de
-  la séance → `n` boosters crédités + nouveau report. Rien ne se
-  perd à l'arrondi. Crédit idempotent par `session_uuid` (la story
-  rejouée ne recrédite JAMAIS) — la réserve rejoint le pipeline
-  Sacre existant (`claim_booster` inchangé pour l'OUVERTURE).
+- **1 booster = 100 pièces** — ~~conversion CUMULÉE avec report : au
+  `settle_session`, `booster_progress` (0-99, par user) + pièces de la
+  séance → `n` boosters crédités + nouveau report~~ → **périmé, tranché
+  le 30-08 : la conversion est automatique et DÉRIVÉE, sans report
+  stocké** (plan coffre-annonces §0 « la jauge », §4 M1.3-4). À 100
+  pièces **un sachet apparaît tout seul** et **les pièces retombent** ;
+  `convertir_pieces()` (privée) tourne à la fin de `cloturer_seance`,
+  `claim_retour_quotidien` et `tirer_noeud_chemin` : tant que
+  `solde_or() ≥ prix_booster`, une ligne `-prix` raison
+  `conversion_booster` (dans le `check` depuis le 28-08, jamais écrite)
+  + un `user_boosters` origine `conversion`, même transaction. Rien ne se
+  perd à l'arrondi : le reste EST `solde_or % prix` — vrai par
+  construction (solde < 100). **Le témoin d'idempotence est le solde
+  lui-même** : un rejeu ne crédite rien, donc ne convertit rien.
+  **`booster_progress` reste morte** — créée le 28-08, jamais écrite,
+  plus lue depuis le 29-08 (`annonces.sql:30-48`, `reste` dérivé) ; on
+  ne la réveille pas, un solde se dérive. Et ~~`claim_booster` inchangé
+  pour l'OUVERTURE~~ : l'ouverture est `ouvrir_booster` ; `claim_booster`
+  était l'**achat** à 100 pièces — avec la conversion le solde ne
+  dépasse plus 99, l'achat ne peut plus réussir : **retiré de l'app et
+  fonction fermée** (`revoke … from authenticated`, Q9 défaut, M1.8) ;
+  « Ouvrir » ouvre un sachet qui existe déjà.
 - **« Vu = pris en compte »** : l'affichage n'accorde rien — le
   crédit est déjà au ledger. Il ENREGISTRE (`reward_events`, kind
   `booster_grant_shown`) pour ne jamais remontrer la cérémonie.
@@ -430,6 +481,11 @@ UN BOOSTER PLAQUÉ à chaque 100 pièces. La règle :
 - **Le front recopie** : la page WIN montre les pièces RÉELLES de
   la séance (séries × 20 aujourd'hui, le ledger demain) et les
   boosters DE LA SÉANCE ; le profil montre le TOTAL.
+
+⚠️ **Esquisse PÉRIMÉE (30-08)** — gardée pour l'histoire : la table a été
+posée le 28-08 (`20260828160000_wallet_coffre.sql`) et n'a jamais été
+écrite ; la forme retenue n'a **aucun état** (ci-dessus). L'origine
+s'appelle `conversion`, pas `pieces`.
 
 ```sql
 -- l'état de conversion, par user :
@@ -546,6 +602,16 @@ contrat Design System ») : `bigLines` 2 × 3-9 signes, `sousTexte`
 déterministe derrière (l'app ne l'attend jamais — calculé au settle,
 stocké avec la séance). Un mot qui ne rentre pas dans le gabarit est
 REJETÉ, pas tronqué : la mise en page est un fait, pas une négociation.
+
+**Confirmé le 30-08** (plan coffre-annonces §1 Q3, défaut accepté) — et
+étendu aux pop-ups en séance : « les chiffres changent avec l'IA » veut
+dire que l'IA **choisit de quel FAIT parler** (reps, kg, total, rang,
+record) et comment le dire ; elle n'invente jamais un chiffre —
+`headline.value` est RECOPIÉ d'un fait d'entrée, le serveur rejette
+sinon et l'app tombe sur le gabarit. Et elle sert **la PROCHAINE**
+pop-up : préparée à la fin de la série N, lue à N+1 si elle est prête,
+jamais attendue (§5.2.8 du plan). Si Kathryn veut un jour que l'IA
+choisisse des NOMBRES, c'est un autre chantier — ce n'est pas celui-ci.
 
 ### 4 nonies. LES ROBES — deux variants de plus, et qui choisit
 ### (ajouté le 27-08 ; les plans design sont ../story/PLAN-STORY-CARD-
@@ -726,7 +792,7 @@ de sachets ouvrables. Ce qu'il demande au serveur :
 | --- | --- |
 | solde or | `etat_coffre() → solde_or` |
 | solde argent | `etat_coffre() → solde_argent` (ou `solde_argent()` seule) |
-| 62/100 vers le prochain booster | `booster_progress.reste` — **table créée** |
+| 62/100 vers le prochain booster | ~~`booster_progress.reste` — table créée~~ → `etat_coffre() → reste`, **dérivé** (`solde_or % prix_booster`, 29-08 ; `sachet_scelle…sql:455-461`) ; avec la conversion automatique du 30-08 il est vrai par construction (§4 sexies) |
 | sachets orange ouvrables | `etat_coffre() → boosters_or` |
 | sachets noirs ouvrables | **= le solde argent** (le sachet naît au claim) |
 | les PRIX | `reward_rules` — **sortis du code** |
@@ -743,8 +809,9 @@ fois. Vérifié en ligne le 28-08 :
 
 1. **Le solde est DÉRIVÉ, toujours** (`sum(delta)` filtré par monnaie) —
    jamais une colonne tenue à la main. C'est déjà la forme de `solde_noir()`.
-2. **Les deux monnaies ne se ressemblent pas.** L'or s'ACCUMULE (100 = 1
-   booster, report cumulé) ; la legendary TOMBE (RNG serveur, 1 = 1 booster).
+2. **Les deux monnaies ne se ressemblent pas.** L'or se CONVERTIT (100 = 1
+   booster, ~~report cumulé~~ conversion automatique dérivée — 30-08, §4
+   sexies) ; la legendary TOMBE (RNG serveur, 1 = 1 booster).
    Le back-end ne doit donc pas exposer de progression pour la seconde —
    **et surtout jamais le *pity timer*** : rendu visible, il devient
    farmable, et la rareté est toute la valeur de cette pièce (§8, anti-abus).
@@ -755,7 +822,7 @@ fois. Vérifié en ligne le 28-08 :
    | clé | valeur | ce que ça dit |
    | --- | --- | --- |
    | `pieces_par_serie` | 20 | ce qu'une série RAPPORTE (la loi des 20) |
-   | `prix_booster` | 100 | ce qu'une pièce ACHÈTE (report cumulé, §4 sexies) |
+   | `prix_booster` | 100 | ce que 100 pièces DEVIENNENT (conversion automatique, 30-08 — l'achat `claim_booster` est fermé ; §4 sexies) |
    | `prix_booster_legendaire` | 1 | une pièce d'argent, et rien d'autre |
 
    **L'app les LIT, elle ne les connaît pas.** `claim_booster_legendaire()`
@@ -1005,9 +1072,28 @@ Le Welcome Back devient un **versement**, pas une politesse. UX au §8bis de
 | | |
 |---|---|
 | montant | **10 pièces jaunes** |
-| déclencheur | le premier lancement d'un **jour calendaire** |
-| annonce | `RewardPopup(style: .welcome)`, les deux robes, `count: 10`, `unit: "Coins"` |
-| encaissement | le bouton **Claim** de la pop-up |
+| déclencheur | le premier lancement d'un **jour calendaire** — jour de **Paris** (30-08, ci-dessous) |
+| annonce | `RewardPopup(style: .welcome)`, les deux robes, `count: 10`, `unit: "Coins"` — puis une **dalle « +10 »** sur la home, dans l'app, pas une notification iPhone (30-08) |
+| encaissement | le bouton **Claim** de la pop-up — **les +10 partent AU TAP** (30-08, Q8) |
+
+⚠️ **C'EST LA DOCTRINE, ET LE BRANCHEMENT DU 29-08 EN AVAIT DÉVIÉ.** Ce que
+le code fait au 30-08 (relu) : à chaque `scenePhase == .active`
+(`WoopApp.swift:83-92`), `SacreServeur.reglerRetourQuotidien()`
+(`SacreServeur.swift:282-291`) poste `.retourQuotidien` une fois par jour
+UTC (marqueur `UserDefaults`) → `claim_retour_quotidien()`
+(`gains_coffre.sql:135-162`) crédite — **les +10 partent tout seuls, sans
+card, sans Claim, sans dalle** ; la card `.welcome` n'a aucune porte de
+production (son « Claim » = `fermer()`, `RewardCard.swift:873-874`), et
+`ExerciseDetailView.swift:2270` double encore le montant en constante.
+**Le 30-08 rétablit la doctrine** (plan coffre-annonces §0, §1 Q7-Q8,
+§5.3.10) : `reglerRetourQuotidien()` sort du `scenePhase` ; une **porte
+sur la home** lit `etat_coffre().retour_disponible` (nouveau, lu sans
+payer) et montre la card ; **Claim** poste `.retourQuotidien` (outbox +
+index = l'idempotence) et pousse la dalle « +10 » dans la file **au tap**
+(le montant est local, le journal rattrape ; si le serveur répond « déjà
+pris » — autre appareil — rien de plus ne s'affiche) ; « Later » ferme, la
+card revient au prochain premier plan du même jour. Le marqueur UTC local
+disparaît : le serveur sait.
 
 ⚠️ **« À CHAQUE CONNEXION » NE PEUT PAS ÊTRE PRIS AU MOT — C'EST FARMABLE.**
 Tuer l'app et la relancer EST une connexion : dix pièces toutes les trois
@@ -1048,15 +1134,29 @@ create unique index if not exists coin_ledger_retour_jour_unique
   where raison = 'retour_quotidien';
 ```
 
+(Esquisse. Posé le 28-08 autrement : une **colonne `jour`** remplie par la
+fonction + l'index partiel `(user_id, jour)` — `gains_coffre.sql:117-151` ;
+on n'indexe pas une expression `at time zone`, elle n'est pas immutable.
+C'est justement ce qui rend le fuseau **une ligne à changer**.)
+
 Deux appareils le même matin ne créditent alors qu'une fois, et le second
 appel rend simplement « déjà pris » au lieu d'échouer.
 
 ⚠️ **LE FUSEAU EST UNE DÉCISION, PAS UN DÉTAIL.** En UTC, quelqu'un qui ouvre
-l'app à 1 h du matin à Paris touche le versement de la veille. Deux options :
+l'app à 1 h du matin à Paris touche le versement de la veille. ~~Deux options :
 UTC (simple, faux aux marges) ou le fuseau déclaré du profil (juste, une
-colonne de plus). ⚠️ Ce qu'il ne faut SURTOUT pas, c'est le fuseau envoyé par
-le client à chaque appel : il se change dans les réglages du téléphone, et
-c'est le farm par voyage dans le temps.
+colonne de plus).~~ ✅ **TRANCHÉ LE 30-08** (« chaque jour à minuit chez
+elle », Q7 défaut accepté) : **une clé serveur `fuseau_jour = "Europe/Paris"`
+dans `reward_rules`**, lue par une fonction interne `jour_courant()` =
+`(now() at time zone (clé))::date` — ni UTC, ni table de profil : le jour
+devient une ligne à changer si elle déménage (M1.1-2 du plan
+coffre-annonces). ⚠️ Ce qu'il ne faut SURTOUT pas, et ça ne bouge pas, c'est
+le fuseau envoyé par le client à chaque appel : il se change dans les
+réglages du téléphone, et c'est le farm par voyage dans le temps — **jamais
+le fuseau du téléphone**. **Au 30-08 le code est encore en UTC** des deux
+côtés (`gains_coffre.sql:149-151`, `SacreServeur.swift:282-291`) : la
+pastille ne bouge qu'après la sonde du J1 (`jour` = date Paris, lu dans le
+carnet).
 
 ### La fonction
 
@@ -1203,7 +1303,10 @@ liées »*, puis, sur la question posée : **« oui une seule annonce par
 
 L'analyse complète (neuf composants, quatre formules, l'ordre de branchement)
 vit dans [PLAN-ANNONCES.md](PLAN-ANNONCES.md). Les deux fiches écran :
-`docs/screens/notification.md` et `docs/screens/reward-popup.md`.
+`docs/screens/notification.md` et `docs/screens/reward-popup.md`. **Depuis le
+30-08, le contrat par catégorie et la chaîne de fin de séance sont tranchés
+dans [../annonces/PLAN-COFFRE-ANNONCES.md](../annonces/PLAN-COFFRE-ANNONCES.md)
+(§0, §3)** — ce paragraphe est amendé ci-dessous, pas remplacé.
 
 ### 1. LA RÈGLE
 
@@ -1217,10 +1320,38 @@ vit dans [PLAN-ANNONCES.md](PLAN-ANNONCES.md). Les deux fiches écran :
 | **la NOTIFICATION** (4 robes) | rien : elle traverse, on ne la tape pas | le cas courant d'un gain |
 | **la POP-UP** (6 robes) | l'écran, un scrim, un geste | quand il y a un FAIT à raconter |
 
-⚠️ **La pop-up REMPLACE la dalle, elle ne s'y ajoute pas.** Aujourd'hui la fin
-de séance en enchaîne DEUX (la capsule à +1,6 s, la pop-up booster à +5,2 s) —
-c'est exactement ce que cette règle interdit. La clé
-`annonce_une_par_evenement` la porte en base.
+~~⚠️ **La pop-up REMPLACE la dalle, elle ne s'y ajoute pas.** Aujourd'hui la
+fin de séance en enchaîne DEUX (la capsule à +1,6 s, la pop-up booster à
++5,2 s) — c'est exactement ce que cette règle interdit.~~ **PÉRIMÉ pour la
+clôture — tranché le 30-08** (plan coffre-annonces §0 « clôture », §1 Q4-Q5,
+§3). **La règle « une annonce PAR ÉVÉNEMENT » reste** ; ce qui tombe, c'est
+la lecture « une fin de séance = un événement ». Une clôture en compte **deux
+ou trois** — les pièces, le sachet forfaitaire, et la pièce d'argent (1/30)
+— plus les sachets convertis à 100 : **chaque événement a SA dalle, et les
+dalles s'EMPILENT** sur une **page noire** montée après la story (« un petit
+chargement » : elle attend la réponse de `cloturer_seance`, borne 4 s, repli
+local dit comme tel). Puis **le CHEMIN**, pas la home (actualisation +
+animation « séance terminée » sur la route), puis la **pop-up « Ouvrir »** —
+qui est une **INVITATION** (« ton sachet t'attend »), pas une seconde
+annonce : le sachet a déjà été dit dans la pile. La page WIN de la story dit
+déjà pièces + sachet ; la page noire les **redit** en dalles — c'est le
+« reçu » (Q5). La clé `annonce_une_par_evenement` reste à `true` — son
+commentaire en base (`annonces.sql:139-144`, « interdit deux annonces à la
+fin ») est périmé, à réécrire avec M1.
+
+**Ce que le code fait au 30-08** (relu, `WoopApp.swift` de 17:47) :
+`terminerSeance()` (:455-536) bascule **toujours sur la home** (:489) — et
+`celebrateFinishedWorkout()` (:1666-1673) force `.home` une seconde fois ;
+`push` + `cloturer_seance` partent en `Task.detached` (:510-513), jamais
+attendus ; story à +2,0 s (:532-535). À sa fermeture, `enchainerApresStory()`
+(:543-556) : **une** capsule `notifPieces = gain` (le calcul LOCAL) à +0,3 s,
+retirée à +3,3 s, puis `SacreEtat.shared.proposer()` à +3,4 s — sur la home.
+Un seul créneau de dalle (`DepartSeance.swift:43`, hôte `WoopApp.swift:1237-1244`)
+— une seconde écriture **écrase** la première ; robe pièces seule, ni robe
+booster ni robe argent ; la réponse de `cloturer_seance` est lue
+(`OutboxGains.swift:191-205`) mais **aucune annonce ne la regarde** — la pièce
+d'argent finit dans un `print`. C'est le J3 du plan coffre-annonces
+(`PileAnnonces.swift`, atterrir sur le chemin, « Ouvrir » après la route).
 
 ### 2. LE CONSTAT QUI L'A RENDUE NÉCESSAIRE (mesuré le 29-08)
 
@@ -1237,13 +1368,24 @@ CoffreFortPurse                séries × 20
 Ce ne sont pas deux composants liés : c'est **une seule fonction manquante —
 annoncer un gain — réimplémentée neuf fois.** Deux d'entre eux sont d'ailleurs
 morts sans qu'on l'ait vu (la page BRAVO, le vol de pièces de la home).
+(Relevé du 30-08 : `WoopApp.swift:442` est devenu `:473` et lit
+`seriesPayantes × EconomieWoop.piecesParSerie` — le taux vient du serveur ;
+`StorySuite.swift:1489` compte encore `× 20`.)
 
-⚠️ **ET CE QUI DÉCIDE AUJOURD'HUI EST CE QUE LE §2 INTERDIT** :
-`DecideurSerie.pour` tient en trois modulos (`% 10`, `% 5`, `% 3`), là où le
-§2 écrit « aucun déclencheur du type "série 5/10/15" ». Pire, la règle ne tient
-même pas sa promesse : `settleSeries` diffère son écriture de 0,55 s alors que
-le rang est lu tout de suite — **le MOMENT tombe à la 4ᵉ série, la pop-up à la
-6ᵉ, la vidéo rare à la 11ᵉ**, et la pill sous-compte de 20 pièces.
+⚠️ ~~**ET CE QUI DÉCIDE AUJOURD'HUI EST CE QUE LE §2 INTERDIT**~~ — **relu le
+30-08 : le §2 ne l'interdit plus.** Kathryn a tranché des **rangs fixes 3 / 5 /
+10, puis un rang au hasard toutes les 5-8 séries**, sous le budget 4 / 1 / 1 /
+6 et l'écart 3 séries ET 6 min pour les rangs tirés (§2 amendé ; plan
+coffre-annonces §3). Ce que `DecideurSerie.pour` (`RestartSheet.swift:608-630`)
+fait de faux n'est donc plus le principe, c'est le reste : ses trois modulos
+(`% 10`, `% 5`, `% 3`) servent **tous les multiples** (6, 9, 12, 15…), sans
+hasard, sans budget, sans horloge, sans serveur — et les 22 clés de rythme de
+`reward_rules` (`annonces.sql:96-152`) ne sont lues par personne. Et la règle
+ne tient même pas sa promesse (mesuré le 29-08, le code est le même au 30-08 :
+`ExerciseDetailView.swift:2356-2375`) : `settleSeries` diffère son écriture de
+0,55 s alors que le rang est lu tout de suite — **le MOMENT tombe à la 4ᵉ
+série, la pop-up à la 6ᵉ, la vidéo rare à la 11ᵉ**, et la pill sous-compte de
+20 pièces.
 
 ### 3. QUI DÉCIDE QUOI
 
@@ -1277,6 +1419,12 @@ pièces en sachets (§4 sexies). `claim_booster()` débite déjà 100 pièces ;
 convertir EN PLUS au règlement paierait deux fois le même travail. C'est la
 question d'économie ouverte du §6.7 de la fiche coffre, et elle appartient à
 Kathryn. La migration rend seulement la jauge **honnête**.
+✅ **Tranchée le 30-08** : conversion automatique, l'achat `claim_booster`
+retiré — voir §4 sexies (amendé) et §7.3 ci-dessous. Ce que `etat_coffre()`
+montre au 30-08 : `reste = solde_or % prix` sur le solde **TOTAL**
+(`sachet_scelle…sql:455-461`) — la sonde du site lit `solde_or 1360 → reste
+60`, treize tranches de 100 qui ne sont des sachets nulle part ; c'est M1 qui
+les convertit.
 
 ### 5. CÔTÉ APP — les deux tuyaux morts, branchés
 
@@ -1291,6 +1439,11 @@ cas d'outbox écrit et traité) et **personne ne les postait** :
   vidage (s'il échoue, le vidage le rejoue dans la foulée). Le marqueur local
   compte le jour **en UTC**, comme la fonction serveur : deux fuseaux
   différents feraient sauter un versement.
+  ⚠️ **C'est ce branchement-là qui a dévié de la doctrine du §4 duodecies**
+  (le Claim, l'encaissement au tap) : posté au premier plan, il crédite sans
+  card ni bouton. Le 30-08 le rétablit (J2 : porte sur la home lisant
+  `retour_disponible`, Claim → outbox → dalle « +10 » au tap) ; le marqueur
+  UTC local disparaît et le jour passe à Paris (M1).
 
 ### 6. CE QUI RESTE, DANS L'ORDRE
 
@@ -1310,15 +1463,32 @@ cas d'outbox écrit et traité) et **personne ne les postait** :
    peintre. Et **l'IA n'a nulle part où écrire** : les mots géants sont câblés
    en dur, `RewardPopup` ne remonte jamais `lignes`.
 
-### 7. À TRANCHER
+### 7. ~~À TRANCHER~~ → TRANCHÉ (30-08), point par point
 
-1. ⚠️ **Une notification consomme-t-elle le budget des 4 pop-ups ?** Posé à
-   `false` avec son propre plafond (`notifs_max_seance` = 6) — **en attente de
-   son verdict**.
-2. **L'écart minimal** : « 3 séries **OU** 6 min » (doctrine) ou « **ET** »
-   (table v1) ? Posé à `ET` (`ecart_exige_les_deux`), bascule sans build.
-3. **La conversion automatique** pièces → sachets (§4, ci-dessus).
-4. ⚠️ `claim_booster_legendaire()` rend toujours **500** sur un refus métier
-   (`P0002`) là où `claim_booster()` rend **200** avec un motif. Non alignée
-   ici : sa signature (`returns public.user_boosters`) est consommée par
-   `SacreServeur.claimLegendaire`, le changement touche les deux côtés.
+1. ✅ **Une notification ne consomme PAS le budget des 4 pop-ups** —
+   `notif_consomme_budget = false`, plafond propre `notifs_max_seance = 6`
+   (verdict du 30-08, « le rythme » : « une dalle ne consomme pas le
+   budget » ; Q5 du plan coffre-annonces). Les valeurs posées le 29-08
+   sont les bonnes ; ce qui manque, c'est le lecteur (J4).
+2. ✅ **L'écart minimal est « 3 séries ET 6 min »** — `ecart_exige_les_deux
+   = true` (Q5 du 30-08). Précision Q1 : il ne s'applique **qu'aux rangs
+   tirés au hasard** après le 10 ; les rangs fixes 3 / 5 / 10 gagnent
+   (deux séries entre 3 et 5, et c'est voulu).
+3. ✅ **La conversion automatique** — tranchée le 30-08, **option 1 du §4
+   terdecies.3, « on assume »** (la question d'économie ouverte du §6.7 de la
+   fiche coffre) : à 100 pièces **un sachet apparaît tout seul**, le nombre
+   monte (1, 2…), **les pièces retombent** ; le sachet forfaitaire de clôture
+   s'affiche aussi. Dérivée, pas de report stocké (`convertir_pieces()`, M1 ;
+   §4 sexies amendé). Conséquence assumée (Q9) : le solde ne dépasse plus
+   99, **l'achat `claim_booster` ne peut plus réussir — il disparaît de l'app
+   (`CoffreV2.swift:2542-2551`, `ProfilLune.swift:1255-1265`) et la fonction
+   est fermée** (`revoke … from authenticated`) ; « Ouvrir » ouvre un sachet
+   qui existe déjà.
+4. ✅ ~~`claim_booster_legendaire()` rend toujours **500** sur un refus
+   métier~~ — **fait depuis `9ef6da1`** (30-08,
+   `20260830160000_sachet_scelle_et_tirage.sql:55-127`) : `drop` puis
+   recréée en `returns jsonb`, un refus métier rend **200** avec un motif
+   (`{ouvert:false, raison:'argent_insuffisant', solde_argent, prix}`),
+   idempotente sur un légendaire ouvert non scellé ;
+   `SacreServeur.claimLegendaire` (`SacreServeur.swift:127-128`) lit
+   l'objet. Les deux côtés ont bougé ensemble, comme ce point l'exigeait.

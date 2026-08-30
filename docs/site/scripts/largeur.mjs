@@ -1,4 +1,4 @@
-// La sonde de largeur : à 390 px, AUCUNE des 7 pages ne doit faire défiler la page
+// La sonde de largeur : à 390 px, AUCUNE des 8 pages ne doit faire défiler la page
 // de côté. Payé le 30-08 : le spotlight `.page::before` faisait 1200 px centré, la
 // page mesurait 795 px sur un écran de 390 — invisible sur une capture, sensible au pouce.
 //
@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 
 const site = resolve(process.argv[2] ?? 'index.html');
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const PAGES = ['etat', 'serveur', 'flow', 'regles', 'forge', 'histoire', 'porte'];
+const PAGES = ['etat', 'serveur', 'flow', 'coffre', 'annonces', 'forge', 'histoire', 'porte'];   // 30-08 : coffre + annonces à la place de regles
 const LARGEUR = 390;
 
 const b = await p.launch({ executablePath: CHROME, headless: true });

@@ -1,0 +1,43 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="annonces" etats={['men']} vide="Rien ne ment ici — mais le rythme est décidé par trois modulos que la base ne connaît pas, la fin de séance n'a qu'un créneau de dalle, et la pièce d'argent finit dans un print." />
+
+</div>
+<div className="reveal">
+
+## Qui a le droit de parler, et quand
+
+<Schema id="regles-2-qui-a-le-droit" legende="Le rythme posé dans reward_rules le 29-08 : le budget, l'écart, le fait. Tranché le 30-08 par-dessus : les rangs FIXES 3 / 5 / 10 gagnent d'abord ; l'écart ne s'applique qu'aux rangs tirés au hasard après le 10, toutes les 5-8 séries. Au 30-08 l'app saute toutes ces questions et regarde seulement le rang de la série." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="annonces" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+<div className="reveal">
+
+## Ce qui tient
+
+<Liste page="annonces" etats={['ok']} />
+
+</div>
+
+<Decision titre="Tranché le 30-08">
+  <p><b>Une annonce par événement — et à la clôture, elles s'empilent.</b> Pièces, sachet forfaitaire, pièce d'argent (1 / 30), sachet(s) converti(s) : autant d'événements, autant de dalles, EMPILÉES sur une page noire après la story — un petit chargement, parce que l'argent est tiré au serveur (borne 4 s, repli « local, dit comme tel »). Puis le retour sur le CHEMIN, pas la home : la pierre du jour s'estampille, la suivante prend le halo ; puis la pop-up « Ouvrir » — une invitation, pas une seconde annonce (Q4). La page WIN de la story a déjà dit le butin ; la page noire est le reçu (Q5).</p>
+  <p><b>En séance</b> : pop-ups aux rangs 3 / 5 / 10 (galet · halo · feu + vidéo), puis un rang au hasard toutes les 5-8 séries ; 4 pop-ups max, 1 en pièces, 1 vidéo, 6 dalles ; écart 3 séries ET 6 min ; une dalle ne consomme pas le budget. Le rang se tire au client depuis les clés serveur ; l'IA écrit les MOTS de la PROCHAINE pop-up (<code>narrate-reward</code>, jamais attendue), les nombres viennent des faits (Q3).</p>
+  <p><b>Welcome Back</b> : la pop-up avec un bouton Claim, chaque jour à minuit à Paris (clé serveur, Q7) ; les +10 partent AU TAP, puis une dalle « +10 » sur la home — pas une notification iPhone. <b>Le nœud du chemin</b> : la card à gratter ET une dalle après, robe pièces ou booster. <b>La flamme</b> : affichée, jamais annoncée. Le contrat par catégorie, ligne par ligne : <code>tools/annonces/PLAN-COFFRE-ANNONCES.md</code> §3 — jalons J3, J4, J5.</p>
+</Decision>
+
+<Savoir>
+  <p><b>Ce que le code fait au 30-08 (relu).</b> <code>DecideurSerie.pour</code> (<code>RestartSheet.swift:608-630</code>) : <code>% 10</code> → vidéo <code>reward-rare</code>, <code>% 5</code> → halo, <code>% 3</code> → moment, sinon pill — tous les multiples (3, 5, 6, 9, 10, 12, 15…), sans hasard, sans budget, sans horloge, sans serveur. Les 21 clés d'annonces sont en base (<code>20260829120000_annonces.sql:98-151</code>) et <code>regles_annonces()</code> les rend (:174-181) : personne ne les lit (un commentaire, <code>ExerciseDetailView.swift:2269</code>).</p>
+  <p><b>La fin de séance</b> : <code>terminerSeance()</code> (<code>WoopApp.swift:455</code>) bascule TOUJOURS sur la home (:489), et <code>celebrateFinishedWorkout()</code> (:1666-1669) l'y force une seconde fois. À la fermeture de la story, <code>enchainerApresStory()</code> (:543-556) pose UNE capsule <code>notifPieces = gain</code> — le calcul local — à +0,3 s, la retire à +3,3 s, et propose le sachet à +3,4 s. Un seul créneau (<code>DepartSeance.swift:43</code>, hôte <code>WoopApp.swift:1238-1239</code>) : une seconde écriture écrase la première ; robe pièces seule, ni booster ni argent. La réponse de <code>cloturer_seance</code> est lue (plan §2.1 : <code>argent += 1</code>) mais aucune annonce ne la regarde. Le chemin n'a aucune séquence « séance terminée ».</p>
+  <p><b>Le Welcome Back</b> : à chaque <code>scenePhase == .active</code> (<code>WoopApp.swift:83-92</code>), <code>reglerRetourQuotidien()</code> (<code>SacreServeur.swift:282-291</code>) poste le claim une fois par jour UTC (marqueur <code>UserDefaults</code>) → <code>claim_retour_quotidien()</code> (<code>20260828190000_gains_coffre.sql:135-162</code>, jour UTC :149-151) : les +10 partent tout seuls, sans dalle. La card <code>.welcome</code> existe (2 robes) et son Claim ferme la card (<code>RewardCard.swift:873-874</code>) ; aucune porte de production. Ce qui tient le « une fois par jour », c'est l'index partiel <code>coin_ledger_retour_jour_unique</code>, pas un réglage.</p>
+  <p><b>L'IA</b> : <code>narrate-reward</code> n'existe pas au serveur — sondé le 30-08, <code>functions list</code> → <code>forge-card</code> seule, <code>POST /functions/v1/narrate-reward</code> → 404 (plan §2.2). <code>RewardPopup</code> n'a pas d'entrée pour des lignes géantes et un titre long casse la card : l'IA n'a nulle part où écrire.</p>
+  <p><b>Ce que ça remplace</b> : la doctrine du 29-08 « la pop-up REMPLACE la dalle » (le commentaire de la clé <code>annonce_une_par_evenement</code>, <code>annonces.sql:140-144</code>) et le plan qui interdisait « tout déclencheur à position fixe » — périmés depuis le 30-08, à réécrire au J0 (plan §2.7).</p>
+  <Schema id="regles-1-la-ligne-de-vie" titre="La ligne de vie d'une séance — le rythme au 30-08, trois modulos" plie />
+</Savoir>

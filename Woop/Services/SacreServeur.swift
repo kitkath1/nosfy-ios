@@ -290,14 +290,23 @@ enum SacreServeur {
         await OutboxGains.shared.poster(.retourQuotidien)
     }
 
-    /// UN NŒUD DU CHEMIN RÉCLAMÉ — pièces et/ou boosters.
+    /// L'ANCIENNE PORTE DU NŒUD — gardée pour vider une outbox d'avant.
     ///
-    /// ⚠️ Le TIRAGE reste au front (`RewardChemin.TirageRecompense`) et cet
-    /// appel ENREGISTRE ce qu'il a donné. C'est une étape, pas la cible :
-    /// tant que le tirage est au client il est falsifiable, comme la pitié
-    /// (après 12 nœuds communs le taux rare double), qui devra remonter au
-    /// serveur. **Ce qui est déjà garanti, c'est qu'un nœud ne paie qu'une
-    /// fois** — un index, là où l'app tenait ça dans `UserDefaults`.
+    /// ⚠️ **CE COMMENTAIRE DISAIT « LE TIRAGE RESTE AU FRONT » JUSQU'AU
+    /// 30-08.** Périmé depuis 9ef6da1 : le tirage et sa pitié vivent au
+    /// serveur (`tirerNoeudChemin` ci-dessus, `tirer_noeud_chemin` dans
+    /// `20260830160000_sachet_scelle_et_tirage.sql`), et l'app ne poste plus
+    /// jamais ce cas (`RewardChemin.poster` est mort). Côté serveur,
+    /// `reclamer_noeud_chemin` DÉLÈGUE à `tirer_noeud_chemin` et IGNORE
+    /// `p_pieces`, `p_monnaie`, `p_boosters` — sauf pour lire la piste
+    /// (`p_pieces > 0`) ; sondée le 30-08 : `(3, 1000000, 'silver', {})` →
+    /// `{deja_reclame: true}`, solde d'argent inchangé.
+    ///
+    /// Son seul appelant restant est l'outbox (`OutboxGains.swift:212-214`),
+    /// pour une entrée `.noeudChemin` mise en file par une version antérieure.
+    /// Elle ne rend qu'un booléen — donc l'outbox RELIT le solde après.
+    /// **Ce qui est garanti n'a pas changé : un nœud ne paie qu'une fois** —
+    /// un index, là où l'app tenait ça dans `UserDefaults`.
     @discardableResult
     static func reclamerNoeudChemin(_ noeud: Int, pieces: Int = 0,
                                     monnaie: String = "yellow",

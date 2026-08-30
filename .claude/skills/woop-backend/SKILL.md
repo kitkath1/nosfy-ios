@@ -34,9 +34,16 @@ LIT ; elle ne les connaît pas.** Une constante Swift qui double une règle
 serveur est une bombe à retardement : le jour où l'une bouge, l'écran et la
 base racontent deux histoires.
 
-> ⚠️ Il en reste deux dans le code (`CoffreFortPurse.perSeries = 20`,
-> `CoffreV2.prixBooster = 100`). Elles disparaissent à l'étape 2 du
-> branchement. Ne pas en ajouter.
+> ⚠️ Il en reste deux dans le code (relu le 30-08) :
+> `CoffreFortPurse.perSeries = 20` (`CoffreFortPurse.swift:28`, la fiche et
+> BRAVO comptent dessus) et `ExerciseDetailView.piecesRetourQuotidien = 10`
+> (`:2270`, lue en `:1098` par la card `.welcome` — retirée au profit de la
+> réponse de `claim_retour_quotidien` au J2 de
+> `tools/annonces/PLAN-COFFRE-ANNONCES.md` §5.3). `CoffreV2.prixBooster = 100`,
+> cité ici jusqu'au 30-08, **n'existe plus** : le seul `prixBooster = 100`
+> restant est `EconomieWoop.swift:103`, un défaut `private(set)` que
+> `etat_coffre` écrase (`:196`) — un défaut de décodage n'est pas une règle
+> doublée. Ne pas en ajouter.
 
 **Toute écriture d'argent est idempotente, et par un index unique PARTIEL :**
 
@@ -58,6 +65,26 @@ dans le modèle local.
 séance : les **pièces** valent `séries × taux`, le **sachet** est UN par
 session complète quel que soit le nombre de séries. Deux règles, deux clés
 d'unicité, la même fonction.
+
+**La conversion : 100 pièces = un sachet, et les pièces RETOMBENT** (tranché
+par Kathryn le 30-08 — `tools/annonces/PLAN-COFFRE-ANNONCES.md` §0 « la
+jauge », §4 M1). Dès que `solde_or() ≥ prix_booster`, le serveur écrit **une
+ligne `-prix` raison `conversion_booster`** (la raison est dans le `check`
+depuis le 28-08, jamais écrite jusqu'ici) **et un `user_boosters` origine
+`conversion`, dans la même transaction** — autant de fois qu'il le faut, sous
+un verrou par utilisateur, à la fin de chaque écriture qui crédite
+(`cloturer_seance`, `claim_retour_quotidien`, `tirer_noeud_chemin` piste
+pièces). **Jamais un report stocké** : `reste = solde_or mod prix` reste la
+seule jauge, et elle devient vraie par construction (le solde ne dépasse plus
+99) ; `booster_progress` reste morte. Le témoin d'idempotence est le solde
+lui-même : un rejeu ne crédite rien, donc ne convertit rien.
+
+> ⚠️ Ça renverse `20260829120000_annonces.sql:38-48` (« aucune conversion
+> automatique, et c'est voulu ») et ferme `claim_booster()` — plus aucun
+> solde à débiter : `revoke` au J1, le bouton d'achat part de l'app au J2.
+> **Au 30-08 rien de tout ça n'est posé** : `etat_coffre` montre encore
+> `solde_or 1360 → reste 60`, treize tranches qui ne sont des sachets nulle
+> part.
 
 ---
 
@@ -115,9 +142,14 @@ pièces » se répond `200` avec `{ouvert: false, raison: 'solde_insuffisant'}`,
 jamais par un `raise exception` qui devient un **HTTP 500** — le client ne
 peut alors pas distinguer un refus légitime d'un serveur cassé.
 
-> ⚠️ `claim_booster_legendaire()` fait encore l'inverse (P0002 → 500). À
-> aligner : les deux portes du même coffre ne doivent pas répondre dans deux
-> langues.
+> ✅ Payé : `claim_booster_legendaire()` a fait l'inverse (P0002 → 500)
+> jusqu'au 30-08. Alignée par 9ef6da1
+> (`20260830160000_sachet_scelle_et_tirage.sql:55-127` — jsonb,
+> `{ouvert:false, raison:'argent_insuffisant'}` en `:96-100`), **sondée** le
+> 30-08 14:35 sur le compte de test (`tools/sacre/verif_backend_sachet.py` :
+> ×2 → 200, le même `booster_id` au rejeu, `reprise:true`). Les deux portes
+> du même coffre répondent enfin dans la même langue — et c'est la langue de
+> toutes les suivantes.
 
 **Le débit et le crédit dans la MÊME transaction.** Un réseau qui coupe entre
 les deux laisse une pièce dépensée sans sachet, ou l'inverse.
@@ -140,10 +172,31 @@ tables : c'est un acte. Deux appels laisseraient un état à moitié réglé.
 | un montant, un prix | ils vivent dans `reward_rules` |
 | « j'ai déjà réclamé » | c'est à l'index de le dire |
 
-> ⚠️ **Dette actuelle et assumée** : le tirage du chemin et sa pitié vivent
-> encore dans `RewardChemin.TirageRecompense` (au front). Le serveur ne fait
-> qu'ENREGISTRER. Ce qui est déjà garanti, c'est qu'un nœud ne paie qu'une
-> fois. Le tirage doit remonter.
+> ✅ **Dette fermée le 30-08 (9ef6da1)** : jusque-là le tirage du chemin et
+> sa pitié vivaient dans `RewardChemin.TirageRecompense`, et le serveur ne
+> faisait qu'enregistrer. Depuis, `tirer_noeud_chemin(p_noeud, p_pieces)`
+> (`20260830160000_sachet_scelle_et_tirage.sql:186-421`) tire, lit ses taux
+> dans `reward_rules`, **dérive la pitié du journal** (combien de nœuds
+> communs d'affilée — jamais un compteur), écrit, et rend le STOCKÉ au rejeu ;
+> le client ne dit que le nœud et la piste (`RewardChemin.swift:224-235` →
+> `SacreServeur.swift:141-145`). Sondée le 30-08 14:35, compte de test
+> (`verif_backend_sachet.py` : rejeu identique, nœud 9001 → `noeud_invalide`).
+> L'ancienne `reclamer_noeud_chemin` reste grantée pour vider une outbox
+> d'avant, mais **délègue en ignorant montant, monnaie et robes** (`:471-498`
+> ; seul appelant : `OutboxGains.swift:212-214`) ; `TirageRecompense.tirer`
+> ne survit qu'en maquette sans serveur (`RewardChemin.swift:203-210`) et
+> n'écrit rien nulle part.
+
+**Le jour est une clé serveur, `fuseau_jour` — jamais le fuseau du client**
+(tranché le 30-08, plan §1 Q7 et §4 M1 : `"Europe/Paris"` dans `reward_rules`,
+une fonction interne `jour_courant()` = `(now() at time zone (clé))::date`,
+et c'est elle qui remplit la colonne `jour`). Le fuseau devient **une ligne à
+changer** si elle déménage — pas une table de profil, pas une valeur envoyée
+par l'app. ⚠️ Au 30-08 rien n'est posé : `claim_retour_quotidien` écrit
+encore `jour` en UTC (`20260828190000_gains_coffre.sql:151`, la ligne que son
+propre commentaire désigne), et le marqueur de politesse du client compte
+aussi en UTC (`SacreServeur.swift:282-291`) — les deux changent ensemble au
+J1 / J2, et le marqueur disparaît (le serveur saura dire `retour_disponible`).
 
 **Le seul garde-fou côté client qui compte** : celui qui empêche d'écrire
 là où il ne faut pas.

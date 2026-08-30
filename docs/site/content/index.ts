@@ -30,11 +30,14 @@ export function aFaire(): { briques: Brique[]; mesures: Mesure[] } {
   return { briques: TOUTES.filter((b) => !b.reference && (b.etat !== 'ok' || b.litige)), mesures: MESURES }
 }
 
+/** Le VERT : tout 🟢 et 0 🔴 — UNE règle, pour les cards de l'accueil et pour le hero d'une page (30-08). */
+export const estVert = (c: ReturnType<typeof compter>) => c.total > 0 && c.men === 0 && c.ok === c.total
+
 /** La teinte d'une card de domaine : ≥ 1 🔴 rouge · tout 🟢 vert · sinon argent. */
 export function teinteDomaine(d: Domaine): 'men' | 'ok' | 'argent' {
   const c = compter(parDomaine(d))
   if (c.men) return 'men'
-  if (c.total && c.ok === c.total) return 'ok'
+  if (estVert(c)) return 'ok'
   return 'argent'
 }
 

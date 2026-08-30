@@ -11,6 +11,16 @@ fichier par fichier le 29-08, et ce que le couple exige. C'est le brouillon du
 Les deux fiches écran : [`docs/screens/notification.md`](../../docs/screens/notification.md)
 et [`docs/screens/reward-popup.md`](../../docs/screens/reward-popup.md).
 
+> ⚠️ **30-08 — KATHRYN A TRANCHÉ, ET LA RÉFÉRENCE A CHANGÉ DE FICHIER.** Le
+> contrat, les rangs, le rythme, le Welcome Back et la fin de séance sont
+> écrits dans [`tools/annonces/PLAN-COFFRE-ANNONCES.md`](../annonces/PLAN-COFFRE-ANNONCES.md)
+> (§0 ses mots, §1 les dix défauts qu'elle a pris, §3 **le contrat**, §5-§6 ce
+> qui change et dans quel ordre). Ce document garde le **constat du 29-08**
+> (neuf composants, quatre formules) : il reste juste comme mesure de ce qui
+> existait. Là où il **proposait** (§5, §8) ou où le code a bougé depuis
+> (8e8a0cc, 9ef6da1), c'est marqué **périmé** et le nouvel état est écrit à
+> côté — les propositions ne se lisent plus comme des décisions.
+
 ---
 
 ## §0 — LE CONSTAT : NEUF COMPOSANTS ANNONCENT UN GAIN, ET AUCUN NE SE PARLE
@@ -29,6 +39,17 @@ moment, son z-index et **son propre calcul du gain** :
 | 7 | `BoosterPopup` | `BoosterPopup.swift:298` | clôture (+5,2 s) | production — ⚠️ le « bouton d'essai » qu'on lui prête vit dans `HomeAuroraView`, donc en **archive** (voir ligne 5) |
 | 8 | `StoryWin` | `StorySuite.swift:1457` | la page « butin » de la story | production |
 | 9 | Les trois **robes de notification** | `NotifCard.swift`, `NotifChasse.swift` | — | ⚠️ **banc seulement** (`-notifLab`) |
+
+⚠️ **Périmé depuis 8e8a0cc (30-08) pour les lignes 4, 7 et 8** — la chaîne de
+clôture n'est plus « capsule +1,6 s, pop-up booster +5,2 s ». Relu le 30-08 au
+soir : `terminerSeance()` pose la **story** à +2,0 s (`WoopApp.swift:532-535`) ;
+à sa fermeture, `enchainerApresStory()` (`WoopApp.swift:543-556`) pose la capsule
+`PiecesNotif` à **+0,3 s** (retirée à +3,3 s) puis `SacreEtat.shared.proposer()`
+à **+3,4 s** — la card booster, plus `BoosterPopup`. `StoryWin` est donc **dans
+la vraie chaîne**, plus seulement au banc. Le créneau reste unique
+(`DepartSeance.swift:43`, hôte `WoopApp.swift:1238-1239`). Et **tranché le
+30-08** : cette chaîne devient story → **page noire** avec les dalles empilées →
+**le chemin** animé → « Ouvrir » (plan §0, §5.1, J3).
 
 ⚠️⚠️ **LE MÊME GAIN EST RECALCULÉ QUATRE FOIS — ET LES QUATRE NE DONNENT PAS
 LE MÊME NOMBRE.** Elles partagent le facteur 20, jamais le multiplicande :
@@ -108,6 +129,15 @@ jamais mis en file) · rareté serveur avec *pity timer*. Et un interdit,
 > *« Interdiction des positions fixes : aucun déclencheur du type "série
 > 5/10/15" ; les triggers sont des FAITS, pas des compteurs. »*
 
+⚠️ **PÉRIMÉ — tranché le 30-08 dans l'autre sens** (plan §0 « pop-ups en
+séance », §1 Q1-Q2, §2.7) : elle veut des **rangs FIXES 3 / 5 / 10**, puis « et
+plus » = **un rang au hasard toutes les 5 à 8 séries** (15±, 21±…) — jamais
+tous les multiples ; la **vidéo une seule fois**, au rang 10 ; l'écart « 3
+séries ET 6 min » ne s'applique qu'aux rangs tirés après le 10. Le budget
+(4 / 1 pièces / 1 vidéo) et la file de priorité tiennent. L'interdit du plan
+backend §2 est donc à réécrire (hors de ce lot) : le compteur **est** un
+déclencheur voulu, le hasard vient après.
+
 ### 2.2 Ce qui tourne
 
 ```swift
@@ -117,11 +147,19 @@ if serie % 3  == 0 { return .moment(...) }
 return .pill(gain: gain, total: total)
 ```
 
-⚠️ **C'est mot pour mot le déclencheur que le plan interdit.** Et le rythme
-qui en sort est celui que le plan décrit comme le mauvais : une pop-up toutes
-les 3 séries, **deux d'affilée aux rangs 9 et 10**, jusqu'à **6 interruptions**
-dans une séance de 20 séries au lieu des 4 de la table v1 — dont une vidéo de
-8 s tous les 10 rangs.
+(`RestartSheet.swift:608-630`, relu le 30-08 — les trois modulos :614, :618,
+:622 ; sans hasard, sans budget, sans horloge, sans serveur.)
+
+⚠️ **C'était mot pour mot le déclencheur que le plan interdisait** — et depuis
+le 30-08 c'est **à moitié voulu** : les rangs 3, 5 et 10 sont les bons ; ce qui
+reste faux, c'est **tous les multiples** (6, 9, 12, 15, 20…) et la vidéo **à
+chaque dizaine**. Le rythme qui en sort reste celui que la décision refuse :
+une pop-up toutes les 3 séries, **deux d'affilée aux rangs 9 et 10**, jusqu'à
+**6 interruptions** dans une séance de 20 séries au lieu des 4 — dont une vidéo
+de 8 s tous les 10 rangs. Le décideur à budget est le **J4** (plan §5.2.7) ; ses
+clés (`popup_rangs_fixes [3,5,10]`, `popup_rang_video 10`,
+`popup_hasard_ecart_min/max 5/8`, `popup_hasard_apres 10`) sont la migration
+**M2** (plan §4), pas encore écrite.
 
 ### 2.3 ⚠️ ET LA RÈGLE EN DUR NE TIENT MÊME PAS SA PROPRE PROMESSE
 
@@ -149,6 +187,15 @@ voit est un bug qui vit longtemps.
 | **quelle ROBE** dans le format | **client**, rotation déterministe | ⚠️ elle s'affiche **avant** toute réponse ; la demander au serveur, c'est l'attendre |
 | **le MONTANT** | client d'abord, serveur qui rattrape | loi du §1 : *« l'UI affiche le gain tout de suite, le ledger rattrape »* |
 | **la RARETÉ** (pièce d'argent) | serveur, toujours | RNG client = farmable |
+
+⚠️ **Tranché le 30-08, et ce tableau bouge sur une ligne** : « annoncer ou se
+taire » et « quel FORMAT » ne sont **pas** demandés au serveur à chaque série —
+**le rang est tiré au CLIENT depuis les clés serveur** (`regles_annonces()` lue
+en début de séance), hasard **déterministe par séance** (`hash(workout_id,
+rang)`), budget tenu en mémoire de séance ; pas de table `popup_servies`
+(plan §4 « ce qu'on ne fait pas », §5.2.7). Une pop-up ne paie rien, donc rien
+n'est falsifiable qui compte. La RARETÉ, elle, reste au serveur (`roll_rare`,
+déployée le 29-08 — §10).
 
 ⚠️ **La robe est le seul point où les deux chantiers divergent, et c'est
 normal** : la notification se pose en 0,3 s (rotation client) ; la pop-up
@@ -194,7 +241,7 @@ affiche, le ledger rattrape » **n'a pas d'objet à rattraper**.
 |---|---|
 | pop-up `.moment` / `.reward` de série | **rien** (`rewardShow = true`, point) |
 | card à gratter : « **Added to your balance** » | ✅ **branché le 29-08** — `.noeudChemin` posté depuis `reclamer` |
-| Welcome Back : « Claim +N » | **rien du bouton** — son action est `fermer` ; le versement, lui, part au premier plan (✅ 29-08) |
+| Welcome Back : « Claim +N » | **rien du bouton** — son action est `fermer` (`RewardCard.swift:873-874`, relu 30-08) ; le versement, lui, part au premier plan (✅ 29-08, `WoopApp.swift:91`). ⚠️ **Tranché le 30-08 : le contraire** — les +10 partent **au tap du Claim**, le premier plan ne paie plus ; jour = minuit **Paris** ; puis une dalle « +10 ». Voir `ANALYSE-WELCOME-BACK.md` §3 et plan §5.3 (J2) |
 | « 2 boosters gagnés » | **rien** — `boostersEnAttente` n'est **jamais incrémenté**, nulle part |
 
 **Au moment où ce document a été écrit**, les cas `.noeudChemin` et
@@ -204,22 +251,34 @@ balance » était un mensonge — le compte ne bougeait pas, et une réinstallat
 rendait tous les nœuds re-réclamables.
 
 ✅ **Les deux sont branchés depuis le 29-08** (§7, étape 3). Ce qui reste
-vrai : le grain de la série manque toujours, et **le tirage du chemin est
-encore au client** donc falsifiable — seule l'unicité par nœud est garantie
-côté serveur.
+vrai : le grain de la série manque toujours — et **il n'est pas dans le plan
+du 30-08** (le crédit reste à la clôture, en bloc ; la dalle de série est
+« locale, le taux vient du serveur », plan §3). ⚠️ **Périmé depuis 9ef6da1
+(30-08)** : « le tirage du chemin est encore au client » — le chemin **tire au
+serveur** (`tirer_noeud_chemin`, qui rend type, montant, monnaie, robes,
+rareté ; plan §2.6). Ce qui manque encore côté app : la dalle après la card ne
+part que pour les pièces (`RewardChemin.swift:286-294`), rien pour un tirage en
+sachets — tranché : card **et** dalle, robe pièces ou booster (plan §0, §5.4.13).
 
-### 3.4 Et le serveur, lui, n'a pas non plus tout
+### 3.4 Et le serveur, lui, n'avait pas non plus tout (état du 29-08 matin)
 
-`cloturer_seance(p_workout, p_series)` fait **deux écritures** : les pièces et
-le sachet forfaitaire. Elle **ne tire aucune rareté** et **n'écrit jamais
-`booster_progress.reste`**.
+⚠️ **PÉRIMÉ depuis 97cf6d9 (29-08 soir) — gardé pour l'histoire, corrigé au
+§10.** Ce qui était vrai au matin :
 
-⚠️ **Deux conséquences que le couple paie directement** :
-1. la **pièce d'argent ne peut pas être gagnée** (`roll_rare` n'existe pas) →
-   solde argent à 0 → **le booster noir est inatteignable** ;
-2. `booster_progress.reste` n'est **jamais mis à jour** → **la jauge « VAULT
-   PROGRESS » de la notification dirait 0/100 en permanence**, même branchée
-   demain.
+`cloturer_seance(p_workout, p_series)` faisait **deux écritures** : les pièces
+et le sachet forfaitaire. Elle **ne tirait aucune rareté** et **n'écrivait
+jamais `booster_progress.reste`** — donc la pièce d'argent ne pouvait pas être
+gagnée (booster noir inatteignable) et la jauge aurait dit 0/100 pour toujours.
+
+**Ce qui tourne depuis** (déployé et sondé, §10) : `cloturer_seance` tire
+`roll_rare` (privée, 1/30, pity 45, cooldown 10) et rend `argent`, `reste`,
+`prix_booster` ; `reste` est **dérivé** (`solde_or mod prix_booster`) ;
+`booster_progress` est morte et **ne se réveille pas** (un solde se dérive).
+Ce qui reste faux le 30-08 : `reste` est calculé sur le solde **total** —
+`solde_or 1360 → reste 60`, treize tranches de 100 qui ne sont des sachets
+nulle part (plan §2.4) ; **tranché** : conversion automatique à 100 au serveur
+(`convertir_pieces()`, plan §4 M1.3, J1), et `cloturer_seance` rejouée rend
+**le stocké** au lieu de zéros (M1.5).
 
 ---
 
@@ -232,10 +291,13 @@ Deux edge functions existent ; **une seule tourne** :
 - **`forge-card`** ✅ — appelée par le manège. GPT-5 écrit une *scène*,
   `gpt-image-1` la peint. ⚠️ Le texte de GPT-5 **n'est jamais affiché** :
   c'est un prompt pour le peintre.
-- **`weekly-synthesis`** ⚠️ **code mort** — Claude écrit 4-6 phrases, mais la
-  seule vue qui les affiche (`SynthesisCard`) vit dans `ProgressionView`, qui
-  **n'est montée nulle part** : l'onglet Progrès affiche le calendrier depuis
-  le 18-08.
+- **`weekly-synthesis`** ⚠️ **code mort, et pas même déployée** — Claude écrit
+  4-6 phrases, mais la seule vue qui les affiche (`SynthesisCard`) vit dans
+  `ProgressionView`, qui **n'est montée nulle part** : l'onglet Progrès affiche
+  le calendrier depuis le 18-08. Sondée le 30-08 : absente de `functions list`
+  (`forge-card` seule, ACTIVE v4), `POST /functions/v1/weekly-synthesis` → 404
+  (plan §2.2). `narrate-reward` → 404 aussi : elle **n'existe pas**, c'est le
+  **J5** (plan §4 E1).
 
 ⇒ **On ne peut pas dire « ça marche déjà, on recopie ».** Ni la latence, ni le
 rendu, ni le comportement en échec n'ont jamais été vus à l'écran.
@@ -262,8 +324,8 @@ sa carte au lieu d'en tirer une seconde).
 |---|---|
 | **un contrat JSON typé** (`{title, subtitle, bigLines[]}`) + parse strict | les deux fonctions rendent du **texte libre** ; « 4 à 6 phrases » de prose est l'inverse de ce qu'une card demande |
 | **des bornes de longueur, aux TROIS étages** (prompt, serveur, rendu) | il n'y en a **nulle part** : `Text` sans `lineLimit` ni `minimumScaleFactor` — un titre de 40 signes casse la carte |
-| **une persistance** (événement → texte, idempotente) | un texte non stocké se **regénère** : la même série raconterait deux histoires, rien ne serait rejouable |
-| **un budget de latence** (pré-chauffe + gabarit de secours) | `forge-card` assume 60-90 s ; une fin de série n'a pas ce budget, et **aucun repli textuel n'existe** |
+| **une persistance** (événement → texte, idempotente) | un texte non stocké se **regénère** : la même série raconterait deux histoires, rien ne serait rejouable. ⚠️ Tranché le 30-08 : **pas au J1** — une table `reward_narrations` seulement si le rejeu doit rendre le même texte (plan §4 E1) |
+| **un budget de latence** (pré-chauffe + gabarit de secours) | `forge-card` assume 60-90 s ; une fin de série n'a pas ce budget, et **aucun repli textuel n'existe**. Tranché le 30-08 : **l'IA écrit la PROCHAINE pop-up** (envoyée à la série N, lue à N+1), `AbortController` 10 s, gabarit sinon — **jamais d'attente, jamais de spinner** (plan §0, §4 E1, §5.2.8) |
 
 ### 4.4 ⚠️ Et l'IA n'a nulle part où écrire — mais le fil existe
 
@@ -293,26 +355,29 @@ plan qui l'annonce (*« C'est ce tableau — et lui seul — que l'IA reçoit »
 
 ---
 
-## §5 — LE CONTRAT PAR CATÉGORIE (le tableau manquant, proposé)
+## §5 — LE CONTRAT PAR CATÉGORIE — PÉRIMÉ : tranché le 30-08, il vit ailleurs
 
-Voilà ce que je propose d'écrire, à valider. Une ligne par **événement**, pas
-par robe : c'est l'événement qui décide, la robe habille.
+⚠️ **Ce tableau était une PROPOSITION du 29-08 ; Kathryn a écrit le sien le
+30-08.** Le contrat en vigueur est **`tools/annonces/PLAN-COFFRE-ANNONCES.md`
+§3** — une ligne par événement, avec la robe et **qui sait quoi** (quelle
+réponse serveur porte le nombre). Il n'est pas recopié ici : deux tableaux qui
+se contredisent valent moins qu'un seul qui dit vrai.
 
-| Événement | Format | Robes autorisées | Champs | Vidéo | Crédit |
-|---|---|---|---|---|---|
-| série ordinaire | **notification** | jauge · châsse · gros texte (rotation) | `gain` | non | outbox, grain série |
-| série + fait notable | **pop-up** MOMENT | `.galet` · `.halo` | `title`, `subtitle` (le fait), `count` | non | rien (c'est un constat) |
-| gain monétaire notable | **pop-up** REWARD | `.halo` · `.neon` | `count`, `unit`, `bigLines` | optionnelle, **courte** | outbox |
-| rare (pièce d'argent) | **pop-up** RARE | `.fire` · `.spotlight` | idem + rareté | `reward-rare` | serveur, `roll_rare` |
-| clôture de séance | **notification** | les 3 robes pièces | `gain`, `fraction` | non | `cloturer_seance` |
-| sachet gagné | **notification** robe booster | booster | `+1` | non | `cloturer_seance` |
-| claim du chemin | **notification** après la card | les 3 robes pièces | `gain` | non | ⚠️ `noeudChemin` **à poster** |
-| Welcome Back | **pop-up** | `.welcome` (2 robes), **sur la home, 1×/jour** | `count = 10`, `unit = Coins` | `reward-welcome-loop` (le palindrome) | ⚠️ `retourQuotidien` **à poster** |
+**Ce qui diffère de la proposition du 29-08**, ligne à ligne :
 
-⚠️ **Trois robes n'ont aujourd'hui aucun événement** : `.neon`, `.spotlight`
-et `.welcome` ne s'ouvrent que par le chip « … » ou un drapeau. Le tableau
-ci-dessus leur en donne un — **sinon il faut les retirer**, pas les garder en
-décor.
+| ce que ce document proposait | ce qu'elle a tranché (plan §3) |
+|---|---|
+| série ordinaire → notification, « outbox, grain série » | **dalle** « +20 », 2 s, robe pièces en rotation ; crédit **local**, le taux vient du serveur — pas de grain série dans l'outbox (le crédit reste à la clôture, en bloc) |
+| « série + fait notable » → MOMENT ; « gain monétaire notable » → REWARD ; « rare » → pop-up `.fire`/`.spotlight` + vidéo | **des rangs** : 3 → `.galet`, 5 → `.halo`, 10 → `.fire` + vidéo, puis un rang **au hasard** toutes les 5-8 séries ; le texte vient de **l'IA préparée à la série d'avant**, sinon gabarit ; la pièce d'argent **n'est pas une pop-up de série** (voir clôture) |
+| clôture → **une** notification (`gain`, `fraction`) ; sachet → une notification à part | **une PILE de dalles** sur une page noire après la story : pièces (jauge) → sachet forfaitaire (robe **booster**, à coder) → **pièce d'argent** (robe **argent**, à coder) → sachet(s) **converti(s)** à 100 (nouveau) ; chacune lue dans la réponse de `cloturer_seance` ; puis **le chemin** animé |
+| — (rien après le chemin) | la pop-up **« Ouvrir »** après la route posée = une **invitation** (« ton sachet t'attend »), **pas une annonce** — le sachet a déjà été dit dans la pile (Q4) ; elle va droit au manège (Q6) |
+| claim du chemin → notification après la card, « `noeudChemin` à poster » | la card à gratter **et** une dalle après (« +176 », robe pièces **ou booster** selon `tirer_noeud_chemin`) ; posté depuis le 29-08, tiré au serveur depuis 9ef6da1 |
+| Welcome Back → pop-up sur la home 1×/jour, « `retourQuotidien` à poster » | pop-up **+ bouton Claim** au 1er premier plan après **minuit Paris**, si `retour_disponible` (lu sans payer) ; **le tap paie** ; puis une **dalle « +10 »** sur la home — pas de notification iPhone |
+| `.neon` · `.spotlight` · `.welcome` sans événement → « leur en donner un, sinon les retirer » | `.welcome` en a un ; **`.neon` et `.spotlight` n'en ont aucun → à retirer** si rien ne les prend (plan §3, dernière ligne) |
+| — | **séance record** → la story TOP à la place de la normale (moteur de faits posé, chantier stories, hors lot) ; **la flamme** → affichée, **jamais annoncée** |
+
+Les robes **booster** (robe 4) et **argent** (robe 5) n'existent pas encore —
+c'est le **J2** (plan §5.1.2) ; la pile et la page noire, le **J3**.
 
 ---
 
@@ -335,7 +400,7 @@ Ce ne sont pas des détails : ce sont des choses **livrées** qui mentent.
 | Quoi | Où | Pourquoi ça presse |
 |---|---|---|
 | `-rewardFlow` appelé depuis un chemin de **production** | `:2233`, neutralisé par une garde interne | le vrai branchement passe par ce point : qui enlèvera la garde aura **deux moteurs d'issue en parallèle** |
-| ⚠️ la constante `piecesRetourQuotidien = 10` | `ExerciseDetailView.swift` | elle double une règle qui vit déjà en base |
+| ⚠️ la constante `piecesRetourQuotidien = 10` | `ExerciseDetailView.swift:2270` (lue :1097-1098, relu 30-08) | elle double une règle qui vit déjà en base — tranché : **retirée au J2**, le montant vient de la réponse `montant` du Claim (plan §5.3.10) |
 | 6,14 Mio de **vidéo orpheline** | `Woop/Media` | poids payé à chaque install, et la robe welcome **boucle la mauvaise vidéo** |
 
 ---
@@ -348,15 +413,15 @@ et une étape qui ne se voit pas est une étape qu'on peut défaire.
 | # | Ce qu'on fait | Ce qui change à l'écran | État |
 |---|---|---|---|
 | **1** | **Le ménage du §6** — le chip fake, le plancher, le décalage, le montant du Claim | ⚠️ **oui, et c'est voulu** : les rendez-vous reviennent où ils devaient être | ✅ **29-08** (build vert ; ⚠️ **pas encore mesuré au simulateur**) |
-| **2** | **Le grain de la série dans l'outbox** (`serie_index`, `facts`) + `settle_session` idempotent | rien | à faire |
-| **3** | **Poster ce qui est déjà écrit** : `.noeudChemin` au claim, `.retourQuotidien` au premier plan | rien — sauf que le compte devient vrai | ✅ **29-08** |
-| **4** | **`reste`** — ⚠️ **DÉRIVÉ**, pas écrit : `solde_or mod prix_booster` (un solde ne se stocke pas) | rien encore (personne ne le lit) | ✅ **29-08** |
-| **5** | **Un seul point d'annonce** : `DecideurSerie` sort de la fiche et devient le passage obligé des cinq chaînes | rien, si le portage est fidèle | à faire |
-| **6** | **Les clés de pacing dans `reward_rules`** (budget, écart, cooldowns) + `regles_annonces()` | le rythme cesse d'être en dur | ✅ **29-08** (le preset `demo` reste à faire) |
-| **7** | **La notification branchée** — les 4 robes prennent la place de la pill et de la capsule | **oui** — le sujet du chantier | à faire |
-| **8** | **Le fact engine**, puis les vrais faits dans la matrice | les textes deviennent vrais | à faire |
-| **9** | **`roll_rare`** — la pièce d'argent devient gagnable | le booster noir s'ouvre enfin | ✅ **29-08** |
-| **10** | **`narrate-reward`** — l'IA écrit, sur des gabarits déjà en place | les textes deviennent contextuels | à faire |
+| **2** | **Le grain de la série dans l'outbox** (`serie_index`, `facts`) + `settle_session` idempotent | rien | ⚠️ **hors du plan du 30-08** : le crédit reste à la clôture, en bloc (plan §3, §4 « ce qu'on ne fait pas ») |
+| **3** | **Poster ce qui est déjà écrit** : `.noeudChemin` au claim, `.retourQuotidien` au premier plan | rien — sauf que le compte devient vrai | ✅ **29-08** — ⚠️ tranché le 30-08 : `.retourQuotidien` **déménage au tap du Claim**, le premier plan ne paie plus (plan §5.3, **J2**) |
+| **4** | **`reste`** — ⚠️ **DÉRIVÉ**, pas écrit : `solde_or mod prix_booster` (un solde ne se stocke pas) | rien encore (personne ne le lit) | ✅ **29-08** — ⚠️ vrai seulement quand le solde < 100 : la **conversion automatique** à 100 est tranchée (plan §4 M1.3, **J1**) |
+| **5** | **Un seul point d'annonce** : `DecideurSerie` sort de la fiche et devient le passage obligé des cinq chaînes | rien, si le portage est fidèle | → **J4** : un **décideur à budget** (rangs fixes 3/5/10 puis hasard, clés serveur M2), plan §5.2.7 |
+| **6** | **Les clés de pacing dans `reward_rules`** (budget, écart, cooldowns) + `regles_annonces()` | le rythme cesse d'être en dur | ✅ **29-08** (le preset `demo` reste à faire) — ⚠️ **lues par personne** au 30-08 (grep : un commentaire, `ExerciseDetailView.swift:2269`) ; + 5 clés de rangs au **J4** (M2) |
+| **7** | **La notification branchée** — les 4 robes prennent la place de la pill et de la capsule | **oui** — le sujet du chantier | → **J2** (file d'annonces `[Annonce]` + robes **booster** et **argent**) et **J3** (la page noire, la pile), plan §5.1 ; `PillGain` **garde** son créneau en séance |
+| **8** | **Le fact engine**, puis les vrais faits dans la matrice | les textes deviennent vrais | moteur de faits **posé** (`20260830100000_moteur_faits.sql`), à appeler — chantier stories, hors lot (plan §3) |
+| **9** | **`roll_rare`** — la pièce d'argent devient gagnable | le booster noir s'ouvre enfin | ✅ **29-08** — la dalle **argent** qui l'annonce est le J2/J3 (aujourd'hui : un `print`, `OutboxGains.swift:199`) |
+| **10** | **`narrate-reward`** — l'IA écrit, sur des gabarits déjà en place | les textes deviennent contextuels | → **J5** (plan §4 E1) : sondée 30-08 → 404, n'existe pas |
 
 **Ce qui est parti le 29-08** : la migration
 `supabase/migrations/20260829120000_annonces.sql` (le `reste` dérivé,
@@ -378,24 +443,44 @@ est le même »*.
 
 ---
 
-## §8 — À TRANCHER (ce que je ne peux pas décider)
+## §8 — À TRANCHER — quatre sur huit le sont, depuis le 30-08
 
-1. ⚠️ **Une notification consomme-t-elle le budget des 4 pop-ups ?** Le plan a
-   déjà tranché ce genre de question pour la story (*« c'est une page, pas une
-   interruption »*). Ma proposition : **non** — une dalle qu'on ne tape pas ne
-   dépense pas d'attention. Mais alors il faut **son propre plafond**, sinon
-   on la sert à chaque série.
-2. ⚠️ **Si la dalle et la pop-up annoncent le même gain, laquelle gagne ?**
-   Le §9.4 pose déjà la question pour pill/Moment et la laisse « à
-   confirmer ». Ma proposition : **une seule annonce par événement**, jamais
-   les deux — la pop-up remplace la dalle, elle ne s'y ajoute pas.
-3. **L'écart minimal** : « 3 séries **OU** 6 min » (doctrine) ou « **ET** »
-   (table v1) ? Les deux formulations sont dans la même section, et le OU est
-   deux fois plus permissif.
+1. ✅ **TRANCHÉ le 30-08** — *une notification consomme-t-elle le budget des 4
+   pop-ups ?* **Non** : une dalle ne consomme pas le budget, et elle a **son
+   propre plafond, 6 par séance** ; le budget des pop-ups est 4 / 1 en pièces /
+   1 vidéo (plan §0 « le rythme »). Les clés `notif_consomme_budget = false` et
+   `notifs_max_seance = 6` (`annonces.sql:146-151`) disent déjà cela — lues par
+   personne jusqu'au J4. (Ce qui est écrit ci-dessous était la proposition : le
+   plan a tranché ce genre de question pour la story, *« c'est une page, pas
+   une interruption »* — une dalle qu'on ne tape pas ne dépense pas
+   d'attention.)
+2. ✅ **TRANCHÉ le 30-08 — DANS L'AUTRE SENS que la proposition.** *Si la dalle
+   et la pop-up annoncent le même gain, laquelle gagne ?* Ce document proposait
+   « une seule annonce par événement, **jamais les deux** — la pop-up remplace
+   la dalle ». Elle garde la doctrine **« une annonce PAR événement »** mais
+   **la pile est voulue** : à la clôture, pièces + sachet (+ argent, + convertis)
+   sont **deux à quatre événements, donc deux à quatre dalles empilées** sur la
+   page noire ; au nœud du chemin, la card à gratter **et** une dalle après.
+   « La pop-up remplace la dalle » **tombe** pour ces deux cas ; la pop-up
+   « Ouvrir » qui suit n'est pas une seconde annonce du sachet mais une
+   **invitation** (Q4). Le §4 quaterdecies de `PLAN-REWARDS-BACKEND.md` et le
+   commentaire de la clé `annonce_une_par_evenement` (`annonces.sql:138-144`)
+   disent encore l'inverse — **périmés, à réécrire** (plan §2.7, hors de ce
+   lot) ; le site passe `b-flow-deux-annonces` de 🔴 à ⚪ « voulu : la pile
+   n'existe pas » (plan §7 J0).
+3. ✅ **TRANCHÉ le 30-08** — *l'écart minimal : OU ou ET ?* **ET** : 3 séries
+   **et** 6 min, sur l'horloge de séance — et il ne s'applique qu'aux rangs
+   tirés **au hasard après le 10** ; les rangs fixes 3 / 5 / 10 gagnent sur
+   lui (plan §1 Q1, défaut pris). `ecart_exige_les_deux = true`
+   (`annonces.sql:102-110`) est la bonne valeur.
 4. **Le chip « … »** doit-il redevenir « date, heure » comme son commentaire
-   le prévoyait, ou disparaître ?
-5. **Le texte d'IA est-il stocké** (une série = un texte, pour toujours) ou
-   **regénéré** ? La réponse change tout le backend.
+   le prévoyait, ou disparaître ? — **toujours ouvert**.
+5. ✅ **TRANCHÉ le 30-08, pour la première version seulement** — *le texte
+   d'IA est-il stocké ou regénéré ?* **Pas stocké** quand `narrate-reward`
+   arrive (J5) : l'IA sert la **prochaine** pop-up, et une table
+   `reward_narrations (user, workout, serie_index)` unique ne vient que
+   **si** le rejeu doit rendre le même texte (plan §4 E1 : « pas au J1 »). La
+   question reste posée pour le rejeu.
 6. **La langue** : EN partout, ou FR/EN localisé dès v1 ? Aujourd'hui les deux
    cohabitent (`PillGain` en anglais, `PiecesNotif` en français, `BoosterPopup`
    en français, `RewardPopup` en anglais).
@@ -421,8 +506,12 @@ est le même »*.
   et répond** (sondé en HTTP le 29-08 : `etat_coffre`, `cloturer_seance`,
   `claim_retour_quotidien`, `reclamer_noeud_chemin`, `historique_gains`,
   `claim_booster`). Ce qui manque est **dans l'app**.
-- ⚠️ Sauf `roll_rare`, `settle_session`, `reward_events` et `welcome_state` :
-  **ceux-là n'existent nulle part**.
+- ⚠️ Sauf `settle_session`, `reward_events` et `welcome_state` : **ceux-là
+  n'existent nulle part** — et `welcome_state` n'existera pas : sa question
+  (« disponible aujourd'hui ? ») devient la clé `retour_disponible` de
+  `etat_coffre()` (plan §4 M1.7, J1). `roll_rare`, elle, **existe depuis le
+  29-08 au soir** (97cf6d9, §10) — la ligne d'origine la comptait parmi les
+  absents, c'était vrai le matin.
 
 ---
 

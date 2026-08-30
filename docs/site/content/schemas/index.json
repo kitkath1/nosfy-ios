@@ -64,21 +64,21 @@
  },
  {
   "id": "regles-1-la-ligne-de-vie",
-  "page": "regles",
+  "page": "annonces",
   "type": "flowchart",
   "titre": "La ligne de vie d'une séance",
-  "legende": "Le rythme actuel vient de trois modulos — série % 10, % 5, % 3. Résultat : jusqu'à six interruptions dans une séance de 20 séries, dont deux d'affilée aux rangs 9 et 10."
+  "legende": "Le rythme au 30-08 vient de trois modulos — série % 10, % 5, % 3 (RestartSheet.swift:608-630). Résultat : jusqu'à six interruptions dans une séance de 20 séries, dont deux d'affilée aux rangs 9 et 10. Tranché le 30-08 : rangs fixes 3 / 5 / 10, puis hasard toutes les 5-8 séries."
  },
  {
   "id": "regles-2-qui-a-le-droit",
-  "page": "regles",
+  "page": "annonces",
   "type": "flowchart",
   "titre": "Qui a le droit de parler, et quand",
-  "legende": "C'est le rythme voulu. Aujourd'hui l'app saute toutes ces questions et regarde seulement le rang de la série."
+  "legende": "Le rythme posé en base le 29-08 (budget, écart, fait). Tranché le 30-08 par-dessus : les rangs fixes 3 / 5 / 10 gagnent d'abord, l'écart ne vaut que pour les rangs tirés au hasard après le 10. Au 30-08 l'app saute toutes ces questions et regarde seulement le rang de la série."
  },
  {
   "id": "regles-3-les-quatre-pages-du",
-  "page": "regles",
+  "page": "coffre",
   "type": "flowchart",
   "titre": "Les quatre pages du coffre",
   "legende": "Tout vient d'un seul objet depuis le 29-08. Avant : le même nombre était calculé à neuf endroits, et le prix d'un sachet valait 20 sur le profil, 100 dans le coffre."

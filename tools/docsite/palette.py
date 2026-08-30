@@ -26,7 +26,7 @@ ECRANS = [
     ('chemin',  'chemin (bleu)',  'tools/road/shots/road-3-tresor-ecran5.png'),
     ('depart',  'départ',         'tools/road/shots/road-1-branchee.png'),
     ('stop',    'stop',           'tools/stop/captures/stop-134059.png'),
-    ('regles',  'coffre v1',      'tools/coffre-v2/ARCHIVE/coffre-v1.jpg'),
+    ('coffre',  'coffre v1',      'tools/coffre-v2/ARCHIVE/coffre-v1.jpg'),   # 30-08 : la page `regles` est devenue `coffre` (+ `annonces`, sans capture)
     ('home2',   'home v2',        'tools/home-v2/shots/verdict-piece-noire-page.jpg'),
     ('notifs',  'notifs',         'tools/notifs/captures/v7.png'),
     ('noir',    'booster noir',   'tools/sacre/noir/preview-face.png'),

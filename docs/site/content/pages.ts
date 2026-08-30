@@ -1,9 +1,15 @@
 import type { DomaineInfo, PageInfo } from './types'
 
 /**
- * Les sept pages du site, dans l'ordre du rail. Le hero d'une page de domaine porte la
+ * Les huit pages du site, dans l'ordre du rail. Le hero d'une page de domaine porte la
  * teinte MESURÉE de la capture qu'il montre (tools/docsite/palette.py — H et S mesurés,
  * V posé à 62 pour tous) ; un écran sans couleur mesurable, ou sans capture, reste noir.
+ * Quand tout y est branché et que rien n'y ment, le hero passe au VERT (--ok) — la règle
+ * des cards de l'accueil, rendue sur la page (tranché le 30-08 ; aucune page n'y est).
+ *
+ * 30-08 : « Économie & annonces » (id `regles`) est devenue DEUX pages, « Le coffre » et
+ * « Les annonces » — tools/annonces/PLAN-COFFRE-ANNONCES.md §0 et §7. Le coffre garde la
+ * capture et la teinte mesurée de l'ancienne page ; les annonces n'ont pas de capture.
  */
 export const PAGES: PageInfo[] = [
   { id: 'etat', libelle: 'État', glyphe: 'gauge', phrase: 'Ce qui marche, ce qui ment, ce qui manque.' },
@@ -17,12 +23,17 @@ export const PAGES: PageInfo[] = [
     },
   },
   {
-    id: 'regles', libelle: 'Économie & annonces', glyphe: 'bell',
-    phrase: 'Les prix vivent en base ; le rythme des annonces, lui, est encore décidé par trois modulos.',
+    id: 'coffre', libelle: 'Le coffre', glyphe: 'coins',
+    phrase: 'Le solde se dérive, le sachet naît à 100, et le profil montre tout, même à 0.',
     hero: {
       capture: 'tools/coffre-v2/ARCHIVE/coffre-v1.jpg',
       teinte: { t1: '#9E6928', t2: '#9E4809', source: 'coffre-v1.jpg (v1, à re-mesurer sur la capture v2) · #5F3F18 h33 S75 (2e #5E2B06) · V posé à 62', part: 2.67 },
     },
+  },
+  {
+    id: 'annonces', libelle: 'Les annonces', glyphe: 'bell',
+    phrase: 'Une annonce par événement ; à la clôture elles s\'empilent.',
+    hero: { capture: null },
   },
   {
     id: 'forge', libelle: 'Forge', glyphe: 'flame',
@@ -51,8 +62,8 @@ export const PAGES: PageInfo[] = [
 export const DOMAINES: DomaineInfo[] = [
   { id: 'compte', libelle: 'Compte', badge: 'CO', page: 'porte' },
   { id: 'sync', libelle: 'Sync', badge: 'SY', page: 'histoire' },
-  { id: 'eco', libelle: 'Économie', badge: 'ÉC', page: 'serveur' },
-  { id: 'annonces', libelle: 'Annonces', badge: 'AN', page: 'regles' },
+  { id: 'eco', libelle: 'Économie', badge: 'ÉC', page: 'coffre' },
+  { id: 'annonces', libelle: 'Annonces', badge: 'AN', page: 'annonces' },
   { id: 'forge', libelle: 'Forge', badge: 'FO', page: 'forge' },
   { id: 'chemin', libelle: 'Calendrier · chemin', badge: 'CH', page: 'flow' },
   { id: 'stories', libelle: 'Stories', badge: 'ST', page: 'histoire' },

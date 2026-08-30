@@ -7,7 +7,7 @@ import { BRIQUES } from '@/content/briques'
 import { MESURES } from '@/content/mesures'
 import { SONDES } from '@/content/sondes'
 import { PAGE_PAR_ID, DOMAINE_PAR_ID } from '@/content/pages'
-import { EMOJI, LIBELLE, compter, parPage, mesuresPar, preuveTexte, verdict } from '@/content'
+import { EMOJI, LIBELLE, compter, estVert, parPage, mesuresPar, preuveTexte, verdict } from '@/content'
 import { Ic } from './Sprite'
 
 const RACINE = join(process.cwd(), '..', '..')
@@ -154,10 +154,14 @@ export function Hero({ page }: { page: Page }) {
   const nm = mesuresPar(page).length
   const cap = lireCaptures().hero[page]
   const teinte = info.hero?.teinte
-  const noir = !teinte
-  const style = teinte ? ({ '--t1': teinte.t1, '--t2': teinte.t2 } as React.CSSProperties) : undefined
+  // LE VERT (30-08) : tout 🟢 et 0 🔴 sur la page → la classe `vert` (app/styles/v2.css) prend la
+  // teinte de l'état à la place de la teinte mesurée — la même règle que les cards de l'accueil.
+  // La teinte mesurée est posée en style inline (elle gagnerait sur la classe) : on ne la pose pas.
+  const vert = estVert(c)
+  const noir = !teinte && !vert
+  const style = teinte && !vert ? ({ '--t1': teinte.t1, '--t2': teinte.t2 } as React.CSSProperties) : undefined
   return (
-    <div className={'hero-dom' + (noir ? ' noir' : '')} style={style} data-teinte={teinte?.source}>
+    <div className={'hero-dom' + (vert ? ' vert' : noir ? ' noir' : '')} style={style} data-teinte={vert ? 'vert : tout branché, rien ne ment' : teinte?.source}>
       {!noir && <div className="grain" aria-hidden="true" />}
       {cap?.fichier ? (
         <img src={`/captures/hero/${cap.fichier.split('/').pop()}`} width={cap.largeur} height={cap.hauteur} alt="" decoding="async" />

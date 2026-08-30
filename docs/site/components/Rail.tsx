@@ -1,7 +1,7 @@
 import { PAGES, TOUTES, compter } from '@/content'
 import { Ic } from './Sprite'
 
-/** Le rail : la lune, les 7 pages, la loi. Les nombres de 🔴 par page sont CALCULÉS. */
+/** Le rail : la lune, les 8 pages (30-08 : le coffre et les annonces à la place de « Économie & annonces »), la loi. Les nombres de 🔴 par page sont CALCULÉS. */
 export function Rail() {
   const total = compter().total
   return (

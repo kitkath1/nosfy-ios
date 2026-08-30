@@ -126,12 +126,19 @@
    "source": "tools/road/shots/j4-home-serpentin.png",
    "octets": 69237
   },
-  "regles": {
-   "fichier": "captures/hero/regles.jpg",
+  "coffre": {
+   "fichier": "captures/hero/coffre.jpg",
    "largeur": 480,
    "hauteur": 1043,
    "source": "tools/coffre-v2/ARCHIVE/coffre-v1.jpg",
    "octets": 44216
+  },
+  "annonces": {
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
   },
   "forge": {
    "fichier": "captures/hero/forge.png",

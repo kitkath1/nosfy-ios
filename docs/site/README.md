@@ -23,7 +23,7 @@ Le même contenu, en un fichier, republié au même lien à chaque changement ba
 
 | | où | quoi |
 |---|---|---|
-| **la source** | `docs/site/content/` | `serveur.ts` (la carte du serveur), `briques.ts` (les briques des pages), `mesures.ts` (les ◌ « à mesurer »), `pages.ts` (les 7 pages, les teintes mesurées), `sondes.ts`, `schemas/*.mmd` (les 19 schémas) et `pages/*.mdx` (la prose) |
+| **la source** | `docs/site/content/` | `serveur.ts` (la carte du serveur), `briques.ts` (les briques des pages), `mesures.ts` (les ◌ « à mesurer »), `pages.ts` (les 8 pages, les teintes mesurées), `sondes.ts`, `schemas/*.mmd` (les 19 schémas) et `pages/*.mdx` (la prose) |
 | **le compilateur** | `docs/site/app/`, `components/`, `scripts/` | Next.js 16 en export statique, **un seul composant client, vide (`Boot`, qui réveille `site.js` après l'hydratation), zéro React dans le livrable** ; `scripts/schemas.mjs` rend les schémas en SVG dans le Chrome installé et les passe à l'obsidienne ; `scripts/inliner.mjs` fait UN fichier de l'export ; `scripts/captures.py` embarque les captures |
 | **le livrable** | `docs/site/index.html` | un seul fichier autonome (Inter, SVG, captures et `site.js` inlinés), commité, ouvert par `voir.sh`, republié au même lien |
 
@@ -106,7 +106,7 @@ le livrable dépasse 2 Mo.
 |---|---|
 | ◉ | **État** — l'accueil : les compteurs (calculés à la build), une card par domaine teintée par son pire état (≥ 1 🔴 rouge · tout 🟢 vert · sinon argent), **la liste de tout ce qui reste à faire côté serveur**, 🔴 d'abord, et le flow en images |
 | ▤ | **Serveur** — la carte : 12 tables, 15 fonctions, 26 règles, 2 edge functions, 6 videurs, les sondes HTTP, le lexique, le dictionnaire plié |
-| ◇ | **Flow · Économie & annonces · Forge · Stories · Compte** — chaque page ouvre sur son hero (la couleur MESURÉE de l'écran de l'app, la capture fondue dedans, le verdict calculé), puis « Ce qui ment », un schéma, « Ce qui reste », « Ce qui tient », une décision, et la prose pliée |
+| ◇ | **Flow · Le coffre · Les annonces · Forge · Stories · Compte** — chaque page ouvre sur son hero (la couleur MESURÉE de l'écran de l'app, la capture fondue dedans, le verdict calculé ; **vert** quand tout y est branché et que rien n'y ment — la règle des cards, rendue sur la page), puis « Ce qui ment », un schéma, « Ce qui reste », « Ce qui tient », une décision, et la prose pliée. Le 30-08, « Économie & annonces » est devenue deux pages (`tools/annonces/PLAN-COFFRE-ANNONCES.md` §7) |
 
 ## Notes techniques
 

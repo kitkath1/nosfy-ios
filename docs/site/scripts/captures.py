@@ -64,7 +64,8 @@ FLOW = [
 #   geste  : 'jpeg' · 'png' (garde l'alpha) · 'jpeg+recadre' (centre au format écran, puis réduit)
 HERO = [
     ('flow',     '@home',                                                                    'jpeg'),
-    ('regles',   'tools/coffre-v2/ARCHIVE/coffre-v1.jpg',                                    'jpeg'),
+    ('coffre',   'tools/coffre-v2/ARCHIVE/coffre-v1.jpg',                                    'jpeg'),          # 30-08 : la page `regles` est devenue `coffre` + `annonces`
+    ('annonces', None,                                                                       'jpeg'),          # aucune capture : hero noir
     ('forge',    'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png',          'png'),           # l'objet flotte dans sa couleur
     ('histoire', None,                                                                       'jpeg'),          # aucune capture : hero noir
     ('porte',    'Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg', 'jpeg+recadre'),  # 1080×1644 → le centre au format écran

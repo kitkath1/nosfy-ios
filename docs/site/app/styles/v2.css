@@ -79,6 +79,9 @@ table.serveur tr.litige td.etat .p{outline:1px dashed rgba(255,255,255,.35);outl
 .hero-dom .comptes i{display:inline-flex;align-items:center;gap:6px;font-style:normal}
 .hero-dom .comptes .pt{width:6px;height:6px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.25)}
 .hero-dom.noir{--t1:#0F0F0F;--t2:transparent}
+/* LE VERT (30-08) : tout branché et rien ne ment → la teinte de l'état (--ok) remplace la teinte mesurée, V ramené à 62 comme
+   palette.py (79 % de #5FC98C = #4B9F6F). La classe est posée par Hero (components/Composants.tsx) ; aucune page n'y est encore. */
+.hero-dom.vert{--t1:color-mix(in srgb,var(--ok) 79%,#000);--t2:color-mix(in srgb,var(--ok) 52%,#000)}
 
 /* ── les panneaux : décision, savoir, sondes, lexique ─────── */
 .decision{margin:32px 0 0;padding:24px 28px;border-radius:16px;border:1px solid var(--filet);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);max-width:none;
