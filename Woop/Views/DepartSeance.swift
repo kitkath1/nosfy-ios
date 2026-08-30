@@ -89,6 +89,59 @@ final class DepartEtat {
         }
     }
 
+    /// ⚠️ **LE SERVEUR COMPLÈTE LA MÉMOIRE LOCALE, IL NE LA REMPLACE PAS.**
+    /// `chemin.reclamees` se remet à zéro à la réinstallation — c'est le
+    /// défaut qu'on répare — mais l'inverse est vrai aussi : un claim tout
+    /// juste posté dort peut-être encore dans l'outbox, et le serveur ne le
+    /// connaît pas. Remplacer, ce serait re-proposer ce cadeau-là. **L'union
+    /// est la seule opération sûre** : on n'oublie jamais un nœud payé, quel
+    /// que soit celui des deux qui le sait.
+    ///
+    /// Elle ne propage jamais son échec : un ensemble qu'on n'a pas pu relire
+    /// n'est pas une erreur d'application, c'est un état périmé — exactement
+    /// la règle d'`EconomieWoop.rafraichir`.
+    @MainActor
+    func rafraichirReclamees() async {
+        guard WoopConfig.isConfigured else { return }
+        do {
+            let jwt = try await SupabaseSession.shared.token()
+            let serveur = try await SacreServeur.noeudsCheminReclames(jwt: jwt)
+            let neufs = serveur.subtracting(reclamees)
+            guard !neufs.isEmpty else { return }
+            reclamees.formUnion(serveur)
+            print("[chemin] \(neufs.count) nœud(s) déjà payés, appris du serveur")
+        } catch {
+            print("[chemin] lecture des nœuds réclamés impossible : \(error)")
+        }
+    }
+
+    /// LA COMPOSITION DU CHAPITRE, RELUE EN BASE — et comparée, jamais
+    /// appliquée (le pourquoi est écrit sur `EcranSpec.verifierComposition`).
+    /// Une divergence est un défaut d'app, pas un réglage à suivre : elle se
+    /// CRIE, et le silence vaut accord.
+    @MainActor
+    func verifierReglesChemin() async {
+        guard WoopConfig.isConfigured else { return }
+        do {
+            let jwt = try await SupabaseSession.shared.token()
+            let regles = try await SacreServeur.reglesChemin(jwt: jwt)
+            guard !regles.isEmpty else {
+                print("[chemin] aucune règle de composition en base — "
+                      + "la migration 20260829170000 n'est pas déployée")
+                return
+            }
+            let ecarts = EcranSpec.verifierComposition(regles)
+            if ecarts.isEmpty {
+                print("[chemin] composition conforme à la base "
+                      + "(\(regles.count) règles lues)")
+            } else {
+                for e in ecarts { print("⚠️ [chemin] DIVERGENCE — \(e)") }
+            }
+        } catch {
+            print("[chemin] règles de composition illisibles : \(error)")
+        }
+    }
+
     func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:]) {
         print("[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? \(cheminOuvert)")
         guard !cheminOuvert else { return }

@@ -315,7 +315,20 @@ struct EcranSpec: Equatable, Identifiable {
         // La démo montre le DÉBUT (voir plus haut) mais avec de VRAIES dates
         // dès que la base en a deux : les deux jours les plus récents.
         func demo() -> (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
+            // ⚠️ **UN JOUR FAIT NE PEUT PAS ÊTRE AUJOURD'HUI** (29-08, vu sur
+            // la card ROUTE de la home : deux pierres voisines affichaient
+            // toutes les deux « 29 »). La démo prenait les DEUX jours de
+            // séance les plus récents — or si le user s'est entraîné
+            // aujourd'hui, l'un des deux EST aujourd'hui, qui est déjà le nœud
+            // ACTIF. Le chemin montrait donc le même jour deux fois, à deux
+            // états différents.
+            //
+            // La dérivation réelle, elle, ne pouvait pas avoir ce défaut : son
+            // `guard i < etape` écarte par construction la séance du jour. La
+            // démo n'avait pas cette garde ; elle l'a maintenant.
+            let veille = cal.startOfDay(for: aujourdhui)
             let recents = Set(seancesFinies.map { cal.startOfDay(for: $0) })
+                .filter { $0 < veille }
                 .sorted(by: >).prefix(2).reversed().map { $0 }
             var dates: [Int: Date] = [:]
             for k in 0..<2 {
@@ -374,6 +387,206 @@ struct EcranSpec: Equatable, Identifiable {
                       ratioHL: 2100.0/1080.0, largeurFrac: 300.0/402.0,
                       couture: 4, bord: .trailing),
     ]
+}
+
+// MARK: - LA LECTURE DU CHEMIN (la source unique)
+
+/// ⚠️ **CE QU'UN NŒUD EST NE VIT PLUS DANS LA PAGE** (29-08, jalon 0 de la
+/// card ROUTE de la home). L'état d'un galet, sa date et son glyphe étaient
+/// trois `private func` de `CheminDuo` : la card de la home ne pouvait que
+/// les RECOPIER. Or deux objets qui recopient la même intention divergent au
+/// premier réglage — c'est la loi déjà payée sur « 26 AUG » contre
+/// « 26. AOÛT » (`DateGalet.depuis`), et elle vaut d'autant plus ici que les
+/// deux surfaces montrent LE MÊME JOUR à dix points d'écran l'une de l'autre.
+///
+/// Elles vivent donc à côté de la table des nœuds, et la page les APPELLE.
+/// Aucun comportement ne change : la preuve du jalon est une capture de la
+/// route identique au pixel près.
+extension EcranSpec {
+
+    /// Les quatre choses qu'il faut savoir pour lire un nœud — exactement ce
+    /// que `EtatDuo` porte pour la route, et ce que `DepartEtat` transporte
+    /// jusqu'à la racine. La card de la home en remplira une depuis les mêmes
+    /// séances (`etapeEtFaits`), sans jamais refaire le raisonnement.
+    struct Lecture {
+        /// Le nœud ACTIF (aujourd'hui). ⚠️ Jamais un nœud spécial : le
+        /// calendrier ne compte que les séances.
+        var etape: Int
+        var faits: Set<Int> = []
+        /// Les estampilles de complétion (`Workout.endedAt`) : un galet fait
+        /// porte SA date, jamais une date déduite du rang.
+        var datesFaites: [Int: Date] = [:]
+        var reclamees: Set<Int> = []
+        /// ⚠️ **AUJOURD'HUI EST UNE DONNÉE, PAS UN `Date()` CACHÉ.** Les trois
+        /// méthodes d'origine appelaient l'horloge en douce : aucun banc ne
+        /// pouvait montrer un autre jour, et deux captures du même écran ne se
+        /// comparaient que si on les prenait dans la même journée.
+        var maintenant: Date = Date()
+
+        /// ⚠️ **LES CINQ ÉTATS DU VERDICT, ET ILS N'EXISTAIENT PAS** (26-08).
+        /// `etatDe` ne connaissait que avant / égal / après : un jour RÉUSSI et
+        /// un jour RATÉ rendaient exactement la même pastille, et le chemin ne
+        /// portait aucune date. Désormais :
+        ///   · passé + fait      → `.accompli`, la date légèrement éclairée ;
+        ///   · passé + non fait  → `.rate`, l'encre presque fantôme ;
+        ///   · aujourd'hui       → `.actif`, halo blanc + la vraie date du jour ;
+        ///   · futur             → `.prochain` / `.verrouille`, la petite flamme ;
+        ///   · fin de chapitre   → `.lune(dispo:)`, plus gros, sombre ou illuminé.
+        func etat(_ e: EtapeSpec) -> EtapeEtat {
+            // Les nœuds spéciaux : PASSIFS (audit §4, « on ne m'impose rien ») —
+            // disponibles dès que le chemin les a dépassés, réclamables une
+            // fois. `etape` n'est jamais un id spécial (le calendrier ne compte
+            // que les séances), donc « dépassé » = `etape > id`.
+            if e.special {
+                if reclamees.contains(e.id) { return .reclame }
+                let dispo = etape > e.id
+                return e.piece ? .piece(dispo: dispo) : .lune(dispo: dispo)
+            }
+            if e.id < etape {
+                return faits.contains(e.id) ? .accompli : .rate
+            }
+            if e.id == etape { return .actif }
+            // le prochain = la séance suivante (pas le nœud suivant : un
+            // spécial peut s'intercaler).
+            if let j = EcranSpec.jour(deId: etape),
+               EcranSpec.id(pourJour: j + 1) == e.id, e.id != etape {
+                return .prochain
+            }
+            return .verrouille
+        }
+
+        /// LA date d'un galet — la SOURCE : l'encre du galet (`date(_:)`) et la
+        /// mini-card du panneau en dérivent toutes deux. Deux objets qui
+        /// s'accordent LISENT la même source, ils ne recopient pas la même
+        /// intention (la loi payée sur « 26 AUG » contre « 26. AOÛT »).
+        ///
+        /// Le calendrier compte les SÉANCES, pas les nœuds : un spécial glissé
+        /// entre deux séances n'est pas un jour.
+        func dateReelle(_ e: EtapeSpec) -> Date? {
+            guard !e.special else { return nil }
+            // AUJOURD'HUI — le galet au halo marque le jour où le user est
+            // connecté : sa date se calcule à l'affichage, et ne se FIGE qu'à la
+            // complétion (c'est à ce moment-là qu'elle entre dans `datesFaites`).
+            if e.id == etape { return maintenant }
+            // À VENIR — aucune date : « les jours apparaissent le jour où le user
+            // a terminé sa séance ». Le galet ne montre que la flamme.
+            guard e.id < etape else { return nil }
+            // FAIT — SON estampille, remontée avec lui par l'hôte.
+            if let d = datesFaites[e.id] { return d }
+            // RATÉ — jamais terminé, donc pas d'estampille ; mais c'est un jour
+            // PASSÉ, et il doit dire lequel (sinon il ne se distingue plus d'un
+            // jour à venir). Sa date reste exacte par construction de l'axe des
+            // rangs : rang k = jour de la première séance + k jours.
+            guard let jE = EcranSpec.jour(deId: e.id),
+                  let jA = EcranSpec.jour(deId: etape) else { return nil }
+            return Calendar.current.date(byAdding: .day, value: jE - jA,
+                                         to: maintenant)
+        }
+
+        /// LA DATE D'UN GALET — le chemin est un CALENDRIER : l'étape courante
+        /// est aujourd'hui, chaque rang vaut un jour. Les galets passés portent
+        /// donc leur vraie date, et l'actif la date du jour.
+        ///
+        /// ⚠️ Seuls le PASSÉ et AUJOURD'HUI en portent une. Un jour futur qui
+        /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict
+        /// dit « ne pas donner l'impression que le contenu est déjà accessible ».
+        func date(_ e: EtapeSpec) -> DateGalet? {
+            dateReelle(e).map(DateGalet.depuis)
+        }
+
+        /// LE FUTUR NE PORTE PLUS UN RANG, IL PORTE UNE PROMESSE : « une petite
+        /// flamme translucide très légère pour signaler à faire, sans donner
+        /// l'impression que le contenu est déjà accessible » (verdict). Un
+        /// chiffre d'étape se lit comme un contenu ; une flamme se lit comme une
+        /// intention. Les nœuds spéciaux, eux, portent le croissant (`glypheLune`).
+        func glyphe(_ e: EtapeSpec) -> String? {
+            guard !e.special, dateReelle(e) == nil else { return nil }
+            return "flame"
+        }
+    }
+
+    /// LES NOMS DES CHAPITRES — un par écran. Ils étaient enfermés dans la
+    /// dalle de la route (`private struct DalleChapitre`) : la card de la home
+    /// doit dire LE MÊME nom que la dalle, donc il n'en existe qu'un
+    /// exemplaire, et c'est celui-ci.
+    static let nomsChapitre = ["Le verre noir", "La braise blanche",
+                               "Le rouge", "La braise rouge", "Le bleu"]
+
+    /// Borné : un chapitre hors table doit rendre un mot, pas un crash.
+    static func nomChapitre(_ ecran: Int) -> String {
+        nomsChapitre[min(max(ecran, 0), nomsChapitre.count - 1)]
+    }
+
+    /// CE QUE LA CARD DE LA HOME MONTRE — trois nœuds et deux lignes de texte,
+    /// dérivés de la MÊME lecture que la route. Les trois règles tranchées le
+    /// 29-08 :
+    ///  · le chiffre du milieu est une DATE, jamais un rang (« la date est un
+    ///    estampillage, pas une position ») — le rang est dit par le texte ;
+    ///  · « étape X sur 9 » compte TOUS les nœuds du chapitre, récompenses
+    ///    comprises : le chiffre doit se vérifier au doigt sur la route ;
+    ///  · le nœud du haut s'affiche tel quel, même éteint — une récompense
+    ///    déjà réclamée reste ce qu'il y a juste avant aujourd'hui.
+    struct Apercu {
+        /// 1-based, pour l'affichage (« Chapitre 1 »).
+        let chapitre: Int
+        let nom: String
+        /// 1-based dans le chapitre (« Étape 4 sur 9 »).
+        let rang: Int
+        let total: Int
+        /// Le nœud d'AVANT et celui d'APRÈS — nil aux deux bouts du chemin.
+        /// Le chemin DESCEND : `avant` se pose au-dessus de l'actif.
+        let avant: EtapeSpec?
+        let actif: EtapeSpec
+        let apres: EtapeSpec?
+    }
+
+    /// ⚠️ **ON COMPARE, ON N'APPLIQUE PAS** (29-08). La composition d'un
+    /// chapitre vit désormais dans `reward_rules` (migration
+    /// `20260829170000_regles_chemin.sql`), parce qu'une règle de jeu n'a rien
+    /// à faire dans du Swift — la loi vaut pour le « sur 9 » de la card comme
+    /// pour un prix.
+    ///
+    /// Mais la table des nœuds est un `static let` calculé au chargement, et
+    /// TOUTE la géométrie du chemin en découle : les positions, le serpentin,
+    /// l'air mesuré entre les pierres. L'appliquer à chaud reviendrait à
+    /// redessiner la route sous les doigts, et surtout à afficher « sur 10 »
+    /// au-dessus d'un chapitre qui dessine neuf pierres — exactement la double
+    /// vérité qu'on cherche à tuer.
+    ///
+    /// Alors l'app LIT la règle et **crie si elle diverge**. Une divergence
+    /// veut dire une seule chose : l'app est en retard sur la base, et il faut
+    /// la mettre à jour — pas la contorsionner.
+    static func verifierComposition(_ regles: [String: Int]) -> [String] {
+        let comp = composition(0)
+        let attendu: [String: Int] = [
+            "chemin_chapitres": les5.count,
+            "chemin_noeuds_par_chapitre": parEcran,
+            "chemin_seances_par_chapitre": comp.filter { $0 == .seance }.count,
+            "chemin_rang_recompense_milieu":
+                comp.firstIndex(where: { $0 == .piece || $0 == .lune }) ?? -1,
+            "chemin_rang_tresor": comp.firstIndex(of: .tresor) ?? -1
+        ]
+        return attendu.compactMap { cle, mien in
+            guard let serveur = regles[cle], serveur != mien else { return nil }
+            return "\(cle) : la base dit \(serveur), l'app dessine \(mien)"
+        }
+    }
+
+    static func apercu(_ l: Lecture) -> Apercu {
+        // ⚠️ Les ids sont des INDEX CONTIGUS (`ecran × parEcran + n`) : c'est ce
+        // qui autorise `etapes[id]`, et c'est pour ça que le rang se lit sur
+        // `n` — jamais sur `id % 10`, l'ancienne base 10 est morte avec les dix
+        // nœuds par écran.
+        let i = min(max(l.etape, 0), etapes.count - 1)
+        let e = etapes[i]
+        return Apercu(chapitre: e.ecran + 1,
+                      nom: nomChapitre(e.ecran),
+                      rang: e.n + 1,
+                      total: parEcran,
+                      avant: i > 0 ? etapes[i - 1] : nil,
+                      actif: e,
+                      apres: i + 1 < etapes.count ? etapes[i + 1] : nil)
+    }
 }
 
 // MARK: - L'état
@@ -1016,7 +1229,8 @@ private struct CheminDuo: View {
                 // contour `flame` (pas `flame.fill`) : le cheveu seul, le
                 // fantôme d'une flamme — le levier gratuit mesuré au fouet
                 // (`hierarchical` sur flame.fill est un no-op).
-                let futur = d == nil && !e.special
+                // Le choix vit dans la source unique : la card de la home
+                // allume la même flamme sur son nœud à venir.
                 // ⚠️ **LES DEUX RÉCOMPENSES PORTENT SON LOGO LUNE** (28-08 :
                 // « dans la route tu as mis un icône pièce — non, on va
                 // toujours mettre un logo lune, et MON logo lune, pas un
@@ -1025,7 +1239,7 @@ private struct CheminDuo: View {
                 // galet est plus petit, c'est très bien » — seul le glyphe
                 // change. Ce qu'ils DONNENT reste distinct sous le même
                 // signe : des pièces au milieu, un booster à la fin.
-                let glyphe: String? = e.special ? nil : (futur ? "flame" : nil)
+                let glyphe: String? = lecture.glyphe(e)
                 let nee = etat.nees.contains(e.id)
                 GaletEtape(etat: quel,
                            numero: nil,
@@ -1230,36 +1444,22 @@ private struct CheminDuo: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) { onDemarrer() }
     }
 
-    /// ⚠️ **LES CINQ ÉTATS DU VERDICT, ET ILS N'EXISTAIENT PAS** (26-08).
-    /// `etatDe` ne connaissait que avant / égal / après : un jour RÉUSSI et un
-    /// jour RATÉ rendaient exactement la même pastille, et le chemin ne portait
-    /// aucune date. Désormais :
-    ///   · passé + fait      → `.accompli`, la date légèrement éclairée ;
-    ///   · passé + non fait  → `.rate`, l'encre presque fantôme ;
-    ///   · aujourd'hui       → `.actif`, halo blanc + la vraie date du jour ;
-    ///   · futur             → `.prochain` / `.verrouille`, la petite flamme ;
-    ///   · fin de chapitre   → `.lune(dispo:)`, plus gros, sombre ou illuminé.
+    /// LA LECTURE DE CETTE PAGE — l'état vivant, passé à la source unique
+    /// (`EcranSpec.Lecture`). Elle se construit à chaque appel et ça ne coûte
+    /// rien : les deux ensembles et la table sont des COW, on ne copie que
+    /// trois références.
+    private var lecture: EcranSpec.Lecture {
+        EcranSpec.Lecture(etape: etat.etape,
+                          faits: etat.faits,
+                          datesFaites: etat.datesFaites,
+                          reclamees: etat.reclamees)
+    }
+
+    /// Les cinq états du verdict — le raisonnement vit dans
+    /// `EcranSpec.Lecture.etat(_:)`, pour que la card de la home dise
+    /// exactement la même chose que la route.
     private func etatDe(_ e: EcranSpec.EtapeSpec) -> EtapeEtat {
-        // Les nœuds spéciaux : PASSIFS (audit §4, « on ne m'impose rien ») —
-        // disponibles dès que le chemin les a dépassés, réclamables une
-        // fois. `etape` n'est jamais un id spécial (le calendrier ne compte
-        // que les séances), donc « dépassé » = `etape > id`.
-        if e.special {
-            if etat.reclamees.contains(e.id) { return .reclame }
-            let dispo = etat.etape > e.id
-            return e.piece ? .piece(dispo: dispo) : .lune(dispo: dispo)
-        }
-        if e.id < etat.etape {
-            return etat.faits.contains(e.id) ? .accompli : .rate
-        }
-        if e.id == etat.etape { return .actif }
-        // le prochain = la séance suivante (pas le nœud suivant : un
-        // spécial peut s'intercaler).
-        if let j = EcranSpec.jour(deId: etat.etape),
-           EcranSpec.id(pourJour: j + 1) == e.id, e.id != etat.etape {
-            return .prochain
-        }
-        return .verrouille
+        lecture.etat(e)
     }
 
     /// LE JOUET : ce qui se porte. Un verrouillé, un prochain, un spécial
@@ -1280,43 +1480,17 @@ private struct CheminDuo: View {
         return true
     }
 
-    /// LA DATE D'UN GALET — le chemin est un CALENDRIER : l'étape courante est
-    /// aujourd'hui, chaque rang vaut un jour. Les galets passés portent donc
-    /// leur vraie date, et l'actif la date du jour.
-    ///
-    /// ⚠️ Seuls le PASSÉ et AUJOURD'HUI en portent une. Un jour futur qui
-    /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict
-    /// dit « ne pas donner l'impression que le contenu est déjà accessible ».
+    /// La date d'un galet (le jour en grand, le mois sur trois lettres) — le
+    /// raisonnement vit dans `EcranSpec.Lecture` : seuls le PASSÉ et
+    /// AUJOURD'HUI en portent une.
     private func dateDe(_ e: EcranSpec.EtapeSpec) -> DateGalet? {
-        dateReelle(e).map(DateGalet.depuis)
+        lecture.date(e)
     }
 
-    /// LA date d'un galet — la SOURCE : l'encre du galet (`dateDe`) et la
-    /// mini-card du panneau en dérivent toutes deux. Deux objets qui
-    /// s'accordent LISENT la même source, ils ne recopient pas la même
-    /// intention (la loi payée sur « 26 AUG » contre « 26. AOÛT »).
-    ///
-    /// Le calendrier compte les SÉANCES, pas les nœuds : un spécial glissé
-    /// entre deux séances n'est pas un jour.
+    /// LA date d'un galet — la SOURCE de l'encre du galet ET de la mini-card
+    /// du panneau. Deux objets qui s'accordent LISENT la même source.
     private func dateReelle(_ e: EcranSpec.EtapeSpec) -> Date? {
-        guard !e.special else { return nil }
-        // AUJOURD'HUI — le galet au halo marque le jour où le user est
-        // connecté : sa date se calcule à l'affichage, et ne se FIGE qu'à la
-        // complétion (c'est à ce moment-là qu'elle entre dans `datesFaites`).
-        if e.id == etat.etape { return Date() }
-        // À VENIR — aucune date : « les jours apparaissent le jour où le user
-        // a terminé sa séance ». Le galet ne montre que la flamme.
-        guard e.id < etat.etape else { return nil }
-        // FAIT — SON estampille, remontée avec lui par l'hôte.
-        if let d = etat.datesFaites[e.id] { return d }
-        // RATÉ — jamais terminé, donc pas d'estampille ; mais c'est un jour
-        // PASSÉ, et il doit dire lequel (sinon il ne se distingue plus d'un
-        // jour à venir). Sa date reste exacte par construction de l'axe des
-        // rangs : rang k = jour de la première séance + k jours.
-        guard let jE = EcranSpec.jour(deId: e.id),
-              let jA = EcranSpec.jour(deId: etat.etape) else { return nil }
-        return Calendar.current.date(byAdding: .day, value: jE - jA,
-                                     to: Date())
+        lecture.dateReelle(e)
     }
 
     /// LE PASSAGE D'ÉTAPE (partition §7) : l'adieu de l'actif, la bascule,
@@ -1414,8 +1588,6 @@ private struct DalleChapitre: View {
     let etat: EtatDuo
     /// §23 — le chevron de retour (dans la capsule, à gauche du bloc).
     var onRetour: (() -> Void)? = nil
-    static let noms = ["Le verre noir", "La braise blanche", "Le rouge",
-                       "La braise rouge", "Le bleu"]
 
     var body: some View {
         let visible = !etat.enGeste
@@ -1457,7 +1629,7 @@ private struct DalleChapitre: View {
                         .foregroundStyle(Color(white: 0.52))
                         .contentTransition(.numericText())
                     ZStack(alignment: .leading) {
-                        Text(Self.noms[etat.ecranCourant])
+                        Text(EcranSpec.nomChapitre(etat.ecranCourant))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(LinearGradient(
                                 colors: [Color(white: 1.0), Color(white: 0.82)],
@@ -2096,6 +2268,10 @@ struct DuoLab: View {
             // §20 Pil-1 : la mire des matières (natif / liquidLens / peint /
             // métal sablé) sur noir et sur feu.
             PillMireLab()
+        } else if args.contains("-routeCard") {
+            // La card ROUTE de la home, seule (J2). Elle vit sous `-duoLab`
+            // parce que la racine est tenue par un autre chantier.
+            RouteCardLab()
         } else if args.contains("-duoGalets") {
             // La mire du galet-étape (J2) : la grammaire seule, deux fonds.
             GaletEtapeLab()

@@ -367,6 +367,66 @@ enum SacreServeur {
         }
     }
 
+    /// LES NŒUDS DU CHEMIN DÉJÀ PAYÉS — la lecture qui manquait.
+    ///
+    /// ⚠️ Le serveur tenait déjà l'argent (deux index uniques sur `noeud_id`),
+    /// mais il ne savait pas DIRE ce qu'il avait payé : l'app relisait son
+    /// `UserDefaults`, qui se remet à zéro à la réinstallation. Le compte ne
+    /// perdait rien ; l'écran, lui, reproposait un cadeau déjà reçu.
+    ///
+    /// Elle rend un ENSEMBLE : un nœud qui a payé des pièces ET un sachet n'y
+    /// figure qu'une fois (le `union` de la fonction serveur).
+    static func noeudsCheminReclames(jwt: String) async throws -> Set<Int> {
+        let data = try await rpc("noeuds_chemin_reclames", jwt: jwt)
+        guard let lignes = try JSONSerialization.jsonObject(with: data)
+                as? [[String: Any]] else { throw Erreur.reponse }
+        return Set(lignes.compactMap { $0["noeud_id"] as? Int })
+    }
+
+    /// LA COMPOSITION D'UN CHAPITRE, LUE EN BASE.
+    ///
+    /// ⚠️ `reward_rules` est lisible directement par tout utilisateur
+    /// authentifié (« les règles sont publiques en lecture ») : **aucune
+    /// fonction à écrire, aucune à déployer** — un simple `select`. C'est la
+    /// raison pour laquelle cette lecture-là ne coûte rien.
+    ///
+    /// ⚠️ Elle ne PILOTE rien : la table des nœuds est un `static let` calculé
+    /// au chargement, et toute la géométrie du chemin en découle. Ce qu'on
+    /// lit sert à COMPARER (voir `EcranSpec.verifierComposition`) — afficher
+    /// « sur 10 » au-dessus d'un chapitre qui dessine 9 pierres serait
+    /// précisément la double vérité qu'on veut tuer.
+    static func reglesChemin(jwt: String) async throws -> [String: Int] {
+        let cles = ["chemin_chapitres", "chemin_noeuds_par_chapitre",
+                    "chemin_seances_par_chapitre",
+                    "chemin_rang_recompense_milieu", "chemin_rang_tresor"]
+        var url = WoopConfig.supabaseURL.appending(path: "rest/v1/reward_rules")
+        url.append(queryItems: [
+            .init(name: "select", value: "key,value"),
+            .init(name: "key", value: "in.(\(cles.joined(separator: ",")))")
+        ])
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        req.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        let (data, rep) = try await URLSession.shared.data(for: req)
+        let code = (rep as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200 ..< 300).contains(code) else {
+            throw Erreur.http(code, String(data: data, encoding: .utf8) ?? "")
+        }
+        guard let lignes = try JSONSerialization.jsonObject(with: data)
+                as? [[String: Any]] else { throw Erreur.reponse }
+        var out: [String: Int] = [:]
+        for l in lignes {
+            guard let k = l["key"] as? String else { continue }
+            // `value` est du jsonb : un nombre nu arrive en `Int`, mais une
+            // règle saisie « 9 » entre guillemets arriverait en `String`. On
+            // accepte les deux plutôt que de rendre la lecture fragile à une
+            // saisie.
+            if let v = l["value"] as? Int { out[k] = v }
+            else if let s = l["value"] as? String, let v = Int(s) { out[k] = v }
+        }
+        return out
+    }
+
     // MARK: L'appel nu
 
     /// Le cas courant : une fonction qui rend un objet JSON.

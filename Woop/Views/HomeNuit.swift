@@ -1355,56 +1355,12 @@ struct SemaineStrip: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            // L'ardoise du calendrier. Son niveau est MESURÉ sur le
-            // wireframe : **L 27**, soit exactement le `white: 0.11` de la
-            // pochette du bac. La mienne tenait L 4 (du noir sur du noir) —
-            // elle disparaissait. Elle reste TRANSLUCIDE (opacité 0,90) :
-            // les fantômes posés dessus mangent encore la vidéo à travers
-            // elle — une ardoise opaque les affamerait.
-            // LA MÊME MATIÈRE QUE LES DEUX WIDGETS (verdict 21-08) : un
-            // plancher très bas et DEUX lueurs radiales neutres posées sur
-            // l'anti-diagonale — jamais un dégradé linéaire. L'ardoise garde
-            // un souffle d'opacité pour que les fantômes mangent encore la
-            // vidéo.
-            if verre {
-                GlassEffectContainer(spacing: 0) {
-                    Color.clear
-                        .frame(width: L, height: H)
-                        .glassEffect(.clear, in: forme)
-                }
-            } else {
-                forme.fill(Color(white: 0.016).opacity(0.94))
-            }
-            forme.fill(RadialGradient(
-                colors: [Color(white: 0.150).opacity(0.94), .clear],
-                center: .topTrailing, startRadius: 0, endRadius: L * 0.95))
-                .opacity(verre ? 0.34 : 1)
-            forme.fill(RadialGradient(
-                colors: [Color(white: 0.100).opacity(0.94), .clear],
-                center: .bottomLeading, startRadius: 0, endRadius: L * 0.62))
-                .opacity(verre ? 0.34 : 1)
-            GrainTexture.tuile
-                .resizable(resizingMode: .tile)
-                .opacity(0.05).blendMode(.overlay).clipShape(forme)
-            forme.fill(EllipticalGradient(
-                stops: [.init(color: .white.opacity(0.06), location: 0),
-                        .init(color: .white.opacity(0.015), location: 0.5),
-                        .init(color: .clear, location: 1)],
-                center: UnitPoint(x: 0.18, y: 0.06),
-                startRadiusFraction: 0, endRadiusFraction: 1.1))
-                .blendMode(.plusLighter)
-            // ⚠️ LE MÊME LISERÉ QUE LES CARDS, et pas un cheveu blanc plat :
-            // celui-ci est ANGULAIRE — il meurt dans deux coins et culmine
-            // dans les deux autres (le blanc en bas-gauche, l'or en
-            // haut-droite). Un trait d'intensité constante lit « bordure » ;
-            // deux crêtes lisent « objet éclairé ». C'est la seule façon que
-            // l'ardoise appartienne au même monde que ses voisines.
-            if lisere {
-                forme.stroke(cardLisereConique, lineWidth: 1.6)
-                forme.stroke(cardLisereConique, lineWidth: 4.4)
-                    .blur(radius: 2.4)
-                    .opacity(0.46)
-            }
+            // LA COQUILLE — sortie d'ici le 29-08 (`ArdoiseFond`, dans
+            // WidgetsCards.swift). Deux cards portent cette matière : cette
+            // ardoise, et celle de la ROUTE qui prend sa place sur la home.
+            // Deux objets qui doivent s'accorder LISENT la même source.
+            ArdoiseFond(largeur: L, hauteur: H, rayon: 26,
+                        verre: verre, lisere: lisere)
 
             // ⚠️ LES FANTÔMES DE VERRE SONT MORTS (verdict 22-08 : « enlève
             // les carrés bizarres gris clair »). C'était un `glassEffect`
@@ -1883,6 +1839,17 @@ struct HomeNuitPage: View {
     /// (le banc nu) : les cards gardent leurs défauts.
     @Query private var workoutsBruts: [Workout]
     @State private var stats: SemaineStats?
+    /// L'ÉTAT DU CHEMIN POUR LA CARD ROUTE — calculé UNE fois, comme les
+    /// stats. ⚠️ `cheminEtat` est une propriété CALCULÉE sur les séances :
+    /// lue depuis un `body`, elle re-dérivait tout le chemin à chaque image
+    /// (la home vit sous une `TimelineView` à 60 Hz). C'est le piège de la
+    /// page ré-évaluée par image, déjà payé ici.
+    @State private var lectureChemin: EcranSpec.Lecture?
+    /// `-thisWeek` : REMONTE l'ardoise « This week » à la place de la card
+    /// ROUTE. Elle est mise de côté, pas supprimée — et « mise de côté » doit
+    /// pouvoir se vérifier d'un lancement, sinon c'est juste du code mort.
+    private static let ardoiseThisWeek =
+        CommandLine.arguments.contains("-thisWeek")
 
     /// Le compte affiché : le banc (`-semaineFaits`) prime, puis les vraies
     /// données, puis le défaut.
@@ -2430,6 +2397,21 @@ struct HomeNuitPage: View {
             if !workoutsBruts.isEmpty {
                 stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
             }
+            majLectureChemin()
+            // ⚠️ **ET ON DEMANDE AU SERVEUR CE QU'IL A DÉJÀ PAYÉ.** La card
+            // est la seule surface de la home qui montre une récompense ; sans
+            // cette lecture, une réinstallation la fait re-proposer un cadeau
+            // déjà reçu (le serveur, lui, refuserait de payer — l'écran, pas).
+            // Elle ne bloque rien : la card est déjà à l'écran, et elle se
+            // corrige d'elle-même quand la réponse arrive.
+            Task { @MainActor in
+                await DepartEtat.shared.rafraichirReclamees()
+                majLectureChemin()
+                // …et on vérifie que l'app dessine bien le chapitre que la
+                // base décrit. Elle ne suit pas la base : elle crie si elles
+                // ne racontent pas la même chose.
+                await DepartEtat.shared.verifierReglesChemin()
+            }
         }
         // ⚠️ **LA HOME SE REMET DEBOUT À LA CLÔTURE** (26-08). Elle ne le
         // faisait NULLE PART : après « Terminer », la racine écrivait bien
@@ -2517,6 +2499,38 @@ struct HomeNuitPage: View {
         if !workoutsBruts.isEmpty {
             stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
         }
+        // …et LE CHEMIN A AVANCÉ D'UNE ÉTAPE. C'est la seule nouvelle que la
+        // card ROUTE ait à annoncer, et elle l'annonce en BOUGEANT : la
+        // colonne glisse d'un pas, la pierre du jour perd son halo, la
+        // suivante le prend et sa date apparaît (elle n'en avait aucune — les
+        // jours n'apparaissent qu'une fois la séance terminée), et le texte
+        // roule.
+        //
+        // ⚠️ **À +0,8 s, ET DANS SA PROPRE TRANSACTION.** Deux raisons : la
+        // remise debout de la home vient de s'animer juste au-dessus (deux
+        // `withAnimation` au même tour ne donnent rien — la loi de la maison),
+        // et surtout la card doit être REGARDÉE quand elle bouge : la page
+        // arrive, elle se pose, puis la route avance. Le compte des pièces
+        // suit à +1,6 s : trois temps, jamais un empilement.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
+                majLectureChemin()
+            }
+        }
+    }
+
+    /// LA LECTURE DU CHEMIN, RECALCULÉE. Deux sites seulement, les mêmes que
+    /// les stats : l'arrivée sur la page, et la clôture d'une séance. Jamais
+    /// dans un `body`.
+    ///
+    /// ⚠️ Les nœuds déjà réclamés viennent de `DepartEtat` (persistés) et pas
+    /// d'un état local : la card doit montrer une récompense GRAVÉE si elle a
+    /// été prise, sinon elle proposerait un cadeau déjà reçu.
+    private func majLectureChemin() {
+        let c = cheminEtat
+        lectureChemin = EcranSpec.Lecture(
+            etape: c.etape, faits: c.faits, datesFaites: c.dates,
+            reclamees: DepartEtat.shared.reclamees)
     }
 
     /// LE FOND : la bande révélée tout au fond, la card par-dessus, et le
@@ -2946,11 +2960,49 @@ struct HomeNuitPage: View {
                         .opacity(RasantHorloge.iso ? 0 : 1)
                     }
 
-                    // LA SEMAINE — la 3e card : son tap ouvre LE CHEMIN
-                    // (§23, sa demande : « celle avec les mini cards des
-                    // dates »). Les minis garderont leur story au jalon
-                    // flow ; aujourd'hui la card entière est la porte.
-                    if verreMonte {
+                    // LA CARD ROUTE — la 3e card. Elle a REMPLACÉ l'ardoise
+                    // « This week » le 29-08 (« mets de côté le composant
+                    // widget this week, on va le réutiliser plus tard ; refais
+                    // le composant par le style route »). `SemaineStrip` reste
+                    // dans le dépôt, entière : son banc l'affiche encore, et
+                    // surtout `MiniCardJour` et ses formateurs de dates sont
+                    // lus par la ROUTE elle-même — la supprimer casserait le
+                    // chemin.
+                    //
+                    // ⚠️ **ET LA PORTE DE LA ROUTE DÉMÉNAGE AVEC ELLE.**
+                    // C'était l'unique entrée du chemin depuis la home ; une
+                    // card posée sans son tap aurait rendu la route
+                    // inatteignable — la régression a déjà été payée deux fois
+                    // (« je n'arrive pas à activer la route en cliquant sur le
+                    // widget This week »). Le tap vit DANS la card, et ses
+                    // galets sont inertes exprès : un enfant qui a un geste
+                    // bat le tap de son parent.
+                    if verreMonte, !Self.ardoiseThisWeek {
+                    CardRoute(lecture: lectureChemin
+                                ?? EcranSpec.Lecture(etape: 0),
+                              pose: min(max((arr - 0.70) / 0.30, 0), 1),
+                              // le verre dort sous la route (jalon 1)
+                              verre: !DepartEtat.shared.homeDort,
+                              lisere: true,
+                              onTap: {
+                                  print("[SONDE-CHEMIN] tap card ROUTE")
+                                  ouvrirChemin()
+                              })
+                        .padding(.leading, 24)
+                        .padding(.top, geo.size.height * 0.620)
+                        .offset(y: 8 * net)
+                        // ⚠️ FLOU PLAFONNÉ À 6 pt — un blur sur du verre natif
+                        // empile deux passes, et au-delà on paie pour du vide.
+                        .blur(radius: 6 * net * flouSemaine)
+                        .opacity(1 - net)
+                        .opacity(RasantHorloge.iso ? 0 : 1)
+                    }
+
+                    // L'ARDOISE « THIS WEEK » — MISE DE CÔTÉ, pas supprimée.
+                    // `-thisWeek` la remonte telle quelle : c'est la preuve
+                    // qu'elle est intacte, et le jour où elle retrouve une
+                    // place, ce `if` disparaît.
+                    if verreMonte, Self.ardoiseThisWeek {
                     SemaineStrip(faits: faitsAffiche, prevus: prevus,
                                  arrivee: arr,
                                  materialises: materialises,

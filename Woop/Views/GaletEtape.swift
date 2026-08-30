@@ -138,12 +138,47 @@ struct GaletEtape: View {
     /// LA DATE — quand elle est là, elle REMPLACE le numéro et le glyphe :
     /// un galet qui porte une date ne porte plus un rang.
     var date: DateGalet? = nil
+    /// ⚠️ **LE JOUR SEUL, SANS SON MOIS** (29-08, la card ROUTE de la home).
+    /// Ce n'est pas un raccourci graphique, c'est une conséquence de la
+    /// taille : le mois vaut 0,125 × Ø, et le plancher de la maison est
+    /// 5,5 pt (le mois de la mini-card du calendrier) — donc un galet qui
+    /// porte un mois ne peut pas descendre sous Ø 44. La card de la home doit
+    /// tenir dans 138 pt de haut (l'ardoise qu'elle remplace en fait 128), et
+    /// à trois pierres empilées ça impose Ø 38.
+    ///
+    /// Le jour, LUI, reprend la place du mois : 0,42 × Ø au lieu de 0,34 —
+    /// donc 16 pt à Ø 38, plus GROS que les 15 pt qu'il faisait à Ø 44 avec
+    /// son mois. On ne perd pas en lisibilité, on perd une précision dont la
+    /// card n'a pas besoin : elle montre trois jours voisins, pas un
+    /// calendrier.
+    var jourSeul: Bool = false
     /// LE JOUET (27-08, point 7 tranché « en mode jouet : on peut les
     /// déplacer partout et ils reviennent à leur place ») : le galet se
     /// porte après un MAINTIEN, suit le doigt au bout d'un élastique, et
     /// revient en ressort au lâcher. `portable` = actif, fait, spécial
     /// disponible — un verrouillé refuse par l'immobilité.
     var portable: Bool = false
+    /// ⚠️ **LE GALET EN VITRINE** (29-08, J1 de la card ROUTE de la home). Sur
+    /// la route, le galet EST l'acteur : il porte son tap, son press et son
+    /// port. Dans une card de la home, il n'est qu'un OBJET POSÉ — et ses
+    /// gestes y feraient deux dégâts connus d'avance, tous deux déjà payés
+    /// dans ce dépôt :
+    ///  · son `DragGesture(minimumDistance: 0)` mange le début du « pull to
+    ///    start » (le piège du bouton sous le drag d'ancêtre) — sur la home,
+    ///    le geste de la page passe AVANT tout le reste ;
+    ///  · un enfant qui a un geste bat le tap de son parent : c'est
+    ///    littéralement le bug des mini-cards de l'ardoise, qui volaient la
+    ///    porte de la route (« je n'arrive pas à activer la route en cliquant
+    ///    sur le widget This week »).
+    ///
+    /// Inerte, le galet ne peut RIEN recevoir : aucun toucher n'atteint ses
+    /// gestes, ils ne peuvent donc pas naître — c'est plus fort que de les
+    /// retirer un à un, où il suffit d'en oublier un. La card tient le doigt,
+    /// et c'est elle qui ouvre la route.
+    ///
+    /// Il continue de RESPIRER : le halo de l'actif est la vie de la card, il
+    /// ne dépend d'aucun doigt.
+    var inerte: Bool = false
     var onTap: () -> Void = {}
     /// La prise et le lâcher, pour le parent (zIndex devant, scroll qui
     /// dort, panneau qui se ferme) — deux appels par port, jamais par image.
@@ -287,6 +322,10 @@ struct GaletEtape: View {
                 relacheA = Date()
             }
         }
+        // ⚠️ LA VITRINE — posé EN DERNIER, après les deux gestes : aucun
+        // toucher ne les atteint, donc aucun ne peut naître. Retirer les
+        // gestes un par un laisserait toujours celui qu'on oublie.
+        .allowsHitTesting(!inerte)
     }
 
     /// LE PORT : maintien 0,20 s (0,14 était sous tous les seuils de la
@@ -710,7 +749,14 @@ struct GaletEtape: View {
             }
         }()
         Group {
-            if let d = date {
+            if let d = date, jourSeul {
+                // LE JOUR SEUL — il prend toute la place du bloc, donc il
+                // grossit (0,42 au lieu de 0,34). C'est le même chiffre, lu
+                // de plus loin.
+                Text("\(d.jour)")
+                    .font(.system(size: taille * 0.42, weight: .medium))
+                    .monospacedDigit()
+            } else if let d = date {
                 // LE JOUR EN GRAND, LE MOIS SUR TROIS LETTRES DESSOUS.
                 // L'interlettrage du mois est la grammaire des sur-titres de
                 // la maison ; son corps est le tiers du jour, pas la moitié —
@@ -1082,8 +1128,20 @@ private struct PressDemo: View {
 /// 5 actif, 6 prochain, le reste verrouillé. La mire EST la vérité.
 struct GaletEtapeLab: View {
     @State private var actifTape = 0
+    /// `-duoGalets -vitrine` : la mire du galet HORS de la route (J1 de la
+    /// card ROUTE de la home). Elle passe par le banc existant — la racine
+    /// n'est pas touchée, une autre session y travaille.
+    private static let vitrine = CommandLine.arguments.contains("-vitrine")
 
     var body: some View {
+        if Self.vitrine {
+            VitrineMire()
+        } else {
+            serpentin
+        }
+    }
+
+    private var serpentin: some View {
         GeometryReader { geo in
             let k = geo.size.height / 874.0
             ZStack(alignment: .topLeading) {
@@ -1139,5 +1197,153 @@ struct GaletEtapeLab: View {
             return DateGalet.depuis(d)
         default: return nil
         }
+    }
+}
+
+// MARK: - LA VITRINE (`-duoGalets -vitrine`)
+
+/// LE GALET HORS DE LA ROUTE — J1 de la card ROUTE de la home.
+///
+/// Deux questions, et une seule mire pour les deux :
+///
+/// **1. Jusqu'où il rétrécit.** La card ne peut pas dépasser ~200 pt de haut
+/// (l'ardoise commence à 0,620 × h et la poignée du pull mange les 112
+/// derniers points), et trois galets empilés au pas de la route (67,5) tiennent
+/// 172 pt à Ø 44 contre 197 à Ø 62 — sans compter les marges de la card. C'est
+/// l'arithmétique qui propose les tailles ; c'est l'œil qui trie.
+///
+/// ⚠️ **LES COTES SONT ÉCRITES SOUS CHAQUE RANGÉE, PAS DEVINÉES.** Dans le
+/// galet, l'encre est proportionnelle : le jour vaut 0,34 × Ø, le mois
+/// 0,125 × Ø. À Ø 44 le mois tombe à 5,5 pt — exactement le plancher de la
+/// maison (le mois de la mini-card du calendrier). En dessous, ce n'est plus
+/// une petite date, c'est une tache.
+///
+/// **2. Qu'il ne prend plus le doigt.** Les trois compteurs le prouvent AU
+/// DOIGT, et c'est le seul juge qui vaille ici : taper un galet doit
+/// incrémenter **card**, jamais **galet** ; et un glissement NÉ SUR un galet
+/// doit faire courir **tirage** — c'est le « pull to start » de la home, celui
+/// qu'un `DragGesture(minimumDistance: 0)` d'enfant mangerait.
+///
+/// La lentille native est COUPÉE : il n'y a pas de vidéo sous cette mire, et
+/// sur le noir pur le natif ne fait qu'un voile gris (mesuré v11 de la route).
+/// Son sort sur la home se tranchera à la cadence (J5), pas ici.
+private struct VitrineMire: View {
+    @State private var tapsCard = 0
+    @State private var tapsGalet = 0
+    @State private var tirage: CGFloat = 0
+
+    /// La route (62) en tête de série — c'est la référence, tout le reste se
+    /// juge contre elle.
+    private let tailles: [CGFloat] = [62, 56, 48, 44]
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            fond
+            VStack(spacing: 2) {
+                ForEach(tailles, id: \.self) { d in rangee(d) }
+                rangeeRecompenses(48)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            compteurs
+        }
+        .ignoresSafeArea()
+        .statusBarHidden()
+        .environment(\.colorScheme, .dark)
+    }
+
+    /// LE FOND EST LA CARD : c'est lui qui doit recevoir tous les touchers,
+    /// galets compris. Le drag imite le « pull to start » — minimumDistance
+    /// par défaut, donc il ne vole pas les taps.
+    private var fond: some View {
+        Color.black
+            .contentShape(Rectangle())
+            .onTapGesture { tapsCard += 1 }
+            .gesture(
+                DragGesture()
+                    .onChanged { tirage = max(0, -$0.translation.height) }
+                    .onEnded { _ in tirage = 0 }
+            )
+    }
+
+    private var compteurs: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("card \(tapsCard)   galet \(tapsGalet)   tirage \(Int(tirage))")
+                .foregroundStyle(tapsGalet == 0 ? Color.green : Color.red)
+            Text("un tap sur un galet doit compter dans CARD")
+                .foregroundStyle(Color(white: 0.40))
+        }
+        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        .padding(.leading, 16)
+        .padding(.top, 58)
+    }
+
+    /// Les trois galets de la card, dans l'ordre du chemin qui DESCEND :
+    /// le fait, aujourd'hui (halo + vraie date), le prochain (la flamme).
+    private func rangee(_ d: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                seance(.accompli, d: d, jours: -2, graine: d)
+                seance(.actif, d: d, jours: 0, graine: d + 1)
+                seance(.prochain, d: d, jours: nil, graine: d + 2)
+            }
+            Text(cotes(d))
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(Color(white: 0.42))
+        }
+    }
+
+    /// Le nœud d'avant comme celui d'après peuvent être une RÉCOMPENSE : elles
+    /// gardent leur rapport de taille avec la séance (pièce 53/62, lune 78/62
+    /// sur la route), sinon la card raconterait une autre hiérarchie que le
+    /// chemin.
+    private func rangeeRecompenses(_ d: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                recompense(.piece(dispo: true), d: d * 53 / 62, graine: 91)
+                recompense(.lune(dispo: true), d: d * 78 / 62, graine: 92)
+                recompense(.reclame, d: d * 78 / 62, graine: 93)
+            }
+            Text("récompenses au rapport de la route — pièce "
+                 + "Ø \(Int(d * 53 / 62)) · lune Ø \(Int(d * 78 / 62)) · réclamée")
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(Color(white: 0.42))
+        }
+    }
+
+    private func seance(_ etat: EtapeEtat, d: CGFloat, jours: Int?,
+                        graine: CGFloat) -> some View {
+        let date = jours.flatMap {
+            Calendar.current.date(byAdding: .day, value: $0, to: Date())
+        }.map(DateGalet.depuis)
+        return GaletEtape(etat: etat,
+                          glyphe: date == nil ? "flame" : nil,
+                          taille: d,
+                          graine: Double(graine),
+                          lentille: false,
+                          date: date,
+                          inerte: true,
+                          onTap: { tapsGalet += 1 })
+    }
+
+    private func recompense(_ etat: EtapeEtat, d: CGFloat,
+                            graine: Double) -> some View {
+        GaletEtape(etat: etat,
+                   glypheLune: true,
+                   taille: d,
+                   graine: graine,
+                   lentille: false,
+                   inerte: true,
+                   onTap: { tapsGalet += 1 })
+    }
+
+    /// Les cotes de l'encre, calculées comme le galet les calcule — pas
+    /// recopiées : 0,34 pour le jour, 0,125 pour le mois.
+    private func cotes(_ d: CGFloat) -> String {
+        let jour = String(format: "%.1f", d * 0.34).replacingOccurrences(
+            of: ".", with: ",")
+        let mois = String(format: "%.1f", d * 0.125).replacingOccurrences(
+            of: ".", with: ",")
+        let plancher = d * 0.125 < 5.5 ? "  ⚠️ SOUS LE PLANCHER" : ""
+        return "Ø \(Int(d))   jour \(jour) pt   mois \(mois) pt" + plancher
     }
 }

@@ -2,7 +2,15 @@
 
 `Woop/Views/DuolinguoPage.swift` · état partagé `DepartEtat.shared`
 (`Woop/Views/DepartSeance.swift`) · nœuds `Woop/Views/GaletEtape.swift` ·
-récompenses `Woop/Views/RewardChemin.swift`.
+récompenses `Woop/Views/RewardChemin.swift` · **la card de la home**
+`Woop/Views/CardRoute.swift` (§ 8 bis).
+
+> **La source unique** (29-08). Ce qu'un nœud EST — son état, sa date, son
+> glyphe — et ce qu'un chapitre RACONTE — son nom, son compte — vivent dans
+> `EcranSpec.Lecture` et `EcranSpec.apercu`, pas dans la page. C'est ce qui
+> permet à la card de la home de dire exactement la même chose que la route :
+> deux objets qui doivent s'accorder LISENT la même source, ils ne recopient
+> pas la même intention.
 
 > **Convention de ce document.** Ce qui est écrit sans marque est **vérifié
 > dans le code**. Ce qui porte **?** n'est pas sûr et attend une décision ou
@@ -309,6 +317,85 @@ Sans ça, la page reste en mode démo.
 
 ---
 
+## 8 bis · La card ROUTE de la home
+
+`Woop/Views/CardRoute.swift` · lecture partagée `EcranSpec.Lecture` ·
+coquille `ArdoiseFond` (`WidgetsCards.swift`).
+
+**Ce qu'elle est.** La troisième card de la home, à la place de l'ardoise
+« This week » (mise de côté le 29-08, `-thisWeek` la remonte). Deux lignes —
+`CHAPITRE n` et `Étape X sur 9` — et **trois pierres du chemin** : le nœud
+d'avant, aujourd'hui au halo, le prochain. C'est aussi **la seule porte de la
+route depuis la home** : le tap vit sur la card, jamais sur les galets.
+
+**Les trois règles tranchées le 29-08 :**
+
+1. le galet du milieu porte **une date**, jamais un rang — la loi de la route
+   (« la date est un estampillage, pas une position ») ; le rang est dit par le
+   texte, à dix points de là ;
+2. « étape X sur **9** » compte **tous les nœuds** du chapitre, récompenses
+   comprises : le chiffre doit se vérifier au doigt sur la route ;
+3. le nœud du haut s'affiche **tel quel**, même éteint — une récompense déjà
+   réclamée reste ce qu'il y a juste avant aujourd'hui.
+
+**Rien n'y est recopié de la route.** L'état d'un nœud, sa date, son glyphe, le
+nom et le compte du chapitre viennent tous de `EcranSpec.Lecture` /
+`EcranSpec.apercu` — les trois `private func` de la page en sont sorties le
+29-08 pour ça. La coquille est celle de l'ardoise, extraite elle aussi : les
+deux cards sont la MÊME matière, pas deux imitations.
+
+**Les cotes, et pourquoi elles sont ce qu'elles sont** (354 × 138 — l'ardoise
+qu'elle remplace en fait 128) :
+
+| Contrainte | Conséquence |
+|---|---|
+| la poignée du « pull » mange les 112 derniers points | la card ne peut pas dépasser ~220 pt ; elle en fait 138 |
+| l'air entre deux pierres vaut `√(A² + pas²) − (r₁+r₂)` | c'est le **serpentin** qui paie l'air, pas le pas — la hauteur, elle, est bornée |
+| la route tient **31,6 pt** d'air pour des Ø 62 (rapport 0,51) | l'étalon : la card en tient 30,9 pour des Ø 48/54 |
+| le halo vaut 0,95 × Ø et le pad Ø/2 + 26 | **au-delà de Ø 57,8 le halo sort de son cadre** — et ici la card le trancherait |
+| le mois vaut 0,125 × Ø, plancher maison 5,5 pt | une pierre qui porte un mois ne descend pas sous Ø 44 → dans la card, **le jour seul** (`GaletEtape.jourSeul`), qui reprend la place du mois à 0,42 × Ø |
+
+⚠️ **Trois pierres ne font pas un serpentin avec le `dx` de la route.** Sa
+sinusoïde de période 4 (0, +76, 0, −76) donne **une fois sur deux
+(+76, 0, −76) — une diagonale**. La card force l'alternance (les voisines d'un
+flanc, l'actif de l'autre) et ne garde de la route que le SENS du virage, pris
+sur le rang du jour : il bascule quand on avance.
+
+⚠️ **Les voisines sont COUPÉES par les bords** (la loi des pochettes du bac :
+la coupe est un choix). Ça renverse la contrainte de hauteur — entières, les
+pierres devaient tomber à Ø 38 ; coupées, elles remontent à 48. Et c'est un
+second argument pour le jour seul : une pierre coupée qui porterait le mois
+sous son jour se ferait couper le mois.
+
+⚠️ **Une récompense n'y est jamais plus petite qu'une séance.** Le rapport de
+la route (pièce 53/62) multiplié par la coupe mettait la pièce à Ø 37,6 et il
+n'en restait qu'un croissant. Ce qui distingue une récompense reste son glyphe
+et son or, pas sa taille.
+
+**Le galet y est INERTE** (`GaletEtape.inerte` → `allowsHitTesting(false)`) :
+sur la home le doigt appartient à la page (le « pull to start ») et à la card
+(la porte). Un galet qui garderait ses deux gestes mangerait les deux — c'est
+le piège du bouton sous le drag d'ancêtre, et le bug des mini-cards qui
+volaient déjà cette porte.
+
+**Ce qu'elle coûte.** Mesuré au simulateur, A/B sur le même build contre
+l'ardoise qu'elle remplace : **10,2 contre 10,9 img/s** en régime établi —
+aucune régression mesurable. ⚠️ Les ~10 img/s absolus sont un artefact du
+simulateur ; le juge reste le téléphone.
+
+**Ce qu'elle ne sait pas encore dire.** Sans `-cheminReel`, elle affiche la
+DÉMO du chemin — donc « Chapitre 1 · étape 3 » en permanence, sur la home, pas
+seulement quand on ouvre la route. Le blocage est celui du § 8 : personne ne
+dit où commence un chapitre.
+
+> **Corrigé au passage (29-08).** La démo semait comme « jours faits » les deux
+> séances les plus récentes, **aujourd'hui compris** : deux pierres voisines
+> affichaient le même jour, à deux états différents. La dérivation réelle ne
+> pouvait pas avoir ce défaut — son `guard i < etape` écarte la séance du jour ;
+> la démo n'avait pas la garde. Elle l'a.
+
+---
+
 ## 9 · Bancs
 
 | Argument | Effet |
@@ -320,8 +407,23 @@ Sans ça, la page reste en mode démo.
 | `-jouetSonde` | trace contact / PRISE / port / LÂCHER dans la console |
 | `-rewardChemin <cas>` | force un tirage : `coins` · `black` · `boosters` · `rare` · `legendary` |
 | `-rewardChemin <cas>R` | idem, card **déjà grattée** |
+| `-duoLab -routeCard <cas>` | la **card ROUTE** seule : `debut` · `milieu` · `apresReward` · `finChapitre` · `chap2` |
+| `-duoLab -routeCard <cas> -planche` | les réglages de géométrie côte à côte, l'air CALCULÉ sous chacun, et le fantôme de l'ardoise (354 × 128) par-dessus |
+| `-duoLab -routeCard <cas> -planCas` | le même réglage dans quatre situations du chemin |
+| `-duoLab -duoGalets -vitrine` | le galet HORS de la route : l'échelle des tailles, les cotes de l'encre, et trois compteurs qui prouvent l'inertie au doigt |
+| `-thisWeek` | remonte l'ardoise « This week » à la place de la card ROUTE |
 
-Simulateur dédié : **`kat-road`**.
+Simulateurs dédiés : **`kat-road`**, et **`kat-cardroute`** pour la card
+(un chantier, un simulateur — un `install` tue l'app de la session voisine).
+Tour de boucle : `./tools/road/voir.sh <args du banc>` (build nu, double
+lancement, capture). ⚠️ Sa pause est à **15 s** : la splash dure ~10 s, et à
+5 s la capture rendait la LUNE.
+
+⚠️ **Le diff de pixels ne vaut RIEN sur cette page** (mesuré le 29-08) : deux
+captures du MÊME build, `-duoFreeze` compris, diffèrent de **37 %** — le film
+du verre noir tourne derrière tout, et le gel ne l'arrête pas. Une
+non-régression s'y prouve sur les VALEURS (le diff normalisé des deux
+implémentations), jamais au pixel. `tools/road/diff_shots.py` le dit en tête.
 
 ---
 
@@ -331,3 +433,15 @@ Rien de ce qui suit n'est jugeable au simulateur, et **rien n'a encore été
 validé** : le port d'un galet, le port de Nosfy, le grattage, l'haptique, la
 prise des sachets de booster, l'allumage du holo. Et la **cadence réelle** de
 la page comme de la card — elle n'a pas été mesurée.
+
+Pour la **card ROUTE** de la home (§ 8 bis), deux verdicts qu'aucune capture ne
+peut rendre, et ils décident de son inertie :
+
+1. un **tap sur une pierre** doit ouvrir la route — donc être compté par la
+   CARD, jamais par le galet ;
+2. un **« pull to start » né sur une pierre** doit partir quand même.
+
+Le banc `-duoLab -duoGalets -vitrine` porte les trois compteurs qui les
+tranchent d'un doigt. ⚠️ Ils ne peuvent pas être vérifiés autrement :
+`osascript` n'a pas le droit de cliquer sur cette machine (accès d'aide
+refusé), et `simctl` ne pose pas de doigt.

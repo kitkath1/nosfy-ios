@@ -405,6 +405,83 @@ let cardLisereDedans = AngularGradient(stops: [
 ], center: .center)
 
 
+// MARK: - L'ARDOISE — la matière de la troisième card
+
+/// LA COQUILLE DE L'ARDOISE, sortie de `SemaineStrip` le 29-08 (J2 de la card
+/// ROUTE de la home). Deux cards la portent désormais : l'ardoise « This
+/// week », qu'on met de côté, et la card de la ROUTE qui prend sa place. Deux
+/// objets qui doivent s'accorder LISENT la même source — la recopier, c'était
+/// s'assurer qu'elles divergeraient au premier réglage.
+///
+/// Les cotes sont celles mesurées sur le wireframe (verdict 21-08) : un
+/// plancher très bas — L 27, exactement le `white: 0.11` de la pochette du
+/// bac —, DEUX lueurs radiales neutres posées sur l'anti-diagonale (jamais un
+/// dégradé linéaire), le grain, la lueur d'angle, et le liseré ANGULAIRE des
+/// cards.
+///
+/// ⚠️ Le liseré n'est pas un cheveu blanc plat : il meurt dans deux coins et
+/// culmine dans les deux autres (le blanc en bas-gauche, l'or en haut-droite).
+/// Un trait d'intensité constante lit « bordure » ; deux crêtes lisent « objet
+/// éclairé ». C'est par ses BORDS qu'un Liquid Glass se lit, jamais par son
+/// corps.
+///
+/// ⚠️ Elle reste TRANSLUCIDE en mode verre : ce qui est posé dessus mange
+/// encore la vidéo à travers elle — une ardoise opaque l'affamerait.
+struct ArdoiseFond: View {
+    var largeur: CGFloat
+    var hauteur: CGFloat
+    var rayon: CGFloat = 26
+    /// L'ardoise en VERRE NATIF — la même matière que les deux widgets. Le
+    /// fond vidéo bouge dessous, et c'est ce qu'on veut voir.
+    var verre: Bool = false
+    var lisere: Bool = true
+
+    private var forme: RoundedRectangle {
+        RoundedRectangle(cornerRadius: rayon, style: .continuous)
+    }
+
+    var body: some View {
+        ZStack {
+            if verre {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .frame(width: largeur, height: hauteur)
+                        .glassEffect(.clear, in: forme)
+                }
+            } else {
+                forme.fill(Color(white: 0.016).opacity(0.94))
+            }
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.150).opacity(0.94), .clear],
+                center: .topTrailing, startRadius: 0,
+                endRadius: largeur * 0.95))
+                .opacity(verre ? 0.34 : 1)
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.100).opacity(0.94), .clear],
+                center: .bottomLeading, startRadius: 0,
+                endRadius: largeur * 0.62))
+                .opacity(verre ? 0.34 : 1)
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05).blendMode(.overlay).clipShape(forme)
+            forme.fill(EllipticalGradient(
+                stops: [.init(color: .white.opacity(0.06), location: 0),
+                        .init(color: .white.opacity(0.015), location: 0.5),
+                        .init(color: .clear, location: 1)],
+                center: UnitPoint(x: 0.18, y: 0.06),
+                startRadiusFraction: 0, endRadiusFraction: 1.1))
+                .blendMode(.plusLighter)
+            if lisere {
+                forme.stroke(cardLisereConique, lineWidth: 1.6)
+                forme.stroke(cardLisereConique, lineWidth: 4.4)
+                    .blur(radius: 2.4)
+                    .opacity(0.46)
+            }
+        }
+        .frame(width: largeur, height: hauteur)
+    }
+}
+
 // MARK: - Le graphe à barres
 
 /// Une journée du graphe : sa hauteur de rail et son nombre de segments.
