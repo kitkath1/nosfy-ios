@@ -624,3 +624,80 @@ et à 10,5 s les deux films montraient une bande pelée — « arrivé mordu » 
 « déchiré par la cérémonie » étaient indiscernables. La preuve d'un état
 INITIAL se prend à la première image visible, jamais après qu'une horloge a
 pu le changer.
+
+---
+
+## 19. LA PLACE DANS LE FLOW, ET LE BACK-END (30-08, 13 h 30 → 14 h)
+
+Sa demande au commit : *« il doit apparaître après la story 2 — regarde la
+documentation du flow — et connecte au back-end ; et si l'utilisateur clique
+Later, ça doit quand même s'ajouter au coffre et à son profil. »* L'analyse
+(trois lecteurs + synthèse) : **`tools/sacre/ANALYSE-FLOW-BACKEND-BOOSTER.md`**.
+
+### Ce que l'analyse a établi
+
+1. **La story n'était branchée NULLE PART dans la vraie chaîne** (§1.6 de
+   l'analyse) : elle vit aux bancs et dans l'onglet Progrès sur des données de
+   démo ; `terminerSeance()` enchaînait home → trophée (+0,5 s) → notif pièces
+   (+1,6 → +4,6 s) → `proposer()` (+5,2 s). « Après la story 2 » = **brancher
+   la story**, puis la card à sa fermeture.
+2. **Le sachet de fin de séance est DÉJÀ accordé par le serveur, à t0**, par
+   l'outbox (`cloturer_seance` : pièces = séries × taux, UN sachet par
+   session, index `user_boosters (user_id, workout_id)`). La pill du profil
+   et le coffre lisent `etat_coffre().boosters_or`. **« Later » n'a rien à
+   accorder** : il ferme, le sachet est déjà en base.
+3. **Sans compte (mode maquette), « Later » n'ajoutait rien** : la réserve
+   locale `maquetteBoosters` naissait à 1 et n'était incrémentée par
+   PERSONNE (§3.6). C'est la « promesse locale » que la doctrine demande
+   (PARCOURS-BOOSTER §7) et que le code ne faisait pas.
+4. **Deux commentaires du code mentaient** : « migration `ouvrir_booster`
+   NON DÉPLOYÉE » (SacreServeur:325, EconomieWoop:274) alors que la sonde
+   PostgREST disait qu'elle existe (401 42501 ≠ 404).
+
+### Ce qui a été fait
+
+- **La story dans la chaîne** (`WoopApp.swift`) : `@State storyFin:
+  StoryLaunch?` posé **2 s après « Terminer »** (l'intention documentée,
+  ANALYSE-VARIANTS §6 bis) avec `StorySession(workout:)` de la vraie séance ;
+  `storyFinHote` monte `StoryPortal` à la racine (in-tree, zIndex 15, au-dessus
+  de la card STOP, sous MoonDust) ; à sa fermeture — fin automatique, tap, ou
+  tirage vers le bas — `enchainerApresStory()` : notif pièces +0,3 s (3 s),
+  **card booster +3,4 s**. La minuterie « +5,2 s sur une home nue » est morte.
+  Rien si `gain == 0` (une séance sans série ne raconte rien et ne propose
+  rien — la garde d'avant).
+- **La promesse locale** : `EconomieWoop.shared.maquetteBoosters += 1` à t0
+  quand `gain > 0`. Invisible avec un compte (`boosters` lit le serveur),
+  décisive sans : la pill et le coffre montrent le sachet, « Later » ou pas.
+  Ce n'est PAS une écriture d'argent.
+- **La preuve serveur, sur le COMPTE DE TEST** (jamais un vrai — skill
+  woop-backend §6), corps lus, pas devinés :
+  `cloturer_seance {p_workout, p_series: 3}` #1 → `{pieces: 60,
+  pieces_creditees: true, booster_neuf: true, booster_id: 5040…}` ; **#2 sur
+  la même séance** → `{pieces: 0, pieces_creditees: false, booster_neuf:
+  false, même booster_id}` — l'idempotence est un INDEX, elle tient ;
+  `etat_coffre` : `boosters_or` **46 → 47**, `solde_or` 1300 → 1360 (le sachet
+  compte sans qu'aucune card n'ait été touchée) ; `ouvrir_booster
+  {p_legendaire: false}` → `{ouvert: true, booster_id: 34e6…}` puis
+  `boosters_or` **47 → 46** ; témoin inventé → 404. **`ouvrir_booster` est
+  déployée et fonctionne** : les deux commentaires « NON DÉPLOYÉE » sont
+  corrigés avec la mesure.
+- **Le banc de la chaîne** : `-activeWorkout -clotureTest` clôturait une
+  séance à **gain 0** — la fixture insérait une série sans la marquer FAITE
+  (`isDone`), et l'économie ne paie que les séries faites (`seriesPayantes` =
+  `completedSets`). Un film de 62 s de home nue avant de lire la sonde
+  `[flow] terminerSeance : exos=1 séries=0 gain=0`. La fixture marque la série
+  faite ; et la séance ouverte PERSISTE entre deux lancements (le piège
+  `-demoData`) : le banc repart d'une base vierge (`simctl uninstall`).
+
+### Ce qui reste à trancher / à faire
+
+- La **robe 4 « booster »** de la notif vs la card (§4.4 de l'analyse — « une
+  annonce par événement ») : aujourd'hui la notif des pièces ET la card
+  jouent après la story ; ce sont deux événements (pièces, sachet). À
+  Kathryn.
+- La story de fin de séance sur téléphone : `StoryCine.hold = [12,6 · 7 · 7]`
+  + le butin — ~35 s avant la card. Long ? À juger au doigt (un tirage vers le
+  bas la ferme).
+- Le site de doc : `docs/site/index.html` ne s'édite plus à la main (session
+  13) — le contenu lui est envoyé par message (`ouvrir_booster` mesurée, la
+  chaîne story → notif → card, la promesse locale).

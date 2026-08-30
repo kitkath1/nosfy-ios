@@ -333,6 +333,10 @@ struct RootView: View {
     /// SYNCHRONE à la fermeture — le profil doit exister avant l'arrivée
     /// de la carte (+0,45 s).
     @State private var homeEclipsee = false
+    /// LA STORY DE FIN DE SÉANCE — posée 2 s après « Terminer », montée à la
+    /// racine (`storyFinHote`) ; la notif des pièces et la card booster
+    /// viennent à sa fermeture (`enchainerApresStory`).
+    @State private var storyFin: StoryLaunch?
 
     /// L'entraînement ouvert, s'il y en a un.
     @Query(filter: #Predicate<Workout> { $0.endedAt == nil },
@@ -497,17 +501,67 @@ struct RootView: View {
             await SupabaseSync.shared.push([snapshot])
             await SacreServeur.reglerFinDeSeance(seance, series: series)
         }
-        if gain > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-                withAnimation { depart.notifPieces = gain }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) {
-                withAnimation { depart.notifPieces = nil }
-            }
-        }
         guard gain > 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.2) {
+        // LA PROMESSE LOCALE (PARCOURS-BOOSTER.md §7 : « promis localement et
+        // réclamé au premier lancement connecté ») : le sachet de fin de
+        // séance entre dans la réserve MAQUETTE tout de suite — sans compte,
+        // hors ligne, la pill du profil et le coffre le montrent, « Later » ou
+        // pas. Avec un compte, `boosters` lit le SERVEUR (`boostersServeur`,
+        // + 1 quand `cloturer_seance` répond `booster_neuf`) et cette ligne
+        // est invisible. Ce n'est PAS une écriture d'argent : un affichage.
+        // ⚠️ Avant : `maquetteBoosters` naissait à 1 et n'était incrémenté
+        // par PERSONNE — « Later » n'ajoutait rien (analyse 30-08, §3.6).
+        EconomieWoop.shared.maquetteBoosters += 1
+        // LA STORY DE FIN DE SÉANCE — « deux secondes après Terminer »
+        // (tools/story/ANALYSE-VARIANTS-ET-FAITS.md §6 bis), le temps que la
+        // home et le trophée (~+0,5 s) soient posés. La notif des pièces et
+        // la card booster viennent APRÈS elle (`enchainerApresStory`) —
+        // c'était +1,6 s et +5,2 s sur une home nue, avant qu'une story
+        // existe dans la chaîne (verdict Kathryn 30-08 : « elle doit
+        // apparaître après la story »).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            storyGain = gain
+            storyFin = StoryLaunch(workout: a, rect: .zero)
+        }
+    }
+
+    /// Le gain à annoncer quand la story se ferme (posé avec elle).
+    @State private var storyGain = 0
+
+    /// APRÈS LA STORY : la notif des pièces (+0,3 s, 3 s), puis la card booster
+    /// (+3,4 s) — la pop-up ne se superpose jamais à la capsule.
+    private func enchainerApresStory() {
+        let gain = storyGain
+        storyGain = 0
+        guard gain > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation { depart.notifPieces = gain }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.3) {
+            withAnimation { depart.notifPieces = nil }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
             SacreEtat.shared.proposer()
+        }
+    }
+
+    /// LA STORY DE FIN DE SÉANCE, montée à la racine — in-tree, comme le
+    /// `MoisIpod` de l'onglet Progrès. Le portail s'ouvre depuis le centre
+    /// (`rect: .zero` = le filet du portail : « une carte au centre ») et
+    /// couvre tout. À sa fermeture — fin automatique, tap, ou tirage vers le
+    /// bas — la chaîne continue. La fermeture se fait SANS animation SwiftUI
+    /// (la grammaire de CalLab) : le portail a déjà joué la sienne.
+    @ViewBuilder
+    private var storyFinHote: some View {
+        if let s = storyFin {
+            StoryPortal(from: s.rect,
+                        session: StorySession(workout: s.workout)) {
+                var tx = Transaction()
+                tx.disablesAnimations = true
+                withTransaction(tx) { storyFin = nil }
+                enchainerApresStory()
+            }
+            .zIndex(15)
         }
     }
 
@@ -1146,6 +1200,10 @@ struct RootView: View {
                 })
                 .zIndex(13)
 
+            // LA STORY DE FIN DE SÉANCE (zIndex 15) : au-dessus de la card
+            // STOP — elle vient APRÈS elle — et sous MoonDust (20).
+            storyFinHote
+
             // LA NOTIF DES PIÈCES — la mini capsule liquid glass qui
             // descend à l'arrivée home, le compte qui roule.
             VStack {
@@ -1608,6 +1666,12 @@ enum DemoData {
         logged.workout = workout
         context.insert(logged)
         let set = StrengthSet(reps: 12, weight: 45, order: 0)
+        // ⚠️ FAITE, pas seulement prévue : l'économie ne paie que les séries
+        // faites (`seriesPayantes` = `completedSets`). Sans ce `isDone`, le
+        // banc `-clotureTest` clôturait une séance à gain 0 — et la chaîne de
+        // fin (story, notif, card) s'arrêtait net, par construction : un film
+        // de 62 s de home nue (30-08).
+        set.isDone = true
         set.loggedExercise = logged
         context.insert(set)
         try? context.save()

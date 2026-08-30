@@ -271,12 +271,12 @@ final class EconomieWoop {
     /// booster noir n'était jamais armée — le manège noir tirait exactement
     /// comme le jaune.
     ///
-    /// ⚠️ **ELLE DÉPEND D'UNE MIGRATION NON DÉPLOYÉE**
-    /// (`20260829150000_ouvrir_booster.sql`). Tant qu'elle n'est pas posée,
-    /// l'appel échoue en 404, on l'avale, et le compte de sachets ne descend
-    /// pas — c'est-à-dire exactement le comportement d'avant. Rien ne casse ;
-    /// rien ne se répare non plus. C'est dit ici pour qu'on ne croie pas le
-    /// contraire en lisant le reste.
+    /// ✅ **LA MIGRATION `20260829150000_ouvrir_booster.sql` EST DÉPLOYÉE**
+    /// (vérifiée le 30-08 sur le compte de test : `ouvert: true`, la réserve
+    /// `boosters_or` redescend de 47 à 46). L'appel FAIT descendre le compte
+    /// de sachets ; un 404 ici ne serait plus « la migration manque » mais une
+    /// vraie panne à lire dans le corps de l'erreur (skill woop-backend §6).
+    /// Le commentaire « NON DÉPLOYÉE » qui vivait ici était périmé.
     @discardableResult
     func consommerBooster(legendaire: Bool) async -> String? {
         guard Self.possible else { return nil }

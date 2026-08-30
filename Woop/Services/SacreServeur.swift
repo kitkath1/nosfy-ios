@@ -322,8 +322,12 @@ enum SacreServeur {
     /// forge doit sceller : une carte tirée sans sachet, c'est une carte que
     /// rien ne relie à ce qu'on a ouvert.
     ///
-    /// ⚠️ **MIGRATION `20260829150000_ouvrir_booster.sql` — NON DÉPLOYÉE.**
-    /// Rien ne part vers Supabase sans elle, et jamais par le MCP.
+    /// ✅ **MIGRATION `20260829150000_ouvrir_booster.sql` — DÉPLOYÉE ET
+    /// VÉRIFIÉE le 30-08** sur le compte de test : `ouvrir_booster
+    /// {p_legendaire: false}` → 200 `{ouvert: true, booster_id}`, et
+    /// `etat_coffre().boosters_or` est passé de 47 à 46 (témoin inventé :
+    /// 404). Le commentaire « NON DÉPLOYÉE » qui vivait ici depuis le 29-08
+    /// était PÉRIMÉ — un état se vérifie, il ne se déduit pas d'un souvenir.
     static func ouvrirBooster(legendaire: Bool,
                               jwt: String) async throws -> String? {
         let data = try await rpc("ouvrir_booster", jwt: jwt,
