@@ -5,7 +5,10 @@
 **`docs/site/` est LE site de documentation du projet.** Sa **source** est une
 app Next.js (`docs/site/content/` = les états, typés ; `content/pages/*.mdx` = la
 prose) ; son **livrable** `docs/site/index.html` est un fichier autonome, généré
-par `npm run artefact`, ouvert par `./docs/site/voir.sh`. Il répond à une seule
+par `npm run artefact`. **Le site tourne en local, toujours allumé : <http://localhost:3111>**
+(`./docs/site/voir.sh`, service de session `fr.kathryn.woop.doc` qui sert la source en
+`next dev`) — c'est LA référence qu'elle ouvre ; le fichier unique est republié au même
+lien pour le téléphone. Il répond à une seule
 question, sur chaque brique : *est-ce que ça marche, est-ce que ça ment, ou
 est-ce que ça n'existe pas* — et si c'est dans le téléphone ou dans Supabase.
 

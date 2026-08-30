@@ -4,10 +4,17 @@
 brique du produit : *est-ce que ça marche, est-ce que ça ment, ou est-ce que ça
 n'existe pas* — et si c'est dans le téléphone ou dans Supabase.
 
-    ./docs/site/voir.sh          # le livrable : un fichier, sans Node ni réseau
-    ./docs/site/voir.sh --dev    # la source : next dev sur localhost:3111
+**C'est un site Next.js, en local, toujours allumé : <http://localhost:3111>** — LA
+référence. Un service de session (`~/Library/LaunchAgents/fr.kathryn.woop.doc.plist`)
+lance `next dev` à l'ouverture de session et le relance s'il tombe ; il sert la source,
+donc une modification de `content/*.ts` se voit au rechargement, sans build.
 
-En ligne (privé, ouvrable au téléphone) :
+    ./docs/site/voir.sh            # ouvre http://localhost:3111 (relance le service s'il dort)
+    ./docs/site/voir.sh --fichier  # le fichier unique index.html (avion, file://)
+    ./docs/site/voir.sh --dev      # next dev au premier plan, pour lire ses logs
+
+Le même contenu, en un fichier, republié au même lien à chaque changement backend
+(pour le téléphone, hors réseau) :
 <https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026>
 
 ---
