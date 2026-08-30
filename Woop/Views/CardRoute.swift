@@ -211,6 +211,10 @@ struct CardRoute: View {
     /// ni `simctl` ni `osascript` ne posent un doigt sur cette machine. Sans
     /// ce drapeau, son intensité ne serait jugeable que sur l'appareil.
     var lueurForcee: Bool = false
+    /// LE COMPTEUR DES RETOURS — il ne sert qu'à déclencher l'haptique. Un
+    /// `trigger:` a besoin d'une valeur qui CHANGE ; un booléen qui repasse à
+    /// la même valeur ne déclencherait rien au deuxième retour.
+    @State private var recentrages = 0
 
     /// `-colonne` : l'ancienne composition à TROIS pierres empilées, gardée
     /// pour la comparaison. La bande des neuf est le défaut depuis le 29-08.
@@ -392,11 +396,25 @@ struct CardRoute: View {
                     defile = apres != .idle
                 }
                 guard apres == .idle, auDoigt else { return }
+                // ⚠️ **L'HAPTIQUE PART AVEC LE RESSORT, PAS À SON ARRIVÉE.**
+                // Le retour dure 0,55 s : une secousse à la fin arriverait
+                // après que le doigt a lâché, et se lirait comme un incident.
+                // Posée au départ, elle DIT le mouvement — c'est la card qui
+                // reprend sa place, et on le sent au moment où on la voit.
+                recentrages &+= 1
                 withAnimation(.spring(response: 0.55,
                                       dampingFraction: 0.88)) {
                     proxy.scrollTo(apercu.actif.id, anchor: .center)
                 }
             }
+            // ⚠️ **UN `trigger:`, PAS UN APPEL IMPÉRATIF DANS LA FERMETURE**
+            // (l'école de la maison, cf. `HomeAuroraView`) : SwiftUI joue le
+            // retour au bon moment du cycle, et il ne peut pas se jouer deux
+            // fois pour un seul changement. `.light` à 0,55 — la card se
+            // repose, elle ne cogne pas : c'est le même registre que la pose
+            // d'un galet, jamais celui d'un refus.
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.55),
+                             trigger: recentrages)
         }
     }
 
