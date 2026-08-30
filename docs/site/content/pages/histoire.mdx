@@ -1,0 +1,30 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="histoire" etats={['men']} vide="Rien ne ment ici : les pages sont peintes, et honnêtes sur ce qu'elles ne déclenchent pas." />
+
+</div>
+<div className="reveal">
+
+## Comment on choisit un variant
+
+<Schema id="histoire-1-comment-on-choisit-un" legende="Trait plein = le variant est codé. Ce qui manque n'est pas le dessin, c'est la détection : rien ne calcule un record." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="histoire" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+
+<Decision titre="À trancher — où vit le variant">
+  <p>Le variant doit-il être choisi <b>au serveur et mémorisé</b> (une séance a sa robe pour toujours), ou retiré à chaque ouverture ? Si c'est le client qui choisit, la même séance peut raconter deux histoires à deux jours d'écart — et un record « battu » peut redevenir un jour ordinaire.</p>
+</Decision>
+
+<Savoir>
+  <p>Le rangement des faits est posé (30-08) : la table <code>workout_facts</code> et <code>poser_faits_seance</code>, déployés et testés au rejeu. Reste le calcul, côté app — tranché : l'app calcule, le serveur range.</p>
+  <p>La cause unique des « local » : <code>SupabaseSync</code> n'a qu'un <code>push</code>, pas une ligne de lecture. Calendrier, étape du chemin et jours faits dérivent de SwiftData — à la réinstallation, l'app repart vide devant un serveur plein. Le chemin a besoin de « ce jour-là a été fait », les stories de « ce jour-là a été un record » : même dérivation, un seul chantier bloque les deux écrans. L'audit des trois contradictions : <code>tools/road/AUDIT-CHEMIN-CALENDRIER-STORIES.md</code>.</p>
+</Savoir>

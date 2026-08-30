@@ -1,0 +1,40 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="porte" etats={['men']} />
+
+</div>
+<div className="reveal">
+
+## Ce que la porte fait vraiment
+
+<Schema id="porte-1-ce-que-la-porte" legende="Il y a bien un onboarding — quatre pages, un film d'arrivée de 5,47 s. Ce qui manque, c'est ce qui vient après le bouton." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="porte" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+<div className="reveal">
+
+## Ce qui tient
+
+<Liste page="porte" etats={['ok']} />
+
+</div>
+
+<Decision titre="Deux décisions t'attendent">
+  <p>① <b>L'app doit-elle dire qu'elle n'est pas connectée ?</b> Aujourd'hui elle affiche un solde de maquette exactement comme un solde réel. Bandeau, pastille, ou on assume le mode invité en silence ?</p>
+  <p>② <b>« Se déconnecter » reste-t-il actif</b> tant qu'il n'existe aucun écran pour se reconnecter ? La seule sortie est la réinstallation.</p>
+</Decision>
+
+<Savoir>
+  <p>La session tient à une seule clé, <code>woop.phone</code>. La racine ne l'écrit que si la porte lui rend un numéro à dix chiffres — elle rend toujours une chaîne vide. Toute installation neuve tourne sans session : le carnet, les sachets, l'historique retombent sur la maquette locale, et les écritures restent dans la file d'attente. C'est la première chose à réparer, et la moins chère du site.</p>
+  <p>Quand ça marche, on se connecte par un numéro écrit en dur ; deux numéros sont connus et le mot de passe est calculé à partir du numéro. Aucune création de compte, pas de signup, pas d'OTP. Le jeton vit dans les préférences, pas dans le Keychain. L'ordre qui compte : une porte qui écrit la session d'abord, Apple ensuite, la migration de la maquette en dernier — sortir Apple sans elle, c'est demander de perdre ses pièces le jour où on se connecte.</p>
+  <Schema id="porte-2-pourquoi-ca-commande-tout" titre="Pourquoi ça commande tout le reste" plie />
+  <Schema id="porte-3-le-parcours-cible" titre="Le parcours cible" plie />
+</Savoir>

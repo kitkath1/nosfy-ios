@@ -1,0 +1,30 @@
+import type { Mesure } from './types'
+
+/**
+ * « À MESURER » — ce que le code laisse lire, JAMAIS peint. Une ligne ici devient une
+ * brique le jour où on a LU la réponse (une mesure par ligne, commit à part).
+ */
+export const MESURES: Mesure[] = [
+  { id: "m-constantes-locales-a-retirer", titre: "Constantes locales à retirer : perSeries 20, le +20 de…", page: "regles", domaine: "eco", lecture: "inconnu", cout: "1 h", preuve: { fichier: "Woop/Views/CoffreFortPurse.swift", lignes: "28-29" } },
+  { id: "m-trancher-la-conversion-automatique", titre: "Trancher la conversion automatique pièces → sachets", page: "regles", domaine: "eco", lecture: "inconnu", cout: "1 j", preuve: { fichier: "docs/screens/coffre-rewards.md", lignes: "287-292" } },
+  { id: "m-trancher-le-fuseau-du", titre: "Trancher le fuseau du « jour » (UTC vs profil)", page: "serveur", domaine: "eco", lecture: "inconnu", cout: "1 j", preuve: { fichier: "Woop/Services/SacreServeur.swift", lignes: "248-253" } },
+  { id: "m-policies-d-ecriture-des", titre: "Policies d'écriture des tables wallet / boosters", page: "serveur", domaine: "eco", lecture: "inconnu", cout: "1 j", preuve: { fichier: "tools/sacre/SUPABASE-A-FAIRE.md", lignes: "113-114" } },
+  { id: "m-trancher-un-nud-un", titre: "Trancher « un nœud = un jour » vs « = une séance »", page: "flow", domaine: "chemin", lecture: "inconnu", cout: "chantier", preuve: { fichier: "tools/road/AUDIT-CHEMIN-CALENDRIER-STORIES.md", lignes: "92-114" } },
+  { id: "m-le-sticker-meme-choix", titre: "Le sticker : même choix sur les deux écrans, et une source…", page: "histoire", domaine: "chemin", lecture: "inconnu", cout: "1 h", preuve: { fichier: "tools/road/AUDIT-CHEMIN-CALENDRIER-STORIES.md", lignes: "69-86" } },
+  { id: "m-definir-fait-parfait-et", titre: "Définir « fait », « parfait », et l'après-35 séances", page: "flow", domaine: "chemin", lecture: "inconnu", cout: "1 j", preuve: { fichier: "docs/screens/duolingo-chemin.md", lignes: "308-316" } },
+  { id: "m-remonter-le-tirage-du", titre: "Remonter le tirage du chemin, la pitié et le journal par…", page: "flow", domaine: "chemin", lecture: "inconnu", cout: "1 j", preuve: { fichier: "Woop/Views/RewardChemin.swift", lignes: "73-76" } },
+  { id: "m-ecrire-narrate-reward-contrat", titre: "Écrire `narrate-reward` (contrat JSON + bornes)", page: "histoire", domaine: "stories", lecture: "inconnu", cout: "chantier", preuve: { fichier: "docs/screens/reward-popup.md", lignes: "226" } },
+  { id: "m-crediter-les-pop-ups", titre: "Créditer les pop-ups `.moment` / `.reward`", page: "regles", domaine: "annonces", lecture: "inconnu", cout: "1 j", preuve: { fichier: "docs/screens/reward-popup.md", lignes: "222" } },
+  { id: "m-decideurserie-10-5-3", titre: "`DecideurSerie` (10/5/3 %) → moteur serveur, facts dans…", page: "regles", domaine: "annonces", lecture: "inconnu", cout: "chantier", preuve: { fichier: "Woop/Services/OutboxGains.swift", lignes: "42-51" } },
+  { id: "m-le-contrat-par-categorie", titre: "Le contrat par catégorie : quelle robe pour quel événement", page: "regles", domaine: "annonces", lecture: "inconnu", cout: "1 j", preuve: { fichier: "docs/screens/reward-popup.md", lignes: "224" } },
+  { id: "m-passer-workout-id-a", titre: "Passer `workout_id` à `forge-card` (colonne toujours nulle)", page: "forge", domaine: "forge", lecture: "inconnu", cout: "1 h", preuve: { fichier: "Woop/Services/ForgeServeur.swift", lignes: "36" } },
+  { id: "m-garde-d-idempotence-serveur", titre: "Garde d'idempotence serveur sur `forge-card` (consommer un…", page: "forge", domaine: "forge", lecture: "inconnu", cout: "1 j", preuve: { fichier: "tools/sacre/SUPABASE-A-FAIRE.md", lignes: "78-82" } },
+  { id: "m-cache-disque-des-png", titre: "Cache disque des PNG de cartes ; générer `depth_path`…", page: "forge", domaine: "forge", lecture: "inconnu", cout: "1 j", preuve: { fichier: "tools/sacre/SUPABASE-A-FAIRE.md", lignes: "56-60" } },
+  { id: "m-fermer-la-sortie-par", titre: "Fermer la sortie par le chevron (elle ne consomme pas le…", page: "forge", domaine: "forge", lecture: "inconnu", cout: "1 h", preuve: { aCiter: true } },
+  { id: "m-rattrapage-hors-ligne-du", titre: "Rattrapage hors-ligne du booster — l'outbox ignore la forge", page: "forge", domaine: "forge", lecture: "inconnu", cout: "1 j", preuve: { fichier: "Woop/Services/OutboxGains.swift", lignes: "42-51" } },
+  { id: "m-retirer-le-repli-jwtbanc", titre: "Retirer le repli `jwtBanc()` du chemin de production", page: "porte", domaine: "compte", lecture: "inconnu", cout: "1 h", preuve: { fichier: "Woop/Services/ForgeServeur.swift", lignes: "90-100" } },
+  { id: "m-sortir-le-token-perso", titre: "Sortir le token perso du compte pro (`.secrets`)", page: "porte", domaine: "compte", lecture: "inconnu", cout: "1 h", preuve: { fichier: "tools/sacre/SUPABASE-A-FAIRE.md", lignes: "7-12" } },
+  { id: "m-valider-le-jwt-dans", titre: "Valider le JWT dans `weekly-synthesis` (préfixe seul)", page: "serveur", domaine: "compte", lecture: "inconnu", cout: "1 h", preuve: { fichier: "docs/screens/reward-popup.md", lignes: "241" } },
+  { id: "m-commiter-les-4-migrations", titre: "Commiter les 4 migrations en `??` (…160000, …170000,…", page: "serveur", domaine: "sync", lecture: "inconnu", cout: "1 h", preuve: { git: "status : migrations non suivies (??)" } },
+  { id: "m-reparer-schema-migrations-avant", titre: "Réparer `schema_migrations` avant tout `db push`", page: "serveur", domaine: "sync", lecture: "inconnu", cout: "1 h", preuve: { fichier: "supabase/README.md", lignes: "34-44" } },
+]

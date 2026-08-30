@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant U as 👤 toi
+  participant A as 📱 l'app
+  participant S as ☁️ Supabase
+
+  U->>A: je finis une série
+  A->>A: 💾 la série s'écrit (SwiftData)
+  Note over A: rien ne part encore
+  U->>A: je finis une autre série
+  A->>A: 💾 idem
+
+  U->>A: 🛑 STOP puis Terminer
+  A->>S: 📤 push de la séance
+  A->>S: 🎯 cloturer_seance(séance, séries)
+  S-->>A: +60 pièces · 1 sachet · solde · jauge · pièce d'argent ?
+  Note over A,S: une seule réponse porte tout ce que l'annonce doit dire
+
+  U->>A: je rouvre l'app plus tard
+  A->>S: 🎁 claim_retour_quotidien()
+  S-->>A: +10 ou déjà pris
+  A->>S: 📖 etat_coffre()
+  S-->>A: les six nombres

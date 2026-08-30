@@ -1,0 +1,19 @@
+flowchart TD
+  A["🏠 Home<br/>slider en bas"] --> B["🛣️ atterrissage<br/>sur le CHEMIN"]
+  B --> C["▶️ début de séance"]
+  C --> D["🏋️ set en cours"]
+  D --> E["⏱️ récupération<br/>+ notification"]
+  E --> F["🎁 re-pop-up rewards<br/>selon difficulté"]
+  F --> D
+  D --> G["🛑 pop-up STOP"]
+  G --> H["✅ Terminer"]
+  H --> I["📖 STORY 2"]
+  I --> J["🛣️ retour CHEMIN"]
+  J --> K["🎉 pop-up<br/>ouvrir un booster"]
+  K --> L["🏆 LE COFFRE<br/>gains + bouton ouvrir"]
+  L --> M["🎡 LE MANÈGE"]
+  M --> N["👤 PROFIL<br/>la carte collectée"]
+
+  class A,B,C,D,E,F,G,K loc
+  class H,L,M ok
+  class I,J,N abs

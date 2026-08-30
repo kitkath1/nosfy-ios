@@ -1,0 +1,4 @@
+# Le livrable du site de doc est GÉNÉRÉ par `npm run artefact` (docs/site/) :
+# son diff n'est pas à relire, la source est content/ + app/.
+docs/site/index.html linguist-generated=true
+docs/site/content/schemas/*.svg linguist-generated=true

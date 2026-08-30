@@ -1,0 +1,39 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="regles" etats={['men']} vide="Rien ne ment ici — mais le rythme est décidé par trois modulos que la base ne connaît pas." />
+
+</div>
+<div className="reveal">
+
+## Qui a le droit de parler, et quand
+
+<Schema id="regles-2-qui-a-le-droit" legende="C'est le rythme voulu, posé dans reward_rules. Aujourd'hui l'app saute toutes ces questions et regarde seulement le rang de la série." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="regles" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+<div className="reveal">
+
+## Ce qui tient
+
+<Liste page="regles" etats={['ok']} />
+
+</div>
+
+<Decision titre="Le fil rouge">
+  <p>Montrer un objet à 0 vaut mieux que le cacher. Une pile cachée n'apprend rien ; une pile à zéro apprend qu'elle existe et donne envie de la remplir.</p>
+</Decision>
+
+<Savoir>
+  <p>Le Welcome Back est <b>déployé</b> « à chaque connexion, une fois par jour » (<code>0 / 0 / 31</code>). Ce qui tient le « une fois par jour », c'est l'index partiel <code>coin_ledger_retour_jour_unique</code>, pas un réglage : même si la porte proposait la card trois fois, le versement ne partirait qu'une fois. L'idempotence est un index, jamais un compteur.</p>
+  <p>Tout le coffre vient d'un seul objet, <code>etat_coffre()</code>. Avant, le même nombre était calculé à neuf endroits, et le prix d'un sachet valait 20 sur le profil, 100 dans le coffre.</p>
+  <Schema id="regles-1-la-ligne-de-vie" titre="La ligne de vie d'une séance — le rythme actuel, trois modulos" plie />
+  <Schema id="regles-3-les-quatre-pages-du" titre="Les quatre pages du coffre" plie />
+</Savoir>

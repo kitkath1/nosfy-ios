@@ -1,0 +1,10 @@
+erDiagram
+  workouts ||--o{ logged_exercises : contient
+  logged_exercises ||--o{ strength_sets : "séries"
+  logged_exercises ||--o{ cardio_phases : "phases cardio"
+  workouts ||--o{ coin_ledger : "paie"
+  workouts ||--o{ user_boosters : "offre 1 sachet"
+  coin_ledger }o--|| reward_rules : "lit les prix"
+  user_boosters ||--o| user_cards : "ouvre en"
+  cards ||--o{ user_cards : "modèle de"
+  workouts ||--o{ syntheses : "résume"

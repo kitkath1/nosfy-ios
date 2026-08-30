@@ -1,0 +1,15 @@
+flowchart TD
+  T0["⏱️ t0 · je tape OUVRIR"] --> T1["🎡 la roue se monte<br/>rien n'est réservé"]
+  T1 --> T2["🔨 la forge tire<br/>et INSCRIT la carte<br/>dans user_cards"]
+  T2 --> T3["✨ la carte est révélée"]
+  T3 --> T4["🕊️ la carte s'envole"]
+  T4 --> T5["✅ ouvrir_booster()<br/>consomme le sachet"]
+
+  T2 -.->|"💥 je quitte"| X1["🔴 carte acquise<br/>sachet PAS consommé"]
+  T3 -.->|"💥 je quitte"| X1
+  T3 -.->|"↩️ chevron retour"| X1
+  T4 -.->|"💥 je quitte"| X1
+
+  class T0,T2,T3,T4,T5 ok
+  class T1 loc
+  class X1 bad

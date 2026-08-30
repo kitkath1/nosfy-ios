@@ -1,0 +1,7 @@
+flowchart LR
+  E["☁️ etat_coffre()"] --> P1["🪙 pièce d'or<br/>solde_or"]
+  E --> P2["🎁 booster<br/>boosters_or + jauge"]
+  E --> P3["🥈 pièce d'argent<br/>solde_argent"]
+  E --> P4["🖤 légendaire<br/>solde_argent"]
+  H["☁️ historique_gains()"] --> G["📜 Mes gains<br/>pièces ET boosters"]
+  class E,H,P1,P2,P3,P4,G ok

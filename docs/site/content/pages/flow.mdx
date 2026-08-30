@@ -1,0 +1,33 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="flow" etats={['men']} vide="Rien ne ment ici." />
+
+</div>
+<div className="reveal">
+
+## Entrée A — la séance
+
+<Schema id="flow-1-entree-a-la-seance" legende="Trait plein = existe · pointillé = à faire. Le code fait Terminer → HOME : ni la story 2, ni le retour au chemin, ni le profil ne sont dans la chaîne." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="flow" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+
+<Decision titre="À trancher — l'ordre de fin de séance">
+  <p>L'ordre que tu décris (Terminer → story 2 → chemin → pop-up → coffre → manège → profil) demande de reprendre la chaîne de fin de séance en entier. C'est un chantier — le seul de cette page qui en soit un.</p>
+</Decision>
+
+<Savoir>
+  <p>Une séance entière = <b>trois appels</b> au serveur : le push de la séance, <code>cloturer_seance</code>, puis <code>etat_coffre</code> au retour. Tout le reste est local, et c'est voulu : l'écran n'attend jamais le réseau.</p>
+  <p>La card ROUTE de la home est un morceau du chemin (chapitre, étape, les neuf nœuds) et la seule porte de la route. Ce qu'elle affiche vient presque entièrement de l'appareil : sans <code>-cheminReel</code>, c'est la démo du chemin. Le blocage : personne ne dit où commence un chapitre.</p>
+  <Schema id="flow-2-entree-b-hors-seance" titre="Entrée B — hors séance" plie />
+  <Schema id="flow-3-le-meme-parcours-vu" titre="Le même parcours, vu du serveur" plie />
+  <Schema id="flow-4-ce-qui-a-ete" titre="Ce qui a été réparé le 29-08 — une série finie n'était écrite nulle part" plie />
+</Savoir>

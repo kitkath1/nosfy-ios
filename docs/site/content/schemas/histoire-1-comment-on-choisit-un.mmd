@@ -1,0 +1,12 @@
+flowchart TD
+  A["📖 une séance finie<br/>veut sa story"] --> B{"deux séances<br/>le même jour ?"}
+  B -- oui --> V2["✌️ variant ×2<br/>noir et blanc"]
+  B -- non --> C{"record<br/>de charge ?"}
+  C -- oui --> VR["🏋️ record muscu"]
+  C -- non --> D{"record<br/>cardio ?"}
+  D -- oui --> VC["🏃 record cardio"]
+  D -- non --> E{"meilleure séance<br/>de la semaine ?"}
+  E -- oui --> VT["👑 TOP SESSION"]
+  E -- non --> VS["📄 SESSION ENDED<br/>la robe de base"]
+  class V2,VT,VS fait
+  class VR,VC abs

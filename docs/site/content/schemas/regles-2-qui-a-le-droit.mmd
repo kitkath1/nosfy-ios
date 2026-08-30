@@ -1,0 +1,13 @@
+flowchart TD
+  A["🏋️ une série vient<br/>d'être finie"] --> B{"budget<br/>déjà épuisé ?"}
+  B -- "4 pop-ups faits" --> Z["🤫 rien"]
+  B -- non --> C{"écart depuis<br/>la dernière ?"}
+  C -- "moins de 3 séries<br/>ET 6 minutes" --> Z
+  C -- ok --> D{"un fait<br/>à raconter ?"}
+  D -- "déjà dit cette séance" --> E["💬 pill simple<br/>+20"]
+  D -- oui --> F{"quel genre ?"}
+  F --> G["✨ moment<br/>un fait vrai"]
+  F --> H["🎁 reward<br/>bonus en pièces"]
+  F --> I["🎬 rare<br/>+ vidéo"]
+  class E,G,H,I dit
+  class Z mut

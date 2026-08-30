@@ -10,3 +10,17 @@ build/
 # 32 368 fichiers qui rendaient `git status` illisible entre deux sessions
 # et faisaient d'un `git add -A` une catastrophe.
 dd-*/
+
+# Le site de doc est une app Next.js (docs/site/) : ses dépendances, son cache et
+# son export multi-fichiers ne se versionnent pas — seul le LIVRABLE
+# docs/site/index.html (généré, un fichier) et la source content/ le sont.
+# Posé AVANT le premier `npm i`, même leçon que dd-*/.
+node_modules/
+.next/
+docs/site/out/
+*.tsbuildinfo
+docs/site/rendu-schemas/
+tools/docsite/captures/dom.html
+
+# généré par next build
+docs/site/next-env.d.ts

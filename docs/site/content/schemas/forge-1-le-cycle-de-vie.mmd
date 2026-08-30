@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> Gagne: fin de séance 🟢
+  [*] --> Achete: 100 pièces 🟢
+  [*] --> Chemin: nœud du chemin 🟢
+  Gagne --> EnAttente
+  Achete --> EnAttente
+  Chemin --> EnAttente
+  EnAttente --> Ouvert: ouvrir_booster() 🟢
+  Ouvert --> Carte: la forge tire 🔵
+  Carte --> [*]: rangée dans la collection 🔵

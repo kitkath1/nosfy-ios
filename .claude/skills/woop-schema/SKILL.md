@@ -53,28 +53,43 @@ Le dégradé n'est pas un effet : c'est ce qui fait qu'un titre blanc sur du noi
 qui s'éteint vers le bas est du métal. ⚠️ Mais un emoji dans un texte clippé
 **disparaît** (silhouette blanche) : **aucun emoji dans un h1/h2/h3**.
 
-## ⚠️ LA COULEUR EST SÉMANTIQUE, JAMAIS DÉCORATIVE
+## ⚠️ LA COULEUR EST SÉMANTIQUE OU MESURÉE, JAMAIS CHOISIE
 
-Trois sources de couleur, et pas une de plus :
+Quatre emplois de la couleur, un seul par surface, et pas un de plus :
 
 1. **l'emoji d'une pastille** (🟢🟡🔵⚪🔴) — et la bille CSS qui le remplace là
-   où il n'y a pas d'emoji (compteurs et rangées de l'accueil) ;
+   où il n'y a pas d'emoji (compteurs, rangées de l'accueil, coin d'un nœud de
+   schéma) ;
 2. **la teinte d'une card de domaine, qui en DÉCOULE** : ≥ 1 🔴 → rouge · tout
    🟢 → vert · sinon argent. Pas d'ambre, pas de bleu : quatre teintes font un
    sapin ;
 3. **l'aurore du hero de l'accueil** (`AuroraHome.metal:592-594` : #FFE699 /
-   #FF8A3D, plancher #210C03) — le seul halo du site, éteint à la ligne de base
-   du hero. 0 pixel orange sur les autres onglets.
+   #FF8A3D, plancher #210C03) — le seul halo de l'accueil ;
+4. **le hero d'une page de domaine, teinté par la palette MESURÉE de la capture
+   qu'il montre** — `tools/docsite/palette.py` (H et S mesurés sur les pixels
+   colorés de la capture, V posé à 62 pour tous : le seul écart à la mesure,
+   assumé ici), la source et la part en % écrites dans `content/pages.ts`.
+   *Une teinte de hero se mesure, elle ne se choisit pas* — même loi que les
+   pastilles. Un écran à < 1 % de pixels colorés, ou sans capture, donne un hero
+   **noir** à spotlight blanc. Sur un hero, **aucune couleur d'état** : le verdict
+   est blanc, l'état vit dans les billes de la ligne des comptes. La teinte
+   n'apparaît nulle part ailleurs sur la page.
 
 Zéro accent de marque, zéro couleur de lien, zéro couleur d'onglet actif. C'est
 la règle qui rend le reste possible : dès qu'on ajoute un accent, les pastilles
 cessent d'être ce qu'on repère en premier.
 
 **Interdits, sans exception :** ombre colorée (toute ombre est `rgba(0,0,0,x)`),
-dégradé à deux teintes ou violet / bleu-rose, néon, halo hors du hero, rayon
-hors de {8, 12, 16, 20, 28, 999}, bordure de plus de 1 px, **flou animé**, plus
-de 7 `backdrop-filter` — et jamais sur les pastilles : sur un fond uni un flou
-ne floute rien et coûte une couche de composition chacun.
+dégradé à deux teintes ou violet / bleu-rose, néon, halo hors des heros, rayon
+hors de {8, 12, 16, 20, 24, 28, 999}, bordure de plus de 1 px, **flou continu ou
+au survol**, plus de 4 `backdrop-filter` — et jamais sur les pastilles : sur un
+fond uni un flou ne floute rien et coûte une couche de composition chacun.
+**Permis :** UNE arrivée, jouée une fois — flou 1 em + montée 22 px + échelle
+1,05, 0,9 s, la courbe de la porte `cubic-bezier(.16,.84,.22,1)`
+(`HomeNuit.swift:343-357`, `PorteEntree.swift:1868`) — sur le h1, la phrase et
+le hero seulement ; jamais sur une rangée, une table, un schéma ; coupée par
+`prefers-reduced-motion`. Une lumière blanche immobile par surface (le
+spotlight) — jamais un flou.
 
 **La pastille** est un verre neutre — 22 px, rayon 999, dégradé blanc .08 → .03,
 filet .08, reflet .12 — autour de l'emoji, qui est sa seule couleur. Pas de fond
@@ -246,14 +261,20 @@ Les diagrammes de séquence sortent avec `width`/`height` et rien d'autre : sous
 un `height:auto` ils s'écrasent à 150 px. On leur reconstruit le cadre depuis
 leurs propres cotes.
 
-**⑦ Le thème ne descend pas partout — et il n'existe qu'UNE fois.**
+**⑦ Le thème ne descend pas partout — et il n'existe qu'UNE fois, À LA BUILD.**
 `erDiagram` ignore `primaryColor` pour ses boîtes : il lui faut `mainBkg`,
 `nodeBorder`, `textColor`, `attributeBackgroundColorOdd/Even`. Sans ça, les
-entités sortent **en blanc plein** sur une page noire. Et le thème vit dans le
-seul `initialize()` du JS (`themeVariables` en HEX — khroma dérive les teintes,
-un `rgba` casse `darken()` — et `themeCSS` pour les classes `ok loc srv abs bad
-neuf dit mut fait`) : **jamais de `%%{init}%%` ni de `classDef` dans un bloc**.
-Les `class A,B ok` suffisent — vérifié : le nœud sort en `class="node default ok"`.
+entités sortent **en blanc plein** sur une page noire. Depuis la v2, **aucun
+moteur au runtime** : `docs/site/scripts/schemas.mjs` rend les `.mmd` en SVG dans
+le Chrome installé (un par un, `render('woop-'+id)`, la même Inter chargée
+AVANT la mesure des boîtes, `line-height` identique à la mesure et au rendu),
+puis les passe à l'obsidienne — fond `#121212 → #000`, rayon 12, bordure en
+dégradé blanc `.34 → .07` posée **en attribut** avec **un `<defs>` par SVG à id
+unique** (un dégradé partagé dans un svg caché ne peint pas, deux ids égaux se
+superposent), et la couleur d'état = **une bille de 6 px** au coin du nœud
+(`class A,B ok` suffit : le nœud sort en `class="node default ok"`). Chaque
+`.svg` porte `<!-- mmd:<sha1> -->` ; un SVG périmé fait échouer `npm run verif`.
+**Jamais de `%%{init}%%` ni de `classDef` dans un bloc.**
 
 **⑧ Un schéma qui n'a pas pu être rendu doit le DIRE.**
 Laisser du texte brut à sa place, c'est le laisser se faire passer pour un

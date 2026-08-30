@@ -1,0 +1,166 @@
+/* ─────────────────────────────────────────────────────────────
+   LA V2 — par-dessus robe.css (la v1, portée telle quelle).
+   Plus d'air, le display, le hero de domaine, le spotlight, les
+   schémas obsidienne, les 3 animations de l'arrivée de la home
+   (HomeNuit.swift:343-357), et ce qui est allégé.
+   Plan : tools/docsite/PLAN-SITE-V2-NEXT.md
+   ───────────────────────────────────────────────────────────── */
+:root{--sans:var(--police),Inter,-apple-system,"SF Pro Text",system-ui,sans-serif;--courbe:cubic-bezier(.16,.84,.22,1);--contenu:1040px}
+body{font-family:var(--sans)}
+
+/* ── l'air ────────────────────────────────────────────────── */
+.page{padding:56px 56px 0;max-width:calc(var(--contenu) + 112px);position:relative;isolation:isolate}
+.page#etat{padding-top:0;max-width:none}
+.page::before{content:"";position:absolute;top:0;left:0;right:0;height:600px;z-index:-1;pointer-events:none;
+  background:radial-gradient(600px 320px at 50% 0,rgba(255,255,255,.05),rgba(255,255,255,0) 100%)}
+.page#etat::before{display:none}
+h1{font-size:48px;line-height:52px;font-weight:300;letter-spacing:-.025em;margin:0 0 12px;width:auto;max-width:18ch;
+   background-image:linear-gradient(100deg,#fff 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,.68) 80%,rgba(255,255,255,.55) 100%)}
+.page>.phrase{font-size:15px;line-height:24px;color:var(--encre-2);max-width:62ch;margin:0 0 24px}
+h2{font-size:22px;line-height:28px;letter-spacing:-.018em;margin:96px 0 20px}
+h2:first-of-type{margin-top:64px}
+.hero-dom + h2,.hero-dom + .reveal > h2:first-child{margin-top:64px}
+h3{font-size:16px}
+p{line-height:24px}
+.bloc{padding:28px 32px;border-radius:16px;
+  background:radial-gradient(60% 50% at 50% 0%,rgba(255,255,255,.04),rgba(255,255,255,0) 70%),var(--panneau)}
+.corps{padding-bottom:96px}
+.pied{margin-top:96px;max-width:var(--contenu)}
+
+/* ── le rail : des nombres, pas des points rouges ─────────── */
+.rail a.item .n::before{display:none}
+.rail a.item .n{color:var(--encre-3);font-weight:400}
+.rail .loi .legende{display:none}
+
+/* ── la rangée, allégée : point · titre · (domaine) · coût · preuve ── */
+.liste li.r{grid-template-columns:22px minmax(0,1fr) 52px minmax(0,240px);border-radius:0;box-shadow:none;cursor:default}
+.liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) auto 52px minmax(0,240px) 16px;cursor:pointer}
+.liste li.r .p{padding:0;height:20px;width:20px;justify-content:center;background:none;border:0;box-shadow:none;font-size:11px}
+.liste li.r .c{text-align:left}
+.liste li.r .bd{display:none}
+.liste li.r.litige .p{outline:1px dashed rgba(255,255,255,.35);outline-offset:2px;border-radius:999px}
+.liste li.r .lecture{color:var(--encre-3);font-size:11px}
+.liste li.r:hover{background:rgba(255,255,255,.03)}
+.liste li.r[data-onglet]:hover{box-shadow:inset 0 0 0 1px var(--filet)}
+.rien{font-size:13px;color:var(--encre-3)}
+
+/* ── les tables du serveur ────────────────────────────────── */
+table.serveur td.etat{width:34px;padding-right:0}
+table.serveur td.etat .p{padding:0 6px 0 5px}
+table.serveur td.nom{white-space:nowrap}
+table.serveur td.quoi{color:rgba(255,255,255,.72)}
+table.serveur tr.litige td.etat .p{outline:1px dashed rgba(255,255,255,.35);outline-offset:2px}
+.litige-note{display:block;font-size:11.5px;color:var(--encre-3);margin-top:3px}
+.tw{margin-bottom:0}
+
+/* ── le hero de domaine — « une grosse card de couleur, l'écran au milieu, fondu » ── */
+.hero-dom{--t1:#0F0F0F;--t2:transparent;position:relative;isolation:isolate;overflow:hidden;height:400px;margin:24px 0 0;border-radius:24px;
+  padding:0 40px 32px;display:flex;flex-direction:column;justify-content:flex-end;
+  border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  background:
+    radial-gradient(70% 60% at 50% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 70%),
+    radial-gradient(45% 55% at 10% 0%,var(--t2),rgba(0,0,0,0) 70%),
+    linear-gradient(180deg,var(--t1) 0%,color-mix(in srgb,var(--t1) 55%,#000) 46%,#000 100%)}
+.hero-dom{background-clip:padding-box;background-repeat:no-repeat}   /* APRÈS le raccourci background:, qui remet clip et repeat à zéro — sinon la 1re rangée du dégradé se répète sous la bordure */
+.hero-dom::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,0) 52%,rgba(0,0,0,.70) 78%,#000 100%)}
+.hero-dom .grain{position:absolute;inset:0;z-index:-2;opacity:.04;mix-blend-mode:overlay;pointer-events:none;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>") 0 0/200px 200px}
+.hero-dom img{position:absolute;z-index:-1;left:50%;top:40px;width:240px;height:auto;transform:translateX(-50%);border-radius:28px;
+  -webkit-mask-image:radial-gradient(70% 62% at 50% 34%,#000 38%,transparent 100%),linear-gradient(180deg,#000 55%,transparent 92%);
+  -webkit-mask-composite:source-in;mask-image:radial-gradient(70% 62% at 50% 34%,#000 38%,transparent 100%),linear-gradient(180deg,#000 55%,transparent 92%);mask-composite:intersect}
+.hero-dom .lune{position:absolute;z-index:-1;left:50%;top:64px;width:120px;height:115px;transform:translateX(-50%);opacity:.9}
+.hero-dom .a-capturer{position:absolute;z-index:-1;left:50%;top:120px;transform:translateX(-50%);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--encre-3);
+  padding:8px 12px;border:1px dashed rgba(255,255,255,.16);border-radius:999px}
+.hero-dom .sur{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.54);margin:0 0 10px;max-width:none}
+.hero-dom .verdict{font-size:36px;line-height:40px;font-weight:300;letter-spacing:-.022em;margin:0;width:max-content;max-width:100%;
+  background-image:linear-gradient(100deg,#fff 0%,rgba(255,255,255,.90) 32%,rgba(255,255,255,.60) 68%,rgba(255,255,255,.35) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;padding-bottom:.08em}
+.hero-dom .comptes{display:flex;flex-wrap:wrap;gap:2px 12px;margin:10px 0 0;font-size:12.5px;line-height:20px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums;max-width:none}
+.hero-dom .comptes i{display:inline-flex;align-items:center;gap:6px;font-style:normal}
+.hero-dom .comptes .pt{width:6px;height:6px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.25)}
+.hero-dom.noir{--t1:#0F0F0F;--t2:transparent}
+
+/* ── les panneaux : décision, savoir, sondes, lexique ─────── */
+.decision{margin:32px 0 0;padding:24px 28px;border-radius:16px;border:1px solid var(--filet);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);max-width:none;
+  background:radial-gradient(60% 50% at 50% 0%,rgba(255,255,255,.04),rgba(255,255,255,0) 70%),var(--panneau)}
+.decision>b{display:block;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--encre-2);margin-bottom:8px}
+.decision>div{font-size:14px;line-height:22px;color:rgba(255,255,255,.72);max-width:62ch}
+.decision>div p{margin:0 0 8px} .decision>div p:last-child{margin:0}
+details.savoir{margin:24px 0 0}
+details.savoir .corps-savoir{padding:4px 20px 18px;max-width:68ch}
+details.savoir .corps-savoir p{font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.72);margin:0 0 10px}
+details.savoir .corps-savoir ul{margin:0 0 10px 18px}
+details.savoir .corps-savoir li{font-size:13.5px;color:rgba(255,255,255,.72)}
+details.bloc.plie{margin-top:12px} details.bloc.plie figure{margin:0;border:0;border-radius:0;padding:12px 20px 20px}
+.sondes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.sondes li{display:grid;grid-template-columns:minmax(0,1.4fr) 140px minmax(0,1fr);gap:16px;align-items:baseline;padding:11px 12px;border-bottom:1px solid var(--filet);max-width:none}
+.sondes code{background:none;padding:0;font-size:12px;color:rgba(255,255,255,.72)}
+.sondes code.rep{color:var(--encre-1);font-weight:500}
+.sondes span{font-size:12.5px;color:var(--encre-2)}
+.lexique{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 32px}
+.lexique div{padding:0 0 12px;border-bottom:1px solid var(--filet)}
+.lexique dt{font-size:14px;font-weight:500;color:var(--encre-1)}
+.lexique dd{margin:3px 0 0;font-size:13px;line-height:1.5;color:var(--encre-2)}
+.dictionnaire details.bloc{margin-bottom:8px}
+.dictionnaire details.bloc summary .p{margin-right:2px}
+.dictionnaire .tw{border-top:1px solid var(--filet)}
+.dictionnaire .note{margin:6px 20px 14px}
+.menu-sb{position:relative;display:inline-block;margin:0 0 8px}
+.menu-sb summary{list-style:none;cursor:pointer} .menu-sb summary::-webkit-details-marker{display:none}
+.menu-sb summary .ic{width:14px;height:14px;opacity:.6}
+.menu-sb>div{position:absolute;z-index:20;left:0;margin-top:6px;min-width:220px;padding:6px;border-radius:12px;background:linear-gradient(180deg,#1A1A1E,#101014);
+  border:1px solid rgba(255,255,255,.10);box-shadow:0 12px 32px rgba(0,0,0,.60),inset 0 1px 0 rgba(255,255,255,.06)}
+.menu-sb a{display:flex;gap:10px;align-items:center;justify-content:space-between;height:32px;padding:0 10px;border-radius:8px;font-size:13px;color:rgba(255,255,255,.80);text-decoration:none}
+.menu-sb a:hover{background:rgba(255,255,255,.06);color:#fff} .menu-sb a .ic{width:14px;height:14px;opacity:.5}
+figure.plan{background:radial-gradient(60% 50% at 50% 0%,rgba(255,255,255,.04),rgba(255,255,255,0) 70%),var(--panneau);padding:28px 24px 20px}
+figure.plan .svg svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figure.plan svg p,figure.plan svg foreignObject div{margin:0;line-height:1.25;max-width:none;font-size:inherit}   /* Mermaid enveloppe ses libellés dans des <p> : la page ne doit pas les remesurer */
+figcaption{margin-top:10px}
+
+/* ── l'accueil, allégé ────────────────────────────────────── */
+.glyphes{display:none}
+.hero h1{max-width:none}
+.compteurs .pill{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0 4px;height:28px;color:rgba(255,255,255,.62);border-radius:0;border-bottom:1px solid transparent}
+.compteurs .pill b{font-size:15px}
+.compteurs .pill:hover{color:var(--encre-1)}
+.compteurs .pill.on{background:none;border-color:rgba(255,255,255,.55);box-shadow:none;color:#fff}
+.compteurs{gap:4px 20px}
+.dom .seg,.dom .aller{display:none}
+.dom{min-height:150px;grid-template-rows:auto auto}
+.dom h3{font-size:22px;max-width:none}
+.filtres .pill{background:none;border-color:transparent;padding:0 8px}
+.filtres .pill.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);box-shadow:none}
+.liste .fin{font-size:11.5px}
+.legende-pied{display:flex;flex-wrap:wrap;gap:6px 16px;padding:24px 40px 0;font-size:12px;color:var(--encre-3);max-width:none}
+.legende-pied .p{height:20px;padding:0 7px 0 5px;font-size:10.5px}
+
+/* ── les 3 animations : l'arrivée de la home (HomeNuit.swift:343-357), une fois ── */
+@keyframes arrive{from{opacity:0;filter:blur(1em);transform:translateY(22px) scale(1.05)}to{opacity:1;filter:blur(0);transform:none}}
+@keyframes allume{from{background-position:100% 100%}to{background-position:0 0}}
+.js body.entree .page.on>h1,.js body.entree .page.on>.phrase,.js body.entree .page.on .hero-dom>.sur,.js body.entree .page.on .hero-dom>.verdict,.js body.entree .page.on .hero-dom>.comptes,
+.js body.entree .page.on .hero>h1,.js body.entree .page.on .hero>.phrase{transform-origin:left center;animation:arrive .9s var(--courbe) both}
+.js body.entree .page.on>.phrase,.js body.entree .page.on .hero>.phrase{animation-delay:.14s}
+.js body.entree .page.on .hero-dom>.sur{animation-delay:.28s}
+.js body.entree .page.on .hero-dom>.verdict{animation-delay:.42s}
+.js body.entree .page.on .hero-dom>.comptes{animation-delay:.56s}
+.js body.entree .page.on>h1,.js body.entree .page.on .hero>h1{background-size:200% 200%;animation:arrive .9s var(--courbe) both,allume 1.2s var(--courbe) .1s both}
+.js .reveal{opacity:0;transform:translateY(12px);transition:opacity .48s var(--courbe),transform .48s var(--courbe)}
+.js .reveal.in{opacity:1;transform:none}
+.js .doms .dom{transition-delay:calc(50ms * var(--i,0))}
+@media(prefers-reduced-motion:reduce){.js *{animation:none!important;transition:none!important}.js .reveal{opacity:1;transform:none}}
+
+/* ── 390 px ───────────────────────────────────────────────── */
+@media(max-width:900px){
+  .page{padding:24px 20px 0}
+  h1{font-size:34px;line-height:38px}
+  h2{margin:64px 0 16px} h2:first-of-type{margin-top:40px}
+  .bloc{padding:20px}
+  .hero-dom{height:320px;border-radius:20px;padding:0 24px 24px}
+  .hero-dom img{width:160px;top:32px}
+  .hero-dom .verdict{font-size:28px;line-height:32px}
+  .liste li.r{grid-template-columns:22px minmax(0,1fr);grid-template-areas:"pt t" ". m";height:58px}
+  .liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) 16px;grid-template-areas:"pt t chev" ". m chev"}
+  .lexique{grid-template-columns:1fr}
+  .sondes li{grid-template-columns:1fr;gap:4px}
+  .decision{padding:18px 20px}
+}

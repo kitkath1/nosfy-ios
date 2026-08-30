@@ -1,0 +1,135 @@
+[
+ {
+  "id": "six-1-ce-que-ca-donne",
+  "page": "six",
+  "type": "flowchart",
+  "titre": "Ce que ça donne pour une seule série finie",
+  "legende": "Le point à retenir : l'écran n'attend jamais le réseau. Il affiche le gain tout de suite ; le carnet rattrape."
+ },
+ {
+  "id": "carte-1-les-douze-tables",
+  "page": "carte",
+  "type": "erDiagram",
+  "titre": "Les douze tables",
+  "legende": "À lire ainsi : une séance porte des exercices, qui portent des séries. Une séance écrit dans le carnet et donne un sachet. Un sachet ouvert devient une carte."
+ },
+ {
+  "id": "schema-1-d-abord-ou-vivent",
+  "page": "schema",
+  "type": "flowchart",
+  "titre": "D'abord : où vivent mes données ?",
+  "legende": "🟡 dans le téléphone = perdu à la réinstallation · 🟢 dans Supabase = gardé pour toujours · 🔵 = gardé, mais l'app ne le relit jamais."
+ },
+ {
+  "id": "schema-2-1-diagramme-conceptuel",
+  "page": "schema",
+  "type": "erDiagram",
+  "titre": "1 · Diagramme conceptuel",
+  "legende": "Lecture des liens : ||--o{ = « un seul d'un côté, plusieurs de l'autre » ; ||--o| = « un pour un, et pas toujours ». Les tables secondaires (strength_sets, cardio_phases, user_cards, syntheses, booster_progress) sont dans le dictionnaire ci-dessous."
+ },
+ {
+  "id": "diag-1-deux-fichiers-decrivent-les",
+  "page": "diag",
+  "type": "flowchart",
+  "titre": "Deux fichiers décrivent les mêmes tables — et ils ne disent pas la même chose",
+  "legende": "Chaque feuille de l'arbre correspond à une pastille du site — et donc à un onglet où la réparation est déjà décrite."
+ },
+ {
+  "id": "flow-1-entree-a-la-seance",
+  "page": "flow",
+  "type": "flowchart",
+  "titre": "Entrée A — la séance",
+  "legende": "Trait plein = existe · trait pointillé = à faire. Aujourd'hui le code fait Terminer → HOME : ni la STORY 2, ni le retour au chemin, ni le profil ne sont dans la chaîne."
+ },
+ {
+  "id": "flow-2-entree-b-hors-seance",
+  "page": "flow",
+  "type": "flowchart",
+  "titre": "Entrée B — hors séance",
+  "legende": "Le claim écrit bien au serveur depuis le 29-08. Ce qui manque, c'est le dernier saut : après le toaster, on ne va pas au coffre."
+ },
+ {
+  "id": "flow-3-le-meme-parcours-vu",
+  "page": "flow",
+  "type": "sequenceDiagram",
+  "titre": "Le même parcours, vu du serveur",
+  "legende": "Une séance entière = trois appels. Tout le reste est local, et c'est voulu : l'écran ne doit jamais attendre le réseau."
+ },
+ {
+  "id": "flow-4-ce-qui-a-ete",
+  "page": "flow",
+  "type": "flowchart",
+  "titre": "Ce qui a été réparé le 29-08, et pourquoi c'était grave",
+  "legende": "Et -demoData l'a caché tout l'été : la démo sème des séries. Le banc en avait, l'app n'en avait pas — le seul régime où le défaut ne se voit pas est celui où l'on juge."
+ },
+ {
+  "id": "regles-1-la-ligne-de-vie",
+  "page": "regles",
+  "type": "flowchart",
+  "titre": "La ligne de vie d'une séance",
+  "legende": "Le rythme actuel vient de trois modulos — série % 10, % 5, % 3. Résultat : jusqu'à six interruptions dans une séance de 20 séries, dont deux d'affilée aux rangs 9 et 10."
+ },
+ {
+  "id": "regles-2-qui-a-le-droit",
+  "page": "regles",
+  "type": "flowchart",
+  "titre": "Qui a le droit de parler, et quand",
+  "legende": "C'est le rythme voulu. Aujourd'hui l'app saute toutes ces questions et regarde seulement le rang de la série."
+ },
+ {
+  "id": "regles-3-les-quatre-pages-du",
+  "page": "regles",
+  "type": "flowchart",
+  "titre": "Les quatre pages du coffre",
+  "legende": "Tout vient d'un seul objet depuis le 29-08. Avant : le même nombre était calculé à neuf endroits, et le prix d'un sachet valait 20 sur le profil, 100 dans le coffre."
+ },
+ {
+  "id": "forge-1-le-cycle-de-vie",
+  "page": "forge",
+  "type": "stateDiagram-v2",
+  "titre": "Le cycle de vie d'un sachet",
+  "legende": "Les trois premières flèches et l'ouverture sont branchées depuis le 29-08. Les deux dernières ne le sont pas."
+ },
+ {
+  "id": "histoire-1-comment-on-choisit-un",
+  "page": "histoire",
+  "type": "flowchart",
+  "titre": "Comment on choisit un variant",
+  "legende": "Trait plein = le variant est codé. Ce qui manque n'est pas le dessin, c'est la détection : rien ne calcule aujourd'hui un record de charge ou de cardio."
+ },
+ {
+  "id": "porte-1-ce-que-la-porte",
+  "page": "porte",
+  "type": "flowchart",
+  "titre": "Ce que la porte fait vraiment",
+  "legende": "Il y a bien un onboarding — 4 pages, WELCOME / EXERCISES / PROGRESS / BOOSTERS, en anglais, avec un film d'arrivée de 5,47 s. Ce qui manque, c'est ce qui vient après le bouton."
+ },
+ {
+  "id": "porte-2-pourquoi-ca-commande-tout",
+  "page": "porte",
+  "type": "flowchart",
+  "titre": "Pourquoi ça commande tout le reste",
+  "legende": "La maquette locale n'est pas une paresse : c'est ce qui fait tourner l'app sans compte. Mais tout ce qu'elle affiche disparaît à la réinstallation."
+ },
+ {
+  "id": "porte-3-le-parcours-cible",
+  "page": "porte",
+  "type": "flowchart",
+  "titre": "Le parcours cible",
+  "legende": "Tout ce qui est en pointillé reste à faire. Le splash existe ; l'onboarding et Apple, non."
+ },
+ {
+  "id": "manege-1-les-instants",
+  "page": "manege",
+  "type": "flowchart",
+  "titre": "Les instants",
+  "legende": "La consommation du sachet est la toute dernière étape, et c'est volontaire — on ne dépense qu'après avoir livré. Mais ça crée l'inverse du problème qu'on craignait."
+ },
+ {
+  "id": "manege-2-ce-que-je-propose",
+  "page": "manege",
+  "type": "flowchart",
+  "titre": "Ce que je propose",
+  "legende": "Le point clé : on rejoue la carte déjà tirée, jamais un nouveau tirage. Sinon on offre une deuxième chance de légendaire à qui coupe l'app au bon moment."
+ }
+]

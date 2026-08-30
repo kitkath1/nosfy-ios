@@ -1,0 +1,9 @@
+flowchart LR
+  A["❌ aucune série<br/>enregistrée"] --> B["setCount = 0"]
+  B --> C["gain = 0 × 20 = 0"]
+  C --> D["🔇 pas de notif"]
+  C --> E["🔇 pas de trophée"]
+  C --> F["🔇 pas de sachet"]
+  C --> G["🔇 cloturer_seance<br/>jamais appelée"]
+  C --> H["💰 solde = 0<br/>à vie"]
+  class A,B,C,D,E,F,G,H bad

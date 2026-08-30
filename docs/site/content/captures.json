@@ -1,0 +1,158 @@
+{
+ "flow": [
+  {
+   "nom": "porte",
+   "legende": "La porte",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "home",
+   "legende": "Home",
+   "fichier": "captures/flow/home.jpg",
+   "largeur": 300,
+   "hauteur": 652,
+   "source": "tools/road/shots/j4-home-serpentin.png",
+   "octets": 39107
+  },
+  {
+   "nom": "chemin",
+   "legende": "Le chemin",
+   "fichier": "captures/flow/chemin.jpg",
+   "largeur": 300,
+   "hauteur": 652,
+   "source": "tools/road/shots/road-2-etats-etape5.png",
+   "octets": 26960
+  },
+  {
+   "nom": "depart",
+   "legende": "Départ",
+   "fichier": "captures/flow/depart.jpg",
+   "largeur": 300,
+   "hauteur": 652,
+   "source": "tools/road/shots/road-1-branchee.png",
+   "octets": 28928
+  },
+  {
+   "nom": "player",
+   "legende": "Player",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "exo",
+   "legende": "Page exo",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "stop",
+   "legende": "Stop",
+   "fichier": "captures/flow/stop.jpg",
+   "largeur": 300,
+   "hauteur": 652,
+   "source": "tools/stop/captures/stop-134059.png",
+   "octets": 16977
+  },
+  {
+   "nom": "bravo",
+   "legende": "Bravo",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "story",
+   "legende": "Story",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "coffre",
+   "legende": "Le coffre",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "booster",
+   "legende": "Booster",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "calendrier",
+   "legende": "Calendrier",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  {
+   "nom": "profil",
+   "legende": "Profil",
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  }
+ ],
+ "hero": {
+  "flow": {
+   "fichier": "captures/hero/flow.jpg",
+   "largeur": 480,
+   "hauteur": 1043,
+   "source": "tools/road/shots/j4-home-serpentin.png",
+   "octets": 69237
+  },
+  "regles": {
+   "fichier": "captures/hero/regles.jpg",
+   "largeur": 480,
+   "hauteur": 1043,
+   "source": "tools/coffre-v2/ARCHIVE/coffre-v1.jpg",
+   "octets": 44216
+  },
+  "forge": {
+   "fichier": "captures/hero/forge.png",
+   "largeur": 480,
+   "hauteur": 641,
+   "source": "Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png",
+   "octets": 440076
+  },
+  "histoire": {
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  "porte": {
+   "fichier": "captures/hero/porte.jpg",
+   "largeur": 480,
+   "hauteur": 1044,
+   "source": "Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg",
+   "octets": 61810
+  }
+ }
+}

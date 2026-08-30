@@ -1,0 +1,19 @@
+flowchart LR
+  subgraph P["📱 dans le téléphone"]
+    A["🏋️ tes séances<br/>SwiftData"]
+    B["📬 la file d'attente<br/>des gains"]
+    C["🎫 les nœuds du chemin<br/>déjà grattés"]
+  end
+  subgraph S["☁️ dans Supabase"]
+    D["🏋️ tes séances<br/>copie de secours"]
+    E["📒 le carnet<br/>coin_ledger"]
+    F["🎁 tes sachets<br/>user_boosters"]
+    G["🃏 ta collection<br/>user_cards"]
+    H["🏷️ les règles<br/>reward_rules"]
+  end
+  A -->|sync| D
+  B -->|au réseau| E
+  B -->|au réseau| F
+  class A,B,C loc
+  class D,E,F,H ok
+  class G srv

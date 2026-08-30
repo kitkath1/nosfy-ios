@@ -1,0 +1,35 @@
+{
+  "name": "woop-chambre-des-machines",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Le site de documentation de Woop — source Next.js, livrable = un seul index.html",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "next dev -p 3111",
+    "build": "next build",
+    "schemas": "node scripts/schemas.mjs",
+    "captures": "python3 scripts/captures.py",
+    "artefact": "next build && node scripts/inliner.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "verif": "../../tools/docsite/verifier.sh"
+  },
+  "dependencies": {
+    "@mdx-js/loader": "^3.1.0",
+    "@mdx-js/react": "^3.1.0",
+    "@next/mdx": "16.3.3",
+    "next": "16.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "mermaid": "^11.17.2",
+    "puppeteer-core": "^25.9.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  }
+}

@@ -261,10 +261,13 @@ séance (versement quotidien, boosters du chemin, sachet de fin de séance).
 
 ## 8. La doc se met à jour AVEC le back-end, jamais après
 
-**`docs/site/index.html` est le site de documentation du projet** — il dit,
-pour chaque brique, si elle est branchée, locale, serveur-seule, absente ou
-mensongère. Il est écrit à la main, donc **rien ne le désynchronise en silence
-— sauf nous.**
+**`docs/site/` est le site de documentation du projet** — il dit, pour chaque
+brique, si elle est branchée, locale, serveur-seule, absente ou mensongère. Sa
+**source** est typée : `docs/site/content/serveur.ts` (la carte du serveur) et
+`content/briques.ts` (les pages) — une pastille = un enregistrement `{ etat,
+preuve }`, et **une brique sans preuve ne compile pas**. Son **livrable**
+`docs/site/index.html` est généré par `npm run artefact`. Les états sont écrits à
+la main, donc **rien ne les désynchronise en silence — sauf nous.**
 
 ⚠️⚠️ **UNE MODIFICATION BACKEND QUI NE TOUCHE PAS LE SITE EST UNE MODIFICATION
 INACHEVÉE**, et le site part dans **le commit du changement**, pas dans un
@@ -287,8 +290,10 @@ pas été mesuré, la pastille ne bouge pas — et on écrit que ça n'a pas ét
 mesuré. C'est la même loi que partout ici : *un état se vérifie, il ne se
 déduit pas.*
 
-Republier au même lien après modification :
-<https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026>
+Le geste : éditer l'enregistrement dans `content/*.ts` → `cd docs/site && npm run
+verif && npm run artefact` → republier `docs/site/index.html` au même lien
+<https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026> → **la source
+ET le livrable** dans le commit du changement, par chemins explicites.
 Mode d'emploi complet : `docs/site/README.md`.
 
 ---
@@ -308,5 +313,6 @@ Mode d'emploi complet : `docs/site/README.md`.
 - [ ] Corps d'erreur **lus**, pas devinés.
 - [ ] Bout en bout sur le compte de test, **rejeu compris**.
 - [ ] Ce qui n'a pas pu être mesuré est **dit**, pas supposé.
-- [ ] **`docs/site/index.html` est à jour et part dans CE commit** (§8), et le
+- [ ] **`docs/site/content/*.ts` est à jour, `npm run verif` passe, et la source
+      ET le livrable `docs/site/index.html` partent dans CE commit** (§8), et le
       site est republié au même lien.

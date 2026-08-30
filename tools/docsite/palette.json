@@ -1,0 +1,310 @@
+{
+ "home": {
+  "teintes": [
+   {
+    "hex": "#8F3F02",
+    "part": 9.21,
+    "h": 26,
+    "s": 98,
+    "v": 56,
+    "hero": "#9E4503"
+   },
+   {
+    "hex": "#661700",
+    "part": 4.24,
+    "h": 14,
+    "s": 100,
+    "v": 40,
+    "hero": "#9E2400"
+   }
+  ],
+  "colore": 18.0,
+  "luminance": 0.119,
+  "noir": 40.2,
+  "verdict": "teinte",
+  "fichier": "tools/road/shots/j4-home-serpentin.png"
+ },
+ "chemin (verre)": {
+  "teintes": [],
+  "colore": 0.0,
+  "luminance": 0.069,
+  "noir": 81.4,
+  "verdict": "noir",
+  "fichier": "tools/road/shots/road-2-etats-etape5.png"
+ },
+ "chemin (bleu)": {
+  "teintes": [
+   {
+    "hex": "#204371",
+    "part": 19.26,
+    "h": 214,
+    "s": 72,
+    "v": 44,
+    "hero": "#2D5E9E"
+   },
+   {
+    "hex": "#679CCD",
+    "part": 1.1,
+    "h": 209,
+    "s": 50,
+    "v": 80,
+    "hero": "#4F789E"
+   }
+  ],
+  "colore": 20.9,
+  "luminance": 0.101,
+  "noir": 60.7,
+  "verdict": "teinte",
+  "fichier": "tools/road/shots/road-3-tresor-ecran5.png"
+ },
+ "départ": {
+  "teintes": [
+   {
+    "hex": "#F6904A",
+    "part": 0.02,
+    "h": 24,
+    "s": 70,
+    "v": 96,
+    "hero": "#9E5C30"
+   },
+   {
+    "hex": "#F74A0D",
+    "part": 0.02,
+    "h": 16,
+    "s": 95,
+    "v": 97,
+    "hero": "#9E2F08"
+   }
+  ],
+  "colore": 0.06,
+  "luminance": 0.111,
+  "noir": 61.7,
+  "verdict": "noir",
+  "fichier": "tools/road/shots/road-1-branchee.png"
+ },
+ "stop": {
+  "teintes": [
+   {
+    "hex": "#3A435B",
+    "part": 0.0,
+    "h": 223,
+    "s": 36,
+    "v": 36,
+    "hero": "#65759E"
+   },
+   {
+    "hex": "#454F63",
+    "part": 0.0,
+    "h": 220,
+    "s": 30,
+    "v": 39,
+    "hero": "#6E7E9E"
+   }
+  ],
+  "colore": 0.0,
+  "luminance": 0.039,
+  "noir": 89.5,
+  "verdict": "noir",
+  "fichier": "tools/stop/captures/stop-134059.png"
+ },
+ "coffre v1": {
+  "teintes": [
+   {
+    "hex": "#5F3F18",
+    "part": 2.67,
+    "h": 33,
+    "s": 75,
+    "v": 37,
+    "hero": "#9E6928"
+   },
+   {
+    "hex": "#5E2B06",
+    "part": 2.24,
+    "h": 25,
+    "s": 94,
+    "v": 37,
+    "hero": "#9E4809"
+   }
+  ],
+  "colore": 5.66,
+  "luminance": 0.035,
+  "noir": 85.6,
+  "verdict": "teinte",
+  "fichier": "tools/coffre-v2/ARCHIVE/coffre-v1.jpg"
+ },
+ "home v2": {
+  "teintes": [
+   {
+    "hex": "#813802",
+    "part": 7.4,
+    "h": 26,
+    "s": 99,
+    "v": 51,
+    "hero": "#9E4502"
+   },
+   {
+    "hex": "#610B01",
+    "part": 4.45,
+    "h": 6,
+    "s": 99,
+    "v": 38,
+    "hero": "#9E1202"
+   }
+  ],
+  "colore": 14.65,
+  "luminance": 0.103,
+  "noir": 40.6,
+  "verdict": "teinte",
+  "fichier": "tools/home-v2/shots/verdict-piece-noire-page.jpg"
+ },
+ "notifs": {
+  "teintes": [
+   {
+    "hex": "#81684A",
+    "part": 0.45,
+    "h": 33,
+    "s": 42,
+    "v": 51,
+    "hero": "#9E805B"
+   },
+   {
+    "hex": "#965624",
+    "part": 0.38,
+    "h": 26,
+    "s": 76,
+    "v": 59,
+    "hero": "#9E5A26"
+   }
+  ],
+  "colore": 0.87,
+  "luminance": 0.029,
+  "noir": 90.2,
+  "verdict": "noir",
+  "fichier": "tools/notifs/captures/v7.png"
+ },
+ "booster noir": {
+  "teintes": [
+   {
+    "hex": "#518F94",
+    "part": 0.14,
+    "h": 185,
+    "s": 45,
+    "v": 58,
+    "hero": "#56999E"
+   },
+   {
+    "hex": "#508897",
+    "part": 0.12,
+    "h": 193,
+    "s": 47,
+    "v": 59,
+    "hero": "#548E9E"
+   }
+  ],
+  "colore": 1.0,
+  "luminance": 0.105,
+  "noir": 36.1,
+  "verdict": "teinte",
+  "fichier": "tools/sacre/noir/preview-face.png"
+ },
+ "page exo (v1)": {
+  "teintes": [
+   {
+    "hex": "#66543E",
+    "part": 2.95,
+    "h": 33,
+    "s": 39,
+    "v": 40,
+    "hero": "#9E8260"
+   },
+   {
+    "hex": "#553820",
+    "part": 1.94,
+    "h": 27,
+    "s": 63,
+    "v": 33,
+    "hero": "#9E673B"
+   }
+  ],
+  "colore": 4.9,
+  "luminance": 0.186,
+  "noir": 59.6,
+  "verdict": "teinte",
+  "fichier": "tools/verre/archives/v1-noir-orange/g9-ferme.png"
+ },
+ "logo lune": {
+  "teintes": [
+   {
+    "hex": "#602106",
+    "part": 13.81,
+    "h": 18,
+    "s": 94,
+    "v": 38,
+    "hero": "#9E370A"
+   },
+   {
+    "hex": "#C55818",
+    "part": 5.03,
+    "h": 22,
+    "s": 88,
+    "v": 77,
+    "hero": "#9E4713"
+   }
+  ],
+  "colore": 20.73,
+  "luminance": 0.124,
+  "noir": 26.9,
+  "verdict": "teinte",
+  "fichier": "Woop/Media/carte-logo-ref.png"
+ },
+ "booster orange": {
+  "teintes": [
+   {
+    "hex": "#60210A",
+    "part": 5.81,
+    "h": 16,
+    "s": 90,
+    "v": 38,
+    "hero": "#9E3610"
+   },
+   {
+    "hex": "#924E23",
+    "part": 3.07,
+    "h": 24,
+    "s": 76,
+    "v": 57,
+    "hero": "#9E5526"
+   }
+  ],
+  "colore": 9.83,
+  "luminance": 0.072,
+  "noir": 63.9,
+  "verdict": "teinte",
+  "fichier": "Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png"
+ },
+ "porte (lune)": {
+  "teintes": [
+   {
+    "hex": "#703913",
+    "part": 9.63,
+    "h": 24,
+    "s": 83,
+    "v": 44,
+    "hero": "#9E501B"
+   },
+   {
+    "hex": "#DA9F4F",
+    "part": 1.64,
+    "h": 34,
+    "s": 64,
+    "v": 85,
+    "hero": "#9E7339"
+   }
+  ],
+  "colore": 14.02,
+  "luminance": 0.082,
+  "noir": 68.3,
+  "verdict": "teinte",
+  "fichier": "Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg"
+ }
+}

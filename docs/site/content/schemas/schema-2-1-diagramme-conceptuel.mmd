@@ -1,0 +1,59 @@
+erDiagram
+  auth_users ||--o{ workouts : "possède"
+  auth_users ||--o{ coin_ledger : "possède"
+  auth_users ||--o{ user_boosters : "possède"
+  auth_users ||--o{ user_cards : "possède"
+
+  workouts ||--o{ logged_exercises : "contient"
+  logged_exercises ||--o{ strength_sets : "séries"
+  logged_exercises ||--o{ cardio_phases : "phases"
+
+  workouts ||--o{ coin_ledger : "paie"
+  workouts ||--o| user_boosters : "offre 1 sachet"
+  user_boosters ||--o| coin_ledger : "coûte"
+  cards ||--o{ user_cards : "modèle de"
+  cards ||--o| user_boosters : "scelle"
+
+  workouts {
+    uuid id PK
+    uuid user_id FK
+    timestamptz started_at
+    timestamptz ended_at "vide = en cours"
+    text notes
+    timestamptz created_at
+  }
+  coin_ledger {
+    uuid id PK
+    uuid user_id FK
+    integer delta "jamais zéro"
+    text raison "8 valeurs"
+    text currency "yellow ou silver"
+    uuid workout_id "unicité du gain"
+    uuid booster_id FK
+    integer noeud_id "unicité du chemin"
+    date jour "unicité du jour"
+    timestamptz created_at
+  }
+  user_boosters {
+    uuid id PK
+    uuid user_id FK
+    text origine "5 valeurs"
+    uuid workout_id
+    integer noeud_id
+    text robe "lune ou noire"
+    uuid card_id FK
+    timestamptz obtained_at
+    timestamptz opened_at "vide = non ouvert"
+  }
+  reward_rules {
+    text key PK
+    jsonb value
+  }
+  cards {
+    uuid id PK
+    text famille
+    text rarete "4 valeurs"
+    text scene
+    text art_path
+    text depth_path
+  }

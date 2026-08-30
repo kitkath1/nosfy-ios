@@ -1,0 +1,14 @@
+flowchart TD
+  A["⏱️ je tape OUVRIR"] --> B["🔖 on pose un marqueur<br/>cérémonie en cours"]
+  B --> C["🎡 la cérémonie joue"]
+  C --> D{"elle va<br/>au bout ?"}
+  D -- oui --> E["🧹 marqueur effacé<br/>sachet consommé"]
+  D -- "💥 non" --> F["🔖 le marqueur survit<br/>au kill"]
+  F --> G["📱 au lancement suivant"]
+  G --> H["🙋 pop-up<br/>ta dernière ouverture<br/>a été interrompue"]
+  H --> I["🎡 Relancer le manège"]
+  I --> J["✨ la MÊME carte<br/>est rejouée"]
+  J --> E
+  class A,C,E ok
+  class F,G bad
+  class B,H,I,J neuf

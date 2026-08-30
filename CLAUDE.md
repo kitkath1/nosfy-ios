@@ -2,10 +2,12 @@
 
 ## La documentation
 
-**`docs/site/` est LE site de documentation du projet.** Un seul fichier
-autonome, ouvert par `./docs/site/voir.sh`. Il répond à une seule question, sur
-chaque brique : *est-ce que ça marche, est-ce que ça ment, ou est-ce que ça
-n'existe pas* — et si c'est dans le téléphone ou dans Supabase.
+**`docs/site/` est LE site de documentation du projet.** Sa **source** est une
+app Next.js (`docs/site/content/` = les états, typés ; `content/pages/*.mdx` = la
+prose) ; son **livrable** `docs/site/index.html` est un fichier autonome, généré
+par `npm run artefact`, ouvert par `./docs/site/voir.sh`. Il répond à une seule
+question, sur chaque brique : *est-ce que ça marche, est-ce que ça ment, ou
+est-ce que ça n'existe pas* — et si c'est dans le téléphone ou dans Supabase.
 
 - **On le lit AVANT de demander l'état de quelque chose.** Il évite de
   re-auditer ce qui l'a déjà été.
@@ -28,15 +30,22 @@ une mesure.
 
 **Le geste, à chaque fois :**
 
-1. `docs/site/index.html` — changer la ou les **pastilles** touchées
-   (🟢 branché · 🟡 local · 🔵 serveur seul · ⚪ absent · 🔴 ment), dans
-   l'onglet du domaine **et** dans la carte du serveur.
-2. Ajouter la ligne si c'est une table, une fonction, un index ou une règle
-   nouvelle — la carte du serveur doit rester **exhaustive**.
-3. Republier au **même lien** (l'URL ne bouge jamais) :
+1. `docs/site/content/serveur.ts` (la carte du serveur) ou `content/briques.ts`
+   (les pages) — changer l'`etat` et la `preuve` de l'enregistrement touché
+   (🟢 branché · 🟡 local · 🔵 serveur seul · ⚪ absent · 🔴 ment). **Une** fois :
+   il est rendu partout (la page, l'accueil, les cards, le rail).
+2. Ajouter l'enregistrement si c'est une table, une fonction, un index ou une
+   règle nouvelle — la carte du serveur doit rester **exhaustive** ; une preuve
+   est obligatoire (le type refuse sans), « preuve à citer » est une dette visible.
+3. `cd docs/site && npm run verif && npm run artefact` — le vérificateur refuse
+   un livrable en retard, un compte qui diverge, une robe hors la loi ; l'artefact
+   régénère `docs/site/index.html`.
+4. Republier au **même lien** (l'URL ne bouge jamais) en repassant
+   `docs/site/index.html` à l'outil Artifact :
    <https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026>
-4. Le fichier part dans **le commit du changement**, pas dans un commit de
-   documentation à part. Un site mis à jour plus tard n'est jamais mis à jour.
+5. **La source ET le livrable** partent dans **le commit du changement**, ajoutés
+   par chemins explicites — jamais `git add -A`. Un site mis à jour plus tard
+   n'est jamais mis à jour.
 
 ⚠️ **Un état se VÉRIFIE avant d'être écrit.** On ne repeint pas une pastille en
 vert parce qu'on vient d'écrire le code : on la repeint quand l'appel a été

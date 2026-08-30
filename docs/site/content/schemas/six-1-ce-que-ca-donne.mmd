@@ -1,0 +1,10 @@
+flowchart LR
+  A["🏋️ tu finis<br/>une série"] --> B["📱 le téléphone<br/>l'écrit tout de suite"]
+  B --> C{"📶 réseau ?"}
+  C -- oui --> D["☁️ le carnet<br/>reçoit +20"]
+  C -- non --> E["📬 ça attend<br/>dans la file"]
+  E -.->|au retour| D
+  D --> F["🧮 solde = addition<br/>du carnet"]
+  F --> G["🏆 le coffre<br/>affiche le solde"]
+  class A,B,E loc
+  class D,F,G ok

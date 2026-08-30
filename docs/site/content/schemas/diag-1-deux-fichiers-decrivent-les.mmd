@@ -1,0 +1,17 @@
+flowchart TD
+  A["😕 un nombre est faux<br/>à l'écran"] --> B{"suis-je<br/>connectée ?"}
+  B -- non --> C["🟡 c'est la maquette<br/>tout est local"]
+  C --> C2["→ onglet 5<br/>rien n'écrit la session"]
+  B -- oui --> D{"le serveur<br/>dit quoi ?"}
+  D --> E["☁️ appeler etat_coffre()<br/>et comparer"]
+  E --> F{"le serveur<br/>a le bon nombre ?"}
+  F -- oui --> G["🔴 l'ÉCRAN ment<br/>il ne lit pas le serveur"]
+  F -- non --> H{"la ligne est-elle<br/>dans le carnet ?"}
+  H -- oui --> I["🔵 le calcul du solde<br/>ou la raison est fausse"]
+  H -- non --> J{"la file d'attente<br/>est-elle pleine ?"}
+  J -- oui --> K["📬 l'envoi n'est pas parti<br/>réseau ou session"]
+  J -- non --> L["⚪ RIEN n'a jamais été écrit<br/>le site d'appel manque"]
+  class C,C2,K loc
+  class G bad
+  class I,E srv
+  class L abs

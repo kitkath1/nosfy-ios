@@ -1,0 +1,51 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="forge" etats={['men']} />
+
+</div>
+<div className="reveal">
+
+## Le cycle de vie d'un sachet
+
+<Schema id="forge-1-le-cycle-de-vie" legende="Les trois premières flèches et l'ouverture sont branchées. Les deux dernières ne le sont pas : le manège appelle la forge sans identifiant de sachet." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="forge" etats={['loc', 'srv', 'abs']} mesures />
+
+</div>
+<div className="reveal">
+
+## Ce qui tient
+
+<Liste page="forge" etats={['ok']} />
+
+</div>
+
+<Decision titre="L'ordre le moins cher">
+  <p>Passer le <code>booster_id</code> d'abord. Une ligne, et elle allume trois choses d'un coup — le scellement, l'idempotence, et la garantie légendaire qui dort déjà côté serveur.</p>
+</Decision>
+
+<div className="reveal">
+
+## Si le manège s'interrompt
+
+<Schema id="manege-1-les-instants" legende="La carte est tirée et inscrite dans user_cards dès le début ; le sachet n'est consommé qu'à l'envol. Quitter au milieu ne perd rien — ça DUPLIQUE : la carte est à toi, et le sachet aussi." />
+
+</div>
+
+<Decision titre="À trancher — la reprise">
+  <p>Réserver le sachet <b>à l'entrée</b> plutôt qu'à la sortie (encaisser puis livrer). Au retour : relancer la cérémonie (tu vois enfin ta carte) ou dire simplement « tu as gagné cette carte » ? Le premier est plus beau, le second plus honnête quand ça arrive trois fois de suite.</p>
+</Decision>
+
+<Savoir>
+  <p>La forge est déployée et fait déjà le travail difficile : la rareté est décidée au serveur (poids 60 / 27 / 10 / 3), une carte vient du pool commun (~1 s) ou est forgée à l'IA (60-90 s). Si on lui passe l'identifiant du sachet, elle scelle la carte dessus et impose « legendary » quand le sachet est noir — ce code existe, et n'est jamais atteint.</p>
+  <p>La consommation du sachet noir ne peut jamais aboutir : la fonction cherche un sachet légendaire non ouvert, or la seule ligne légendaire naît déjà marquée ouverte. Un sachet ne devrait pas naître consommé.</p>
+  <p>Le set des 25 familles vit en deux listes (Swift et l'edge function) plus les totaux en dur du profil : trois éditions pour ajouter une famille. Les prompts vivent dans <code>tools/carte-lune/PROMPTS.md</code>.</p>
+  <Schema id="manege-2-ce-que-je-propose" titre="Ce que je propose — un marqueur qui survit au kill, et la MÊME carte rejouée" plie />
+</Savoir>
