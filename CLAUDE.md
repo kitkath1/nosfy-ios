@@ -40,7 +40,9 @@ une mesure.
 2. Ajouter l'enregistrement si c'est une table, une fonction, un index ou une
    règle nouvelle — la carte du serveur doit rester **exhaustive** ; une preuve
    est obligatoire (le type refuse sans), « preuve à citer » est une dette visible.
-3. `cd docs/site && npm run verif && npm run artefact` — le vérificateur refuse
+3. `cd docs/site && npm run artefact && npm run verif` — **l'artefact D'ABORD**
+   (mesuré le 30-08 : dans l'autre ordre, l'étape 1 du vérificateur refuse
+   « le livrable ment par retard » avant même de vérifier) ; le vérificateur refuse
    un livrable en retard, un compte qui diverge, une robe hors la loi ; l'artefact
    régénère `docs/site/index.html`.
 4. Republier au **même lien** (l'URL ne bouge jamais) en repassant
