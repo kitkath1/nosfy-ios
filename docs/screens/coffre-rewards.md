@@ -57,12 +57,25 @@ objet posé dessus à la fois**.
 lit `EconomieWoop` et rien d'autre (`CoffreV2.swift:2382-2435`, propriété
 calculée `variantes`, « jamais un appel réseau ici ») :
 
-| # | objet | ce que le pied dit **aujourd'hui** (`CoffreV2.swift`) |
-|---|---|---|
-| 1 | pièce d'or | le solde `or` · « *{pieces_par_serie}* coins for every set you finish. » (:2392 — le taux vient du serveur, c'était la neuvième copie du 20) · pas de bouton |
-| 2 | booster orange | les sachets `boosters` · **jauge** `reste` sur `prix` (:2404) · « Won after every session, or bought for *{prix}* coins. » (:2406) · bouton **OUVRIR** si `boosters > 0`, sinon « *N* COINS TO GO » en verre mat, inactif (:2407-2409) |
-| 3 | pièce d'argent | le solde `argent` · « A rare drop from the path. Never earned, never bought. » (:2418) · pas de bouton |
-| 4 | booster noir | `boostersNoirs` (= argent **+** le noir payé, ouvert, pas scellé — `EconomieWoop.swift:94`) · « One silver coin opens it. A legendary card, guaranteed. » (:2430) · **OUVRIR** ou « LOCKED » mat, inactif (:2431-2432) |
+**Depuis le 30-08 au soir (la grammaire d'Opal, `tools/coffre-v2/PLAN-PIED-COFFRE.md`
+§29)** : chaque page porte **en haut** (à la place de l'ancienne pill de prix)
+le **nom** de l'objet et une phrase d'une ligne (`EnTeteObjet`, `:1379`) ; **en
+bas** la **pill** glyphe + nombre (`PillCompte`, `:1196`), une petite ligne sur
+les pages de pièces (`sousPill`), la **barre fine** de 3 pt avec sa légende
+dessous (`BarreFine`, `:1281`), et le bouton, ancré en bas (`variantes`,
+`:2525-2574`) :
+
+| # | objet | en haut | en bas |
+|---|---|---|---|
+| 1 | pièce d'or | **Gold Coin** · « Opens a Lune Booster. » | 🪙 `or` · « *{pieces_par_serie}* coins for every set you finish. » · **barre = l'horloge du +10** (« +10 coins in 6 hours » / « +10 coins to claim ») — ⚠️ sur **maquette seule** tant que `retour_prochain` n'est pas décodé (§6.5 bis) · bouton **Discover history** → l'histoire du sachet Lune |
+| 2 | booster orange | **Lune Booster** · « A pack of cards from the Lune set. » | sachet détouré (`booster-hero`) · `boosters` · **barre** `reste` sur `prix`, légende « 🪙 40 / 100 » · **Ouvrir** si `boosters > 0`, sinon « Locked » en verre mat, inactif — « N COINS TO GO » est mort (la barre le dit) |
+| 3 | pièce d'argent | **Silver Coin** · « Opens a Legendary Booster. » | 🪙 `argent` · « A rare drop from the path. » · **pas de barre** (la seule jauge possible exposerait la pitié) · **Discover history** → l'histoire du légendaire |
+| 4 | booster noir | **Legendary Booster** · « One legendary card, guaranteed. » | `boostersNoirs` (= argent **+** le noir payé, ouvert, pas scellé — `EconomieWoop.swift:94`) · **pas de barre** (« courant / 1 » écrirait « 2 / 1 ») · **Ouvrir** ou « Locked » mat, inactif |
+
+Les captures de référence : `tools/coffre-v2/refs/s29-j0-page0..3.png`
+(sim kat-coffre, 30-08 19:16). La casse des boutons est celle du composant
+(`String.enPhrase`, `BoutonPrimaire.swift:181`) ; le mat a le lettrage du
+primaire (18 semibold, −0,2).
 
 **Périmé depuis 1b73879 (28-08) puis le 29-08 :** « 100 coins open one. » —
 la phrase de la page 2 est devenue « …or bought for N coins » quand le prix
@@ -72,9 +85,9 @@ a été lu du serveur. **DÉCIDÉ 30-08 — elle disparaît à son tour** (plan 
 - « or bought for *N* coins » n'a plus de sens : **rien ne s'achète**. À 100
   pièces **un sachet apparaît tout seul** (le nombre monte : 1, 2…) et **les
   pièces retombent** — la jauge repart de `reste`, qui ne peut plus dépasser 99.
-- le pied n'a plus que **la jauge et OUVRIR** ; « *N* COINS TO GO » comme
-  bouton est mort (la jauge le dit déjà). Ce que le pied dit à 0 sachet reste
-  à dessiner (§5 « rien à ouvrir »).
+- le pied n'a plus que **la jauge et Ouvrir** ; « *N* COINS TO GO » comme
+  bouton est mort (la jauge le dit déjà). **Fait le 30-08 au soir** : à
+  0 sachet le pied dit « Locked » en verre mat (§29.9 du plan du pied).
 - le sachet **forfaitaire** de clôture continue d'arriver **en plus** du
   converti (§6.7, option 1 assumée).
 

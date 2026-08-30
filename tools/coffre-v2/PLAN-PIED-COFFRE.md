@@ -3124,3 +3124,541 @@ une lueur. Reculée à 1,02 / 1,02 et baissée à 0,5 :
 | après | **14,5** | **11 806** |
 
 Deux fois et demie moins de lumière sur la zone de lecture.
+
+---
+
+## 29. PLAN : LA GRAMMAIRE D'OPAL — le nom, la pill en bas, la barre fine (30-08, relu par quatre juges)
+
+**Rien n'est codé.** Verdict de Kathryn, avec sa capture d'Opal (« Gem
+Ambitieuse ») en référence :
+
+> *« enlève le titre de l'asset (exemple Booster), en place police 14 dégradé
+> et en dessous une petite phrase en une ligne sans tiret : qu'est-ce que
+> c'est. Exemple pour la pièce Or : "Or Piece" et description "sert à ouvrir un
+> Booster Lune" (booster lune = le booster orange). Et à la place de "60 coins"
+> en bas tu mets la pill avec la mini pièce et le nombre, et en dessous une
+> petite progress bar très fine comme Opal (+10 prévu dans 24 h, avec la
+> récompense journalière). Pareil pour le booster Lune : enlève la pastille du
+> haut, mets le titre et le sous-titre. Et tu mets la petite pastille avec le
+> nombre et le mini booster, et en dessous une mini progress bar avec le
+> nombre de pièces manquant 60/100, et tu gardes le bouton primaire Open ! Je
+> veux le nom. »* — puis : *« et bouton Ouvrir pas en majuscules, juste le O »*.
+
+> ⚠️ **Ce §29 a été démoli par quatre juges adverses** (fidélité / technique /
+> backend / dessin) puis chaque grief re-vérifié par un sceptique : **10 griefs
+> tenus, 0 réfuté**, 12 non vérifiés relus à la main. Les trois qui changent
+> tout : (1) **une autre session a tranché le versement quotidien AVANT ce
+> plan** — Claim au tap, minuit Paris, `retour_disponible` rendu par le
+> serveur — et sa migration est déjà dans l'arbre ; (2) **« Ouvrir, juste le
+> O » est déjà dans HEAD** (`9a7c429`, 18:25, cinq minutes après la première
+> version de ce §29) ; (3) ma lecture « nom en haut » et mes capitales espacées
+> n'étaient pas ses mots. Tout ce qui suit est la version corrigée.
+
+### 29.1 Ce qu'elle demande, page par page — et DEUX lectures, pas une
+
+| | page OR (1) | page LUNE (2) |
+|---|---|---|
+| **le nom** — 14, dégradé · **une phrase** d'une ligne, sans tiret | « Pièce Or » · *Sert à ouvrir un Booster Lune.* (ses mots) | « Booster Lune » · une phrase à valider (§29.5) |
+| **l'objet** | inchangé | inchangé |
+| **la pill** | **mini pièce + le solde** | **mini sachet + le nombre de sachets** |
+| **la barre très fine** dessous | le versement quotidien, *« +10 dans N h »* | la jauge du prochain sachet, *« 40 / 100 »* |
+| **le bouton** | aucun (comme aujourd'hui) | **« Ouvrir »** — gardé ; la casse est déjà faite (§29.9) |
+
+**Où vont le nom et la phrase — deux lectures, et sa phrase n'en exclut
+aucune :**
+
+- **(A) EN HAUT, à la place de la pill de prix** (0,222 H, `PillPrix`,
+  `CoffreV2.swift:3167-3175`) — c'est la grille d'Opal (titre à 0,139 H,
+  §29.3), c'est « enlève la pastille du haut, mets le titre et le
+  sous-titre », et c'est « je veux le nom » en position de nom.
+  **Recommandé.**
+- **(B) DANS LE PIED, à la place de « BOOSTER » / « COINS »** — la lecture
+  littérale de *« enlève le titre de l'asset… en place police 14 »* : le
+  titre de l'asset, c'est l'étiquette du pied (`Text(v.mot.uppercased())`,
+  `:1380`), « en place » = à sa place ; la pill et la barre dessous, rien à
+  0,222 H. ⚠️ Le pied ne tient plus dans 320 × 196 : nom 17 + 5 + phrase 18
+  + 12 + pill 44 + 12 + barre 3 + 16 + légende 18 + bouton 58 = **203 > 196**
+  → `podFin + 103` et `PiedCoffre.taille` à recoter.
+
+Sa phrase sur la page Lune ne dit ni « à la place », ni « en haut ». Le §29
+est écrit pour **A** ; **② et §29.4 sont conditionnels à sa réponse**
+(§29.14, question 0).
+
+Le « 60 coins » et le « 60/100 » de son message sont **les nombres de SON
+téléphone** (solde 60 → jauge 60 / 100), pas une consigne de calcul : la
+jauge garde la forme tranchée au §27 — `courant / prix` — et non « ce qui
+manque » (§26.2 : « 60 to go » a déjà été jugé illisible). ⚠️ À confirmer
+d'un mot si elle voulait vraiment le manque (§29.14).
+
+### 29.2 L'état d'aujourd'hui — mesuré sur le sim kat-coffre, ET CE QUI A BOUGÉ DEPUIS
+
+Captures `refs/s29-or-avant.png` / `refs/s29-lune-avant.png` (402 × 874 pt,
+build **18:10**) ; Opal : `refs/s29-opal-ref.png`.
+
+| élément | page OR | page LUNE | où dans le code (HEAD `9a7c429`) |
+|---|---|---|---|
+| pill du haut, centre 0,222 H = **194 pt** (172 → 216) | `🪙 1240` (pas de « / ») | `🪙 40 / 100`, liquide à 40 % | `PillPrix`, `:1208` ; posée `:3167-3175` |
+| barre de crans | **604 pt** | idem | `barreDeCrans`, `:3181` |
+| pied, cadre 320 × 196 centré à `podFin + 103` = **728 pt** (630 → 826) | « **1 240** COINS » (40 + 15 caps, tracking 1,5) · *20 coins for every set you finish.* | « **1** BOOSTER » · *Won after every session, or bought for 100 coins.* · bouton | `PiedCoffre`, `:1309` ; `haut` `:1368-1397` ; `variantes`, `:2382-2435` |
+| bouton | — | `DiamondPrimaryButton(title: "OUVRIR")`, 58, ancré en bas | `:1426`, texte `:2408` |
+
+**Trois faits, dont deux ont changé pendant qu'on capturait :**
+
+1. ⚠️ **« Ouvrir, juste le O » EST DÉJÀ FAIT — dans HEAD, pas dans la
+   capture.** Commit `9a7c429` (30-08 **18:25**, l'autre session) : *« LA
+   CASSE DES BOUTONS : UNE PHRASE — la première lettre en majuscule, le
+   reste en minuscules, le « Locked » compris »*. `String.enPhrase`
+   (`BoutonPrimaire.swift:181-184`) est appliqué par `BoutonPrimaire`
+   (`:156`, à 18 semibold, tracking **−0,2** `:157-158`) — dont
+   `DiamondPrimaryButton` n'est qu'une coquille
+   (`ConnexionButtonLab.swift:159-162`) — et par le mat du verrouillé du
+   coffre (`CoffreV2.swift:1439`). « OUVRIR » se rend donc déjà « Ouvrir »,
+   « LOCKED » déjà « Locked ». **La capture `s29-lune-avant` (18:20, build
+   18:10) précède ce commit** : elle est à refaire sur HEAD avant tout
+   verdict, et « Ouvrir » sort du périmètre de ce plan.
+2. **Le remplissage de la pill (`remplie`, 0 → 1 à l'arrivée) est la seule
+   chose qui bouge sur la page posée** (`:1645-1648`) — il migre dans la
+   barre. Sa courbe réelle : `.spring(response: 0.80, dampingFraction:
+   0.75).delay(0.45)` (`:2690-2691`), pas « 0,6 s ».
+3. ⚠️⚠️ **LE « +10 » A ÉTÉ TRANCHÉ AUTREMENT, AVANT CE PLAN, ET LA MIGRATION
+   EST DÉJÀ ÉCRITE.** `tools/annonces/PLAN-COFFRE-ANNONCES.md` (commit
+   `168f548`, 17:58) §0 :23 — *ses mots, rien de déduit* : **« bouton Claim
+   dans la pop-up, chaque jour à minuit chez elle (pas UTC) ; les +10
+   partent au tap »** ; §5.3 :276-281 : `reglerRetourQuotidien()` quitte le
+   `scenePhase`, la home lit `etat_coffre().retour_disponible`, Claim poste
+   `.retourQuotidien`, **le marqueur UTC local disparaît**. Loi écrite depuis
+   dans `.claude/skills/woop-backend/SKILL.md:190-199` : *le jour est une
+   clé serveur, `fuseau_jour` — jamais le fuseau du client*. Et
+   **`supabase/migrations/20260830210000_conversion_jour_flamme.sql`** (dans
+   l'arbre, `??`, **ni commitée ni déployée** — le sceptique a sondé le
+   compte de test : `etat_coffre` rend encore 7 clés) fait déjà sortir
+   `jour`, **`retour_disponible`**, **`retour_prochain`** (le prochain minuit
+   Paris, calculé AU SERVEUR) et `flamme` (`:423-431`), sur `jour_courant()`
+   = `(now() at time zone fuseau_jour())::date` (`:40-56`). **Seul le
+   MONTANT `pieces_retour_quotidien` manque** à cette fonction (grep : 0).
+   Le 10 en dur de `ExerciseDetailView.swift:2270` est condamné par le §5.3
+   de ce même plan.
+
+   ⚠️ **Et cette migration CONVERTIT** : à 100 pièces un sachet naît tout
+   seul (`convertir_pieces`, `:85-121`, déclencheur sur tout crédit jaune),
+   **les pièces retombent** ; `claim_booster` est fermée (`:439-441`) et
+   `acheterBooster()` part (§5.4). Conséquence pour NOS deux pages : **une
+   fois M1 posée, `solde_or < 100` toujours, donc `reste == solde`** — la
+   pill de la page OR (« 40 ») et la barre de la page Lune (« 40 / 100 »)
+   disent le MÊME nombre. Ce n'est pas un défaut, c'est sa demande (« la
+   jauge : les pièces retombent ») ; mais il faut le savoir en dessinant.
+
+### 29.3 Opal, mesurée (sa capture, 1179 × 2556, écran 393 × 852 pt) — re-mesurée par le juge dessin
+
+| élément | mesure |
+|---|---|
+| titre | haut à **0,139 H**, hauteur de capitale 16 pt → corps ≈ **23**, semibold, blanc plein, **casse de phrase** |
+| sous-titre | **2 lignes**, ≈ 17, gris sur les fûts **(176,183,186) ≈ blanc 0,69**, **14 pt** sous le titre |
+| pill « Obtenue par 93 % » | centre **0,266 H**, **≈ 30 pt** de haut (la nôtre fait 44), texte teinté (184,247,230) |
+| objet | **0,315 → 0,61 H** ; **102 pt d'air** entre l'objet et la barre |
+| **la barre** | **3,0 pt** · **249 pt** de long (0,633 W, marges 72) · centre **0,732 H** · rail **(23,27,26)** ≈ blanc 0,10 sur du noir à ZÉRO · remplie à **60 %** |
+| son remplissage | dégradé **(180,223,247) → (183,252,225)** : bleu pâle → menthe, **jamais sous L 220** — clair de bout en bout, aucun pouce, aucune tête |
+| légende « 6/10 heures » | **16 pt** sous la barre, corps ≈ **17** (chiffre de 11,7 pt de haut), gris (147,157,155) ≈ 0,60 |
+| bouton « Verrouillée » | haut à **0,80 H**, ≈ 46-52 de haut (seuil), fond (17,20,19), label (84,93,91) ≈ 0,35, marges 32 |
+
+**Ce qui fait que SA barre marche, alors que les nôtres ont été jetées quatre
+fois (§26.4, §27.1)** : elle est **fine** (3 pt : un trait, pas un objet), son
+remplissage est **clair partout** (le dégradé va d'un clair à un autre clair —
+l'œil ne trouve pas d'arrêt sombre à lire, la faute du §26.4 ②), **sans
+pouce**, sur **un sol noir absolu**, avec **une légende DESSOUS, à 17** (pas à
+côté : posée sous, elle se lit comme sa valeur — §25). Elle n'est pas
+« premium », elle est **discrète** ; le premium est ailleurs. C'est ça qu'on
+copie.
+
+> ⚠️ Le §27 avait écrit *« une barre est plate par nature, on la remplace »*.
+> C'est Kathryn qui la rétablit, avec un modèle sous les yeux — et le modèle
+> tient parce qu'il ne demande PAS à la barre d'être belle. On ne rejoue pas le
+> §26.4 : pas de dégradé sombre, pas de tête, pas de 5 pt.
+
+### 29.4 L'anatomie proposée (lecture A) — cotes sur 402 × 874
+
+```
+   63 ┌ ‹  Rewards                                 ≡ ┐   (inchangé)
+      │                                              │
+  174 │               Pièce Or                       │  ← le nom : 14 semibold, casse de phrase, dégradé
+  196 │        Sert à ouvrir un Booster Lune.        │  ← 15 medium, blanc 0,62, UNE ligne
+      │                                              │
+      │                 ( l'objet )                  │  haut mesuré : sachet 280 pt · pièce 323 pt
+      │                                              │
+  604 │                ● ○ ○ ○                       │  (crans, inchangés)
+  630 │           ╭──────────────────╮               │
+      │           │ 🪙  1 240        │               │  ← la pill descend (verre .clear, plus de liquide)
+  674 │           ╰──────────────────╯               │
+  686 │      ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬░░░░░░░░░░░░░░         │  ← 3 pt, 240 de long, rail blanc 0,10
+  705 │              +10 dans 6 h                    │  ← 15 medium, blanc 0,60, 16 pt sous la barre
+      │                                              │
+  768 │      ┌──────────────────────────────┐        │
+      │      │            Ouvrir             │        │  ← page LUNE seulement ; 58, ancré en bas
+  826 │      └──────────────────────────────┘        │
+```
+
+- **Le bloc du haut** remplace `PillPrix` à la MÊME cote (centre 0,222 H) :
+  nom (≈ 17 de ligne) + 5 + phrase (≈ 18) = **40 pt** (174 → 214), la hauteur
+  de la pill qu'il remplace. **Mesuré** (juge dessin, PIL sur les captures) :
+  le haut du sachet est à **280 pt**, celui de la pièce à **323 pt** — même
+  un titre à la Opal (23 + 5 + 15 = 51 pt, 168 → 220) laisserait **60 pt
+  d'air**. Le choix 14 / 23 est un choix de ROBE, pas de place.
+- **Le pied garde son cadre 320 × 196 et son ancre** (`podFin + 103`) — la
+  grille unique du §25.6 tient : pill 44 → 12 → barre 3 → 16 → légende ≈ 18
+  → `Spacer` → bouton 58 = **151 ≤ 196**. Sur les pages sans bouton, le
+  `Spacer` absorbe, comme aujourd'hui.
+- **La légende à 15 medium** (la taille de la phrase du pied, `:1405`), pas
+  13 : le registre des légendes iOS (11-13) a déjà été jugé « trop petit,
+  pas Apple » sur ce pied même (`:1370-1375`), et Opal est à 17.
+- **La barre fait 240 pt** (0,60 W) — Opal 0,63 ; 40 pt de marge dans le cadre
+  de 320. 3 pt, capsule, deux fois plus longue que la pill : c'est l'axe du
+  composant, la pill est posée dessus.
+
+### 29.5 Les textes — quatre pages, une seule grammaire
+
+| page | le nom (14, dégradé, casse de phrase) | la phrase (15, une ligne, sans tiret) | la pill | la barre |
+|---|---|---|---|---|
+| 1 · pièce d'or | **Pièce Or** | *Sert à ouvrir un Booster Lune.* — **ses mots** | 🪙 or **1 240** | *+10 dans 6 h* |
+| 2 · booster Lune | **Booster Lune** | *Un sachet de cartes du set Lune.* — **à valider** | sachet orange **1** | *40 / 100* |
+| 3 · pièce d'argent | **Pièce Argent** | *Sert à ouvrir un Booster Légendaire.* | 🪙 argent **0** | *(pas de barre — §29.10)* |
+| 4 · booster noir | **Booster Légendaire** | *Une carte légendaire, garantie.* | sachet noir **0** | *(pas de barre — §29.10)* |
+
+- **Le nom, à la lettre** : elle a écrit « Or Piece » — **casse de phrase,
+  tracking nul**, pas des capitales. Deux commits d'aujourd'hui le disent
+  aussi fort qu'elle (`c56db68` 18:01 *« plus de capitales »*, `9a7c429`
+  18:25 *« la première lettre en majuscule et le reste en minuscules, normal
+  quoi »*). Les capitales espacées de la première version de ce plan
+  reprenaient la grammaire exacte de l'étiquette qu'elle demande d'enlever
+  (`:1380-1392`, 15 semibold tracking 1,5). Elles restent une alternative
+  nommée (§29.14), pas la reco.
+- **Seule la phrase de la page OR est la sienne.** Celle de la page Lune ne
+  peut pas dire « une carte » : le code de cette page refuse d'écrire le
+  nombre de cartes d'un sachet (`:2169-2171`, *« on ne l'invente pas ici »*)
+  et le récit dit « a hand » (`:2183`). ⚠️ Or le serveur scelle **une**
+  `card_id` par sachet (`user_boosters`, forge-card rejouée rend la même
+  carte — site `b-fo-garantie-legendaire-du-sachet-noir`) : le récit et le
+  commentaire sont en désaccord avec la base. Ce n'est pas ce plan qui
+  tranche ; la phrase proposée n'affirme aucun nombre.
+- ⚠️ **La langue.** La page est en anglais (« Rewards », les descriptions, les
+  récits `:2172-2187`) et son bouton en français. Ses exemples sont en
+  français. **Reco : français sur ces quatre lignes** ; « Rewards » et les
+  récits ne bougent pas dans ce lot. À trancher d'un mot (§29.14).
+- **Une ligne, garantie** : `lineLimit(1)` + `minimumScaleFactor(0.85)` sur
+  320 pt. La plus longue (« Sert à ouvrir un Booster Légendaire. », 35
+  caractères à 15 medium ≈ 250 pt) tient sans réduire — le facteur est un
+  filet, pas un réglage.
+
+### 29.6 Le nom à 14 en dégradé — la loi du dégradé, et un piège mesurable d'avance
+
+Le dégradé de la maison est `WoopGradient.titleFade` (`Theme.swift:170-179`) :
+blanc → 0,25 en diagonale, **fait pour un titre de 30** — le commentaire du
+fichier prévient : *« on s'arrête à 0,25 — plus bas, les dernières lettres
+cessent d'être lisibles »*. ⚠️ **Sur une seule ligne de 14 pt, la diagonale
+devient quasi horizontale et les dernières lettres tombent à 0,25 sur 60 pt
+de course : « Pièce Or » finit en « Pièce O_ ».** Mesuré nulle part encore →
+c'est le premier point à capturer (luminance du dernier glyphe : sous L 90 sur
+le noir, le nom est tronqué à l'œil).
+
+**Reco** : un `etiquetteFade` court, blanc 1,00 → 0,55, même diagonale — le
+« dégradé » est là, la dernière lettre reste au-dessus du seuil. Corps **14
+semibold, casse de phrase, tracking normal** (§29.5). Alternatives nommées :
+14 en capitales espacées (l'étiquette) · 23 semibold blanc plein à la Opal —
+**qui tient à la même place** (§29.4 : 60 pt d'air), donc un choix de robe.
+
+### 29.7 La barre de la page OR = le versement quotidien — SUR LA DÉCISION DU 30-08, pas sur l'ancien UTC
+
+**Ce qui est tranché, et par qui** (§29.2 fait 3) : *bouton Claim, minuit chez
+elle, les +10 partent au tap* — `PLAN-COFFRE-ANNONCES.md:23`, `§5.3 :276-281`,
+loi `woop-backend:190-199`. Le jour est `jour_courant()` dans `fuseau_jour`
+(Europe/Paris), **une règle serveur** ; l'échéance est **rendue** par le
+serveur : `etat_coffre().retour_prochain` (timestamptz) et
+`retour_disponible` (M1 `:423-431`). **L'app ne calcule aucun jour, aucun
+minuit** — ni UTC, ni local. À Paris 18 h, le prochain versement est à minuit
+Paris : **« +10 dans 6 h »**.
+
+**Les deux états de la barre**, et rien d'autre :
+
+| état (`retour_disponible`) | remplissage | légende |
+|---|---|---|
+| **`false`** — versé aujourd'hui | l'horloge : `1 − (retour_prochain − now) / 24 h` (18 h Paris → **0,75**) | *+10 dans 6 h* (heures entières ; sous 1 h : *dans 40 min*) |
+| **`true`** — à réclamer | **1,00** — il est dû | *+10 à réclamer* — **c'est la card Welcome Back et son bouton Claim qui paient** (§5.3), jamais la barre, jamais « la connexion » |
+
+Ce n'est pas une jauge vers quelque chose qu'on gagne par l'effort : c'est
+une **horloge**, et elle ne promet que ce que `claim_retour_quotidien()` fait.
+
+⚠️ **Tant que `WoopApp.swift:83-92` poste encore au premier plan** (la porte
+Claim du §5.3 n'est pas codée), « à réclamer » ne se verra qu'hors ligne ;
+après la porte, c'est l'état normal du matin. La barre est juste dans les deux
+mondes parce qu'elle lit `retour_disponible` et rien d'autre.
+
+⚠️ **Le passage de minuit** : la page ouverte à 00 h 05 Paris a un
+`retour_prochain` dépassé et un `retour_disponible` périmé. Règle : quand
+`now ≥ retour_prochain`, la barre passe à l'état « à réclamer » **localement**
+jusqu'à la prochaine lecture d'`etat_coffre()` — c'est le `TimelineView` qui
+bat la minute qui porte ce test (§29.11 ④). Jamais une horloge neuve à
+« dans 24 h » sur un versement dû.
+
+**Ce qu'il faut pour la dessiner sans mentir — et ce que ce plan NE fait PAS :**
+
+1. **Lire** `retour_disponible`, `retour_prochain` (et `jour`) dans
+   `SacreServeur.EtatCoffre` → `EconomieWoop`. **Décodés, jamais calculés.**
+2. **Le montant** : `pieces_retour_quotidien` doit sortir de `etat_coffre()`
+   — le seul manque réel de M1. **Ce plan ne touche pas M1** (c'est le
+   fichier de l'autre session, non commité) : le champ s'ajoute soit à M1
+   avant sa pose (à négocier avec elle), soit dans une migration **ordonnée
+   APRÈS `20260830210000`** qui repart de SON corps (`:389-433`), jamais de
+   `20260830160000:435-469`. ⚠️ Deux `create or replace` sur la même
+   fonction depuis deux chantiers : celui qui passe en dernier efface
+   l'autre — c'est pour ça qu'il n'y a PAS de migration « §29 » parallèle.
+3. **Aucun helper de jour côté app.** Le marqueur `woop.retour.dernierJourUTC`
+   (`SacreServeur.swift:286-289`) est condamné par §5.3 ; on ne construit
+   rien dessus.
+4. **La maquette** (`-demoData`, pas de compte : `EconomieWoop.possible`
+   faux, `:153-157`) : `retourDisponible = false`, `prochainRetour` = un
+   minuit fictif à +6 h, l'horloge tourne — une maquette qui dirait « à
+   réclamer » pour toujours serait un mensonge de banc.
+
+⚠️ **Le site, dans le même commit que la migration qui ajoute le montant** :
+`b-fn-etat-coffre` (`serveur.ts:21` — le `quoi` passe aux clés de M1 + le
+montant, la `preuve` = la sonde rejouée, réponse LUE) ;
+`b-rg-pieces-retour-quotidien` (`:39`) **reste 🟢**, seule sa `preuve` gagne
+le lecteur côté app ; `b-fn-claim-retour-quotidien` (`:25`, le `quoi` sous la
+décision au tap) ; `b-rg-le-versement-lui-part-vraiment` (`briques.ts:37-38`,
+litige « au tap / Paris » → la barre s'y conforme) ; `m-trancher-le-fuseau-du`
+(`mesures.ts:10`, sa `lecture` change quand M1 est posée) ; et une brique
+nouvelle « la barre du versement » — 🔵 tant que l'écran ne lit pas, 🟢 après
+capture. `npm run verif && npm run artefact`, republication au même lien.
+
+### 29.8 La pill du bas — `PillPrix` descend, perd son liquide, garde son verre
+
+C'est le composant existant, déplacé : `.clear` (jamais `.regular` — donc
+**pas la recette de `PillBooster`**, `BoosterPopup.swift:813`, qui est en
+`.regular` teinté, l'interdit de la maison), liseré 0,13, ombre. Ce qui
+change :
+
+- **le remplissage liquide meurt** (il va dans la barre) → `part` et
+  `remplie` quittent la pill ; elle ne porte plus qu'**un glyphe et un
+  nombre** ;
+- **le glyphe dépend de l'objet** : `PieceSprite(planche:, tour: 0,
+  diametre: 22)` sur les pages de pièces, **`SachetVignette(largeur: 15,
+  hauteur: 26, robe:)`** sur les pages de sachets — les 15 × 26 de la pill du
+  profil, un objet déjà validé à cette taille ;
+- **le nombre** : le solde (pièces) ou le compte de sachets, 17 semibold,
+  `numericText` — celui qui vivait en 40 dans le pied et qu'on ne voit plus
+  qu'ici : **un nombre, un endroit** ;
+- ⚠️ **le défaut connu reste** (§27.6) : à 22 pt les deux pièces ne se
+  distinguent pas (R−B +20 contre +1, même croissant). Le nom (« Pièce
+  Argent ») le compense — une raison de plus de vouloir le nom. À remesurer
+  sur capture.
+
+⚠️ **Le verre `.clear` dans le pied est posé sur du NOIR ABSOLU.** La loi dit
+que `.clear` convient au contenu doux ; ici il n'y a RIEN dessous — un verre
+sur du noir n'a rien à réfracter (`HomeNuit:536-542`, le galet refusé). Il
+peut lire « plat ». Repli déjà validé dans la maison : la recette de
+`PiecesNotif` (`PlayerSeance.swift:291-302`) — noir 0,35 + `.clear` derrière +
+liseré 0,12. À juger sur capture, pas d'avance.
+
+### 29.9 Le bouton — « Ouvrir » est fait ; reste le MOT du verrouillé, et un tracking à trancher
+
+- **La casse** : imposée par le composant depuis `9a7c429` (§29.2 fait 1) —
+  changer la chaîne `"OUVRIR"` (`:2408`) est un no-op cosmétique. **Hors
+  périmètre.**
+- ⚠️ **Le MOT du verrouillé** : `enPhrase` rend `"\(prix − reste) COINS TO
+  GO"` (`:2409`) en « 60 coins to go » et `"LOCKED"` (`:2432`) en « Locked ».
+  Avec la barre « 40 / 100 » à 50 pt au-dessus, « 60 coins to go » est **la
+  redondance du §26.2 qui revient** ; et sous M1 l'achat n'existe plus (§5.4 :
+  *« le pied n'a plus que Ouvrir, le "N coins to go" devient la jauge »*).
+  → le mat dit **« Verrouillé »** (Opal : « Verrouillée ») sur la page Lune à
+  zéro sachet comme sur la page noire. Une langue, un mot.
+- ⚠️ **Le tracking des deux états n'est PAS le même** : le primaire est à
+  −0,2 / 18 semibold (`BoutonPrimaire.swift:157-158`), le mat à **1,6 / 15**
+  (`CoffreV2.swift:1440-1441`). Même casse depuis ce matin, pas même
+  lettrage : deux états d'un composant doivent partager le lettrage. **Reco :
+  aligner le mat sur le primaire** (−0,2 / 18) — c'est le composant qui
+  commande, pas la capsule mate.
+- Priorité haute, action vide, `highPriorityGesture` : inchangés
+  (`:1413-1429`), c'est la loi des gestes de cette page.
+
+### 29.10 Les pages 3 et 4 — pas demandées, mais la grille ne se fait pas à moitié
+
+*« Une seule grille pour les quatre pages »* (§25.6) : on ne pose pas deux
+grammaires sur un manège qui se feuillette.
+
+- **Page argent** : nom + phrase ; pill 🪙 argent **N** ; **pas de barre** —
+  la loi du §3 tient toujours : la pièce TOMBE (p ≈ 1/30, pitié 45, cooldown
+  10, `cloturer_seance`), une jauge exposerait le *pity timer* et rendrait la
+  rareté farmable. Le créneau reste vide, le `Spacer` absorbe ; pas de bouton.
+- **Page noire** : nom + phrase ; pill sachet noir **N** ; **pas de barre non
+  plus** — rien ne s'accumule VERS le sachet noir, il naît d'une pièce
+  entière, et une barre `courant / 1` écrirait **« 2 / 1 »** avec deux pièces
+  d'argent (`boostersNoirs = argent + noirsOuverts`, `EconomieWoop.swift:94`,
+  cible 1 à `:2428`). La pill porte le compte, le bouton « Ouvrir » /
+  « Verrouillé » dit s'il y en a un.
+
+### 29.11 Ce que ça change dans le code — nommé, pour que le type-checker ne morde pas
+
+⚠️ **`CoffreV2.swift` est PARTAGÉ** : l'autre session y a commité `9a7c429`
+à 18:25 (`:1435-1439`, le mat en `enPhrase`) cinq minutes après la première
+version de ce plan. Le plan se relit contre HEAD `9a7c429` ; skill
+architecture §10 : `git diff HEAD` avant tout commit, chemins et hunks
+explicites, on ne touche pas à son hunk, jamais `git add -A`.
+
+| # | où | quoi |
+|---|---|---|
+| ① | `PiedVariante` (`:1268-1307`) | gagne `nom: String` ; `mot` meurt ; `pill: PillPrix.Contenu?` devient `compte: CompteObjet` (glyphe + nombre) et **`jauge: Jauge?` qui porte des DONNÉES, pas des valeurs rendues** : `enum Jauge { case compte(courant: Int, cible: Int) ; case horloge(montant: Int, disponible: Bool, prochain: Date?) }` (entrées stables, loi §2.3 — jamais une closure, jamais un `part` calculé dans `variantes`) ; `bouton` garde `(mot, actif)` |
+| ② | nouveau `EnTeteObjet: View` **(lecture A)** | nom + phrase, `.id(piedIdx)` + `.transition(.opacity)`, posé à `sc.H * 0.222` à la place de `PillPrix` (`:3167-3175`) ; `.opacity(pageOp * texteOp)` gardé |
+| ③ | `PillPrix` → `PillCompte` | sans `part`/`remplie` ; le glyphe en `enum` (pièce / sachet) — deux `if` nommés, pas une expression |
+| ④ | nouveau `BarreFine: View` | rail `Capsule` blanc 0,10 + remplissage `Capsule`, 240 × 3, dégradé clair → clair ; **`animatableData = remplie`** seule (l'arrivée, même transaction que `remplie` aujourd'hui : `.spring(0.80 / 0.75).delay(0.45)`, `:2690-2691`) ; largeur rendue = `part × remplie`. **`part` et `legende` se calculent DANS la vue** : `.compte` → statique ; `.horloge` → enveloppé dans `TimelineView(.periodic(from:by: 60))`, `part` et légende dérivés de `context.date` et de `prochain`, et le test « `now ≥ prochain` → à réclamer » (§29.7). La page n'est pas relue. |
+| ⑤ | `PiedCoffre` (`:1347-1361`) | `haut` et `description` meurent ; `pill` · `barre` · `Spacer` · `bouton` — quatre propriétés nommées ; le mat aligné sur le lettrage du primaire (§29.9) |
+| ⑥ | `variantes` (`:2382-2435`) | les quatre textes du §29.5 ; « Verrouillé » à `:2409` et `:2432` ; **ne calcule ni `part` ni légende** |
+| ⑦ | `EconomieWoop` | `piecesRetourQuotidien: Int` (lu), `retourDisponible: Bool` et `prochainRetour: Date?` **décodés, jamais calculés** ; `appliquer(RetourQuotidien)` pose `retourDisponible = false` ; la maquette pose `false` + un minuit fictif |
+| ⑧ | `SacreServeur.EtatCoffre` | trois clés : `pieces_retour_quotidien` (Int), `retour_disponible` (Bool), `retour_prochain` (ISO 8601 → un lecteur `Date` à côté de `n(_:_:)`, `:84`). ⚠️ **Clé absente = valeur INCHANGÉE, jamais un défaut** : un serveur sans M1 (« deux dialectes, par construction », `:120-126`) ne doit pas écraser en `false`/`nil` ce que `appliquer(RetourQuotidien)` ou la maquette ont posé — sinon chaque premier plan finit sur une barre fausse toute la journée (`WoopApp:88-92` : claim → vider → `rafraichir()` en dernier) |
+| ⑨ | — | **supprimé** : aucun `JourUTC`, aucun minuit côté app |
+| ⑩ | `ExerciseDetailView:2270` | la constante `10` meurt, lue depuis ⑦ (le §5.3 le demande aussi — une seule mort) |
+| ⑪ | migration | **aucune parallèle à M1** ; le seul ajout (`pieces_retour_quotidien` dans `etat_coffre()`) va dans M1 ou dans une migration ordonnée après elle, repartant de son corps (§29.7 ②) |
+| ⑫ | `docs/site/content/*.ts` | §29.7, même commit que ⑪ |
+
+### 29.12 Les pièges, nommés d'avance
+
+1. **Le dégradé qui mange la dernière lettre** (§29.6) — mesurer la luminance
+   du dernier glyphe sur la capture.
+2. **Une vue `Animatable` sur `remplie`, pas un `frame` qui change** — une
+   courbe écrite dans le corps n'est jamais jouée (mémoire
+   `woop-piege-rampes-withanimation`, payé sur le calendrier ; `PieceSprite`
+   l'applique déjà, `:332-337`).
+3. **Le verre sur du noir** (§29.8) — capture, et repli `PiecesNotif`.
+4. **`.id(piedIdx)` + `.transition(.opacity)`** : le bloc du haut et le pied
+   changent au CRAN, pas sur `page` (la note de `piedIdx`, `:1638-1643` :
+   deux matériaux en fondu croisé par image = « pas fluide au drag »).
+5. **Rien ne se calcule côté app sur le jour** : `retour_prochain` est lu,
+   point. Le seul calcul est `prochain − now` pour la légende, à la minute.
+6. **La maquette doit vivre** : `-demoData` n'appelle pas le serveur ; sans
+   `retourDisponible = false` et un minuit fictif, la barre du banc dirait
+   « à réclamer » pour toujours.
+7. **Clé absente ≠ valeur** (⑧) : l'app se déploie avant ou après la base ;
+   un `?? false` ferait mentir la barre pendant tout l'écart.
+8. **La pastille du profil** (`PillBooster`) affiche le même nombre de sachets
+   que la nouvelle pill du pied : elles lisent toutes deux
+   `EconomieWoop.boosters`, rien à faire — à vérifier sur capture
+   (non-régression).
+9. **Sous M1, la page OR et la page Lune montrent le même nombre** (§29.2
+   fait 3) : « 40 » puis « 40 / 100 ». Voulu — mais à regarder en feuilletant.
+10. **La ligne unique** : `lineLimit(1)` + `minimumScaleFactor(0.85)`, la plus
+    longue mesurée tient à 1,0.
+11. **Le sim ne fabrique pas de doigt** : les quatre pages se capturent par
+    `-coffrePage 0|1|2|3` (les deux formes de l'argument, `nombre(_:)`,
+    `:1712-1717`) ; le drag et le tap se jugent au téléphone.
+12. **L'autre session** : `git status` porte ~50 fichiers modifiés (dont
+    `SacreServeur.swift`, `WoopApp.swift`, `HomeNuit.swift`, le site entier,
+    la fiche du coffre) et M1 non suivie. ⑦⑧ touchent `EconomieWoop.swift`
+    (propre) et **`SacreServeur.swift` (modifié par elle)** → ses hunks
+    d'abord, ou attendre son commit ; par chemins explicites.
+
+### 29.13 L'ordre
+
+| jalon | quoi | risque |
+|---|---|---|
+| **J0** | ①②③⑤⑥ : le bloc du haut (lecture A, ou B si elle tranche B), la pill en bas, la barre **avec la jauge Lune seule** (« 40 / 100 », `courant = reste`, `cible = prix` — déjà lus) ; « Verrouillé » et le lettrage du mat ; captures des 4 pages **sur HEAD** | aucun serveur ; c'est là que se jugent le nom à 14, le dégradé, le verre sur le noir |
+| **J1** | ⑦⑧ les champs (clé absente = inchangée), la maquette ; la barre OR en **horloge** sur la maquette seule | l'écran est complet AVANT que le serveur parle ; **rien n'est mesuré sur un vrai compte** tant que M1 n'est pas posée |
+| **J2** | **attend la pose de M1 par l'autre session** (`migration list` avant/après, `etat_coffre` appelée et la réponse LUE) ; ⑪ le montant + ⑫ le site, **un commit** ; ⑩ la constante meurt | lecture seule : rien à rembobiner ; dépendance nommée, pas cachée |
+| **J3** | non-régression mesurée : crans, objet, projecteur, arrivée (`remplie`), la pastille du profil | ce qu'on n'a pas voulu changer |
+| **J4** | verdicts téléphone : le dégradé du nom, la finesse de la barre, le lettrage du mat | ce que le sim ne montre pas |
+
+J0 seul est déjà sa demande entière, hors le « +10 » ; J1-J2 rendent le
+« +10 » vrai au lieu de décoratif — et J2 ne peut pas partir avant M1.
+
+### 29.14 Ce qu'elle seule peut trancher (rien ici n'est dans le dépôt)
+
+0. **Le nom et la phrase : en haut, à la place de la pill (A, reco) — ou dans
+   le pied, à la place de « BOOSTER » / « COINS » (B, la lettre de « en
+   place ») ?** Le §29 est écrit pour A ; B recote le pied (203 > 196).
+1. **La langue** des quatre noms et phrases : français (reco — ses mots, et
+   le bouton) ou anglais (le reste de la page) ?
+2. **« 60/100 »** : la forme `courant / prix` d'aujourd'hui (reco, §27) — ou
+   vraiment le **manque** (« 60 à obtenir ») ?
+3. **Le nom à 14** : casse de phrase (reco, « Or Piece » à la lettre) — ou
+   capitales espacées — ou 23 à la Opal (tient à la même place) ?
+4. **La phrase de la page Lune** (§29.5) : « Un sachet de cartes du set
+   Lune. » — ou la sienne.
+5. **Pages argent et noire sans barre** : confirmé ? (la seule barre possible
+   exposerait la pitié, ou écrirait « 2 / 1 ».)
+6. **Le lettrage du mat « Verrouillé »** : aligné sur le primaire (−0,2 / 18,
+   reco) ou gardé à 1,6 / 15 ?
+
+### 29.15 CODÉ — J0, sur HEAD `8d9d4eb` (30-08, 18:59), NON commité
+
+Ses réponses : **« ok »** (les recos), **« anglais »**, **« page argent et
+noir sans barre »**, **« et le mat oui »**. Lecture **A** (le nom en haut).
+
+**Ce qui est dans l'arbre** (`Woop/Views/CoffreV2.swift` +299/−206,
+`Woop/Services/EconomieWoop.swift` +25) :
+
+- `PillPrix` **meurt** → `PillCompte` (glyphe + nombre, verre `.clear`, plus
+  de liquide) · `JaugeCoffre` (`.compte` / `.horloge` — des DONNÉES) ·
+  `BarreFine` (3 × 240, rail blanc 0,10, remplissage `lueur.mix(blanc 0,55)
+  → blanc`, `Animatable` sur `remplie`, l'horloge dans un
+  `TimelineView(60 s)` qui porte aussi le test « minuit passé ») ·
+  `EnTeteObjet` (14 semibold casse de phrase, fondu 1,00 → 0,55 ; phrase 15
+  medium 0,62, une ligne) · `PiedVariante` réécrite (`nom`, `phrase`,
+  `glyphe`, `nombre`, `jauge?`, `robe`, `bouton`, `lueur`).
+- `PiedCoffre` = pill · barre · `Spacer` · bouton ; le mat au lettrage du
+  primaire (18 semibold, −0,2). Les chaînes restent `"OUVRIR"` / `"LOCKED"`
+  (la casse est celle du composant : « Ouvrir » / « Locked »).
+- `variantes` en anglais : *Gold Coin — Opens a Lune Booster.* · *Lune
+  Booster — A pack of cards from the Lune set.* · *Silver Coin — Opens a
+  Legendary Booster.* · *Legendary Booster — One legendary card, guaranteed.*
+  Pas de barre sur ③ et ④. `contenu()` lit la variante UNE fois (`let v`).
+- `EconomieWoop` : `piecesRetourQuotidien` (10), `retourDisponible`,
+  `prochainRetour: Date?` — **maquette seule** (un minuit fictif à +6 h, posé
+  une fois, uniquement si `!possible`) ; `appliquer(RetourQuotidien)` pose
+  `retourDisponible = false`. **Sur un vrai compte `prochainRetour` reste nil
+  → pas d'horloge** tant que ⑧ (le décodage) et M1 ne sont pas là.
+
+**Mesuré** sur kat-coffre (`refs/s29-j0-page0..3.png`, planche
+`s29-j0-planche.jpg`, 402 × 874) :
+
+| | page OR | page LUNE |
+|---|---|---|
+| le nom | L max 252 (1ᵉʳ glyphe) → **221** (dernier) : le fondu court garde la dernière lettre ; fond derrière médiane **L 42**, p90 83 | 253 → 222, fond L 53 |
+| la phrase | une ligne, L max 255 | une ligne (« …Lune set. » frôle la goutte de verre à droite, dans les 320) |
+| la barre | **y 687, 3,0 pt, rail 81 → 321 (240 pt), rail L 25 ≈ blanc 0,10, fond L 0** ; remplie à **0,75** (+10 in 6 h), (255,227,186) → (254,255,254) | remplie à **0,40** (40 / 100), (255,201,169) → (254,253,252) |
+| la pill · la légende | texte y 642-662 · légende y 708-719 | idem |
+| le bouton | — | « Ouvrir » (page 3 : « Locked » mat, 18 / −0,2) |
+
+**Non vérifié** : l'arrivée de la barre (`remplie`, ressort 0,80/0,75) n'est
+pas filmée — la capture à 8 s la montre posée ; le feuilletage, le tap et le
+drag se jugent au téléphone. **Rien n'est commité** (par chemins :
+`CoffreV2.swift`, `EconomieWoop.swift`, ce plan, `refs/s29-*`).
+
+**Reste** : ⑧ le décodage (`SacreServeur.swift`, modifié par l'autre session
+— attendre son commit), M1 posée par elle, le montant ajouté à `etat_coffre()`
++ le site dans le même commit (J2), et ses verdicts téléphone (J4).
+
+### 29.16 CODÉ — ses cinq retours sur J0 (30-08, 19:16), NON commité
+
+*« Bien espacer davantage la pastille et la progress bar — j'adore · une
+petite ligne de description sous la pastille des pièces, ça fait trop vide ·
+un bouton "Discover history" qui mène sur la page avec l'histoire et la vidéo
+· sous la barre du booster Lune, 40/100 avec une petite pièce or pour le
+rappel · sous la barre de la pièce or, "+10 pièces in 6 hours" · et prends le
+booster détouré Lune de la pop-up de fin, on a réussi à le faire et c'est
+good. »*
+
+| retour | ce qui est codé | mesuré (`refs/s29-j0-page0..3.png`, remplacées) |
+|---|---|---|
+| l'air pill → barre | 12 → **24** (20 quand la ligne est là) | page Lune : pill 630-674, barre **698** |
+| la ligne sous la pill | `PiedVariante.sousPill`, 14 medium 0,55, une ligne — *20 coins for every set you finish.* (taux serveur) · *A rare drop from the path.* | page Or : 687-700 |
+| « Discover history » | `PiedVariante.histoire: RobeBooster?` sur les pages de PIÈCES (l'or → l'histoire du sachet Lune, l'argent → celle du légendaire : chaque récit parle de sa pièce) ; même capsule que le mat, encre 0,92, liseré 0,16, lettrage du primaire, `highPriorityGesture` → `ouvrirHistoire(robe)` (la vidéo puis la page). Les pages de sachets y vont déjà par le 2ᵉ tap sur l'objet | pages Or et Argent : 780-838 |
+| « 🪙 40 / 100 » | `JaugeCoffre.compte(courant:cible:monnaie:)` — la mini pièce (16 pt) devant la légende | page Lune : 718-734 |
+| « +10 coins in 6 hours » | en toutes lettres, singulier/pluriel (`hour`/`hours`, `minute`/`minutes`), « +10 coins to claim » | page Or : 743-755 |
+| le sachet détouré | `Image("booster-hero")` (l'asset de `BoosterCard`, 795 × 1334 RGBA, alpha réel) dans `PillCompte` pour `.sachet(.lune)` ; le noir garde `SachetVignette` | page Lune : la pastille |
+
+⚠️ **Le cadre 196 était PLEIN sur la page Or** (44 + 13 + 13 + 21 + 3 + 19 +
+12 + 13 + 58) : 13 pt entre la légende et le bouton. → **`PiedCoffre.taille`
+196 → 208**, ancre `podFin + 103 → + 109` : le haut reste à 630, les crans à
+597-607, le bouton passe à **780-838** (25 pt sous la légende), le bas à 838
+sous la zone sûre (840).
+
+**Non vérifié** : le tap « Discover history » (le sim ne fabrique pas de
+doigt — la porte appelle `ouvrirHistoire`, la même que le 2ᵉ tap de l'objet,
+vérifiée au §28.8) ; l'arrivée ; le téléphone.

@@ -106,6 +106,22 @@ final class EconomieWoop {
     /// Le journal, du plus récent au plus ancien.
     private(set) var journal: [GainCoffre] = []
 
+    // ── LE VERSEMENT QUOTIDIEN, pour l'horloge du coffre (§29.7) ────────
+    //
+    // Trois lectures, à DÉCODER du serveur, jamais à calculer ici : le
+    // montant (`pieces_retour_quotidien`), « il est dû » (`retour_disponible`)
+    // et le prochain minuit de la maison (`retour_prochain`) — M1
+    // `20260830210000_conversion_jour_flamme.sql`, PAS ENCORE POSÉE.
+    //
+    // ⚠️ Tant que le décodage (§29.11 ⑧) n'est pas branché, ces trois-là ne
+    // vivent QUE par la maquette : sur un vrai compte `prochainRetour` reste
+    // nil et le coffre ne montre PAS d'horloge — mieux qu'une heure inventée.
+    // ⚠️ Et le jour où ⑧ arrive : clé absente = valeur INCHANGÉE, jamais un
+    // défaut (deux dialectes, `SacreServeur.swift:120`).
+    private(set) var piecesRetourQuotidien = 10
+    private(set) var retourDisponible = false
+    private(set) var prochainRetour: Date?
+
     /// Vrai dès que le serveur a répondu UNE fois. Tant qu'il est faux, tout
     /// ce qui précède vient de la maquette.
     private(set) var serveur = false
@@ -142,6 +158,13 @@ final class EconomieWoop {
         if let journal { self.journal = journal }
         // La maquette n'a pas de sachet : c'est `SacreEtat` qui les tenait, et
         // il vient les chercher ici (voir `BoosterPopup.swift`).
+        // ⚠️ La maquette a une HORLOGE : un minuit fictif à six heures, posé
+        // UNE fois (chaque relecture de la home repasse ici — la remettre à
+        // zéro ferait reculer la barre). Sans serveur possible seulement :
+        // avec un compte, l'heure vient du serveur ou n'existe pas.
+        if !Self.possible, prochainRetour == nil {
+            prochainRetour = Date().addingTimeInterval(6 * 3600)
+        }
     }
 
     // ── LA LECTURE ──────────────────────────────────────────────────────
@@ -217,6 +240,8 @@ final class EconomieWoop {
     func appliquer(_ r: SacreServeur.RetourQuotidien) {
         or = r.solde
         reste = max(or, 0) % max(prixBooster, 1)
+        // Crédité OU « déjà pris » : dans les deux cas le jour est réglé.
+        retourDisponible = false
         serveur = true
     }
 

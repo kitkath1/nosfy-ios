@@ -1178,58 +1178,34 @@ struct HautDeListe: PreferenceKey {
     }
 }
 
-/// LA PILL DE PRIX — et elle EST la jauge.
+// MARK: - La pill du compte, la barre fine, l'en-tête de l'objet (§29, 30-08)
+
+/// LA PILL DU COMPTE — un glyphe, un nombre, et rien d'autre.
 ///
-/// ⚠️⚠️ **UNE BARRE EST PLATE PAR NATURE : ON NE LA REND PAS PREMIUM, ON LA
-/// REMPLACE.** J'ai réglé la précédente quatre fois — plus épaisse, un
-/// dégradé, un rail plus sombre, une braise plus grosse — et chaque tour a
-/// produit un autre défaut : le dégradé l'a rendue GRISE (l'œil lit un
-/// dégradé par son arrêt le plus SOMBRE), la braise en a fait un SLIDER (un
-/// disque plein au bout d'une barre, c'est un pouce — ça invite à tirer).
-/// Je réglais des symptômes.
+/// ⚠️ C'est l'ancienne `PillPrix` DESCENDUE dans le pied, sans son liquide
+/// (30-08, la grammaire d'Opal — `tools/coffre-v2/PLAN-PIED-COFFRE.md` §29) :
+/// la progression vit maintenant dans `BarreFine`, sous elle. Le glyphe dit
+/// l'objet — la pièce (sprite, cases de 320 px) ou le sachet
+/// (`SachetVignette` à 15 × 26, la taille validée sur la pill du profil).
 ///
-/// Le premium de cette maison, c'est du verre noir, un cheveu de liseré, et
-/// **une lumière qui vient de DEDANS**. Un rectangle rempli n'a ni dedans, ni
-/// épaisseur, ni matière — il n'a qu'une longueur. Aucun réglage ne lui
-/// donnera ce qu'il n'a pas.
-///
-/// Ici, **le remplissage vit DANS la capsule**, comme un liquide qui monte :
-/// la capsule a une épaisseur, un liseré, un dedans. C'est la même
-/// information, dans une forme qui peut être belle.
-///
-/// ⚠️ La grammaire est la même sur les quatre pages, et c'est ce qui règle
-/// les deux anatomies du §25.3 — **sans inventer de prix là où il n'y en a
-/// pas** : c'est le « / » qui apparaît ou non.
-///
-///     pièce d'or ....... 🪙 1 140        (rien à atteindre)
-///     booster orange ... 🪙 40 / 100
-///     pièce d'argent ... 🪙 0
-///     booster noir ..... 🪙 0 / 1        ← ce qui manquait à la légendaire
-struct PillPrix: View {
-    struct Contenu {
-        let courant: Int
-        /// nil = il n'y a rien à atteindre : pas de « / », pas de jauge.
-        let cible: Int?
-        let argent: Bool
+/// ⚠️ `.clear` et jamais `.regular` : pas la recette de `PillBooster`
+/// (`.regular` teinté, l'interdit de la maison). Et posée sur du NOIR ABSOLU,
+/// ce verre n'a rien à réfracter (`HomeNuit:536`) — le repli connu est la
+/// recette de `PiecesNotif` (noir 0,35 + `.clear` derrière). À juger sur
+/// capture, pas d'avance.
+struct PillCompte: View {
+    enum Glyphe {
+        case piece(PlanchePiece)
+        case sachet(RobeBooster)
     }
 
-    let c: Contenu
-    let lueur: Color
-    /// 0 → 1 : le remplissage monte à l'arrivée, comme l'ancienne jauge.
-    var remplie: Double = 1
-
-    private var part: Double {
-        guard let cible = c.cible, cible > 0 else { return 0 }
-        return min(max(Double(c.courant) / Double(cible), 0), 1) * remplie
-    }
+    let glyphe: Glyphe
+    let nombre: Int
 
     var body: some View {
         HStack(spacing: 9) {
-            // ⚠️ Le sprite de la pièce, pas un glyphe SF : c'est LA pièce de
-            // l'app, et elle dit de quelle monnaie on parle sans un mot.
-            // Ses cases font 320 × 320 px — de quoi tenir 22 pt sans mollir.
-            PieceSprite(planche: c.argent ? .argent : .or, tour: 0, diametre: 22)
-            Text(mot)
+            image
+            Text("\(nombre)")
                 .font(.inter(17, .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.95))
@@ -1238,78 +1214,239 @@ struct PillPrix: View {
         .padding(.leading, 13)
         .padding(.trailing, 17)
         .frame(height: 44)
-        .background {
-            ZStack(alignment: .leading) {
-                // LE DEDANS : le liquide, borné à la capsule.
-                GeometryReader { g in
-                    Capsule()
-                        .fill(LinearGradient(
-                            colors: [lueur.opacity(0.55), lueur.opacity(0.22)],
-                            startPoint: .leading, endPoint: .trailing))
-                        .frame(width: g.size.width * part)
-                        .frame(maxHeight: .infinity, alignment: .center)
-                }
-            }
-            .clipShape(Capsule())
-        }
-        // ⚠️ `.clear` et pas `.regular` : le givré laiteux est interdit, et
-        // ce qui passe dessous est le décor de l'arche — du contenu doux.
         .glassEffect(.clear, in: .capsule)
         .overlay(Capsule().strokeBorder(.white.opacity(0.13), lineWidth: 1))
         .shadow(color: .black.opacity(0.5), radius: 12, y: 4)
     }
 
-    private var mot: String {
-        if let cible = c.cible { return "\(c.courant) / \(cible)" }
-        return "\(c.courant)"
+    @ViewBuilder
+    private var image: some View {
+        switch glyphe {
+        case .piece(let p):
+            // ⚠️ Le sprite de la pièce, pas un glyphe SF : c'est LA pièce de
+            // l'app. ⚠️ Défaut connu (§27.6) : à 22 pt l'or et l'argent se
+            // distinguent mal — c'est le NOM en haut qui les nomme.
+            PieceSprite(planche: p, tour: 0, diametre: 22)
+        case .sachet(.lune):
+            // ⚠️ LE SACHET DÉTOURÉ DE LA CARD DE FIN (30-08 : « prends le
+            // booster détouré Lune de la pop-up de fin, on a réussi à le
+            // faire et c'est good ») : `booster-hero`, l'asset de
+            // `BoosterCard` (795 × 1334, alpha réel, h/w 1,69) — un objet du
+            // catalogue, donc `Image(_:)` le trouve. Le noir n'a pas encore
+            // son détouré : il garde sa vignette.
+            Image("booster-hero")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 26)
+        case .sachet(let r):
+            SachetVignette(largeur: 15, hauteur: 26, robe: r)
+                .frame(width: 20, height: 24)
+        }
     }
 }
 
+/// CE QUE LA BARRE DIT — des DONNÉES, jamais des valeurs rendues.
+///
+/// ⚠️ `part` et la légende ne se calculent PAS dans `variantes` (relue six
+/// fois par passe de corps) : une horloge posée là ne bougerait que quand la
+/// page se réévalue. La barre les dérive elle-même, et seul le cas `.horloge`
+/// est enveloppé dans un `TimelineView` (§29.11 ④).
+enum JaugeCoffre {
+    /// « 🪙 40 / 100 » — ce qu'on a vers ce que ça coûte, et DANS QUELLE
+    /// monnaie : la mini pièce devant la légende (30-08, « petite pièce or
+    /// pour le rappel, on comprend pas »).
+    case compte(courant: Int, cible: Int, monnaie: PlanchePiece)
+    /// Le versement quotidien. `disponible` = il est dû (il se réclame au tap
+    /// du Claim — décision du 30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
+    /// §5.3) ; sinon `prochain` = le prochain minuit de la maison, RENDU par
+    /// le serveur (`etat_coffre().retour_prochain`), jamais calculé ici.
+    case horloge(montant: Int, disponible: Bool, prochain: Date)
+}
+
+/// LA BARRE FINE — celle d'Opal, mesurée (§29.3) : 3 pt, un rail à blanc
+/// 0,10, un remplissage CLAIR de bout en bout, aucun pouce, et la légende
+/// DESSOUS, à 15.
+///
+/// ⚠️ Le §27 avait écrit « une barre est plate par nature, on la remplace ».
+/// C'est Kathryn qui la rétablit, avec un modèle sous les yeux — et le modèle
+/// tient parce qu'il ne demande PAS à la barre d'être belle : il la fait
+/// minuscule et lui donne une légende. On ne rejoue pas le §26.4 : pas de
+/// dégradé sombre (l'œil lit un dégradé par son arrêt le plus sombre), pas de
+/// tête (un disque au bout d'une barre est un pouce), pas de 5 pt.
+///
+/// ⚠️ `Animatable` sur `remplie` (l'arrivée — le même ressort que l'ancienne
+/// pill, `:2690`) : la largeur rendue est `part × remplie`, et c'est SwiftUI
+/// qui interpole `remplie`. Une courbe écrite dans le corps ne serait jamais
+/// jouée (mémoire `woop-piege-rampes-withanimation`).
+struct BarreFine: View, Animatable {
+    let jauge: JaugeCoffre
+    let lueur: Color
+    var remplie: Double
+
+    var animatableData: Double {
+        get { remplie }
+        set { remplie = newValue }
+    }
+
+    static let largeur: CGFloat = 240
+    static let epaisseur: CGFloat = 3
+
+    var body: some View {
+        switch jauge {
+        case .compte(let courant, let cible, let monnaie):
+            rendu(part: Self.part(courant, sur: cible),
+                  legende: "\(courant) / \(cible)", monnaie: monnaie)
+        case .horloge(let montant, let disponible, let prochain):
+            // ⚠️ La minute, pas l'image : une légende en heures n'a pas
+            // besoin de plus, et la page n'est pas relue (loi §2). Le test
+            // « minuit passé » vit ici aussi.
+            TimelineView(.periodic(from: .now, by: 60)) { ctx in
+                let h = Self.horloge(montant: montant, disponible: disponible,
+                                     prochain: prochain, now: ctx.date)
+                rendu(part: h.part, legende: h.legende, monnaie: nil)
+            }
+        }
+    }
+
+    private static func part(_ courant: Int, sur cible: Int) -> Double {
+        guard cible > 0 else { return 0 }
+        return min(max(Double(courant) / Double(cible), 0), 1)
+    }
+
+    /// L'horloge du +10 : la part du jour écoulée, et ce qu'il reste.
+    /// ⚠️ Passé `prochain`, le versement est DÛ : la barre passe à « to
+    /// claim » localement, jusqu'à la prochaine lecture du serveur — jamais
+    /// une horloge neuve à « in 24 h » sur un versement dû (§29.7).
+    static func horloge(montant: Int, disponible: Bool, prochain: Date,
+                        now: Date) -> (part: Double, legende: String) {
+        // En toutes lettres (30-08 : « +10 pièces in 6 hours par exemple »).
+        let restant = prochain.timeIntervalSince(now)
+        if disponible || restant <= 0 {
+            return (1, "+\(montant) coins to claim")
+        }
+        let part = min(max(1 - restant / 86_400, 0), 1)
+        let minutes = Int((restant / 60).rounded(.up))
+        if minutes < 60 {
+            return (part, "+\(montant) coins in \(minutes) minute\(minutes == 1 ? "" : "s")")
+        }
+        let heures = Int((restant / 3600).rounded())
+        return (part, "+\(montant) coins in \(heures) hour\(heures == 1 ? "" : "s")")
+    }
+
+    private func rendu(part: Double, legende: String,
+                       monnaie: PlanchePiece?) -> some View {
+        VStack(spacing: 16) {
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(.white.opacity(0.10))
+                    .frame(width: Self.largeur, height: Self.epaisseur)
+                // Clair → clair : la lueur de la page ÉCLAIRCIE, vers le
+                // blanc. Aucun arrêt sombre — Opal va de L 220 à L 250.
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [lueur.mix(with: .white, by: 0.55), .white],
+                        startPoint: .leading, endPoint: .trailing))
+                    .frame(width: Self.largeur * CGFloat(part * remplie),
+                           height: Self.epaisseur)
+            }
+            HStack(spacing: 6) {
+                // La mini pièce dit la monnaie de la jauge — sur la page du
+                // sachet, sans elle « 40 / 100 » ne dit pas de quoi.
+                if let monnaie {
+                    PieceSprite(planche: monnaie, tour: 0, diametre: 16)
+                }
+                Text(legende)
+                    .font(.inter(15, .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.60))
+            }
+        }
+    }
+}
+
+/// L'EN-TÊTE DE L'OBJET — son nom, et une phrase qui dit ce que c'est.
+///
+/// Il prend la place de l'ancienne pill de prix, au-dessus de l'objet
+/// (0,222 H), à la même hauteur qu'elle (≈ 40 pt) : rien d'autre ne bouge.
+/// « Je veux le nom » (30-08) — 14, dégradé, casse de phrase (« Or Piece »,
+/// pas des capitales : elle les a refusées deux fois ce jour-là, `c56db68`
+/// et `9a7c429`).
+///
+/// ⚠️ **PAS `titleFade`** : il va de blanc à 0,25, fait pour un titre de 30.
+/// Sur une ligne de 14 la diagonale devient quasi horizontale et la dernière
+/// lettre tombe à 0,25 — « Gold Coi_ ». Un fondu court (1,00 → 0,55) garde le
+/// dégradé ET la dernière lettre. À MESURER sur capture (§29.6).
+struct EnTeteObjet: View {
+    let nom: String
+    let phrase: String
+
+    private static let fade = LinearGradient(
+        stops: [.init(color: .white, location: 0),
+                .init(color: .white.opacity(0.55), location: 1)],
+        startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Text(nom)
+                .font(.inter(14, .semibold))
+                .foregroundStyle(Self.fade)
+            // Une ligne, sans tiret (verdict). Le facteur est un filet : la
+            // plus longue phrase mesurée tient à 1,0 sur 320.
+            Text(phrase)
+                .font(.inter(15, .medium))
+                .foregroundStyle(.white.opacity(0.62))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(width: 320)
+        .shadow(color: .black.opacity(0.45), radius: 10, y: 2)
+    }
+}
+
+/// CE QUE CHAQUE PAGE DIT — le nom et sa phrase en haut, la pill et sa barre
+/// en bas (§29). *Le pied décrit toujours l'objet posé sur le socle.*
 struct PiedVariante {
-    let solde: Int
-    let mot: String
-    /// ⚠️ **LA RÈGLE ET LA PROGRESSION ONT FUSIONNÉ, ET ELLES ONT QUITTÉ LE
-    /// PIED** (29-08 : *« faut mixer 100 coins et 60 to go, c'est pas clair,
-    /// avec une mini pièce »*). C'étaient **une seule phrase coupée en deux**
-    /// — ce que ça coûte d'un côté, ce qui manque de l'autre — et il fallait
-    /// faire la soustraction soi-même pour savoir qu'on est à 40.
-    ///
-    /// Le fait unique est « 40 / 100 », et il vit maintenant dans une pill
-    /// de verre AU-DESSUS de l'objet : une étiquette de prix se lit en
-    /// regardant l'objet, pas sous le socle.
-    let pill: PillPrix.Contenu?
+    /// Le nom de l'objet — en haut, à la place de l'ancienne pill de prix.
+    let nom: String
+    /// Une ligne, sans tiret : ce que c'est.
+    let phrase: String
+    /// La pill du pied : le glyphe de l'objet et son nombre (solde ou sachets).
+    let glyphe: PillCompte.Glyphe
+    let nombre: Int
+    /// Une petite ligne SOUS la pill, sur les pages de pièces (30-08 : « ça
+    /// fait trop vide ») — la règle qui les gagne, en un souffle.
+    let sousPill: String?
+    /// La barre fine sous la pill — nil sur les pages argent et noire (rien
+    /// ne s'accumule VERS ces objets : une jauge exposerait la pitié, ou
+    /// écrirait « 2 / 1 » — tranché le 30-08, « page argent et noir sans
+    /// barre »).
+    let jauge: JaugeCoffre?
     /// Non-nil = c'est une page de BOOSTER : elle porte le bouton d'ouverture.
     let robe: RobeBooster?
-    /// LA DESCRIPTION — une phrase qui dit d'où vient l'objet et à quoi il
-    /// sert (29-08 : *« rajoute une phrase de description sous les éléments,
-    /// on comprend pas »*). C'est la règle du §12, *le pied décrit l'objet
-    /// posé*, enfin dite en mots et non en chiffres. ⚠️ Sans tirets dans le
-    /// texte affiché : verdict explicite.
-    let description: String
-    /// ⚠️ **LE BOUTON N'EXISTE QUE LÀ OÙ ON PEUT AGIR** (revu le 29-08).** Verdict : *« pour moi c'est pas assez clair »*. Les quatre
-    /// pages faisaient DEUX anatomies — avec jauge et bouton, ou rien — et
-    /// alors le pied s'arrêtait après deux lignes en laissant 40 % de l'écran
-    /// vide. Il n'avait pas l'air d'avoir deux états, il avait l'air AMPUTÉ.
-    ///
-    /// Là où l'on ne peut rien faire, le bouton **dit ce qui manque**. C'est
-    /// la 5ᵉ loi d'Opal (§17.3) : *le verrouillé se dit par la MATIÈRE, pas
-    /// par un cadenas* — même place, même taille, verre mat au lieu du bijou.
-    /// Les pages de PIÈCES n'en ont plus : « 60 COINS TO GO » doublait la
-    /// pill, « A RARE DROP » était une description déguisée en bouton. C'est
-    /// la description qui donne maintenant son poids au pied.
+    /// LA PORTE DE L'HISTOIRE (30-08 : « un bouton Discover history qui mène
+    /// sur la page avec l'histoire et la vidéo ») — sur les pages de PIÈCES,
+    /// dont le bas n'avait pas de bouton : l'or ouvre l'histoire du sachet
+    /// Lune, l'argent celle du légendaire (chaque récit parle de sa pièce).
+    /// Les pages de sachets y vont déjà par le second tap sur l'objet.
+    let histoire: RobeBooster?
+    /// Le bouton — actif (le primaire) ou mat (« Locked », même place, même
+    /// hauteur : le verrouillé se dit par la MATIÈRE, 5ᵉ loi d'Opal). Les
+    /// pages de pièces n'en ont pas.
     let bouton: (mot: String, actif: Bool)?
     /// ⚠️ LA COULEUR DE L'OBJET POSÉ SUR LE SOCLE — la même que sa flaque
-    /// (`ObjetSocle.lueur`), et pour la même raison : la braise de la jauge et
-    /// l'aura du bouton doivent appartenir à la page, sinon ce sont deux
-    /// systèmes de couleur sur un même écran.
+    /// (`ObjetSocle.lueur`) : la barre et l'aura du bouton appartiennent à la
+    /// page, sinon ce sont deux systèmes de couleur sur un même écran.
     let lueur: Color
-
 }
 
 struct PiedCoffre: View {
     let v: PiedVariante
+    /// 0 → 1 : l'arrivée de la barre (le ressort de l'ancienne pill).
+    var remplie: Double = 1
     /// Ouvrir le manège de CETTE page — nil sur une page de pièce.
     var onOuvrir: (() -> Void)?
+    /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
+    var onHistoire: ((RobeBooster) -> Void)?
 
     /// ⚠️⚠️ **LA PLAQUE EST MORTE, ET C'EST LA LEÇON D'OPAL (28-08).**
     /// 128 → 104 → **plus de plaque du tout**. Verdict : *« ça fait cheap »*,
@@ -1339,19 +1476,36 @@ struct PiedCoffre: View {
     /// ⚠️ Et le bouton est ANCRÉ EN BAS, pas empilé : sur les pages sans
     /// jauge il reste à la même hauteur qu'ailleurs. Un bouton qui se déplace
     /// d'une page à l'autre se cherche à chaque fois.
-    static let taille = CGSize(width: 320, height: 196)
-
-    /// 0 → 1 en boucle : la respiration du bouton, quand il a la parole.
-    @State private var appel: Double = 0
+    /// ⚠️ 196 → 208 (30-08) : avec la ligne sous la pill ET la barre ET sa
+    /// légende (page Or), le cadre de 196 était PLEIN — mesuré, 13 pt entre
+    /// « +10 coins in 6 hours » et le bouton. Douze de plus, pris par le bas :
+    /// l'ancre du pied descend de 6 (`contenu`), le haut et les crans ne
+    /// bougent pas, le bas tombe à 838 — sous la zone sûre (874 − 34 = 840).
+    static let taille = CGSize(width: 320, height: 208)
 
     var body: some View {
         VStack(spacing: 0) {
-            // ⚠️ Le pied ne porte plus que DEUX choses : le compte, et le
-            // bouton. La règle et la progression sont montées dans la pill,
-            // avec l'objet (§27). Cinq lignes en sont devenues deux — c'est
-            // là que « plus clair » se gagne.
-            haut.allowsHitTesting(false)
-            description.padding(.top, 8).allowsHitTesting(false)
+            // La grammaire d'Opal (§29.4) : la pill, [la petite ligne], la
+            // barre et sa légende DESSOUS, le bouton ancré en bas. Le Spacer
+            // absorbe, le bouton ne bouge pas d'une page à l'autre.
+            // ⚠️ 12 → 24 entre la pill et la barre (30-08 : « bien espacer
+            // davantage ») ; avec la ligne, 10 + 17 + 20.
+            PillCompte(glyphe: v.glyphe, nombre: v.nombre)
+                .allowsHitTesting(false)
+            if let s = v.sousPill {
+                Text(s)
+                    .font(.inter(14, .medium))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .padding(.top, 10)
+                    .allowsHitTesting(false)
+            }
+            if let j = v.jauge {
+                BarreFine(jauge: j, lueur: v.lueur, remplie: remplie)
+                    .padding(.top, v.sousPill == nil ? 24 : 20)
+                    .allowsHitTesting(false)
+            }
             Spacer(minLength: 0)
             bouton
         }
@@ -1365,51 +1519,10 @@ struct PiedCoffre: View {
     // ⚠️ Ce fichier SATURE le vérificateur de types sur les vues aux mesures
     // inlinées (payé deux fois). Chaque bloc sort en propriété.
 
-    private var haut: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 9) {
-            // ⚠️ **30 → 44.** Quatre des cinq lignes du pied vivaient dans le
-            // registre des LÉGENDES d'iOS (Caption 1 et 2, 11 à 13 pt) —
-            // fait pour de la densité, pas pour un écran héros où il n'y a
-            // que cinq lignes à lire. Verdict : *« certaines polices sont
-            // trop petites, c'est pas Apple style »*.
-            Text("\(v.solde)")
-                .font(.inter(40, .semibold))
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.96))
-                .contentTransition(.numericText())
-            Text(v.mot.uppercased())
-                // ⚠️⚠️ **CE N'ÉTAIT PAS LA POLICE, C'ÉTAIT L'APPARIEMENT**
-                // (« la police que tu as mise est bizarre »). À 44 contre 17
-                // sur une ligne de base commune, le mot tombe au pied d'un
-                // chiffre trois fois plus haut : il a l'air DÉCROCHÉ, pas
-                // petit. Deux corrections, et aucune ne touche à Inter —
-                // le rapport passe de 2,6 à 2,7 mais le mot devient une
-                // ÉTIQUETTE : capitales espacées, comme sur le bouton. Des
-                // capitales tracées à 15 ont la présence d'un bas de casse à
-                // 18, et surtout elles se lisent comme une UNITÉ accolée au
-                // nombre, pas comme un mot qui a glissé.
-                .font(.inter(15, .semibold))
-                .tracking(1.5)
-                .foregroundStyle(.white.opacity(0.58))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-    }
-
     /// ⚠️ `highPriorityGesture` ET PAS un `Button` : le geste de la page est
     /// posé sur un ANCÊTRE qui couvre tout l'écran, et un bouton d'enfant s'y
     /// fait AFFAMER dès que le drag reconnaît — la loi payée sur le stop du
     /// player. La priorité haute passe devant.
-    private var description: some View {
-        Text(v.description)
-            .font(.inter(15, .medium))
-            .foregroundStyle(.white.opacity(0.62))
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: 300)
-    }
-
     @ViewBuilder
     private var bouton: some View {
         if let b = v.bouton, b.actif, let onOuvrir {
@@ -1436,9 +1549,12 @@ struct PiedCoffre: View {
             // ⚠️ `glassEffect(.clear)` et pas `.regular` : le givré laiteux
             // est interdit, et ce qui passe dessous est du décor DOUX.
             // La casse des boutons (30-08, « même pour locked ») : une phrase.
+            // ⚠️ LE MÊME LETTRAGE QUE LE PRIMAIRE (`BoutonPrimaire:156-158`,
+            // 18 semibold, −0,2) : deux états d'un composant partagent la
+            // casse ET le lettrage — tranché le 30-08 (« le mat oui »).
             Text(b.mot.enPhrase)
-                .font(.inter(15, .semibold))
-                .tracking(1.6)
+                .font(.inter(18, .semibold))
+                .tracking(-0.2)
                 .foregroundStyle(.white.opacity(0.55))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1447,6 +1563,28 @@ struct PiedCoffre: View {
                 .glassEffect(.clear, in: .capsule)
                 .overlay(Capsule().strokeBorder(.white.opacity(0.10), lineWidth: 1))
                 .allowsHitTesting(false)
+        } else if let h = v.histoire, let onHistoire {
+            // LA PORTE DE L'HISTOIRE — la même capsule de verre que le mat,
+            // mais ÉVEILLÉE (encre à 0,92, liseré 0,16) : c'est une action,
+            // pas un verrou. Même place, même hauteur, même lettrage que le
+            // primaire — la grille des quatre pages tient.
+            // ⚠️ Priorité haute, comme le primaire : un tap d'enfant sous le
+            // geste de page se fait affamer.
+            Text("Discover history".enPhrase)
+                .font(.inter(18, .semibold))
+                .tracking(-0.2)
+                .foregroundStyle(.white.opacity(0.92))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .glassEffect(.clear, in: .capsule)
+                .overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1))
+                .contentShape(Capsule())
+                .highPriorityGesture(TapGesture().onEnded {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onHistoire(h)
+                })
         }
     }
 }
@@ -2383,55 +2521,66 @@ struct CoffreV2Page: View {
         let e = economie
         let prix = max(e.prixBooster, 1)
         return [
-            // ① la pièce d'or : ce qu'elle vaut, ce qui la gagne.
-            PiedVariante(solde: e.or, mot: "coins",
-                         pill: .init(courant: e.or, cible: nil, argent: false),
-                         robe: nil,
-                         // ⚠️ Le taux vient du serveur (`pieces_par_serie`) :
-                         // ce texte était la neuvième copie du 20.
-                         description: "\(e.piecesParSerie) coins for every set you finish.",
-                         bouton: nil,
+            // ① la pièce d'or : son solde, et l'horloge du versement quotidien.
+            //    ⚠️ En anglais, comme le reste de la page (tranché 30-08).
+            PiedVariante(nom: "Gold Coin",
+                         phrase: "Opens a Lune Booster.",
+                         glyphe: .piece(.or), nombre: e.or,
+                         // ⚠️ Le taux vient du serveur (`pieces_par_serie`).
+                         sousPill: "\(e.piecesParSerie) coins for every set you finish.",
+                         jauge: jaugeRetour(e),
+                         robe: nil, histoire: .lune, bouton: nil,
                          lueur: Self.manege[0].lueur),
-            // ② le booster orange : combien j'en ai, ce qu'il coûte, et
-            //    COMBIEN IL M'EN MANQUE — la jauge est enfin sur la page de
-            //    l'objet dont elle parle.
-            PiedVariante(solde: e.boosters,
-                         mot: e.boosters == 1 ? "booster" : "boosters",
-                         // ⚠️ `reste` est DÉRIVÉ PAR LE SERVEUR
-                         // (`solde_or mod prix_booster`) depuis le 29-08 : il
-                         // lisait avant une table que personne n'écrivait, et
-                         // la jauge affichait 0/100 quel que soit le solde.
-                         pill: .init(courant: e.reste, cible: prix, argent: false),
-                         robe: .lune,
-                         description: "Won after every session, or bought for \(prix) coins.",
+            // ② le booster Lune : combien j'en ai, et où en est le prochain.
+            //    ⚠️ `reste` est DÉRIVÉ PAR LE SERVEUR (`solde_or mod prix`) ;
+            //    sous la conversion (M1, à poser) il vaudra le solde même.
+            //    ⚠️ La phrase ne dit AUCUN nombre de cartes : le code de la
+            //    page du récit refuse de l'écrire (voir `recitLune`).
+            PiedVariante(nom: "Lune Booster",
+                         phrase: "A pack of cards from the Lune set.",
+                         glyphe: .sachet(.lune), nombre: e.boosters,
+                         sousPill: nil,
+                         jauge: .compte(courant: e.reste, cible: prix, monnaie: .or),
+                         robe: .lune, histoire: nil,
+                         // La casse est celle du composant (`enPhrase`) :
+                         // « Ouvrir » / « Locked ». « N COINS TO GO » est
+                         // mort : la barre le dit déjà (§26.2, la redondance).
                          bouton: e.boosters > 0
-                            ? ("OUVRIR", true)
-                            : ("\(prix - e.reste) COINS TO GO", false),
+                            ? ("OUVRIR", true) : ("LOCKED", false),
                          lueur: Self.manege[1].lueur),
-            // ③ la pièce d'argent : elle ne s'accumule pas, elle TOMBE.
-            //    ⚠️ Et elle ne pouvait PAS tomber avant le 29-08 : `roll_rare`
-            //    était nommée dans les commentaires et n'existait pas.
-            PiedVariante(solde: e.argent,
-                         mot: e.argent == 1 ? "silver coin" : "silver coins",
-                         pill: .init(courant: e.argent, cible: nil, argent: true),
-                         robe: nil,
-                         description: "A rare drop from the path. Never earned, never bought.",
-                         bouton: nil,
+            // ③ la pièce d'argent : PAS de barre — elle TOMBE (p ≈ 1/30), et
+            //    la seule jauge possible exposerait la pitié.
+            PiedVariante(nom: "Silver Coin",
+                         phrase: "Opens a Legendary Booster.",
+                         glyphe: .piece(.argent), nombre: e.argent,
+                         sousPill: "A rare drop from the path.",
+                         jauge: nil, robe: nil, histoire: .noire, bouton: nil,
                          lueur: Self.manege[2].lueur),
-            // ④ le booster noir : pas de jauge (rien à accumuler), et son
-            //    compte EST le solde d'argent — le sachet naît au claim.
-            PiedVariante(solde: e.boostersNoirs,
-                         // « legendary boosters » était trop long en titre : le
-                         // sachet est sur le socle, il n'a pas besoin qu'on lui
-                         // dise qu'il est un booster.
-                         mot: "legendary",
-                         pill: .init(courant: e.boostersNoirs, cible: 1, argent: true),
-                         robe: .noire,
-                         description: "One silver coin opens it. A legendary card, guaranteed.",
+            // ④ le booster noir : pas de barre non plus (rien ne s'accumule
+            //    vers lui, il naît d'une pièce entière ; « courant / 1 »
+            //    écrirait « 2 / 1 »). Son compte EST le solde d'argent.
+            PiedVariante(nom: "Legendary Booster",
+                         phrase: "One legendary card, guaranteed.",
+                         glyphe: .sachet(.noire), nombre: e.boostersNoirs,
+                         sousPill: nil,
+                         jauge: nil, robe: .noire, histoire: nil,
                          bouton: e.boostersNoirs > 0
                             ? ("OUVRIR", true) : ("LOCKED", false),
                          lueur: Self.manege[3].lueur),
         ]
+    }
+
+    /// L'HORLOGE DU +10 — seulement quand on SAIT. `prochainRetour` est lu du
+    /// serveur (`etat_coffre().retour_prochain`, M1) ou posé par la maquette ;
+    /// sans lui, pas de barre : une barre à une heure inventée mentirait.
+    private func jaugeRetour(_ e: EconomieWoop) -> JaugeCoffre? {
+        if e.retourDisponible {
+            return .horloge(montant: e.piecesRetourQuotidien, disponible: true,
+                            prochain: .distantFuture)
+        }
+        guard let prochain = e.prochainRetour else { return nil }
+        return .horloge(montant: e.piecesRetourQuotidien, disponible: false,
+                        prochain: prochain)
     }
 
     /// LE BOUTON « OUVRIR » — et un piège de présentation.
@@ -2501,7 +2650,7 @@ struct CoffreV2Page: View {
 
     private func cran(_ i: Int) -> some View {
         let ici = Int(page.rounded()) == i
-        let possede = variantes[min(i, variantes.count - 1)].solde > 0
+        let possede = variantes[min(i, variantes.count - 1)].nombre > 0
         // Un cran PLEIN = j'y suis. Un cran allumé = j'y ai quelque chose.
         // Un cran éteint = la page existe, elle est vide.
         return Capsule()
@@ -3116,11 +3265,16 @@ struct CoffreV2Page: View {
         // inscription de 146, et `.position` centre son cadre. Le haut du
         // texte tombe donc à `podFin + 30` — juste sous le reflet du socle,
         // là où le sol devient lisible.
-        let piedY = sc.podFin + 103
+        // ⚠️ +103 → +109 (30-08) : le pied a grandi de 12 par le BAS (196 →
+        // 208, voir `PiedCoffre.taille`) ; `.position` centre le cadre, donc
+        // l'ancre descend de 6 pour que le haut reste à `podFin + 5`.
+        let piedY = sc.podFin + 109
         // ⚠️ CE QUI EST SOUS LE SOCLE REMONTE AVEC LE BORD BAS DE LA CARD —
         // sinon, card tirée, le texte se retrouve posé sur la bande de nuit
         // qui découvre la lune. C'est `MonteAvecLaCard` des exos, en une ligne.
         let monte = min(tirage, 0) * 0.9
+        // La variante du cran, lue UNE fois (`variantes` est calculée).
+        let v = variantes[min(piedIdx, variantes.count - 1)]
         ZStack(alignment: .topLeading) {
             // ⚠️ **LE TITRE VIT SUR LE MUR, DONC IL EST EN ENCRE SOMBRE.** Le
             // retournement l'a fait tomber en pleine lumière (L 157 → 250) ; du
@@ -3159,20 +3313,15 @@ struct CoffreV2Page: View {
             // plus si le bouton qu'on vise est là où on le voit.
             piece(sc).parallaxe(CoffreParallaxe.objets)
 
-            // ⚠️ **L'ÉTIQUETTE DE PRIX VIT AVEC L'OBJET, PAS SOUS LE SOCLE**
-            // (§27) : on lit « ce sachet coûte 100 pièces » en regardant le
-            // sachet. Elle est posée à une cote FIXE et ne suit pas l'objet —
-            // une étiquette qui monte et descend avec ce qu'elle décrit se
-            // lit comme un ballon de BD.
-            if let c = variantes[min(piedIdx, variantes.count - 1)].pill {
-                PillPrix(c: c,
-                         lueur: variantes[min(piedIdx, variantes.count - 1)].lueur,
-                         remplie: remplie)
-                    .id(piedIdx)
-                    .transition(.opacity)
-                    .position(x: sc.W / 2, y: sc.H * 0.222)
-                    .opacity(pageOp * texteOp)
-            }
+            // ⚠️ **LE NOM ET SA PHRASE VIVENT AVEC L'OBJET, PAS SOUS LE SOCLE**
+            // (§29) : à la cote de l'ancienne pill de prix, FIXE — un texte
+            // qui monte et descend avec ce qu'il décrit se lit comme un
+            // ballon de BD. Le pied lit le CRAN (`piedIdx`), jamais `page`.
+            EnTeteObjet(nom: v.nom, phrase: v.phrase)
+                .id(piedIdx)
+                .transition(.opacity)
+                .position(x: sc.W / 2, y: sc.H * 0.222)
+                .opacity(pageOp * texteOp)
 
             // LE PIED : un seul objet, et les deux pièces s'y croisent à
             // taille FIXE. Deux dalles montées/démontées au cran feraient
@@ -3182,8 +3331,9 @@ struct CoffreV2Page: View {
                 .opacity(pageOp)
                 .offset(y: monte)
 
-            PiedCoffre(v: variantes[min(piedIdx, variantes.count - 1)],
-                       onOuvrir: robeDeLaPage.map { r in { ouvrirManege(r) } })
+            PiedCoffre(v: v, remplie: remplie,
+                       onOuvrir: robeDeLaPage.map { r in { ouvrirManege(r) } },
+                       onHistoire: { r in ouvrirHistoire(r) })
                 .id(piedIdx)
                 .transition(.opacity)
             .position(x: sc.W / 2, y: piedY)
