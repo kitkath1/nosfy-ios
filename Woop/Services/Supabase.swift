@@ -57,6 +57,17 @@ actor SupabaseSession {
     /// Renvoie un jeton valide pour le numéro courant, en se connectant au
     /// premier appel. Sans numéro enregistré, la synchronisation attend.
     func token() async throws -> String {
+        // ⚠️ BANC `-sessionBanc` (30-08 soir) : la session du COMPTE DE TEST de
+        // la forge (`ForgeServeur.jwtBanc`), pour MESURER au simulateur ce que
+        // le serveur rend à un vrai compte — le coffre, le Welcome Back, la
+        // pile des annonces — sans jamais toucher un vrai numéro. Le jeton est
+        // gardé le temps du processus ; rien n'est écrit dans les préférences.
+        if CommandLine.arguments.contains("-sessionBanc") {
+            if let accessToken { return accessToken }
+            let jwt = try await ForgeServeur.jwtBanc()
+            accessToken = jwt
+            return jwt
+        }
         guard let phone = UserDefaults.standard.string(forKey: phoneKey),
               let creds = WoopConfig.credentials(forPhone: phone) else {
             throw SupabaseError.notAuthenticated

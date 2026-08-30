@@ -7,7 +7,7 @@ import { BRIQUES } from '@/content/briques'
 import { MESURES } from '@/content/mesures'
 import { SONDES } from '@/content/sondes'
 import { PAGE_PAR_ID, DOMAINE_PAR_ID } from '@/content/pages'
-import { EMOJI, LIBELLE, compter, estVert, parPage, mesuresPar, preuveTexte, verdict } from '@/content'
+import { EMOJI, compter, compterFamilles, estVert, famille, ligneFamilles, parPage, mesuresPar, preuveTexte, verdict } from '@/content'
 import { Ic } from './Sprite'
 
 const RACINE = join(process.cwd(), '..', '..')
@@ -37,10 +37,11 @@ function Preuve({ p }: { p: Brique['preuve'] }) {
   return <code className={vide ? 'vide' : ''} title={'fichier' in p ? p.fichier : undefined}>{texte}</code>
 }
 
+/** `data-fam` = la famille (à trancher · à valider · en chantier · bon, content/index.ts) — ce que les filtres de l'accueil lisent (public/site.js). */
 export function Rangee({ b, lien }: { b: Brique; lien?: boolean }) {
   return (
     <li className={'r' + (b.litige ? ' litige' : '')} id={lien ? undefined : b.id} data-src={lien ? b.id : undefined} data-onglet={lien ? b.page : undefined}
-        data-etat={b.etat} data-dom={b.domaine} title={b.litige || b.note}>
+        data-etat={b.etat} data-fam={famille(b)} data-dom={b.domaine} title={b.litige || b.note}>
       {lien ? <i className="pt" data-etat={b.etat} /> : <Pastille etat={b.etat} />}
       <span className="t"><Texte t={b.titre} /></span>
       <span className="m">
@@ -55,7 +56,7 @@ export function Rangee({ b, lien }: { b: Brique; lien?: boolean }) {
 
 export function RangeeMesure({ m, lien }: { m: Mesure; lien?: boolean }) {
   return (
-    <li className="r nm" id={lien ? undefined : m.id} data-onglet={lien ? m.page : undefined} data-etat="nm" data-dom={m.domaine} title={m.note}>
+    <li className="r nm" id={lien ? undefined : m.id} data-onglet={lien ? m.page : undefined} data-etat="nm" data-fam={famille(m)} data-dom={m.domaine} title={m.note}>
       <i className="pt" data-etat="nm" />
       <span className="t"><Texte t={m.titre} />{m.lecture && m.lecture !== 'inconnu' ? <span className="lecture"> ({EMOJI[m.lecture]} au code)</span> : null}</span>
       <span className="m">
@@ -151,13 +152,13 @@ export function lireCaptures(): Captures {
 export function Hero({ page }: { page: Page }) {
   const info = PAGE_PAR_ID[page]
   const c = compter(parPage(page))
-  const nm = mesuresPar(page).length
+  const f = compterFamilles(parPage(page), mesuresPar(page))
   const cap = lireCaptures().hero[page]
   const teinte = info.hero?.teinte
-  // LE VERT (30-08) : tout 🟢 et 0 🔴 sur la page → la classe `vert` (app/styles/v2.css) prend la
-  // teinte de l'état à la place de la teinte mesurée — la même règle que les cards de l'accueil.
+  // LE VERT (30-08) : tout bon sur la page (briques ET ◌) → la classe `vert` (app/styles/v2.css) prend la
+  // teinte de l'état à la place de la teinte mesurée — la même règle que les cards et le hero de l'accueil.
   // La teinte mesurée est posée en style inline (elle gagnerait sur la classe) : on ne la pose pas.
-  const vert = estVert(c)
+  const vert = estVert(f)
   const noir = !teinte && !vert
   const style = teinte && !vert ? ({ '--t1': teinte.t1, '--t2': teinte.t2 } as React.CSSProperties) : undefined
   return (
@@ -171,13 +172,9 @@ export function Hero({ page }: { page: Page }) {
         <span className="a-capturer">à capturer</span>
       )}
       <p className="sur">{info.libelle} · {c.total} brique{c.total > 1 ? 's' : ''}</p>
-      <p className="verdict">{verdict(c, nm)}</p>
-      <p className="comptes">
-        {(['men', 'loc', 'srv', 'abs', 'ok'] as Etat[]).filter((e) => c[e]).map((e) => (
-          <i key={e}><span className="pt" data-etat={e} />{c[e]} {LIBELLE[e]}</i>
-        ))}
-        {nm > 0 && <i><span className="pt" data-etat="nm" />{nm} à mesurer</i>}
-      </p>
+      <p className="verdict">{verdict(f)}</p>
+      {/* la même ligne à quatre familles que les cards de l'accueil ; les zéros ne s'écrivent pas */}
+      <p className="comptes">{ligneFamilles(f).join(' · ')}</p>
     </div>
   )
 }

@@ -37,10 +37,16 @@ final class DepartEtat {
     /// stop de l'ardoise) : la racine l'exécute — elle seule tient la
     /// séance, la bascule d'onglet et la chaîne de fin.
     var clotureDemandee = false
-    /// La notif des pièces à l'arrivée home post-clôture : le gain à
-    /// annoncer, nil = rien. La chaîne de fin de séance l'orchestre
-    /// (trophée → pièces → pop-up booster).
+    /// ⚠️ PÉRIMÉ depuis le 30-08 soir : les dalles vivent dans `FileAnnonces`
+    /// (Annonces.swift), qui EMPILE — un `Int?` n'avait qu'un créneau et
+    /// s'écrasait. Gardé le temps que `HomeAuroraView` (l'ancienne home) cesse
+    /// de l'écouter ; plus personne ne l'écrit.
     var notifPieces: Int?
+    /// LA CARD WELCOME BACK est à l'écran (tranché 30-08 : au premier plan, si
+    /// le +10 du jour est encore à prendre — `EconomieWoop.retourDisponible`,
+    /// lu au serveur sans payer). Le Claim encaisse, « Later » la range jusqu'au
+    /// prochain premier plan.
+    var welcomeOuverte = false
 
     // MARK: LE CHEMIN EN ARBRE (27-08, jalon 1 de tools/road/AUDIT-ROAD.md)
     //

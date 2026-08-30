@@ -75,6 +75,43 @@ enum SacreServeur {
         let reste: Int
         let prixBooster: Int
         let piecesParSerie: Int
+        // ── DEPUIS 20260830210000 (30-08 soir) — le jour de la maison, le
+        //    Welcome Back et la flamme. ⚠️ OPTIONNELS, ET C'EST LA LOI DES
+        //    DEUX DIALECTES (:120) : une clé absente (base d'avant la
+        //    migration) vaut « je ne sais pas », JAMAIS un défaut — l'écran
+        //    garde ce qu'il avait plutôt que d'afficher un faux.
+        /// La date du jour dans le fuseau de la maison (`fuseau_jour`,
+        /// Europe/Paris) — « minuit chez elle », jamais celui du téléphone.
+        let jour: String?
+        /// Le +10 est-il encore à prendre aujourd'hui (lu SANS payer : c'est
+        /// ce qui permet au Claim de promettre avant d'encaisser).
+        let retourDisponible: Bool?
+        /// Le prochain minuit de la maison — l'horloge du +10 du coffre (§29).
+        let retourProchain: Date?
+        /// Le montant du retour (`pieces_retour_quotidien`), depuis
+        /// 20260830220000 — avant, l'app le connaissait par cœur.
+        let piecesRetourQuotidien: Int?
+        /// La flamme : jours d'affilée avec une séance, dérivée au serveur,
+        /// sans bonus — et « aujourd'hui est-il fait ».
+        let flammeJours: Int?
+        let flammeAujourdhui: Bool?
+    }
+
+    private static let iso: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    private static let isoFractions: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    /// Postgres sérialise un `timestamptz` en `2026-08-30T22:00:00+00:00`,
+    /// parfois avec des fractions — on lit les deux.
+    static func date(_ s: String?) -> Date? {
+        guard let s else { return nil }
+        return iso.date(from: s) ?? isoFractions.date(from: s)
     }
 
     static func etatCoffre(jwt: String) async throws -> EtatCoffre {
@@ -82,13 +119,20 @@ enum SacreServeur {
         guard let j = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any] else { throw Erreur.reponse }
         func n(_ k: String, _ defaut: Int) -> Int { (j[k] as? Int) ?? defaut }
+        let flamme = j["flamme"] as? [String: Any]
         return EtatCoffre(soldeOr: n("solde_or", 0),
                           soldeArgent: n("solde_argent", 0),
                           boostersOr: n("boosters_or", 0),
                           noirsOuverts: n("noirs_ouverts", 0),
                           reste: n("reste", 0),
                           prixBooster: n("prix_booster", 100),
-                          piecesParSerie: n("pieces_par_serie", 20))
+                          piecesParSerie: n("pieces_par_serie", 20),
+                          jour: j["jour"] as? String,
+                          retourDisponible: j["retour_disponible"] as? Bool,
+                          retourProchain: date(j["retour_prochain"] as? String),
+                          piecesRetourQuotidien: j["pieces_retour_quotidien"] as? Int,
+                          flammeJours: flamme?["jours"] as? Int,
+                          flammeAujourdhui: flamme?["aujourdhui_fait"] as? Bool)
     }
 
     /// Le solde de pièces d'ARGENT (dérivé côté serveur, jamais une colonne).
@@ -164,6 +208,10 @@ enum SacreServeur {
         let credite: Bool
         let montant: Int
         let solde: Int
+        /// Depuis 20260830210000 : le jour de la maison écrit dans le carnet,
+        /// et ce que ce crédit a fait naître comme sachets (100 → 1).
+        let jour: String?
+        let sachetsConvertis: Int
     }
 
     static func claimRetourQuotidien(jwt: String) async throws
@@ -171,7 +219,9 @@ enum SacreServeur {
         let j = try await objet("claim_retour_quotidien", jwt: jwt)
         return RetourQuotidien(credite: (j["credite"] as? Bool) ?? false,
                                montant: (j["montant"] as? Int) ?? 0,
-                               solde: (j["solde"] as? Int) ?? 0)
+                               solde: (j["solde"] as? Int) ?? 0,
+                               jour: j["jour"] as? String,
+                               sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0)
     }
 
     /// LA CLÔTURE D'UNE SÉANCE — les pièces **et** le sachet, en un appel.
@@ -198,14 +248,27 @@ enum SacreServeur {
         let boosterId: String?
         let boosterNeuf: Bool
         let solde: Int
-        /// La pièce d'argent est-elle tombée sur cette séance (`roll_rare`,
+        /// La pièce d'argent est-elle tombée À CET APPEL (`roll_rare`,
         /// p = 1/30, pitié 45, cooldown 10 — tiré au RÈGLEMENT, jamais au
-        /// client). ⚠️ Faux sur un rejeu : l'index d'unicité l'interdit.
+        /// client). ⚠️ Faux sur un rejeu — et depuis 20260830210000 c'est
+        /// `argentSeance` qui dit si la séance l'a jamais fait tomber.
         let argent: Bool
         /// Où en est la jauge APRÈS ce gain (0…prix−1).
         let reste: Int
         /// Le prix du sachet, tel que la base le dit à cet instant.
         let prixBooster: Int
+        // ── DEPUIS 20260830210000 (30-08 soir) ──
+        /// Un REJEU (outbox, kill, double tap) : le serveur a rendu le STOCKÉ
+        /// — les mêmes pièces, le même sachet — et n'a rien crédité.
+        let rejeu: Bool
+        /// Le solde d'argent APRÈS ce règlement — l'app le POSE, elle ne
+        /// l'incrémente plus (un rejeu comptait la pièce deux fois).
+        let soldeArgent: Int?
+        /// La pièce d'argent est-elle tombée pour CETTE séance (rejeu compris).
+        let argentSeance: Bool
+        /// Les sachets nés de ce crédit (100 pièces → 1), dans la même
+        /// transaction — de quoi empiler une dalle « +N sachets ».
+        let sachetsConvertis: Int
     }
 
     static func cloturerSeance(_ workout: UUID, series: Int,
@@ -214,15 +277,20 @@ enum SacreServeur {
                                 corps: ["p_workout": workout.uuidString
                                                             .lowercased(),
                                         "p_series": series])
+        let argent = (j["argent"] as? Bool) ?? false
         return ClotureSeance(pieces: (j["pieces"] as? Int) ?? 0,
                              piecesCreditees: (j["pieces_creditees"] as? Bool)
                                 ?? false,
                              boosterId: j["booster_id"] as? String,
                              boosterNeuf: (j["booster_neuf"] as? Bool) ?? false,
                              solde: (j["solde"] as? Int) ?? 0,
-                             argent: (j["argent"] as? Bool) ?? false,
+                             argent: argent,
                              reste: (j["reste"] as? Int) ?? 0,
-                             prixBooster: (j["prix_booster"] as? Int) ?? 100)
+                             prixBooster: (j["prix_booster"] as? Int) ?? 100,
+                             rejeu: (j["rejeu"] as? Bool) ?? false,
+                             soldeArgent: j["solde_argent"] as? Int,
+                             argentSeance: (j["argent_seance"] as? Bool) ?? argent,
+                             sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0)
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
@@ -260,33 +328,22 @@ enum SacreServeur {
                                                      series: series))
     }
 
-    /// LE VERSEMENT DE CONNEXION — appelé au retour au premier plan.
+    /// LE VERSEMENT DE CONNEXION — posté AU TAP du bouton Claim, et nulle
+    /// part ailleurs (tranché par Kathryn le 30-08 : « je tiens au bouton
+    /// Claim »).
     ///
-    /// ⚠️⚠️ **JUSQU'AU 29-08, PERSONNE NE POSTAIT CE CAS.** La fonction
-    /// serveur était déployée et vérifiée le 28-08, le cas `.retourQuotidien`
-    /// existait dans l'outbox et y était traité — mais aucune ligne de l'app
-    /// ne l'y mettait. Du code mort des deux côtés d'un tuyau complet.
+    /// ⚠️⚠️ **JUSQU'AU 30-08 AU SOIR, IL PARTAIT TOUT SEUL** à chaque retour
+    /// au premier plan, sans card ni bouton, avec un marqueur UserDefaults en
+    /// UTC pour ne pas reposter dans la journée — le contraire de la doctrine
+    /// (§4 duodecies : « l'encaissement, c'est le bouton Claim »). Le marqueur
+    /// est mort avec lui : le serveur sait si le jour est pris
+    /// (`etat_coffre().retour_disponible`, lu sans payer), et l'index
+    /// `(user, jour)` reste la seule idempotence — un Claim rejoué ne crédite
+    /// rien et ne lève rien.
     ///
-    /// ⚠️ **LE MARQUEUR LOCAL N'EST PAS L'IDEMPOTENCE.** Celle-ci est côté
-    /// serveur, dans un index unique partiel sur (user, jour) — un marqueur de
-    /// préférences se remet à zéro à la réinstallation, la loi est écrite. Il
-    /// n'est ici que par POLITESSE : sans lui, on posterait un RPC à CHAQUE
-    /// bascule d'application, et il y en a beaucoup.
-    ///
-    /// ⚠️ **ET IL COMPTE LE JOUR EN UTC**, comme la fonction serveur
-    /// (`(now() at time zone 'UTC')::date`). Un marqueur en heure locale et un
-    /// index en UTC ne changent pas de jour au même instant : à Paris, entre
-    /// minuit et 1 h, le local dirait « nouveau jour » quand le serveur dirait
-    /// « déjà pris » — ou l'inverse, et on sauterait un versement. Le jour où
-    /// le fuseau du profil sera tranché, ces deux lignes-là changent ensemble.
-    static func reglerRetourQuotidien() async {
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = TimeZone(identifier: "UTC") ?? .gmt
-        let jour = utc.startOfDay(for: Date()).timeIntervalSince1970
-        let cle = "woop.retour.dernierJourUTC"
-        let vu = UserDefaults.standard.double(forKey: cle)
-        guard vu != jour else { return }
-        UserDefaults.standard.set(jour, forKey: cle)
+    /// Elle passe par l'outbox : hors ligne, le tap n'est pas perdu, il est
+    /// rejoué au prochain retour au premier plan.
+    static func reclamerRetourQuotidien() async {
         await OutboxGains.shared.poster(.retourQuotidien)
     }
 

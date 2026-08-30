@@ -104,7 +104,7 @@ le livrable dépasse 2 Mo.
 
 | | |
 |---|---|
-| ◉ | **État** — l'accueil : les compteurs (calculés à la build), une card par domaine teintée par son pire état (≥ 1 🔴 rouge · tout 🟢 vert · sinon argent), **la liste de tout ce qui reste à faire côté serveur**, 🔴 d'abord, et le flow en images |
+| ◉ | **État** — l'accueil parle en **quatre familles, par QUI agit** (30-08, « je veux savoir ce que JE dois faire ») : **à trancher** (elle — une ◌ « Trancher / Définir / Décider… » ou une brique « décision ① »), **à valider ensemble** (elle et moi — 🔴), **en chantier** (moi — 🟡 🔵 ⚪, les autres ◌, une 🟢 à litige), **bon** (personne — 🟢). Le hero dit la prochaine chose à faire (« 3 décisions t'attendent »), quatre compteurs calculés à la build, une card par domaine (≥ 1 à trancher blanche · ≥ 1 à valider rouge · tout bon verte · sinon argent), **la liste de ce qui reste** en trois sections (pas de section « bon » : ce qui va n'est pas une to-do), et le flow en images. Les cinq états restent la vérité de la source (`content/index.ts` `famille`), regroupés à l'affichage |
 | ▤ | **Serveur** — la carte : 12 tables, 15 fonctions, 26 règles, 2 edge functions, 6 videurs, les sondes HTTP, le lexique, le dictionnaire plié |
 | ◇ | **Flow · Le coffre · Les annonces · Forge · Stories · Compte** — chaque page ouvre sur son hero (la couleur MESURÉE de l'écran de l'app, la capture fondue dedans, le verdict calculé ; **vert** quand tout y est branché et que rien n'y ment — la règle des cards, rendue sur la page), puis « Ce qui ment », un schéma, « Ce qui reste », « Ce qui tient », une décision, et la prose pliée. Le 30-08, « Économie & annonces » est devenue deux pages (`tools/annonces/PLAN-COFFRE-ANNONCES.md` §7) |
 

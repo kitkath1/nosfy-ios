@@ -123,26 +123,64 @@ figcaption{margin-top:10px}
 /* ── l'accueil, allégé ────────────────────────────────────── */
 .glyphes{display:none}
 .hero h1{max-width:none}
-.compteurs .pill{background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0 4px;height:28px;color:rgba(255,255,255,.62);border-radius:0;border-bottom:1px solid transparent}
-.compteurs .pill b{font-size:15px}
-.compteurs .pill:hover{color:var(--encre-1)}
-.compteurs .pill.on{background:none;border-color:rgba(255,255,255,.55);box-shadow:none;color:#fff}
-.compteurs{gap:4px 20px}
+/* LES QUATRE FAMILLES (30-08, « je veux savoir ce que JE dois faire ») : quatre compteurs, le chiffre en 300 comme
+   le h1, le mot dessous. La couleur reste dans la bille (blanc · rouge · gris · vert) — le chiffre est un blanc en
+   dégradé, comme le h1. */
+.familles{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 44px;margin:28px 0 0}
+.fam{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:0 0 6px;background:none;border:0;border-bottom:1px solid transparent;border-radius:0;
+  cursor:pointer;color:inherit;text-align:left;font-family:var(--sans);transition:border-color .14s}
+.fam b{font-size:44px;line-height:48px;font-weight:300;letter-spacing:-.025em;font-variant-numeric:tabular-nums;display:inline-block;padding-bottom:.04em;
+  background-image:linear-gradient(100deg,#fff 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,.68) 80%,rgba(255,255,255,.55) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.fam span{display:inline-flex;align-items:center;gap:7px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.62);transition:color .14s}
+.fam span .pt{width:7px;height:7px}
+.fam small{font-size:12px;line-height:16px;color:var(--encre-3);font-variant-numeric:tabular-nums}
+.fam:hover span{color:#fff}
+.fam.on{border-bottom-color:rgba(255,255,255,.55)} .fam.on span{color:#fff}
+.fam:focus-visible{outline:1px solid rgba(255,255,255,.35);outline-offset:4px;border-radius:4px}
+.familles .pill.alerte{align-self:center;border:1px dashed var(--men);color:var(--men);display:none}
+.familles .pill.alerte.on{display:inline-flex}
+/* la bille d'une famille : à trancher BLANCHE pleine · à valider rouge · en chantier grise · bon verte
+   (l'état, lui, vit dans la bille de chaque rangée — en petit) */
+.pt[data-fam=trancher]{--c:#fff;background:radial-gradient(circle at 35% 30%,#fff,rgba(255,255,255,.86) 60%);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.5),0 0 0 3px rgba(255,255,255,.14)}
+.pt[data-fam=valider]{--c:var(--men)}
+.pt[data-fam=chantier]{--c:rgba(255,255,255,.42)}
+.pt[data-fam=bon]{--c:var(--ok)}
+/* LE VERT de l'accueil : tout bon → l'aurore prend la teinte de l'état (--ok), même logique que .hero-dom.vert */
+.hero.vert::before{background:
+  radial-gradient(60% 70% at 48% -10%,color-mix(in srgb,var(--ok) 79%,#000) 0%,rgba(0,0,0,0) 60%),
+  radial-gradient(90% 80% at 50% -15%,color-mix(in srgb,var(--ok) 52%,#000) 0%,rgba(0,0,0,0) 72%),
+  radial-gradient(45% 55% at 12% 4%,color-mix(in srgb,var(--ok) 40%,#000),rgba(0,0,0,0) 70%),
+  linear-gradient(180deg,color-mix(in srgb,var(--ok) 20%,#000) 0%,color-mix(in srgb,var(--ok) 12%,#000) 34%,#000 100%)}
 .dom .seg,.dom .aller{display:none}
 .dom{min-height:150px;grid-template-rows:auto auto}
 .dom h3{font-size:22px;max-width:none}
+.dom .sous{display:block;font-size:12.5px}
+/* la teinte d'une card : ≥ 1 à trancher BLANCHE · ≥ 1 à valider rouge (= .dom.men de la v1) · tout bon verte (= .dom.ok) · sinon argent */
+.dom.trancher{--t:255,255,255;border-color:rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.08) 45%,#0A0A0A 100%)}
+.dom.trancher .sur{color:rgba(255,255,255,.80)}
+.dom.valider{--t:229,106,106;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(229,106,106,.30) 0%,rgba(229,106,106,.06) 45%,#0A0A0A 100%)}
+.dom.bon{--t:95,201,140;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(95,201,140,.26) 0%,rgba(95,201,140,.06) 45%,#0A0A0A 100%)}
 .filtres .pill{background:none;border-color:transparent;padding:0 8px}
 .filtres .pill.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);box-shadow:none}
+.liste .grp{text-transform:none;letter-spacing:-.005em;font-size:13px;color:var(--encre-1)}
+.liste .grp .pt{width:7px;height:7px}
+.liste .rien-a-faire{padding:14px 12px;font-size:13px;color:var(--encre-3);max-width:none}
 .liste .fin{font-size:11.5px}
-.legende-pied{display:flex;flex-wrap:wrap;gap:6px 16px;padding:24px 40px 0;font-size:12px;color:var(--encre-3);max-width:none}
-.legende-pied .p{height:20px;padding:0 7px 0 5px;font-size:10.5px}
+/* la légende du pied : une phrase par famille, quatre lignes, qui disent QUI agit */
+.legende-pied{padding:32px 40px 0;font-size:12.5px;line-height:20px;color:var(--encre-3);max-width:none}
+.legende-pied p{margin:0 0 4px;max-width:none}
+.legende-pied b{font-weight:500;color:var(--encre-2)}
+.legende-pied .pt{width:7px;height:7px;vertical-align:1px;margin:0 6px 0 0}
 
 /* ── les 3 animations : l'arrivée de la home (HomeNuit.swift:343-357), une fois ── */
 @keyframes arrive{from{opacity:0;filter:blur(1em);transform:translateY(22px) scale(1.05)}to{opacity:1;filter:blur(0);transform:none}}
 @keyframes allume{from{background-position:100% 100%}to{background-position:0 0}}
 .js body.entree .page.on>h1,.js body.entree .page.on>.phrase,.js body.entree .page.on .hero-dom>.sur,.js body.entree .page.on .hero-dom>.verdict,.js body.entree .page.on .hero-dom>.comptes,
-.js body.entree .page.on .hero>h1,.js body.entree .page.on .hero>.phrase{transform-origin:left center;animation:arrive .9s var(--courbe) both}
+.js body.entree .page.on .hero>h1,.js body.entree .page.on .hero>.phrase,.js body.entree .page.on .hero>.familles{transform-origin:left center;animation:arrive .9s var(--courbe) both}
 .js body.entree .page.on>.phrase,.js body.entree .page.on .hero>.phrase{animation-delay:.14s}
+.js body.entree .page.on .hero>.familles{animation-delay:.28s}
 .js body.entree .page.on .hero-dom>.sur{animation-delay:.28s}
 .js body.entree .page.on .hero-dom>.verdict{animation-delay:.42s}
 .js body.entree .page.on .hero-dom>.comptes{animation-delay:.56s}
@@ -161,6 +199,9 @@ figcaption{margin-top:10px}
   .hero-dom{height:320px;border-radius:20px;padding:0 24px 24px}
   .hero-dom img{width:160px;top:32px}
   .hero-dom .verdict{font-size:28px;line-height:32px}
+  .familles{gap:8px 28px;margin-top:22px}
+  .fam b{font-size:36px;line-height:40px}
+  .legende-pied{padding:24px 20px 0}
   .liste li.r{grid-template-columns:22px minmax(0,1fr);grid-template-areas:"pt t" ". m";height:58px}
   .liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) 16px;grid-template-areas:"pt t chev" ". m chev"}
   .lexique{grid-template-columns:1fr}

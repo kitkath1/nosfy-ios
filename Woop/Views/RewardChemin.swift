@@ -283,15 +283,24 @@ enum TirageRecompense {
         // compte qui roule, au-dessus de la route. La pastille dans la card dit
         // « c'est porté au compte » ; celle-ci le REJOUE à l'endroit où le
         // solde vit, pour que le geste se termine là où il compte.
-        let gain: Int? = tirage?.type == .coins ? tirage?.montant : nil
+        // ⚠️ TRANCHÉ LE 30-08 : « la card à gratter ET une dalle après, robe
+        // pièces ou booster ». Avant, un tirage en sachets ne posait RIEN (la
+        // dalle n'avait qu'une robe). L'événement fait la robe : pièces, pièce
+        // d'argent (piste pièces, monnaie silver), ou sachet(s).
+        let annonce: Annonce? = {
+            guard let t = tirage else { return nil }
+            switch t.type {
+            case .coins:
+                return t.isLegendaryCurrency ? .argent(t.montant) : .pieces(t.montant)
+            case .boosters:
+                return .sachet(max(t.boosters.count, 1))
+            }
+        }()
         withAnimation(.easeOut(duration: 0.28)) { ouverte = nil }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.tirage = nil
-            guard let gain else { return }
-            withAnimation { DepartEtat.shared.notifPieces = gain }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
-                withAnimation { DepartEtat.shared.notifPieces = nil }
-            }
+            guard let annonce else { return }
+            FileAnnonces.shared.pousser(annonce)
         }
     }
 }

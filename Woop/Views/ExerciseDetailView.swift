@@ -1095,7 +1095,7 @@ struct ExerciseDetailView: View {
                         // (§4 duodecies : 10, une fois par jour calendaire) —
                         // sinon « Claim +4 » sur une card qui donne 10 pièces.
                         count: styleFinal == .welcome
-                            ? Self.piecesRetourQuotidien
+                            ? EconomieWoop.shared.piecesRetourQuotidien
                             : (rangIssue ?? max(sets.filter(\.isDone).count, 4)),
                         title: {
                             if case .moment(let t, _, _) = iss { return t }
@@ -2262,12 +2262,10 @@ struct ExerciseDetailView: View {
     /// ⚠️ **UNE CONSTANTE SWIFT QUI DOUBLE UNE RÈGLE SERVEUR EST UNE BOMBE À
     /// RETARDEMENT** — la loi du back-end est « l'app LIT les prix, elle ne
     /// les connaît pas », et celui-ci vit déjà en base
-    /// (`reward_rules.pieces_retour_quotidien`). Il est ici parce que la robe
-    /// welcome n'a **aucune porte de production** aujourd'hui : elle ne sert
-    /// que l'atelier, et un atelier qui annonce « +4 Sets » sur une card de
-    /// versement ment aussi. Il disparaît au branchement de
-    /// `regles_annonces()`.
-    private static let piecesRetourQuotidien = 10
+    /// (`reward_rules.pieces_retour_quotidien`). ✅ Le 30-08 au soir la copie
+    /// « 10 » est morte : `etat_coffre()` rend le montant (20260830220000) et
+    /// `EconomieWoop.piecesRetourQuotidien` le porte — l'atelier lit le même
+    /// nombre que la vraie card, montée à la racine (`WoopApp.swift`).
 
     /// Ce que l'issue montre, et ce qu'elle laisse derrière elle.
     ///

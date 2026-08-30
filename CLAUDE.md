@@ -1,5 +1,32 @@
 # Woop — instructions projet
 
+## ⚠️⚠️⚠️ RÈGLE ABSOLUE, NON NÉGOCIABLE — TOUTE SESSION LIT LE SITE DU BACK-END AVANT DE TRAVAILLER
+
+**Demandé par Kathryn le 30-08-2026 : « toutes les sessions doivent lire le site du
+back-end qu'on bosse ensemble — impératif, non négociable ».**
+
+Le site de documentation (`docs/site/`, servi sur <http://localhost:3111>, source
+`docs/site/content/serveur.ts` · `briques.ts` · `mesures.ts`) est **l'état vérifié du
+projet** : pour chaque brique, si ça marche, si ça ment, ou si ça n'existe pas — et si
+c'est dans le téléphone ou dans Supabase. Plusieurs sessions Claude travaillent en même
+temps sur ce dépôt ; ce site est ce qui les empêche de se contredire.
+
+**Avant la première ligne de code, de plan ou de réponse sur un sujet, chaque session :**
+
+1. **lit la carte du serveur et les briques du domaine qu'elle touche**
+   (`docs/site/content/serveur.ts`, `briques.ts`, `mesures.ts` — ou la page du domaine
+   sur <http://localhost:3111>) — l'état, la preuve, la note, le litige de chaque ligne ;
+2. **ne re-déduit JAMAIS un état que le site dit déjà** — un état se lit, il ne se devine
+   pas ; si le site et le code se contredisent, c'est un 🔴 ou un litige à poser, pas une
+   opinion à défendre ;
+3. **met le site à jour dans le MÊME commit** que toute modification qui touche au
+   back-end ou à un site d'appel (la règle du §« La documentation » ci-dessous) ;
+4. **ne repeint jamais une pastille en 🟢 sans avoir mesuré** (appel fait, réponse LUE).
+
+Une session qui n'a pas lu le site n'a pas le droit de dire ce qui marche. Une session
+qui modifie le back-end sans mettre le site à jour a laissé son travail inachevé.
+
+
 ## La documentation
 
 **`docs/site/` est LE site de documentation du projet.** Sa **source** est une

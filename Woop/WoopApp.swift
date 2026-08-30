@@ -84,17 +84,24 @@ struct WoopApp: App {
             guard nouvelle == .active else { return }
             Task {
                 await OutboxGains.semer()          // banc `-outboxSemer`
-                // ⚠️ LE VERSEMENT DE CONNEXION D'ABORD, LE VIDAGE ENSUITE :
-                // `poster` tente l'envoi tout de suite et ne met en file qu'en
-                // cas d'échec — s'il échoue, le vidage qui suit le rejoue dans
-                // la foulée au lieu d'attendre la prochaine bascule.
-                await SacreServeur.reglerRetourQuotidien()
+                // ⚠️ LE +10 NE PART PLUS D'ICI (30-08 soir) : il part AU TAP
+                // du bouton Claim de la card Welcome Back, qui s'ouvre plus
+                // bas si le serveur dit que le jour est encore à prendre.
                 await OutboxGains.shared.vider()
                 // ⚠️ **APRÈS le vidage, jamais avant.** La file peut porter
                 // une clôture de séance faite hors ligne : relire le solde
                 // avant de la jouer, ce serait afficher l'ancien — et le
                 // corriger sous les yeux de quelqu'un une seconde plus tard.
                 await EconomieWoop.shared.rafraichir()
+                // LA PORTE DU WELCOME BACK — la home, au premier plan, une fois
+                // par jour de la maison : `retour_disponible` est LU sans payer
+                // (M1), donc la card ne promet que ce qu'elle peut encaisser.
+                // Jamais par-dessus une séance en cours ni un manège.
+                let eco = EconomieWoop.shared
+                if eco.serveur, eco.retourDisponible,
+                   !SacreEtat.shared.manegeOuvert, !SacreEtat.shared.popupOuverte {
+                    DepartEtat.shared.welcomeOuverte = true
+                }
             }
         }
     }
@@ -538,17 +545,18 @@ struct RootView: View {
     /// Le gain à annoncer quand la story se ferme (posé avec elle).
     @State private var storyGain = 0
 
-    /// APRÈS LA STORY : la notif des pièces (+0,3 s, 3 s), puis la card booster
-    /// (+3,4 s) — la pop-up ne se superpose jamais à la capsule.
+    /// APRÈS LA STORY : LA PILE (30-08 soir) — les pièces, puis le sachet
+    /// forfaitaire, l'une sous l'autre (+0,3 s, puis +0,45 s d'écart), et la
+    /// pièce d'argent / les sachets convertis quand `cloturer_seance` répond
+    /// (`EconomieWoop.appliquer`) ; puis la card booster « Ouvrir » (+3,4 s).
+    /// ⚠️ Le J3 du plan remplace ce chaînage par la page noire qui ATTEND la
+    /// réponse, puis le chemin animé, puis « Ouvrir » — ici, l'empilement seul.
     private func enchainerApresStory() {
         let gain = storyGain
         storyGain = 0
         guard gain > 0 else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation { depart.notifPieces = gain }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.3) {
-            withAnimation { depart.notifPieces = nil }
+            FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
             SacreEtat.shared.proposer()
@@ -1232,16 +1240,11 @@ struct RootView: View {
             // STOP — elle vient APRÈS elle — et sous MoonDust (20).
             storyFinHote
 
-            // LA NOTIF DES PIÈCES — la mini capsule liquid glass qui
-            // descend à l'arrivée home, le compte qui roule.
-            VStack {
-                PiecesNotif(gain: depart.notifPieces ?? 0,
-                            visible: depart.notifPieces != nil)
-                Spacer()
-            }
-            .padding(.top, 8)
-            .zIndex(9)
-            .allowsHitTesting(false)
+            // LES ANNONCES — la pile de dalles liquid glass (pièces, sachet,
+            // argent, +10) qui descendent et s'empilent, le compte qui roule.
+            // Une par événement ; la file vit dans Annonces.swift.
+            PileAnnoncesHote()
+                .zIndex(9)
 
             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
             // racine (l'école du parcours booster : l'état partagé, pas
@@ -1283,6 +1286,23 @@ struct RootView: View {
                 // La sonde de cadence (`-fps`) : elle dit l'état RÉEL de
                 // l'écran, panneau ouvert comme fermé.
                 .sondeCadence(sacre.popupOuverte ? "panneau" : "home")
+            // LA CARD WELCOME BACK (30-08 soir) — sa porte de production : la
+            // home, au premier plan, quand le serveur dit que le +10 du jour
+            // est à prendre. Le Claim ENCAISSE (outbox → claim_retour_quotidien)
+            // et la dalle « +10 » se dit au tap ; « Later » la range. Sous la
+            // pile des annonces (9), au-dessus de la card booster (6).
+            if depart.welcomeOuverte {
+                RewardPopup(count: EconomieWoop.shared.piecesRetourQuotidien,
+                            title: "Welcome back",
+                            subtitle: "Your next session is waiting for you.",
+                            unit: "Coins",
+                            style: .welcome,
+                            robe: .video,
+                            onClose: { depart.welcomeOuverte = false },
+                            onClaim: { EconomieWoop.shared.reclamerRetour() })
+                    .zIndex(8)
+                    .transition(.opacity)
+            }
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
                            // LA MORSURE de la card (BoosterCard.swift) : si

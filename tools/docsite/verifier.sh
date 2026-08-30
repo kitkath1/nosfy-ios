@@ -128,7 +128,7 @@ for p in $PAGES; do for l in 1440 390; do [ -s "$CAPTURES/$p-$l.png" ] || ko "ca
 # Plus de `chrome --dump-dom` : en v2 les compteurs sont calculés à la build, ils se lisent dans le
 # livrable. (Et un Chrome sans --user-data-dir attend le verrou du profil sans fin dès qu'un Chrome
 # sans tête fantôme traîne — payé le 30-08 : 10 min de blocage.)
-print "   $(grep -o 'id="etat"[^>]*' $LIVRABLE | head -1) · $(grep -o 'data-f="etat:' $LIVRABLE | wc -l | tr -d ' ') compteurs statiques"
+print "   $(grep -o 'id="etat"[^>]*' $LIVRABLE | head -1) · $(grep -o 'data-f="fam:' $LIVRABLE | wc -l | tr -d ' ') compteurs statiques (à trancher · à valider · en chantier · bon)"
 
 etape "9. les sondes PIL — le hero de Compte à 1440 (la teinte meurt dans le noir, rien ne bave dessous)"
 python3 - "$CAPTURES/porte-1440.png" "$LIVRABLE" <<'PY' || ko "sonde du hero"

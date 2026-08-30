@@ -113,9 +113,11 @@ print("aujourd'hui à Paris :", aujourdhui_paris, "· heure Paris :", datetime.n
 
 print("\n[0] etat_coffre — les quatre clés nouvelles, et le stock d'avant converti")
 e0 = coffre(jwt); print("   ", json.dumps(e0))
-for k in ("jour", "retour_disponible", "retour_prochain", "flamme"):
+for k in ("jour", "retour_disponible", "retour_prochain", "flamme", "pieces_retour_quotidien"):
     verdict(k in e0, f"la clé {k} existe (témoin : absente = KeyError)")
 verdict(e0.get("jour") == aujourdhui_paris, f"jour = {e0.get('jour')} = aujourd'hui à Paris ({aujourdhui_paris})")
+verdict(isinstance(e0.get("pieces_retour_quotidien"), int) and e0["pieces_retour_quotidien"] > 0,
+        f"pieces_retour_quotidien = {e0.get('pieces_retour_quotidien')} — le montant vient de la règle, plus d'une constante Swift (20260830220000)")
 verdict(isinstance(e0.get("flamme"), dict) and "jours" in e0.get("flamme", {}) and "aujourdhui_fait" in e0.get("flamme", {}),
         "flamme est un objet {jours, aujourdhui_fait}")
 prix = e0.get("prix_booster") or 100

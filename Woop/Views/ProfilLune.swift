@@ -22,6 +22,9 @@ struct ProfilLuneView: View {
     @State private var showReglages = false
     /// Le rebond de la pastille pièces au tap (0 → 1 → 0).
     @State private var coinKick: CGFloat = 0
+    /// Le même rebond pour la pastille d'ARGENT — le sien, pour que l'or ne
+    /// tressaille pas quand on touche l'argent.
+    @State private var argentKick: CGFloat = 0
     /// LA sonde du scroll — une seule, le champ vivant (le piège de la
     /// sonde constante : une sonde qui renvoie une constante ne rappelle
     /// jamais).
@@ -547,43 +550,14 @@ struct ProfilLuneView: View {
                     .allowsHitTesting(false))
             .overlay(coque
                 .strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
-            // LES DEUX PASTILLES, CÔTE À CÔTE : les pièces et — quand il
-            // y en a — les boosters qui attendent. La pill booster est LA
-            // RÉCUPÉRATION du parcours : dire « Plus tard » à la pop-up
-            // ne perd jamais un sachet, on revient le chercher ici, et
-            // elle ouvre le Manège DIRECTEMENT (pas de détour).
+            // LE TRÉSOR SUR LA BANNIÈRE : la flamme, les deux réserves
+            // de sachets, l'argent et l'or — TOUJOURS visibles, même à 0
+            // (verdict 30-08). La pill booster est LA RÉCUPÉRATION du
+            // parcours : dire « Plus tard » à la pop-up ne perd jamais un
+            // sachet, on revient le chercher ici, et elle ouvre le Manège
+            // DIRECTEMENT (pas de détour).
             .overlay(alignment: .bottomTrailing) {
-                HStack(spacing: 8) {
-                    // LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe
-                    // devant : deux réserves qui ne se mélangent jamais
-                    // (verdict 28-08) — une pastille sur la pill jaune
-                    // aurait dit « des boosters, dont des noirs », alors
-                    // que ce sont deux portes et deux manèges.
-                    if SacreEtat.shared.boostersNoirsEnAttente > 0 {
-                        PillBooster(
-                            nombre: SacreEtat.shared.boostersNoirsEnAttente,
-                            robe: .noire) {
-                            SacreEtat.shared.ouvrirManege(robe: .noire)
-                        }
-                        .transition(.scale(scale: 0.7)
-                            .combined(with: .opacity))
-                    }
-                    if SacreEtat.shared.boostersEnAttente > 0 {
-                        PillBooster(
-                            nombre: SacreEtat.shared.boostersEnAttente) {
-                            SacreEtat.shared.ouvrirManege(robe: .lune)
-                        }
-                        .transition(.scale(scale: 0.7)
-                            .combined(with: .opacity))
-                    }
-                    pastillePieces
-                }
-                .animation(.spring(response: 0.42, dampingFraction: 0.8),
-                           value: SacreEtat.shared.boostersEnAttente)
-                .animation(.spring(response: 0.42, dampingFraction: 0.8),
-                           value: SacreEtat.shared.boostersNoirsEnAttente)
-                .padding(.trailing, 14)
-                .padding(.bottom, 14)
+                tresorBanniere
             }
             // L'identité au centre de la carte ouverte — le SLOT du
             // futur contenu vivra dessous (« plus tard on mettra des
@@ -743,6 +717,169 @@ struct ProfilLuneView: View {
         .padding(.horizontal, 20)
         .padding(.top, 44)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Le trésor sur la bannière
+
+    /// LES CINQ PASTILLES (30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
+    /// §0 « le profil ») : la pièce d'or, la pièce d'argent, le booster
+    /// noir, le booster orange et la flamme — **toujours visibles, même à
+    /// 0** : « sinon on ne sait pas qu'il existe ». Le géant, lui, vit
+    /// dans le sol (`TirageBooster`), pas ici.
+    ///
+    /// ⚠️ DEUX RANGS, pas un : cinq pastilles en ligne font ~410 pt, et à
+    /// droite de KD la bannière n'en offre ~270 (383 − 14 − 90). Le rang du
+    /// haut dit l'ÉTAT (la flamme) et les RÉSERVES (noir, orange) ; le rang
+    /// du bas, ancré où l'or a toujours été, dit les MONNAIES (argent, or).
+    /// Les `.transition` des pills restent : rien n'apparaît plus, mais le
+    /// jour où une pill se cache elles diront la sortie.
+    private var tresorBanniere: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            rangReserves
+            rangMonnaies
+        }
+        .animation(.spring(response: 0.42, dampingFraction: 0.8),
+                   value: SacreEtat.shared.boostersEnAttente)
+        .animation(.spring(response: 0.42, dampingFraction: 0.8),
+                   value: SacreEtat.shared.boostersNoirsEnAttente)
+        .padding(.trailing, 14)
+        .padding(.bottom, 14)
+    }
+
+    /// Le rang du haut : la flamme, puis les deux réserves de sachets.
+    /// LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe devant l'orange :
+    /// deux réserves qui ne se mélangent jamais (verdict 28-08) — une
+    /// pastille sur la pill jaune aurait dit « des boosters, dont des
+    /// noirs », alors que ce sont deux portes et deux manèges.
+    private var rangReserves: some View {
+        HStack(spacing: 8) {
+            pastilleFlamme
+            PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
+                        robe: .noire) {
+                ouvrirReserve(.noire)
+            }
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+            PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
+                ouvrirReserve(.lune)
+            }
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+        }
+    }
+
+    /// Le rang du bas : l'argent, puis l'or.
+    private var rangMonnaies: some View {
+        HStack(spacing: 8) {
+            pastilleArgent
+            pastillePieces
+        }
+    }
+
+    /// La porte du manège depuis une pill — GARDÉE ICI : une pill visible
+    /// à 0 (30-08) n'ouvre pas un manège vide, et `ouvrirManege` ne compte
+    /// pas. À 0 le sachet a déjà tressailli sous le doigt (le kick de
+    /// `PillBooster`) : ça suffit, pas de troisième canal.
+    private func ouvrirReserve(_ robe: RobeBooster) {
+        let nombre = robe == .noire
+            ? SacreEtat.shared.boostersNoirsEnAttente
+            : SacreEtat.shared.boostersEnAttente
+        guard nombre > 0 else { return }
+        SacreEtat.shared.ouvrirManege(robe: robe)
+    }
+
+    /// LA PIÈCE D'ARGENT (30-08) — la sœur de la pastille d'or : même
+    /// forme, même police, même matière, même geste (rebond puis le
+    /// coffre). La pièce est l'image `piece-argent-mini` — une image, pas
+    /// une scène : la 3D de l'or coûte déjà une `MoonCoinView`. Visible à
+    /// 0, sans mot : la couleur de la pièce dit laquelle c'est.
+    private var pastilleArgent: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.42)) {
+                argentKick = 1
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.32)) {
+                argentKick = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+                showCoffre = true
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image("piece-argent-mini")
+                    .resizable().scaledToFit()
+                    .frame(width: 22, height: 22)
+                    .frame(width: 24, height: 24)
+                    .rotationEffect(.degrees(Double(argentKick) * -14))
+                Text("\(economie.argent)")
+                    .font(.inter(15, .bold))
+                    .foregroundStyle(Color.inkPrimary)
+                    .contentTransition(.numericText())
+            }
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .glassEffect(.regular.tint(Color.black.opacity(0.5))
+                             .interactive(),
+                         in: .capsule)
+            .scaleEffect(1 + 0.10 * argentKick)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            "\(economie.argent) pièces d'argent — ouvrir le coffre")
+    }
+
+    /// La laque blanche de la flamme allumée — la robe du profil est
+    /// monochrome : jamais le néon de `FlammeJauge`.
+    private static let flammeLaque = LinearGradient(
+        colors: [Color(white: 0.96), Color(white: 0.72)],
+        startPoint: .top, endPoint: .bottom)
+
+    /// Vrai = la flamme est allumée (au moins un jour d'affilée).
+    private var flammeAllumee: Bool { economie.flammeJours > 0 }
+
+    private var flammeLabel: String {
+        let base = "Flamme : \(economie.flammeJours) jours d'affilée"
+        return economie.flammeAujourdhui
+            ? base + ", séance faite aujourd'hui" : base
+    }
+
+    /// LA FLAMME 🔥 (30-08 : « jours d'affilée, comptée au serveur, SANS
+    /// bonus ») — une pastille, pas un bouton : elle ne mène nulle part,
+    /// elle DIT. À 0 elle est mate (le contour `flame` en encre calme, la
+    /// flamme éteinte de `MiniCardJour`) ; au-delà elle s'allume — le
+    /// `flame.fill` en laque blanche. Le point après le nombre = la séance
+    /// d'AUJOURD'HUI est faite (`flammeAujourdhui`). Rien n'y bouge : pas
+    /// de verre animé, pas de Canvas (la loi du verre).
+    private var pastilleFlamme: some View {
+        HStack(spacing: 6) {
+            flammeGlyphe
+                .frame(width: 16, height: 24)
+            Text("\(economie.flammeJours)")
+                .font(.inter(15, .bold))
+                .foregroundStyle(flammeAllumee
+                    ? Color.inkPrimary : Color.inkSecondary)
+                .contentTransition(.numericText())
+            if economie.flammeAujourdhui {
+                Circle()
+                    .fill(Color.white.opacity(0.92))
+                    .frame(width: 4, height: 4)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .glassEffect(.regular.tint(Color.black.opacity(0.5)), in: .capsule)
+        .accessibilityLabel(flammeLabel)
+    }
+
+    @ViewBuilder private var flammeGlyphe: some View {
+        if flammeAllumee {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Self.flammeLaque)
+        } else {
+            Image(systemName: "flame")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.inkMuted)
+        }
     }
 
     /// La pastille de la page BRAVO, en petit, posée SUR la bannière. Au
@@ -1261,20 +1398,11 @@ struct TirageBooster: View {
             fermer()
             return
         }
-        Task {
-            let sort = await economie.acheterBooster()
-            guard case .obtenu = sort else {
-                // ⚠️ Un refus ne DIT rien pour l'instant, et c'est assumé :
-                // le panneau affiche déjà « Il te manque N pièces » sous la
-                // question, et ce texte lit le même solde. Une alerte
-                // par-dessus une cérémonie serait un troisième canal pour un
-                // fait déjà à l'écran.
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                return
-            }
-            SacreEtat.shared.ouvrirManege()
-            fermer()
-        }
+        // ⚠️ L'ACHAT EST MORT (30-08 soir, Q9) : `claim_booster` est révoquée
+        // au serveur, la conversion automatique fait naître le sachet à 100
+        // pièces. À 0 sachet, le panneau dit déjà « Il te manque N pièces » ;
+        // le tap ne fait que le confirmer du bout du doigt.
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
     private func sheet(W: CGFloat) -> some View {

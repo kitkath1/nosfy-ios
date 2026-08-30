@@ -33,25 +33,32 @@
   if (bouton) bouton.addEventListener('click', function () { document.body.classList.toggle('tiroir'); });
   if (voile) voile.addEventListener('click', function () { document.body.classList.remove('tiroir'); });
 
-  /* ── l'accueil : filtres + clic d'une rangée ─────────────── */
+  /* ── l'accueil : filtres par famille et par domaine + clic d'une rangée ──
+     Une rangée porte `data-fam` (à trancher · à valider · en chantier · bon — posé par Rangee à la build,
+     content/index.ts `famille`) et `data-etat` (les cinq états + nm). Un groupe = une famille. */
   var etat = document.getElementById('etat');
   if (etat) {
-    var rangees = q('.liste li.r', etat), groupes = q('.liste li.grp', etat);
-    var fE = {}, fD = {};
+    var rangees = q('.liste li.r', etat), groupes = q('.liste li.grp', etat), rien = etat.querySelector('.liste .rien-a-faire');
+    var fF = {}, fD = {};
     function vide(o) { for (var k in o) if (o[k]) return false; return true; }
     function appliquer() {
+      var visibles = 0;
       rangees.forEach(function (li) {
-        var ok = (vide(fE) || fE[li.dataset.etat]) && (vide(fD) || fD[li.dataset.dom]);
-        li.hidden = !ok;
+        var ok = (vide(fF) || fF[li.dataset.fam]) && (vide(fD) || fD[li.dataset.dom]);
+        li.hidden = !ok; if (ok) visibles++;
       });
       groupes.forEach(function (g) {
-        var k = g.dataset.grp, vis = rangees.filter(function (li) { return li.dataset.etat === k && !li.hidden; }).length;
+        var k = g.dataset.grp, vis = rangees.filter(function (li) { return li.dataset.fam === k && !li.hidden; }).length;
         g.hidden = !vis; var n = g.querySelector('.n'); if (n) n.textContent = vis;
       });
+      if (rien) {
+        rien.hidden = visibles > 0;
+        rien.textContent = fF.bon && !fF.trancher && !fF.valider && !fF.chantier ? 'Ce qui est bon n’est pas une to-do : rien à lister.' : 'Rien dans cette sélection.';
+      }
       q('[data-f]').forEach(function (b) {
         var f = b.dataset.f, on = false;
-        if (f === '*') on = vide(fE) && vide(fD);
-        else if (f.indexOf('etat:') === 0) on = !!fE[f.slice(5)];
+        if (f === '*') on = vide(fF) && vide(fD);
+        else if (f.indexOf('fam:') === 0) on = !!fF[f.slice(4)];
         else if (f.indexOf('dom:') === 0) on = !!fD[f.slice(4)];
         b.classList.toggle('on', on);
       });
@@ -59,8 +66,8 @@
     q('[data-f]').forEach(function (b) {
       b.addEventListener('click', function () {
         var f = b.dataset.f;
-        if (f === '*') { fE = {}; fD = {}; }
-        else if (f.indexOf('etat:') === 0) { var k = f.slice(5); fE[k] = !fE[k]; }
+        if (f === '*') { fF = {}; fD = {}; }
+        else if (f.indexOf('fam:') === 0) { var k = f.slice(4); fF[k] = !fF[k]; }
         else if (f.indexOf('dom:') === 0) { var d = f.slice(4); fD[d] = !fD[d]; }
         appliquer();
       });

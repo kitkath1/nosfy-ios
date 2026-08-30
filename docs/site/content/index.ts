@@ -30,26 +30,71 @@ export function aFaire(): { briques: Brique[]; mesures: Mesure[] } {
   return { briques: TOUTES.filter((b) => !b.reference && (b.etat !== 'ok' || b.litige)), mesures: MESURES }
 }
 
-/** Le VERT : tout 🟢 et 0 🔴 — UNE règle, pour les cards de l'accueil et pour le hero d'une page (30-08). */
-export const estVert = (c: ReturnType<typeof compter>) => c.total > 0 && c.men === 0 && c.ok === c.total
+/**
+ * LES QUATRE FAMILLES (30-08, retour de Kathryn : « je veux savoir ce que JE dois faire ») — ce qu'on LIT
+ * à l'accueil, défini par QUI AGIT. Les cinq états et les ◌ restent la vérité de la source ; ils sont
+ * REGROUPÉS à l'affichage, jamais supprimés :
+ *   à trancher          — elle          : une ◌ (ou une brique) qui attend SA décision — le titre commence par
+ *                                          « Trancher », « Définir », « Décider », ou porte « décision ① » (le
+ *                                          renvoi à un panneau « … décisions t'attendent » d'une page) ;
+ *   à valider ensemble  — elle et moi   : 🔴 l'écran affirme ce que le code ne fait pas ;
+ *   en chantier         — moi           : 🟡 local + 🔵 serveur seul + ⚪ absent + les autres ◌ à mesurer, et
+ *                                          une 🟢 qui porte un litige (le site et le code se contredisent : à relire) ;
+ *   bon                 — personne      : 🟢 branché et vérifié.
+ * Une décision DÉJÀ prise (« décision du 30-08 », « tranché le 30-08 » dans une note ou un litige) n'est pas
+ * à trancher : c'est du chantier — aligner le code sur la décision.
+ */
+export type Famille = 'trancher' | 'valider' | 'chantier' | 'bon'
+export const FAMILLES: Famille[] = ['trancher', 'valider', 'chantier', 'bon']
+/** Le mot du compteur (le hero) et le mot de la ligne (les cards) — « 2 à trancher · 6 à valider · 9 en chantier · 25 bons ». */
+export const LIBELLE_FAMILLE: Record<Famille, string> = { trancher: 'à trancher', valider: 'à valider ensemble', chantier: 'en chantier', bon: 'bon' }
+export const LIBELLE_LIGNE: Record<Famille, (n: number) => string> = {
+  trancher: () => 'à trancher', valider: () => 'à valider', chantier: () => 'en chantier', bon: (n) => (n > 1 ? 'bons' : 'bon'),
+}
+/** Qui agit — la légende du pied. */
+export const QUI_AGIT: Record<Famille, string> = { trancher: 'toi', valider: 'toi et moi', chantier: 'moi', bon: 'personne' }
+/** L'ordre des états DANS « en chantier » : local, serveur seul, absent (puis les ◌, puis les litiges). */
+export const ORDRE_CHANTIER: Etat[] = ['loc', 'srv', 'abs']
+const A_TRANCHER = /^(Trancher|Définir|Décider)\b|\bdécision [①-⑩]/u
 
-/** La teinte d'une card de domaine : ≥ 1 🔴 rouge · tout 🟢 vert · sinon argent. */
-export function teinteDomaine(d: Domaine): 'men' | 'ok' | 'argent' {
-  const c = compter(parDomaine(d))
-  if (c.men) return 'men'
-  if (estVert(c)) return 'ok'
-  return 'argent'
+export function famille(x: Brique | Mesure): Famille {
+  if (A_TRANCHER.test(x.titre)) return 'trancher'
+  if (!('etat' in x)) return 'chantier'                       // une ◌ : ce que le code laisse lire, à mesurer
+  if (x.etat === 'men') return 'valider'
+  if (x.etat === 'ok') return x.litige ? 'chantier' : 'bon'
+  return 'chantier'
 }
 
-/** La phrase d'une card ou d'un hero : « 6 briques mentent », « tout est branché »… */
-export function verdict(c: ReturnType<typeof compter>, nm = 0): string {
-  const br = (n: number) => `${n} brique${n > 1 ? 's' : ''}`
-  if (c.men) return `${br(c.men)} ${c.men > 1 ? 'mentent' : 'ment'}`
-  if (c.total && c.ok === c.total) return 'tout est branché'
-  if (c.loc) return `${br(c.loc)} ${c.loc > 1 ? 'locales' : 'locale'}`
-  if (c.abs) return `${br(c.abs)} à écrire`
-  if (c.srv) return `${br(c.srv)} sans appelant`
-  return nm ? `${nm} à mesurer` : 'rien à dire'
+export type Familles = { trancher: number; valider: number; chantier: number; bon: number; mesurer: number; total: number }
+/** Le compte par famille, briques ET mesures — `mesurer` dit combien de ◌ (elles comptent dans trancher ou chantier). */
+export function compterFamilles(briques: Brique[] = TOUTES, mesures: Mesure[] = MESURES): Familles {
+  const f: Familles = { trancher: 0, valider: 0, chantier: 0, bon: 0, mesurer: 0, total: 0 }
+  for (const b of briques) { f[famille(b)]++; f.total++ }
+  for (const m of mesures) { f[famille(m)]++; f.mesurer++; f.total++ }
+  return f
+}
+/** « 2 à trancher · 6 à valider · 9 en chantier · 25 bons » — les zéros ne s'écrivent pas. */
+export const ligneFamilles = (f: Familles) => FAMILLES.filter((k) => f[k]).map((k) => `${f[k]} ${LIBELLE_LIGNE[k](f[k])}`)
+
+/** Le VERT : tout bon — UNE règle, pour les cards de l'accueil, le hero de l'accueil et le hero d'une page. */
+export const estVert = (f: Familles) => f.total > 0 && f.bon === f.total
+
+/** La teinte d'une card de domaine : ≥ 1 à trancher blanche · ≥ 1 à valider rouge · tout bon verte · sinon argent (en chantier). */
+export function teinteDomaine(d: Domaine): Famille {
+  const f = compterFamilles(parDomaine(d), MESURES.filter((m) => m.domaine === d))
+  if (f.trancher) return 'trancher'
+  if (f.valider) return 'valider'
+  if (estVert(f)) return 'bon'
+  return 'chantier'
+}
+
+/** La phrase d'un hero ou d'une card : la PROCHAINE chose qu'elle doit faire. */
+export function verdict(f: Familles): string {
+  if (f.trancher) return f.trancher > 1 ? `${f.trancher} décisions t'attendent` : `1 décision t'attend`
+  if (f.valider) return `${f.valider} à valider ensemble`
+  if (f.chantier) return 'tout est en chantier, rien à faire pour toi'
+  if (f.bon) return 'Tout est bon.'
+  return 'rien à dire'
 }
 
 /** « 1 h · 1 j · chantier » — un seul vocabulaire, en texte. */

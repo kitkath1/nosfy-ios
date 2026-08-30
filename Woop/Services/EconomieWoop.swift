@@ -108,19 +108,27 @@ final class EconomieWoop {
 
     // ── LE VERSEMENT QUOTIDIEN, pour l'horloge du coffre (§29.7) ────────
     //
-    // Trois lectures, à DÉCODER du serveur, jamais à calculer ici : le
-    // montant (`pieces_retour_quotidien`), « il est dû » (`retour_disponible`)
-    // et le prochain minuit de la maison (`retour_prochain`) — M1
-    // `20260830210000_conversion_jour_flamme.sql`, PAS ENCORE POSÉE.
+    // Trois lectures, DÉCODÉES du serveur, jamais calculées ici : le montant
+    // (`pieces_retour_quotidien`, depuis 20260830220000), « il est dû »
+    // (`retour_disponible`) et le prochain minuit de la maison
+    // (`retour_prochain`) — M1 `20260830210000_conversion_jour_flamme.sql`,
+    // POSÉE le 30-08 à 18:48 et branchée ici le soir même (§29.11 ⑧).
     //
-    // ⚠️ Tant que le décodage (§29.11 ⑧) n'est pas branché, ces trois-là ne
-    // vivent QUE par la maquette : sur un vrai compte `prochainRetour` reste
-    // nil et le coffre ne montre PAS d'horloge — mieux qu'une heure inventée.
-    // ⚠️ Et le jour où ⑧ arrive : clé absente = valeur INCHANGÉE, jamais un
-    // défaut (deux dialectes, `SacreServeur.swift:120`).
+    // ⚠️ Clé absente = valeur INCHANGÉE, jamais un défaut (deux dialectes,
+    // `SacreServeur.swift:120`) : sur une base d'avant la migration,
+    // `prochainRetour` reste nil et le coffre ne montre PAS d'horloge —
+    // mieux qu'une heure inventée. Sans serveur, la maquette pose la sienne.
     private(set) var piecesRetourQuotidien = 10
     private(set) var retourDisponible = false
     private(set) var prochainRetour: Date?
+    /// Le jour de la maison (Europe/Paris), tel que le serveur le dit.
+    private(set) var jour: String?
+
+    // ── LA FLAMME 🔥 (30-08 : « jours d'affilée, comptée au serveur, SANS
+    //    bonus ») — dérivée de `workouts.ended_at`, jamais stockée, rien à
+    //    calculer ici : on l'affiche, c'est tout.
+    private(set) var flammeJours = 0
+    private(set) var flammeAujourdhui = false
 
     /// Vrai dès que le serveur a répondu UNE fois. Tant qu'il est faux, tout
     /// ce qui précède vient de la maquette.
@@ -218,6 +226,14 @@ final class EconomieWoop {
         reste = e.reste
         prixBooster = e.prixBooster
         piecesParSerie = e.piecesParSerie
+        // Les clés du 30-08 soir : POSÉES si présentes, INCHANGÉES sinon
+        // (une base d'avant la migration ne les rend pas — deux dialectes).
+        if let j = e.jour { jour = j }
+        if let d = e.retourDisponible { retourDisponible = d }
+        if let p = e.retourProchain { prochainRetour = p }
+        if let m = e.piecesRetourQuotidien { piecesRetourQuotidien = m }
+        if let f = e.flammeJours { flammeJours = f }
+        if let a = e.flammeAujourdhui { flammeAujourdhui = a }
         serveur = true
     }
 
@@ -231,9 +247,22 @@ final class EconomieWoop {
         or = c.solde
         reste = c.reste
         prixBooster = c.prixBooster
-        if c.argent { argent += 1 }
+        // ⚠️ L'ARGENT SE POSE, IL NE S'INCRÉMENTE PLUS (relecture adverse du
+        // 30-08 soir) : une réponse appliquée deux fois — reprise, rejeu de
+        // l'outbox — comptait la pièce deux fois jusqu'au prochain
+        // `etat_coffre`. Le serveur rend `solde_argent` depuis 20260830210000 ;
+        // sur une base d'avant, on garde l'ancien geste, sans le rejeu.
+        if let s = c.soldeArgent { argent = s }
+        else if c.argent, !c.rejeu { argent += 1 }
         if c.boosterNeuf { boostersServeur += 1 }
+        // Les sachets nés de ce crédit (100 pièces → 1) : ils comptent, et
+        // ils se DISENT — une dalle par événement (plan §3).
+        boostersServeur += c.sachetsConvertis
         serveur = true
+        var pile: [Annonce] = []
+        if c.sachetsConvertis > 0 { pile.append(.sachet(c.sachetsConvertis)) }
+        if c.argent { pile.append(.argent(1)) }
+        if !pile.isEmpty { FileAnnonces.shared.pousser(pile) }
     }
 
     /// Un versement de connexion réglé : le solde est à jour sans relecture.
@@ -242,59 +271,35 @@ final class EconomieWoop {
         reste = max(or, 0) % max(prixBooster, 1)
         // Crédité OU « déjà pris » : dans les deux cas le jour est réglé.
         retourDisponible = false
+        if let j = r.jour { jour = j }
+        boostersServeur += r.sachetsConvertis
+        if r.sachetsConvertis > 0 {
+            FileAnnonces.shared.pousser(.sachet(r.sachetsConvertis))
+        }
         serveur = true
     }
 
+    /// LE CLAIM DU WELCOME BACK — tranché le 30-08 : les +10 partent AU TAP,
+    /// et la dalle « +10 » se dit tout de suite (Q8 : le montant est local, le
+    /// journal rattrape ; si le serveur dit « déjà pris » — un autre appareil —
+    /// rien ne s'affiche de plus, et `etat_coffre` remet le solde d'aplomb au
+    /// prochain premier plan).
+    func reclamerRetour() {
+        guard retourDisponible else { return }
+        retourDisponible = false
+        FileAnnonces.shared.pousser(.retour(piecesRetourQuotidien))
+        Task { await SacreServeur.reclamerRetourQuotidien() }
+    }
+
     // ── LES DÉPENSES ────────────────────────────────────────────────────
-
-    enum Achat {
-        case obtenu
-        case soldeInsuffisant(manque: Int)
-        case impossible
-    }
-
-    /// ACHETER UN SACHET — **le seul débit de pièces de l'app.**
-    ///
-    /// ⚠️⚠️ **IL N'EN EXISTAIT AUCUN.** Les deux boutons qui promettaient un
-    /// achat — le panneau du profil (« Utiliser N pièces pour ouvrir un
-    /// booster ? ») et le pied du coffre (« bought for 100 coins ») —
-    /// appelaient tous deux `SacreEtat.ouvrirManege()` et rien d'autre :
-    /// aucun débit, aucune garde sur le solde. On pouvait ouvrir des sachets
-    /// indéfiniment avec zéro pièce, et le ledger ne faisait que grossir. Le
-    /// commentaire du profil l'assumait (« DÉMO : le verrou des pièces NE
-    /// FERME JAMAIS la porte ») — il ne l'assume plus.
-    ///
-    /// ⚠️ **LE DÉBIT ET LA RÉSERVE SONT DANS LA MÊME TRANSACTION**, côté
-    /// serveur (`claim_booster`) : sans ça, un réseau qui coupe entre les deux
-    /// laisse une pièce dépensée sans sachet, ou l'inverse. C'est aussi
-    /// pourquoi cet achat ne passe PAS par l'outbox : une file d'attente
-    /// répond « peut-être, plus tard », et on n'ouvre pas une cérémonie sur un
-    /// peut-être.
-    ///
-    /// ⚠️ **SANS SERVEUR, LA PORTE RESTE OUVERTE.** L'app doit tourner sans
-    /// compte : la maquette laisse passer, comme avant. C'est un choix, pas un
-    /// oubli — refuser l'achat hors ligne fermerait le manège à quiconque n'a
-    /// pas encore de compte, et le manège est ce qu'on montre en premier.
-    func acheterBooster() async -> Achat {
-        guard Self.possible else { return .obtenu }
-        do {
-            let jwt = try await SupabaseSession.shared.token()
-            let a = try await SacreServeur.claimBooster(jwt: jwt)
-            or = a.solde
-            prixBooster = a.prix
-            reste = max(or, 0) % max(prixBooster, 1)
-            serveur = true
-            guard a.ouvert else {
-                return .soldeInsuffisant(manque: max(a.prix - a.solde, 0))
-            }
-            boostersServeur += 1
-            return .obtenu
-        } catch {
-            derniereErreur = error.localizedDescription
-            print("[économie] achat impossible : \(error)")
-            return .impossible
-        }
-    }
+    //
+    // ⚠️⚠️ **L'ACHAT EST MORT LE 30-08 AU SOIR (Q9).** `acheterBooster()` —
+    // le seul débit de pièces de l'app, `claim_booster` côté serveur — n'a
+    // plus d'objet : la conversion automatique (20260830210000) fait naître
+    // un sachet à chaque tranche de 100, et le solde jaune ne dépasse plus
+    // jamais 99. Un achat ne pouvait plus que mentir « bought for 100 coins »,
+    // et la fonction est RÉVOQUÉE au serveur (403). « Ouvrir » ouvre un sachet
+    // qui existe déjà ; à 0 sachet, le pied dit « Locked » et ne fait rien.
 
     /// CONSOMMER UN SACHET — l'ouverture, côté serveur.
     ///
@@ -355,6 +360,7 @@ final class EconomieWoop {
             case "seance":     return "Booster de séance"
             case "chemin":     return "Booster du chemin"
             case "achat":      return "Booster acheté"
+            case "conversion": return "100 pièces → un sachet"
             case "legendaire": return "Booster légendaire"
             default:           return "Booster"
             }

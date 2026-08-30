@@ -2697,20 +2697,13 @@ struct CoffreV2Page: View {
             }
             return
         }
-        Task {
-            let sort = await economie.acheterBooster()
-            guard case .obtenu = sort else {
-                // Le pied dit déjà « N COINS TO GO » sur la même page : il n'y
-                // a rien à annoncer de plus, et il se met à jour tout seul
-                // (le solde vient d'être relu par l'achat refusé).
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                return
-            }
-            onClose()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                SacreEtat.shared.ouvrirManege(robe: robe)
-            }
-        }
+        // ⚠️ L'ACHAT EST MORT (30-08 soir, Q9) : à 0 sachet il n'y a rien à
+        // ouvrir et rien à acheter — la conversion fait naître le prochain
+        // sachet à 100 pièces, le pied dit « Locked ». Un tap ici ne fait
+        // que le dire du bout du doigt.
+        // (l'ancienne branche `acheterBooster()` vivait ici — `claim_booster`
+        // est révoquée au serveur : 403.)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
     }
 
     var body: some View {

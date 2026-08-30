@@ -80,6 +80,10 @@ struct RewardPopup: View {
     /// noire de la card, joue UNE fois, gèle sur sa dernière frame.
     var videoNom: String? = nil
     var onClose: () -> Void
+    /// LE CLAIM (welcome) — ce qu'il ENCAISSE avant de fermer. Nil = le bouton
+    /// ne fait que fermer (les bancs). Tranché le 30-08 : les +10 partent AU
+    /// TAP — c'est ici que la card cesse de mentir « Claim +10 ».
+    var onClaim: (() -> Void)? = nil
 
     /// L'unique progrès de l'entrée [0,1] — toutes les rampes en dérivent.
     /// `-rewardFreeze <p>` le CLOUE : deux tours de fouettage se comparent
@@ -111,7 +115,7 @@ struct RewardPopup: View {
                     unit: unit, style: style, robe: robe,
                     videoNom: videoNom,
                     naissance: naissance, enSortie: enSortie,
-                    posee: posee, fermer: fermer)
+                    posee: posee, fermer: fermer, onClaim: onClaim)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
             .onAppear {
@@ -179,6 +183,8 @@ private struct RewardScene: View, Animatable {
     /// La card vient de se poser (fin du count-up) : elle TRESSAILLE.
     let posee: Bool
     var fermer: () -> Void
+    /// Le Claim du Welcome Back (30-08) : encaisse AVANT de fermer.
+    var onClaim: (() -> Void)? = nil
 
     /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
     @State private var videoRelance = 0
@@ -871,7 +877,7 @@ private struct RewardScene: View, Animatable {
             // LE BOUTON CLAIM (welcome) — la capsule de VRAI verre avec
             // la pièce de la maison ; ailleurs, le lien nu.
             if style == .welcome {
-                BoutonClaim(montant: count, action: fermer)
+                BoutonClaim(montant: count, action: { onClaim?(); fermer() })
                     .opacity(sstep(0.58, 0.86, p))
                     .padding(.bottom, 6)
             }
