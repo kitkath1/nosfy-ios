@@ -333,9 +333,11 @@ struct SliderObsidienne: View {
         // rien à lire, on ne lit pas ce qu'on est en train de faire.
         let vie = Double(1 - min(1, max(0, (p - 0.35) / 0.35)))
 
-        let encre = Text(label.uppercased())
+        // La casse des boutons (30-08, « pareil dans le switch ») : une phrase,
+        // comme le primaire — l'interlettrage des capitales tombe avec elles.
+        let encre = Text(label.enPhrase)
             .font(.system(size: height * 0.169, weight: .medium))
-            .tracking(height * 0.050)
+            .tracking(height * 0.004)
 
         // LA LARGEUR UTILE : la course LIBRE, pas la piste. Centré sur la
         // piste, le texte a son premier caractère sous le pouce au repos —
