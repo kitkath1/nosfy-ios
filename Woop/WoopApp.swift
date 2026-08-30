@@ -681,10 +681,28 @@ struct RootView: View {
         if !workout.isDeleted {
             ActiveWorkoutSheet(workout: workout,
                                onAddExercise: {
-                                   // on referme la feuille, on ouvre la
-                                   // bibliothèque.
+                                   // On referme la feuille, PUIS — DÉFÉRÉ — on
+                                   // ouvre la bibliothèque.
+                                   //
+                                   // ⚠️ NE JAMAIS changer `selection` au MÊME
+                                   // tick que `sheetWorkout = nil`. Une `.sheet`
+                                   // système met ~0,35 s à se refermer ; basculer
+                                   // d'onglet pendant sa transition laisse son
+                                   // conteneur de présentation ORPHELIN au sommet
+                                   // de la fenêtre — invisible (fond verre
+                                   // transparent d'ActiveWorkoutSheet), il mange
+                                   // TOUS les touchers de la home (« je vois le
+                                   // player, je peux plus rien faire »). Les deux
+                                   // sœurs du fichier défèrent déjà leur second
+                                   // mouvement (demarrerDepuisChemin, onStopViaPause) ;
+                                   // celle-ci était la seule à ne pas le faire.
                                    sheetWorkout = nil
-                                   selection = .exercises
+                                   DispatchQueue.main.asyncAfter(
+                                       deadline: .now() + 0.35) {
+                                       withAnimation(.easeOut(duration: 0.3)) {
+                                           selection = .exercises
+                                       }
+                                   }
                                },
                                onStopViaPause: {
                                    // LE STOP DU PLAYER : la feuille se
