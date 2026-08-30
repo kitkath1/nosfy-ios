@@ -612,5 +612,15 @@ commit suivant :
    cachée. Deux tailles bougeaient par image (lueur, fente) → des transforms.
    `-boosterPrise` cloue vraiment (le geste est désactivé au banc).
 
-Preuve de non-régression : `vignettes/manege-intact.png` — sans geste de card
-(`-boosterManege -boosterCine`), le sachet arrive **intact** au manège.
+Preuve de non-régression : **`vignettes/manege-avant-cine.png`** — les
+premières images où le sachet apparaît, sur les deux films cinématiques :
+avec la morsure (v10), la bande est pelée dès 8,5 s ; sans (v12), le cran est
+**intact** de 8,5 à 9,5 s et c'est la cinématique automatique qui entame la
+déchirure à ~9,75 s.
+
+⚠️ **Une preuve à 10,5 s ne prouvait rien** (`manege-reprise.png`,
+`manege-intact.png`) : `-boosterCine` déchire tout seul 1,4 s après la pose,
+et à 10,5 s les deux films montraient une bande pelée — « arrivé mordu » et
+« déchiré par la cérémonie » étaient indiscernables. La preuve d'un état
+INITIAL se prend à la première image visible, jamais après qu'une horloge a
+pu le changer.
