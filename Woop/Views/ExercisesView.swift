@@ -328,12 +328,20 @@ private struct TheatreToucher: ViewModifier {
             // cartes de la section qu'on est en train de choisir — devenait
             // illisible pendant tout le geste.
             //
-            // Il reste un souffle : 3 pt de flou et 12 % de noir. Assez pour
-            // dire « la molette a la main », trop peu pour cacher la page. Le
-            // recul, lui, est mort — c'est lui qui faisait le « posé devant ».
-            // (Bénéfice de cadence en prime : un blur plein écran à 10 pt sur
-            // une page qui porte du verre natif, c'est deux passes hors écran.)
-            .blur(radius: etat.engaged ? 3 : 0)
+            // Reste le SEUL voile noir à 12 %. Assez pour dire « la molette a la
+            // main », trop peu pour cacher la page. Le recul est mort — et
+            // maintenant le FLOU aussi.
+            //
+            // ⚠️ LE `.blur(3)` PLEIN ÉCRAN EST RETIRÉ (30-08) — c'était LA cause
+            // du gel du spin, mesurée. Un flou sur la card entière, c'est deux
+            // passes hors écran (capturer le fond du verre natif des cartes,
+            // puis aplatir le tout), MAINTENUES pendant tout le geste et
+            // re-rasterisées à CHAQUE image de la vidéo qui joue derrière le
+            // verre : le gel Metal 60→14 img/s que le simulateur ne voit pas.
+            // Baisser le rayon 10→3 n'avait réduit que la LARGEUR du noyau,
+            // jamais le NOMBRE de passes. Le voile noir seul est un calque de
+            // compositing : zéro passe. (S'il paraît trop faible sans le flou,
+            // monter 0,12 → 0,16 est GRATUIT — ne JAMAIS réintroduire le blur.)
             .overlay {
                 Color.black.opacity(etat.engaged ? 0.12 : 0)
                     .allowsHitTesting(false)
@@ -701,8 +709,19 @@ struct ExercisesView: View {
             ArcDial(etat: etat)
                 .frame(width: cardW, height: 300)
                 .modifier(MonteAvecLaCard(etat: etat))
-                .anchorPreference(key: SlotAnchorKey.self, value: .bounds) {
-                    ["tuto-dial": $0]
+                // ⚠️ ANCRE SEULEMENT TUTO ARMÉ, comme `tuto-card` : publiée en
+                // permanence, `MonteAvecLaCard` la décale par image d'un drag de
+                // card et republie les préférences pour une couche éteinte
+                // 99,9 % du temps. `tutoCouche` ne lit `tuto-dial` que sous
+                // `if tutoActif`, donc la garder derrière le flag est neutre.
+                .overlay {
+                    if tutoActif {
+                        Color.clear
+                            .anchorPreference(key: SlotAnchorKey.self,
+                                              value: .bounds) {
+                                ["tuto-dial": $0]
+                            }
+                    }
                 }
         }
         // LE CLAVIER DE BRAISE — DERNIER, donc au-dessus de la molette et de la
@@ -1864,7 +1883,11 @@ private struct GrilleExos: View {
             // débord n'a rien à dire. Et `-exosTirage` fige la card : sans
             // cette garde, le tout premier relevé de layout (débord nul)
             // écrasait la valeur du banc — la levée figée ne se voyait plus.
-            guard !etat.mainTient, ExosBanc.tirage == nil else { return }
+            // ⚠️ `!etat.engaged` AUSSI : pendant un spin, aucun débord de scroll
+            // ne doit pouvoir écrire `tirage` — ce serait la « respiration » de
+            // card sous le doigt qui tourne la molette.
+            guard !etat.mainTient, !etat.engaged, ExosBanc.tirage == nil
+            else { return }
             // LE REBOND EST LE TIRAGE : en tête il pousse la card vers le bas,
             // en fin de course il la LÈVE et la lune se lève. Même élastique
             // que la poignée (150 · tanh) : la card répond exactement pareil,
@@ -1933,12 +1956,35 @@ private struct GrilleExos: View {
              + row * (Self.cardHeight + Self.gutter)
     }
 
+    /// Une rangée de la colonne : l'exercice, sa POSITION dans `items` (`i`,
+    /// pour le voile et le scroll-pour-rejoindre) et son RANG dans la colonne
+    /// (`row`, pour le retard de cascade). L'`id` est celui de l'exercice —
+    /// c'est LUI qui porte l'identité du ForEach (§3).
+    private struct RangCarte: Identifiable {
+        let exercise: Exercise
+        let i: Int
+        let row: Int
+        var id: String { exercise.id }
+    }
+
     private func cardColumn(_ indices: [Int]) -> some View {
-        let list = items
         let reserve = self.reserve
+        // ⚠️ §3 — L'IDENTITÉ DESCEND DANS LA DONNÉE. La boucle est clé par
+        // `exercise.id` (via `RangCarte`), le rang et la position VOYAGENT dans
+        // la donnée. Avant, `id: \.element` clé la rangée par sa POSITION `i` :
+        // au changement de section, SwiftUI croyait la même rangée et
+        // remplaçait le contenu SANS transition — les cartes se téléportaient,
+        // la cascade ne rejouait pas (« la molette tourne mais les sections
+        // n'apparaissent pas »). Clé par l'exercice, chaque section devient un
+        // vrai jeu d'insertions/retraits et le `.transition` se rejoue.
+        let rangs = indices.enumerated().map { row, i in
+            RangCarte(exercise: items[i], i: i, row: row)
+        }
         return LazyVStack(spacing: Self.gutter) {
-            ForEach(Array(indices.enumerated()), id: \.element) { row, i in
-                let exercise = list[i]
+            ForEach(rangs) { rc in
+                let exercise = rc.exercise
+                let i = rc.i
+                let row = rc.row
                 Button {
                     if veilT(i) < 0.35 {
                         deepLinked = exercise
@@ -1976,8 +2022,13 @@ private struct GrilleExos: View {
                         }
                         etat.pulse += 1
                         ArcChime.shared.card()
-                        withAnimation(.spring(response: 0.5,
-                                              dampingFraction: 0.8)) {
+                        // ⚠️ SNAP FRANC (0,5 → 0,32) : l'auto-scroll d'un mur de
+                        // cartes en verre natif tombe vers 14 img/s (le verre
+                        // bouge par rapport à la vidéo et rejoue son voile) — une
+                        // demi-seconde de dérive se lit « janky ». Raccourci, il
+                        // se lit comme une décision, pas un glissement.
+                        withAnimation(.spring(response: 0.32,
+                                              dampingFraction: 0.85)) {
                             sp.scrollTo(y: cible)
                         }
                     }
@@ -1985,7 +2036,8 @@ private struct GrilleExos: View {
                     ExerciseCard(exercise: exercise)
                 }
                 .buttonStyle(CardPressStyle())
-                .id(exercise.id)
+                // (Plus de `.id(exercise.id)` : la boucle est DÉJÀ clé par
+                // `exercise.id` — le doubler regèlerait l'identité.)
                 // L'ancre du tuto : la PREMIÈRE card publie son rect — le
                 // projecteur se découpe dessus (l'école SlotAnchorKey).
                 // ⚠️ SEULEMENT TUTO ARMÉ. Publiée en permanence, elle change à
@@ -2119,9 +2171,12 @@ private struct ArcDial: View {
         // cette vue doivent rester stables.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Filtre de catégorie")
+        // ⚠️ LIRE LE DÉTENT (Int, change une poignée de fois par spin), PAS
+        // `etat.pos` (écrit ~60×/s) : lu ICI dans le corps de l'hôte, `pos`
+        // ré-invalidait le tambour PAR IMAGE pendant tout le spin (§2). Le
+        // détent annonce la même section à VoiceOver.
         .accessibilityValue(Self.items[
-            Int(min(max(etat.pos.rounded(), 0),
-                    Double(Self.items.count - 1)))].0)
+            min(max(etat.detent, 0), Self.items.count - 1)].0)
         .accessibilityAdjustableAction { direction in
             let maxPos = Double(Self.items.count - 1)
             let next = direction == .increment
@@ -2288,7 +2343,9 @@ private struct ArcTambour: View {
             .foregroundStyle(WoopGradient.silverText)
             .fixedSize()
             .opacity(engaged ? 0.0 : 0.80)
-            .blur(radius: engaged ? 4 : 0)
+            // (Plus de `.blur(engaged ? 4 : 0)` : le flou n'était NON nul que
+            // lorsque le label est déjà invisible — une passe hors écran par
+            // image gaspillée sur du vide pendant tout le spin.)
             .position(x: kx, y: ky - ArcDial.ringR - 22)
             .allowsHitTesting(false)
     }
@@ -2307,7 +2364,10 @@ private struct ArcTambour: View {
                 .tracking(0.4)
                 .foregroundStyle(WoopGradient.silverText)
                 .fixedSize()
-                .blur(radius: 2.6 * min(n, 2.0))
+                // ⚠️ FLOU SEULEMENT À L'ENGAGEMENT : au repos les labels sont à
+                // opacité 0 — un rayon non nul y posait 6 passes hors écran par
+                // image pour du texte invisible, alors que la page doit DORMIR.
+                .blur(radius: engaged ? 2.6 * min(n, 2.0) : 0)
                 .opacity(engaged ? (n < 0.5 ? 1.0 : max(0.16, 0.85 - 0.30 * n))
                                  : 0.0)
                 .scaleEffect((engaged ? 1.0 : 0.55)
