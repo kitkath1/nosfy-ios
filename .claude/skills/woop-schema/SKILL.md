@@ -1,6 +1,6 @@
 ---
 name: woop-schema
-description: Documenter et DESSINER pour Woop — schémas de base de données, diagrammes de parcours, fiches de table, dictionnaires de données, et le site de documentation. À charger dès qu'il faut produire un diagramme (ERD, séquence, états, arbre de décision) ou décrire un schéma PostgreSQL. Couvre la robe (noir et deux blancs, la couleur ne vient que des emoji), les règles de conception du schéma, le format de sortie en quatre parties, les huit pièges de rendu Mermaid payés au banc, et la vérification d'un schéma sans base locale.
+description: Documenter et DESSINER pour Woop — schémas de base de données, diagrammes de parcours, fiches de table, dictionnaires de données, et le site de documentation. À charger dès qu'il faut produire un diagramme (ERD, séquence, états, arbre de décision) ou décrire un schéma PostgreSQL. Couvre la robe (le noir de l'app, des blancs en dégradé, Inter, la couleur sémantique : emoji, card d'état, aurore du hero), les règles de conception du schéma, le format de sortie en quatre parties, les huit pièges de rendu Mermaid payés au banc, et la vérification d'un schéma sans base locale.
 ---
 
 # Dessiner et documenter — le cahier d'atelier de Woop
@@ -22,57 +22,78 @@ mesure.
 
 # I. LA ROBE
 
-## Le noir et deux blancs — et rien d'autre
+## Le noir de l'app, et des blancs en dégradé — rien d'autre
 
 C'est un cahier d'atelier qu'on ouvre à côté du code. Il ne suit pas le thème
-de qui le lit : **une seule robe, la nuit**, peinte explicitement.
+de qui le lit : **une seule robe, la nuit de l'app**, peinte explicitement.
+Chaque valeur vient de l'app (`fichier:ligne`), jamais d'un goût — le relevé est
+dans `tools/docsite/ANNEXE-DESIGN-APP.md`, le plan dans
+`tools/docsite/PLAN-SITE-PREMIUM.md`.
 
 ```
---sol        #08070B    le noir. Pas #000 : une pointe de violet, pour qu'il
-                        ait une température au lieu d'être un trou.
---panneau    #121017    les blocs, à peine détachés du sol.
---trait      #262230    les filets. 1 px. Jamais plus.
+--noir      #000000                            le noir de l'app (Theme.swift:27), SANS température :
+                                               une capture d'écran posée dessus n'a pas de rectangle.
+--panneau   linear-gradient(#0F0F0F,#080808)   les blocs (HomeNuit.swift:1248-1250).
+--filet     rgba(255,255,255,.06)              1 px, blanc-alpha : .06 au repos, .08 sur le verre,
+                                               .16 au plafond (hover, actif). Aucun gris en hex.
 ```
 
-**Deux blancs, et ce sont des DÉGRADÉS**, pas des gris :
+**Les blancs sont des DÉGRADÉS de blanc**, jamais des gris :
 
 ```
---encre-vive   linear-gradient(#FFFFFF → rgba(255,255,255,.55))
-               les titres, les nombres qui comptent, le mot qu'on retient.
-
---encre-calme  linear-gradient(rgba(255,255,255,.62) → rgba(255,255,255,.30))
-               la prose, les libellés, tout ce qui accompagne.
+--titre    160deg, #fff → .90 @32 % → .60 @68 % → .25     Theme.swift:166-176 (titleFade).
+           DIAGONAL obligatoire : l'horizontal fait clignoter un titre sur deux lignes.
+           Sur ≤ 2 éléments par vue (le display + un h1, ou le titre d'une card).
+--argent   180deg, #fff → .80 @62 % → .68                  Theme.swift:150-158 (silverText) — les h2.
+encres     .96 vive · .55 calme · .42 sourde — plancher ABSOLU .42 (HomeNuit.swift:328).
 ```
 
 Le dégradé n'est pas un effet : c'est ce qui fait qu'un titre blanc sur du noir
 **pèse** au lieu de flotter. Un blanc plat sur du noir est violent ; un blanc
-qui s'éteint vers le bas est du métal.
+qui s'éteint vers le bas est du métal. ⚠️ Mais un emoji dans un texte clippé
+**disparaît** (silhouette blanche) : **aucun emoji dans un h1/h2/h3**.
 
-## ⚠️ LA COULEUR NE VIENT QUE DES EMOJI
+## ⚠️ LA COULEUR EST SÉMANTIQUE, JAMAIS DÉCORATIVE
 
-**Aucune couleur dans le CSS.** Pas d'accent, pas de teinte de marque, pas de
-vert « succès ». Les états sont portés par les pastilles emoji, qui apportent
-leur propre couleur — et comme ce sont les seules taches colorées de la page,
-elles se voient de loin sans avoir besoin de crier.
+Trois sources de couleur, et pas une de plus :
 
-C'est la règle qui rend le reste possible : dès qu'on ajoute un accent, les
-pastilles cessent d'être ce qu'on repère en premier.
+1. **l'emoji d'une pastille** (🟢🟡🔵⚪🔴) — et la bille CSS qui le remplace là
+   où il n'y a pas d'emoji (compteurs et rangées de l'accueil) ;
+2. **la teinte d'une card de domaine, qui en DÉCOULE** : ≥ 1 🔴 → rouge · tout
+   🟢 → vert · sinon argent. Pas d'ambre, pas de bleu : quatre teintes font un
+   sapin ;
+3. **l'aurore du hero de l'accueil** (`AuroraHome.metal:592-594` : #FFE699 /
+   #FF8A3D, plancher #210C03) — le seul halo du site, éteint à la ligne de base
+   du hero. 0 pixel orange sur les autres onglets.
 
-**Interdits, sans exception :** ombres portées, dégradés décoratifs, néon,
-arrondis de plus de 12 px, bordures de plus de 1 px, toute couleur qui n'est
-pas dans un emoji.
+Zéro accent de marque, zéro couleur de lien, zéro couleur d'onglet actif. C'est
+la règle qui rend le reste possible : dès qu'on ajoute un accent, les pastilles
+cessent d'être ce qu'on repère en premier.
+
+**Interdits, sans exception :** ombre colorée (toute ombre est `rgba(0,0,0,x)`),
+dégradé à deux teintes ou violet / bleu-rose, néon, halo hors du hero, rayon
+hors de {8, 12, 16, 20, 28, 999}, bordure de plus de 1 px, **flou animé**, plus
+de 7 `backdrop-filter` — et jamais sur les pastilles : sur un fond uni un flou
+ne floute rien et coûte une couche de composition chacun.
+
+**La pastille** est un verre neutre — 22 px, rayon 999, dégradé blanc .08 → .03,
+filet .08, reflet .12 — autour de l'emoji, qui est sa seule couleur. Pas de fond
+teinté, pas de capitales. Dans une table, en première colonne, étroite : l'œil
+balaie une colonne de points.
 
 ## La typographie
 
 | rôle | famille | pourquoi |
 |---|---|---|
-| titres, noms d'entité | **Sans** (display, 700-800, tracking serré) | ça se lit à la volée |
-| prose | **Sans** (400-500) | 65 à 75 caractères par ligne |
-| **tout ce qui est technique** | **Mono** | nom de colonne, type SQL, `fichier:ligne`, code HTTP, chemin |
+| tout le texte | **Inter** — la police de l'app (`Woop/Fonts/`), via Google Fonts `opsz,wght@14..32,300..600` | une seule famille ; l'axe optique fait le « Display » au-dessus de 24 px |
+| graisses | **300 / 400 / 500 / 600** — 300 seulement ≥ 28 px, 600 seulement sur le bouton obsidienne, **jamais 700+** | « plus fine » : la hiérarchie se fait par la lumière (vif 1.0 / sourd .42), pas par le gras |
+| titres | 500, tracking −0,02 em, en dégradé | ça se lit à la volée sans crier |
+| **tout ce qui est technique** | **Mono système** (`ui-monospace, "SF Mono", Menlo`), **seulement** dans une cellule, un `code`, un `pre` | nom de colonne, type SQL, `fichier:ligne`, code HTTP — jamais un titre, une nav, une légende, un pied |
 
 ⚠️ La séparation Sans / Mono **n'est pas décorative** : elle dit ce qu'on peut
 copier-coller et ce qu'on doit lire. Un type SQL en Sans se lit comme une
-opinion ; en Mono, comme un fait.
+opinion ; en Mono, comme un fait. Les nombres en colonne sont en `tabular-nums`
+(= le `.monospacedDigit()` de l'app).
 
 ## Les cinq pastilles — les mêmes partout, sans exception
 
@@ -103,8 +124,10 @@ Un état sans son prix ne se hiérarchise pas : on ne sait pas par quoi commence
 ## Un emoji par nœud
 
 Choisi pour ce que le nœud **est** — 🏋️ une séance, 📒 le carnet, 🎁 un sachet,
-🎡 le manège, 🍎 Apple, 🚪 la porte — jamais pour décorer un titre de section.
-Dans un schéma dense, on retrouve un nœud par son emoji avant de lire son texte.
+🎡 le manège, 🍎 Apple, 🚪 la porte — jamais pour décorer un titre de section :
+**ni dans un `h1/h2/h3`, ni dans la nav, ni comme icône de card.** Un emoji vit
+dans un nœud de schéma ou dans une pastille, nulle part ailleurs. Dans un schéma
+dense, on retrouve un nœud par son emoji avant de lire son texte.
 
 ---
 
@@ -223,10 +246,14 @@ Les diagrammes de séquence sortent avec `width`/`height` et rien d'autre : sous
 un `height:auto` ils s'écrasent à 150 px. On leur reconstruit le cadre depuis
 leurs propres cotes.
 
-**⑦ Le thème ne descend pas partout.**
+**⑦ Le thème ne descend pas partout — et il n'existe qu'UNE fois.**
 `erDiagram` ignore `primaryColor` pour ses boîtes : il lui faut `mainBkg`,
 `nodeBorder`, `textColor`, `attributeBackgroundColorOdd/Even`. Sans ça, les
-entités sortent **en blanc plein** sur une page noire.
+entités sortent **en blanc plein** sur une page noire. Et le thème vit dans le
+seul `initialize()` du JS (`themeVariables` en HEX — khroma dérive les teintes,
+un `rgba` casse `darken()` — et `themeCSS` pour les classes `ok loc srv abs bad
+neuf dit mut fait`) : **jamais de `%%{init}%%` ni de `classDef` dans un bloc**.
+Les `class A,B ok` suffisent — vérifié : le nœud sort en `class="node default ok"`.
 
 **⑧ Un schéma qui n'a pas pu être rendu doit le DIRE.**
 Laisser du texte brut à sa place, c'est le laisser se faire passer pour un
@@ -266,10 +293,11 @@ qu'elle **existe**.
 
 # VII. LA CHECK-LIST
 
-- [ ] **Aucune couleur dans le CSS** — la couleur ne vient que des emoji.
-- [ ] Le noir, et **deux blancs en dégradé** : l'encre vive, l'encre calme.
-- [ ] Filets à **1 px**, aucune ombre, aucun arrondi au-delà de 12 px.
-- [ ] **Sans** pour les noms, **Mono** pour les types.
+- [ ] **La couleur est sémantique** — emoji d'état, teinte de card qui en découle, aurore du hero ; rien d'autre.
+- [ ] Le noir `#000`, et **des blancs en dégradé** : `--titre` (≤ 2 par vue), `--argent`, plancher `.42`.
+- [ ] Filets à **1 px** blanc-alpha, ombres noires seulement, rayons de l'échelle, ≤ 7 flous, **0 flou animé**.
+- [ ] **Inter 300-600** pour tout, **Mono système** seulement dans `code`/`pre`/cellule ; **aucun emoji dans un titre**.
+- [ ] `./tools/docsite/verifier.sh` passe : l'invariant des pastilles = `data-attendu`, les deux captures **regardées**.
 - [ ] Chaque nœud porte son **emoji** et, s'il y a lieu, sa **pastille** + son **coût**.
 - [ ] Chaque pastille a été **vérifiée**, et ce qui n'a pas pu l'être est **dit**.
 - [ ] Le dictionnaire dit **à quoi ça sert**, pas ce que c'est ; il est plié.
