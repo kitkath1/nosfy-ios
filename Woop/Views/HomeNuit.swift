@@ -1250,6 +1250,10 @@ struct MiniCardJour: View {
     var vide: Bool = false
     var largeur: CGFloat = 70
     var hauteur: CGFloat = 78
+    /// LE STYLE DU PLAYER (30-08, opt-in) : le sticker s'ALIGNE À GAUCHE
+    /// avec le texte, posé EN BAS — au lieu du centré-tranché de la
+    /// pochette. `false` partout ailleurs : This Week inchangé.
+    var stickerBasGauche: Bool = false
 
     /// `-progressFlammeSticker` : l'A/B de la flamme vide — le sticker
     /// `sticker-flamme-serree` à 0,16 (la jauge de séries, `StickerFlamme`)
@@ -1298,7 +1302,13 @@ struct MiniCardJour: View {
             Image(sticker)
                 .resizable().scaledToFit()
                 .frame(width: 36, height: 36)
-                .position(x: largeur * 0.443, y: hauteur * 0.590)
+                // ⚠️ L'ALIGNEMENT SE FAIT SUR LE BORD VISIBLE, pas sur le
+                // cadre : le PNG a 26,6 % de marge transparente (mesuré à la
+                // bbox alpha) — x 15,4 pose le bord VISIBLE de la flamme
+                // pile sous le bord gauche du texte (x = 7).
+                .position(x: stickerBasGauche ? 15.4 : largeur * 0.443,
+                          y: stickerBasGauche ? hauteur * 0.76
+                                              : hauteur * 0.590)
                 .scaleEffect(faite ? 1 : 0.7)
         }
     }

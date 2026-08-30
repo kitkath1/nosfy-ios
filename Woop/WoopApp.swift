@@ -271,6 +271,10 @@ struct RootView: View {
     /// `-boosterStill` fige le flottement, `-boosterTear <s>` fige une
     /// découpe entamée, `-boosterOpen` démarre carte présentée.
     private static let boosterLab = CommandLine.arguments.contains("-boosterLab")
+    /// Banc du rideau PageCard : `-pageCardLab` — le player qui pousse la page
+    /// (flou premium par snapshot, tranche 0, `tools/player/PLAN-PLAYER-CARD.md`).
+    private static let pageCardLab = CommandLine.arguments
+        .contains("-pageCardLab")
     /// Banc du carnet de cuir : `-carnetLab` — le carnet relié de la
     /// collection d'entraînements (chantier 18-08). `-carnetOuvert` montre
     /// la double page, `-carnetCote` le trois-quarts.
@@ -905,6 +909,8 @@ struct RootView: View {
             NavLab()
         } else if Self.progressLab {
             ProgressLab()
+        } else if Self.pageCardLab {
+            PageCardLab()
         } else if Self.calLab {
             CalLab()
         } else if Self.duoLab {

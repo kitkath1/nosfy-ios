@@ -14,6 +14,118 @@ import SwiftUI
 /// v1 DESIGN : la pause reste un placeholder visuel et le stop est posé
 /// mais INERTE — son panneau « Terminer la séance ? » est le prochain
 /// chantier. Le filet et le chrono, eux, sont vrais.
+/// LE MÉDAILLON DU STOP — extrait de WorkoutPill (30-08) pour VOYAGER : le
+/// morph du player transporte le MÊME objet de la dalle au centre-bas
+/// déployé, jamais un mime. `lueur` pilote la respiration des liserés
+/// (l'hôte l'anime ; figée à `true` en vol).
+struct MedaillonStop: View {
+    var symbol: String = "stop.fill"
+    var neon: Bool = false
+    var lueur: Bool = true
+    var action: () -> Void = {}
+
+    var body: some View {
+        ZStack {
+            // Le disque laqué — la lumière prend en haut-gauche.
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color(white: 0.105), Color(white: 0.035)],
+                    center: UnitPoint(x: 0.38, y: 0.30),
+                    startRadius: 2, endRadius: 24))
+            // Le petit halo chaud — l'ambiance du médaillon, en sourdine.
+            Circle()
+                .fill(RadialGradient(
+                    stops: [
+                        .init(color: FlammePalette.flamme
+                            .opacity(neon ? 0.11 : 0.06), location: 0),
+                        .init(color: FlammePalette.or.opacity(0.025),
+                              location: 0.55),
+                        .init(color: .clear, location: 1),
+                    ], center: .center, startRadius: 0, endRadius: 20))
+                .blendMode(.plusLighter)
+                .opacity(lueur ? 1.0 : 0.62)
+            if neon {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(FlammePalette.neon)
+                    .shadow(color: FlammePalette.coeur.opacity(0.45),
+                            radius: 3)
+            } else {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(FlammePalette.blanc.opacity(0.92))
+            }
+        }
+        .frame(width: 34, height: 34)
+        // Le liseré premium, aux crans du médaillon.
+        .overlay {
+            Circle()
+                .stroke(AngularGradient(stops: LisereMedaillon.crans,
+                                        center: .center, angle: .zero),
+                        lineWidth: 0.8)
+                .opacity(lueur ? 1.0 : 0.78)
+        }
+        // La bague : `stroke` centré, elle déborde DEHORS du disque.
+        .overlay {
+            Circle()
+                .stroke(AngularGradient(stops: LisereMedaillon.bague,
+                                        center: .center, angle: .zero),
+                        lineWidth: 2.4)
+                .frame(width: 36.5, height: 36.5)
+                .blur(radius: 1.0)
+                .blendMode(.plusLighter)
+                .opacity(0.85)
+        }
+        .contentShape(Circle())
+        // LA ZONE DE TAP passe le disque : 34 pt de médaillon, 44 pt de
+        // doigt (le minimum d'Apple), posée AVANT le geste.
+        .padding(8)
+        .contentShape(Circle())
+        .highPriorityGesture(TapGesture().onEnded { action() })
+    }
+}
+
+/// LA VEINE D'OR — le filet de progression de la dalle, extrait (30-08) pour
+/// VOYAGER : la même veine sous le héros du player déployé. Une barre nue
+/// (2,5 pt) — les paddings restent chez l'hôte.
+struct VeineOr: View {
+    var progress: Double
+    var lueur: Bool = true
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width * min(max(progress, 0.04), 1)
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.10))
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [FlammePalette.or.opacity(0.10),
+                                 FlammePalette.or.opacity(0.75),
+                                 FlammePalette.blanc],
+                        startPoint: .leading, endPoint: .trailing))
+                    .frame(width: w)
+                // La perle de braise — jamais un point : une lumière.
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [FlammePalette.blanc,
+                                 FlammePalette.braise.opacity(0.85),
+                                 FlammePalette.coeur.opacity(0)],
+                        center: .center, startRadius: 0, endRadius: 5))
+                    .frame(width: 10, height: 10)
+                    .blur(radius: 1.2)
+                    .blendMode(.plusLighter)
+                    .opacity(lueur ? 1.0 : 0.62)
+                    .position(x: w, y: geo.size.height / 2)
+                Circle()
+                    .fill(FlammePalette.blanc)
+                    .frame(width: 2.6, height: 2.6)
+                    .position(x: w, y: geo.size.height / 2)
+            }
+        }
+        .frame(height: 2.5)
+    }
+}
+
 struct WorkoutPill: View {
     let exercise: Exercise
     /// Fraction de la séance accomplie, pour le filet de progression.
@@ -36,6 +148,24 @@ struct WorkoutPill: View {
     /// de la séance (l'hôte les connaît ; la vraie séance les nourrira).
     var doneSeries: Int = 0
     var exoCount: Int = 0
+    /// LE MORPH DU STOP (PageCard, 30-08) : pendant la levée du player, le
+    /// stop de la dalle s'ÉTEINT — son fantôme descend se poser au centre-bas.
+    /// Un seul stop visible à tout instant. `true` partout ailleurs.
+    var stopVisible: Bool = true
+    /// LA DALLE v7 (héros-jour, 30-08) : `jour` affiche la MINI-CARD JOUR à
+    /// la place de la lune (la date vit LÀ — le titre dit l'exercice en
+    /// cours), `jourSticker` son sticker, `jourVisible` éteint la vignette
+    /// pendant le VOL du héros (un seul objet en vol), `titreCourant`
+    /// remplace « Session · date ». `nil`/`true` partout ailleurs : les
+    /// montages home/exos/détail restent intacts.
+    var jour: Date? = nil
+    var jourSticker: String = ""
+    var jourVisible: Bool = true
+    var titreCourant: String? = nil
+    /// LA HAUTEUR DE LA DALLE (30-08, « tout est trop collé ») : 76 partout
+    /// (la home intacte), le player la monte à 86 — le contenu se centre,
+    /// l'air revient entre le titre et la barre.
+    var hauteurDock: CGFloat = 76
 
     /// `-stopSheet` ouvre le panneau de fin à la naissance (captures).
     /// ⚠️ Il passe désormais par l'état GLOBAL : le panneau vit à la racine.
@@ -51,7 +181,25 @@ struct WorkoutPill: View {
             // le glyphe de la maison remplace la photo d'exercice
             // (verdict 17-08 : « c'est toute la session »).
             if docked {
-                sessionMoon
+                if let jour {
+                    // LA MINI-CARD JOUR (v7) — la date de la séance en
+                    // vignette, éteinte pendant le vol du héros.
+                    // ⚠️ À SA TAILLE NATIVE (70×78) puis RÉDUITE en scale :
+                    // ses encres internes ne rétrécissent pas avec
+                    // largeur/hauteur — à 40×48 la flamme mangeait « AOÛT ».
+                    MiniCardJour(date: jour, sticker: jourSticker,
+                                 stickerBasGauche: true)
+                        .scaleEffect(0.58)
+                        .frame(width: 42, height: 47)
+                        // L'air entre l'image et le titre (verdict v9.3 :
+                        // « trop collés, espace un peu »).
+                        .padding(.trailing, 6)
+                        .opacity(jourVisible ? 1 : 0)
+                        .animation(.easeOut(duration: 0.15),
+                                   value: jourVisible)
+                } else {
+                    sessionMoon
+                }
             } else {
                 ExercisePhoto(exercise: exercise)
                     .frame(width: 42, height: 42)
@@ -74,7 +222,8 @@ struct WorkoutPill: View {
                 // Une date n'est pas un libellé qu'on traduit, c'est un
                 // format qu'on impose.
                 Text(docked
-                     ? "Session · \((startedAt ?? .now).formatted(.dateTime.month(.wide).day().locale(Locale(identifier: "en_US"))))"
+                     ? (titreCourant
+                        ?? "Session · \((startedAt ?? .now).formatted(.dateTime.month(.wide).day().locale(Locale(identifier: "en_US"))))")
                      : exercise.name)
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.inkPrimary)
@@ -88,6 +237,8 @@ struct WorkoutPill: View {
             // n'y a que le stop ») — la pause-placeholder est morte.
             if docked {
                 medallionButton("stop.fill") { demanderLaPause() }
+                    .opacity(stopVisible ? 1 : 0)
+                    .animation(.easeOut(duration: 0.15), value: stopVisible)
             } else {
                 roundButton("stop.fill") { demanderLaPause() }
             }
@@ -105,7 +256,7 @@ struct WorkoutPill: View {
         // leur bas.
         .padding(.top, docked ? 10 : 0)
         .frame(maxWidth: .infinity)
-        .frame(height: docked ? 76 : 64)
+        .frame(height: docked ? hauteurDock : 64)
         // ⚠️ **LE SOUFFLE N'EST PLUS ICI — ET C'ÉTAIT ÇA, LE PLAYER QUI
         // FLOTTE** (26-08). Verdict de Kathryn : « le logo Lune du player
         // flotte, le bouton Stop flotte, ils remontent et redescendent
@@ -319,38 +470,15 @@ struct WorkoutPill: View {
     /// braise qui respire, sur le souffle déjà en place (`lueur`, aucune
     /// horloge de plus). Plancher 4 % conservé : la perle vit dès zéro.
     private var veine: some View {
-        GeometryReader { geo in
-            let w = geo.size.width * min(max(progress, 0.04), 1)
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.10))
-                Capsule()
-                    .fill(LinearGradient(
-                        colors: [FlammePalette.or.opacity(0.10),
-                                 FlammePalette.or.opacity(0.75),
-                                 FlammePalette.blanc],
-                        startPoint: .leading, endPoint: .trailing))
-                    .frame(width: w)
-                // La perle de braise — jamais un point : une lumière.
-                Circle()
-                    .fill(RadialGradient(
-                        colors: [FlammePalette.blanc,
-                                 FlammePalette.braise.opacity(0.85),
-                                 FlammePalette.coeur.opacity(0)],
-                        center: .center, startRadius: 0, endRadius: 5))
-                    .frame(width: 10, height: 10)
-                    .blur(radius: 1.2)
-                    .blendMode(.plusLighter)
-                    .opacity(lueur ? 1.0 : 0.62)
-                    .position(x: w, y: geo.size.height / 2)
-                Circle()
-                    .fill(FlammePalette.blanc)
-                    .frame(width: 2.6, height: 2.6)
-                    .position(x: w, y: geo.size.height / 2)
-            }
-        }
-        .frame(height: 2.5)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 7)
+        // LA MÊME BARRE que le player déployé (verdict 30-08 : une seule
+        // matière de progression partout) — la blanche au dégradé qui
+        // coulisse, en 3,5 pt pour la dalle. L'AIR du verdict v9.2
+        // (« trop collé partout, au footer, sur les côtés ») : 22 pt de
+        // marge latérale, 13 sous elle.
+        BarreBlancheAnimee(progress: progress)
+        .frame(height: 3.5)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 13)
     }
 
     // Le liseré angulaire du médaillon à flamme et sa bague vivent dans
@@ -383,67 +511,8 @@ struct WorkoutPill: View {
     /// l'appareil) n'est pas re-vendue pour la payer.
     private func medallionButton(_ symbol: String, neon: Bool = false,
                                  action: @escaping () -> Void) -> some View {
-        Group {
-            ZStack {
-                // Le disque laqué — la lumière prend en haut-gauche.
-                Circle()
-                    .fill(RadialGradient(
-                        colors: [Color(white: 0.105), Color(white: 0.035)],
-                        center: UnitPoint(x: 0.38, y: 0.30),
-                        startRadius: 2, endRadius: 24))
-                // Le petit halo chaud — l'ambiance du médaillon, en
-                // sourdine, qui respire.
-                Circle()
-                    .fill(RadialGradient(
-                        stops: [
-                            .init(color: FlammePalette.flamme
-                                .opacity(neon ? 0.11 : 0.06), location: 0),
-                            .init(color: FlammePalette.or.opacity(0.025),
-                                  location: 0.55),
-                            .init(color: .clear, location: 1),
-                        ], center: .center, startRadius: 0, endRadius: 20))
-                    .blendMode(.plusLighter)
-                    .opacity(lueur ? 1.0 : 0.62)
-                if neon {
-                    Image(systemName: symbol)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(FlammePalette.neon)
-                        .shadow(color: FlammePalette.coeur.opacity(0.45),
-                                radius: 3)
-                } else {
-                    Image(systemName: symbol)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(FlammePalette.blanc.opacity(0.92))
-                }
-            }
-            .frame(width: 34, height: 34)
-            // Le liseré premium, aux crans du médaillon.
-            .overlay {
-                Circle()
-                    .stroke(AngularGradient(stops: LisereMedaillon.crans,
-                                            center: .center, angle: .zero),
-                            lineWidth: 0.8)
-                    .opacity(lueur ? 1.0 : 0.78)
-            }
-            // La bague : `stroke` centré, elle déborde DEHORS du disque.
-            .overlay {
-                Circle()
-                    .stroke(AngularGradient(stops: LisereMedaillon.bague,
-                                            center: .center, angle: .zero),
-                            lineWidth: 2.4)
-                    .frame(width: 36.5, height: 36.5)
-                    .blur(radius: 1.0)
-                    .blendMode(.plusLighter)
-                    .opacity(0.85)
-            }
-            .contentShape(Circle())
-        }
-        // LA ZONE DE TAP passe le disque : 34 pt de médaillon, mais 44 pt de
-        // doigt (le minimum d'Apple). Elle est posée AVANT le geste, sinon le
-        // `contentShape` du disque la reprend.
-        .padding(8)
-        .contentShape(Circle())
-        .highPriorityGesture(TapGesture().onEnded { action() })
+        MedaillonStop(symbol: symbol, neon: neon, lueur: lueur,
+                      action: action)
         // La même respiration que la lune, et RIEN d'autre : le médaillon lit
         // `lueur` pour ses deux liserés, il n'a aucune géométrie animée.
         .animation(docked ? nil
