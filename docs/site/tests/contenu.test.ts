@@ -67,11 +67,16 @@ describe.skipIf(!presents.length)(`content/ (${presents.join(', ') || 'aucun fic
     for (const e of tous) expect(e.id, `id vide`).toMatch(/^[a-z0-9][a-z0-9-]*$/)
   })
 
-  it('titre ≤ 60 caractères, sans emoji', () => {
+  it('titre ≤ 60 caractères, sans emoji, JAMAIS coupé par …', () => {
     const longs = tous.filter((e) => [...e.titre].length > 60).map((e) => `${e.id} (${[...e.titre].length})`)
     const emojis = tous.filter((e) => EMOJI.test(e.titre)).map((e) => e.id)
+    // ⚠️ 30-08 soir : la migration avait TRONQUÉ 12 titres à 60 caractères en collant un « … » à la fin
+    // (« Le set défini à un seul endroit (Swift + Deno + totaux du… ») — illisibles, et la colonne avait
+    // 600 px de vide à droite. Un titre se RÉÉCRIT court ; il ne se coupe pas.
+    const coupes = tous.filter((e) => /…\s*$/.test(e.titre)).map((e) => e.id)
     expect(longs, 'titres > 60 : ' + longs.join(', ')).toEqual([])
     expect(emojis, 'titres avec emoji : ' + emojis.join(', ')).toEqual([])
+    expect(coupes, 'titres coupés par … (à réécrire, pas à tronquer) : ' + coupes.join(', ')).toEqual([])
   })
 
   it('chaque preuve a UNE forme (fichier · sonde · git · aCiter)', () => {

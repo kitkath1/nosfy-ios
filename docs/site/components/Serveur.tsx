@@ -1,13 +1,21 @@
 import { PAGE_PAR_ID } from '@/content/pages'
+import { comptePage, familleDe, ligneFamilles, verdict } from '@/content'
 import { Tableau, Videurs, Sondes, Lexique, Dictionnaire, MenuSupabase, Schema, Liste, Decision } from './Composants'
 
-/** LE SERVEUR — la carte (tables, fonctions, règles, edge), les sondes, le lexique, le dictionnaire plié. */
+/**
+ * LE SERVEUR — la carte (tables, fonctions, règles, edge), les sondes, le lexique, le dictionnaire plié.
+ *
+ * C'est la seule page sans hero d'image (plan v2 §2 : display + spotlight) : elle porte donc sa ligne de
+ * verdict à la main, sinon elle serait la seule à ne pas répondre à la card qui l'ouvre (30-08 soir).
+ */
 export function Serveur() {
   const p = PAGE_PAR_ID.serveur
+  const f = comptePage('serveur')
   return (
     <section className="page" id="serveur">
       <h1>{p.libelle}</h1>
       <p className="phrase">{p.phrase}</p>
+      <p className="verdict-nu"><i className="pt" data-fam={familleDe(f)} /><b>{verdict(f)}</b><span>{ligneFamilles(f).join(' · ')}</span></p>
       <MenuSupabase />
 
       <div className="reveal">

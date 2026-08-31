@@ -37,17 +37,25 @@ function Preuve({ p }: { p: Brique['preuve'] }) {
   return <code className={vide ? 'vide' : ''} title={'fichier' in p ? p.fichier : undefined}>{texte}</code>
 }
 
-/** `data-fam` = la famille (à trancher · à valider · en chantier · bon, content/index.ts) — ce que les filtres de l'accueil lisent (public/site.js). */
+/**
+ * `data-fam` = la famille (à trancher · à valider · en chantier · bon, content/index.ts) — ce que les filtres
+ * de l'accueil lisent (public/site.js).
+ *
+ * ⚠️ La BILLE d'une rangée d'accueil porte la FAMILLE, pas l'état (30-08 soir) : sous « À trancher — toi »
+ * (bille blanche) les trois lignes montraient une bille grise et deux anneaux vides — la légende qu'on venait
+ * de lire ne s'appliquait à aucune ligne. L'état détaillé (🟡 local, 🔵 serveur seul, ⚪ absent, ◌ à mesurer)
+ * reste sur la page de la brique, où il a la place d'être expliqué.
+ */
 export function Rangee({ b, lien }: { b: Brique; lien?: boolean }) {
   return (
     <li className={'r' + (b.litige ? ' litige' : '')} id={lien ? undefined : b.id} data-src={lien ? b.id : undefined} data-onglet={lien ? b.page : undefined}
-        data-etat={b.etat} data-fam={famille(b)} data-dom={b.domaine} title={b.litige || b.note}>
-      {lien ? <i className="pt" data-etat={b.etat} /> : <Pastille etat={b.etat} />}
+        data-etat={b.etat} data-fam={famille(b)} data-dom={b.domaine} title={lien ? undefined : b.litige || b.note}>
+      {lien ? <i className="pt" data-fam={famille(b)} /> : <Pastille etat={b.etat} />}
       <span className="t"><Texte t={b.titre} /></span>
       <span className="m">
-        {lien && <span className="d">{DOMAINE_PAR_ID[b.domaine]?.libelle}</span>}
-        <span className="c">{b.cout ?? ''}</span>
-        <Preuve p={b.preuve} />
+        {lien
+          ? <span className="d">{DOMAINE_PAR_ID[b.domaine]?.libelle}</span>
+          : <><span className="c">{b.cout ?? ''}</span><Preuve p={b.preuve} /></>}
       </span>
       {lien && <Ic id="chev" className="ic chev" />}
     </li>
@@ -56,13 +64,13 @@ export function Rangee({ b, lien }: { b: Brique; lien?: boolean }) {
 
 export function RangeeMesure({ m, lien }: { m: Mesure; lien?: boolean }) {
   return (
-    <li className="r nm" id={lien ? undefined : m.id} data-onglet={lien ? m.page : undefined} data-etat="nm" data-fam={famille(m)} data-dom={m.domaine} title={m.note}>
-      <i className="pt" data-etat="nm" />
+    <li className="r nm" id={lien ? undefined : m.id} data-onglet={lien ? m.page : undefined} data-etat="nm" data-fam={famille(m)} data-dom={m.domaine} title={lien ? undefined : m.note}>
+      {lien ? <i className="pt" data-fam={famille(m)} /> : <i className="pt" data-etat="nm" />}
       <span className="t"><Texte t={m.titre} />{m.lecture && m.lecture !== 'inconnu' ? <span className="lecture"> ({EMOJI[m.lecture]} au code)</span> : null}</span>
       <span className="m">
-        {lien && <span className="d">{DOMAINE_PAR_ID[m.domaine]?.libelle}</span>}
-        <span className="c">{m.cout ?? ''}</span>
-        <Preuve p={m.preuve} />
+        {lien
+          ? <span className="d">{DOMAINE_PAR_ID[m.domaine]?.libelle}</span>
+          : <><span className="c">{m.cout ?? ''}</span><Preuve p={m.preuve} /></>}
       </span>
       {lien && <Ic id="chev" className="ic chev" />}
     </li>
@@ -151,8 +159,10 @@ export function lireCaptures(): Captures {
 
 export function Hero({ page }: { page: Page }) {
   const info = PAGE_PAR_ID[page]
-  const c = compter(parPage(page))
+  // ⚠️ le compte du hero est celui des FAMILLES (30-08 soir) — `compter()` garde les lignes `reference: true`
+  // et affichait « Serveur · 87 briques » quand la card de l'accueil, elle, annonçait 55.
   const f = compterFamilles(parPage(page), mesuresPar(page))
+  const c = { total: f.total }
   const cap = lireCaptures().hero[page]
   const teinte = info.hero?.teinte
   // LE VERT (30-08) : tout bon sur la page (briques ET ◌) → la classe `vert` (app/styles/v2.css) prend la

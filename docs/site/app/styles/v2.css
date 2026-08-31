@@ -83,6 +83,12 @@ table.serveur tr.litige td.etat .p{outline:1px dashed rgba(255,255,255,.35);outl
    palette.py (79 % de #5FC98C = #4B9F6F). La classe est posée par Hero (components/Composants.tsx) ; aucune page n'y est encore. */
 .hero-dom.vert{--t1:color-mix(in srgb,var(--ok) 79%,#000);--t2:color-mix(in srgb,var(--ok) 52%,#000)}
 
+/* la ligne de verdict d'une page SANS hero (Serveur) : la même phrase que sa card, la bille de sa famille */
+.verdict-nu{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 20px;font-size:15px;line-height:24px;max-width:none}
+.verdict-nu .pt{width:8px;height:8px;box-shadow:none;align-self:center}
+.verdict-nu b{font-weight:400;color:var(--encre-1)}
+.verdict-nu span{font-size:12.5px;color:var(--encre-3);font-variant-numeric:tabular-nums}
+
 /* ── les panneaux : décision, savoir, sondes, lexique ─────── */
 .decision{margin:32px 0 0;padding:24px 28px;border-radius:16px;border:1px solid var(--filet);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);max-width:none;
   background:radial-gradient(60% 50% at 50% 0%,rgba(255,255,255,.04),rgba(255,255,255,0) 70%),var(--panneau)}
@@ -126,18 +132,37 @@ figcaption{margin-top:10px}
 /* LES QUATRE FAMILLES (30-08, « je veux savoir ce que JE dois faire ») : quatre compteurs, le chiffre en 300 comme
    le h1, le mot dessous. La couleur reste dans la bille (blanc · rouge · gris · vert) — le chiffre est un blanc en
    dégradé, comme le h1. */
-.familles{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 44px;margin:28px 0 0}
+.hero .commencer{margin:14px 0 0;font-size:13.5px;line-height:22px;color:var(--encre-3);max-width:62ch}
+.hero .commencer .lien{font:inherit;color:#fff;background:none;border:0;padding:0;cursor:pointer;text-align:left;
+  border-bottom:1px solid rgba(255,255,255,.30);transition:border-color .14s}
+.hero .commencer .lien:hover{border-bottom-color:#fff}
+.hero .commencer .lien code{font-size:12px}
+.familles{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 44px;margin:24px 0 0}
 .fam{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:0 0 6px;background:none;border:0;border-bottom:1px solid transparent;border-radius:0;
   cursor:pointer;color:inherit;text-align:left;font-family:var(--sans);transition:border-color .14s}
 .fam b{font-size:44px;line-height:48px;font-weight:300;letter-spacing:-.025em;font-variant-numeric:tabular-nums;display:inline-block;padding-bottom:.04em;
   background-image:linear-gradient(100deg,#fff 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,.68) 80%,rgba(255,255,255,.55) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .fam span{display:inline-flex;align-items:center;gap:7px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.62);transition:color .14s}
+.fam span em{font-style:normal;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--encre-3)}
+.fam span em::before{content:"— "}
 .fam span .pt{width:7px;height:7px}
 .fam small{font-size:12px;line-height:16px;color:var(--encre-3);font-variant-numeric:tabular-nums}
 .fam:hover span{color:#fff}
+.fam:not(:disabled){border-bottom-color:rgba(255,255,255,.14)}
+.fam:disabled{cursor:default;opacity:.55}
 .fam.on{border-bottom-color:rgba(255,255,255,.55)} .fam.on span{color:#fff}
 .fam:focus-visible{outline:1px solid rgba(255,255,255,.35);outline-offset:4px;border-radius:4px}
+.hero .reste{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin:14px 0 0;font-size:12.5px;line-height:20px;color:var(--encre-3);max-width:none}
+.hero .reste .lien-fam{display:inline-flex;align-items:center;gap:7px;font:inherit;color:var(--encre-3);background:none;border:0;padding:0;cursor:pointer;
+  border-bottom:1px solid transparent;transition:color .14s,border-color .14s}
+.hero .reste .lien-fam b{font-weight:500;color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums}
+.hero .reste .lien-fam:hover{color:#fff} .hero .reste .lien-fam:hover b{color:#fff}
+.hero .reste .lien-fam.on{color:#fff;border-bottom-color:rgba(255,255,255,.45)} .hero .reste .lien-fam.on b{color:#fff}
+.hero .reste .lien-fam .pt{width:7px;height:7px;box-shadow:none}
+.hero .reste .tout{display:none;margin-left:auto;color:rgba(255,255,255,.72);border-bottom-color:rgba(255,255,255,.24)}
+.hero .reste .tout::before{content:"↺ "}
+body.filtre .hero .reste .tout{display:inline-flex}   /* « tout voir » n'apparaît QUE si un filtre est posé (site.js) */
 .familles .pill.alerte{align-self:center;border:1px dashed var(--men);color:var(--men);display:none}
 .familles .pill.alerte.on{display:inline-flex}
 /* la bille d'une famille : à trancher BLANCHE pleine · à valider rouge · en chantier grise · bon verte
@@ -152,27 +177,55 @@ figcaption{margin-top:10px}
   radial-gradient(90% 80% at 50% -15%,color-mix(in srgb,var(--ok) 52%,#000) 0%,rgba(0,0,0,0) 72%),
   radial-gradient(45% 55% at 12% 4%,color-mix(in srgb,var(--ok) 40%,#000),rgba(0,0,0,0) 70%),
   linear-gradient(180deg,color-mix(in srgb,var(--ok) 20%,#000) 0%,color-mix(in srgb,var(--ok) 12%,#000) 34%,#000 100%)}
-.dom .seg,.dom .aller{display:none}
-.dom{min-height:150px;grid-template-rows:auto auto}
-.dom h3{font-size:22px;max-width:none}
-.dom .sous{display:block;font-size:12.5px}
+.dom .seg,.dom .aller,.dom .sur{display:none}
+.dom{min-height:148px;grid-template-rows:auto 1fr auto;position:relative;padding:18px 20px 16px}
+.dom h3{font-size:24px;max-width:none}
+.dom .sous{display:block;font-size:12.5px;line-height:19px;margin-top:0}
 /* la teinte d'une card : ≥ 1 à trancher BLANCHE · ≥ 1 à valider rouge (= .dom.men de la v1) · tout bon verte (= .dom.ok) · sinon argent */
 .dom.trancher{--t:255,255,255;border-color:rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
   background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.08) 45%,#0A0A0A 100%)}
 .dom.trancher .sur{color:rgba(255,255,255,.80)}
-.dom.valider{--t:229,106,106;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(229,106,106,.30) 0%,rgba(229,106,106,.06) 45%,#0A0A0A 100%)}
-.dom.bon{--t:95,201,140;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(95,201,140,.26) 0%,rgba(95,201,140,.06) 45%,#0A0A0A 100%)}
-.filtres .pill{background:none;border-color:transparent;padding:0 8px}
-.filtres .pill.on{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);box-shadow:none}
+.dom.valider{--t:229,106,106;border-color:rgba(229,106,106,.30);background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(229,106,106,.30) 0%,rgba(229,106,106,.06) 45%,#0A0A0A 100%)}
+.dom.bon{--t:95,201,140;border-color:rgba(95,201,140,.30);background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 28px),linear-gradient(155deg,rgba(95,201,140,.26) 0%,rgba(95,201,140,.06) 45%,#0A0A0A 100%)}
+/* LE BADGE (30-08, Kathryn : « rajoute des indications vert ou rouge ou blanc dans les grosses cards ») : la famille en
+   toutes lettres, dans sa couleur, en haut à droite. --fc = la couleur de la famille ; la bille la répète. */
+.dom.trancher{--fc:#fff} .dom.valider{--fc:var(--men)} .dom.chantier{--fc:rgba(255,255,255,.60)} .dom.bon{--fc:var(--ok)}
+/* LA CARD (30-08 soir) : le NOM en gros — c'est le seul mot qui la distingue —, le badge dessous dans sa
+   couleur, une ligne de compte. Plus de barre : elle répétait la ligne, et 67 % de vert sur une card rouge
+   disaient l'inverse du badge. */
+.dom h3{align-self:start;margin:0}
+.dom .badge{align-self:start;justify-self:start;margin-top:12px;display:inline-flex;align-items:center;gap:7px;height:24px;padding:0 10px 0 8px;border-radius:999px;
+  font-size:10.5px;line-height:1;font-weight:500;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--fc);
+  border:1px solid color-mix(in srgb,var(--fc) 38%,transparent);background:color-mix(in srgb,var(--fc) 10%,transparent)}
+.dom .badge .pt{width:7px;height:7px;box-shadow:none}
+.dom.trancher .badge{color:#fff;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.12)}
+/* LA BARRE : la part de bon, verte — pleine quand tout est bon ; la ligne dessous la chiffre (« 5 bons sur 9 ») */
+.dom .barre i{display:block;height:100%;border-radius:2px;background:var(--ok)}
+/* L'ACCUEIL, ALLÉGÉ (30-08, « trop de pilules, on sait pas quoi faire ») : la rangée = bille · titre · domaine · chevron ;
+   le coût et la preuve vivent sur la page de la brique. Plus de filtres par domaine (la card est la porte). */
+.page#etat .liste li.r .m .c,.page#etat .liste li.r .m code{display:none}
+.page#etat .liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) auto 16px}
 .liste .grp{text-transform:none;letter-spacing:-.005em;font-size:13px;color:var(--encre-1)}
 .liste .grp .pt{width:7px;height:7px}
+/* un groupe PLIÉ (en chantier · bon) : une ligne, un chevron ; le clic déplie — public/site.js */
+.liste .grp[data-plie]{cursor:pointer;user-select:none}
+.liste .grp[data-plie]:hover{background:#0A0A0A}
+.liste .grp .chev{width:14px;height:14px;opacity:.35;margin-left:8px;color:#fff;transform:rotate(90deg);transition:transform .14s,opacity .14s}
+.liste .grp.ferme .chev{transform:none}
+.liste .grp[data-plie]:hover .chev{opacity:.7}
+.liste .grp.ferme{margin-bottom:8px}
+.liste .grp:focus-visible{outline:1px solid rgba(255,255,255,.35);outline-offset:2px}
 .liste .rien-a-faire{padding:14px 12px;font-size:13px;color:var(--encre-3);max-width:none}
 .liste .fin{font-size:11.5px}
-/* la légende du pied : une phrase par famille, quatre lignes, qui disent QUI agit */
-.legende-pied{padding:32px 40px 0;font-size:12.5px;line-height:20px;color:var(--encre-3);max-width:none}
-.legende-pied p{margin:0 0 4px;max-width:none}
+/* la 2e phrase du hero porte les quatre billes : blanc toi · rouge toi et moi · gris moi · vert bon — chaque couple bille+mot est insécable */
+.hero .phrase.couleurs{display:flex;flex-wrap:wrap;gap:2px 18px;margin-top:8px;color:rgba(255,255,255,.72)}
+.hero .phrase.couleurs span{white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.hero .phrase .pt{width:7px;height:7px;box-shadow:none;flex:none}
+/* la légende du pied : UNE ligne, qui dit QUI agit */
+.legende-pied{display:flex;flex-wrap:wrap;align-items:center;gap:4px 20px;padding:28px 40px 0;font-size:12.5px;line-height:20px;color:var(--encre-3);max-width:none}
+.legende-pied span{white-space:nowrap} .legende-pied span:last-child{white-space:normal}
 .legende-pied b{font-weight:500;color:var(--encre-2)}
-.legende-pied .pt{width:7px;height:7px;vertical-align:1px;margin:0 6px 0 0}
+.legende-pied .pt{width:7px;height:7px;vertical-align:1px;margin:0 6px 0 0;box-shadow:none}
 
 /* ── les 3 animations : l'arrivée de la home (HomeNuit.swift:343-357), une fois ── */
 @keyframes arrive{from{opacity:0;filter:blur(1em);transform:translateY(22px) scale(1.05)}to{opacity:1;filter:blur(0);transform:none}}
@@ -199,11 +252,26 @@ figcaption{margin-top:10px}
   .hero-dom{height:320px;border-radius:20px;padding:0 24px 24px}
   .hero-dom img{width:160px;top:32px}
   .hero-dom .verdict{font-size:28px;line-height:32px}
-  .familles{gap:8px 28px;margin-top:22px}
+  .familles{gap:8px 28px;margin-top:20px}
   .fam b{font-size:36px;line-height:40px}
+  /* LE TÉLÉPHONE (30-08 soir) : les cards EMPILÉES. En carrousel, on voyait une card et demie sur sept,
+     sans point ni compteur : six domaines n'existaient pas tant qu'on ne devinait pas le glissement. */
+  .doms{display:grid;grid-template-columns:1fr;overflow:visible;padding:18px 20px 0;gap:10px}
+  .dom{flex:none;min-height:0;padding:14px 16px}
+  .dom h3{font-size:19px;margin-top:12px}
+  .dom .barre{margin:12px 0 7px}
+  /* la rangée : le titre a droit à DEUX lignes (il était coupé au milieu d'un mot), la 2e ligne du gabarit
+     ne sert plus à rien sur l'accueil (domaine, coût et preuve y sont masqués) */
+  .page#etat .liste li.r[data-onglet]{height:auto;min-height:52px;padding:9px 10px;grid-template-areas:"pt t chev";align-items:center}
+  .page#etat .liste li.r .t{white-space:normal;overflow:visible;text-overflow:clip;line-height:19px}
+  .page#etat .liste li.r .m{display:none}
+  .hero .reste{gap:4px 12px;font-size:12px}
+  .hero .reste .tout{margin-left:0}
   .legende-pied{padding:24px 20px 0}
   .liste li.r{grid-template-columns:22px minmax(0,1fr);grid-template-areas:"pt t" ". m";height:58px}
   .liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) 16px;grid-template-areas:"pt t chev" ". m chev"}
+  .page#etat .liste li.r[data-onglet]{grid-template-columns:22px minmax(0,1fr) 16px}   /* l'accueil retombe sur les 3 colonnes du téléphone */
+    .legende-pied{gap:4px 16px}
   .lexique{grid-template-columns:1fr}
   .sondes li{grid-template-columns:1fr;gap:4px}
   .decision{padding:18px 20px}

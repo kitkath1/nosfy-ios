@@ -33,34 +33,41 @@
   if (bouton) bouton.addEventListener('click', function () { document.body.classList.toggle('tiroir'); });
   if (voile) voile.addEventListener('click', function () { document.body.classList.remove('tiroir'); });
 
-  /* ── l'accueil : filtres par famille et par domaine + clic d'une rangée ──
+  /* ── l'accueil : les quatre compteurs filtrent, deux groupes se plient, une rangée ouvre sa page ──
      Une rangée porte `data-fam` (à trancher · à valider · en chantier · bon — posé par Rangee à la build,
-     content/index.ts `famille`) et `data-etat` (les cinq états + nm). Un groupe = une famille. */
+     content/index.ts `famille`) et `data-etat` (les cinq états + nm). Un groupe = une famille. Un groupe
+     `data-plie` (en chantier · bon) naît FERMÉ : une ligne et son compte ; le clic (ou le compteur de sa
+     famille) le déplie — 30-08, « trop de pilules, on sait pas quoi faire ». */
   var etat = document.getElementById('etat');
   if (etat) {
     var rangees = q('.liste li.r', etat), groupes = q('.liste li.grp', etat), rien = etat.querySelector('.liste .rien-a-faire');
-    var fF = {}, fD = {};
+    var fF = {}, fD = {}, plie = {};
+    groupes.forEach(function (g) { if (g.hasAttribute('data-plie')) plie[g.dataset.grp] = true; });
     function vide(o) { for (var k in o) if (o[k]) return false; return true; }
     function appliquer() {
-      var visibles = 0;
+      var visibles = 0, parFam = {};
       rangees.forEach(function (li) {
-        var ok = (vide(fF) || fF[li.dataset.fam]) && (vide(fD) || fD[li.dataset.dom]);
-        li.hidden = !ok; if (ok) visibles++;
+        var fam = li.dataset.fam;
+        var ok = (vide(fF) || fF[fam]) && (vide(fD) || fD[li.dataset.dom]);
+        var ferme = !!plie[fam] && !fF[fam];   /* un compteur choisi déplie sa famille */
+        li.hidden = !ok || ferme;
+        if (ok) { visibles++; parFam[fam] = (parFam[fam] || 0) + 1; }
       });
       groupes.forEach(function (g) {
-        var k = g.dataset.grp, vis = rangees.filter(function (li) { return li.dataset.fam === k && !li.hidden; }).length;
-        g.hidden = !vis; var n = g.querySelector('.n'); if (n) n.textContent = vis;
+        var k = g.dataset.grp, n = parFam[k] || 0;
+        g.hidden = !n; g.classList.toggle('ferme', !!plie[k] && !fF[k]);
+        var e = g.querySelector('.n'); if (e) e.textContent = n;
       });
-      if (rien) {
-        rien.hidden = visibles > 0;
-        rien.textContent = fF.bon && !fF.trancher && !fF.valider && !fF.chantier ? 'Ce qui est bon n’est pas une to-do : rien à lister.' : 'Rien dans cette sélection.';
-      }
+      if (rien) rien.hidden = visibles > 0;
+      /* un filtre posé se VOIT et se défait : `body.filtre` fait apparaitre « tout voir » (v2.css) —
+         sans ça, un clic curieux sur « 46 bon » vidait la page sans dire comment revenir. */
+      document.body.classList.toggle('filtre', !vide(fF) || !vide(fD));
       q('[data-f]').forEach(function (b) {
         var f = b.dataset.f, on = false;
         if (f === '*') on = vide(fF) && vide(fD);
         else if (f.indexOf('fam:') === 0) on = !!fF[f.slice(4)];
         else if (f.indexOf('dom:') === 0) on = !!fD[f.slice(4)];
-        b.classList.toggle('on', on);
+        if (f !== '*') b.classList.toggle('on', on);
       });
     }
     q('[data-f]').forEach(function (b) {
@@ -72,20 +79,29 @@
         appliquer();
       });
     });
+    groupes.forEach(function (g) {
+      if (!g.hasAttribute('data-plie')) return;
+      function bascule() { var k = g.dataset.grp; plie[k] = !plie[k]; appliquer(); }
+      g.addEventListener('click', bascule);
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bascule(); } });
+    });
     appliquer();
+    function viser(o, src) {
+      if (!o || !montrer(o, true)) return;
+      var s = src && document.getElementById(src);
+      if (!s) return;
+      setTimeout(function () {
+        s.scrollIntoView({ block: 'center' });
+        s.classList.add('vise');
+        setTimeout(function () { s.classList.add('fin'); }, 1200);
+        setTimeout(function () { s.classList.remove('vise', 'fin'); }, 2600);
+      }, 60);
+    }
+    q('[data-aller]', etat).forEach(function (b) {
+      b.addEventListener('click', function () { viser(b.dataset.onglet, b.dataset.aller); });
+    });
     rangees.forEach(function (li) {
-      li.addEventListener('click', function () {
-        var o = li.dataset.onglet, src = li.dataset.src;
-        if (!o || !montrer(o, true)) return;
-        var s = src && document.getElementById(src);
-        if (!s) return;
-        setTimeout(function () {
-          s.scrollIntoView({ block: 'center' });
-          s.classList.add('vise');
-          setTimeout(function () { s.classList.add('fin'); }, 1200);
-          setTimeout(function () { s.classList.remove('vise', 'fin'); }, 2600);
-        }, 60);
-      });
+      li.addEventListener('click', function () { viser(li.dataset.onglet, li.dataset.src); });
     });
     q('.dom[data-onglet]', etat).forEach(function (c) {
       c.addEventListener('click', function (e) { e.preventDefault(); montrer(c.dataset.onglet, true); });
