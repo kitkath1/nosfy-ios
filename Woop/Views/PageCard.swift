@@ -35,16 +35,30 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
     /// capture, montée spring, pause, rangement — pour FILMER l'animation
     /// globale au simulateur sans doigt.
     private let autoCycle: Bool
+    /// LE LAYOUT UNIVERSEL (§2.14) : `true` = le player dessous (la dalle,
+    /// le déployé) ; `false` = HORS SÉANCE — le trait seul invite, le drag
+    /// ÉLASTIQUE soulève la card et révèle LA LUNE (le secret de la home,
+    /// homogène partout).
+    private let enSeance: Bool
+    /// §2.17 (verdict 31-08 : « le player n'arrive JAMAIS dès que le galet
+    /// est enclenché et pendant le chrono ») : `false` = AUCUNE bande — ni
+    /// dalle, ni trait, ni lune ; la card prend presque toute la hauteur.
+    /// L'hôte le dérive de son état (plongée, série en cours).
+    private let bandeVisible: Bool
 
     init(dockH: CGFloat = 76,
          leveeInitiale: CGFloat = 0,
          autoCycle: Bool = false,
+         enSeance: Bool = true,
+         bandeVisible: Bool = true,
          @ViewBuilder page: () -> Page,
          @ViewBuilder dalle: @escaping (CGFloat) -> Dalle,
          @ViewBuilder detail: @escaping (CGFloat) -> Detail,
          @ViewBuilder pied: @escaping (CGFloat) -> Pied) {
         self.dockH = dockH
         self.autoCycle = autoCycle
+        self.enSeance = enSeance
+        self.bandeVisible = bandeVisible
         self.page = page()
         self.dalle = dalle
         self.detail = detail
@@ -61,66 +75,100 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
     /// poussée telle quelle.
     @State private var snap: Image?
     @State private var snapJeton = 0
+    /// LE CHIEN DE GARDE des tirages (§2.18, le piège de la maison : un
+    /// DragGesture peut mourir SANS `onEnded` — pointeur sorti de la
+    /// fenêtre, présentation, Reachability ; payé : la lune restait
+    /// ALLUMÉE au repos). Réarmé à chaque frame ; s'il aboie, il COMMET
+    /// l'état stable le plus proche — jamais un simple reset.
+    @State private var chienJeton = 0
     /// L'échelle RÉELLE de l'écran (un snapshot 2x sur écran 3x = flou
     /// permanent, payé v5).
     @Environment(\.displayScale) private var displayScale
 
     /// Le trait (grabber) + son air, au-dessus de la dalle.
     private var grabH: CGFloat { 18 }
+    /// La bande du bas au repos (en zone sûre) : trait + dalle + 6 pt d'air.
+    private var bandeH: CGFloat { grabH + dockH + 6 }
 
     // Les courbes du rendu (E/F) : net jusqu'à mi-course, dissolution finale.
     private func lisse(_ u: CGFloat) -> CGFloat {
         let t = min(max(u, 0), 1); return t * t * (3 - 2 * t)
     }
-    // DEUX CARDS D'ABORD, LE FONDU APRÈS (verdict v8.1, « j'insiste à
-    // 100 % ») : pendant le push les deux cards restent NETTES et entières —
-    // le flou ne démarre qu'à 70 % de course, l'extinction qu'à 78 %.
-    private var flouCard: CGFloat { 24 * lisse((levee - 0.7) / 0.28) }
-    private var opaciteCard: CGFloat { 1 - lisse((levee - 0.78) / 0.2) }
+    // DEUX CARDS NETTES D'ABORD (~40 % de course), PUIS LA DISSOLUTION
+    // (§2.13 bis — « il manque le blur de disparition comme on avait ») :
+    // le flou monte sur la seconde moitié du vol, l'extinction suit.
+    private var flouCard: CGFloat { 24 * lisse((levee - 0.40) / 0.5) }
+    private var opaciteCard: CGFloat { 1 - lisse((levee - 0.55) / 0.35) }
 
     var body: some View {
         GeometryReader { g in
-            let H = g.size.height
-            let safeTop = g.safeAreaInsets.top
+            // ⚠️ LA RACINE VIT DANS LA ZONE SÛRE (verdict T1 : le chevron de
+            // la fiche coupé, le retour mort) — un `.ignoresSafeArea()` de
+            // racine VOLAIT les insets de la page : ses GeometryReader
+            // internes lisaient zéro, le header remontait sous la status
+            // bar. La page garde ses insets ; SEUL le player plonge au bord
+            // physique du bas (l'offset +safeBottom).
+            let W = g.size.width
+            let Hs = g.size.height
             let safeBottom = g.safeAreaInsets.bottom
-            // ⚠️ LA DALLE NE COLLE PAS LE FOOTER (verdict v8.1) : au repos
-            // elle s'arrête AU-DESSUS de l'indicateur home (+6 pt d'air).
-            let bandeH = grabH + dockH + safeBottom + 6 + 10
-            let zoneH = max(H - bandeH, 1)
-            // Le corps du player à TAILLE FINALE : il s'arrête SOUS la zone
-            // sûre du haut — jamais collé à l'heure.
-            let corpsH = max(H - safeTop - 8, 1)
-            let course = max(corpsH - (grabH + dockH), 1)
-            // La course VISIBLE : au repos, le bas de la dalle vit au-dessus
-            // de l'indicateur — pas au bord physique.
-            let repos = max(course - safeBottom - 6, 1)
+            // Le corps à TAILLE FINALE : de 8 pt sous le haut sûr jusqu'au
+            // bord PHYSIQUE du bas.
+            let corpsH = max(Hs + safeBottom - 8, 1)
+            // La course : au repos, le bas de la dalle vit à 6 pt au-dessus
+            // de l'indicateur.
+            let repos = max(Hs - 14 - grabH - dockH, 1)
             ZStack(alignment: .bottom) {
-                // 1) LA CARD-PAGE — poussée en CONTACT 1:1 par le sommet du
-                //    player (même course). Vivante et nette jusqu'à
-                //    mi-course ; snapshot flouté en dissolution finale.
-                VStack(spacing: 0) {
-                    pageLayer
-                        .frame(width: g.size.width, height: zoneH)
-                        .blur(radius: flouCard)
-                        .opacity(Double(opaciteCard))
-                        .offset(y: -levee * repos)
-                    Spacer(minLength: 0)
+                // -1) LE FOND DE L'APP — le noir sur lequel la card flotte
+                //     (§2.15 : la page n'atteint plus les bords, le fond
+                //     vient du moteur). Couche INTERNE : elle n'affecte pas
+                //     les insets du root (le bug T1 venait du root).
+                Color.black.ignoresSafeArea()
+                // 0) HORS SÉANCE : LA LUNE dans la nuit que la card découvre
+                //    (construite à p=1, modulée par-dessus — la loi de la
+                //    bande exo : jamais un `p` vivant, trois ombres).
+                if !enSeance, bandeVisible {
+                    luneFond
                 }
-                // 2) LE PLAYER-CARD — noir pur, taille finale, il GLISSE
-                //    depuis le bas (le bord d'écran le coupe : il grandit).
-                corpsPlayer(course: repos, zone: CGSize(width: g.size.width,
-                                                        height: zoneH))
-                    .frame(width: g.size.width, height: corpsH,
-                           alignment: .top)
-                    .offset(y: (1 - levee) * repos)
+                // 1) LA CARD-PAGE — la GROSSE CARD PERMANENTE (§2.15) :
+                //    coins, marges et liseré posés par `pageEnCard`, dans un
+                //    cadre plein (les marges vivent DANS le cadre — le
+                //    layout ne bouge pas au swap snapshot). Poussée en
+                //    CONTACT 1:1, coupée au cadre.
+                pageLayer
+                    .frame(width: W, height: Hs)
+                    .blur(radius: flouCard)
+                    .opacity(Double(opaciteCard))
+                    .offset(y: -levee * repos)
+                    .frame(width: W, height: Hs, alignment: .top)
+                    .clipped()
+                // 2) LE PLAYER-CARD — noir pur, taille finale ; lui seul
+                //    plonge au bord physique (le +safeBottom). EN SÉANCE.
+                if enSeance, bandeVisible {
+                    corpsPlayer(course: repos, zone: CGSize(width: W,
+                                                            height: Hs))
+                        .frame(width: W, height: corpsH,
+                               alignment: .top)
+                        .offset(y: safeBottom + (1 - levee) * repos)
+                } else if bandeVisible {
+                    // LE TRAIT SEUL — l'invitation hors séance : le drag
+                    // élastique soulève la card, la lune se lève dessous.
+                    Capsule()
+                        .fill(Color.white.opacity(0.28))
+                        .frame(width: 36, height: 4)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                        .contentShape(Rectangle())
+                        .gesture(tirageLune(
+                            course: repos,
+                            zone: CGSize(width: W, height: Hs)))
+                }
             }
-            .frame(width: g.size.width, height: H)
-            .clipped()
+            .frame(width: W, height: Hs)
             // LA CINÉMATIQUE DU BANC : le cycle complet en boucle, avec la
             // vraie capture à chaque montée (fidèle au geste).
             .task(id: autoCycle) {
-                guard autoCycle else { return }
-                let zone = CGSize(width: g.size.width, height: zoneH)
+                guard autoCycle, enSeance else { return }
+                let zone = CGSize(width: g.size.width, height: Hs)
                 try? await Task.sleep(for: .seconds(1.2))
                 while !Task.isCancelled {
                     capture(zone: zone)
@@ -157,19 +205,117 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
                 .allowsHitTesting(false)
             }
         }
-        .ignoresSafeArea()
+        // (Plus de `.ignoresSafeArea()` racine — le bug du chevron coupé.)
     }
 
     // MARK: La card-page
 
     @ViewBuilder
     private var pageLayer: some View {
-        if let snap, levee > 0.5 {
-            // Le snapshot ne sert QUE la dissolution finale (E) — avant,
-            // c'est la vraie vue qui sort, nette, objet entier.
+        if let snap {
+            // LE SNAPSHOT (T1.2, le pattern app-switcher) : dès la PRISE la
+            // page vivante est remplacée par son image morte — l'offset ne
+            // coûte rien (la vraie fiche porte vidéos et shaders : la
+            // pousser vivante était le « pas fluide »). L'image contient
+            // DÉJÀ la card (coins, marges, liseré — §2.15) : rien à
+            // habiller, la card — déjà card — est poussée telle quelle.
             snap.resizable()
         } else {
-            page
+            pageEnCard
+        }
+    }
+
+    /// LA GROSSE CARD PERMANENTE (§2.15, verdict 30-08 : « toute la page
+    /// détail EST une card, comme ma capture ») : la page vit dans la card
+    /// DÈS LE REPOS — coins 30, marges fines (12 latéral, 6 sous le haut
+    /// sûr), liseré discret — et la card SE TERMINE au-dessus de la bande
+    /// du player (le padding bas remplace l'inset d'avant). Le clip ROGNE
+    /// LE DESSIN sans toucher au layout (pas le piège T1.2 du cadre
+    /// raccourci) ; le padding est un « iPhone un peu plus étroit », la
+    /// page s'y adapte (ses `safeAreaInsets` internes lisent 0). LA MÊME
+    /// vue à l'écran et dans la capture : le swap vivant→snapshot est
+    /// invisible.
+    private var pageEnCard: some View {
+        page
+            .clipShape(Self.robeCard)
+            .overlay(
+                Self.robeCard
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                    // §2.18 : LE LISERÉ MEURT VERS LE HAUT — jamais une
+                    // ligne en travers sous l'heure, les flancs fondent.
+                    .mask(LinearGradient(
+                        stops: [.init(color: .clear, location: 0),
+                                .init(color: .black, location: 0.14)],
+                        startPoint: .top, endPoint: .bottom)))
+            // Marges FINES (verdict 31-08 : « sur le côté c'est trop
+            // espacé ») : 8 pt — invisibles en haut (noir sur noir),
+            // structurantes en bas.
+            .padding(.horizontal, 8)
+            // §2.18 : AUCUNE limite en haut (« hors de question ») — pas
+            // de padding top : le noir de la page FOND dans le noir de
+            // l'app jusque sous l'heure, comme home et exercices.
+            // §2.17 : bande cachée (galet enclenché, chrono) = la card
+            // reprend presque tout — le changement de hauteur est UNIQUE
+            // par événement (jamais par image), animé ici même.
+            .padding(.bottom, bandeVisible ? (enSeance ? bandeH : 34) : 12)
+            .animation(.easeInOut(duration: 0.25), value: bandeVisible)
+    }
+
+    /// La robe §2.18 : coins BAS seulement — le haut fond dans le châssis
+    /// (la « limite » sous l'heure était une invention, verdict 31-08).
+    private static var robeCard: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 0, bottomLeadingRadius: 30,
+            bottomTrailingRadius: 30, topTrailingRadius: 0,
+            style: .continuous)
+    }
+
+    /// LA LUNE (§2.14, hors séance) — le secret de la home, réutilisé tel
+    /// quel : construite à p = 1, seule sa NAISSANCE est modulée (opacité +
+    /// échelle) par la levée — jamais un `p` vivant (trois ombres par image).
+    private var luneFond: some View {
+        let n = min(1, levee * 7)
+        return VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            LuneSecrete(p: 1)
+                .opacity(Double(n))
+                .scaleEffect(0.82 + 0.18 * n)
+                .padding(.bottom, 46)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// LE TIRAGE HORS SÉANCE — l'élastique de la home : la card se soulève,
+    /// résiste (tanh, ~16 % de course max), la lune se lève ; au relâcher,
+    /// toujours le retour. Jamais un déploiement.
+    private func tirageLune(course: CGFloat, zone: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .onChanged { v in
+                if dragFrom == nil {
+                    dragFrom = levee
+                    snapJeton += 1
+                    if levee < 0.02 { capture(zone: zone) }
+                }
+                let brut = max(0, -v.translation.height / course)
+                levee = 0.16 * CGFloat(tanh(Double(brut) * 7))
+                armerChien { ranger() }
+            }
+            .onEnded { _ in
+                chienJeton += 1
+                dragFrom = nil
+                ranger()
+            }
+    }
+
+    /// Réarme le chien à chaque frame de geste ; s'il aboie (~0,35 s sans
+    /// nouvelle frame ni `onEnded`), il libère la prise et COMMET.
+    private func armerChien(_ commettre: @escaping () -> Void) {
+        chienJeton += 1
+        let jeton = chienJeton
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            guard jeton == chienJeton, dragFrom != nil else { return }
+            dragFrom = nil
+            commettre()
         }
     }
 
@@ -199,7 +345,7 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 20)
                             .onEnded { v in
-                                if levee > 0.9, v.velocity.height > 900 {
+                                if levee > 0.9, v.velocity.height > 650 {
                                     ranger()
                                 }
                             })
@@ -216,12 +362,24 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
                 bottomTrailingRadius: 0, topTrailingRadius: 30,
                 style: .continuous)
             .fill(Color.black))
-        // LE PIED — le morph du stop + « Page exercices », par-dessus la
-        // partition. Inerte au banc (tranche 0).
+        // LA PRISE DU HEADER (verdict T1 : « j'arrive pas à drag le player
+        // déplié ») — au déployé, tout le header (CD + titre + barre, rien
+        // n'y scrolle) est une prise de rangement, façon Apple Music. Sous
+        // le pied : ses boutons gardent la priorité.
+        .overlay(alignment: .top) {
+            if levee > 0.5 {
+                Color.clear
+                    .frame(height: 300)
+                    .contentShape(Rectangle())
+                    .gesture(tirage(course: course, zone: zone))
+            }
+        }
+        // LE PIED — le héros en vol + les contrôles, par-dessus la
+        // partition. Hit-transparent hors de ses objets : le slot arme ses
+        // boutons lui-même, et seulement posés (t > 0,95).
         .overlay(alignment: .bottom) {
             if levee > 0.02 {
                 pied(levee)
-                    .allowsHitTesting(false)
             }
         }
     }
@@ -240,8 +398,21 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
                 }
                 let d = -v.translation.height / course
                 levee = min(max((dragFrom ?? 0) + d, 0), 1)
+                // Le chien COMMET le côté le plus proche (la loi : jamais
+                // un simple reset — sinon une card abandonnée à mi-vol).
+                armerChien {
+                    if levee > 0.5 {
+                        withAnimation(.spring(response: 0.42,
+                                              dampingFraction: 0.86)) {
+                            levee = 1
+                        }
+                    } else {
+                        ranger()
+                    }
+                }
             }
             .onEnded { v in
+                chienJeton += 1
                 dragFrom = nil
                 let vy = v.velocity.height
                 let cible: CGFloat = vy < -280 ? 1
@@ -268,8 +439,12 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
 
     @MainActor
     private func capture(zone: CGSize) {
+        // La capture rend EXACTEMENT ce que l'œil voyait (la card entière,
+        // marges comprises — l'alpha autour reste transparent, le fond noir
+        // du moteur vit derrière) : le swap vivant→snapshot est invisible.
         let renderer = ImageRenderer(content:
-            page.frame(width: zone.width, height: zone.height))
+            pageEnCard
+                .frame(width: zone.width, height: zone.height))
         renderer.scale = displayScale
         if let ui = renderer.uiImage { snap = Image(uiImage: ui) }
     }
@@ -402,7 +577,127 @@ struct BadgeSetsNeon: View {
     }
 }
 
+// MARK: - Les vues PARTAGÉES du player déployé (banc ET pages réelles)
+
+/// LA SCÈNE — la zone d'atterrissage du héros, le titre de l'exercice EN
+/// COURS, la barre-comète, la partition aux deux fondus. UNE seule vue pour
+/// le banc et les vraies pages : jamais deux copies qui divergent.
+struct ScenePlayer: View {
+    var levee: CGFloat
+    var titre: String
+    var groupes: [SlateGroupe]
+    @Binding var deplies: Set<String>
+
+    var body: some View {
+        let t = min(max(levee, 0), 1)
+        VStack(spacing: 0) {
+            // La zone d'atterrissage du héros (il VOLE dans le pied ; la
+            // card posée fait ~133 pt de haut, la zone lui donne l'air).
+            Spacer().frame(height: 210)
+            Text(titre)
+                .font(.inter(21, .semibold))
+                .foregroundStyle(Color.white.opacity(0.94))
+                .lineLimit(1)
+            // LA BARRE — la comète coulisse en continu ; aucune fraction
+            // affichée (on ne sait jamais où s'arrête le user).
+            BarreBlancheAnimee(progress: 0.6)
+                .frame(width: 220, height: 5)
+                .padding(.top, 14)
+            Spacer().frame(height: 22)
+            SlateListe(groupes: groupes, courant: "courant",
+                       basAir: 260, deplies: $deplies)
+                .equatable()
+                .padding(.horizontal, 12)
+                // LES DEUX FONDUS : en HAUT les rangées fondent sous le
+                // header fixe, en BAS elles s'éteignent avant les contrôles.
+                .mask(
+                    LinearGradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.07),
+                        .init(color: .black, location: 0.68),
+                        .init(color: .clear, location: 0.87),
+                    ], startPoint: .top, endPoint: .bottom))
+        }
+        // La scène naît avec l'atterrissage du héros.
+        .opacity(Double(max(0, (t - 0.45) * 2.2)))
+    }
+}
+
+/// LE PIED — le héros en vol (la mini-card jour + son ticket), le vrai
+/// médaillon stop né en fondu, « Page exercices » en verre. Hit-transparent
+/// hors de ses objets ; les boutons ne s'arment que POSÉS (t > 0,95) et
+/// seulement si l'hôte les branche (le banc les laisse inertes).
+struct PiedPlayer: View {
+    var levee: CGFloat
+    var jour: Date
+    var sticker: String
+    var setsFaits: Int
+    var stopActif: Bool = false
+    var onStop: () -> Void = {}
+    var pageExosActif: Bool = false
+    var onPageExercices: () -> Void = {}
+
+    var body: some View {
+        GeometryReader { gp in
+            let t = min(max(levee, 0), 1)
+            // Le trajet du héros : la vignette de la dalle → le centre-haut.
+            let x0: CGFloat = 41, y0: CGFloat = 18 + 38
+            let x1 = gp.size.width / 2, y1: CGFloat = 176
+            ZStack {
+                // LE HÉROS — la MÊME mini-card jour, à sa taille native,
+                // transportée et grossie au scale. Jamais interactive.
+                MiniCardJour(date: jour, sticker: sticker,
+                             stickerBasGauche: true)
+                    .overlay(alignment: .trailing) {
+                        BadgeSetsNeon(texte: "\(setsFaits) SETS")
+                            .offset(x: 26)
+                            .opacity(Double(max(0, (t - 0.25) * 1.6)))
+                    }
+                    .scaleEffect(0.58 + 1.12 * t)
+                    .position(x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t)
+                    .opacity(t > 0.03 ? 1 : 0)
+                    .allowsHitTesting(false)
+
+                // LE STOP — le vrai médaillon, né en fondu, actif seulement
+                // POSÉ (jamais un bouton qui vole sous le doigt).
+                MedaillonStop(lueur: true, action: onStop)
+                    .scaleEffect(1.35)
+                    .position(x: x1, y: gp.size.height - 140)
+                    .opacity(Double(max(0, (t - 0.55) * 2.2)))
+                    .allowsHitTesting(stopActif && t > 0.95)
+
+                Text("Page exercices")
+                    .font(.inter(15, .semibold))
+                    .foregroundStyle(Color.white.opacity(0.92))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 13)
+                    .glassEffect(.regular.tint(Color.black.opacity(0.35))
+                                     .interactive(),
+                                 in: .capsule)
+                    .contentShape(Capsule())
+                    .highPriorityGesture(
+                        TapGesture().onEnded { onPageExercices() })
+                    .position(x: x1, y: gp.size.height - 80)
+                    .opacity(Double(max(0, (t - 0.6) * 2.5)))
+                    .allowsHitTesting(pageExosActif && t > 0.95)
+            }
+        }
+    }
+}
+
 // MARK: - Le banc : `-pageCardLab`
+
+/// La levée FIGÉE des bancs de capture (`-pageCardLevee <0…1>`) — partagée :
+/// le Lab ET la vraie fiche la lisent (§2.16 : le bandeau du bug B était
+/// invisible aux sondes tant que le déplié réel ne se capturait pas).
+enum PageCardBanc {
+    static let leveeFigee: CGFloat? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-pageCardLevee"), i + 1 < a.count,
+              let v = Double(a[i + 1]) else { return nil }
+        return CGFloat(min(max(v, 0), 1))
+    }()
+}
 
 /// Banc de `PageCard` (tranche 0, v6) : card-page NOIRE au contenu réaliste,
 /// player noir pur, VRAI médaillon transporté, verre molette sans bordure.
@@ -410,14 +705,6 @@ struct BadgeSetsNeon: View {
 /// se valide sur image AVANT tout build device).
 struct PageCardLab: View {
     @State private var deplies: Set<String> = ["courant"]
-
-    /// La levée figée du banc de captures (absente = geste vivant).
-    private static let leveeFigee: CGFloat? = {
-        let a = CommandLine.arguments
-        guard let i = a.firstIndex(of: "-pageCardLevee"), i + 1 < a.count,
-              let v = Double(a[i + 1]) else { return nil }
-        return CGFloat(min(max(v, 0), 1))
-    }()
 
     private static let demoStart = Date().addingTimeInterval(-27 * 60)
     private static let demoGroupes: [SlateGroupe] = {
@@ -444,13 +731,27 @@ struct PageCardLab: View {
         ZStack {
             Color.black.ignoresSafeArea()
             PageCard(dockH: 86,
-                     leveeInitiale: Self.leveeFigee ?? 0,
+                     leveeInitiale: PageCardBanc.leveeFigee ?? 0,
                      autoCycle: CommandLine.arguments
                          .contains("-pageCardAuto"),
+                     // `-pageCardLune` : le banc du mode HORS SÉANCE (le
+                     // trait, l'élastique, la lune).
+                     enSeance: !CommandLine.arguments
+                         .contains("-pageCardLune"),
                      page: { demoPage },
                      dalle: { l in vraieDalle(l) },
-                     detail: { l in vraiePartition(l) },
-                     pied: { l in piedMorph(l) })
+                     // Les vues PARTAGÉES (T1) — le banc et les vraies pages
+                     // montent les mêmes, données de démo ici.
+                     detail: { l in
+                         ScenePlayer(levee: l,
+                                     titre: ExerciseCatalog.all[0].name,
+                                     groupes: Self.demoGroupes,
+                                     deplies: $deplies)
+                     },
+                     pied: { l in
+                         PiedPlayer(levee: l, jour: Self.demoStart,
+                                    sticker: "sticker-flamme", setsFaits: 5)
+                     })
         }
         .preferredColorScheme(.dark)
     }
@@ -478,107 +779,13 @@ struct PageCardLab: View {
             .opacity(Double(1 - min(1, levee * 2.2)))
     }
 
-    /// LA SCÈNE + LA PARTITION (v7) : sous la zone d'atterrissage du héros,
-    /// le titre de l'exercice EN COURS + LA VEINE D'OR, puis la SlateListe.
-    /// Aucune plaque — encres sur le noir du corps (D/F).
-    private func vraiePartition(_ levee: CGFloat) -> some View {
-        let t = min(max(levee, 0), 1)
-        return VStack(spacing: 0) {
-            // La zone d'atterrissage du héros (il VOLE dans le pied ; la
-            // card posée fait ~133 pt de haut, la zone lui donne l'air).
-            Spacer().frame(height: 210)
-            Text(ExerciseCatalog.all[0].name)
-                .font(.inter(21, .semibold))
-                .foregroundStyle(Color.white.opacity(0.94))
-                .lineLimit(1)
-            // LA BARRE BLANCHE (verdict 30-08) : plus épaisse que la veine,
-            // et son dégradé COULISSE — compositée, jamais une horloge.
-            BarreBlancheAnimee(progress: 0.6)
-                .frame(width: 220, height: 5)
-                .padding(.top, 14)
-            // (Pas de « Set 3 of 5 » : on ne sait jamais où le user
-            // s'arrête — aucun total n'existe. La barre parle seule.)
-            Spacer().frame(height: 22)
-            SlateListe(groupes: Self.demoGroupes, courant: "courant",
-                       basAir: 260, deplies: $deplies)
-                .equatable()
-                .padding(.horizontal, 12)
-                // LES DEUX FONDUS (verdict 30-08, « trop marqué ») : en HAUT
-                // les rangées FONDENT en glissant sous le header fixe du
-                // player (CD + titre + barre) ; en BAS elles s'éteignent
-                // avant la zone des contrôles. Jamais une coupe nette.
-                .mask(
-                    LinearGradient(stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .black, location: 0.07),
-                        .init(color: .black, location: 0.68),
-                        .init(color: .clear, location: 0.87),
-                    ], startPoint: .top, endPoint: .bottom))
-        }
-        // La scène naît avec l'atterrissage du héros.
-        .opacity(Double(max(0, (t - 0.45) * 2.2)))
-    }
-
-    /// LE PIED (v7) — UN SEUL OBJET EN VOL : le HÉROS mini-card jour quitte
-    /// la gauche de la dalle et se pose au centre en grossissant (le CD).
-    /// Le stop NAÎT en fondu à sa place du bas (plus bas — verdict v6), le
-    /// verre « Page exercices » dessous.
-    private func piedMorph(_ levee: CGFloat) -> some View {
-        GeometryReader { gp in
-            let t = min(max(levee, 0), 1)
-            // Le trajet du héros : la vignette de la dalle → le centre-haut
-            // (posé à y1=176, la card ~133 de haut vit entre le trait et le
-            // titre de la scène, sans jamais le couvrir).
-            let x0: CGFloat = 41, y0: CGFloat = 18 + 38
-            let x1 = gp.size.width / 2, y1: CGFloat = 176
-            ZStack {
-                // LE HÉROS — la MÊME mini-card jour, à sa taille NATIVE,
-                // transportée et grossie au scale (aucune taille animée) :
-                // 0,58 (la vignette de la dalle) → 1,7 (le CD posé).
-                MiniCardJour(date: Self.demoStart, sticker: "sticker-flamme",
-                             stickerBasGauche: true)
-                    // LE BADGE « 5 SETS » (les FAITS — un total n'existe
-                    // pas) : la mini-card néon de la ×2 en badge, penchée,
-                    // SUPERPOSÉE au côté bas-droit de la card jour (~55 %
-                    // dedans). Il ne s'allume qu'en vol/posé.
-                    .overlay(alignment: .trailing) {
-                        // PLUS PETIT, SUR LE FLANC (verdict v8.1) : à cheval
-                        // sur le bord droit, mi-hauteur, ~55 % dedans.
-                        BadgeSetsNeon(texte: "5 SETS")
-                            .offset(x: 26)
-                            .opacity(Double(max(0, (t - 0.25) * 1.6)))
-                    }
-                    .scaleEffect(0.58 + 1.12 * t)
-                    .position(x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t)
-                    .opacity(t > 0.03 ? 1 : 0)
-
-                // LE STOP — le vrai médaillon, posé : il NAÎT en fondu,
-                // il ne vole plus (un seul héros).
-                MedaillonStop(lueur: true)
-                    .scaleEffect(1.35)
-                    .position(x: x1, y: gp.size.height - 140)
-                    .opacity(Double(max(0, (t - 0.55) * 2.2)))
-
-                Text("Page exercices")
-                    .font(.inter(15, .semibold))
-                    .foregroundStyle(Color.white.opacity(0.92))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 13)
-                    .glassEffect(.regular.tint(Color.black.opacity(0.35))
-                                     .interactive(),
-                                 in: .capsule)
-                    .position(x: x1, y: gp.size.height - 80)
-                    .opacity(Double(max(0, (t - 0.6) * 2.5)))
-            }
-        }
-    }
-
-    /// LA PAGE bidon (v6) : NOIRE, la robe de la maison, du contenu RÉALISTE
-    /// jusqu'en bas — jamais un aplat qui se lit « calque » au push.
+    /// LA PAGE bidon (v6) : NOIRE, du contenu RÉALISTE jusqu'en bas — jamais
+    /// un aplat qui se lit « calque » au push. PLEIN CADRE : la robe de card
+    /// est posée par le MOTEUR — et NOIR PUR (§2.18) : le gris 0.05
+    /// fabriquait un « bord » en haut que la vraie fiche n'a pas.
     private var demoPage: some View {
         ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(Color(white: 0.05))
+            Color.black
             VStack(alignment: .leading, spacing: 0) {
                 Spacer().frame(height: 66)
                 Image(systemName: "figure.strengthtraining.traditional")
@@ -615,8 +822,5 @@ struct PageCardLab: View {
             }
             .padding(26)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
     }
 }

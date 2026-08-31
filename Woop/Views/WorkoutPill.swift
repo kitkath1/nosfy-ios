@@ -191,9 +191,9 @@ struct WorkoutPill: View {
                                  stickerBasGauche: true)
                         .scaleEffect(0.58)
                         .frame(width: 42, height: 47)
-                        // L'air entre l'image et le titre (verdict v9.3 :
-                        // « trop collés, espace un peu »).
-                        .padding(.trailing, 6)
+                        // L'air entre l'image et le titre (verdicts v9.3 et
+                        // T1 : encore trop collés à 6).
+                        .padding(.trailing, 11)
                         .opacity(jourVisible ? 1 : 0)
                         .animation(.easeOut(duration: 0.15),
                                    value: jourVisible)
@@ -254,7 +254,10 @@ struct WorkoutPill: View {
         // l'air vit ENTRE le trait-poignée et la ligne (« c'est trop
         // collé »), pas sous elle — le filet et l'indicateur gardent
         // leur bas.
-        .padding(.top, docked ? 10 : 0)
+        // Le contenu REMONTE dans la dalle haute (T1.2 : « pas d'espace
+        // entre la progress bar et le contenu ») — l'air vit sous lui.
+        .padding(.top, docked ? 6 : 0)
+        .padding(.bottom, docked ? 16 : 0)
         .frame(maxWidth: .infinity)
         .frame(height: docked ? hauteurDock : 64)
         // ⚠️ **LE SOUFFLE N'EST PLUS ICI — ET C'ÉTAIT ÇA, LE PLAYER QUI

@@ -225,7 +225,13 @@ struct ExerciseDetailView: View {
     @State private var heroAspect: CGFloat = 0.8
     /// La photo au repos : 225 (« réduis encore les images », 13 août) —
     /// c'était 285.
-    private static let heroCap: CGFloat = 225
+    // §2.17 (le compactage de la card) : 225 était taillé pour la page
+    // plein écran (759 pt) ; dans la GROSSE CARD (§2.15, ~640 pt), la
+    // carte des séries frôlait le dôme (2 pt d'air mesurés au sim,
+    // chevauchement au tel). La photo cède 50 pt, tout le header suit
+    // (photo, titre, carte, PanneauMesures — ils lisent tous heroCap ou
+    // expandedHeader).
+    private static let heroCap: CGFloat = 175
     /// La course du geste, en points de scroll. 140 au temps de la
     /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
     /// plus long — la croissance se savoure sous le doigt.
@@ -296,7 +302,7 @@ struct ExerciseDetailView: View {
     /// la hauteur des panneaux-question sur le bord haut de la carte des
     /// séries. Un chiffre recopié là-bas et la couverture redeviendrait une
     /// coïncidence de modèle d'iPhone.
-    static let expandedHeader: CGFloat = 12 + 225 + 8 + 118
+    static let expandedHeader: CGFloat = 12 + Self.heroCap + 8 + 118
     /// `-headerFreeze <y>` : fige la course vue par le header (le
     /// simulateur ne drague pas) — les poses du dépliement se capturent.
     private static let headerFreeze: CGFloat? = {
@@ -590,6 +596,131 @@ struct ExerciseDetailView: View {
         style: .continuous)
 
     var body: some View {
+        // LE PLAYER EN CARD (T1, plan tools/player/PLAN-PLAYER-CARD.md) : en
+        // séance, la fiche devient LA CARD que le player pousse — la dalle en
+        // bas sous le galet, le fantôme du haut est mort. Sans séance, la
+        // page nue. L'arbitrage avec le drag de la carte des séries est
+        // STRUCTUREL : pendant la levée, la page devient un snapshot mort —
+        // ses gestes n'existent plus.
+        // LE LAYOUT UNIVERSEL (§2.14) : la fiche est TOUJOURS la card — en
+        // séance le player dessous, hors séance le trait + LA LUNE.
+        PageCard(dockH: 86,
+                 // Le banc du DÉPLIÉ RÉEL (§2.16) : `-pageCardLevee` fige la
+                 // levée de la vraie fiche pour les captures — le bandeau du
+                 // bug B était INVISIBLE aux sondes sans doigt.
+                 leveeInitiale: PageCardBanc.leveeFigee ?? 0,
+                 enSeance: active != nil,
+                 // §2.17 : LE PLAYER N'ARRIVE JAMAIS pendant la plongée du
+                 // galet (`flood` monte dès le drive) ni pendant la série
+                 // (`running`, la lentille et son chrono) — la bande
+                 // disparaît, la card prend presque tout.
+                 bandeVisible: running == nil && flood < 0.01,
+                 page: { pageContenu },
+                 dalle: { l in dallePlayer(l) },
+                 detail: { l in scenePlayer(l) },
+                 pied: { l in piedPlayer(l) })
+        // ⚠️ LA BARRE SYSTÈME SE CACHE ICI, SUR LE BODY (§2.16, bug B payé
+        // au tel 31-08 : « toujours le bandeau noir quand je monte ») : ces
+        // préférences vivaient DANS `pageContenu` — le slot que PageCard
+        // DÉMONTE dès la prise (remplacé par le snapshot). Démontées, la
+        // nav bar Liquid Glass revenait (le bandeau noir, son chevron) et
+        // décalait le cadre en plein geste. Le body, lui, ne se démonte
+        // jamais.
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+    }
+
+    // MARK: - Le player en card (T1)
+
+    @Environment(\.dismiss) private var fermerFiche
+    /// Le dépliage de la partition (la loi de SlateListe : chez l'hôte).
+    @State private var playerDeplies: Set<String> = ["courant"]
+    /// LES GROUPES FIGÉS — une visite SwiftData par OUVERTURE du player
+    /// (l'onAppear de la scène), jamais par image.
+    @State private var playerGroupes: [SlateGroupe] = []
+
+    private func dallePlayer(_ levee: CGFloat) -> some View {
+        WorkoutPill(exercise: exercise,
+                    progress: sets.isEmpty ? 0
+                        : Double(sets.filter(\.isDone).count)
+                            / Double(sets.count),
+                    startedAt: active?.startedAt,
+                    docked: true,
+                    lisere: false,
+                    doneSeries: sets.filter(\.isDone).count,
+                    exoCount: 1 + (active?.orderedExercises
+                        .filter { $0.exerciseID != exercise.id }
+                        .count ?? 0),
+                    stopVisible: levee < 0.03,
+                    jour: active?.startedAt ?? .now,
+                    // TODO : le sticker RÉEL du jour (le moteur de faits).
+                    jourSticker: "sticker-flamme",
+                    jourVisible: levee < 0.03,
+                    titreCourant: exercise.name,
+                    hauteurDock: 86)
+            // LA DALLE SE TAIT PENDANT LE VOL (verdict T1 : « on voit le
+            // mini player dans le player déplié ») — son titre renaît dans
+            // la scène. L'opacité n'éteint pas le hit : le geste reste.
+            .opacity(Double(1 - min(1, levee * 2.2)))
+    }
+
+    private func scenePlayer(_ levee: CGFloat) -> some View {
+        ScenePlayer(levee: levee, titre: exercise.name,
+                    groupes: playerGroupes, deplies: $playerDeplies)
+            .onAppear { playerGroupes = groupesSeance() }
+    }
+
+    private func piedPlayer(_ levee: CGFloat) -> some View {
+        PiedPlayer(levee: levee,
+                   jour: active?.startedAt ?? .now,
+                   sticker: "sticker-flamme",
+                   setsFaits: sets.filter(\.isDone).count,
+                   stopActif: true,
+                   onStop: {
+                       // LE MÊME CHEMIN que le stop de la dalle : l'état
+                       // global → StopCardHote (la pop-up stop, racine).
+                       withAnimation(.spring(response: 0.42,
+                                             dampingFraction: 0.86)) {
+                           DepartEtat.shared.pauseOuverte = true
+                       }
+                   },
+                   pageExosActif: true,
+                   onPageExercices: { fermerFiche() })
+    }
+
+    /// La partition réelle : l'exercice courant (ses brouillons) d'abord,
+    /// puis les autres exercices de la séance — le barème de l'ardoise.
+    private func groupesSeance() -> [SlateGroupe] {
+        var courant: [SlateLigne] = sets.map {
+            SlateLigne(reps: $0.reps, kilos: $0.weight,
+                       seconds: $0.isDone ? $0.durationSeconds : restSeconds,
+                       done: $0.isDone)
+        }
+        if courant.isEmpty {
+            courant.append(SlateLigne(reps: 12, kilos: 20,
+                                      seconds: restSeconds, done: false))
+        }
+        var out = [SlateGroupe(id: "courant", exercise: exercise,
+                               rows: courant)]
+        for le in active?.orderedExercises ?? []
+        where le.exerciseID != exercise.id {
+            guard let exo = le.exercise, !le.orderedSets.isEmpty
+            else { continue }
+            out.append(SlateGroupe(
+                id: le.exerciseID, exercise: exo,
+                rows: le.orderedSets.map {
+                    SlateLigne(reps: $0.reps, kilos: $0.weight,
+                               seconds: $0.isDone ? $0.durationSeconds
+                                                  : le.restSeconds,
+                               done: $0.isDone)
+                }))
+        }
+        return out
+    }
+
+    /// LE CONTENU DE LA PAGE — la fiche elle-même (l'ancien `body`).
+    private var pageContenu: some View {
         GeometryReader { geo in
             // LA CARTE NOIRE, désormais RÉSERVÉE AU CARDIO : pleine largeur,
             // grands coins hauts, elle s'inscrit sur la braise et coupe le
@@ -623,18 +754,10 @@ struct ExerciseDetailView: View {
             // ici il n'y a pas de bande découverte à habiter, et le verdict
             // « séance = le galet néon SEUL » vaut pour la HOME — la fiche
             // n'a pas de galet de séance à lui opposer.
-            .overlay(alignment: .top) {
-                if let w = active {
-                    WorkoutPill(exercise: exercise,
-                                startedAt: w.startedAt,
-                                docked: false)
-                        .padding(.horizontal, 14)
-                        .padding(.top, 8)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-            .animation(.spring(response: 0.42, dampingFraction: 0.9),
-                       value: active != nil)
+            // (Le player-pilule du haut est MORT — T1, 30-08 : le player vit
+            // désormais EN BAS, la dalle PageCard, comme partout. Le verdict
+            // d'origine « aucun moyen de terminer la session depuis cet
+            // écran » reste honoré : le stop vit dans la dalle.)
             // Le socle et la braise vivent en FOND, hors jeu de layout : la
             // carte-braise a déjà fait dérailler la largeur de la page une
             // fois — plus rien d'elle ne participe à la mise en page.
@@ -728,10 +851,14 @@ struct ExerciseDetailView: View {
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) { headerChips }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            // LE GALET DEVANT LA CARD (§2.14/§2.16 fix A) : un OVERLAY,
+            // plus un `safeAreaInset` — il ne RÉSERVE plus ses 160 pt de
+            // layout, il FLOTTE devant le contenu au bas de la card (son
+            // drag gagne toujours : l'overlay est au-dessus au hit-test).
+            // La carte des séries OUVERTE compense ses 160 pt elle-même
+            // (voir `carteSeries`) pour garder le même bas qu'avant.
+            .overlay(alignment: .bottom) {
                 if isStrength {
-                    // La carte Séries a DÉMÉNAGÉ dans le flux du scroll
-                    // (sous le header) — le galet reste seul en bas.
                     VStack(spacing: 0) {
                         // LA BULLE DE LA LENTILLE, du côté de la nuit :
                         // même course, même écriture de `flood` que le
@@ -771,9 +898,12 @@ struct ExerciseDetailView: View {
                             )
                         }
                     }
-                } else {
-                    primaryAction
                 }
+            }
+            // Le cardio, lui, garde sa RÉSERVATION : `primaryAction`
+            // participe au layout de sa page — hors périmètre §2.16.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !isStrength { primaryAction }
             }
         }
         // LA PLONGÉE DANS LE GALET — la troisième caméra de la maison
@@ -856,11 +986,8 @@ struct ExerciseDetailView: View {
             rewardVariant = 1
             rewardShow = true
         }
-        // Le chevron du chip a remplacé la barre système : deux flèches de
-        // retour seraient une de trop.
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
-        .toolbar(.hidden, for: .tabBar)
+        // (Les trois `.toolbar(.hidden)` ont DÉMÉNAGÉ sur le body — §2.16
+        // bug B : posés ici, ils mouraient avec le démontage du slot.)
         // L'appareil confirme la série en même temps que les paillettes partent.
         .sensoryFeedback(.success, trigger: sets.filter(\.isDone).count)
         // Le battement du montage : la lentille vient d'entrer sous le doigt.
@@ -1501,9 +1628,13 @@ struct ExerciseDetailView: View {
             let x = Self.lp(20, 5, u)
             let y = Self.lp(Self.expandedHeader + 4, 5 - cime, u)
             // LA HAUTEUR DE L'ÉCRIN — mesurée bandeau et liseré compris
-            // (ils vivent DANS le composant). Ouvert : du châssis au galet.
+            // (ils vivent DANS le composant). Ouvert : du châssis au galet —
+            // le galet est un OVERLAY depuis §2.16 (il ne réduit plus
+            // `g.size`), sa hauteur se soustrait ICI : le bas de la carte
+            // ouverte ne bouge pas d'un pixel.
             let h = Self.lp(carteFermeeH,
-                            g.size.height - 15 + cime, u)
+                            g.size.height - 15 + cime
+                                - LaunchPebble.height, u)
             // LE BANDEAU — le seul élément qui change vraiment de nature
             // pendant la course : un bandeau de lumière fermé, TOUT le
             // haut de l'écran ouvert (le chevron et le « … » s'y posent).

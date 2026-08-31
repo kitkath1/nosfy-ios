@@ -303,7 +303,9 @@ struct StopCard: View, Animatable {
                 .opacity(sstep(0.55, 0.90, p))
                 .offset(y: 8 * (1 - sstep(0.55, 0.90, p)))
         }
-        .padding(.bottom, 16)
+        // 36 et non 16 (verdict Kathryn 30-08, « élève le stop dans la
+        // pop-up ») : le bloc slider respire du bord bas de la card.
+        .padding(.bottom, 36)
         .frame(width: l, height: h, alignment: .bottom)
     }
 
