@@ -775,6 +775,41 @@ chien de garde.
 que carte, relais du tap et `PanneauMesures` suivent d'un seul geste.
 Répond au « tout est collé au milieu ». Rien n'est buildé.
 
+### 2.19 L'EXERCICE ACTIF EST FULL SCREEN — JAMAIS EN CARD (verdicts 31-08
+midi, 4 captures : « dès qu'on lance le galet tout l'écran est blanc — des
+bordures noires SURTOUT PAS ; pareil la vue chrono : full screen, pas de
+marge, pas d'élément de card » + « toujours la barre noire une fois le
+player ouvert »)
+
+**BUG 1 — la plongée et la lentille naissent DANS la card (cause lue,
+`ExerciseDetailView` ~983-1090)** : le voile `paper`, le flash et
+`LiquidLensLab` (la lentille, son chrono) sont des overlays DE
+`pageContenu` — le slot que PageCard habille en card : clippés par la robe
+(marges 8, coins bas, bandes). Leurs `ignoresSafeArea` sont neutralisés
+dans le cadre paddé.
+→ **FIX : le bloc DÉMÉNAGE au body** — overlay DE PageCard (mêmes états,
+même struct), où `ignoresSafeArea` redevient opérant : bord à bord
+PHYSIQUE, zéro bordure. Le `scaleEffect(dive)` (le zoom de la page) RESTE
+dans la page, sous le voile. Le player est déjà effacé (§2.17
+`bandeVisible`) ; par-dessus tout, la question ne se pose plus.
+
+**BUG 2 — la « barre noire » du player ouvert (cause lue, le spotlight)** :
+la lumière du sommet (RadialGradient, overlay du root PageCard) vit en
+zone SÛRE : elle s'arrête à la safe top — la status bar reste noire pure
+au-dessus d'une zone éclairée : c'est ELLE, la barre. Le corps, lui, est
+noir sur noir (aucun bord dessiné).
+→ **FIX : le spotlight ignore la safe top** (une ligne) — la lumière monte
+jusqu'au châssis, la démarcation meurt.
+
+**Fouettage** : `-aubeFreeze 0.6` → le blanc couvre l'ÉCRAN PHYSIQUE
+entier (sondes : AUCUN pixel noir de marge, ni bandes haut/bas) ; le
+déplié réel → aucune rupture de luminance à la safe top ; non-régression
+des quatre états §2.18.
+
+(Constat au passage, T2/T3 : « on a la vue grosse card QUE dans la page
+détail » — home, exercices et progress attendent leur tour, périmètre
+§2.17.)
+
 **H. LA VALIDATION PAR CAPTURES, PAS PAR BUILDS EN RAFALE.** Cinq builds
 device jugés à l'œil = la mauvaise boucle (payée aujourd'hui, 0/10). La
 prochaine : (1) v6 appliquant A→G ; (2) TROIS CAPTURES statiques (repos /

@@ -190,6 +190,13 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
             // claire était un radial trop fort au bord trop court). Long
             // fondu additif, très doux, né avec la levée.
             .overlay(alignment: .top) {
+                // §2.19 : la lumière monte JUSQU'AU CHÂSSIS — coupée à la
+                // safe top, elle laissait la status bar noire pure :
+                // c'était ÇA, « la barre noire une fois le player
+                // ouvert ». (`ignoresSafeArea` sur l'enfant d'un overlay
+                // ne l'étendait presque pas — mesuré : la mécanique frame
+                // étendu + offset, elle, ne ment pas.)
+                let safeTop = g.safeAreaInsets.top
                 RadialGradient(
                     stops: [
                         .init(color: Color.white.opacity(0.12), location: 0),
@@ -199,7 +206,8 @@ struct PageCard<Page: View, Dalle: View, Detail: View, Pied: View>: View {
                     ],
                     center: UnitPoint(x: 0.5, y: 0.0),
                     startRadius: 0, endRadius: 460)
-                .frame(height: 340)
+                .frame(height: 340 + safeTop)
+                .offset(y: -safeTop)
                 .blendMode(.plusLighter)
                 .opacity(Double(levee))
                 .allowsHitTesting(false)

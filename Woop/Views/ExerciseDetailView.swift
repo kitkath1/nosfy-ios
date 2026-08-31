@@ -619,6 +619,11 @@ struct ExerciseDetailView: View {
                  dalle: { l in dallePlayer(l) },
                  detail: { l in scenePlayer(l) },
                  pied: { l in piedPlayer(l) })
+        // §2.19 : LE MONDE FLOTTANT AU-DESSUS DE LA CARD — plein écran
+        // physique (ses `ignoresSafeArea` internes redeviennent opérants
+        // ici ; pas d'`ignoresSafeArea` global : le panneau ancré LIT ses
+        // insets — l'école du calendrier).
+        .overlay { mondeFlottant }
         // ⚠️ LA BARRE SYSTÈME SE CACHE ICI, SUR LE BODY (§2.16, bug B payé
         // au tel 31-08 : « toujours le bandeau noir quand je monte ») : ces
         // préférences vivaient DANS `pageContenu` — le slot que PageCard
@@ -993,12 +998,20 @@ struct ExerciseDetailView: View {
         // Le battement du montage : la lentille vient d'entrer sous le doigt.
         .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
                          trigger: launchBeat)
-        // LE RACCORD. La lumière du galet inonde la page pendant le geste —
-        // le verre chauffe sur la MÊME rampe que ce voile ; quand la
-        // lentille se pose, elle ouvre sur CE papier-là. Aucune transition
-        // n'est jouée : il n'y a rien à traverser, c'est la même lumière
-        // qui continue.
-        .overlay {
+    }
+
+    /// LE MONDE FLOTTANT (§2.19) — le voile, le flash, la lentille et son
+    /// chrono, la question « Recommencer ? », la pill, les pièces, la card
+    /// reward : TOUT vit en overlay DU BODY, au-dessus de PageCard, PLEIN
+    /// ÉCRAN PHYSIQUE — jamais dans la card (« des bordures noires SURTOUT
+    /// PAS »). C'était l'overlay final de `pageContenu` : habillé en card
+    /// avec elle, il naissait à ses marges et ses coins.
+    /// LE RACCORD. La lumière du galet inonde la page pendant le geste —
+    /// le verre chauffe sur la MÊME rampe que ce voile ; quand la
+    /// lentille se pose, elle ouvre sur CE papier-là. Aucune transition
+    /// n'est jouée : il n'y a rien à traverser, c'est la même lumière
+    /// qui continue.
+    private var mondeFlottant: some View {
             ZStack {
                 if flood > 0.001 {
                     Self.paper
@@ -1280,7 +1293,6 @@ struct ExerciseDetailView: View {
                         })
                 }
             }
-        }
     }
 
     /// Le papier arrive VITE — la page a basculé bien avant la fin du geste,
