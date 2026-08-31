@@ -928,6 +928,10 @@ struct RootView: View {
             // Ses prises vivent avec elle (`StopBanc`, dans StopCard.swift) —
             // pas de doublon de drapeau ici.
             StopLab()
+        } else if TapisBanc.actif {
+            // Banc du player tapis : `-tapisLab`, la scène SEULE sur du noir.
+            // Ses prises vivent avec elle (`TapisBanc`, dans TapisLab.swift).
+            TapisLab()
         } else {
             mainBody
         }
