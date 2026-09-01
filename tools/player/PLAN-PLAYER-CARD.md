@@ -1175,6 +1175,249 @@ shaders de la fiche. Piste alors : pendant le vol, remplacer le voile
 alpha par un assombrissement SANS couche (brightness sur la page ?) —
 à mesurer avant.
 
+### 3.4decies LE PLAN F — « ÇA MARCHE PAS » (01-09, 4ᵉ passe, après le
+scellement 647cdbb ; sans code, attend son go)
+
+**LE CONSTAT.** S10 (suivi ancré + prise 3 pt + `scrollDisabled` si la
+partition tient) est sur le tel, verdict « ça marche pas ». La série §3
+est SCELLÉE (647cdbb) — ce plan repart de ce socle. Trois défauts sont
+encore LISIBLES dans le code (vérifiés `fichier:ligne` ce matin), plus
+la mesure qui manque toujours.
+
+**F1 — LE SPRING DE POURSUITE (la cause n°1 du ressenti).**
+`PlayerMonde.swift:124` : chaque frame de drag écrit `p` via
+`withAnimation(.interactiveSpring(response: 0.15))`. Le player ne SUIT
+pas le doigt, il le POURSUIT avec ~0,15 s de retard permanent, et
+chaque delta RELANCE un ressort re-ciblé — du caoutchouc structurel,
+jamais du « collé au doigt ». On l'avait mis pour amortir le saut de
+saisie en vol (§3.4nonies-2 : pendant une animation, le modèle `p` est
+déjà à la cible pendant que l'écran montre la valeur animée — une
+écriture sèche CLAQUE). Le vrai fix n'est pas d'amortir TOUTES les
+écritures, c'est de supprimer l'écart modèle/visuel :
+**POSSÉDER `p`.** Plus aucun `withAnimation` sur `p` : les vols
+ouvrir/fermer deviennent un TWEEN MAISON (un pas par frame —
+`CADisplayLink` ou `TimelineView` — qui avance `p` avec la même courbe
+easeInOut 0,68 s). Alors `p` modèle == `p` visible À CHAQUE INSTANT :
+la saisie en vol lit `p` (exact, l'ancre est juste), le suivi écrit `p`
+SEC (transaction sans animation) — collé au doigt, zéro rattrapage,
+zéro claquement. C'est l'architecture des vrais sheets (UIKit met un
+animator EN PAUSE à la saisie et lit `fractionComplete` ; on refait
+pareil en possédant la variable). ⚠️ Lois tenues : le tween n'écrit
+QUE `p` (lu par `OffsetVol`/voile seuls — la granularité §3 tient), et
+le pas de frame vit derrière l'`@Observable`, pas un `@State` de page.
+
+**F2 — LE SCROLL QUI GARDE LE CENTRE dès que la partition déborde.**
+`PageCard.swift:398` : `scrollDisabled(contenuH <= cadreH + 1)` ne
+libère le drag que si la liste TIENT dans son cadre. Une vraie séance
+(plusieurs exos) déborde → le `ScrollView` reprend TOUS les drags
+verticaux du centre → « j'arrive pas à drag vers le bas » revient
+exactement dans le cas réel. Le vrai pattern (Apple Music) : la
+COOPÉRATION AU TOP — le scroll possède tant qu'il n'est pas à
+l'offset 0 ; AU TOP (l'état par défaut de la partition), tirer vers le
+BAS appartient au player. SwiftUI pur ne sait pas transférer un geste
+en plein vol → un `UIPanGestureRecognizer` SIMULTANÉ posé sur
+l'`UIScrollView` sous-jacent (introspection par descente de vues,
+`shouldRecognizeSimultaneously = true`) : si `contentOffset.y <= 0` ET
+translation vers le bas → il ÉPINGLE l'offset à 0 et nourrit
+`suivreDelta` ; sinon il ne fait rien et le scroll garde. Parade au
+risque d'introspection : si l'`UIScrollView` n'est pas trouvé, on
+retombe sur S10 tel quel (rien de cassé).
+
+**F3 — L'EFFLEUREMENT QUI « BIM ».** `PlayerMonde.swift:160-161` :
+`commettre()` juge l'élan à ±150 pt/s. Un drag LENT dépasse déjà
+150 → quasi tout relâcher part à FOND d'un coup : elle ne peut jamais
+poser le player à mi-geste ni le raccompagner — c'est le « quand
+j'effleure, bim ». Recaler le seuil à ~450 pt/s (l'ordre de grandeur
+UIKit) : en dessous, c'est la POSITION qui décide (les seuils
+asymétriques existants) ; l'effleurement FRANC continue de commettre.
+
+**F4 — LA MESURE QUI MANQUE (la porte de sortie, pas une option).**
+Toujours aucun chiffre de cadence sur SON tel pendant SON drag. La
+sonde est branchée (`SondeCadence("player")` sous `-fps`). Protocole :
+lancer sur le tel avec `-fps` + console, elle drague 20 s, lire les
+img/s seconde par seconde. Si ~60 → F1-F3 étaient le sujet, fin. Si
+< 45 pendant le suivi → il reste un chantier RENDU (nota : les vidéos
+de page sont DÉJÀ à rate 0 pendant tout le vol — `couvre` se lève dès
+`ouvrir()`/`saisir()`, vérifié `PlayerMonde.swift:46,101` — donc le
+suspect serait le compositage voile+couches, à trancher sonde en main,
+pas à deviner).
+
+**ORDRE DE JEU** (chaque passe se termine par le FOUETTAGE ULTIME
+§3.4bis ENTIER avant de lui montrer) :
+1. **Passe A = F1 + F3** (posséder `p`, seuil d'élan) — le cœur du
+   ressenti, un seul fichier (`PlayerMonde.swift`).
+2. **Passe B = F2** (coopération au top, chantier UIKit séparé).
+3. **F4 en porte** : la mesure `-fps` au tel AVANT son verdict final —
+   le chiffre d'abord, le « c'est fluide » ensuite.
+
+**JOURNAL DE LA PASSE A (01-09 après-midi)** :
+- F1 codé : `MoteurVol` (CADisplayLink), `volVers(cible:duree:courbe:)`
+  avec fins par fermeture de vol (les jetons `poseJeton`/`jetonVie`
+  sont morts) ; `saisir()` arrête le vol LÀ OÙ IL EST ; suivi SEC ;
+  `enMouvement = enSuivi || enVol` fige le contenu en bloc pour TOUT
+  mouvement. F3 codé : élan 150 → 450.
+- **LE PAS BORNÉ (trouvé au fouettage, film à l'appui)** : un tween au
+  temps TÉLÉPORTE sous famine (sim chargé : 6 frames au ralenti puis
+  55 % d'amplitude en UNE frame, mesuré f2499 du film b-fiche). Borne
+  à 0,08 de course/frame — au-dessus de la pente crête légitime
+  (easeOut ×3 / 13 frames ≈ 0,074), donc invisible à cadence pleine ;
+  sous famine le vol s'ALLONGE au lieu de sauter.
+- **Le banc `-playerDoigt`** (doigt fantôme) : tap-vol · fermeture au
+  doigt lent (élan 120 : la position décide) · ouverture lente ·
+  REPRISE en plein vol à 250 ms — il exerce le chemin du geste que
+  `-playerCycle` ne touche pas.
+- **Les juges recalés, leçons de mesure** : (a) la luminance globale
+  ne juge pas une page à VIDÉOS (flammes home = Δ légitimes) → les Δ
+  ne se jugent qu'EN VOL (`couvre` fait taire les lecteurs) ; (b) la
+  page exos est aussi sombre que le player → juge à DEUX ZONES (titre
+  header + titres de grille) ; (c) le player MICRO-OUVERT (p ~0,1)
+  recouvre pile la bande et masque la pilule SANS bouger la luminance
+  → les frames « avant/après » exigent la dalle visible ; (d) le
+  texte de la dalle VIT (chrono) → ancrage xmin/ymin strict (±6),
+  xmax libre (±40), ymax ±20 (lueurs qui respirent).
+- **Égalité géométrique mesurée (en séance, boîte claire de la bande
+  basse)** : home (68, 1100, 0, 76) · progress (68, 1100, 0, 76) ·
+  fiche (68, 1100, 0, 76) — IDENTIQUES au pixel. Exos : jugée à part
+  (zones), même robe PageCard.
+- `-activeWorkout` = l'arg qui sème la séance OUVERTE (le vrai régime
+  du player) ; `-demoData` ne sème que l'historique.
+
+**BILAN DU FOUETTAGE (protocole C, 01-09 13h, machine calme, binaire
+pas-borné, 4 pages × ~7 cycles doigt fantôme en séance)** :
+- VOLS (frames mesurables par transition, juge lum) : home
+  [20,59,20,54,17] · progress [23,37,19,29,16] · fiche
+  [44,4,48,4,53,4,55,6,101,7] — min ≥ 3, moy ≥ 5 partout ✓. Exos
+  (page sombre, juge lum aveugle) : bord du corps MESURÉ frame à
+  frame — ouverture f24-35 : −72,−64,−60,−56,−52,−40,−36,−28,−20,
+  −12,−4,0 px/f (décélération easeInOut propre) ; fermeture
+  f613-625 : +44/+48 px/f réguliers ✓.
+- SAUT/FLASH : home max 5 px-lum (filet 11,2) ✓ · progress 8 (11,7)
+  ✓ · fiche/exos : bords mesurés lisses (max 96 px/f continu,
+  ≪ 230) ; les « échecs » lum restants = falaises LÉGITIMES (le bord
+  traverse le dôme/la dalle claire) — et le pas borné rend la
+  téléportation STRUCTURELLEMENT impossible (≤ 204 px/frame). ✓
+- PAGE INTACTE : dalle avant/après IDENTIQUE (68, 1100, 0, 76) sur
+  home, fiche ; progress écarts [4,0,0,2] ; casse grossière 8,32 ·
+  8,24 · 4,36 · 5,49 (seuil 10) ✓ — et l'ÉGALITÉ GÉOMÉTRIQUE des
+  dalles : (68, 1100, 0, 76) au pixel sur les quatre pages ✓.
+- RETOURS : SONDE-HIT 18-21 rapports/page, jamais un conteneur UIKit
+  orphelin (le fantôme e9521cf ne renaît pas) ✓.
+- Leçon d'instrumentation : les juges lum/zones ont accusé à tort
+  exos et fiche (voile progressif, dôme clair, pilule masquée au
+  micro-ouvert, trait pris pour la pilule) — chaque accusation a été
+  contre-vérifiée par une MESURE DE POSITION du bord, qui est le bon
+  instrument (juge_trait naïf rejeté : il suivait les textes).
+
+### 3.4undecies LE PLAN HARD DU DRAG VERS LE BAS (01-09 fin de
+journée — verdict : « j'arrive toujours pas à drag vers le bas, ça
+fait 10 fois, fais un plan hard » ; sans code, attend son go)
+
+**L'AVEU DE MÉTHODE, d'abord.** Dix itérations parce que mes bancs
+n'ont JAMAIS testé son doigt : le doigt fantôme appelle
+`suivreDelta()` DANS le modèle — il court-circuite tout le routage
+tactile (recognizers, ScrollView, priorités). Le protocole prouvait la
+cinématique (vraie), jamais LA POSSESSION DU GESTE. Le coupable
+identifié dès §3.4decies-F2 et repoussé en « passe B » : depuis le
+player ouvert, le `ScrollView` de la partition possède TOUS les drags
+verticaux du centre de l'écran dès que la liste déborde
+(`scrollDisabled(contenuH <= cadreH + 1)`, PageCard.swift:398, ne joue
+que liste courte). Son drag vers le bas tombe dedans. On ne repousse
+plus : c'est LE chantier, et il se teste désormais avec de VRAIS
+touchers.
+
+**LE PRINCIPE (le « hard ») : LE DRAG DESCENDANT APPARTIENT AU
+PLAYER — toujours, partout sur le corps, sans zone morte.** La liste
+ne scrolle que ce qui reste (montées, et descentes quand elle n'est
+pas au top).
+
+- **B1 — LE PAN MAÎTRE UIKIT.** Un `UIPanGestureRecognizer` à nous,
+  posé au niveau du corps du player (introspection : descendre depuis
+  la vue hôte jusqu'à l'`UIScrollView` de la partition et accrocher le
+  pan sur leur ancêtre commun), `shouldRecognizeSimultaneouslyWith =
+  true`. SwiftUI ne sait pas exprimer une priorité CONTRE le pan d'un
+  UIScrollView ; UIKit sait : notre pan pilote `suivreDelta` pour tout
+  geste NET vers le bas (|dy| > |dx|), et le pan du scroll est
+  subordonné (`shouldBeRequiredToFail` conditionnel).
+- **B2 — LA COOPÉRATION AU TOP (Apple Music).** Dans le pan continu :
+  si `contentOffset.y <= 0` ET translation descendante → le player
+  prend (offset ÉPINGLÉ à 0, bounces coupés pendant la prise) ; si la
+  liste est descendue → elle remonte d'abord son chemin, et LE MÊME
+  geste bascule au player à l'instant où elle touche le top (on lit
+  l'offset en continu, pas d'état armé à l'avance).
+- **B3 — LE FILET (si l'introspection ne trouve pas le scroll sur cet
+  iOS)** : `scrollDisabled(p < 1 || enSuivi)` — la liste ne scrolle
+  qu'au POSÉ COMPLET ; et au posé, des PRISES LARGES garanties :
+  le header entier + deux gouttières latérales de 36 pt (contentShape
+  au-dessus de la liste). Le pire des cas garde de vraies poignées —
+  plus jamais « je n'y arrive pas ».
+- **B4 — LE BANC DES VRAIS TOUCHERS (la leçon, outillée).** Fini le
+  fantôme-modèle comme seule preuve : un pilote CGEvent (souris
+  scriptée SUR la fenêtre du Simulator — le sim traduit en VRAIS
+  UITouch qui traversent le VRAI routage) joue : drag lent descendant
+  depuis le CENTRE de la liste (contenu LONG puis court), depuis le
+  header, depuis les gouttières, flick descendant, drag montant
+  (le scroll doit garder les montées liste longue). Chaque geste
+  filmé + `-gesteSonde` à la console. AUCUN verdict de routage sans ce
+  banc.
+- **B5 — LA SONDE DE POSSESSION (`-gesteSonde`).** En DEBUG : chaque
+  began/changed/ended de notre pan et du pan du scroll loggé avec le
+  gagnant. Si le voleur n'est pas le scroll (un cover, un autre
+  recognizer, la Reachability du bord bas), la console le NOMME au
+  lieu qu'on devine.
+
+**ORDRE : B5 + B4 d'abord** (prouver le voleur avec de vrais touchers
+AVANT de réparer — une fois, proprement), **puis B1/B2, filet B3**,
+puis le protocole §3.4bis ENTIER + le banc B4 complet, et seulement
+là le tel.
+
+**JOURNAL (01-09 fin d'après-midi)** :
+- `tools/player/doigt.swift` écrit (CGEvent sur la fenêtre du sim) —
+  **l'injection est REFUSÉE par macOS** (self-test : curseur demandé
+  (200,200), resté sur place — Accessibilité non accordée au
+  processus). Les vrais-touchers automatisés attendent soit cette
+  permission (Réglages → Confidentialité → Accessibilité), soit une
+  target XCUITest. AUCUN verdict de routage n'a donc encore été rendu
+  au sim — dit, pas caché.
+- **Pivot d'ordre, pas d'esprit** : B1/B2 se construisent par
+  POSSESSION (le pan maître prend le descendant au niveau fenêtre —
+  correct quel que soit le voleur) ; B5 embarque pour le TEL :
+  `-gesteSonde` fait crier maître (BEGAN/PREND/LAISSE/COMMET) et
+  scroll (began/ended/offset) — la console USB nommera le voleur sous
+  SES doigts si le pan maître ne suffisait pas.
+- Découverte de banc : même la séance `-activeWorkoutLong` donne une
+  partition PLIÉE plus courte que son cadre (seul « courant » est
+  déplié) → `scrollDisabled` S10 était souvent ACTIF — le ScrollView
+  n'est probablement pas le seul voleur ; le pan maître ne dépend pas
+  de son identité.
+- CODÉ : `PanMaitre` (pan fenêtre simultané, direction nette, coop
+  au top avec épinglage d'offset, retrait au démontage — un
+  recognizer ne retient pas sa cible), le `simultaneousGesture`
+  SwiftUI du corps RETIRÉ (remplacé), seed `-activeWorkoutLong`
+  (5 exos ×4 sets), `SondeGestePan` (target additionnel sur le pan du
+  scroll), logs SAISIR/COMMETTRE sous `-gesteSonde`.
+
+### 3.4duodecies L'AFFINAGE + LA RAFALE (01-09 soir — verdicts :
+« plus fluide de fou, tu peux encore l'améliorer ? et après tu
+commit » · « si je joue et fais 20 fois d'affilée ça bug »)
+
+Le pan maître A réglé le drag (« plus fluide de fou »). Les
+retouches de cette passe, toutes dans `PlayerMonde.swift` :
+1. **La fin de course CONTINUE la vitesse du doigt** : pente initiale
+   d'un easeOut cubique = 3·distance/durée → durée = 3·distance/v :
+   elle jette, ça file ; elle pose, ça se pose. Zéro à-coup au
+   relâcher (élan aligné et > 0,35 course/s ; sinon le tempo
+   proportionnel).
+2. **Les butées VIVENT** : au-delà de [0, 1], sur-course élastique
+   (tanh, ≤ 5 %) — une butée qui répond, pas un mur ; et la JUPE
+   (débord noir 80 pt sous le corps) couvre le bas pendant
+   l'étirement.
+3. **LA RAFALE, deux trous colmatés** : (a) le voile reste bouclier
+   dès le vol mais ne FERME qu'au posé — en vol, un tap parasite de
+   la rafale fermait le player par surprise ; (b) le pan maître, une
+   fois PRIS, garde le geste jusqu'au relâcher — `ouvert` ne se
+   re-lit que pour prendre, jamais pour lâcher en plein doigt.
+4. Prise à 6 pt (au lieu de 8).
+
 ### 3.5 LES RISQUES, CHACUN AVEC SA PARADE
 
 1. **Le mur du type-checker de mainBody** (337a6e3, payé) → le player

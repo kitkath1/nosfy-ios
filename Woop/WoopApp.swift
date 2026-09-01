@@ -1737,6 +1737,24 @@ enum DemoData {
         set.isDone = true
         set.loggedExercise = logged
         context.insert(set)
+        // §3.4undecies B4 : `-activeWorkoutLong` = la séance de KATHRYN
+        // (une partition qui DÉBORDE le cadre du player) — c'est ELLE qui
+        // reproduit le vol du drag par le ScrollView ; le seed court
+        // (1 exo) tombe dans le `scrollDisabled` et ne prouve rien.
+        if CommandLine.arguments.contains("-activeWorkoutLong") {
+            for (i, id) in ["woop-haute", "woop-basse", "flexion-laterale",
+                            "developpe-couche", "papillon"].enumerated() {
+                let le = LoggedExercise(exerciseID: id, order: i + 1)
+                le.workout = workout
+                context.insert(le)
+                for j in 0..<4 {
+                    let s = StrengthSet(reps: 10 + j, weight: 20, order: j)
+                    s.isDone = j < 2
+                    s.loggedExercise = le
+                    context.insert(s)
+                }
+            }
+        }
         try? context.save()
     }
 
