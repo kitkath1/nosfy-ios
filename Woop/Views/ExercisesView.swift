@@ -459,71 +459,23 @@ struct ExercisesView: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { geo in
-                // ⚠️ LE `GeometryReader` RESPECTE LA SAFE AREA, c'est SON
-                // CONTENU qui l'ignore (l'école du calendrier). Posé
-                // l'inverse — `ignoresSafeArea` sur le GeometryReader
-                // lui-même — il rend des insets NULS : le chevron remontait
-                // se coller à l'heure, mesuré à 36 pt au lieu de 88.
-                let safeT = geo.safeAreaInsets.top
-                let hEcran = geo.size.height + safeT + geo.safeAreaInsets.bottom
-                // LA RÉSERVE DU BANDEAU : la zone sûre (moins la marge que la
-                // card a déjà prise en tête) plus la hauteur du bandeau. La
-                // grille commence là, et les deux voiles se mesurent dessus.
-                let reserve = max(safeT - GrandeCardExos.margeHaut, 0) + Self.hBandeau
-                ZStack(alignment: .topLeading) {
-                    // LA PAGE EST NOIRE (le halo braise est mort avec la page
-                    // nuit : la lumière vient de la vidéo, maintenant).
-                    Color.black
-
-                    // LA BANDE DÉCOUVERTE, tout au fond : en séance le player,
-                    // hors séance le secret de la lune.
-                    BandeExos(etat: etat, seance: seancesOuvertes.first)
-
-                    GrandeCardExos(naissance: naissance)
-                        .modifier(CarteLevee(etat: etat))
-
-                    contenuCard(safeT: safeT, w: geo.size.width,
-                                safeB: geo.safeAreaInsets.bottom,
-                                reserve: reserve)
-                        .modifier(CadreCarte(etat: etat, hEcran: hEcran,
-                                             w: geo.size.width))
-                    // banc jetable `-exosSonde` (chasse au souffle 25-08) :
-                    // les insets vivants, à l'écran, lisibles en mitraille.
-                    if CommandLine.arguments.contains("-exosSonde") {
-                        Text(String(format: "sT %.1f sB %.1f h %.1f",
-                                    safeT, geo.safeAreaInsets.bottom,
-                                    geo.size.height))
-                            .font(.system(size: 13, weight: .bold,
-                                          design: .monospaced))
-                            .foregroundStyle(.green)
-                            .position(x: 150, y: 400)
-                    }
-                }
-                // ⚠️ AUCUN `frame` EXPLICITE ICI : c'est `ignoresSafeArea` qui
-                // propose l'écran entier au ZStack. Un cadre fixé à la hauteur
-                // physique serait POSÉ à l'origine sûre et déborderait par le
-                // bas — la card commencerait sous l'encoche.
-                .ignoresSafeArea()
-                // LE TUTO À PROJECTEURS — au-dessus de tout.
+            // LA ROBE DU MOTEUR (§3.4ter, S2') : la page vit dans PageCard —
+            // même card, même bande, même dalle que la fiche, home et
+            // progress. La levée de card locale est MORTE (la doctrine : la
+            // page ne bouge jamais) : la place du player vient du padding du
+            // moteur, la lune est celle du moteur (le trait, l'élastique).
+            // Le clavier de braise est le cas §2.17 de cette page : bande
+            // cachée tant qu'il est sorti.
+            PageCard(
+                     enSeance: enSeance,
+                     bandeVisible: !etat.clavier,
+                     page: { corpsPage },
+                     dalle: { dalleExos })
+                // LE TUTO À PROJECTEURS — sur PageCard : l'espace global des
+                // ancres reste cohérent, le voile couvre card ET bande.
                 .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
                     tutoCouche(anchors)
                 }
-                // N'importe quel tap éteint le tuto — dans une fenêtre il fait
-                // AUSSI l'action réelle : le geste appris est le geste fait.
-                .simultaneousGesture(TapGesture().onEnded {
-                    if tutoActif { eteindreTuto() }
-                    // LE FILET DES GESTES ANNULÉS — un tap sur la page réveille
-                    // et guérit. ⚠️ **PLUS DE GARDE `prise != .molette`**
-                    // (26-08) : c'était le TROU. Une molette tuée en plein vol
-                    // laisse `engaged` ET `prise == .molette` collés, et
-                    // l'ancienne garde REFUSAIT justement de la réparer — le
-                    // seul cas qu'on voulait guérir. Un tap ne survient jamais
-                    // pendant un vrai drag (le mouvement l'annule) : s'il
-                    // arrive engagé, le geste est bel et bien mort.
-                    if etat.engaged || etat.mainTient { arreterToutNet() }
-                })
-            }
             .onAppear { arrivee() }
             // La roue libre ne survit pas à la page : une tâche qui écrit
             // `etat.pos` toutes les 16 ms sur un écran démonté, c'est le
@@ -649,6 +601,58 @@ struct ExercisesView: View {
 
     // MARK: - Le contenu de la card
 
+    /// LE CONTENU DU SLOT (§3.4ter S2') — plein cadre, SANS robe ni bande
+    /// (le moteur les pose), SANS `ignoresSafeArea` (la loi du root). Le
+    /// slot naît en zone sûre : `safeT`/`safeB` valent ZÉRO ici — les
+    /// passer vivants serait la double soustraction (piège n° 2 du plan).
+    private var corpsPage: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                Color.black
+                GrandeCardExos(naissance: naissance, nue: true)
+                contenuCard(safeT: 0, w: geo.size.width,
+                            safeB: 0, reserve: Self.hBandeau)
+                if CommandLine.arguments.contains("-exosSonde") {
+                    Text(String(format: "sT %.1f sB %.1f h %.1f",
+                                geo.safeAreaInsets.top,
+                                geo.safeAreaInsets.bottom,
+                                geo.size.height))
+                        .font(.system(size: 13, weight: .bold,
+                                      design: .monospaced))
+                        .foregroundStyle(.green)
+                        .position(x: 150, y: 400)
+                }
+            }
+            // N'importe quel tap éteint le tuto ; le filet des gestes
+            // annulés vit DANS le slot (sous la dalle, il doublerait le
+            // tap d'ouverture du player).
+            .simultaneousGesture(TapGesture().onEnded {
+                if tutoActif { eteindreTuto() }
+                if etat.engaged || etat.mainTient { arreterToutNet() }
+            })
+        }
+    }
+
+    /// LA DALLE — le même composant que partout (dock 86), nourri par la
+    /// séance ouverte (l'ancien contenu de BandeExos, unifié).
+    private var dalleExos: some View {
+        let s = seancesOuvertes.first
+        let exo = s?.orderedExercises.first?.exercise
+            ?? ExerciseCatalog.all[0]
+        return WorkoutPill(
+            exercise: exo,
+            progress: 0,
+            startedAt: s?.startedAt,
+            docked: true,
+            lisere: false,
+            doneSeries: s?.seriesPayantes ?? 0,
+            exoCount: s?.orderedExercises.count ?? 0,
+            jour: s?.startedAt ?? .now,
+            jourSticker: s.map { WoopSticker.pour($0).asset }
+                ?? "sticker-flamme",
+            titreCourant: exo.name)
+    }
+
     @ViewBuilder
     private func contenuCard(safeT: CGFloat, w: CGFloat, safeB: CGFloat,
                              reserve: CGFloat) -> some View {
@@ -672,8 +676,10 @@ struct ExercisesView: View {
                                 selection = .home
                             }
                         },
-                        tirer: { poignee($0) },
-                        reposer: { poigneeFin() })
+                        // §3.4ter : la page ne bouge JAMAIS — la poignée
+                        // de tirage est morte avec la levée locale.
+                        tirer: { _ in },
+                        reposer: { })
             // RIEN TROUVÉ — une grille vide se lit comme une page cassée. La
             // ligne se pose sous le bandeau, jamais au centre de l'écran : le
             // bas appartient au lit de la molette.
@@ -700,7 +706,6 @@ struct ExercisesView: View {
                 .frame(height: Self.prise)
                 .contentShape(Rectangle())
                 .gesture(priseBasse)
-                .modifier(MonteAvecLaCard(etat: etat))
         }
         // LA MOLETTE, couchée au bas de la card. Son cadre est GÉNÉREUX
         // (300 pt) pour que la fumée ait de l'air au-dessus du disque : le
@@ -708,7 +713,6 @@ struct ExercisesView: View {
         .overlay(alignment: .bottom) {
             ArcDial(etat: etat)
                 .frame(width: cardW, height: 300)
-                .modifier(MonteAvecLaCard(etat: etat))
                 // ⚠️ ANCRE SEULEMENT TUTO ARMÉ, comme `tuto-card` : publiée en
                 // permanence, `MonteAvecLaCard` la décale par image d'un drag de
                 // card et republie les préférences pour une couche éteinte
@@ -767,13 +771,10 @@ struct ExercisesView: View {
             etat.mortePoignee = v.translation.height
             etat.mainTient = true
         }
-        var t = v.translation.height - etat.mortePoignee
-        // EN SÉANCE, LA CARD NE SE REFERME PAS : elle résiste au doigt qui la
-        // pousse vers le bas (course divisée par 4), jamais bloquée net — un
-        // objet qui ne bouge PAS DU TOUT se lit comme une panne, pas un refus.
-        if etat.enSeance, t > 0 { t *= 0.25 }
-        etat.tirage = 160 * CGFloat(tanh(Double(t) / 150))
-        souffleDeLaLune()
+        // §3.4ter : LA PAGE NE BOUGE JAMAIS — le tirage de card est mort
+        // (la lune vit sur le trait du moteur, hors séance). La poignée ne
+        // fait plus rien ; elle reste câblée pour l'aiguillage des gestes.
+        _ = v
     }
 
     private func poigneeFin() {
@@ -1894,19 +1895,8 @@ private struct GrilleExos: View {
             // qu'on la prenne par le bandeau ou qu'on pousse la liste au-delà
             // de son bout. Et au lâcher, le scroll revient tout seul — aucun
             // ressort à écrire.
-            var sur: CGFloat = 0
-            if s.offset < 0 {
-                sur = -s.offset * (etat.enSeance ? 0.35 : 1)
-            } else if s.offset > s.fin {
-                sur = -(s.offset - s.fin)
-            }
-            // Le débord d'UIKit est DÉJÀ amorti (rubber band) : on l'assouplit
-            // moins que le doigt nu, sinon la lune reste hors d'atteinte.
-            let t = 160 * CGFloat(tanh(Double(sur) / 90))
-            if etat.tirage != t { etat.tirage = t }
-            // LA BRAISE DU SECRET vaut pour les DEUX chemins : découvrir la
-            // lune en poussant la liste au-delà de son bout — le chemin normal
-            // — ne se sentait pas.
+            // §3.4ter : LA PAGE NE BOUGE JAMAIS — le débord de scroll
+            // n'écrit plus le tirage (la lune vit sur le trait du moteur).
             let p = max(etat.luneP, etat.luneHautP)
             if p >= 1, !etat.luneSentie {
                 etat.luneSentie = true

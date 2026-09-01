@@ -1063,6 +1063,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
     /// vers le haut, depuis la place de repos (55 du bas). Tout le reste —
     /// bornes, couronne, retours — lit la place à travers cet écart.
     var placeDy: CGFloat = 0
+    /// §3.4quater (verdict 01-09) : « on ENLÈVE la pastille home quand on
+    /// pull et voit le slider » — le rangement l'ENCASTRE, ce drapeau
+    /// l'ÉTEINT (opacité animée, jamais un démontage en plein geste).
+    var galetCache: Bool = false
     @ViewBuilder var fond: () -> Fond
     /// LE MOBILIER — lui recule.
     @ViewBuilder var contenu: () -> Contenu
@@ -1404,6 +1408,10 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // valeur : rien d'autre de la pile n'hérite du ressort.
                     .animation(.spring(response: 0.5, dampingFraction: 0.82),
                                value: placeDy)
+                    // §3.4quater : l'extinction au pull — même cachée, la
+                    // pastille « cassait le layout ».
+                    .opacity(galetCache ? 0 : 1)
+                    .animation(.easeOut(duration: 0.22), value: galetCache)
                     // ⚠️ LA PRISE DE LA NAVETTE — « parfois je suis bloquée,
                     // j'arrive plus à la tirer ». Deux causes, mesurables :
                     //  · la navette fait 84 pt de haut, le cadre du galet 62 :

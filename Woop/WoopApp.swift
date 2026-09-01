@@ -1250,6 +1250,19 @@ struct RootView: View {
             PileAnnoncesHote()
                 .zIndex(9)
 
+            // LE PLAYER GLOBAL (§3, plan tools/player/PLAN-PLAYER-CARD.md) —
+            // UNE instance, au-dessus des pages et des pop-ups de jeu
+            // (5-8), SOUS les annonces (9) et la StopCard (13) : le stop
+            // se pose SUR le player ouvert. La page derrière ne bouge
+            // JAMAIS — le voile et le corps vivent ici, les dalles des
+            // pages appellent PlayerEtat.shared.ouvrir().
+            PlayerMondeHote(
+                seance: active,
+                onPageExercices: {
+                    withAnimation { selection = .exercises }
+                })
+                .zIndex(8.5)
+
             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
             // racine (l'école du parcours booster : l'état partagé, pas
             // une notification). « Commencer » = la séance du galet

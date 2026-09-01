@@ -604,11 +604,7 @@ struct ExerciseDetailView: View {
         // ses gestes n'existent plus.
         // LE LAYOUT UNIVERSEL (§2.14) : la fiche est TOUJOURS la card — en
         // séance le player dessous, hors séance le trait + LA LUNE.
-        PageCard(dockH: 86,
-                 // Le banc du DÉPLIÉ RÉEL (§2.16) : `-pageCardLevee` fige la
-                 // levée de la vraie fiche pour les captures — le bandeau du
-                 // bug B était INVISIBLE aux sondes sans doigt.
-                 leveeInitiale: PageCardBanc.leveeFigee ?? 0,
+        PageCard(
                  enSeance: active != nil,
                  // §2.17 : LE PLAYER N'ARRIVE JAMAIS pendant la plongée du
                  // galet (`flood` monte dès le drive) ni pendant la série
@@ -616,9 +612,9 @@ struct ExerciseDetailView: View {
                  // disparaît, la card prend presque tout.
                  bandeVisible: running == nil && flood < 0.01,
                  page: { pageContenu },
-                 dalle: { l in dallePlayer(l) },
-                 detail: { l in scenePlayer(l) },
-                 pied: { l in piedPlayer(l) })
+                 // §3 : la dalle est un BOUTON — le déployé vit à la
+                 // RACINE (PlayerMonde), plus ici.
+                 dalle: { dallePlayer })
         // §2.19 : LE MONDE FLOTTANT AU-DESSUS DE LA CARD — plein écran
         // physique (ses `ignoresSafeArea` internes redeviennent opérants
         // ici ; pas d'`ignoresSafeArea` global : le panneau ancré LIT ses
@@ -636,16 +632,11 @@ struct ExerciseDetailView: View {
         .toolbar(.hidden, for: .tabBar)
     }
 
-    // MARK: - Le player en card (T1)
+    // MARK: - La dalle player (§3 : le déployé vit à la RACINE)
 
     @Environment(\.dismiss) private var fermerFiche
-    /// Le dépliage de la partition (la loi de SlateListe : chez l'hôte).
-    @State private var playerDeplies: Set<String> = ["courant"]
-    /// LES GROUPES FIGÉS — une visite SwiftData par OUVERTURE du player
-    /// (l'onAppear de la scène), jamais par image.
-    @State private var playerGroupes: [SlateGroupe] = []
 
-    private func dallePlayer(_ levee: CGFloat) -> some View {
+    private var dallePlayer: some View {
         WorkoutPill(exercise: exercise,
                     progress: sets.isEmpty ? 0
                         : Double(sets.filter(\.isDone).count)
@@ -657,71 +648,10 @@ struct ExerciseDetailView: View {
                     exoCount: 1 + (active?.orderedExercises
                         .filter { $0.exerciseID != exercise.id }
                         .count ?? 0),
-                    stopVisible: levee < 0.03,
                     jour: active?.startedAt ?? .now,
                     // TODO : le sticker RÉEL du jour (le moteur de faits).
                     jourSticker: "sticker-flamme",
-                    jourVisible: levee < 0.03,
-                    titreCourant: exercise.name,
-                    hauteurDock: 86)
-            // LA DALLE SE TAIT PENDANT LE VOL (verdict T1 : « on voit le
-            // mini player dans le player déplié ») — son titre renaît dans
-            // la scène. L'opacité n'éteint pas le hit : le geste reste.
-            .opacity(Double(1 - min(1, levee * 2.2)))
-    }
-
-    private func scenePlayer(_ levee: CGFloat) -> some View {
-        ScenePlayer(levee: levee, titre: exercise.name,
-                    groupes: playerGroupes, deplies: $playerDeplies)
-            .onAppear { playerGroupes = groupesSeance() }
-    }
-
-    private func piedPlayer(_ levee: CGFloat) -> some View {
-        PiedPlayer(levee: levee,
-                   jour: active?.startedAt ?? .now,
-                   sticker: "sticker-flamme",
-                   setsFaits: sets.filter(\.isDone).count,
-                   stopActif: true,
-                   onStop: {
-                       // LE MÊME CHEMIN que le stop de la dalle : l'état
-                       // global → StopCardHote (la pop-up stop, racine).
-                       withAnimation(.spring(response: 0.42,
-                                             dampingFraction: 0.86)) {
-                           DepartEtat.shared.pauseOuverte = true
-                       }
-                   },
-                   pageExosActif: true,
-                   onPageExercices: { fermerFiche() })
-    }
-
-    /// La partition réelle : l'exercice courant (ses brouillons) d'abord,
-    /// puis les autres exercices de la séance — le barème de l'ardoise.
-    private func groupesSeance() -> [SlateGroupe] {
-        var courant: [SlateLigne] = sets.map {
-            SlateLigne(reps: $0.reps, kilos: $0.weight,
-                       seconds: $0.isDone ? $0.durationSeconds : restSeconds,
-                       done: $0.isDone)
-        }
-        if courant.isEmpty {
-            courant.append(SlateLigne(reps: 12, kilos: 20,
-                                      seconds: restSeconds, done: false))
-        }
-        var out = [SlateGroupe(id: "courant", exercise: exercise,
-                               rows: courant)]
-        for le in active?.orderedExercises ?? []
-        where le.exerciseID != exercise.id {
-            guard let exo = le.exercise, !le.orderedSets.isEmpty
-            else { continue }
-            out.append(SlateGroupe(
-                id: le.exerciseID, exercise: exo,
-                rows: le.orderedSets.map {
-                    SlateLigne(reps: $0.reps, kilos: $0.weight,
-                               seconds: $0.isDone ? $0.durationSeconds
-                                                  : le.restSeconds,
-                               done: $0.isDone)
-                }))
-        }
-        return out
+                    titreCourant: exercise.name)
     }
 
     /// LE CONTENU DE LA PAGE — la fiche elle-même (l'ancien `body`).

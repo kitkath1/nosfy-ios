@@ -12,9 +12,10 @@ import SwiftData
 // VIDES, et la card calendrier (grille fixe à six rangées, ‹ › de mois, le
 // bouton « Voir dans le lecteur »).
 //
-// CE QU'ELLE NE FAIT PAS — le partage du 30-08 : le player. La dalle, le geste
-// qui pousse la page et la partition sont le composant PageCard de la session
-// player ; la page DÉGAGE la zone (levée fixe en séance) et reçoit `levee`.
+// LE PLAYER (§3, 31-08) : la page vit DANS PageCard (la robe et la bande
+// du moteur — même card et même dalle que fiche/home/exercices) ; le
+// player déployé est GLOBAL (PlayerMonde, à la racine), la dalle du
+// moteur l'ouvre au tap. `levee`/`leveeSeance` sont morts avec.
 // Rien de SwiftData n'est rendu derrière la page (la loi du rideau).
 //
 // Les lois tenues ici (skill woop-architecture) : les données se calculent UNE
@@ -58,9 +59,6 @@ enum ProgressBanc {
     static let story: Int? = valeur("-progressStory").map { Int($0) }
     /// `-progressLecteur` : l'iPod du mois affiché s'ouvre seul à 1,6 s.
     static let lecteur = CommandLine.arguments.contains("-progressLecteur")
-    /// `-progressLevee <pt>` : la card tenue raccourcie de <pt> (l'école
-    /// `-exosTirage` — le seed ne laisse aucune séance ouverte).
-    static let levee: CGFloat? = valeur("-progressLevee").map { CGFloat($0) }
     /// Les A/B de CADENCE (`-fps`) : attribuer un coût, pas le deviner.
     /// `-progressSansBouton` retire le primaire (shader 30 Hz),
     /// `-progressSansVerre` met les deux ardoises en plaque peinte.
@@ -96,8 +94,6 @@ struct ProgressPage: View {
     @State private var story: CalStoryLaunch?
     @State private var flashDay: Date?
     @State private var moisOuvert: MoisLaunch?
-    /// LA LEVÉE — reçue. En séance : fixe (la zone du player, à PageCard).
-    @State private var levee: CGFloat = 0
 
     /// Lundi d'abord — la semaine de `SemaineStats` et de la grille.
     private let calendar: Calendar = {
@@ -106,9 +102,6 @@ struct ProgressPage: View {
         return c
     }()
 
-    /// La zone dégagée en séance : la référence HOME (6 d'air · 76 de dalle ·
-    /// 14), en attendant la cote définitive de PageCard.
-    static let leveeSeance: CGFloat = 96
 
     init(onBack: @escaping () -> Void) {
         self.onBack = onBack
@@ -121,36 +114,21 @@ struct ProgressPage: View {
     // MARK: Le corps
 
     var body: some View {
-        GeometryReader { geo in
-            let safeT = geo.safeAreaInsets.top
-            let W = geo.size.width
-            let hEcran = geo.size.height + safeT + geo.safeAreaInsets.bottom
-            ZStack(alignment: .top) {
-                // LA NUIT — ce qui reste quand la card se raccourcit.
-                Color.black
-                // LA CARD : le fond (feu + pill) puis l'encre, tous deux
-                // découpés par la MÊME forme, animable sur la levée.
-                fondCard(W: W, H: hEcran)
-                    .clipShape(FormeCardExos(levee: levee,
-                                             haut: GrandeCardExos.margeHaut))
-                contenu(safeT: safeT, W: W)
-                    .frame(width: W, height: hEcran, alignment: .top)
-                    .clipShape(FormeCardExos(levee: levee,
-                                             haut: GrandeCardExos.margeHaut))
-                // LA STORY, DANS L'ARBRE (la loi de l'iPod : le cover imbriqué
-                // ouvrait une ancienne fenêtre et coupait le titre).
-                if let launch = story {
-                    storyVue(launch)
-                }
-                // LA SONDE DU LAG (`-fps`) : un CADisplayLink qui compte les
-                // battements servis et publie chaque seconde. Rien hors banc.
-                if CommandLine.arguments.contains("-fps") {
-                    SondeCadence(quoi: "progress")
-                        .frame(width: 1, height: 1)
-                        .allowsHitTesting(false)
-                }
+        // LA ROBE DU MOTEUR (§3.4ter, S2') : la page vit dans PageCard —
+        // même card, même bande, même dalle que la fiche, home et
+        // exercices. Le contrat « la page DÉGAGE la zone » est honoré par
+        // le moteur (padding bas 110 en séance) : `levee`/`leveeSeance`
+        // sont morts. La STORY et le cover de l'iPod vivent SUR PageCard
+        // (l'école mondeFlottant §2.19 / bug B §2.16 : rien de démontable
+        // dans le slot, et les `ignoresSafeArea` redeviennent opérants).
+        PageCard(
+                 enSeance: !seancesOuvertes.isEmpty,
+                 page: { pageContenu },
+                 dalle: { dallePlayer })
+        .overlay {
+            if let launch = story {
+                storyVue(launch)
             }
-            .ignoresSafeArea()
         }
         .fullScreenCover(item: $moisOuvert) { m in
             MoisIpod(month: m.month, calendar: calendar,
@@ -168,20 +146,57 @@ struct ProgressPage: View {
             jouerBanc()
         }
         .onChange(of: workoutsBruts.count) { _, _ in calcule() }
-        .onChange(of: seancesOuvertes.isEmpty, initial: true) { _, vide in
-            // La levée de séance se joue dans une transaction : le @Query
-            // arrive après la première image.
-            withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.62)) {
-                levee = ProgressBanc.levee ?? (vide ? 0 : Self.leveeSeance)
+    }
+
+    /// LE CONTENU DU SLOT — plein cadre, SANS robe (clip, marges, coins :
+    /// le moteur), SANS `ignoresSafeArea` (la loi du root).
+    private var pageContenu: some View {
+        GeometryReader { geo in
+            let W = geo.size.width
+            let hEcran = geo.size.height
+            ZStack(alignment: .top) {
+                Color.black
+                fondCard(W: W, H: hEcran)
+                contenu(safeT: geo.safeAreaInsets.top, W: W)
+                    .frame(width: W, height: hEcran, alignment: .top)
+                if CommandLine.arguments.contains("-fps") {
+                    SondeCadence(quoi: "progress")
+                        .frame(width: 1, height: 1)
+                        .allowsHitTesting(false)
+                }
             }
         }
+    }
+
+    /// LA DALLE — le même composant que partout (dock 86), nourri par LA
+    /// séance ouverte : `seriesPayantes` (la seule ligne qui fait foi,
+    /// Models.swift) et le VRAI sticker du jour (`WoopSticker.pour`).
+    private var dallePlayer: some View {
+        let s = seancesOuvertes.first
+        let exo = s?.orderedExercises.first?.exercise
+            ?? ExerciseCatalog.all[0]
+        return WorkoutPill(
+            exercise: exo,
+            progress: 0,
+            startedAt: s?.startedAt,
+            docked: true,
+            lisere: false,
+            doneSeries: s?.seriesPayantes ?? 0,
+            exoCount: s?.orderedExercises.count ?? 0,
+            jour: s?.startedAt ?? .now,
+            jourSticker: s.map { WoopSticker.pour($0).asset }
+                ?? "sticker-flamme",
+            titreCourant: exo.name)
     }
 
     // MARK: Le fond — le feu et la pill
 
     /// Les lecteurs se taisent quand la page ne se voit plus (story ou iPod
     /// ouverts) : `rate: 0` — jamais un démontage.
-    private var rateFond: Float { (story == nil && moisOuvert == nil) ? 1 : 0 }
+    private var rateFond: Float {
+        (story == nil && moisOuvert == nil
+         && !PlayerEtat.shared.couvre) ? 1 : 0
+    }
 
     /// L'école exacte de la home (`DepartCine`) : un hôte NEUTRE qui prend la
     /// proposition, deux calques en `overlay` alignés (le feu au pied, la pill
@@ -195,7 +210,6 @@ struct ProgressPage: View {
                     .overlay(alignment: .bottom) { feu(W: W) }
                     .overlay(alignment: .top) { pill(W: W, H: H) }
                     .compositingGroup()
-                    .padding(.top, GrandeCardExos.margeHaut)
                     // LA NAISSANCE de la card (l'école GrandeCardExos) : elle
                     // s'allume en fondu avec une approche imperceptible — vu
                     // au film, la pill claquait à l'écran avant l'encre.

@@ -981,6 +981,15 @@ struct HomeFondVideo: UIViewRepresentable {
 /// posée sur la page noire — l'anatomie du puits de l'iPod appliquée à la
 /// page entière. Le rayon est CONCENTRIQUE (celui de l'écran moins la marge,
 /// la règle d'Apple) : c'est lui qui fait « posé » et pas « collé ».
+/// §3.4ter : l'`ignoresSafeArea` conditionnel de la card home — plein
+/// écran dans l'ancien monde, sage dans le slot du moteur.
+private struct IgnoreSaufNueHome: ViewModifier {
+    let nue: Bool
+    func body(content: Content) -> some View {
+        if nue { content } else { content.ignoresSafeArea() }
+    }
+}
+
 struct GrandeCardVideo: View {
     /// La naissance de la page, 0 → 1 : la card s'allume en fondu avec une
     /// approche imperceptible (1,015 → 1). Jamais un bounce (la spec).
@@ -1014,6 +1023,10 @@ struct GrandeCardVideo: View {
     /// « Bonjour » à cheval sur l'heure. Un tiroir qui s'ouvre ne déménage pas
     /// la pièce.
     var levee: CGFloat = 0
+    /// §3.4ter S2' : `nue` = SANS robe (ni coins, ni `ignoresSafeArea`,
+    /// ni marche d'encart) — la robe vient du moteur PageCard, la card
+    /// n'est plus que son fond vidéo, plein cadre du slot.
+    var nue: Bool = false
     /// LE TEMPS DE LA SCÈNE DE DÉPART, **en secondes** (0 → `DepartCine.T`).
     /// Ce n'était pas une durée qui manquait, c'était une horloge : `scene`
     /// valait `-tirage/150`, donc le film durait ce que durait le geste — 0,2 s.
@@ -1087,17 +1100,19 @@ struct GrandeCardVideo: View {
                 // elles emportaient la braise avec la pilule — c'était
                 // arithmétique, pas un réglage.
                 .clipShape(UnevenRoundedRectangle(
-                    topLeadingRadius: rayon,
-                    bottomLeadingRadius: rayonEcran,
-                    bottomTrailingRadius: rayonEcran,
-                    topTrailingRadius: rayon,
+                    topLeadingRadius: nue ? 0 : rayon,
+                    bottomLeadingRadius: nue ? 0 : rayonEcran,
+                    bottomTrailingRadius: nue ? 0 : rayonEcran,
+                    topTrailingRadius: nue ? 0 : rayon,
                     style: .continuous))
-                .padding(.top, marge)
-                .padding(.horizontal, marge)
+                .padding(.top, nue ? 0 : marge)
+                .padding(.horizontal, nue ? 0 : marge)
                 .opacity(naissance)
                 .scaleEffect(1.015 - 0.015 * naissance)
             )
-            .ignoresSafeArea()
+            // §3.4ter : nue, la card vit dans un slot en zone sûre — un
+            // `ignoresSafeArea` y volerait les insets (la loi du root).
+            .modifier(IgnoreSaufNueHome(nue: nue))
             // ⚠️ LA LEVÉE SE RETIRE EN BAS, ET DU NOIR AUSSI. Deux pièges
             // enfilés ici : posée en haut, elle raccourcissait la card par le
             // HAUT (0 pt découvert, mesuré) ; et posée sur le seul contenu,
@@ -1121,7 +1136,7 @@ struct GrandeCardVideo: View {
             //
             // On retire donc l'encart de la levée demandée. Il se LIT, il ne
             // s'écrit pas en dur : 34 est une cote d'iPhone 17 Pro, pas une loi.
-            .padding(.bottom, max(levee - encartBas, 0))
+            .padding(.bottom, nue ? 0 : max(levee - encartBas, 0))
             // BANC `-cotes` : les cotes VIVANTES, écrites à l'écran. La console
             // de simctl n'a pas rendu le stdout de l'app, et une géométrie ne se
             // diagnostique pas par déduction : deux modèles de layout
@@ -2121,162 +2136,28 @@ struct HomeNuitPage: View {
 
     var body: some View {
         GeometryReader { geo in
-            // ⚠️ TOUTE LA PAGE VIT DANS `MenuHote` : c'est lui qui porte le
-            // galet, la couronne et le recul du mobilier. Le FOND (la vidéo)
-            // ne recule jamais — une couche UIKit ne sait pas s'échelonner
-            // dans une transaction SwiftUI, elle SAUTE. Le mobilier, lui,
-            // s'éloigne : sans quoi le disque `.clear` de la couronne
-            // GIVRERAIT l'encre nette de la phrase.
-            // ⚠️ **UNE SEULE HORLOGE, ET ELLE EST LE PRÉREQUIS DE TOUT.**
-            // `Chambre(p: e)` nourri par une `Date` ne joue RIEN : `Chambre`
-            // est `Animatable`, donc SwiftUI n'interpole que si la valeur
-            // change DANS UNE TRANSACTION. Une horloge murale n'invalide aucun
-            // body — au lâcher, la pilule descendrait seule (elle a sa propre
-            // couche) et TOUT LE RESTE GÈLERAIT.
-            //
-            // Elle est PAUSÉE au repos ET sous le doigt : là, `e` vaut 0 et la
-            // page se réévalue de toute façon parce que `tirage` est un
-            // `@State`. Coût d'horloge au repos : zéro. Elle ne tourne que
-            // pendant les 1,95 s du film.
-            //
-            // 60 Hz et pas 30 : la pointe de la chute est à 452 pt/s, soit
-            // 7,5 pt par image à 60 Hz — 15 à 30 Hz, sur un objet net de 288 pt.
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: reduceMotion
-                                        || (depart == nil && ferme == nil))) { tl in
-                let e = eNow(tl.date)
-                MenuHote(ouvert: $menuOuvert,
-                         onChoix: { i in
-                             guard Self.destinations.indices.contains(i) else { return }
-                             onRoute(Self.destinations[i])
-                         },
-                         // ⚠️ LA COLONNE, PAS LA COURONNE (verdict 22-08 : « on
-                         // remet le menu liste »). Les deux formes cohabitaient
-                         // le temps de l'A/B et le code le disait déjà : « la
-                         // colonne est validée, on ne la jette pas sur une
-                         // intuition ». La couronne n'est pas supprimée pour
-                         // autant — elle se rejoue à son banc `-couronneLab`.
-                         //
-                         // ⚠️ CE QUI CHANGE DANS LA MAIN, ET C'EST LA SEULE
-                         // CHOSE : l'appui TENU faisait éclore la couronne ; la
-                         // colonne s'ouvre au TAP. L'appui tenu se retrouve donc
-                         // sans emploi — laissé inerte, pas réaffecté au hasard.
-                         // Le port libre, le rangement dans le mur, les bornes,
-                         // la chute et le néon armé ne dépendent pas du drapeau :
-                         // le galet ne sait même pas que le menu a changé.
-                         couronne: false,
-                         onRange: { galetRange = $0 },
-                         // LE GALET S'EFFACE QUAND LE SLIDER PARLE — hors
-                         // séance seulement. Tiroir ouvert, la rangée du bas
-                         // appartient au slider : le galet s'encastre dans le
-                         // mur, sinon il se pose littéralement DESSUS (vu en
-                         // capture).
-                         // ⚠️ EN SÉANCE, ON NE RANGE PLUS (26-08 soir, dit dix
-                         // fois : « le petit palet vit dans la card orange »).
-                         // Le rangement de séance posait le palet au coin — sur
-                         // le player — à chaque sortie de languette. Sa place
-                         // MONTE dans la card (`placeDy`), le coin appartient
-                         // au player, et il n'y a plus rien à ranger.
-                         rangerDemande: (tiroirOuvert && !enSeance)
-                             || vitrineSlot != nil,
-                         // Le slider est dans la bande : pendant qu'il est là, le
-                         // galet ne dispute plus le doigt. Et pendant la
-                         // vitrine, TOUT le bas se tait.
-                         verrouille: (tiroirOuvert && !enSeance)
-                             || vitrineSlot != nil,
-                         reculExterne: reculVitrine,
-                         // LA PLACE DE SÉANCE DU PALET : au milieu du strip que
-                         // la card allongée ouvre sous « This week » (657) —
-                         // centre (55, 706), soit 18 pt d'air de chaque côté
-                         // de l'arête (756) et du widget. MESURÉ au banc
-                         // `-homeSeance`, pas déduit. 763 − 706 = 57.
-                         placeDy: enSeance ? 57 : 0) {
-                    // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
-                    // non ! »). La card CHAUDE reste, c'est elle la scène.
-                    fondPage(e)
-                } contenu: {
-                    // ⚠️ LA SONDE DU PULL (`-pullSonde <n>`) : elle éteint une
-                    // couche à la fois pour savoir laquelle coûte les trous de
-                    // 1,3 s mesurés sous le doigt. 1 = pas de mobilier,
-                    // 2 = pas de card vidéo, 3 = ni l'un ni l'autre.
-                    if Self.pullSonde == 1 || Self.pullSonde == 3 {
-                        Color.clear
-                    } else {
-                    // ⚠️ **LE PONT ANIMATABLE, ENFIN BRANCHÉ** (26-08).
-                    // Verdict : « l'arrivée sur la home est trop statique — je
-                    // veux une micro-profondeur, un très léger décalage entre
-                    // les widgets, les mini-cards qui se mettent en place ».
-                    //
-                    // Les rangs d'apparition ÉTAIENT déjà écrits (`pose` de la
-                    // rangée à `(arrivee − 0,55)/0,30`, celui de la semaine à
-                    // `(arrivee − 0,70)/0,30`) — ils ne jouaient simplement
-                    // jamais. `CardsRangee` et `SemaineStrip` sont de simples
-                    // `View` : sous `withAnimation`, SwiftUI ne réévalue pas le
-                    // body à chaque pas, il interpole les MODIFICATEURS. Il
-                    // voyait donc une opacité aller de 0 à 1 et la menait
-                    // linéairement sur les 1,46 s, en écrasant la fenêtre —
-                    // tout ce qui n'est pas la phrase arrivait ENSEMBLE, sans
-                    // décalage ni profondeur. C'est le piège que le dépôt
-                    // documente lui-même (« les rampes sur p sous withAnimation
-                    // ne jouent qu'au doigt ; la forme robuste est une struct
-                    // View Animatable sur p ») — et le remède, `Chambre`, était
-                    // déjà écrit, déjà payé, déjà en production dans la vitrine.
-                    // Il n'a fallu inventer AUCUNE fenêtre : celles qui
-                    // existaient se remettent à jouer.
-                    //
-                    // ⚠️ PAS une `TimelineView` à la place : celle du body de
-                    // la home est volontairement pausée au repos, la réveiller
-                    // rejouerait le piège de la page ré-évaluée par image.
-                    Chambre(p: arrivee) { a in
-                        mobilierScene(geo, g, e, a)
-                    }
-                    // ⚠️ MENU OUVERT, LE VERRE DES WIDGETS EST DÉMONTÉ (26-08 :
-                    // « on voit la card !! non !! »). L'extinction du menu ne
-                    // peut rien contre du verre natif — il ignore `.opacity` —
-                    // les carcasses des deux cards restaient lisibles sous le
-                    // voile. La doublure mate prend, le verre revient posé.
-                    // … et SOUS LA ROUTE (jalon 1) : la home dort, son verre
-                    // aussi — du verre natif sur une vidéo vivante sous une
-                    // page opaque, c'était la moitié des 12-21 img/s mesurés.
-                    .environment(\.verreDemonte,
-                                  menuOuvert || DepartEtat.shared.homeDort)
-                    }
-                }
-                // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
-                // note sur `fondPage`. `.simultaneousGesture` et jamais
-                // `.gesture` : posé en exclusif sur la page, il AFFAMERAIT le
-                // slider, le galet, les cards et l'ardoise ; en simultané, il
-                // écoute par-dessus leur épaule et son verrou d'axe le fait
-                // sortir dès que le mouvement n'est pas le sien.
-                // ⚠️ **EN SÉANCE, LE TIRAGE SE TAIT** (26-08, verdict n° 1 :
-                // « le bouton Stop ne répond pas… je ne peux pas non plus
-                // ouvrir / drag le menu correctement »).
-                //
-                // Le tirage est page-large et son seuil est à 2 pt : en
-                // séance, la bande découverte porte LE PLAYER, et le menu
-                // vit juste au-dessus. Un drag d'ancêtre qui reconnaît au
-                // deuxième point ANNULE le bouton qu'il couvre et vole
-                // l'amorce du galet — le stop ne partait pas, le menu ne
-                // s'attrapait plus. Or en séance le tiroir est DÉJÀ ouvert
-                // (c'est le départ qui l'a levé) : le tirage n'a plus rien à
-                // faire, il ne peut que nuire. On le démonte, on ne remonte
-                // pas son seuil — la fluidité du pull a été payée en mesures.
-                .simultaneousGesture(enSeance ? nil : tirageGeste)
+            // LA ROBE DU MOTEUR (§3.4ter, S2') : la home vit dans PageCard —
+            // même card, même bande, même dalle que fiche, exercices et
+            // progress. Le player local (WorkoutPill de fondPage) est mort ;
+            // la lune locale aussi (celle du moteur vit sur le trait). Le
+            // TIROIR et son film gardent leur tirage — il ne bouge plus la
+            // card, il ne fait que le départ.
+            PageCard(
+                     enSeance: enSeance,
+                     // §3.4quater : le tiroir de la home possède déjà le
+                     // geste du bas — pas de prise lune du moteur ici.
+                     luneAuDrag: false,
+                     page: { pageContenu(geo) },
+                     dalle: { dalleHome })
+                // LES SATELLITES — HORS card (clippés/étranglés dedans) :
+                // le panneau du départ et la vitrine, l'école mondeFlottant.
                 .overlay {
-                    // L'OVERLAY DU DÉPART — déjà écrit (la vidéo de la lune qui
-                    // se charge). Le slider l'ouvre, « Commencer » le referme et
-                    // lance la séance.
                     DepartPanneauHote(
                         ouverte: DepartEtat.shared.panneauOuvert,
                         onCommencer: { commencer() },
                         onFermer: { DepartEtat.shared.fermer() })
                 }
                 .overlay {
-                    // LA VITRINE — au-dessus de MenuHote (l'école
-                    // DepartPanneauHote) : posée dans `contenu:` elle
-                    // hériterait du flou du retrait et de l'offset du
-                    // tirage. Le widget vole du slot au centre, le carousel
-                    // à crans autour de lui.
                     if let vs = vitrineSlot {
                         VitrineHote(slot: vs,
                                     choix: choixPour(vs),
@@ -2306,10 +2187,6 @@ struct HomeNuitPage: View {
                                     onFini: { fermerVitrine($0) })
                     }
                 }
-                // L'encart bas, LU ici et transmis à la card : c'est lui que la
-                // marche du padding lui faisait perdre.
-                .environment(\.encartBas, geo.safeAreaInsets.bottom)
-            }
         }
         // LA FUMÉE DE LA PIÈCE se dessine ICI, au niveau de la page et
         // AU-DESSUS de MenuHote — la grammaire exacte de la v1 : la pièce
@@ -2557,6 +2434,175 @@ struct HomeNuitPage: View {
         }
     }
 
+    /// LA DALLE — le même composant que partout (dock 86), nourri par la
+    /// séance ouverte (l'ancien player de `fondPage`, unifié).
+    private var dalleHome: some View {
+        let s = seancesOuvertes.first
+        let exo = s?.orderedExercises.first?.exercise
+            ?? ExerciseCatalog.all[0]
+        return WorkoutPill(
+            exercise: exo,
+            progress: 0,
+            startedAt: s?.startedAt ?? debutSeance,
+            docked: true,
+            lisere: false,
+            doneSeries: s?.seriesPayantes ?? 0,
+            exoCount: s?.orderedExercises.count ?? 0,
+            jour: s?.startedAt ?? .now,
+            jourSticker: s.map { WoopSticker.pour($0).asset }
+                ?? "sticker-flamme",
+            titreCourant: exo.name)
+    }
+
+    private func pageContenu(_ geo: GeometryProxy) -> some View {
+            // ⚠️ TOUTE LA PAGE VIT DANS `MenuHote` : c'est lui qui porte le
+            // galet, la couronne et le recul du mobilier. Le FOND (la vidéo)
+            // ne recule jamais — une couche UIKit ne sait pas s'échelonner
+            // dans une transaction SwiftUI, elle SAUTE. Le mobilier, lui,
+            // s'éloigne : sans quoi le disque `.clear` de la couronne
+            // GIVRERAIT l'encre nette de la phrase.
+            // ⚠️ **UNE SEULE HORLOGE, ET ELLE EST LE PRÉREQUIS DE TOUT.**
+            // `Chambre(p: e)` nourri par une `Date` ne joue RIEN : `Chambre`
+            // est `Animatable`, donc SwiftUI n'interpole que si la valeur
+            // change DANS UNE TRANSACTION. Une horloge murale n'invalide aucun
+            // body — au lâcher, la pilule descendrait seule (elle a sa propre
+            // couche) et TOUT LE RESTE GÈLERAIT.
+            //
+            // Elle est PAUSÉE au repos ET sous le doigt : là, `e` vaut 0 et la
+            // page se réévalue de toute façon parce que `tirage` est un
+            // `@State`. Coût d'horloge au repos : zéro. Elle ne tourne que
+            // pendant les 1,95 s du film.
+            //
+            // 60 Hz et pas 30 : la pointe de la chute est à 452 pt/s, soit
+            // 7,5 pt par image à 60 Hz — 15 à 30 Hz, sur un objet net de 288 pt.
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                    paused: reduceMotion
+                                        || (depart == nil && ferme == nil))) { tl in
+                let e = eNow(tl.date)
+                MenuHote(ouvert: $menuOuvert,
+                         onChoix: { i in
+                             guard Self.destinations.indices.contains(i) else { return }
+                             onRoute(Self.destinations[i])
+                         },
+                         // ⚠️ LA COLONNE, PAS LA COURONNE (verdict 22-08 : « on
+                         // remet le menu liste »). Les deux formes cohabitaient
+                         // le temps de l'A/B et le code le disait déjà : « la
+                         // colonne est validée, on ne la jette pas sur une
+                         // intuition ». La couronne n'est pas supprimée pour
+                         // autant — elle se rejoue à son banc `-couronneLab`.
+                         //
+                         // ⚠️ CE QUI CHANGE DANS LA MAIN, ET C'EST LA SEULE
+                         // CHOSE : l'appui TENU faisait éclore la couronne ; la
+                         // colonne s'ouvre au TAP. L'appui tenu se retrouve donc
+                         // sans emploi — laissé inerte, pas réaffecté au hasard.
+                         // Le port libre, le rangement dans le mur, les bornes,
+                         // la chute et le néon armé ne dépendent pas du drapeau :
+                         // le galet ne sait même pas que le menu a changé.
+                         couronne: false,
+                         onRange: { galetRange = $0 },
+                         // LE GALET S'EFFACE QUAND LE SLIDER PARLE — hors
+                         // séance seulement. Tiroir ouvert, la rangée du bas
+                         // appartient au slider : le galet s'encastre dans le
+                         // mur, sinon il se pose littéralement DESSUS (vu en
+                         // capture).
+                         // ⚠️ EN SÉANCE, ON NE RANGE PLUS (26-08 soir, dit dix
+                         // fois : « le petit palet vit dans la card orange »).
+                         // Le rangement de séance posait le palet au coin — sur
+                         // le player — à chaque sortie de languette. Sa place
+                         // MONTE dans la card (`placeDy`), le coin appartient
+                         // au player, et il n'y a plus rien à ranger.
+                         rangerDemande: (tiroirOuvert && !enSeance)
+                             || vitrineSlot != nil,
+                         // Le slider est dans la bande : pendant qu'il est là, le
+                         // galet ne dispute plus le doigt. Et pendant la
+                         // vitrine, TOUT le bas se tait.
+                         verrouille: (tiroirOuvert && !enSeance)
+                             || vitrineSlot != nil,
+                         reculExterne: reculVitrine,
+                         // LA PLACE DE SÉANCE DU PALET : au milieu du strip que
+                         // la card allongée ouvre sous « This week » (657) —
+                         // centre (55, 706), soit 18 pt d'air de chaque côté
+                         // de l'arête (756) et du widget. MESURÉ au banc
+                         // `-homeSeance`, pas déduit. 763 − 706 = 57.
+                         // §3.4ter : placeDy 0 — le player n'est plus sous
+                         // le galet (la bande du moteur réserve déjà 110) ;
+                         // à RE-MESURER au banc -homeSeance, jamais déduire.
+                         placeDy: 0) {
+                    // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
+                    // non ! »). La card CHAUDE reste, c'est elle la scène.
+                    fondPage(e)
+                } contenu: {
+                    // ⚠️ LA SONDE DU PULL (`-pullSonde <n>`) : elle éteint une
+                    // couche à la fois pour savoir laquelle coûte les trous de
+                    // 1,3 s mesurés sous le doigt. 1 = pas de mobilier,
+                    // 2 = pas de card vidéo, 3 = ni l'un ni l'autre.
+                    if Self.pullSonde == 1 || Self.pullSonde == 3 {
+                        Color.clear
+                    } else {
+                    // ⚠️ **LE PONT ANIMATABLE, ENFIN BRANCHÉ** (26-08).
+                    // Verdict : « l'arrivée sur la home est trop statique — je
+                    // veux une micro-profondeur, un très léger décalage entre
+                    // les widgets, les mini-cards qui se mettent en place ».
+                    //
+                    // Les rangs d'apparition ÉTAIENT déjà écrits (`pose` de la
+                    // rangée à `(arrivee − 0,55)/0,30`, celui de la semaine à
+                    // `(arrivee − 0,70)/0,30`) — ils ne jouaient simplement
+                    // jamais. `CardsRangee` et `SemaineStrip` sont de simples
+                    // `View` : sous `withAnimation`, SwiftUI ne réévalue pas le
+                    // body à chaque pas, il interpole les MODIFICATEURS. Il
+                    // voyait donc une opacité aller de 0 à 1 et la menait
+                    // linéairement sur les 1,46 s, en écrasant la fenêtre —
+                    // tout ce qui n'est pas la phrase arrivait ENSEMBLE, sans
+                    // décalage ni profondeur. C'est le piège que le dépôt
+                    // documente lui-même (« les rampes sur p sous withAnimation
+                    // ne jouent qu'au doigt ; la forme robuste est une struct
+                    // View Animatable sur p ») — et le remède, `Chambre`, était
+                    // déjà écrit, déjà payé, déjà en production dans la vitrine.
+                    // Il n'a fallu inventer AUCUNE fenêtre : celles qui
+                    // existaient se remettent à jouer.
+                    //
+                    // ⚠️ PAS une `TimelineView` à la place : celle du body de
+                    // la home est volontairement pausée au repos, la réveiller
+                    // rejouerait le piège de la page ré-évaluée par image.
+                    Chambre(p: arrivee) { a in
+                        mobilierScene(geo, g, e, a)
+                    }
+                    // ⚠️ MENU OUVERT, LE VERRE DES WIDGETS EST DÉMONTÉ (26-08 :
+                    // « on voit la card !! non !! »). L'extinction du menu ne
+                    // peut rien contre du verre natif — il ignore `.opacity` —
+                    // les carcasses des deux cards restaient lisibles sous le
+                    // voile. La doublure mate prend, le verre revient posé.
+                    // … et SOUS LA ROUTE (jalon 1) : la home dort, son verre
+                    // aussi — du verre natif sur une vidéo vivante sous une
+                    // page opaque, c'était la moitié des 12-21 img/s mesurés.
+                    .environment(\.verreDemonte,
+                                  menuOuvert || DepartEtat.shared.homeDort)
+                    }
+                }
+                // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
+                // note sur `fondPage`. `.simultaneousGesture` et jamais
+                // `.gesture` : posé en exclusif sur la page, il AFFAMERAIT le
+                // slider, le galet, les cards et l'ardoise ; en simultané, il
+                // écoute par-dessus leur épaule et son verrou d'axe le fait
+                // sortir dès que le mouvement n'est pas le sien.
+                // ⚠️ **EN SÉANCE, LE TIRAGE SE TAIT** (26-08, verdict n° 1 :
+                // « le bouton Stop ne répond pas… je ne peux pas non plus
+                // ouvrir / drag le menu correctement »).
+                //
+                // Le tirage est page-large et son seuil est à 2 pt : en
+                // séance, la bande découverte porte LE PLAYER, et le menu
+                // vit juste au-dessus. Un drag d'ancêtre qui reconnaît au
+                // deuxième point ANNULE le bouton qu'il couvre et vole
+                // l'amorce du galet — le stop ne partait pas, le menu ne
+                // s'attrapait plus. Or en séance le tiroir est DÉJÀ ouvert
+                // (c'est le départ qui l'a levé) : le tirage n'a plus rien à
+                // faire, il ne peut que nuire. On le démonte, on ne remonte
+                // pas son seuil — la fluidité du pull a été payée en mesures.
+                .simultaneousGesture(enSeance ? nil : tirageGeste)
+            }
+
+    }
+
     /// LE RETOUR À L'ÉTAT POSÉ, après une séance qui vient de se clore.
     ///
     /// ⚠️ **CE N'EST PAS `fermer()`** : celle-là joue un film de 1,25 s à
@@ -2645,47 +2691,9 @@ struct HomeNuitPage: View {
                         .frame(width: 1, height: 1)
                         .allowsHitTesting(false)
                 }
-                // LE SECRET, tout au fond : la card le couvre au repos, et
-                // le tirage vers le bas le découvre.
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    if enSeance {
-                        // LE PLAYER — la dalle de la maison, déjà écrite
-                        // (`WorkoutPill(docked:)`). Un seul geste, une seule
-                        // bande : hors séance le secret, en séance le player.
-                        WorkoutPill(exercise: ExerciseCatalog.all[0],
-                                    startedAt: debutSeance,
-                                    docked: true,
-                                    lisere: false)
-                            .opacity(playerP)
-                            .offset(y: 16 * (1 - playerP))
-                    } else {
-                        ZStack {
-                            // LA LUNE — le secret d'aujourd'hui, intact
-                            // pendant toute la montée. Elle s'efface quand la
-                            // piste arrive : le secret DEVIENT la clé.
-                            // ⚠️ ELLE SE COUCHE, ELLE NE SE COUPE PLUS. Le
-                            // `tiroirOuvert ? 0 : 1` l'éteignait en UNE image,
-                            // et elle n'était animée que par le ressort du
-                            // lâcher — supprimé. Sa fenêtre comble en plus le
-                            // trou de la bande : elle la tient jusqu'à 0,45 s,
-                            // le slider n'entre qu'à 0,95.
-                            LuneSecrete(p: luneP)
-                                .opacity(1 - DepartCine.sstep(0, 0.45, e))
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                       alignment: .center)
-                // ⚠️ Les 46 pt appartiennent à la LUNE, pas à la bande : le
-                // slider les ajoutait aux siens (46 + 26 = 72) et passait
-                // 18 pt DERRIÈRE la card, donc invisible.
-                // ⚠️ Le player ne touche PAS le bord : à ras, son bouton
-                // stop et le départ de la veine se collaient à l'arête
-                // physique. 14 pt le décollent, et la levée grandit d'autant
-                // pour garder l'air sous la card.
-                .padding(.bottom, enSeance ? 14 : (tiroirOuvert ? 0 : 46))
-                .ignoresSafeArea(edges: .bottom)
+                // (§3.4ter S2' : LA BANDE EST AU MOTEUR — le player local
+                // et la lune locale de fondPage sont MORTS ; la dalle vit
+                // dans PageCard, la lune sur son trait.)
 
                 // TOUTE LA HOME EST UNE CARD, ET ELLE SE TIENT : le drag la
                 // déplace EN BLOC (fond vidéo, phrase, semaine) avec une
@@ -2709,14 +2717,14 @@ struct HomeNuitPage: View {
                             Color(white: 0.05)
                         } else {
                         GrandeCardVideo(naissance: naissance,
-                                        // LA PILULE EN DERNIER : elle n'entre
-                                        // qu'une fois la phrase posée et les
-                                        // widgets en place — fenêtre 0,80 →
-                                        // 1,00 de l'arrivée, la plus tardive
-                                        // de la partition (les widgets sont à
-                                        // 0,55, la semaine à 0,70).
+                                        // LA PILULE EN DERNIER : fenêtre
+                                        // 0,80 → 1,00 de l'arrivée.
                                         pilule: PilP.entree(arrivee),
-                                        levee: max(-tirage, 0),
+                                        // §3.4ter : la robe et la levée
+                                        // sont au MOTEUR — la card est nue,
+                                        // plein cadre du slot.
+                                        levee: 0,
+                                        nue: true,
                                         e: e)
                         }
                     }

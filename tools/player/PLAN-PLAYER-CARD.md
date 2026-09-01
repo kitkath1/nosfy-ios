@@ -810,6 +810,398 @@ des quatre états §2.18.
 détail » — home, exercices et progress attendent leur tour, périmètre
 §2.17.)
 
+---
+
+## §3 LE PLAYER GLOBAL AU-DESSUS DES PAGES (le revirement du 31-08 —
+plan v2, écrit sur l'INVENTAIRE du code, pas sur des suppositions)
+
+Verdicts : « je préfère finalement l'OVERLAY (sheet au-dessus des
+écrans) — garde tout le reste (les grosses cards) » · « full page ça me
+va aussi, tant que ça passe par-dessus les pages-cards » · « DIMINUER
+LES BUGS » · « la card détail n'a pas les mêmes dimensions que home et
+exercices ».
+
+### 3.0 LES FAITS ÉTABLIS (inventoriés fichier:ligne, 31-08)
+
+1. **Le point de montage racine existe** : le ZStack de `mainBody`
+   (`WoopApp.swift:1030`), en FRÈRE du TabView (`:1058`), échelle de
+   zIndex documentée (Départ 5 · Booster 6 · RewardPopup 8 · Annonces 9
+   · RewardChemin 12 · StopCard 13 · story 15).
+2. **Le précédent maison** : LE CHEMIN a déjà QUITTÉ son
+   fullScreenCover pour la racine (`WoopApp.swift:1188-1205`) — même
+   raison, même geste. On copie.
+3. **Trois dalles WorkoutPill EXISTENT déjà** : home
+   (`HomeNuit.swift:2656`, dock 76), exercices
+   (`ExercisesView.swift:1213`, dock 76), fiche
+   (`ExerciseDetailView` dallePlayer, dock 86). Progress n'en a PAS
+   mais **réserve déjà 96 pt avec le contrat écrit**
+   (`ProgressPage.swift:15-17, 99-111` : « la page DÉGAGE la zone, le
+   player est ailleurs »).
+4. **La barre bijou est MORTE** (`WoopApp.swift:721-726` :
+   `barreBijouVisible` toujours false) — aucun conflit de tab bar.
+5. **ActiveWorkoutSheet** (le player modal historique) vit encore :
+   `.sheet($sheetWorkout)` attaché au TabView (`:1162`), fond verre
+   transparent (`ActiveWorkoutView.swift:243`) — c'est LUI l'orphelin
+   mangeur de touchers du defer e9521cf (`WoopApp.swift:764-787`).
+6. **Les présentations UIKit passent AU-DESSUS de la racine** : le
+   sheet `:1162`, les covers coffre (`HomeNuit:2372`), Chemin
+   (`:2339`), l'ExercisesView IMBRIQUÉE dans le cover du Chemin
+   (`HomeNuit:2360`), MoisIpod (`ProgressPage:155`).
+7. Exercices et progress ont DÉJÀ leur système de card
+   (`GrandeCardExos`/`FormeCardExos`, clipShape + `.ignoresSafeArea()`
+   sur le ZStack) — DIFFÉRENT de la robe §2.18 de la fiche : c'est LA
+   cause des dimensions divergentes qu'elle voit.
+
+### 3.1 LA DÉCISION D'ARCHITECTURE : UN SEUL PLAYER, À LA RACINE
+
+**`PlayerMonde` — une instance UNIQUE, montée dans le ZStack de
+`mainBody`, zIndex 8,5** (au-dessus des pop-ups de jeu 5-8, SOUS les
+annonces 9, le reward-chemin 12 et la StopCard 13 — le stop doit
+pouvoir se poser SUR le player ouvert).
+
+Pourquoi l'unique et pas un par page (la moitié des bugs se décide
+ici) :
+- UN état, UN montage, UNE animation — jamais N players à
+  synchroniser, jamais un player par page qui survit à une navigation ;
+- il couvre TOUT (pages, robes, galet, molette) sans rien mesurer —
+  prouvé par l'inventaire (« un frère du TabView passe au-dessus ») ;
+- la séance est déjà un état GLOBAL (`active` vit à RootView,
+  `DepartEtat.shared` pour le stop) — le player la suit ;
+- le type-checker : `mainBody` a DÉJÀ payé le mur (337a6e3) → le
+  player s'ajoute comme UNE ligne (`playerMondeHote`, struct à part
+  dans PageCard.swift ou un fichier neuf `PlayerMonde.swift` — PAS
+  `PlayerSeance.swift`, il appartient à une autre session).
+
+**L'état** : `PlayerEtat` @Observable (fichier du player) —
+`p: CGFloat` (0 fermé, 1 ouvert), `ouvert: Bool`, `ouvrir()` /
+`fermer()` (springs uniques response 0,42/0,86), et RIEN d'autre. La
+dalle de chaque page appelle `ouvrir()` ; les gestes du player
+appellent `fermer()`. Le chien de garde commet sur tout geste.
+
+**Les données** : le player global dit LA SÉANCE, pas la fiche —
+titre = l'exercice COURANT (v1 : le premier non terminé de
+`active.orderedExercises`), groupes SlateGroupe requêtés à
+l'ouverture (le pattern de la fiche, une visite par ouverture), sets
+faits = `active` entier. La dalle par page garde ses données locales
+actuelles (elles sont déjà justes).
+
+### 3.2 LA MACHINE À ÉTATS (hit-test et z-order à chaque état)
+
+Couches de `PlayerMonde` (de bas en haut) : VOILE noir
+(opacité 0,55·p, `contentShape` plein — il MANGE les touchers du
+dessous dès p > 0,05 et un tap dessus ferme) → CORPS noir opaque à
+TAILLE FINALE plein écran châssis-à-châssis (à la racine, plus aucun
+conflit de corpsH avec une card : `ignoresSafeArea` + offset
+`(1−p)·écran` — la seule chose qui bouge) → trait + ScenePlayer +
+PiedPlayer (fonctions de p, RÉUTILISÉS TELS QUELS — le héros vole
+encore) → spotlight (déjà réglé châssis).
+
+| état | déclencheur | ce qui écoute le doigt |
+|---|---|---|
+| fermé (p=0) | — | rien du player (démonté : `if etat.actif`) |
+| ouverture | TAP dalle OU drag-up franc ≥ 40 pt sur elle → `ouvrir()` (animation UNIQUE, jamais un suivi) | rien — tout est sourd le temps du spring |
+| ouvert (p=1) | — | le player seul (partition, stop, boutons) ; le voile ferme au tap ; flick descendant > 650 et header-grab ferment |
+| fermeture | `fermer()` | rien jusqu'à p=0, puis démontage |
+
+**Jamais de `.sheet`/`fullScreenCover`** (l'orphelin e9521cf est la
+preuve à vie). Montage `if` + `.transition` interdits aussi pendant
+l'animation de p : le corps est monté tant que `p > 0` OU `ouvert`.
+
+### 3.3 LE SORT DE CHAQUE PIÈCE ACTUELLE
+
+| pièce (PageCard.swift) | sort |
+|---|---|
+| snap / capture() / swap pageLayer / displayScale | ☠️ MEURENT (plus un seul ImageRenderer dans l'app) |
+| flouCard / opaciteCard / offset de page / course partagée | ☠️ MEURENT — la page ne bouge plus JAMAIS |
+| corpsPlayer + tirage + header-grab + flick | 🚚 DÉMÉNAGENT dans PlayerMonde (le corps monte déjà par offset à taille finale — la mécanique est la bonne, seul son HÔTE change) |
+| ScenePlayer / PiedPlayer / BarreBlancheAnimee / BadgeSetsNeon / TicketShape | 🚚 DÉMÉNAGENT (vues partagées, zéro copie) |
+| robeCard §2.18 (haut fondu, marges 8, coins bas) + bande §2.17 (dalle / trait+lune / rien) + luneFond + tirageLune + chiens | 🏠 RESTENT par page — PageCard devient **PageRobe** (slots page + dalle seulement, plus de detail/pied) |
+| spotlight | 🚚 suit le corps dans PlayerMonde |
+| mondeFlottant §2.19 (fiche) | 🏠 reste au body de la fiche (l'exercice actif est full screen ET le player y est fermé + bande cachée §2.17 — aucun conflit de z) |
+
+### 3.4ter LE RE-SÉQUENÇAGE DU 31-08 APRÈS-MIDI (verdicts : « ça ne
+monte pas en overlay, ça se transforme en page » · « j'ai demandé à
+tester sur les 3 écrans, pourquoi tu bâcles » · « même taille de cards,
+même player — t'as pas vu la flèche »)
+
+**LA RÈGLE QUI PRIME SUR L'ANCIENNE SÉQUENCE : aucun build tel avant
+que LES QUATRE PAGES (home, exercices, progress, fiche) soient
+branchées ET passent ENSEMBLE le fouettage ultime.** Le découpage
+« la fiche d'abord, le tel entre chaque étape » est MORT — il
+contournait la consigne.
+
+- **S1' — le vol d'ouverture réparé** : `ouvrir()` monte le corps et
+  anime `p` dans la MÊME transaction → SwiftUI insère la vue avec `p`
+  déjà à sa cible, le vol ne joue pas (« ça se transforme en page »).
+  Fix : monter (`monte = true`, `p = 0`), PUIS le spring au tick
+  suivant. Et le protocole gagne un juge du VOL : sur le film, la
+  frontière haute du corps doit DESCENDRE/MONTER sur ≥ 4 frames
+  consécutives (jamais une apparition en 1 frame).
+- **S2' — LA GÉOMÉTRIE UNIQUE, TOUT DE SUITE** (la flèche) : les
+  quatre pages ont LA MÊME robe (haut fondu, marges 8, coins bas 30,
+  bas de card à la MÊME hauteur) et LA MÊME dalle (dock 86, même
+  position au pixel, même contenu de WorkoutPill). Exercices, home et
+  progress se branchent sur PageCard ; leurs systèmes de card actuels
+  (GrandeCardExos, FormeCardExos, la card de HomeNuit) deviennent le
+  CONTENU du slot page ; la molette exercices et le galet home restent
+  des habitants de LEUR page. Chaque page a son analyse AVANT le
+  branchement (la levée de card exercices liée à la molette, la scène
+  de départ home, la story in-tree de progress).
+- **S3' — LE FOUETTAGE ULTIME ×4** (§3.4bis entier) : cycles filmés
+  sur les quatre pages + le juge du vol + géométrie CHIFFRÉE ÉGALE
+  (le tableau des quatre pages dans le rapport) + retours + pages
+  immobiles.
+- **S4' — le tel** : seulement quand S3' passe entier.
+- Ensuite, inchangés : S5 (mort d'ActiveWorkoutSheet), S7 (parcours
+  de masse), dettes (robe nuit, zoom launch).
+
+### 3.4 L'ANCIENNE SÉQUENCE (S1-S7, ARCHIVÉE le 31-08 — S1 seul a été
+joué ; le re-séquençage 3.4ter fait foi)
+
+- **S1 — PlayerMonde à la racine + la fiche dégraissée.**
+  `PlayerMonde` monté dans mainBody (une ligne, struct à part) ; la
+  fiche passe sur PageRobe (sa dalle : tap/drag-up → `ouvrir()`) ;
+  `-playerOuvert` fige p=1 (le banc). Puis LE FOUETTAGE ULTIME
+  (§3.4bis) sur la fiche — et le tel seulement s'il passe entier.
+- **S2 — page exercices.** Sa dalle (`BandeExos:1213`) : dock 76 → 86,
+  padding bottom 14 gardé, tap → `ouvrir()`. La MOLETTE : AUCUN
+  conflit nouveau (l'ouverture est un tap sur la dalle, la molette
+  garde sa prise du pouce). ⚠️ l'instance IMBRIQUÉE dans le cover du
+  Chemin (`HomeNuit:2360`) : son binding replie déjà les covers — on
+  VÉRIFIE au banc que la dalle y ferme le cover avant d'ouvrir le
+  player (sinon : player invisible sous le cover, le bug est PLANIFIÉ
+  ici au lieu d'être découvert).
+- **S3 — home.** `fondPage:2656` : dock 76 → 86, tap → `ouvrir()` ;
+  `placeDy: 57` inchangé (le galet monte déjà en séance).
+- **S4 — progress.** Poser la dalle dans les 96 pt réservés
+  (`leveeSeance` — le contrat de la page est déjà écrit pour ça).
+- **S5 — TUER ActiveWorkoutSheet.** `sheetWorkout`/`feuilleSeance`/le
+  `.sheet(:1162)` meurent ; `galetPlayTape` (le galet play) démarre la
+  séance PUIS `ouvrir()` ; les defer 0,35/0,4 d'e9521cf se retirent
+  (l'orphelin n'existe plus). C'est le T4 promis.
+- **S6 — L'UNIFORMITÉ DES ROBES** (« pas les mêmes dimensions ») :
+  mesurer `GrandeCardExos`/`FormeCardExos` (exercices, progress) vs
+  `robeCard` (fiche) ; UNE constante partagée (coins bas 30, marges 8,
+  haut fondu) consommée par les trois — ALIGNER, pas rebrancher (moins
+  de pièces qui bougent). Sondes différentielles avant/après sur les
+  trois pages.
+- **S7 — LE PARCOURS EN MASSE FILMÉ** : home → exercices → fiche →
+  galet → série → retour, player ouvert/fermé sur CHAQUE étage,
+  10 cycles par étage, cadence sondée, puis le verdict tel global.
+
+### 3.4bis LE FOUETTAGE ULTIME — LA PORTE DE TOUT VERDICT (gravé en
+mémoire, ordonné 31-08 : « sans ça tu ne viens pas me voir — on a eu
+trop de beugs »)
+
+AUCUN build tel, AUCUN « c'est prêt », sans CE protocole passé ENTIER
+au simulateur. À chaque étape S il couvre les pages DÉJÀ branchées ;
+S7 le passe sur les quatre.
+
+1. **Les cycles filmés** : chaque page branchée × ouverture (tap
+   dalle, drag-up franc) × CHAQUE fermeture (flick descendant,
+   header-grab, tap sur le voile) — `simctl recordVideo`, ≥ 6 cycles
+   par page.
+2. **Rien ne casse en UI** : capture de la page AVANT le premier
+   cycle vs APRÈS le dernier — différentiel pixel ≤ bruit ; sondes
+   des éléments clés par page (chevron/titre fiche, molette
+   exercices, galet home, calendrier progress, dalle partout).
+3. **LES RETOURS FIABLES** : back de la fiche → re-entrée ×5 APRÈS
+   des cycles player ; changement d'onglet pendant ET après le player
+   ×5 ; et après CHAQUE cycle un TAP-SONDE sur un bouton de la page —
+   il doit répondre (aucun voile ni hit-test orphelin, le fantôme
+   d'e9521cf ne renaît pas sous une autre robe).
+4. **MÊME TAILLE DE CARDS** : les mêmes sondes géométriques (marge
+   gauche, bas de card, haut fondu, position de dalle) sur les quatre
+   pages — valeurs ÉGALES, chiffrées dans le rapport.
+5. **OUVERTURE SMOOTH, PAS DE PAGE QUI SAUTE** : les films relus au
+   détecteur de saut (différentiel inter-frames : la page DERRIÈRE le
+   player = zéro mouvement hors voile ; aucun flash) ; cadence sondée
+   en régime, charge machine vérifiée avant (`./tools/charge.sh`).
+6. **L'échec** : un seul point qui casse = on répare, puis on
+   RE-passe le protocole ENTIER — jamais un verdict sur un protocole
+   partiel.
+
+Le rapport à Kathryn cite les chiffres (pas « ça marche ») : cycles
+joués, différentiels, valeurs géométriques des 4 pages, cadence.
+
+### 3.4quater LES RETOURS DU TEL 01-09 (verdict : « ok » sur cette liste)
+
+1. **HOME PAR DÉFAUT = PLEIN ÉCRAN** : hors séance, AUCUNE zone noire,
+   aucun trait (la robe home ne joue qu'en séance). Le slider dans la
+   card : ok. **La pastille home (galet maison) disparaît à l'état
+   pull/slider** — même cachée elle casse le layout.
+2. **MARGES LATÉRALES 0 + LISERÉ MORT, PARTOUT** : les cards vont bord
+   à bord (verdict : « padding noir à supprimer comme leur border ») ;
+   la card ne se lit plus que par son BAS. Réparer le layout des
+   widgets home cassé par le cadre réduit.
+3. **L'INTÉRIEUR DU PLAYER** : (a) le CD (176 pt) chevauche titre/barre
+   (scène à 237 pt) depuis que le corps part du châssis — cotes
+   scène/pied à re-poser ENSEMBLE ; (b) partition VIDE quand la séance
+   n'a pas d'exercices (séance du galet) — toujours au moins le groupe
+   « courant » placeholder (le pattern de la fiche).
+4. **LA FLUIDITÉ DU VOL (chantier loi n° 6)** : le hote relit `p` dans
+   tout son body par frame. REFONTE : l'ouverture étant DÉCLENCHÉE, le
+   contenu se construit UNE fois à l'état posé ; tous les mouvements
+   (corps, héros, opacités) deviennent des modifiers ANIMATABLES animés
+   par le même withAnimation — zéro body ré-évalué pendant le vol,
+   CoreAnimation seul. Les vues partagées perdent `levee` (plus aucun
+   autre consommateur depuis §3). Cadence sondée avant/après.
+5. **HORS SÉANCE : FULL SCREEN PARTOUT, LA LUNE AU DRAG** (verdict
+   01-09 : « full screen mais lune en bas si on drag, si ça bug pas
+   trop ») : padding bas 0, AUCUN trait dessiné ; une PRISE INVISIBLE
+   de 30 pt au bord bas porte l'élastique lune (jamais un geste
+   page-large — c'est lui qui apportait les bugs). La HOME en est
+   exemptée (`luneAuDrag: false`) : son tiroir possède déjà le geste
+   du bas — sa lune est une perte assumée, dite.
+
+### 3.4sexies LA CHAUFFE ET LA FLUIDITÉ (verdicts 01-09 : « la fluidité
+horrible » · « le tel chauffe de fou » · « la dalle un peu plus basse
+donc card un peu plus basse »)
+
+**LA MESURE D'ABORD** : au REPOS, en séance, l'app tient 15-17 % de CPU
+en continu (3 relevés sim, `ps -o %cpu`). La chauffe n'est pas une
+impression — et la fluidité du suivi se noie dans ce bruit de fond (le
+GPU/CPU déjà occupés quand le doigt arrive).
+
+**LES SUSPECTS, par ordre de culpabilité :**
+1. **LE RIDEAU (piège maison, payé une 2ᵉ fois)** : le cadre du player
+   global était monté EN PERMANENCE dès qu'une séance existe
+   (`if seance != nil`) — un voile plein écran + un corps ignoresSafeArea
+   rendus en continu derrière TOUTES les pages. ✅ DÉJÀ POSÉ localement
+   (avant le « ne code pas », avoué, rien de commité) : le cadre ne naît
+   qu'au geste (`if etat.monte`) — le pré-montage d'un tick protège le
+   vol (jugé au film).
+2. **LES 4 VEINES 30 Hz** : chaque page du TabView vit en permanence
+   (structurel SwiftUI) et chaque dalle porte sa BarreBlancheAnimee
+   (TimelineView 30 Hz) → jusqu'à 4 horloges qui invalident en continu.
+3. Les fonds vidéo des pages (préexistants — hors périmètre sauf preuve).
+
+**LA MÉTHODE (le pattern -pullSonde : attribuer un coût, jamais le
+deviner)** :
+- M1 : CPU au repos APRÈS le fix-rideau — si ≤ ~5 %, le rideau était
+  la chauffe ; sinon :
+- M2 : A/B par soustraction — veines de dalles éteintes partout → CPU ;
+  puis fonds vidéo → CPU. Chaque suspect reçoit SON chiffre.
+- M3 : les fixes ciblés se tranchent AVEC Kathryn quand le visuel est
+  en jeu (une veine morte au repos se voit).
+- La FLUIDITÉ se re-juge à SON doigt après M1 (le suivi était noyé dans
+  le bruit) ; si encore : geler les TimelineView pendant le suivi
+  (`vivante: false` dès `p > 0`), sonde `-fps` en cycle à l'appui.
+
+**LA DALLE PLUS BASSE (« aucun changement visible »)** : les −14 pt de
+S6 étaient trop timides. ✅ DÉJÀ POSÉ localement : la bande descend de
+18 pt DANS la zone home-bar (le bas de dalle à ~16 pt du bord physique,
+l'école de l'ancienne pill home) et la card la suit — à VALIDER sur
+capture avant tout tel.
+
+**LA SÉQUENCE** : fouettage complet (CPU avant/après CHIFFRÉ ·
+géométrie ×4 · cycles + juge du vol · retours) → UN build tel → verdict.
+
+### 3.4septies L'ANALYSE DU DRAG « TRÈS MAL » (01-09, sans code — la
+dalle est ACQUISE)
+
+**LES TROIS COUPABLES, par ordre :**
+
+1. **LA NAISSANCE DANS LE GESTE.** Au TAP, le contenu du player naît un
+   tick AVANT le vol (protégé). Au DRAG : `saisir()` monte le contenu
+   ENTIER (partition, mini-card, badge, médaillon) DANS LA PREMIÈRE
+   FRAME DU GESTE — le hitch de naissance tombe PILE sous le doigt (le
+   piège « une vue lourde qui naît pendant un film », version geste).
+   C'est pour ça que le tap passe et que le drag accroche.
+
+2. **LES ANIMATIONS CONTINUES DU CONTENU.** Le BadgeSetsNeon RESPIRE en
+   `repeatForever` (ombres animées), en permanence dès qu'il existe —
+   pendant le suivi, il invalide le pied à la cadence système EN PLUS
+   du doigt. C'est probablement AUSSI lui (avec la comète 30 Hz,
+   depuis en pause) qui chauffait le « rideau » : un cadre monté n'est
+   coûteux QUE si quelque chose y anime.
+
+3. **LE VOILE ALPHA SUR LES VIDÉOS DES PAGES.** Une couche alpha
+   par-dessus une AVPlayerLayer fait perdre le direct-to-display : le
+   compositeur rééchantillonne la vidéo à CHAQUE frame du vol (la loi
+   maison : « ce qui coûte, c'est ce que le compositeur doit
+   rééchantillonner »). Home/exos/progress ont toutes un fond vidéo.
+
+(Accessoire : le chien de garde re-empile un `asyncAfter` PAR FRAME —
+60/s ; churn inutile, un seul timer réarmé suffit.)
+
+**LE PLAN DE FIX (au go) :**
+- F1 : le contenu du player devient INERTE tant que p < 1 (le badge ne
+  respire que POSÉ, comme la comète) → le cadre+contenu peuvent alors
+  être PRÉ-MONTÉS en permanence SANS chauffe (un arbre statique
+  offscreen ne coûte rien — le rideau ne brûlait que par ses
+  animations) → la naissance SORT du geste, le drag ne paie plus rien.
+- F2 : les LECTEURS des pages SE TAISENT (`rate 0`, le pattern
+  rateFond de progress) dès que le player couvre (p > 0,05) — le
+  compositeur retrouve son chemin direct.
+- F3 : le chien = un seul minuteur réarmé.
+- Vérifs : CPU repos (cadre monté inerte ≈ sans player), `-fps` en
+  cycle, films du vol, et SON doigt.
+
+### 3.4nonies L'ANALYSE « PAS ENCORE ASSEZ FLUIDE » (01-09, 3ᵉ passe —
+sans code)
+
+**LE CONSTAT DE MÉTHODE : je n'ai JAMAIS mesuré la cadence réelle sur
+SON tel pendant SON drag.** La loi maison : la vraie cadence se mesure
+sur le téléphone. Tant que ce chiffre manque, on ne sait pas si le
+« pas fluide » est une CADENCE (rendu) ou une RÉPONSE (le geste).
+→ Protocole : SondeCadence branchée au player (l'arg `-fps` existant),
+lancée sur le tel avec console — elle drague 20 s, la console donne
+les img/s seconde par seconde pendant SES gestes. LE chiffre qui
+aiguille tout le reste.
+
+**LES DEUX DÉFAUTS DE RÉPONSE déjà identifiables dans le code (le
+ressenti, même à 60 img/s) :**
+1. **LA PRISE TARDE ET SAUTE** : `minimumDistance: 12` = le player ne
+   bouge qu'après 12 pt de doigt (un début de geste « qui ne répond
+   pas ») ; et le suivi calcule `1 − dy/écran` en ABSOLU — au premier
+   événement, p saute de sa valeur au point du doigt. Fix candidat :
+   prise à 2-4 pt + suivi ANCRÉ (p = p₀ − dy/écran, p₀ capturé à la
+   prise).
+2. **LE SAUT DE REPRISE EN VOL** : attraper le player PENDANT une
+   animation (il monte au tap, elle le rattrape) : le modèle `p` est
+   déjà À LA CIBLE (1) pendant que l'écran montre la valeur animée —
+   le premier `suivre()` fait CLAQUER le player de sa position visible
+   vers celle du doigt. C'est un glitch structurel des animations de
+   modèle SwiftUI. Fixes candidats : (a) raccord DOUX (le premier
+   suivre re-cible en `withAnimation` courte au lieu d'écrire sec) ;
+   (b) interdire la reprise pendant le vol tap (fenêtre 0,7 s) —
+   moins bien (le doigt doit toujours gagner).
+
+**RESTE CÔTÉ RENDU (si la sonde tel dit < 50 img/s)** : le voile
+plein écran composité par frame au-dessus des couches vidéo (muettes
+mais PRÉSENTES — une AVPlayerLayer figée reste une couche) et des
+shaders de la fiche. Piste alors : pendant le vol, remplacer le voile
+alpha par un assombrissement SANS couche (brightness sur la page ?) —
+à mesurer avant.
+
+### 3.5 LES RISQUES, CHACUN AVEC SA PARADE
+
+1. **Le mur du type-checker de mainBody** (337a6e3, payé) → le player
+   est UNE var nommée + struct à part, jamais un inline.
+2. **Un cover UIKit par-dessus le player ouvert** (coffre, Chemin,
+   MoisIpod) → conforme au périmètre §2.17 (« pas le reste ») : le
+   cover recouvre, le player attend dessous ; SEULE l'ExercisesView
+   imbriquée est traitée (S2).
+3. **La vue lourde qui naît pendant un film** → la partition reste
+   montée à p > 0,02 (différée), les groupes requêtés à l'ouverture,
+   une fois.
+4. **Le geste mort sans onEnded** → chiens de garde partout (déjà
+   écrits), et l'ouverture DÉCLENCHÉE n'a pas de geste à perdre.
+5. **Le double-player transitoire S1→S4** : impossible — les dalles
+   home/exercices n'ouvrent RIEN aujourd'hui ; chaque étape en branche
+   UNE sur le player unique.
+6. **La séance qui meurt pendant que le player est ouvert** (stop
+   validé depuis la pop-up) → `fermer()` sur `active == nil`
+   (onChange à la racine), le corps se range proprement.
+7. **Les hunks des autres sessions** : `ActiveWorkoutView.swift`,
+   `SessionSlate.swift`, `PlayerSeance.swift` portent du travail
+   étranger — commits par chemins/hunks, jamais `-A`, et
+   `SessionSlate` ne s'édite qu'en évitant les 28 lignes étrangères.
+
+Dettes inchangées : robe NUIT de la plongée (verdict attendu), cible
+du zoom du launch, sticker réel du jour (moteur de faits).
+
 **H. LA VALIDATION PAR CAPTURES, PAS PAR BUILDS EN RAFALE.** Cinq builds
 device jugés à l'œil = la mauvaise boucle (payée aujourd'hui, 0/10). La
 prochaine : (1) v6 appliquant A→G ; (2) TROIS CAPTURES statiques (repos /

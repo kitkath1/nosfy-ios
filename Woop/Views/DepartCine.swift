@@ -654,7 +654,8 @@ struct FondDeuxCalques: View {
                         .clipped()
                 } else {
                     CalqueVideo(nom: "home-fond-flamme",
-                                pose: "home-fond-flamme-poster")
+                                pose: "home-fond-flamme-poster",
+                                rate: PlayerEtat.shared.couvre ? 0 : 1)
                         .frame(width: Self.braL, height: Self.braH)
                 }
             }
@@ -684,7 +685,7 @@ struct FondDeuxCalques: View {
                     } else {
                         CalqueVideo(nom: "home-fond-pilule",
                                     pose: "home-fond-pilule-poster",
-                                    rate: DepartCine.rate(e))
+                                    rate: PlayerEtat.shared.couvre ? 0 : DepartCine.rate(e))
                             .frame(width: Self.pilL, height: Self.pilH)
                     }
                 }
