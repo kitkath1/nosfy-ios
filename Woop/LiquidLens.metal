@@ -69,8 +69,15 @@ static float vfbm(float2 p) {
 // le liseré. Utilisée par la VISION (courbée dans la bille), par le
 // DÉBORDEMENT (à l'échelle réelle), et — c'est le point — IDENTIQUE à ce
 // que le cadran affichera après la coupe : les halos ne sentent rien.
+// ⚠️ `voix2` (défaut 1,05 = la valeur historique) : le POIDS DE LA VOIX
+// BLANCHE. Un paramètre à défaut, pour que les DEUX appels existants
+// (`glowShade` :493 et la vision de `liquidLens` :847) restent inchangés au
+// caractère près — on n'ajoute pas un risque de régression au parcours muscu
+// pour servir un autre écran. Le player TAPIS la passe à 0 : mesuré au banc
+// (tools/tapis/essai_braise.py), c'est elle qui pousse B/R de 0,039 à 0,164
+// sur un lit local sombre — le feu de la maison n'a pas de bleu.
 static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
-                           float rimK, float occK) {
+                           float rimK, float occK, float voix2 = 1.05) {
     // LA PALETTE DE L'ENCRE, jusqu'au bout : le halo EST l'encre qui
     // continue — orange franc, orange doré, jaune, et au plus un blanc
     // CHAUD discret. (La parité de palette avec EclipseCounter est
@@ -126,7 +133,7 @@ static float3 eclipseWorld(float2 d, float r, float R, float t, float ig,
     const float bper[4]  = { 13.0, 8.1, 5.2, 21.0 };
     const float bbase[4] = { 0.72, 0.62, 0.50, 0.66 };
     const float bamp[4]  = { 0.28, 0.38, 0.50, 0.30 };
-    const float wgt[4]   = { 0.55, 0.85, 1.05, 0.50 };
+    const float wgt[4]   = { 0.55, 0.85, voix2, 0.50 };
     const float kap[4]   = { 5.0, 9.0, 11.0, 3.5 };
 
     float2 n = r > 0.5 ? d / r : float2(0.0, -1.0);
@@ -612,6 +619,81 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     // LE HALO PULSE AVEC LA PASTILLE — même battement, même seconde.
     c *= 1.0 + 0.12 * pulse;
     return c;
+}
+
+// ── LA BRAISE DU PLAYER TAPIS ─────────────────────────────────────────────
+//
+// Le MÊME feu que le cadran, moins les deux registres blancs. Ce n'est pas un
+// goût : c'est une MESURE (tools/tapis/essai_braise.py, port numpy fidèle de
+// ce fichier). Sur un lit LOCAL sombre — une pastille posée sur la page noire,
+// sans traînée d'encre ni spotlight derrière elle — les blancs du feu ne
+// lisent plus comme des pointes chaudes : ils DEVIENNENT le pixel le plus
+// clair, donc l'aura elle-même. Mesuré, encre masquée, sur l'anneau :
+//
+//     glowShade tel quel ................ G/R 0,574 · B/R 0,366   GRIS
+//     sans les pointes (mTip, :604) ..... G/R 0,438 · B/R 0,164
+//     + la voix blanche éteinte .......... G/R 0,351 · B/R 0,039   braise
+//     + le cadre qui garde la couronne ... G/R 0,336 · B/R 0,026   ✅
+//
+// La coupable nommée : `:604`, `max(…, 0.55)` — un PLANCHER qui invente un
+// blanc à 0,55 de luminance là où le lit est mort. Dans le monde muscu, `c`
+// y est déjà ≥ 0,55 (encre + spotlight + 4 voix) : la langue lit comme une
+// pointe. Ici elle EST l'image. On ne touche PAS à `:604` — le parcours muscu
+// en dépend ; on entre par une autre porte.
+//
+// `chaleur` déplace `heat` le long de la rampe de la vidéo (:562-564) : c'est
+// LE levier des paliers du fond qui rougit. `ig` porte la flamme (la nappe
+// est ×ig, :571). DEUX leviers, parce qu'un seul ne se lit pas : `heat` seul
+// ne déplace la teinte que de 0,07 sur toute la course.
+[[ stitchable ]] half4 braiseGlow(float2 position, half4 color,
+                                  float2 size, float2 center, float R,
+                                  float t, float ig, float pulse,
+                                  float chaleur) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = position - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+
+    // La nappe et son occultation — :498-503, à l'identique.
+    float napp = exp(-(r * r) / (1.55 * R * 1.55 * R));
+    napp *= mix(0.30, 1.0, smoothstep(0.72 * R, 1.06 * R, r));
+
+    // LES VOIX, sans la blanche.
+    float3 c = eclipseWorld(d, r, R, t, ig, 0.02, 0.55, 0.0);
+
+    if (napp > 0.004) {
+        // La brame de flamme en flow-map — :517-530, à l'identique.
+        float2 fdir = d / max(r, 1.0);
+        float Tf = 2.6;
+        float ph0 = fract(t / Tf);
+        float ph1 = fract(t / Tf + 0.5);
+        float2 off = fdir * (R * 0.22 * Tf);
+        float2 q0 = d - off * ph0;
+        float2 q1 = d - off * ph1;
+        float qr0 = dot(q0, fdir);
+        float qr1 = dot(q1, fdir);
+        q0 = (q0 - fdir * qr0) + fdir * (qr0 * 0.55);
+        q1 = (q1 - fdir * qr1) + fdir * (qr1 * 0.55);
+        float w0 = 1.0 - fabs(2.0 * ph0 - 1.0);
+        float fl = mix(vfbm(q1 * 0.010 + float2(9.4, 2.6)),
+                       vfbm(q0 * 0.010 + float2(3.7, 8.1)), w0);
+
+        // LA RAMPE DE LA VIDÉO (22-08) — :557-564, plus le palier.
+        float heat = clamp(0.66 * fl + 0.52 * napp - 0.06, 0.0, 1.0);
+        heat = clamp(heat + 0.05 * sin(t * 0.45) + chaleur, 0.0, 1.0);
+        float3 vRacine = float3(1.00, 0.13, 0.005);
+        float3 vCorps  = float3(1.00, 0.30, 0.015);
+        float3 vChaud  = float3(1.00, 0.44, 0.035);
+        float3 warm = heat < 0.55
+            ? mix(vRacine, vCorps, heat / 0.55)
+            : mix(vCorps,  vChaud, (heat - 0.55) / 0.45);
+        c += warm * (napp * 0.50 * ig * (0.55 + 0.75 * fl));
+        c *= 0.72 + 0.55 * fl;
+        // ⚠️ PAS DE POINTES BLANCHES ICI (:593-606). C'est tout le sujet.
+    }
+    c *= 1.0 + 0.12 * pulse;
+    float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
+    return half4(half3(c), half(a)) * color.a;
 }
 
 [[ stitchable ]] half4 eclipseGlow(float2 position, half4 color,

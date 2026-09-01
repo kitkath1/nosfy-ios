@@ -28,6 +28,704 @@ matin (arbre avec WIP multi-sessions : les `fichier:ligne` peuvent glisser).
 
 ---
 
+---
+
+# ⚠️ V2 — LE REJET DU J0 (31-08) ET CE QUI LE REMPLACE
+
+**Son verdict, mot pour mot** : *« ça va pas du tout, les couleurs sont noir
+dégradé beurk ; le premier est coupé par une claque noire ; on n'a pas la
+grosse molette blur voulue qui prend tout le bas de l'écran pour changer le
+km/h ; le slider n'est pas assez en bas ; quand je stop j'ai pas la
+notification du set end avec mini recap + pièce ; bref ça va pas et c'est
+pas clair je trouve au global. L'état "stop" et "end" pas assez
+différenciants aussi en couleurs, on ne comprend pas ! Et en terme
+d'animation aussi ! »*
+
+**Le J0 est REJETÉ.** Ce qui suit remplace le §3 (anatomie) et précise le
+§6. Rien n'est codé tant que cette V2 n'est pas validée.
+
+## V2.1 — LE DIAGNOSTIC MESURÉ (mes trois fautes, pas des opinions)
+
+**① LE GRIS : une lentille ne fabrique PAS de couleur, elle RÉFRACTE CE
+QU'ELLE CONTIENT.** Mesuré sur ma capture, **sur les pixels clairs**
+(jamais en moyenne) :
+
+| zone | R | G | B | G/R | B/R | verdict |
+|---|---|---|---|---|---|---|
+| aura du chrono | 48 | 33 | 25 | 0,69 | 0,53 | brun sale |
+| aura de la vitesse | 101 | 94 | 91 | **0,94** | **0,90** | **GRIS NEUTRE** |
+| la loi de la maison (braise) | 1,00 | — | — | **0,30-0,45** | **≈0** | |
+
+La cause est structurelle : sur le parcours muscu, la lentille vit sur un
+**MONDE plein écran** (noir + spotlight + étoiles + **la traînée d'encre** +
+le grain) et c'est ce monde COLORÉ qu'elle réfracte. Mon carré local ne
+contenait QUE du noir et un anneau de halo : la lentille a réfracté du
+vide, et rendu du gris. **La couleur ne se règle pas sur la lentille — elle
+se met DEDANS.**
+
+**② LA CLAQUE NOIRE : le carré opaque.** Saut de luminance mesuré à
+**y = 1048 px : 231 sur 255**, c'est-à-dire un bord FRANC. Chaque pastille
+portait son propre carré `Color.black` opaque posé sur la page : deux
+plaques noires qui se coupent. C'est le mille-feuille que le plan player
+interdit explicitement (§F : « à pleine levée l'écran est UNE surface »).
+J'ai masqué le halo, pas le carré.
+
+**③ LA MOLETTE ET LA NOTIF N'ÉTAIENT PAS LÀ — et c'était l'erreur de
+découpage.** Je les avais rangées en J1/J2 en croyant livrer « la scène ».
+Mais sans l'organe de la vitesse et sans la fête du stop, ce n'est pas une
+scène incomplète : **c'est un écran qui ne raconte rien**. D'où « c'est pas
+clair au global ». Un jalon qui ne se lit pas ne se montre pas.
+
+## V2.2 — LES DEUX ÉTATS DOIVENT SE LIRE À UN MÈTRE (couleur ET animation)
+
+Son grief central : *« l'état stop et end pas assez différenciants en
+couleurs, on ne comprend pas — et en terme d'animation aussi »*. Le J0 avait
+la MÊME robe pour les deux états : même aura, même vie, seul le glyphe
+changeait. Un coup d'œil à 17 km/h ne peut pas trancher sur un glyphe.
+
+**LA RÈGLE V2 : deux états = deux MATIÈRES, deux VIES, deux TEMPÉRATURES.**
+
+| | ▶ **SET EN COURS** (ça brûle) | ⏸ **ENTRE-SETS** (ça refroidit) |
+|---|---|---|
+| **couleur** | **BRAISE VIVE** — R 1,00 · G 0,30-0,45 · B≈0. Et elle MONTE d'un palier à chaque set (le fond rouge de ta demande, porté aussi par la pastille) | **CENDRE** — la braise TOMBE (G/R ~0,80, très sombre), l'aura se contracte : le feu couve, il ne flambe pas |
+| **animation** | **UN BATTEMENT PAR SECONDE** — la pastille pèse à chaque bascule (attaque 0,10 s), le halo bat avec ; la phrase « Tap to stop » pulse vite (2,6 s) | **UNE RESPIRATION LENTE** — inspire/expire sur ~4,5 s, AUCUN battement de seconde (le temps ne se compte plus pareil) ; le ▶ respire avec |
+| **la bascule** | | **elle se VOIT** : au tap stop, la braise s'effondre en ~0,8 s (une décharge, pas un fondu) ; au tap play, elle se rallume d'un coup (0,25 s) puis s'installe |
+| **encre** | chrono à pleine encre, gros | REST + le temps de repos en encre calme, le ▶ est le héros |
+
+C'est ÇA qui rend l'écran lisible en courant : la couleur dit l'état avant
+que l'œil lise un glyphe.
+
+## V2.3 — LA NOUVELLE ANATOMIE (l'écran en trois étages, plus deux ronds posés)
+
+Le J0 empilait quatre objets de même poids (phrase, rond, rond, slider) :
+personne ne savait où regarder. **V2 : une hiérarchie explicite.**
+
+```
+ ┌───────────────────────────┐
+ │        Tap to stop        │ ← la phrase, blanc dégradé qui pulse
+ │      ╭───────────────╮    │
+ │      │    SET 1      │    │ ← ① LE HÉROS : la pastille chrono,
+ │      │     0:29      │    │   PLUS GROSSE (~300), braise vive,
+ │      ╰───────────────╯    │   elle bat à la seconde
+ │                           │
+ │      ╭─────────╮          │ ← ② LE CADRAN VITESSE, plus PETIT
+ │      │ 17 km/h │          │   (~170) et CALME : c'est un afficheur,
+ │      ╰─────────╯          │   pas un deuxième héros. Tap = la molette
+ │  ░░░░░░░░░░░░░░░░░░░░░░░  │
+ │  ░  LA GROSSE MOLETTE  ░  │ ← ③ TOUT LE BAS, en verre fumé :
+ │  ░  5   6   7  [8]  10  ░ │   les gros raccourcis EN HAUT du panneau
+ │  ░ ▁▁▁▁▁│▁▁▁▁▁▁▁▁▁▁▁▁▁ ░ │   + la règle crantée EN DESSOUS,
+ │  ░░░░░░░░░░░░░░░░░░░░░░░  │   chiffres énormes, cible ≥ 90 pt
+ │ ⟮→        Finish        ⟯ │ ← ④ le slider COLLÉ AU BAS (~34 pt du bord)
+ └───────────────────────────┘
+```
+
+1. **Deux ronds de tailles DIFFÉRENTES** — je challenge ta maquette ici :
+   deux cercles identiques empilés, c'est ce qui rend l'écran illisible. Le
+   chrono est le héros (il est l'exercice), la vitesse est un afficheur.
+2. **La molette prend TOUT LE BAS** (ta demande) : verre fumé, ouverte au
+   tap du cadran vitesse. Ouverte, elle COUVRE le slider — on ne finit pas
+   une session pendant qu'on règle sa vitesse : le conflit se résout tout
+   seul.
+3. **Le slider descend** à ~34 pt du bord (au lieu de 78) — sous la molette
+   fermée, au ras du bas comme ta maquette.
+4. **PLUS AUCUN CARRÉ OPAQUE** : les pastilles n'ont plus de plaque noire.
+   Deux chemins, à trancher (§V2.5-Q1).
+
+## V2.4 — LA FÊTE DU STOP (ce qui manquait le plus)
+
+Au tap stop, dans cet ordre :
+
+1. **LA DALLE « SET 1 END »** avec **le mini-récap ET la pièce** — c'est ta
+   demande littérale, et `NotifJauge` la porte déjà (la pièce de 92 pt qui
+   mord le bord, `NotifCard.swift:140-165`) : `sousTitre` = « SET 1 END »,
+   la ligne de récap = **« 0:45 · 17 km/h »**, le gain = +20 lu du serveur.
+2. **LA POP-UP FLAMMES** à +0,4 s (robe `.fire`, ton sticker flamme noire)
+   qui encourage, avec le crescendo qui monte avec les sets.
+3. **LA BASCULE DE COULEUR** dans le même souffle : la braise s'effondre en
+   cendre (§V2.2) et **le fond de la page monte d'un palier de rouge**.
+
+Les trois partent ensemble : c'est UN événement, pas trois notifications.
+
+## V2.4 bis — LA RECETTE, MESURÉE AU BANC (31-08, `tools/tapis/essai_braise.py`)
+
+Le banc re-joue `glowShade`/`eclipseWorld` (`LiquidLens.metal:488-628`) **à la
+constante près** en numpy : les nombres sortent du même calcul que le
+téléphone, sans builder. Planches : `tools/tapis/vignettes/tapis-recettes.png`
+et `tapis-paliers.png`.
+
+**① LA CAUSE EXACTE DU GRIS — une ligne, `LiquidLens.metal:604` :**
+```metal
+float niv = max(max(max(c.r, c.g), c.b), 0.55);   // ← LE PLANCHER
+c = mix(c, float3(1.00, 0.97, 0.93) * niv, mTip);
+```
+Ce plancher **invente un blanc à 0,55 de luminance** là où le lit local est
+sombre. Dans le monde muscu il est inoffensif (le lit y est déjà ≥ 0,55 :
+traînée d'encre + spotlight + 4 voix) et la langue lit comme une pointe
+chaude. Dans mon carré local vide, **cette langue blanche EST le pixel le
+plus clair de l'image** — donc elle EST « l'aura » que j'ai mesurée.
+Prédiction du modèle : 101/98/94. Ma mesure : **101/94/91**. Le même pixel.
+
+**② AGGRAVANT — mon masque coupait la braise et gardait le gris.** Stops
+0,44/0,86 sur `endRadius = côté/2` : au pic de la nappe (r = R) il ne laissait
+passer que **33 %**, et il supprimait tout le lit large — les deux seules
+zones où le shader est à G/R 0,26-0,37.
+
+**③ LA RECETTE (mesurée sur l'anneau, encre masquée) :**
+
+| composition | R | G | B | G/R | B/R | |
+|---|---|---|---|---|---|---|
+| **A — le J0 rejeté** | 0,264 | 0,151 | 0,097 | **0,574** | **0,366** | 🔴 |
+| B — sans les pointes (`:601-605`) | 0,263 | 0,115 | 0,043 | 0,438 | 0,164 | 🔴 |
+| C — + la voix blanche #2 éteinte (`wgt[2]`) | 0,248 | 0,087 | 0,010 | 0,351 | 0,039 | ✅ |
+| **D — + le masque 0,72/1,00 = LA RECETTE** | 0,772 | 0,259 | 0,020 | **0,336** | **0,026** | ✅ |
+
+**④ LES 7 PALIERS — DEUX leviers, et il en faut deux.** `heat` seul ne
+déplace la teinte que de 0,07 sur toute la course (mesuré : G/R 0,317 →
+0,387) : **ça ne se lit pas**. On ajoute `ig`, qui porte la flamme (la nappe
+est `×ig`, `:571`) — et `ig` est libre parce que la voix blanche est éteinte
+(sinon elle naîtrait à `ig > 0,55`, `:152`, et regriserait tout).
+**`ig` progresse en GÉOMÉTRIE, pas en addition** : l'œil lit des rapports.
+
+| palier | `ig` | biais `heat` | G/R | B/R | saut de luminance |
+|---|---|---|---|---|---|
+| P0 (0 set) | 0,235 | −0,34 | 0,248 | 0,018 | — |
+| P1 | 0,302 | −0,22 | 0,281 | 0,035 | ×1,36 |
+| P2 | 0,388 | −0,11 | 0,318 | 0,031 | ×1,41 |
+| P3 | 0,499 | +0,01 | 0,363 | 0,030 | ×1,46 |
+| P4 | 0,641 | +0,14 | 0,392 | 0,031 | ×1,44 |
+| P5 | 0,824 | +0,30 | 0,380 | 0,031 | ×1,36 |
+| P6 (≥ 6 sets) | 1,000 | +0,50 | 0,387 | 0,033 | ×1,17 |
+
+**Les 7 paliers sont dans la loi** (B/R ≤ 0,035 partout) et la progression est
+**monotone et lisible**. La teinte sature vers G/R 0,39 en haut de rampe
+(`vChaud` plafonne à 0,44) : c'est la luminance qui porte la fin — un feu qui
+grossit plus qu'il ne change de couleur.
+
+**⑤ LA CENDRE N'EXISTE PAS DANS CETTE MAISON — et c'est une bonne nouvelle.**
+Le banc le prouve : `heat → 0` ne rend pas du gris, il rend **`vRacine`
+(1,00 · 0,13 · 0,005)** — le rouge le plus PROFOND de la rampe. Chercher une
+cendre grise, c'était re-fabriquer exactement le défaut que tu as rejeté.
+**L'entre-sets, c'est le feu qui RENTRE DANS SES RACINES** : `ig` du palier
+N−2 × 0,62 et `heat` −0,42.
+Mesuré depuis P4 : **G/R 0,258 · B/R 0,022**, et surtout **3,93× moins
+lumineux** que le set. C'est ce rapport-là qui fait qu'on lit l'état à un
+mètre, pas une différence de teinte.
+
+## V2.4 ter — LA V2 CONSTRUITE ET MESURÉE (31-08, au banc `-tapisLab`)
+
+Ce qui est en place (non commité — le verdict d'abord) :
+
+- **`braiseGlow`**, un point d'entrée NEUF dans `LiquidLens.metal` : le même
+  feu, sans ses deux registres blancs. Le parcours muscu n'est pas touché —
+  `eclipseWorld` reçoit un paramètre `voix2` **à défaut 1,05**, donc ses deux
+  appels existants sont inchangés au caractère près.
+- **La pastille = la couche de feu SEULE.** Plus de `Color.black`, plus de
+  `layerEffect`, plus de `compositingGroup` : le carré noir faisait la claque,
+  et le verre ajoutait ses reflets blancs (le second agent de grisaille). Une
+  passe au lieu de deux.
+- **La hiérarchie** : chrono 350 pt (héros), cadran vitesse 215 pt à 62 % de
+  braise (afficheur). **La molette** prend tout le bas (raccourcis 5·7·10·14·17
+  en cibles de 62 pt, puis la règle fine `FluidPicker` 0-20 pas 0,5, puis
+  « Done ») ; ouverte, elle couvre le slider. **Le slider** descend à 34 pt du
+  bord. **La fête** : dalle « SET n END · 0:03 · 0 KM/H » + pièce à +0 s,
+  pop-up flammes à +0,4 s, dalle retirée à +3,2 s.
+- **La fête vit DANS LE MODÈLE**, pas dans le geste : le banc `-tapisAuto`
+  (le simulateur n'a pas de doigt) doit voir EXACTEMENT ce que le doigt
+  déclenche — deux chemins qui divergent, c'est un banc qui ment.
+
+**Les mesures, machine calme (`charge.sh` ✅ 0,8) :**
+
+| régime | cadence | pire trou | |
+|---|---|---|---|
+| SET qui court | **60,0 img/s** | 17 ms | ✅ |
+| molette ouverte (verre fumé plein bas) | **60,0 img/s** | 17 ms | ✅ |
+| **la FÊTE (dalle + pop-up qui naissent)** | **40-43 img/s** | **60-76 ms** | 🔴 |
+
+**🔴 DETTE MESURÉE, À DIRE PLUTÔT QU'À CACHER** : la naissance de la pop-up
+flammes coûte deux trous de 60-76 ms. C'est le piège nommé de la maison —
+« une vue lourde qui naît PENDANT un film est un MONTAGE, pas un fichier ».
+Ça ne se voit pas au repos (les deux autres régimes tiennent 60), ça se voit
+à l'instant précis du tap stop. Pistes, dans l'ordre, à mesurer et non à
+supposer : pré-monter la pop-up hors écran au DÉBUT du set (elle a 30 s pour
+naître tranquillement), ou alléger sa scène pour le tapis. **Et le vrai juge
+reste le téléphone** : le simulateur est aveugle aux gels Metal.
+
+**La couleur, RE-MESURÉE sur la capture livrée** (flancs de la couronne, sans
+l'encre) : **G/R 0,322 et 0,361 · B/R 0,027 et 0,024** — la prédiction du banc
+était 0,336 / 0,026. Le shader du téléphone et le port numpy disent la même
+chose.
+
+⚠️ **Loi de mesure re-payée** : ma première sonde de capture visait des
+DEMI-ÉCRANS et rendait « G/R 0,515 · B/R 0,259 — ECART ». Elle mesurait les
+bords antialiasés de l'encre blanche sur l'orange, qui passent le filtre
+`R > G` en portant tout le bleu du blanc. On vise les FLANCS, jamais une
+moitié d'écran.
+
+---
+
+# V5 — LE BAS DE L'ÉCRAN **EST** LA VITESSE (01-09)
+
+> *« La molette s'ouvre pas et j'arrive pas à utiliser la molette. Et aussi
+> quand je tourne sur les chiffres directe, ou trait — car quand on court on
+> doit pouvoir toucher l'écran facilement en bas pour changer, surtout à
+> grosse vitesse. »*
+
+## V5.0 — SA DERNIÈRE PHRASE EST LA SPÉCIFICATION, ET ELLE TUE MA MOLETTE
+
+*« Quand on court on doit pouvoir toucher l'écran facilement en bas pour
+changer, surtout à grosse vitesse. »*
+
+Ça ne demande pas de réparer l'ouverture du cadran. **Ça dit qu'il ne devrait
+pas y avoir de cadran à ouvrir.** À 17 km/h, on ne vise pas une pastille de
+168 pt pour déplier un panneau, puis on cherche une prise, puis on referme. On
+tape le bas de l'écran et ça change.
+
+Chaque étape que j'ai ajoutée — ouvrir, viser, fermer — est une étape de plus
+à faire en courant. **Le meilleur correctif à « la molette ne s'ouvre pas »,
+c'est qu'il n'y ait plus rien à ouvrir.**
+
+## V5.1 bis — ⚠️ LA CAUSE, TROUVÉE (01-09) : `.offset` déplace les PIXELS, pas la ZONE TACTILE
+
+Sa localisation — *« au-delà de la pastille »* — a suffi. La zone de prise
+était construite ainsi :
+
+```swift
+VoileCadran(...)
+    .offset(y: haut)            // ← déplace le DESSIN de 190 pt vers le bas
+    .contentShape(Rectangle())  // ← définit la zone sur le cadre de LAYOUT,
+    .highPriorityGesture(rotation)   //  resté en HAUT
+```
+
+`.offset` ne change pas le cadre de layout. Le `.contentShape` posé APRÈS lui
+décrit donc un rectangle **à la place d'origine** : la bande prenante est
+**190 pt trop haute**.
+
+| élément | sa position | zone prenante (0 → 451) |
+|---|---|---|
+| le centre de la pastille | 418 pt | ✅ dedans |
+| les graduations | 558 pt | ❌ dehors |
+| **les chiffres** | 465 → 602 pt | ❌ **tous dehors** |
+
+**Elle ne pouvait toucher QUE le vide au-dessus de la pastille.** Et comme le
+`Color.clear` de fermeture est juste derrière, un doigt posé sur les chiffres
+ne tombait pas dans le vide : **il fermait la molette** — d'où « la molette
+s'ouvre pas », qui était en réalité « la molette se referme à chaque
+toucher ».
+
+C'est la loi maison déjà écrite, que je n'ai pas appliquée : **« les pixels et
+le hit-test sont DEUX choses »**. Et c'est aussi la démonstration de §V4.0 :
+mon banc appelait la fonction directement, donc il ne pouvait pas voir un
+défaut qui vit entièrement dans la couche du toucher.
+
+## V5.1 — POURQUOI ELLE NE S'OUVRE PAS : ce que je croyais ne pas savoir
+
+J'ai vérifié la piste la plus crédible — que le slider « Finish » recouvre la
+zone de tap. **C'est FAUX** : sa poudre est un `overlay` de 130 pt
+explicitement `allowsHitTesting(false)` et **sans emprise de layout** (le
+commentaire du fichier le dit : « un hôte plus haut posé en frère pousserait
+tout le slider vers le bas »). Le slider n'occupe que 62 pt tout en bas.
+
+Les deux zones de tap (chrono et vitesse) sont construites **exactement
+pareil** — même `Color.clear`, même `contentShape(Circle())`, même
+`highPriorityGesture` — et ne diffèrent que par leur position. Je ne trouve
+pas la cause par la lecture, et **je refuse d'en inventer une sixième**.
+
+**Ce que ça implique, et c'est important :** si le tap ne parvient pas à la
+zone basse, une commande posée au même endroit échouerait pareil. **Donc la
+sonde reste obligatoire** — mais elle devient une vérification (« le bas de
+l'écran reçoit-il les touchers ? »), pas une enquête.
+
+Une question à toi vaudrait toute la sonde : **le tap sur la pastille du HAUT
+(stop / start du set) fonctionne-t-il ?** Si oui, les touchers arrivent et le
+problème est local au bas. Si non, rien n'arrive à la scène et c'est un
+niveau au-dessus.
+
+## V5.2 — LE DESIGN V5 : plus rien à ouvrir, plus rien à fermer
+
+```
+ ┌───────────────────────────┐
+ │      12 MIN · 4 SETS      │
+ │        Tap to stop        │
+ │        ╭─────────╮        │
+ │        │  SET 5  │        │  ← le chrono, inchangé
+ │        │  0:29   │        │
+ │        │    ⏹    │        │
+ │        ╰─────────╯        │
+ │                           │
+ │          ╭─────╮          │
+ │          │ 17  │          │  ← la VALEUR, en grand
+ │          │km/h │          │
+ │          ╰─────╯          │
+ │    15  16  ·  18  19      │  ← l'arc, EN VEILLEUSE en permanence,
+ │  ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌   │    qui S'ALLUME dès qu'un doigt touche
+ │                           │
+ │   ⟵  toute cette bande    │  ← LA COMMANDE : un glissement
+ │      change la vitesse    │    HORIZONTAL n'importe où ici.
+ │                           │    Rien à viser, rien à ouvrir.
+ │  ⟮→      Finish      ⟯    │  ← sa propre bande, en bas
+ └───────────────────────────┘
+```
+
+1. **Aucune ouverture, aucune fermeture.** La commande est là, tout le temps.
+   Zéro état, donc zéro état qui puisse se coincer.
+2. **La cible, c'est la moitié basse de l'écran** — des centaines de points de
+   large, au lieu d'une pastille de 168. C'est ça, « toucher facilement en
+   bas ».
+3. **Le geste est un TRAIT horizontal** (tu l'acceptes : « ou trait »), à la
+   recette de la molette de la maison qui marche : **position absolue depuis
+   le point de pose**, ~62 pt par cran, élastique aux bornes. Elle ne peut pas
+   dériver, elle n'a pas de centre, elle ne se perd pas si le doigt s'arrête.
+4. **L'arc de chiffres reste ton design** — visible en permanence, en
+   veilleuse, il **s'allume** sous le doigt (et la fumée avec). En courant, tu
+   VOIS ta vitesse et ses voisines sans rien toucher.
+5. **Le halo blanc** reste : il confirme au lâcher.
+
+## V5.3 — CE QUE ÇA SUPPRIME (donc ce qui ne peut plus casser)
+
+| supprimé | pourquoi il faisait mal |
+|---|---|
+| le tap d'ouverture | c'est **exactement** ce qui ne marche pas |
+| le panneau qui monte / descend | une transition de plus à rater |
+| la fermeture automatique (1,10 s) | elle se refermait sous ton doigt |
+| le chien de garde (0,6 s) | il tuait le geste dès que tu hésitais |
+| l'entrée angulaire | centre, déroulé ±π, dérive, instabilité au milieu |
+| l'état `moletteOuverte` | un état de moins = un blocage de moins |
+
+**Six mécanismes retirés d'un coup.** Le cadran ne devient pas plus simple par
+goût : il devient plus simple parce que **chacune de ces six pièces était un
+endroit où ça pouvait se coincer**, et qu'aucune ne servait ton usage réel.
+
+## V5.4 — LE SEUL ARBITRAGE QUI RESTE : la vitesse contre « Finish »
+
+Les deux sont des glissements horizontaux dans le bas de l'écran. Ma reco :
+**deux bandes franches et séparées** — le slider « Finish » garde sa hauteur
+propre tout en bas (62 pt + son air), la bande de vitesse s'arrête
+au-dessus, avec un vide visible entre les deux. Aucun partage de doigt, aucune
+règle subtile à deviner : deux zones, deux objets.
+
+## V5.5 — CE QUE JE TE DEMANDE (et je ne code pas avant)
+
+1. **Le tap sur la pastille du HAUT (stop/start du set) marche-t-il ?**
+   C'est la question qui vaut le plus : elle dit si les touchers arrivent.
+2. **Le design V5 te va** — plus de molette à ouvrir, le bas de l'écran EST la
+   vitesse en permanence ?
+3. **L'arc de chiffres en veilleuse permanente** (ma reco : on voit sa vitesse
+   et ses voisines en courant) — ou seulement pendant qu'on touche ?
+
+---
+
+# V4 — POURQUOI LA MOLETTE NE MARCHE TOUJOURS PAS (01-09)
+
+> *« Non, plus rien ne marche, tu vas trop vite ! Réanalyse et fais un plan,
+> ne code pas. »*
+
+Elle a raison, et sur les deux points. Ce qui suit commence par MON erreur de
+méthode, parce que c'est elle qui explique pourquoi je lui ai dit cinq fois
+« c'est prouvé » sur un objet qui ne marche pas.
+
+## V4.0 — MON ERREUR DE MÉTHODE : un banc qui prouvait la MOITIÉ QUI N'ÉTAIT PAS EN DOUTE
+
+Mon « doigt du banc » (`-tapisTourne`) **appelle `appliquer(point:cy:temps:)`
+directement**. Il ne touche pas l'écran : il court-circuite tout le système
+de SwiftUI — le hit-testing, la zone de prise, l'arbitrage entre gestes, le
+repère de coordonnées d'un vrai toucher, la concurrence avec les taps de la
+scène.
+
+Donc quand j'annonçais « le banc atteint 20,0 km/h, même 46 pt au-delà des
+chiffres », **je prouvais que ma trigonométrie était juste**. Ça ne l'a
+jamais été en doute. **Ce qui est en doute, c'est qu'un toucher réel arrive
+jusqu'au geste** — et de ça, mon banc ne dit RIEN.
+
+C'est la faute exacte que la maison nomme : *un juge qui affirme ne remplace
+pas une sonde qui mesure* — sauf qu'ici la sonde mesurait à côté. Une sonde
+qui mesure la mauvaise chose est pire qu'un juge : elle a l'autorité d'un
+chiffre.
+
+## V4.1 — CE QUE JE SAIS VRAIMENT, ET CE QUE JE NE SAIS PAS
+
+| | statut |
+|---|---|
+| La trigonométrie angle → valeur | ✅ **prouvée** (banc : 0 → 20, et hors anneau) |
+| La cadence en régime établi | ✅ **mesurée** : 60,0 img/s, trou 17 ms |
+| Le coût des chiffres du Canvas | ✅ **ablation faite** : nul (57/56/60/60 avec, 59/55/60/60 sans) |
+| Les couleurs de braise | ✅ **mesurées** : G/R 0,32-0,36 · B/R 0,025 |
+| **Qu'un toucher réel atteigne le geste** | ❌ **JAMAIS VÉRIFIÉ** |
+| **Ce que voit l'app sous SON doigt** | ❌ **AUCUNE observation** |
+| Le comportement quand le doigt s'arrête, hésite, sort de l'écran | ❌ jamais éprouvé |
+
+**Trois de mes cinq « correctifs » (le lissage, le découpage, l'ablation) ont
+donc traité une fluidité qui, en régime, était déjà à 60 img/s.** Ils ne sont
+pas faux — le découpage était une vraie dette — mais aucun ne pouvait
+réparer « ça ne marche pas ».
+
+## V4.2 — LA CAUSE PROBABLE : J'AI PRIS L'ENTRÉE DU CARROUSEL, PAS CELLE DE LA MOLETTE
+
+Voilà le fait que j'aurais dû voir au premier jour. **La molette de la maison
+qui MARCHE — celle de la page exos, celle dont tu aimes le rendu — n'est PAS
+pilotée par un angle. Elle est pilotée par une TRANSLATION HORIZONTALE**
+(`ExercisesView.swift:915-940`) :
+
+```swift
+var p = etat.base - Double(v.translation.width - etat.morte) / 62.0
+```
+
+**62 points de glisse par cran, et la position est ABSOLUE** : `base` (la
+valeur au moment où le doigt s'est posé) plus le déplacement total depuis ce
+point. Elle ressemble à un cadran, elle se pilote comme un curseur.
+
+Moi, j'ai copié l'entrée de `MoisIpod` — qui est un **carrousel de mois**,
+pas un sélecteur de valeur — et qui accumule des deltas d'angle autour d'un
+centre.
+
+## V4.3 — LES CINQ FRAGILITÉS DE L'ENTRÉE ANGULAIRE (et la translation n'en a AUCUNE)
+
+1. **Elle a besoin d'un CENTRE, dans le bon repère.** Je me suis trompé de
+   190 pt une fois déjà, et rien ne le montrait à l'écran.
+2. **Elle est INCRÉMENTALE** : elle additionne des deltas. Tout événement
+   perdu, dupliqué, ou toute remise à zéro (le chien de garde !) fait DÉRIVER
+   la valeur. Une translation, elle, est absolue : elle ne peut pas dériver.
+3. **Elle a besoin du déroulé ±π**, et se trompe d'un tour entier si le doigt
+   passe du mauvais côté.
+4. **Elle est INSTABLE près du centre** : à 20 pt du centre, un millimètre de
+   doigt fait 30° — soit deux crans. Or le centre du cadran, c'est là où
+   s'affiche la valeur : la zone la plus naturelle à toucher est la pire.
+5. **Elle exige un ARC.** Un pouce, surtout en courant, fait un TRAIT.
+
+Et une sixième, propre à mon code : **le chien de garde de 0,6 s remet
+`angleDoigt` à nil**. Si le doigt s'arrête six dixièmes de seconde — hésiter,
+lire la valeur —, le geste est considéré comme mort, la molette se replie et
+se ferme 1,1 s plus tard. **Trois mécanismes temporels (chien de garde,
+fermeture auto, ressort de recalage) se battent au-dessus d'un geste
+incrémental.** C'est très probablement ça, « plus rien ne marche ».
+
+## V4.4 — LE PLAN V4 (rien de tout ça n'est codé)
+
+**A. LA SONDE D'ABORD — je ne coderai plus une ligne à l'aveugle.**
+Un drapeau `-tapisSonde` qui affiche en haut de l'écran, en direct : le
+nombre de touchers reçus par le geste, la position du doigt, l'état
+(posé/relâché), la valeur continue, la valeur crantée, et chaque déclenchement
+du chien de garde ou de la fermeture. **Tu ouvres le banc, tu poses le doigt,
+et on VOIT si le geste reçoit quoi que ce soit.** C'est la seule façon de
+savoir si le problème est « le toucher n'arrive pas » ou « le toucher arrive
+mal ». Tant que ce n'est pas su, tout le reste est de la devinette.
+
+**B. L'ENTRÉE DEVIENT LINÉAIRE — le visuel ne change PAS.**
+Le cadran garde exactement ce que tu as validé : le cercle, l'arc de chiffres
+en dégradé de blanc, la valeur en grand au centre, la fumée, le halo. **Seule
+l'entrée change** : glisser horizontalement (n'importe où dans la zone basse)
+fait tourner l'anneau, à la recette de la maison — position absolue depuis le
+point de pose, ~62 pt par cran, élastique aux bornes. Plus de centre, plus de
+déroulé, plus d'accumulation, plus d'instabilité au milieu. Et le geste
+devient celui que fait un pouce en courant : un trait.
+
+**C. ON SUPPRIME LES TROIS HORLOGES QUI SE BATTENT.**
+Sans accumulation, le chien de garde n'a plus de rôle (une translation absolue
+ne peut pas rester « collée ») : il disparaît. La fermeture automatique
+devient explicite — soit elle reste, mais **seulement après un vrai lâcher
+suivi d'un silence**, soit on la retire et on ferme en tapant à côté. À
+trancher (§V4.5).
+
+**D. ON RE-MESURE, MAIS SUR LA BONNE CHOSE.** Le verdict n'est plus « 60
+img/s » (déjà acquis) : c'est **« le doigt de Kathryn fait-il bouger la
+valeur, du premier au dernier km/h, sans que rien ne se referme »**. Ça se
+juge à l'écran, avec la sonde ouverte, et par toi.
+
+## V4.5 — CE QUE JE TE DEMANDE (et je ne code pas avant)
+
+1. **Le geste** : glisser **horizontalement** (ma reco, c'est ce que fait la
+   molette de la maison qui marche) — ou tu tiens vraiment au mouvement
+   circulaire, et j'assume alors de le fiabiliser autrement ?
+2. **La fermeture automatique** : on la garde (après un lâcher franc), ou on
+   la supprime et on ferme uniquement en tapant à côté ? Ma reco : **la
+   supprimer** — c'est elle qui t'a le plus gênée, et un tap à côté est sans
+   ambiguïté.
+3. **Où ça coince exactement**, si tu peux le dire en un mot : la molette ne
+   **s'ouvre pas** ? elle s'ouvre mais **ne bouge pas** ? elle bouge et **se
+   referme** toute seule ? Chacune de ces trois réponses désigne une cause
+   différente, et m'éviterait un tour de sonde.
+
+---
+
+# V3 — LA MOLETTE ROTATIVE, LE STOP PERMANENT, LA DURÉE DE SÉANCE (31-08)
+
+**Ses trois verdicts** : *« la molette est pas assez claire et grosse et blur !
+je cours là, c'est trop petit trop détaillé. Je veux un SIMPLE CERCLE BLUR
+LIQUID GLASS où je peux TOURNER, c'est en dégradé de blanc et haptique. Ça
+passe DANS LE CERCLE DES KM/H ! »* — puis : *« on doit voir l'icône stop dans
+le chrono quand c'est en cours »* et *« la durée globale du set en haut
+quelque part »*.
+
+## V3.1 — CE QUE J'AI RATÉ, ET POURQUOI (l'analyse, pas l'excuse)
+
+J'ai livré **quatre organes empilés** (titre, 5 raccourcis ronds, réglette
+linéaire, bouton Done) sur ~338 pt de haut. « Trop détaillé » porte sur la
+DENSITÉ, pas sur le verre : le fond `.regular.tint(noir 0,45)` est déjà la
+bonne matière et il tient 60,0 img/s. Ce que j'ai fait, c'est **un formulaire
+posé devant quelqu'un qui court**. Elle demande **un objet**, pas un panneau.
+
+Et son instinct « ça passe DANS le cercle des km/h » est **techniquement le bon
+appel**, pour une raison qu'elle ne peut pas connaître : *un verre posé sur du
+noir absolu rend un TROU ou une bille de chrome* (mesuré, `HomeNuit:537-544` :
+p95 = 23). Il faut le NOURRIR. Sur cette page, la pastille de braise EST le
+« contenu doux » que `.clear` a le droit de recouvrir — c'est le seul écran de
+l'app où le verre mange sans qu'on paie une passe de plus.
+
+## V3.2 — L'ÉTAT DES LIEUX : deux molettes, aucune ne fait ce qu'elle veut
+
+| | `MoisIpod` (CalLab) | `ArcDial` (ExercisesView) |
+|---|---|---|
+| entrée | **angulaire VRAIE** — `atan2` autour du centre (`:3729-3731`) | linéaire — `translation.width / 62 pt` |
+| rendu | verre + vidéo + 6 calques, ~40 `@State` sur l'hôte | **UN `Canvas`** `Animatable`, 72 traits |
+| haptique | générateur `.rigid` **tenu et préparé**, intensité 0,75 + ω·0,06, **plancher 40 ms** | `.sensoryFeedback(.selection)` |
+| butée | **PATINE** (`×0,25`) puis toque UNE fois | élastique ×0,30 |
+
+**Ce qu'elle demande = l'ENTRÉE de MoisIpod + le RENDU d'ArcDial.** Aucun des
+deux ne le fait seul, et aucun n'est extractible tel quel (`MoisIpod` est une
+PAGE aux `@State` soudés ; `ArcDial` est `private` et dépend d'un observable de
+93 lignes qui porte le scroll, le clavier et la lune).
+
+**Ce qui est VRAIMENT réutilisable** : les recettes numériques (le cran, le
+lissage, la roue libre, l'haptique) et le pattern `Canvas + Animatable`. Le
+reste se réécrit — mais avec des valeurs PAYÉES, pas inventées.
+
+**Et « gros », ça se chiffre** : la bande du doigt de MoisIpod fait **72 pt**
+de large — contre les **13 pt** de pas de ma réglette. C'est ça, l'écart entre
+« je cours » et « je suis assise ».
+
+## V3.3 — LE CADRAN PROPOSÉ (un seul organe)
+
+```
+        ╭─────────────────────╮
+        │      6   7   8      │  ← les valeurs voisines, en arc,
+        │    5  ╭───────╮ 10  │    dégradé de blanc, celle du centre
+        │       │  7,0  │     │    à pleine encre, les autres qui
+        │       │ km/h  │     │    s'éteignent (0,85 → 0,16)
+        │       ╰───────╯     │
+        │   ← on tourne ici → │  ← LA BANDE DU DOIGT : ~72 pt de large,
+        ╰─────────────────────╯    tout autour. On n'a pas à viser.
+```
+
+- **Le disque de verre**, D ≈ 150-160 pt, **à taille CONSTANTE** : un verre
+  redimensionné frame à frame retombe en blur plat **et n'en revient pas**
+  (mesuré 60 → 14 img/s). L'ouverture se joue en translation du panneau (déjà
+  en place, légal, mesuré 60,0) ou par un masque — **jamais un `scaleEffect`**.
+- **Il se nourrit de la braise déjà là** : le disque vitesse a son anneau chaud
+  à r ≈ 77-108 pt ; un verre de D ≈ 152 tombe pile dessus. Pas de troisième
+  shader, pas de lueur en plus (un `colorEffect` permanent coûte 60 → 16).
+- **L'encre vit AU-DESSUS du verre**, jamais dedans — c'est écrit noir sur
+  blanc dans le code sous le nom de « la loi de la molette » : dedans, les
+  chiffres sortent givrés et doublés de fantômes.
+- **UN SEUL `Canvas`** porte les graduations + les valeurs + le cran d'index,
+  `Animatable` sur (angle, engagement). Jamais N vues : « 72 calques hors
+  écran par image, le vrai prix de la molette pas fluide ». Et jamais un
+  `.shadow` par graduation.
+- **Le dégradé de blanc se RESSERRE quand le corps grandit** : pour « 7,0 » en
+  52-64 pt, `1,00 → 0,78`. Le dégradé de titre de la maison finit à 0,25 —
+  mesuré illisible à ce corps (facteur 3,7 dans le sens de la lecture).
+- **L'haptique** : générateur `.rigid` **tenu et préparé à la saisie** (la
+  latence tue le crantage), intensité 0,75 poussée par la vitesse, **plancher
+  40 ms — on saute des CLICS, jamais des crans** ; à la butée, la matière
+  **patine à 25 %** et toque une seule fois.
+- **Le filet obligatoire** : MoisIpod n'a **aucun** chien de garde. Ici il en
+  faut un (0,6 s, le pattern d'ExercisesView) : ce cadran monte **par-dessus
+  une séance qui tourne**, et un `DragGesture` tué en vol ne reçoit jamais son
+  `onEnded` — le cadran resterait accroché au doigt d'un fantôme.
+
+**⚠️ LE PIÈGE DE CADENCE, précis :** `seance.vitesse` est lu par l'encre du
+cadran, qui vit **dans le même sous-arbre que les deux shaders de feu**. Un
+cadran qui écrit la vitesse en continu (~60×/s) ré-invaliderait la braise à
+chaque image. La loi de la maison est écrite : **on lit le CRAN (un `Int` qui
+change une poignée de fois), jamais la position continue**. Donc : la vitesse
+s'écrit **au cran**, ou l'encre sort du sous-arbre vivant.
+
+## V3.4 — LE STOP PERMANENT (et ce que ça SIMPLIFIE)
+
+*« On doit voir l'icône stop dans le chrono quand c'est en cours. »*
+
+**Ça rend l'alternance inutile — et c'est une bonne nouvelle.** L'alternance
+⏹ toutes les 3 s était un TUTORIEL : elle existait pour faire comprendre que
+la pastille se tape. Si le stop est **là en permanence**, il n'y a plus rien à
+apprendre. Garder les deux, ce serait un glyphe qui clignote à côté d'un
+glyphe fixe : du bruit.
+
+**Proposé** : sous le chrono, un ⏹ **petit et permanent** en blanc dégradé
+(l'encre de la maison), pendant tout le set ; au repos il devient ▶, plus gros
+(c'est lui l'action du moment). L'alternance disparaît. La phrase « Tap to
+stop » reste : elle dit le geste, le glyphe dit l'état.
+
+## V3.5 — LA DURÉE EN HAUT
+
+*« La durée globale du set en haut quelque part. »*
+
+⚠️ **Ambigu, et je ne veux pas deviner** : le chrono de la pastille DIT déjà la
+durée du set en cours. Deux lectures :
+- **(a) la durée de la SÉANCE** — le temps total depuis le début, tous sets et
+  repos confondus. **Ma lecture** : c'est ce qui manque à l'écran, et c'est ce
+  que ta phrase « globale » désigne.
+- **(b) le cumul des sets seuls** — le temps sous effort, repos exclus (la
+  mesure qui compte en HIIT).
+
+**Proposé pour (a)** : en haut, au-dessus de la phrase, en petites capitales
+espacées, discret — `24 MIN · 5 SETS`. Et la maison a déjà la recette : le
+player affiche son chrono de séance **en MINUTES avec une horloge qui bat une
+fois par minute** (« un player n'est pas un chronomètre »). Ça ne coûte rien,
+et ça ne re-dessine pas la page 60 fois par seconde pour afficher un chiffre
+qui bouge toutes les 60 s.
+
+## V3.6 — CE QUE JE TE DEMANDE AVANT DE CODER
+
+1. **Le cran** — 1 km/h par cran ? À 40° le cran (la valeur iPod), 0→20
+   = 2,2 tours de doigt : trop pour quelqu'un qui court. **Ma reco : 20° par
+   cran** (1,1 tour sur toute la plage), et **des demis (0,5 km/h) seulement
+   si tu les veux** — sinon on reste en entiers, plus francs au doigt.
+2. **La durée en haut** — (a) la séance entière, ou (b) le temps sous effort ?
+3. **Le cadran remplace-t-il le panneau ?** Ma reco : le panneau blur qui monte
+   du bas RESTE (il est mesuré à 60 img/s et il fait le fond), mais il ne
+   contient plus **qu'une chose** : le cadran. Plus de raccourcis, plus de
+   réglette, plus de « Done » — on ferme en tapant à côté.
+4. **Le stop permanent tue-t-il l'alternance ?** Ma reco : oui (§V3.4).
+
+## V2.5 — CE QUE JE DOIS TE DEMANDER AVANT DE RECODER
+
+**Q1 — Comment on tue la claque noire ?** (le choix technique, tes yeux
+tranchent le rendu)
+- **(a) UN SEUL MONDE plein écran** que les deux pastilles réfractent
+  ensemble — exactement le parcours muscu, la vraie « même matière » : la
+  couleur revient toute seule, plus aucun bord. Coût : une passe de verre
+  plein écran (le muscu tient 60 img/s ainsi) + une variante du shader à
+  deux centres. **Ma reco** — c'est la seule qui rend la matière que tu
+  aimes déjà.
+- **(b) Chaque pastille garde son carré**, mais on met une VRAIE nappe de
+  braise dedans et on éteint le bord en fondu. Moins cher, mais deux
+  mondes séparés : le risque de re-lire « deux calques ».
+
+**Q2 — La molette, permanente ou au tap ?** Ta phrase (« qui prend tout le
+bas ») peut se lire des deux façons : **(a)** toujours là, le bas de
+l'écran EST la molette (on voit le réglage en permanence, mais elle mange
+l'écran pendant l'effort) ; **(b)** au tap du cadran vitesse, elle monte et
+couvre le bas (ma reco : l'écran reste calme quand tu cours).
+
+**Q3 — La couleur de l'ENTRE-SETS.** ⚡ **TRANCHÉE PAR LA MESURE** (§V2.4
+bis-⑤) : la cendre grise n'existe pas dans cette maison — le shader, poussé
+vers le froid, rend le rouge le plus PROFOND, pas du gris. L'entre-sets est
+donc **le feu qui rentre dans ses racines** : même braise, 3,93× plus
+sombre. Il reste à toi de dire si ce contraste te suffit à l'écran, ou s'il
+faut aller plus loin (couper le feu presque entièrement).
+
+**Q4 — Le palier de rouge, sur QUOI ?** Le fond de la page seul (le plan
+d'origine) — ou **le fond ET la pastille** ensemble (ma reco : à 8 sets,
+tout l'écran est chaud, c'est plus fort) ?
+
+**Q5 — La méthode.** Je propose de **cuire les couleurs et les deux états
+dans un banc Python d'abord** (l'école `essai_fond.py` de la card STOP :
+composer le rendu exact, sans builder) et de te montrer **une planche
+d'images — SET / ENTRE-SETS / les 6 paliers de rouge — AVANT de toucher au
+Swift**. Ça t'évite de rejuger des builds à l'œil, et moi d'inventer une
+matière de plus.
+
+---
+
 ## 0. CE QUE JE CHALLENGE (avant l'anatomie)
 
 1. **⚡ TRANCHÉ 31-08 (ok Kathryn) — deux « stop » à l'écran = confusion.**

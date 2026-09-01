@@ -19,11 +19,29 @@ enum TapisBanc {
     static let nu = CommandLine.arguments.contains("-tapisNu")
     static let auto = CommandLine.arguments.contains("-tapisAuto")
     static let fps = CommandLine.arguments.contains("-fps")
+    /// ⚠️ `-tapisTourne` EST MORT, et c'est une leçon, pas un nettoyage.
+    /// Il appelait la fonction du geste DIRECTEMENT : il court-circuitait le
+    /// hit-testing, la zone de prise et l'arbitrage. Il « prouvait » donc la
+    /// trigonométrie — jamais en doute — et RIEN sur le fait qu'un toucher
+    /// réel atteigne le geste. Pendant ce temps la zone de prise était 190 pt
+    /// trop haute et rien ne le montrait. Une sonde qui mesure la mauvaise
+    /// chose est pire qu'un juge : elle a l'autorité d'un chiffre.
+    /// Ce qui se prouve maintenant se prouve AU DOIGT, à l'écran.
+    /// `-tapisSansChiffres` — SONDE D'ABLATION : l'anneau sans ses valeurs.
+    /// Verdict rendu (01-09) : AUCUN coût (57/56/60/60 avec, 59/55/60/60
+    /// sans). Gardée : c'est elle qui m'a évité de réécrire les chiffres en
+    /// vues pour rien.
+    static let sansChiffres = CommandLine.arguments.contains("-tapisSansChiffres")
 
     /// `-tapisT 6.5` — l'instant cloué (secondes après la naissance).
     static let tempsFige: Double? = valeur("-tapisT").flatMap(Double.init)
     /// `-tapisSet 4` — le nombre de sets déjà faits à la naissance.
     static let setsFaits: Int = valeur("-tapisSet").flatMap(Int.init) ?? 0
+    /// `-tapisChoisi 15` — la vitesse vient d'être SCELLÉE (1 s après la
+    /// naissance). Un drapeau d'ÉTAT, pas un faux geste : il ne simule aucun
+    /// doigt, il pose la scène à l'instant de la confirmation pour qu'elle se
+    /// capture avec `-tapisT`.
+    static let choisi: Int? = valeur("-tapisChoisi").flatMap(Int.init)
 
     private static func valeur(_ drapeau: String) -> String? {
         let args = CommandLine.arguments
@@ -54,6 +72,13 @@ struct TapisLab: View {
             }
         }
         .statusBarHidden()
+        .onAppear {
+            if let v = TapisBanc.choisi {
+                seance.vitesse = Double(v)
+                seance.vitesseChoisie = v
+                seance.vitesseScellee = seance.naissance.addingTimeInterval(1.0)
+            }
+        }
         .task {
             guard TapisBanc.auto else { return }
             // Le cycle qu'on filme : 4 s de set, stop, 2,2 s de repos, start.
@@ -67,7 +92,7 @@ struct TapisLab: View {
     }
 
     private var bandeau: some View {
-        Text("pastille chrono = stop/start · pastille km/h = vitesses démo · Finish rejoue l'arrivée")
+        Text("pastille chrono = stop/start · pastille km/h = la molette · Finish rejoue l'arrivée")
             .font(.inter(11))
             .foregroundStyle(Color.inkMuted)
             .frame(maxHeight: .infinity, alignment: .bottom)
