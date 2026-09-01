@@ -1418,6 +1418,29 @@ retouches de cette passe, toutes dans `PlayerMonde.swift` :
    re-lit que pour prendre, jamais pour lâcher en plein doigt.
 4. Prise à 6 pt (au lieu de 8).
 
+### 3.4terdecies L'ATTERRISSAGE DOUX + L'ARMURE RANGÉE (01-09 soir —
+verdicts : « à la fin il bug un peu à s'afficher » puis « commit,
+et que tout ça ne soit plus jamais cassé »)
+
+- **L'atterrissage** : à la fin du vol, le verre natif, le mask des
+  fondus et le badge naissaient d'UN COUP (`poseComplet` sec) — le
+  « bug à s'afficher ». Fix : `poser()` — la pose passe en FONDU
+  0,22 s ; le DÉPART de geste reste SEC (la loi du verre aux bounds
+  vivants). Témoin sim : f-home vol/saut/page verts ; f-fiche mesuré
+  AFFAMÉ car deux builds tel compilaient pendant son film (la loi de
+  la charge, assumée — le tel réel a validé au doigt).
+- **L'ARMURE (le « plus jamais cassé » outillé)** : le protocole
+  quitte le scratchpad éphémère et vit dans le dépôt :
+  `tools/player/fouettage/` — `fouette_page.sh` (une page du
+  protocole, chemins paramétrés `FOUET_DIR`/`FOUET_SIM`), les quatre
+  juges (`juge_vol/saut/page/zones.py`) et `mesure_bord.py`
+  (l'instrument qui TRANCHE). Le header du script porte les lois
+  payées : charge machine d'abord, artefacts connus des juges
+  (micro-ouvert, zones exos), la dalle canonique (68, 1100, 0, 76).
+  TOUTE session qui touche PlayerMonde/PageCard/les robes de page
+  repasse ce protocole AVANT tout build tel — c'est la règle gravée
+  en mémoire, désormais avec ses outils versionnés.
+
 ### 3.5 LES RISQUES, CHACUN AVEC SA PARADE
 
 1. **Le mur du type-checker de mainBody** (337a6e3, payé) → le player

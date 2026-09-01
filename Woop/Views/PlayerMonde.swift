@@ -65,7 +65,18 @@ final class PlayerEtat {
         ouvert = true
         poseComplet = false
         volVers(1, duree: Self.tempo, courbe: .doux) {
-            self.poseComplet = true
+            self.poser()
+        }
+    }
+
+    /// §3.4terdecies (verdict : « à la fin il bug un peu à
+    /// s'afficher ») : la POSE se fait en FONDU court — le verre, le
+    /// mask des fondus et le badge naissaient d'UN COUP à la fin du
+    /// vol. Le DÉPART de geste, lui, reste SEC (la loi du verre aux
+    /// bounds vivants : il se retire avant que ça bouge).
+    private func poser() {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            poseComplet = true
         }
     }
 
@@ -256,7 +267,7 @@ final class PlayerEtat {
             : min(max(distance * Self.tempo, 0.22), Self.tempo)
         volVers(cible, duree: duree, courbe: .sortie) {
             if cible == 1 {
-                self.poseComplet = true
+                self.poser()
             } else {
                 self.monte = false
                 self.couvre = false
