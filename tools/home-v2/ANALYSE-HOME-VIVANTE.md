@@ -255,6 +255,88 @@ n'a pas pris (l'app réécrit la clé au lancement).
 
 ---
 
+# §FLUIDITÉ — POURQUOI LE RUBAN SACCADE, ET CE QUE J'AI CESSÉ DE COMPRENDRE
+
+> Son verdict, après cinq essais : **« la bordure animée que tu avais faite
+> était cool, il faut juste la rendre plus fluide. »** Le LOOK est validé — les
+> trois couches floutées (14 / 5 / 1,6 pt), le dégradé qui tourne, un tour en
+> 9 s. Il ne reste qu'un défaut, et un seul.
+
+## F.1 — Ce qui a été essayé, et ce que chacun a coûté
+
+| version | verdict |
+|---|---|
+| 3 couches floutées, 20 Hz | ✅ **le look validé** — « j'aime bien l'épaisseur », mais « pas trop fluide » |
+| 2 couches + cœur chaud, 60 Hz | « ça lag » |
+| 7 `strokeBorder`, aucun flou, 60 Hz | « on voit les pixels », puis « ça lag de fou » |
+| un shader `colorEffect`, UNE passe GPU | « ça lag de fou » |
+| foyers fixes, seule l'opacité anime | rejeté — ce n'était plus l'effet |
+
+## F.2 — 🔴 LE FAIT QUI RENVERSE MON DIAGNOSTIC
+
+**Le shader a lagué aussi.** Une seule passe GPU, calculée par pixel, sans
+aucune couche empilée — ça devrait être quasi gratuit. Ça ne l'a pas été.
+
+Donc **le coût de dessin du contour n'est PAS le problème**. J'ai passé quatre
+tours à rendre le ruban moins cher (moins de flous, moins de couches, un
+shader) et chaque fois le résultat a été identique ou pire. Quand quatre
+remèdes différents échouent de la même façon, c'est qu'on soigne le mauvais
+organe.
+
+**Ce que le contour fait vraiment, c'est INVALIDER LA CARD À CHAQUE IMAGE.**
+Il est posé en `.overlay` sur `pageEnCard`, donc *à l'intérieur* de la
+composition de la card — et cette card contient une **vidéo vivante** et
+**trois panneaux de verre natif**. Une capture de fond de verre natif force la
+résolution en texture de tout le composite situé dessous, et le dépôt l'a déjà
+chiffré. Le contour n'est pas la dépense : il est le **déclencheur** qui la
+fait payer soixante fois par seconde.
+
+## F.3 — 🔴 ET L'INSTRUMENT EST CASSÉ : on ne peut PAS régler ça au simulateur
+
+Toutes les mesures ci-dessous sont machine calme (`charge.sh` vert), même
+binaire, à quelques minutes d'intervalle :
+
+| | relevés |
+|---|---|
+| home au repos | 8,7 · 18,7 · 5,6 img/s |
+| séance, contour allumé | 4,5 · 5,1 · 6,5 · 10,0 · 12,2 img/s |
+
+Et le coup de grâce, sur la version à foyers : **contour ALLUMÉ 12,2 img/s,
+contour ÉTEINT 8,0**. Le contour rendrait la page *plus rapide* — ce qui est
+impossible. **Le bruit de l'instrument dépasse l'effet qu'on veut mesurer.**
+
+> Régler la fluidité du ruban au simulateur est hors de portée. Le drapeau
+> **`-sansBord`** existe désormais et fait la bisection exacte (même page, même
+> séance, le contour seul change) : **il faut la lancer sur le TÉLÉPHONE.**
+
+## F.4 — Les trois pistes, par ordre de promesse
+
+**① SORTIR LE CONTOUR DE LA COMPOSITION DE LA CARD.** C'est la piste que le
+§F.2 désigne. Aujourd'hui il est *dans* `pageEnCard`, avant son `clipShape` :
+son invalidation entraîne la vidéo et le verre. Le poser en **frère au-dessus
+de la card**, découpé à la forme de la robe, donnerait le même rendu — dans la
+card, s'arrêtant au-dessus du player, comme elle l'a demandé — sans traîner le
+composite avec lui. **C'est un déplacement, pas un redesign : le ruban validé
+ne change pas d'un pixel.**
+
+**② LE `.mask` ET LE `.blendMode` DU RUBAN.** Les deux forcent un groupe de
+composition à la taille de la card, à chaque image. Le fondu du haut pourrait
+venir d'un dégradé DANS les couleurs des trois couches plutôt que d'un masque ;
+`plusLighter` peut se poser sur chaque couche au lieu du groupe. Deux passes
+hors écran en moins, sans toucher au look.
+
+**③ LA CADENCE, EN DERNIER.** 20 Hz montre le pas d'horloge sur une lumière qui
+court ; 60 Hz coûte trois fois plus. **Ce choix ne se tranche qu'une fois ① et
+② faits** — sinon on arbitre entre deux symptômes.
+
+## F.5 — Ce que je ne ferai pas
+
+Rien de tout ça n'est codé. ① touche `PageCard`, que l'autre session lit en ce
+moment pour la nav du bas — je l'ai prévenue du déplacement de 17 pt, je ne
+vais pas y toucher une seconde fois sans que Kathryn ait tranché.
+
+---
+
 # §BORD — LE CONTOUR DE SÉANCE : FAIT, MESURÉ (02-09, 12h20) — **pas commité**
 
 `Woop/Views/BordSeance.swift`, monté au châssis (`WoopApp.swift`, zIndex 9,5).

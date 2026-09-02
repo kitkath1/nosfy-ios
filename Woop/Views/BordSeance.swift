@@ -34,6 +34,9 @@ struct BordSeance: View {
     /// `-bordSeance` : la braise allumée SANS séance en base. Le simulateur ne
     /// démarre pas de séance tout seul. `static let` : évalué une fois.
     static let banc = CommandLine.arguments.contains("-bordSeance")
+    /// `-sansBord` : le contour ÉTEINT, tout le reste identique. C'est la seule
+    /// façon de répondre à « est-ce le contour ou la page ? » sans deviner.
+    static let eteint = CommandLine.arguments.contains("-sansBord")
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -60,149 +63,52 @@ struct BordSeance: View {
     }
 
     var body: some View {
-        if actif {
-            // 20 Hz : un souffle de 6 s n'a pas besoin de 60. C'est la cadence
-            // que le dépôt donne déjà à ses respirations lentes, et elle divise
-            // la note par trois.
-            // ⚠️ **20 Hz, ET C'EST MESURÉ — pas un compromis de principe.**
-            //
-            // J'étais passé à 60 Hz en croyant que le « pas fluide » venait de
-            // la cadence. La sonde dit l'inverse : en séance, machine calme,
-            // 60 Hz rend **4,5 img/s** et 20 Hz **6,1**. Trois passes de flou
-            // plein cadre par image coûtent plus cher que le gain de netteté
-            // qu'elles achètent — à 60 Hz on demande le triple de travail pour
-            // dessiner une crête qui n'avance que de 0,7° de plus.
-            //
-            // La saccade venait du COÛT, pas du pas d'horloge : c'est en
-            // retirant des passes qu'on la fait disparaître, pas en en
-            // demandant plus souvent.
-            TimelineView(.animation(paused: reduceMotion)) { tl in
+        if actif, !Self.eteint {
+            // 20 Hz — la cadence à laquelle elle a dit « j'aime bien
+            // l'épaisseur ». La fluidité ne se règle PAS ici (voir
+            // tools/home-v2/ANALYSE-HOME-VIVANTE.md, §FLUIDITÉ).
+            TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+                                    paused: reduceMotion)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
-                // UN TOUR EN 9 s. À 17 s, mesuré au film, la corrélation
-                // gauche/droite valait +0,33 : la lumière voyageait vraiment,
-                // mais trop lentement pour qu'on le PERÇOIVE — « on capte
-                // pas ». Le mouvement doit se lire en une respiration, pas en
-                // une minute.
                 contour(souffle(t), t * 360 / 9)
             }
-            // ⚠️ SOURD AU DOIGT. Il couvre l'écran entier : sans ça il
-            // mangerait TOUS les touchers de l'app pendant la séance — le
-            // piège du rideau, en version totale.
             .allowsHitTesting(false)
             .transition(.opacity)
         }
     }
 
-    /// LES QUATRE PASSES. Elles partent toutes de l'arête et rentrent : la plus
-    /// large est la plus faible (la lueur qui déborde dans la page), la plus
-    /// fine est la plus vive (l'arête elle-même). C'est cette pile, et non un
-    /// flou, qui fait la douceur.
-    /// LA RECETTE EST CELLE DU HALO DE LA STORY TOP — `StorySuite.swift`
-    /// (`halo`, autour de la ligne 1031). C'est SA référence : « comme la
-    /// story ×2, tout le bord de l'écran animé en rouge ».
+    /// LE RUBAN — c'est CETTE version qu'elle a validée (« j'aime bien
+    /// l'épaisseur »), et c'est la seule chose qu'on garde.
     ///
-    /// ⚠️ **ET C'EST LE FLOU QUI FAIT TOUT.** Mon premier jet posait quatre
-    /// traits NETS de largeurs décroissantes pour éviter une passe hors écran :
-    /// ça donnait un cadre CERNÉ, pas un néon. Le néon vient de trois passes
-    /// FLOUES (26, 8 et 1,1 pt) plus une arête blanche au cœur — la lumière
-    /// déborde de son trait, c'est sa définition.
+    /// Trois couches serrées sur l'arête : le lit pose la couleur, le ruban est
+    /// ce qu'on voit courir, le fil donne une tête à la lumière. Le dégradé
+    /// TOURNE, la forme ne bouge pas — la loi des liserés de cette maison.
     ///
-    /// ⚠️ Le prix est connu et assumé : trois `.blur` sur une forme plein
-    /// écran, c'est trois passes hors écran par image. Dans la story ça dure
-    /// une seconde ; ici ça dure toute la séance. **La cadence est donc à
-    /// mesurer, pas à supposer** — et si elle ne tient pas, c'est le nombre de
-    /// passes qui baisse, jamais le flou (sans lui il n'y a plus de néon).
+    /// ⚠️ Sa fluidité ne se corrige NI en changeant la cadence, NI en empilant
+    /// moins de couches : les deux ont été essayés et mesurés, et les deux ont
+    /// empiré. L'analyse est dans `tools/home-v2/ANALYSE-HOME-VIVANTE.md`.
     @ViewBuilder
     private func contour(_ s: Double, _ sTour: Double) -> some View {
         let forme = UnevenRoundedRectangle(
             topLeadingRadius: 0, bottomLeadingRadius: rayonBas,
             bottomTrailingRadius: rayonBas, topTrailingRadius: 0,
             style: .continuous)
-        // ⚠️ **LA LUMIÈRE VOYAGE, ELLE NE PULSE PAS** (verdict 02-09 : « pas
-        // type néon, type blur joli très fondu, type IA qui parle »).
-        //
-        // C'est la loi que ce dépôt a déjà écrite pour le liseré des cards :
-        // « on ne fait PAS tourner la forme — on fait tourner le DÉGRADÉ : les
-        // crêtes glissent le long d'un contour qui, lui, ne bouge pas d'un
-        // pixel. C'est la lumière qui se promène, pas l'objet. »
-        // (`cardLisereConique`, WidgetsCards.swift:361-367.)
-        //
-        // Deux couches qui tournent à des vitesses DIFFÉRENTES et en SENS
-        // CONTRAIRE : leurs crêtes se croisent sans jamais se retrouver, donc
-        // la figure ne se répète pas. Un seul anneau qui tourne, aussi lent
-        // soit-il, finit par se reconnaître — c'est la même faute qu'un sinus
-        // unique, en rotation.
-        //
-        // ⚠️ AUCUNE ARÊTE NETTE : c'est un cœur net, si fin soit-il, qui
-        // dessine une LIGNE — et une ligne se lit comme une bordure. Il ne
-        // reste ici que de la lumière très étalée.
-        // ⚠️ **UN RUBAN FIN SUR L'ARÊTE, PAS UN HALO** (verdict 02-09 : « pourquoi
-        // t'as fait de gros halos… là ça fait un peu fake »). C'est l'erreur
-        // que j'ai faite en cherchant « très fondu » : un trait de 58 pt flouté
-        // à 62 n'est pas de la lumière, c'est un LAVIS — il bave dans la page,
-        // il n'a plus de bord, et rien ne dit plus où est l'arête.
-        //
-        // La lueur d'Apple Intelligence est l'inverse : une bande ÉTROITE et
-        // VIVE collée au bord, à peine adoucie, dont les couleurs COURENT. Ce
-        // qui la fait vivre est le mouvement le long de l'arête, pas l'étendue.
-        //
-        // Trois couches, de la plus large à la plus fine, toutes serrées :
-        //  · le lit (14 pt, flou 14) — il pose la couleur et la fait déborder
-        //    d'un cheveu, juste assez pour que l'arête ne soit pas dure ;
-        //  · le ruban (5 pt, flou 4) — c'est LUI qu'on voit courir ;
-        //  · le fil (1,6 pt, flou 1,2) — le cœur vif, décalé en phase, qui
-        //    donne l'impression que la lumière a une TÊTE.
-        // ⚠️ **DEUX COUCHES, PLUS TROIS** (verdict 02-09 : « c'est pas trop
-        // fluide »). Sur un dégradé qui tourne, le manque de fluidité n'est
-        // presque jamais la cadence — c'est le COÛT : chaque `.blur` sur une
-        // forme plein cadre est une passe HORS ÉCRAN, et j'en demandais trois
-        // par image. Le simulateur décroche, et le mouvement devient saccadé
-        // alors que l'horloge, elle, est régulière.
-        //
-        // Le fil de 1,6 pt disparaît : il ne portait presque rien, et son flou
-        // de 1,2 coûtait une passe entière. Le lit et le ruban suffisent — le
-        // cœur vif est désormais DANS le dégradé (le point blanc-chaud), pas
-        // dans une couche de plus.
-        // ⚠️ **PLUS AUCUN `.blur` — ET C'EST LA CAUSE DU « ÇA LAG »**
-        // (verdict 02-09 : « l'animation autour des bordures qui fait IA lag,
-        // elle est pas naturelle »).
-        //
-        // Deux flous plein cadre par image ne peuvent être fluides À AUCUNE
-        // CADENCE : à 60 Hz c'est le coût qui saccade (mesuré 4,5 img/s en
-        // séance), à 20 Hz c'est le pas d'horloge qu'on voit. J'ai passé deux
-        // tours à choisir entre les deux au lieu de sortir du piège.
-        //
-        // La douceur ne vient pas d'un flou, elle vient de DEUX sources qui ne
-        // coûtent rien :
-        //  · EN TRAVERS de la bande — une pile de `strokeBorder` concentriques
-        //    d'opacité décroissante ; c'est l'école exacte de la lueur de
-        //    l'ardoise (« le MÊME liseré, une passe de plus »), et c'est du
-        //    pur vecteur ;
-        //  · LE LONG de la bande — les épaules du dégradé angulaire, qui
-        //    étaient déjà là et que le flou ne faisait que redoubler.
-        //
-        // Résultat : zéro passe hors écran, donc 60 Hz gratuit, donc une
-        // lumière qui coule vraiment.
         ZStack {
-            forme.strokeBorder(Self.nappe(s * 0.10, .degrees(sTour)), lineWidth: 34)
-            forme.strokeBorder(Self.nappe(s * 0.16, .degrees(sTour)), lineWidth: 24)
-            forme.strokeBorder(Self.nappe(s * 0.24, .degrees(sTour)), lineWidth: 16)
-            forme.strokeBorder(Self.nappe(s * 0.34, .degrees(sTour + 4)), lineWidth: 10)
-            forme.strokeBorder(Self.nappe(s * 0.50, .degrees(sTour + 8)), lineWidth: 5.5)
-            forme.strokeBorder(Self.nappe(s * 0.70, .degrees(sTour + 12)), lineWidth: 2.5)
-            forme.strokeBorder(Self.nappe(s * 0.85, .degrees(sTour + 16)), lineWidth: 1)
+            forme
+                .strokeBorder(Self.nappe(s * 0.55, .degrees(sTour)),
+                              lineWidth: 14)
+                .blur(radius: 14)
+            forme
+                .strokeBorder(Self.nappe(s, .degrees(sTour + 8)),
+                              lineWidth: 5)
+                .blur(radius: 4)
+            forme
+                .strokeBorder(Self.nappe(s * 1.15, .degrees(sTour + 18)),
+                              lineWidth: 1.6)
+                .blur(radius: 1.2)
         }
         .padding(2)
-        // ⚠️ **LE HAUT MEURT — ET C'EST LA LOI DE LA CARD, PAS UN RÉGLAGE.**
-        // La robe n'a pas de coins hauts : « le haut FOND dans l'heure, le
-        // liseré meurt vers le haut » (§2.18, PageCard). Sans cette rampe, le
-        // `strokeBorder` referme la braise par un TRAIT DROIT en travers du
-        // haut de l'écran — vu sur l'appareil, et c'est laid : on lit une
-        // bordure collée, pas une lumière.
-        //
-        // Le fondu part de RIEN au ras du haut et n'atteint sa pleine force
-        // qu'au quart de la card : les flancs émergent, le haut n'existe pas.
         .mask {
             LinearGradient(stops: [
                 .init(color: .clear, location: 0.00),
@@ -212,8 +118,6 @@ struct BordSeance: View {
                 .init(color: .white, location: 1.00)
             ], startPoint: .top, endPoint: .bottom)
         }
-        // Les passes s'ADDITIONNENT : une braise est de la lumière, pas de la
-        // peinture.
         .blendMode(.plusLighter)
     }
 
