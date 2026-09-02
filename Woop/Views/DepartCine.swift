@@ -63,7 +63,26 @@ enum DepartCine {
     /// image : l'accueil part de 291 et doit finir à 694, là où vit la phrase
     /// d'arrivée. 694 − 291 = **403**. Le plan du devant va donc plus loin que
     /// le plan du fond — c'est la parallaxe, et elle est dans le bon sens.
-    static let courseTexte: CGFloat = 403
+    ///
+    /// ⚠️ **441 DEPUIS LE 02-09, ET C'EST UNE CONSÉQUENCE MÉCANIQUE.** La phrase
+    /// d'accueil est passée de CINQ à QUATRE lignes ; elle est ancrée par le
+    /// HAUT (`.padding(.top, 48)`), donc son bas est REMONTÉ d'une hauteur de
+    /// ligne, tandis que la phrase d'arrivée, épinglée par le BAS
+    /// (`leveeTiroir + 6`), n'a pas bougé d'un point. Sans ce recalage, les deux
+    /// bas ne sont plus confondus et la bascule (`basculeAt` 0,94 · 0,12 s)
+    /// devient un FAUX RACCORD : la ligne qu'on lit saute au moment précis où
+    /// les mots se substituent — exactement ce que la métamorphose validée
+    /// interdit.
+    ///
+    /// Le chiffre est MESURÉ, pas déduit : le pas de ligne vaut 38,35 pt
+    /// (sommets d'encre de « Hello Kathryn, » à 131,0 et de « 6 workouts » à
+    /// 207,7, deux pas — `tools/home-v2/mesure_cotes.py` sur
+    /// `captures/pose-083906.png`). ⚠️ Ce n'est PAS `taille × 1,14 + interligne`
+    /// (36,2) : la formule que `PhraseVue.sourd(_:)` utilise pour lire la lampe
+    /// est fausse de 2,15 pt par ligne — défaut latent, sans conséquence
+    /// visible, constaté ici et pas corrigé.
+    /// 403 + 38,35 ≈ **441**.
+    static let courseTexte: CGFloat = 441
 
     /// LE SOMMET DU FLOU, et l'instant où les mots changent.
     static let clocheAt = 0.10, clocheSommet = 1.00, clocheFin = 1.62

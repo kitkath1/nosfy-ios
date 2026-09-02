@@ -111,7 +111,27 @@ struct PageCard<Page: View, Dalle: View>: View {
                         .gesture(tirageLune(course: repos))
                 }
             }
-            .frame(width: W, height: Hs)
+            // ⚠️ **ALIGNÉ EN BAS, ET ÇA REND 17 pt À TOUTES LES PAGES** (02-09,
+            // « remonte la pill nav qui est collée en bas »).
+            //
+            // Hors séance le plus grand enfant de ce ZStack fait `Hs +
+            // safeBottom` (la card plein écran physique) ; une `.frame` de
+            // hauteur `Hs` CENTRE ce qui la dépasse, donc la card débordait de
+            // `safeBottom / 2` en haut ET en bas. MESURÉ sur iPhone 15 : le
+            // galet du menu, à qui le code donne `.padding(.bottom, 24)`,
+            // n'avait plus que **7 pt d'air** — 845 pt sur un écran de 852.
+            // 24 − 7 = 17 = 34 / 2. Ce n'était donc pas un padding trop petit,
+            // c'était un débordement.
+            //
+            // Aligné en bas, le débordement passe ENTIÈREMENT en haut — où il
+            // ne coûte rien : la card n'a pas de coins hauts et « le haut fond
+            // dans l'heure » (§2.18), c'est sa loi depuis le début.
+            //
+            // ⚠️ EN SÉANCE, RIEN NE CHANGE : `hPage == Hs`, aucun enfant ne
+            // dépasse, l'alignement n'a alors aucun effet. Les quatre pages
+            // hors séance remontent ensemble — home, exercices, progress,
+            // fiche — et c'est voulu : le défaut était commun.
+            .frame(width: W, height: Hs, alignment: .bottom)
         }
     }
 

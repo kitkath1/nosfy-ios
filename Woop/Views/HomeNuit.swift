@@ -299,15 +299,62 @@ enum PhraseTexte {
     /// phrase d'accueil était la seule pièce en français, et le mélange se
     /// voyait. L'alternance clair / sourd est conservée à la lettre : c'est elle
     /// qui donne son rythme au bloc, pas les mots.
+    /// ⚠️ **QUATRE LIGNES DEPUIS LE 02-09** (« mets le texte sur 4 lignes max,
+    /// enlève le "out of N planned" »). La ligne partie portait le GALET DE
+    /// VERRE de l'objectif hebdomadaire — c'était le seul endroit de l'app où
+    /// on pouvait le régler, et sa suppression a été TRANCHÉE en connaissance
+    /// de cause : `prevus` reste lu partout (la card « / N », le pied
+    /// « N sessions left to hit your goal », `SemaineStats`, la vitrine,
+    /// ProgressPage) mais plus personne ne l'écrit — il vaut désormais la
+    /// dernière valeur choisie, pour toujours. **C'est une dette assumée, pas
+    /// un oubli** : le jour où l'objectif retrouve une porte, on rend
+    /// `objectif:` à un fragment et tout le reste (le galet, son panneau 3→7,
+    /// la découpe du masque) est encore là, intact.
+    ///
+    /// L'alternance clair / sourd tient à la lettre : c'est elle qui donne son
+    /// rythme au bloc, pas les mots. Elle finit donc sur un SOURD — la phrase
+    /// s'éteint au lieu de claquer, et c'est la bonne fin pour une voix.
     static func fragments(faits: Int, prevus: Int) -> [PhraseFragment] {
         let mot = faits == 1 ? "workout" : "workouts"
         return [
             PhraseFragment("Hello Kathryn,", clair: true),
             PhraseFragment("you've done", clair: false),
             PhraseFragment("\(faits) \(mot)", clair: true),
-            PhraseFragment("this week", clair: false),
-            PhraseFragment("out of ", objectif: prevus, apres: " planned.",
-                           clair: true)
+            PhraseFragment("this week.", clair: false)
+        ]
+    }
+
+    /// LA PHRASE PENDANT UNE SÉANCE (02-09).
+    ///
+    /// ⚠️ **QUATRE LIGNES, ET CE N'EST PAS NÉGOCIABLE.** La phrase d'accueil
+    /// est ancrée par le HAUT, celle du départ par le BAS, et
+    /// `DepartCine.courseTexte` (441) est la distance mesurée entre leurs deux
+    /// bas. Une phrase de séance à trois ou cinq lignes déplacerait ce bas de
+    /// 38 pt et rendrait FAUX le raccord du fondu croisé du départ — le texte
+    /// sauterait à l'instant précis où les mots se substituent.
+    ///
+    /// ⚠️ **MÊME ALTERNANCE, MÊME FIN SUR UN SOURD** : c'est elle qui fait
+    /// lire le bloc comme une voix, pas les mots.
+    ///
+    /// ⚠️ Textes PROVISOIRES : ils tiennent la place que les textes générés
+    /// prendront (avant / pendant / fin de séance). La forme est le contrat —
+    /// quatre fragments, clair/sourd/clair/sourd, en anglais, chacun tenant
+    /// dans les 300 pt de `PhraseParams.largeur`.
+    static func fragmentsSeance(minutes: Int) -> [PhraseFragment] {
+        let mot = minutes == 1 ? "minute" : "minutes"
+        if minutes < 1 {
+            return [
+                PhraseFragment("Alright Kathryn,", clair: true),
+                PhraseFragment("you're in", clair: false),
+                PhraseFragment("a session", clair: true),
+                PhraseFragment("right now.", clair: false)
+            ]
+        }
+        return [
+            PhraseFragment("Alright Kathryn,", clair: true),
+            PhraseFragment("you've been at it", clair: false),
+            PhraseFragment("\(minutes) \(mot)", clair: true),
+            PhraseFragment("so far.", clair: false)
         ]
     }
 }
@@ -345,6 +392,22 @@ struct PhraseParams: Equatable {
     /// départ est énorme, la course longue, et les fragments se suivent de
     /// loin. Le flou de départ de chaque fragment…
     var flou: Double = 30
+    /// LE FLOU DE LA RÉÉCRITURE — 15, et c'est un chiffre MESURÉ, pas un goût.
+    ///
+    /// ⚠️ **LE « CALQUE » EST UN DÉFAUT DÉJÀ NOMMÉ ET DÉJÀ CHIFFRÉ DANS CE
+    /// DÉPÔT** (`DepartCine.flouMax`, verdict 22-08 : « il y a un petit calque
+    /// blanc quand le texte descend »). Sa cause exacte : « à 26 pt de rayon
+    /// sur un corps de 30, chaque ligne se DISSOUT en une dalle blanche
+    /// pleine, et trois dalles empilées se lisent comme une nappe posée. À 15
+    /// on lit encore des mots hors du net — c'est une mise au point, pas une
+    /// gomme. »
+    ///
+    /// `flou` vaut 30 sur un corps de 30 : **au-delà du 26 qui avait déjà été
+    /// refusé**. Ça passe À L'OUVERTURE DE L'APP, une fois, sur un écran qui
+    /// s'allume et que personne ne fixe. Rejoué à CHAQUE changement de texte,
+    /// le calque se voit — elle l'a vu tout de suite. La réécriture prend donc
+    /// le chiffre mesuré, l'arrivée garde le sien.
+    var flouMue: Double = 15
     /// …l'écart entre deux fragments…
     var retard: Double = 0.14
     /// …la durée de chacun…
@@ -419,17 +482,34 @@ struct PhraseVue: View, Animatable {
     /// Le panneau du galet est ouvert.
     @Binding var reglageOuvert: Bool
 
+    /// LA LIGNE QUI SORT DU MASQUE — et elle n'existe QUE pour le galet.
+    ///
+    /// Le galet de verre vit DANS sa ligne, et un `.mask` posé par-dessus lui
+    /// mangerait sa transparence en même temps que l'encre : un verre à 87 %
+    /// d'opacité n'est plus un verre. Cette ligne-là porte donc en dur, via
+    /// `atenu`, la valeur que le dégradé aurait eue à sa hauteur.
+    ///
+    /// ⚠️ **DEPUIS LE 02-09 LA PHRASE N'A PLUS DE GALET, DONC PLUS D'EXCEPTION**
+    /// (`fragments.last?.objectif == nil` ⇒ ce vaut `nil`) : tout le bloc rentre
+    /// sous UN SEUL dégradé, ce que la loi de la maison demandait depuis le
+    /// début — « UN seul dégradé pour tout le bloc, jamais un par ligne ».
+    /// Laisser la découpe aurait sorti « this week. » du masque et l'aurait
+    /// rendue avec `atenu` par DÉFAUT (1), c'est-à-dire hors de la rampe.
+    /// La branche reste écrite : rendre `objectif:` à un fragment la rallume.
+    private var horsMasque: PhraseFragment? {
+        fragments.last?.objectif != nil ? fragments.last : nil
+    }
+
+    /// Les lignes qui passent sous le dégradé du bloc — toutes, sauf celle qui
+    /// porterait un galet.
+    private var masquees: [PhraseFragment] {
+        horsMasque == nil ? fragments : Array(fragments.dropLast())
+    }
+
     var body: some View {
-        // LE MASQUE S'ARRÊTE À L'AVANT-DERNIÈRE LIGNE, et c'est un arbitrage.
-        // Le galet de verre vit DANS la dernière ligne, et un `.mask` posé
-        // par-dessus lui mangerait sa transparence en même temps que l'encre —
-        // un verre à 87 % d'opacité n'est plus un verre. La dernière ligne
-        // porte donc, en dur, la valeur que le dégradé aurait eue à sa hauteur
-        // (une bande de 30 pt dans un dégradé de 170 : l'écart avec la rampe
-        // continue est invisible, on l'a vérifié en superposant les deux).
         VStack(alignment: .leading, spacing: params.interligne) {
             VStack(alignment: .leading, spacing: params.interligne) {
-                ForEach(Array(fragments.dropLast().enumerated()),
+                ForEach(Array(masquees.enumerated()),
                         id: \.offset) { i, f in
                     ligne(f, index: i)
                 }
@@ -449,7 +529,7 @@ struct PhraseVue: View, Animatable {
                     .padding(-(flouDepart + 6))
             }
 
-            if let derniere = fragments.last {
+            if let derniere = horsMasque {
                 ligne(derniere, index: fragments.count - 1)
             }
         }
@@ -2009,7 +2089,7 @@ struct HomeNuitPage: View {
     private func origineSlot(_ i: Int, _ h: CGFloat) -> CGRect {
         let z = 1 - 0.04 * editionP
         let cx = 201 + (CGFloat(24 + i * 184 + 85) - 201) * z
-        let cy = h * 0.375 + 85
+        let cy = Self.yCards(h) + 85
         let cote = 170 * z
         return CGRect(x: cx - cote / 2, y: cy - cote / 2,
                       width: cote, height: cote)
@@ -2109,6 +2189,70 @@ struct HomeNuitPage: View {
     /// LA POIGNÉE DU PULL — la hauteur de la bande qui prend le doigt au bas
     /// de la card. Elle DÉBORDE le dessin de l'invite : on ne doit pas viser.
     private static var poigneePull: CGFloat { 112 }
+    /// LA LIGNE DES DEUX CARDS, et celle de la card ROUTE.
+    ///
+    /// ⚠️ **UNE SEULE SOURCE, ET C'EST TOUT LE POINT.** La fraction des cards
+    /// est lue par CINQ endroits — la rangée elle-même, l'ORIGINE DU VOL de la
+    /// vitrine (`origineSlot`), la drop-list du mode édition, la poudre d'adieu
+    /// et la pop-up de refus. Tant qu'elle était recopiée en clair, la bouger
+    /// en oubliait un : le vol de la vitrine serait parti d'une case vide, et
+    /// personne n'aurait fait le lien avec le déplacement.
+    ///
+    /// ⚠️ **LA REMONTÉE EST ABSOLUE, PAS FRACTIONNAIRE** (02-09). Ce qu'on
+    /// récupère est le trou laissé par la ligne de phrase supprimée — une
+    /// hauteur de ligne, donc des POINTS (pas mesurée de tête : 38,35 pt, lus
+    /// entre les sommets d'encre de « Hello Kathryn, » et de « 6 workouts » au
+    /// banc, `tools/home-v2/mesure_cotes.py`). Une fraction aurait fait remonter
+    /// plus sur un grand téléphone que la ligne n'y occupait.
+    private static let remonteePhrase: CGFloat = 38
+    private static func yCards(_ h: CGFloat) -> CGFloat {
+        h * 0.375 - remonteePhrase
+    }
+    private static func yRoute(_ h: CGFloat) -> CGFloat {
+        h * 0.620 - remonteePhrase
+    }
+
+    /// LE SEUIL D'EXTINCTION DE LA PASTILLE, en points de course vers le haut.
+    /// Assez haut pour ne pas s'éteindre sur un tremblement (le verrou d'axe
+    /// se décide déjà à 4), assez bas pour que « dès qu'on pull » soit vrai —
+    /// le cran, lui, est à 52.
+    private static var seuilCache: CGFloat { 10 }
+
+    /// LE PULL EST ENGAGÉ (sa demande du 02-09 : « quand on pull elle
+    /// disparaît complètement »).
+    ///
+    /// ⚠️ **PAS `tiroirOuvert` : il n'arrive qu'AU CRAN** (52 pt), c'est-à-dire
+    /// après la moitié du geste — la pastille restait pleine, et VIVANTE,
+    /// pendant tout le début du pull, au coin exact où le pouce se pose.
+    ///
+    /// ⚠️ **DÉRIVÉ DE `tirage`, PAS UN `@State` ÉCRIT PAR LE GESTE.** Un
+    /// drapeau posé dans `onChanged` demanderait sa remise à plat aux trois
+    /// endroits du geste (`startLocation`, `onEnded`, chien de garde) — et ce
+    /// geste-ci est celui que la Reachability d'iOS vole SANS `onEnded` : un
+    /// chemin oublié laisserait la pastille éteinte pour toujours. Dérivé, il
+    /// n'a aucun état à perdre, il suit la fermeture animée sans repasser par
+    /// le doigt, et il se juge au banc `-tirageFige <pt>`.
+    ///
+    /// ⚠️ Ça ne coûte RIEN de plus : le corps lit déjà `tirage` partout, et
+    /// `MenuHote` porte des closures — il se réévalue de toute façon à chaque
+    /// image du geste. Ce qui bascule une seule fois, c'est le BOOLÉEN, donc
+    /// l'animation d'extinction (easeOut 0,22 s, écrite chez lui) ne joue
+    /// qu'une fois.
+    private var pullEngage: Bool { tirage < reposCard - Self.seuilCache }
+
+    /// LA PASTILLE EST ÉTEINTE ET SOURDE.
+    ///
+    /// ⚠️ **DEUX RÔLES, UN SEUL INSTANT, ET C'EST VOULU.** « Je ne me vois
+    /// plus » et « je ne prends plus le doigt » basculent ensemble : une
+    /// pastille invisible qui garde sa prise ouvrirait le menu au contact
+    /// (`MenuNappe`, le menu naît au toucher) puis SUIVRAIT le doigt dès 5 pt.
+    /// Invisible et vivante est pire que visible.
+    ///
+    /// ⚠️ **HORS SÉANCE SEULEMENT** : en séance le palet VIT dans la card
+    /// orange (26-08, dit dix fois) — on ne le range plus, on ne l'éteint pas.
+    private var galetEteint: Bool {
+        (!enSeance && (pullEngage || tiroirOuvert)) || vitrineSlot != nil
+    }
     /// LE REPOS DE LA CARD : zéro hors séance, la levée pendant. Tout le
     /// tirage se mesure PAR RAPPORT À LUI — sinon la card retomberait sur
     /// le player à chaque lâcher.
@@ -2516,8 +2660,13 @@ struct HomeNuitPage: View {
                          // Le slider est dans la bande : pendant qu'il est là, le
                          // galet ne dispute plus le doigt. Et pendant la
                          // vitrine, TOUT le bas se tait.
-                         verrouille: (tiroirOuvert && !enSeance)
-                             || vitrineSlot != nil,
+                         // ⚠️ **DÉSORMAIS DÈS L'ENGAGEMENT DU PULL, PLUS AU
+                         // CRAN** (`galetEteint`) : entre le premier point et le
+                         // cran, `tiroirOuvert` est encore faux — la pastille
+                         // était donc pleine ET vivante pendant toute la
+                         // première moitié du geste, au coin exact où le pouce
+                         // se pose pour tirer.
+                         verrouille: galetEteint,
                          reculExterne: reculVitrine,
                          // LA PLACE DE SÉANCE DU PALET : au milieu du strip que
                          // la card allongée ouvre sous « This week » (657) —
@@ -2527,7 +2676,13 @@ struct HomeNuitPage: View {
                          // §3.4ter : placeDy 0 — le player n'est plus sous
                          // le galet (la bande du moteur réserve déjà 110) ;
                          // à RE-MESURER au banc -homeSeance, jamais déduire.
-                         placeDy: 0) {
+                         placeDy: 0,
+                         // §3.4quater, branché le 02-09 : le drapeau existait
+                         // depuis le 01-09 et n'avait AUCUN site d'appel — le
+                         // rangement encastrait la pastille et lui laissait
+                         // 13 pt sur l'arête, cette tranche qu'on voyait sur
+                         // l'écran du slider.
+                         galetCache: galetEteint) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
@@ -3049,7 +3204,7 @@ struct HomeNuitPage: View {
                                 editable: true)
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
-                        .padding(.top, geo.size.height * 0.375)
+                        .padding(.top, Self.yCards(geo.size.height))
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
                         // NATIF empile deux passes de flou — c'est
@@ -3137,7 +3292,7 @@ struct HomeNuitPage: View {
                             ouvrirChemin()
                         }
                         .padding(.leading, 24)
-                        .padding(.top, geo.size.height * 0.620)
+                        .padding(.top, Self.yRoute(geo.size.height))
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
                         // NATIF empile deux passes de flou — c'est
@@ -3167,18 +3322,18 @@ struct HomeNuitPage: View {
                                  min(24 + CGFloat(ls) * 184 + 181,
                                      geo.size.width - 12)
                                  - ListeEdition.largeur)
-                        .padding(.top, geo.size.height * 0.375 + 14)
+                        .padding(.top, Self.yCards(geo.size.height) + 14)
                     }
                     if let ps = poudreSlot {
                         PoudreAdieu(depuis: poudreDepuis)
                             .frame(width: 230, height: 230)
                             .padding(.leading, 24 + CGFloat(ps) * 184 - 30)
-                            .padding(.top, geo.size.height * 0.375 - 30)
+                            .padding(.top, Self.yCards(geo.size.height) - 30)
                     }
                     if refusP > 0.005 {
                         Chambre(p: refusP) { rp in RefusPopup(p: rp) }
                             .frame(maxWidth: .infinity)
-                            .padding(.top, geo.size.height * 0.375 - 88)
+                            .padding(.top, Self.yCards(geo.size.height) - 88)
                             .allowsHitTesting(false)
                     }
 

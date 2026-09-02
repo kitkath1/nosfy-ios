@@ -1377,7 +1377,19 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                             // en transport OU sous la route (jalon 1) : la
                             // doublure mate, jamais du verre qu'on ne voit pas
                             range: range,
-                            transport: enMain || DepartEtat.shared.cheminOuvert)
+                            // ⚠️ **ET QUAND ON L'ÉTEINT AUSSI** (02-09). Le
+                            // corps du galet est un `GlassEffectContainer` :
+                            // le verre natif IGNORE `.opacity` — la loi est
+                            // écrite deux fois dans ce dépôt, mesurée (ici même
+                            // vingt lignes plus haut, et sur les cards du menu
+                            // : « on voit la card !! non !! »). Une extinction
+                            // par opacité seule aurait retiré l'ENCRE et laissé
+                            // la capsule de verre peinte sur l'arête — la
+                            // tranche serait restée. La doublure mate, elle,
+                            // obéit à l'opacité.
+                            transport: enMain
+                                || DepartEtat.shared.cheminOuvert
+                                || galetCache)
                     // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
                     // **DEUX `withAnimation` SUR LA MÊME VALEUR DANS LE MÊME
                     // TOUR NE JOUENT RIEN.** Écrire 0 → 1 puis 1 → 0 dans le
