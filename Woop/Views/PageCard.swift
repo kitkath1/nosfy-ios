@@ -175,6 +175,12 @@ struct PageCard<Page: View, Dalle: View>: View {
     /// TERMINE au-dessus de la bande (padding bas).
     private var pageEnCard: some View {
         page
+            // LE CONTOUR DE SÉANCE — DANS LA CARD, jamais sur l'écran (verdict
+            // 02-09 : « ça doit bouger que dans la card, pas dans le player »).
+            // Posé AVANT le `clipShape` : la braise est ainsi taillée par la
+            // robe elle-même, donc elle s'arrête net au bas de la card et la
+            // bande du player reste à elle.
+            .overlay { BordSeance(actif: enSeance || BordSeance.banc) }
             .clipShape(Self.robeCard)
             // §3.4quater (verdict 01-09) : MARGES 0, LISERÉ MORT
             // (« padding noir à supprimer comme leur border ») — la card

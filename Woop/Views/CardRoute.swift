@@ -133,6 +133,33 @@ struct CardRouteGeo: Equatable {
     static let toutes = [compacte, chemin]
 }
 
+/// LES MINUTES DE LA SÉANCE — sa propre horloge, à la MINUTE.
+///
+/// ⚠️ `.periodic(by: 60)` et non `.animation` : un player n'est pas un
+/// chronomètre, et la seconde par seconde était un tic (verdict déjà payé sur
+/// `WorkoutPill`). Une horloge à la minute ne coûte rien, et elle est SCOPÉE à
+/// ce seul texte — elle ne réveille ni la card ni la page.
+private struct MinutesSeance: View {
+    var depuis: Date?
+
+    var body: some View {
+        if let depuis {
+            TimelineView(.periodic(from: depuis, by: 60)) { tl in
+                let m = Int(tl.date.timeIntervalSince(depuis) / 60)
+                // ⚠️ COURT PAR OBLIGATION : la gouttière ne fait que 174 pt
+                // avant les galets. « Ça vient de commencer » y était tronqué
+                // — vu à la capture `chemin-140857.png`, et c'est exactement
+                // le défaut que la borne de largeur sert à rendre VISIBLE au
+                // lieu de le laisser glisser sous les pierres.
+                Text(m < 1 ? "À l'instant" : "Depuis \(m) min")
+                    .contentTransition(.numericText())
+            }
+        } else {
+            Text("Séance ouverte")
+        }
+    }
+}
+
 struct CardRoute: View {
     /// L'état du chemin — la même lecture que la route. ⚠️ Elle se calcule
     /// UNE fois chez l'hôte (l'école de `SemaineStats`), jamais dans un
@@ -221,12 +248,61 @@ struct CardRoute: View {
     private static let colonneSeule =
         CommandLine.arguments.contains("-colonne")
 
+    /// UNE SÉANCE EST EN COURS (02-09). Un PARAMÈTRE DE VALEUR, jamais un
+    /// `@Query` : cette card est aussi montée par son banc `RouteCardLab`, qui
+    /// n'a pas de home — un `@Query` y créerait une seconde source de vérité à
+    /// côté de celle de `HomeNuit`, et le banc deviendrait aveugle à cet état.
+    var enSeance: Bool = false
+    /// Le début de la séance ouverte, pour le compteur de minutes.
+    var debutSeance: Date? = nil
+
     var body: some View {
+        // ⚠️ **UNE SEULE HORLOGE POUR LE POINT ET POUR LE HALO**, et elle
+        // n'existe QUE pendant une séance. Deux horloges donneraient deux
+        // souffles qui dérivent l'un par rapport à l'autre ; et une horloge
+        // permanente sur cette card serait un coût permanent sur la page dont
+        // la cadence est le chantier.
+        //
+        // ⚠️ Fonction PURE DU TEMPS, pas un `@State` + `repeatForever` : cette
+        // card est démontée à chaque film de départ (`if verreMonte`), et un
+        // état de phase y sauterait à chaque aller-retour de la home.
+        if enSeance {
+            TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+                                    paused: reduceMotion)) { tl in
+                corps(souffle(tl.date.timeIntervalSinceReferenceDate))
+            }
+        } else {
+            corps(0)
+        }
+    }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// LES DEUX PÉRIODES, PREMIÈRES ENTRE ELLES — la loi des liserés. Et
+    /// encore d'autres que celles du contour d'écran (6,1 / 9,7) et de la
+    /// fumée (7,3 / 11,7) : trois respirations à l'écran ne doivent jamais
+    /// tomber en phase, sinon toute la page se met à battre ensemble.
+    private func souffle(_ t: Double) -> Double {
+        guard enSeance, !reduceMotion else { return enSeance ? 0.8 : 0 }
+        let a = sin(t * 2 * .pi / 4.7)
+        let b = sin(t * 2 * .pi / 7.9 + 0.8)
+        return 0.62 + 0.26 * a + 0.12 * b
+    }
+
+    @ViewBuilder
+    private func corps(_ s: Double) -> some View {
         ZStack(alignment: .topLeading) {
             ArdoiseFond(largeur: Self.L, hauteur: geo.hauteur, rayon: 26,
                         verre: verre, lisere: lisere,
-                        lueur: (defile || lueurForcee) ? 1 : 0)
-            texte
+                        // ⚠️ LE HALO DE SÉANCE PASSE PAR LA LUEUR DE
+                        // L'ARDOISE, pas par le halo du galet actif : celui-là
+                        // sort de son propre cadre au-delà de Ø 57,8 (on est à
+                        // 54), la bande le masque et la card le clippe — il
+                        // serait tranché deux fois. Et `GaletEtape` est PARTAGÉ
+                        // avec la page route, qui est validée.
+                        lueur: enSeance ? s
+                             : ((defile || lueurForcee) ? 1 : 0))
+            texte(s)
             if Self.colonneSeule {
                 colonne
             } else {
@@ -253,22 +329,84 @@ struct CardRoute: View {
     /// les trois pierres se serraient à droite : la card se lisait comme un
     /// rectangle à moitié rempli. Centré, les deux masses se répondent —
     /// le texte à gauche, le chemin à droite, sur le même axe.
-    private var texte: some View {
+    /// LA GOUTTIÈRE RÉELLE du texte — et elle n'était bornée NULLE PART.
+    /// Le bloc s'étendait sur les 354 pt de la card alors que les galets
+    /// commencent à x = 146 : « Étape 3 sur 9 » est court, donc ça ne se
+    /// voyait pas. Un libellé de séance plus long serait passé SOUS les
+    /// pierres, sans erreur ni warning. 354 − 22 (marge) − 146 (les galets)
+    /// − 12 (l'air) = 174.
+    private static let gouttiere: CGFloat = 174
+
+    @ViewBuilder
+    private func texte(_ s: Double) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("CHAPITRE \(apercu.chapitre)")
-                .font(.system(size: 11, weight: .semibold))
-                .kerning(1.6)
-                .foregroundStyle(Color(white: 0.52))
-                .contentTransition(.numericText())
-            Text("Étape \(apercu.rang) sur \(apercu.total)")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(LinearGradient(
-                    colors: [Color(white: 1.0), Color(white: 0.82)],
-                    startPoint: .top, endPoint: .bottom))
-                .contentTransition(.numericText())
+            HStack(spacing: 7) {
+                // LE POINT VIVANT — il ne dit qu'une chose : ça tourne.
+                // ⚠️ SOURD AU DOIGT : la porte de la route est le tap de la
+                // card ENTIÈRE, et un enfant qui a une zone tactile la
+                // volerait (le bug des mini-cards, payé deux fois — c'est
+                // aussi pourquoi les neuf galets sont `inerte: true`).
+                if enSeance {
+                    // LE POINT VIVANT — il ne dit qu'une chose : ça tourne.
+                    // ⚠️ **TROIS GESTES SUR LE MÊME SOUFFLE** (verdict 02-09 :
+                    // « anime le bouton blanc »). Une opacité seule se remarque
+                    // mal sur 6 pt : le point RESPIRE aussi en taille, et une
+                    // auréole naît sous lui au sommet. Les trois lisent le même
+                    // `s`, donc ils ne peuvent pas se désaccorder.
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 6, height: 6)
+                        .scaleEffect(0.82 + 0.34 * s)
+                        .opacity(0.42 + 0.58 * s)
+                        .background {
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 6, height: 6)
+                                .scaleEffect(1.6 + 1.5 * s)
+                                .opacity(0.16 * s)
+                                .blur(radius: 3)
+                        }
+                        .allowsHitTesting(false)
+                }
+                Text(enSeance ? "SÉANCE EN COURS"
+                              : "CHAPITRE \(apercu.chapitre)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .kerning(1.6)
+                    .foregroundStyle(enSeance
+                                     ? Color(white: 0.72)
+                                     : Color(white: 0.52))
+            }
+            ligneBasse
         }
+        .lineLimit(1)
         .padding(.leading, 22)
+        .frame(width: Self.gouttiere + 22, alignment: .leading)
         .frame(width: Self.L, height: geo.hauteur, alignment: .leading)
+    }
+
+    /// ⚠️ **DEUX TRANSITIONS, PAS UNE.** `.numericText()` est un ODOMÈTRE : il
+    /// est fait pour des CHIFFRES qui roulent. Il reste sur « Étape R sur T »,
+    /// où seuls les nombres bougent. Mais lui faire jouer un changement de
+    /// PHRASE ferait rouler des lettres — au mieux un fondu bizarre, au pire
+    /// illisible, et c'est précisément la ligne qui doit dire que l'app est
+    /// vivante. Le passage repos ↔ séance change donc d'IDENTITÉ de vue et
+    /// passe en fondu.
+    @ViewBuilder
+    private var ligneBasse: some View {
+        Group {
+            if enSeance {
+                MinutesSeance(depuis: debutSeance)
+            } else {
+                Text("Étape \(apercu.rang) sur \(apercu.total)")
+                    .contentTransition(.numericText())
+            }
+        }
+        .font(.system(size: 17, weight: .semibold))
+        .foregroundStyle(LinearGradient(
+            colors: [Color(white: 1.0), Color(white: 0.82)],
+            startPoint: .top, endPoint: .bottom))
+        .id(enSeance)
+        .transition(.opacity)
     }
 
     // MARK: les trois galets

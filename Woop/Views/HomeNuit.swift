@@ -1893,6 +1893,22 @@ struct HomeNuitPage: View {
 
     /// Le galet est rangé au mur : le slider reprend la largeur libérée.
     @State private var galetRange = false
+    /// LA MUE DE LA PHRASE — 0 au début de la métamorphose, 1 une fois posée.
+    /// Elle vaut 1 au repos : rien ne joue tant qu'on ne change pas d'état.
+    @State private var mue: Double = 1
+    /// LES MINUTES DE SÉANCE AFFICHÉES DANS LA PHRASE.
+    ///
+    /// ⚠️ **UN `@State` RAFRAÎCHI SUR ÉVÉNEMENT, JAMAIS UNE DÉRIVÉE DE `body`.**
+    /// La home se réévalue à chaque image pendant un pull : un
+    /// `Date().timeIntervalSince(...)` lu dans le corps serait recalculé
+    /// soixante fois par seconde — et, pire, la phrase pourrait CHANGER au
+    /// milieu de la cloche. C'est l'école de `stats` et de `lectureChemin` :
+    /// deux sites d'écriture, jamais un calcul dans un corps.
+    @State private var minutesSeance: Int = 0
+    /// L'ÉTAT QUE LA PHRASE AFFICHE — distinct de `enSeance`, parce qu'il
+    /// change au moment PRÉCIS où la phrase est invisible, pas à celui où la
+    /// séance bascule.
+    @State private var phraseSeance = false
     @State private var menuOuvert = false
     /// LA SÉANCE TOURNE. Tant qu'elle tourne, la card reste SOULEVÉE et
     /// refuse de se refermer : le player n'est pas un tiroir qu'on range,
@@ -1921,6 +1937,54 @@ struct HomeNuitPage: View {
 
     private var enSeance: Bool {
         Self.bancSeance || !seancesOuvertes.isEmpty
+    }
+
+    /// LES FRAGMENTS QU'ON MONTRE. L'échange se fait à l'instant où `mue`
+    /// retombe à 0 — c'est-à-dire quand la phrase est à `u = 0` : opacité
+    /// NULLE et flou de 30 pt. Il n'y a rigoureusement rien à voir à cet
+    /// instant, donc rien à cacher : c'est le seul échange qui ne se voit pas.
+    private func fragmentsPhrase() -> [PhraseFragment] {
+        phraseSeance
+            ? PhraseTexte.fragmentsSeance(minutes: minutesSeance)
+            : PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus)
+    }
+
+    /// LA PHRASE SE RÉÉCRIT — l'entrée en scène, rejouée.
+    ///
+    /// ⚠️ **ON NE REJOUE PAS `lancer()`** : il écrit `naissance` ET `arrivee`,
+    /// donc il rallumerait la lampe de toute la pièce et referait arriver les
+    /// cards. Ici, seule la phrase repart de zéro.
+    ///
+    /// La durée est celle de l'arrivée elle-même (`duréeTotale` = 1,46 s), pas
+    /// un nombre neuf : c'est LA MÊME entrée en scène, donc le même tempo.
+    /// LES RÉGLAGES DE LA PHRASE, PENDANT UNE RÉÉCRITURE.
+    ///
+    /// L'arrivée de l'app garde son flou de 30 — c'est sa cinématique, elle est
+    /// validée. La réécriture prend `flouMue` (15) : au-delà, chaque ligne se
+    /// dissout en dalle et les quatre dalles empilées font le CALQUE.
+    ///
+    /// ⚠️ Aucun saut au raccord : à `m = 1` l'avancement vaut 1, donc le flou
+    /// vaut `(1 − u) × flou = 0` des deux côtés. On peut échanger les réglages
+    /// à cet instant sans que rien ne bouge.
+    private func phraseMuee(_ m: Double) -> PhraseParams {
+        guard m < 1 else { return phrase }
+        var p = phrase
+        p.flou = phrase.flouMue
+        return p
+    }
+
+    private func muer(_ vers: Bool) {
+        mue = 0
+        // Le texte change PENDANT qu'il est invisible.
+        phraseSeance = vers
+        withAnimation(.linear(duration: phrase.duréeTotale)) { mue = 1 }
+    }
+
+    /// Les minutes, relues sur ÉVÉNEMENT. Appelée au changement d'état de
+    /// séance et à chaque minute pendant qu'elle dure.
+    private func majMinutes() {
+        guard let d = debutSeance else { minutesSeance = 0; return }
+        minutesSeance = max(0, Int(Date().timeIntervalSince(d) / 60))
     }
     private var debutSeance: Date? {
         Self.bancSeance ? Self.bancDepart : seancesOuvertes.first?.startedAt
@@ -2488,6 +2552,16 @@ struct HomeNuitPage: View {
                     tirage = -CGFloat(u) * Self.leveeTiroir
                 }
             }
+            // `-mueAuto` : LA MÉTAMORPHOSE DE LA PHRASE, REJOUÉE EN BOUCLE.
+            // ⚠️ Sans ce banc elle est INVISIBLE au simulateur : `-homeSeance`
+            // rend `enSeance` vrai dès la PREMIÈRE image, donc `onChange` ne
+            // se déclenche jamais — il n'y a aucun changement à jouer. C'est
+            // exactement pour ça qu'elle ne l'a pas vue.
+            if CommandLine.arguments.contains("-mueAuto") {
+                Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in
+                    muer(!phraseSeance)
+                }
+            }
             if CommandLine.arguments.contains("-departAuto") {
                 Timer.scheduledTimer(withTimeInterval: 5.5, repeats: true) { _ in
                     lancer(gDepart: 0)
@@ -2548,7 +2622,26 @@ struct HomeNuitPage: View {
             case .none: break
             }
         }
+        // LES MINUTES SE RAFRAÎCHISSENT PENDANT LA SÉANCE, et seulement
+        // pendant. ⚠️ Un `.task(id:)` et non un `Timer` : il s'annule tout
+        // seul quand l'état change ou que la vue part — un timer retenu
+        // survivrait à la page et écrirait dans le vide. Une réveil toutes les
+        // 30 s, et le nombre ROULE (chaque mot porte déjà
+        // `.contentTransition(.numericText())`) : pas de cloche pour ça, une
+        // métamorphose pour changer de minute serait grotesque.
+        .task(id: enSeance) {
+            guard enSeance else { return }
+            while !Task.isCancelled {
+                majMinutes()
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
         .onChange(of: enSeance) { _, encore in
+            // LA PHRASE SE MÉTAMORPHOSE — à l'entrée EN séance comme à la
+            // sortie. C'est le même mouvement joué deux fois : le bloc sort du
+            // net, change de mots au sommet du flou, et revient au net.
+            majMinutes()
+            muer(encore)
             guard encore else { rendreLaHome(); return }
             // LA SÉANCE TOURNAIT DÉJÀ AU LANCEMENT. Le `@Query` n'est
             // renseigné qu'APRÈS la première image : la card naît basse, on
@@ -3070,6 +3163,22 @@ struct HomeNuitPage: View {
             // card ouvre en se raccourcissant, jamais une nappe posée sur la
             // page. C'est le MÊME espace que le player en séance : un seul
             // endroit, trois contenus, et la cohérence d'expérience avec lui.
+            // ⚠️ **MONTÉ, PAS SEULEMENT TRANSPARENT** — et c'est la loi que ce
+            // fichier écrit déjà vingt lignes plus bas pour la fumée d'invite :
+            // « une `.opacity(0)` ne l'arrêterait pas — le sous-arbre
+            // continuerait de battre pendant toute la scène et toute la séance,
+            // pour peindre du vide. »
+            //
+            // Au repos `slid` vaut 0, donc ce slider était rendu à OPACITÉ
+            // NULLE, flouté à 7 pt, avec un shader Metal (`colorEffect`), deux
+            // `Canvas` et une `TimelineView` à 60 Hz SANS `paused:`
+            // (SliderObsidienne.swift:187) — au repos ET pendant toute la
+            // séance. Il n'apparaissait dans aucune ligne de la sonde du pull.
+            //
+            // Le seuil est celui de la maison (`if p > 0.01`, `if lueur > 0.01`,
+            // `if net < 0.02`) : au-delà, l'objet existe ; en deçà, il n'a rien
+            // à peindre.
+            if slid > 0.001 {
             SliderObsidienne(label: libelleSlider,
                              height: 62,
                              // §23 : la course validée ouvre LE CHEMIN —
@@ -3104,17 +3213,41 @@ struct HomeNuitPage: View {
                 .offset(y: 30 * (1 - slid))
                 .blur(radius: slid > 0.96 ? 0 : 7 * (1 - slid))
                 .allowsHitTesting(e > 1.88)
+            }
                 Group {
-                    PhraseVue(p: arr, flouDepart: cloche
+                    // ⚠️ **LA MÉTAMORPHOSE, ET C'EST LA MÊME QU'AU DÉPART**
+                    // (02-09). `Chambre` est le pont Animatable : sans lui,
+                    // `flouDepart` SAUTERAIT au lieu de monter — `PhraseVue`
+                    // n'interpole que `p`, et une rampe posée sur un autre
+                    // paramètre sous `withAnimation` ne joue pas (loi payée).
+                    //
+                    // La cloche est une fonction PURE de `mue` : le flou monte
+                    // à 15 pt, les mots changent À SON SOMMET, puis il retombe.
+                    // On ne lit donc pas un texte remplacé, on lit un bloc qui
+                    // sort du net et y revient en disant autre chose.
+                    Chambre(p: mue) { m in
+                    // ⚠️ **C'EST L'ARRIVÉE QU'ON REJOUE, PAS UNE CLOCHE.**
+                    // Elle voulait « l'effet blur comme si une IA parlait » :
+                    // c'est mot pour mot ce que `avancement(i)` fait déjà —
+                    // chaque ligne sort du flou l'une APRÈS l'autre (flou 30,
+                    // montée 22, zoom 1,05, décalage 0,14 s). Une cloche unique
+                    // floute le bloc ENTIER d'un bloc : c'est une mise au
+                    // point, pas une voix qui écrit.
+                    //
+                    // `min(arr, m)` fait les deux avec une seule expression :
+                    // au lancement `m` vaut déjà 1 et c'est `arr` qui mène ;
+                    // à un changement de texte `arr` vaut 1 et c'est `m` qui
+                    // rejoue l'entrée. Rien d'autre sur la page ne bouge.
+                    PhraseVue(p: min(arr, m), flouDepart: cloche
                                 + 3.5 * min(g / 0.37, 1),
-                              params: phrase, rasant: rasant,
-                              fragments: PhraseTexte.fragments(
-                                faits: faitsAffiche, prevus: prevus),
+                              params: phraseMuee(m), rasant: rasant,
+                              fragments: fragmentsPhrase(),
                               ecran: geo.size.width,
                               hautEcran: geo.safeAreaInsets.top + 48,
                               galet: galet,
                               objectif: $prevus,
                               reglageOuvert: $reglageOuvert)
+                    }
                         .padding(.leading, 24)
                         // 56 pt sous la barre. Le ScrollView est MORT (la
                         // home tient sur un écran, c'est le TIRAGE qui la
@@ -3237,7 +3370,23 @@ struct HomeNuitPage: View {
                     // widget This week »). Le tap vit DANS la card, et ses
                     // galets sont inertes exprès : un enfant qui a un geste
                     // bat le tap de son parent.
-                    if verreMonte, !Self.ardoiseThisWeek {
+                    // ⚠️ **`|| enSeance` — ET C'EST LE PRÉREQUIS DE TOUT LE
+                    // RESTE** (02-09). `verreMonte` est mis à `false` par
+                    // `lancer()` et n'est remis à `true` que par `fermer()` et
+                    // `rendreLaHome()` — cette dernière n'étant appelée que
+                    // quand `enSeance` passe à FAUX. Sur le chemin
+                    // slider → chemin → séance, cette card n'était donc PAS
+                    // MONTÉE pendant toute la séance : on aurait animé un
+                    // texte, un halo et un point que personne ne voit.
+                    //
+                    // ⚠️ On élargit LA CONDITION DE CETTE CARD, jamais
+                    // `verreMonte` lui-même : le drapeau commande aussi les
+                    // deux widgets en verre natif, et son rôle d'origine est
+                    // d'alléger le film de départ. Le remonter globalement
+                    // rallumerait deux verres et deux gaussiennes pendant la
+                    // séance — le régime que le dépôt a démonté exprès.
+                    if verreMonte || enSeance, !Self.ardoiseThisWeek,
+                       net < 0.995 {
                     CardRoute(lecture: lectureChemin
                                 ?? EcranSpec.Lecture(etape: 0),
                               pose: min(max((arr - 0.70) / 0.30, 0), 1),
@@ -3247,9 +3396,11 @@ struct HomeNuitPage: View {
                               onTap: {
                                   print("[SONDE-CHEMIN] tap card ROUTE")
                                   ouvrirChemin()
-                              })
+                              },
+                              enSeance: enSeance,
+                              debutSeance: debutSeance)
                         .padding(.leading, 24)
-                        .padding(.top, geo.size.height * 0.620)
+                        .padding(.top, Self.yRoute(geo.size.height))
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt — un blur sur du verre natif
                         // empile deux passes, et au-delà on paie pour du vide.

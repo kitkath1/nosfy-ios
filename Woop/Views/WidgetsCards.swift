@@ -1322,9 +1322,16 @@ struct CardSeances: View {
                                             endPoint: .bottom)))
                                 .frame(width: 0.052 * W, height: 0.052 * W)
                                 .scaleEffect(1 + 0.06 * s)
-                                .shadow(color: on
-                                        ? CardTon.chaleur(0.38)
-                                            .opacity(0.55 + 0.20 * s)
+                                // ⚠️ **PAS DE HALO SUR LE JOUR EN COURS**
+                                // (verdict 02-09). Il en portait un, et il
+                                // PULSAIT avec `s` : le seul point de la
+                                // rangée à la fois plus gros, plus clair ET
+                                // auréolé — trois signaux pour dire une seule
+                                // chose. Les jours faits gardent le leur ;
+                                // celui d'aujourd'hui se distingue par son
+                                // souffle, pas par une couronne.
+                                .shadow(color: on && !derniere
+                                        ? CardTon.chaleur(0.38).opacity(0.55)
                                         : .clear,
                                         radius: 0.030 * W)
                                 .position(x: (0.156 + 0.1115 * Double(i)) * W,
