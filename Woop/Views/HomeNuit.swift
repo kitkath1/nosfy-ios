@@ -3308,7 +3308,19 @@ struct HomeNuitPage: View {
                     // vide. Le dépôt le savait déjà (MenuCouronne garde son
                     // disque par `if p > 0.01`), la leçon n'avait pas été portée
                     // ici.
-                    if verreMonte {
+                    // ⚠️ **ON NE REND PAS CE QUI EST DÉJÀ INVISIBLE.** Pendant
+                    // le pull, ces cards portent `.opacity(1 - net)` — et `net`
+                    // atteint 1 dès 68 pt de doigt, alors que la décision se
+                    // prend à 80. Sur toute la fin du geste, et pendant tout le
+                    // temps où le pouce s'immobilise avant de lâcher, on payait
+                    // donc du verre natif AU-DESSUS D'UNE VIDÉO VIVANTE pour
+                    // peindre rigoureusement rien.
+                    //
+                    // Le seuil est à 0,995 : au-delà l'opacité vaut moins de
+                    // 5/1000, il n'y a rien à voir — la garde est donc
+                    // PROUVABLEMENT invisible, ce qui n'aurait pas été le cas
+                    // d'un démontage à mi-course.
+                    if verreMonte, net < 0.995 {
                     CardsRangee(faites: faitsAffiche, prevues: prevus,
                                 volume: stats?.volumeValeur ?? "8.4",
                                 volumeUnite: stats?.volumeUnite ?? "kg",
