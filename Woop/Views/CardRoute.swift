@@ -245,6 +245,12 @@ struct CardRoute: View {
 
     /// `-colonne` : l'ancienne composition à TROIS pierres empilées, gardée
     /// pour la comparaison. La bande des neuf est le défaut depuis le 29-08.
+    /// `-sansGalet` : l'horloge du galet actif en pause. Bisection — elle
+    /// tourne à CADENCE LIBRE (`minimumInterval: nil`) dès que l'état est
+    /// `.actif`, et depuis que la card est montée pendant la séance, elle
+    /// tourne pendant toute la séance.
+    static let sansGalet = CommandLine.arguments.contains("-sansGalet")
+
     private static let colonneSeule =
         CommandLine.arguments.contains("-colonne")
 
@@ -572,6 +578,7 @@ struct CardRoute: View {
                           glypheLune: e.special,
                           taille: taille,
                           graine: Double(e.id),
+                          figee: Self.sansGalet,
                           lentille: false,
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,
@@ -624,6 +631,7 @@ struct CardRoute: View {
                           glypheLune: e.special,
                           taille: taille,
                           graine: Double(e.id),
+                          figee: Self.sansGalet,
                           lentille: false,
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,

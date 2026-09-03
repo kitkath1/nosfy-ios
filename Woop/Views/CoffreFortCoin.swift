@@ -44,6 +44,11 @@ struct CoffreFortCoinButton: View {
     /// premium, néon discret »).
     var matte: Float = 0
 
+    /// `-sansPiece` : bisection. `static let` — évalué une fois, jamais dans
+    /// un `body`.
+    private static let sansPiece =
+        CommandLine.arguments.contains("-sansPiece")
+
     /// Le diamètre visible. Parti de 42 (la taille du coffre), monté à 52
     /// pour qu'un bijou qu'on fait tourner ait de quoi se montrer, puis
     /// redescendu à 46 : à 52 elle pesait plus lourd que le salut lui-même.
@@ -54,13 +59,20 @@ struct CoffreFortCoinButton: View {
             .frame(width: Self.diameter, height: Self.diameter)
             .anchorPreference(key: CoffreFortCoinBounds.self, value: .bounds) { $0 }
             .overlay {
-                MoonCoinView(coinR: Self.diameter / 2, matte: matte, onTap: {
+                // ⚠️ `-sansPiece` : la pièce FIGÉE, pour la bisection sur
+                // TÉLÉPHONE. Son propre fichier le dit — « un abonnement au
+                // tilt d'un @Observable qui réévalue toutes les pièces au
+                // rythme du gyroscope : invisible au simulateur (le tilt y
+                // reste nul), PAYÉ SUR LE TÉLÉPHONE ». C'est donc le seul
+                // suspect qu'aucune mesure au simulateur ne pouvait voir.
+                MoonCoinView(coinR: Self.diameter / 2, matte: matte,
+                             onTap: {
                     onPress(true)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
                         onPress(false)
                     }
                     action()
-                })
+                }, figee: Self.sansPiece)
             }
     }
 }

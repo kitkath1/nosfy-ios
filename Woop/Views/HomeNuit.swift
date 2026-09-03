@@ -2253,6 +2253,9 @@ struct HomeNuitPage: View {
     /// LA POIGNÉE DU PULL — la hauteur de la bande qui prend le doigt au bas
     /// de la card. Elle DÉBORDE le dessin de l'invite : on ne doit pas viser.
     private static var poigneePull: CGFloat { 112 }
+    /// `-sansInvite` : bisection de la charge en séance.
+    private static let sansInvite =
+        CommandLine.arguments.contains("-sansInvite")
     /// LA LIGNE DES DEUX CARDS, et celle de la card ROUTE.
     ///
     /// ⚠️ **UNE SEULE SOURCE, ET C'EST TOUT LE POINT.** La fraction des cards
@@ -3545,10 +3548,17 @@ struct HomeNuitPage: View {
                         Color.clear
                             .frame(height: Self.poigneePull)
                             .contentShape(Rectangle())
+                        // ⚠️ `-sansInvite` : bisection. Elle bat à 30 Hz
+                        // PENDANT TOUTE LA SÉANCE — sa seule garde est une
+                        // `.opacity(enSeance ? 0 : …)`, et son horloge n'est
+                        // pausée que par `homeDort` (vrai sous la route
+                        // seulement). Elle peint donc du vide à 30 Hz.
+                        if !Self.sansInvite {
                         InviteTirage(actif: !tiroirOuvert)
                             .padding(.leading, 24)
                             .padding(.trailing, 24)
                             .padding(.bottom, 24)
+                        }
                     }
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottom)

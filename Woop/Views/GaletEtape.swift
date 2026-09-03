@@ -129,6 +129,10 @@ struct GaletEtape: View {
     var taille: CGFloat = 60
     /// La graine de forme : chaque goutte du chemin est unique.
     var graine: Double = 0
+    /// L'HORLOGE EN PAUSE, commandée de l'extérieur. `inerte` ne coupe que le
+    /// hit-testing ; celui-ci coupe le TEMPS. Sert à la bisection `-sansGalet`
+    /// et, plus tard, à taire un galet qui n'a rien à animer.
+    var figee: Bool = false
     /// LA LENTILLE NATIVE — le verre `.clear` qui RÉFRACTE la vidéo qui
     /// bouge dessous (l'orbe, les flammes). Légal ici : le contenu est
     /// DOUX (la loi affinée du 20-08). Sur le noir pur elle est invisible
@@ -413,6 +417,7 @@ struct GaletEtape: View {
     }
 
     private var pauseTimeline: Bool {
+        if figee { return true }
         if reduceMotion { return true }
         if enMain { return false }
         if etat == .actif || etat == .parfait { return false }
