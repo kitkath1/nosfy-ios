@@ -932,6 +932,10 @@ struct RootView: View {
             // Banc du player tapis : `-tapisLab`, la scène SEULE sur du noir.
             // Ses prises vivent avec elle (`TapisBanc`, dans TapisLab.swift).
             TapisLab()
+        } else if NavBanc.actif {
+            // Banc de la nav d'encre : `-navEncre`, le rail SEUL sur du noir.
+            // Son drapeau vit avec lui (`NavBanc`, dans NavEncre.swift).
+            NavEncreLab()
         } else {
             mainBody
         }
