@@ -407,12 +407,24 @@ struct CalqueVideo: UIViewRepresentable {
         c.looper = AVPlayerLooper(player: p, templateItem: modele)
         c.player = p
         v.playerLayer.player = p
-        p.play()
+        // ⚠️ LES RÉVEILS REJOUENT LE RATE DEMANDÉ (03-09, chantier chauffe
+        // item 1) : les trois chemins ci-dessous faisaient un `play()` EN
+        // DUR — chaque déverrouillage entre deux séries relançait TOUS les
+        // lecteurs sous la porte `couvre`, et le cache de `updateUIView`
+        // interdisait toute re-pause. Désormais chacun rejoue `c.rate` (ce
+        // que l'hôte demande) : un lecteur en pose RESTE en pose.
+        c.rate = rate
+        if c.rate > 0 { p.rate = c.rate }
         // ⚠️ `preroll` LÈVE UNE EXCEPTION tant que le statut n'est pas
-        // `readyToPlay` — appelé à la construction, il tue l'app au lancement.
-        c.statut = p.observe(\.status, options: [.new]) { joueur, _ in
+        // `readyToPlay` — appelé à la construction, il tue l'app au
+        // lancement. Préroller reste permis (le filet anti-frames-
+        // manquées) : c'est le play FINAL qui se conditionne.
+        c.statut = p.observe(\.status, options: [.new]) { [weak c] joueur, _ in
             guard joueur.status == .readyToPlay else { return }
-            joueur.preroll(atRate: 1) { fini in if fini { joueur.play() } }
+            joueur.preroll(atRate: 1) { fini in
+                guard fini, let c, c.rate > 0 else { return }
+                joueur.rate = c.rate
+            }
         }
         // La pose s'efface quand la première image est là, pas avant.
         c.pret = v.playerLayer.observe(\.isReadyForDisplay, options: [.new]) {
@@ -422,7 +434,10 @@ struct CalqueVideo: UIViewRepresentable {
         }
         c.retour = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
-            object: nil, queue: .main) { [weak p] _ in p?.play() }
+            object: nil, queue: .main) { [weak p, weak c] _ in
+                guard let p, let c, c.rate > 0 else { return }
+                p.rate = c.rate
+            }
         return v
     }
 

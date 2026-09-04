@@ -31,6 +31,10 @@ struct ExosFondVideo: UIViewRepresentable {
         var looper: AVPlayerLooper?
         var retour: NSObjectProtocol?
         var statut: NSKeyValueObservation?
+        /// Le rate DEMANDÉ par l'hôte — ce que les réveils rejouent
+        /// (03-09, chantier chauffe item 1 : un `play()` en dur au retour
+        /// au premier plan relançait le décodeur sous sa porte).
+        var rate: Float = 1
         deinit {
             if let r = retour { NotificationCenter.default.removeObserver(r) }
             statut?.invalidate()
@@ -58,39 +62,51 @@ struct ExosFondVideo: UIViewRepresentable {
         // touchait l'arête physique.
         v.clipsToBounds = true
         v.playerLayer.masksToBounds = true
-        guard let url = Bundle.main.url(forResource: "exos-fond-loop",
-                                        withExtension: "mp4") else {
+        // LE CELLIER DU SPLASH (03-09, item 9) : l'asset vient de
+        // `AssetsVideo` — chauffé au lancement, il ne se re-parse pas.
+        // L'`AVPlayerItem(url:)` direct parsait le mp4 de 16,5 Mo À FROID
+        // dans la transition animée du premier tap d'onglet.
+        guard let modele = AssetsVideo.item("exos-fond-loop") else {
             // Sans le fichier, l'image de pose tient la page à elle seule.
             return v
         }
         let p = AVQueuePlayer()
         p.isMuted = true
         p.automaticallyWaitsToMinimizeStalling = false
-        context.coordinator.looper = AVPlayerLooper(
-            player: p, templateItem: AVPlayerItem(url: url))
-        context.coordinator.player = p
+        let c = context.coordinator
+        c.looper = AVPlayerLooper(player: p, templateItem: modele)
+        c.player = p
         v.playerLayer.player = p
-        p.play()
+        // ⚠️ LES RÉVEILS REJOUENT LE RATE DEMANDÉ (03-09, item 1) — plus
+        // jamais un `play()` en dur qui relance un lecteur en pose.
+        c.rate = rate
+        if c.rate > 0 { p.rate = c.rate }
         // LE PRÉCHARGEMENT, une fois les tampons prêts : sans lui la première
         // seconde est une suite de frames manquées.
         // ⚠️ `preroll` LÈVE UNE EXCEPTION tant que le statut n'est pas
         // `readyToPlay` — appelé à la construction, il tue l'app au lancement
-        // (payé le 21-08). Il s'attache donc au statut.
-        context.coordinator.statut = p.observe(\.status, options: [.new]) {
-            joueur, _ in
+        // (payé le 21-08). Il s'attache donc au statut. Préroller reste
+        // permis : c'est le play FINAL qui se conditionne.
+        c.statut = p.observe(\.status, options: [.new]) { [weak c] joueur, _ in
             guard joueur.status == .readyToPlay else { return }
             joueur.preroll(atRate: 1) { fini in
-                if fini { joueur.play() }
+                guard fini, let c, c.rate > 0 else { return }
+                joueur.rate = c.rate
             }
         }
-        context.coordinator.retour = NotificationCenter.default.addObserver(
+        c.retour = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
-            object: nil, queue: .main) { [weak p] _ in p?.play() }
+            object: nil, queue: .main) { [weak p, weak c] _ in
+                guard let p, let c, c.rate > 0 else { return }
+                p.rate = c.rate
+            }
         return v
     }
 
     func updateUIView(_ v: BoosterLoopLayerView, context: Context) {
-        guard let p = context.coordinator.player else { return }
+        let c = context.coordinator
+        c.rate = rate
+        guard let p = c.player else { return }
         if p.rate != rate { p.rate = rate }
     }
 
@@ -120,6 +136,11 @@ struct GrandeCardExos: View {
     /// La naissance de la page, 0 → 1 : la card s'allume en fondu avec une
     /// approche imperceptible (1,015 → 1). Jamais un bounce (la spec).
     var naissance: Double = 1
+    /// LA PORTE D'ONGLET (03-09, item 4) : quand la page n'est pas
+    /// l'onglet affiché, le lecteur CÈDE LA PLACE à sa pose — l'école
+    /// exacte de la home sous `\.dort` (« pas un rate 0 : ce lecteur
+    /// l'ignore par trois chemins, et le réveil flushe la couche »).
+    @Environment(\.ongletCache) private var ongletCache
     /// §3.4ter S2' : `nue` = SANS robe (ni clip, ni marges, ni
     /// `ignoresSafeArea`) — la robe vient du moteur PageCard, la card
     /// n'est plus que son fond vidéo, plein cadre du slot.
@@ -174,8 +195,14 @@ struct GrandeCardExos: View {
                             Image("exos-fond-poster")
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                            ExosFondVideo(
-                                rate: PlayerEtat.shared.couvre ? 0 : 1)
+                            // Onglet caché → le lecteur se DÉMONTE, la pose
+                            // tient la card ; au retour il renaît derrière
+                            // elle (le cellier du splash rend la renaissance
+                            // gratuite — plus de re-parse).
+                            if !ongletCache {
+                                ExosFondVideo(
+                                    rate: PlayerEtat.shared.couvre ? 0 : 1)
+                            }
                         }
                     }
                 .clipShape(nue ? UnevenRoundedRectangle(

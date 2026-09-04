@@ -2822,6 +2822,10 @@ struct CoffreV2Page: View {
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // LE BOUCLIER SYSTÈME (03-09, item 10) : la moitié qui manquait —
+        // l'indicateur était déjà caché, mais le geste bas partait au
+        // système au premier glissement.
+        .defersSystemGestures(on: .bottom)
         .onAppear {
             demarrer()
             // ⚠️ LE CAPTEUR NE TOURNE QUE PAGE OUVERTE. Un `CMMotionManager`

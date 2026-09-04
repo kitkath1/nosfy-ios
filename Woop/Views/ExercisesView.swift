@@ -466,11 +466,19 @@ struct ExercisesView: View {
             // moteur, la lune est celle du moteur (le trait, l'élastique).
             // Le clavier de braise est le cas §2.17 de cette page : bande
             // cachée tant qu'il est sorti.
+            // NAV DU BAS (banc validé a0d6aac, intégration §6) : la bande
+            // reçoit la nav ET la dalle via BandeNav. `dockH` vient de la
+            // MÊME source que BandeNav (NavEtat.dockH) — la card et la bande
+            // ne divergent jamais. Lire `dockH` ici crée la dépendance
+            // d'Observation : au repli, la page se ré-évalue et la card
+            // s'allonge en une fois.
             PageCard(
+                     dockH: NavEtat.shared.dockH(enSeance: enSeance),
                      enSeance: enSeance,
                      bandeVisible: !etat.clavier,
                      page: { corpsPage },
-                     dalle: { dalleExos })
+                     dalle: { dalleExos },
+                     nav: { NavBande(hauteur: NavEtat.shared.navH) })
                 // LE TUTO À PROJECTEURS — sur PageCard : l'espace global des
                 // ancres reste cohérent, le voile couvre card ET bande.
                 .overlayPreferenceValue(SlotAnchorKey.self) { anchors in

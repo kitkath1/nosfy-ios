@@ -604,7 +604,12 @@ struct ExerciseDetailView: View {
         // ses gestes n'existent plus.
         // LE LAYOUT UNIVERSEL (§2.14) : la fiche est TOUJOURS la card — en
         // séance le player dessous, hors séance le trait + LA LUNE.
+        // NAV DU BAS (intégration §6) : nav + dalle via BandeNav ; `dockH`
+        // depuis NavEtat (même source). `bandeVisible: false` pendant la
+        // plongée/série masque la bande ENTIÈRE, nav comprise — la loi
+        // « jamais pendant l'exercice » tient sans rien ajouter.
         PageCard(
+                 dockH: NavEtat.shared.dockH(enSeance: active != nil),
                  enSeance: active != nil,
                  // §2.17 : LE PLAYER N'ARRIVE JAMAIS pendant la plongée du
                  // galet (`flood` monte dès le drive) ni pendant la série
@@ -614,7 +619,8 @@ struct ExerciseDetailView: View {
                  page: { pageContenu },
                  // §3 : la dalle est un BOUTON — le déployé vit à la
                  // RACINE (PlayerMonde), plus ici.
-                 dalle: { dallePlayer })
+                 dalle: { dallePlayer },
+                 nav: { NavBande(hauteur: NavEtat.shared.navH) })
         // §2.19 : LE MONDE FLOTTANT AU-DESSUS DE LA CARD — plein écran
         // physique (ses `ignoresSafeArea` internes redeviennent opérants
         // ici ; pas d'`ignoresSafeArea` global : le panneau ancré LIT ses

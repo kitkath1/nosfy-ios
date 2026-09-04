@@ -121,10 +121,14 @@ struct ProgressPage: View {
         // sont morts. La STORY et le cover de l'iPod vivent SUR PageCard
         // (l'école mondeFlottant §2.19 / bug B §2.16 : rien de démontable
         // dans le slot, et les `ignoresSafeArea` redeviennent opérants).
+        // NAV DU BAS (intégration §6) : la bande reçoit nav + dalle via
+        // BandeNav ; `dockH` vient de NavEtat (même source que BandeNav).
         PageCard(
+                 dockH: NavEtat.shared.dockH(enSeance: !seancesOuvertes.isEmpty),
                  enSeance: !seancesOuvertes.isEmpty,
                  page: { pageContenu },
-                 dalle: { dallePlayer })
+                 dalle: { dallePlayer },
+                 nav: { NavBande(hauteur: NavEtat.shared.navH) })
         .overlay {
             if let launch = story {
                 storyVue(launch)
@@ -198,6 +202,12 @@ struct ProgressPage: View {
          && !PlayerEtat.shared.couvre) ? 1 : 0
     }
 
+    /// LA PORTE D'ONGLET (03-09, item 4) : onglet caché → les DEUX calques
+    /// cèdent la place à leur pose (l'école `\.dort` de la home — jamais un
+    /// rate 0 seul, ce lecteur l'ignore par trois chemins). C'est elle qui
+    /// éteint les 2 décodeurs de Progress quand on navigue ailleurs.
+    @Environment(\.ongletCache) private var ongletCache
+
     /// L'école exacte de la home (`DepartCine`) : un hôte NEUTRE qui prend la
     /// proposition, deux calques en `overlay` alignés (le feu au pied, la pill
     /// à mi-hauteur), l'additif, et UN SEUL groupe, en dernier — posé sur une
@@ -223,12 +233,21 @@ struct ProgressPage: View {
     /// maquette, collée par son arête basse à l'arête de la card, dans la
     /// boîte de la home (largeur × 330 : la cuisson est faite pour être
     /// coupée par le bas).
+    @ViewBuilder
     private func feu(W: CGFloat) -> some View {
-        CalqueVideo(nom: "home-fond-flamme",
-                    pose: "home-fond-flamme-poster",
-                    rate: rateFond)
-            .frame(width: W, height: 330)
-            .blendMode(.plusLighter)
+        if ongletCache {
+            Image("home-fond-flamme-poster")
+                .resizable().scaledToFill()
+                .frame(width: W, height: 330)
+                .clipped()
+                .blendMode(.plusLighter)
+        } else {
+            CalqueVideo(nom: "home-fond-flamme",
+                        pose: "home-fond-flamme-poster",
+                        rate: rateFond)
+                .frame(width: W, height: 330)
+                .blendMode(.plusLighter)
+        }
     }
 
     /// LA PILL — option A : `story-pilule-droite` (1206 × 964 = 3 × la
@@ -236,19 +255,31 @@ struct ProgressPage: View {
     /// 0,50 H, réglable au banc (`-progressPill <dy> <dx>`). Option B
     /// (`-progressPillBas`) : `progress-pill-bas` (1206 × 2592 = la card à
     /// 3×), la pill verticale qui part du bas, plein cadre.
+    @ViewBuilder
     private func pill(W: CGFloat, H: CGFloat) -> some View {
         let bas = ProgressBanc.pillBas
         let h: CGFloat = bas ? W * 2592 / 1206 : W * 964 / 1206
         let top: CGFloat = bas ? 0
             : max(0, H * 0.50 - h / 2 + ProgressBanc.pillDy)
-        return CalqueVideo(nom: bas ? "progress-pill-bas" : "story-pilule-droite",
-                           pose: bas ? "progress-pill-bas-poster"
-                                     : "story-pilule-droite-poster",
-                           rate: rateFond)
-            .frame(width: W, height: h)
-            .padding(.top, top)
-            .offset(x: bas ? 0 : ProgressBanc.pillDx)
-            .blendMode(.plusLighter)
+        let pose = bas ? "progress-pill-bas-poster"
+                       : "story-pilule-droite-poster"
+        Group {
+            if ongletCache {
+                Image(pose)
+                    .resizable().scaledToFill()
+                    .frame(width: W, height: h)
+                    .clipped()
+            } else {
+                CalqueVideo(nom: bas ? "progress-pill-bas"
+                                     : "story-pilule-droite",
+                            pose: pose,
+                            rate: rateFond)
+                    .frame(width: W, height: h)
+            }
+        }
+        .padding(.top, top)
+        .offset(x: bas ? 0 : ProgressBanc.pillDx)
+        .blendMode(.plusLighter)
     }
 
     // MARK: L'encre — header, semaine, calendrier

@@ -171,3 +171,20 @@ ai enfreintes aujourd'hui :
   pas une précaution : c'est la seule option.
 - **`xcodebuild | grep` rend le code de grep.** Payé une fois de plus le 02-09
   (`install … | tail` → `EXIT=0` faux).
+
+---
+
+## 6. LES RELEVÉS TÉLÉPHONE (registre unique — sessions nav + BordSeance)
+
+### Relevé 1 — 03-09 ~13h50, `-sansBord` seul (session nav)
+
+- **Protocole** : app relancée sur l'iPhone 15 de Kathryn via devicectl,
+  `-sansBord` SEUL, séance réelle en cours, ~2 min d'usage, main sur le dos.
+- **Verdict de Kathryn (mot pour mot)** : « La chaleur est un peu retombée,
+  mais globalement, ça chauffe quand même. » Le lag entre pages persiste
+  (« quand je passe d'une page à l'autre, ça met du temps à charger, ça
+  chauffe »).
+- **Lecture** : le ruban `BordSeance` PÈSE (baisse sensible) mais n'est PAS
+  seul — il reste au moins une autre source. Prochain barreau : `-sansPiece`
+  seul (suspect ① du §3 : le gyroscope 30 Hz de la pièce), puis `-sansGalet`,
+  puis `-sansInvite`.

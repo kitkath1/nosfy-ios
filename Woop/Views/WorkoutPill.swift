@@ -130,6 +130,11 @@ struct WorkoutPill: View {
     let exercise: Exercise
     /// Fraction de la séance accomplie, pour le filet de progression.
     var progress: Double = 0
+    /// LA PORTE DE LA COMÈTE (chantier chauffe 03-09, item 2) : la veine
+    /// ne bat que si SA page est l'onglet affiché ET que le monde du
+    /// player ne la couvre pas. Avant : 30 Hz permanent sur la dalle de
+    /// CHAQUE page montée, toute la séance.
+    @Environment(\.ongletCache) private var ongletCache
     /// Le départ de la séance : le sous-titre devient chrono. `nil`,
     /// l'attente — le libellé seul.
     var startedAt: Date? = nil
@@ -478,7 +483,12 @@ struct WorkoutPill: View {
         // coulisse, en 3,5 pt pour la dalle. L'AIR du verdict v9.2
         // (« trop collé partout, au footer, sur les côtés ») : 22 pt de
         // marge latérale, 13 sous elle.
-        BarreBlancheAnimee(progress: progress)
+        // La porte : l'ÉTAT du player (`monte` — jamais la course t) et
+        // l'onglet. L'horloge murale (mod 2,2 s) garantit la reprise
+        // sans saut par construction.
+        BarreBlancheAnimee(progress: progress,
+                           vivante: !ongletCache
+                               && !PlayerEtat.shared.monte)
         .frame(height: 3.5)
         .padding(.horizontal, 22)
         .padding(.bottom, 13)

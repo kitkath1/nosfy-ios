@@ -2353,13 +2353,19 @@ struct HomeNuitPage: View {
             // la lune locale aussi (celle du moteur vit sur le trait). Le
             // TIROIR et son film gardent leur tirage — il ne bouge plus la
             // card, il ne fait que le départ.
+            // NAV DU BAS (intégration §6) : nav + dalle via BandeNav ;
+            // `dockH` depuis NavEtat (même source). Le tiroir/slider de la
+            // home restent inchangés — la nav ne vit que dans la bande, en
+            // séance à ce jalon.
             PageCard(
+                     dockH: NavEtat.shared.dockH(enSeance: enSeance),
                      enSeance: enSeance,
                      // §3.4quater : le tiroir de la home possède déjà le
                      // geste du bas — pas de prise lune du moteur ici.
                      luneAuDrag: false,
                      page: { pageContenu(geo) },
-                     dalle: { dalleHome })
+                     dalle: { dalleHome },
+                     nav: { NavBande(hauteur: NavEtat.shared.navH) })
                 // LES SATELLITES — HORS card (clippés/étranglés dedans) :
                 // le panneau du départ et la vitrine, l'école mondeFlottant.
                 .overlay {
@@ -2486,7 +2492,9 @@ struct HomeNuitPage: View {
         // bord revient à la page, il en faut un second pour réveiller le
         // système. Le vrai filet reste le chien de garde du geste : même volé,
         // le doigt ne doit plus laisser la page cassée derrière lui.
-        .defersSystemGestures(on: .bottom)
+        // ⚠️ LA DÉCLARATION A DÉMÉNAGÉ AU CHÂSSIS (03-09, hygiène du gel) :
+        // un seul émetteur, sur le TabView de WoopApp — la doctrine
+        // ci-dessus reste vraie, seul le POSTE a changé.
         // `-fps` : la sonde de cadence (le SEUL juge fiable du « ça lag »).
         .sondeCadence("home")
         .onAppear {
@@ -2773,12 +2781,14 @@ struct HomeNuitPage: View {
                          // le galet (la bande du moteur réserve déjà 110) ;
                          // à RE-MESURER au banc -homeSeance, jamais déduire.
                          placeDy: 0,
-                         // §3.4quater, branché le 02-09 : le drapeau existait
-                         // depuis le 01-09 et n'avait AUCUN site d'appel — le
-                         // rangement encastrait la pastille et lui laissait
-                         // 13 pt sur l'arête, cette tranche qu'on voyait sur
-                         // l'écran du slider.
-                         galetCache: galetEteint) {
+                         // NAV DU BAS (J2, 03-09) : la pastille de la home est
+                         // SUPPRIMÉE — la nav du bas la remplace pour la
+                         // navigation. `galetCache: true` l'éteint en
+                         // permanence (opacité animée, transport neutralisé),
+                         // sans démonter le conteneur ni le tiroir/slider du
+                         // départ, qui vivent à part. Le menu-colonne devient
+                         // inatteignable : c'est voulu, la nav route désormais.
+                         galetCache: true) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
                     fondPage(e)
@@ -3548,12 +3558,14 @@ struct HomeNuitPage: View {
                         Color.clear
                             .frame(height: Self.poigneePull)
                             .contentShape(Rectangle())
-                        // ⚠️ `-sansInvite` : bisection. Elle bat à 30 Hz
-                        // PENDANT TOUTE LA SÉANCE — sa seule garde est une
-                        // `.opacity(enSeance ? 0 : …)`, et son horloge n'est
-                        // pausée que par `homeDort` (vrai sous la route
-                        // seulement). Elle peint donc du vide à 30 Hz.
-                        if !Self.sansInvite {
+                        // ⚠️ EN SÉANCE, L'INVITE NE SE MONTE PLUS (03-09,
+                        // chantier chauffe, ANALYSE-CHAUFFE-GESTES item 3) :
+                        // elle battait à 30 Hz sous une simple `.opacity 0` —
+                        // elle peignait du vide toute la séance. Le `if`
+                        // MIROIR de l'opacité ci-dessous ; la poignée
+                        // Color.clear et le tap restent HORS du if (le
+                        // hit-test et les cotes ne bougent pas).
+                        if !Self.sansInvite, !enSeance {
                         InviteTirage(actif: !tiroirOuvert)
                             .padding(.leading, 24)
                             .padding(.trailing, 24)

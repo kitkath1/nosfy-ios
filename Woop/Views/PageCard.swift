@@ -12,14 +12,23 @@ import UIKit
 /// séance, RIEN pendant l'exercice actif (§2.17).
 ///
 /// DEPUIS LE §3 (le revirement overlay) : cette vue ne porte PLUS le
-/// player déployé. La dalle est un BOUTON — tap ou drag-up franc →
-/// `PlayerEtat.shared.ouvrir()` : LE player unique de la racine
-/// (`PlayerMonde.swift`) monte PAR-DESSUS tout. La page ne bouge
-/// JAMAIS (la doctrine anti-bugs) — seule la lune garde son élastique
-/// minuscule (0,16 de course, le geste validé de la home).
-struct PageCard<Page: View, Dalle: View>: View {
+/// player déployé. La dalle est un BOUTON — tap → `ouvrir()`, drag
+/// arbitré par le PAN MAÎTRE de bande (`PanBande.swift`) : LE player
+/// unique de la racine (`PlayerMonde.swift`) monte PAR-DESSUS tout.
+/// La page ne bouge JAMAIS (la doctrine anti-bugs).
+/// ⚠️ ÉTAT RÉEL DE LA LUNE (03-09) : sa prise n'est PLUS branchée —
+/// `tirageLune` est orphelin, `levee` reste à 0, la lune ne se révèle
+/// plus. Le bas appartient à la bande et à son pan. Sa mort ou son
+/// re-logement (une zone du pan) est une DÉCISION DE KATHRYN en
+/// attente (plan §5) — le code dort ici en attendant le verdict.
+struct PageCard<Page: View, Dalle: View, Nav: View>: View {
     private let page: Page
     private let dalle: Dalle
+    /// LA NAV DU BAS (03-09) — son PROPRE slot, que le geste du player
+    /// n'enveloppe JAMAIS. C'est ce qui règle les trois bugs (tap qui ouvre
+    /// le player, drag qui pilote le player, lag) : voir plan §6bis. La dalle
+    /// player garde son tap+drag, la nav a le sien.
+    private let nav: Nav
     private let dockH: CGFloat
 
     /// `true` = la dalle player dans la bande ; `false` = HORS SÉANCE :
@@ -38,14 +47,21 @@ struct PageCard<Page: View, Dalle: View>: View {
          bandeVisible: Bool = true,
          luneAuDrag: Bool = true,
          @ViewBuilder page: () -> Page,
-         @ViewBuilder dalle: () -> Dalle) {
+         @ViewBuilder dalle: () -> Dalle,
+         @ViewBuilder nav: () -> Nav = { EmptyView() }) {
         self.dockH = dockH
         self.enSeance = enSeance
         self.bandeVisible = bandeVisible
         self.luneAuDrag = luneAuDrag
         self.page = page()
         self.dalle = dalle()
+        self.nav = nav()
     }
+
+    /// La porte d'onglet — seule la PageCard de l'onglet AFFICHÉ publie
+    /// sa géométrie de bande au pan racine (quatre instances vivent en
+    /// même temps dans le TabView : sans cette garde elles se battraient).
+    @Environment(\.ongletCache) private var ongletCache
 
     /// La levée de L'ÉLASTIQUE LUNE (hors séance seulement) — 0…0,16.
     @State private var levee: CGFloat = 0
@@ -54,15 +70,22 @@ struct PageCard<Page: View, Dalle: View>: View {
     /// peut mourir SANS `onEnded` — payé : la lune restait ALLUMÉE).
     @State private var chienJeton = 0
 
-    /// Le trait (grabber) + son air, au-dessus de la dalle.
-    private var grabH: CGFloat { 18 }
-    /// La descente de la dalle DANS la zone home-bar (§3.4sexies,
-    /// verdict 01-09 : « un peu plus basse donc card un peu plus
-    /// basse ») — la bande mord le bas physique, la card la suit.
-    private var descente: CGFloat { 18 }
-    /// La bande du bas au repos : trait + dalle + 2 pt d'air, MOINS la
-    /// descente (la card gagne autant).
-    private var bandeH: CGFloat { grabH + dockH + 2 - descente }
+    /// Le trait (grabber) + son air, au-dessus de la dalle. La cote vit
+    /// dans `BandeCote` (une source, partagée avec l'arbitre de zones).
+    private var grabH: CGFloat { BandeCote.grab }
+    /// La descente de la dalle dans la zone home-bar — **MORTE le 04-09,
+    /// verdict Kathryn** : « dès que je drag dans la partie noire, bim je
+    /// quitte l'app ». La bande mordait le bas physique de 18 pt (verdict
+    /// 01-09), ce qui posait la nav PILE dans la zone des gestes système
+    /// d'iOS (Home/Reachability, non désactivables) — le drag du bas ne
+    /// pouvait pas être fiable. Elle a TRANCHÉ : la bande SORT de la zone
+    /// système, le drag redevient sûr. La cote reste une propriété pour
+    /// que le jour où le débat revient, il revienne ICI.
+    private var descente: CGFloat { 0 }
+    /// La bande du bas au repos : trait + dalle, MOINS la descente (la
+    /// card gagne autant). L'air bas de 2 pt est mort à la compaction du
+    /// 04-09 (« trop haut »).
+    private var bandeH: CGFloat { grabH + dockH - descente }
 
     var body: some View {
         GeometryReader { g in
@@ -75,7 +98,12 @@ struct PageCard<Page: View, Dalle: View>: View {
             // séance le PLEIN ÉCRAN est PHYSIQUE — la page descend sous
             // la home bar.
             let safeBottom = g.safeAreaInsets.bottom
-            let hPage = enSeance ? Hs : Hs + safeBottom
+            // LES PAGES SONT TOUJOURS RELEVÉES (03-09) : dès que la bande est
+            // là (séance OU pas), la card vit dans la zone sûre et la bande
+            // occupe le bas. Le PLEIN ÉCRAN physique n'est plus le défaut hors
+            // séance : il ne reste QUE pour `bandeVisible == false` (exercice
+            // en cours), où la bande entière se retire.
+            let hPage = bandeVisible ? Hs : Hs + safeBottom
             // La course de l'élastique lune (la même échelle qu'avant).
             let repos = max(Hs - 14 - grabH - dockH, 1)
             ZStack(alignment: .bottom) {
@@ -95,20 +123,16 @@ struct PageCard<Page: View, Dalle: View>: View {
                 pageEnCard
                     .frame(width: W, height: hPage)
                     .offset(y: -levee * repos
-                        + (enSeance ? 0 : safeBottom))
-                // 2) LA BANDE DU BAS — en séance seulement. Hors séance
-                //    la page est PLEIN ÉCRAN (§3.4quater) : une PRISE
-                //    INVISIBLE de 30 pt porte l'élastique lune (jamais
-                //    un geste page-large).
-                if enSeance, bandeVisible {
+                        + (bandeVisible ? 0 : safeBottom))
+                // 2) LA BANDE DU BAS — TOUJOURS présente quand `bandeVisible`
+                //    (séance OU pas) : elle porte la nav en permanence (loi
+                //    §0, « pages toujours relevées »). Elle ne se retire que
+                //    pendant l'exercice en cours (`bandeVisible == false`).
+                //    L'ancienne prise-lune invisible de 30 pt a cédé la place :
+                //    le bas appartient désormais à la bande et à son geste.
+                if bandeVisible {
                     bande
                         .offset(y: descente)
-                } else if bandeVisible, luneAuDrag {
-                    Color.clear
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
-                        .contentShape(Rectangle())
-                        .gesture(tirageLune(course: repos))
                 }
             }
             // ⚠️ **ALIGNÉ EN BAS, ET ÇA REND 17 pt À TOUTES LES PAGES** (02-09,
@@ -133,39 +157,101 @@ struct PageCard<Page: View, Dalle: View>: View {
             // fiche — et c'est voulu : le défaut était commun.
             .frame(width: W, height: Hs, alignment: .bottom)
         }
+        // LA VISIBILITÉ SE PUBLIE MÊME BANDE DÉMONTÉE : pendant
+        // l'exercice (`bandeVisible == false`) la bande n'existe plus et
+        // son `onGeometryChange` ne parle plus — sans ces lignes, le pan
+        // racine garderait une porte OUVERTE sur un rect périmé.
+        .onChange(of: bandeVisible, initial: true) { _, v in
+            guard !ongletCache else { return }
+            NavEtat.shared.bandeVisiblePubliee = v
+            NavEtat.shared.bandeEnSeance = enSeance
+        }
+        .onChange(of: ongletCache) { _, cache in
+            if !cache {
+                NavEtat.shared.bandeVisiblePubliee = bandeVisible
+                NavEtat.shared.bandeEnSeance = enSeance
+            }
+        }
+        // (Le bouclier système NE vit PLUS ici : une préférence posée à
+        //  plusieurs niveaux imbriqués sur 4 onglets montés est le motif
+        //  « Bound preference updated multiple times per frame » — suspect
+        //  n°1 du GEL du 03-09. UN seul émetteur : le TabView du châssis,
+        //  WoopApp. Voir tools/nav/PLAN-GESTE-SYSTEME.md + le plan final.)
     }
 
     // MARK: la bande (en séance) — la dalle est un BOUTON
 
+    /// La hauteur canonique de la dalle player — INCHANGÉE (l'invariant
+    /// fouetté). En séance elle vit au-dessus de la nav ; hors séance elle
+    /// n'existe pas et la nav prend toute la bande. La COTE vit dans
+    /// `BandeCote` (PanBande.swift) : une seule source, consommée aussi
+    /// par l'arbitre de zones.
+    private var dalleH: CGFloat { BandeCote.dalle }
+
     private var bande: some View {
         VStack(spacing: 0) {
+            // LE TRAIT — la poignée. Le TAP y bascule mini ⇄ déployée
+            // (04-09 : « il n'y a que le tap au niveau du trait qui
+            // marche » — on le rend officiel : c'est le chemin immobile,
+            // que ni iOS ni le player ne peuvent voler ; le drag reste le
+            // chemin principal maintenant que la bande est sortie de la
+            // zone système).
             Capsule()
                 .fill(Color.white.opacity(0.28))
                 .frame(width: 36, height: 4)
-                .padding(.top, 8)
+                .padding(.top, 5)
                 .frame(height: grabH)
-            dalle
-                .frame(height: dockH)
+                .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
-                // LE TAP OUVRE (le stop, Button enfant, garde son
-                // toucher). Le drag-up FRANC ouvre aussi — DÉCLENCHÉ à
-                // la fin, jamais un suivi (§3.2).
-                .onTapGesture { PlayerEtat.shared.ouvrir() }
-                // §3.4quinquies : le drag SUIT LE DOIGT — la prise
-                // pré-monte le contenu, p suit, le relâcher commet avec
-                // l'élan (le chien de PlayerEtat garde le geste mort).
-                .gesture(
-                    DragGesture(minimumDistance: 3)
-                        .onChanged { v in
-                            PlayerEtat.shared.suivreDelta(
-                                -v.translation.height)
-                        }
-                        .onEnded { v in
-                            PlayerEtat.shared.commettre(
-                                velocite: v.velocity.height)
-                        })
+                .onTapGesture {
+                    guard !NavEtat.shared.enVol,
+                          !NavEtat.shared.enSuivi else { return }
+                    NavEtat.shared.basculer()
+                }
+            // LA DALLE PLAYER — EN SÉANCE SEULEMENT. Son TAP reste à elle
+            // (l'affordance voulue) ; son DRAG est parti au PAN MAÎTRE de
+            // bande (03-09, CONCEPTION-PAN-BANDE.md) : le drag descendant
+            // né ici ne monte PLUS le monde du player — il route au repli.
+            if enSeance {
+                dalle
+                    .frame(height: dalleH)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        // ⚠️ Jamais pendant un geste/vol (la garde du banc
+                        // de fouettage — le pan coopératif peut laisser un
+                        // tap vivant au lever d'un drag court).
+                        guard !NavEtat.shared.enVol,
+                              !NavEtat.shared.enSuivi,
+                              !PlayerEtat.shared.enSuivi else { return }
+                        Haptique.moyen()
+                        PlayerEtat.shared.ouvrir()
+                    }
+            }
+            // LA NAV — ses taps à elle (glyphes, dépli en mini) ; son drag
+            // vit lui aussi chez le pan maître.
+            nav
         }
-        .padding(.bottom, 2)
+        // Les TAPS SwiftUI deviennent sourds dès que le monde du player
+        // est monté (le yoyo mort — le toucher-sous-le-noir du vol de
+        // fermeture). Le PAN, lui, vit à la FENÊTRE (NavPanHote, racine)
+        // et n'est pas concerné par cette porte.
+        .allowsHitTesting(!PlayerEtat.shared.monte)
+        // LA PUBLICATION DE GÉOMÉTRIE (plan final 03-09, étape 2) : la
+        // SEULE PageCard visible publie le rect FENÊTRE de sa bande vers
+        // `NavEtat` — c'est la porte du pan racine.
+        // ⚠️ `frame(in:.global)` INCLUT DÉJÀ l'`.offset(y: descente)` des
+        // ancêtres — MESURÉ au banc de fouettage (le double-décalage
+        // faisait viser la porte 18 pt trop bas et affaiblissait la
+        // parade anti-strip-système d'autant). La loi 39f95f9 parle du
+        // HIT-TEST, pas de la lecture de géométrie : on publie TEL QUEL.
+        .onGeometryChange(for: CGRect.self) {
+            $0.frame(in: .global)
+        } action: { r in
+            guard !ongletCache else { return }
+            NavEtat.shared.bandeRectFenetre = r
+            NavEtat.shared.bandeEnSeance = enSeance
+            NavEtat.shared.bandeVisiblePubliee = bandeVisible
+        }
     }
 
     // MARK: la robe de card
@@ -187,11 +273,18 @@ struct PageCard<Page: View, Dalle: View>: View {
             // va BORD À BORD, elle ne se lit plus que par son BAS.
             // HORS SÉANCE : PLEIN ÉCRAN (padding bas 0) — seul
             // l'élastique lune la soulève.
-            .padding(.bottom, bandeVisible && enSeance ? bandeH : 0)
+            .padding(.bottom, bandeVisible ? bandeH : 0)
             .animation(.easeInOut(duration: 0.25), value: bandeVisible)
             // ⚠️ le @Query des pages arrive APRÈS la première image :
             // sans cette ligne, la card CLAQUE à l'atterrissage.
             .animation(.easeInOut(duration: 0.25), value: enSeance)
+            // ⚠️ LE SNAP DE 52 pt (03-09, workflow fluidité — certain à
+            // la lecture) : le commit du repli change `dockH` (76⇄24,
+            // 152⇄100) donc `bandeH` donc ce padding — et un
+            // `.animation(value:)` inerte NEUTRALISE le `withAnimation`
+            // ambiant de `poser()` pour son sous-arbre : la nav glissait,
+            // la card SAUTAIT. Même durée que le commit (0,25 s).
+            .animation(.easeInOut(duration: 0.25), value: dockH)
     }
 
     /// Coins BAS seulement — le haut fond dans le châssis (§2.18).
@@ -263,7 +356,11 @@ struct BarreBlancheAnimee: View {
     var progress: Double
     /// §3.4quater fluidité : l'horloge se TAIT pendant le vol et au
     /// repos — elle ne tourne que le player POSÉ.
-    var vivante: Bool = true
+    /// ⚠️ SANS DÉFAUT (chantier chauffe 03-09, item 2) : le `= true`
+    /// permissif a laissé la comète de la dalle battre à 30 Hz sur
+    /// chaque page en séance. Chaque site CHOISIT sa porte, le
+    /// compilateur y veille.
+    var vivante: Bool
 
     var body: some View {
         GeometryReader { g in

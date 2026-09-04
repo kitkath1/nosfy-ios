@@ -2178,10 +2178,19 @@ private struct ManegeVue: View, Animatable {
         // rasterise dans les bounds de l'hôte — sans lui, les cards
         // aux offsets sont TRANCHÉES (le piège de la fente dorée,
         // repayé : « on voit plus les mini cards »).
+        // LE CYCLE FERMÉ (le verdict « c'est pas centré, regarde à
+        // droite et à gauche ») : l'écart se replie sur l'angle le
+        // PLUS COURT. Sans ce repli, la dernière séance se posait à
+        // +225° au lieu de −45° : la voisine de gauche arrivait plus
+        // près et plus petite, celle de droite partait trop loin et se
+        // faisait trancher par le bord.
+        let nf = CGFloat(n)
         return ZStack {
             ForEach(Array(sessions.enumerated()),
                     id: \.element.id) { i, s in
-                place(s, theta: (CGFloat(i) - p) * pasA)
+                let brut = CGFloat(i) - p
+                let plie = brut - nf * (brut / nf).rounded()
+                place(s, theta: plie * pasA)
             }
         }
         .frame(width: 351, height: 240)
@@ -2464,6 +2473,16 @@ struct MoisIpod: View {
         // LE PORTAIL : la page entière naît du rect de la card — un
         // zoom ancré au point de la card (l'école StoryPortal), le
         // bac visible derrière qui s'éteint pendant la montée.
+        corpsPortail
+            // LE BOUCLIER SYSTÈME (03-09, item 10) : ce cover est un
+            // AUTRE view controller — il n'hérite pas de la paire posée
+            // dans PageCard. Sans elle, l'indicateur home réapparaît
+            // dans le lecteur et le geste bas part au système.
+            .defersSystemGestures(on: .bottom)
+            .persistentSystemOverlays(.hidden)
+    }
+
+    private var corpsPortail: some View {
         GeometryReader { geo in
             let g = geo.frame(in: .global)
             let W = max(geo.size.width, 1)

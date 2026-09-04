@@ -936,6 +936,10 @@ struct RootView: View {
             // Banc de la nav d'encre : `-navEncre`, le rail SEUL sur du noir.
             // Son drapeau vit avec lui (`NavBanc`, dans NavEncre.swift).
             NavEncreLab()
+        } else if PiluleBanc.actif {
+            // Banc de la pilule vagabonde : `-piluleLab` (J1 du plan
+            // NAV V2) — drag partout, pose bornée, tap/stop, doigt mort.
+            PiluleLab()
         } else {
             mainBody
         }
@@ -1070,6 +1074,12 @@ struct RootView: View {
                     // L'ancienne home (HomeAuroraView) reste en archive.
                     HomeNuitPage(onRoute: routerVers, exoParRoute: true)
                         .toolbarVisibility(.hidden, for: .tabBar)
+                        // LA PORTE D'ONGLET (chantier chauffe 03-09, item
+                        // 4) : le TabView garde les onglets visités MONTÉS
+                        // — chaque page sait désormais si elle est
+                        // affichée, et ses moteurs (fonds vidéo, comète,
+                        // horloges) se mettent en POSE sans se démonter.
+                        .environment(\.ongletCache, selection != .home)
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
                     value: WoopTab.exercises) {
@@ -1078,6 +1088,8 @@ struct RootView: View {
                     // retire quand elle est à l'écran (cf. safeAreaInset).
                     ExercisesView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
+                        .environment(\.ongletCache,
+                                     selection != .exercises)
                 }
                 Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
                     // PROGRESS v2 (30-08, plan tools/progress/PLAN-PROGRESS-V2.md) :
@@ -1089,14 +1101,20 @@ struct RootView: View {
                     // (18-08) vit sous `-calLab`.
                     ProgressPage(onBack: retourHome)
                     .toolbarVisibility(.hidden, for: .tabBar)
+                    .environment(\.ongletCache, selection != .progress)
                 }
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     // La maison des cartes : le halo versé de la droite, le
                     // chevron ramène à la home (le pattern d'Exercices).
                     ProfilLuneView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
+                        .environment(\.ongletCache, selection != .profile)
                 }
             }
+            // (Le bouclier système a déménagé le 04-09 à la RACINE de
+            //  mainBody — un « je quitte l'app » résiduel suggérait que
+            //  l'émission au niveau du TabView ne remontait pas toujours
+            //  au root VC. Toujours UN SEUL émetteur, jamais imbriqué.)
             // La barre native est MASQUÉE au profit de la barre bijou. Le verre
             // liquide d'Apple est translucide par nature : posé sur l'aurore il
             // en prend la couleur et la barre devient un reflet du sol.
@@ -1110,7 +1128,37 @@ struct RootView: View {
             // démonté — voir `\.dort` (DepartSeance.swift).
             // ⚠️ `homeDort`, PAS `cheminOuvert` (28-08) : le sommeil arrive
             // APRÈS la course de la route, jamais pendant — voir DepartSeance.
-            .environment(\.dort, depart.homeDort)
+            // COMPOSÉ (03-09, item 4) : les DEUX calques vidéo de
+            // FondDeuxCalques passent aussi en pose quand la home n'est pas
+            // l'onglet affiché — `\.dort` n'a que CE lecteur
+            // (DepartCine.swift:602). Les horloges de la home, elles,
+            // lisent `homeDort` en direct (HomeNuit) et ne reçoivent RIEN
+            // d'ici : les endormir sous un onglet caché est l'item 7,
+            // NON fait.
+            .environment(\.dort, depart.homeDort || selection != .home)
+            // NAV DU BAS (intégration §6) : le PONT nav ↔ onglet. Un tap sur
+            // un glyphe écrit `NavEtat.page` ; ce pont le porte à la sélection
+            // du TabView, et l'inverse allume le bon glyphe quand l'onglet
+            // change par un autre chemin (route, chevron). Deux `onChange`,
+            // aucun état nouveau — la sélection reste la vérité du châssis.
+            .onChange(of: NavEtat.shared.page) { _, p in
+                let cible = p.ongletWoop
+                if selection != cible {
+                    withAnimation(.easeOut(duration: 0.3)) { selection = cible }
+                }
+            }
+            .onChange(of: selection, initial: true) { _, s in
+                if let d = NavDest(onglet: s), NavEtat.shared.page != d {
+                    NavEtat.shared.page = d
+                }
+            }
+            // NAV DU BAS (FIX 1, 03-09) : la SÉANCE DÉMARRE EN MINI NAV. Au
+            // passage en séance (`active` devient non nil), on pose `mini`
+            // UNE fois — le drag reste libre ensuite pour déployer/replier
+            // (les allers-retours). Jamais forcé en continu.
+            .onChange(of: active != nil) { _, enSeance in
+                if enSeance { NavEtat.shared.mini = true }
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 // Les pages Exercices et Profil sont IMMERSIVES : la barre
                 // se retire quand on y entre — leur chevron fait la sortie,
@@ -1266,6 +1314,17 @@ struct RootView: View {
                     withAnimation { selection = .exercises }
                 })
                 .zIndex(8.5)
+
+            // LE PAN MAÎTRE DE BANDE — l'hôte UNIQUE du drag de la nav
+            // (plan final 03-09) : un pan sur la FENÊTRE, le patron du
+            // PanMaitre du player. Monté UNE fois ici (jamais dans les
+            // 4 PageCard : quatre instances = un static qui ne garde que
+            // la première). Sa géométrie vient de NavEtat (publiée par la
+            // PageCard visible) ; sa porte refuse le player monté et le
+            // strip système du bas.
+            NavPanHote()
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
 
             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
             // racine (l'école du parcours booster : l'état partagé, pas
@@ -1448,6 +1507,18 @@ struct RootView: View {
                 .zIndex(10)
             }
         }
+        // ⚠️ LE BOUCLIER SYSTÈME — UNE SEULE ÉMISSION, À LA RACINE de
+        // mainBody (04-09) : le contenu direct du hosting controller
+        // racine, là où iOS lit la préférence à coup sûr (émise au niveau
+        // du TabView, un « je quitte l'app » résiduel persistait au tel).
+        // JAMAIS re-déclaré dans les pages ni PageCard : la même
+        // préférence imbriquée à plusieurs niveaux est le motif « Bound
+        // preference updated multiple times per frame » (suspect n°1 du
+        // gel du 03-09). Les covers plein écran gardent LEUR paire (un VC
+        // présenté n'hérite pas). Ça DIFFÈRE le geste Home (1er glissement
+        // à l'app) ; ni le 2e ni Reachability — lois iOS.
+        .defersSystemGestures(on: .bottom)
+        .persistentSystemOverlays(.hidden)
         // Les bancs du parcours booster :
         //   `-boosterPopup` propose la pop-up au lancement (elle se juge
         //     seule, sans traverser l'app) ;

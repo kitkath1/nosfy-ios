@@ -1234,13 +1234,19 @@ struct FlammesRow: View {
     /// change : le « +X » ne prend plus la place d'une flamme, il se
     /// COLLE à la dernière — « quand c'est plus de 5, sur la dernière
     /// flamme tu mets +X ».
-    private var pleines: Int { compacte ? min(done, 1) : min(done, 5) }
+    private var pleines: Int { compacte ? min(done, 1) : min(done, 4) }
     private var reste: Int { done - pleines }
-    /// Les séries qui restent à faire : la MÊME flamme, très
-    /// transparente — la rangée dit le contrat autant que l'effort.
-    private var vides: Int {
-        compacte ? 0 : max(0, min(total - done, 5 - pleines))
-    }
+    /// ⚠️ **AUCUNE FLAMME POUR CE QUI N'EST PAS FAIT** — règle de
+    /// Kathryn du 04-09, et elle vaut PARTOUT (jusque dans les règles
+    /// serveur) : « on met des flammes QUE lorsqu'une série est
+    /// accomplie ; on ne devine pas le nombre. Mettre 4 flammes à
+    /// l'état upcoming ne sert à rien, ça n'arrivera jamais. »
+    ///
+    /// Une flamme est un ACQUIS, jamais une promesse : la rangée dit
+    /// l'effort FAIT, pas un contrat. Au-delà de quatre, la dernière
+    /// porte « +N » (`reste`) — c'est ainsi qu'on compte au-delà, pas
+    /// en alignant des silhouettes vides.
+    private var vides: Int { 0 }
 
     var body: some View {
         HStack(spacing: 2) {

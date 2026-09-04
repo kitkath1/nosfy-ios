@@ -46,6 +46,27 @@ enum NavDest: String, CaseIterable, Hashable {
     }
 }
 
+/// LA CORRESPONDANCE nav ↔ onglet du châssis (le pont de `WoopApp`).
+extension NavDest {
+    var ongletWoop: WoopTab {
+        switch self {
+        case .home: .home
+        case .exos: .exercises
+        case .prog: .progress
+        case .profil: .profile
+        }
+    }
+
+    init?(onglet: WoopTab) {
+        switch onglet {
+        case .home: self = .home
+        case .exercises: self = .exos
+        case .progress: self = .prog
+        case .profile: self = .profil
+        }
+    }
+}
+
 /// L'ÉTAT PARTAGÉ (plan §4.3) — jamais un `@State` de vue.
 ///
 /// ⚠️ La raison est mesurée : il y a QUATRE instances de `PageCard` (une par
@@ -92,15 +113,39 @@ final class NavEtat {
     /// Le geste est en cours.
     var enSuivi = false
 
-    /// LA VALEUR DE DESSIN : le doigt pendant le geste, l'état commis sinon.
-    var r: CGFloat { enSuivi ? suivi : (mini ? 1 : 0) }
+    /// LA FIN DE COURSE est en vol (le tween possédé de `commettre`).
+    var enVol = false
+
+    /// LA VALEUR DE DESSIN : le doigt pendant le geste, le TWEEN pendant
+    /// la fin de course, l'état commis sinon. (Plan final 03-09, étape 3 :
+    /// avant, `r` sautait lire `mini` dès le lever et la fin de course
+    /// était un `withAnimation` FIXE — le « pas comme de l'eau ».)
+    var r: CGFloat { (enSuivi || enVol) ? suivi : (mini ? 1 : 0) }
 
     /// L'horloge du chien de garde (plan §4.7 : un `DragGesture` peut mourir
     /// sans `onEnded` — payé sur la lune et sur le player).
     private var derniereFrame: Double = 0
 
+    /// Le moteur de la fin de course — le jumeau minuscule du `MoteurVol`
+    /// du player (on ne touche PAS PlayerMonde.swift).
+    @ObservationIgnored private let moteur = MoteurNav()
+
+    // MARK: la géométrie publiée pour le pan racine (plan final, étape 2)
+
+    /// Le rect FENÊTRE de la bande de la SEULE `PageCard` visible —
+    /// publié par elle (`onGeometryChange`, gardé par `!ongletCache`).
+    /// `@ObservationIgnored` : la géométrie n'invalide aucune vue, elle
+    /// ne sert qu'à la porte du pan.
+    @ObservationIgnored var bandeRectFenetre: CGRect = .zero
+    @ObservationIgnored var bandeEnSeance = false
+    @ObservationIgnored var bandeVisiblePubliee = false
+
     func saisir() {
         guard !enSuivi else { return }
+        // ⚠️ Reprise EN PLEIN VOL : le moteur s'arrête D'ABORD (faille 2
+        // du plan final — sinon deux écrivains sur `suivi`, ça tremble).
+        moteur.arreter()
+        enVol = false
         enSuivi = true
         armerChien()
     }
@@ -138,23 +183,86 @@ final class NavEtat {
             // Depuis mini : un petit geste vers le haut suffit à relever.
             cible = !(velocite < -140 || suivi < 0.78)
         } else {
-            // Depuis déployée : il faut un geste franc pour replier.
-            cible = velocite > 300 || suivi > 0.45
+            // Depuis déployée : le repli au pouce RÉEL de Kathryn
+            // (04-09, log -gesteSonde du téléphone, 68 gestes) : ses
+            // replis naturels sortent à v ≈ +294..+298 — l'ancien seuil
+            // « franc » à 300 les REFUSAIT pile (« ça ne se replie
+            // pas ») et seuls ses re-essais énervés passaient. Seuils
+            // recalibrés SUR SES CHIFFRES : 180 pt/s, et 0,30 de course
+            // (~10 pt) en position.
+            cible = velocite > 180 || suivi > 0.30
         }
-        poser(cible)
+        #if DEBUG
+        if CommandLine.arguments.contains("-gesteSonde") {
+            print("GESTE-SONDE nav COMMET v=\(Int(velocite)) "
+                + "suivi=\(String(format: "%.2f", suivi)) "
+                + "mini \(mini) → \(cible)")
+        }
+        #endif
+        // LE LAYOUT se commet en 0,25 s, une fois, au relâcher — la card
+        // gagne (ou rend) sa hauteur d'un bloc (la demande de Kathryn :
+        // un commit, pas un élan ; le `.animation(value: dockH)` de
+        // PageCard suit la même durée).
+        withAnimation(.easeInOut(duration: 0.25)) { mini = cible }
+        Haptique.leger()
+        // LES POINTS, eux, FILENT À L'ÉLAN : la fin de course PROLONGE la
+        // vitesse du doigt (la recette payée du player : la pente initiale
+        // d'un easeOut cubique vaut 3·distance/durée) — plus jamais un
+        // claquement à durée fixe.
+        volVers(cible ? 1 : 0, velocite: velocite)
     }
 
     func basculer() { poser(!mini) }
 
-    /// LE COMMIT DISCRET — le seul endroit du fichier qui change un layout.
-    /// 0,25 s, la même durée que `bandeVisible` : la card gagne (ou rend) sa
-    /// hauteur EN UNE FOIS, jamais sous le doigt.
+    /// LE COMMIT AU TAP — un tap n'a pas de vélocité, le 0,25 s fixe y
+    /// est juste. Le seul endroit du fichier qui change un layout ET le
+    /// dessin d'un coup.
     func poser(_ cible: Bool) {
+        moteur.arreter()
+        enVol = false
         withAnimation(.easeInOut(duration: 0.25)) {
             mini = cible
             suivi = cible ? 1 : 0
         }
         Haptique.leger()
+    }
+
+    /// LE TWEEN DE FIN DE COURSE — possédé (CADisplayLink), durée à
+    /// l'ÉLAN. ⚠️ Le SIGNE est l'INVERSE du player : ici `suivi = 1` est
+    /// MINI, un drag vers le BAS (`velocite > 0`) AUGMENTE `suivi`.
+    /// `tempoNav` et les seuils sont des points de DÉPART, à caler au
+    /// doigt (« les chiffres ne sont PAS ceux du player », la course fait
+    /// 34 pt, pas l'écran).
+    static let tempoNav: Double = 0.30
+
+    private func volVers(_ cible: CGFloat, velocite: CGFloat) {
+        let depart = suivi
+        let distance = Double(abs(cible - depart))
+        guard distance > 0.001 else {
+            moteur.arreter()
+            enVol = false
+            suivi = cible
+            return
+        }
+        let vP = Double(abs(velocite)) / Double(Self.course)
+        let aligne = (cible > depart && velocite > 0)
+            || (cible < depart && velocite < 0)
+        let duree = (aligne && vP > 0.35)
+            ? min(max(3 * distance / vP, 0.12), Self.tempoNav)
+            : min(max(distance * Self.tempoNav, 0.16), Self.tempoNav)
+        enVol = true
+        let t0 = CACurrentMediaTime()
+        moteur.demarrer { [weak self] maintenant in
+            guard let self else { return }
+            let t = min(max((maintenant - t0) / duree, 0), 1)
+            let e = 1 - pow(1 - t, 3)   // easeOut : prolonge la vitesse
+            self.suivi = depart + (cible - depart) * CGFloat(e)
+            if t >= 1 {
+                self.moteur.arreter()
+                self.enVol = false
+                self.suivi = cible
+            }
+        }
     }
 
     /// LE CHIEN : une horloge relue, jamais un minuteur posé par image.
@@ -174,12 +282,103 @@ final class NavEtat {
 
     /// La course du doigt qui fait un repli complet.
     static let course: CGFloat = 34
+
+    // MARK: l'intégration — la SEULE source de vérité de la hauteur
+
+    /// LA COTE DE LA BANDE, dérivée de l'état — c'est `dockH`, à passer À LA
+    /// FOIS à `PageCard` (pour qu'elle raccourcisse la card) et à `BandeNav`
+    /// (pour qu'elle remplisse la bande). Les deux lisent la MÊME fonction :
+    /// pas deux calculs qui divergent.
+    ///
+    /// La hauteur de la NAV seule (le player, en séance, s'ajoute par-dessus).
+    ///  · déployée → 70   · repliée (points) → 20
+    /// COMPACTÉE le 04-09 (verdict Kathryn « trop haut, trop de place »
+    /// après la remontée hors zone système) : −6/−4 pt ici, grab 18→12,
+    /// air 2→0 — la bande rend ~14 pt à la card SANS redescendre dans la
+    /// zone d'iOS. Les cibles de glyphe restent à 44 pt.
+    var navH: CGFloat { mini ? 20 : 70 }
+
+    /// `dockH` = ce que `PageCard` réserve sous le grabber. En séance la dalle
+    /// player (76) s'empile SUR la nav ; hors séance, la nav seule.
+    ///  · repos, déployée      → 76    · repos, repliée      → 24
+    ///  · séance, nav déployée → 152   · séance, nav repliée → 100
+    /// La nav se drague librement dans les DEUX contextes (plus de `forceMini`).
+    /// Le régime « fermée » (exercice) passe par `bandeVisible: false`.
+    func dockH(enSeance: Bool) -> CGFloat {
+        (enSeance ? 76 : 0) + navH
+    }
+}
+
+/// LE MOTEUR DE LA FIN DE COURSE — le jumeau minuscule du `MoteurVol`
+/// du player (`PlayerMonde.swift:283-304`, qu'on ne touche pas) : le
+/// CADisplayLink qui fait avancer `suivi` d'un pas par frame d'écran.
+/// `arreter()` invalide et libère tout ; mode `.common` pour que le pas
+/// tombe aussi pendant un tracking.
+private final class MoteurNav: NSObject {
+    private var lien: CADisplayLink?
+    private var pas: ((Double) -> Void)?
+
+    func demarrer(_ pas: @escaping (Double) -> Void) {
+        arreter()
+        self.pas = pas
+        let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
+        l.add(to: .main, forMode: .common)
+        lien = l
+    }
+
+    @objc private func tick(_ l: CADisplayLink) {
+        pas?(l.targetTimestamp)
+    }
+
+    func arreter() {
+        lien?.invalidate()
+        lien = nil
+        pas = nil
+    }
+}
+
+// MARK: - LA PORTE D'ONGLET (chantier chauffe 03-09, item 4)
+
+/// « JE NE SUIS PAS L'ONGLET AFFICHÉ. »
+///
+/// Le TabView du châssis garde les onglets VISITÉS montés — c'est son rôle
+/// (l'état, les piles) — mais aucun moteur des pages ne le savait : après une
+/// visite des trois pages, CINQ décodeurs vidéo bouclaient en même temps,
+/// quelle que soit la page affichée (mesuré : la chauffe du 03-09,
+/// `tools/nav/ANALYSE-CHAUFFE-GESTES.md`). Cette clé est LA porte commune :
+/// le châssis la pose par onglet (`WoopApp`, dérivée de `selection`), et
+/// chaque moteur — fond vidéo, horloge, ruban — la lit pour se mettre en
+/// POSE (poster, paused) sans jamais se DÉMONTER (le démontage re-paie tout
+/// à la reprise ; la pose, rien).
+private struct OngletCacheKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var ongletCache: Bool {
+        get { self[OngletCacheKey.self] }
+        set { self[OngletCacheKey.self] = newValue }
+    }
 }
 
 /// L'haptique, isolée pour rester muette au banc si besoin.
+/// L'haptique de la nav. ⚠️ Générateurs RETENUS et RÉ-ARMÉS après chaque coup
+/// (`prepare()`) : un `UIImpactFeedbackGenerator` créé à la volée rate souvent
+/// le premier coup (le moteur n'est pas chaud) — c'est la cause n°1 du
+/// « l'haptique manque ». Et un rappel : le SIMULATEUR n'a pas de moteur
+/// haptique, le verdict est sur le TÉLÉPHONE.
 enum Haptique {
+    private static let petit = UIImpactFeedbackGenerator(style: .light)
+    private static let moyenGen = UIImpactFeedbackGenerator(style: .medium)
+
     static func leger() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        petit.impactOccurred()
+        petit.prepare()
+    }
+
+    static func moyen() {
+        moyenGen.impactOccurred()
+        moyenGen.prepare()
     }
 }
 
@@ -335,10 +534,23 @@ struct NavBande: View {
         .frame(maxWidth: .infinity)
         // LA HAUTEUR NE BOUGE JAMAIS (la loi de ce fichier).
         .frame(height: hauteur)
-        // ⚠️ UNE SEULE forme tactile, PLEINE, au conteneur : sinon le doigt
-        // qui tombe entre deux points traverse jusqu'à la page.
+        // ⚠️ UNE SEULE forme tactile, PLEINE, au conteneur — au service du
+        // TAP seul désormais : le DRAG appartient au PAN MAÎTRE de bande
+        // (PanBande.swift ; le `tirage` SwiftUI du banc est mort à
+        // l'intégration, comme promis ci-dessous). EN MINI, TOUT TAP SUR
+        // LA BANDE DÉPLOIE (item 11 du chantier 03-09) : c'est le seul
+        // geste de dépliage que ni le système ni le player ne peuvent
+        // voler — une touche immobile ne déclenche jamais un UIPan.
         .contentShape(Rectangle())
-        .gesture(tirage)
+        .onTapGesture {
+            // ⚠️ JAMAIS pendant un geste ou un vol (banc de fouettage,
+            // faille « le tap se bat avec le tween ») : le pan-fenêtre est
+            // COOPÉRATIF — un drag court peut laisser le tap SwiftUI
+            // vivant au lever, et son poser() écraserait le commit à
+            // l'élan qui vient de partir.
+            guard !etat.enVol, !etat.enSuivi else { return }
+            if etat.mini { etat.poser(false) }
+        }
     }
 
     /// LE DÉTAIL QUI FAIT TOUT, et la raison pour laquelle la braise vit chez
@@ -357,36 +569,36 @@ struct NavBande: View {
 
     // MARK: le geste
 
-    /// ⚠️ AU BANC SEULEMENT. À l'intégration, ce `DragGesture` DOIT devenir un
-    /// pan maître UIKit unique posé sur la bande (plan §4ter) : entre frères
-    /// il n'y a AUCUNE passation — celui qui a pris le doigt le garde jusqu'au
-    /// lever, donc un repli poursuivi sur la dalle n'ouvrirait jamais le player.
-    private var tirage: some Gesture {
-        DragGesture(minimumDistance: 4)
-            .onChanged { v in
-                if !etat.enSuivi { ancre = etat.r }
-                // Vers le BAS on replie : le delta est + vers le bas.
-                etat.suivre(depuis: ancre, delta: v.translation.height)
-            }
-            .onEnded { v in
-                etat.commettre(velocite: v.velocity.height)
-            }
-    }
-
-    @State private var ancre: CGFloat = 0
+    // (Le `tirage` DragGesture du banc est MORT le 03-09, comme le
+    //  promettait son commentaire : le drag de la bande appartient au PAN
+    //  MAÎTRE UIKit — `PanBande.swift`, posé par `PageCard.bande`. Il
+    //  appelle les mêmes `NavEtat.suivre`/`commettre`.)
 
     private func aller(_ d: NavDest) {
-        guard etat.page != d else {
-            // Un tap sur l'onglet courant, nav repliée, la redéploie.
-            if etat.mini { etat.poser(false) }
+        // ⚠️ JAMAIS pendant un geste ou un vol (même garde que le tap de
+        // bande — le tap SwiftUI peut survivre à un drag court sous le
+        // pan coopératif et écraserait le commit à l'élan).
+        guard !etat.enVol, !etat.enSuivi else { return }
+        // EN MINI, TOUT TAP DÉPLOIE — même sur un glyphe (ils sont
+        // invisibles en mini : naviguer sur une cible qu'on ne voit pas
+        // serait le bug, item 11). La navigation reprend une fois déployée.
+        guard !etat.mini else {
+            etat.poser(false)
             return
         }
+        guard etat.page != d else { return }
         withAnimation(.timingCurve(0.32, 0.72, 0, 1, duration: 0.38)) {
             etat.page = d
         }
         Haptique.leger()
     }
 }
+
+// MARK: - LE WRAPPER D'INTÉGRATION — la bande des vraies pages
+
+// (BandeNav a été retiré le 03-09 : la composition dalle + nav vit désormais
+//  DANS `PageCard` — deux slots distincts, geste player strictement sur la
+//  dalle. Chaque page passe `dalle: { saDalle }` et `nav: { NavBande(...) }`.)
 
 // MARK: - LE BANC — `-navEncre`
 
@@ -494,33 +706,21 @@ struct NavEncreLab: View {
 
     // MARK: la vraie robe
 
+    /// Le régime « player » du banc = une séance en cours ; les autres, hors
+    /// séance. C'est `PageCard` qui compose dalle + nav, comme en prod.
+    private var enSeanceBanc: Bool { regime == .player }
+
     private var carte: some View {
-        // ⚠️ `dockH` est la SEULE valeur qui change la hauteur de la card,
-        // et elle est DISCRÈTE : un régime, une cote, jamais sous le doigt.
-        PageCard(dockH: regime.dockH,
-                 enSeance: regime != .fermee,
+        // Le banc utilise MAINTENANT la vraie structure à deux slots : la
+        // dalle player (geste player) et la nav (son geste), séparées — plus
+        // d'empilement à la main. `dockH` vient de `NavEtat`, comme en prod.
+        PageCard(dockH: NavEtat.shared.dockH(enSeance: enSeanceBanc),
+                 enSeance: enSeanceBanc,
                  bandeVisible: regime != .fermee,
                  luneAuDrag: false,
                  page: { contenu },
-                 dalle: { bande })
-    }
-
-    /// LE CONTENU DE LA BANDE, par régime — LA RÉFÉRENCE VALIDÉE (03-09) :
-    /// en séance, la dalle du player AU-DESSUS et la mini nav SOUS elle.
-    @ViewBuilder
-    private var bande: some View {
-        switch regime {
-        case .nav, .mini:
-            NavBande(hauteur: regime.dockH)
-        case .player:
-            VStack(spacing: 0) {
-                dallePlayer
-                    .frame(height: 76)
-                NavBande(hauteur: 24)
-            }
-        case .fermee:
-            Color.clear
-        }
+                 dalle: { dallePlayer },
+                 nav: { NavBande(hauteur: NavEtat.shared.navH) })
     }
 
     /// La vraie dalle du player, montée comme sur Progress.
@@ -911,7 +1111,8 @@ struct NavEncreLab: View {
 
     /// LE TÉMOIN : le bas de la card. Il ne bouge qu'aux commits discrets.
     private var trait: some View {
-        let bande = regime == .fermee ? 0 : regime.dockH + 2
+        let bande = regime == .fermee
+            ? 0 : NavEtat.shared.dockH(enSeance: enSeanceBanc) + 2
         return GeometryReader { g in
             Rectangle()
                 .fill(Color.red.opacity(0.55))

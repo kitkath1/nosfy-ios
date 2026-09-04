@@ -14,30 +14,64 @@ debout, avec la preuve `fichier:ligne` de chaque point.
 
 ---
 
-## §0 · CE QU'ELLE VEUT
+## §0 · LE MODÈLE VALIDÉ AU BANC — la référence, réécrite le 03-09 au soir
 
-1. Les quatre pages **toujours relevées** — le même espace noir en bas que
-   pendant une séance, en permanence, pas seulement en séance.
-2. Une **nav permanente** dans cet espace, qui **se réduit en points** pour
-   alléger (déclenchée au drag, tranché le 02-09).
-3. Le **slider de départ dans la card**, à ~12 pt de son bord bas — pas du bord
-   de l'écran (il est cassé aujourd'hui, voir §7).
-4. Un **morphing** où le player vient au-dessus de la nav.
-5. L'**overlay du player** et l'**égalité des cotes** entre pages : intouchables.
-6. Ça ne doit **pas prendre de hauteur**, surtout sur un iPhone SE.
+⚠️ **Cette section remplace toutes les versions antérieures.** Je me suis
+entêté deux jours à dire « pas de bande hors séance » — c'était FAUX, et c'est
+l'inverse de ce qui a été validé au banc une centaine de fois. Voici le modèle,
+sans ambiguïté.
 
-**Trois lois posées par elle le 02-09, non négociables :**
+### La loi fondatrice : LES PAGES SONT TOUJOURS RELEVÉES
 
-- la nav **n'apparaît jamais pendant l'exercice en cours**, du galet blanc
-  jusqu'à la fin du repos ;
-- **ni au coffre, ni au profil** ;
-- **QUATRE points** — corrigé par Kathryn le 02-09 : « la carte descend et on
-  voit les **4 points** ». Une version antérieure de ce plan déduisait trois
-  destinations du fait que le profil sort de la nav ; c'était une déduction, pas
-  sa demande. Le code a bien quatre onglets (`WoopTab` = home, exercises,
-  progress, profile — `WoopApp.swift:121`). ⚠️ Reste à réconcilier : **le profil
-  est un point de la nav, mais la nav ne s'affiche pas SUR la page profil** —
-  les deux ne sont pas contradictoires, mais il faut le dire explicitement.
+Les quatre pages (home, exercices, progress, fiche) sont **relevées EN
+PERMANENCE**, séance ou pas. **La bande noire du bas existe TOUJOURS** et porte
+la nav. Il n'y a pas d'état « plein écran sans bande » — sauf les deux
+exceptions ci-dessous. C'est un **changement du contrat de `PageCard`**, et
+c'est le cœur du chantier, pas une option à reporter.
+
+### Les états de la bande
+
+| Contexte | Ce que la bande montre | Cote |
+|---|---|---|
+| **Hors séance, par défaut** | la nav DÉPLOYÉE : icônes + le repère courant | ~78 |
+| **Hors séance, repliée** | la mini nav : 4 points (drag down léger) — la card s'allonge | ~26 |
+| **En séance, nav déployée** | la dalle du player AU-DESSUS, la GROSSE nav SOUS lui | ~154 |
+| **En séance, mini** | la dalle AU-DESSUS, les 4 points SOUS lui | ~100 |
+| **Exercice en cours** | RIEN — la bande est masquée | 0 |
+
+### Les gestes (validés au banc)
+
+- **Hors séance** : drag down léger → la nav déployée devient mini (points), la
+  card s'allonge ; drag up → elle se redéploie.
+- **En séance** : drag up / drag down → la nav SOUS le player passe de mini à
+  grosse et inversement. La card s'allonge quand la nav grossit. ⚠️ **Attention
+  à l'overlay du player** pendant ces gestes (les deux fenêtres de vol, §4ter).
+
+### Les exceptions, non négociables
+
+- **Pendant l'exercice en cours** (du galet blanc à la fin du repos) : AUCUNE
+  bande. `bandeVisible: false` masque tout.
+- **Ni au coffre, ni au profil** : ces pages n'ont pas de `PageCard`, donc pas
+  de nav — satisfait par construction.
+
+### Les quatre destinations
+
+Home, Exercices, Progress, Profil — **quatre** points/icônes. Le profil est un
+point de la nav (il ROUTE vers l'onglet profil) même si la page profil elle-même
+n'affiche pas de nav.
+
+### À FAIRE aussi (03-09) : SUPPRIMER LA PASTILLE DE LA HOME
+
+Le galet-menu de la home (`MenuHote` / `LaunchPebble`, `HomeNuit.swift:2727`)
+disparaît : la nav du bas le remplace. C'est une retouche `HomeNuit`, à
+coordonner avec la session qui possède le fichier.
+
+### Le reste des exigences
+
+- Le **slider de départ dans la card**, à ~12 pt de son bord bas (§7).
+- L'**overlay du player** et l'**égalité des cotes** entre pages : intouchables.
+- Attention à la **hauteur sur petit écran** (SE) — mais Kathryn : « pour le SE
+  on verra plus tard ».
 
 ## §0bis · LA MÉCANIQUE DU MINI, dictée le 02-09
 
@@ -661,27 +695,267 @@ position canonique de 26 pt → **la constante du fouettage et les cinq juges
 seront recalés, et le protocole §3.4bis repassé en entier** après intégration.
 On ne relitige plus.
 
-### Les six chantiers, dans l'ordre
+### État au 03-09 soir : ce qui est FAIT, ce qui RESTE
 
-**J1 — La spec `PageCard` (fichier de la session home : coordination
-obligatoire, jamais une modification en douce).** La forme minimale : la bande
-gagne un slot `nav:` à côté de `dalle:`, et `dockH` devient une fonction du
-régime — une valeur **discrète** lue depuis `NavEtat.shared`, jamais continue.
-`bandeVisible` garde exactement sa sémantique §2.17 (galet, chrono, clavier) et
-coupe la bande ENTIÈRE, nav comprise — c'est la loi « jamais pendant
-l'exercice ». Les quatre `PageCard` lisent le MÊME état : une seule hauteur à
-tout instant, l'invariant inter-pages tient.
+**FAIT (non commité, en local) :** le wrapper `BandeNav` + `NavEtat.dockH()`,
+et l'intégration dans les quatre `PageCard` (home, exos, progress, fiche) via le
+slot `dalle:`, plus le pont `NavEtat.page ↔ selection` au châssis. **Vérifié au
+simulateur : EN SÉANCE, la nav apparaît correctement** (dalle au-dessus, mini
+points sous elle, l'état validé). Aucun slot `nav:` neuf n'a été nécessaire —
+la bande reçoit `BandeNav` qui compose nav + dalle.
 
-**J2 — Les trois sites d'appel libres.** `ExercisesView`, `ProgressPage`,
-`ExerciseDetailView` passent la nav à leur `PageCard`. Leurs prédicats
-existants ne bougent pas. Vérifs dédiées : le clavier d'Exercices, le `flood`
-de la fiche, le voile du tuto (qui vit AU-DESSUS de `PageCard` et mangerait les
-taps — §2bis).
+**LE TROU, et c'est le cœur :** hors séance, `PageCard` ne montre AUCUNE bande
+(`if enSeance, bandeVisible { bande }`, `PageCard.swift:103`) et la card va au
+bord physique (`hPage = Hs + safeBottom`, `:78`). Donc la nav n'apparaît qu'en
+séance. **Or la loi §0 est : les pages sont TOUJOURS relevées.** Il faut donc
+changer le contrat de `PageCard`.
 
-**J3 — La home, avec la session qui la possède.** Même geste, plus deux
-particularités : le tiroir (`tirageGeste` page-large, qui vit DANS le slot
-`page:` donc ne vole pas la bande — prouvé §2 ⚠️ 6) et le slider, qui
-retrouvera l'espace noir pour lequel il a été étalonné (§7).
+### §6quater — LA CRISE DU PREMIER BUILD TÉLÉPHONE (03-09) : quatre symptômes, quatre causes LUES
+
+Premier vrai passage sur le tel (iPhone 15, séance réelle de 7 min). Verdict de
+Kathryn : lag énorme au global, le tel CHAUFFE, drag nav = l'écran disparaît
+(capture : page poussée ~60 % vers le bas, noir + chevron ^ au-dessus), parfois
+changement de page, parfois l'app SE FERME ; player très lent. Diagnostic mené
+ligne à ligne (le workflow de sous-agents était à sa limite de session) —
+**chaque cause ci-dessous est lue, pas déduite.**
+
+#### C1 — LA CHAUFFE + LE LAG GLOBAL : le ruban de séance (`BordSeance`)
+
+**La cause racine de la crise, et PAS une régression du chantier nav.**
+`BordSeance.swift:65-121` : en séance, une `TimelineView(.animation …1/20)`
+redessine à 20 Hz un contour fait de TROIS passes `strokeBorder` **chacune
+suivie d'un `.blur` (14, 4, 1.2)** + un `mask` plein-card + `.blendMode(.plusLighter)`
+— alors que l'en-tête du fichier lui-même (:13) pose la loi « AUCUN `.blur`,
+AUCUN `Canvas` ». Trois flous plein-card offscreen, 20 fois par seconde, toute
+la séance — monté par `PageCard.swift:209` sur la robe. C'est exactement le
+« trois traits + gros ruban + LAG » du verdict tel du 03-09
+(`tools/home-v2/ANALYSE-RUBAN-SEANCE.md`, analysé, jamais réparé — chantier de
+la session BordSeance, 2 décisions bloquent). Le GPU saturé explique AUSSI une
+grande part de S4 (player lent : le pas borné 0,08/frame s'étire quand la
+cadence s'effondre) et du « tout lag ».
+
+⚠️ **HYPOTHÈSE tant que l'A/B n'a pas parlé** (garde-fou de la session
+BordSeance, dossier `tools/home-v2/CHAUFFE-HOME.md` : six diagnostics argumentés
+y ont déjà été FAUX). Son suspect n°1 par élimination est LA PIÈCE du trésor
+(`-sansPiece` : gyroscope à 30 Hz, invisible au simulateur — le seul profil qui
+colle à « chauffe au tel, rien au sim »).
+
+**Le protocole de preuve (le sien, adopté)** : UN drapeau à la fois, ~2 min de
+séance par lancement, la main sur le dos du tel ; noter la PAGE affichée (le
+ruban bat aussi derrière le player déployé et dans chaque robe montée).
+L'échelle : `-sansBord` → si la chaleur ne tombe pas, `-sansPiece` →
+`-sansGalet` → `-sansInvite`. Les relevés vont dans `CHAUFFE-HOME.md` (un seul
+registre).
+**Le fix réel** (déjà conçu dans l'analyse du ruban) : nappe CUITE +
+`repeatForever`, jamais un redessin par frame — et un ruban en PAUSE sur les
+pages non visibles.
+
+#### C2 — L'ÉCRAN QUI DISPARAÎT : Reachability, le geste SYSTÈME
+
+La capture (page descendue, noir + chevron au-dessus) est **Reachability
+d'iOS** — le glisser-vers-le-bas sur le bord bas de l'écran, qui fait descendre
+TOUT l'écran. Déjà rencontré au chantier stabilisation (« l'écran qui descend =
+Reachability iOS »). La mini nav (24 pt) vit dans la zone du geste système : la
+bande mord le bas physique (`descente` 18, PageCard.swift:69) et rien ne
+déclare `defersSystemGestures(.bottom)` au châssis (greppé : seuls des bancs et
+l'ancienne home posent `persistentSystemOverlays(.hidden)`). Même cause pour
+**l'app qui se ferme** : le glisser-vers-le-haut au même endroit = geste Home.
+
+**Fix** : au châssis (`WoopApp.mainBody`), `.persistentSystemOverlays(.hidden)`
++ `.defersSystemGestures(on: .bottom)` — le premier glissement revient à l'app,
+le système exige alors un second. À évaluer en plus : remonter la PRISE du
+repli (étendre le `contentShape` de la bande au grabber, 18 pt plus haut).
+
+#### C3 — LE CHANGEMENT DE PAGE INTEMPESTIF : le tap du glyphe gagne le drag léger
+
+Le châssis est un `TabView` standard (WoopApp.swift:1064) — AUCUN swipe
+horizontal entre onglets : ce n'est pas lui. C'est la nav : chaque glyphe porte
+`highPriorityGesture(TapGesture)` (NavEncre.swift:329), qui bat le drag de
+l'HÔTE (son ancêtre) tant que le doigt reste dans la tolérance du tap — et la
+course TOTALE du repli ne fait que 34 pt (`NavEtat.course`). Un repli léger et
+lent qui démarre SUR un glyphe se termine en TAP : navigation.
+
+**Fix** : l'arbitrage que le code s'était déjà promis (NavEncre.swift:416-419 :
+« à l'intégration, ce DragGesture DOIT devenir un pan maître UIKit ») — un pan
+unique sur la bande qui tranche à ~6 pt : mouvement vertical = repli, sinon le
+tap. C'est la même école que le pan maître du player (§3.4duodecies).
+
+#### C4 — LE PLAYER LENT : conséquence de C1, plus deux « pop » propres
+
+Aucune cause nouvelle propre au vol : `suivreDelta` est clampé (élastique ≤5 %,
+PlayerMonde.swift:202-208), le tween est possédé. S4 = (a) le GPU saturé par C1
+qui étire le pas borné ; (b) les deux défauts trouvés par le workflow fluidité :
+la POSE finale qui claque (swaps discrets mask/verre sous `withAnimation` 0,22 —
+PlayerMonde.swift:77-81, PageCard.swift:455-466, 612-626) et `groupes` construit
+sur la première frame du premier vol (PlayerMonde.swift:318, 368-370). Chantier
+de la session player (fouettage compris) — ne pas y toucher d'ici.
+
+#### Et la fluidité du repli lui-même (le « pas fluide comme de l'eau »)
+
+Trouvaille CERTAINE du workflow fluidité : le commit du repli change `dockH`
+(76⇄24, 152⇄100) donc `bandeH` donc le `.padding(.bottom)` de la card — et
+**AUCUN `.animation(value:)` ne couvre `dockH`** (les deux scoped de
+`pageEnCard`, PageCard.swift:217/220, ne surveillent que `bandeVisible` et
+`enSeance` — et un `.animation(value:)` inerte NEUTRALISE le `withAnimation`
+ambiant de `poser()` pour son sous-arbre). Résultat : la nav glisse, la card
+SNAPPE de 52 pt. **Fix d'une ligne** : `.animation(.easeInOut(duration: 0.25),
+value: dockH)` sur `pageEnCard`.
+
+**L'ordre du chantier** : ① prouver C1 au tel (`-sansBord`) puis fix ruban
+(session BordSeance) · ② C2 les deux modificateurs châssis · ③ le snap `dockH`
+(une ligne) · ④ C3 le pan maître de bande · ⑤ C4 côté session player.
+
+⚠️ **DÉPASSÉ PAR LES DEUX WORKFLOWS DU 03-09 après-midi** — le §6quater reste
+vrai mais INCOMPLET (le barreau `-sansBord` a montré que le ruban n'est pas
+seul). Les références à jour :
+- **`ANALYSE-CHAUFFE-GESTES.md`** (même dossier) : le diagnostic complet
+  (V1-V4), le chantier en 13 items ordonnés avec propriétaires, les mesures
+  téléphone restantes, les 6 causes rejetées. Cœur du verdict : la chauffe est
+  une ADDITION (5 décodeurs vidéo empilés sans porte d'onglet + réveils
+  fantômes + horloges qui peignent du vide + ruban ×N + pièce/gyro).
+- **`CONCEPTION-PAN-BANDE.md`** (même dossier) : la conception DURCIE du pan
+  maître de bande (verdict adversaire : tient-avec-corrections, 10 failles
+  intégrées), prête à coder — remplace les deux DragGesture concurrents,
+  bouclier `defersSystemGestures` posé DANS PageCard (pas au châssis : les
+  fullScreenCover n'héritent pas).
+- Verdicts de Kathryn intégrés : le « quitter l'app » arrive sur TOUTES les
+  pages (home comprise, qui porte déjà le deferral → le tap/pan est le remède
+  principal, pas le bouclier) ; OK pour estomper l'indicateur home sur les 4
+  pages (`persistentSystemOverlays(.hidden)` partout).
+
+### §6ter — LES QUATRE FIX APRÈS LE REFACTOR DES SLOTS (03-09, tard)
+
+Le refactor à deux slots est en place (dalle + nav séparés, geste player isolé).
+Kathryn a testé sur le tel et demande quatre choses. **Plan seul, rien codé.**
+
+#### FIX 1 — La séance démarre en MINI nav, pas en grosse
+
+« Quand on lance la session, on commence par afficher la mini nav, pas la
+grosse — mais on peut toujours passer de l'une à l'autre. »
+
+État partagé `NavEtat.mini`. Aujourd'hui il garde sa valeur d'avant la séance
+(souvent `false` = déployée). **Fix : au passage en séance, poser `mini = true`
+une fois.** Où, proprement : un `onChange(of: enSeance)` par page (ou au
+châssis) qui, quand `enSeance` devient vrai, fait `NavEtat.shared.mini = true`
+(sans animation parasite). Le drag reste libre ensuite (les allers-retours).
+⚠️ Ne PAS le forcer en continu (sinon on ne peut plus déployer en séance) : une
+seule fois, à la bascule.
+
+#### FIX 2 — Le player ouvert ne se drague plus vers le bas (fermeture)
+
+« J'arrive à ouvrir le player mais pas à le drag vers le bas — on a déjà fixé ce
+truc des dizaines de fois. »
+
+**Ce n'est PAS une régression de ce chantier : `git diff HEAD` sur
+`PlayerMonde.swift` est VIDE, je n'y ai pas touché.** C'est donc soit le bug
+récurrent de fermeture (documenté : le `PanMaitre` window-level), soit une
+interaction avec la nav. Diagnostic à mener AVANT de toucher :
+- La fermeture passe par le `PanMaitre` (UIPan sur la fenêtre), gardé par
+  `PlayerEtat.shared.ouvert && !DepartEtat.shared.pauseOuverte`
+  (`PlayerMonde.swift:735-739`). Vérifier que `ouvert` est vrai et
+  `pauseOuverte` faux quand le player est posé.
+- Le PanMaitre laisse d'abord scroller la branche (`contentOffset.y > 1`) puis
+  prend à l'offset 0. Vérifier que la liste du player (« Session… Page
+  exercices ») n'empêche pas d'atteindre l'offset 0.
+- **Nouvelle piste, la mienne** : ma nav porte un `DragGesture` (NavBande).
+  Le player ouvert la couvre (zIndex 8,5), mais `shouldRecognizeSimultaneouslyWith`
+  du PanMaitre rend `true` à tout le monde — vérifier que le geste de la nav (ou
+  celui de la dalle) ne « prend » pas le doigt sous le player. Sonde `-gesteSonde`
+  (`PlayerMonde.swift:175-177, 238-241, 694-708`) : lire QUI prend le doigt.
+- Reproduire sur un build SANS mes changements (HEAD `a0d6aac`) pour trancher
+  net : pré-existant, ou interaction nav.
+
+#### FIX 3 — La fluidité globale, encore
+
+Reprend §4bis (la recette payée du player) : geste POSSÉDÉ, écriture sèche, pas
+de `withAnimation` sur la valeur suivie, commit unique. Le refactor a retiré le
+geste player parasite de la nav (le gros du lag) ; reste à vérifier au doigt sur
+le tel, `./tools/charge.sh` d'abord, cadence jamais jugée au simulateur.
+
+#### FIX 4 — Haptique manquante
+
+« +haptique missing ! » La nav doit RÉPONDRE au doigt. Aujourd'hui
+`NavEtat.poser` et `aller` appellent `Haptique.leger()`, mais il en manque
+et/ou il ne se déclenche pas. À poser :
+- **au changement de page** (tap sur un glyphe) — `leger` ;
+- **au cran mini ⇄ big** quand le commit bascule (pas à chaque frame) —
+  `leger`, une fois, au franchissement ;
+- **à l'ouverture / fermeture du player** — `moyen` (aligné sur le reste de
+  l'app).
+⚠️ Jamais d'haptique sur un geste que la main n'a pas fait (un repli
+automatique), ni par frame — au franchissement de seuil seulement (la loi du
+player, §4bis).
+
+### 🔴 §6bis — LE GESTE : LA CAUSE UNIQUE DE TROIS BUGS (03-09 soir)
+
+Kathryn, trois symptômes, **une seule cause** :
+
+1. « en séance, j'arrive pas à drag et passer de mini nav à big nav, ça ouvre
+   direct le player » ;
+2. « hors séance, je drague haut/bas et je passe de nav à mini — mais ça lag
+   parfois, et quand je **tap** ça ouvre le player, c'est un bug » ;
+3. « au global, toutes les interactions doivent être plus fluides quand la
+   session n'est pas commencée ».
+
+**LA CAUSE, mesurée dans le code :** `PageCard.bande` (PageCard.swift:148-167)
+enveloppe **tout le slot `dalle:`** — donc ma nav entière, qui y est passée —
+avec :
+- `.onTapGesture { PlayerEtat.shared.ouvrir() }` → **tout tap sur la nav ouvre
+  le player** (bug 1 et 2) ;
+- `.gesture(DragGesture(minimumDistance: 3) → suivreDelta/commettre)` → **tout
+  drag sur la nav pilote le PLAYER**, pas le repli de la nav (bug 1 et 2), et ce
+  geste parasite est aussi ce qui « lag » (il monte l'arbre du player, `saisir()`
+  pose `couvre`/`monte`, cf. §2 ⚠️ 1).
+
+Un seul geste possède donc le bas, et c'est celui du player. Ma nav, enfant de
+ce slot, ne reçoit rien de propre.
+
+**LE FIX, en un geste d'architecture :** la nav a son PROPRE slot dans la bande,
+que le geste du player n'enveloppe JAMAIS.
+
+- `PageCard` gagne un slot `nav:` (3ᵉ ViewBuilder). La bande devient :
+  `grabber` + (`dalle` player AVEC son tap+drag, **en séance seulement**) +
+  `nav` (avec SON geste à elle, jamais celui du player).
+- Hors séance : `grabber` + `nav`. Le tap n'ouvre plus rien d'autre que la
+  navigation ; le drag ne pilote que le repli. **Les deux bugs de tap et de
+  drag meurent à la racine.**
+- En séance : `dalle` (player) au-dessus + `nav` en dessous, chacun son geste →
+  le drag sur la nav fait mini ⇄ big **sous** le player (les allers-retours),
+  le drag sur la dalle ouvre le player. Plus de conflit.
+
+**LA FLUIDITÉ (la demande 3)** vient du même fix, plus la recette §4bis déjà
+payée : le geste de la nav est POSSÉDÉ (écriture sèche de `suivi`, déjà en
+place dans `NavEtat.suivre`), il n'a plus à se battre contre le geste du player,
+et le commit est un `withAnimation` court unique. Le « lag » actuel EST le geste
+player parasite qui monte tout son arbre à chaque frame — le retirer de la nav,
+c'est retirer le lag.
+
+**Détail de cotes** (la hauteur suit l'état, `NavEtat.dockH`) :
+- hors séance : nav 76 (déployée) / 24 (mini) → bande 78 / 26 ;
+- en séance : dalle 76 + nav 76 (big) / 24 (mini) → bande 154 / 102.
+`forceMini` DISPARAÎT : la nav en séance lit le même `mini` que hors séance et
+se drague donc librement (c'était `forceMini` qui la bloquait).
+
+### Les chantiers restants, dans l'ordre
+
+**J1 — LE CONTRAT `PageCard` : la bande TOUJOURS réservée (fichier de la session
+home / de la session BordSeance : coordination obligatoire).** Aujourd'hui la
+bande et le raccourci de card sont conditionnés à `enSeance`. Il faut :
+- que la bande se monte dès que `bandeVisible` (hors séance comprise), pas
+  seulement en séance — `PageCard.swift:103` ;
+- que la card réserve `bandeH` hors séance aussi, au lieu du plein écran
+  physique — `PageCard.swift:78, 190` ;
+- que `dockH` reste la valeur discrète de `NavEtat.dockH()` (déjà branchée).
+
+⚠️ **C'est LE changement d'invariant.** Il touche les quatre pages d'un coup
+(même moteur), donc il se fouette en entier (J4). `bandeVisible: false` garde sa
+sémantique §2.17 et masque la bande pendant l'exercice — la loi « jamais pendant
+l'exercice » tient sans rien ajouter.
+
+**J2 — La pastille de la home SUPPRIMÉE.** Le galet-menu (`MenuHote` /
+`LaunchPebble`, `HomeNuit.swift:2727`) disparaît : la nav du bas le remplace.
+Retouche `HomeNuit`, à coordonner. Attention au tiroir et au slider qui vivent
+dans le même bas (§7).
 
 **J4 — Le geste et le player.** Un **pan maître DE BANDE** (le patron de
 `PlayerMonde.swift:646-789`, posé sur la bande, pas sur la fenêtre) : il décide
