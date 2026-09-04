@@ -1423,6 +1423,11 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                     // §3.4quater : l'extinction au pull — même cachée, la
                     // pastille « cassait le layout ».
                     .opacity(galetCache ? 0 : 1)
+                    // ⚠️ CACHÉE **ET SOURDE** (04-09 : « quand je clique à
+                    // son ancien endroit je revois le menu ») — une
+                    // opacité 0 laisse la vue TOTALEMENT tapable : le
+                    // piège classique. Elle doit aussi cesser de recevoir.
+                    .allowsHitTesting(!galetCache)
                     .animation(.easeOut(duration: 0.22), value: galetCache)
                     // ⚠️ LA PRISE DE LA NAVETTE — « parfois je suis bloquée,
                     // j'arrive plus à la tirer ». Deux causes, mesurables :

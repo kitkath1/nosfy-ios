@@ -197,3 +197,68 @@ C (rien) reste déconseillé.
 - ⚠️ **À porter aussi côté SERVEUR** (règle de gain / d'affichage) : la
   source ne doit jamais promettre un total de séries — elle compte ce qui
   est fait. À poser dans les règles back-end et sur le site de doc.
+
+---
+
+## §9 · LE LOT « TROIS ONGLETS » (dicté par Kathryn le 04-09, ANALYSÉ)
+
+### Ce qui est tranché par elle
+1. **La nav reste dans la partie noire**, fixe. **Le TAP la replie/la fait
+   disparaître** — pas un drag (le bord bas appartient à iOS : c'est la
+   leçon des deux jours, on n'y rouvre pas de geste).
+2. **Au toucher : le verre liquide natif qui zoome, sur fond PLEIN NOIR.**
+3. **Nav disparue → les page cards prennent TOUTE la page.**
+4. **Le player par-dessus**, tel qu'il vient d'être construit (884112d).
+5. **Trois onglets : Accueil · Exercices · Profil.** Progression est
+   ARCHIVÉE, **et le calendrier + l'iPod avec elle** (inaccessibles dans
+   l'app, gardés dans le code).
+6. **La pop-up STOP doit être condensée.**
+
+### Ce que le code dit (mesuré, pas supposé)
+- La nav est montée sur QUATRE pages (home, exercices, progress, fiche) et
+  **jamais** sur profil ni coffre : sa règle « pas sur profil/coffre » est
+  **déjà tenue**, rien à retirer. Retirer Progress laisse **trois** pages
+  porteuses ; le profil reste une DESTINATION sans porter la nav.
+- Retirer l'onglet touche **huit endroits** : `WoopTab` (:112), l'ordre des
+  onglets (WoopApp:375 et HomeAuroraView:19), la migration `openTab`
+  (WoopApp:329 — une install qui a « progress » en mémoire ne doit pas
+  atterrir dans le vide : la rabattre sur `.home`), le `Tab` lui-même
+  (:1094-1105), la garde :725, `MenuCouronne` (:200/:221),
+  `HomeNuit.destinations` (:1892), et `NavDest` (NavEncre:28) qui perd
+  `prog`.
+- **Le calendrier et l'iPod vivent DANS ProgressPage** (`CalendrierMois`,
+  `MoisIpod`) : les archiver = archiver la page entière. Le fichier RESTE
+  (aucune suppression), il n'a simplement plus de site d'appel — comme
+  `HomeAuroraView` aujourd'hui.
+- **La pop-up stop** : `StopCard` fait `l = min(largeur × 0,80, 332)` et une
+  hauteur de **l × 480/332** — soit ~332 × 480 pt : elle occupe presque tout
+  l'écran. La condenser = revoir ce ratio (une card, pas une page) + les
+  cotes internes (titre 22, corps 15, bouton 44, `padding.bottom 36`).
+
+### Le geste de la nav qui disparaît — la forme SÛRE
+- **Tap sur la nav → elle s'efface** ; la card reprend toute la page (c'est
+  le contrat `bandeVisible: false` qui EXISTE DÉJÀ et est éprouvé : il sert
+  au clavier d'Exercices et à l'exercice en cours).
+- **Elle revient** : par un tap sur la zone laissée libre, OU au changement
+  d'onglet. ⚠️ **Le retour ne doit JAMAIS être un drag depuis le bord bas.**
+- **Le verre au toucher** : ⚠️ la loi payée — un verre sur du noir uniforme
+  est quasi INVISIBLE (« le contenu EST le verre »), et `.regular` est
+  interdit. Sur fond plein noir demandé, il faudra lui donner quelque chose
+  à réfracter (une lueur douce sous la capsule) — à comparer AU BANC sur
+  captures avant d'intégrer, jamais à l'aveugle.
+
+### L'ordre proposé (chaque jalon montré avant le suivant)
+1. **J1 — Trois onglets** : archiver Progress + les huit sites, `NavDest` à
+   trois, migration `openTab` rabattue. Lot compilable d'un bloc.
+2. **J2 — La nav qui s'efface au tap** (via `bandeVisible`, le contrat
+   existant) + son retour.
+3. **J3 — Le verre au toucher**, sur captures comparées (3 variantes).
+4. **J4 — La pop-up stop condensée**, sur captures.
+5. **J5 — Le banc re-matricé** (le fouettage vit toujours) + verdicts doigt.
+
+### Ce qui reste à trancher par Kathryn
+- **Comment la nav REVIENT** une fois effacée (tap sur le bas ? au
+  changement de page ? au scroll vers le haut ?) — je recommande le tap sur
+  la zone libérée, symétrique de la disparition.
+- **La pop-up stop condensée** : quelle silhouette ? (une card courte
+  centrée ~332 × 300 ? un bandeau bas ?) — à voir sur captures.

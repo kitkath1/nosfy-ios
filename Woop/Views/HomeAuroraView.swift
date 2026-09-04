@@ -16,7 +16,7 @@ struct HomeAuroraLab: View {
 
     /// L'ordre des onglets, tenu ICI plutôt que dans `WoopTab` : ce fichier est
     /// partagé, et une conformance ajoutée à l'énum se paie en conflits.
-    private static let order: [WoopTab] = [.home, .exercises, .progress, .profile]
+    private static let order: [WoopTab] = [.home, .exercises, .profile]
 
     private static let tabItems: [(icon: String, label: String)] = [
         ("house.fill", "Accueil"),
@@ -54,11 +54,8 @@ struct HomeAuroraLab: View {
                     Color.black.ignoresSafeArea()
                         .toolbarVisibility(.hidden, for: .tabBar)
                 }
-                Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis",
-                    value: WoopTab.progress) {
-                    Color.black.ignoresSafeArea()
-                        .toolbarVisibility(.hidden, for: .tabBar)
-                }
+                // (onglet Progression ARCHIVÉ le 04-09)
+                
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     Color.black.ignoresSafeArea()
                         .toolbarVisibility(.hidden, for: .tabBar)
@@ -128,6 +125,8 @@ struct HomeAuroraView: View {
     @State private var story: StoryLaunch?
     /// L'horloge de la fumée du coffre, ou `nil` si personne n'y touche.
     @State private var smokeStart: Date?
+    /// Le vol des pièces de fin de séance (vers la petite pièce).
+    @State private var volPiecesNe: Date?
     /// L'instant où le doigt s'est levé (la fumée retombe à partir de là).
     @State private var smokeEnd: Date?
     /// La page du trésor.
@@ -188,8 +187,29 @@ struct HomeAuroraView: View {
                                   start: smokeStart, end: smokeEnd,
                                   palette: .light)
                     }
+                    // LE VOL DES PIÈCES de la fin de séance : les
+                    // pièces gagnées ARQUENT vers la petite pièce (le
+                    // coffre publie sa place) pendant que la capsule
+                    // du haut annonce le compte — la récolte se VOIT.
+                    if let anchor, let born = volPiecesNe {
+                        let box = proxy[anchor]
+                        VolDePieces(
+                            depart: CGPoint(x: proxy.size.width / 2,
+                                            y: 74),
+                            cible: CGPoint(x: box.midX, y: box.midY),
+                            born: born)
+                    }
                 }
                 .allowsHitTesting(false)
+            }
+            // Le déclencheur du vol : la notif des pièces (la racine la
+            // pose à la clôture) — le vol part un souffle après elle.
+            .onChange(of: DepartEtat.shared.notifPieces) { _, gain in
+                guard gain != nil else { return }
+                volPiecesNe = Date()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
+                    volPiecesNe = nil
+                }
             }
             .sensoryFeedback(.impact(weight: .light), trigger: smokeStart)
             .navigationBarHidden(true)
@@ -431,7 +451,7 @@ struct HomeAuroraView: View {
                           action: {
                               CalCine.demande = true
                               withAnimation(.easeOut(duration: 0.3)) {
-                                  selection = .progress
+                                  selection = .home
                               }
                           })
                 .padding(.horizontal, 20)

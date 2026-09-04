@@ -25,13 +25,14 @@ import SwiftUI
 /// demande. Le profil est un POINT de la nav — reste à trancher si la nav
 /// s'affiche sur la page profil (plan §5).
 enum NavDest: String, CaseIterable, Hashable {
-    case home, exos, prog, profil
+    /// TROIS destinations (04-09) : Progression est archivée — la nav
+    /// porte Accueil · Exercices · Profil.
+    case home, exos, profil
 
     var glyphe: String {
         switch self {
         case .home: "house.fill"
         case .exos: "figure.strengthtraining.functional"
-        case .prog: "chart.line.uptrend.xyaxis"
         case .profil: "person"
         }
     }
@@ -40,7 +41,6 @@ enum NavDest: String, CaseIterable, Hashable {
         switch self {
         case .home: "Accueil"
         case .exos: "Entraînements"
-        case .prog: "Progression"
         case .profil: "Profil"
         }
     }
@@ -52,7 +52,6 @@ extension NavDest {
         switch self {
         case .home: .home
         case .exos: .exercises
-        case .prog: .progress
         case .profil: .profile
         }
     }
@@ -61,7 +60,6 @@ extension NavDest {
         switch onglet {
         case .home: self = .home
         case .exercises: self = .exos
-        case .progress: self = .prog
         case .profile: self = .profil
         }
     }
@@ -80,6 +78,18 @@ final class NavEtat {
 
     /// L'endroit où l'on est.
     var page: NavDest = .home
+
+    /// LA NAV EFFACÉE (04-09, Kathryn) : un TAP la fait disparaître — la
+    /// page card prend alors TOUTE la page — et un TAP sur la zone
+    /// libérée la ramène. ⚠️ **JAMAIS un drag** : le bord bas appartient
+    /// à iOS, c'est la leçon des deux jours (Reachability et le geste
+    /// Home volent tout tirage né là ; une touche IMMOBILE, jamais).
+    var effacee = false
+
+    func basculerEffacee() {
+        withAnimation(.easeInOut(duration: 0.28)) { effacee.toggle() }
+        Haptique.leger()
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // DEUX RÉGIMES, ET C'EST TOUTE LA MÉCANIQUE (plan §0bis).
@@ -296,7 +306,11 @@ final class NavEtat {
     /// après la remontée hors zone système) : −6/−4 pt ici, grab 18→12,
     /// air 2→0 — la bande rend ~14 pt à la card SANS redescendre dans la
     /// zone d'iOS. Les cibles de glyphe restent à 44 pt.
-    var navH: CGFloat { mini ? 20 : 70 }
+    /// RABAISSÉE ENCORE (04-09, 2e passe : « elle prend trop de place,
+    /// la partie noire est trop grande ») : 70 → 52. La cible tactile
+    /// des glyphes reste à 44 pt (elle ne se négocie jamais) — c'est
+    /// l'AIR autour qui part, pas la prise.
+    var navH: CGFloat { mini ? 20 : 46 }
 
     /// `dockH` = ce que `PageCard` réserve sous le grabber. En séance la dalle
     /// player (76) s'empile SUR la nav ; hors séance, la nav seule.
@@ -304,9 +318,11 @@ final class NavEtat {
     ///  · séance, nav déployée → 152   · séance, nav repliée → 100
     /// La nav se drague librement dans les DEUX contextes (plus de `forceMini`).
     /// Le régime « fermée » (exercice) passe par `bandeVisible: false`.
-    func dockH(enSeance: Bool) -> CGFloat {
-        (enSeance ? 76 : 0) + navH
-    }
+    /// ⚠️ LA DALLE A QUITTÉ LA BANDE (pivot 04-09) : le player est
+    /// désormais LA PILULE VAGABONDE, qui flotte au châssis. La bande ne
+    /// réserve donc plus que la nav — en séance comme au repos, UNE
+    /// seule hauteur.
+    func dockH(enSeance: Bool) -> CGFloat { navH }
 }
 
 /// LE MOTEUR DE LA FIN DE COURSE — le jumeau minuscule du `MoteurVol`
@@ -541,16 +557,10 @@ struct NavBande: View {
         // LA BANDE DÉPLOIE (item 11 du chantier 03-09) : c'est le seul
         // geste de dépliage que ni le système ni le player ne peuvent
         // voler — une touche immobile ne déclenche jamais un UIPan.
-        .contentShape(Rectangle())
-        .onTapGesture {
-            // ⚠️ JAMAIS pendant un geste ou un vol (banc de fouettage,
-            // faille « le tap se bat avec le tween ») : le pan-fenêtre est
-            // COOPÉRATIF — un drag court peut laisser le tap SwiftUI
-            // vivant au lever, et son poser() écraserait le commit à
-            // l'élan qui vient de partir.
-            guard !etat.enVol, !etat.enSuivi else { return }
-            if etat.mini { etat.poser(false) }
-        }
+        // ⚠️ PLUS AUCUN GESTE SUR LA BANDE (04-09 : « enlève le truc du
+        // tap, ça fait bugger tout ») : seuls les GLYPHES répondent, et
+        // ils naviguent. La bande est une surface morte — c'est le plus
+        // sûr, et c'est ce qu'elle a demandé.
     }
 
     /// LE DÉTAIL QUI FAIT TOUT, et la raison pour laquelle la braise vit chez
@@ -744,7 +754,6 @@ struct NavEncreLab: View {
         case .home: contenuHome
         case .exos: contenuExos
         case .profil: contenuFiche
-        case .prog: contenuProg
         }
     }
 
@@ -1148,7 +1157,6 @@ struct NavEncreLab: View {
                 boutonPage(.home, "home")
                 boutonPage(.exos, "exos")
                 boutonPage(.profil, "fiche")
-                boutonPage(.prog, "prog")
                 Spacer(minLength: 8)
             }
             Spacer()

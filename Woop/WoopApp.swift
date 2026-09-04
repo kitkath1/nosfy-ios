@@ -114,11 +114,17 @@ enum WoopTab: String, Hashable {
     /// Profil prend sa place — à quatre onglets, deux de chaque côté, le bouton
     /// de séance tombe exactement au centre de la barre.
     ///
-    /// Le rang `calendar` a DISPARU du jeu : une install qui l'avait retenu
-    /// dans `openTab` ne le retrouve plus, et `WoopTab(rawValue:)` rend `nil`.
-    /// La migration ci-dessous le rattrape explicitement plutôt que de laisser
-    /// le repli silencieux ramener l'utilisatrice à l'accueil sans raison.
-    case home, exercises, progress, profile
+    /// ⚠️ **PROGRESSION EST ARCHIVÉE (04-09, Kathryn)** — trois onglets :
+    /// Accueil · Exercices · Profil. La page, son calendrier et son iPod
+    /// restent DANS LE CODE (rejouables par `-progressLab`) mais n'ont
+    /// plus de porte, comme `HomeAuroraView` avant eux.
+    ///
+    /// Les rangs `calendar` ET `progress` ont DISPARU du jeu : une install
+    /// qui les avait retenus dans `openTab` ne les retrouve plus, et
+    /// `WoopTab(rawValue:)` rend `nil`. La migration les rattrape
+    /// explicitement plutôt que de laisser le repli silencieux ramener
+    /// l'utilisatrice à l'accueil sans raison.
+    case home, exercises, profile
 }
 
 struct RootView: View {
@@ -324,9 +330,10 @@ struct RootView: View {
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
     @State private var selection: WoopTab = {
         guard let raw = UserDefaults.standard.string(forKey: "openTab") else { return .home }
-        // Le calendrier a fusionné dans Progression : qui demandait le
-        // calendrier atterrit là où son contenu a déménagé, pas à l'accueil.
-        if raw == "calendar" { return .progress }
+        // Le calendrier avait fusionné dans Progression ; Progression est
+        // archivée à son tour (04-09) : les deux rangs morts retombent sur
+        // l'ACCUEIL — explicitement, jamais par le repli silencieux.
+        if raw == "calendar" || raw == "progress" { return .home }
         return WoopTab(rawValue: raw) ?? .home
     }()
 
@@ -372,7 +379,7 @@ struct RootView: View {
     /// L'ordre des onglets et leurs glyphes, tenus ici : la barre bijou parle
     /// en INDICE, le TabView en `WoopTab`, et ce pont est le seul endroit qui
     /// connaisse les deux.
-    private static let order: [WoopTab] = [.home, .exercises, .progress, .profile]
+    private static let order: [WoopTab] = [.home, .exercises, .profile]
     private static let tabItems: [(icon: String, label: String)] = [
         ("house.fill", "Accueil"),
         ("figure.strengthtraining.functional", "Entraînements"),
@@ -722,7 +729,7 @@ struct RootView: View {
     /// condition vaut toujours `false`, le code reste pour l'archive de la v1.
     private var barreBijouVisible: Bool {
         selection != .exercises && selection != .profile
-            && selection != .progress && selection != .home
+            && selection != .home
     }
 
     /// Le menu de la home route vers un onglet.
@@ -1034,6 +1041,49 @@ struct RootView: View {
         }
     }
 
+    /// LE CONTENU DE LA PILULE — les vraies données de la séance, dans
+    /// la robe validée au banc : la mini-card du jour, le nom de
+    /// l'exercice courant (ou l'invite animée), le chrono, le stop.
+    @ViewBuilder
+    private func contenuPilule(_ a: Workout) -> some View {
+        let exo = a.orderedExercises.first?.exercise
+        HStack(spacing: 10) {
+            MiniCardJour(date: a.startedAt ?? .now,
+                         sticker: WoopSticker.pour(a).asset)
+                .scaleEffect(0.80)
+                .frame(width: 68, height: 68)
+                .frame(width: 74, height: 76)
+            VStack(alignment: .leading, spacing: 3) {
+                if let e = exo {
+                    Text(e.name)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.95))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                } else {
+                    InviteAnimee(taille: 17).minimumScaleFactor(0.8)
+                }
+                TimelineView(.periodic(from: a.startedAt ?? .now, by: 1)) { tl in
+                    let s = max(0, Int(tl.date
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                    Text("In session · \(s / 60):\(String(format: "%02d", s % 60))")
+                        .font(.system(size: 13))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            MedaillonStop(lueur: true, action: {
+                DepartEtat.shared.pauseOuverte = true
+            })
+                .scaleEffect(1.22)
+                .frame(width: 60, height: 60)
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 14)
+    }
+
     private var mainBody: some View {
         ZStack {
             // « Un seul ciel » : horloge globale (temps absolu modulo 900 s)
@@ -1091,18 +1141,10 @@ struct RootView: View {
                         .environment(\.ongletCache,
                                      selection != .exercises)
                 }
-                Tab("Progrès", systemImage: "chart.line.uptrend.xyaxis", value: WoopTab.progress) {
-                    // PROGRESS v2 (30-08, plan tools/progress/PLAN-PROGRESS-V2.md) :
-                    // on n'atterrit plus sur l'iPod — une page (header, This
-                    // week, calendrier) ; l'iPod est une destination (« Voir
-                    // dans le lecteur »). Page immersive — la barre bijou se
-                    // retire, le chevron ramène à la home (la grammaire
-                    // d'Exercices et du Profil). L'ancienne page calendrier
-                    // (18-08) vit sous `-calLab`.
-                    ProgressPage(onBack: retourHome)
-                    .toolbarVisibility(.hidden, for: .tabBar)
-                    .environment(\.ongletCache, selection != .progress)
-                }
+                // (L'onglet PROGRESSION est ARCHIVÉ le 04-09 — trois
+                //  onglets désormais. `ProgressPage`, son calendrier et
+                //  son iPod restent dans le code, rejouables par
+                //  `-progressLab`, mais n'ont plus de porte.)
                 Tab("Profil", systemImage: "person", value: WoopTab.profile) {
                     // La maison des cartes : le halo versé de la droite, le
                     // chevron ramène à la home (le pattern d'Exercices).
@@ -1314,6 +1356,23 @@ struct RootView: View {
                     withAnimation { selection = .exercises }
                 })
                 .zIndex(8.5)
+
+            // ⚠️ LA PILULE VAGABONDE — LE PLAYER EN SÉANCE (pivot 04-09).
+            // Montée UNE fois au châssis, `if active != nil` seulement (la
+            // loi du rideau : rien ne se monte caché). Elle flotte
+            // AU-DESSUS des pages et SOUS le monde du player : on la
+            // drague partout, un tap l'ouvre, son ticket se tire.
+            if let a = active {
+                PiluleVagabonde(
+                    utile: 130...(UIScreen.main.bounds.height - 96),
+                    departSeance: a.startedAt ?? .now,
+                    ticketTexte: "\(a.seriesPayantes) SETS",
+                    onOuvrir: { PlayerEtat.shared.ouvrir() },
+                    onStop: { DepartEtat.shared.pauseOuverte = true }) {
+                    contenuPilule(a)
+                }
+                .zIndex(6)
+            }
 
             // LE PAN MAÎTRE DE BANDE — l'hôte UNIQUE du drag de la nav
             // (plan final 03-09) : un pan sur la FENÊTRE, le patron du

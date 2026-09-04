@@ -1889,7 +1889,7 @@ struct HomeNuitPage: View {
     var exoParRoute = false
 
     /// L'ordre de la colonne — il doit suivre `MenuItems.titres` à la lettre.
-    static let destinations: [WoopTab] = [.profile, .progress, .exercises]
+    static let destinations: [WoopTab] = [.profile, .exercises]
 
     /// Le galet est rangé au mur : le slider reprend la largeur libérée.
     @State private var galetRange = false
@@ -4530,7 +4530,6 @@ struct HomeNuitLab: View {
             Group {
                 switch t {
                 case .profile:   ProfilLuneView(selection: .constant(.profile))
-                case .progress:  CalendarStickersPage(onBack: { route = nil })
                 case .exercises: ExercisesView(selection: .constant(.exercises))
                 default:         Color.black.ignoresSafeArea()
                 }

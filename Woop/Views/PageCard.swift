@@ -190,43 +190,14 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
 
     private var bande: some View {
         VStack(spacing: 0) {
-            // LE TRAIT — la poignée. Le TAP y bascule mini ⇄ déployée
-            // (04-09 : « il n'y a que le tap au niveau du trait qui
-            // marche » — on le rend officiel : c'est le chemin immobile,
-            // que ni iOS ni le player ne peuvent voler ; le drag reste le
-            // chemin principal maintenant que la bande est sortie de la
-            // zone système).
-            Capsule()
-                .fill(Color.white.opacity(0.28))
-                .frame(width: 36, height: 4)
-                .padding(.top, 5)
-                .frame(height: grabH)
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    guard !NavEtat.shared.enVol,
-                          !NavEtat.shared.enSuivi else { return }
-                    NavEtat.shared.basculer()
-                }
-            // LA DALLE PLAYER — EN SÉANCE SEULEMENT. Son TAP reste à elle
-            // (l'affordance voulue) ; son DRAG est parti au PAN MAÎTRE de
-            // bande (03-09, CONCEPTION-PAN-BANDE.md) : le drag descendant
-            // né ici ne monte PLUS le monde du player — il route au repli.
-            if enSeance {
-                dalle
-                    .frame(height: dalleH)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // ⚠️ Jamais pendant un geste/vol (la garde du banc
-                        // de fouettage — le pan coopératif peut laisser un
-                        // tap vivant au lever d'un drag court).
-                        guard !NavEtat.shared.enVol,
-                              !NavEtat.shared.enSuivi,
-                              !PlayerEtat.shared.enSuivi else { return }
-                        Haptique.moyen()
-                        PlayerEtat.shared.ouvrir()
-                    }
-            }
+            // (LE TRAIT EST MORT le 04-09 : « enlève le petit trait,
+            //  ça n'a plus d'intérêt » — il ne portait plus de geste
+            //  depuis que le TAP de la nav l'efface. La bande gagne
+            //  toute sa hauteur : `BandeCote.grab` est à zéro.)
+            // (LA DALLE A QUITTÉ LA BANDE le 04-09 : le player est la
+            //  PILULE VAGABONDE, montée au châssis. La bande ne porte
+            //  plus QUE la nav — le paramètre `dalle:` survit pour les
+            //  bancs, il n'est plus rendu ici.)
             // LA NAV — ses taps à elle (glyphes, dépli en mini) ; son drag
             // vit lui aussi chez le pan maître.
             nav

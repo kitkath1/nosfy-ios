@@ -12,7 +12,9 @@ enum BandeCote {
     /// Le trait (grabber) + son air — compacté 18 → 12 le 04-09
     /// (« trop haut ») ; la dalle, elle, est l'invariant fouetté et ne
     /// bouge PAS.
-    static let grab: CGFloat = 12
+    /// Le trait + son air — 12 → 6 (04-09, 2e passe) : le trait n'a plus
+    /// de geste (le tap efface la nav), il n'a plus besoin de sa marge.
+    static let grab: CGFloat = 6
     /// La dalle player, hauteur canonique — l'invariant fouetté.
     static let dalle: CGFloat = 76
 }
@@ -48,7 +50,7 @@ struct NavPanHote: UIViewRepresentable {
         weak var fenetre: UIWindow?
         weak var panPose: UIPanGestureRecognizer?
 
-        enum Mode { case indecis, player, repli }
+        enum Mode { case indecis, player }
         enum Zone { case grabber, dalle, nav }
         var mode: Mode = .indecis
         var tyAncre: CGFloat = 0
@@ -111,8 +113,16 @@ struct NavPanHote: UIViewRepresentable {
                                y: pan.location(in: w).y - t.y)
             let yLocal = pose.y - NavEtat.shared.bandeRectFenetre.minY
             let zone = zoneDe(yLocal)
-            mode = (zone == .dalle && t.y < 0) ? .player : .repli
-            if crie { print("GESTE-SONDE bande DÉCIDE \(mode)/\(zone)") }
+            // ⚠️ LE REPLI EST MORT (pivot 04-09) : la nav ne se drague
+            // PLUS — plus de mini, plus de card qui bouge. Le pan ne sert
+            // qu'à la DALLE du player (drag vers le haut = ouvrir). Tout
+            // autre départ REFUSE, et le toucher repart intact.
+            guard zone == .dalle, t.y < 0 else {
+                if crie { print("GESTE-SONDE bande LAISSE (\(zone))") }
+                return false
+            }
+            mode = .player
+            if crie { print("GESTE-SONDE bande DÉCIDE player/dalle") }
             return true
         }
 
@@ -122,7 +132,6 @@ struct NavPanHote: UIViewRepresentable {
             switch g.state {
             case .began:
                 tyAncre = ty
-                if mode == .repli { rAncre = NavEtat.shared.r }
                 suivre(ty)
             case .changed:
                 suivre(ty)          // UNE FOIS DÉCIDÉ, ON NE CHANGE PLUS.
@@ -132,7 +141,6 @@ struct NavPanHote: UIViewRepresentable {
                 let vy = g.velocity(in: w).y
                 switch mode {
                 case .player: PlayerEtat.shared.commettre(velocite: vy)
-                case .repli: NavEtat.shared.commettre(velocite: vy)
                 case .indecis: break
                 }
                 if crie { print("GESTE-SONDE bande COMMET v=\(Int(vy))") }
@@ -145,8 +153,6 @@ struct NavPanHote: UIViewRepresentable {
             switch mode {
             case .player:
                 PlayerEtat.shared.suivreDelta(-(ty - tyAncre))
-            case .repli:
-                NavEtat.shared.suivre(depuis: rAncre, delta: ty - tyAncre)
             case .indecis: break
             }
         }
