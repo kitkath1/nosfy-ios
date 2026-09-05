@@ -1075,7 +1075,8 @@ struct ExercisesView: View {
                 // LA CASCADE — jamais tout d'un coup : le voile tombe
                 // (0 → 0,4), la fenêtre de la card S'OUVRE (0,45 → 0,85), puis
                 // celle de la molette (1,05 → 1,45).
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: RythmeEcran.dort("exercises"))) { tl in
                     let age = tl.date.timeIntervalSince(tutoNe)
                     let sstep: (Double, Double) -> Double = { a, b in
                         let u = min(max((age - a) / (b - a), 0), 1)
@@ -1536,7 +1537,8 @@ struct BraiseEcriture: View {
     static let profond = Color(red: 0.98, green: 0.26, blue: 0.06)
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                paused: RythmeEcran.dort("exercises"))) { tl in
             Canvas { ctx, size in
                 let age = gel ?? max(0, tl.date.timeIntervalSince(frappe))
                 // L'ATTAQUE ET LA TRAÎNE. `f` monte en trois centièmes puis
@@ -2198,7 +2200,8 @@ private struct ArcSmoke: View {
     var body: some View {
         if let start = etat.touchStart {
             let fin = etat.touchEnd
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: RythmeEcran.dort("exercises"))) { timeline in
                 let now = timeline.date
                 let age = now.timeIntervalSince(start)
                 let attack = min(age / 0.10, 1.0)
@@ -2281,7 +2284,8 @@ private struct ArcKnob: View {
                 }
                 .overlay {
                     // Le liseré vivant : la respiration des icônes de la nav.
-                    TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: RythmeEcran.dort("exercises"))) { tl in
                         let clock = tl.date.timeIntervalSinceReferenceDate
                         let warm = 0.5 + 0.5 * sin(clock * 0.83)
                         let cool = 0.5 + 0.5 * sin(clock * 0.57 + 1.7)

@@ -180,7 +180,7 @@ struct GaletMaison: View {
 
     var body: some View {
         // LA HOME DORT SOUS LA ROUTE (jalon 1) : l'horloge se tait.
-        TimelineView(.animation(minimumInterval: 1.0 / 30,
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                 paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
             let t = ctx.date.timeIntervalSinceReferenceDate
@@ -360,7 +360,7 @@ struct MenuHalos: View {
     var body: some View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 24,
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
                 let t = ctx.date.timeIntervalSinceReferenceDate
@@ -932,7 +932,7 @@ private struct PanacheSection: View {
 
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(1)
                 let now = tl.date
@@ -976,7 +976,7 @@ private struct GaletFumee: View {
 
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(1)
                 let now = tl.date
@@ -1325,7 +1325,7 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 // l'appui tenu, c'est le geste du galet qui nourrit la
                 // sélection — un seul doigt, du premier contact au choix.
                 if couronne {
-                    TimelineView(.animation(minimumInterval: 1.0 / 60,
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                             paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
                         let now = ctx.date
@@ -1474,7 +1474,17 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                             y: porte.height + (range ? 34 : 0))
                     .contentShape(range ? AnyShape(Rectangle())
                                         : AnyShape(Circle()))
-                    .allowsHitTesting(!verrouille)
+                    // ⚠️ ET `!galetCache` AUSSI (05-09, verdict : « quand je
+                    // clique sur le côté droit je revois l'ancien menu de
+                    // fumée »). La pastille est déjà rendue sourde 40 lignes
+                    // plus haut (`.allowsHitTesting(!galetCache)`, :1435) —
+                    // mais CE modificateur-ci est posé APRÈS, donc plus à
+                    // l'extérieur, et il la remettait à l'écoute. Deux
+                    // `allowsHitTesting` sur la même pile ne s'additionnent
+                    // pas : le dernier posé décide. Ils doivent donc porter
+                    // la MÊME condition complète, sinon le correctif d'hier
+                    // est effacé en silence — c'est ce qui s'est passé.
+                    .allowsHitTesting(!verrouille && !galetCache)
                     // ⚠️ UN SEUL GESTE. Un `onLongPressGesture` même à
                     // 0,01 s VOLE le tap qui le suit (le piège déjà payé sur
                     // le puits de l'iPod, où le tap simple devait être posé

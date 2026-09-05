@@ -900,9 +900,19 @@ struct ProfilLuneView: View {
         } label: {
             HStack(spacing: 7) {
                 // La pièce 3D de BRAVO — la recette gelée, en petit.
+                // ⚠️ `figee: true` — IL MANQUAIT (05-09). Une pièce déjà
+                // posée (`idleLife: 0` + `yawOverride`) rend, figée, une
+                // image IDENTIQUE AU PIXEL : c'est le composant lui-même
+                // qui le documente (`MoonCoinLab.swift:60-66`), et le même
+                // appel le porte déjà ailleurs (`SetHistoryRow.swift:186`).
+                // Sans lui : une horloge, un dispatch de shader Metal par
+                // battement, et un abonnement au gyroscope — qui publie à
+                // 30 Hz (`DemonSky.swift`) — donc la pastille se réévaluait
+                // au rythme du poignet, en permanence, pour ne rien montrer
+                // de différent.
                 MoonCoinView(coinR: 11, draggable: false,
                              yawOverride: 0.34, idleLife: 0, fps: 6,
-                             reveal: 0.34, matte: 0)
+                             reveal: 0.34, matte: 0, figee: true)
                     .frame(width: 11 * MoonCoinView.hostScale,
                            height: 11 * MoonCoinView.hostScale)
                     .frame(width: 24, height: 24)
@@ -1236,7 +1246,8 @@ struct TirageBooster: View {
                         VStack(spacing: 7) {
                             FlechesInvite(taille: 12)
                             TimelineView(.animation(
-                                minimumInterval: 1.0 / 20.0)) { tl in
+                                minimumInterval: RythmeEcran.pas,
+                                paused: RythmeEcran.dort("profile"))) { tl in
                                 let t = tl.date.timeIntervalSinceReferenceDate
                                 let vie = 0.75
                                     + 0.25 * sin(t * 2 * .pi / 3.1)
@@ -1417,7 +1428,8 @@ struct TirageBooster: View {
                 // que le sheet n'a PAS de drag-fermeture), et par-dessus
                 // sa respiration interne, une DANSE lente : balancement
                 // ±2,5° et souffle d'échelle, périodes premières.
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: RythmeEcran.dort("profile"))) { tl in
                     let t = tl.date.timeIntervalSinceReferenceDate
                     BoosterStage(still: false, frozenTear: nil,
                                  startOpen: false)
@@ -1501,7 +1513,8 @@ struct RondAvatar: View {
     var anneau: CGFloat = 0
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                paused: RythmeEcran.dort("profile"))) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
             let tour = Angle.degrees(
                 t.truncatingRemainder(dividingBy: 8.0) / 8.0 * 360.0)
@@ -1926,7 +1939,8 @@ struct FlechesInvite: View {
     var taille: CGFloat = 15
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { tl in
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                paused: RythmeEcran.dort("profile"))) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
             VStack(spacing: -taille * 0.34) {
                 ForEach(0..<2, id: \.self) { i in
@@ -2029,7 +2043,8 @@ struct BanniereHalos: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: cadence)) { tl in
+            TimelineView(.animation(minimumInterval: cadence,
+                                    paused: RythmeEcran.dort("profile"))) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
                 Rectangle()
