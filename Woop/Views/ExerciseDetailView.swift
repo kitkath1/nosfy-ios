@@ -251,6 +251,31 @@ struct ExerciseDetailView: View {
     /// padV rend les 8 autres (FlammeJauge).
     private static let bande0: CGFloat = 40
 
+    /// ⚠️⚠️ **LA CARTE DES SÉRIES EST ARCHIVÉE** (05-09, Kathryn) : « ce
+    /// composant de set ne sert à rien, puisque la pastille de
+    /// notification en live — soit dans le Dynamic Island, soit qui se
+    /// balade dans l'écran — fait redondance. Archive-le et **laisse-le
+    /// dans le design system**, ce composant trop beau. »
+    ///
+    /// Ce qui meurt est le **site d'appel**, pas le composant :
+    /// `FlammeJauge.swift` (1 821 lignes) et son banc `-flammeLab`
+    /// restent ENTIERS dans le dépôt. `-carteSeries` la remonte telle
+    /// quelle — c'est par là qu'on la revoit, et qu'on la compare.
+    ///
+    /// Ce que l'archivage emporte, et où c'est parti :
+    /// · le compte des séries et les flammes → **la pastille**
+    ///   (`PiluleVagabonde`, `WoopApp` la nourrit) ;
+    /// · la cible de la volée de pièces → **`PiluleEtat.ancreGlobale`** ;
+    /// · le dépliage (`carteP`, `carteDrag`) → il n'ouvre plus rien, il
+    ///   est éteint AVEC elle (jamais laissé vivant à vide : un geste qui
+    ///   écrit un état que personne ne rend est un rideau, et un rideau
+    ///   se paie en images) ;
+    /// · la place → **la description de l'exercice** (`DescriptionExo`).
+    ///
+    /// L'analyse : `tools/flow/ANALYSE-PASTILLE-UNIQUE.md`.
+    private static let carteSeriesVisible =
+        CommandLine.arguments.contains("-carteSeries")
+
     // MARK: - Le banc de RESTAURATION du verre (`-verreLab`, 16-08)
     //
     // La photo woodchopper meurt, remplacée par le HUD de réglage ; le
@@ -386,6 +411,16 @@ struct ExerciseDetailView: View {
     @State private var restartAsk: FinishedSeries?
     /// La volée de pièces vers la carte Série : l'instant du départ.
     @State private var coinsAt: Date?
+    /// L'ARRIVÉE DU TEXTE — « quand on arrive sur la page détail
+    /// exercice, le texte s'anime en blur progressivement » (Kathryn,
+    /// 05-09), puis : « pas assez blur, fading, Apple ; là ça va trop
+    /// vite, c'est trop cheap ». Un seul drapeau pour le TITRE et la
+    /// DESCRIPTION : ils arrivent dans la même vague, décalés.
+    @State private var texteApparu = false
+    /// LA CIBLE DE LA VOLÉE, en coordonnées PHYSIQUES, figée au départ —
+    /// depuis le 05-09 c'est la PASTILLE (`PiluleEtat.ancreGlobale`), la
+    /// carte des séries étant archivée.
+    @State private var coinsCible: CGPoint = .zero
     /// La carte Série en repère global — la cible des pièces.
     @State private var seriesCardFrame: CGRect = .zero
     /// Le prochain montage du cadran naît POSÉ (le bouton du panneau) —
@@ -746,13 +781,21 @@ struct ExerciseDetailView: View {
             // de la maison : glow < carte), sourde au doigt : le scroll
             // du dessous est le geste, le tap vit dans le flux.
             .overlay(alignment: .topLeading) {
-                if isStrength { carteSeries }
+                if isStrength, Self.carteSeriesVisible { carteSeries }
             }
+            // LA DESCRIPTION — ce qui prend sa place (verdict Kathryn
+            // 05-09 : « laisse l'espace noir, tu vas mettre une
+            // description sur plusieurs lignes, genre 5, en gros, comme
+            // Apple »). Elle est montée DANS la pile du titre, un peu
+            // plus bas — `collapsingHeaderBack` : c'est le seul endroit
+            // d'où elle peut suivre un titre qui change de hauteur.
+            // Ce qui reste sous elle est de la NUIT, et c'est voulu :
+            // « laisse l'espace noir ».
             // LA BANDE DE PRISE, posée APRÈS la carte pour gagner le doigt
             // sur elle : la carte ouverte rend son scroll à la liste des
             // séries, et sa tête reste l'endroit où on l'attrape.
             .overlay(alignment: .top) {
-                if isStrength { priseCarteSeries }
+                if isStrength, Self.carteSeriesVisible { priseCarteSeries }
             }
             // Le HUD du banc — AU-DESSUS de tout, et lui SEUL est
             // touchable (la carte des séries reste sourde au doigt).
@@ -762,6 +805,9 @@ struct ExerciseDetailView: View {
             // La taille pour le banc — JAMAIS une géométrie d'avant le
             // premier layout (le zéro faisait le NaN ci-dessus).
             .onAppear {
+                // LA VAGUE DU TEXTE (titre + description) part ICI, à
+                // l'arrivée de la PAGE — pas au montage de chaque vue.
+                texteApparu = true
                 if geo.size.height > 100 {
                     pageFull = CGSize(
                         width: geo.size.width,
@@ -1118,11 +1164,19 @@ struct ExerciseDetailView: View {
                 if let at = coinsAt {
                     GeometryReader { g in
                         let og = g.frame(in: .global).origin
-                        let tgt = seriesCardFrame == .zero
-                            ? CGPoint(x: g.size.width - 64,
-                                      y: g.size.height - 210)
-                            : CGPoint(x: seriesCardFrame.maxX - 44 - og.x,
+                        // ⚠️ LA CIBLE A DÉMÉNAGÉ AVEC LA PASTILLE (05-09).
+                        // La carte archivée, `seriesCardFrame` reste à
+                        // zéro pour toujours : les pièces tombaient dans
+                        // le repli — le coin bas droit, c'est-à-dire
+                        // nulle part. Elles montent maintenant vers la
+                        // pastille (l'île, ou sa place si on l'a tirée),
+                        // lue au moment du tir et figée.
+                        let tgt = Self.carteSeriesVisible
+                                && seriesCardFrame != .zero
+                            ? CGPoint(x: seriesCardFrame.maxX - 44 - og.x,
                                       y: seriesCardFrame.midY - og.y)
+                            : CGPoint(x: coinsCible.x - og.x,
+                                      y: coinsCible.y - og.y)
                         SeriesCoinFlight(
                             start: at,
                             source: CGPoint(x: g.size.width / 2,
@@ -1265,9 +1319,14 @@ struct ExerciseDetailView: View {
             // et le galet sont dessinés PAR-DESSUS (ce sont des
             // `safeAreaInset`) : leurs touchers gagnent, et le galet
             // garde son drag de lancement intact.
+            // ⚠️ LE GESTE MEURT AVEC LA CARTE (05-09). Laissé vivant, il
+            // continuait d'écrire `carteP` — donc de replier le titre et
+            // d'éteindre la photo — pour ouvrir une carte que plus
+            // personne ne rend. Un geste qui pilote un état que rien
+            // n'affiche est un rideau : ça se paie en images.
             Color.clear
                 .contentShape(Rectangle())
-                .gesture(carteDrag)
+                .gesture(carteDrag, isEnabled: Self.carteSeriesVisible)
                 .ignoresSafeArea()
             // Le RELAIS DU TAP, à la place fermée de la carte :
             // « Touchez pour voir le détail » ouvre — le même chemin
@@ -1277,7 +1336,7 @@ struct ExerciseDetailView: View {
                 .contentShape(Rectangle())
                 .offset(y: Self.expandedHeader + 4)
                 .onTapGesture { dock(true) }
-                .allowsHitTesting(carteP <= 0.02)
+                .allowsHitTesting(Self.carteSeriesVisible && carteP <= 0.02)
         }
     }
 
@@ -1532,7 +1591,28 @@ struct ExerciseDetailView: View {
             ZStack(alignment: .topLeading) {
                 // Le titre meurt le premier : la carte passe sur sa zone
                 // dès le début de la course.
-                titleBlock(big: true)
+                // ⚠️ LA DESCRIPTION SUIT LE TITRE, elle ne vise PAS une
+                // cote fixe (mesuré le 05-09, deux captures) : « Papillon
+                // à la machine » tient sur une ligne, « Développé couché
+                // à la barre » en prend deux — 36 pt d'écart. Posée à
+                // `expandedHeader − 26`, elle flottait sur les noms
+                // courts et COLLAIT au sous-titre sur les longs. Dans la
+                // même pile que le titre, l'air entre les deux est le
+                // même pour tout le catalogue.
+                VStack(alignment: .leading, spacing: 30) {
+                    // LE TITRE ARRIVE COMME LE TEXTE (05-09 : « pareil
+                    // pour le titre, ça s'affiche à l'Apple et c'est
+                    // doux ») — il ouvre la vague, la description suit.
+                    titleBlock(big: true)
+                        .modifier(ArriveeDouce(vu: texteApparu,
+                                               retard: 0.15))
+                    if !Self.carteSeriesVisible {
+                        DescriptionExo(cue: exercise.cue,
+                                       mistake: exercise.mistake,
+                                       enSeance: active != nil,
+                                       vu: texteApparu)
+                    }
+                }
                     .padding(.horizontal, 20)
                     .offset(y: Self.lp(12 + Self.heroCap + 8,
                                        12 + Self.heroCap - 22, u))
@@ -2448,6 +2528,14 @@ struct ExerciseDetailView: View {
             ancrerSerie(f.index)
         }
         if coins {
+            // ⚠️ LA CIBLE SE FIGE AU DÉPART, elle ne se lit pas dans le
+            // corps (05-09). Depuis que les pièces visent la PASTILLE,
+            // leur cible vit dans un `@Observable` : la lire pendant le
+            // vol rendrait la page dépendante de `yRatio` — donc
+            // re-jouée à chaque relâcher de la pastille, et pire, la
+            // volée changerait de but en plein vol si on la déplaçait.
+            // Une cible se lit UNE fois, à l'instant du tir.
+            coinsCible = PiluleEtat.shared.ancreGlobale
             coinsAt = .now
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55,
                                           execute: write)
@@ -2761,5 +2849,146 @@ struct HeaderEmberCard: View {
         }
         .frame(height: height)
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - LA DESCRIPTION DE L'EXERCICE (05-09)
+
+/// CE QUI PREND LA PLACE DE LA CARTE DES SÉRIES — verdict Kathryn du
+/// 05-09, mot pour mot : « laisse l'espace noir, tu vas mettre une
+/// description sur plusieurs lignes, genre 5, en gros, comme Apple. Et
+/// dès que la pastille sort du Dynamic Island, ça devient blur quasi
+/// noir mais on voit le texte, comme Apple ; dès qu'elle revient dans
+/// le Dynamic Island, on réaffiche le texte en fade-in blur. »
+///
+/// **Rien n'est inventé** : le texte est celui du catalogue —
+/// `Exercise.cue` (la consigne d'exécution) puis `Exercise.mistake`
+/// (l'erreur la plus fréquente). Les deux existaient depuis toujours
+/// dans `Models.swift` et n'étaient affichés NULLE PART. La fiche ne
+/// gagne donc pas un remplissage : elle montre enfin ce qu'elle sait.
+///
+/// **La grammaire** : aucun contenant, aucune arête, aucun fond — du
+/// texte posé sur la nuit. La consigne en pleine encre, l'erreur en
+/// encre basse : la hiérarchie se fait par le CONTRASTE, pas par une
+/// boîte (l'école Apple, et la seule qui tienne sur du noir pur).
+///
+/// ⚠️ **C'EST UNE `struct` À PART, ET C'EST OBLIGATOIRE.** Elle LIT
+/// `PiluleEtat.dansIle` : lire une propriété d'un `@Observable` dans un
+/// corps rend TOUT ce corps dépendant d'elle. Posée dans la page, la
+/// fiche entière (photo, titre, galet, lentille) se serait rejouée à
+/// chaque aller-retour de la pastille. Isolée ici, elle est la seule à
+/// se rejouer — c'est la même loi que `CibleIle` (04-09, cause n° 12).
+private struct DescriptionExo: View {
+    let cue: String
+    let mistake: String
+    /// La séance tourne — donc la pastille EXISTE quelque part. Hors
+    /// séance il n'y a rien à devancer : le texte reste net.
+    /// (Sans cette garde, `dansIle` étant faux au repos, la fiche se
+    /// serait ouverte floue en dehors de toute séance.)
+    let enSeance: Bool
+    /// L'ARRIVÉE — le drapeau vient de la PAGE : le titre et les deux
+    /// phrases sont une seule vague, décalée. Possédé ici, il partait au
+    /// montage de CETTE vue et le titre arrivait tout seul.
+    let vu: Bool
+
+    private var pilule: PiluleEtat { PiluleEtat.shared }
+
+
+    var body: some View {
+        // LA PASTILLE SORTIE PREND LA LUMIÈRE, et la page recule derrière
+        // elle. Elle est dans l'île : la page est à elle, tout est net.
+        let recule = enSeance && !pilule.dansIle
+        VStack(alignment: .leading, spacing: 16) {
+            Text(cue)
+                .foregroundStyle(.white.opacity(0.92))
+                .modifier(ArriveeDouce(vu: vu, retard: 0.48))
+            // ⚠️ « À ÉVITER » N'EST PAS UNE COQUETTERIE (mesuré à la
+            // première capture, 05-09) : sans lui, l'erreur la plus
+            // fréquente se lisait comme une SECONDE CONSIGNE — « tendre
+            // complètement les bras et tirer avec les épaules », en gris,
+            // sous la description. Exactement l'inverse de ce qu'il faut
+            // faire. Le mot vit DANS la phrase (une concaténation de
+            // `Text`), pas dans une étiquette : pas de contenant, pas de
+            // ligne en plus.
+            // (Interpolation d'un `Text` DANS un `Text` : le `+` de la
+            //  maison est déprécié depuis iOS 26.)
+            Text("\(Text("À éviter   ").foregroundStyle(.white.opacity(0.20)))\(mistake)")
+                .foregroundStyle(.white.opacity(0.34))
+                // Les deux phrases ne se posent pas ensemble : 0,16 s
+                // d'écart, et l'œil les lit dans l'ordre où elles
+                // arrivent. C'est ça, « progressivement ».
+                .modifier(ArriveeDouce(vu: vu, retard: 0.76))
+        }
+        .font(.inter(20, .medium))
+        .tracking(-0.2)
+        .lineSpacing(7)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // LE RECUL — flou ET encre, ensemble : un flou seul laisserait un
+        // gris laiteux qui se lit encore comme un bloc ; l'encre seule
+        // laisserait un texte net qu'on essaierait de LIRE. Les deux, et
+        // le texte devient une TEXTURE derrière la pastille.
+        //
+        // ⚠️ IL DOIT RESTER VISIBLE (verdict 05-09, sur la capture
+        // `tools/flow/captures/fiche-v3-sortie.png`) : « on voit encore le
+        // texte, mais très très finement blurré, pour comprendre qu'il est
+        // en train de disparaître — là, il est tout noir ». À 0,16
+        // d'encre et 7 de flou, il ne restait qu'une tache : plus de
+        // texte du tout, donc plus rien à comprendre. 0,34 et 5 : les
+        // lignes se DEVINENT, on lit qu'il s'efface, on ne le lit pas.
+        .blur(radius: recule ? 5 : 0)
+        .opacity(recule ? 0.34 : 1)
+        // Il recule aussi d'un souffle — 1,5 % suffit, l'œil le prend
+        // pour de la profondeur.
+        .scaleEffect(recule ? 0.985 : 1, anchor: .topLeading)
+        // ⚠️ LE RETOUR EST PLUS LENT QUE LA SORTIE. La pastille qui sort
+        // doit dégager la vue TOUT DE SUITE (elle arrive sur le texte) ;
+        // le texte qui revient, lui, a le droit de se poser — c'est le
+        // « fade-in blur trop beau » qu'elle a demandé.
+        .animation(recule ? .easeIn(duration: 0.28)
+                          : .easeOut(duration: 0.55),
+                   value: recule)
+        // Elle ne prend JAMAIS le doigt : le galet et la lentille vivent
+        // en dessous.
+        .allowsHitTesting(false)
+    }
+}
+
+/// L'ARRIVÉE DOUCE — le texte naît HORS FOCALE et se pose, lentement.
+///
+/// ⚠️ CE N'EST PAS `ArriveeFloue` (CoffreV2:1159), et c'est délibéré.
+/// Celle-là lit un curseur continu et décale par RANG ; sous un simple
+/// `withAnimation`, le corps n'est évalué QU'UNE FOIS — le rang ne
+/// décale alors plus rien, tout arrive ensemble. Ici le retard vit dans
+/// l'ANIMATION elle-même (`.delay`), la seule forme qui étage vraiment
+/// deux blocs.
+///
+/// Les cotes, après le verdict « pas assez blur, fading, Apple ; trop
+/// vite, trop cheap » (05-09) : flou **26** (c'était 13) et course de
+/// **1,6 s** (c'était 0,80). Le texte monte de 16 pt et se dilate d'un
+/// cheveu (1,04 → 1) : il se POSE au lieu d'apparaître.
+///
+/// ⚠️ **LA COURBE EST `easeInOut`, ET C'EST MESURÉ** (film
+/// `tools/flow/films/arrivee-texte.mov`, planche 4). J'avais pris une
+/// expo-out (`timingCurve(0.16, 1, 0.3, 1)`) en la croyant « très
+/// Apple » : elle fait 50 % du chemin dans les 15 premiers pour cent du
+/// temps — au film, le flou avait déjà disparu sur la PREMIÈRE image
+/// visible, et la seconde moitié rampait sans qu'on la voie. Une durée
+/// longue ne suffit pas : c'est le DÉBUT de la courbe qui décide si ça
+/// fait cheap. `easeInOut` est lent aux DEUX bouts — le flou se lit.
+///
+/// ⚠️ Le rayon retombe à ZÉRO EXACT une fois posé — un `.blur` non nul,
+/// même de 0,3, force une passe hors écran à chaque image, pour toujours.
+private struct ArriveeDouce: ViewModifier {
+    let vu: Bool
+    let retard: Double
+
+    func body(content: Content) -> some View {
+        content
+            .blur(radius: vu ? 0 : 26)
+            .opacity(vu ? 1 : 0)
+            .offset(y: vu ? 0 : 16)
+            .scaleEffect(vu ? 1 : 1.04, anchor: .leading)
+            .animation(.easeInOut(duration: 1.6).delay(retard), value: vu)
     }
 }

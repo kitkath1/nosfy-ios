@@ -692,9 +692,10 @@ struct PageCardLab: View {
                             .font(.inter(15, .regular))
                             .foregroundStyle(.white.opacity(0.5))
                         Spacer()
-                        Text("Upcoming")
-                            .font(.inter(13, .regular))
-                            .foregroundStyle(.white.opacity(0.3))
+                        // (« Upcoming » n'existe pas — loi du 05-09 : on
+                        //  n'affiche jamais une série qu'on suppose. La
+                        //  page bidon du banc dit ce que dit la vraie.)
+                        Color.clear.frame(width: 1, height: 18)
                     }
                     .padding(.vertical, 15)
                 }

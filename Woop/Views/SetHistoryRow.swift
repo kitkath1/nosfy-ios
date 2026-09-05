@@ -191,10 +191,16 @@ struct SetHistoryRow: View {
                     .frame(width: 28, height: 28)
             }
         } else {
-            Text("Upcoming")
-                .font(.inter(12))
-                .foregroundStyle(Color.white.opacity(0.35))
-                .frame(height: 28)
+            // ⚠️⚠️ **« UPCOMING » N'EXISTE PAS** — loi de Kathryn, 05-09 :
+            // « sous l'exercice, on ne peut pas avoir upcoming, c'est un
+            // état qui n'existera JAMAIS puisqu'on ne sait pas ce que le
+            // user va faire ». C'est la même loi que les flammes du
+            // 04-09 (`FlammeJauge:1243`) : on n'affiche que L'ACQUIS,
+            // jamais une promesse — annoncer « +20 à venir » sur trois
+            // lignes que personne ne fera peut-être, c'est mentir en
+            // gris. La place reste (la ligne garde sa hauteur), elle est
+            // simplement VIDE.
+            Color.clear.frame(height: 28)
         }
     }
 

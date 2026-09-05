@@ -1120,10 +1120,20 @@ struct RootView: View {
                                      || morphPlayer > 0.98)
                         .minimumScaleFactor(0.8)
                 }
-                TimelineView(.periodic(from: a.startedAt ?? .now, by: 1)) { tl in
+                // ⚠️ UNE SEULE LIGNE SOUS LE NOM (verdict Kathryn 05-09 :
+                // « juste le timer de la session et le nombre de reps, et
+                // basta, allège »). Les flammes y ont vécu une heure,
+                // elles en repartent ; le ticket « N SETS » aussi — le
+                // compte des séries ne se lit plus que dans le DÉTAIL.
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                       by: 1)) { tl in
                     let s = max(0, Int(tl.date
                         .timeIntervalSince(a.startedAt ?? .now)))
-                    Text("In session · \(s / 60):\(String(format: "%02d", s % 60))")
+                    let reps = a.orderedExercises.first?
+                        .orderedSets.first?.reps
+                    Text(reps.map {
+                        "\(s / 60):\(String(format: "%02d", s % 60)) · \($0) reps"
+                    } ?? "\(s / 60):\(String(format: "%02d", s % 60))")
                         .font(.system(size: 13))
                         .monospacedDigit()
                         .foregroundStyle(.white.opacity(0.55))
@@ -1302,7 +1312,25 @@ struct RootView: View {
             }
             .onChange(of: active != nil, initial: true) { _, enSeance in
                 SondeVol.shared.enSeance = enSeance
+                // ⚠️ ELLE Y VOLE, ELLE N'Y NAÎT PAS (05-09, Kathryn :
+                // « dès qu'une session se lance, il vole directement dans
+                // le Dynamic Island » — et « j'aimerais beaucoup qu'on
+                // comprenne qu'on peut la tirer »). Posée à `true` sec,
+                // la pastille naissait DÉJÀ dans l'île : personne ne
+                // voyait le voyage, donc personne n'apprenait qu'il
+                // existe un chemin de retour. Elle naît donc à sa place
+                // sur la page, et s'envole une demi-seconde plus tard —
+                // le temps d'être vue.
                 PiluleEtat.shared.dansIle = false
+                if enSeance, !PiluleBanc.horsIle {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                        // La séance a pu mourir entre-temps (un stop
+                        // immédiat, un banc qui enchaîne) : on ne fait
+                        // pas voler une pastille qui n'existe plus.
+                        guard active != nil else { return }
+                        PiluleEtat.shared.envolerVersIle()
+                    }
+                }
                 morphPlayer = 0
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -1494,9 +1522,17 @@ struct RootView: View {
                     // séance (`yRatio` est persisté).
                     // La cote : haut de la nav (H − 60) − débord ticket
                     // (30) − demi-pilule (48) = H − 138.
-                    utile: 130...(UIScreen.main.bounds.height - 138),
+                    // ⚠️ LA COTE VIT DÉSORMAIS CHEZ `PiluleEtat` (05-09) :
+                    // la cible des pièces la lit elle aussi depuis que la
+                    // carte des séries est archivée, et une cote recopiée
+                    // est une cote qui divergera.
+                    utile: PiluleEtat.utile,
                     departSeance: a.startedAt ?? .now,
-                    ticketTexte: "\(a.seriesPayantes) SETS",
+                    // ⚠️ PLUS DE TICKET « N SETS » (verdict Kathryn 05-09 :
+                    // « enlève sur la pastille les 11 sets, laisse que
+                    // dans le détail »). Le composant `TicketSeries` reste
+                    // entier — c'est l'appel qui se tait, comme pour la
+                    // carte des séries.
                     figee: morphPlayer > 0.98,
                     onOuvrir: { ouvrirGrandPlayer() },
                     onStop: { DepartEtat.shared.pauseOuverte = true }) {

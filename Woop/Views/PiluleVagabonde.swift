@@ -167,6 +167,12 @@ struct BraisesVague: View {
 struct InviteAnimee: View {
     var taille: CGFloat
     var poids: Font.Weight = .semibold
+    /// LE TEXTE BALAYÉ — l'invite par défaut, ou le NOM DE L'EXERCICE EN
+    /// COURS (05-09) : « l'exercice en cours avec un effet de balayage de
+    /// lumière très Apple pour montrer que c'est en cours ». Une seule
+    /// lueur dans toute la maison : deux balayages qui divergeraient ne
+    /// seraient plus la même langue.
+    var texte: String = "Choisissez un exercice"
     /// ⚠️ ELLE N'AVAIT AUCUNE PORTE (04-09, lot 2, cause n° 7) : une
     /// `TimelineView` sans `paused:`, qui balayait un dégradé sur du
     /// texte 30 fois par seconde — et c'est l'état du DÉBUT DE CHAQUE
@@ -182,7 +188,7 @@ struct InviteAnimee: View {
             let t = tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900)
             let u = CGFloat((t / 2.6).truncatingRemainder(dividingBy: 1))
-            Text("Choisissez un exercice")
+            Text(texte)
                 .font(.system(size: taille, weight: poids))
                 .foregroundStyle(LinearGradient(
                     stops: [
@@ -236,20 +242,15 @@ struct TicketSeries: View {
                 // l'icône ») — VIDE, et c'est LUI qui bouge : il se
                 // soulève de temps en temps, comme si on allait le
                 // DÉCHIRER. Le pivot est la perforation elle-même.
+                // ⚠️ LE TALON NE BOUGE PLUS (verdict Kathryn 05-09 :
+                // « enlève-lui son animation »). Il se soulevait de 26°
+                // toutes les 3,4 s, tout seul, à côté d'une card
+                // immobile : un objet qui gigote sans qu'on le touche.
+                // Le ticket reste EXACTEMENT le même papier — il est
+                // simplement POSÉ. (Et c'est une horloge de moins qui
+                // tourne derrière le player.)
                 talon
                     .frame(width: 30 * echelle)
-                    .phaseAnimator([false, true]) { vue, leve in
-                        vue.rotation3DEffect(
-                            .degrees(leve ? 26 : 0),
-                            axis: (x: 0, y: 1, z: 0),
-                            anchor: .trailing, perspective: 0.85)
-                    } animation: { leve in
-                        // Il DORT, puis se soulève, puis retombe : le
-                        // délai est sur la montée — pas une oscillation
-                        // continue (« des fois ça bouge, c'est tout »).
-                        leve ? .easeInOut(duration: 0.55).delay(3.4)
-                             : .easeInOut(duration: 0.45)
-                    }
                 // LE CHIFFRE, en encre pressée dans le papier.
                 Text(texte)
                     .font(.system(size: 12.5 * echelle, weight: .heavy))
@@ -342,7 +343,40 @@ final class PiluleEtat {
     /// elle s'ASPIRE dans la Dynamic Island et devient une bordure
     /// animée autour de l'île ; un tap sur l'île la fait RESSORTIR à sa
     /// dernière hauteur.
+    ///
+    /// ⚠️ DEPUIS LE 05-09 ELLE Y NAÎT (Kathryn : « par défaut quand on
+    /// lance un exercice, la notification/pastille va dans le Dynamic
+    /// Island »). C'est `WoopApp` qui le pose à l'ouverture de la séance
+    /// — la valeur d'ici n'est que le repos d'avant la première.
     var dansIle = false
+
+    /// LA PLAGE UTILE — la hauteur autorisée pour la POSE. Elle vivait en
+    /// DUR dans `WoopApp` ; depuis que la cible des pièces la lit aussi
+    /// (`ancreGlobale`), elle n'a plus le droit d'exister en deux
+    /// exemplaires : une cote recopiée est une cote qui divergera.
+    /// Haut : sous la barre d'état. Bas : haut de la nav (H − 60) moins
+    /// le débord du ticket (30) moins la demi-pilule (48).
+    static var utile: ClosedRange<CGFloat> {
+        130...(UIScreen.main.bounds.height - 138)
+    }
+
+    /// LA CIBLE DE CE QU'UNE SÉRIE RAPPORTE (les pièces, et demain le
+    /// reste), en coordonnées PHYSIQUES. Depuis le 05-09 la pastille est
+    /// le SEUL point d'arrivée : la carte des séries de la fiche exo est
+    /// archivée (`tools/flow/ANALYSE-PASTILLE-UNIQUE.md`), et ce qui
+    /// visait son cadre ne visait plus rien.
+    ///
+    /// ⚠️ Le `dessin` du doigt n'entre PAS dans le calcul : une cible se
+    /// lit à l'instant du départ, elle ne se recalcule pas à chaque image
+    /// d'un drag (la loi de la page ré-évaluée par image).
+    var ancreGlobale: CGPoint {
+        let W = UIScreen.main.bounds.width
+        guard !dansIle else { return CGPoint(x: W / 2, y: IleGeo.centreY) }
+        let u = Self.utile
+        return CGPoint(x: W / 2,
+                       y: u.lowerBound
+                           + yRatio * (u.upperBound - u.lowerBound))
+    }
 
     /// LE DESSIN pendant le geste/le vol : offset possédé, écrit SEC.
     var dessin: CGSize = .zero
@@ -406,6 +440,24 @@ final class PiluleEtat {
         dessin = CGSize(width: dessin.width,
                         height: (yAvant + dessin.height) - yCommis)
         volerVersZero(velocity: velocity)
+    }
+
+    /// L'ENVOL TOUT SEUL — « dès qu'une session se lance, il vole
+    /// directement dans le Dynamic Island » (Kathryn, 05-09).
+    ///
+    /// ⚠️ C'est EXACTEMENT le vol du doigt, pas une téléportation : le
+    /// même ressort, le même `matchedGeometryEffect` côté vue, le même
+    /// carillon. Poser `dansIle = true` sec (ce que faisait `WoopApp`
+    /// depuis ce matin) faisait NAÎTRE la pastille dans l'île — on ne
+    /// voyait pas qu'elle y était allée, donc rien n'apprenait qu'elle
+    /// pouvait en revenir.
+    func envolerVersIle() {
+        guard !dansIle else { return }
+        withAnimation(.spring(response: 0.72, dampingFraction: 0.88)) {
+            dansIle = true
+            dessin = .zero
+        }
+        CarillonIle.entree()
     }
 
     /// Le geste est MORT sans onEnded (arrière-plan, doigt volé) : les
@@ -474,7 +526,10 @@ private struct PriseIle: Shape {
     /// en haut (au-dessus c'est la barre d'état, elle ne nous appartient
     /// pas), et 44 pt en dessous — la lèvre atteignable.
     static let flanc: CGFloat = 12
-    static let sous: CGFloat = 44
+    /// 60 et non 44 (05-09) : c'est la SEULE zone de l'île qu'un doigt
+    /// atteigne — le trou physique appartient au système. Chaque point
+    /// gagné ici est un « j'arrive pas à la retirer » de moins.
+    static let sous: CGFloat = 60
 
     func path(in r: CGRect) -> Path {
         let etendu = CGRect(x: r.minX - Self.flanc, y: r.minY,
@@ -541,6 +596,7 @@ struct PiluleVagabonde<Contenu: View>: View {
     /// Le tirage du ticket (élastique, pixels seulement).
     @State private var tire: CGSize = .zero
 
+
     /// LA FORME ET LES COTES — celles des NOTIFICATIONS (verdict Kathryn
     /// J1 : « comme les notifications, pour consistance ») : la MÊME
     /// constante `NotifGeo.rayon` (28, continu), la même marge latérale,
@@ -573,8 +629,15 @@ struct PiluleVagabonde<Contenu: View>: View {
     }
 
     var body: some View {
+        etatCourant
+    }
+
+    @ViewBuilder private var etatCourant: some View {
         if etat.dansIle {
-            ile
+            // Le fondu croisé : la capsule se dissout dans la pastille
+            // (et l'inverse) pendant que `matchedGeometryEffect` déplace
+            // le cadre. Sans lui, le contenu SAUTE au milieu du voyage.
+            ile.transition(.opacity)
         } else {
             ZStack {
                 // LA CIBLE (demande Kathryn 04-09) : dès qu'on DÉPLACE la
@@ -583,6 +646,7 @@ struct PiluleVagabonde<Contenu: View>: View {
                 if etat.enDrag { CibleIle(utile: utile) }
                 corps
             }
+            .transition(.opacity)
         }
     }
 }
@@ -714,16 +778,36 @@ extension PiluleVagabonde {
         // — l'île n'avait donc plus AUCUNE sortie au doigt, et maintenant
         // que son tap ouvre le player, on y serait entré pour ne plus
         // jamais en sortir.
+        // ⚠️⚠️ TOUT LA FAIT SORTIR (verdict Kathryn 05-09 : « la moindre
+        // drag ou tirage ou tap, elle sort du display island — souvent
+        // c'est bloqué, j'arrive pas à la retirer »).
+        //
+        // Le 04-09, le tap OUVRAIT LE PLAYER : c'était la réparation d'un
+        // autre défaut (l'île sans issue), et ça a créé celui-ci — le
+        // seul geste qui atteignait vraiment l'app servait à autre chose,
+        // donc la sortie n'existait qu'au drag, dans une lèvre de 44 pt
+        // sous un trou que le système se réserve. D'où « c'est bloqué ».
+        // Désormais : tap ET drag la font SORTIR ; le player s'ouvre
+        // depuis la pastille, qui est grande et à portée.
+        // Le seuil de drag tombe à 3 pt (c'était 8) : un doigt qui
+        // s'appuie et glisse à peine doit suffire.
         .gesture(
-            DragGesture(minimumDistance: 8)
+            DragGesture(minimumDistance: 3)
                 .onChanged { _ in sortirDeLIle() }
                 .exclusively(before: TapGesture().onEnded {
                     Haptique.moyen()
-                    onOuvrir()
+                    sortirDeLIle()
                 }))
         .matchedGeometryEffect(id: "pilule-vol", in: vol)
         .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
     }
+
+    // ⚠️ LA POIGNÉE EST MORTE (verdict Kathryn 05-09 : « enlève le
+    // trait sous le display island, ça sert à rien »). Elle avait vécu
+    // trois heures : une barre sous la capsule qui faisait signe à
+    // l'arrivée et à chaque série. Ce qui fait comprendre qu'on peut la
+    // tirer, ce n'est pas un dessin — c'est le VOL qu'on a vu à l'aller,
+    // et une sortie qui répond au premier doigt (ci-dessous).
 
     /// Le souffle principal : deux périodes premières entre elles,
     /// plancher 0,32 — la braise ne meurt jamais, elle COUVE.
@@ -749,25 +833,59 @@ extension PiluleVagabonde {
         let s2 = Self.souffle(t * 0.77 + 210)      // la nappe large, déphasée
         let e = Self.eclat(t)
         HStack(spacing: 0) {
-            Text(Self.chrono(depuis: departSeance, a: maintenant))
-                .font(.system(size: 14, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.80 + 0.2 * e))
-                .shadow(color: .white.opacity(0.35 * e), radius: 3)
-                .frame(width: 58)
-            // LE TROU : l'île physique vit ici, on ne peint rien dessus.
-            Spacer().frame(width: IleGeo.largeur + 8)
-            // LE MÊME MÉDAILLON, en tout petit — une seule matière de
-            // stop d'un bout à l'autre (île, pilule, grand player).
-            // Le stop de l'île, GROSSI (verdict 04-09 : « pas assez
-            // gros ») — il tient la hauteur de la capsule.
+            // ⚠️⚠️ LE CHRONO A CHANGÉ DE CÔTÉ (verdict Kathryn 05-09 :
+            // « le time, il est collé sur l'heure »). Écarter ne suffisait
+            // PAS : mesuré, l'heure du système finit à 91 pt et notre
+            // chrono commençait à 104 — treize points d'air, et pourtant
+            // les deux se lisaient comme UNE SEULE chaîne, parce que ce
+            // sont deux textes blancs, à chiffres fixes, sur la même
+            // ligne de base. Deux horloges côte à côte restent deux
+            // horloges.
+            //
+            // Le remède est géométrique, pas cosmétique : le seul côté
+            // libre est le DROIT (l'heure mange 50→91 à gauche, le wifi
+            // et la pile ne commencent qu'à ~325 à droite). Le chrono y
+            // va, et le STOP prend le slot étroit de gauche — un DISQUE
+            // à côté d'un texte ne se confond avec rien.
+            // Le stop y est aussi plus gros (« un peu plus gros aussi ») :
+            // 0,62 → 0,76.
             MedaillonStop(lueur: true, action: {
                 Haptique.moyen()
                 onStop()
             })
-                .scaleEffect(0.62)
-                .frame(width: 58, height: 42)
+            // ⚠️ COLLÉ AU TROU, PAS CENTRÉ DANS SON SLOT — les bandes
+            // libres du haut de l'écran sont MESURÉES (capture
+            // `tools/flow/captures/ile-v6-haut.png`, iPhone 15 Pro) :
+            // l'heure du système finit à 93 pt, le trou commence à 133,
+            // le wifi commence à ~318. Il reste donc QUARANTE points à
+            // gauche et cinquante à droite, pas un de plus. Centré dans
+            // ses 58 pt, le médaillon mordait le « 5 » de 10:55.
+                .scaleEffect(0.72)
+                .frame(width: 58, height: 42, alignment: .trailing)
                 .shadow(color: braise.opacity(0.25 + 0.3 * s), radius: 5)
+            // LE TROU : l'île physique vit ici, on ne peint rien dessus.
+            Spacer().frame(width: IleGeo.largeur + 8)
+            // ⚠️ PAS DE FLAMMES ICI (verdict Kathryn, 05-09 : « enlève
+            // les flammes de la mini pastille : on a que l'animation qui
+            // rentre dedans et basta »). Elles y ont vécu une heure : la
+            // capsule s'élargissait, le chrono passait sous l'heure du
+            // système. L'île dit le TEMPS et donne le STOP — rien
+            // d'autre. Ce qu'une série rapporte se lit dans la pastille
+            // tirée et dans le détail.
+            // LE CHRONO — il dit que ça TOURNE, et c'est ce qu'elle en
+            // garde (« on comprend bien que c'est en cours avec le
+            // time »). Aligné à GAUCHE dans son slot : il s'appuie sur le
+            // bord du trou et laisse ses 25 pt d'air avant le wifi.
+            Text(Self.chrono(depuis: departSeance, a: maintenant))
+                // 13 et non 14 : à 14, « 28:59 » fait 50 pt et finissait
+                // à 4 pt du wifi — l'air se voit, l'absence d'air aussi.
+                .font(.system(size: 13, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.80 + 0.2 * e))
+                .shadow(color: .white.opacity(0.35 * e), radius: 3)
+                .lineLimit(1)
+                .frame(width: 58, alignment: .leading)
+                .padding(.leading, 3)
         }
         .frame(height: h)
         // LE CHAMP DE BRAISE, en couches — du serré au large :
@@ -815,10 +933,18 @@ extension PiluleVagabonde {
     }
 
 
+    /// ⚠️ LA SORTIE ÉTAIT BRUTALE (verdict Kathryn 05-09 : « quand on
+    /// quitte le display island, c'est trop brutal »). Deux causes, les
+    /// deux traitées : le ressort était COURT (0,50 s, amorti à 0,80 —
+    /// il arrivait sec), et surtout les deux formes se REMPLACENT (l'île
+    /// et le corps sont deux branches d'un `if`) : le cadre se morphait
+    /// pendant que le CONTENU sautait d'un coup. Le ressort s'allonge
+    /// (0,72 / 0,88) et chaque branche entre et sort en fondu — la
+    /// matière se dissout dans l'autre pendant que le cadre voyage.
     private func sortirDeLIle() {
         guard etat.dansIle else { return }
         CarillonIle.sortie()      // souffle + scintillement
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.72, dampingFraction: 0.88)) {
             etat.dansIle = false
         }
     }
@@ -1034,6 +1160,12 @@ extension PiluleVagabonde {
 
 enum PiluleBanc {
     static let actif = CommandLine.arguments.contains("-piluleLab")
+    /// `-piluleSortie` : la séance démarre avec la pastille SORTIE de
+    /// l'île (le régime d'avant le 05-09). Le simulateur ne drague pas :
+    /// sans ce barreau, l'état « pastille dehors » — donc la page qui
+    /// recule derrière elle — n'est pas capturable.
+    static let horsIle = CommandLine.arguments.contains("-piluleSortie")
+    static let playerOuvert = CommandLine.arguments.contains("-playerOuvert")
 }
 
 /// J1 du plan : la pilule SEULE sur une fausse page — drag partout,
@@ -1051,7 +1183,10 @@ struct PiluleLab: View {
     /// forme se DÉPLIE (largeur, hauteur, position, rayon) depuis les
     /// cotes exactes de la pastille — un transfert de matière, jamais
     /// une échelle uniforme (qui écrasait sa silhouette large).
-    @State private var morph: CGFloat = 0
+    /// `-playerOuvert` : le banc naît PLAYER OUVERT — le simulateur ne
+    /// tape pas, et la tête du player (le nom balayé, la card du jour)
+    /// n'était capturable qu'au doigt.
+    @State private var morph: CGFloat = PiluleBanc.playerOuvert ? 1 : 0
     /// LES TROIS ENTRÉES DU PLAYER, à essayer au doigt (04-09 : « propose
     /// une autre animation ») — AUCUNE ne met à l'échelle quoi que ce
     /// soit : Kathryn refuse le grossissement.
@@ -1486,10 +1621,13 @@ struct GrandPlayer: View {
             MiniCardJour(date: depart, sticker: sticker)
                 .scaleEffect(1.55)
                 .frame(width: 150, height: 150)
-                // LE MÊME TICKET DE PAPIER que sous la pastille — une
-                // seule matière d'un bout à l'autre (verdict 04-09).
-                // SUR LE CÔTÉ de la card du jour, plus petit, et son
-                // bord gauche BAT comme un coin qui se rabat (04-09).
+                // LE TICKET DE PAPIER — il RESTE ici, dans le DÉTAIL
+                // (verdict Kathryn 05-09, correction du même jour : « il
+                // fallait pas enlever le ticket avec le nombre de sets
+                // total sur le détail de la session ; il fallait
+                // n'enlever que sur la pastille, et enlever SON
+                // ANIMATION »). C'est donc son talon qui s'est tu (voir
+                // `TicketSeries`), pas le ticket.
                 .overlay(alignment: .trailing) {
                     TicketSeries(texte: "\(setsFaits) SETS",
                                  echelle: 0.95)
@@ -1631,9 +1769,14 @@ struct GrandPlayer: View {
     @ViewBuilder
     private var titreOverlay: some View {
         if let nom = exoChoisi {
-            Text(nom)
-                .font(.system(size: 25, weight: .semibold))
-                .foregroundStyle(.white)
+            // ⚠️ LE NOM EST BALAYÉ PAR LA LUMIÈRE (verdict Kathryn 05-09,
+            // en remplacement du ticket : « l'exercice en cours avec un
+            // effet de balayage de lumière très Apple pour montrer que
+            // c'est en cours »). C'est la MÊME lueur que l'invite — un
+            // seul balayage dans la maison — et elle se tait sous le
+            // doigt comme elle : rien ne s'anime pendant un geste.
+            InviteAnimee(taille: 25, texte: nom,
+                         fige: fermeture > 0.5 || morph < 0.98)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)
         } else {
