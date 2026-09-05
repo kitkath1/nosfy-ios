@@ -1041,6 +1041,40 @@ struct RootView: View {
         }
     }
 
+    /// L'OUVERTURE DU GRAND PLAYER — 0 fermé, 1 ouvert (la même valeur
+    /// continue qu'au banc : il MONTE du bas, rien ne grandit).
+    @State private var morphPlayer: CGFloat = 0
+
+    private func ouvrirGrandPlayer() {
+        Haptique.leger()
+        withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
+            morphPlayer = 1
+        }
+    }
+
+    /// LA PARTITION RÉELLE — l'exercice courant en tête, puis les autres
+    /// (le même contrat que l'ancien player : elle n'est JAMAIS vide).
+    private func groupesDeSeance(_ a: Workout) -> [SlateGroupe] {
+        let lignes = a.orderedExercises
+        guard !lignes.isEmpty else {
+            return [SlateGroupe(id: "courant",
+                                exercise: ExerciseCatalog.all[0],
+                                rows: [SlateLigne(reps: 12, kilos: 20,
+                                                  seconds: 60,
+                                                  done: false)])]
+        }
+        return lignes.compactMap { le in
+            guard let exo = le.exercise else { return nil }
+            return SlateGroupe(id: le.exerciseID, exercise: exo,
+                               rows: le.orderedSets.map {
+                SlateLigne(reps: $0.reps, kilos: $0.weight,
+                           seconds: $0.isDone ? $0.durationSeconds
+                               : le.restSeconds,
+                           done: $0.isDone)
+            })
+        }
+    }
+
     /// LE CONTENU DE LA PILULE — les vraies données de la séance, dans
     /// la robe validée au banc : la mini-card du jour, le nom de
     /// l'exercice courant (ou l'invite animée), le chrono, le stop.
@@ -1061,7 +1095,12 @@ struct RootView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 } else {
-                    InviteAnimee(taille: 17).minimumScaleFactor(0.8)
+                    // Elle se tait sous le doigt (cause n° 7) — la loi de
+                    // la maison : rien ne s'anime pendant un geste.
+                    InviteAnimee(taille: 17,
+                                 fige: PiluleEtat.shared.enMouvement
+                                     || morphPlayer > 0.98)
+                        .minimumScaleFactor(0.8)
                 }
                 TimelineView(.periodic(from: a.startedAt ?? .now, by: 1)) { tl in
                     let s = max(0, Int(tl.date
@@ -1194,12 +1233,32 @@ struct RootView: View {
                     NavEtat.shared.page = d
                 }
             }
-            // NAV DU BAS (FIX 1, 03-09) : la SÉANCE DÉMARRE EN MINI NAV. Au
-            // passage en séance (`active` devient non nil), on pose `mini`
-            // UNE fois — le drag reste libre ensuite pour déployer/replier
-            // (les allers-retours). Jamais forcé en continu.
-            .onChange(of: active != nil) { _, enSeance in
-                if enSeance { NavEtat.shared.mini = true }
+            // ⚠️ ICI VIVAIT LA CAUSE N° 1 DU 04-09 (« la navigation
+            // redevient des petits points alors qu'on avait dit non ») :
+            // `if enSeance { NavEtat.shared.mini = true }` — le FIX 1 du
+            // 03-09, écrit quand la mini nav existait encore. Le pivot a
+            // tué le GESTE du repli sans tuer son ÉTAT : la nav se
+            // repliait à chaque séance et plus RIEN ne pouvait la
+            // relever. Mort et remplacé par son contraire utile.
+            //
+            // LA BULLE SORT DE L'ÎLE À CHAQUE SÉANCE (cause n° 3) :
+            // `dansIle` vit dans un singleton et personne ne le remettait
+            // jamais à faux — une fois la pastille aspirée dans l'île,
+            // on y restait, séance suivante comprise, sans plus aucun
+            // moyen d'ouvrir le player. Chaque séance repart propre.
+            // ⚠️ ET `morphPlayer` MEURT AVEC SA SÉANCE (relecture adverse
+            // 04-09, deux relecteurs indépendants). Il n'était écrit qu'à
+            // l'ouverture (1) et par `fermer()` (0) — or on ne ferme PAS
+            // le player pour arrêter la séance : on tape STOP, la StopCard
+            // passe par-dessus, « Terminer » pose `endedAt`, et le player
+            // se démonte avec `morphPlayer` resté à 1. À la séance
+            // SUIVANTE, `morphPlayer > 0.001` était vrai d'emblée : le
+            // grand player naissait PLEIN ÉCRAN, sans un geste, par-dessus
+            // la nav et la pilule. Un état d'ouverture qui vit au châssis
+            // doit mourir avec l'objet qui l'a ouvert — aux DEUX bords.
+            .onChange(of: active != nil) { _, _ in
+                PiluleEtat.shared.dansIle = false
+                morphPlayer = 0
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 // Les pages Exercices et Profil sont IMMERSIVES : la barre
@@ -1362,28 +1421,115 @@ struct RootView: View {
             // loi du rideau : rien ne se monte caché). Elle flotte
             // AU-DESSUS des pages et SOUS le monde du player : on la
             // drague partout, un tap l'ouvre, son ticket se tire.
+            // ⚠️ `.ignoresSafeArea()` — CAUSE N° 2 DU 04-09. Les cotes de
+            // la pilule sont PHYSIQUES (elle vise la Dynamic Island : voir
+            // `IleGeo`, qui le dit dans son propre en-tête). Montée dans la
+            // zone sûre, TOUT tombait 59 pt plus bas : lâchée en bas elle
+            // se posait SUR la nav et débordait de l'écran, et « l'île »
+            // n'était pas la Dynamic Island mais une barre noire en
+            // travers du haut de page, 60 pt sous la vraie.
+            //
+            // ⚠️ ET SES MOTEURS SE TAISENT SOUS LE GRAND PLAYER (loi du
+            // rideau) : player ouvert, elle continuait de chanter derrière
+            // lui — braises comprises — pour rien.
+            // ⚠️ ON LA GÈLE, ON NE LA DÉMONTE PAS. `morphPlayer` SAUTE à 1
+            // (avec `withAnimation`, c'est le RENDU que SwiftUI interpole,
+            // pas la valeur) : la démonter sur ce seuil la ferait
+            // disparaître D'UN COUP pendant que le player monte encore.
             if let a = active {
                 PiluleVagabonde(
-                    utile: 130...(UIScreen.main.bounds.height - 96),
+                    // ⚠️ LA BORNE BASSE TIENT COMPTE DE LA NAV ET DU
+                    // TICKET (relecture adverse 04-09). À `H − 96`, le
+                    // bord bas de la pilule tombait à `H − 48` alors que
+                    // la rangée nav vit de `H − 60` à `H − 18` : posée au
+                    // plus bas elle s'asseyait DESSUS, et son ticket —
+                    // qui pend encore ~30 pt plus bas avec sa propre zone
+                    // tactile — recouvrait le glyphe du milieu. L'onglet
+                    // Exercices devenait intapable pour le reste de la
+                    // séance (`yRatio` est persisté).
+                    // La cote : haut de la nav (H − 60) − débord ticket
+                    // (30) − demi-pilule (48) = H − 138.
+                    utile: 130...(UIScreen.main.bounds.height - 138),
                     departSeance: a.startedAt ?? .now,
                     ticketTexte: "\(a.seriesPayantes) SETS",
-                    onOuvrir: { PlayerEtat.shared.ouvrir() },
+                    figee: morphPlayer > 0.98,
+                    onOuvrir: { ouvrirGrandPlayer() },
                     onStop: { DepartEtat.shared.pauseOuverte = true }) {
                     contenuPilule(a)
                 }
+                .ignoresSafeArea()
                 .zIndex(6)
             }
 
-            // LE PAN MAÎTRE DE BANDE — l'hôte UNIQUE du drag de la nav
-            // (plan final 03-09) : un pan sur la FENÊTRE, le patron du
-            // PanMaitre du player. Monté UNE fois ici (jamais dans les
-            // 4 PageCard : quatre instances = un static qui ne garde que
-            // la première). Sa géométrie vient de NavEtat (publiée par la
-            // PageCard visible) ; sa porte refuse le player monté et le
-            // strip système du bas.
-            NavPanHote()
-                .frame(width: 0, height: 0)
-                .allowsHitTesting(false)
+            // ⚠️ LE GRAND PLAYER — CELUI QU'ON A CONSTRUIT AU BANC
+            // (04-09 : « quand j'ai cliqué sur la pastille, ça a ouvert
+            // l'ANCIEN overlay »). Il monte du bas d'un bloc, le fond
+            // s'assombrit, on le ferme au drag. `PlayerMonde` (l'ancien)
+            // n'est plus ouvert par la pastille — ZÉRO ligne touchée
+            // chez lui, il reste pour ses autres chemins.
+            if let a = active, morphPlayer > 0.001 {
+                GrandPlayer(
+                    morph: $morphPlayer,
+                    ecranTaille: UIScreen.main.bounds.size,
+                    depart: a.startedAt ?? .now,
+                    exoChoisi: a.orderedExercises.first?.exercise?.name,
+                    groupes: groupesDeSeance(a),
+                    sticker: WoopSticker.pour(a).asset,
+                    onStop: { DepartEtat.shared.pauseOuverte = true },
+                    onExos: { withAnimation { selection = .exercises } })
+                    // Même loi que la pilule : il reçoit `UIScreen.bounds`,
+                    // une cote PHYSIQUE — sans ça il naissait 59 pt trop bas.
+                    .ignoresSafeArea()
+                    // ⚠️ IL EST PLEIN ÉCRAN DÈS 0,001 (cause n° 5) : il
+                    // descend par un `.offset` et s'efface par l'`.opacity`
+                    // — or un offset déplace les PIXELS, pas la zone
+                    // tactile, et une vue à opacité 0 reste parfaitement
+                    // tappable. Pendant toute la montée (0,62 s) et toute
+                    // la descente, TOUT L'ÉCRAN appartenait à un player
+                    // invisible : plus un seul tap ne passait.
+                    .allowsHitTesting(morphPlayer > 0.98)
+                    .zIndex(8.4)
+            }
+
+            // ⚠️ LA NAV DU BAS — UNE SEULE, AU CHÂSSIS, IMMOBILE
+            // (04-09). Rendue dans chaque PageCard, elle VOYAGEAIT avec
+            // la transition de page (« quand je passe d'exercices à la
+            // fiche, la nav bouge »). Ici elle ne bouge plus jamais : le
+            // contenu passe DESSOUS, elle reste. La page continue de
+            // réserver sa hauteur, et de publier si la bande doit se
+            // montrer (clavier, exercice en cours).
+            // (Le pan de bande est mort avec le repli : plus aucun drag
+            //  ne vit ici — seuls les glyphes répondent, et ils naviguent.)
+            if NavEtat.shared.bandeVisiblePubliee {
+                // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
+                // milieu de l'espace noir » — collée au bas elle mordait
+                // l'indicateur, posée sur la zone sûre elle était trop
+                // haute). La zone noire vaut `navH + safeBottom` : la
+                // rangée tombe au milieu si on la relève d'exactement la
+                // MOITIÉ de la zone sûre.
+                // ⚠️ LA COTE EST FIXE ET LUE HORS DU CONTENEUR (04-09,
+                // ma faute : je lisais `safeAreaInsets` À L'INTÉRIEUR
+                // d'une vue qui IGNORE la zone sûre — elle y vaut ZÉRO,
+                // et la nav s'est collée au bord).
+                //
+                // LA GÉOMÉTRIE, au point près (iPhone 15, strip 34) :
+                // la rangée de 42 pt se pose à 18 pt du bord physique
+                // (18…60) ; la card réserve 44, donc le noir va de 0 à
+                // 78 — 18 d'air EN DESSOUS, 18 d'air AU-DESSUS : elle
+                // est CENTRÉE, et le CENTRE des glyphes tombe à ~39 pt,
+                // au-dessus du strip d'iOS. Centrer parfaitement en
+                // gardant la rangée toute entière hors du strip aurait
+                // coûté 110 pt de noir : trop, elle l'a dit.
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    NavBande(hauteur: NavEtat.shared.navH)
+                        .padding(.bottom, 18)
+                }
+                .ignoresSafeArea(edges: .bottom)
+                .allowsHitTesting(true)
+                .zIndex(4)
+                .transition(.opacity)
+            }
 
             // LE DÉPART DE SÉANCE — le panneau du galet play, monté à la
             // racine (l'école du parcours booster : l'état partagé, pas

@@ -143,9 +143,13 @@ struct StopCard: View, Animatable {
     private static let forme = RoundedRectangle(cornerRadius: 36,
                                                 style: .continuous)
     /// 332 × 480 pt : plus haute que la reward (1,32) — elle porte un slider.
-    private static let ratio: CGFloat = 480.0 / 332.0
+    /// CONDENSÉE (04-09, Kathryn) : 480 → 372 pour 332 de large — elle
+    /// prenait presque tout l'écran, elle redevient une CARD. Les cotes
+    /// internes suivent (l'air, pas le contenu : titre, bilan, slider et
+    /// « Cancel » gardent leurs tailles de lecture).
+    private static let ratio: CGFloat = 372.0 / 332.0
     /// Le centre du mot, depuis le bord haut (§2.1 du plan).
-    private static let centreMot: CGFloat = 112
+    private static let centreMot: CGFloat = 86
 
     var body: some View {
         GeometryReader { g in
@@ -303,16 +307,16 @@ struct StopCard: View, Animatable {
                 .opacity(sstep(0.55, 0.90, p))
                 .offset(y: 8 * (1 - sstep(0.55, 0.90, p)))
         }
-        // 36 et non 16 (verdict Kathryn 30-08, « élève le stop dans la
-        // pop-up ») : le bloc slider respire du bord bas de la card.
-        .padding(.bottom, 36)
+        // 36 → 22 (04-09, condensation) : le bloc respire encore du bord
+        // bas, mais la card ne s'étire plus pour ça.
+        .padding(.bottom, 22)
         .frame(width: l, height: h, alignment: .bottom)
     }
 
     /// Titre et bilan RESPIRENT (verdict Kathryn 29-08 : +4 pt) — collés,
     /// ils se lisaient comme une seule masse.
     private var titres: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 7) {
             Text("Stop the session?")
                 .font(.inter(22, .semibold))
                 .foregroundStyle(
@@ -334,16 +338,16 @@ struct StopCard: View, Animatable {
     /// droite (il fuit le pouce), et « STOP » ne tombait pas sur l'axe de
     /// « Cancel » juste dessous — ça se lisait comme un défaut d'alignement.
     private var commandes: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 2) {
             SliderObsidienne(label: "Stop",
-                             height: 62,
+                             height: 58,
                              auto: StopBanc.sliderAuto,
                              labelCentre: true,
                              onConfirm: onStop)
                 .padding(.horizontal, 20)
-                // +10 pt (verdict Kathryn 29-08) : le bloc de texte se
-                // décolle du slider, la décision n'est plus dans la question.
-                .padding(.top, 28)
+                // 28 → 20 (04-09) : le texte reste décollé du slider, la
+                // décision n'est toujours pas dans la question.
+                .padding(.top, 20)
             // LE BOUTON LIEN — de l'encre nue, la zone de toucher reste large.
             // (Aucun drag d'ancêtre dans cette card : un `Button` suffit.)
             Button(action: onCancel) {

@@ -63,6 +63,11 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
     /// même temps dans le TabView : sans cette garde elles se battraient).
     @Environment(\.ongletCache) private var ongletCache
 
+    /// LE JETON DE CETTE CARD — sa voix au registre de `NavEtat`.
+    /// `@State` : né une fois, stable pour toute la vie de la vue, mort
+    /// avec elle (`onDisappear` le retire).
+    @State private var jeton = UUID().uuidString
+
     /// La levée de L'ÉLASTIQUE LUNE (hors séance seulement) — 0…0,16.
     @State private var levee: CGFloat = 0
     @State private var dragFrom: CGFloat?
@@ -130,10 +135,13 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
                 //    pendant l'exercice en cours (`bandeVisible == false`).
                 //    L'ancienne prise-lune invisible de 30 pt a cédé la place :
                 //    le bas appartient désormais à la bande et à son geste.
-                if bandeVisible {
-                    bande
-                        .offset(y: descente)
-                }
+                // (LA NAV A DÉMÉNAGÉ AU CHÂSSIS le 04-09 : « quand je
+                //  passe d'exercices à la fiche, la nav bouge — plus
+                //  logique qu'elle reste statique et que le contenu
+                //  vienne dessus ». Rendue DANS la page, elle voyageait
+                //  avec la transition. PageCard n'en garde que la
+                //  RÉSERVE de hauteur ; la nav elle-même vit une fois,
+                //  au châssis, immobile.)
             }
             // ⚠️ **ALIGNÉ EN BAS, ET ÇA REND 17 pt À TOUTES LES PAGES** (02-09,
             // « remonte la pill nav qui est collée en bas »).
@@ -161,17 +169,39 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
         // l'exercice (`bandeVisible == false`) la bande n'existe plus et
         // son `onGeometryChange` ne parle plus — sans ces lignes, le pan
         // racine garderait une porte OUVERTE sur un rect périmé.
+        // ⚠️ ON PUBLIE SOUS SON JETON, ON N'ÉCRASE PLUS (04-09, lot 2) :
+        // deux cards du même onglet (la liste Exercices et la FICHE
+        // poussée par-dessus) écrivaient toutes les deux ce drapeau. La
+        // fiche cachait la nav pendant l'exercice, et au retour PERSONNE
+        // ne la redemandait — la nav ne revenait plus jamais. Chaque card
+        // a maintenant une VOIX ; la nav se montre si aucune voix ne
+        // demande à la cacher, et une card démontée rend la sienne.
         .onChange(of: bandeVisible, initial: true) { _, v in
             guard !ongletCache else { return }
-            NavEtat.shared.bandeVisiblePubliee = v
+            NavEtat.shared.publierBande(jeton, visible: v)
             NavEtat.shared.bandeEnSeance = enSeance
         }
         .onChange(of: ongletCache) { _, cache in
-            if !cache {
-                NavEtat.shared.bandeVisiblePubliee = bandeVisible
+            if cache {
+                NavEtat.shared.retirerBande(jeton)
+            } else {
+                NavEtat.shared.publierBande(jeton, visible: bandeVisible)
                 NavEtat.shared.bandeEnSeance = enSeance
             }
         }
+        // ⚠️ LA PORTE SYMÉTRIQUE, ET ELLE EST VITALE (relecture adverse
+        // 04-09). Sans elle, le registre décrivait l'écran d'il y a deux
+        // gestes : un push de fiche appelle `onDisappear` sur la card de
+        // la LISTE, et au retour RIEN ne redonnait sa voix — le registre
+        // se vidait, et « registre vide » veut dire « nav cachée » (c'est
+        // voulu : le Profil n'a aucune PageCard et doit rester immersif).
+        // La nav mourait donc sur l'onglet Exercices, au geste le plus
+        // fréquent de l'app. Une voix qui revient à l'écran SE REDÉCLARE.
+        .onAppear {
+            guard !ongletCache else { return }
+            NavEtat.shared.publierBande(jeton, visible: bandeVisible)
+        }
+        .onDisappear { NavEtat.shared.retirerBande(jeton) }
         // (Le bouclier système NE vit PLUS ici : une préférence posée à
         //  plusieurs niveaux imbriqués sur 4 onglets montés est le motif
         //  « Bound preference updated multiple times per frame » — suspect
@@ -221,7 +251,7 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
             guard !ongletCache else { return }
             NavEtat.shared.bandeRectFenetre = r
             NavEtat.shared.bandeEnSeance = enSeance
-            NavEtat.shared.bandeVisiblePubliee = bandeVisible
+            NavEtat.shared.publierBande(jeton, visible: bandeVisible)
         }
     }
 

@@ -65,6 +65,15 @@ struct SondeCadence: UIViewRepresentable {
         let v = UIView()
         v.isUserInteractionEnabled = false
         context.coordinator.quoi = quoi
+        // ⚠️ LA GARDE VIT ICI AUSSI (04-09, lot 2, cause n° 8). Elle ne
+        // vivait QUE dans l'extension `View.sondeCadence(_:)` ci-dessous
+        // — et deux appels construisaient `SondeCadence(...)` EN DIRECT
+        // (la pilule, le grand player). Résultat : deux `CADisplayLink`
+        // réveillaient le fil principal à chaque battement d'écran, sur
+        // l'app de PRODUCTION, pendant toute la séance — et un display
+        // link permanent empêche un écran ProMotion de descendre son
+        // taux de rafraîchissement au repos. De la chaleur gratuite.
+        guard CommandLine.arguments.contains("-fps") else { return v }
         context.coordinator.demarre()
         return v
     }

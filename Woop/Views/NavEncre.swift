@@ -148,7 +148,49 @@ final class NavEtat {
     /// ne sert qu'à la porte du pan.
     @ObservationIgnored var bandeRectFenetre: CGRect = .zero
     @ObservationIgnored var bandeEnSeance = false
-    @ObservationIgnored var bandeVisiblePubliee = false
+    /// ⚠️ OBSERVÉ, lui (04-09) : depuis que la nav vit AU CHÂSSIS, c'est
+    /// ce drapeau qui décide si elle se montre. Laissé
+    /// `@ObservationIgnored` (son état d'avant, quand il ne servait qu'à
+    /// la porte du pan), le châssis ne voyait jamais son changement — la
+    /// nav ne s'affichait plus du tout.
+    private(set) var bandeVisiblePubliee = false
+
+    // MARK: QUI A LE DROIT DE CACHER LA NAV — le registre (04-09, lot 2)
+
+    /// ⚠️ LE DERNIER ÉCRIVAIN NE PEUT PAS DÉCIDER SEUL. Deux `PageCard`
+    /// du MÊME onglet publiaient ici : la liste Exercices
+    /// (`bandeVisible: !etat.clavier`) et la FICHE poussée par-dessus
+    /// (`bandeVisible: running == nil && flood < 0.01`). Pendant un
+    /// exercice la fiche publiait `false` — et au retour à la liste,
+    /// PERSONNE ne redisait `true` : le `onChange` de la liste ne
+    /// rejoue pas (sa valeur n'a pas bougé) et sa géométrie non plus.
+    /// La nav disparaissait POUR DE BON. C'est « l'app devient
+    /// impraticable » dans sa forme la plus brutale.
+    ///
+    /// La règle, maintenant : la nav est visible tant qu'AUCUNE card
+    /// montée et non cachée ne demande à la masquer. Une card qui se
+    /// démonte retire sa demande — et la nav revient toute seule.
+    @ObservationIgnored private var demandes: [String: Bool] = [:]
+
+    /// Une card publie sa demande sous SON jeton (stable pour la durée
+    /// de vie de la vue).
+    func publierBande(_ jeton: String, visible: Bool) {
+        guard demandes[jeton] != visible else { return }
+        demandes[jeton] = visible
+        recalculerBande()
+    }
+
+    /// La card se démonte (ou passe sur un onglet caché) : sa voix part.
+    func retirerBande(_ jeton: String) {
+        guard demandes.removeValue(forKey: jeton) != nil else { return }
+        recalculerBande()
+    }
+
+    private func recalculerBande() {
+        let v = !demandes.isEmpty && !demandes.values.contains(false)
+        guard v != bandeVisiblePubliee else { return }
+        bandeVisiblePubliee = v
+    }
 
     func saisir() {
         guard !enSuivi else { return }
@@ -310,7 +352,14 @@ final class NavEtat {
     /// la partie noire est trop grande ») : 70 → 52. La cible tactile
     /// des glyphes reste à 44 pt (elle ne se négocie jamais) — c'est
     /// l'AIR autour qui part, pas la prise.
-    var navH: CGFloat { mini ? 20 : 46 }
+    /// ⚠️ CONSTANTE DEPUIS LE 04-09 (lot 2, cause n° 1). Elle valait
+    /// `mini ? 20 : 42`. Le pivot a tué le GESTE du repli mais pas son
+    /// ÉTAT : le châssis posait encore `mini = true` à chaque départ de
+    /// séance, et plus rien ne pouvait le relever — la nav rétrécissait
+    /// à 20 pt (« la navigation redevient des petits points »), la card
+    /// se réajustait, tout bougeait. Une hauteur qui ne dépend plus d'un
+    /// état mort ne peut plus ressusciter le bug.
+    var navH: CGFloat { 42 }
 
     /// `dockH` = ce que `PageCard` réserve sous le grabber. En séance la dalle
     /// player (76) s'empile SUR la nav ; hors séance, la nav seule.
@@ -322,7 +371,14 @@ final class NavEtat {
     /// désormais LA PILULE VAGABONDE, qui flotte au châssis. La bande ne
     /// réserve donc plus que la nav — en séance comme au repos, UNE
     /// seule hauteur.
-    func dockH(enSeance: Bool) -> CGFloat { navH }
+    /// ⚠️ LA RÉSERVE VAUT LA RANGÉE **+ LA ZONE SÛRE** (04-09) : la
+    /// rangée se pose sur la ligne de zone sûre (jamais plus bas — le
+    /// strip appartient à iOS), et l'air au-dessus d'elle égale l'air en
+    /// dessous : elle est CENTRÉE dans le noir, en sécurité.
+    /// La réserve : la rangée + 2 pt. Avec les 34 pt de zone sûre, le
+    /// noir fait 78 — et la rangée (posée à 18 du bord) y est CENTRÉE.
+    /// Réserver `navH + 34` centrait aussi, mais coûtait 110 pt de noir.
+    func dockH(enSeance: Bool) -> CGFloat { navH + 2 }
 }
 
 /// LE MOTEUR DE LA FIN DE COURSE — le jumeau minuscule du `MoteurVol`
@@ -460,6 +516,8 @@ struct NavEncre: View {
     var serrage: CGFloat = 0
     /// L'action, remontée à l'hôte.
     var onChoix: (NavDest) -> Void = { _ in }
+    /// Le glyphe SOUS LE DOIGT — c'est lui qui porte le verre.
+    @State private var presse: NavDest?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -484,8 +542,34 @@ struct NavEncre: View {
             .font(.system(size: 21, weight: .medium))
             .foregroundStyle(.white.opacity(actif ? 1 : 0.34))
             .frame(width: NavGeo.cible, height: NavGeo.cible)
+            // ⚠️ LE VERRE AU TOUCHER (04-09) — et c'est SA précision qui
+            // le rend possible : « le verre reflète l'icône elle-même ».
+            // La loi payée dit qu'une vitre sur du noir uniforme est
+            // invisible (« le contenu EST le verre ») : ici le contenu
+            // est le GLYPHE, il y a donc bien de la matière à réfracter.
+            // La capsule naît SOUS le doigt, à taille FIXE (un verre aux
+            // bounds vivants devient un blur plat), et meurt au relâcher.
+            .background {
+                if presse == d {
+                    Capsule()
+                        .fill(Color.white.opacity(0.10))
+                        .glassEffect(.clear.interactive(), in: .capsule)
+                        .frame(width: NavGeo.cible + 8,
+                               height: NavGeo.cible - 4)
+                        .transition(.opacity)
+                }
+            }
             .contentShape(Rectangle())
             .highPriorityGesture(TapGesture().onEnded { onChoix(d) })
+            // L'ÉTAT PRESSÉ — `onLongPressGesture` est la forme SwiftUI
+            // propre pour le lire : un `DragGesture(minimumDistance: 0)`
+            // AFFAMERAIT le tap (la loi payée du bouton stop).
+            .onLongPressGesture(minimumDuration: 10, maximumDistance: 60,
+                                perform: {}) { enCours in
+                withAnimation(.easeOut(duration: 0.16)) {
+                    presse = enCours ? d : nil
+                }
+            }
             .opacity(Double(encre))
             .scaleEffect(0.4 + 0.6 * encre)
             // LE DÉPLACEMENT EST UN OFFSET, PAS UN SPACING : rien ne se
@@ -543,7 +627,13 @@ struct NavBande: View {
 
     var body: some View {
         ZStack {
-            NavMini(presence: presence, serrage: serrage)
+            // ⚠️ LES QUATRE POINTS NE SE MONTENT PLUS QUE S'ILS SONT
+            // DEMANDÉS (04-09, lot 2) : `r` vaut 0 pour toujours en
+            // production — le seul écrivain de `mini` était le châssis,
+            // il est mort. Le banc `-navEncre`, lui, garde ses régimes.
+            if r > 0.001 {
+                NavMini(presence: presence, serrage: serrage)
+            }
             braise
             NavEncre(encre: encre, serrage: serrage, onChoix: aller)
         }
@@ -567,15 +657,10 @@ struct NavBande: View {
     /// l'hôte : **un seul** point qui voyage d'un endroit à l'autre — jamais
     /// deux braises qui se relaient d'un composant à l'autre. C'est ce qui
     /// donne la continuité.
-    private var braise: some View {
-        let i = NavDest.allCases.firstIndex(of: etat.page) ?? 0
-        return Capsule()
-            .fill(Color(red: 1, green: 0.54, blue: 0.18))
-            .frame(width: 5 + 13 * serrage, height: 5)
-            .shadow(color: Color(red: 1, green: 0.48, blue: 0.14).opacity(0.75),
-                    radius: 5)
-            .offset(x: NavGeo.x(i, serrage), y: 15 - 15 * serrage)
-    }
+    /// (LA BRAISE EST MORTE le 04-09 : « enlève le point orange ». La
+    ///  page courante se lit à l'ENCRE — blanc plein contre 34 % — et
+    ///  ça suffit : un second signal pour la même chose est du bruit.)
+    private var braise: some View { EmptyView() }
 
     // MARK: le geste
 
@@ -589,13 +674,11 @@ struct NavBande: View {
         // bande — le tap SwiftUI peut survivre à un drag court sous le
         // pan coopératif et écraserait le commit à l'élan).
         guard !etat.enVol, !etat.enSuivi else { return }
-        // EN MINI, TOUT TAP DÉPLOIE — même sur un glyphe (ils sont
-        // invisibles en mini : naviguer sur une cible qu'on ne voit pas
-        // serait le bug, item 11). La navigation reprend une fois déployée.
-        guard !etat.mini else {
-            etat.poser(false)
-            return
-        }
+        // ⚠️ LA CONFISCATION DU PREMIER TAP EST MORTE (04-09, lot 2).
+        // Il y avait ici `guard !etat.mini else { etat.poser(false) }` —
+        // « en mini, tout tap déploie » (item 11 du 03-09). Le repli
+        // n'existant plus, ce garde ne faisait qu'une chose : avaler le
+        // premier tap de chaque séance sans jamais naviguer.
         guard etat.page != d else { return }
         withAnimation(.timingCurve(0.32, 0.72, 0, 1, duration: 0.38)) {
             etat.page = d
@@ -721,16 +804,30 @@ struct NavEncreLab: View {
     private var enSeanceBanc: Bool { regime == .player }
 
     private var carte: some View {
-        // Le banc utilise MAINTENANT la vraie structure à deux slots : la
-        // dalle player (geste player) et la nav (son geste), séparées — plus
-        // d'empilement à la main. `dockH` vient de `NavEtat`, comme en prod.
-        PageCard(dockH: NavEtat.shared.dockH(enSeance: enSeanceBanc),
-                 enSeance: enSeanceBanc,
-                 bandeVisible: regime != .fermee,
-                 luneAuDrag: false,
-                 page: { contenu },
-                 dalle: { dallePlayer },
-                 nav: { NavBande(hauteur: NavEtat.shared.navH) })
+        // ⚠️ LE BANC MONTE LA NAV COMME LE CHÂSSIS (04-09, relecture
+        // adverse). Il la passait au slot `nav:` de `PageCard` — or
+        // depuis le pivot, `PageCard` ne rend PLUS ce slot : la nav a
+        // déménagé au châssis (`WoopApp.mainBody`). Le banc n'affichait
+        // donc plus AUCUNE nav : un juge aveugle, qui aurait validé
+        // n'importe quoi. Il rejoue maintenant la géométrie de prod,
+        // à l'identique — rangée de `navH`, 18 pt au-dessus du bord
+        // PHYSIQUE.
+        ZStack {
+            PageCard(dockH: NavEtat.shared.dockH(enSeance: enSeanceBanc),
+                     enSeance: enSeanceBanc,
+                     bandeVisible: regime != .fermee,
+                     luneAuDrag: false,
+                     page: { contenu },
+                     dalle: { dallePlayer })
+            if regime != .fermee {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    NavBande(hauteur: NavEtat.shared.navH)
+                        .padding(.bottom, 18)
+                }
+                .ignoresSafeArea(edges: .bottom)
+            }
+        }
     }
 
     /// La vraie dalle du player, montée comme sur Progress.

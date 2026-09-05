@@ -100,10 +100,17 @@ struct BraisesVague: View {
     /// FIGÉE : l'horloge s'arrête (pendant un geste, rien ne doit
     /// redessiner un Canvas — la loi de la maison).
     var fige: Bool = false
+    /// LA CADENCE (04-09, lot 2, cause n° 6). La mini vague de la pilule
+    /// tourne TOUTE LA SÉANCE : elle passe à 15 Hz. Elle fait 69 pt de
+    /// haut et elle est floutée à 11 — à cette échelle, 30 et 15 sont le
+    /// même mouvement à l'œil, et c'est une image sur deux qui ne coûte
+    /// plus rien (le Canvas, son flou, son `plusLighter` — ET l'ombre du
+    /// groupe qui les contient, recalculée avec eux).
+    var hz: Double = 30
 
     var body: some View {
         GeometryReader { g in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+            TimelineView(.animation(minimumInterval: 1.0 / hz,
                                     paused: fige)) { tl in
                 let t = tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
@@ -160,9 +167,18 @@ struct BraisesVague: View {
 struct InviteAnimee: View {
     var taille: CGFloat
     var poids: Font.Weight = .semibold
+    /// ⚠️ ELLE N'AVAIT AUCUNE PORTE (04-09, lot 2, cause n° 7) : une
+    /// `TimelineView` sans `paused:`, qui balayait un dégradé sur du
+    /// texte 30 fois par seconde — et c'est l'état du DÉBUT DE CHAQUE
+    /// SÉANCE, tant qu'aucun exercice n'est choisi, c'est-à-dire pendant
+    /// tout le moment où on tripote la bulle. Elle se tait sous le doigt
+    /// et sous un onglet caché ; sa lueur descend à 20 Hz (elle traverse
+    /// le mot en 2,6 s — personne n'a jamais lu ça en 30 images).
+    var fige: Bool = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+                                paused: fige)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900)
             let u = CGFloat((t / 2.6).truncatingRemainder(dividingBy: 1))
@@ -366,9 +382,16 @@ final class PiluleEtat {
         // L'ASPIRATION DANS L'ÎLE (règles Kathryn 04-09) : lâchée en
         // HAUT, ou jetée SUR LES CÔTÉS (elle « disparaît » dans l'île,
         // d'où qu'on la jette) — avec le grand voyage animé côté vue.
+        // ⚠️ LA PORTE S'EST RESSERRÉE (04-09, lot 2, cause n° 3). Elle
+        // était `xFin < 70 || xFin > W - 70` : un simple déplacement
+        // LATÉRAL de ~125 pt suffisait à l'aspirer, sans intention. Un
+        // jet sur le côté doit maintenant être un VRAI jet — la vitesse
+        // du doigt le dit, la position seule ne le disait pas.
         let W = UIScreen.main.bounds.width
         let xFin = W / 2 + dessin.width
-        if yVise < utile.lowerBound - 6 || xFin < 70 || xFin > W - 70 {
+        let jetLateral = (xFin < 56 || xFin > W - 56)
+            && abs(velocity.width) > 500
+        if yVise < utile.lowerBound - 6 || jetLateral {
             withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
                 dansIle = true
                 dessin = .zero
@@ -440,6 +463,18 @@ private final class MoteurPilule: NSObject {
     }
 }
 
+/// LE DESSIN DU DOIGT, ISOLÉ — le jumeau d'`OffsetVol` (PlayerMonde).
+/// `body(content:)` reçoit l'arbre DÉJÀ CONSTRUIT : le relire soixante
+/// fois par seconde ne reconstruit rien. C'est LE remède de la maison
+/// contre « la vue qui contient tout se ré-évalue par image ».
+private struct DessinPilule: ViewModifier {
+    private var etat: PiluleEtat { PiluleEtat.shared }
+
+    func body(content: Content) -> some View {
+        content.offset(etat.dessin)
+    }
+}
+
 /// LA DYNAMIC ISLAND — ses cotes (iPhone 15/15 Pro, coordonnées
 /// PHYSIQUES : l'hôte de la pilule doit ignorer la zone sûre).
 enum IleGeo {
@@ -465,6 +500,11 @@ struct PiluleVagabonde<Contenu: View>: View {
     /// qu'on peut le tirer, d'ailleurs on peut aussi le tirer »). `nil`
     /// = pas de ticket.
     var ticketTexte: String? = nil
+    /// ⚠️ LA LOI DU RIDEAU (04-09, lot 2) : le grand player la recouvre
+    /// entièrement — elle n'a plus RIEN à animer. Ses moteurs se taisent
+    /// (braises, île) sans qu'elle se démonte : `morphPlayer` saute à 1,
+    /// la démonter ferait un pop pendant que le player monte encore.
+    var figee: Bool = false
     var onOuvrir: () -> Void = {}
     var onStop: () -> Void = {}
     @ViewBuilder var contenu: () -> Contenu
@@ -485,6 +525,16 @@ struct PiluleVagabonde<Contenu: View>: View {
     /// le même liseré, la même ombre. Deux cards qui ne portent pas le
     /// même bord ne sont plus une famille.
     static var forme: RoundedRectangle { NotifGeo.forme }
+    /// ⚠️ LE VERRE PENDANT LE DRAG (04-09 : « je ne vois pas l'effet
+    /// liquid glass comme le composant natif AU DRAG »). La loi payée du
+    /// dépôt dit qu'un verre aux bounds vivants tombe à 14 img/s — elle
+    /// a été mesurée sur l'ANCIEN verre. Le natif d'iOS 26
+    /// (`.interactive()`) est fait pour bouger : on l'allume, et on
+    /// MESURE (`-fps`, sonde de cadence). `-piluleMate` rend la doublure
+    /// mate si la mesure devait le réclamer.
+    static var mateAuDrag: Bool {
+        CommandLine.arguments.contains("-piluleMate")
+    }
     /// « Plus gros, plus de hauteur, la carrure d'une grosse notif Apple. »
     static var hauteur: CGFloat { 96 }
 
@@ -508,20 +558,35 @@ struct PiluleVagabonde<Contenu: View>: View {
                 // LA CIBLE (demande Kathryn 04-09) : dès qu'on DÉPLACE la
                 // pastille, un halo ROUGE + un petit DOIGT s'allument sur
                 // l'île — « tu peux la déposer ici ».
-                if etat.enDrag { cibleIle }
+                if etat.enDrag { CibleIle(utile: utile) }
                 corps
             }
         }
     }
+}
 
-    /// LE HALO D'ACCUEIL DE L'ÎLE — visible seulement pendant le drag.
-    /// Il s'INTENSIFIE quand la pastille approche (le doigt sent qu'il
-    /// « chauffe »), et le petit doigt dit le geste.
-    private var cibleIle: some View {
+/// LE HALO D'ACCUEIL DE L'ÎLE — visible seulement pendant le drag.
+/// Il s'INTENSIFIE quand la pastille approche (le doigt sent qu'il
+/// « chauffe »), et le petit doigt dit le geste.
+///
+/// ⚠️ C'EST UNE VUE À PART DEPUIS LE 04-09 (lot 2, cause n° 12). Il
+/// vivait dans le corps de `PiluleVagabonde` et y lisait `etat.dessin`
+/// — la position du doigt, écrite à CHAQUE événement et à chaque
+/// battement d'écran. Lire une propriété d'`@Observable` dans un corps
+/// rend TOUT ce corps dépendant : le halo faisait donc reconstruire la
+/// pilule entière (contenu, robe, ombre, ticket) à chaque image du
+/// drag. Isolé ici, il est le SEUL à se rejouer.
+struct CibleIle: View {
+    var utile: ClosedRange<CGFloat>
+    private var etat: PiluleEtat { PiluleEtat.shared }
+
+    var body: some View {
         // LE HALO BOUGE (demande Kathryn) : une horloge propre, deux
         // périodes désaccordées — il respire ET flotte légèrement, il
         // n'est jamais figé. Surface minuscule, aucune taille animée.
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        // 20 Hz : il ne vit que le temps d'un drag, mais il vit PENDANT
+        // le drag — c'est le pire moment pour prendre une image de plus.
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900)
             cibleCorps(t: t)
@@ -573,6 +638,12 @@ struct PiluleVagabonde<Contenu: View>: View {
         .offset(y: 3 * flot)                   // le halo flotte
         .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
     }
+}
+
+// La suite de la pilule — l'île, le corps, la robe, le ticket. (Elle
+// vit en extension depuis que `CibleIle` s'est détachée : le halo
+// devait sortir du corps pour cesser de le faire rejouer par image.)
+extension PiluleVagabonde {
 
     /// L'ÎLE HABITÉE : la dégaine Live Activity — capsule noire qui
     /// englobe la Dynamic Island, CHRONO à gauche du trou, STOP à
@@ -583,7 +654,11 @@ struct PiluleVagabonde<Contenu: View>: View {
     /// BLANCS rares et brefs — le vrai battement d'un pulsar, jamais un
     /// métronome. UNE horloge, surface minuscule. Anti-brun : R = 1,00.
     private var ile: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        // ⚠️ 15 Hz, PAS 30 (04-09, lot 2, cause n° 9) : un souffle de
+        // braise sur une capsule de 49 pt ne se lit pas plus fin à 30 —
+        // et c'est un cycle sur deux de rendu qui disparaît.
+        TimelineView(.animation(minimumInterval: 1.0 / 15.0,
+                                paused: figee)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900)
             ileCorps(t: t, maintenant: tl.date)
@@ -591,11 +666,25 @@ struct PiluleVagabonde<Contenu: View>: View {
         .contentShape(RoundedRectangle(
             cornerRadius: (IleGeo.hauteur + 12) / 2, style: .continuous)
             .inset(by: -10))
-        .onTapGesture { sortirDeLIle() }
-        // LE DRAG SUR L'ÎLE la fait AUSSI ressortir (règle Kathryn).
+        // ⚠️ LE TAP OUVRE LE PLAYER (04-09, lot 2, cause n° 3). Avant, il
+        // ne faisait que la sortir de l'île — et comme le corps de la
+        // pilule n'est plus monté quand elle y est, LE TAP QUI OUVRE LE
+        // PLAYER N'EXISTAIT PLUS DU TOUT. C'était, mot pour mot,
+        // « impossible de cliquer sur la bulle, pas d'overlay ».
+        // L'île est un état du player, pas une impasse : on la touche,
+        // le player s'ouvre. Le DRAG, lui, la fait ressortir.
+        // ⚠️ MÊME ORDRE EXCLUSIF QUE LA PASTILLE (04-09) : le drag
+        // d'abord, le tap ensuite. En deux gestes séparés, le tap gagnait
+        // — l'île n'avait donc plus AUCUNE sortie au doigt, et maintenant
+        // que son tap ouvre le player, on y serait entré pour ne plus
+        // jamais en sortir.
         .gesture(
             DragGesture(minimumDistance: 8)
-                .onChanged { _ in sortirDeLIle() })
+                .onChanged { _ in sortirDeLIle() }
+                .exclusively(before: TapGesture().onEnded {
+                    Haptique.moyen()
+                    onOuvrir()
+                }))
         .matchedGeometryEffect(id: "pilule-vol", in: vol)
         .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
     }
@@ -678,7 +767,14 @@ struct PiluleVagabonde<Contenu: View>: View {
                 ], startPoint: .top, endPoint: .bottom),
                 lineWidth: 1.1)
         }
-        .shadow(color: braise.opacity(0.18 + 0.30 * s), radius: 7 + 5 * s)
+        // ⚠️ LE RAYON D'OMBRE EST FIXE (04-09, lot 2, cause n° 9) : il
+        // valait `7 + 5 * s`. Une gaussienne dont le RAYON change ne se
+        // met pas en cache — elle était recalculée à chaque image. Le
+        // souffle passe dans l'OPACITÉ, qui est un simple facteur : à
+        // l'œil c'est le même battement, au GPU c'est un flou cuit une
+        // fois. (La même loi vaut partout : faire respirer l'opacité,
+        // jamais le rayon.)
+        .shadow(color: braise.opacity(0.18 + 0.30 * s), radius: 9)
         .shadow(color: .white.opacity(0.30 * e), radius: 4)
     }
 
@@ -712,12 +808,39 @@ struct PiluleVagabonde<Contenu: View>: View {
             // lire comme un ticket qu'on peut tirer.
             .overlay(alignment: .bottom) { ticket }
             .contentShape(Self.forme)
-            .onTapGesture {
-                guard !etat.enVol, !etat.enDrag else { return }
-                Haptique.moyen()
-                onOuvrir()
-            }
-            .gesture(
+            // ⚠️ LE DRAG D'ABORD, LE TAP ENSUITE — UN SEUL GESTE
+            // EXCLUSIF (04-09, TROUVÉ AU BANC À VRAIS TOUCHERS).
+            // C'étaient deux gestes séparés : `.onTapGesture` PUIS
+            // `.gesture(drag)`. Or un `.gesture()` a une précédence
+            // INFÉRIEURE aux gestes déjà posés sur le contenu : le TAP
+            // gagnait. Un geste rapide sur la pastille (une main qui la
+            // jette, pas une main qui la promène) était donc lu comme un
+            // tap et OUVRAIT LE PLAYER au lieu de la déplacer — mesuré
+            // au banc : 3 tentatives sur 3, la pastille n'a pas bougé
+            // d'un pixel et le player s'est ouvert à chaque fois.
+            // `exclusively(before:)` dit l'ordre une bonne fois : si le
+            // doigt BOUGE, c'est un drag ; s'il ne bouge pas, c'est un
+            // tap. (Le ticket garde son `highPriorityGesture` : un
+            // descendant prioritaire bat toujours ce geste-ci.)
+            //
+            // ⚠️⚠️ ET C'EST UN `highPriorityGesture`, PAS UN `.gesture`
+            // — LA CAUSE PREMIÈRE DE « IMPOSSIBLE DE CLIQUER SUR LA
+            // BULLE » (04-09, mesurée au banc, sonde par sonde).
+            // La robe pose un verre natif `.interactive()` : ce verre se
+            // déforme sous le doigt, donc IL PREND LE TOUCHER. Il vit
+            // dans le `.background` du corps, donc dans son CONTENU — et
+            // un `.gesture()` a une précédence INFÉRIEURE aux gestes du
+            // contenu. Résultat mesuré : une sonde `simultaneousGesture`
+            // posée à l'extérieur comptait 9 événements de doigt pendant
+            // que le geste de la pastille en comptait ZÉRO (chg=0,
+            // tap=0). La pastille n'a JAMAIS été ni déplaçable ni
+            // tapable ; seul le ticket répondait, parce que LUI est
+            // prioritaire — et c'est lui qui ouvrait le player, ce qui
+            // ressemblait à un tap qui marche.
+            // (Le verre reste `.interactive()` : c'est ce qu'elle a
+            //  demandé à voir au drag. On lui passe devant, on ne
+            //  l'éteint pas.)
+            .highPriorityGesture(
                 // ⚠️ `.global`, JAMAIS l'espace local : la pilule BOUGE
                 // avec le doigt — un drag lu dans son propre repère se
                 // course lui-même (translation ≈ doigt MOINS vue) et
@@ -731,7 +854,12 @@ struct PiluleVagabonde<Contenu: View>: View {
                                              height: v.velocity.height),
                             dansUtile: utile, hauteurUtile: H)
                         Haptique.leger()
-                    })
+                    }
+                    .exclusively(before: TapGesture().onEnded {
+                        guard !etat.enVol, !etat.enDrag else { return }
+                        Haptique.moyen()
+                        onOuvrir()
+                    }))
             .onChange(of: doigtPose) { _, pose in
                 if !pose { etat.gesteMort() }
             }
@@ -739,8 +867,23 @@ struct PiluleVagabonde<Contenu: View>: View {
             // est un offset possédé par-dessus.
             .matchedGeometryEffect(id: "pilule-vol", in: vol)
             .position(x: UIScreen.main.bounds.width / 2, y: y)
-            .offset(etat.dessin)
+            // ⚠️ L'OFFSET VIT DANS UN MODIFIER (04-09, lot 2, cause
+            // n° 11) — le patron exact d'`OffsetVol` du player
+            // (PlayerMonde.swift). `.offset(etat.dessin)` posé ICI lisait
+            // `dessin` DANS le corps : or `dessin` est écrit à chaque
+            // événement du doigt PUIS à chaque battement d'écran pendant
+            // le vol de rappel. Tout le corps en dépendait, donc SwiftUI
+            // reconstruisait par image le contenu (mini-card, invite,
+            // chrono, médaillon stop et ses deux dégradés angulaires), la
+            // robe, le groupe de composition, l'ombre de rayon 22 et le
+            // ticket. C'est le piège déjà payé, mot pour mot : un état
+            // écrit par image sur la vue qui contient tout.
+            .modifier(DessinPilule())
             .allowsHitTesting(!PlayerEtat.shared.monte)
+            // La sonde passe par le MODIFIER (04-09, cause n° 8) : appelée
+            // en direct, elle sautait la garde `-fps` et laissait un
+            // `CADisplayLink` tourner en production.
+            .sondeCadence("pilule")
     }
 
     /// LE TICKET TIRABLE — gros, en débord au coin haut-droit. On peut
@@ -753,10 +896,33 @@ struct PiluleVagabonde<Contenu: View>: View {
             // débord qui dit « tire-moi ».
             // SANS icône et CENTRÉ sous la pastille (verdict 04-09).
             TicketSeries(texte: texte, echelle: 1.15)
-                .offset(x: tire.width * 0.5, y: 20 + tire.height * 0.5)
+                // ⚠️ LA DESCENTE DE 20 pt EST DU LAYOUT, PAS UN OFFSET
+                // (04-09, TROUVÉ AU BANC — la loi payée le disait déjà :
+                // « .offset déplace les PIXELS, pas la zone tactile »).
+                // Le ticket était descendu par `.offset(y: 20)` : à l'œil
+                // il pendait sous la pastille, mais sa PRISE était restée
+                // 20 pt plus haut — c'est-à-dire EN PLEIN CENTRE de la
+                // pastille, encore élargie de 10 pt par le contentShape.
+                // Son `highPriorityGesture` bat celui de son ancêtre :
+                // TOUT drag de la pastille était donc avalé par le
+                // ticket, et son relâcher « franc » OUVRAIT LE PLAYER.
+                // Mesuré : 4 formes de geste sur 4, la pastille n'a pas
+                // bougé d'un pixel (chg=0, tap=0) et le player s'est
+                // ouvert à chaque fois. La pastille n'a JAMAIS été
+                // déplaçable — voilà « impossible de cliquer sur la
+                // bulle » et « ça ouvre l'overlay tout seul ».
+                // Seul le TIRAGE élastique reste un offset : pendant le
+                // geste, la prise a le droit de ne pas suivre.
+                .contentShape(Rectangle())
+                // Le DÉBORD est du layout : la marge négative raccourcit
+                // le cadre, donc le ticket sort de 20 pt sous la pastille
+                // — et sa PRISE sort avec lui. (Un `.offset` aurait laissé
+                // la prise 20 pt plus haut, en plein centre de la
+                // pastille : c'est le bug qu'on vient de payer.)
+                .padding(.bottom, -20)
+                .offset(x: tire.width * 0.5, y: tire.height * 0.5)
                 .rotationEffect(.degrees(-1 + Double(tire.width) * 0.06),
                                 anchor: .top)
-                .contentShape(Rectangle().inset(by: -10))
                 // ⚠️ highPriorityGesture : il bat le drag de la pastille,
                 // qui est son ANCÊTRE (la topologie maison).
                 .highPriorityGesture(
@@ -768,8 +934,11 @@ struct PiluleVagabonde<Contenu: View>: View {
                                 height: v.translation.height * 0.5)
                         }
                         .onEnded { v in
-                            let franc = abs(v.translation.height) > 40
-                                || abs(v.translation.width) > 40
+                            // ⚠️ ON TIRE UN TICKET VERS LE BAS (04-09).
+                            // C'était « > 40 dans N'IMPORTE QUEL sens » —
+                            // donc un geste vers le HAUT, celui qui range
+                            // la pastille, ouvrait le player.
+                            let franc = v.translation.height > 40
                             withAnimation(.spring(response: 0.34,
                                                   dampingFraction: 0.7)) {
                                 tire = .zero
@@ -790,14 +959,17 @@ struct PiluleVagabonde<Contenu: View>: View {
     private var robe: some View {
         // NOIR → TRANSPARENT : opaque en haut, il s'EFFACE vers le bas —
         // c'est par là que le verre se voit.
+        // ⚠️ L'ENCRE S'ALLÈGE (04-09 : « il manque le verre natif ») —
+        // à 0,90 en haut elle ÉTOUFFAIT le verre : on ne voyait le
+        // liquid glass que dans le dernier tiers. Le dégradé reste noir
+        // → transparent, mais il laisse le verre parler partout.
         let encre = LinearGradient(
-            stops: [.init(color: .black.opacity(0.90), location: 0),
-                    .init(color: .black.opacity(0.55), location: 0.45),
-                    .init(color: .black.opacity(0.12), location: 1)],
+            stops: [.init(color: .black.opacity(0.42), location: 0),
+                    .init(color: .black.opacity(0.22), location: 0.5),
+                    .init(color: .black.opacity(0.04), location: 1)],
             startPoint: .top, endPoint: .bottom)
-        if etat.enMouvement {
-            // EN MOUVEMENT : la doublure mate (un verre aux bounds
-            // vivants devient un blur plat et coûte 60 → 14 img/s).
+        if etat.enMouvement && Self.mateAuDrag {
+            // La doublure mate — le repli si la cadence ne tenait pas.
             Self.forme.fill(Color.black.opacity(0.72))
             Self.forme.fill(encre)
         } else {
@@ -807,7 +979,7 @@ struct PiluleVagabonde<Contenu: View>: View {
             // composant d'exercice du player (VerreOuMat).
             Color.clear
                 .glassEffect(
-                    .regular.tint(Color.black.opacity(0.28)).interactive(),
+                    .regular.tint(Color.black.opacity(0.16)).interactive(),
                     in: .rect(cornerRadius: NotifGeo.rayon))
             Self.forme.fill(encre)
             // LES MÊMES BRAISES, EN PETIT (demande Kathryn) : la mini
@@ -816,7 +988,7 @@ struct PiluleVagabonde<Contenu: View>: View {
             // le mouvement (la loi : rien qui s'anime sous le doigt).
             BraisesVague(force: 0.42, partBasse: 0.72,
                          colonnes: 9, flou: 11,
-                         fige: etat.enMouvement)
+                         fige: etat.enMouvement || figee, hz: 15)
                 .clipShape(Self.forme)
         }
     }
@@ -920,7 +1092,7 @@ struct PiluleLab: View {
                 // qu'elle soit (l'ancre suit sa position réelle) —
                 // c'est le rendu que Kathryn veut juger.
                 if overlayOuvert {
-                    GrandPlayerDemo(
+                    GrandPlayer(
                         morph: $morph,
                         style: style,
                         ecranTaille: g.size,
@@ -973,7 +1145,10 @@ struct PiluleLab: View {
                         .minimumScaleFactor(0.8)
                 } else {
                     // LA MÊME INVITE ANIMÉE QUE LE GRAND PLAYER.
-                    InviteAnimee(taille: 17)
+                    // Le banc doit montrer l'état de PROD, sinon il
+                    // mesure autre chose que l'app (loi de la maison).
+                    InviteAnimee(taille: 17,
+                                 fige: PiluleEtat.shared.enMouvement)
                         .minimumScaleFactor(0.8)
                 }
                 Text("In session · 7 min")
@@ -1029,32 +1204,19 @@ struct PiluleLab: View {
         .ignoresSafeArea()
     }
 
-    /// LA NAV FIXE RABAISSÉE, esquissée (le vrai J2 la règlera sur
-    /// captures) : quatre glyphes tap-only, braise, PAS de fond.
+    /// LA NAV FIXE — LA VRAIE, plus une esquisse (04-09).
+    /// ⚠️ Elle dessinait encore QUATRE glyphes et le point orange : un
+    /// banc qui montre un écran qui n'existe plus est un juge qui ment.
+    /// Elle monte maintenant `NavBande` avec la géométrie EXACTE du
+    /// châssis (rangée de `navH`, 18 pt au-dessus du bord PHYSIQUE) —
+    /// trois onglets, pas de braise.
     private var navFixeEsquisse: some View {
-        VStack {
-            Spacer()
-            HStack(spacing: 0) {
-                ForEach(Array(["house.fill",
-                               "figure.strengthtraining.functional",
-                               "chart.line.uptrend.xyaxis",
-                               "person"].enumerated()), id: \.offset) { i, s in
-                    Image(systemName: s)
-                        .font(.system(size: 21, weight: .medium))
-                        .foregroundStyle(.white.opacity(i == 0 ? 1 : 0.34))
-                        .frame(width: 44, height: 44)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .overlay(alignment: .bottom) {
-                Capsule().fill(Color(red: 1, green: 0.54, blue: 0.18))
-                    .frame(width: 5, height: 5)
-                    .shadow(color: Color(red: 1, green: 0.48, blue: 0.14)
-                        .opacity(0.75), radius: 5)
-                    .offset(x: -3 * 44 / 2 - 22, y: 2)
-            }
-            .padding(.bottom, 26)
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            NavBande(hauteur: NavEtat.shared.navH)
+                .padding(.bottom, 18)
         }
+        .ignoresSafeArea(edges: .bottom)
     }
 
     /// Le faux galet blanc de la fiche — la zone que la POSE doit fuir.
@@ -1147,14 +1309,16 @@ enum StylePlayer: String, CaseIterable {
 /// (fond, pastille, les deux Canvas de braises) — le « glitch de ouf »
 /// du 04-09, exactement le piège payé « un @State écrit par image sur
 /// la vue qui contient tout ». Isolé ici, seul le player se rejoue.
-private struct GrandPlayerDemo: View {
+struct GrandPlayer: View {
     @Binding var morph: CGFloat
-    let style: StylePlayer
+    var style: StylePlayer = .glisse
     let ecranTaille: CGSize
-    let ancreY: CGFloat
+    var ancreY: CGFloat = 0
     let depart: Date
     let exoChoisi: String?
     let groupes: [SlateGroupe]
+    /// Le sticker du jour — la vraie mini-card de séance.
+    var sticker: String = "sticker-flamme"
     var onStop: () -> Void = {}
     var onExos: () -> Void = {}
 
@@ -1214,7 +1378,12 @@ private struct GrandPlayerDemo: View {
         return ZStack {
             LinearGradient(colors: [Color(white: 0.07), .black],
                            startPoint: .top, endPoint: .bottom)
-            BraisesVague(force: 0.62, fige: enGeste)
+            // ⚠️ 15 Hz ET GELÉE HORS POSE (relecture adverse 04-09) :
+            // celle-ci est PLEIN ÉCRAN — la plus chère de l'app. Elle
+            // était restée à 30 alors que la mini est passée à 15, et
+            // elle tournait pendant tout le geste de fermeture.
+            BraisesVague(force: 0.62,
+                         fige: enGeste || morph < 0.98, hz: 15)
                 .opacity(Double(encre))
             VStack(spacing: 0) {
                 teteFixe(encre: encre, enGeste: enGeste)
@@ -1246,18 +1415,22 @@ private struct GrandPlayerDemo: View {
         }
         // LA MONTÉE + LE DOIGT, dans le MÊME offset : des pixels,
         // jamais un layout (la loi payée).
+        // ⚠️ UN SEUL OFFSET (04-09, lot 2). Il y en avait DEUX :
+        // `.offset(y: montee + fermeture)` puis `.offset(y: fermeture)` —
+        // le doigt était compté deux fois et l'écran descendait au DOUBLE
+        // de sa vitesse. Le commentaire du second parlait encore d'un
+        // `.position` qui n'existe plus : c'était un résidu.
+        // Le drag bouge des PIXELS, jamais un layout (la loi payée) :
+        // `position` re-mesurait tout l'arbre à chaque image — dont le
+        // GeometryReader de la partition. C'était le « glitch de ouf ».
         .offset(y: montee + fermeture)
         .simultaneousGesture(dragFermeture)
-        // ⚠️ LE DRAG BOUGE DES PIXELS, JAMAIS UN LAYOUT (la loi payée) :
-        // `position` re-mesurait TOUT l'arbre à chaque image — dont le
-        // GeometryReader de la partition. C'était le « glitch de ouf ».
-        // `position` pose l'ancre du morph, `offset` porte le doigt.
-        .offset(y: fermeture)
         // LA MESURE (loi : une sonde qui mesure, pas un juge qui
         // affirme) — `-fps` imprime la cadence RÉELLE du player, et
         // `dragSonde` l'intervalle entre deux événements du doigt : on
         // saura si le trou est au RENDU ou dans les ÉVÉNEMENTS.
-        .overlay { SondeCadence(quoi: "player-morph").allowsHitTesting(false) }
+        // ⚠️ PAR LE MODIFIER : appelée en direct, elle sautait la garde.
+        .sondeCadence("player-morph")
     }
 
     /// L'EN-TÊTE FIXE — il ne scrolle jamais, et c'est LUI qui porte le
@@ -1274,7 +1447,7 @@ private struct GrandPlayerDemo: View {
             // LA MINI-CARD DU JOUR + LE BADGE DE SÉRIES (l'ancien player).
             // L'IMAGE DU JOUR + LE BADGE, BEAUCOUP plus grands (verdict
             // 04-09) : c'est la pièce maîtresse de la tête.
-            MiniCardJour(date: depart, sticker: "sticker-flamme")
+            MiniCardJour(date: depart, sticker: sticker)
                 .scaleEffect(1.55)
                 .frame(width: 150, height: 150)
                 // LE MÊME TICKET DE PAPIER que sous la pastille — une
@@ -1428,7 +1601,10 @@ private struct GrandPlayerDemo: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)
         } else {
-            InviteAnimee(taille: 25)
+            // La même porte que dans la pilule : rien ne s'anime sous
+            // le doigt (relecture adverse 04-09 — c'était la dernière
+            // horloge qui battait encore pendant le geste).
+            InviteAnimee(taille: 25, fige: fermeture > 0.5 || morph < 0.98)
         }
     }
 
