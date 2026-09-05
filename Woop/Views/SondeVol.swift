@@ -67,6 +67,16 @@ final class SondeVol {
     /// 2 chaud (il commence à brider), 3 critique. C'est le seul juge
     /// non discutable de « ça chauffe ».
     private(set) var thermique: Int = 0
+    /// ⚠️ COMBIEN DE FOIS LE CORPS DE LA PAGE EST RECALCULÉ PAR SECONDE.
+    /// C'est la mesure qui MANQUAIT, et elle coupe le problème en deux :
+    ///   · ≈ 0  → plus rien ne se recalcule ; les 27 % sont de la
+    ///            COMPOSITION (verres, flous, ombres, vidéo). Le remède
+    ///            est d'avoir moins de couches chères, pas moins d'horloges.
+    ///   · 30-60 → quelque chose INVALIDE la page en continu, et il n'y a
+    ///            plus qu'à trouver qui écrit.
+    /// Sans elle, on éteint des interrupteurs au hasard — ce qu'on a fait
+    /// une demi-journée le 05-09, pour rien.
+    private(set) var corpsParSeconde: Int = 0
     private(set) var secondes: Int = 0
     private(set) var marques: Int = 0
 
@@ -82,6 +92,7 @@ final class SondeVol {
     @ObservationIgnored private var depuis: CFTimeInterval = 0
     @ObservationIgnored private var t0: CFTimeInterval = 0
     @ObservationIgnored private var marqueEnAttente = false
+    @ObservationIgnored private var corpsCompte = 0
     @ObservationIgnored private var sortie: FileHandle?
     @ObservationIgnored private(set) var chemin: URL?
 
@@ -140,6 +151,25 @@ final class SondeVol {
         }
     }
 
+    /// Appelée DANS le corps d'une vue qu'on surveille. Elle ne fait
+    /// qu'incrémenter un entier : elle ne doit rien coûter, et surtout
+    /// rien invalider (sinon elle se mesurerait elle-même).
+    @inline(__always)
+    func corps() { corpsCompte &+= 1 }
+
+    /// LES HORLOGES, comptées SÉPARÉMENT (05-09). Le corps de la page ne
+    /// se recalcule pas (mesuré : 0/s) — donc ce qui redessine est
+    /// PROFOND dans l'arbre. Chaque tranche compte un groupe :
+    ///   0 widgets · 1 nappe/menu · 2 galets · 3 route · 4 semaine.
+    /// Celle qui bat est celle qui force la recomposition.
+    @inline(__always)
+    func tic(_ i: Int) {
+        guard i >= 0, i < 5 else { return }
+        tics[i] &+= 1
+    }
+    @ObservationIgnored private var tics = [Int](repeating: 0, count: 5)
+    private(set) var ticsParSeconde = [Int](repeating: 0, count: 5)
+
     /// Elle tape la pastille : « LÀ, ça a lagué ». La marque part dans la
     /// ligne de la seconde en cours.
     func marquer() {
@@ -170,6 +200,10 @@ final class SondeVol {
         pireMs = (pire * 1000).rounded()
         cpu = (Self.cpuPourcent() * 10).rounded() / 10
         thermique = ProcessInfo.processInfo.thermalState.rawValue
+        corpsParSeconde = corpsCompte
+        corpsCompte = 0
+        ticsParSeconde = tics
+        for i in tics.indices { tics[i] = 0 }
         secondes += 1
         let marque = marqueEnAttente
         marqueEnAttente = false
@@ -238,7 +272,8 @@ final class SondeVol {
             format: "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,"
                 + "\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,"
                 + "\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,"
-                + "\"cpu\":%.0f,\"therm\":%d}\n",
+                + "\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,"
+                + "\"tics\":[%d,%d,%d,%d,%d]}\n",
             t, cadence, min(pireMs, 2000), onglet,
             enSeance ? 1 : 0,
             p.ouvert ? 1 : 0,
@@ -246,7 +281,9 @@ final class SondeVol {
             (pi.enDrag || pi.enVol) ? 1 : 0,
             marque ? 1 : 0,
             pireMs > 2000 ? 1 : 0,
-            cpu, thermique)
+            cpu, thermique, corpsParSeconde,
+            ticsParSeconde[0], ticsParSeconde[1], ticsParSeconde[2],
+            ticsParSeconde[3], ticsParSeconde[4])
         if let d = ligne.data(using: .utf8) { sortie.write(d) }
     }
 }

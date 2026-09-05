@@ -2703,6 +2703,12 @@ struct HomeNuitPage: View {
     }
 
     private func pageContenu(_ geo: GeometryProxy) -> some View {
+        // Compteur de recalculs (sonde de vol) — un entier, rien d'autre.
+        SondeVol.shared.corps()
+        return contenuVrai(geo)
+    }
+
+    private func contenuVrai(_ geo: GeometryProxy) -> some View {
             // ⚠️ TOUTE LA PAGE VIT DANS `MenuHote` : c'est lui qui porte le
             // galet, la couronne et le recul du mobilier. Le FOND (la vidéo)
             // ne recule jamais — une couche UIKit ne sait pas s'échelonner

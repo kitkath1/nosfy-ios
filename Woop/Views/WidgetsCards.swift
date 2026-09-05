@@ -260,7 +260,8 @@ struct CardCorps<Contenu: View>: View {
                     // 60 images par seconde.
                     TimelineView(.animation(minimumInterval: 1.0 / 12,
                                             paused: reduceMotion
-                                                || DepartEtat.shared.cheminOuvert)) { tl in
+                                                || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                         let t = tl.date.timeIntervalSinceReferenceDate
                         // LA RESPIRATION DU REPOS : ±3° sur 9,4 s. On ne la
                         // voit pas, on la sent. La période est volontairement
@@ -1018,7 +1019,8 @@ struct CardVolume: View {
                 // la TimelineView qui se dimensionne sur son contenu).
                 TimelineView(.animation(minimumInterval: 1.0 / 12,
                                         paused: reduceMotion || vide
-                                            || DepartEtat.shared.cheminOuvert)) { tl in
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                     let t = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
@@ -1166,7 +1168,8 @@ struct CardSeances: View {
                 // ouverture, ce scintillement ne coûte pas une image.
                 TimelineView(.animation(minimumInterval: 1.0 / 24,
                                         paused: f < 0.02
-                                            || DepartEtat.shared.cheminOuvert)) { tl in
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                     let t = tl.date.timeIntervalSinceReferenceDate
                     // ⚠️ LE CADRE EST FORCÉ. Une `TimelineView` se dimensionne
                     // sur SON contenu : les `.position()` visaient le cadre de
@@ -1271,7 +1274,8 @@ struct CardSeances: View {
                 // EST FORCÉ (le piège de la TimelineView).
                 TimelineView(.animation(minimumInterval: 1.0 / 12,
                                         paused: reduceMotion || vide
-                                            || DepartEtat.shared.cheminOuvert)) { tl in
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                     let t = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         ForEach(0..<jours.count, id: \.self) { i in
@@ -1463,7 +1467,8 @@ struct CardHiitPeak: View {
                 let nT = max(tours, 1)
                 TimelineView(.animation(minimumInterval: 1.0 / 12,
                                         paused: reduceMotion || f < 0.3
-                                            || DepartEtat.shared.cheminOuvert)) { tl in
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                     let tps = tl.date.timeIntervalSinceReferenceDate
                     ZStack {
                         // le foyer, sous l'onde — il respire
@@ -1626,7 +1631,8 @@ struct CardHiitPeak: View {
             TimelineView(.animation(minimumInterval: 1.0 / 12,
                                     paused: reduceMotion || vide
                                         || chambre > 0.5
-                                        || DepartEtat.shared.cheminOuvert)) { tl in
+                                        || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                 let tps = tl.date.timeIntervalSinceReferenceDate
                 ZStack {
                     // ── LE FOYER (plan §13.4) : sous le pic, une lueur de
@@ -1785,7 +1791,8 @@ struct CardPeakEffort: View {
                     TimelineView(.animation(minimumInterval: 1.0 / 12,
                                             paused: reduceMotion
                                                 || f < 0.3
-                                                || DepartEtat.shared.cheminOuvert)) { tl in
+                                                || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                         let tps = tl.date.timeIntervalSinceReferenceDate
                         ZStack {
                             // le foyer, sous le plateau du record
@@ -2013,7 +2020,8 @@ struct CardPeakEffort: View {
         TimelineView(.animation(minimumInterval: 1.0 / 12,
                                 paused: reduceMotion || vide
                                     || chambre > 0.5
-                                    || DepartEtat.shared.cheminOuvert)) { tl in
+                                    || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
             let t = tl.date.timeIntervalSinceReferenceDate
             let souffle = reduceMotion ? 0.0
                 : 0.5 + 0.5 * sin(t * 2 * .pi / 4.7)
@@ -2571,7 +2579,8 @@ private struct RespireEdition<C: View>: View {
             contenu(0)
         } else {
             TimelineView(.animation(minimumInterval: 1.0 / 20,
-                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
                 let t = tl.date.timeIntervalSinceReferenceDate
                 contenu(1.4 * edition
                         * sin(t * 2 * .pi / periode + phase))

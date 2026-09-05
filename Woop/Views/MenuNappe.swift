@@ -181,7 +181,8 @@ struct GaletMaison: View {
     var body: some View {
         // LA HOME DORT SOUS LA ROUTE (jalon 1) : l'horloge se tait.
         TimelineView(.animation(minimumInterval: 1.0 / 30,
-                                paused: DepartEtat.shared.cheminOuvert)) { ctx in
+                                paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(1)
             let t = ctx.date.timeIntervalSinceReferenceDate
             let souffle = reduceMotion ? 1.0
                 : 1 + 0.02 * sin(t * 2 * .pi / 4.3)
@@ -360,7 +361,8 @@ struct MenuHalos: View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
             TimelineView(.animation(minimumInterval: 1.0 / 24,
-                                    paused: DepartEtat.shared.cheminOuvert)) { ctx in
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(1)
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 ZStack {
                     LinearGradient(
@@ -931,7 +933,8 @@ private struct PanacheSection: View {
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(1)
                 let now = tl.date
                 let age = now.timeIntervalSince(start)
                 let attack = min(age / 0.10, 1.0)
@@ -974,7 +977,8 @@ private struct GaletFumee: View {
     var body: some View {
         if let start = fumeeBanc ? (start ?? Self.origine) : start {
             TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.cheminOuvert)) { tl in
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(1)
                 let now = tl.date
                 let age = now.timeIntervalSince(start)
                 let attack = min(age / 0.10, 1.0)
@@ -1322,7 +1326,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                 // sélection — un seul doigt, du premier contact au choix.
                 if couronne {
                     TimelineView(.animation(minimumInterval: 1.0 / 60,
-                                            paused: DepartEtat.shared.cheminOuvert)) { ctx in
+                                            paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(1)
                         let now = ctx.date
                         let b = bloom(now)
                         let geo = CouronneGeo.calcule(

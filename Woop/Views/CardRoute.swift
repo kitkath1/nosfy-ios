@@ -145,6 +145,7 @@ private struct MinutesSeance: View {
     var body: some View {
         if let depuis {
             TimelineView(.periodic(from: depuis, by: 60)) { tl in
+                let _ = SondeVol.shared.tic(3)
                 let m = Int(tl.date.timeIntervalSince(depuis) / 60)
                 // ⚠️ COURT PAR OBLIGATION : la gouttière ne fait que 174 pt
                 // avant les galets. « Ça vient de commencer » y était tronqué
@@ -274,7 +275,8 @@ struct CardRoute: View {
         // état de phase y sauterait à chaque aller-retour de la home.
         if enSeance {
             TimelineView(.animation(minimumInterval: 1.0 / 20.0,
-                                    paused: reduceMotion)) { tl in
+                                    paused: reduceMotion || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(3)
                 corps(souffle(tl.date.timeIntervalSinceReferenceDate))
             }
         } else {

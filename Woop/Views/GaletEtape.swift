@@ -243,7 +243,17 @@ struct GaletEtape: View {
             || etat == .lune(dispo: false) || etat == .piece(dispo: false)
         // La timeline ne tourne que si quelque chose vit : la respiration
         // de l'actif, ou une rampe de press/refus en vol (± une seconde).
-        TimelineView(.animation(minimumInterval: nil, paused: pauseTimeline)) { ctx in
+        // ⚠️ 30 Hz, PAS LA CADENCE DE L'ÉCRAN (05-09). `minimumInterval:
+        // nil` suit ProMotion : 120 images par seconde pour une
+        // respiration de quatre secondes et un shader + deux flous +
+        // un `plusLighter`. Trois images sur quatre étaient rendues pour
+        // RIEN — invisible à l'œil, mais c'est le compositeur qui repasse
+        // sur tout l'écran à travers le verre à chaque fois. Le dessin ne
+        // change pas d'un pixel : seule la fréquence baisse.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: pauseTimeline
+                                    || RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(2)
             let t = ctx.date.timeIntervalSinceReferenceDate
             let press = rampePress(ctx.date)
             corps(t: t, press: press, verrouille: verrouille)
@@ -943,7 +953,8 @@ struct PillMireLab: View {
     /// autour du noir (anneau fin) + la DATE gravée en creux (l'emboss :
     /// encre sombre, lumière sur la lèvre basse).
     private func pillMetal(date: String, taille: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 0.08)) { ctx in
+        TimelineView(.animation(minimumInterval: 0.08, paused: RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(2)
             let t = Float(ctx.date.timeIntervalSinceReferenceDate)
             let pad: CGFloat = 12
             ZStack {
@@ -1006,7 +1017,8 @@ private struct PressDemo: View {
     var body: some View {
         let D: CGFloat = 84
         TimelineView(.animation(minimumInterval: nil,
-                                paused: pauseTimeline)) { ctx in
+                                paused: pauseTimeline || RythmeEcran.dortHome)) { ctx in
+                let _ = SondeVol.shared.tic(2)
             let now = ctx.date
             let press = rampe(now)
             let u = burst(now)

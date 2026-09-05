@@ -1263,6 +1263,12 @@ struct RootView: View {
             .onChange(of: selection, initial: true) { _, s in
                 // Le contexte de la boîte noire — POSÉ, jamais deviné.
                 SondeVol.shared.onglet = s.rawValue
+                // ⚠️ ET LA PORTE DES HORLOGES (05-09) : le TabView garde
+                // les trois pages MONTÉES, donc les trois animaient en
+                // même temps — mesuré 18 + 14 + 10 battements/seconde sur
+                // le seul accueil. Un onglet qu'on ne regarde pas se tait.
+                // Deux écritures par bascule, jamais une par image.
+                RythmeEcran.shared.ongletActif = s.rawValue
                 if let d = NavDest(onglet: s), NavEtat.shared.page != d {
                     NavEtat.shared.page = d
                 }
