@@ -139,7 +139,37 @@ tuto-ci, pas les suivants.
    justement interdit aujourd'hui : **le verdict de perf restera donc en
    suspens**, et il faut le DIRE plutôt que le laisser croire.
 
-## 5. LES QUESTIONS OUVERTES — ? (elles changent le code, pas la peinture)
+## 5. LES QUESTIONS — TRANCHÉES PAR KATHRYN LE 05-09
+
+| | la question | **sa décision** |
+|---|---|---|
+| ① | les 6 s à chaque départ | **on garde le film entier, ET un tap le passe** |
+| ② | le son du décompte | **on le garde**, `.ambient` + `mixWithOthers` (sa musique continue, le mode silencieux est respecté) |
+| ③ | quel exercice on entoure | **le PREMIER de la grille, toujours** — pas le premier visible |
+
+⚠️ **Ce que ③ implique, et qui n'est pas gratuit** : si la page est déjà
+défilée quand le tuto s'arme, il doit la RAMENER en haut avant de tracer le
+cercle — sinon on entoure une card hors écran. Et le remède connu est étroit :
+**`scrollPosition(id:)` fait naître la page DÉFILÉE** (piège payé le 22-08,
+`woop-page-exos-couronne`) ; la seule cible juste est une **ORDONNÉE**
+(`ScrollPosition(edge: .top)` + `scrollTo(y:)`). Le retour se fait AVANT le
+voile, jamais pendant : une page qui défile sous un voile est illisible.
+
+Les deux autres restent sur ma reco, à corriger d'un mot si elle veut :
+**④** iPhone sans Dynamic Island → l'étape 2 se replie sur la pastille à sa
+place réelle (`PiluleEtat.ancreGlobale`) ; **⑤** le décompte vaut pour TOUT
+départ de séance, pas seulement depuis la route (une règle, pas une exception).
+
+### Ce que ces réponses ferment côté code
+
+- le tap qui passe le film : un `contentShape` plein cadre sur le player, qui
+  coupe la lecture ET enchaîne sur le tuto — le même chemin que la fin
+  naturelle, jamais un second chemin (deux sorties finissent par diverger) ;
+- le son : `AVAudioSession.setCategory(.ambient, options: [.mixWithOthers])`,
+  la recette déjà écrite dans `CarillonIle` (`PiluleVagabonde.swift:20`) ;
+- la cible : une ancre `"tuto-exo"` posée sur la card d'indice 0 de la grille.
+
+## 6. LES QUESTIONS D'ORIGINE (gardées pour l'histoire)
 
 ① **6,04 s à chaque départ, c'est long.** Trois issues : garder tel quel ·
 recuire à ~3 s (couper les premières images) · laisser passer d'un tap.
@@ -164,7 +194,7 @@ que depuis la route (le galet de la home, un banc) ? **Ma reco : oui** — c'est
 le départ de séance qui le porte, pas la page d'où l'on vient ; une seule règle
 vaut mieux qu'une exception.
 
-## 6. CE QUE ÇA TOUCHE
+## 7. CE QUE ÇA TOUCHE
 
 `WoopApp.swift` (le player du décompte au châssis, la bascule derrière lui) ·
 `ExercisesView.swift` (le tuto : voile à UNE fenêtre, ancre `tuto-exo`, mort de
