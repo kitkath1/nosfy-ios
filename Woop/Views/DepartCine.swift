@@ -601,6 +601,18 @@ struct FondDeuxCalques: View {
     /// place à leur pose.
     @Environment(\.dort) private var dort
 
+    /// ⚠️ LE BARREAU DU FOND VIDÉO (05-09) — `-fondPose` force les deux
+    /// calques sur leur IMAGE DE POSE, comme quand la home dort. Rien
+    /// d'autre ne change.
+    ///
+    /// POURQUOI IL EXISTE : sa balade dit « ça chauffe dès que je lance
+    /// Woop », et la bissection du 05-09 sur son iPhone 15 a donné
+    /// écran nu 1,0 % de processeur contre accueil 27,0 % — les 26 points
+    /// sont TOUS dans la page, et aucun barreau de bloc (widgets, galet,
+    /// pièce, grain) ne les a bougés. Restent ces deux lecteurs, qui
+    /// tournent en boucle sur une page immobile.
+    private var poseSeule: Bool { dort || FondPoseBanc.actif }
+
     // ⚠️ L'ÉCHELLE DES DEUX CALQUES EST CONSTANTE, ET C'EST CELLE DU REPOS.
     // C'était LA deuxième cause du bug : `aspectFill` remplit par la HAUTEUR
     // quand la card est pleine (ratio 0,442 contre 0,460) et par la LARGEUR
@@ -681,7 +693,7 @@ struct FondDeuxCalques: View {
                 // lecteur l'ignore par trois chemins, et le réveil flushe la
                 // couche) : l'image, montée à la place du calque. Au réveil le
                 // lecteur renaît derrière sa pose, comme à l'arrivée.
-                if dort {
+                if poseSeule {
                     Image("home-fond-flamme-poster")
                         .resizable().scaledToFill()
                         .frame(width: Self.braL, height: Self.braH)
@@ -711,7 +723,7 @@ struct FondDeuxCalques: View {
             // le déplacement par k, soit 62 pt de course parasite.
             .overlay(alignment: .top) {
                 Group {
-                    if dort {
+                    if poseSeule {
                         Image("home-fond-pilule-poster")
                             .resizable().scaledToFill()
                             .frame(width: Self.pilL, height: Self.pilH)
@@ -820,4 +832,11 @@ struct FondDeuxCalques: View {
             // et cet élément neutre doit être atteint AVANT le bord du cadre.
         }
     }
+}
+
+
+/// `-fondPose` : les deux calques vidéo de la home rendent leur image de
+/// pose au lieu de tourner. Le seul but est de MESURER ce qu'ils coûtent.
+enum FondPoseBanc {
+    static let actif = CommandLine.arguments.contains("-fondPose")
 }

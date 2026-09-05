@@ -267,7 +267,26 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
             // Posé AVANT le `clipShape` : la braise est ainsi taillée par la
             // robe elle-même, donc elle s'arrête net au bas de la card et la
             // bande du player reste à elle.
-            .overlay { BordSeance(actif: enSeance || BordSeance.banc) }
+            // ⚠️ LE RUBAN EST RETIRÉ DE L'APP (05-09, Kathryn : « enlève le
+            // ruban »). Il ne s'allume plus QU'AU BANC, `-bordSeance` : le
+            // composant reste entier, le chemin de retour aussi.
+            //
+            // LA MESURE QUI L'A CONDAMNÉ — sa balade du 05-09, sonde de vol
+            // sur SON iPhone 15, 746 secondes :
+            //   · hors séance ... 60,1 img/s médians, pire trou 17 ms
+            //   · EN SÉANCE .....  9,3 img/s médians, pire trou 122 ms,
+            //                      91 % des secondes au-dessus de 100 ms
+            //   · séance + accueil 7,8 img/s, 100 % des secondes mauvaises
+            // L'app est fluide jusqu'à ce qu'une séance démarre, et le ruban
+            // est ce qui s'allume alors sur CHAQUE PageCard montée (accueil
+            // ET exercices, les deux vivent en même temps dans le TabView) :
+            // trois `.blur` (14, 4, 1.2), un `.mask` et un `.blendMode`
+            // plein cadre, vingt fois par seconde, ×2 — pendant que son
+            // propre en-tête jure « AUCUN `.blur`, AUCUN `Canvas` ».
+            //
+            // ⚠️ ON N'ENLÈVE QUE LUI : un seul moteur à la fois, sinon la
+            // seconde balade ne prouve rien.
+            .overlay { BordSeance(actif: BordSeance.banc) }
             .clipShape(Self.robeCard)
             // §3.4quater (verdict 01-09) : MARGES 0, LISERÉ MORT
             // (« padding noir à supprimer comme leur border ») — la card
@@ -695,5 +714,30 @@ struct VerreOuMat: ViewModifier {
                     Capsule().strokeBorder(
                         Color.white.opacity(0.12), lineWidth: 1))
         }
+    }
+}
+
+/// LE BARREAU DU VERRE DE LA HOME (05-09) — `-sansVerreHome` rend les
+/// verres natifs de l'accueil INERTES, et rien d'autre.
+///
+/// POURQUOI : la bissection du 05-09 sur son iPhone 15 a donné écran nu
+/// 1,0 % de processeur contre accueil 27,0 %, téléphone FROID. Les 26
+/// points sont dans la page — et aucun barreau de bloc ne les a bougés
+/// (widgets, galet, pièce, grain : tous dans le bruit ; le fond vidéo
+/// mis sur image de pose : 27 % contre 27 %). Restent les six verres
+/// natifs de l'accueil. La loi du dépôt dit qu'un verre natif animé fait
+/// tomber 60 → 14 img/s : ici la cadence TIENT à 60, donc s'il coûte,
+/// il coûte en CHALEUR — ce qu'aucune mesure de cadence ne pouvait dire.
+enum VerreHomeBanc {
+    static let eteint = CommandLine.arguments.contains("-sansVerreHome")
+}
+
+extension View {
+    /// Le verre de l'accueil, débranchable d'un drapeau. Même signature
+    /// que `glassEffect(_:in:)` : les sites d'appel ne changent pas de
+    /// forme, seul le nom change — on peut revenir en un `sed`.
+    @ViewBuilder
+    func verreHome<S: Shape>(_ verre: Glass, in forme: S) -> some View {
+        if VerreHomeBanc.eteint { self } else { glassEffect(verre, in: forme) }
     }
 }

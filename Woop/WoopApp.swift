@@ -71,6 +71,15 @@ struct WoopApp: App {
             RootView()
                 .preferredColorScheme(.dark)
                 .tint(.woopViolet)
+                // LA BOÎTE NOIRE (05-09) — elle se balade, la sonde
+                // enregistre. Éteinte, elle ne coûte RIEN : ni vue, ni
+                // display link. Voir `SondeVol.swift`.
+                .overlay {
+                    if SondeVolBanc.actif { SondeVolHUD() }
+                }
+                .task {
+                    if SondeVolBanc.actif { SondeVol.shared.demarrer() }
+                }
         }
         .modelContainer(container)
         // ⚠️ **LE VIDAGE DE L'OUTBOX SE FAIT AU RETOUR AU PREMIER PLAN, ET
@@ -1047,6 +1056,15 @@ struct RootView: View {
 
     private func ouvrirGrandPlayer() {
         Haptique.leger()
+        // ⚠️ LA CORDE QUE PERSONNE NE TIRAIT (05-09, audit + lecture).
+        // `PlayerEtat.couvre` a QUATRE lecteurs — les deux vidéos de
+        // l'accueil, celle des exercices, la page Progression — et il
+        // veut dire « un player me recouvre, taisez-vous ». L'ANCIEN
+        // player l'armait (`PlayerMonde.swift:64`) ; le nôtre, jamais.
+        // Résultat : player plein écran ouvert, les vidéos continuaient
+        // de tourner DERRIÈRE lui. C'est la loi du rideau, à l'échelle
+        // de l'app, et ça coûtait une ligne.
+        PlayerEtat.shared.couvre = true
         withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
             morphPlayer = 1
         }
@@ -1152,7 +1170,21 @@ struct RootView: View {
             // `-cheminSeul` (banc de mesure, jalon 1) : la home DÉMONTÉE sous
             // la route — isole le coût du résidu de la home de celui de la
             // route dans la racine.
-            if !showSplash && !showAuth && !homeEclipsee
+            // ⚠️ L'ÉCRAN NU — L'INSTRUMENT DE BISSECTION (05-09).
+            // Sa balade dit : accueil IMMOBILE, 60 img/s, et pourtant
+            // 27 à 29 % de processeur en continu et l'état thermique 2.
+            // Une page statique devrait être à 2 %. Éteindre un moteur à
+            // la fois sur un téléphone déjà bridé ne prouve RIEN (mesuré :
+            // quatre barreaux, quatre résultats dans le bruit thermique).
+            // `-ecranNu` remplace TOUT le contenu par du noir, la sonde
+            // restant allumée : la mesure donne le PLANCHER du châssis.
+            //   · plancher bas  → tout le coût est dans les pages ;
+            //   · plancher haut → il est dans la racine (mondes montés,
+            //     décodeurs, sonde elle-même) et les pages sont hors de
+            //     cause. Une mesure, et la moitié des suspects tombe.
+            if EcranNu.actif {
+                Color.black.ignoresSafeArea()
+            } else if !showSplash && !showAuth && !homeEclipsee
                 && !(Self.cheminSeul && depart.cheminOuvert) {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
@@ -1229,6 +1261,8 @@ struct RootView: View {
                 }
             }
             .onChange(of: selection, initial: true) { _, s in
+                // Le contexte de la boîte noire — POSÉ, jamais deviné.
+                SondeVol.shared.onglet = s.rawValue
                 if let d = NavDest(onglet: s), NavEtat.shared.page != d {
                     NavEtat.shared.page = d
                 }
@@ -1256,7 +1290,12 @@ struct RootView: View {
             // grand player naissait PLEIN ÉCRAN, sans un geste, par-dessus
             // la nav et la pilule. Un état d'ouverture qui vit au châssis
             // doit mourir avec l'objet qui l'a ouvert — aux DEUX bords.
-            .onChange(of: active != nil) { _, _ in
+            // Le rideau se lève AVEC le player, dans les deux sens.
+            .onChange(of: morphPlayer) { _, m in
+                PlayerEtat.shared.couvre = m > 0.98
+            }
+            .onChange(of: active != nil, initial: true) { _, enSeance in
+                SondeVol.shared.enSeance = enSeance
                 PiluleEtat.shared.dansIle = false
                 morphPlayer = 0
             }

@@ -230,7 +230,7 @@ struct GaletMaison: View {
                     GlassEffectContainer(spacing: 0) {
                         Color.clear
                             .frame(width: largeur, height: hauteur)
-                            .glassEffect(.clear.interactive(),
+                            .verreHome(.clear.interactive(),
                                          in: range ? AnyShape(Capsule())
                                                    : AnyShape(Circle()))
                             .glassEffectID("galet", in: verre)

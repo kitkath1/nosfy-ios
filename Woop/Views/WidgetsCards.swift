@@ -293,7 +293,7 @@ struct CardCorps<Contenu: View>: View {
                     GlassEffectContainer(spacing: 0) {
                         Color.clear
                             .frame(width: W, height: H)
-                            .glassEffect(.clear, in: dehors)
+                            .verreHome(.clear, in: dehors)
                     }
                 }
 
@@ -456,7 +456,7 @@ struct ArdoiseFond: View {
                 GlassEffectContainer(spacing: 0) {
                     Color.clear
                         .frame(width: largeur, height: hauteur)
-                        .glassEffect(.clear, in: forme)
+                        .verreHome(.clear, in: forme)
                 }
             } else {
                 forme.fill(Color(white: 0.016).opacity(0.94))
@@ -2137,7 +2137,7 @@ struct CardFantome: View {
                 GlassEffectContainer(spacing: 0) {
                     Color.clear
                         .frame(width: W, height: H)
-                        .glassEffect(.clear, in: forme)
+                        .verreHome(.clear, in: forme)
                 }
                 forme.strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
                 ZStack {

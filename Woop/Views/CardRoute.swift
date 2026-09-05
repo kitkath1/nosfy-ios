@@ -823,3 +823,27 @@ struct RouteCardLab: View {
             + "  ·  après \(nom(a.apres))"
     }
 }
+
+/// LE BARREAU DU VERRE DE LA ROUTE (05-09) — `-sansVerreRoute` éteint le
+/// verre natif de la card ROUTE, et RIEN d'autre. C'est la seule façon de
+/// répondre à « est-ce ce verre qui coûte, en séance ? » : un moteur à la
+/// fois, mesuré sur SON téléphone, jamais déduit.
+enum CardRouteBanc {
+    /// ⚠️ IL SURVIT AUX RELANCES (05-09). Un barreau qui s'évapore quand
+    /// elle ferme et rouvre l'app à la main mesurerait l'inverse de ce
+    /// qu'on croit — et une mesure qui ment est pire que pas de mesure.
+    /// `-sansVerreRoute` l'éteint, `-avecVerreRoute` le rallume.
+    static let cle = "woop.sansVerreRoute"
+
+    static let sansVerre: Bool = {
+        if CommandLine.arguments.contains("-sansVerreRoute") {
+            UserDefaults.standard.set(true, forKey: cle)
+            return true
+        }
+        if CommandLine.arguments.contains("-avecVerreRoute") {
+            UserDefaults.standard.set(false, forKey: cle)
+            return false
+        }
+        return UserDefaults.standard.bool(forKey: cle)
+    }()
+}

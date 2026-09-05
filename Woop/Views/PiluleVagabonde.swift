@@ -463,6 +463,28 @@ private final class MoteurPilule: NSObject {
     }
 }
 
+/// LA PRISE DE L'ÎLE — la capsule, PLUS une lèvre de 44 pt en dessous.
+///
+/// Une `contentShape` a le droit de déborder les bornes de sa vue (c'est
+/// ce que faisait déjà `inset(by: -10)`) : on s'en sert pour descendre la
+/// zone tactile SOUS le trou physique de la Dynamic Island, seul endroit
+/// où un toucher arrive encore à l'app. Le dessin, lui, ne bouge pas.
+private struct PriseIle: Shape {
+    /// Ce qui déborde : 12 pt sur les flancs (le doigt vise large), rien
+    /// en haut (au-dessus c'est la barre d'état, elle ne nous appartient
+    /// pas), et 44 pt en dessous — la lèvre atteignable.
+    static let flanc: CGFloat = 12
+    static let sous: CGFloat = 44
+
+    func path(in r: CGRect) -> Path {
+        let etendu = CGRect(x: r.minX - Self.flanc, y: r.minY,
+                            width: r.width + Self.flanc * 2,
+                            height: r.height + Self.sous)
+        return Path(roundedRect: etendu, cornerRadius: 26,
+                    style: .continuous)
+    }
+}
+
 /// LE DESSIN DU DOIGT, ISOLÉ — le jumeau d'`OffsetVol` (PlayerMonde).
 /// `body(content:)` reçoit l'arbre DÉJÀ CONSTRUIT : le relire soixante
 /// fois par seconde ne reconstruit rien. C'est LE remède de la maison
@@ -663,9 +685,23 @@ extension PiluleVagabonde {
                 .truncatingRemainder(dividingBy: 900)
             ileCorps(t: t, maintenant: tl.date)
         }
-        .contentShape(RoundedRectangle(
-            cornerRadius: (IleGeo.hauteur + 12) / 2, style: .continuous)
-            .inset(by: -10))
+        // ⚠️⚠️ LA PRISE DESCEND SOUS LE TROU — ELLE S'EST RETROUVÉE
+        // ENFERMÉE (05-09, verdict téléphone : « j'ai masqué la
+        // notification dans la Dynamic Island pendant un exercice, et
+        // impossible de la ressortir, donc impossible de stopper la
+        // séance »).
+        //
+        // LA CAUSE, mesurée au banc le 04-09 : le centre de l'île tombe à
+        // y ≈ 30, c'est-à-dire DANS le trou physique de la Dynamic Island,
+        // que le système se réserve — un toucher n'y arrive JAMAIS à
+        // l'app. Il ne restait que la lèvre basse de la capsule, six
+        // points de haut. Autant dire rien, et rien du tout à 8 img/s.
+        //
+        // La prise couvre maintenant la capsule PLUS 44 pt EN DESSOUS :
+        // un tap « juste sous l'île » — le geste naturel — ouvre le
+        // player, d'où le gros stop est accessible. Le dessin ne bouge
+        // pas d'un pixel : c'est la ZONE TACTILE qui descend.
+        .contentShape(PriseIle())
         // ⚠️ LE TAP OUVRE LE PLAYER (04-09, lot 2, cause n° 3). Avant, il
         // ne faisait que la sortir de l'île — et comme le corps de la
         // pilule n'est plus monté quand elle y est, LE TAP QUI OUVRE LE

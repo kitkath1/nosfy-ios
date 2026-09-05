@@ -829,7 +829,7 @@ struct ObjectifTouche: View {
             GlassEffectContainer {
                 Color.clear
                     .frame(width: Self.pan.width, height: Self.pan.height)
-                    .glassEffect(.clear, in: Capsule())
+                    .verreHome(.clear, in: Capsule())
             }
             .frame(width: Self.pan.width, height: Self.pan.height)
 
@@ -3416,7 +3416,18 @@ struct HomeNuitPage: View {
                                 ?? EcranSpec.Lecture(etape: 0),
                               pose: min(max((arr - 0.70) / 0.30, 0), 1),
                               // le verre dort sous la route (jalon 1)
-                              verre: !DepartEtat.shared.homeDort,
+                              // ⚠️ ET UN BARREAU POUR LE MESURER (05-09) :
+                              // cette card ne se monte EN SÉANCE que par
+                              // `verreMonte || enSeance` (juste au-dessus),
+                              // et le commentaire de cette condition prévient
+                              // lui-même qu'elle rallume « deux verres et
+                              // deux gaussiennes pendant la séance ». Sa
+                              // balade dit 60 img/s hors séance contre 30 en
+                              // séance : `-sansVerreRoute` répond à « est-ce
+                              // ce verre-là ? » sans rien deviner et sans
+                              // changer le défaut.
+                              verre: !DepartEtat.shared.homeDort
+                                  && !CardRouteBanc.sansVerre,
                               lisere: true,
                               onTap: {
                                   print("[SONDE-CHEMIN] tap card ROUTE")
@@ -4722,7 +4733,7 @@ struct GaletCuisson: View {
         GlassEffectContainer(spacing: 20) {
             Color.clear
                 .frame(width: cote, height: cote)
-                .glassEffect(.clear.interactive(),
+                .verreHome(.clear.interactive(),
                              in: RoundedRectangle(cornerRadius: cote * 0.34,
                                                   style: .continuous))
                 .overlay { combustibleNeutre }
