@@ -28,6 +28,23 @@ Corrigé : `SetHistoryRow.swift:193` (la partition du player — la place reste,
 elle est vide) et `PageCard.swift:695` (la page bidon du banc dit ce que dit la
 vraie).
 
+### ⚠️ L'ÎLE EST LE DÉFAUT — ET C'EST UNE RÈGLE DE POIDS, PAS DE GOÛT
+
+> « Quand on lance une séance, la pastille de l'exercice en cours est par
+> défaut dans le Dynamic Island, **pour alléger l'écran** — d'autant qu'une
+> fois qu'on lance un exo, on **arrive sur la page exercice**. Sinon ça reste
+> un peu lourd à lire. » — Kathryn, 05-09
+
+C'est la raison d'être du défaut, et elle doit survivre à qui touchera ce code :
+le chemin normal (lancer un exo → atterrir sur la fiche) pose la pastille **sur
+la page qu'on vient d'ouvrir pour la LIRE**. Une dalle de 96 pt en travers d'une
+description, c'est une page qu'on ne lit plus. L'île la range ; le texte reste
+entier ; et quand on la tire, c'est le TEXTE qui recule — jamais l'inverse.
+
+⚠️ Corollaire : **on ne remet jamais la pastille au premier plan par défaut**
+« pour qu'on la voie ». Ce qui la fait voir, c'est son VOL à l'aller (0,55 s
+après le départ) — pas sa présence en travers de la lecture.
+
 ### ⚠️ CE QUI BOUGE TOUT SEUL, ON L'ÉTEINT
 
 Deux objets gigotaient sans qu'on les touche, et les deux ont été rejetés le
@@ -76,10 +93,13 @@ celle-là décale par RANG dans un curseur continu, et sous un simple
 plus rien. Ici le retard vit dans l'animation.
 
 **Le recul derrière la pastille** : pastille SORTIE de l'île → le texte passe à
-flou 7 / opacité 0,16 (« blur quasi noir, on le voit légèrement en arrière-plan
-comme Apple ») ; elle RENTRE dans l'île → il revient en fondu plus lent
+**flou 5 / encre 0,34** ; elle RENTRE dans l'île → il revient en fondu plus lent
 (0,28 s à la sortie, 0,55 s au retour : ce qui arrive doit dégager la vue tout
-de suite, ce qui revient a le droit de se poser).
+de suite, ce qui revient a le droit de se poser). ⚠️ Les premières cotes (flou 7,
+encre 0,16) ne laissaient qu'une TACHE : « on voit encore le texte, mais très
+très finement blurré, pour comprendre qu'il est en train de disparaître — là, il
+est tout noir ». Un recul doit rester LISIBLE COMME TEXTE pour dire qu'il
+s'efface ; sinon il n'y a plus rien à comprendre.
 
 ### La pastille et l'île (`PiluleVagabonde.swift`, `WoopApp.swift`)
 
@@ -87,13 +107,28 @@ de suite, ce qui revient a le droit de se poser).
   le même ressort et le même carillon que le vol du doigt, joué 0,55 s après le
   début. Posée à `dansIle = true` sec, elle y NAISSAIT : personne ne voyait le
   voyage, donc personne n'apprenait qu'il existe un retour.
-- **Une poignée** sous la capsule, dans la lèvre tactile qui existait déjà
-  (`PriseIle.sous` = 44 pt) : elle fait **signe** (aller-retour) à l'arrivée et
-  à chaque série finie, puis se tait à 0,30. Jamais un clignotant.
-- **L'île ne montre PAS les flammes** (elles y ont vécu une heure : la capsule
-  passait de 250 à ~295 pt, le chrono sous l'heure du système, le stop sous le
-  wifi — mesuré `captures/fiche-seance-ile.png`). Le chrono est désormais
-  **aligné à droite** dans son slot : il démarre après l'heure système.
+- **TOUT l'en fait sortir** : tap **ou** drag de 3 pt, et la lèvre tactile passe
+  de 44 à **60 pt**. Avant, le tap OUVRAIT LE PLAYER (réparation du 04-09) : le
+  seul geste qui atteignait vraiment l'app servait à autre chose, et la sortie
+  n'existait qu'au drag, dans 44 pt sous un trou que le système se réserve —
+  d'où « souvent c'est bloqué, j'arrive pas à la retirer ».
+- **Le morphing est adouci** : ressort 0,50 → **0,72 / 0,88**, et les deux
+  formes se **fondent** l'une dans l'autre (`.transition(.opacity)` sur chaque
+  branche) — le cadre voyageait pendant que le contenu SAUTAIT (« trop brutal »).
+- **Rien d'autre dans l'île** : ni flammes (elles y ont vécu une heure : la
+  capsule passait de 250 à ~295 pt, le chrono sous l'heure du système, le stop
+  sous le wifi — `captures/fiche-seance-ile.png`), ni poignée (« enlève le trait
+  sous le display island, ça sert à rien » : ce qui apprend qu'on peut la tirer,
+  c'est le VOL de l'aller, pas un dessin).
+- **Le chrono a changé de CÔTÉ, le stop aussi** — et c'est une mesure, pas un
+  goût : deux textes blancs à chiffres fixes sur la même ligne de base se lisent
+  comme UNE chaîne, quel que soit l'air entre eux (« le time, il est collé sur
+  l'heure » — il y avait pourtant 13 pt). Les bandes libres du haut, mesurées
+  sur `captures/ile-v6-haut.png` (iPhone 15 Pro) : l'heure système finit à
+  **93 pt**, le trou commence à **133**, le wifi à **~318**. Il reste 40 pt à
+  gauche, 50 à droite. Le **stop** (un disque, qui ne se confond avec aucun
+  texte) prend la gauche, collé au trou, et grossit (0,62 → **0,72**) ; le
+  **chrono** prend la droite, en 13 pt.
 - **La pastille tirée** dit : le nom de l'exercice, puis **le chrono et les
   reps**, et rien d'autre. Plus de ticket « N SETS », plus de flammes.
 - **Le ticket reste dans le DÉTAIL** (la tête du grand player), **sans son
@@ -119,9 +154,19 @@ Recette de capture : `-demoData -activeWorkout -skipAuth -openTab exercises
 -openExercise papillon` (⚠️ `-activeWorkout` est OBLIGATOIRE pour qu'une séance
 existe : `-activeWorkoutLong` seul n'en sème aucune).
 
+⚠️ **PIÈGE REPAYÉ : il faut LANCER DEUX FOIS.** Un `install` suivi d'un seul
+`launch --terminate-running-process` rend une app **sans ses arguments** — on
+atterrit sur la porte, sans séance et sans deep link, et on croit que son
+barreau ne marche pas. C'est la recette déjà écrite dans `tools/stop/voir.sh` :
+deux lancements, le premier paie les caches.
+
 ## 3. CE QUI RESTE À JUGER — ? téléphone
 
-- la poignée sur un iPhone **sans** Dynamic Island (les cotes d'`IleGeo` sont
+- **le calage final de l'île n'a PAS été revu à l'écran** : la dernière
+  retouche (stop collé au trou, chrono en 13 pt) est posée sur les cotes
+  mesurées de `ile-v6-haut.png`, mais le simulateur a cessé de rendre une image
+  neuve avant que je la recapture — c'est la première chose à regarder ;
+- l'île sur un iPhone **sans** Dynamic Island (les cotes d'`IleGeo` sont
   physiques et taillées pour le trou) ;
 - la cadence réelle de l'arrivée floue (un `.blur` de 26 sur deux blocs de
   texte, pendant 1,6 s, au moment même où la fiche monte ses lecteurs) ;
