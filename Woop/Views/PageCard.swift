@@ -286,6 +286,17 @@ struct PageCard<Page: View, Dalle: View, Nav: View>: View {
             //
             // ⚠️ ON N'ENLÈVE QUE LUI : un seul moteur à la fois, sinon la
             // seconde balade ne prouve rien.
+            //
+            // ⚠️⚠️ ET C'EST DÉFINITIF — KATHRYN A TRANCHÉ LE 05-09, APRÈS
+            // AVOIR VU LA MESURE : « enlève le ruban, c'est pas grave. »
+            // Ce n'est donc PLUS une expérience en attente de verdict :
+            // c'est une décision. Une session travaillait à un BordSeance v2
+            // (nappe cuite, zéro flou vivant) pour le REMONTER en séance —
+            // ce chantier n'a plus de commanditaire. NE PAS LE REMONTER ICI
+            // sans un nouveau mot d'elle.
+            // Le composant reste entier et le chemin de retour existe
+            // (`-bordSeance`) : rien n'est détruit, tout est réversible d'un
+            // mot. Mais le défaut, c'est dehors.
             .overlay { BordSeance(actif: BordSeance.banc) }
             .clipShape(Self.robeCard)
             // §3.4quater (verdict 01-09) : MARGES 0, LISERÉ MORT
