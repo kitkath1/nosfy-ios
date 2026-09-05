@@ -1,0 +1,377 @@
+08:14:48  Acquired tunnel connection to device.
+08:14:48  Enabling developer disk image services.
+08:14:48  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+Waiting for the application to terminate…
+[booster-bench] makeHDRStudio: envCal=false
+Synchronisation Supabase différée : Session Supabase indisponible.
+GESTE-SONDE bande POSÉ sur la fenêtre
+[outbox] 4 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[chemin] lecture des nœuds réclamés impossible : notAuthenticated
+[chemin] règles de composition illisibles : notAuthenticated
+GESTE-SONDE bande RECOIT p=(253,751) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-993
+GESTE-SONDE bande RECOIT p=(242,763) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=296
+GESTE-SONDE bande RECOIT p=(250,734) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=789
+GESTE-SONDE bande RECOIT p=(251,796) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-921
+GESTE-SONDE bande RECOIT p=(231,738) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=452
+GESTE-SONDE bande RECOIT p=(224,787) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-996
+GESTE-SONDE bande RECOIT p=(213,762) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=526
+GESTE-SONDE bande RECOIT p=(222,807) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-390
+GESTE-SONDE bande RECOIT p=(222,736) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=632
+GESTE-SONDE bande RECOIT p=(227,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-769
+GESTE-SONDE bande RECOIT p=(245,744) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=568
+GESTE-SONDE bande RECOIT p=(248,793) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-485
+GESTE-SONDE bande RECOIT p=(225,747) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=560
+GESTE-SONDE bande RECOIT p=(233,799) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-745
+GESTE-SONDE bande RECOIT p=(221,762) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=464
+GESTE-SONDE bande RECOIT p=(219,795) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-685
+GESTE-SONDE bande RECOIT p=(254,727) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=828
+GESTE-SONDE bande RECOIT p=(237,804) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1089
+GESTE-SONDE bande RECOIT p=(201,778) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=640
+GESTE-SONDE bande RECOIT p=(215,810) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-941
+GESTE-SONDE bande RECOIT p=(187,749) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=660
+GESTE-SONDE bande RECOIT p=(240,813) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+[outbox] 4 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+GESTE-SONDE bande RECOIT p=(260,793) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-907
+GESTE-SONDE bande RECOIT p=(218,809) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1467
+GESTE-SONDE bande RECOIT p=(275,810) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-414
+GESTE-SONDE bande RECOIT p=(228,804) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=386
+GESTE-SONDE bande RECOIT p=(255,809) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1155
+GESTE-SONDE bande RECOIT p=(259,739) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=849
+GESTE-SONDE bande RECOIT p=(251,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-1316
+GESTE-SONDE bande RECOIT p=(234,808) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1363
+GESTE-SONDE bande RECOIT p=(221,755) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=693
+GESTE-SONDE bande RECOIT p=(271,802) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-670
+GESTE-SONDE bande RECOIT p=(290,779) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-335
+The app terminated with the exit code 0.
+═══════ MESURE EN SÉANCE (correction 08:20) ═══════
+08:20:29  Acquired tunnel connection to device.
+08:20:29  Enabling developer disk image services.
+08:20:29  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+Waiting for the application to terminate…
+[booster-bench] makeHDRStudio: envCal=false
+Synchronisation Supabase différée : Session Supabase indisponible.
+GESTE-SONDE bande POSÉ sur la fenêtre
+[outbox] 4 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[booster-bench] lune: geo=false op=1.0
+[booster-bench] scène : mylar=false env=booster-studio.hdr emission=0.6000000238418579
+[booster-bench] démontage : liens coupés, gyro arrêté, sonnant=false
+[chemin] lecture des nœuds réclamés impossible : notAuthenticated
+[chemin] règles de composition illisibles : notAuthenticated
+GESTE-SONDE bande RECOIT p=(243,767) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=1105
+GESTE-SONDE bande RECOIT p=(276,799) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-524
+GESTE-SONDE bande RECOIT p=(245,747) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=796
+GESTE-SONDE bande RECOIT p=(269,805) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1529
+GESTE-SONDE bande RECOIT p=(236,756) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=365
+GESTE-SONDE bande RECOIT p=(296,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-915
+GESTE-SONDE bande RECOIT p=(286,773) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=667
+GESTE-SONDE bande RECOIT p=(277,804) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-610
+GESTE-SONDE bande RECOIT p=(221,749) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(287,784) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=294
+GESTE-SONDE bande RECOIT p=(290,768) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-437
+GESTE-SONDE bande RECOIT p=(269,760) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=640
+GESTE-SONDE bande RECOIT p=(278,807) rect=(774-818)
+GESTE-SONDE bande RECOIT p=(267,795) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1330
+GESTE-SONDE bande RECOIT p=(235,757) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=298
+GESTE-SONDE bande RECOIT p=(270,788) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1427
+GESTE-SONDE bande RECOIT p=(264,762) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=897
+GESTE-SONDE bande RECOIT p=(245,810) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1249
+GESTE-SONDE bande RECOIT p=(265,773) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=1170
+GESTE-SONDE bande RECOIT p=(244,798) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=263
+GESTE-SONDE bande RECOIT p=(265,792) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=336
+[outbox] 4 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[outbox] 4 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+GESTE-SONDE bande RECOIT p=(269,803) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-849
+GESTE-SONDE bande RECOIT p=(280,765) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=808
+GESTE-SONDE bande RECOIT p=(275,803) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-1321
+GESTE-SONDE bande RECOIT p=(249,746) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=328
+GESTE-SONDE bande RECOIT p=(275,799) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-957
+GESTE-SONDE bande RECOIT p=(175,783) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(95,786) rect=(722-818)
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+[SONDE-RATTRAPEUR] tap avalé — enSeance=false liste=false edition=false reglage=false
+GESTE-SONDE bande RECOIT p=(170,796) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(236,800) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(327,789) rect=(722-818)
+[économie] lecture impossible : notAuthenticated
+GESTE-SONDE bande RECOIT p=(159,785) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(74,781) rect=(722-818)
+GESTE-SONDE bande RECOIT p=(240,753) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-20
+GESTE-SONDE bande RECOIT p=(289,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-303
+GESTE-SONDE bande RECOIT p=(306,755) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=440
+GESTE-SONDE bande RECOIT p=(247,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-452
+GESTE-SONDE bande RECOIT p=(216,747) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=424
+GESTE-SONDE bande RECOIT p=(215,808) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=-821
+GESTE-SONDE bande RECOIT p=(263,745) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=385
+GESTE-SONDE bande RECOIT p=(248,815) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande RECOIT p=(253,799) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-579
+GESTE-SONDE bande RECOIT p=(224,738) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=849
+GESTE-SONDE bande RECOIT p=(262,790) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-776
+GESTE-SONDE bande RECOIT p=(247,741) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande COMMET v=570
+GESTE-SONDE bande RECOIT p=(266,801) rect=(774-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE bande COMMET v=-571
+GESTE-SONDE bande RECOIT p=(239,817) rect=(722-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE bande RECOIT p=(212,815) rect=(722-818)
+App terminated due to signal 9.
+═══════ BUILD CALIBRÉ (seuils 180/0,30 · compaction · bouclier) 09:07:05 ═══════
+09:07:06  Acquired tunnel connection to device.
+09:07:06  Enabling developer disk image services.
+09:07:06  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+Waiting for the application to terminate…
+[booster-bench] makeHDRStudio: envCal=false
+Synchronisation Supabase différée : Session Supabase indisponible.
+GESTE-SONDE bande POSÉ sur la fenêtre
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[chemin] lecture des nœuds réclamés impossible : notAuthenticated
+[chemin] règles de composition illisibles : notAuthenticated
+GESTE-SONDE bande RECOIT p=(231,783) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=-1193 suivi=-0.06 mini false → false
+GESTE-SONDE bande COMMET v=-1193
+GESTE-SONDE bande RECOIT p=(230,752) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=827 suivi=0.98 mini false → true
+GESTE-SONDE bande COMMET v=827
+GESTE-SONDE bande RECOIT p=(244,812) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=-755 suivi=1.00 mini true → false
+GESTE-SONDE bande COMMET v=-755
+GESTE-SONDE bande RECOIT p=(236,751) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=937 suivi=1.06 mini false → true
+GESTE-SONDE bande COMMET v=937
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+GESTE-SONDE bande RECOIT p=(260,806) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-1025 suivi=-0.06 mini true → false
+GESTE-SONDE bande COMMET v=-1025
+GESTE-SONDE bande RECOIT p=(238,778) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=584 suivi=0.66 mini false → true
+GESTE-SONDE bande COMMET v=584
+GESTE-SONDE bande RECOIT p=(248,800) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-785 suivi=-0.06 mini true → false
+GESTE-SONDE bande COMMET v=-785
+GESTE-SONDE bande RECOIT p=(245,761) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=680 suivi=1.01 mini false → true
+GESTE-SONDE bande COMMET v=680
+GESTE-SONDE bande RECOIT p=(267,804) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-1253 suivi=-0.06 mini true → false
+GESTE-SONDE bande COMMET v=-1253
+GESTE-SONDE bande RECOIT p=(273,778) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=-1298 suivi=-0.06 mini false → false
+GESTE-SONDE bande COMMET v=-1298
+GESTE-SONDE bande RECOIT p=(259,770) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=721 suivi=1.06 mini false → true
+GESTE-SONDE bande COMMET v=721
+GESTE-SONDE bande RECOIT p=(295,794) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-1085 suivi=1.00 mini true → false
+GESTE-SONDE bande COMMET v=-1085
+GESTE-SONDE bande RECOIT p=(168,795) rect=(736-818)
+GESTE-SONDE bande RECOIT p=(250,791) rect=(736-818)
+GESTE-SONDE bande RECOIT p=(173,786) rect=(736-818)
+GESTE-SONDE bande RECOIT p=(287,776) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=-17 suivi=1.06 mini false → true
+GESTE-SONDE bande COMMET v=-17
+GESTE-SONDE bande RECOIT p=(304,800) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-664 suivi=-0.06 mini true → false
+GESTE-SONDE bande COMMET v=-664
+GESTE-SONDE bande RECOIT p=(269,775) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=0 suivi=1.06 mini false → true
+GESTE-SONDE bande COMMET v=0
+GESTE-SONDE bande RECOIT p=(265,798) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/grabber
+GESTE-SONDE nav COMMET v=-893 suivi=-0.06 mini true → false
+GESTE-SONDE bande COMMET v=-893
+GESTE-SONDE bande RECOIT p=(98,792) rect=(736-818)
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+GESTE-SONDE bande RECOIT p=(268,781) rect=(736-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=220 suivi=0.00 mini false → true
+GESTE-SONDE bande COMMET v=220
+GESTE-SONDE bande RECOIT p=(260,809) rect=(786-818)
+GESTE-SONDE bande DÉCIDE repli/nav
+GESTE-SONDE nav COMMET v=-660 suivi=0.61 mini true → false
+GESTE-SONDE bande COMMET v=-660
+GESTE-SONDE bande RECOIT p=(94,771) rect=(736-818)
+[SONDE-CHEMIN] tap card ROUTE
+[SONDE-CHEMIN] ouvrirChemin() appelé — exoParRoute=true
+[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? false
+[SONDE-CHEMIN] la page du chemin est MONTÉE
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+[SONDE-CHEMIN] ouvrirChemin() appelé — exoParRoute=true
+[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? false
+[SONDE-CHEMIN] la page du chemin est MONTÉE
+[outbox] 5 en attente du prochain réseau
+[économie] lecture impossible : notAuthenticated
+2026-09-04 09:11:46.818 Woop[78746:5659469] AVPlayer 0x10c91b980 deallocated while a pending preroll is still in progress; leaking completion handler. Use -cancelPendingPrerolls to deallocate an AVPlayer safely while a preroll is still pending.
+2026-09-04 09:11:46.818 Woop[78746:5659469] AVPlayer 0x11943c140 deallocated while a pending preroll is still in progress; leaking completion handler. Use -cancelPendingPrerolls to deallocate an AVPlayer safely while a preroll is still pending.
+2026-09-04 09:11:46.818 Woop[78746:5659469] AVPlayer 0x12610e700 deallocated while a pending preroll is still in progress; leaking completion handler. Use -cancelPendingPrerolls to deallocate an AVPlayer safely while a preroll is still pending.
+ERROR: An error occurred while communicating with a remote process. (com.apple.dt.CoreDeviceError error 3 (0x03))
+       ----------------------------------------
+           The connection was invalidated. (com.apple.Mercury.error error 1001 (0x3E9))
+           XPCConnectionDescription = <RemoteXPCPeerConnection 0x8f542c300> { <remote connection: 0x8f49043c0> { type = preconnected, state = canceled, remote service name = (null), server mode = 0, protocol version number = 1, protocol feature flags = 0x6, local service version = 0, remote service version = 0, traffic class = 0, (root, reply) helo received = (1, 1), next msg id = 5, first msg id = 1, send in progress = 0, preexisting socket = -1 }

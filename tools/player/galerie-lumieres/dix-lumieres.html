@@ -1,0 +1,665 @@
+<title>Le Player Vivant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ============================================================
+   DIX LUMIÈRES — galerie de propositions d'animation
+   Robe : parti pris sombre unique (c'est une maquette de l'app
+   Woop, qui est noire ; la montrer sur fond clair la trahirait).
+   Toutes les couleurs sont peintes explicitement.
+   ============================================================ */
+
+:root {
+  --ground:  #0B0B0F;
+  --panel:   #101017;
+  --panel-2: #14141C;
+  --line:    rgba(255,255,255,.085);
+  --line-2:  rgba(255,255,255,.14);
+
+  --screen:  #040406;   /* woopBase — le fond de l'app */
+  --dock:    #000000;   /* woopCard */
+  --metal-hi:#191920;
+  --metal-mid:#0D0D12;
+
+  --ink:     #F1F1F5;
+  --ink-2:   rgba(255,255,255,.56);
+  --ink-3:   rgba(255,255,255,.34);
+  --ink-4:   rgba(255,255,255,.20);
+
+  --violet:  #A58BFF;
+  --violet-core: #855DFF;
+  --violet-deep: #5C36D8;
+  --gold:    #F2BF53;
+
+  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:  "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1140px; margin: 0 auto; padding: 0 28px 120px; }
+
+/* ---------- en-tête ---------- */
+
+.masthead { padding: 92px 0 8px; max-width: 720px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 22px;
+}
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(46px, 8vw, 78px);
+  line-height: .96;
+  letter-spacing: -.01em;
+  margin: 0 0 26px;
+  text-wrap: balance;
+}
+h1 em { font-style: italic; color: var(--violet); }
+
+.lede { font-size: 17px; color: var(--ink-2); margin: 0 0 18px; max-width: 62ch; }
+.lede strong { color: var(--ink); font-weight: 500; }
+
+/* ---------- la règle ---------- */
+
+.rule-card {
+  margin: 44px 0 0;
+  padding: 22px 26px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--violet);
+  border-radius: 4px;
+  background: linear-gradient(100deg, rgba(133,93,255,.09), rgba(133,93,255,0) 62%);
+  max-width: 760px;
+}
+.rule-card p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+.rule-card p + p { margin-top: 10px; }
+.rule-card b { color: var(--ink); font-weight: 500; }
+
+/* ---------- barre de contrôle ---------- */
+
+.controls {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin: 64px 0 0;
+  padding: 14px 0;
+  background: linear-gradient(var(--ground) 72%, rgba(11,11,15,0));
+  backdrop-filter: blur(8px);
+}
+
+.btn {
+  font-family: var(--mono);
+  font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.btn:hover { color: var(--ink); border-color: rgba(255,255,255,.3); }
+.btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+[data-motion="off"] .btn.motion { color: var(--gold); border-color: rgba(242,191,83,.4); }
+
+.controls .hint { font-size: 13px; color: var(--ink-3); }
+
+/* ---------- l'index ---------- */
+
+.index {
+  margin: 40px 0 0; display: grid; gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: start;
+}
+.index-col h3 {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-4);
+  margin: 0 0 12px; padding-bottom: 9px;
+  border-bottom: 1px solid var(--line);
+}
+.index-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.index-col a {
+  font-family: var(--serif); font-size: 19px; line-height: 1.15;
+  color: var(--ink-2); text-decoration: none;
+  transition: color .18s;
+}
+.index-col a:hover { color: var(--ink); }
+.index-col a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+.index-col a .star { color: var(--gold); font-size: 12px; vertical-align: 3px; }
+
+/* ---------- le titre d'une série ---------- */
+
+.serie {
+  margin: 84px 0 0; padding-top: 40px;
+  border-top: 1px solid var(--line-2);
+}
+.serie h2 {
+  font-family: var(--serif); font-weight: 400; font-size: 40px;
+  margin: 0 0 12px; letter-spacing: -.01em;
+}
+.serie p { margin: 0; color: var(--ink-2); max-width: 60ch; font-size: 15px; }
+.serie + .specimen { border-top: none; }
+
+/* ---------- spécimen ---------- */
+
+.specimen {
+  display: grid;
+  grid-template-columns: minmax(280px, 350px) 1fr;
+  gap: 44px;
+  padding: 54px 0;
+  border-top: 1px solid var(--line);
+}
+.specimen:first-of-type { border-top: none; }
+
+.spec-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+
+.spec-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -.005em;
+}
+
+.chips { display: flex; gap: 7px; flex-wrap: wrap; margin: 14px 0 18px; }
+.chip {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: .11em; text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  color: var(--ink-3);
+}
+.chip.fam { color: var(--violet); border-color: rgba(165,139,255,.32); }
+.chip.cout-leger  { color: rgba(255,255,255,.5); }
+.chip.cout-moyen  { color: var(--ink-3); }
+.chip.cout-lourd  { color: rgba(242,191,83,.75); border-color: rgba(242,191,83,.28); }
+
+.spec-pitch { color: var(--ink-2); font-size: 15px; margin: 0 0 22px; }
+
+.tech {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin: 0;
+}
+.tech summary {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: .11em; text-transform: uppercase;
+  color: var(--ink-4);
+  cursor: pointer;
+  list-style: none;
+  transition: color .18s;
+}
+.tech summary::-webkit-details-marker { display: none; }
+.tech summary::before { content: "+ "; }
+.tech[open] summary::before { content: "– "; }
+.tech summary:hover { color: var(--ink-2); }
+.tech summary:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+.tech > div {
+  font-family: var(--mono);
+  font-size: 11.5px; line-height: 1.72;
+  color: var(--ink-3);
+  margin-top: 12px;
+}
+/* Les notes citent du Swift : les backticks deviennent des respirations. */
+.tech > div code { color: var(--ink-2); }
+
+/* l'ancienne note de « Aujourd'hui » garde sa forme de paragraphe */
+p.tech { font-family: var(--mono); font-size: 12px; line-height: 1.65; color: var(--ink-3); padding-top: 16px; }
+p.tech b { color: var(--ink-2); font-weight: 500; display: block; margin-bottom: 5px;
+          letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+
+.reco {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--gold);
+}
+.reco::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+
+/* ---------- la scène : les deux tailles ---------- */
+
+.stage { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+
+.slot { display: flex; flex-direction: column; gap: 11px; }
+.slot-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+
+/* Les deux appareils sont dessinés à la cote réelle (390 pt de large)
+   puis réduits à la MÊME échelle : le rapport de taille entre la dalle
+   et le plein écran est donc honnête. */
+.scale-grand { width: 289px; height: 489px; overflow: hidden; }
+.scale-mini  { width: 289px; height: 104px; overflow: hidden; }
+.scale-grand > *, .scale-mini > * { transform: scale(.7407); transform-origin: top left; }
+
+/* ---------- l'appareil : le plein écran ---------- */
+
+.grand {
+  position: relative;
+  width: 390px; height: 660px;
+  background: var(--dock);
+  border-radius: 30px 30px 0 0;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(255,255,255,.07);
+  border-bottom: none;
+}
+
+.grand .fx, .grand .fx-top,
+.mini  .fx, .mini  .fx-top {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.grand .fx, .mini .fx { z-index: 0; }
+.grand .fx-top, .mini .fx-top { z-index: 9; }
+
+.grand .grabber {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.18);
+  z-index: 2;
+}
+
+/* la card du jour — l'« image » dont elle parle */
+.grand .art {
+  position: absolute; top: 96px; left: 50%; margin-left: -66px;
+  width: 132px; height: 148px;
+  border-radius: 14px;
+  z-index: 2;
+  background:
+    radial-gradient(88% 62% at 50% 108%, rgba(133,93,255,.42), rgba(133,93,255,0) 68%),
+    radial-gradient(64% 44% at 32% 14%, rgba(255,255,255,.16), rgba(255,255,255,0) 72%),
+    linear-gradient(158deg, #1B1B24 0%, #0E0E14 46%, #060609 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 44px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.grand .art::after {
+  content: "16"; position: absolute; inset: auto 0 14px 0;
+  text-align: center;
+  font-family: var(--serif); font-size: 40px; line-height: 1;
+  color: rgba(255,255,255,.86);
+}
+.grand .art::before {
+  content: "SEP"; position: absolute; inset: 16px 0 auto 0;
+  text-align: center;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .22em;
+  color: rgba(255,255,255,.4);
+}
+
+.grand .badge {
+  position: absolute; top: 258px; left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 9px; letter-spacing: .16em;
+  color: rgba(255,255,255,.72);
+  padding: 5px 11px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 3px;
+  background: rgba(255,255,255,.045);
+  z-index: 3;
+  white-space: nowrap;
+}
+
+.grand .title {
+  position: absolute; top: 300px; left: 0; right: 0;
+  text-align: center;
+  font-size: 21px; font-weight: 600; letter-spacing: -.01em;
+  color: rgba(255,255,255,.94);
+  z-index: 3;
+}
+
+/* le chrono qui remplace « Session » — présent dans les 10 */
+.grand .chrono {
+  position: absolute; top: 336px; left: 0; right: 0;
+  text-align: center;
+  z-index: 3;
+  font-family: var(--mono); font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  color: rgba(255,255,255,.55);
+}
+.grand .chrono span {
+  font-size: 9px; letter-spacing: .2em; color: rgba(255,255,255,.28);
+  margin-right: 9px;
+}
+
+.grand .rows {
+  position: absolute; top: 388px; left: 26px; right: 26px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 2;
+}
+.grand .rows i {
+  display: flex; align-items: center; justify-content: space-between;
+  font-style: normal;
+  height: 46px; padding: 0 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.055);
+  font-size: 13px; color: rgba(255,255,255,.5);
+}
+.grand .rows i b { font-weight: 500; color: rgba(255,255,255,.72); }
+.grand .rows i u {
+  text-decoration: none; font-family: var(--mono); font-size: 10.5px;
+  color: rgba(255,255,255,.3); font-variant-numeric: tabular-nums;
+}
+
+/* ---------- l'appareil : la dalle en bas de page ---------- */
+
+.mini-wrap {
+  position: relative;
+  width: 390px; height: 140px;
+  background: var(--screen);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.07);
+}
+/* un soupçon de la page au-dessus, pour que la dalle se lise
+   comme incrustée en bas d'écran et non comme un objet flottant */
+.mini-wrap .page-hint {
+  position: absolute; top: 14px; left: 22px; right: 22px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.mini-wrap .page-hint i {
+  display: block; height: 15px; border-radius: 6px;
+  background: rgba(255,255,255,.035);
+}
+.mini-wrap .page-hint i:nth-child(2) { width: 62%; }
+
+.mini {
+  position: absolute; bottom: 0; left: 0;
+  width: 390px; height: 76px;
+  background: var(--dock);
+  border-radius: 30px 30px 0 0;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 18px;
+}
+.mini::after {   /* le liseré mourant de la dalle incrustée */
+  content: ""; position: absolute; inset: 0; z-index: 8;
+  border-radius: inherit; pointer-events: none;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(255,255,255,.11), rgba(255,255,255,.03) 40%, transparent 66%)
+    border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+
+.mini .art {
+  position: relative; z-index: 2;
+  width: 44px; height: 44px; flex: none;
+  border-radius: 10px;
+  background:
+    radial-gradient(86% 60% at 50% 110%, rgba(133,93,255,.42), rgba(133,93,255,0) 70%),
+    linear-gradient(158deg, #1B1B24, #08080C);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.mini .art::after {
+  content: "16"; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 19px; color: rgba(255,255,255,.8);
+}
+
+.mini .meta { position: relative; z-index: 2; flex: 1; min-width: 0; }
+.mini .meta .t {
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,.94);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mini .meta .s {
+  font-size: 11px; color: rgba(255,255,255,.30);
+  font-variant-numeric: tabular-nums; margin-top: 2px;
+}
+
+.mini .stop {
+  position: relative; z-index: 2; flex: none;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(160deg, #23232D, #0C0C11);
+  border: 1px solid rgba(255,255,255,.13);
+}
+.mini .stop::after {
+  content: ""; position: absolute; inset: 0; margin: auto;
+  width: 9px; height: 9px; border-radius: 2px; background: rgba(255,255,255,.82);
+}
+
+/* ---------- le composant (troisième série) ---------- */
+
+/* le composant prend la place exacte de la barre, sous le titre ;
+   le chrono descend d'un cran, la liste aussi */
+.grand .compo-slot {
+  position: absolute; top: 324px; left: 0; right: 0; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3; pointer-events: none;
+}
+.grand.has-compo .chrono { top: 372px; }
+.grand.has-compo .rows { top: 406px; }
+
+/* dans la dalle : l'équaliseur PRÉSENT, un vrai objet entre le titre
+   et le stop — plus seulement un glyphe */
+.mini .compo-mini {
+  position: relative; z-index: 2; flex: none;
+  min-width: 44px; height: 34px; margin-right: 5px;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+/* la colonne dalle + loupe */
+.slot-col { display: flex; flex-direction: column; gap: 24px; }
+
+/* la loupe : le composant seul, agrandi, sur le noir de l'app */
+.loupe {
+  width: 289px; height: 118px;
+  background: var(--screen);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.loupe .gros { transform: scale(2.4); flex: none; }
+
+/* ---------- l'état actuel (la fausse barre) ---------- */
+
+.today { border-top: none; }
+.today .spec-name { color: var(--ink-2); }
+
+.oldbar {
+  position: absolute; z-index: 4;
+  height: 5px; border-radius: 3px;
+  background: rgba(255,255,255,.14);
+  overflow: hidden;
+}
+.oldbar::before {
+  content: ""; position: absolute; inset: 0;
+  width: 60%;   /* progress: 0.6 EN DUR — PageCard.swift:385 */
+  border-radius: 3px;
+  background: rgba(255,255,255,.62);
+}
+.oldbar::after {   /* la comète qui coulisse */
+  content: ""; position: absolute; top: 0; bottom: 0; width: 88px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+  animation: comete 2.2s linear infinite;
+}
+@keyframes comete { from { left: -88px; } to { left: 100%; } }
+
+.grand .oldbar { top: 338px; left: 50%; margin-left: -110px; width: 220px; }
+.mini  .oldbar { bottom: 13px; left: 22px; right: 22px; height: 3.5px; }
+.mini  .oldbar::before { width: 0%; }   /* les pages passent progress: 0 */
+
+.callout {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.7;
+  color: var(--gold);
+  border-left: 2px solid rgba(242,191,83,.45);
+  padding-left: 14px;
+  margin: 0 0 22px;
+}
+
+/* ---------- ce qui reste à trancher ---------- */
+
+.decisions { padding: 76px 0 0; border-top: 1px solid var(--line); margin-top: 40px; }
+.decisions h2 {
+  font-family: var(--serif); font-weight: 400; font-size: 40px;
+  margin: 0 0 34px; letter-spacing: -.01em;
+}
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.dcard {
+  padding: 26px 26px 28px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.dcard h3 { font-size: 16px; font-weight: 600; margin: 0 0 12px; letter-spacing: -.005em; }
+.dcard p { margin: 0 0 12px; font-size: 14px; color: var(--ink-2); }
+.dcard p:last-child { margin-bottom: 0; }
+.dcard code {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--violet); background: rgba(133,93,255,.1);
+  padding: 1px 5px; border-radius: 3px;
+}
+.dcard .mine { color: var(--gold); }
+
+footer {
+  margin-top: 80px; padding-top: 26px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+  color: var(--ink-4);
+}
+
+/* ---------- gel du mouvement ---------- */
+
+[data-motion="off"] .grand, [data-motion="off"] .grand *,
+[data-motion="off"] .mini,  [data-motion="off"] .mini *,
+[data-motion="off"] .loupe, [data-motion="off"] .loupe * {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grand, .grand *, .mini, .mini *,
+  .loupe, .loupe * { animation-play-state: paused !important; }
+}
+
+@media (max-width: 900px) {
+  .specimen { grid-template-columns: 1fr; gap: 28px; }
+  .masthead { padding-top: 64px; }
+}
+</style>
+<!-- ANIM-CSS-ICI -->
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Player de séance · propositions d'animation</p>
+    <h1>Le player <em>vivant</em></h1>
+    <p class="lede">Toutes les propositions pour rendre le player vivant <strong>sans jamais rien mesurer</strong> — chacune montrée aux deux tailles, la dalle du bas et le plein écran, à la même échelle. La direction tranchée : <strong>le composant</strong>, pas le fond — et l'objet retenu, <strong>l'équaliseur</strong>, décliné en six matières.</p>
+  </header>
+
+  <div class="rule-card">
+    <p><b>La règle qui les unit.</b> Aucune des dix ne peut se relire comme une progression : pas de segment qui remplit un rail, pas de point qui traverse une piste, aucun début ni aucune fin visibles. Les périodes sont lentes et non rondes (7 à 16 s) pour que rien ne semble « repartir ».</p>
+    <p>Le <b>chronomètre</b> remplace le mot « Session » dans les dix, à la place exacte de l'ancienne barre.</p>
+    <p>Ce qui les sépare vraiment, c'est <b>où la lumière vit</b> : sur l'image, derrière elle, ou sur toute la card. C'est ce que dit le premier badge de chaque proposition.</p>
+  </div>
+
+  <!-- INDEX-ICI -->
+
+  <div class="controls">
+    <button class="btn motion" id="freeze" type="button">Geler le mouvement</button>
+    <span class="hint">Gèle les dix d'un coup pour comparer les états au repos.</span>
+  </div>
+
+  <!-- ================= AUJOURD'HUI ================= -->
+  <section class="specimen today">
+    <div class="spec-text">
+      <div class="spec-head"><h2 class="spec-name">Aujourd'hui</h2></div>
+      <div class="chips"><span class="chip">l'état actuel</span></div>
+      <p class="callout">BarreBlancheAnimee(progress: <b>0.6</b>, …)<br>PageCard.swift:385</p>
+      <p class="spec-pitch">La barre du grand player est remplie à <strong>60 %</strong> en dur — la valeur n'est jamais calculée. Le commentaire juste au-dessus dit déjà l'argument : « on ne sait jamais où s'arrête le user ». L'intention était décorative ; c'est la <em>forme</em> qui ment, parce qu'un segment blanc dans un rail se lit toujours comme une mesure.</p>
+      <p class="spec-pitch">Et sous la card, un seul mot : <strong>Session</strong>. C'est le repli du titre quand aucun exercice n'est en cours — le seul endroit de l'écran qui pourrait dire depuis combien de temps ça dure, et il ne dit rien.</p>
+      <p class="tech"><b>Dans la dalle</b>Les pages passent <code>progress: 0</code> — la barre y est donc vide en permanence.</p>
+    </div>
+    <div class="stage">
+      <div class="slot">
+        <span class="slot-label">Plein écran</span>
+        <div class="scale-grand"><div class="grand p-today">
+          <div class="grabber"></div>
+          <div class="art"></div>
+          <div class="badge">8 SETS</div>
+          <div class="title">Session</div>
+          <div class="oldbar"></div>
+          <div class="rows"><i><b>Bench Press</b><u>4 × 8</u></i><i><b>Incline Press</b><u>3 × 10</u></i><i><b>Cable Fly</b><u>3 × 12</u></i><i><b>Lateral Raise</b><u>3 × 15</u></i></div>
+        </div></div>
+      </div>
+      <div class="slot">
+        <span class="slot-label">La dalle</span>
+        <div class="scale-mini"><div class="mini-wrap">
+          <div class="page-hint"><i></i><i></i></div>
+          <div class="mini p-today">
+            <div class="art"></div>
+            <div class="meta"><div class="t">Bench Press</div><div class="s">In session · 24 min</div></div>
+            <div class="stop"></div>
+            <div class="oldbar"></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPECIMENS-ICI -->
+
+  <section class="decisions">
+    <h2>Ce qui reste à trancher</h2>
+    <div class="dgrid">
+      <div class="dcard">
+        <h3>Les deux vraies progressions</h3>
+        <p>Deux barres, elles, disent la vérité : la dalle de la fiche exo affiche vraiment séries faites / séries totales (<code>ExerciseDetailView.swift:641</code>), et le filet de la pill flottante aussi.</p>
+        <p>« Plus de progress bar » les emporte-t-il aussi, ou ça ne concerne que le player ?</p>
+      </div>
+      <div class="dcard">
+        <h3>Le chrono : minutes ou secondes ?</h3>
+        <p>Un verdict est déjà gravé dans le code (<code>WorkoutPill.swift:446</code>) : « un player n'est pas un chronomètre — la seconde par seconde était un tic ». C'est pour ça que la dalle affiche les minutes.</p>
+        <p class="mine">Ma proposition : les secondes en plein écran, les minutes dans la dalle.</p>
+      </div>
+      <div class="dcard">
+        <h3>Le geste de la série</h3>
+        <p>L'idée que les deux juges ont désignée comme la plus forte : quand une série est validée, la lumière passe <strong>une fois</strong>, plus ample, puis se rassoit. L'interface entend l'effort.</p>
+        <p>Elle s'ajoute à n'importe laquelle des dix. À garder pour un second temps, ou à faire d'emblée ?</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Maquette web · les cotes, la palette et la typographie viennent de Theme.swift, PageCard.swift et WorkoutPill.swift</footer>
+
+</div>
+
+<script>
+  (function () {
+    var b = document.getElementById('freeze');
+    var off = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function paint() {
+      document.documentElement.setAttribute('data-motion', off ? 'off' : 'on');
+      b.textContent = off ? 'Relancer le mouvement' : 'Geler le mouvement';
+      b.setAttribute('aria-pressed', String(off));
+    }
+    b.addEventListener('click', function () { off = !off; paint(); });
+    paint();
+  })();
+</script>
