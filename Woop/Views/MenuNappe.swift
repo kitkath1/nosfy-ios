@@ -179,13 +179,59 @@ struct GaletMaison: View {
     }
 
     var body: some View {
-        // LA HOME DORT SOUS LA ROUTE (jalon 1) : l'horloge se tait.
-        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
+        // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME (05-09) — geste ①
+        // de `tools/nav/PLAN-DEBUG-PERF.md`, validé à l'œil par Kathryn sur
+        // le liseré des widgets. Cette fermeture faisait 109 LIGNES et
+        // battait 20 fois par seconde — dont le `GlassEffectContainer`, le
+        // verre natif, la navette et le néon — alors que le temps n'y sert
+        // qu'à DEUX SCALAIRES : une échelle (`souffle`) et une luminosité
+        // (`braise`). Les deux sont ANIMABLES : le système les interpole
+        // lui-même, image par image, sans rien reconstruire.
+        // `-souffleHorloge` rejoue l'ancienne forme (le témoin de l'A/B).
+        if SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            let souffle = reduceMotion ? 1.0
-                : 1 + 0.02 * sin(t * 2 * .pi / 4.3)
+                let t = ctx.date.timeIntervalSinceReferenceDate
+                corps(souffle: reduceMotion ? 1.0
+                        : 1 + 0.02 * sin(t * 2 * .pi / 4.3),
+                      braise: reduceMotion ? 0.78
+                        : 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 2 * .pi / 3.4)))
+            }
+            .frame(width: taille, height: taille)
+        } else {
+            corps(souffle: souffleAnime, braise: braiseAnime)
+                .frame(width: taille, height: taille)
+                .task { armerSouffle() }
+                .onChange(of: reduceMotion) { _, _ in armerSouffle() }
+        }
+    }
+
+    /// LES DEUX SEULES VALEURS QUI BOUGENT. ⚠️ Elles vivent dans la FEUILLE :
+    /// un `repeatForever` posé chez un parent SE FAIT AVALER quand celui-ci
+    /// est ré-évalué (piège payé, `PageCard.swift`).
+    @State private var souffleAnime: Double = 1
+    @State private var braiseAnime: Double = 0.78
+
+    private func armerSouffle() {
+        guard !reduceMotion else {
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { souffleAnime = 1; braiseAnime = 0.78 }
+            return
+        }
+        // Les deux périodes d'origine, au dixième de seconde près — et
+        // elles restent PREMIÈRES ENTRE ELLES (4,3 et 3,4) : la loi de la
+        // maison, un seul sinus se reconnaît et devient un clignotant.
+        souffleAnime = 0.98
+        braiseAnime = 0.55
+        withAnimation(.easeInOut(duration: 4.3 / 2)
+            .repeatForever(autoreverses: true)) { souffleAnime = 1.02 }
+        withAnimation(.easeInOut(duration: 3.4 / 2)
+            .repeatForever(autoreverses: true)) { braiseAnime = 1.0 }
+    }
+
+    @ViewBuilder
+    private func corps(souffle: Double, braise: Double) -> some View {
             ZStack {
                 // ⚠️ PLUS D'ANNEAU. Un cercle qui s'étale d'un bouton est un
                 // *ripple* — la signature de Material Design, et c'est
@@ -261,17 +307,22 @@ struct GaletMaison: View {
             // qu'on ne mesure pas n'existe pas.
             .background {
                 if !range {
-                    let braise = reduceMotion ? 0.78
-                        : 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 2 * .pi / 3.4))
+                    // ⚠️ LA BRAISE SORT DU DÉGRADÉ, ET ÇA SE FACTORISE
+                    // EXACTEMENT : ses deux arrêts valaient `0,44 · braise`
+                    // et `0,18 · braise`, le troisième est `.clear` — donc
+                    // un dégradé CONSTANT (0,44 / 0,18) sous une
+                    // `.opacity(braise)` donne la MÊME image, à
+                    // l'arithmétique près. Le dégradé n'est plus refabriqué :
+                    // seule l'opacité, qui est animable, varie.
                     Circle()
                         .fill(RadialGradient(
                             stops: [
                                 .init(color: Color(red: 1.00, green: 0.30,
                                                    blue: 0.16)
-                                    .opacity(0.44 * braise), location: 0.22),
+                                    .opacity(0.44), location: 0.22),
                                 .init(color: Color(red: 0.86, green: 0.15,
                                                    blue: 0.10)
-                                    .opacity(0.18 * braise), location: 0.62),
+                                    .opacity(0.18), location: 0.62),
                                 .init(color: .clear, location: 1.0),
                             ],
                             center: .center,
@@ -279,6 +330,7 @@ struct GaletMaison: View {
                             endRadius: taille * 0.92))
                         .frame(width: taille * 1.85, height: taille * 1.85)
                         .scaleEffect(0.95 + 0.06 * braise)
+                        .opacity(braise)
                         .allowsHitTesting(false)
                 }
             }
@@ -288,8 +340,6 @@ struct GaletMaison: View {
             // revient sec se sent bon marché.
             .animation(.spring(response: 0.30, dampingFraction: 0.55),
                        value: appui)
-        }
-        .frame(width: taille, height: taille)
     }
 }
 

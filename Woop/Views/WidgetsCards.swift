@@ -258,7 +258,15 @@ struct CardCorps<Contenu: View>: View {
                     // ⚠️ L'HORLOGE DORT sous Reduce Motion, et elle est LENTE
                     // (12 Hz) : une dérive de 3° sur 9 s n'a aucun besoin de
                     // 60 images par seconde.
-                    TimelineView(.animation(minimumInterval: 1.0 / 12,
+                    // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME
+                    // (05-09) — voir `LisereRespirant` et le §① de
+                    // `tools/nav/PLAN-DEBUG-PERF.md`. Ce bloc refabriquait
+                    // un dégradé conique, trois traits et DEUX GAUSSIENNES
+                    // vingt fois par seconde, sous un verre natif, pour
+                    // tourner la lumière de TROIS DEGRÉS.
+                    // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
+                    if SouffleBanc.horloge {
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                             paused: reduceMotion
                                                 || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
@@ -288,6 +296,11 @@ struct CardCorps<Contenu: View>: View {
                                 .opacity(0.55 * chambre)
                         }
                         .frame(width: W, height: H)
+                    }
+                    } else {
+                        LisereRespirant(forme: dehors, W: W, H: H,
+                                        chambre: chambre, penche: penche,
+                                        immobile: reduceMotion)
                     }
                 }
                 if verre, !verreDemonte {
@@ -1017,7 +1030,7 @@ struct CardVolume: View {
                 // battent jamais ensemble), 12 Hz suffisent, l'horloge dort
                 // sous Reduce Motion — et LE CADRE EST FORCÉ (le piège de
                 // la TimelineView qui se dimensionne sur son contenu).
-                TimelineView(.animation(minimumInterval: 1.0 / 12,
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: reduceMotion || vide
                                             || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
@@ -1166,7 +1179,7 @@ struct CardSeances: View {
                 }
                 // ⚠️ L'HORLOGE DORT quand la chambre est fermée : hors
                 // ouverture, ce scintillement ne coûte pas une image.
-                TimelineView(.animation(minimumInterval: 1.0 / 24,
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: f < 0.02
                                             || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
@@ -1272,7 +1285,7 @@ struct CardSeances: View {
                 // points : « la plus récente », pas une décoration).
                 // ⚠️ 12 Hz, l'horloge dort sous Reduce Motion, et LE CADRE
                 // EST FORCÉ (le piège de la TimelineView).
-                TimelineView(.animation(minimumInterval: 1.0 / 12,
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: reduceMotion || vide
                                             || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
@@ -1465,7 +1478,7 @@ struct CardHiitPeak: View {
                 // L'ONDE. ⚠️ 12 Hz, endormie sous Reduce Motion et tant que
                 // la chambre n'est pas là ; LE CADRE EST FORCÉ (le piège).
                 let nT = max(tours, 1)
-                TimelineView(.animation(minimumInterval: 1.0 / 12,
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: reduceMotion || f < 0.3
                                             || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
@@ -1628,7 +1641,7 @@ struct CardHiitPeak: View {
             // son sommet SCINTILLE (périodes incommensurables, l'école des
             // points du mois). ⚠️ 12 Hz, l'horloge dort sous Reduce Motion
             // et quand la chambre couvre ; LE CADRE EST FORCÉ.
-            TimelineView(.animation(minimumInterval: 1.0 / 12,
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: reduceMotion || vide
                                         || chambre > 0.5
                                         || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
@@ -1788,7 +1801,7 @@ struct CardPeakEffort: View {
 
                 if precedent != nil {
                     // ⚠️ 12 Hz, endormie sous Reduce Motion ; CADRE FORCÉ.
-                    TimelineView(.animation(minimumInterval: 1.0 / 12,
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                             paused: reduceMotion
                                                 || f < 0.3
                                                 || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
@@ -2017,7 +2030,7 @@ struct CardPeakEffort: View {
         let sx = 0.330 * W, sy = 0.700 * H
         let ex = 0.670 * W, ey = 0.598 * H
         let aL = min(max((p - 0.45) / 0.45, 0), 1)
-        TimelineView(.animation(minimumInterval: 1.0 / 12,
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                 paused: reduceMotion || vide
                                     || chambre > 0.5
                                     || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
@@ -2578,7 +2591,7 @@ private struct RespireEdition<C: View>: View {
         if edition < 0.005 || reduceMotion {
             contenu(0)
         } else {
-            TimelineView(.animation(minimumInterval: 1.0 / 20,
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
                 let t = tl.date.timeIntervalSinceReferenceDate

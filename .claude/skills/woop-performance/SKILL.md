@@ -217,7 +217,52 @@ Toutes les horloges d'ambiance d'une page battent sur `RythmeEcran.pas` (20 Hz).
 Deux horloges désaccordées font deux recompositions ; au même pas, elles se
 confondent. **Aucun changement de dessin.**
 
-### ③ Ne pas redessiner pour animer
+### ③ NE PAS REDESSINER POUR ANIMER — **la technique qui a tout changé**
+
+**MESURÉ le 05-09 sur son iPhone, A/B alterné, à cadence égale (~24 img/s) :**
+
+| | processeur | battements/s |
+|---|---|---|
+| on REDESSINE (`TimelineView` 20 Hz) | **33 à 38 %** | 109 à 122 |
+| on ANIME (valeur animable + `repeatForever`) | **4 à 18 %** | 24 à 50 |
+
+Le rendu a été validé à l'œil par Kathryn (« non ça me va »). C'est le seul
+geste de toute la campagne qui ait donné un écart de cette taille.
+
+**Le motif à traquer**, il est partout dans ce dépôt :
+
+```
+20 fois par seconde :
+  · un dégradé recalculé, des traits redessinés, DEUX FLOUS gaussiens,
+  · le tout sous un verre natif,
+pour tourner une lumière de TROIS DEGRÉS.
+```
+
+**Les trois questions, dans l'ordre, devant toute `TimelineView` :**
+1. **Qu'est-ce que le temps fait ici ?** Souvent : deux scalaires dans une
+   fermeture de cent lignes.
+2. **Est-ce ANIMABLE ?** (opacité, échelle, rotation, offset, une couleur)
+   Si oui → le système l'interpole seul, sans jamais reconstruire le contenu.
+3. **Le reste peut-il SORTIR de la fermeture ?** Tout ce qui ne dépend pas du
+   temps était refabriqué pour rien.
+
+**Deux factorisations qui marchent à tous les coups :**
+- un dégradé dont tous les arrêts valent `k · v` (le reste `.clear`) → dégradé
+  CONSTANT sous une `.opacity(v)`. Même image, à l'arithmétique près.
+- une lumière qui TOURNE sur un contour → ne pas tourner la vue (ça tournerait
+  le cadre, visible !), mais tourner **la peinture** : un carré de dégradé plus
+  grand que l'objet, tourné, et le contour posé en **masque** par-dessus. Le
+  masque, lui, est construit une fois. Voir `LisereRespirant.swift`.
+
+⚠️ Ce que ça change à l'œil, à dire honnêtement : un flou porte alors sur
+l'ALPHA de la forme et non sur le trait déjà peint. Sur un dégradé doux c'est
+négligeable (2,4 pt de flou ≈ 0,4° d'arc contre une épaule de 7°) — mais
+« négligeable » n'est pas « nul » : **ça se montre, ça ne se décrète pas.**
+
+⚠️ Une `TimelineView` ne se justifie que si le CONTENU change : un `Canvas`, un
+shader nourri du temps, un chrono. Jamais pour une valeur animable.
+
+### ③bis Le piège du `repeatForever` avalé
 
 **La question à se poser avant d'écrire une `TimelineView`** : ce qui bouge
 est-il une **valeur animable** (opacité, échelle, rotation, offset) ? Si oui,
