@@ -71,8 +71,14 @@ final class ChambreEtat {
     /// L'objectif hebdomadaire (3…10). LE SERVEUR LE TIENT (`user_prefs`,
     /// `definir_objectif` / `objectif_hebdo`) ; ceci est son cache, lu à
     /// l'ouverture de la chambre Regularity, écrit au choix (`choisir`).
-    var objectif: Int = UserDefaults.standard.object(forKey: "woop.chambre.objectif") as? Int ?? 0 {
-        didSet { UserDefaults.standard.set(objectif, forKey: "woop.chambre.objectif") }
+    /// ⚠️ UNE SEULE CLÉ LOCALE (13-09, Kathryn : « que le nombre de séances
+    /// soit bien lié avec l'onboarding ») : `Goal.cleHebdo` (« objectifHebdo »),
+    /// celle que la home lit en `@AppStorage` pour « / N » et la phrase. La
+    /// chambre, la home, les cards et le questionnaire de Nosfy (« Combien de
+    /// fois par semaine ? » → `ChambreEtat.shared.choisir(n)`) parlent du même
+    /// nombre — et le serveur le tient (`user_prefs`).
+    var objectif: Int = UserDefaults.standard.object(forKey: Goal.cleHebdo) as? Int ?? 0 {
+        didSet { UserDefaults.standard.set(objectif, forKey: Goal.cleHebdo) }
     }
     /// Un choix fait sans session (pas de réseau, pas de compte) attend ici
     /// et part à la prochaine ouverture connectée — jamais un objectif perdu.

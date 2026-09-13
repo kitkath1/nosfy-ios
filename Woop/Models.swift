@@ -572,7 +572,11 @@ enum Goal {
     /// la phrase est un galet de verre, et son panneau propose de 3 à 7.
     /// La clé de stockage, partagée avec l'`@AppStorage` de la page.
     static let cleHebdo = "objectifHebdo"
-    static let hebdoChoix = [3, 4, 5, 6, 7]
+    /// 3 → 10 depuis le 13-09 (la chambre Regularity propose 3 à 10, validé ;
+    /// 3 → 7 avant). Le serveur accepte 1..14 (`user_prefs`, `definir_objectif`).
+    /// UNE SEULE CLÉ pour la home, les cards, la chambre et le questionnaire de
+    /// Nosfy : `ChambreEtat.shared.choisir(n)` l'écrit ici ET au serveur.
+    static let hebdoChoix = [3, 4, 5, 6, 7, 8, 9, 10]
 
     /// L'objectif effectif. À lire ici, et plus `weeklyTarget`, à mesure que
     /// les autres pages migrent (carte objectif, calendrier, synthèse).
