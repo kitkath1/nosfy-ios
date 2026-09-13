@@ -11,6 +11,12 @@ qu'on veut faire, et dans quel ordre.*
 > `retour_disponible` faux et claim refusé sans séance) · C3 serveur (`20260913231000_apple_jetons`,
 > edge functions `apple-jeton` et `supprimer-compte` déployées ; le compte jetable a été
 > supprimé par la fonction : auth.users, profils, user_prefs, sessions à 0).
+> **23:00, sur son mot « fais le reste pour que tout soit vert »** : le rejeu des révocations
+> ratées (`rejouer-revocations`, service role ; et au passage dans apple-jeton / supprimer-compte),
+> le script `tools/porte/poser-cle-apple.sh` (trois secrets + mesure), et la moitié serveur du
+> PULL — `seances_depuis(p_depuis, p_limite)` rend l'arbre complet des séances (mesuré : 23 / 43 /
+> 88 / 70, les mêmes uuid que la poussée). Côté serveur, il ne reste RIEN qui ne dépende d'elle
+> (la clé) ou de l'app (les sites d'appel, le pull dans SupabaseSync).
 > **Attend toi** : la clé `.p8` Sign in with Apple (Key ID + Team ID) — sans elle
 > `apple-jeton` répond `cle_absente` et la suppression efface sans révoquer.
 > **Attend la session porte** (contrats envoyés) : C0, C2, C3 côté app, C4, et la première
@@ -251,3 +257,37 @@ plus).
 
 Sur le site : `marquer_visite_home` est posée ⚪ sur la carte du serveur (page Compte), et
 les notes de `profils`, `profil()`, `home()`, `etat_coffre` disent ce qui vient.
+
+---
+
+## 7. « Peut-on créer des utilisateurs qui s'inscrivent et bénéficient de l'expérience ? » (13-09, 23:40)
+
+Sa question, mot pour mot. La réponse, lue sur le site (page Compte) et mesurée ce soir :
+
+**Côté serveur : OUI.** Un compte se crée par Apple (provider armé, mesuré sur son iPhone
+le 13-09 à 11:22), le profil s'écrit à la fin de Nosfy (`definir_profil`, mesuré), les
+séances montent (`push`, 23 séances au banc), les widgets et la home lisent le serveur
+(`widget_*`, `home()`, mesurés), la suppression efface tout (`supprimer-compte`, mesurée),
+les portes parasites sont fermées. **Une seule pièce manque, et elle t'attend** : la clé
+Sign in with Apple (révocation à la suppression — exigée par l'App Store à la revue, pas
+avant). Elle se pose en une commande le jour où tu l'as.
+
+**Côté app : PAS ENCORE pour des inconnus.** Six choses, toutes chez la session porte
+(les contrats sont écrits, § 3), dans l'ordre où elles bloquent :
+
+| # | Ce qu'une vraie personne vivrait aujourd'hui | Chantier |
+|---|---|---|
+| 1 | Connectée, elle revoit la porte et la feuille Apple **à chaque ouverture** de l'app | C0 |
+| 2 | « Se déconnecter » ne déconnecte pas ; « Supprimer mon compte » ne supprime pas | C2, C3 app |
+| 3 | Son jeton dort dans les préférences (il part dans les sauvegardes), et **les deux numéros et le mot de passe dérivé sont encore dans le binaire** — à fermer avant toute distribution | C2 (Keychain), C4 |
+| 4 | Elle choisit sa langue chez Nosfy, la home reste en anglais | b-po-langue-home (en cours) |
+| 5 | Sa première arrivée n'a pas encore sa visite (v2 en plan, v1 refusée) | b-po-visite-home |
+| 6 | Le vrai chemin Apple n'a pas été **re-mesuré** depuis que la porte aiguille par `profil()` (ton téléphone est en maquette) — une mesure sur ton iPhone en `-parcoursReel` | mesure |
+
+**Entre les deux : le pull.** Un téléphone neuf (ou réinstallé) ne retrouve pas ses
+séances : la moitié serveur existe (`seances_depuis`), la moitié app non — la home
+reste vide alors que les chambres lisent le serveur. Chantier serveur↔app suivant.
+
+**Verdict** : pour toi et des testeurs proches (TestFlight interne), dès C0 + C2 + C3 app +
+C4 — la clé Apple peut venir juste avant la revue. Pour des inconnus, ajouter le pull, la
+langue et la visite. Rien de tout cela n'est du serveur : le serveur est prêt.

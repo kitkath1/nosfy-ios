@@ -13,7 +13,7 @@
 // l'effacement échoue — alors RIEN n'a été effacé).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { APPLE_REVOKE, CLIENT_ID, appelApple, secretApple } from "../_shared/apple.ts";
+import { APPLE_REVOKE, CLIENT_ID, appelApple, rejouerRevocations, secretApple } from "../_shared/apple.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -51,7 +51,9 @@ Deno.serve(async (req) => {
     // 2. L'effacement — tout part par la cascade.
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) return Response.json({ ok: false, raison: error.message, revocation }, { status: 500 });
-    return Response.json({ ok: true, revocation, user_id: user.id });
+    // 3. Au passage : quelques révocations ratées d'autres comptes, si la clé est là.
+    const rejeu = await rejouerRevocations(admin, 3).catch(() => undefined);
+    return Response.json({ ok: true, revocation, user_id: user.id, rejeu });
   } catch (e) {
     return Response.json({ ok: false, raison: String((e as Error)?.message ?? e) }, { status: 500 });
   }

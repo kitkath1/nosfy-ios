@@ -41,3 +41,33 @@ export async function appelApple(url: string, champs: Record<string, string>): P
     body: new URLSearchParams(champs),
   });
 }
+
+/// LE REJEU DES RÉVOCATIONS RATÉES (13-09 soir). Une révocation qui a échoué à la
+/// suppression d'un compte dort dans `apple_revocations` (sans clé étrangère : la ligne
+/// survit au compte). On la rejoue ici — depuis la fonction `rejouer-revocations`
+/// (maintenance, service role) et, opportunément, à chaque entrée Apple et à chaque
+/// suppression (quelques lignes au plus, pour ne pas ralentir la personne).
+export type Rejeu = { tentees: number; revoquees: number; echecs: number; raison?: string };
+
+// deno-lint-ignore no-explicit-any
+export async function rejouerRevocations(admin: any, max = 5): Promise<Rejeu> {
+  const { data: lignes } = await admin.from("apple_revocations")
+    .select("id, refresh_token").is("revoque_le", null).order("cree_le").limit(max);
+  if (!lignes?.length) return { tentees: 0, revoquees: 0, echecs: 0 };
+  const secret = await secretApple();
+  if (!secret) return { tentees: lignes.length, revoquees: 0, echecs: lignes.length, raison: "cle_absente" };
+  let revoquees = 0, echecs = 0;
+  for (const l of lignes) {
+    const rep = await appelApple(APPLE_REVOKE, {
+      client_id: CLIENT_ID, client_secret: secret, token: l.refresh_token, token_type_hint: "refresh_token",
+    });
+    if (rep.ok) {
+      revoquees++;
+      await admin.from("apple_revocations").update({ revoque_le: new Date().toISOString() }).eq("id", l.id);
+    } else {
+      echecs++;
+      await admin.from("apple_revocations").update({ echec: `echec_${rep.status}` }).eq("id", l.id);
+    }
+  }
+  return { tentees: lignes.length, revoquees, echecs };
+}

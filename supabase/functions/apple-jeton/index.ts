@@ -9,7 +9,7 @@
 // "cle_absente" | "apple_<status>" | "sans_refresh" }.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { APPLE_TOKEN, CLIENT_ID, appelApple, secretApple } from "../_shared/apple.ts";
+import { APPLE_TOKEN, CLIENT_ID, appelApple, rejouerRevocations, secretApple } from "../_shared/apple.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -40,7 +40,9 @@ Deno.serve(async (req) => {
     const { error } = await admin.from("apple_jetons")
       .upsert({ user_id: user.id, refresh_token: refresh, updated_at: new Date().toISOString() });
     if (error) return Response.json({ ok: false, raison: error.message }, { status: 500 });
-    return Response.json({ ok: true });
+    // Au passage : quelques révocations ratées d'autres comptes, si la clé est là.
+    const rejeu = await rejouerRevocations(admin, 3).catch(() => undefined);
+    return Response.json({ ok: true, rejeu });
   } catch (e) {
     return Response.json({ ok: false, raison: String((e as Error)?.message ?? e) }, { status: 500 });
   }
