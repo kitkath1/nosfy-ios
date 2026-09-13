@@ -26,6 +26,11 @@ import Foundation
 
 enum ProfilServeur {
     struct Profil {
+        /// La réponse d'une ÉCRITURE : `ok` false + `raison` (« prenom_requis »,
+        /// « sans_session ») quand le serveur refuse — règle du 13-09 : on ne
+        /// finit pas l'onboarding sans prénom, l'input passe au rouge.
+        var ok: Bool = true
+        var raison: String?
         var existe: Bool
         var onboardingTermine: Bool
         var langue: String?
@@ -47,6 +52,8 @@ enum ProfilServeur {
         }
 
         init(json o: [String: Any]) {
+            ok = o["ok"] as? Bool ?? (o["raison"] == nil)
+            raison = o["raison"] as? String
             existe = o["existe"] as? Bool ?? false
             onboardingTermine = o["onboarding_termine"] as? Bool ?? false
             langue = o["langue"] as? String
