@@ -104,9 +104,16 @@ final class ChambreEtat {
         return tel
     }
 
-    /// Le choix de l'objectif (le tap dans `ObjectifRangee`, ou le banc).
+    /// Le jeton du choix : il avance à chaque `choisir` — la chambre y accroche
+    /// le petit check blanc (« pris en compte », 13-09), la home son recalcul.
+    private(set) var objectifJeton = 0
+
+    /// Le choix de l'objectif (le tap dans `ObjectifRangee`, le questionnaire
+    /// de Nosfy, ou le banc) : la clé locale unique tout de suite, le serveur
+    /// ensuite (`definir_objectif`), le check dans la chambre.
     func choisir(_ n: Int) {
         objectif = n
+        objectifJeton += 1
         Task { @MainActor in await ecrireObjectif(n) }
     }
 
@@ -244,6 +251,8 @@ struct ChambreLongue: View {
     @State private var tirage: CGFloat = 0
     /// Regularity : la rangée d'objectif, ouverte par le héros.
     @State private var objectifOuvert = false
+    /// Le check blanc « pris en compte », 1,6 s après un choix d'objectif.
+    @State private var objectifCheck = false
 
     private var f: ChambreFenetre { etat.fenetreAffichee(kind) }
 
@@ -327,10 +336,17 @@ struct ChambreLongue: View {
                 sousTitre.padding(.top, 7)
             }
             if kind == .regularite, objectifOuvert {
-                ObjectifRangee(objectif: etat.objectifEffectif) { n in
+                ObjectifRangee(objectif: etat.objectifEffectif, check: objectifCheck) { n in
                     etat.choisir(n)
                 }
                 .padding(.top, 14)
+                .onChange(of: etat.objectifJeton) { _, _ in
+                    withAnimation(.easeOut(duration: 0.2)) { objectifCheck = true }
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(1.6))
+                        withAnimation(.easeIn(duration: 0.35)) { objectifCheck = false }
+                    }
+                }
             }
             selecteur.padding(.top, 16)
         }
@@ -855,6 +871,7 @@ struct LegendeHalo: View {
 /// La rangée d'objectif : 3 à 10, le choix en un geste.
 struct ObjectifRangee: View {
     var objectif: Int
+    var check = false
     var onChoix: (Int) -> Void
     var body: some View {
         // Pas d'étiquette : la rangée s'ouvre sous « 8 / 5 séances », elle se
@@ -878,6 +895,16 @@ struct ObjectifRangee: View {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.5)
                             withAnimation(.easeOut(duration: 0.18)) { onChoix(n) }
                         }
+                }
+                // LE CHECK BLANC (13-09, « un petit check pour montrer que ça a
+                // été pris en compte — blanc, plus joli ») : il naît au choix,
+                // s'efface seul ; le serveur, lui, est écrit dans le même geste.
+                if check {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .padding(.leading, 6)
+                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
                 }
             }
         }

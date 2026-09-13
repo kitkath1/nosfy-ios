@@ -1145,7 +1145,7 @@ struct CardSeances: View {
     /// `faites` premières), ce que veulent les bancs et les aperçus sans
     /// calendrier. Voir le commentaire des perles pour le défaut que ça règle.
     var joursFaits: Set<Int>? = nil
-    var pied: String = "1 session left to hit your goal"
+    var pied: String = "1 session left"
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
@@ -2336,8 +2336,11 @@ struct SemaineStats {
         var s = SemaineStats()
         s.faites = cette.count
         let restent = max(prevues - cette.count, 0)
+        // 13-09 (Kathryn : « mets juste "3 sessions left", pour que ça passe en
+        // français aussi ») : le pied dit le reste, rien d'autre. Le serveur
+        // rend le même nombre (`widget_regularite.reste`), le mot est à l'écran.
         s.pied = restent == 0 ? "goal reached"
-            : "\(restent) session\(restent > 1 ? "s" : "") left to hit your goal"
+            : "\(restent) session\(restent > 1 ? "s" : "") left"
 
         // ── LE VOLUME
         let v = cette.reduce(0) { $0 + $1.totalVolume }
@@ -2761,7 +2764,7 @@ struct CardsRangee: View {
     var moyenne: String = "1.2 kg"
     var gain: String = "+12%"
     var jours: [CardJour] = CardJour.semaineRef
-    var pied: String = "1 session left to hit your goal"
+    var pied: String = "1 session left"
     /// Les jours de la semaine réellement faits (0 = lundi). Transmis à la
     /// card des séances : ses perles se posent dessus au lieu de compter.
     var joursFaits: Set<Int>? = nil

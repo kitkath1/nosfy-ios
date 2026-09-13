@@ -2502,6 +2502,15 @@ struct HomeNuitPage: View {
         // ci-dessus reste vraie, seul le POSTE a changé.
         // `-fps` : la sonde de cadence (le SEUL juge fiable du « ça lag »).
         .sondeCadence("home")
+        // L'OBJECTIF A CHANGÉ (13-09) — dans la chambre longue, ou chez Nosfy :
+        // la clé unique `objectifHebdo` bouge, la card « / N » suit seule
+        // (@AppStorage), mais le pied (« 2 sessions left… ») et les fantômes
+        // viennent de `stats` : on recalcule, sinon le mini-widget ment.
+        .onChange(of: prevus) { _, _ in
+            if !workoutsBruts.isEmpty {
+                stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
+            }
+        }
         .onAppear {
             guard !deja else { return }
             deja = true
