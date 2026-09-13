@@ -25,6 +25,11 @@ struct BoutonPrimaire: View {
     /// Gardé pour l'API du diamant (les sites l'envoient) — sans effet ici :
     /// la lumière de ce bouton est blanche, jamais dorée.
     var smokeWarmth: Float = 0
+    /// Le bouton met tout en casse de phrase (`enPhrase`) — ce qui écrase les
+    /// NOMS PROPRES : « Se connecter avec Apple » devenait « … avec apple »
+    /// (vu au sim le 06-09). Ce drapeau rend le titre tel quel ; il est faux
+    /// par défaut, donc aucun site d'appel existant ne bouge.
+    var respecteLaCasse: Bool = false
     var action: () -> Void = {}
 
     @State private var presse = false
@@ -153,7 +158,7 @@ struct BoutonPrimaire: View {
     /// ni interlettrage, ni flèche. Blanc, avec un souffle à peine là (v6,
     /// « trop de néon ») qui ne monte qu'au tap.
     private var texte: some View {
-        Text(title.enPhrase)
+        Text(respecteLaCasse ? title : title.enPhrase)
             .font(.inter(18, .semibold))
             .tracking(-0.2)
             .foregroundStyle(.white.opacity(0.96))

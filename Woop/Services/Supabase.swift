@@ -134,6 +134,25 @@ actor SupabaseSession {
         return decoded.access_token
     }
 
+    /// LA SESSION VENUE D'APPLE (06-09) — `AppleAuth.entrer()` a déjà fait
+    /// l'échange `grant_type=id_token` ; elle pose ici le résultat pour que toute
+    /// la synchro s'en serve, sans repasser par `token()` et son `woop.phone`.
+    ///
+    /// ⚠️ Le refresh token va encore dans `UserDefaults`, comme celui du numéro
+    /// (:133) : le Keychain est le jalon 1 du plan, il n'est pas fait. La dette
+    /// est ici, écrite, pas cachée.
+    func adopter(access: String, refresh: String, userID: String) {
+        self.accessToken = access
+        self.refreshToken = refresh
+        self.userID = userID
+        UserDefaults.standard.set(refresh, forKey: tokenKey)
+        UserDefaults.standard.set(userID, forKey: appleUserKey)
+    }
+
+    /// L'identité Apple retenue : elle remplacera `woop.phone` quand le numéro
+    /// sortira pour de bon (jalon 1).
+    private let appleUserKey = "woop.apple.userID"
+
     func currentUserID() async throws -> String {
         _ = try await token()
         guard let userID else { throw SupabaseError.notAuthenticated }

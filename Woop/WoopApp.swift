@@ -337,6 +337,13 @@ struct RootView: View {
     /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
     /// (captures d'écran automatisées uniquement).
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
+    /// LE FILM DE NOSFY par-dessus la porte (13-09) : ouvert quand Apple rend
+    /// une NOUVELLE. La porte se dissout sous lui pendant que l'île s'allume.
+    @State private var nosfyOuvert = false
+    /// LE REJEU (13-09, sa demande : « un bouton sur la home pour relancer le
+    /// parcours après la partie Apple »). Le film seul, par-dessus tout ; à la
+    /// fin, la home, sans cérémonie.
+    @State private var nosfyRejoue = false
     @State private var selection: WoopTab = {
         guard let raw = UserDefaults.standard.string(forKey: "openTab") else { return .home }
         // Le calendrier avait fusionné dans Progression ; Progression est
@@ -875,6 +882,10 @@ struct RootView: View {
             NeonPrimaryLab()
         } else if Self.counterLab {
             CounterLab()
+        } else if CommandLine.arguments.contains("-porteApple") {
+            // LA PORTE (06-09) : l'écran d'entrée Apple, seul. La feuille est la
+            // VRAIE feuille native ; le verdict s'affiche à l'écran.
+            PorteApple()
         } else if Self.porteLab {
             PorteEntree()
         } else if Self.luneSangLab {
@@ -1752,19 +1763,48 @@ struct RootView: View {
                     // en archive, derrière `-loginLab`. Même contrat exact :
                     // `onConnect` + `cineStart` poussé par la racine.
                     PorteEntree(onConnect: { digits in
-                        // Le parcours entre SANS CONDITION. On ne retient que
-                        // ce qui est un numéro — la porte passe une chaîne
-                        // vide, donc `woop.phone` (la clé de session Supabase)
-                        // n'est jamais écrasé ; le jour où l'identité viendra
-                        // d'Apple, cette clé changera de nature (§ 6 du plan).
+                        // ⚠️ Depuis le 06-09, la porte n'appelle PLUS ça sans
+                        // condition : elle l'appelle après le verdict Apple.
+                        // Le numéro est mort, mais on garde la branche tant que
+                        // `woop.phone` sert de clé à `SupabaseSession` (jalon 1).
                         if digits.count == 10 {
                             UserDefaults.standard.set(digits, forKey: "woop.phone")
                         }
                         startConnexionCinematic()
+                    }, onVerdict: { verdict in
+                        // L'AIGUILLAGE (06-09, branché le 13-09) : aucune ligne
+                        // `user_prefs` → c'est une nouvelle, le film de Nosfy
+                        // lui est dû, PAR-DESSUS la porte. Une connue, elle, est
+                        // déjà partie par la cérémonie (PorteEntree l'a lancée).
+                        UserDefaults.standard.set(verdict.estNouvelle,
+                                                  forKey: "woop.onboarding.du")
+                        print("[PORTE] verdict = \(verdict.estNouvelle ? "NOUVELLE → onboarding" : "CONNUE → app") · \(verdict.userID)")
+                        if verdict.estNouvelle {
+                            withAnimation(.easeInOut(duration: 0.7)) { nosfyOuvert = true }
+                        }
                     }, cineStart: cineStart,
                        arrivee: !Self.porteDejaVue)
+                    // LA COUTURE login → onboarding : la porte se DISSOUT (flou +
+                    // fondu) pendant que, dans le film, le halo naît de l'île.
+                    // ⚠️ `.blur` = voile uniforme sur le rectangle de l'hôte —
+                    // ici l'hôte EST l'écran entier sur du noir : rien à voir.
+                    .blur(radius: nosfyOuvert ? 18 : 0)
+                    .opacity(nosfyOuvert ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.7), value: nosfyOuvert)
                     .transition(.opacity)
                     .zIndex(9)
+
+                    if nosfyOuvert {
+                        NosfyOnboarding { reponses in
+                            // ⚠️ Rien n'est écrit au serveur : `definir_profil()`
+                            // n'existe pas (jalon 2). On note, et on entre.
+                            print("[NOSFY] langue=\(reponses.langue) prenom=\(reponses.prenom ?? "—") but=\(reponses.but ?? "—") objectif=\(reponses.objectifHebdo.map(String.init) ?? "—")")
+                            withAnimation(.easeOut(duration: 0.5)) { nosfyOuvert = false }
+                            startConnexionCinematic()
+                        }
+                        .transition(.opacity)
+                        .zIndex(9.5)
+                    }
                 }
             }
 
@@ -1803,6 +1843,39 @@ struct RootView: View {
         // gel du 03-09). Les covers plein écran gardent LEUR paire (un VC
         // présenté n'hérite pas). Ça DIFFÈRE le geste Home (1er glissement
         // à l'app) ; ni le 2e ni Reachability — lois iOS.
+        // LE BOUTON « ▶ Nosfy » (13-09) — DEBUG seulement, un overlay de la
+        // racine : il ne touche ni HomeNuit ni le TabView. Il rejoue le film
+        // exactement comme après un verdict NOUVELLE, et rend la home à la fin.
+        .overlay(alignment: .topTrailing) {
+            #if DEBUG
+            if !showAuth && !showSplash && !nosfyRejoue {
+                Button {
+                    Haptique.leger()
+                    withAnimation(.easeInOut(duration: 0.6)) { nosfyRejoue = true }
+                } label: {
+                    Text("▶ Nosfy")
+                        .font(.inter(11, .semibold))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(.white.opacity(0.08)))
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 54)
+                .padding(.trailing, 14)
+            }
+            #endif
+        }
+        .overlay {
+            if nosfyRejoue {
+                NosfyOnboarding { _ in
+                    withAnimation(.easeOut(duration: 0.5)) { nosfyRejoue = false }
+                }
+                .transition(.opacity)
+                .zIndex(30)
+            }
+        }
         .defersSystemGestures(on: .bottom)
         .persistentSystemOverlays(.hidden)
         // Les bancs du parcours booster :

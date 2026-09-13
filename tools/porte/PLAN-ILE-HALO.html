@@ -1,0 +1,714 @@
+<title>L'île et la braise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   L'ÎLE ET LA BRAISE — plan de l'écrin du film de Nosfy.
+   Même robe que le plan de la porte : la nuit, les blancs en dégradé,
+   la braise dépensée uniquement là où elle est le sujet.
+   Les échantillons sont VRAIS : ils tournent, en CSS, sur du noir.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --nuit:      #07060A;
+  --voile:     #0E0C12;
+  --trait:     rgba(255,255,255,0.085);
+  --trait-vif: rgba(255,255,255,0.18);
+
+  --encre:   #F4F2F7;
+  --encre-2: #A5A0B2;
+  --encre-3: #6B6678;
+
+  --braise:  #FF7A33;
+  --rouge:   #C41E3A;
+
+  --ok:  #6FD79B;
+  --men: #FF5C5C;
+
+  --display: "Inter Tight", "SF Pro Display", system-ui, sans-serif;
+  --corps:   "Inter", system-ui, -apple-system, sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --mesure: 66ch;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--nuit);
+  color: var(--encre);
+  font-family: var(--corps);
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 1120px; margin: 0 auto; padding: 0 28px 130px; }
+section { padding-top: 74px; }
+.mesure { max-width: var(--mesure); }
+
+h2 {
+  font-family: var(--display);
+  font-size: clamp(25px, 3.3vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0 0 10px;
+  background: linear-gradient(178deg, #FFFFFF 8%, #B9B4C6 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+h3 { font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0 0 8px; }
+p { margin: 0 0 14px; color: var(--encre-2); }
+p strong { color: var(--encre); font-weight: 600; }
+
+.oeil {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--encre-3);
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 22px;
+}
+.oeil::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--trait), transparent); }
+
+code, .chemin {
+  font-family: var(--mono); font-size: 0.86em; color: var(--encre);
+  background: rgba(255,255,255,0.05); border: 1px solid var(--trait);
+  border-radius: 5px; padding: 1px 5px; white-space: nowrap;
+}
+
+/* ── hero ────────────────────────────────────────────────────────── */
+
+.hero { padding: 118px 0 66px; }
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(42px, 7vw, 76px);
+  font-weight: 700; letter-spacing: -0.045em; line-height: 0.98;
+  margin: 0 0 20px; text-wrap: balance;
+  background: linear-gradient(176deg, #FFFFFF 0%, #C7C2D4 58%, #8B8698 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero p { font-size: 18px; max-width: 58ch; }
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px;
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em;
+  color: var(--encre-3); text-transform: uppercase;
+}
+
+/* ── LA SCÈNE : un bout d'écran noir avec l'île en haut ──────────── */
+
+.scenes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.piste { display: flex; flex-direction: column; gap: 12px; }
+
+.scene {
+  position: relative;
+  height: 250px;
+  border-radius: 20px;
+  background: #030205;
+  overflow: hidden;
+  border: 1px solid var(--trait);
+  isolation: isolate;
+}
+
+/* le trou physique — il ne bouge JAMAIS */
+.ile {
+  position: absolute;
+  top: 14px; left: 50%;
+  width: 88px; height: 26px;
+  margin-left: -44px;
+  border-radius: 13px;
+  background: #000;
+  z-index: 3;
+}
+
+/* l'anneau, autour du trou */
+.anneau {
+  position: absolute;
+  top: 10px; left: 50%;
+  width: 96px; height: 34px;
+  margin-left: -48px;
+  border-radius: 17px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.legende {
+  font-family: var(--mono);
+  font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--encre-3);
+}
+.legende b { color: var(--encre); font-weight: 500; letter-spacing: 0.06em; }
+.piste p { font-size: 13.5px; margin: 0; line-height: 1.55; }
+
+/* ① ce qu'on a : un trait fin qui s'épaissit */
+.a-actuel {
+  border: 2.4px solid rgba(255,255,255,0.85);
+  box-shadow: 0 0 9px rgba(255,255,255,0.30), 0 0 15px rgba(255,122,51,0.16);
+}
+
+/* ② le double anneau */
+.a-double {
+  border: 3px solid rgba(255,255,255,0.92);
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.9),
+    0 0 0 3.4px rgba(255,255,255,0.30),
+    0 0 16px rgba(255,255,255,0.45),
+    0 0 34px rgba(255,122,51,0.35);
+}
+
+/* ③ la lumière qui court */
+.a-court {
+  border: 3px solid transparent;
+  background:
+    conic-gradient(from 0deg,
+      rgba(255,255,255,0.05) 0deg,
+      rgba(255,255,255,1) 40deg,
+      rgba(255,150,60,0.7) 70deg,
+      rgba(255,255,255,0.05) 130deg,
+      rgba(255,255,255,0.05) 360deg) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: court 3.4s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));
+}
+@keyframes court { to { transform: rotate(360deg); } }
+
+/* ④ l'anneau qui PROJETTE — la lumière descend dans l'écran */
+.a-projette {
+  border: 3px solid rgba(255,255,255,0.95);
+  box-shadow: 0 0 18px rgba(255,255,255,0.55), 0 0 40px rgba(255,122,51,0.4);
+}
+.faisceau {
+  position: absolute;
+  top: 26px; left: 50%;
+  width: 320px; height: 260px;
+  margin-left: -160px;
+  z-index: 1;
+  background: conic-gradient(from 160deg at 50% 0%,
+    rgba(0,0,0,0) 0deg,
+    rgba(255,150,70,0.30) 14deg,
+    rgba(255,90,40,0.16) 20deg,
+    rgba(0,0,0,0) 40deg);
+  filter: blur(16px);
+  animation: souffleFaisceau 5.5s ease-in-out infinite;
+}
+@keyframes souffleFaisceau {
+  0%,100% { opacity: 0.62; transform: scaleX(0.92); }
+  50%     { opacity: 1;    transform: scaleX(1.08); }
+}
+
+/* ── LES BRAISES ─────────────────────────────────────────────────── */
+
+.braise-base, .braise-b, .braise-c, .braise-d {
+  position: absolute;
+  top: 27px; left: 50%;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+/* ① ce qu'on a : deux disques qui pulsent */
+.braise-base {
+  width: 300px; height: 300px; margin: -150px 0 0 -150px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.30), rgba(255,255,255,0) 34%),
+    radial-gradient(closest-side, rgba(255,178,86,0.85), rgba(255,106,30,0.55) 34%, rgba(196,30,58,0.30) 56%, rgba(0,0,0,0) 76%);
+  filter: blur(18px);
+  animation: respire 4.3s ease-in-out infinite;
+}
+@keyframes respire {
+  0%,100% { transform: scale(0.96); opacity: 0.76; }
+  50%     { transform: scale(1.10); opacity: 1; }
+}
+
+/* ② la braise à NOYAU BLANC — la lumière a une source, pas une teinte */
+.braise-b {
+  width: 320px; height: 320px; margin: -160px 0 0 -160px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.95), rgba(255,255,255,0) 18%),
+    radial-gradient(closest-side, rgba(255,220,150,0.9), rgba(255,140,40,0.7) 30%, rgba(190,20,40,0.35) 55%, rgba(0,0,0,0) 78%);
+  filter: blur(16px);
+  animation: respire 4.3s ease-in-out infinite;
+}
+
+/* ③ les rayons — la lumière traverse quelque chose */
+.braise-c {
+  width: 320px; height: 320px; margin: -160px 0 0 -160px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.9), rgba(255,255,255,0) 18%),
+    radial-gradient(closest-side, rgba(255,200,120,0.85), rgba(255,120,35,0.6) 32%, rgba(180,18,40,0.30) 58%, rgba(0,0,0,0) 78%);
+  filter: blur(16px);
+}
+.rayons {
+  position: absolute;
+  top: 27px; left: 50%;
+  width: 340px; height: 340px;
+  margin: -170px 0 0 -170px;
+  z-index: 2;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255,190,110,0.16) 0deg 3deg,
+    rgba(0,0,0,0) 3deg 13deg);
+  -webkit-mask: radial-gradient(closest-side, #000 12%, rgba(0,0,0,0.55) 40%, transparent 72%);
+  mask: radial-gradient(closest-side, #000 12%, rgba(0,0,0,0.55) 40%, transparent 72%);
+  filter: blur(5px);
+  animation: tourneRayons 26s linear infinite;
+}
+@keyframes tourneRayons { to { transform: rotate(360deg); } }
+
+/* ④ la braise VIVANTE — deux disques déphasés + un grain */
+.braise-d {
+  width: 320px; height: 320px; margin: -160px 0 0 -160px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.92), rgba(255,255,255,0) 18%),
+    radial-gradient(closest-side, rgba(255,205,130,0.88), rgba(255,125,38,0.62) 32%, rgba(185,20,42,0.32) 58%, rgba(0,0,0,0) 78%);
+  filter: blur(16px);
+  animation: respire 4.3s ease-in-out infinite;
+}
+.braise-d2 {
+  position: absolute;
+  top: 27px; left: 50%;
+  width: 210px; height: 210px; margin: -105px 0 0 -105px;
+  border-radius: 50%;
+  z-index: 1;
+  background: radial-gradient(closest-side, rgba(255,150,50,0.55), rgba(0,0,0,0) 70%);
+  filter: blur(22px);
+  animation: vagabonde 9s ease-in-out infinite;
+}
+@keyframes vagabonde {
+  0%,100% { transform: translate(-34px, -12px) scale(0.86); }
+  50%     { transform: translate(42px, 22px) scale(1.2); }
+}
+.grain {
+  position: absolute; inset: 0; z-index: 2;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* ── tableaux et fiches ──────────────────────────────────────────── */
+
+.cadre { overflow-x: auto; border: 1px solid var(--trait); border-radius: 12px; margin-top: 26px; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+thead th {
+  text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.11em; text-transform: uppercase; color: var(--encre-3);
+  padding: 13px 16px; background: rgba(255,255,255,0.028);
+  border-bottom: 1px solid var(--trait); white-space: nowrap;
+}
+tbody td { padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.045); color: var(--encre-2); vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+tbody td:first-child { color: var(--encre); font-weight: 500; }
+
+.lois { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 14px; margin-top: 26px; }
+.loi { border: 1px solid var(--trait); border-radius: 12px; padding: 16px 17px; background: var(--voile); }
+.loi h4 { font-family: var(--display); font-size: 14.5px; font-weight: 600; margin: 0 0 6px; }
+.loi p { font-size: 13px; margin: 0 0 7px; line-height: 1.55; }
+.loi .preuve { font-family: var(--mono); font-size: 10.5px; color: var(--encre-3); line-height: 1.5; }
+
+.verdict {
+  border: 1px solid rgba(111,215,155,0.28);
+  background: linear-gradient(180deg, rgba(111,215,155,0.05), rgba(14,12,18,0) 80%);
+  border-radius: 14px; padding: 20px 22px; margin-top: 28px;
+}
+.verdict h3 { color: #8FE3B4; }
+.verdict p:last-child { margin-bottom: 0; }
+
+.piege {
+  border: 1px solid rgba(255,92,92,0.28);
+  background: linear-gradient(180deg, rgba(255,92,92,0.055), rgba(14,12,18,0) 80%);
+  border-radius: 14px; padding: 20px 22px; margin-top: 26px;
+}
+.piege h3 { color: #FF8A8A; }
+.piege p:last-child { margin-bottom: 0; }
+
+.retenu {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--ok);
+}
+.retenu::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 9px currentColor; }
+
+footer {
+  margin-top: 84px; padding-top: 24px; border-top: 1px solid var(--trait);
+  font-family: var(--mono); font-size: 11px; color: var(--encre-3); line-height: 1.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; }
+}
+</style>
+
+<div class="page">
+
+<header class="hero">
+  <h1>L'île<br>et la braise</h1>
+  <p>Le film de Nosfy tient. Reste son écrin : l'anneau autour du trou, et la lumière
+     qui vient de derrière. Quatre pistes pour chacun — animées ici, sur du noir, pour
+     être comparées à l'œil et pas décrites.</p>
+  <div class="hero-meta">
+    <span>06 · 09 · 2026</span>
+    <span>Plan — rien n'est codé</span>
+    <span>Suite de <span class="chemin">PLAN-COMPTE-ONBOARDING</span></span>
+  </div>
+</header>
+
+<!-- ══ 1. CE QU'ON A ══════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">01 — Ce qui tourne déjà</p>
+  <div class="mesure">
+    <h2>Pourquoi ça ne « marque » pas encore</h2>
+    <p>L'écrin actuel n'est ni pauvre ni faux — il est <em>diffus</em>. Trois raisons, lues
+       dans le code, pas devinées.</p>
+  </div>
+
+  <div class="lois">
+    <div class="loi">
+      <h4>Tout est flou, donc rien n'a de bord</h4>
+      <p>Les cinq couches du halo sont floutées entre 16 et 44 pt. Une lumière sans
+         <strong>aucun</strong> bord net n'a pas de source : l'œil ne sait pas d'où elle vient,
+         et ce qui n'a pas d'origine ne marque pas.</p>
+      <p class="preuve">NosfyOnboarding.swift — HaloIle, blur 16·24·26·34·44</p>
+    </div>
+    <div class="loi">
+      <h4>La braise n'a pas de cœur blanc</h4>
+      <p>Elle commence à l'orange (1,00 · 0,70 · 0,34). Une vraie source lumineuse est
+         <strong>blanche au centre</strong> et ne prend sa couleur qu'en s'éloignant — c'est ce
+         qui fait la différence entre une lampe et une tache.</p>
+      <p class="preuve">le premier arrêt du RadialGradient</p>
+    </div>
+    <div class="loi">
+      <h4>L'anneau est fin par rapport au trou</h4>
+      <p>3,8 pt au maximum autour d'une pastille de 126 × 37. Rapporté à l'écran, le trait le
+         plus épais fait <strong>un centième</strong> de la largeur : il se lit, il ne s'impose pas.</p>
+      <p class="preuve">epaisseur = 1,4 + tiers × 0,8</p>
+    </div>
+  </div>
+
+  <div class="piege">
+    <h3>⚠ La contrainte qui commande tout</h3>
+    <p>L'île est un <strong>trou physique dans la dalle</strong>. On ne peut ni l'éclairer, ni la
+       colorer, ni la faire grandir — on ne peint qu'<em>autour</em>. Tout ce qui suit vit dans
+       la couronne de quelques points qui la borde, et dans ce que cette couronne
+       <em>projette</em> vers le bas.</p>
+    <p>C'est aussi pour ça que le verdict « ne la fais pas grandir » était juste : une
+       pastille qui enfle est le seul effet que l'œil sait immédiatement faux.</p>
+  </div>
+</section>
+
+<!-- ══ 2. L'ÎLE ═══════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">02 — L'anneau</p>
+  <div class="mesure">
+    <h2>Quatre façons de le rendre présent</h2>
+    <p>Les quatre tournent vraiment ci-dessous. Le rectangle noir au centre de chaque
+       vignette est le trou — il ne bouge dans aucune.</p>
+  </div>
+
+  <div class="scenes">
+
+    <div class="piste">
+      <div class="scene">
+        <div class="anneau a-actuel"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>A · aujourd'hui</b> — un trait, une lueur</p>
+      <p>Un anneau blanc de 3,8 pt au plus fort, une ombre blanche et une ombre orange.
+         Propre, et ça se remarque à peine sur un écran allumé.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="anneau a-double"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>B · le double anneau</b></p>
+      <p>Un trait épais, <strong>un noir de séparation</strong>, puis un second trait fin. Le noir
+         entre les deux est ce qui fait tout : il détache l'anneau de la dalle au lieu de l'y
+         fondre. C'est le geste d'un bijou, pas d'une interface.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="anneau a-court"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>C · la lumière qui court</b></p>
+      <p>Un éclat parcourt l'anneau sans arrêt, blanc puis ambre. C'est déjà ce que fait le
+         reflet actuel — mais <strong>trois fois plus contrasté et deux fois plus rapide</strong>.
+         Il donne à l'île une vie propre, indépendante de la parole.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="faisceau"></div>
+        <div class="anneau a-projette"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>D · l'île qui projette</b></p>
+      <p>L'anneau devient une <em>source</em> : un faisceau descend dans l'écran, comme une
+         lampe au plafond. C'est le seul des quatre qui change la nature de l'objet — l'île
+         n'est plus décorée, elle <strong>éclaire la page</strong>.</p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>Mon avis : <strong>B + C ensemble</strong>, et D en réserve</h3>
+    <p>Le double anneau donne la présence <em>au repos</em> (c'est un objet, il existe même
+       quand rien ne se passe), la lumière qui court donne la vie. Les deux se cumulent sans
+       se gêner : l'un est la matière, l'autre le mouvement.</p>
+    <p><strong>D est plus fort mais plus risqué</strong> : un faisceau qui descend mange le haut
+       de la page, et c'est exactement là que Nosfy parle. À tenir pour l'écran de sortie —
+       « Bienvenue, Margaux. » — où il n'y a plus rien à lire en haut.</p>
+  </div>
+</section>
+
+<!-- ══ 3. LA BRAISE ═══════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">03 — Le halo</p>
+  <div class="mesure">
+    <h2>Lui donner une source, pas plus d'orange</h2>
+    <p>Le réflexe serait de monter l'opacité. C'est exactement ce qui a produit le brun la
+       première fois. Ce qui manque n'est pas la quantité de lumière, c'est sa
+       <strong>structure</strong>.</p>
+  </div>
+
+  <div class="scenes">
+
+    <div class="piste">
+      <div class="scene">
+        <div class="braise-base"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>A · aujourd'hui</b></p>
+      <p>Cinq disques flous en <span class="chemin">plusLighter</span>, sur quatre horloges.
+         La couleur est juste, le mouvement est là — mais l'ensemble n'a ni cœur ni bord.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="braise-b"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>B · le cœur blanc</b></p>
+      <p>Le même halo, mais <strong>blanc pur au centre</strong> sur 18 % du rayon, avant de
+         virer à l'ambre puis au rouge. Un seul arrêt de dégradé change tout : la lumière a
+         une origine, et l'orange devient sa conséquence.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="braise-c"></div>
+        <div class="rayons"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>C · les rayons</b></p>
+      <p>Des rais très fins tournent lentement dans le halo. C'est ce qui dit qu'une lumière
+         traverse <em>quelque chose</em> — de la poussière, de la brume. Le plus
+         cinématographique des quatre.</p>
+    </div>
+
+    <div class="piste">
+      <div class="scene">
+        <div class="braise-d"></div>
+        <div class="braise-d2"></div>
+        <div class="grain"></div>
+        <div class="ile"></div>
+      </div>
+      <p class="legende"><b>D · la braise vivante</b></p>
+      <p>Cœur blanc, une seconde braise qui vagabonde <strong>plus loin et plus vite</strong>,
+         et un grain fin par-dessus. Le grain est le détail qui coûte le moins et se voit le
+         plus : il enlève au dégradé son côté « calculé ».</p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>Mon avis : <strong>B + D</strong>, et C si le téléphone tient</h3>
+    <p>Le cœur blanc d'abord — c'est une ligne de code et c'est le plus grand écart visuel de
+       toute la liste. Le grain ensuite, pour tuer le côté synthétique. La braise vagabonde
+       existe déjà, il suffit de doubler son amplitude et de raccourcir son horloge.</p>
+    <p><strong>Les rayons sont beaux et ils coûtent.</strong> Un dégradé conique masqué et
+       tournant est le genre de couche qui fait chuter la cadence — à ne poser
+       qu'<em>après</em> mesure, et jamais en même temps que le reste.</p>
+  </div>
+
+  <div class="piege">
+    <h3>⚠ Ce qui va coûter, et ce qu'il faudra mesurer</h3>
+    <p>L'écran est déjà chargé : cinq couches floutées, quatre horloges, un mode de fusion,
+       et le texte mot par mot par-dessus. Chaque couche ajoutée se paie en cadence — et un
+       onboarding qui saccade est pire qu'un onboarding sobre.</p>
+    <p><strong>La règle pour ce chantier :</strong> une piste à la fois, filmée au téléphone,
+       cadence relevée avant et après. Le grain et le cœur blanc ne coûtent presque rien
+       (pas de couche en plus) ; les rayons et le faisceau en ajoutent une chacun. Aucun des
+       deux ne rentre sans mesure.</p>
+  </div>
+</section>
+
+<!-- ══ 4. LA SORTIE ═══════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">04 — La sortie</p>
+  <div class="mesure">
+    <h2>« Bienvenue, Margaux. » n'est pas une card. C'est un projecteur.</h2>
+    <p>Le dernier écran est aujourd'hui construit comme les autres : le halo en haut, le
+       texte au milieu, le bouton en bas. C'est cohérent, et c'est faible — <strong>la fin
+       d'un film ne ressemble pas à ses questions</strong>.</p>
+    <p>Et la pièce existe déjà dans le dépôt.</p>
+  </div>
+
+  <div class="lois">
+    <div class="loi" style="border-color:rgba(111,215,155,0.28)">
+      <h4><span class="chemin">NightSpotlight</span> — déjà écrit</h4>
+      <p>Un shader Metal plein écran (<span class="chemin">nightSpotlight</span>), posé
+         <em>sous</em> tout le reste, à 30 Hz. Trois bancs s'en servent déjà : la page de
+         succès, le cadran, la lentille.</p>
+      <p class="preuve">Woop/Views/CounterLab.swift:41 · utilisé par SuccessLab:245 et :294</p>
+    </div>
+    <div class="loi" style="border-color:rgba(111,215,155,0.28)">
+      <h4><span class="chemin">WoopGrain</span> — déjà écrit aussi</h4>
+      <p>Le grain de la maison, avec sa densité et ses deux alphas réglables. La page de
+         succès le compose exactement comme il le faudrait ici :
+         <span class="chemin">Color.black + NightSpotlight + WoopGrain</span>.</p>
+      <p class="preuve">SuccessLab.swift:248 — density 0.028, light 0.022, dark 0.028</p>
+    </div>
+    <div class="loi" style="border-color:rgba(111,215,155,0.28)">
+      <h4><span class="chemin">RewardCard(.spotlight)</span> — la robe « YOU MADE IT »</h4>
+      <p>C'est ELLE que tu m'as montrée. Card gris-en-tête / noir-au-pied, la vidéo
+         <span class="chemin">fond-matrice-loop</span> bord à bord, la lampe-barrette et son
+         éventail, et <span class="chemin">TexteGeant</span> par-dessus.</p>
+      <p class="preuve">RewardCard.swift:324 · le style .galet porte le GROS GALET de vrai
+         verre natif qui se promène sur le chiffre et le réfracte (:41)</p>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h3>Et le composant attend déjà nos mots</h3>
+    <p><span class="chemin">TexteGeant</span> prend <span class="chemin">lignes: [String]</span>,
+       et son commentaire dit exactement ce qu'on veut en faire :
+       <em>« LES MOTS — jamais en dur (contrat du plan backend : l'IA les fournira). Le corps
+       se calcule ICI, jamais côté IA : le Design System décide de la typo. »</em></p>
+    <p>Donc trois lignes — <strong>deux mots et le prénom</strong> — plus le nombre de séances
+       en galet de verre. Il n'y a rien à inventer, juste à appeler.</p>
+  </div>
+
+  <div class="piege">
+    <h3>⚠ Le prénom long va être coupé</h3>
+    <p>À trois lignes, <span class="chemin">TexteGeant</span> passe à <strong>112 pt</strong>
+       (128 à deux lignes), en <span class="chemin">.inter(_, .heavy)</span>, tracking −3,
+       avec <span class="chemin">lineLimit(1)</span> et <span class="chemin">fixedSize()</span>.
+       Le seul garde-fou est un palier unique : au-delà de 4 caractères, ×0,88. Une fois.</p>
+    <p>« MARGAUX » (7) passe. « CHRISTELLE » (10) déborde, et c'est le clip de la card qui le
+       coupe. <strong>Le correctif est une ligne</strong> : remplacer le palier par une échelle
+       continue sur la longueur du mot le plus long. À faire dans la même passe — un prénom
+       tronqué au moment où on lui souhaite la bienvenue, c'est le pire endroit possible.</p>
+  </div>
+
+  <div class="verdict">
+    <h3>Ce que ça donne comme film</h3>
+    <p>Quatre écrans dans la nuit, éclairés par une braise au-dessus de la tête — puis, au
+       dernier, <strong>la lumière change de nature</strong> : elle vient d'en face, elle est
+       blanche, elle la prend en pleine figure. Le passage de l'un à l'autre est déjà écrit,
+       c'est le fondu-flou.</p>
+    <p>Et il y a une logique : pendant les questions, la lumière est <em>derrière</em> Nosfy
+       — on est dans son univers noir. À la fin, elle est sur <em>elle</em>.</p>
+  </div>
+</section>
+
+<!-- ══ 5. L'ORDRE ═════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">05 — Dans quel ordre</p>
+  <div class="mesure">
+    <h2>Du moins cher au plus risqué</h2>
+    <p>Chaque étape se voit toute seule. On s'arrête dès que c'est assez marqué — il n'y a
+       aucune obligation d'aller au bout.</p>
+  </div>
+
+  <div class="cadre">
+    <table>
+      <thead>
+        <tr><th>Rang</th><th>Le geste</th><th>Ce que ça change</th><th>Couche en plus</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>① <span class="retenu">à faire</span></td>
+          <td>Le cœur blanc de la braise</td>
+          <td>La lumière a une source. Le plus grand écart de la liste.</td>
+          <td>aucune — un arrêt de dégradé</td>
+        </tr>
+        <tr>
+          <td>②</td>
+          <td>Le double anneau</td>
+          <td>L'île devient un objet posé, pas un contour. Le noir de séparation fait tout.</td>
+          <td>aucune — deux ombres</td>
+        </tr>
+        <tr>
+          <td>③</td>
+          <td>La lumière qui court, ×3 de contraste</td>
+          <td>L'île vit sans qu'on lui parle.</td>
+          <td>aucune — le reflet existe</td>
+        </tr>
+        <tr>
+          <td>④</td>
+          <td>Le grain — <span class="chemin">WoopGrain</span></td>
+          <td>Le dégradé cesse d'être « calculé ». Le composant existe : c'est un appel.</td>
+          <td>aucune — déjà écrit</td>
+        </tr>
+        <tr>
+          <td>⑤</td>
+          <td>La braise vagabonde : amplitude ×2</td>
+          <td>La lumière n'a plus de repos nulle part.</td>
+          <td>aucune — elle existe</td>
+        </tr>
+        <tr>
+          <td>⑥ <em>sous réserve</em></td>
+          <td>Les rayons</td>
+          <td>La lumière traverse quelque chose. Le plus beau, le plus cher.</td>
+          <td>une couche animée</td>
+        </tr>
+        <tr>
+          <td>⑥ <em>ex æquo</em></td>
+          <td>La sortie en projecteur — <span class="chemin">NightSpotlight</span></td>
+          <td>La lumière change de camp : elle vient d'en face, blanche, sur elle. Les trois
+              couches existent déjà, il n'y a qu'à les composer.</td>
+          <td>un shader, mais déjà écrit</td>
+        </tr>
+        <tr>
+          <td>⑧ <em>sortie seule</em></td>
+          <td>Le faisceau qui descend</td>
+          <td>L'île éclaire la page. Sans objet si la sortie passe en projecteur.</td>
+          <td>une couche animée</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:24px;max-width:var(--mesure)">Les cinq premiers n'ajoutent
+     <strong>aucune couche de rendu</strong> : ce sont des réglages sur ce qui existe déjà. Ils
+     peuvent partir ensemble, et c'est ce que je propose de faire en premier — puis tu
+     regardes, et on décide si les rayons valent leur prix.</p>
+  <p style="max-width:var(--mesure)"><strong>La sortie en projecteur est à part</strong> : elle
+     ne coûte presque rien à écrire puisque <span class="chemin">NightSpotlight</span> et
+     <span class="chemin">WoopGrain</span> existent, et c'est le plus grand écart du film. Je la
+     mettrais dans la même passe que les cinq premiers.</p>
+</section>
+
+<footer>
+  Woop — l'écrin du film de Nosfy · 06-09-2026<br>
+  Les échantillons de cette page sont du CSS : ils donnent l'intention et les rapports,
+  pas le rendu exact de Metal et de SwiftUI.<br>
+  Rien n'est codé. Rien n'est commité.
+</footer>
+
+</div>

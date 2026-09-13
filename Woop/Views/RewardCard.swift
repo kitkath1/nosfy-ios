@@ -1838,12 +1838,26 @@ struct TexteGeant: View {
 
     private var corps: CGFloat { lignes.count <= 2 ? 128 : 112 }
 
+    /// ⚠️ **LE MOT LONG DÉBORDAIT** (06-09). Le garde-fou n'avait qu'UN palier —
+    /// au-delà de 4 caractères, ×0,88, une fois pour toutes — avec
+    /// `lineLimit(1)` et `fixedSize()` : un mot de dix lettres sortait de la
+    /// card et se faisait couper par son clip. Sans conséquence tant que les
+    /// mots étaient à nous (« YOU MADE IT », « YOU'RE BACK », un nombre en
+    /// lettres) ; inacceptable dès qu'ils portent un PRÉNOM.
+    ///
+    /// L'échelle devient continue au-delà de 8 — et **rigoureusement identique
+    /// à l'ancienne en deçà**, pour qu'aucune robe existante ne bouge d'un
+    /// pixel (tous nos mots font 8 caractères ou moins).
+    static func echelle(_ n: Int) -> CGFloat {
+        if n > 8 { return 0.88 * (8.0 / CGFloat(n)) }
+        return n > 4 ? 0.88 : 1
+    }
+
     private var rangées: some View {
         VStack(spacing: lignes.count <= 2 ? -12 : -16) {
             ForEach(0..<lignes.count, id: \.self) { i in
                 Text(lignes[i])
-                    .font(.inter(corps * (lignes[i].count > 4 ? 0.88 : 1),
-                                 .heavy))
+                    .font(.inter(corps * Self.echelle(lignes[i].count), .heavy))
                     .tracking(-3)
                     .lineLimit(1)
                     .fixedSize()

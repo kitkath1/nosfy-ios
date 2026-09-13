@@ -1,0 +1,2048 @@
+<title>L'univers de Nosfy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   L'UNIVERS DE NOSFY — plan de la création de compte et de l'onboarding.
+   Robe : l'app elle-même. Noir violacé, blancs en dégradé, la braise
+   (rouge → orange) dépensée UNIQUEMENT dans le halo de l'île. Parti pris
+   assumé : une seule robe, la nuit — c'est le sujet de la page.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --nuit:      #07060A;
+  --voile:     #0E0C12;
+  --voile-2:   #16131C;
+  --trait:     rgba(255,255,255,0.085);
+  --trait-vif: rgba(255,255,255,0.18);
+
+  --encre:   #F4F2F7;
+  --encre-2: #A5A0B2;
+  --encre-3: #6B6678;
+
+  --braise:       #FF7A33;
+  --braise-rouge: #C41E3A;
+
+  --ok:  #6FD79B;
+  --srv: #74A9FF;
+  --loc: #E5C06A;
+  --abs: #6B6678;
+  --men: #FF5C5C;
+
+  --display: "Inter Tight", "SF Pro Display", system-ui, sans-serif;
+  --corps:   "Inter", system-ui, -apple-system, sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --mesure: 68ch;
+  --page:   1180px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--nuit);
+  color: var(--encre);
+  font-family: var(--corps);
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── ossature ────────────────────────────────────────────────────── */
+
+.page { max-width: var(--page); margin: 0 auto; padding: 0 28px 140px; }
+
+section { padding-top: 76px; }
+
+.mesure { max-width: var(--mesure); }
+
+h2 {
+  font-family: var(--display);
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0 0 10px;
+  background: linear-gradient(178deg, #FFFFFF 8%, #B9B4C6 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+h3 {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 8px;
+  color: var(--encre);
+}
+
+p { margin: 0 0 14px; color: var(--encre-2); }
+p strong { color: var(--encre); font-weight: 600; }
+p.chapo { font-size: 17.5px; color: var(--encre-2); }
+
+.oeil {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+.oeil::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--trait), transparent);
+}
+
+a { color: var(--encre); text-decoration-color: var(--trait-vif); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--braise); outline-offset: 3px; }
+
+code, .chemin {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  color: var(--encre);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--trait);
+  border-radius: 5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* ── le hero : l'île et son halo, en vrai ─────────────────────────── */
+
+.hero {
+  position: relative;
+  padding: 132px 0 82px;
+  overflow: hidden;
+}
+
+.hero-halo {
+  position: absolute;
+  top: -240px; left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 130vw);
+  aspect-ratio: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.13), rgba(255,255,255,0) 62%),
+    radial-gradient(closest-side, rgba(255,122,51,0.30), rgba(196,30,58,0.16) 46%, rgba(0,0,0,0) 72%);
+  filter: blur(18px);
+  animation: souffle 7.5s ease-in-out infinite;
+}
+@keyframes souffle {
+  0%, 100% { opacity: 0.82; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.05); }
+}
+
+.hero-ile {
+  position: relative;
+  width: 126px; height: 37px;
+  border-radius: 19px;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 24px rgba(255,255,255,0.16);
+  margin-bottom: 44px;
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(44px, 7.4vw, 82px);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  margin: 0 0 20px;
+  text-wrap: balance;
+  background: linear-gradient(176deg, #FFFFFF 0%, #C7C2D4 58%, #8B8698 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero p { font-size: 18px; max-width: 56ch; }
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin-top: 34px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--encre-3);
+  text-transform: uppercase;
+}
+.hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
+
+/* ── pastilles d'état (la grammaire du site de doc) ───────────────── */
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pastille::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 9px currentColor;
+}
+.p-ok  { color: var(--ok); }
+.p-srv { color: var(--srv); }
+.p-loc { color: var(--loc); }
+.p-abs { color: var(--abs); }
+.p-abs::before { box-shadow: none; }
+.p-men { color: var(--men); }
+
+/* ── les cartes d'état ───────────────────────────────────────────── */
+
+.grille-etats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.colonne { display: flex; flex-direction: column; gap: 10px; }
+
+.colonne > header {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  padding-bottom: 4px;
+}
+
+.fiche {
+  background: var(--voile);
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fiche h4 {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  margin: 0;
+  color: var(--encre);
+}
+.fiche p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--encre-2); }
+.fiche .preuve {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--encre-3);
+  word-break: break-word;
+}
+
+.fiche-vedette {
+  border-color: rgba(116,169,255,0.30);
+  background: linear-gradient(180deg, rgba(116,169,255,0.06), rgba(14,12,18,1) 70%);
+}
+
+/* ── le film : une rangée par écran ──────────────────────────────── */
+
+.film { display: flex; flex-direction: column; gap: 8px; margin-top: 40px; }
+
+.scene {
+  display: grid;
+  grid-template-columns: 268px 1fr;
+  gap: 44px;
+  align-items: start;
+  padding: 34px 0;
+  border-top: 1px solid var(--trait);
+}
+.scene:first-child { border-top: none; padding-top: 8px; }
+
+.scene-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--encre-3);
+  margin-bottom: 14px;
+}
+
+.scene-corps h3 { font-size: 22px; margin-bottom: 4px; }
+.scene-corps > p { max-width: 62ch; }
+
+.dit {
+  margin: 16px 0 20px;
+  padding: 16px 18px;
+  border-left: 2px solid rgba(255,122,51,0.55);
+  background: linear-gradient(90deg, rgba(255,122,51,0.05), transparent 70%);
+  border-radius: 0 10px 10px 0;
+}
+.dit p {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  color: var(--encre);
+  margin: 0 0 6px;
+}
+.dit p:last-child { margin-bottom: 0; }
+.dit .glose {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  margin-top: 10px;
+}
+
+.gestes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.gestes li {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--encre-2);
+  line-height: 1.5;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255,255,255,0.045);
+}
+.gestes li:first-child { border-top: none; padding-top: 0; }
+.gestes b {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  padding-top: 3px;
+}
+.gestes strong { color: var(--encre); font-weight: 600; }
+
+/* ── LE TÉLÉPHONE ────────────────────────────────────────────────── */
+
+.tel {
+  margin: 0;
+  width: 268px;
+  aspect-ratio: 393 / 852;
+  border-radius: 46px;
+  padding: 8px;
+  background: linear-gradient(160deg, #2A2731, #101017 42%, #23202B);
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06);
+  position: sticky;
+  top: 24px;
+}
+
+.ecran {
+  position: relative;
+  height: 100%;
+  border-radius: 39px;
+  background: #030205;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+  isolation: isolate;
+}
+
+/* le halo blanc DERRIÈRE l'île + la braise autour */
+.ecran::before {
+  content: "";
+  position: absolute;
+  top: -132px; left: 50%;
+  transform: translateX(-50%);
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.16), rgba(255,255,255,0) 55%),
+    radial-gradient(closest-side, rgba(255,122,51,0.34), rgba(196,30,58,0.20) 44%, rgba(0,0,0,0) 74%);
+  filter: blur(14px);
+  z-index: 0;
+  animation: souffle 7.5s ease-in-out infinite;
+}
+
+.ile {
+  position: relative;
+  z-index: 2;
+  width: 86px; height: 25px;
+  margin: 8px auto 0;
+  border-radius: 13px;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.50);
+  box-shadow: 0 0 14px rgba(255,255,255,0.14);
+  flex: none;
+  overflow: hidden;
+}
+/* l'avancement vit DANS la bordure de l'île : 3 segments */
+.ile[data-pas]::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 13px;
+  border: 1.5px solid transparent;
+  background: conic-gradient(from 180deg, #FFF var(--arc), rgba(255,255,255,0) var(--arc)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.ile[data-pas="1"] { --arc: 33%; }
+.ile[data-pas="2"] { --arc: 66%; }
+.ile[data-pas="3"] { --arc: 100%; }
+
+.toile {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 26px;
+}
+
+.tel-titre {
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.14;
+  background: linear-gradient(174deg, #FFFFFF 0%, #C0BBCC 62%, #7E7A8C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+}
+.tel-titre.petit { font-size: 20px; }
+
+.tel-sous {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--encre-3);
+  margin: 10px 0 0;
+}
+
+/* la voix de Nosfy, en haut de l'écran */
+.voix {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.42;
+  margin: 0;
+  min-height: 148px;
+  background: linear-gradient(174deg, #FFFFFF 0%, #C8C3D4 60%, #8B8698 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.curseur {
+  display: inline-block;
+  width: 2px; height: 1em;
+  vertical-align: -0.14em;
+  background: var(--encre);
+  margin-left: 2px;
+  animation: bat 1s steps(1) infinite;
+}
+@keyframes bat { 50% { opacity: 0; } }
+
+/* ── LE FONDU-FLOU DU TEXTE — chaque mot sort du flou ────────────── */
+.mot-r {
+  display: inline-block;
+  animation: apparait 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+@keyframes apparait {
+  from { opacity: 0; filter: blur(10px); transform: translateY(7px); }
+  to   { opacity: 1; filter: blur(0px);  transform: translateY(0); }
+}
+/* la lumière qui s'installe, une fois, quand les mots sont posés */
+.lueur { animation: sinstalle 2.2s ease-out 0.5s both; }
+@keyframes sinstalle {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  45%      { filter: drop-shadow(0 0 28px rgba(255,255,255,0.20)); }
+}
+
+/* la voix du seuil — la même phrase dans les deux langues */
+.voix-duo {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  margin: 0 0 18px;
+  background: linear-gradient(174deg, #FFFFFF 0%, #C8C3D4 62%, #8B8698 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.voix-duo.faible { opacity: 0.4; }
+
+/* les cards de verre */
+.verres { display: flex; flex-direction: column; gap: 10px; }
+.verres.paire { flex-direction: row; }
+.verre {
+  flex: 1;
+  border-radius: 17px;
+  padding: 15px 14px;
+  background: linear-gradient(158deg, rgba(255,255,255,0.10), rgba(255,255,255,0.035));
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.verres.paire .verre { align-items: center; text-align: center; padding: 20px 10px; }
+.verre .glyphe { font-size: 21px; line-height: 1; opacity: 0.92; }
+.verre .nom {
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+}
+.verre .note { font-size: 10.5px; color: var(--encre-3); line-height: 1.4; }
+.verre.choisi {
+  border-color: rgba(255,255,255,0.42);
+  background: linear-gradient(158deg, rgba(255,255,255,0.20), rgba(255,255,255,0.07));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 0 22px rgba(255,255,255,0.09);
+}
+.verre.range { flex-direction: row; align-items: center; gap: 12px; }
+.verre.range .glyphe { font-size: 18px; }
+
+/* la semaine tapable */
+.semaine { display: flex; justify-content: space-between; gap: 5px; }
+.jour {
+  flex: 1;
+  aspect-ratio: 1 / 1.5;
+  border-radius: 11px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.035);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--encre-3);
+}
+.jour .perle {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+}
+.jour.on {
+  border-color: rgba(255,255,255,0.40);
+  background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05));
+  color: var(--encre);
+}
+.jour.on .perle {
+  background: #FFF;
+  box-shadow: 0 0 8px rgba(255,255,255,0.85);
+}
+
+/* le bouton primaire */
+.primaire {
+  margin-top: auto;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1D1A22, #0B0A0E);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.26), 0 6px 20px -8px rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--encre);
+}
+.primaire.apple { background: linear-gradient(180deg, #FFFFFF, #E4E1E8); color: #08070A; border-color: transparent; }
+
+.pied-tel {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 9.5px;
+  line-height: 1.45;
+  color: var(--encre-3);
+}
+
+/* la poudre de diamant, au tap */
+.poudre { display: flex; gap: 4px; justify-content: center; margin-top: 12px; }
+.poudre i {
+  width: 3px; height: 3px;
+  background: #FFF;
+  border-radius: 50%;
+  opacity: 0.55;
+  transform: rotate(45deg);
+}
+.poudre i:nth-child(2n) { opacity: 0.28; height: 2px; width: 2px; }
+.poudre i:nth-child(3n) { opacity: 0.8; }
+
+/* le champ du prénom */
+.champ {
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.34);
+  background: rgba(255,255,255,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  padding: 13px 14px;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--encre);
+  display: flex;
+  align-items: center;
+}
+
+/* le lien « Passer » */
+.lien-skip {
+  margin-top: 13px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--encre-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255,255,255,0.16);
+}
+
+/* l'île qui répond */
+.ile.parle {
+  width: 158px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--encre);
+  box-shadow: 0 0 20px rgba(255,255,255,0.20);
+}
+
+/* la démonstration du fondu */
+.fondu { display: flex; gap: 12px; margin-top: 24px; }
+.fondu figure { flex: 1; margin: 0; min-width: 0; }
+.fondu .vitre {
+  height: 92px;
+  border-radius: 13px;
+  border: 1px solid var(--trait);
+  background: linear-gradient(158deg, #16121F, #08070C);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.fondu .mot {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--encre);
+  white-space: nowrap;
+}
+.fondu figcaption {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  margin-top: 9px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── tableaux ────────────────────────────────────────────────────── */
+
+.cadre { overflow-x: auto; border: 1px solid var(--trait); border-radius: 12px; margin-top: 28px; }
+
+table { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 13.5px; }
+thead th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--encre-3);
+  padding: 13px 16px;
+  background: rgba(255,255,255,0.028);
+  border-bottom: 1px solid var(--trait);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.045);
+  color: var(--encre-2);
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody td:first-child { color: var(--encre); font-weight: 500; }
+td .chemin { white-space: nowrap; }
+
+/* ── la chaîne Apple ─────────────────────────────────────────────── */
+
+.chaine { list-style: none; margin: 30px 0 0; padding: 0; counter-reset: pas; }
+.chaine li {
+  position: relative;
+  padding: 0 0 26px 46px;
+  counter-increment: pas;
+}
+.chaine li::before {
+  content: counter(pas, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 1px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--trait-vif);
+  background: var(--voile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--encre-2);
+}
+.chaine li::after {
+  content: "";
+  position: absolute;
+  left: 13.5px; top: 32px; bottom: 4px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--trait), transparent);
+}
+.chaine li:last-child::after { display: none; }
+.chaine h4 { font-family: var(--display); font-size: 16px; font-weight: 600; margin: 3px 0 5px; color: var(--encre); }
+.chaine p { font-size: 14px; margin: 0 0 8px; max-width: 64ch; }
+
+pre {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.65;
+  background: var(--voile);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  color: var(--encre-2);
+  margin: 10px 0 0;
+}
+pre .cle { color: var(--braise); }
+pre .txt { color: var(--encre); }
+
+/* ── l'alerte ────────────────────────────────────────────────────── */
+
+.piege {
+  border: 1px solid rgba(255,92,92,0.28);
+  background: linear-gradient(180deg, rgba(255,92,92,0.055), rgba(14,12,18,0) 80%);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-top: 28px;
+}
+.piege h3 { color: #FF8A8A; display: flex; align-items: center; gap: 9px; }
+.piege p:last-child { margin-bottom: 0; }
+
+.lois { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 26px; }
+.loi {
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  padding: 16px 17px;
+  background: var(--voile);
+}
+.loi h4 { font-family: var(--display); font-size: 14.5px; font-weight: 600; margin: 0 0 6px; color: var(--encre); }
+.loi p { font-size: 13px; margin: 0 0 7px; line-height: 1.55; }
+.loi .preuve { font-family: var(--mono); font-size: 10.5px; color: var(--encre-3); line-height: 1.5; word-break: break-word; }
+
+/* ── les décisions ───────────────────────────────────────────────── */
+
+.decisions { display: flex; flex-direction: column; gap: 0; margin-top: 30px; }
+.decision {
+  display: grid;
+  grid-template-columns: 34px 1fr 300px;
+  gap: 22px;
+  padding: 22px 0;
+  border-top: 1px solid var(--trait);
+  align-items: start;
+}
+.decision:first-child { border-top: none; }
+.decision .marque {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--encre-3);
+  padding-top: 2px;
+}
+.decision h4 { font-family: var(--display); font-size: 16.5px; font-weight: 600; margin: 0 0 6px; color: var(--encre); }
+.decision p { font-size: 14px; margin: 0; }
+.avis {
+  border-left: 2px solid rgba(255,122,51,0.5);
+  padding: 2px 0 2px 16px;
+}
+.avis span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--braise);
+  margin-bottom: 5px;
+}
+.avis p { font-size: 13.5px; color: var(--encre-2); }
+
+/* ── l'ordre de travail ──────────────────────────────────────────── */
+
+.ordre { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 30px; }
+.jalon {
+  border: 1px solid var(--trait);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--voile);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.jalon .rang {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--braise);
+}
+.jalon h4 { font-family: var(--display); font-size: 15.5px; font-weight: 600; margin: 0; color: var(--encre); }
+.jalon p { font-size: 13px; margin: 0; line-height: 1.55; }
+.jalon ul { margin: 0; padding-left: 17px; font-size: 13px; color: var(--encre-2); line-height: 1.6; }
+
+footer {
+  margin-top: 90px;
+  padding-top: 26px;
+  border-top: 1px solid var(--trait);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--encre-3);
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .scene { grid-template-columns: 1fr; gap: 26px; }
+  .tel { position: static; margin: 0 auto; }
+  .decision { grid-template-columns: 26px 1fr; }
+  .decision .avis { grid-column: 2; margin-top: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="page">
+
+<!-- ══ HERO ═══════════════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-halo" aria-hidden="true"></div>
+  <div class="hero-ile" aria-hidden="true"></div>
+  <h1>L'univers<br>de Nosfy</h1>
+  <p class="chapo">La création de compte par Apple, et les trois questions du coach.
+     Ce que le serveur sait déjà, ce qu'il faut lui apprendre, et l'écran par écran.</p>
+  <div class="hero-meta">
+    <span>05 · 09 · 2026</span>
+    <span>Plan — rien n'est codé</span>
+    <span>Les états viennent du <a href="https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026">site du back-end</a></span>
+  </div>
+</header>
+
+<!-- ══ 1. L'ÉTAT MESURÉ ═══════════════════════════════════════════ -->
+<section>
+  <p class="oeil">01 — Ce qui est vrai aujourd'hui</p>
+  <div class="mesure">
+    <h2>La porte est ouverte, et elle ne sait pas qui entre</h2>
+    <p>Trois choses avant de dessiner. <strong>Un :</strong> Sign in with Apple n'existe nulle part —
+       pas de fichier <span class="chemin">.entitlements</span> dans le dépôt, pas une ligne de
+       <span class="chemin">AuthenticationServices</span>. <strong>Deux :</strong> l'écran d'entrée actuel laisse
+       passer sans rien vérifier, et deux numéros de téléphone en dur désignent deux comptes dont le mot de
+       passe se déduit du numéro. <strong>Trois</strong> — et c'est la bonne nouvelle : la question 3 de
+       l'onboarding a <em>déjà</em> son back-end, posé et mesuré ce matin.</p>
+  </div>
+
+  <div class="grille-etats">
+    <div class="colonne">
+      <header>Ce qui ment</header>
+
+      <article class="fiche">
+        <span class="pastille p-men">Ment</span>
+        <h4>Deux numéros en dur ouvrent deux comptes</h4>
+        <p>Le mot de passe est <em>dérivé</em> du numéro. Quiconque lit le binaire entre dans les deux comptes.</p>
+        <p class="preuve">Woop/Services/Supabase.swift:27-35</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-men">Ment</span>
+        <h4>« Se connecter » n'authentifie rien</h4>
+        <p>Le bouton appelle <span class="chemin">onConnect</span> et on entre. Le commentaire le dit :
+           « la connexion est immédiate ».</p>
+        <p class="preuve">Woop/Views/AuthView.swift:95-100 · WoopApp.swift:1718-1727</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-men">Ment</span>
+        <h4>Le jeton dort en clair</h4>
+        <p>Le <em>refresh token</em> est écrit dans <span class="chemin">UserDefaults</span> — il part
+           dans les sauvegardes iCloud.</p>
+        <p class="preuve">Woop/Services/Supabase.swift:133</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-men">Ment</span>
+        <h4>Déconnexion et suppression</h4>
+        <p>« Se déconnecter » n'a plus d'écran de retour. « Supprimer mon compte » ne supprime rien —
+           refus App Store garanti.</p>
+        <p class="preuve">docs/site — b-po-deconnecter · b-po-supprimer</p>
+      </article>
+    </div>
+
+    <div class="colonne">
+      <header>Ce qui n'existe pas</header>
+
+      <article class="fiche">
+        <span class="pastille p-abs">Absent</span>
+        <h4>Sign in with Apple</h4>
+        <p>Ni capability, ni entitlement, ni provider. Zéro import de <span class="chemin">AuthenticationServices</span>
+           dans les 120 fichiers Swift.</p>
+        <p class="preuve">mesuré 05-09 : find *.entitlements → rien · grep ASAuthorization → rien</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-abs">Absent</span>
+        <h4>Une identité de personne</h4>
+        <p>Aucune table de profil. « Kathryn » est écrit en dur trois fois dans
+           <span class="chemin">ProfilLune</span>.</p>
+        <p class="preuve">docs/site — b-po-profil</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-abs">Absent</span>
+        <h4>Une création de compte</h4>
+        <p>Pas de signup, pas d'OTP, pas de magic link. Les 8 comptes existants ont été créés à la main.</p>
+        <p class="preuve">docs/site — b-po-signup</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-ok">Rien à migrer</span>
+        <h4>Et donc : la reprise est gratuite</h4>
+        <p>Mesuré ce matin — les quatre tables de séance sont <strong>vides</strong>. Les 80 lignes du carnet
+           appartiennent toutes au compte de test. Aucun compte réel n'a jamais rien synchronisé : il n'y a
+           pas d'historique serveur à recoller sur une identité Apple.</p>
+        <p class="preuve">docs/site — b-sy-jamais-ecrit (05-09)</p>
+      </article>
+    </div>
+
+    <div class="colonne">
+      <header>Ce qui attend déjà</header>
+
+      <article class="fiche fiche-vedette">
+        <span class="pastille p-srv">Serveur seul</span>
+        <h4><span class="chemin">user_prefs</span> — une ligne par compte</h4>
+        <p>Posée et mesurée le 05-09. RLS « own » en select, insert et update. La note de la carte du serveur
+           dit, mot pour mot : <em>« L'onboarding la posera plus tard. »</em> C'est aujourd'hui.</p>
+        <p class="preuve">supabase/migrations/20260905110000_objectif_hebdo.sql</p>
+      </article>
+
+      <article class="fiche fiche-vedette">
+        <span class="pastille p-srv">Serveur seul</span>
+        <h4><span class="chemin">definir_objectif(n)</span></h4>
+        <p>Écrit l'objectif hebdomadaire, idempotent, et <em>rend le nouvel état</em> — l'appelante ne
+           redemande pas. Hors bornes = erreur métier (200 + motif), jamais un 500.
+           <strong>La question 3 n'a plus rien à écrire côté serveur.</strong></p>
+        <p class="preuve">mesuré : 10 écrit puis relu 10 · 99 → {ok:false, hors_bornes}</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-ok">Branché</span>
+        <h4>Le composant semaine existe</h4>
+        <p><span class="chemin">CardSeances</span> — les sept lettres, les perles qui s'allument sur les
+           <em>vrais</em> jours (correctif du 25-08). L'écran 4 le reprend en mode « je choisis » au lieu de
+           « j'ai fait ».</p>
+        <p class="preuve">Woop/Views/WidgetsCards.swift:1080-1345</p>
+      </article>
+
+      <article class="fiche">
+        <span class="pastille p-ok">Branché</span>
+        <h4>La poudre de diamant aussi</h4>
+        <p><span class="chemin">BoutonPrimaire</span> sème déjà seize grains au tap — l'étoile-facette, la
+           gravité, et l'horloge qui dort quand il n'y a plus rien à semer. Rien au repos.</p>
+        <p class="preuve">Woop/Views/BoutonPrimaire.swift:18-58</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 2. APPLE ═══════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">02 — Le back-end</p>
+  <div class="mesure">
+    <h2>Apple, et rien d'autre</h2>
+    <p>Un seul bouton sur l'écran d'entrée. Pas de mail, pas de mot de passe, pas de SMS — donc pas de
+       fournisseur d'OTP à payer, pas d'écran de code à dessiner, et le numéro en dur disparaît le jour où
+       cette chaîne est branchée.</p>
+  </div>
+
+  <ol class="chaine">
+    <li>
+      <h4>La capability, côté Xcode et côté Apple</h4>
+      <p>« Sign in with Apple » ajoutée à la cible crée <span class="chemin">Woop.entitlements</span> avec
+         <span class="chemin">com.apple.developer.applesignin = [Default]</span>. Le même interrupteur doit
+         être armé sur l'App ID <span class="chemin">fr.kathryn.woop</span> dans le portail développeur.
+         <strong>Aucun des deux n'existe aujourd'hui.</strong></p>
+    </li>
+    <li>
+      <h4>Le provider Apple, côté Supabase</h4>
+      <p>Auth → Providers → Apple → activer, et coller le bundle id dans <em>Authorized Client IDs</em>.
+         Pour le flux natif iOS, c'est tout : ni Services ID, ni clé secrète, ni URL de retour — ceux-là ne
+         servent qu'au flux web.</p>
+    </li>
+    <li>
+      <h4>Le nonce, à deux visages</h4>
+      <p>On tire un nonce aléatoire. Apple reçoit son <strong>SHA-256</strong> ; Supabase reçoit le
+         <strong>brut</strong>. C'est ce couple qui interdit de rejouer un jeton volé — et c'est l'erreur
+         numéro un de cette intégration : envoyer le même des deux côtés donne un 401 illisible.</p>
+    </li>
+    <li>
+      <h4>L'échange du jeton</h4>
+      <p>L'app ne passe pas par le SDK Supabase (<span class="chemin">Supabase.swift</span> est écrit à la
+         main, en <span class="chemin">URLSession</span>). L'appel garde exactement cette forme :</p>
+      <pre>POST /auth/v1/token?grant_type=<span class="txt">id_token</span>
+apikey: &lt;anon&gt;
+
+{ <span class="cle">"provider"</span>: "apple",
+  <span class="cle">"id_token"</span>: "&lt;identityToken d'Apple&gt;",
+  <span class="cle">"nonce"</span>:    "&lt;le nonce BRUT&gt;" }</pre>
+      <p style="margin-top:10px">Il remplace le <span class="chemin">grant_type=password</span> de
+         <span class="chemin">Supabase.swift:90</span>. La réponse a la même forme — access, refresh, user.id —
+         donc <span class="chemin">store(from:)</span> ne bouge pas.</p>
+    </li>
+    <li>
+      <h4>La session change de clé</h4>
+      <p>Tout l'acteur <span class="chemin">SupabaseSession</span> est aujourd'hui indexé sur
+         <span class="chemin">woop.phone</span> : sans numéro enregistré, la synchro attend. Cette clé
+         devient l'identité Apple (<span class="chemin">user.id</span>), et le refresh token descend dans le
+         <strong>Keychain</strong> en <span class="chemin">AfterFirstUnlockThisDeviceOnly</span>.</p>
+      <p class="preuve" style="font-family:var(--mono);font-size:11px;color:var(--encre-3)">
+         Woop/Services/Supabase.swift:51-88 · :133</p>
+    </li>
+    <li>
+      <h4>L'aiguillage : nouvelle, ou pas</h4>
+      <p>Une seule lecture après la connexion — <span class="chemin">profil()</span> — et une seule question :
+         <span class="chemin">onboarding_fait_le</span> est-il vide&nbsp;?</p>
+      <pre><span class="cle">null</span>      → le film de Nosfy, puis la home
+<span class="cle">une date</span>  → la home, directement</pre>
+      <p style="margin-top:10px">C'est ce champ qui décide, <strong>pas</strong> la date de création du compte :
+         une session interrompue au troisième écran doit rejouer le film, et un compte créé hier mais jamais
+         terminé aussi. Le même fait sert de verrou et d'aiguillage — il n'y en a qu'un à maintenir.</p>
+    </li>
+    <li>
+      <h4>Et la porte de sortie, dans le même chantier</h4>
+      <p>Se déconnecter doit ramener à l'écran d'entrée. Supprimer son compte doit vraiment supprimer —
+         c'est une <em>exigence</em> App Store, pas un confort : une edge function
+         <span class="chemin">supprimer-mon-compte</span> qui appelle l'admin API, et les
+         <span class="chemin">on delete cascade</span> font le reste (<span class="chemin">user_prefs</span>
+         en a déjà un).</p>
+    </li>
+  </ol>
+
+  <div class="piege" style="border-color:rgba(111,215,155,0.28);background:linear-gradient(180deg,rgba(111,215,155,0.05),rgba(14,12,18,0) 80%)">
+    <h3 style="color:#8FE3B4">On ne demande rien à Apple — et c'est ce qui simplifie tout</h3>
+    <p>Apple ne rend le nom qu'à la <strong>toute première</strong> autorisation, et seulement si elle accepte
+       de le partager : à la deuxième connexion, après une réinstallation, ou si elle a masqué son identité,
+       le champ est <span class="chemin">nil</span>, définitivement. Une app qui s'appuie dessus a un bug qui
+       ne se reproduit jamais en test.</p>
+    <p><strong>Décision du 05-09 : Nosfy pose la question lui-même.</strong> On ne demande donc à Apple
+       ni le nom, ni le mail — <span class="chemin">requestedScopes</span> reste vide, seul le jeton
+       d'identité compte. Un écran de moins à prévoir en secours, un cas limite de moins à tester, et la
+       question devient une réplique de personnage au lieu d'un formulaire.</p>
+  </div>
+</section>
+
+<!-- ══ 3. LE FILM ═════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">03 — L'écran par écran</p>
+  <div class="mesure">
+    <h2>Six écrans, une seule voix</h2>
+    <p>Le noir tient tout. La seule source est le halo blanc <em>derrière</em> l'île, et la braise —
+       rouge vers orange — qui l'entoure. L'île porte l'avancement : sa bordure blanche se remplit d'un
+       tiers à chaque réponse, et <strong>c'est elle qui parle</strong> — après <em>chaque</em> réponse,
+       Nosfy répond dedans. Elle est le seul élément qui traverse les six écrans sans jamais bouger de place.</p>
+    <p><strong>Une seule transition</strong> : le fondu-flou. Et <strong>un seul bouton</strong> :
+       <span class="chemin">BoutonPrimaire</span>, celui de la maison, partout — y compris sur la porte
+       Apple.</p>
+  </div>
+
+  <div class="piege" style="border-color:rgba(255,122,51,0.30);background:linear-gradient(180deg,rgba(255,122,51,0.06),rgba(14,12,18,0) 80%);margin-top:26px">
+    <h3 style="color:#FFA46B">La loi d'écriture : il n'y a pas d'interface, il y a quelqu'un qui parle</h3>
+    <p><strong>Aucun titre d'écran. Aucun sous-titre. Aucun label.</strong> Pas de « Choisissez votre
+       langue », pas de « Tapez les jours qui vous vont », pas de petite ligne grise qui explique la
+       précédente. Chaque mot affiché est une <em>phrase de Nosfy</em>, dans le grand blanc dégradé —
+       la même écriture que la home, jamais du gris d'interface.</p>
+    <p>Les seuls textes qui ne sortent pas de sa bouche sont les <strong>réponses</strong> (les cards, les
+       lettres des jours), le <strong>bouton</strong> et le lien <strong>Passer</strong>. Tout le reste,
+       c'est lui. Il annonce même les numéros — « Deuxième question », « Dernière question » — et c'est
+       comme ça que la jauge de l'île devient lisible sans qu'un seul mot ne l'explique.</p>
+  </div>
+
+  <div class="film">
+
+    <!-- ÉCRAN 0 -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile" aria-hidden="true"></div>
+          <div class="toile">
+            <div style="flex:1"></div>
+            <h2 class="tel-titre reveler">Woop</h2>
+            <div style="flex:1"></div>
+            <div class="primaire"> Se connecter avec Apple</div>
+            <p class="pied-tel">En continuant, tu acceptes les conditions<br>et la politique de confidentialité.</p>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 00 — LA PORTE</p>
+        <h3>Un seul bouton, et c'est le nôtre</h3>
+        <p>Le champ « numéro » disparaît, et avec lui les deux comptes en dur. Pas de bouton Apple noir et
+           blanc : <strong><span class="chemin">BoutonPrimaire</span>, libellé « Se connecter avec Apple »</strong>,
+           avec sa poudre de diamant au tap. Il ne fait rien d'autre — c'est tout l'écran d'auth.</p>
+        <ul class="gestes">
+          <li><b>L'île</b><span>Vide, bordure éteinte. Le halo respire lentement — c'est la seule chose qui bouge.</span></li>
+          <li><b>Au tap</b><span>La feuille Apple monte. Au retour : <strong>aucun écran de chargement</strong> — le fondu-flou couvre l'attente.</span></li>
+          <li><b>L'aiguillage</b><span>Pas de compte détecté (<span class="chemin">onboarding_fait_le</span> vide) → <strong>le film de Nosfy</strong>. Compte déjà fait → <strong>l'app</strong>, directement.</span></li>
+          <li><b>Refus</b><span>Elle annule la feuille Apple : on reste ici, rien ne s'affiche. Une erreur réseau, elle, se dit en une ligne sous le bouton.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ÉCRAN 1 — LA LANGUE -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile" aria-hidden="true"></div>
+          <div class="toile">
+            <div style="flex:1"></div>
+            <p class="voix-duo reveler">Quelqu'un vous attend<br>dans le noir.<br><br>Dans quelle langue<br>doit-il vous parler&nbsp;?</p>
+            <p class="voix-duo faible reveler" data-retard="0.7">Someone is waiting for you<br>in the dark.<br><br>What language<br>should he speak?</p>
+            <div style="flex:1"></div>
+            <div class="verres paire">
+              <div class="verre choisi"><span class="nom">Français</span></div>
+              <div class="verre"><span class="nom">English</span></div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="primaire">Continuer</div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 01 — LA LANGUE</p>
+        <h3>Une voix sans nom, dans les deux langues à la fois</h3>
+        <p>Un écran qui demande un réglage n'est pas un film. Alors ce n'est pas un réglage :
+           <strong>c'est le premier signe qu'il y a quelqu'un là-dedans</strong>. La question est posée par
+           une voix qui ne s'est pas encore présentée — et le mot « quelqu'un » est une promesse qui se tient
+           à l'écran suivant, quand il dit son nom.</p>
+
+        <div class="dit">
+          <p>Quelqu'un vous attend dans le noir.<br>Dans quelle langue doit-il vous parler&nbsp;?</p>
+          <p style="opacity:.5">Someone is waiting for you in the dark.<br>What language should he speak?</p>
+          <p class="glose">Les deux versions, l'une sous l'autre — c'est le seul écran du film qui parle deux langues</p>
+        </div>
+
+        <p>Elles sont empilées, même écriture, même dégradé : celle de la langue du téléphone est
+           <strong>pleine</strong>, l'autre à quarante pour cent. Taper « English » les <em>échange</em> —
+           l'anglaise monte dans la lumière, la française s'efface. La page entière répond avant même le
+           bouton : c'est là qu'est la romance, pas dans un label.</p>
+
+        <ul class="gestes">
+          <li><b>L'île</b><span>Éteinte. La jauge ne compte que ses trois questions — celle-ci n'en est pas une, c'est le seuil.</span></li>
+          <li><b>Le défaut</b><span>La langue du téléphone est <strong>déjà choisie</strong> en arrivant. Pour une Française, un seul tap sur « Continuer ».</span></li>
+          <li><b>Les cards</b><span>Un mot chacune — <strong>Français</strong>, <strong>English</strong>. Toute la phrase est déjà au-dessus ; les répéter dans les cards serait le sous-titre qu'on vient de chasser.</span></li>
+          <li><b>Il répond</b><span>« <strong>Français.</strong> » dans l'île — un seul mot, pour ne pas gâcher le « Bonjour » qui arrive juste après.</span></li>
+          <li><b>Écrit</b><span><span class="chemin">user_prefs.langue</span> dès maintenant. <strong>La traduction de l'app vient plus tard</strong> — voir le §05.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ÉCRAN 1 -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile" aria-hidden="true"></div>
+          <div class="toile">
+            <p class="voix" id="voix-nosfy" data-texte="Bonjour. Je me présente : je suis Nosfy, votre coach sportif.
+
+Bienvenue dans mon univers noir. Avant de commencer, j'ai trois questions.
+
+La première : comment dois-je vous appeler ?"></p>
+            <div style="flex:1"></div>
+            <div class="champ">Margaux<span class="curseur"></span></div>
+            <div class="primaire" style="margin-top:12px">Continuer</div>
+            <div class="poudre" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="lien-skip">Passer</div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 02 — QUESTION 1 SUR 3</p>
+        <h3>Il se présente, et sa présentation contient déjà la question</h3>
+        <p>Les mots arrivent un par un, <strong>en fondu-flou</strong> — chacun sort du flou en montant de
+           quelques points, décalé de 40 ms sur le précédent, et la ponctuation tient une respiration. C'est
+           un débit de parole, jamais une machine à écrire. Le dégradé de blanc court sur toute la tirade,
+           donc chaque mot naît déjà à sa place dans la lumière.</p>
+
+        <div class="dit">
+          <p>Bonjour. Je me présente : je suis Nosfy, votre coach sportif.</p>
+          <p>Bienvenue dans mon univers noir. Avant de commencer, j'ai trois questions.</p>
+          <p>La première : comment dois-je vous appeler&nbsp;?</p>
+          <p class="glose">Le prénom est la question 1 sur 3 — on ne demande plus rien à Apple</p>
+        </div>
+
+        <ul class="gestes">
+          <li><b>Le champ</b><span>Il apparaît <strong>avec la dernière phrase</strong>, et prend le clavier tout seul. Une seule ligne, prénom, majuscule au premier caractère.</span></li>
+          <li><b>Passer</b><span>Le lien sous le bouton. Sans prénom, Nosfy ne dit jamais de nom — il ne dit pas « Bonjour, [vide] ».</span></li>
+          <li><b>L'île</b><span>Éteinte pendant la présentation. Elle <strong>s'allume à la réponse</strong> : premier tiers.</span></li>
+          <li><b>Il répond</b><span>« <strong>Enchanté, Margaux.</strong> » — ou « <strong>Comme vous voulez.</strong> » si elle a passé.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ÉCRAN 3 -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile parle" aria-hidden="true">Bien.</div>
+          <div class="toile">
+            <h2 class="tel-titre petit reveler">Deuxième question.<br>Vous voulez vous<br>entraîner pour quoi&nbsp;?</h2>
+            <div style="flex:1"></div>
+            <div class="verres">
+              <div class="verre range"><div><div class="nom">Être plus fort</div></div></div>
+              <div class="verre range choisi"><div><div class="nom">Perdre du poids</div></div></div>
+              <div class="verre range"><div><div class="nom">Être en forme</div></div></div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="primaire">Continuer</div>
+            <div class="lien-skip">Passer</div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 03 — QUESTION 2 SUR 3</p>
+        <h3>Il annonce le numéro, puis il demande</h3>
+        <p><em>« Deuxième question. Vous voulez vous entraîner pour quoi ? »</em> — il compte à voix haute,
+           c'est ce qui rend l'île lisible sans qu'aucun texte n'explique la jauge. Les trois cards ne portent
+           que la réponse, une ligne chacune : <strong>ni glyphe, ni seconde ligne, ni explication</strong>.
+           Ce que ça change dans l'app, il le dira au moment où ça changera quelque chose.</p>
+
+        <p><strong>Le téléphone ci-contre montre l'île en train de répondre</strong> — c'est le seul moment où
+           elle change de forme, et il dure moins d'une seconde.</p>
+
+        <div class="dit">
+          <p>Bien. Je sais où on va.</p>
+          <p class="glose">La réplique s'ouvre DANS l'île, la page change derrière, l'île se referme sur son deuxième tiers</p>
+        </div>
+
+        <ul class="gestes">
+          <li><b>L'île</b><span>Deux tiers. Elle s'élargit, dit sa phrase, se referme — la pilule s'aspire dans l'île puis redevient bordure : <strong>ce morphisme est déjà écrit dans l'app</strong>.</span></li>
+          <li><b>Preuve</b><span>Woop/Views/PiluleVagabonde.swift:342 · :470 · l'île mesure 126 pt pour 125 réels (HaloDawnLab.swift:630)</span></li>
+          <li><b>La règle</b><span><strong>Une réplique par réponse, toujours</strong> — courte, trois à cinq mots, jamais un écran de plus. Si elle passe : « Comme vous voulez. »</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ÉCRAN 4 -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile" data-pas="3" aria-hidden="true"></div>
+          <div class="toile">
+            <h2 class="tel-titre petit reveler">Dernière question.<br>Combien de fois<br>par semaine&nbsp;?</h2>
+            <div style="flex:1"></div>
+            <div class="semaine">
+              <div class="jour on">L<span class="perle"></span></div>
+              <div class="jour">M<span class="perle"></span></div>
+              <div class="jour on">M<span class="perle"></span></div>
+              <div class="jour">J<span class="perle"></span></div>
+              <div class="jour on">V<span class="perle"></span></div>
+              <div class="jour">S<span class="perle"></span></div>
+              <div class="jour on">D<span class="perle"></span></div>
+            </div>
+            <h2 class="tel-titre petit reveler" style="text-align:center;margin-top:16px">Quatre fois.</h2>
+            <div style="flex:1"></div>
+            <div class="primaire">Continuer</div>
+            <div class="lien-skip">Passer</div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 04 — QUESTION 3 SUR 3</p>
+        <h3>Elle tape des jours ; il compte à voix haute</h3>
+        <p>Le composant de la card Régularité, retourné : mêmes lettres, mêmes perles, mais on <em>choisit</em>
+           au lieu de constater. Sous la semaine, ce n'est pas une légende — c'est <strong>lui qui répond en
+           direct</strong>, dans le même blanc dégradé que ses phrases : « Quatre fois. » Le nombre change à
+           chaque tap, et se ré-écrit en fondu-flou.</p>
+        <ul class="gestes">
+          <li><b>L'île</b><span>Bordure pleine. La boucle est fermée.</span></li>
+          <li><b>Le tap</b><span>La perle s'allume avec un haptique léger. Zéro jour = bouton éteint.</span></li>
+          <li><b>Il répond</b><span>« <strong>Quatre fois. On s'y tient.</strong> » — la dernière réplique avant la sortie.</span></li>
+          <li><b>Passer</b><span>Le défaut serveur s'applique : <strong>5 séances</strong> (<span class="chemin">objectif_hebdo_defaut</span>). Il le dit — « Cinq, alors. On verra. » — il ne laisse jamais un réglage muet.</span></li>
+          <li><b>Écrit</b><span><span class="chemin">definir_objectif(4)</span> — la fonction existe, elle est mesurée, elle rend le nouvel état. <strong>Rien à coder au serveur.</strong></span></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ÉCRAN 5 -->
+    <article class="scene">
+      <figure class="tel">
+        <div class="ecran">
+          <div class="ile" aria-hidden="true"></div>
+          <div class="toile">
+            <div style="flex:1"></div>
+            <h2 class="tel-titre reveler">Bienvenue,<br>Margaux.<br><br>Quatre fois par<br>semaine. On commence<br>quand vous voulez.</h2>
+            <div style="flex:1"></div>
+            <div class="primaire">Entrer</div>
+          </div>
+        </div>
+      </figure>
+
+      <div class="scene-corps">
+        <p class="scene-num">ÉCRAN 05 — LA SORTIE</p>
+        <h3>Il rend ce qu'elle vient de dire</h3>
+        <p>Un dernier écran de texte, court. Il ne félicite pas — il <em>récapitule</em>, et c'est ce qui
+           prouve qu'on a écouté : le prénom, et le rythme qu'elle a choisi. Puis la même transition floutée,
+           et la home est là.</p>
+        <ul class="gestes">
+          <li><b>L'île</b><span>La bordure s'éteint doucement — l'avancement n'a plus rien à dire.</span></li>
+          <li><b>La sortie</b><span>Elle réutilise la cérémonie qui existe : le nuage de braises passe au-dessus de tout, la page change <em>derrière</em> lui, et il ne bronche pas d'un pixel (<span class="chemin">MoonDustOverlay</span>, WoopApp.swift:1739).</span></li>
+          <li><b>Verrou</b><span>À cet instant seulement, <span class="chemin">onboarding_fait_le</span> est écrit. Une sortie forcée avant la fin ⇒ le film se rejoue.</span></li>
+        </ul>
+      </div>
+    </article>
+
+  </div>
+
+  <div style="margin-top:64px">
+    <h3 style="font-size:24px">La transition — une seule, jouée six fois</h3>
+    <p class="mesure">C'est <em>elle</em>, la signature du film. Pas six effets différents : le même
+       fondu-flou, à l'identique, entre chaque écran — c'est la répétition qui le rend cher. Le fond ne bouge
+       <strong>jamais</strong> : le halo, la braise et l'île restent posés, seul le contenu traverse.</p>
+
+    <div class="fondu" aria-hidden="true">
+      <figure>
+        <div class="vitre"><span class="mot">Continuer</span></div>
+        <figcaption>0,00 s<br>net</figcaption>
+      </figure>
+      <figure>
+        <div class="vitre"><span class="mot" style="filter:blur(9px);opacity:.45;transform:scale(1.03)">Continuer</span></div>
+        <figcaption>0,18 s<br>la sortante s'éloigne</figcaption>
+      </figure>
+      <figure>
+        <div class="vitre"><span class="mot" style="filter:blur(14px);opacity:.14;transform:scale(1.05)">Êtes-vous…</span></div>
+        <figcaption>0,30 s<br>l'entrante perce</figcaption>
+      </figure>
+      <figure>
+        <div class="vitre"><span class="mot">Êtes-vous…</span></div>
+        <figcaption>0,55 s<br>net</figcaption>
+      </figure>
+    </div>
+
+    <div class="lois" style="margin-top:30px">
+      <div class="loi">
+        <h4>Les chiffres</h4>
+        <p><strong>Sortante</strong> — flou 0 → 22, opacité 1 → 0, échelle 1 → 1,04, en 0,28 s.<br>
+           <strong>Entrante</strong> — flou 18 → 0, opacité 0 → 1, échelle 0,97 → 1, en 0,40 s,
+           <em>après 0,15 s de retard</em>.</p>
+        <p>Elles se croisent : la page part avant que l'autre arrive, et il y a un instant où l'écran ne porte
+           que le halo. C'est ce trou d'un dixième de seconde qui fait la respiration.</p>
+      </div>
+      <div class="loi">
+        <h4>Le texte, mot par mot</h4>
+        <p>Chaque mot sort du flou en montant de 6 pt : flou 10 → 0, opacité 0 → 1, sur 0,50 s, <strong>décalé
+           de 40 ms</strong> sur le précédent. Le dégradé de blanc, lui, est posé sur la <em>tirade entière</em> —
+           donc un mot naît déjà à la bonne place dans la lumière, il ne s'y installe pas.</p>
+        <p>Titres, répliques, tirades de Nosfy : la même loi partout.</p>
+      </div>
+      <div class="loi">
+        <h4>⚠ Ce qui va casser</h4>
+        <p><span class="chemin">.blur</span> pose un voile uniforme sur <em>tout</em> le rectangle de l'hôte,
+           fond compris — le flou se met donc sur la <strong>couche de contenu</strong>, jamais sur la page.</p>
+        <p>Et un aller-retour ne se joue pas en deux <span class="chemin">withAnimation</span> au même tour :
+           les deux s'annulent et il ne se passe <strong>rien</strong>. C'est une keyframe, ou une vue
+           <span class="chemin">Animatable</span> sur l'avancement.</p>
+        <p class="preuve">deux lois payées — woop-piege-blur-calque · woop-piege-double-withanimation</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4. CE QU'ON ÉCRIT ══════════════════════════════════════════ -->
+<section>
+  <p class="oeil">04 — Les données</p>
+  <div class="mesure">
+    <h2>Trois réponses, une seule table</h2>
+    <p>Tout va dans <span class="chemin">user_prefs</span>, qui existe déjà avec ses trois politiques RLS.
+       Une migration ajoute trois colonnes et une fonction — l'objectif, lui, ne bouge pas.</p>
+  </div>
+
+  <div class="cadre">
+    <table>
+      <thead>
+        <tr><th>Ce qu'elle donne</th><th>Où ça va</th><th>Par quoi</th><th>État</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Français / English</td>
+          <td><span class="chemin">user_prefs.langue</span></td>
+          <td><span class="chemin">definir_profil()</span></td>
+          <td><span class="pastille p-abs">À écrire</span></td>
+        </tr>
+        <tr>
+          <td>Le prénom, demandé par Nosfy</td>
+          <td><span class="chemin">user_prefs.prenom</span></td>
+          <td><span class="chemin">definir_profil()</span></td>
+          <td><span class="pastille p-abs">À écrire</span></td>
+        </tr>
+        <tr>
+          <td>Force / poids / forme</td>
+          <td><span class="chemin">user_prefs.but</span></td>
+          <td><span class="chemin">definir_profil()</span></td>
+          <td><span class="pastille p-abs">À écrire</span></td>
+        </tr>
+        <tr>
+          <td>Les jours tapés → un nombre</td>
+          <td><span class="chemin">user_prefs.objectif_hebdo</span></td>
+          <td><span class="chemin">definir_objectif(n)</span></td>
+          <td><span class="pastille p-srv">Déjà déployé</span></td>
+        </tr>
+        <tr>
+          <td>Le film est fini</td>
+          <td><span class="chemin">user_prefs.onboarding_fait_le</span></td>
+          <td><span class="chemin">definir_profil()</span></td>
+          <td><span class="pastille p-abs">À écrire</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:22px;max-width:var(--mesure)">La fonction suit la loi de la maison, déjà appliquée par
+     <span class="chemin">definir_objectif</span> : idempotente (<span class="chemin">on conflict do update</span>),
+     elle <strong>rend le nouvel état</strong> pour que l'app ne redemande pas, et une valeur hors liste est une
+     erreur <em>métier</em> — 200 avec un motif, jamais un 500.</p>
+
+  <p style="max-width:var(--mesure)"><strong>« Passer » écrit <span class="chemin">null</span>, et c'est une
+     réponse.</strong> Pas d'absence de ligne, pas de colonne oubliée : la ligne existe, le champ est vide, et
+     l'app sait faire la différence entre « elle n'a pas voulu dire » et « on ne lui a jamais demandé ». Seul
+     l'objectif se comporte autrement — il retombe sur le défaut du jeu, 5, parce qu'une home sans objectif
+     n'aurait rien à afficher.</p>
+
+  <p style="max-width:var(--mesure)"><strong>La langue est rangée aujourd'hui, tenue plus tard.</strong> On
+     stocke le choix dès maintenant — c'est deux minutes de migration, et ne pas le faire coûterait un écran de
+     plus à rejouer. Mais l'app n'est pas traduite : tant qu'elle ne l'est pas, choisir « English » ne change
+     rien à l'écran. C'est un 🔵 assumé, pas un 🟢 — et il sera écrit tel quel sur le site.</p>
+
+  <div class="lois">
+    <div class="loi">
+      <h4>Le verre ne prend pas le doigt</h4>
+      <p>Un verre <span class="chemin">.interactive()</span> vole le geste de son hôte : la card se voit,
+         se touche, et ne répond pas. Remède mesuré : <span class="chemin">highPriorityGesture</span>.</p>
+      <p class="preuve">payé le 04-09 — les cards des écrans 2 et 3 tombent pile dedans</p>
+    </div>
+    <div class="loi">
+      <h4>Le verre qui bouge s'éteint</h4>
+      <p>Du verre natif redimensionné image par image : 60 → 14 img/s, et le flou reste plat
+         définitivement. La card choisie change de <em>lumière</em>, jamais de taille.</p>
+      <p class="preuve">loi mesurée — woop-piege-verre-qui-bouge</p>
+    </div>
+    <div class="loi">
+      <h4>Le flou laisse son calque</h4>
+      <p><span class="chemin">.blur</span> pose un voile uniforme sur tout le rectangle de l'hôte. La
+         transition « à la Apple » se joue sur la <em>couche de texte</em>, pas sur la page.</p>
+      <p class="preuve">loi mesurée — woop-piege-blur-calque</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 5. LE CHANTIER DE LA LANGUE ════════════════════════════════ -->
+<section>
+  <p class="oeil">05 — Ce que la question de la langue déclenche</p>
+  <div class="mesure">
+    <h2>La langue n'est pas une case, c'est un chantier</h2>
+    <p>Ranger le choix coûte deux minutes. Le <em>tenir</em> touche <strong>toute l'app et tout le
+       serveur</strong>. Deux moitiés, et la plus dure n'est pas celle qu'on croit : côté serveur il y a des
+       phrases <em>fabriquées par l'IA</em> et partagées entre les comptes ; côté app il y a 269 phrases en
+       dur — déjà dans deux langues, sans que personne l'ait décidé.</p>
+    <p>Tout ce qui suit est compté dans le dépôt aujourd'hui, fichier par fichier. On commence par le
+       serveur.</p>
+  </div>
+
+  <div class="cadre">
+    <table>
+      <thead>
+        <tr><th>Le texte</th><th>Où il vit</th><th>Langue aujourd'hui</th><th>Ce qu'il faudra</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Les 23 noms de familles de cartes</td>
+          <td><span class="chemin">forge-card/index.ts:47-69</span> → <span class="chemin">cards.famille</span></td>
+          <td><span class="pastille p-men">Français, en dur</span></td>
+          <td>« Vallée noire », « L'oiseau souverain », « Le dragon de braise »… écrits en dur dans l'edge
+              function, et <strong>le pool est partagé par tous les comptes</strong> (RLS : lisible par tous).
+              Une anglaise verrait des noms français.</td>
+        </tr>
+        <tr>
+          <td>La scène de chaque carte</td>
+          <td><span class="chemin">cards.scene</span></td>
+          <td><span class="pastille p-ok">Anglais</span></td>
+          <td>C'est le <em>prompt</em> du générateur d'image, jamais montré à personne. Rien à faire — et
+              c'est le seul de la liste.</td>
+        </tr>
+        <tr>
+          <td>Le bilan hebdomadaire écrit par Claude</td>
+          <td><span class="chemin">weekly-synthesis</span> → <span class="chemin">syntheses</span></td>
+          <td><span class="pastille p-abs">Jamais déployée</span></td>
+          <td>À générer dans la langue du compte — et la table a une <strong>unicité par semaine et par
+              personne</strong> : si la langue n'entre pas dans la clé, changer de langue relit à jamais la
+              phrase d'avant.</td>
+        </tr>
+        <tr>
+          <td>La phrase IA sous le bilan des chambres</td>
+          <td>n'existe pas encore</td>
+          <td><span class="pastille p-abs">Absent</span></td>
+          <td>Elle peut <em>naître</em> bilingue — c'est le seul texte de la liste qu'on peut faire bien du
+              premier coup, parce qu'il n'est pas encore écrit.</td>
+        </tr>
+        <tr>
+          <td>Les répliques de Nosfy, les boutons, les dalles</td>
+          <td>dans l'app (Swift)</td>
+          <td><span class="pastille p-loc">Français</span></td>
+          <td>Localisation iOS classique. Du travail, aucun piège — et aucun serveur.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mesure" style="margin-top:52px">
+    <h3 style="font-size:23px">Et dans l'app : 269 phrases en dur, dans deux langues à la fois</h3>
+    <p>Le serveur n'est que la moitié du chantier. J'ai compté dans le dépôt, aujourd'hui —
+       <strong>269 chaînes visibles écrites en dur</strong> dans une cinquantaine de fichiers, et
+       <strong>zéro fichier de localisation</strong> : ni <span class="chemin">.strings</span>, ni
+       <span class="chemin">.xcstrings</span>, ni un seul dossier <span class="chemin">.lproj</span>. Le
+       projet ne connaît qu'une langue : <span class="chemin">developmentRegion = fr</span>,
+       <span class="chemin">knownRegions = (fr, Base)</span>.</p>
+    <p><strong>Et le vrai problème n'est pas là.</strong> L'app parle <em>déjà</em> deux langues — sans
+       l'avoir décidé.</p>
+  </div>
+
+  <div class="cadre">
+    <table>
+      <thead>
+        <tr><th>Là où on parle</th><th>Chaînes</th><th>Ce qui y est écrit aujourd'hui</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Les widgets de la home</td>
+          <td>9</td>
+          <td><span class="pastille p-men">Anglais</span> « this week », « This month », « best week »,
+              « avg / session », « PEAK », « REGULARITY »</td>
+        </tr>
+        <tr>
+          <td>La séance en cours</td>
+          <td>15</td>
+          <td><span class="pastille p-loc">Français</span> « Terminer l'entraînement », « Ta séance est
+              prête. », « Annuler cette séance »</td>
+        </tr>
+        <tr>
+          <td>Le profil</td>
+          <td>21</td>
+          <td><span class="pastille p-loc">Français</span> « Cartes collectées », « Réglages »,
+              « Supprimer ton compte ? »</td>
+        </tr>
+        <tr>
+          <td>La home elle-même</td>
+          <td>5</td>
+          <td><span class="pastille p-men">Les deux, sur le même écran</span> « Objectif hebdomadaire »
+              juste à côté de « This week. » et « pull to start »</td>
+        </tr>
+        <tr>
+          <td>Tout le reste (≈ 45 fichiers)</td>
+          <td>219</td>
+          <td>114 français · 37 anglais · 118 neutres (chiffres, unités, glyphes)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="lois">
+    <div class="loi" style="border-color:rgba(255,92,92,0.28)">
+      <h4 style="color:#FF8A8A">D'abord démêler, ensuite traduire</h4>
+      <p>Une home qui dit « Objectif hebdomadaire » et « This week. » dans le même écran n'a pas un problème
+         de traduction : elle a un problème de <em>langue de référence</em>. Tant que ce n'est pas tranché,
+         traduire ne fait que figer le mélange en deux exemplaires.</p>
+      <p><strong>Le geste, avant tout le reste :</strong> choisir la langue source — le français, puisque
+         <span class="chemin">developmentRegion</span> l'est déjà — et repasser les 37 chaînes anglaises en
+         français. C'est un après-midi, et ça n'attend pas l'anglais.</p>
+    </div>
+    <div class="loi">
+      <h4>La bonne nouvelle : 179 sur 269 sont gratuites</h4>
+      <p>En SwiftUI, <span class="chemin">Text("…")</span> est <em>déjà</em> une clé de localisation. Poser
+         un String Catalog (<span class="chemin">.xcstrings</span>) les extrait toutes seules — les 179
+         chaînes sans interpolation sont réglées par un clic.</p>
+      <p>Restent les <strong>91 à interpolation</strong> (« Utiliser \(prix) pièces ») : celles-là veulent une
+         relecture une par une — l'ordre des mots change d'une langue à l'autre, et les pluriels aussi.</p>
+    </div>
+    <div class="loi">
+      <h4>Ce que ça coûte, honnêtement</h4>
+      <p>Le catalogue et les 179 faciles : <strong>un jour</strong>. Le démêlage des 37 anglaises :
+         <strong>un après-midi</strong>. Les 91 interpolées : <strong>deux à trois jours</strong>. Le serveur
+         (les cartes, le bilan) : <strong>un chantier à part</strong>, et il a son prérequis.</p>
+      <p>Total : une semaine pleine, sans un seul écran nouveau à montrer. C'est exactement pourquoi on range
+         le choix maintenant et qu'on ne le tient pas encore.</p>
+    </div>
+  </div>
+
+  <div class="lois" style="margin-top:14px">
+    <div class="loi">
+      <h4>La règle, en une phrase</h4>
+      <p><strong>Le serveur ne stocke jamais une phrase dans une seule langue.</strong> Ou bien la ligne
+         porte toutes les langues, ou bien la langue fait partie de sa clé. Il n'y a pas de troisième cas —
+         et « on traduira à la lecture » n'en est pas un.</p>
+    </div>
+    <div class="loi">
+      <h4>Texte partagé → toutes les langues dans la ligne</h4>
+      <p>Le pool de cartes est commun : un nom de famille devient
+         <span class="chemin">libelles jsonb {"fr": …, "en": …}</span>, écrit <em>au moment de la forge</em>,
+         dans le même appel IA. Le coût est payé une fois par carte, à la génération ; la lecture est
+         gratuite pour toujours.</p>
+    </div>
+    <div class="loi">
+      <h4>Texte personnel → la langue dans la clé</h4>
+      <p>Le bilan est écrit pour une personne : il se génère dans <em>sa</em> langue, et se range sous
+         <span class="chemin">(compte, période, langue)</span>. Changer de langue ne réécrit pas l'ancien —
+         il en fabrique un nouveau, et les deux coexistent.</p>
+    </div>
+  </div>
+
+  <div class="piege">
+    <h3>⚠ Il y a un prérequis, et il est déjà sur le site en rouge</h3>
+    <p>Le set de cartes vit <strong>à trois endroits</strong> aujourd'hui — la liste en Swift, la liste en
+       Deno, et les totaux en dur : il faut trois éditions pour ajouter une famille. C'est écrit sur la carte
+       du serveur depuis le 30-08 (<span class="chemin">b-fo-set</span>, 🔴). Le rendre bilingue sans le
+       réparer d'abord, c'est le faire vivre à <strong>six</strong> endroits.</p>
+    <p><strong>Donc : on range le choix maintenant, on ne promet rien.</strong> La pastille de
+       <span class="chemin">user_prefs.langue</span> restera 🔵 « serveur seul » tant que l'app parlera
+       français quoi qu'on tape — et ce sera écrit tel quel. Ce chantier n'est <em>pas</em> dans les jalons
+       ci-dessous : c'en est un à lui tout seul.</p>
+  </div>
+</section>
+
+<!-- ══ 6. LES DÉCISIONS ═══════════════════════════════════════════ -->
+<section>
+  <p class="oeil">06 — À trancher avant la première ligne</p>
+  <div class="mesure">
+    <h2>Ce qui est tranché, ce qui reste</h2>
+    <p>Huit points sont réglés depuis le premier tour. Cinq restent ouverts — chacun avec un défaut proposé.
+       Dis-moi ceux qui ne te vont pas ; je code ensuite, pas avant.</p>
+  </div>
+
+  <div class="lois" style="margin-top:26px">
+    <div class="loi" style="border-color:rgba(111,215,155,0.24)">
+      <h4 style="color:#8FE3B4">Tranché le 05-09</h4>
+      <p>· Nosfy demande le prénom lui-même — on ne demande plus rien à Apple<br>
+         · <strong>Le genre est supprimé</strong> — la question ne sert à rien aujourd'hui<br>
+         · Une question de langue, <strong>Français / English</strong><br>
+         · Un lien <strong>« Passer »</strong> sous le bouton, sur chaque question</p>
+    </div>
+    <div class="loi" style="border-color:rgba(111,215,155,0.24)">
+      <h4 style="color:#8FE3B4">Tranché le 05-09</h4>
+      <p>· <strong>Nosfy répond après CHAQUE réponse</strong>, dans l'île — langue comprise<br>
+         · <strong>Zéro label, zéro sous-titre</strong> : tout ce qui est écrit, c'est lui qui le dit<br>
+         · <span class="chemin">BoutonPrimaire</span> partout, y compris sur la porte Apple<br>
+         · Le fondu-flou entre <em>tous</em> les écrans, et le texte mot par mot</p>
+    </div>
+  </div>
+
+  <div class="decisions">
+
+    <div class="decision">
+      <div class="marque">①</div>
+      <div>
+        <h4>Les jours, ou juste leur nombre ?</h4>
+        <p>Elle tape lundi, mercredi, vendredi, dimanche. Le serveur peut ne retenir que « 4 » — ou retenir
+           <em>lesquels</em>, et alors la home peut dire « c'est mercredi, c'était prévu ».</p>
+      </div>
+      <div class="avis">
+        <span>Mon avis</span>
+        <p>Le nombre pour l'instant : <span class="chemin">definir_objectif(4)</span> existe et est mesuré,
+           l'onboarding sort sans une ligne de serveur. Les jours eux-mêmes sont une colonne
+           <span class="chemin">jours_objectif int[]</span> qu'on ajoute le jour où un écran s'en sert
+           vraiment — pas avant.</p>
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="marque">②</div>
+      <div>
+        <h4>La langue, à quelle place ?</h4>
+        <p>J'ai pris une décision seul, il faut que tu la valides : la question de la langue passe
+           <strong>avant</strong> que Nosfy parle. La raison est bête et imparable — il ne peut pas demander
+           en français dans quelle langue il doit s'exprimer. Conséquence : le premier écran après Apple est
+           muet, deux cards, deux mots.</p>
+      </div>
+      <div class="avis">
+        <span>Mon avis</span>
+        <p>La garder là, et la rendre presque invisible : la langue du téléphone est <em>déjà</em> choisie en
+           arrivant, donc pour une Française c'est un simple « Continuer ». Et elle ne compte pas dans les
+           trois questions de Nosfy — l'île reste à trois tiers.</p>
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="marque">③</div>
+      <div>
+        <h4>Et toi, et Margaux ?</h4>
+        <p>Vos deux comptes existent avec leur mot de passe dérivé du numéro. Ils ne sont liés à aucun Apple ID,
+           et vos séances locales ne sont montées nulle part (mesuré : les quatre tables sont vides).</p>
+      </div>
+      <div class="avis">
+        <span>Mon avis</span>
+        <p>On ne recolle rien. Vous vous connectez par Apple comme deux nouvelles, vous jouez l'onboarding
+           une fois, et les deux comptes numéro sont supprimés dans la foulée. Il n'y a rien dedans —
+           c'est le bon moment, et il ne se représentera pas.</p>
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="marque">④</div>
+      <div>
+        <h4>Que devient la porte actuelle ?</h4>
+        <p>Le carrousel des quatre pages (<span class="chemin">PorteEntree</span>, 1 875 lignes, son film
+           d'arrivée, sa flamme, ses trois décors) est <span class="pastille p-ok" style="font-size:9.5px">Branché</span>
+           et beau. Ces trois questions ne le remplacent pas — elles viennent après.</p>
+      </div>
+      <div class="avis">
+        <span>Mon avis</span>
+        <p>Ordre : splash → <em>la porte</em> (elle vend) → Apple → <em>Nosfy</em> (il configure) → home.
+           Deux choses différentes : l'une raconte l'app à une inconnue, l'autre lui pose des questions une
+           fois qu'elle est entrée. Ne pas les fondre.</p>
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="marque">⑤</div>
+      <div>
+        <h4>« Passer » promet un écran qui n'existe pas</h4>
+        <p>Le lien Passer est simple à poser. Mais il engage : celle qui passe doit pouvoir revenir donner sa
+           réponse plus tard — sinon elle est coincée avec un objectif à 5 et personne pour le lui dire. Or il
+           n'y a <strong>aucun écran de réglages</strong> aujourd'hui, et « Kathryn » est encore écrit en dur
+           dans le profil.</p>
+      </div>
+      <div class="avis">
+        <span>Mon avis</span>
+        <p>Poser le lien quand même, et ajouter un jalon 4 : <em>trois lignes au profil</em> — prénom,
+           langue, objectif — qui rappellent <span class="chemin">definir_profil</span> et
+           <span class="chemin">definir_objectif</span>. Les deux fonctions serviront déjà, l'écran est une
+           liste. C'est le plus petit prix pour tenir la promesse du lien.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 7. L'ORDRE ═════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">07 — Dans quel ordre</p>
+  <div class="mesure">
+    <h2>Le serveur d'abord, l'écran ensuite</h2>
+    <p>Parce qu'un écran qui ne peut rien écrire est un écran qu'on refera. Et parce qu'aucune pastille du
+       site ne passera au vert avant qu'un appel ait été fait et sa réponse lue.</p>
+  </div>
+
+  <div class="ordre">
+    <div class="jalon">
+      <span class="rang">Jalon 0</span>
+      <h4>Ouvrir la porte Apple</h4>
+      <ul>
+        <li>Capability + entitlement</li>
+        <li>App ID au portail</li>
+        <li>Provider Apple chez Supabase</li>
+      </ul>
+      <p>Rien de visible. Mais tant que ce n'est pas fait, rien d'autre ne peut être mesuré.</p>
+    </div>
+    <div class="jalon">
+      <span class="rang">Jalon 1</span>
+      <h4>La chaîne du jeton</h4>
+      <ul>
+        <li>Nonce, <span class="chemin">ASAuthorization</span></li>
+        <li><span class="chemin">grant_type=id_token</span></li>
+        <li>Refresh token au Keychain</li>
+        <li>Déconnexion + suppression</li>
+      </ul>
+      <p>Verdict : se connecter, tuer l'app, revenir — et retrouver la session.</p>
+    </div>
+    <div class="jalon">
+      <span class="rang">Jalon 2</span>
+      <h4>La migration du profil</h4>
+      <ul>
+        <li>3 colonnes sur <span class="chemin">user_prefs</span></li>
+        <li><span class="chemin">definir_profil()</span></li>
+        <li>Le site mis à jour <em>dans le même commit</em></li>
+      </ul>
+      <p>Verdict : appel réel, réponse relue, puis la pastille bouge.</p>
+    </div>
+    <div class="jalon">
+      <span class="rang">Jalon 3</span>
+      <h4>Les sept écrans</h4>
+      <ul>
+        <li>Le fondu-flou, d'abord — tout en dépend</li>
+        <li>La voix mot par mot</li>
+        <li>L'île-jauge, et l'île qui répond</li>
+        <li>Les cards, le champ, la semaine</li>
+      </ul>
+      <p>Filmé avant d'être montré — le fouettage, comme d'habitude.</p>
+    </div>
+    <div class="jalon">
+      <span class="rang">Jalon 4</span>
+      <h4>Ce que « Passer » promet</h4>
+      <ul>
+        <li>Trois lignes au profil</li>
+        <li>Prénom, langue, objectif</li>
+        <li>Les mêmes deux fonctions</li>
+      </ul>
+      <p>Et « Kathryn » en dur disparaît par la même occasion.</p>
+    </div>
+  </div>
+
+  <div class="piege" style="border-color:rgba(116,169,255,0.28);background:linear-gradient(180deg,rgba(116,169,255,0.05),rgba(14,12,18,0) 80%)">
+    <h3 style="color:#9BC4FF">Ce que ce chantier répare au passage</h3>
+    <p>Six lignes du site changent d'état quand il est fini : les deux numéros en dur disparaissent (🔴 → 🟢),
+       le jeton descend au Keychain (🔴 → 🟢), la déconnexion et la suppression existent (🔴 → 🟢),
+       « Kathryn » en dur dans le profil s'en va (⚪ → 🟢), et <span class="chemin">user_prefs</span> passe de
+       serveur seul à branché (🔵 → 🟢). <strong>Aucune ne bouge avant sa mesure.</strong></p>
+  </div>
+</section>
+
+<!-- ══ 8. LE SITE ═════════════════════════════════════════════════ -->
+<section>
+  <p class="oeil">08 — Où vit la vérité</p>
+  <div class="mesure">
+    <h2>Ce plan dit ce qu'on veut faire. Le site dit ce qui est fait.</h2>
+    <p>Les deux ne se remplacent pas. Cette page est un <em>plan</em> : elle a une date, elle vieillit, et
+       elle sera fausse le jour où le code existera. Le site du back-end, lui, ne raconte rien — il répond à
+       une seule question sur chaque brique : <strong>est-ce que ça marche, est-ce que ça ment, ou est-ce que
+       ça n'existe pas</strong> — et si c'est dans le téléphone ou dans Supabase.</p>
+    <p>Toutes les pastilles de cette page (🟢 🟡 🔵 ⚪ 🔴) viennent de là, et y retourneront.</p>
+  </div>
+
+  <div class="lois" style="margin-top:30px">
+    <div class="loi fiche-vedette" style="border-color:rgba(116,169,255,0.30)">
+      <h4>Le site officiel du back-end</h4>
+      <p><a href="https://claude.ai/code/artifact/17333ad1-6bae-442f-981f-ab5b88f44026"><strong>claude.ai/code/artifact/17333ad1…</strong></a><br>
+         Le livrable, un fichier autonome, republié <em>au même lien</em> — celui qui s'ouvre sur le téléphone.</p>
+      <p class="preuve">L'URL ne bouge jamais. C'est la règle.</p>
+    </div>
+    <div class="loi">
+      <h4>La version vivante, en local</h4>
+      <p><strong>http://localhost:3111</strong> — <span class="chemin">./docs/site/voir.sh</span>, toujours
+         allumée. C'est LA référence qu'on ouvre pendant qu'on travaille.</p>
+      <p class="preuve">source : docs/site/content/serveur.ts · briques.ts · mesures.ts</p>
+    </div>
+    <div class="loi">
+      <h4>Le mode d'emploi</h4>
+      <p><span class="chemin">docs/site/README.md</span> — et la loi complète est dans le
+         <span class="chemin">CLAUDE.md</span> du dépôt : toute session lit le site avant de travailler, et
+         toute modification back-end le met à jour <strong>dans le même commit</strong>.</p>
+    </div>
+  </div>
+
+  <div class="piege" style="border-color:rgba(116,169,255,0.28);background:linear-gradient(180deg,rgba(116,169,255,0.05),rgba(14,12,18,0) 80%)">
+    <h3 style="color:#9BC4FF">Ce que ce chantier écrira sur le site — et quand</h3>
+    <p><strong>À la fin du jalon 2</strong> (la migration) : <span class="chemin">user_prefs</span> gagne
+       <span class="chemin">prenom</span>, <span class="chemin">langue</span>,
+       <span class="chemin">onboarding_fait_le</span> et la fonction
+       <span class="chemin">definir_profil()</span> — quatre enregistrements nouveaux sur la carte du
+       serveur, chacun avec sa preuve.</p>
+    <p><strong>À la fin du jalon 1</strong> : six lignes changent d'état — les deux numéros en dur, le jeton
+       au Keychain, la déconnexion, la suppression, « Kathryn » en dur, et
+       <span class="chemin">user_prefs</span> qui passe de 🔵 à 🟢.</p>
+    <p><strong>Et une ligne nouvelle, en 🔵 assumé :</strong> la langue est rangée, l'app parle français
+       quoi qu'on tape. Plus les deux dettes du §05, à poser telles quelles :
+       <span class="chemin">cards.famille</span> en français dans un pool partagé, et les 269 chaînes en dur
+       de l'app.</p>
+    <p style="margin-top:14px"><strong>Aucune pastille ne bouge avant sa mesure.</strong> Appel fait, réponse
+       lue — sinon elle ne bouge pas, et on dit qu'elle n'a pas été mesurée.</p>
+  </div>
+</section>
+
+<footer>
+  Woop — plan de la création de compte et de l'onboarding · 05-09-2026<br>
+  États lus sur docs/site/content/serveur.ts et briques.ts, puis re-mesurés dans le code (fichier:ligne).<br>
+  Le compte des chaînes de l'app : 269 littéraux visibles, mesurés dans Woop/**/*.swift le 05-09.<br>
+  Rien n'est codé. Rien n'est commité.
+</footer>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   LE FONDU-FLOU DU TEXTE — la loi de l'onboarding, jouée ici pour de
+   vrai : chaque mot sort du flou en montant, décalé de 40 ms sur le
+   précédent, avec une respiration après chaque ponctuation forte.
+
+   La difficulté : le dégradé de blanc doit rester CONTINU sur toute la
+   tirade alors que chaque mot est une couche à part. On donne donc à
+   chaque mot le même dégradé, redimensionné à la taille du bloc et
+   décalé de sa propre position — il porte sa tranche, et la couture est
+   introuvable.
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  var doux = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var peintes = [];
+
+  /* Découpe en mots, en gardant les <br> et les blocs internes. */
+  function collecte(el, mots) {
+    var noeuds = Array.prototype.slice.call(el.childNodes);
+    while (el.firstChild) el.removeChild(el.firstChild);
+    noeuds.forEach(function (n) {
+      if (n.nodeType === 3) {
+        n.nodeValue.split(/(\s+)/).forEach(function (bout) {
+          if (!bout) return;
+          if (/^\s+$/.test(bout)) { el.appendChild(document.createTextNode(' ')); return; }
+          var s = document.createElement('span');
+          s.style.display = 'inline-block';
+          s.textContent = bout;
+          el.appendChild(s);
+          mots.push(s);
+        });
+      } else if (n.nodeName === 'BR') {
+        el.appendChild(n);
+      } else {
+        el.appendChild(n);
+        collecte(n, mots);
+      }
+    });
+  }
+
+  /* Chaque mot porte sa tranche du dégradé du bloc. */
+  function peindre(el) {
+    var pr = el.getBoundingClientRect();
+    (el.__mots || []).forEach(function (s) {
+      var sr = s.getBoundingClientRect();
+      s.style.backgroundImage = el.__fond;
+      s.style.backgroundRepeat = 'no-repeat';
+      s.style.backgroundSize = pr.width + 'px ' + pr.height + 'px';
+      s.style.backgroundPosition =
+        (-(sr.left - pr.left)).toFixed(1) + 'px ' + (-(sr.top - pr.top)).toFixed(1) + 'px';
+      s.style.webkitBackgroundClip = 'text';
+      s.style.backgroundClip = 'text';
+      s.style.color = 'transparent';
+    });
+  }
+
+  function reveler(el, base, lueur) {
+    if (el.dataset.revele) return;
+    el.dataset.revele = '1';
+
+    var fond = window.getComputedStyle(el).backgroundImage;
+    var degrade = !!fond && fond !== 'none';
+
+    var mots = [];
+    collecte(el, mots);
+    if (!mots.length) return;
+    el.__mots = mots;
+
+    if (degrade) {
+      el.__fond = fond;
+      peindre(el);              // mesuré AVANT que l'animation ne décale
+      el.style.backgroundImage = 'none';
+      peintes.push(el);
+    }
+
+    if (doux) return;
+
+    var t = base, precedent = '';
+    mots.forEach(function (s) {
+      if (/[.?!:]$/.test(precedent)) t += 0.20;   // la respiration
+      s.style.setProperty('--d', t.toFixed(2) + 's');
+      s.className = 'mot-r';
+      t += 0.04;
+      precedent = s.textContent;
+    });
+
+    if (lueur) {
+      setTimeout(function () { el.classList.add('lueur'); }, (t + 0.1) * 1000);
+    }
+  }
+
+  function armer() {
+    var cibles = [];
+    function ajouter(sel) {
+      Array.prototype.forEach.call(document.querySelectorAll(sel), function (e) { cibles.push(e); });
+    }
+    ajouter('.hero h1');
+    ajouter('h2');
+    ajouter('.reveler');
+
+    /* La tirade de Nosfy : paragraphes, puis le même traitement. */
+    var voix = document.getElementById('voix-nosfy');
+    if (voix) {
+      var texte = voix.dataset.texte || '';
+      voix.textContent = '';
+      texte.split('\n\n').forEach(function (para, i) {
+        var p = document.createElement('span');
+        p.style.display = 'block';
+        if (i) p.style.marginTop = '12px';
+        p.textContent = para;
+        voix.appendChild(p);
+      });
+      cibles.push(voix);
+    }
+
+    var obs = new IntersectionObserver(function (entrees) {
+      entrees.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        obs.unobserve(e.target);
+        reveler(e.target, parseFloat(e.target.dataset.retard || 0), false);
+      });
+    }, { threshold: 0.3 });
+
+    cibles.forEach(function (el) {
+      if (el.closest('.hero')) reveler(el, 0.2, true);
+      else obs.observe(el);
+    });
+
+    /* Le dégradé est calculé en pixels : il se recale à chaque respiration
+       de la fenêtre, sinon la couture réapparaît. */
+    var horloge;
+    window.addEventListener('resize', function () {
+      clearTimeout(horloge);
+      horloge = setTimeout(function () { peintes.forEach(peindre); }, 140);
+    });
+  }
+
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(armer);
+  else window.addEventListener('load', armer);
+})();
+</script>

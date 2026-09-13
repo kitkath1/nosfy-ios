@@ -190,6 +190,58 @@ struct PorteEntree: View {
     /// Le même contrat que l'écran de connexion qu'elle remplace : c'est
     /// l'appelant qui décide quoi faire de l'identité.
     var onConnect: (String) -> Void = { _ in }
+
+    // MARK: - LA PORTE APPLE (06-09)
+
+    /// Le verdict de la connexion Apple, remonté à la racine : nouvelle → le
+    /// film de Nosfy ; connue → l'app. `onConnect` reste appelé juste avant,
+    /// pour que la cérémonie de sortie parte comme avant.
+    var onVerdict: (AppleAuth.Verdict) -> Void = { _ in }
+
+    @State private var connexionEnCours = false
+    @State private var pannePorte: String?
+
+    /// LE BANC `-porteAppleAuto` : la feuille Apple ne se tape pas en ligne de
+    /// commande. Il l'ouvre tout seul, une fois la porte habillée.
+    private static let appleAuto = CommandLine.arguments.contains("-porteAppleAuto")
+
+    /// La VRAIE feuille Apple (`ASAuthorizationController`) — voir
+    /// `Services/AppleAuth.swift`. La cérémonie de sortie ne part QU'APRÈS le
+    /// verdict : ouvrir le portail avant de savoir qui entre, c'était le défaut
+    /// de l'ancienne porte (elle laissait passer sans condition).
+    private func entrerParApple() {
+        guard !connexionEnCours else { return }
+        withAnimation(.easeOut(duration: 0.2)) {
+            connexionEnCours = true
+            pannePorte = nil
+        }
+        Task { @MainActor in
+            do {
+                let verdict = try await AppleAuth.entrer()
+                connexionEnCours = false
+                // L'AIGUILLAGE (13-09) : une CONNUE part par la cérémonie de
+                // sortie (le portail, la flamme) vers la home — comme avant.
+                // Une NOUVELLE ne passe PAS par là : la racine ouvre le film de
+                // Nosfy par-dessus la porte, et c'est l'île qui s'allume.
+                if !verdict.estNouvelle {
+                    if Self.porteSortie && cineLocal == nil { cineLocal = .now }
+                    onConnect("")
+                }
+                onVerdict(verdict)
+            } catch let panne as AppleAuth.Panne {
+                connexionEnCours = false
+                guard panne != .annulee else { return }   // elle a fermé la feuille : rien à dire
+                withAnimation(.easeOut(duration: 0.25)) {
+                    pannePorte = panne.errorDescription
+                }
+            } catch {
+                connexionEnCours = false
+                withAnimation(.easeOut(duration: 0.25)) {
+                    pannePorte = error.localizedDescription
+                }
+            }
+        }
+    }
     /// Posé par la racine quand le bouton est touché (la cérémonie de sortie,
     /// jalon 5).
     var cineStart: Date? = nil
@@ -597,11 +649,31 @@ struct PorteEntree: View {
             // ⚠️ Son écrin shader déborde de 34 pt de chaque côté (halos,
             // poussières) : **aucun `clipped()` sur ce pied**, il tronquerait la
             // matière.
-            DiamondPrimaryButton(title: "SE CONNECTER", glyph: "apple.logo") {
-                // Le banc `-porteSortie` joue la cérémonie ici ; en production
-                // c'est la racine qui la déclenche (et qui coupe à 2,10 s).
-                if Self.porteSortie && cineLocal == nil { cineLocal = .now }
-                onConnect("")
+            // LE BOUTON PRIMAIRE DE LA MAISON (06-09) — il remplace le diamant :
+            // même hauteur (58, `PorteMesures.hauteurBouton`), même débord de
+            // 34 pt, et sa poudre de diamant au tap. `respecteLaCasse` parce que
+            // « Apple » est un nom propre et que le bouton met tout en casse de
+            // phrase (il affichait « … avec apple »).
+            BoutonPrimaire(title: "Se connecter avec Apple",
+                           glyph: "apple.logo",
+                           respecteLaCasse: true) {
+                entrerParApple()
+            }
+            .opacity(connexionEnCours ? 0.5 : 1)
+            .allowsHitTesting(!connexionEnCours)
+            .overlay(alignment: .bottom) {
+                // La panne se dit SOUS le bouton, en une ligne — jamais une
+                // alerte système par-dessus la porte.
+                if let panne = pannePorte {
+                    Text(panne)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .padding(.horizontal, 8)
+                        .offset(y: 34)
+                        .transition(.opacity)
+                }
             }
             .padding(.horizontal, PorteMesures.margeCote)
             .padding(.bottom, PorteMesures.piedBouton + encartBas)
@@ -611,6 +683,11 @@ struct PorteEntree: View {
             // déclencherait la CÉRÉMONIE DE SORTIE en plein film d'arrivée, au
             // lieu du saut. Le doigt ne touche que ce qui est posé.
             .allowsHitTesting(habille)
+            .task(id: habille) {
+                guard Self.appleAuto, habille else { return }
+                try? await Task.sleep(for: .milliseconds(900))
+                entrerParApple()
+            }
         }
     }
 
