@@ -341,3 +341,17 @@ du bas. `CarteSortie` / `CapsuleEntrer` du premier jet : supprimées. Au sim : l
 chiffres, le 4 en vrai verre SUR « GO ! », ALLEZ / MARGAUX entiers, Entrer, le galet.
 Banc : `-nosfy -nosfyAuto -rewardAuto` (la pop-up se ferme seule). Restent : ses verdicts au
 téléphone (le verre, le boum, la place de la card sous le cône), la mesure serveur.
+
+## 16. La marche du galet, sur l'appareil (13-09, plus tard)
+
+Au simulateur la marche avait disparu (mesurée sur les pixels) ; **sur son iPhone elle
+restait** (« je vois toujours la marche, mais c'est mieux le background »). C'est la loi du
+26-08 : sur l'appareil, une couche vidéo ne se fond pas — masque et mode écran ne mordent pas,
+son rectangle couvre ce qu'il a sous lui. Ce qu'il avait sous lui : **la queue du cône**
+(600 pt + 28 de flou, jusqu'à ≈ 660 pt) et **le grain**. Deux gestes, aucun sur la vidéo :
+- `coneHauteur` 600 → **520** : le cône s'arrête au-dessus du galet (qui naît à 610 pt) ; la
+  page y est vraiment noire, comme le fichier ;
+- le **grain passe AU-DESSUS** du galet dans le ZStack (avant : dessous, donc coupé par le
+  rectangle).
+Le masque et l'écran restent (le simulateur en profite, l'appareil les ignore). Posé sur
+l'iPhone ; son verdict attendu.

@@ -274,3 +274,57 @@ du ralenti (3), le rythme (1). Si le ×1,5 saccade, on repasse à ×1,25 et on r
 la bande est un projecteur (vignette elliptique), les deux langues au même corps, le
 « 4 » dans son galet, « MARGAUX » dans l'écran. Restent SES verdicts au téléphone : le
 ralenti ×1,5 (saccade ou pas — le simulateur ne le dit pas), le rythme, la fête F à la fin.
+
+## 12. Le deuxième texte (13-09, nuit — après le commit 996b9d3)
+
+Son verdict sur le premier poème : « je ne comprends pas trop le sens des deux premières
+phrases ; refais une proposition à la Nietzsche, thématique nuit et dépassement, et la phrase
+de fin doit être une VRAIE phrase de Nietzsche, pas des mots bidons — ne change pas le
+workflow, tout est top ».
+
+| t | FR (clair) | EN (sourd) |
+|---|---|---|
+| 1,0 | La nuit tombe sur tout le monde. | Night falls on everyone. |
+| 5,0 | Peu la traversent. | Few cross it. |
+| 8,6 | Chaque séance est une nuit à traverser. | Every workout is a night to cross. |
+| 13,4 | Il faut avoir du chaos en soi pour enfanter une étoile dansante. | One must have chaos within to give birth to a dancing star. |
+| | *Nietzsche — Ainsi parlait Zarathoustra* (Prologue § 5 : « man muss noch Chaos in sich haben, um einen tanzenden Stern gebären zu können ») | |
+
+La citation est désormais dans les deux langues (la langue n'est pas encore choisie), la
+zone de texte passe à 264 pt (six lignes à 30 + l'auteur), et **l'accueil passe de 17,0 à
+18,6 s** : au sim, l'anglais de la citation finissait d'apparaître à 17 s. Rien d'autre ne
+bouge (vidéo, passation du son, haptique). Vu au sim (`captures/poeme`), posé sur l'iPhone.
+
+**Retouche (13-09, plus tard) : « un peu trop longue, on n'a pas le temps de la lire ».** L'étoile
+dansante (12 mots) cède à **« Ce qui ne me tue pas me rend plus fort. » / « What does not kill
+me makes me stronger. »** — *Nietzsche — Crépuscule des idoles* (« Maximes et flèches » § 8,
+« Was mich nicht umbringt, macht mich stärker »). Huit mots, lisibles en deux secondes ;
+l'accueil reste à 18,6 s. Alternative gardée sous le coude si elle la trouve trop tee-shirt :
+« L'homme est quelque chose qui doit être surmonté. » (Zarathoustra, Prologue § 3).
+
+**Citation, troisième mot (13-09) : « trop cliché, une autre plus profonde ».** →
+**« La nuit aussi est un soleil. » / « Night, too, is a sun. »** — *Nietzsche — Ainsi parlait
+Zarathoustra* (IV, « Le chant d'ivresse » : « auch Nacht ist eine Sonne »). Six mots, la nuit
+du film, le renversement : la séance qu'on redoute est la lumière.
+
+## 13. La couture connexion → film (13-09, plus tard)
+
+Son verdict : « transition plus douce, plus blur, plus jolie quand je passe de connexion à
+l'onboarding — là c'est brut, on voit la vidéo qui est déjà chargée ». Trois gestes :
+- la porte se dissout en **1,3 s** (0,7) et **28 pt de flou** (18) ;
+- le film **sort du flou** (`.transition(.fonduFlou)` au lieu de `.opacity`, WoopApp) ;
+- **la bande de nuit naît du noir à 0,6 s**, en fondu-flou 1,2 s (`bandeNee`) — la vidéo ne
+  démarre qu'à sa naissance ; toute l'horloge glisse de 0,6 s : temps à 1,6 / 5,6 / 9,2,
+  passation 11,1, citation 14,0, accueil 19,2.
+
+## 14. « Pas assez fluide, trop brusque » (13-09, plus tard)
+
+Ses mots : « pas assez fluide ; on ne peut pas passer l'étape de la vidéo au tap, c'est trop
+beau ; la transition de son et d'apparition de la vidéo pas assez fine, trop brusque ».
+- **Plus de saut au tap sur l'intro** — elle se regarde (l'accueil et la fin se sautent encore).
+- **La bande affleure** : fondu-flou de 2,0 s en aisance des deux côtés (1,2 easeOut avant).
+- **Sa piste est cuite avec une montée de 1,6 s** (`afade=t=in`) : l'image et le son naissent
+  ensemble ; et sa descente passe de 1,3 s à **2,8 s** (9,2 → 12,0).
+- **La passation en croisé** : ma musique monte à 9,8 s sur **3,2 s** (`musique(true, fondu:)`,
+  1,5 avant) — deux pentes douces qui se croisent, jamais une coupe.
+Recuit `recuit_nuit.sh` (depuis la racine du dépôt — le script écrit `Woop/Media/…`).

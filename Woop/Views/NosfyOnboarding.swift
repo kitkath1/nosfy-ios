@@ -34,6 +34,10 @@ struct NosfyOnboarding: View {
     /// L'INTRO (PLAN-INTRO-NUIT.md) : −1 = le noir · 0/1/2 = les trois temps du
     /// poème · 3 = la citation sur le noir. Une horloge qui meurt à l'accueil.
     @State private var tempsIntro = -1
+    /// La bande de nuit NAÎT du noir, 0,6 s après l'entrée, en fondu-flou (13-09,
+    /// son verdict sur la couture connexion → film : « c'est brut, on voit la vidéo
+    /// qui est déjà chargée »). Avant elle : le noir seul.
+    @State private var bandeNee = false
     /// LE BARREAU de la vidéo (`-sansNosfyVideo`) : le poster à sa place — sans
     /// lui on ne pourra ni l'accuser ni la disculper à la mesure.
     static let sansVideo = CommandLine.arguments.contains("-sansNosfyVideo")
@@ -103,22 +107,36 @@ struct NosfyOnboarding: View {
         // à 10,8, l'accueil à 14,0. Le mot par mot est ralenti d'un tiers.
         // Sur la vidéo ralentie à 12 s (PLAN-INTRO-NUIT §11) : les temps à
         // 1,0 / 5,0 / 8,6 (le troisième sur la lune, ≈ 8,7 s ralentie), la
-        // passation du son à 10,5, la citation à 13,4, l'accueil à 17,0.
-        let pas: [(Double, Int)] = [(1.0, 0), (5.0, 1), (8.6, 2)]
+        // passation du son à 10,5, la citation à 13,4, l'accueil à 18,6 (17,0 avec
+        // « Deviens ce que tu es. » : la vraie phrase de Zarathoustra, dans les deux
+        // langues, a besoin de ces 1,6 s — vu au sim, l'anglais finissait à 17).
+        // LA BANDE NAÎT à 0,6 s, du noir, en fondu-flou — et toute l'horloge
+        // glisse de 0,6 s avec elle (la vidéo ne commence qu'à sa naissance :
+        // la lune reste sous le troisième temps).
         var t = 0.0
+        try? await Task.sleep(for: .seconds(0.6)); t = 0.6
+        guard etape == .intro else { return }
+        // Deux secondes, en aisance des deux côtés : elle ne « pop » pas, elle
+        // affleure (« pas assez fine, trop brusque », 13-09). Sa piste est cuite
+        // avec 1,6 s de montée : l'image et le son naissent ensemble.
+        withAnimation(.easeInOut(duration: 2.0)) { bandeNee = true }
+        let pas: [(Double, Int)] = [(1.6, 0), (5.6, 1), (9.2, 2)]
         for (quand, temps) in pas {
             try? await Task.sleep(for: .seconds(quand - t)); t = quand
             guard etape == .intro else { return }
             withAnimation(.easeInOut(duration: 0.9)) { tempsIntro = temps }
         }
-        try? await Task.sleep(for: .seconds(10.5 - t)); t = 10.5
+        // LA PASSATION, en croisé : sa piste descend de 9,8 à 12,6 (cuit : 2,8 s),
+        // ma musique monte de 9,8 à 13,0 (3,2 s) — deux pentes douces qui se
+        // croisent, jamais une coupe.
+        try? await Task.sleep(for: .seconds(9.8 - t)); t = 9.8
         guard etape == .intro else { return }
-        NosfySon.musique(true)                       // la passation : 1,5 s de montée
-        try? await Task.sleep(for: .seconds(13.4 - t)); t = 13.4
+        NosfySon.musique(true, fondu: 3.2)
+        try? await Task.sleep(for: .seconds(14.0 - t)); t = 14.0
         guard etape == .intro else { return }
         Haptique.fort()
         withAnimation(.easeInOut(duration: 0.9)) { tempsIntro = 3 }
-        try? await Task.sleep(for: .seconds(17.0 - t))
+        try? await Task.sleep(for: .seconds(19.2 - t))
         guard etape == .intro else { return }
         withAnimation(.easeInOut(duration: 0.9)) { etape = .accueil }
     }
@@ -213,9 +231,10 @@ struct NosfyOnboarding: View {
             // vide ne ferme pas le clavier, il REFUSE — le message passe au rouge.
             if etape == .prenom, champOuvert, prenomVide { refuserPrenom(); return }
             prenomActif = false
-            // L'intro, l'accueil et la fin se SAUTENT d'un tap : Apple laisse
-            // toujours passer.
-            if etape == .intro || etape == .accueil || etape == .fin { avancer(passe: true) }
+            // L'accueil et la fin se SAUTENT d'un tap : Apple laisse toujours
+            // passer. PAS L'INTRO (13-09, son verdict : « on ne peut pas passer
+            // l'étape de la vidéo au tap, c'est trop beau ») — elle se regarde.
+            if etape == .accueil || etape == .fin { avancer(passe: true) }
         }
         .onAppear {
             if etape == .accueil { allumer() }          // (si un jour on entre par là)
@@ -264,24 +283,29 @@ struct NosfyOnboarding: View {
                         .transition(.fonduFlou)
                     } else if tempsIntro == 3 {
                         // NIETZSCHE, sur le noir — on ne corrige pas une citation.
+                        // Les deux langues, comme le poème (la langue n'est pas
+                        // encore choisie) : FR clair, EN sourd.
                         VStack(alignment: .leading, spacing: 12) {
                             MotsFlou([(IntroPoeme.citation, true)], taille: 30)
+                            MotsFlou([(IntroPoeme.citationEn, false)], taille: 30, base: 1.3)
                             Text(IntroPoeme.auteur)
                                 .font(.inter(13))
                                 .foregroundStyle(.white.opacity(0.42))
-                                .modifier(Retarde(apres: 1.1))
+                                .modifier(Retarde(apres: 1.6))
                         }
                         .id(3)
                         .transition(.fonduFlou)
                     }
                 }
-                .frame(height: 220, alignment: .bottom)      // 4 lignes à 30, jamais de chevauchement
+                // 6 lignes à 30 (la citation dans les deux langues) + l'auteur, jamais
+                // de chevauchement : 96 + 264 + 24 + 200 = 584 < 852.
+                .frame(height: 264, alignment: .bottom)
 
                 // LA BANDE — 300 × 200 pt (3:2, le ratio du fichier cuit 990 × 660),
                 // sa vignette elliptique fondue DANS le fichier, ralentie ×1,5 (12 s).
                 // Elle joue UNE fois, avec SON son, finit dans son noir et le tient ;
                 // démontée à la citation.
-                if tempsIntro < 3 {
+                if tempsIntro < 3, bandeNee {
                     Group {
                         if Self.sansVideo {
                             Image("nosfy-nuit-poster").resizable().aspectRatio(contentMode: .fit)
@@ -290,7 +314,10 @@ struct NosfyOnboarding: View {
                         }
                     }
                     .frame(width: 300, height: 200)
-                    .transition(.opacity)
+                    // Elle sort du flou (1,2 s) — jamais « déjà là ».
+                    .transition(.fonduFlou)
+                } else if tempsIntro < 3 {
+                    Color.clear.frame(width: 300, height: 200)     // sa place, avant elle
                 }
 
                 Spacer(minLength: 0)
@@ -770,14 +797,17 @@ private struct SortieProjecteur: View {
             // 30 Hz qui REDESSINE : la retirer est un gain, pas un coût. Le
             // projecteur est désormais le halo lui-même, penché (`HaloIle`).
             Color.clear
-            WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
 
             // TEMPS 1 — LE GALET DE VERRE NOIR (13-09, sa consigne : « la pilule
             // noire / blanche du chapitre 1 "le verre noir" de la route, debout,
             // coupée, fondue, en bas de la page ») : il monte du bord, sous la card.
+            // ⚠️ AVANT le grain : sur l'appareil la vidéo couvre ce qu'elle a sous
+            // elle, et un grain dessous faisait une marche de plus au bord du fichier.
             galetDuBas
+
+            WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
             // TEMPS 2 — LA POP-UP DE BASE (PLAN-SORTIE-POPUP § 11) : la robe
             // « You Made It » telle qu'elle est — sa lampe, sa matrice, le chiffre
@@ -1081,7 +1111,12 @@ struct HaloIle: View {
 
     private static let cote: CGFloat = 380
     private static let ileCentre: CGFloat = 11 + 37 / 2
-    private static let coneHauteur: CGFloat = 600
+    /// 600 → 520 (13-09, nuit) : la queue du cône (avec ses 28 pt de flou) léchait
+    /// encore la page à 610 pt, là où le galet de verre naît — et sur l'appareil,
+    /// une vidéo ne se fond pas : son rectangle noir découpait cette lueur en
+    /// MARCHE (« je vois toujours la marche »). Le cône s'arrête au-dessus du galet ;
+    /// la page y est vraiment noire, comme la vidéo.
+    private static let coneHauteur: CGFloat = 520
 
     var body: some View {
         ZStack {
@@ -1216,15 +1251,28 @@ struct HaloIle: View {
 /// n'est pas encore choisie), et le mot « courage » n'est jamais dit : Nietzsche
 /// le dit à sa façon, sur le noir. On ne corrige pas une citation : elle tutoie,
 /// le film continue de vouvoyer.
+/// LE POÈME (13-09, deuxième texte — son verdict sur le premier : « je ne comprends
+/// pas trop le sens des deux premières ; refais à la Nietzsche, nuit et dépassement,
+/// et la phrase de fin doit être une VRAIE phrase de Nietzsche »). Trois temps clairs
+/// — la nuit tombe sur tous, peu la traversent, chaque séance est une nuit à
+/// traverser — et pour finir une phrase authentique, Ainsi parlait Zarathoustra,
+/// Prologue § 5 (« man muss noch Chaos in sich haben, um einen tanzenden Stern
+/// gebären zu können ») : le chaos qu'on porte, l'étoile qu'on en tire.
 private enum IntroPoeme {
-    static let fr = ["La nuit ne demande pas si l'on est prêt.",
-                     "Elle demande si l'on y va.",
-                     "Chaque séance est une nuit."]
-    static let en = ["The night doesn't ask if you're ready.",
-                     "It asks if you'll go.",
-                     "Every workout is a night."]
-    static let citation = "Deviens ce que tu es."
-    static let auteur = "Nietzsche"
+    static let fr = ["La nuit tombe sur tout le monde.",
+                     "Peu la traversent.",
+                     "Chaque séance est une nuit à traverser."]
+    static let en = ["Night falls on everyone.",
+                     "Few cross it.",
+                     "Every workout is a night to cross."]
+    // « Un peu trop longue » (l'étoile dansante, 12 mots), puis « trop cliché, une
+    // autre plus profonde » (« ce qui ne me tue pas… ») : LA NUIT AUSSI EST UN
+    // SOLEIL — Ainsi parlait Zarathoustra, IV, « Le chant d'ivresse » (« auch Nacht
+    // ist eine Sonne »). Six mots, la nuit du film, et le renversement qui dit
+    // tout : la séance qu'on redoute est la lumière.
+    static let citation = "La nuit aussi est un soleil."
+    static let citationEn = "Night, too, is a sun."
+    static let auteur = "Nietzsche — Ainsi parlait Zarathoustra"
 }
 
 // MARK: - LA BÊTE : le lecteur de l'accueil
@@ -1328,7 +1376,9 @@ enum NosfySon {
     }
 
     /// La musique monte quand le film s'ouvre ; elle est la même jusqu'au bout.
-    static func musique(_ allumer: Bool) {
+    /// `fondu` : la montée (1,5 s par défaut ; 3,2 s à la passation de l'intro —
+    /// « la transition de son pas assez fine, trop brusque », 13-09).
+    static func musique(_ allumer: Bool, fondu: TimeInterval = 1.5) {
         preparerSession()
         if allumer {
             guard musique == nil else { return }
@@ -1340,7 +1390,7 @@ enum NosfySon {
             p.play()
             // 50 % d'un master à −24 LUFS : discret mais PRÉSENT. À 18 % (premier
             // jet) le haut-parleur du téléphone ne rendait presque rien (13-09).
-            p.setVolume(0.5, fadeDuration: 1.5)
+            p.setVolume(0.5, fadeDuration: fondu)
             musique = p
         } else {
             guard let p = musique else { return }

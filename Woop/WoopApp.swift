@@ -1807,7 +1807,9 @@ struct RootView: View {
                                                   forKey: "woop.onboarding.du")
                         print("[PORTE] verdict = \(verdict.estNouvelle ? "NOUVELLE → onboarding" : "CONNUE → app") · \(verdict.userID)")
                         if verdict.estNouvelle {
-                            withAnimation(.easeInOut(duration: 0.7)) { nosfyOuvert = true }
+                            // 1,3 s (0,7 avant — « brut », 13-09) : la porte se
+                            // dissout LENTEMENT, le film sort du flou dessous.
+                            withAnimation(.easeInOut(duration: 1.3)) { nosfyOuvert = true }
                         }
                     }, cineStart: cineStart,
                        arrivee: !Self.porteDejaVue)
@@ -1820,9 +1822,9 @@ struct RootView: View {
                     // page de login) : `porteEteinte` la tient à zéro jusqu'à ce
                     // que `showAuth` tombe — sous le blanc du film, le noir et
                     // les braises, jamais le carrousel.
-                    .blur(radius: nosfyOuvert ? 18 : 0)
+                    .blur(radius: nosfyOuvert ? 28 : 0)
                     .opacity((nosfyOuvert || porteEteinte) ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.7), value: nosfyOuvert)
+                    .animation(.easeInOut(duration: 1.3), value: nosfyOuvert)
                     .transition(.opacity)
                     .zIndex(9)
 
@@ -1840,7 +1842,9 @@ struct RootView: View {
                             withAnimation(.easeOut(duration: 0.5)) { nosfyOuvert = false }
                             startConnexionCinematic()
                         }
-                        .transition(.opacity)
+                        // Le film SORT DU FLOU pendant que la porte s'y enfonce
+                        // (13-09 : « plus douce, plus blur, plus jolie »).
+                        .transition(.fonduFlou)
                         .zIndex(9.5)
                     }
                 }

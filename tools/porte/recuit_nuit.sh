@@ -20,7 +20,7 @@ T_C="clip((1.25-sqrt(pow((X-247.5)/247.5,2)+pow((Y-165)/165,2)))/0.65,0,1)"
 GEQ="geq=lum='lum(X,Y)*0.92*(${T_L})*(${T_L})*(3-2*(${T_L}))':cb='128+(cb(X,Y)-128)*(${T_C})*(${T_C})*(3-2*(${T_C}))':cr='128+(cr(X,Y)-128)*(${T_C})*(${T_C})*(3-2*(${T_C}))'"
 ffmpeg -v error -y -i "$SRC" \
   -vf "crop=3240:2160:300:0,scale=990:660:flags=lanczos,format=yuv420p,${GEQ},fade=t=in:st=0:d=0.8,setpts=1.5*PTS" \
-  -af "atempo=0.6667,afade=t=out:st=10.6:d=1.3" -c:a aac -b:a 128k -ar 44100 \
+  -af "atempo=0.6667,afade=t=in:st=0:d=1.6,afade=t=out:st=9.2:d=2.8" -c:a aac -b:a 128k -ar 44100 \
   -r 24 "${X264[@]}" "$OUT"
 mkdir -p "$POSTER_DIR"
 ffmpeg -v error -y -i "$OUT" -vf "select=eq(n\,12)" -frames:v 1 "$POSTER_DIR/nosfy-nuit-poster.png"
