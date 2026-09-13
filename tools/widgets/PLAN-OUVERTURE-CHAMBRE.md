@@ -8,7 +8,7 @@ mini-détail** (la card se retourne), **l'appui long garde la vibration** (les c
 tremblent, on change de widgets). Et la fluidité, jugée « pas très bien », se mesure
 avant de se corriger.
 
-Rien n'est codé. Ce plan attend son verdict.
+**Verdict du 13-09 : « oui A+B ok ». Codé le soir même dans `CardTouche` (WidgetsCards.swift) — à mesurer au doigt sur son téléphone.**
 
 ## 1. Ce qui existe aujourd'hui (lu dans `CardTouche`, WidgetsCards.swift)
 
@@ -31,11 +31,11 @@ ne s'ouvre. Sur le simulateur ça passe ; au doigt, non.
 Tap 2, **sur la face retournée, quel que soit le délai** : la chambre s'ouvre. Le
 mini-détail devient l'antichambre du détail long — c'est la progression naturelle
 (« voir » → « voir plus »), aucune précision de timing, aucun conflit avec l'appui long
-(il reste l'appui long) ni avec le glisser (il reste le glisser). Un glyphe discret sur la
-face retournée (le chevron d'iOS, en bas à droite, gris) dit que c'est une porte — pas une
-phrase, la règle des textes du 13-09. **Coût : une heure.** Une ligne de `CardTouche` (si
-la card est retournée, un tap ouvre au lieu de re-retourner) et le glyphe sur la face
-arrière de chaque card.
+(il reste l'appui long) ni avec le glisser (il reste le glisser). **Aucun glyphe** sur la
+face retournée — « pas de mini chevron, trop cheap » (verdict du 13-09) : la face retournée
+EST la porte, on le découvre en la touchant, comme le mini-détail lui-même. **Coût : une
+heure.** Une ligne de `CardTouche` : si la card est retournée, un tap ouvre au lieu de
+re-retourner.
 
 **B. Le double tap tolérant.** Garder le double tap mais élargir la fenêtre (0,32 → 0,45 s)
 et tolérer 12 pt de mouvement. Moins de ratés, jamais zéro : le geste reste un geste de
@@ -55,7 +55,7 @@ garder (la vibration ouvre l'édition, tout de suite).
 ## 3. La recommandation
 
 **A + B ensemble.** A parce qu'elle ne demande aucune précision et qu'elle donne un sens au
-mini-détail ; B parce que ça ne coûte rien et que ceux qui double-tapent vite continueront
+mini-détail, sans rien ajouter au dessin ; B parce que ça ne coûte rien et que ceux qui double-tapent vite continueront
 d'y arriver. Le tap simple, l'appui long et le glisser ne bougent pas d'un point.
 
 À mesurer au doigt sur SON téléphone avant tout verdict (la sonde de gestes de

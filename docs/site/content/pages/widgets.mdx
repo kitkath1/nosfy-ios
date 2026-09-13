@@ -15,6 +15,30 @@
 </div>
 <div className="reveal">
 
+## Vide et plein — les deux états, widget par widget
+
+<p>La loi du 13-09 : à zéro, LE MÊME dessin, en gris (saturation 0, opacité 55 %), des zéros et des tirets — jamais une phrase « rien à afficher », jamais un chiffre de maquette. Le vide est vrai depuis que la démo ne se sème plus seule.</p>
+
+<div className="tw">
+<table className="serveur">
+<thead>
+<tr><th></th><th>Vide (aucune séance sur la fenêtre)</th><th>Avec des séances</th></tr>
+</thead>
+<tbody>
+<tr><td className="mono nom">Regularity</td><td>« 0 / 5 séances », les sept cases datées sans sticker, l'anneau du jour, la légende du halo en gris ; Résumé 0 · « Aucune la semaine passée » · 0 semaine d'affilée ; Le défi « — Séances pour battre ton meilleur mois », 14 crans gris, aucune phrase</td><td>« 8 / 5 séances », stickers et halos (3 niveaux), Résumé avec ▲ +2, semaines d'affilée + record, Le défi : « 17 · Séances ce mois-ci · Août est battu » ou « 3 · Séances pour battre août », la piste des crans, la date projetée ; l'objectif se change au héros (3 → 10), écrit au serveur</td></tr>
+<tr><td className="mono nom">Volume</td><td>« 0 kg », courbe plate, « — % », Par séance 0 kg, Record de la semaine 0 kg, trois rangs « — · 0 rép. · 0 kg », podium : quatre colonnes grises « — »</td><td>le cumul + le fantôme pointillé + « +99 % », scrub au doigt, Par séance · Record de la semaine, les trois exercices avec leur part, le podium des quatre catégories nommées (Fessiers 53 %, Abdos 47 %, Haut 0 %, Bas 0 %)</td></tr>
+<tr><td className="mono nom">HIIT Peak</td><td>« 0,0 km/h », Pic max 0,0 · Temps de pics 0:00 · Efforts 0, les sept cases datées, « La séance — · 0:00 · 0 segment », la silhouette d'un HIIT gris (repos et efforts qui alternent, cotes et durées en tirets), bilan « — », record de vitesse en marches grises « — »</td><td>le pic, la synthèse, les jours HIIT allumés avec leur pic (halo seulement au-dessus de 15 km/h), la séance segment par segment (largeur = durée, hauteur = vitesse, chaleur = intensité, le pic perce), le bilan En progrès / En recul avec sa phrase, les quatre semaines du record</td></tr>
+<tr><td className="mono nom">Peak Effort</td><td>« 0 kg » sans sous-titre, cinq marches grises « — », Le compte 0 kg · 0 kg · « — j », deux rangs « — », Records « — »</td><td>« 35 kg · Pull-through à la poulie · × 10 », l'ascension (les marches du record, la dernière brûle), Le compte (charge × reps, 1RM, depuis le record), Autres pics avec leur delta, Records battus</td></tr>
+<tr><td className="mono nom">La home</td><td>« 0 workouts this week », 0 / 5, 0 kg, « — vs last week », HIIT « 0,0 · — », Peak « — · 0 kg » — plus de « 8.4 kg », « +12% », « 1 session left » ni « 60 kg Hip Thrust »</td><td>les quatre cards avec les vrais chiffres de `SemaineStats.calcule`</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>La première fenêtre ne se compare à rien (« Première semaine d'intervalles… », jamais « +17,0 contre 0,0 ») ; ce que le serveur ne rend pas reste gris (fantôme, défi, quatre semaines). Le passage du gris aux données se fait en fondu quand le serveur répond.</p>
+
+</div>
+<div className="reveal">
+
 ## Ce qui reste
 
 <Liste page="widgets" etats={['loc', 'srv', 'abs']} mesures />
@@ -37,6 +61,6 @@
 <Savoir>
   <p>Les quatre widgets de la home — Regularity, Volume, HIIT Peak, Peak Effort — et leurs chambres longues (l'overlay du double tap) lisent <b>la même passe, dans le téléphone</b> : <code>SemaineStats.calcule</code> puis <code>ChambreDonnees.calcule</code>. Deux fenêtres (lundi → maintenant ; 30 jours glissants), la précédente bornée au même temps écoulé, un effort = un segment au-dessus de 15 km/h, jamais de « × N » : une séance HIIT est une suite de segments irréguliers.</p>
   <p>Le serveur sait faire pareil : <code>widget_regularite</code>, <code>widget_volume</code>, <code>widget_hiit</code>, <code>widget_peak</code> (une fenêtre → un JSON), <code>objectif_hebdo</code> et <code>definir_objectif</code> (l'objectif vit dans <code>user_prefs</code>). Depuis le 13-09 l'app les appelle à l'ouverture d'une chambre, avec une règle unique écrite en tête de <code>ChambreServeur.swift</code> : l'objectif, c'est le serveur qui le tient ; les chiffres, c'est le téléphone tant qu'il a une séance sur la fenêtre, le serveur seulement s'il n'en a aucune (nouveau téléphone, réinstallation). Ce que le serveur ne rend pas reste gris plutôt qu'inventé : le fantôme de la semaine passée, le défi du mois, les quatre semaines du record de vitesse.</p>
-  <p>Deux faits mesurés le 13-09 sur le compte de test. <code>push()</code> marche dès qu'une session existe — 23 séances de démo sont montées d'un coup ; les tables vides des vrais comptes viennent de l'absence de session, pas du code (la brique <code>b-sy-jamais-ecrit</code> de la page Serveur). Et <code>widget_volume</code> répondait en timeout parce que <code>fuseau_jour()</code> balayait la liste des fuseaux à chaque ligne (<code>b-fn-fuseau-jour</code>, page Serveur) : corrigé par la migration du 13-09, 12,7 s → 26 ms.</p>
+  <p>Trois faits mesurés le 13-09 sur le compte de test. La session posée par la porte Apple était BARRÉE par la garde du numéro dans <code>token()</code> : un compte créé par Apple ne poussait rien et ne lisait rien, en silence — corrigé, et mesuré par le banc <code>-sessionAdoptee</code> (la poussée passe, la chambre lit ; brique <code>b-sy-session-apple-token</code>, page Compte). <code>push()</code> marche dès qu'une session existe — 23 séances de démo sont montées d'un coup ; les tables vides des vrais comptes viennent de l'absence de session, pas du code (la brique <code>b-sy-jamais-ecrit</code> de la page Serveur). Et <code>widget_volume</code> répondait en timeout parce que <code>fuseau_jour()</code> balayait la liste des fuseaux à chaque ligne (<code>b-fn-fuseau-jour</code>, page Serveur) : corrigé par la migration du 13-09, 12,7 s → 26 ms.</p>
   <p>La loi du vide : à zéro, chaque chambre garde son design, en gris — jamais une phrase « rien à afficher » ; le serveur rend des zéros, jamais un null. Et le vide est VRAI depuis le 13-09 : le semis automatique de séances de démo en debug est mort (il ressemait la base à chaque lancement) — la démo ne vient plus que de <code>-demoData</code>. Une chambre ouverte efface la nav du bas ; l'eyebrow « 03 · HIIT Peak » est parti. L'analyse complète des données, widget par widget : <code>tools/widgets/ANALYSE-DATAS-WIDGETS.md</code>. Les phases cardio, elles, vivent dans <code>cardio_phases</code> (<code>b-tb-cardio</code>, page Serveur).</p>
 </Savoir>

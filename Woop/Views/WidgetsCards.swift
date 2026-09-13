@@ -719,8 +719,9 @@ struct CardTouche: ViewModifier {
     /// immédiatement (la card se retourne, et elle RESTE : c'est le verdict
     /// de Kathryn), et c'est le second qui ouvre la chambre.
     @State private var finPrecedente: Date?
-    /// 0,32 s — au-delà, deux taps sont deux intentions.
-    private static let seuilDouble = 0.32
+    /// 0,45 s — au-delà, deux taps sont deux intentions (0,32 le 07-09 ;
+    /// élargi le 13-09, verdict B : « j'arrive pas à bien cliquer »).
+    private static let seuilDouble = 0.45
 
     /// 0,50 s — l'arbitrage F du plan (0,4-0,5 s chez Apple ; la tolérance
     /// de mouvement est de 10 pt, au-delà c'est un drag, pas un appui).
@@ -741,10 +742,10 @@ struct CardTouche: ViewModifier {
             .onChanged { v in
                 doigt = v.location
                 if presseAt != nil {
-                    // Le doigt a fui : plus un appui. (10 pt, la tolérance
-                    // du long press d'Apple.)
+                    // Le doigt a fui : plus un appui. (12 pt depuis le 13-09,
+                    // verdict B — 10 chez Apple, un doigt réel tremble.)
                     if max(abs(v.translation.width),
-                           abs(v.translation.height)) > 10 {
+                           abs(v.translation.height)) > 12 {
                         aBouge = true
                     }
                     return
@@ -808,13 +809,17 @@ struct CardTouche: ViewModifier {
                     _ = onEdition
                     // L'édition a pris la main : le relâchement se tait.
                     guard !edition else { return }
-                    // ── LE DOUBLE TAP OUVRE LA CHAMBRE LONGUE.
-                    // Deux relâchements COURTS et immobiles à moins de
-                    // `seuilDouble` : la card se range et l'overlay monte.
+                    // ── LA PORTE DE LA CHAMBRE LONGUE (verdicts A + B, 13-09).
+                    // A : LA FACE RETOURNÉE EST LA PORTE — un tap court sur la
+                    // card déjà retournée (le mini-détail) ouvre la chambre,
+                    // quel que soit le délai, sans glyphe (« pas de mini
+                    // chevron, trop cheap »). La card se range en même temps.
+                    // B : deux relâchements courts à moins de `seuilDouble`
+                    // ouvrent aussi — pour qui double-tape vite.
                     if court, !bouge {
                         let n = Date()
-                        if let p = finPrecedente,
-                           n.timeIntervalSince(p) < Self.seuilDouble {
+                        let double = finPrecedente.map { n.timeIntervalSince($0) < Self.seuilDouble } ?? false
+                        if etaitOuverte || double {
                             finPrecedente = nil
                             UIImpactFeedbackGenerator(style: .rigid)
                                 .impactOccurred()

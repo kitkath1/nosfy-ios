@@ -128,7 +128,7 @@ final class ChambreEtat {
         if objectifEnAttente, objectif > 0 { await ecrireObjectif(objectif); return }
         do {
             let s = try await ChambreServeur.objectif()
-            objectif = s
+            withAnimation(.easeOut(duration: 0.35)) { objectif = s }
             note("objectif_hebdo() → \(s)")
         } catch { note("objectif_hebdo() ✗ \(error)") }
     }
@@ -140,7 +140,9 @@ final class ChambreEtat {
                 let json = try await ChambreServeur.fenetre(kind, fen)
                 var f = ChambreDonnees().fenetre(fen)     // le vide daté du téléphone
                 let n = ChambreServeur.traduire(kind, json: json, dans: &f)
-                serveur["\(kind)/\(fen.rawValue)"] = f
+                // Le brin d'animation du chargement (13-09) : le gris du vide
+                // se réchauffe en un demi-souffle quand le serveur répond.
+                withAnimation(.easeOut(duration: 0.55)) { serveur["\(kind)/\(fen.rawValue)"] = f }
                 note("\(ChambreServeur.nomFonction(kind))(\(fen.rawValue)) → \(n) séance(s)")
             } catch { note("\(ChambreServeur.nomFonction(kind))(\(fen.rawValue)) ✗ \(error)") }
         }
@@ -397,6 +399,9 @@ struct ChambreLongue: View {
                 .padding(.horizontal, 28)
                 .padding(.top, 22)
                 .padding(.bottom, 140)
+                // Le passage du vide (gris) aux données se fait en fondu — le
+                // `.chambreVide` de chaque bloc (saturation, opacité) suit.
+                .animation(.easeOut(duration: 0.55), value: f.vide)
         }
         // Le banc `-chambreBas` ouvre le rouleau par le bas (le simulateur ne
         // sait pas glisser ; les captures du bilan, du podium et des records

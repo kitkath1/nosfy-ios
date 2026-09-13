@@ -88,6 +88,15 @@ enum ForgeServeur {
     /// Le user de TEST du banc (dev uniquement — les vrais comptes
     /// seront « Connexion avec Apple », voir supabase/README.md).
     static func jwtBanc() async throws -> String {
+        try await sessionBanc().access
+    }
+
+    /// La session ENTIÈRE du compte de test (13-09) — ce que la porte Apple
+    /// obtient de son échange, pour le banc `-sessionAdoptee` : on la POSE par
+    /// `SupabaseSession.adopter(...)` et on mesure le chemin d'un compte créé
+    /// par Apple (jeton adopté → `token()` → `push()` → `widget_*`), sans le
+    /// bouton Apple, que le simulateur n'a pas.
+    static func sessionBanc() async throws -> (access: String, refresh: String, userID: String) {
         var req = URLRequest(url: base.appending(
             path: "auth/v1/token").appending(
             queryItems: [.init(name: "grant_type", value: "password")]))
@@ -102,8 +111,11 @@ enum ForgeServeur {
         guard (rep as? HTTPURLResponse)?.statusCode == 200,
               let json = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any],
-              let jwt = json["access_token"] as? String
+              let jwt = json["access_token"] as? String,
+              let refresh = json["refresh_token"] as? String,
+              let user = json["user"] as? [String: Any],
+              let id = user["id"] as? String
         else { throw Erreur.reponse }
-        return jwt
+        return (jwt, refresh, id)
     }
 }

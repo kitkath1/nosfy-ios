@@ -71,6 +71,26 @@ actor SupabaseSession {
             userID = Self.sujet(du: jwt)
             return jwt
         }
+        // ⚠️ LA SESSION D'APPLE PASSE AVANT LE NUMÉRO (13-09). `adopter(...)`
+        // pose le jeton et l'identité SANS numéro ; la garde `woop.phone`
+        // ci-dessous lui barrait la route : pour un compte créé par la porte
+        // Apple, `push()` et toute lecture serveur échouaient EN SILENCE
+        // (« Synchronisation Supabase différée »). Ici : le jeton adopté tant
+        // qu'il vit, puis le refresh mémorisé par `adopter`, sinon rien.
+        // Le banc `-sessionAdoptee` (13-09) : la session du compte de test,
+        // POSÉE comme la porte Apple la pose — pour mesurer ce chemin-là.
+        if CommandLine.arguments.contains("-sessionAdoptee"),
+           UserDefaults.standard.string(forKey: appleUserKey) == nil {
+            let s = try await ForgeServeur.sessionBanc()
+            adopter(access: s.access, refresh: s.refresh, userID: s.userID)
+        }
+        if let appleID = UserDefaults.standard.string(forKey: appleUserKey) {
+            if let accessToken { return accessToken }
+            if userID == nil { userID = appleID }
+            if let stored = UserDefaults.standard.string(forKey: tokenKey),
+               let refreshed = try? await refresh(using: stored) { return refreshed }
+            throw SupabaseError.notAuthenticated
+        }
         guard let phone = UserDefaults.standard.string(forKey: phoneKey),
               let creds = WoopConfig.credentials(forPhone: phone) else {
             throw SupabaseError.notAuthenticated
