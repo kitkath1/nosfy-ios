@@ -30,13 +30,18 @@ struct NosfyOnboarding: View {
 
     var onFini: (Reponses) -> Void = { _ in }
 
-    @State private var etape: Etape = .accueil
+    @State private var etape: Etape = .intro
+    /// L'INTRO (PLAN-INTRO-NUIT.md) : −1 = le noir · 0/1/2 = les trois temps du
+    /// poème · 3 = la citation sur le noir. Une horloge qui meurt à l'accueil.
+    @State private var tempsIntro = -1
     /// LE BARREAU de la vidéo (`-sansNosfyVideo`) : le poster à sa place — sans
     /// lui on ne pourra ni l'accuser ni la disculper à la mesure.
     static let sansVideo = CommandLine.arguments.contains("-sansNosfyVideo")
     @State private var reponses = Reponses()
     @State private var replique: String?
     @State private var prenomSaisi = ""
+    /// Le refus du prénom vide (13-09) : le message du champ est rouge.
+    @State private var prenomRefuse = false
     /// Le champ n'existe qu'une fois la question posée.
     @State private var champOuvert = false
     /// Le halo s'embrase quand il parle — c'est la respiration du film.
@@ -58,22 +63,101 @@ struct NosfyOnboarding: View {
     private func battre() {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) { battement.toggle() }
     }
+
+    /// L'intro et la fin sont des plans : pas de marge, pas de halo.
+    private var pleinEcran: Bool { etape == .bienvenue || etape == .fin }
+
+    /// L'ALLUMAGE — 1,2 s : le halo s'épanouit depuis l'île sur un ressort lent,
+    /// et quand il est plein l'anneau FLASHE avec sa voix (fort). Il se joue à
+    /// l'ACCUEIL, après le noir de l'intro — la lumière naît de ce noir-là. Sous
+    /// Reduce Motion : tout est là d'un coup. Ma musique est déjà montée
+    /// pendant la dernière seconde du plan (voir `jouerIntro`).
+    private func allumer() {
+        NosfySon.musique(true)                       // sans effet si elle joue déjà
+        if reduceMotion {
+            allume = true
+        } else {
+            withAnimation(.spring(response: 1.2, dampingFraction: 0.8).delay(0.1)) {
+                allume = true
+            }
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(520))
+            Haptique.fort()
+            ileFlash = true
+            try? await Task.sleep(for: .milliseconds(180))
+            ileFlash = false
+        }
+    }
+
+    /// L'HORLOGE DE L'INTRO (PLAN-INTRO-NUIT.md §4) : les trois temps du poème
+    /// sur le vol, la passation du son à 7,0 s (la piste de la vidéo s'éteint
+    /// dans le fichier pendant que la mienne monte), la citation sur le noir à
+    /// 8,3 s, l'accueil à 10,5 s. Elle meurt si elle tape.
+    @MainActor
+    private func jouerIntro() async {
+        // ⚠️ « ÇA VA TROP VITE » (13-09 soir) : à 0,6 / 3,2 / 5,8 chaque phrase
+        // était remplacée avant d'avoir fini de se poser. Les temps s'écartent,
+        // le troisième tient sur la lune ET sur le noir qui suit (le plan tient
+        // sa dernière image, noire — invisible sur le noir), la citation arrive
+        // à 10,8, l'accueil à 14,0. Le mot par mot est ralenti d'un tiers.
+        // Sur la vidéo ralentie à 12 s (PLAN-INTRO-NUIT §11) : les temps à
+        // 1,0 / 5,0 / 8,6 (le troisième sur la lune, ≈ 8,7 s ralentie), la
+        // passation du son à 10,5, la citation à 13,4, l'accueil à 17,0.
+        let pas: [(Double, Int)] = [(1.0, 0), (5.0, 1), (8.6, 2)]
+        var t = 0.0
+        for (quand, temps) in pas {
+            try? await Task.sleep(for: .seconds(quand - t)); t = quand
+            guard etape == .intro else { return }
+            withAnimation(.easeInOut(duration: 0.9)) { tempsIntro = temps }
+        }
+        try? await Task.sleep(for: .seconds(10.5 - t)); t = 10.5
+        guard etape == .intro else { return }
+        NosfySon.musique(true)                       // la passation : 1,5 s de montée
+        try? await Task.sleep(for: .seconds(13.4 - t)); t = 13.4
+        guard etape == .intro else { return }
+        Haptique.fort()
+        withAnimation(.easeInOut(duration: 0.9)) { tempsIntro = 3 }
+        try? await Task.sleep(for: .seconds(17.0 - t))
+        guard etape == .intro else { return }
+        withAnimation(.easeInOut(duration: 0.9)) { etape = .accueil }
+    }
+
+    // MARK: - LA LANGUE DU FILM (13-09 : « j'ai cliqué anglais, ça devrait
+    // faire le chemin en anglais »)
+
+    /// Le choix du seuil bascule TOUT ce qui suit : les questions, les cards,
+    /// les répliques de l'île, Passer, la sortie. Une table à deux colonnes,
+    /// ici, dans le film — la traduction de l'APP est un autre chantier
+    /// (269 chaînes, voir PLAN-COMPTE-ONBOARDING §05).
+    private var en: Bool { reponses.langue == "en" }
+    private func L(_ fr: String, _ en: String) -> String { self.en ? en : fr }
+
+    /// « Quatre fois. » / « Four times. » — il parle, il ne compte pas en chiffres.
+    static func fois(_ n: Int, en: Bool) -> String {
+        if en {
+            let mots = ["Zero", "Once", "Twice", "Three", "Four", "Five", "Six", "Seven"]
+            let m = mots.indices.contains(n) ? mots[n] : "\(n)"
+            return n <= 2 ? "\(m)." : "\(m) times."
+        }
+        return enLettres(n) + " fois."
+    }
     @State private var minuterieJours: Task<Void, Never>?
     @FocusState private var prenomActif: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum Etape: Int, CaseIterable {
-        case accueil, langue, prenom, but, jours, bien, bienvenue
+        case intro, accueil, langue, prenom, but, jours, bien, fin, bienvenue
 
-        /// Le rang dans la jauge : l'accueil et la langue ne sont pas des
-        /// questions — c'est la rencontre, puis le seuil ; la sortie non plus,
-        /// la boucle est fermée. « Bien. » est le mot de fin.
+        /// Le rang dans la jauge : l'intro, l'accueil et la langue ne sont pas
+        /// des questions — le plan, la rencontre, le seuil ; la sortie non plus,
+        /// la boucle est fermée. « Bien. » est le mot de fin, « fin » son plan.
         var tiers: Int {
             switch self {
-            case .accueil, .langue: return 0
+            case .intro, .accueil, .langue: return 0
             case .prenom: return 1
             case .but:    return 2
-            case .jours, .bien, .bienvenue: return 3
+            case .jours, .bien, .fin, .bienvenue: return 3
             }
         }
     }
@@ -111,9 +195,10 @@ struct NosfyOnboarding: View {
                 Spacer(minLength: 0)
                 pied
             }
-            .padding(.horizontal, etape == .bienvenue ? 0 : 30)
-            .padding(.top, etape == .bienvenue ? 0 : 152)
-            .padding(.bottom, etape == .bienvenue ? 0 : 28)
+            .padding(.horizontal, pleinEcran ? 0 : 30)
+            // L'intro n'a pas de halo à ménager : le poème monte plus haut.
+            .padding(.top, pleinEcran ? 0 : (etape == .intro ? 96 : 152))
+            .padding(.bottom, pleinEcran ? 0 : 28)
         }
         .overlay(alignment: .top) {
             // L'île reste jusqu'au bout : à la sortie, c'est elle l'interrupteur.
@@ -124,30 +209,32 @@ struct NosfyOnboarding: View {
         .preferredColorScheme(.dark)
         .contentShape(Rectangle())
         .onTapGesture {
+            // LE PRÉNOM EST OBLIGATOIRE (13-09, sa règle) : un tap à côté du champ
+            // vide ne ferme pas le clavier, il REFUSE — le message passe au rouge.
+            if etape == .prenom, champOuvert, prenomVide { refuserPrenom(); return }
             prenomActif = false
-            // L'accueil se SAUTE d'un tap : Apple laisse toujours passer.
-            if etape == .accueil { avancer(passe: true) }
+            // L'intro, l'accueil et la fin se SAUTENT d'un tap : Apple laisse
+            // toujours passer.
+            if etape == .intro || etape == .accueil || etape == .fin { avancer(passe: true) }
         }
         .onAppear {
-            NosfySon.musique(true)
-            // L'ALLUMAGE — 1,2 s : le halo s'épanouit depuis l'île sur un
-            // ressort lent, et quand il est plein l'anneau FLASHE avec sa voix
-            // (moyen). Sous Reduce Motion : tout est là d'un coup.
-            if reduceMotion {
-                allume = true
-            } else {
-                withAnimation(.spring(response: 1.2, dampingFraction: 0.8).delay(0.1)) {
-                    allume = true
-                }
-            }
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(520))
-                Haptique.fort()
-                ileFlash = true
-                try? await Task.sleep(for: .milliseconds(180))
-                ileFlash = false
-            }
+            if etape == .accueil { allumer() }          // (si un jour on entre par là)
             if Self.autoBanc { jouerSeul() }
+        }
+        .onChange(of: etape) { _, e in
+            switch e {
+            case .accueil:
+                allumer()                                  // la lumière naît APRÈS le plan
+            case .fin:
+                // Le halo et l'île s'effacent pendant son regard.
+                withAnimation(.easeOut(duration: 0.6)) { allume = false }
+            case .bienvenue:
+                // Le projecteur les rallume — et c'est LA FÊTE qui joue, pas D.
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.85)) { allume = true }
+                NosfySon.fete(true)
+            default:
+                break
+            }
         }
     }
 
@@ -156,6 +243,59 @@ struct NosfyOnboarding: View {
     @ViewBuilder
     private var contenu: some View {
         switch etape {
+
+        // ── L'INTRO « NUIT » (13-09, `PLAN-INTRO-NUIT.md`) : 8 s, et rien de
+        // plus. Le plan de cinéma en bande fondue au milieu, le poème au-dessus
+        // (la nuit EST la séance), les deux langues ensemble ; à son noir, la
+        // citation ; puis l'accueil s'allume. Ni halo ni île : la lumière n'est
+        // pas encore née. Sous le poème : LA PISTE DE LA VIDÉO, puis la mienne.
+        case .intro:
+            VStack(spacing: 24) {
+                Group {
+                    if (0...2).contains(tempsIntro) {
+                        // « La même taille, plus gros, plus beau » (13-09 soir) :
+                        // les deux langues à 30 — la couleur les distingue, pas
+                        // le corps. FR clair, EN sourd.
+                        VStack(alignment: .leading, spacing: 14) {
+                            MotsFlou([(IntroPoeme.fr[tempsIntro], true)], taille: 30, lenteur: 1.35)
+                            MotsFlou([(IntroPoeme.en[tempsIntro], false)], taille: 30, base: 1.3, lenteur: 1.35)
+                        }
+                        .id(tempsIntro)
+                        .transition(.fonduFlou)
+                    } else if tempsIntro == 3 {
+                        // NIETZSCHE, sur le noir — on ne corrige pas une citation.
+                        VStack(alignment: .leading, spacing: 12) {
+                            MotsFlou([(IntroPoeme.citation, true)], taille: 30)
+                            Text(IntroPoeme.auteur)
+                                .font(.inter(13))
+                                .foregroundStyle(.white.opacity(0.42))
+                                .modifier(Retarde(apres: 1.1))
+                        }
+                        .id(3)
+                        .transition(.fonduFlou)
+                    }
+                }
+                .frame(height: 220, alignment: .bottom)      // 4 lignes à 30, jamais de chevauchement
+
+                // LA BANDE — 300 × 200 pt (3:2, le ratio du fichier cuit 990 × 660),
+                // sa vignette elliptique fondue DANS le fichier, ralentie ×1,5 (12 s).
+                // Elle joue UNE fois, avec SON son, finit dans son noir et le tient ;
+                // démontée à la citation.
+                if tempsIntro < 3 {
+                    Group {
+                        if Self.sansVideo {
+                            Image("nosfy-nuit-poster").resizable().aspectRatio(contentMode: .fit)
+                        } else {
+                            NosfyReel(nom: "nosfy-nuit", boucle: false, muet: false)
+                        }
+                    }
+                    .frame(width: 300, height: 200)
+                    .transition(.opacity)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .task { await jouerIntro() }
 
         // ── L'ACCUEIL (13-09, `PLAN-ACCUEIL-NOSFY.md`) : la rencontre ──
         // La chauve-souris au milieu, fondue dans le noir ; le texte AU-DESSUS,
@@ -226,10 +366,10 @@ struct NosfyOnboarding: View {
                 // redisait tout. Ici il ENCHAÎNE sur la langue qu'elle vient de
                 // choisir : on se comprend, donc on peut se parler.
                 Tirade(blocs: [
-                    [("Top.", true),
-                     ("J'ai trois questions pour vous.", false)],
-                    [("La première :", false),
-                     ("comment dois-je vous appeler ?", true)]
+                    [(L("Top.", "Great."), true),
+                     (L("J'ai trois questions pour vous.", "I have three questions for you."), false)],
+                    [(L("La première :", "First:"), false),
+                     (L("comment dois-je vous appeler ?", "what should I call you?"), true)]
                 ], onMot: battre) {
                     withAnimation(.easeOut(duration: 0.7)) { champOuvert = true }
                 }
@@ -237,29 +377,39 @@ struct NosfyOnboarding: View {
                 // Pas de bouton : le clavier valide. Le champ n'existe qu'une
                 // fois la question posée.
                 if champOuvert {
-                TextField("", text: $prenomSaisi)
+                // LE PRÉNOM EST OBLIGATOIRE (13-09, sa règle : « pas de skip, mais un
+                // message qui devient rouge dans l'input si le user tape à côté ») :
+                // le seul rouge du film. Il ne vient qu'après un geste faux (retour
+                // vide, tap à côté), il part au premier caractère.
+                TextField("", text: $prenomSaisi,
+                          prompt: Text(L("Votre prénom", "Your first name"))
+                              .foregroundStyle(prenomRefuse ? Self.rougeRefus : .white.opacity(0.30)))
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .submitLabel(.done)
                     .onSubmit {
-                        guard !prenomSaisi.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                        guard !prenomVide else { refuserPrenom(); return }
                         avancer(passe: false)
+                    }
+                    .onChange(of: prenomSaisi) { _, _ in
+                        if prenomRefuse { withAnimation(.easeOut(duration: 0.2)) { prenomRefuse = false } }
                     }
                     .font(.inter(19, .medium))
                     .foregroundStyle(.white)
-                    .tint(.white)
+                    .tint(prenomRefuse ? Self.rougeRefus : .white)
                     .focused($prenomActif)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 17)
                     .background {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.white.opacity(0.06))
+                            .fill(prenomRefuse ? Self.rougeRefus.opacity(0.08) : .white.opacity(0.06))
                             .overlay {
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                                     .strokeBorder(
                                         LinearGradient(
-                                            colors: [.white.opacity(prenomActif ? 0.62 : 0.30),
-                                                     .white.opacity(0.06)],
+                                            colors: prenomRefuse
+                                                ? [Self.rougeRefus.opacity(0.85), Self.rougeRefus.opacity(0.35)]
+                                                : [.white.opacity(prenomActif ? 0.62 : 0.30), .white.opacity(0.06)],
                                             startPoint: .top, endPoint: .bottom),
                                         lineWidth: 1)
                             }
@@ -277,13 +427,13 @@ struct NosfyOnboarding: View {
         // ── QUESTION 2 SUR 3 : l'objectif ──
         case .but:
             VStack(alignment: .leading, spacing: 30) {
-                MotsFlou([("Deuxième question.", true),
-                          ("Vous voulez vous entraîner pour quoi ?", false)],
-                         taille: 30)
+                MotsFlou([(L("Deuxième question.", "Second question."), true),
+                          (L("Vous voulez vous entraîner pour quoi ?", "What do you train for?"), false)],
+                         taille: 30, onMot: battre)
                 VStack(spacing: 11) {
-                    CardVerre(titre: "Être plus fort") { reponses.but = "force"; avancer(passe: false) }
-                    CardVerre(titre: "Perdre du poids") { reponses.but = "poids"; avancer(passe: false) }
-                    CardVerre(titre: "Être en forme") { reponses.but = "forme"; avancer(passe: false) }
+                    CardVerre(titre: L("Être plus fort", "Get stronger")) { reponses.but = "force"; avancer(passe: false) }
+                    CardVerre(titre: L("Perdre du poids", "Lose weight")) { reponses.but = "poids"; avancer(passe: false) }
+                    CardVerre(titre: L("Être en forme", "Stay in shape")) { reponses.but = "forme"; avancer(passe: false) }
                 }
                 .modifier(Retarde(apres: 1.9))
             }
@@ -291,11 +441,11 @@ struct NosfyOnboarding: View {
         // ── QUESTION 3 SUR 3 : les jours ──
         case .jours:
             VStack(alignment: .leading, spacing: 30) {
-                MotsFlou([("Dernière question.", true),
-                          ("Combien de fois par semaine ?", false)],
+                MotsFlou([(L("Dernière question.", "Last question."), true),
+                          (L("Combien de fois par semaine ?", "How many times a week?"), false)],
                          taille: 30, onMot: battre)
 
-                SemaineTapable(choisis: reponses.jours) { i in
+                SemaineTapable(choisis: reponses.jours, en: en) { i in
                     Haptique.leger()
                     if reponses.jours.contains(i) { reponses.jours.remove(i) }
                     else { reponses.jours.insert(i) }
@@ -305,7 +455,7 @@ struct NosfyOnboarding: View {
 
                 // Ce n'est pas une légende : c'est LUI qui compte à voix haute.
                 if !reponses.jours.isEmpty {
-                    MotsFlou([(Self.enLettres(reponses.jours.count) + " fois.", true)], taille: 30)
+                    MotsFlou([(Self.fois(reponses.jours.count, en: en), true)], taille: 30)
                         .id(reponses.jours.count)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
@@ -316,7 +466,7 @@ struct NosfyOnboarding: View {
         // L'écran ne porte QUE le mot ; le halo s'embrase avec lui ; 1,6 s, puis
         // le projecteur. Pas de réplique dans l'île : ce mot-là EST l'écran.
         case .bien:
-            MotsFlou([("Bien.", true)], taille: 44, onMot: battre)
+            MotsFlou([(L("Bien.", "Good."), true)], taille: 44, onMot: battre)
                 .frame(width: 150)
                 .frame(maxWidth: .infinity)
                 .task {
@@ -326,13 +476,36 @@ struct NosfyOnboarding: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.9)) { embrase = false }
                     try? await Task.sleep(for: .milliseconds(600))
                     guard etape == .bien else { return }
-                    withAnimation(.easeInOut(duration: 0.55)) { etape = .bienvenue }
+                    withAnimation(.easeInOut(duration: 0.55)) { etape = .fin }
                 }
+
+        // ── LA FIN « END » (13-09, `PLAN-INTRO-NUIT.md` §8) : le dernier regard ──
+        // Un plan PORTRAIT, plein écran, une fois, avec SON son — ma musique se
+        // retire pendant son regard (le silence est ce qui le rend important) et
+        // revient avec le projecteur. Le halo et l'île s'effacent ; le noir de
+        // sa fin est exactement ce que l'interrupteur du projecteur attend.
+        case .fin:
+            Group {
+                if Self.sansVideo {
+                    Image("nosfy-end-poster").resizable().aspectRatio(contentMode: .fill)
+                } else {
+                    NosfyReel(nom: "nosfy-end", boucle: false, muet: false, remplir: true)
+                }
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .task {
+                NosfySon.musique(false)                       // elle se retire, 1,2 s
+                try? await Task.sleep(for: .seconds(8.1))
+                guard etape == .fin else { return }
+                withAnimation(.easeInOut(duration: 0.55)) { etape = .bienvenue }
+            }
 
         // ── LA SORTIE : LE PROJECTEUR ──
         case .bienvenue:
             SortieProjecteur(prenom: reponses.prenom,
                              seances: reponses.jours.count,
+                             en: en,
                              onInterrupteur: {
                                  // L'INTERRUPTEUR : le flash de l'anneau, sa voix
                                  // (moyen), et le halo qui se penche en projecteur.
@@ -362,15 +535,33 @@ struct NosfyOnboarding: View {
     private var pied: some View {
         if etape == .bienvenue {
             EmptyView()          // le projecteur porte son propre « Entrer »
-        } else if etape != .langue {
-            Button("Passer") { NosfySon.tap(); avancer(passe: true) }
+        } else if etape == .but || etape == .jours {
+            // « Passer » n'existe que sur le BUT et les JOURS — pas sur un plan (vu
+            // au sim le 13-09 : il s'affichait sur la vidéo de fin), et PLUS SUR LE
+            // PRÉNOM (13-09, sa règle : « le user ne peut pas passer le prénom »).
+            Button(L("Passer", "Skip")) { NosfySon.tap(); avancer(passe: true) }
                 .font(.inter(12.5))
                 .foregroundStyle(.white.opacity(0.30))
                 .underline()
                 .padding(.top, 26)
                 .padding(.bottom, 6)
-                .modifier(Retarde(apres: etape == .prenom ? 8.5 : 2.4))
+                .modifier(Retarde(apres: 2.4))
         }
+    }
+
+    // MARK: Le prénom obligatoire
+
+    /// Le rouge du refus — le seul rouge du film.
+    private static let rougeRefus = Color(red: 1.0, green: 0.30, blue: 0.20)
+
+    private var prenomVide: Bool { prenomSaisi.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// Le refus : le message du champ passe au rouge, un coup léger, le clavier
+    /// reste — on ne sort pas d'une question obligatoire.
+    private func refuserPrenom() {
+        withAnimation(.easeOut(duration: 0.25)) { prenomRefuse = true }
+        Haptique.leger()
+        prenomActif = true
     }
 
     // MARK: Le tour — la réplique, l'embrasement, la vibration
@@ -393,6 +584,13 @@ struct NosfyOnboarding: View {
 
         var mot: String?
         switch etape {
+        case .intro:
+            // Un tap saute le plan : Apple laisse toujours passer.
+            withAnimation(.easeInOut(duration: 0.7)) { etape = .accueil }
+            return
+        case .fin:
+            withAnimation(.easeInOut(duration: 0.55)) { etape = .bienvenue }
+            return
         case .accueil:
             // La rencontre n'est pas une réponse : pas de réplique, pas de coup —
             // le texte et la bête s'effacent, le seuil arrive.
@@ -403,21 +601,22 @@ struct NosfyOnboarding: View {
         case .prenom:
             if passe {
                 reponses.prenom = nil
-                mot = "Comme vous voulez."
+                mot = L("Comme vous voulez.", "As you wish.")
             } else {
                 let p = prenomSaisi.trimmingCharacters(in: .whitespaces)
                 reponses.prenom = p
-                mot = "Enchanté, \(p)."
+                mot = L("Enchanté, \(p).", "Nice to meet you, \(p).")
             }
         case .but:
-            if passe { reponses.but = nil; mot = "Comme vous voulez." }
-            else { mot = "Bien. Je sais où on va." }
+            if passe { reponses.but = nil; mot = L("Comme vous voulez.", "As you wish.") }
+            else { mot = L("Bien. Je sais où on va.", "Good. I know where we're going.") }
         case .jours:
             if passe {
                 reponses.jours = []
-                mot = "Cinq, alors. On verra."          // le défaut du serveur
+                mot = L("Cinq, alors. On verra.", "Five, then. We'll see.")   // le défaut du serveur
             } else {
-                mot = "\(Self.enLettres(reponses.jours.count)) fois. On s'y tient."
+                mot = L("\(Self.enLettres(reponses.jours.count)) fois. On s'y tient.",
+                        "\(Self.fois(reponses.jours.count, en: true).dropLast()) We'll hold to it.")
             }
         case .bien:
             return                                       // il avance tout seul
@@ -465,20 +664,29 @@ struct NosfyOnboarding: View {
     /// simulateur ne tape pas, et elle ne le voit pas depuis le remote).
     static let autoBanc = CommandLine.arguments.contains("-nosfyAuto")
 
+    /// ⚠️ PILOTÉ PAR L'ÉTAPE, plus par des durées (13-09 soir) : la version aux
+    /// `sleep` fixes tapait au mauvais écran dès qu'un plan s'ajoutait au film —
+    /// elle s'est perdue sur les jours à l'arrivée de l'intro. Ici il ATTEND
+    /// d'être à l'étape, laisse le temps qu'elle se dise, puis agit. Les jours
+    /// passent par la vraie minuterie (2,2 s après le « dernier tap »).
     private func jouerSeul() {
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(7))          // le seuil se pose
-            reponses.langue = "fr"; avancer(passe: false)
-
-            try? await Task.sleep(for: .seconds(19))         // il se présente, en trois temps
-            prenomSaisi = "Margaux"; avancer(passe: false)
-
-            try? await Task.sleep(for: .seconds(6))          // l'objectif
-            reponses.but = "poids"; avancer(passe: false)
-
-            try? await Task.sleep(for: .seconds(6))          // les jours
-            reponses.jours = [0, 2, 4, 6]
-            avancer(passe: false)
+            func attendre(_ e: Etape, puis s: Double) async -> Bool {
+                var n = 0
+                while etape != e {
+                    try? await Task.sleep(for: .milliseconds(200))
+                    n += 1
+                    if n > 600 { return false }              // 2 min : on abandonne
+                }
+                try? await Task.sleep(for: .seconds(s))
+                return etape == e
+            }
+            if await attendre(.intro, puis: 6)   { avancer(passe: true) }
+            if await attendre(.accueil, puis: 8) { avancer(passe: true) }
+            if await attendre(.langue, puis: 5)  { reponses.langue = "fr"; avancer(passe: false) }
+            if await attendre(.prenom, puis: 9)  { prenomSaisi = "Margaux"; avancer(passe: false) }
+            if await attendre(.but, puis: 6)     { reponses.but = "poids"; avancer(passe: false) }
+            if await attendre(.jours, puis: 4)   { reponses.jours = [0, 2, 4, 6]; armerMinuterieJours() }
         }
     }
 
@@ -510,22 +718,29 @@ struct NosfyOnboarding: View {
 private struct SortieProjecteur: View {
     var prenom: String?
     var seances: Int
+    /// La langue du film — « LET'S / MARGAUX / GO ! » et « Enter ».
+    var en: Bool = false
     /// L'île s'allume (t = 0,25 s) : le parent flashe l'anneau, vibre, et
     /// penche le halo en projecteur. Un seul événement déclenche tout.
     var onInterrupteur: () -> Void
     var onEntrer: () -> Void
 
-    /// LES QUATRE TEMPS DE L'APPARITION (§3 du plan) : 0 = le halo seul ·
-    /// 1 = l'île allumée, le cône descend · 2 = les mots · 3 = le nombre de
-    /// verre et la poudre · 4 = Entrer. Une horloge qui MEURT au dernier temps.
+    /// LES TEMPS DE L'APPARITION (PLAN-SORTIE-POPUP § 11) : 0 = le halo seul ·
+    /// 1 = l'île allumée, le cône descend, le galet monte du bord · 2 = LA POP-UP
+    /// DE BASE est montée (elle arrive par sa propre rampe, 1,45 s) · 3 = elle est
+    /// posée : la pluie de diamant. Une horloge qui MEURT au dernier temps.
     @State private var temps = 0
-    @State private var naissanceMots = Date()
-    @State private var naissanceVerre = Date()
+    /// Le galet de verre noir monte du bord bas (fondu 0,9 s).
+    @State private var galet = false
+    /// La sortie est engagée (un seul départ).
     @State private var dissipe = false
+    /// Le zoom cinématique — APRÈS que la card est partie : rien de vivant n'est
+    /// jamais redimensionné (le verre se retire, la caméra avance ensuite).
+    @State private var zoom = false
     /// La coupe sur blanc (§4) : la caméra entre dans la lumière.
     @State private var voile: Double = 0
-    /// L'instant du semis de la poudre — nil tant que le nombre n'est pas là.
-    @State private var semee: Date?
+    /// LA PLUIE — la poudre de diamant sur TOUT l'écran, quand la fin est là.
+    @State private var pluie: Date?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// « ALLEZ / MARGAUX / GO ! » — le prénom AU MILIEU, encadré par les deux
@@ -541,9 +756,9 @@ private struct SortieProjecteur: View {
     /// `TexteGeant` passe alors tout seul de 112 à 128 pt.
     private var lignes: [String] {
         guard let p = prenom?.trimmingCharacters(in: .whitespaces), !p.isEmpty else {
-            return ["ALLEZ", "GO !"]
+            return en ? ["LET'S", "GO !"] : ["ALLEZ", "GO !"]
         }
-        return ["ALLEZ", p.uppercased(), "GO !"]
+        return en ? ["LET'S", p.uppercased(), "GO !"] : ["ALLEZ", p.uppercased(), "GO !"]
     }
 
     var body: some View {
@@ -559,58 +774,42 @@ private struct SortieProjecteur: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
+            // TEMPS 1 — LE GALET DE VERRE NOIR (13-09, sa consigne : « la pilule
+            // noire / blanche du chapitre 1 "le verre noir" de la route, debout,
+            // coupée, fondue, en bas de la page ») : il monte du bord, sous la card.
+            galetDuBas
 
-                // TEMPS 2 — les mots arrivent DANS la lumière déjà posée.
-                // La lumière avant le texte : la loi de la maison.
-                if temps >= 2 {
-                    TexteGeant(naissance: naissanceMots, lignes: lignes)
-                        // ⚠️ **LE MOT LONG DÉBORDAIT** (vu au sim le 07-09).
-                        // `TexteGeant` a `lineLimit(1)` et `fixedSize()` : il ne
-                        // se replie jamais, il SORT. À 112 pt en Inter Heavy une
-                        // lettre avance d'environ 58 pt tracking compris —
-                        // « COMMENCE » (8) réclame 464 pt sur un écran qui en
-                        // fait 393, et « MARGAUX » 406. Les deux étaient rognés.
-                        //
-                        // La card reward ne l'avait jamais vu : ses mots à elle
-                        // font quatre lettres (YOU · MADE · IT). Dès qu'un
-                        // PRÉNOM entre, la garde par compte de lettres ne suffit
-                        // plus — il faut viser une LARGEUR.
-                        //
-                        // On échelonne le bloc ENTIER, pas chaque mot : les
-                        // trois lignes gardent leur rapport, et le mot le plus
-                        // long décide pour tout le monde.
-                        .scaleEffect(Self.tenirDansLEcran(lignes))
-                        .transition(.fonduFlou)
+            // TEMPS 2 — LA POP-UP DE BASE (PLAN-SORTIE-POPUP § 11) : la robe
+            // « You Made It » telle qu'elle est — sa lampe, sa matrice, le chiffre
+            // en vrai Liquid Glass posé SUR les mots — avec nos mots, la capsule
+            // « Entrer », et le scrim à 0 (le cône reste visible ; le scrim,
+            // transparent, porte le « tap partout = entrer »). Elle arrive par sa
+            // propre rampe, se ferme par sa propre sortie, et `onClose` nous rend
+            // la main pour le zoom et la coupe.
+            if temps >= 2 {
+                RewardPopup(count: seances, title: "", subtitle: "", unit: "",
+                            style: .spotlight,
+                            onClose: { partir() },
+                            lignesGeantes: lignes,
+                            bouton: .capsule(en ? "Enter" : "Entrer"),
+                            scrim: 0)
+                    // (13-09, son verdict : « animation, transition, plus de blur »)
+                    // Elle sort du flou en montant, comme tout ce qui apparaît dans
+                    // le film — par-dessus sa propre rampe d'arrivée.
+                    .transition(.fonduFlou)
+            }
+
+            // LA PLUIE DE DIAMANT — partout, quand l'écran de fin est complet.
+            // ⚠️ Elle tombe SUR le verre : la poudre de la maison (RewardCard:911)
+            // est validée sur cette card même ; l'interdit n° 2 de la lentille
+            // vise les particules-points, pas ses facettes.
+            if let pluie {
+                GeometryReader { geo in
+                    PoudreDiamant(largeur: geo.size.width, hauteur: geo.size.height,
+                                  naissance: pluie)
                 }
-
-                // TEMPS 3 — LE NOMBRE DE VERRE naît en opacité sous les mots,
-                // et LA POUDRE DE DIAMANT (celle de la maison, RewardCard:911)
-                // sème de part et d'autre — AUTOUR du verre, jamais dessus
-                // (interdit n° 2 de la lentille : les particules ne traversent
-                // pas le verre). Les deux cadres latéraux le garantissent par
-                // construction, pas par chance.
-                if seances > 0 {
-                    HStack(spacing: 0) {
-                        poudre
-                        nombreDeVerre
-                        poudre
-                    }
-                    .frame(height: 230)
-                    .opacity(temps >= 3 ? 1 : 0)
-                    .animation(.easeOut(duration: 0.5), value: temps)
-                }
-
-                Spacer(minLength: 0)
-
-                // TEMPS 4 — Entrer.
-                if temps >= 4 {
-                    BoutonPrimaire(title: "Entrer", respecteLaCasse: true) { partir() }
-                        .padding(.horizontal, 30)
-                        .padding(.bottom, 28)
-                        .transition(.fonduFlou)
-                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
             }
 
             // LA COUPE SUR BLANC (§4 du plan) — on ne passe pas par le noir, on
@@ -622,14 +821,15 @@ private struct SortieProjecteur: View {
                 .opacity(voile)
                 .allowsHitTesting(false)
         }
-        // Toute la page est tappable : « à la tap de la pop-up elle se dissipe ».
+        // Toute la page est tappable. Avant la pop-up, un tap l'appelle d'un coup ;
+        // une fois là, c'est SON scrim (transparent) qui prend les taps → fermer.
         .contentShape(Rectangle())
-        .onTapGesture { partir() }
-        // LE ZOOM CINÉMATIQUE : la caméra AVANCE vers le nombre (l'ancre est
-        // au centre du chiffre, pas de l'écran). Le verre a déjà été retiré
-        // (voir `partir`) : rien de vivant n'est redimensionné.
-        .scaleEffect(dissipe ? 1.38 : 1, anchor: UnitPoint(x: 0.5, y: 0.62))
-        .animation(.easeIn(duration: 0.55), value: dissipe)
+        .onTapGesture { if temps < 2 { NosfySon.tap(); arriverALaFin() } }
+        // LE ZOOM CINÉMATIQUE : la caméra AVANCE vers la place de la card (l'ancre
+        // est son centre, pas celui de l'écran). La card a déjà été retirée (voir
+        // `partir`) : rien de vivant n'est redimensionné.
+        .scaleEffect(zoom ? 1.38 : 1, anchor: UnitPoint(x: 0.5, y: 0.43))
+        .animation(.easeIn(duration: 0.55), value: zoom)
         .preferredColorScheme(.dark)
         .task { await jouer() }
     }
@@ -644,93 +844,105 @@ private struct SortieProjecteur: View {
     @MainActor
     private func jouer() async {
         try? await Task.sleep(for: .milliseconds(250))
-        onInterrupteur()                                          // 0,25 · l'île s'allume · moyen
+        guard temps < 1 else { return }                           // elle a sauté à la fin
+        onInterrupteur()                                          // 0,25 · l'île s'allume · fort
         temps = 1
         try? await Task.sleep(for: .milliseconds(600))
-        naissanceMots = Date()
-        withAnimation(.easeOut(duration: 0.5)) { temps = 2 }      // 0,85 · les mots
-        Haptique.leger()
-        try? await Task.sleep(for: .milliseconds(1050))
-        naissanceVerre = Date()
-        if !reduceMotion { semee = Date() }
-        withAnimation(.easeOut(duration: 0.5)) { temps = 3 }      // 1,90 · le verre + la poudre
-        Haptique.leger()
-        try? await Task.sleep(for: .milliseconds(90))
-        Haptique.leger()
-        try? await Task.sleep(for: .milliseconds(410))
-        withAnimation(.easeOut(duration: 0.5)) { temps = 4 }      // 2,40 · Entrer
+        guard temps < 2 else { return }
+        arriverALaFin()                                           // 0,85 · la pop-up naît
     }
 
-    /// Le nombre de séances : un chiffre PLEIN (il doit exister pour être
-    /// réfracté), et par-dessus `GaletVerre` — le galet de la robe `.galet`,
-    /// tel qu'il a été validé sur la card reward. Le cône passe DERRIÈRE : c'est
-    /// lui qui donne les spéculaires (sans source derrière, un verre est opaque
-    /// et gris — la loi des widgets, mesurée).
-    ///
-    /// ⚠️ Le galet ne change JAMAIS de taille (14 img/s sinon, mesuré) : il naît
-    /// en opacité avec son bloc, et il est RETIRÉ au tap — jamais dans le zoom.
-    /// Le chiffre plein qui reste est son jumeau plat.
-    private var nombreDeVerre: some View {
-        Text("\(seances)")
-            .font(.inter(190, .heavy))
-            .foregroundStyle(.white)
-            .fixedSize()
-            .overlay {
-                if !dissipe {
-                    GaletVerre(naissance: naissanceVerre)
-                }
-            }
-    }
-
-    /// Un cadre de poudre de chaque côté du nombre. Avant le semis : rien —
-    /// aucune horloge ne tourne pour rien.
-    private var poudre: some View {
-        Group {
-            if let semee {
-                PoudreDiamant(largeur: 96, hauteur: 230, naissance: semee)
-            } else {
-                Color.clear
-            }
+    /// LA POP-UP ARRIVE — à 0,85 s, ou d'un tap avant (13-09, son verdict :
+    /// « même si j'appuie plusieurs fois, ça doit m'amener à l'écran de fin avec
+    /// des paillettes partout ; et seulement là, dès que j'appuie, la home »).
+    /// Elle se pose seule (sa rampe de 1,45 s : count-up, secousse, boum) ; à la
+    /// pose, LA PLUIE de diamant tombe sur tout l'écran — c'est la fête.
+    private func arriverALaFin() {
+        guard temps < 2 else { return }
+        if temps < 1 { onInterrupteur() }
+        withAnimation(.easeOut(duration: 0.7)) { temps = 2 }     // la pop-up, en fondu-flou
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1450))
+            guard temps == 2 else { return }
+            temps = 3
+            if !reduceMotion { pluie = Date() }
+            // LE GALET NE MONTE QU'APRÈS la pop-up (13-09, son verdict : « le
+            // galet est déjà présent avant l'apparition de la page ! »).
+            galet = true
         }
-        .frame(width: 96, height: 230)
+    }
+
+    /// LE GALET DE VERRE NOIR — `duo-galet-noir.mp4`, le fichier même de l'écran 1
+    /// de la route (déjà cuit, déjà dans le bundle) : debout, AU RAS DU BAS —
+    /// ≈ 110 pt émergent du bord, le reste est sous l'écran, sa tête fondue dans
+    /// le noir (13-09, son verdict : « coupée, fondue vers le bas de l'écran, pas
+    /// au niveau de la pop-up »). Il ne s'approche jamais de la pop-up : un verre
+    /// posé sur une vidéo ne met rien en cache (loi mesurée).
+    /// Barreau : `-sansNosfyVideo` (celui de `NosfyReel`).
+    private var galetDuBas: some View {
+        GeometryReader { g in
+            // Assez petit pour vivre SOUS la card (son bas est à ≈ 645 pt), assez
+            // grand pour qu'on voie le verre : 50 % de large, 254 pt de haut.
+            let l = g.size.width * 0.50
+            let h = l * 1560 / 1206
+            NosfyReel(nom: "duo-galet-noir", boucle: true, muet: true)
+                .frame(width: l, height: h)
+                // La tête se fond dans le noir (elle passe sous la card, invisible),
+                // et le pied se fond VERS LE BAS DE L'ÉCRAN — après le ventre.
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.7), location: 0.26),
+                            .init(color: .white, location: 0.42),
+                            .init(color: .white, location: 0.93),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                // ⚠️ SON RECTANGLE SE VOYAIT (son téléphone, 13-09 : « un problème
+                // avec le footer, le background du bas et la pilule ») : le noir
+                // du fichier est pur, la page au-dessus est un noir grainé éclairé
+                // par le pied du cône — le bord haut de la vidéo faisait une marche.
+                // En ÉCRAN, le noir n'ajoute rien : seules les arêtes claires du
+                // verre s'impriment, le rectangle n'existe plus. ⚠️ Et en écran,
+                // ce qu'on VOIT du galet, c'est son VENTRE (le reflet) : à 110 pt
+                // visibles il restait sous le bord (« on ne voit pas la pilule »).
+                // Le ventre vit à 85-92 % de la hauteur : il est à ~25 pt du bas.
+                .blendMode(.screen)
+                .opacity(galet ? 0.95 : 0)
+                .offset(y: galet ? 0 : 34)
+                .animation(.easeOut(duration: 1.1), value: galet)
+                .position(x: g.size.width / 2, y: g.size.height + 12 - h / 2)
+        }
+        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 
-    /// La largeur utile de l'écran, moins une marge de sécurité.
-    private static let utile: CGFloat = 356
-    /// L'avance moyenne d'une lettre d'Inter Heavy à 112 pt, tracking −3
-    /// compris — mesurée sur la capture du 07-09.
-    private static let avance: CGFloat = 58
-
-    static func tenirDansLEcran(_ lignes: [String]) -> CGFloat {
-        let plusLong = lignes.map(\.count).max() ?? 1
-        return min(1, utile / (CGFloat(plusLong) * avance))
-    }
-
-    /// LE ZOOM CINÉMATIQUE (§4 du plan). Au tap : le galet tombe (son jumeau
-    /// plat reste, même chiffre, même place), la caméra avance 0,55 s, le voile
-    /// monte au blanc à partir de 0,20, et à 0,55 c'est la coupe — sur du blanc
-    /// pur. Un tap avant que les mots soient là ne fait rien : on ne zoome pas
-    /// sur une scène vide.
+    /// LA SORTIE (§ 11 du plan) — appelée par `onClose` de la pop-up, donc APRÈS
+    /// sa propre sortie de 0,42 s (le verre s'est retiré, il n'est jamais
+    /// transformé) : la caméra avance 0,55 s, le voile monte au blanc, et c'est
+    /// la coupe — sur du blanc pur. (Un tap avant la pose ne ferme rien : la
+    /// pop-up garde ses taps tant qu'elle n'est pas posée — sa loi.)
     private func partir() {
-        guard !dissipe, temps >= 2 else { return }
+        guard !dissipe else { return }
+        dissipe = true
+        temps = 3
         NosfySon.tap()
         NosfySon.musique(false)                      // la musique s'éteint avec la page
+        NosfySon.fete(false)
         Haptique.moyen()
-        if !reduceMotion { semee = Date() }          // la poudre du départ, devant le blanc
-        dissipe = true                               // le galet tombe · la caméra avance
         Task { @MainActor in
+            zoom = true                                             // la caméra avance
             try? await Task.sleep(for: .milliseconds(200))
             withAnimation(.easeIn(duration: 0.35)) { voile = 1 }   // le cône monte au blanc
             try? await Task.sleep(for: .milliseconds(150))
             Haptique.leger()
-            try? await Task.sleep(for: .milliseconds(200))          // 0,55 · coupe sur blanc
+            try? await Task.sleep(for: .milliseconds(200))          // coupe sur blanc
             onEntrer()
         }
     }
 
 }
-
 
 // MARK: - L'ÎLE : la jauge autour du trou, et la voix
 
@@ -941,7 +1153,7 @@ struct HaloIle: View {
             //    balayage, la famille d'effets que les interdits nomment.
             Cone(hautLargeur: 70)
                 .fill(LinearGradient(
-                    stops: [.init(color: .white.opacity(0.62), location: 0),
+                    stops: [.init(color: .white.opacity(0.85), location: 0),
                             .init(color: .white.opacity(0.22), location: 0.45),
                             .init(color: .white.opacity(0.0), location: 1)],
                     startPoint: .top, endPoint: .bottom))
@@ -998,6 +1210,23 @@ struct HaloIle: View {
     }
 }
 
+// MARK: - LE POÈME DE L'INTRO (PLAN-INTRO-NUIT.md §2-3)
+
+/// La nuit EST la séance. Trois temps, les deux langues ensemble (la langue
+/// n'est pas encore choisie), et le mot « courage » n'est jamais dit : Nietzsche
+/// le dit à sa façon, sur le noir. On ne corrige pas une citation : elle tutoie,
+/// le film continue de vouvoyer.
+private enum IntroPoeme {
+    static let fr = ["La nuit ne demande pas si l'on est prêt.",
+                     "Elle demande si l'on y va.",
+                     "Chaque séance est une nuit."]
+    static let en = ["The night doesn't ask if you're ready.",
+                     "It asks if you'll go.",
+                     "Every workout is a night."]
+    static let citation = "Deviens ce que tu es."
+    static let auteur = "Nietzsche"
+}
+
 // MARK: - LA BÊTE : le lecteur de l'accueil
 
 /// `NosfyReel` — l'école de `ReelHote` (PorteEntree) : une `AVPlayerLayer` en
@@ -1013,6 +1242,14 @@ struct HaloIle: View {
 /// fichier partagé.
 private struct NosfyReel: UIViewRepresentable {
     let nom: String
+    /// L'accueil BOUCLE (la bête immobile) ; l'intro et la fin jouent UNE fois et
+    /// finissent dans leur propre noir — le temps les enchaîne, pas le lecteur.
+    var boucle: Bool = true
+    /// L'accueil est muet (la boucle n'a pas de son utile) ; l'intro et la fin
+    /// gardent LEUR piste — c'est elle qu'on entend, puis ma musique (§9 du plan).
+    var muet: Bool = true
+    /// La fin est un plan PORTRAIT fait pour l'écran entier : il remplit.
+    var remplir: Bool = false
 
     final class Vue: UIView {
         override static var layerClass: AnyClass { AVPlayerLayer.self }
@@ -1026,13 +1263,19 @@ private struct NosfyReel: UIViewRepresentable {
         v.backgroundColor = .black
         v.clipsToBounds = true
         v.playerLayer.masksToBounds = true
-        v.playerLayer.videoGravity = .resizeAspect
+        v.playerLayer.videoGravity = remplir ? .resizeAspectFill : .resizeAspect
         guard let url = Bundle.main.url(forResource: nom, withExtension: "mp4") else { return v }
         let item = AVPlayerItem(url: url)
-        let lecteur = AVQueuePlayer()
-        lecteur.isMuted = true
+        let lecteur: AVQueuePlayer
+        if boucle {
+            lecteur = AVQueuePlayer()
+            v.boucle = AVPlayerLooper(player: lecteur, templateItem: item)
+        } else {
+            lecteur = AVQueuePlayer(items: [item])
+            lecteur.actionAtItemEnd = .pause              // il finit dans son noir, et s'y tient
+        }
+        lecteur.isMuted = muet
         lecteur.preventsDisplaySleepDuringVideoPlayback = false
-        v.boucle = AVPlayerLooper(player: lecteur, templateItem: item)
         v.lecteur = lecteur
         v.playerLayer.player = lecteur
         lecteur.play()
@@ -1066,7 +1309,13 @@ private struct NosfyReel: UIViewRepresentable {
 /// joué — la leçon de `PiluleVagabonde`). Catégorie `.ambient` : on se mêle à
 /// la musique de l'utilisatrice et on respecte l'interrupteur silence.
 enum NosfySon {
-    private static let theme = "MoonSplashTheme"
+    /// ⚠️ « C'est toujours la même musique que le splash, j'aime pas du tout »
+    /// (13-09). Le thème du splash est SORTI. `NosfyTheme` n'existe pas encore
+    /// dans Woop/Sounds : tant qu'il n'y est pas, `url(forResource:)` rend nil et
+    /// le film est SILENCIEUX — mieux qu'une musique qu'elle déteste. Les
+    /// variantes se fabriquent par tools/porte/theme_nosfy.py ; la retenue
+    /// sera copiée sous ce nom.
+    private static let theme = "NosfyTheme"
     private static var musique: AVAudioPlayer?
     private static var bruits: [String: AVAudioPlayer] = [:]
     private static var sessionPrete = false
@@ -1089,7 +1338,9 @@ enum NosfySon {
             p.volume = 0
             p.prepareToPlay()
             p.play()
-            p.setVolume(0.18, fadeDuration: 1.5)
+            // 50 % d'un master à −24 LUFS : discret mais PRÉSENT. À 18 % (premier
+            // jet) le haut-parleur du téléphone ne rendait presque rien (13-09).
+            p.setVolume(0.5, fadeDuration: 1.5)
             musique = p
         } else {
             guard let p = musique else { return }
@@ -1099,8 +1350,38 @@ enum NosfySon {
         }
     }
 
-    static func tap() { bruit("DialTap", "wav", volume: 0.55) }
-    static func paillette() { bruit("Paillette", "wav", volume: 0.5) }
+    /// Le tap et la paillette sont des CRISTAUX du thème (theme_nosfy.py) :
+    /// la même matière que la musique — on n'entend pas « un son d'interface
+    /// sur une musique », on entend Nosfy.
+    /// LA MUSIQUE DE FIN (13-09 soir : « avec le résultat, un peu plus joyeuse,
+    /// LET'S GO MARGAUX ») — `NosfyFin` (F · fête, theme_nosfy2.py : la même
+    /// matière que D, en majeur, des arpèges qui montent, un pouls doux). Elle
+    /// remplace D au projecteur ; D s'était déjà retirée pendant « end ».
+    private static let themeFin = "NosfyFin"
+    private static var fete: AVAudioPlayer?
+
+    static func fete(_ allumer: Bool) {
+        preparerSession()
+        if allumer {
+            guard fete == nil else { return }
+            guard let url = Bundle.main.url(forResource: themeFin, withExtension: "m4a"),
+                  let p = try? AVAudioPlayer(contentsOf: url) else { return }
+            p.numberOfLoops = -1
+            p.volume = 0
+            p.prepareToPlay()
+            p.play()
+            p.setVolume(0.6, fadeDuration: 1.2)
+            fete = p
+        } else {
+            guard let p = fete else { return }
+            p.setVolume(0, fadeDuration: 1.0)
+            fete = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { p.stop() }
+        }
+    }
+
+    static func tap() { bruit("NosfyTap", "wav", volume: 0.6) }
+    static func paillette() { bruit("NosfyPaillette", "wav", volume: 0.55) }
 
     private static func bruit(_ nom: String, _ ext: String, volume: Float) {
         preparerSession()
@@ -1181,21 +1462,23 @@ struct MotsFlou: View {
     /// Le sourd de la nuit — la même valeur que la phrase de la home.
     private static let sourd: Double = 0.42
 
+    /// `lenteur` étire le phrasé (1 = le film ; 1,35 = l'intro, qui a le temps).
     init(_ fragments: [(String, Bool)], taille: CGFloat = 22, base: Double = 0,
-         onMot: (() -> Void)? = nil) {
+         onMot: (() -> Void)? = nil, lenteur: Double = 1) {
         self.taille = taille
-        self.mots = Self.calendrier(fragments, base: base)
+        self.mots = Self.calendrier(fragments, base: base, lenteur: lenteur)
         self.onMot = onMot
     }
 
     /// Combien de temps la tirade met à se dire, en entier — la dernière
     /// apparition comprise. C'est ce que `Tirade` attend avant d'enchaîner.
     static func duree(_ fragments: [(String, Bool)]) -> Double {
-        (calendrier(fragments, base: 0).last?.retard ?? 0) + 0.78
+        (calendrier(fragments, base: 0, lenteur: 1).last?.retard ?? 0) + 0.78
     }
 
     /// LE PHRASÉ, calculé une fois — voir la note ci-dessous.
-    private static func calendrier(_ fragments: [(String, Bool)], base: Double) -> [Mot] {
+    private static func calendrier(_ fragments: [(String, Bool)], base: Double,
+                                   lenteur: Double) -> [Mot] {
         var t = base
         var sortie: [Mot] = []
         var n = 0
@@ -1216,7 +1499,7 @@ struct MotsFlou: View {
 
                 let lettres = Double(mot.count)
                 let grain = Double(mot.unicodeScalars.reduce(0) { $0 + Int($1.value) } % 5) * 0.012
-                t += 0.05 + lettres * 0.013 + grain
+                t += (0.05 + lettres * 0.013 + grain) * lenteur
                 n += 1
             }
         }
@@ -1476,7 +1759,10 @@ private struct SemaineTapable: View {
     var choisis: Set<Int>
     var onTap: (Int) -> Void
 
-    private let lettres = ["L", "M", "M", "J", "V", "S", "D"]
+    var en: Bool = false
+    private var lettres: [String] {
+        en ? ["M", "T", "W", "T", "F", "S", "S"] : ["L", "M", "M", "J", "V", "S", "D"]
+    }
 
     var body: some View {
         HStack(spacing: 6) {

@@ -65,6 +65,12 @@ enum WelcomeRobe {
     case video, texte
 }
 
+/// Le bouton du bas quand ce n'est pas le lien « Close » (la sortie de Nosfy) :
+/// une capsule de VRAI verre, celle du Claim, sans la pièce.
+enum BoutonBas {
+    case capsule(String)
+}
+
 struct RewardPopup: View {
     /// Le chiffre annoncé — les séries effectuées.
     let count: Int
@@ -84,6 +90,16 @@ struct RewardPopup: View {
     /// ne fait que fermer (les bancs). Tranché le 30-08 : les +10 partent AU
     /// TAP — c'est ici que la card cesse de mentir « Claim +10 ».
     var onClaim: (() -> Void)? = nil
+    /// LA SORTIE DE NOSFY (13-09, PLAN-SORTIE-POPUP § 11) — trois paramètres
+    /// OPTIONNELS, `nil` = la robe telle quelle, aucune robe existante ne bouge :
+    /// les mots du texte géant (au lieu du nombre en lettres — plusieurs rangées,
+    /// échelonnées sur la largeur de la card), le bouton du bas (une capsule de
+    /// verre au lieu du lien « Close »), et l'opacité du scrim (0 = le halo du
+    /// film reste visible derrière ; le scrim reste MONTÉ : c'est lui qui porte le
+    /// « tap partout = fermer »).
+    var lignesGeantes: [String]? = nil
+    var bouton: BoutonBas? = nil
+    var scrim: Double = 0.68
 
     /// L'unique progrès de l'entrée [0,1] — toutes les rampes en dérivent.
     /// `-rewardFreeze <p>` le CLOUE : deux tours de fouettage se comparent
@@ -115,7 +131,8 @@ struct RewardPopup: View {
                     unit: unit, style: style, robe: robe,
                     videoNom: videoNom,
                     naissance: naissance, enSortie: enSortie,
-                    posee: posee, fermer: fermer, onClaim: onClaim)
+                    posee: posee, fermer: fermer, onClaim: onClaim,
+                    lignesGeantes: lignesGeantes, bouton: bouton, scrim: scrim)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
             .onAppear {
@@ -185,6 +202,10 @@ private struct RewardScene: View, Animatable {
     var fermer: () -> Void
     /// Le Claim du Welcome Back (30-08) : encaisse AVANT de fermer.
     var onClaim: (() -> Void)? = nil
+    /// La sortie de Nosfy (13-09) — voir `RewardPopup`.
+    var lignesGeantes: [String]? = nil
+    var bouton: BoutonBas? = nil
+    var scrim: Double = 0.68
 
     /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
     @State private var videoRelance = 0
@@ -220,7 +241,8 @@ private struct RewardScene: View, Animatable {
             ZStack {
                 // Le scrim — PROFOND (verdict « plus foncé derrière ») ;
                 // il porte aussi la sortie au tap.
-                Color.black.opacity(0.68 * sstep(0, 0.30, p))
+                Color.black.opacity(scrim * sstep(0, 0.30, p))
+                    .contentShape(Rectangle())        // à 0, il porte encore le tap
                     .onTapGesture { fermer() }
                 carte(largeur: l, hauteur: l * 1.32)
             }
@@ -410,15 +432,29 @@ private struct RewardScene: View, Animatable {
                         // LETTRES. Il remplace « Training » et sa ligne de
                         // félicitations, morts par verdict. Posé HAUT : le
                         // chiffre matrice descend pour lui faire place.
+                        // LA SORTIE DE NOSFY (13-09) : plusieurs rangées (ALLEZ /
+                        // PRÉNOM / GO !) au lieu du nombre en lettres. ⚠️ Un prénom
+                        // ne doit PAS se faire manger par les fondus : TexteGeant
+                        // fond ses lettres sur les flancs de son PROPRE cadre
+                        // (12 → 32 %), et le pied de ses rangées. Son cadre est
+                        // donc bien plus large et plus haut que la card (les fondus
+                        // tombent hors card, le clip rogne le vide), l'échelle vient
+                        // après, autour du centre, et le cadre de LAYOUT reste la
+                        // card. À `nil`, rien de tout ça : la robe d'origine.
                         TexteGeant(naissance: naissance,
-                                   lignes: [Self.enLettres(count)])
+                                   lignes: lignesGeantes ?? [Self.enLettres(count)])
+                            .frame(width: lignesGeantes == nil ? largeur : 1700,
+                                   height: lignesGeantes == nil ? hauteur : 900)
                             // PLUS GROS (verdict) — et s'il se coupe dans
                             // les fondus des côtés et du bas, « pas
                             // grave » : ce sont eux qui le mangent, pas
                             // le cadre.
-                            .scaleEffect(0.96)
-                            // TOUT EN HAUT (« fais FOUR en haut »).
-                            .offset(y: -hauteur * 0.355)
+                            .scaleEffect(lignesGeantes.map { Self.echelleGeante($0, largeur: largeur) } ?? 0.96)
+                            .frame(width: largeur, height: hauteur)
+                            // TOUT EN HAUT (« fais FOUR en haut ») — trois
+                            // rangées descendent un peu plus : le chiffre se
+                            // pose SUR les dernières (« sur le texte »).
+                            .offset(y: -hauteur * (lignesGeantes == nil ? 0.355 : 0.25))
                             // SA LUMIÈRE VIENT DU HAUT DE LA CARD : la
                             // source est au-dessus de lui, hors card —
                             // donc il est CLAIR EN CRÊTE et s'éteint en
@@ -457,7 +493,7 @@ private struct RewardScene: View, Animatable {
                                     endPoint: .trailing))
                             .mask(
                                 LinearGradient(
-                                    stops: [
+                                    stops: lignesGeantes == nil ? [
                                         // LE PIED SE NOIE DANS LE NOIR
                                         // (« après, le bas du gros texte
                                         // en fondu noir ») — la crête
@@ -468,6 +504,13 @@ private struct RewardScene: View, Animatable {
                                         .init(color: .white.opacity(0.46),
                                               location: 0.66),
                                         .init(color: .clear, location: 0.94)
+                                    ] : [
+                                        // Trois rangées : le pied est déjà
+                                        // noyé par TexteGeant lui-même —
+                                        // un second fondu effaçait « GO ! ».
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white, location: 0.80),
+                                        .init(color: .white.opacity(0.55), location: 1)
                                     ],
                                     startPoint: .top, endPoint: .bottom))
                             .opacity(sstep(0.20, 0.52, p))
@@ -866,7 +909,7 @@ private struct RewardScene: View, Animatable {
                     .opacity(sstep(0.48, 0.72, p))
             } else if style == .welcome {
                 Color.clear.frame(height: 2)
-            } else {
+            } else if !unit.isEmpty {
                 // L'unité en blanc dans la fumée — halo et galet.
                 Text(unit)
                     .font(.inter(19, .semibold))
@@ -883,23 +926,84 @@ private struct RewardScene: View, Animatable {
             }
             // Le BOUTON LIEN (verdict « pour consistance ») : de l'encre
             // nue, pas de cadre — la zone de toucher reste large.
-            Button(action: fermer) {
-                Text(style == .welcome ? "Later" : "Close")
-                    .font(.inter(15, .medium))
-                    .foregroundStyle(Color.white.opacity(0.66))
-                    .frame(height: 44)
-                    .padding(.horizontal, 34)
-                    .contentShape(Rectangle())
+            if case .capsule(let titre)? = bouton {
+                // LA SORTIE DE NOSFY : « Entrer », la capsule de verre du Claim.
+                BoutonVerre(titre: titre, action: fermer)
+                    .opacity(sstep(0.64, 0.90, p))
+                    .padding(.bottom, 22)
+            } else {
+                Button(action: fermer) {
+                    Text(style == .welcome ? "Later" : "Close")
+                        .font(.inter(15, .medium))
+                        .foregroundStyle(Color.white.opacity(0.66))
+                        .frame(height: 44)
+                        .padding(.horizontal, 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .opacity(sstep(0.64, 0.90, p))
+                .padding(.bottom, 10)
             }
-            .buttonStyle(.plain)
-            .opacity(sstep(0.64, 0.90, p))
-            .padding(.bottom, 10)
         }
+    }
+
+    /// L'échelle des mots de Nosfy : le mot le plus long doit tenir dans la card
+    /// (l'avance d'une lettre LARGE d'Inter Heavy à 112 pt ≈ 86 pt, tracking
+    /// compris — le pire cas, pas la moyenne : un prénom n'est pas « ALLEZ »).
+    static func echelleGeante(_ lignes: [String], largeur: CGFloat) -> CGFloat {
+        let plusLong = lignes.map(\.count).max() ?? 1
+        return min(0.96, (largeur - 24) / (CGFloat(plusLong) * 86))
     }
 
     private func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
         let t = min(max((x - a) / (b - a), 0), 1)
         return t * t * (3 - 2 * t)
+    }
+}
+
+/// LA CAPSULE DE VERRE sans la pièce — la recette exacte de `BoutonClaim` (du
+/// VERRE, pas du frost ; conteneur à taille constante), un libellé seul.
+private struct BoutonVerre: View {
+    let titre: String
+    var action: () -> Void
+
+    @State private var appuye = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(titre)
+                .font(.inter(16, .semibold))
+                .foregroundStyle(Color.white.opacity(0.95))
+                .padding(.horizontal, 36)
+                .frame(height: 52)
+                .background {
+                    GlassEffectContainer(spacing: 0) {
+                        Color.clear
+                            .glassEffect(.clear.interactive(), in: Capsule())
+                    }
+                    .environment(\.colorScheme, .dark)
+                }
+                .overlay(
+                    Capsule().strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white.opacity(0.42), location: 0),
+                                .init(color: .white.opacity(0.10), location: 0.55),
+                                .init(color: .white.opacity(0.24), location: 1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing),
+                        lineWidth: 1))
+                .contentShape(Capsule())
+                .scaleEffect(appuye ? 0.96 : 1)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
+                         trigger: appuye)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in appuye = true }
+                .onEnded { _ in appuye = false })
     }
 }
 
@@ -2106,7 +2210,8 @@ struct Scintilles: View {
 /// LA FORME DU GLYPHE — le contour réel du chiffre (CoreText), en
 /// SF Rounded black (la rondeur de la réf), ajusté dans son rect : la
 /// silhouette qui reçoit le VRAI verre.
-private struct FormeGlyphe: Shape {
+// (interne depuis le 13-09 : la sortie de Nosfy coule son chiffre dans le même verre)
+struct FormeGlyphe: Shape {
     let texte: String
 
     func path(in rect: CGRect) -> Path {
@@ -2150,7 +2255,9 @@ private struct FormeGlyphe: Shape {
 /// réellement réfracté à travers lui. Et il se SAISIT comme la pill (la
 /// recette galet : dérive discrète + gyro, drag au doigt, haptique
 /// prise/lâcher, ressort au lâcher SUR LE MODIFICATEUR — la leçon).
-private struct ChiffreVerre: View {
+// (interne depuis le 13-09 : la pop-up de sortie de Nosfy — « le chiffre en liquid glass,
+// pas de galet » — est le second hôte de ce verre)
+struct ChiffreVerre: View {
     let valeur: Int
     var naissance: Date
 

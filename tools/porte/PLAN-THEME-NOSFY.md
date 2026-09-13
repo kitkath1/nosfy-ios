@@ -149,3 +149,33 @@ l'écraser, mesurer la forme au RMS, caler.
 fondue (recuite : flancs, haut 12 %, bas 28 %, gain 0,88), le seuil sans « Quelqu'un vous
 attend » (« Dans quelle langue **dois-je** vous parler ? »), et la phrase après la langue
 (« Nous nous comprenons. J'ai trois questions pour vous. »). Un build les pose quand tu veux.
+
+---
+
+## LA FIN — la musique du projecteur (13-09, nuit)
+
+**Ce qui est resté :** D · touches (piano électrique, `NosfyTheme.m4a`, 50 %) pour tout le
+film. A/B/C (bourdon + cristaux) refusés — « comme le splash ».
+
+**Le premier jet de fin, F · fête (`theme_nosfy2.py`) — REFUSÉ : « horrible, on dirait un
+truc chinois ».** Diagnostic : ce n'est pas la joie, c'est l'instrument. La corde pincée
+(Karplus-Strong, l'instrument des « perles ») jouée en **arpèges qui montent** sur des accords
+à neuvièmes, avec de la réverbération, c'est un **guzheng** — timbre, geste et gamme (un
+arpège de maj9 est presque pentatonique). Loi : **plus aucune corde pincée dans le film.**
+
+**La deuxième proposition (`theme_nosfy3.py`), deux variantes, aperçus envoyés à −16 LUFS :**
+
+| | tempo | accords | ce qui fait la joie | ce qui l'empêche d'être princesse ou chinoise |
+|---|---|---|---|---|
+| **G · ÉLAN** | 100 BPM, 8 mesures = 19,2 s | I·V·vi·IV (A · E · F#m · D) | une nappe de scies désaccordées dont le filtre **s'ouvre** à chaque accord ; le piano électrique de D en frappes sur le temps ; basse ronde en noires ; kick feutré sur chaque temps ; souffle sur les contretemps ; le **pompage** discret de la nappe sous le kick (0,70) ; 2e moitié : l'octave au-dessus, loin | aucune corde, aucun arpège ; pas de mélodie ; des septièmes partout ; la scie filtrée est un timbre de keynote, pas de conte |
+| **H · SOLEIL** | 84 BPM, 8 mesures = 22,9 s | I·IV·V·I (A · D · E · A) | des **cuivres de synthèse** (scies, vibrato qui n'arrive qu'après 0,4 s) qui gonflent 0,6 s sur chaque accord, deux mesures chacun ; le piano en accords **brisés avec la septième** ; basse et kick sur 1 et 3, caisse claire feutrée sur 2 et 4 ; plus lent, plus large | même loi ; la septième dans le brisé casse la pentatonique ; la caisse claire est un souffle 1,5–7 kHz, pas un claquement |
+
+Commun : scies **additives** (harmoniques sous 11 kHz, jamais de repliement), réverbération
+courte sur l'harmonie seule (la basse et le kick restent secs), bande à 9 kHz, largeur
+stéréo 0,14–0,16, crête −3 dB, boucle exacte repliée. ⚠️ Piège payé : `int(t·sr)` tronque
+et la gaine de pompage voyait un `x` négatif → `x**1.6` = NaN → un WAV de 19 ko à moitié
+mort ; `np.clip` avant la puissance.
+
+**À faire quand elle a choisi :** master −24 LUFS → `Woop/Sounds/NosfyFin.m4a` (même nom,
+`NosfySon.fete` inchangé), F sort de `tools/porte/theme/`, build, pose, son verdict au
+haut-parleur du téléphone.

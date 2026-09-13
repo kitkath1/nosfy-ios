@@ -340,6 +340,34 @@ struct RootView: View {
     /// parcours après la partie Apple »). Le film seul, par-dessus tout ; à la
     /// fin, la home, sans cérémonie.
     @State private var nosfyRejoue = false
+    /// LA PORTE ÉTEINTE (13-09) : une fois le film fini, le carrousel ne
+    /// revient jamais — la cérémonie d'entrée se joue sur le noir, jusqu'à
+    /// ce que `showAuth` tombe et l'emporte.
+    @State private var porteEteinte = false
+
+    /// LA FIN DU FILM ÉCRIT LE PROFIL (13-09, `definir_profil` — migration
+    /// 20260913200000 de la session chambres) : langue, prénom, but, objectif — UN
+    /// appel, qui relaie l'objectif à `definir_objectif` et pose la date de fin
+    /// d'onboarding (c'est elle que `profil()` lit à la porte). En maquette, rien
+    /// ne part au réseau. Une panne s'imprime : la home n'attend pas le serveur.
+    private func ecrireProfil(_ reponses: NosfyOnboarding.Reponses) {
+        guard !AppleAuth.Maquette.active else {
+            print("[NOSFY] maquette : le profil n'est pas écrit au serveur")
+            return
+        }
+        Task { @MainActor in
+            do {
+                let p = try await ProfilServeur.definirProfil(langue: reponses.langue,
+                                                              prenom: reponses.prenom,
+                                                              but: reponses.but,
+                                                              objectifHebdo: reponses.objectifHebdo)
+                print("[NOSFY] definir_profil → existe=\(p.existe) onboarding_termine=\(p.onboardingTermine) prenom=\(p.prenom ?? "—") objectif=\(p.objectifHebdo)")
+            } catch {
+                print("[NOSFY] definir_profil en panne · \(error)")
+            }
+        }
+    }
+
     @State private var selection: WoopTab = {
         guard let raw = UserDefaults.standard.string(forKey: "openTab") else { return .home }
         // Le calendrier avait fusionné dans Progression ; Progression est
@@ -1787,8 +1815,13 @@ struct RootView: View {
                     // fondu) pendant que, dans le film, le halo naît de l'île.
                     // ⚠️ `.blur` = voile uniforme sur le rectangle de l'hôte —
                     // ici l'hôte EST l'écran entier sur du noir : rien à voir.
+                    // ⚠️ Et elle NE REVIENT PAS après le film (13-09, son
+                    // « mini bug » : à « Entrer » on voyait la transition ET la
+                    // page de login) : `porteEteinte` la tient à zéro jusqu'à ce
+                    // que `showAuth` tombe — sous le blanc du film, le noir et
+                    // les braises, jamais le carrousel.
                     .blur(radius: nosfyOuvert ? 18 : 0)
-                    .opacity(nosfyOuvert ? 0 : 1)
+                    .opacity((nosfyOuvert || porteEteinte) ? 0 : 1)
                     .animation(.easeInOut(duration: 0.7), value: nosfyOuvert)
                     .transition(.opacity)
                     .zIndex(9)
@@ -1798,6 +1831,12 @@ struct RootView: View {
                             // ⚠️ Rien n'est écrit au serveur : `definir_profil()`
                             // n'existe pas (jalon 2). On note, et on entre.
                             print("[NOSFY] langue=\(reponses.langue) prenom=\(reponses.prenom ?? "—") but=\(reponses.but ?? "—") objectif=\(reponses.objectifHebdo.map(String.init) ?? "—")")
+                            // L'OBJECTIF HEBDO EST LIÉ (13-09, sa consigne relayée par la
+                            // session chambres) : la clé locale que la home lit, puis
+                            // `definir_objectif(n)` au serveur (user_prefs, mesuré).
+                            if let n = reponses.objectifHebdo { ChambreEtat.shared.choisir(n) }
+                            ecrireProfil(reponses)
+                            porteEteinte = true
                             withAnimation(.easeOut(duration: 0.5)) { nosfyOuvert = false }
                             startConnexionCinematic()
                         }
@@ -1868,7 +1907,9 @@ struct RootView: View {
         }
         .overlay {
             if nosfyRejoue {
-                NosfyOnboarding { _ in
+                NosfyOnboarding { reponses in
+                    if let n = reponses.objectifHebdo { ChambreEtat.shared.choisir(n) }
+                    ecrireProfil(reponses)                 // le rejeu écrit aussi (session réelle)
                     withAnimation(.easeOut(duration: 0.5)) { nosfyRejoue = false }
                 }
                 .transition(.opacity)

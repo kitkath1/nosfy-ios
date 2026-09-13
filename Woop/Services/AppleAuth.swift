@@ -78,7 +78,17 @@ enum AppleAuth {
     enum Maquette {
         private static let cle = "woop.parcours.maquette"
 
-        static func verdict() -> Verdict? {
+        /// La maquette est en place : RIEN ne part au réseau — ni la lecture du
+        /// profil à la porte, ni son écriture à la fin du film.
+        /// ⚠️ Les arguments s'appliquent ICI aussi : au banc `-nosfy`, la porte
+        /// n'est jamais appelée, et un `-parcoursReel` resterait lettre morte
+        /// (mesuré le 13-09 : « maquette : le profil n'est pas écrit »).
+        static var active: Bool {
+            appliquerLesArguments()
+            return UserDefaults.standard.string(forKey: cle) != nil
+        }
+
+        private static func appliquerLesArguments() {
             let args = CommandLine.arguments
             if args.contains("-parcoursReel") {
                 UserDefaults.standard.removeObject(forKey: cle)
@@ -87,6 +97,10 @@ enum AppleAuth {
             } else if args.contains("-parcoursMaquette") {
                 UserDefaults.standard.set("nouvelle", forKey: cle)
             }
+        }
+
+        static func verdict() -> Verdict? {
+            appliquerLesArguments()
             switch UserDefaults.standard.string(forKey: cle) {
             case "nouvelle": return .nouvelle(userID: "maquette-nouvelle", courriel: nil)
             case "connue":   return .connue(userID: "maquette-connue", courriel: nil)
@@ -105,13 +119,29 @@ enum AppleAuth {
         let brut = nonceBrut()
         let reponse = try await Portier().demander(nonceHache: sha256(brut))
         let session = try await echanger(idToken: reponse.jeton, nonceBrut: brut)
-        let connue = try await aDejaUnProfil(token: session.access)
 
         // La session sert tout de suite : c'est elle qui remplace le jeton dérivé
-        // du numéro pour toute la synchro.
+        // du numéro pour toute la synchro — et c'est elle que `profil()` lit.
         await SupabaseSession.shared.adopter(access: session.access,
                                              refresh: session.refresh,
                                              userID: session.userID)
+
+        // L'AIGUILLAGE (13-09, sa décision : « ça identifie direct si un compte
+        // existe déjà et on arrive à la home direct ») : `profil().onboarding_termine`
+        // — la date que pose `definir_profil` à la fin du film. Plus jamais « aucune
+        // ligne user_prefs = une nouvelle » : la chambre Regularity écrit user_prefs
+        // dès qu'on choisit un objectif, sans avoir vu Nosfy.
+        let connue: Bool
+        do {
+            let profil = try await ProfilServeur.profil()
+            connue = profil.onboardingTermine
+            print("[PORTE] profil() → existe=\(profil.existe) onboarding_termine=\(profil.onboardingTermine) prenom=\(profil.prenom ?? "—")")
+        } catch {
+            // Une lecture qui échoue ne doit PAS inventer un compte connu : dans le
+            // doute, on joue le film. Mieux vaut le rejouer qu'escamoter l'entrée.
+            print("[PORTE] profil() en panne → on joue le film · \(error)")
+            connue = false
+        }
 
         return connue
             ? .connue(userID: session.userID, courriel: session.courriel)
@@ -167,28 +197,8 @@ enum AppleAuth {
                        courriel: decodee.user.email)
     }
 
-    // MARK: La détection
-
-    /// ⚠️ Provisoire, et assumé : la vraie porte est `user_prefs.onboarding_fait_le`,
-    /// une colonne qui n'existe pas encore (jalon 2 du plan). En attendant, on lit
-    /// si la ligne `user_prefs` existe — le schéma déployé le 05-09 le permet SANS
-    /// migration, et RLS « select own » garantit qu'on ne voit que la sienne.
-    private static func aDejaUnProfil(token: String) async throws -> Bool {
-        var requete = URLRequest(url: WoopConfig.supabaseURL
-            .appending(path: "rest/v1/user_prefs")
-            .appending(queryItems: [URLQueryItem(name: "select", value: "objectif_hebdo")]))
-        requete.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        requete.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let (data, reponse) = try await URLSession.shared.data(for: requete)
-        guard let http = reponse as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            // Une lecture qui échoue ne doit PAS inventer un compte connu : dans le
-            // doute, on joue le film. Mieux vaut le rejouer qu'escamoter l'entrée.
-            return false
-        }
-        let lignes = (try? JSONSerialization.jsonObject(with: data)) as? [Any] ?? []
-        return !lignes.isEmpty
-    }
+    // (La détection « la ligne user_prefs existe » a vécu du 06-09 au 13-09 : elle
+    // est remplacée par `ProfilServeur.profil()`, voir `entrer()`.)
 
     // MARK: Le nonce
 
