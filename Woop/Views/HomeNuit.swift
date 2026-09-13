@@ -1800,7 +1800,8 @@ struct HomeNuitPage: View {
     var rasant = RasantParams.retenus()
     var phrase = PhraseParams()
     var galet = GaletParams.retenus()
-    var faits: Int = SemaineBanc.faits ?? 4
+    // 13-09 : sans séance, ZÉRO — plus jamais le 4 de la maquette (« tout doit être empty »).
+    var faits: Int = SemaineBanc.faits ?? 0
 
     /// Les fantômes matérialisés en plus (le banc `-semaineMaterialise`).
     @State private var materialises = 0
@@ -2368,6 +2369,10 @@ struct HomeNuitPage: View {
                      nav: { NavBande(hauteur: NavEtat.shared.navH) })
                 // LES SATELLITES — HORS card (clippés/étranglés dedans) :
                 // le panneau du départ et la vitrine, l'école mondeFlottant.
+                // ⚠️ Appliqués APRÈS PageCard, ils échappent aux trois
+                // `.animation(value:)` de `pageEnCard` qui neutralisent le
+                // `withAnimation` ambiant de tout ce qui vit dans le slot.
+                .overlay { ChambreLongueHote() }
                 .overlay {
                     DepartPanneauHote(
                         ouverte: DepartEtat.shared.panneauOuvert,
@@ -2381,17 +2386,17 @@ struct HomeNuitPage: View {
                                     depart: vitrineDepart,
                                     origine: origineSlot(vs, geo.size.height),
                                     faites: faitsAffiche, prevues: prevus,
-                                    volume: stats?.volumeValeur ?? "8.4",
+                                    volume: stats?.volumeValeur ?? "0",
                                     volumeUnite: stats?.volumeUnite ?? "kg",
-                                    jours: stats?.jours ?? CardJour.semaineRef,
-                                    gain: stats?.gain ?? "+12%",
-                                    moyenne: stats?.moyenne ?? "1.2 kg",
+                                    jours: stats?.jours ?? CardJour.semaineVide,
+                                    gain: stats?.gain ?? "—",
+                                    moyenne: stats?.moyenne ?? "—",
                                     piedSeances: stats?.pied
-                                        ?? "1 session left to hit your goal",
+                                        ?? "",
                                     joursFaits: stats?.joursFaits,
                                     moisFaits: stats?.moisFaits,
-                                    hiit: stats?.hiit ?? HiitPeakInfo(),
-                                    peak: stats?.peak ?? PeakEffortInfo(),
+                                    hiit: stats?.hiit ?? .vide,
+                                    peak: stats?.peak ?? .vide,
                                     vides: widgetsVides,
                                     auto: VitrineBanc.auto,
                                     onSortie: {
@@ -3341,17 +3346,17 @@ struct HomeNuitPage: View {
                     // d'un démontage à mi-course.
                     if verreMonte, net < 0.995 {
                     CardsRangee(faites: faitsAffiche, prevues: prevus,
-                                volume: stats?.volumeValeur ?? "8.4",
+                                volume: stats?.volumeValeur ?? "0",
                                 volumeUnite: stats?.volumeUnite ?? "kg",
-                                moyenne: stats?.moyenne ?? "1.2 kg",
-                                gain: stats?.gain ?? "+12%",
-                                jours: stats?.jours ?? CardJour.semaineRef,
+                                moyenne: stats?.moyenne ?? "—",
+                                gain: stats?.gain ?? "—",
+                                jours: stats?.jours ?? CardJour.semaineVide,
                                 pied: stats?.pied
-                                    ?? "1 session left to hit your goal",
+                                    ?? "",
                                 joursFaits: stats?.joursFaits,
                                 moisFaits: stats?.moisFaits,
-                                hiit: stats?.hiit ?? HiitPeakInfo(),
-                                peak: stats?.peak ?? PeakEffortInfo(),
+                                hiit: stats?.hiit ?? .vide,
+                                peak: stats?.peak ?? .vide,
                                 arrivee: arr, lisere: true,
                                 // le verre dort sous la route (jalon 1)
                                 verre: !DepartEtat.shared.homeDort,

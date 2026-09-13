@@ -131,5 +131,12 @@
   "type": "flowchart",
   "titre": "Ce que je propose",
   "legende": "Le point clé : on rejoue la carte déjà tirée, jamais un nouveau tirage. Sinon on offre une deuxième chance de légendaire à qui coupe l'app au bon moment."
+ },
+ {
+  "id": "widgets-1-d-ou-viennent-les-chiffres",
+  "page": "widgets",
+  "type": "flowchart",
+  "titre": "D'où viennent les chiffres",
+  "legende": "Trait plein = existe et mesuré · pointillé = ne se fait que sous condition. Le téléphone calcule tout ; le serveur calcule pareil, et n'est lu que si le téléphone n'a rien sur la fenêtre."
  }
 ]

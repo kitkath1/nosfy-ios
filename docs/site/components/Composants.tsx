@@ -90,6 +90,22 @@ export function Liste({ page, etats, mesures, vide }: { page: Page; etats?: Etat
   )
 }
 
+/**
+ * LES RENVOIS (13-09, la page Widgets) : les lignes de la carte du serveur (`genre`) POSÉES sur une page de
+ * domaine. Leur pastille vit dans les tables de la carte — l'invariant compte chaque brique UNE fois — donc ici
+ * elles sont rendues en RENVOI, la forme de l'accueil : la bille de famille, le titre, le domaine, le chevron ;
+ * un clic ouvre la carte du serveur sur la ligne.
+ */
+export function Renvois({ page, etats, vide }: { page: Page; etats?: Etat[]; vide?: string }) {
+  const bs = parPage(page).filter((b) => !!b.genre).filter((b) => !etats || etats.includes(b.etat))
+  if (!bs.length) return vide ? <p className="rien">{vide}</p> : null
+  return (
+    <ul className="liste">
+      {bs.map((b) => <Rangee key={b.id} b={{ ...b, page: 'serveur' }} lien />)}
+    </ul>
+  )
+}
+
 /* ── la carte du serveur : une table par genre ──────────────────────────── */
 const ENTETES: Record<Genre, string[]> = {
   table: ['', 'Table', 'À quoi ça sert'],

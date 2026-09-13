@@ -66,6 +66,9 @@ actor SupabaseSession {
             if let accessToken { return accessToken }
             let jwt = try await ForgeServeur.jwtBanc()
             accessToken = jwt
+            // 13-09 : l'identité du compte de test, lue dans le jeton (`sub`),
+            // pour que `currentUserID()` — donc `push()` — marche aussi au banc.
+            userID = Self.sujet(du: jwt)
             return jwt
         }
         guard let phone = UserDefaults.standard.string(forKey: phoneKey),
@@ -157,6 +160,23 @@ actor SupabaseSession {
         _ = try await token()
         guard let userID else { throw SupabaseError.notAuthenticated }
         return userID
+    }
+
+    /// Le `sub` d'un JWT (sa partie centrale, base64url) — sans vérifier la
+    /// signature : c'est le serveur qui vérifie, ici on ne fait que lire qui
+    /// on est. Sert au banc (`-sessionBanc`), où l'identité ne vient pas de
+    /// la réponse de connexion.
+    static func sujet(du jwt: String) -> String? {
+        let parts = jwt.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        var b64 = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        while b64.count % 4 != 0 { b64 += "=" }
+        guard let data = Data(base64Encoded: b64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        return json["sub"] as? String
     }
 
     /// Le jeton a expiré : on force une nouvelle authentification au prochain appel.

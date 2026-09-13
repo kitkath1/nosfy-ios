@@ -1,0 +1,12 @@
+flowchart TD
+  S["🏋️ une séance<br/>SwiftData, dans le téléphone"] --> T["🧮 SemaineStats.calcule<br/>+ ChambreDonnees.calcule<br/>deux fenêtres · seuil 15 km/h"]
+  T --> W["🟧 les 4 widgets de la home"]
+  T --> C["🖤 la chambre longue<br/>au double tap"]
+  S -. "push() — seulement<br/>avec une session" .-> P["🗄️ workouts · logged_exercises<br/>strength_sets · cardio_phases<br/>VIDES pour les vrais comptes"]
+  P --> F["⚙️ widget_regularite · volume<br/>hiit · peak<br/>15 à 38 ms depuis le 13-09"]
+  F -. "seulement si le téléphone<br/>n'a rien sur la fenêtre" .-> C
+  O["🎯 objectif_hebdo · definir_objectif<br/>user_prefs — le serveur le tient"] --> C
+  C --> O
+  class S,T,W,C ok
+  class P bad
+  class F,O ok

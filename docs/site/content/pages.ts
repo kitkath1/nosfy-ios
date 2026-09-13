@@ -23,6 +23,13 @@ export const PAGES: PageInfo[] = [
     },
   },
   {
+    // 13-09 — demandé par Kathryn (« une section dédiée aux widgets et à leur back-end ») : les quatre
+    // widgets de la home, leurs chambres, leurs données, et les fonctions serveur qui les recalculent.
+    id: 'widgets', libelle: 'Widgets', glyphe: 'widgets',
+    phrase: 'Tout se calcule dans le téléphone ; le serveur sait faire pareil, et sert quand le téléphone n\'a rien.',
+    hero: { capture: null },
+  },
+  {
     id: 'coffre', libelle: 'Le coffre', glyphe: 'coins',
     phrase: 'Le solde se dérive, le sachet naît à 100, et le profil montre tout, même à 0.',
     hero: {
@@ -62,6 +69,7 @@ export const PAGES: PageInfo[] = [
 export const DOMAINES: DomaineInfo[] = [
   { id: 'compte', libelle: 'Compte', badge: 'CO', page: 'porte' },
   { id: 'sync', libelle: 'Sync', badge: 'SY', page: 'histoire' },
+  { id: 'widgets', libelle: 'Widgets', badge: 'WI', page: 'widgets' },
   { id: 'eco', libelle: 'Économie', badge: 'ÉC', page: 'coffre' },
   { id: 'annonces', libelle: 'Annonces', badge: 'AN', page: 'annonces' },
   { id: 'forge', libelle: 'Forge', badge: 'FO', page: 'forge' },

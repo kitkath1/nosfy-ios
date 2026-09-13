@@ -23,7 +23,7 @@ Le même contenu, en un fichier, republié au même lien à chaque changement ba
 
 | | où | quoi |
 |---|---|---|
-| **la source** | `docs/site/content/` | `serveur.ts` (la carte du serveur), `briques.ts` (les briques des pages), `mesures.ts` (les ◌ « à mesurer »), `pages.ts` (les 8 pages, les teintes mesurées), `sondes.ts`, `schemas/*.mmd` (les 19 schémas) et `pages/*.mdx` (la prose) |
+| **la source** | `docs/site/content/` | `serveur.ts` (la carte du serveur), `briques.ts` (les briques des pages), `mesures.ts` (les ◌ « à mesurer »), `pages.ts` (les 9 pages, les teintes mesurées), `sondes.ts`, `schemas/*.mmd` (les 19 schémas) et `pages/*.mdx` (la prose) |
 | **le compilateur** | `docs/site/app/`, `components/`, `scripts/` | Next.js 16 en export statique, **un seul composant client, vide (`Boot`, qui réveille `site.js` après l'hydratation), zéro React dans le livrable** ; `scripts/schemas.mjs` rend les schémas en SVG dans le Chrome installé et les passe à l'obsidienne ; `scripts/inliner.mjs` fait UN fichier de l'export ; `scripts/captures.py` embarque les captures |
 | **le livrable** | `docs/site/index.html` | un seul fichier autonome (Inter, SVG, captures et `site.js` inlinés), commité, ouvert par `voir.sh`, republié au même lien |
 

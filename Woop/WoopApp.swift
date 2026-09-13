@@ -26,19 +26,15 @@ struct WoopApp: App {
         if CommandLine.arguments.contains("-demoForce") {
             DemoData.seedDemo(in: container)
         }
-        #if DEBUG
-        // LA PILE DE LA HOME NE S'AFFICHE QU'AVEC DES SÉANCES TERMINÉES, et
-        // `seedIfEmpty` refuse de semer dès qu'il existe UNE séance, fût-elle
-        // en cours. Une base contenant une seule séance active restait donc
-        // coincée sur l'état vide, sans aucun moyen d'en sortir — et sans
-        // cartes, ni le swap ni les stories ne sont atteignables.
-        //
-        // En debug, on ne s'en remet plus à un argument de lancement (qui
-        // n'atteint pas l'app selon la façon dont elle est lancée) : on
-        // GARANTIT quelques séances terminées. Rien n'est effacé, et la
-        // condition est « aucune terminée », pas « base vide ».
-        DemoData.seedDemoIfNoneFinished(in: container)
-        #endif
+        // ⚠️ LE SEMIS AUTOMATIQUE EN DEBUG EST MORT (13-09, Kathryn : « tout
+        // doit être empty quand c'est empty — sur mon tel branché il y a
+        // encore des données »). Il ressemait des séances de démo à CHAQUE
+        // lancement dès que les 21 derniers jours étaient clairsemés, sans
+        // aucun argument : impossible de voir l'état vide de la home et des
+        // chambres, même après désinstallation (mesuré le 13-09). La démo ne
+        // vient plus que de `-demoData` (base vide) ou `-demoForce`.
+        // `seedDemoIfNoneFinished` reste pour l'archive, plus personne ne
+        // l'appelle. Un téléphone déjà semé se vide en réinstallant l'app.
         if CommandLine.arguments.contains("-activeWorkout") {
             DemoData.seedActiveWorkout(in: container)
         }
@@ -1592,7 +1588,10 @@ struct RootView: View {
             // montrer (clavier, exercice en cours).
             // (Le pan de bande est mort avec le repli : plus aucun drag
             //  ne vit ici — seuls les glyphes répondent, et ils naviguent.)
-            if NavEtat.shared.bandeVisiblePubliee {
+            // 13-09 (Kathryn : « enlève le menu quand on affiche les
+            // overlays ») : une chambre longue ouverte efface la nav —
+            // la feuille prend tout, la nav revient en fondu à la fermeture.
+            if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil {
                 // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
                 // milieu de l'espace noir » — collée au bas elle mordait
                 // l'indicateur, posée sur la zone sûre elle était trop

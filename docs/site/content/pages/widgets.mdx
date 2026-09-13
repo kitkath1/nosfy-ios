@@ -1,0 +1,42 @@
+<div className="reveal">
+
+## Ce qui ment
+
+<Liste page="widgets" etats={['men']} />
+<Renvois page="widgets" etats={['men']} vide="Rien ne ment ici." />
+
+</div>
+<div className="reveal">
+
+## D'où viennent les chiffres
+
+<Schema id="widgets-1-d-ou-viennent-les-chiffres" legende="Trait plein = existe et mesuré · pointillé = ne se fait que sous condition. Le téléphone calcule tout ; le serveur calcule pareil, et n'est lu que si le téléphone n'a rien sur la fenêtre." />
+
+</div>
+<div className="reveal">
+
+## Ce qui reste
+
+<Liste page="widgets" etats={['loc', 'srv', 'abs']} mesures />
+<Renvois page="widgets" etats={['loc', 'srv', 'abs']} />
+
+</div>
+<div className="reveal">
+
+## Ce qui tient
+
+<Liste page="widgets" etats={['ok']} />
+<Renvois page="widgets" etats={['ok']} />
+
+</div>
+
+<Decision titre="Une décision t'attend">
+  <p><b>La card HIIT de la home compte des répétitions qui n'existent pas</b> (elle groupe les phases identiques et affiche « 2:00 continu »). Le corriger change ce que la card affiche : c'est ton verdict, pas une ligne à pousser en silence.</p>
+</Decision>
+
+<Savoir>
+  <p>Les quatre widgets de la home — Regularity, Volume, HIIT Peak, Peak Effort — et leurs chambres longues (l'overlay du double tap) lisent <b>la même passe, dans le téléphone</b> : <code>SemaineStats.calcule</code> puis <code>ChambreDonnees.calcule</code>. Deux fenêtres (lundi → maintenant ; 30 jours glissants), la précédente bornée au même temps écoulé, un effort = un segment au-dessus de 15 km/h, jamais de « × N » : une séance HIIT est une suite de segments irréguliers.</p>
+  <p>Le serveur sait faire pareil : <code>widget_regularite</code>, <code>widget_volume</code>, <code>widget_hiit</code>, <code>widget_peak</code> (une fenêtre → un JSON), <code>objectif_hebdo</code> et <code>definir_objectif</code> (l'objectif vit dans <code>user_prefs</code>). Depuis le 13-09 l'app les appelle à l'ouverture d'une chambre, avec une règle unique écrite en tête de <code>ChambreServeur.swift</code> : l'objectif, c'est le serveur qui le tient ; les chiffres, c'est le téléphone tant qu'il a une séance sur la fenêtre, le serveur seulement s'il n'en a aucune (nouveau téléphone, réinstallation). Ce que le serveur ne rend pas reste gris plutôt qu'inventé : le fantôme de la semaine passée, le défi du mois, les quatre semaines du record de vitesse.</p>
+  <p>Deux faits mesurés le 13-09 sur le compte de test. <code>push()</code> marche dès qu'une session existe — 23 séances de démo sont montées d'un coup ; les tables vides des vrais comptes viennent de l'absence de session, pas du code (la brique <code>b-sy-jamais-ecrit</code> de la page Serveur). Et <code>widget_volume</code> répondait en timeout parce que <code>fuseau_jour()</code> balayait la liste des fuseaux à chaque ligne (<code>b-fn-fuseau-jour</code>, page Serveur) : corrigé par la migration du 13-09, 12,7 s → 26 ms.</p>
+  <p>La loi du vide : à zéro, chaque chambre garde son design, en gris — jamais une phrase « rien à afficher » ; le serveur rend des zéros, jamais un null. Et le vide est VRAI depuis le 13-09 : le semis automatique de séances de démo en debug est mort (il ressemait la base à chaque lancement) — la démo ne vient plus que de <code>-demoData</code>. Une chambre ouverte efface la nav du bas ; l'eyebrow « 03 · HIIT Peak » est parti. L'analyse complète des données, widget par widget : <code>tools/widgets/ANALYSE-DATAS-WIDGETS.md</code>. Les phases cardio, elles, vivent dans <code>cardio_phases</code> (<code>b-tb-cardio</code>, page Serveur).</p>
+</Savoir>

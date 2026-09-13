@@ -526,6 +526,12 @@ struct CardJour: Identifiable {
     var id: String { lettre + String(rail) }
 
     /// Les sept jours de la référence, mesurés (rails et segments).
+    /// La semaine VIDE (13-09) : sept lettres, aucun rail, aucun segment.
+    /// (`id` = lettre + rail : un rail infime et DISTINCT par jour, sinon les
+    /// deux T et les deux S se confondent dans le ForEach.)
+    static let semaineVide: [CardJour] = ["M", "T", "W", "T", "F", "S", "S"].enumerated().map {
+        CardJour(lettre: $1, rail: 0.001 * Double($0 + 1), segments: 0)
+    }
     static let semaineRef: [CardJour] = [
         CardJour(lettre: "M", rail: 0.123, segments: 2),
         CardJour(lettre: "T", rail: 0.105, segments: 2),
@@ -694,6 +700,8 @@ struct CardTouche: ViewModifier {
     var mode: CardMode
     @Binding var chambre: Double
     @Binding var doigt: CGPoint?
+    /// Quelle chambre le double tap ouvre — posé par `CardsRangee`.
+    @Environment(\.widgetKind) private var widgetKind
 
     @State private var presseAt: Date?
     @State private var etaitOuverte = false
@@ -702,6 +710,17 @@ struct CardTouche: ViewModifier {
     @State private var jeton = 0
     /// Le long press a tiré : le relâchement n'a plus rien à dire.
     @State private var editionTiree = false
+    /// LE DOUBLE TAP (07-09) — la fin du relâchement précédent.
+    ///
+    /// ⚠️ Il est détecté ICI, dans le drag qui existe déjà, et surtout PAS
+    /// par un `onTapGesture(count: 2)` : celui-là RETARDE tous les taps
+    /// simples de sa zone (le système attend le second) — payé aujourd'hui
+    /// par la session nav sur les taps de la home. Ici le premier tap agit
+    /// immédiatement (la card se retourne, et elle RESTE : c'est le verdict
+    /// de Kathryn), et c'est le second qui ouvre la chambre.
+    @State private var finPrecedente: Date?
+    /// 0,32 s — au-delà, deux taps sont deux intentions.
+    private static let seuilDouble = 0.32
 
     /// 0,50 s — l'arbitrage F du plan (0,4-0,5 s chez Apple ; la tolérance
     /// de mouvement est de 10 pt, au-delà c'est un drag, pas un appui).
@@ -785,9 +804,28 @@ struct CardTouche: ViewModifier {
                 case .libre:
                     guard etaitOuverte || !court else { return }
                     fermer()
-                case .home:
+                case .home(let onEdition):
+                    _ = onEdition
                     // L'édition a pris la main : le relâchement se tait.
                     guard !edition else { return }
+                    // ── LE DOUBLE TAP OUVRE LA CHAMBRE LONGUE.
+                    // Deux relâchements COURTS et immobiles à moins de
+                    // `seuilDouble` : la card se range et l'overlay monte.
+                    if court, !bouge {
+                        let n = Date()
+                        if let p = finPrecedente,
+                           n.timeIntervalSince(p) < Self.seuilDouble {
+                            finPrecedente = nil
+                            UIImpactFeedbackGenerator(style: .rigid)
+                                .impactOccurred()
+                            fermer()
+                            ChambreEtat.shared.ouvrir(widgetKind)
+                            return
+                        }
+                        finPrecedente = n
+                    } else {
+                        finPrecedente = nil
+                    }
                     guard etaitOuverte || !court else { return }
                     fermer()
                 case .vitrine(let onTap):
@@ -2175,6 +2213,20 @@ struct CardFantome: View {
 
 /// Ce que la card HIIT Peak affiche — calculé par `SemaineStats`, ou les
 /// défauts de banc.
+/// UN SEGMENT RÉEL d'une séance. ⚠️ Une séance HIIT n'est PAS un motif
+/// répété : c'est une suite de segments dont aucun n'a la même durée ni la
+/// même vitesse (verdict du 05-09 : « 2 min à 9, puis 1 min à 17, et après
+/// je peux reprendre 30 secondes à 19 »). La chambre les dessine un par un ;
+/// rien ici ne se factorise en « × N ».
+struct SegmentHiit: Identifiable, Equatable {
+    let id = UUID()
+    var secondes: Int
+    var vitesse: Double
+    /// Au-dessus du seuil : un EFFORT. En dessous : récup, échauffement ou
+    /// retour au calme — le graphite, jamais la braise.
+    var effort: Bool
+}
+
 struct HiitPeakInfo {
     var vitesse = "17.0"
     var repetitions = "4 × 40 s"
@@ -2183,6 +2235,20 @@ struct HiitPeakInfo {
     var picLargeur = 0.26
     /// Les tours du segment — la chambre les dessine.
     var tours = 4
+    /// LA SÉANCE, segment par segment — ce que la chambre longue dessine.
+    /// Vide = on n'a rien à montrer, et la chambre le DIT (elle n'invente pas
+    /// un fractionné régulier pour remplir).
+    var segments: [SegmentHiit] = []
+    /// Le libellé de la séance dont viennent ces segments.
+    var jour = ""
+}
+
+extension HiitPeakInfo {
+    /// L'ÉTAT VIDE (13-09, Kathryn : « tout doit être empty quand c'est empty ») :
+    /// des zéros et des tirets, jamais la maquette. La géométrie du tracé garde
+    /// des valeurs sûres (`picLargeur` divise) ; sans tour, il ne dessine rien.
+    static let vide = HiitPeakInfo(vitesse: "0,0", repetitions: "—", chambreLigne: "",
+                                   pic: 0.5, picLargeur: 0.26, tours: 0)
 }
 
 /// Ce que la card Peak Effort affiche. Le héros est LE RECORD LUI-MÊME
@@ -2197,6 +2263,12 @@ struct PeakEffortInfo {
     var chambreHaut = "60 kg × 8"
     var chambreBas = "previous best · 55 kg"
     var nouveau = true
+}
+
+extension PeakEffortInfo {
+    /// L'ÉTAT VIDE (13-09) : un tiret, zéro kilo, rien de battu.
+    static let vide = PeakEffortInfo(titre: "—", valeur: "0 kg", delta: nil, precedent: nil,
+                                     chambreHaut: "0 kg", chambreBas: "", nouveau: false)
 }
 
 /// LES CHIFFRES DE LA SEMAINE — calculés UNE fois (à l'apparition de la
@@ -2310,6 +2382,12 @@ struct SemaineStats {
 
         s.hiit = Self.hiitPeak(cette)
         s.peak = Self.peakEffort(cette: cette, avant: avant)
+        // LES CHAMBRES LONGUES lisent la même passe (13-09). Publié ICI, hors
+        // de tout `body` (cette fonction est appelée à l'apparition et au
+        // changement de séance, jamais pendant une évaluation de vue) : la
+        // home et les chambres comptent sur les MÊMES fenêtres.
+        ChambreEtat.shared.donnees = ChambreDonnees.calcule(
+            ChambreEtat.bancVide ? [] : workouts, prevues: prevues, maintenant: maintenant)
         return s
     }
 
@@ -2365,7 +2443,38 @@ struct SemaineStats {
             info.repetitions = "\(duree(b.s)) continuous"
             info.chambreLigne = "\(v) km/h · \(duree(b.s))"
         }
+        // ── LES SEGMENTS RÉELS de la séance qui porte le pic (05-09).
+        // On ne regroupe RIEN : chaque phase est un segment, avec SA durée et
+        // SA vitesse. C'est exactement ce que le groupage de `candidat(…)`
+        // ci-dessus ne sait pas voir — et c'est ce que la chambre dessine.
+        (info.segments, info.jour) = Self.segmentsDuPic(cette, pic: b.v)
         return info
+    }
+
+    /// La séance de la fenêtre qui a atteint `pic`, rendue segment par
+    /// segment. Le seuil d'effort est celui de la chambre (15 km/h) — le
+    /// même partout, sinon la card et la chambre comptent différemment.
+    static let seuilEffort: Double = 15.0
+
+    private static func segmentsDuPic(_ cette: [Workout],
+                                      pic: Double) -> ([SegmentHiit], String) {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = "EEEE dd.MM"
+        for w in cette.sorted(by: { $0.startedAt > $1.startedAt }) {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                let phases = ex.orderedPhases
+                guard phases.contains(where: { abs($0.speed - pic) < 0.001 })
+                else { continue }
+                let segs = phases.map {
+                    SegmentHiit(secondes: $0.seconds, vitesse: $0.speed,
+                                effort: $0.speed >= seuilEffort)
+                }
+                guard !segs.isEmpty else { continue }
+                return (segs, f.string(from: w.startedAt).capitalized)
+            }
+        }
+        return ([], "")
     }
 
     // ── PEAK EFFORT : le moment le plus fort, priorité charge > vitesse >
@@ -2760,9 +2869,19 @@ struct CardsRangee: View {
         }
     }
 
+    /// La carte, plus SON identité posée dans l'environnement (07-09) — c'est
+    /// par là que `CardTouche` sait quelle chambre ouvrir au double tap, sans
+    /// qu'aucune des quatre cards ait à changer de signature.
     @ViewBuilder
     private func carte(_ kind: WidgetKind, slot: Int,
                        penche: Double) -> some View {
+        carteBrute(kind, slot: slot, penche: penche)
+            .environment(\.widgetKind, kind)
+    }
+
+    @ViewBuilder
+    private func carteBrute(_ kind: WidgetKind, slot: Int,
+                            penche: Double) -> some View {
         let mode: CardMode = editionActive
             ? .inerte
             : (editable

@@ -5,16 +5,18 @@ import { Etat } from '@/components/Etat'
 import { Serveur } from '@/components/Serveur'
 import { Hero } from '@/components/Composants'
 import Flow from '@/content/pages/flow.mdx'
+import Widgets from '@/content/pages/widgets.mdx'
 import Coffre from '@/content/pages/coffre.mdx'
 import Annonces from '@/content/pages/annonces.mdx'
 import Forge from '@/content/pages/forge.mdx'
 import Histoire from '@/content/pages/histoire.mdx'
 import Porte from '@/content/pages/porte.mdx'
 
-// UNE route : les huit pages empilées en <section class="page">, le JS n'en montre qu'une.
+// UNE route : les neuf pages empilées en <section class="page">, le JS n'en montre qu'une.
 // C'est la source du fichier unique produit par scripts/inliner.mjs.
 // 30-08 : « Économie & annonces » (regles.mdx) est devenue coffre.mdx + annonces.mdx.
-const DOMAINES: [Page, ComponentType][] = [['flow', Flow], ['coffre', Coffre], ['annonces', Annonces], ['forge', Forge], ['histoire', Histoire], ['porte', Porte]]
+// 13-09 : « Widgets » (widgets.mdx) — les quatre widgets, leurs chambres et leur back-end.
+const DOMAINES: [Page, ComponentType][] = [['flow', Flow], ['widgets', Widgets], ['coffre', Coffre], ['annonces', Annonces], ['forge', Forge], ['histoire', Histoire], ['porte', Porte]]
 
 export default function Site() {
   return (
