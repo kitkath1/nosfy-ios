@@ -80,10 +80,62 @@ enum ProfilServeur {
     }
 
     /// Rafraîchit le prénom depuis le serveur, en silence : sans session, sans
-    /// réseau, rien ne bouge (le cache reste). La home l'appelle en apparaissant.
+    /// réseau, rien ne bouge (le cache reste). La home l'appelle en apparaissant
+    /// — par `home()`, l'appel fait pour elle (13-09 soir).
     static func rafraichirPrenom() async {
         guard WoopConfig.isConfigured else { return }
-        if let p = try? await profil() { garder(p) }
+        if let a = try? await accueil(), let n = a.prenom, !n.isEmpty {
+            UserDefaults.standard.set(n, forKey: clePrenom)
+        }
+    }
+
+    // MARK: - home() : ce que la home demande au serveur, en un appel
+
+    /// LA VÉRITÉ DU SERVEUR POUR LA HOME (13-09 soir, Kathryn : « la homepage
+    /// est aussi interactive, des fois le wording change ; ça doit récupérer
+    /// de vraies données »). Le prénom, les séances faites cette semaine,
+    /// l'objectif, le reste, la séance en cours et ses minutes.
+    ///
+    /// Ce que la home en CONSOMME aujourd'hui : le prénom. Les nombres, elle
+    /// les compte sur les séances du téléphone (la même passe que les cards,
+    /// b-ux-chambre-donnees) — parce qu'une phrase qui dirait « 3 workouts »
+    /// au-dessus d'une card Regularity à « 0 / 5 » (téléphone vide, serveur
+    /// plein) contredirait l'écran. Le jour où la lecture des séances existe
+    /// (le `pull` qui manque), `faites` / `reste` / `enSeance` sont déjà là.
+    struct Accueil {
+        var prenom: String?
+        var onboardingTermine: Bool
+        var faites: Int
+        var objectif: Int
+        var reste: Int
+        var enSeance: Bool
+        var minutesEnSeance: Int
+        var derniereSeance: Date?
+        var seancesTotal: Int
+
+        init(json o: [String: Any]) {
+            prenom = (o["prenom"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            onboardingTermine = o["onboarding_termine"] as? Bool ?? false
+            faites = (o["faites"] as? NSNumber)?.intValue ?? 0
+            objectif = (o["objectif"] as? NSNumber)?.intValue ?? Goal.weeklyTarget
+            reste = (o["reste"] as? NSNumber)?.intValue ?? max(objectif - faites, 0)
+            enSeance = o["en_seance"] as? Bool ?? false
+            minutesEnSeance = (o["minutes_en_seance"] as? NSNumber)?.intValue ?? 0
+            derniereSeance = (o["derniere_seance_at"] as? String).flatMap {
+                let a = ISO8601DateFormatter(); a.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let d = a.date(from: $0) { return d }
+                let b = ISO8601DateFormatter(); b.formatOptions = [.withInternetDateTime]
+                return b.date(from: $0)
+            }
+            seancesTotal = (o["seances_total"] as? NSNumber)?.intValue ?? 0
+        }
+    }
+
+    /// `home()` — un appel, le journal `[home-serveur]` dit ce qui est revenu.
+    static func accueil() async throws -> Accueil {
+        let a = Accueil(json: try await objet("home"))
+        print("[home-serveur] home() → prénom \(a.prenom ?? "—") · \(a.faites) / \(a.objectif), reste \(a.reste) · en séance \(a.enSeance) (\(a.minutesEnSeance) min) · \(a.seancesTotal) séances en tout")
+        return a
     }
 
     /// `profil()` — l'aiguillage et tout ce qu'on sait de la personne.

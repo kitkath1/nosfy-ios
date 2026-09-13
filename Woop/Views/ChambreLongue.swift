@@ -156,7 +156,7 @@ final class ChambreEtat {
                 // Le brin d'animation du chargement (13-09) : le gris du vide
                 // se réchauffe en un demi-souffle quand le serveur répond.
                 withAnimation(.easeOut(duration: 0.55)) { serveur["\(kind)/\(fen.rawValue)"] = f }
-                note("\(ChambreServeur.nomFonction(kind))(\(fen.rawValue)) → \(n) séance(s)")
+                note("\(ChambreServeur.nomFonction(kind))(\(fen.rawValue)) → \(n) séance(s) · \(ChambreServeur.detail(kind, f))")
             } catch { note("\(ChambreServeur.nomFonction(kind))(\(fen.rawValue)) ✗ \(error)") }
         }
     }
