@@ -314,10 +314,21 @@ enum PhraseTexte {
     /// L'alternance clair / sourd tient à la lettre : c'est elle qui donne son
     /// rythme au bloc, pas les mots. Elle finit donc sur un SOURD — la phrase
     /// s'éteint au lieu de claquer, et c'est la bonne fin pour une voix.
-    static func fragments(faits: Int, prevus: Int) -> [PhraseFragment] {
+    /// LE PRÉNOM VIENT DU PROFIL (13-09, Kathryn : « le nom, tu dois le garder
+    /// en backend, il apparaît dans la home ») : `profils.prenom` au serveur,
+    /// `ProfilServeur.clePrenom` en cache local. Sans prénom connu, la phrase
+    /// reste vraie : « Hello there, » — plus jamais un « Kathryn » en dur.
+    static func salut(_ prenom: String?) -> String {
+        (prenom?.isEmpty ?? true) ? "Hello there," : "Hello \(prenom!),"
+    }
+    static func alors(_ prenom: String?) -> String {
+        (prenom?.isEmpty ?? true) ? "Alright," : "Alright \(prenom!),"
+    }
+
+    static func fragments(faits: Int, prevus: Int, prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
         let mot = faits == 1 ? "workout" : "workouts"
         return [
-            PhraseFragment("Hello Kathryn,", clair: true),
+            PhraseFragment(salut(prenom), clair: true),
             PhraseFragment("you've done", clair: false),
             PhraseFragment("\(faits) \(mot)", clair: true),
             PhraseFragment("this week.", clair: false)
@@ -340,18 +351,18 @@ enum PhraseTexte {
     /// prendront (avant / pendant / fin de séance). La forme est le contrat —
     /// quatre fragments, clair/sourd/clair/sourd, en anglais, chacun tenant
     /// dans les 300 pt de `PhraseParams.largeur`.
-    static func fragmentsSeance(minutes: Int) -> [PhraseFragment] {
+    static func fragmentsSeance(minutes: Int, prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
         let mot = minutes == 1 ? "minute" : "minutes"
         if minutes < 1 {
             return [
-                PhraseFragment("Alright Kathryn,", clair: true),
+                PhraseFragment(alors(prenom), clair: true),
                 PhraseFragment("you're in", clair: false),
                 PhraseFragment("a session", clair: true),
                 PhraseFragment("right now.", clair: false)
             ]
         }
         return [
-            PhraseFragment("Alright Kathryn,", clair: true),
+            PhraseFragment(alors(prenom), clair: true),
             PhraseFragment("you've been at it", clair: false),
             PhraseFragment("\(minutes) \(mot)", clair: true),
             PhraseFragment("so far.", clair: false)
@@ -1810,6 +1821,9 @@ struct HomeNuitPage: View {
     /// `@AppStorage` et non un `@State` : un objectif qu'on choisit et que
     /// l'app oublie au relancement n'est pas un objectif.
     @AppStorage(Goal.cleHebdo) private var prevus: Int = Goal.weeklyTarget
+    /// Le prénom du profil (cache local de `profils.prenom`) — la phrase le lit,
+    /// et se redessine quand le serveur le pose (13-09).
+    @AppStorage(ProfilServeur.clePrenom) private var prenom: String = ""
     /// Le panneau du galet est-il ouvert. `-galetOuvert` l'ouvre au
     /// lancement : le simulateur ne sait pas poser un doigt sur un galet.
     @State private var reglageOuvert =
@@ -1946,8 +1960,8 @@ struct HomeNuitPage: View {
     /// instant, donc rien à cacher : c'est le seul échange qui ne se voit pas.
     private func fragmentsPhrase() -> [PhraseFragment] {
         phraseSeance
-            ? PhraseTexte.fragmentsSeance(minutes: minutesSeance)
-            : PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus)
+            ? PhraseTexte.fragmentsSeance(minutes: minutesSeance, prenom: prenom.isEmpty ? nil : prenom)
+            : PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus, prenom: prenom.isEmpty ? nil : prenom)
     }
 
     /// LA PHRASE SE RÉÉCRIT — l'entrée en scène, rejouée.
@@ -2511,6 +2525,9 @@ struct HomeNuitPage: View {
                 stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)
             }
         }
+        // LE PRÉNOM (13-09) : la home demande au serveur qui elle salue — en
+        // silence, sans session rien ne bouge, le cache `woop.prenom` reste.
+        .task { await ProfilServeur.rafraichirPrenom() }
         .onAppear {
             guard !deja else { return }
             deja = true
