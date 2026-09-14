@@ -55,13 +55,6 @@ final class DepartEtat {
     /// la racine ; `visiteEtape` = le temps de départ (0 en production).
     var visiteOuverte = false
     var visiteEtape = 0
-    /// L'élément que la visite met en avant (le nom de son ancre) — lu par
-    /// `visiteAncre(_:)` : l'élément AVANCE (échelle 1,04) pendant son temps.
-    var visiteFocus: String?
-    /// LA PAGE RECULE (la lampe) : vrai le temps du voile — la racine passe à
-    /// 0,965 (WoopApp) ; VisiteHome le rend à faux 0,2 s avant de se démonter,
-    /// pour que la page revienne AVEC le voile qui s'éteint, pas après.
-    var visiteReculee = false
 
     // MARK: LE CHEMIN EN ARBRE (27-08, jalon 1 de tools/road/AUDIT-ROAD.md)
     //

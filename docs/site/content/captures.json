@@ -214,36 +214,36 @@
    "legende": "Visite · les galets",
    "fichier": "captures/onboarding/onb-11-visite-galets.jpg",
    "largeur": 240,
-   "hauteur": 521,
+   "hauteur": 520,
    "source": "tools/docsite/shots/onb-11-visite-galets.png",
-   "octets": 7527
+   "octets": 7235
   },
   {
    "nom": "onb-12-visite-progres",
    "legende": "Visite · la progression",
    "fichier": "captures/onboarding/onb-12-visite-progres.jpg",
    "largeur": 240,
-   "hauteur": 521,
+   "hauteur": 520,
    "source": "tools/docsite/shots/onb-12-visite-progres.png",
-   "octets": 7157
+   "octets": 7731
   },
   {
    "nom": "onb-13-visite-profil",
    "legende": "Visite · le profil",
    "fichier": "captures/onboarding/onb-13-visite-profil.jpg",
    "largeur": 240,
-   "hauteur": 521,
+   "hauteur": 520,
    "source": "tools/docsite/shots/onb-13-visite-profil.png",
-   "octets": 5264
+   "octets": 5085
   },
   {
    "nom": "onb-14-visite-pieces",
    "legende": "Visite · les pièces",
    "fichier": "captures/onboarding/onb-14-visite-pieces.jpg",
    "largeur": 240,
-   "hauteur": 521,
+   "hauteur": 520,
    "source": "tools/docsite/shots/onb-14-visite-pieces.png",
-   "octets": 5201
+   "octets": 5557
   }
  ],
  "hero": {

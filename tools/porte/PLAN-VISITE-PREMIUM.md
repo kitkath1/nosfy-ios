@@ -110,7 +110,7 @@ les points, « Suivant », « Terminer », le battement du noir.
 
 | temps | claire | sourde |
 |---|---|---|
-| 1 | Commence ton entraînement. | Ton parcours, séance après séance. |
+| 1 | Commencer. (son mot, 14-09 : « juste un mot, comme Tes progrès ») | Ton parcours, séance après séance. |
 | 2 | Tes progrès. | Chaque séance compte. |
 | 3 | Ton profil. | Tes Boosters et ta collection. |
 | 4 | Tes pièces. | Gagne-les en t'entraînant. Ouvre des Boosters. |
@@ -129,3 +129,23 @@ v2), la porte du Welcome Back (3 lignes), le CTA (1 mot) — **½ j**. Captures 
 
 ## 6. Aucune question
 Tout est tranché par ses mots. Elle dit « code » ; sinon rien ne bouge.
+
+## 7. État (14-09, matin — « ok bien, commit que ça et continue le plan en // »)
+**CODÉE** : `VisiteHome.swift` v4 (la brume = `Brume`, vue Animatable sur x, y, l, h, rayon,
+masquée par une poche floutée à rayon constant ; `Perce` pour le toucher ; les mots dans la
+brume ; l'invite qui respire ; « Passer » ; la cascade § 1 e ; tic + paillette). Le recul de
+la page et le focus de la v2 sont retirés (WoopApp, DepartEtat). Le P0 (Welcome Back coupé,
+CTA « Commencer ») est commité dans b7035c7. Vue au simulateur (captures onb-11…14), à juger
+sur son iPhone, non mesurée. Et, en parallèle, LA PHRASE DE LA HOME VIENT DU SERVEUR
+(`home().phrases`, session back-end, 14-09) : `PhraseTexte.serveur(_:nombre:)` lit le cache
+`woop.phrases`, le nombre du téléphone dans le troisième fragment ; mes textes ne sont plus
+que le repli.
+
+**Son verdict sur la v4 (14-09, matin) : « OK c'est mieux. »** Et trois retouches, posées :
+« plus d'haptique » (la brume qui tombe = main douce `.soft`, les mots = légère, le temps
+suivant = moyenne, la poche posée = douce, la fin = `.success`) ; « apparition plus blur, jolie »
+(la poche NAÎT large — 1,6 × l'objet — et se resserre sur lui pendant que la brume monte en
+1,1 s ; la sourde et l'invite naissent du flou aussi ; la sortie rouvre la poche en s'éteignant)
+; « dégradé de noir » (le noir n'est plus plat : 66 % en haut → 90 % en bas, plus une vignette
+radiale de 22 %). Le wording FR/EN de la visite et de la pop-up est transmis à la session
+back-end (elle le tiendra pour `home().visite` le jour où elle voudra le voir servi).

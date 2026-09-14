@@ -90,6 +90,11 @@ enum PremiereArrivee {
         banc || bancVisite || UserDefaults.standard.bool(forKey: clePremiereFois)
     }
 
+    /// Le prénom DU BANC quand le téléphone n'en connaît aucun (verdict 14-09 : « dans
+    /// la Home à l'état vide tu as oublié le user name après Hey ») — au banc seulement ;
+    /// en vrai, le prénom vient du profil (`woop.prenom`) ou des mots du serveur.
+    static var prenomBanc: String? { (banc || bancVisite) ? "Kathryn" : nil }
+
     static func poserPremiereFois(_ vrai: Bool) {
         UserDefaults.standard.set(vrai, forKey: clePremiereFois)
     }
@@ -149,8 +154,6 @@ enum PremiereArrivee {
     @MainActor
     static func finirVisite() {
         UserDefaults.standard.set(true, forKey: cleVisite)
-        DepartEtat.shared.visiteFocus = nil
-        DepartEtat.shared.visiteReculee = false
         withAnimation(.easeOut(duration: 0.4)) {
             DepartEtat.shared.visiteOuverte = false
         }

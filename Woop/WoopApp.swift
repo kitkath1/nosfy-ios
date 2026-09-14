@@ -1963,11 +1963,8 @@ struct RootView: View {
         // au-dessus de la Home ET de la nav (l'onglet Profil est un temps). Les
         // quatre éléments publient leur cadre (`visiteAncre`), la racine les lit
         // ici. DÉMONTÉE à la fin (pas cachée), jamais avec `-sansVisite`.
-        // LA PAGE RECULE (v2, « la lampe ») : toute la racine à 0,965 pendant la
-        // visite — une transform, pas une mise en page ; les ancres restent en
-        // coordonnées de layout, VisiteHome les ramène à l'écran (`VisiteHome.recul`).
-        .scaleEffect(depart.visiteReculee ? VisiteHome.recul : 1)
-        .animation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.7), value: depart.visiteReculee)
+        // (v4 « la brume » : la page ne recule plus, l'objet n'avance plus — la Home
+        // ne change pas, seule la brume s'ouvre autour de l'objet.)
         .overlayPreferenceValue(VisiteAncreKey.self) { ancres in
             if depart.visiteOuverte {
                 VisiteHome(ancres: ancres, depart: depart.visiteEtape,

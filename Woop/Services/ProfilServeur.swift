@@ -119,6 +119,14 @@ enum ProfilServeur {
         var visiteHome: Bool
         /// La langue de la personne (`profils.langue`) — le cache `woop.langue` la suit.
         var langue: String?
+        /// LA PHRASE DE LA HOME VIENT DU SERVEUR (14-09, migrations 20260914010000 +
+        /// 011000, session back-end — sur l'ordre de Kathryn : « fais anglais /
+        /// français pour les variants de la Home, vide, active, en cours »). Les
+        /// quatre variantes dans la langue du profil, le prénom dans le premier
+        /// fragment : `vide`, `active`, `seance_debut`, `seance` — quatre fragments
+        /// chacune, clair / sourd / clair / sourd. Le cache `woop.phrases` les suit ;
+        /// la Home compose son nombre (séances, minutes) dans le troisième.
+        var phrases: [String: [String]]
 
         init(json o: [String: Any]) {
             prenom = (o["prenom"] as? String).flatMap { $0.isEmpty ? nil : $0 }
@@ -126,6 +134,14 @@ enum ProfilServeur {
             premiereFois = o["premiere_fois"] as? Bool ?? false
             visiteHome = o["visite_home"] as? Bool ?? false
             langue = o["langue"] as? String
+            var ph: [String: [String]] = [:]
+            for (etat, v) in (o["phrases"] as? [String: Any]) ?? [:] {
+                if let f = v as? [Any] {
+                    let mots = f.compactMap { $0 as? String }
+                    if mots.count == 4 { ph[etat] = mots }
+                }
+            }
+            phrases = ph
             faites = (o["faites"] as? NSNumber)?.intValue ?? 0
             objectif = (o["objectif"] as? NSNumber)?.intValue ?? Goal.weeklyTarget
             reste = (o["reste"] as? NSNumber)?.intValue ?? max(objectif - faites, 0)
@@ -147,12 +163,25 @@ enum ProfilServeur {
         print("[home-serveur] home() → prénom \(a.prenom ?? "—") · \(a.faites) / \(a.objectif), reste \(a.reste) · en séance \(a.enSeance) (\(a.minutesEnSeance) min) · \(a.seancesTotal) séances en tout · première fois \(a.premiereFois) · visite \(a.visiteHome) · langue \(a.langue ?? "—")")
         Langue.poser(a.langue)                        // le serveur gagne (le contrat § 9)
         PremiereArrivee.poserPremiereFois(a.premiereFois) // idem : la phrase et la card ROUTE
+        if !a.phrases.isEmpty {                       // idem : les mots de la Home
+            UserDefaults.standard.set(a.phrases, forKey: clePhrases)
+            print("[home-serveur] phrases → \(a.phrases.keys.sorted().joined(separator: ", "))")
+        }
         dernierAccueil = a
         return a
     }
 
     /// Le dernier `home()` lu — la racine s'en sert pour la première arrivée.
     static var dernierAccueil: Accueil?
+
+    /// LES MOTS DE LA HOME, en cache (le dernier `home()`) — `vide`, `active`,
+    /// `seance_debut`, `seance`, quatre fragments chacun. Vide tant qu'aucun
+    /// `home()` n'a répondu (les bancs, le hors-ligne) : la Home garde alors ses
+    /// textes de repli.
+    static let clePhrases = "woop.phrases"
+    static var phrasesLocales: [String: [String]] {
+        (UserDefaults.standard.dictionary(forKey: clePhrases) as? [String: [String]]) ?? [:]
+    }
 
     /// `marquer_visite_home()` — la visite guidée est faite ; la date se pose une fois.
     static func marquerVisiteHome() async throws -> Profil {

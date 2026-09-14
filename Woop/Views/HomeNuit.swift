@@ -352,6 +352,37 @@ enum PhraseTexte {
         ]
     }
 
+    /// LES MOTS VIENNENT DU SERVEUR (14-09, `home().phrases`, session back-end — sur
+    /// l'ordre de Kathryn : « ton wording français est nul ; fais anglais / français
+    /// pour les variants de la Home »). Quatre fragments dans la langue du profil,
+    /// le prénom déjà dedans, clair / sourd / clair / sourd. Le NOMBRE, lui, est
+    /// celui du téléphone (les séances comptées ici, les minutes qui courent) : il
+    /// remplace le troisième fragment, le mot suit (« séance(s) », « workout(s) »,
+    /// « minute(s) »). `nil` tant qu'aucun `home()` n'a répondu → les textes de repli.
+    static func serveur(_ etat: String, nombre: Int? = nil) -> [PhraseFragment]? {
+        guard let f = ProfilServeur.phrasesLocales[etat], f.count == 4 else { return nil }
+        var mots = f
+        // LE PRÉNOM NE MANQUE JAMAIS (verdict 14-09 : « dans la Home à l'état vide tu
+        // as oublié le user name après Hey ») : si le serveur a salué sans prénom
+        // (« Salut, », « Hello there, ») et que le téléphone le connaît, on le remet.
+        if let p = ProfilServeur.prenomLocal ?? PremiereArrivee.prenomBanc, !p.isEmpty, !mots[0].contains(p) {
+            let salut = mots[0].hasSuffix(",") ? String(mots[0].dropLast()) : mots[0]
+            let parts = salut.split(separator: " ").map(String.init)
+            if parts.count == 1 { mots[0] = "\(parts[0]) \(p)," }
+            else if parts.count == 2, parts[1].lowercased() == "there" { mots[0] = "\(parts[0]) \(p)," }
+        }
+        if let n = nombre {
+            let mot: String
+            switch etat {
+            case "active": mot = Langue.en ? (n == 1 ? "workout" : "workouts")
+                                           : (n == 1 ? "séance" : "séances")
+            default:       mot = n == 1 ? "minute" : "minutes"
+            }
+            mots[2] = "\(n) \(mot)"
+        }
+        return zip(mots, [true, false, true, false]).map { PhraseFragment($0, clair: $1) }
+    }
+
     /// LA PHRASE PENDANT UNE SÉANCE (02-09).
     ///
     /// ⚠️ **QUATRE LIGNES, ET CE N'EST PAS NÉGOCIABLE.** La phrase d'accueil
@@ -1976,16 +2007,28 @@ struct HomeNuitPage: View {
     /// NULLE et flou de 30 pt. Il n'y a rigoureusement rien à voir à cet
     /// instant, donc rien à cacher : c'est le seul échange qui ne se voit pas.
     private func fragmentsPhrase() -> [PhraseFragment] {
-        let qui = prenom.isEmpty ? nil : prenom
+        // Le prénom : celui de la page, sinon le cache du profil (verdict 14-09 :
+        // « tu as oublié le user name après Hey »).
+        let qui = prenom.isEmpty ? (ProfilServeur.prenomLocal ?? PremiereArrivee.prenomBanc) : prenom
+        // LES MOTS DU SERVEUR D'ABORD (14-09, `home().phrases`, le contrat § 9), le
+        // nombre du téléphone dedans ; les textes d'ici ne sont plus que le repli
+        // (hors ligne, les bancs).
         if phraseSeance {
+            if minutesSeance < 1, let s = PhraseTexte.serveur("seance_debut") { return s }
+            if let s = PhraseTexte.serveur("seance", nombre: max(minutesSeance, 1)) { return s }
             return PhraseTexte.fragmentsSeance(minutes: minutesSeance, prenom: qui)
         }
         // LA PREMIÈRE FOIS (13-09, PremiereArrivee.swift) : tant qu'aucune séance
         // n'est finie (`home().premiere_fois`, en cache), la phrase accueille au
         // lieu de compter — même forme, même verre, même alternance.
         if PremiereArrivee.premiereFois {
+            if let s = PhraseTexte.serveur("vide") { return s }
             return PhraseTexte.fragmentsPremiereFois(prenom: qui)
         }
+        // À ZÉRO, la phrase du zéro TELLE QUELLE (`active_zero`, 14-09 — « déjà / 0
+        // séances » était faux) ; sinon le gabarit compté avec le nombre du téléphone.
+        if faitsAffiche == 0, let s = PhraseTexte.serveur("active_zero") { return s }
+        if let s = PhraseTexte.serveur("active", nombre: faitsAffiche) { return s }
         return PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus, prenom: qui)
     }
 

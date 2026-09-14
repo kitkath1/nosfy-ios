@@ -262,7 +262,14 @@ la traversée, tic + paillette). La v1 est remplacée. Et ses deux mots : « Com
 entraînement » dans le widget (CardRoute, 15 pt sur deux lignes) ; la phrase « Hey Margaux, / ta
 première séance / t'attend. / On y va. » (« le reste ne voulait rien dire »).
 
+**Sa note du 14-09 (matin) :** « dans la Home à l'état vide tu as oublié le user name après
+Hey ». Le prénom ne doit JAMAIS manquer : les mots du serveur (`home().phrases`) le portent
+dans le premier fragment ; si le serveur salue sans prénom (« Salut, », « Hello there, »),
+`PhraseTexte.serveur` remet celui que le téléphone connaît (`woop.prenom`) ; le repli local
+lit aussi ce cache ; et au banc (`-welcomePremiere`, `-visiteHome`), sans aucun prénom
+connu, « Kathryn » (`PremiereArrivee.prenomBanc`).
+
 **Non mesuré sur un vrai compte** (la session back-end propose un compte jetable — il faut un
 banc `-sessionBanc <email> <mdp>`) : la pop-up sur `premiere_fois`, l'appel
-`marquer_visite_home()`. Le téléphone n'a pas reçu ce dernier build (injoignable : « Ensure the
+`marquer_visite_home()`, les mots du serveur dans la phrase. Le téléphone n'a pas reçu ce dernier build (injoignable : « Ensure the
 device is unlocked and attached with a cable ») — il porte la pop-up Nosfy d'avant la robe galet.
