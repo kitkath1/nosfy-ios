@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 
 const site = resolve(process.argv[2] ?? 'index.html');
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const PAGES = ['etat', 'serveur', 'flow', 'widgets', 'coffre', 'annonces', 'forge', 'histoire', 'porte'];   // 30-08 : coffre + annonces à la place de regles · 13-09 : widgets
+const PAGES = ['etat', 'serveur', 'flow', 'widgets', 'coffre', 'annonces', 'forge', 'histoire', 'porte', 'qa'];   // 30-08 : coffre + annonces à la place de regles · 13-09 : widgets · 14-09 : qa
 const LARGEUR = 390;
 
 const b = await p.launch({ executablePath: CHROME, headless: true });

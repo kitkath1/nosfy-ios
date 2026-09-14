@@ -26,7 +26,7 @@ import { Ic } from './Sprite'
  * une grille de sept alors que toute la page est organisée par qui agit. À égalité, l'ordre du rail.
  */
 const URGENCE: Famille[] = ['trancher', 'valider', 'chantier', 'bon']
-const CARDS = PAGES.filter((p) => p.id !== 'etat')
+const CARDS = PAGES.filter((p) => p.id !== 'etat' && p.id !== 'qa')   // 14-09 : le Test QA compte des étapes, pas des briques — pas de card
   .map((p, i) => ({ p, i, f: familleDe(comptePage(p.id)) }))
   .sort((a, b) => URGENCE.indexOf(a.f) - URGENCE.indexOf(b.f) || a.i - b.i)
   .map((x) => x.p)

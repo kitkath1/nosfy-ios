@@ -64,6 +64,13 @@ export const PAGES: PageInfo[] = [
       lune: true,
     },
   },
+  {
+    // 14-09 — demandé par Kathryn (« crée un onglet Test QA avec ce flow qu'on valide ensemble
+    // niveau front et back ») : le compte de bout en bout, une étape par ligne, deux verdicts.
+    id: 'qa', libelle: 'Test QA', glyphe: 'check',
+    phrase: 'Le compte, du login à la suppression : ce qu\'elle voit, ce que le serveur tient, validé ensemble.',
+    hero: { capture: null },
+  },
 ]
 
 export const DOMAINES: DomaineInfo[] = [

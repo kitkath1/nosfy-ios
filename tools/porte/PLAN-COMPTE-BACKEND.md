@@ -291,3 +291,68 @@ reste vide alors que les chambres lisent le serveur. Chantier serveur↔app suiv
 **Verdict** : pour toi et des testeurs proches (TestFlight interne), dès C0 + C2 + C3 app +
 C4 — la clé Apple peut venir juste avant la revue. Pour des inconnus, ajouter le pull, la
 langue et la visite. Rien de tout cela n'est du serveur : le serveur est prêt.
+
+---
+
+## 8. Nuit du 13 au 14 — deux pièces de plus, côté serveur↔app
+
+- **Le pull des séances est FAIT et mesuré** (`SupabaseSync.relire`, plan
+  `tools/sync/PLAN-PULL-SEANCES.md`) : base vide → 23 séances retrouvées ; relance et
+  `-pullTout` idempotents. Le point 11 du § 7 tombe : un téléphone neuf retrouve ses séances.
+- **La phrase de la home en deux langues vient du serveur** (`home().phrase` / `phrases`,
+  `phrase_home(...)`, migrations 20260914010000 + 011000), sur son mot du 14-09 (« anglais /
+  français déjà pour les variants de la Home en mode empty, active et en cours »). Quatre
+  fragments, ≤ 18 lettres, le prénom dans le premier, dans `profils.langue`. Le côté app
+  (lire `phrase` dans `PhraseTexte`) est chez la session porte.
+
+---
+
+## 9. Le vrai test de bout en bout (14-09, matin) — son ordre, et ce qui se pose pour le rendre possible
+
+Son ordre : « la partie tuto est ok ; fais le backend manquant et ajoute dans l'app ce qu'il
+manque, on va tester en vrai : login → Apple → création de compte → onboarding (langue,
+prénom, le reste) → la HOME dans la langue choisie, tout vide, la pop-up tutoriel dans la
+bonne langue et la suite du tutoriel → mon profil montre mon prénom (comme la home) → je
+peux me déconnecter et supprimer mon compte ; et avant de supprimer : relancer l'app →
+direct la home, mini splash + home, plus de porte. Pour le binaire, un vrai truc. » Plus,
+dans la foulée : « **pas de pop-up Welcome Back** dans l'onboarding / la création de compte —
+seulement quand le compte est créé, avec notre règle backend ».
+
+**Le serveur ne manque de rien** (§ 7) : la clé `.p8` reste la seule pièce absente, et elle
+n'empêche ni de créer, ni de se déconnecter, ni de supprimer (la révocation Apple est alors
+« cle_absente », journalisée dans `apple_revocations`, rejouée quand la clé arrive).
+
+**Ce qui se pose dans l'app, par moi (la session back-end), sur cet ordre** — les chantiers
+C0 / C2 / C3-app / C4 du § 3, tels quels, plus la règle du Welcome Back :
+
+| Pièce | Fichier | Ce qui change |
+|---|---|---|
+| Le refresh au **Keychain** | `Supabase.swift` | `Coffre` (kSecClassGenericPassword, `fr.kathryn.woop`) ; le refresh d'`UserDefaults` migre au premier passage ; `sessionGardee()` lisible sans réseau |
+| C0 — la porte seulement sans session | `WoopApp.swift` | `showAuth = !skipAuth && !sessionGardee()` ; un refresh refusé (`invalid_grant`) → `oublier()` → `CompteEtat.porteDemandee` → la porte |
+| C2 — se déconnecter | `Compte.swift` (nouveau), `ProfilLune.swift` | pousser les séances finies (échec réseau → **refus**, § 4 (a)), `POST /auth/v1/logout`, effacer TOUT ce qui est à elle (clés, SwiftData, économie, outbox), la porte |
+| C3-app — le code Apple, la suppression | `AppleAuth.swift`, `Compte.swift`, `ProfilLune.swift` | `Portier` rend l'`authorizationCode` → `apple-jeton` (503 toléré) ; l'alerte → `supprimer-compte` → effacer → la porte |
+| C4 — hors du binaire, le prénom | `Supabase.swift`, `ProfilLune.swift` | les deux numéros et le mot de passe dérivé meurent (le banc e-mail reste sous `#if DEBUG`) ; « Kathryn » ×3 et « KD » → `woop.prenom` |
+| Le Welcome Back | `WoopApp.swift` | jamais sous la porte, le film ou le splash (`CompteEtat.enPorte`), jamais en `premiere_fois` ; et le serveur dit `retour_disponible = false` sans séance finie (S4) — deux verrous, un par côté |
+
+**Ce qui est à elle** (effacé à la déconnexion et à la suppression) : la session
+(`woop.apple.userID`, le refresh au Keychain, `woop.supabase.*`, `woop.phone`), le profil
+en cache (`woop.prenom`, `woop.langue`, `woop.phrases`, `woop.premiere_fois`,
+`woop.welcome.premiere.vue`, `woop.visite.faite`, `woop.onboarding.du`), l'objectif
+(`objectifHebdo`, `woop.chambre.objectif.attente`), le pull (`woop.pull.depuis`), le chemin
+(`chemin.*`), l'outbox des gains (`woop.outbox.gains`, vidée avant), les séances SwiftData,
+et en mémoire : `ChambreEtat.serveur`, `EconomieWoop`, `ProfilServeur.dernierAccueil`.
+**Ce qui est à l'app** (reste) : la porte vue, le tuto exos vu, l'onglet ouvert, les bancs.
+
+**La mesure, au simulateur, avant son téléphone** (compte jetable par e-mail, jamais le
+compte du banc) : ① entrer par `-sessionAdoptee <email> <mdp>` une fois, tuer, relancer
+**sans aucun argument** → la home, pas de porte (C0) ; ② « Se déconnecter » → la porte,
+`auth.sessions` du compte vide, les clés absentes, SwiftData vide (C2) ; ③ rentrer,
+« Supprimer mon compte » → la porte, `auth.users` sans la ligne (C3) ; ④ le prénom du
+profil dans Réglages et la bannière (C4) ; ⑤ `-sessionAdoptee` sur un compte SANS séance :
+pas de Welcome Back sous la porte ni après (S4 + `enPorte`).
+
+**Sur son téléphone** : un vrai binaire (aucun argument, pas de maquette), l'app
+désinstallée puis réinstallée (téléphone vierge), et son compte Apple b8dc40f5 **effacé au
+serveur avant** (ses 4 essais du 13-09 exportés dans `.secrets/`) pour qu'elle passe par la
+création — c'est la seule façon de jouer « je crée un compte » avec un vrai Apple ID, qui
+est le sien. Son script est dans le message qui accompagne la livraison.

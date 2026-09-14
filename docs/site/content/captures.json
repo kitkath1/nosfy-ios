@@ -16,7 +16,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/j4-home-serpentin.png",
-   "octets": 32747
+   "octets": 31480
   },
   {
    "nom": "chemin",
@@ -25,7 +25,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/road-2-etats-etape5.png",
-   "octets": 23310
+   "octets": 22518
   },
   {
    "nom": "depart",
@@ -34,7 +34,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/road-1-branchee.png",
-   "octets": 24706
+   "octets": 23836
   },
   {
    "nom": "player",
@@ -61,7 +61,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/stop/captures/stop-134059.png",
-   "octets": 14520
+   "octets": 14106
   },
   {
    "nom": "bravo",
@@ -255,6 +255,218 @@
    "octets": 6217
   }
  ],
+ "popups": [
+  {
+   "nom": "pop-reward-spotlight",
+   "legende": "Reward · spotlight",
+   "fichier": "captures/popups/pop-reward-spotlight.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-spotlight.png",
+   "octets": 6294,
+   "composant": "RewardPopup(style: .spotlight)"
+  },
+  {
+   "nom": "pop-reward-halo",
+   "legende": "Reward · halo",
+   "fichier": "captures/popups/pop-reward-halo.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-halo.png",
+   "octets": 5954,
+   "composant": "RewardPopup(style: .halo)"
+  },
+  {
+   "nom": "pop-reward-neon",
+   "legende": "Reward · néon",
+   "fichier": "captures/popups/pop-reward-neon.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-neon.png",
+   "octets": 6077,
+   "composant": "RewardPopup(style: .neon)"
+  },
+  {
+   "nom": "pop-reward-galet",
+   "legende": "Reward · galet de verre",
+   "fichier": "captures/popups/pop-reward-galet.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-galet.png",
+   "octets": 5728,
+   "composant": "RewardPopup(style: .galet)"
+  },
+  {
+   "nom": "pop-reward-fire",
+   "legende": "Reward · flamme noire",
+   "fichier": "captures/popups/pop-reward-fire.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-fire.png",
+   "octets": 6031,
+   "composant": "RewardPopup(style: .fire)"
+  },
+  {
+   "nom": "pop-reward-welcome",
+   "legende": "Welcome Back · vidéo chauve-souris",
+   "fichier": "captures/popups/pop-reward-welcome.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-welcome.png",
+   "octets": 4969,
+   "composant": "RewardPopup(style: .welcome, robe: .video, videoNom: \"reward-welcome\")"
+  },
+  {
+   "nom": "pop-reward-welcomeTexte",
+   "legende": "Welcome Back · texte géant « YOU'RE / BACK »",
+   "fichier": "captures/popups/pop-reward-welcomeTexte.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-reward-welcomeTexte.png",
+   "octets": 5951,
+   "composant": "RewardPopup(style: .welcome, robe: .texte)"
+  },
+  {
+   "nom": "pop-welcome-back-prod",
+   "legende": "Welcome Back · tel qu'il s'ouvre EN PROD (sans sa vidéo)",
+   "fichier": "captures/popups/pop-welcome-back-prod.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-welcome-back-prod.png",
+   "octets": 7066,
+   "composant": "WoopApp.swift → RewardPopup(.welcome, .video) sans videoNom"
+  },
+  {
+   "nom": "pop-premiere-galet",
+   "legende": "Première fois · Nosfy sur les galets",
+   "fichier": "captures/popups/pop-premiere-galet.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-premiere-galet.png",
+   "octets": 7225,
+   "composant": "RewardPopup(.welcome, videoNom: \"welcome-galet-premiere\", bouton: .capsule)"
+  },
+  {
+   "nom": "pop-premiere-entree",
+   "legende": "Première fois · Nosfy de face",
+   "fichier": "captures/popups/pop-premiere-entree.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-premiere-entree.png",
+   "octets": 7429,
+   "composant": "RewardPopup(.welcome, videoNom: \"welcome-nosfy-premiere\", bouton: .capsule)"
+  },
+  {
+   "nom": "pop-notifs-pile",
+   "legende": "Les trois toasters, empilés",
+   "fichier": "captures/popups/pop-notifs-pile.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-notifs-pile.png",
+   "octets": 6992,
+   "composant": "NotifJauge · NotifGrosTexte · NotifChasse"
+  },
+  {
+   "nom": "pop-notif-1",
+   "legende": "Toaster · la jauge",
+   "fichier": "captures/popups/pop-notif-1.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-notif-1.png",
+   "octets": 4205,
+   "composant": "NotifJauge"
+  },
+  {
+   "nom": "pop-notif-2",
+   "legende": "Toaster · le gros texte",
+   "fichier": "captures/popups/pop-notif-2.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-notif-2.png",
+   "octets": 4015,
+   "composant": "NotifGrosTexte"
+  },
+  {
+   "nom": "pop-notif-3",
+   "legende": "Toaster · la chasse (chauve-souris)",
+   "fichier": "captures/popups/pop-notif-3.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-notif-3.png",
+   "octets": 5725,
+   "composant": "NotifChasse"
+  },
+  {
+   "nom": "pop-stop",
+   "legende": "La card STOP",
+   "fichier": "captures/popups/pop-stop.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-stop.png",
+   "octets": 5845,
+   "composant": "StopCard"
+  },
+  {
+   "nom": "pop-booster",
+   "legende": "La pop-up « Ouvrir » du booster",
+   "fichier": "captures/popups/pop-booster.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-booster.png",
+   "octets": 7392,
+   "composant": "BoosterPopup"
+  },
+  {
+   "nom": "pop-chemin-coins",
+   "legende": "Card du chemin · pièces",
+   "fichier": "captures/popups/pop-chemin-coins.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-chemin-coins.png",
+   "octets": 5904,
+   "composant": "RewardChemin(cas: coins)"
+  },
+  {
+   "nom": "pop-chemin-black",
+   "legende": "Card du chemin · pièce noire",
+   "fichier": "captures/popups/pop-chemin-black.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-chemin-black.png",
+   "octets": 4215,
+   "composant": "RewardChemin(cas: black)"
+  },
+  {
+   "nom": "pop-chemin-boosters",
+   "legende": "Card du chemin · boosters",
+   "fichier": "captures/popups/pop-chemin-boosters.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-chemin-boosters.png",
+   "octets": 6057,
+   "composant": "RewardChemin(cas: boosters)"
+  },
+  {
+   "nom": "pop-chemin-rare",
+   "legende": "Card du chemin · rare",
+   "fichier": "captures/popups/pop-chemin-rare.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-chemin-rare.png",
+   "octets": 5969,
+   "composant": "RewardChemin(cas: rare)"
+  },
+  {
+   "nom": "pop-chemin-legendary",
+   "legende": "Card du chemin · légendaire",
+   "fichier": "captures/popups/pop-chemin-legendary.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/pop-chemin-legendary.png",
+   "octets": 4219,
+   "composant": "RewardChemin(cas: legendary)"
+  }
+ ],
  "hero": {
   "flow": {
    "fichier": "captures/hero/flow.jpg",
@@ -282,9 +494,16 @@
    "largeur": 400,
    "hauteur": 534,
    "source": "Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png",
-   "octets": 316275
+   "octets": 30394
   },
   "histoire": {
+   "fichier": null,
+   "largeur": null,
+   "hauteur": null,
+   "source": null,
+   "octets": 0
+  },
+  "qa": {
    "fichier": null,
    "largeur": null,
    "hauteur": null,

@@ -38,8 +38,8 @@ import tempfile
 
 # 13-09 : les 18 captures du dépôt réunies faisaient un livrable de 2,25 Mo (l'inliner
 # refuse au-delà de 2 Mo, « on baisse la qualité JPEG, jamais le nombre ») : flow q78 → 70,
-# hero 480 px q72 → 400 px q58 (q64 → q58 le 14-09, livrable à 2,006 Mo) (1,67× des 240 px CSS, assez pour un fondu au noir).
-LARGEUR_FLOW, QUALITE_FLOW = 300, 68
+# hero 480 px q72 → 400 px q58 (q64 → q58 le 14-09, livrable à 2,006 Mo ; flow q68 → 66 le 14-09 midi, 2,002 Mo ; le 14-09 après-midi l’onglet Test QA a coûté 21 Ko : le hero PNG de la forge passe en palette, 316 → 30 Ko, le flow reste à q66) (1,67× des 240 px CSS, assez pour un fondu au noir).
+LARGEUR_FLOW, QUALITE_FLOW = 300, 66
 LARGEUR_HERO, QUALITE_HERO = 400, 58
 MAX_JPEG, MAX_TOTAL = 70_000, 900_000
 RATIO_ECRAN = (1206, 2622)          # le format des captures du téléphone (largeur, hauteur)
@@ -84,6 +84,36 @@ ONBOARDING = [
     ('onb-15-route-vivante',   'Card ROUTE vivante · vide / déjà fait'),
 ]
 
+# LE CATALOGUE DES POP-UPS ET DES TOASTERS (14-09, Kathryn : « fais des screenshots de toutes
+# les variantes de pop-up qu'on a, toutes les robes, et les toaster notifications ; nomme-les
+# bien en composant pour qu'on puisse éditer ou pas ») — (nom, légende, composant). La source
+# est tools/docsite/shots/pop-<nom>.png, prise par tools/docsite/capturer-popups.sh sur le banc
+# de chaque composant. Page Les annonces, bandeau <PopUps />. En couleur : c'est un catalogue
+# de composants, pas un flow — on juge des robes.
+POPUPS = [
+    ('pop-reward-spotlight',  'Reward · spotlight',            'RewardPopup(style: .spotlight)'),
+    ('pop-reward-halo',       'Reward · halo',                 'RewardPopup(style: .halo)'),
+    ('pop-reward-neon',       'Reward · néon',                 'RewardPopup(style: .neon)'),
+    ('pop-reward-galet',      'Reward · galet de verre',       'RewardPopup(style: .galet)'),
+    ('pop-reward-fire',       'Reward · flamme noire',         'RewardPopup(style: .fire)'),
+    ('pop-reward-welcome',    'Welcome Back · vidéo chauve-souris', 'RewardPopup(style: .welcome, robe: .video, videoNom: "reward-welcome")'),
+    ('pop-reward-welcomeTexte', 'Welcome Back · texte géant « YOU\'RE / BACK »', 'RewardPopup(style: .welcome, robe: .texte)'),
+    ('pop-welcome-back-prod', 'Welcome Back · tel qu\'il s\'ouvre EN PROD (sans sa vidéo)', 'WoopApp.swift → RewardPopup(.welcome, .video) sans videoNom'),
+    ('pop-premiere-galet',    'Première fois · Nosfy sur les galets', 'RewardPopup(.welcome, videoNom: "welcome-galet-premiere", bouton: .capsule)'),
+    ('pop-premiere-entree',   'Première fois · Nosfy de face',        'RewardPopup(.welcome, videoNom: "welcome-nosfy-premiere", bouton: .capsule)'),
+    ('pop-notifs-pile',       'Les trois toasters, empilés',   'NotifJauge · NotifGrosTexte · NotifChasse'),
+    ('pop-notif-1',           'Toaster · la jauge',            'NotifJauge'),
+    ('pop-notif-2',           'Toaster · le gros texte',       'NotifGrosTexte'),
+    ('pop-notif-3',           'Toaster · la chasse (chauve-souris)', 'NotifChasse'),
+    ('pop-stop',              'La card STOP',                  'StopCard'),
+    ('pop-booster',           'La pop-up « Ouvrir » du booster', 'BoosterPopup'),
+    ('pop-chemin-coins',      'Card du chemin · pièces',       'RewardChemin(cas: coins)'),
+    ('pop-chemin-black',      'Card du chemin · pièce noire',  'RewardChemin(cas: black)'),
+    ('pop-chemin-boosters',   'Card du chemin · boosters',     'RewardChemin(cas: boosters)'),
+    ('pop-chemin-rare',       'Card du chemin · rare',         'RewardChemin(cas: rare)'),
+    ('pop-chemin-legendary',  'Card du chemin · légendaire',   'RewardChemin(cas: legendary)'),
+]
+
 # (page, source, geste)
 #   source : '@<nom>' = la même capture que l'écran <nom> du flow (avec sa priorité
 #            tools/docsite/shots), un chemin depuis la racine du dépôt, ou None = hero noir
@@ -94,6 +124,7 @@ HERO = [
     ('annonces', None,                                                                       'jpeg'),          # aucune capture : hero noir
     ('forge',    'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png',          'png'),           # l'objet flotte dans sa couleur
     ('histoire', None,                                                                       'jpeg'),          # aucune capture : hero noir
+    ('qa',       None,                                                                       'jpeg'),          # 14-09 : le Test QA, hero noir
     ('porte',    'Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg', 'jpeg+recadre'),  # 1080×1644 → le centre au format écran
 ]
 
@@ -140,8 +171,15 @@ def reduire(src, out, largeur, fmt, qualite=None):
     l, h = dims(out)
     if l != largeur:
         raise RuntimeError('%s fait %d px de large au lieu de %d' % (os.path.basename(out), l, largeur))
-    if fmt == 'png' and a_alpha(src) and not a_alpha(out):
-        raise RuntimeError('%s a perdu son alpha' % os.path.basename(out))
+    if fmt == 'png':
+        # 14-09 : LA PALETTE (256 couleurs + transparence tRNS) — le hero de la forge pesait 316 Ko
+        # en RGBA, 30 Ko en palette, l'alpha gardé. C'est « baisser la qualité », jamais le nombre
+        # de captures (l'onglet Test QA avait fait passer le livrable à 2,02 Mo).
+        from PIL import Image
+        im = Image.open(out).convert('RGBA')
+        im.quantize(256, method=Image.Quantize.FASTOCTREE).save(out, 'PNG', optimize=True)
+        if a_alpha(src) and 'transparency' not in Image.open(out).info:
+            raise RuntimeError('%s a perdu son alpha' % os.path.basename(out))
     return l, h
 
 def recadrer(src, out, ratio):
@@ -202,7 +240,7 @@ def vide(**champs):
 
 def produire(atelier):
     """Produit tout dans `atelier` ; rend (manifeste, [(chemin dans l'atelier, chemin public)], erreurs)."""
-    manifeste = {'flow': [], 'onboarding': [], 'hero': {}}
+    manifeste = {'flow': [], 'onboarding': [], 'popups': [], 'hero': {}}
     fichiers, erreurs, total = [], [], 0
 
     # Un bandeau = une liste de (nom, légende, repli) → dossier `cle` de public/captures.
@@ -233,6 +271,11 @@ def produire(atelier):
     # q55 → q42 le 14-09 quand les quatre temps de la visite sont entrés (2,04 Mo sinon) ;
     # q42 → q38 le 14-09 (matin) quand la card ROUTE vivante est entrée (2,004 Mo sinon).
     bandeau('onboarding', [(nom, legende, None) for nom, legende in ONBOARDING], largeur=240, qualite=38)
+    # Le catalogue des pop-ups (14-09) : 240 px, q40 — le composant est porté par le manifeste.
+    bandeau('popups', [(nom, legende, None) for nom, legende, _ in POPUPS], largeur=240, qualite=40)
+    composants = {nom: comp for nom, _, comp in POPUPS}
+    for e in manifeste['popups']:
+        e['composant'] = composants.get(e['nom'], '')
 
     print('── hero (%d px · JPEG q%d, ou PNG alpha)' % (LARGEUR_HERO, QUALITE_HERO))
     for page, source, geste in HERO:

@@ -177,7 +177,7 @@ if pire[0] > SEUIL:
 print('   ✔ sous y=%d : au pire %d pixel(s) saturé(s) par ligne hors rail (≤ %d)' % (max(bas - 3, 0), pire[0], SEUIL))
 PY
 
-etape "10. la largeur à 390 — aucune des 8 pages ne défile de côté (scrollWidth = 390, mesuré page affichée)"
+etape "10. la largeur à 390 — aucune des 10 pages ne défile de côté (scrollWidth = 390, mesuré page affichée)"
 # La largeur du PNG ne prouve rien (--window-size la fixe) : un document de 795 px se capture à 390 et
 # Chrome y met en page les rangées à 795 — les titres partent sous le bord sans points de suspension.
 (cd $RACINE/docs/site && node scripts/largeur.mjs index.html) || ko "une page déborde à 390"

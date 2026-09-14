@@ -1,0 +1,18 @@
+<div className="reveal">
+
+## Le flow, étape par étape
+
+<ParcoursQA />
+
+</div>
+
+<Decision titre="Comment on valide — et ce qui est déjà mesuré">
+  <p><b>Deux verdicts par étape, un par côté.</b> Le <b>front</b>, c'est ce que tu vois sur ton iPhone, avec le vrai binaire (aucun argument, ton Apple ID, ton compte serveur remis à zéro avant) ; tu dis « ok » ou ce qui cloche, étape par étape, et je pose le verdict avec la date. Le <b>back</b>, c'est ce que le serveur et le téléphone tiennent pendant que tu joues : je le lis (une requête, le journal par le câble, le fichier des préférences) et je pose l'autre verdict. Un verdict ne se déduit jamais du code — la règle du site.</p>
+  <p><b>Ce qui a déjà été mesuré au simulateur le 14-09</b>, sur un compte jetable effacé après : la relance sans porte, la déconnexion (sessions à zéro, téléphone vierge), la suppression (auth.users sans la ligne), la session révoquée, le prénom du profil, le Welcome Back retenu sous la porte et le jour de la première fois. Le simulateur ne sait pas ouvrir la feuille Apple : la création, l'aiguillage « connue » après une vraie déconnexion et l'appel d'<code>apple-jeton</code> n'ont de verdict que sur ton téléphone.</p>
+  <p><b>Ce que le test ne couvre pas encore</b> : la révocation du jeton Apple à la suppression (elle attend ta clé <code>.p8</code> — <code>tools/porte/poser-cle-apple.sh</code>), et la première séance finie d'un compte neuf (le Welcome Back du lendemain, la flamme, les widgets qui se remplissent) — une étape à ajouter quand celles-ci sont vertes.</p>
+</Decision>
+
+<Savoir titre="Lire le journal et le serveur pendant qu'elle teste">
+  <p>Le journal de l'app sur son iPhone : <code>xcrun devicectl device process launch --console --terminate-existing --device 022244AD-484B-5489-A884-6B781A82E372 fr.kathryn.woop</code> — par le câble, le Wi-Fi lâche toutes les minutes. Les lignes qui comptent : <code>[PORTE]</code> (le verdict nouvelle / connue), <code>[NOSFY]</code> (definir_profil), <code>[home-serveur]</code> (home(), les phrases), <code>[welcome-back]</code> (retenue / ouverte, et pourquoi), <code>[premiere-arrivee]</code> (marquer_visite_home), <code>[compte]</code> (apple-jeton, déconnexion, suppression, la porte rendue), <code>[session]</code> (logout, refresh refusé), <code>[pull]</code>.</p>
+  <p>Le serveur, par l'API de gestion (projet <code>ytnnyjkramgiqyxdrkcu</code>) : <code>select id, created\_at from auth.users</code> · <code>select prenom, langue, onboarding\_termine\_at, visite\_home\_le from public.profils</code> · <code>select count(\*) from auth.sessions where user\_id = …</code> · <code>select \* from public.apple\_revocations</code>. Le téléphone : les clés <code>woop.\*</code> des préférences et le Keychain (<code>CoffreSession</code>) ne se lisent qu'au simulateur — sur l'iPhone, c'est le journal qui les dit.</p>
+</Savoir>

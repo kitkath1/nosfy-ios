@@ -19,7 +19,33 @@ export type Domaine = 'eco' | 'chemin' | 'stories' | 'annonces' | 'forge' | 'com
  * DEUX pages : `coffre` (pièces, sachets, argent, profil) et `annonces` (dalles, pop-ups,
  * Welcome Back, le rythme) — tools/annonces/PLAN-COFFRE-ANNONCES.md §7.
  */
-export type Page = 'etat' | 'serveur' | 'flow' | 'widgets' | 'coffre' | 'annonces' | 'forge' | 'histoire' | 'porte'
+export type Page = 'etat' | 'serveur' | 'flow' | 'widgets' | 'coffre' | 'annonces' | 'forge' | 'histoire' | 'porte' | 'qa'
+
+/**
+ * LE TEST QA (14-09) — une étape du flow de bout en bout, validée ENSEMBLE : le front (ce
+ * qu'elle voit sur son téléphone) et le back (ce que le serveur ou le téléphone tient, lu
+ * par moi). Un verdict par côté ; « à valider » tant que personne n'a vu ni lu.
+ */
+export type VerdictQA = {
+  etat: 'a_valider' | 'valide' | 'ko'
+  /** la date du verdict (« 14-09 ») */
+  le?: string
+  /** ce qui a été vu / lu, ou pourquoi c'est KO */
+  note?: string
+}
+export interface EtapeQA {
+  id: string
+  n: number
+  titre: string
+  /** le geste qu'elle fait */
+  geste: string
+  /** ce qu'elle doit voir */
+  front: string
+  /** ce que le serveur / le téléphone doit tenir, et comment on le lit */
+  back: string
+  frontVerdict: VerdictQA
+  backVerdict: VerdictQA
+}
 
 /** ⏱️ une heure · ⏳ une journée · 🧗 un chantier */
 export type Cout = '1 h' | '1 j' | 'chantier'

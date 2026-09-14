@@ -3,8 +3,9 @@ import { SERVEUR } from './serveur'
 import { BRIQUES } from './briques'
 import { MESURES } from './mesures'
 import { PAGES, DOMAINES } from './pages'
+import { ETAPES_QA } from './qa'
 
-export { PAGES, DOMAINES, MESURES, SERVEUR, BRIQUES }
+export { PAGES, DOMAINES, MESURES, SERVEUR, BRIQUES, ETAPES_QA }
 export const TOUTES: Brique[] = [...SERVEUR, ...BRIQUES]
 export const ETATS: Etat[] = ['men', 'loc', 'srv', 'abs', 'ok']
 export const LIBELLE: Record<Etat | 'nm', string> = { ok: 'branché', loc: 'local', srv: 'serveur seul', abs: 'absent', men: 'ment', nm: 'à mesurer' }

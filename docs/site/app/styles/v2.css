@@ -276,3 +276,42 @@ body.filtre .hero .reste .tout{display:inline-flex}   /* « tout voir » n'appar
   .sondes li{grid-template-columns:1fr;gap:4px}
   .decision{padding:18px 20px}
 }
+
+/* ── le Test QA (14-09) : une étape par rangée, deux verdicts — PAS des pastilles (le témoin data-attendu) ── */
+table.qa{min-width:920px}
+table.qa td{vertical-align:top}
+table.qa td.num{width:28px;color:var(--encre-3);font-variant-numeric:tabular-nums}
+table.qa td.etape{min-width:170px}
+table.qa td.etape .geste{color:var(--encre-3);font-size:12.5px}
+table.qa td.front,table.qa td.back{color:rgba(255,255,255,.72);min-width:260px}
+table.qa td.verdicts{min-width:150px}
+table.qa tr.ko td.etape b{color:var(--men)}
+.qv{display:inline-flex;align-items:center;gap:5px;padding:1px 8px 1px 6px;border-radius:999px;font-size:12px;line-height:18px;white-space:nowrap;
+  background:rgba(255,255,255,.05);border:1px solid var(--filet-verre);color:var(--encre-2);margin:2px 6px 2px 0}
+.qv b{font-weight:600}.qv i{font-style:normal;color:var(--encre-3)}
+.qv-valide{border-color:rgba(95,201,140,.45);color:var(--ok)}
+.qv-ko{border-color:rgba(229,106,106,.5);color:var(--men)}
+.qv-a_valider{color:var(--encre-2)}
+.qa-note{display:block;color:var(--encre-3);font-size:11.5px;line-height:15px;margin:0 0 6px}
+.qa-compact{margin:0 0 12px;padding:0 0 0 20px}
+.qa-compact li{margin:0 0 6px}
+.qa-compact li a{color:var(--encre-1);text-decoration:none;border-bottom:1px solid var(--filet-verre)}
+.qa-compact .qa-verdicts{display:inline-block;margin-left:8px}
+.num-inline{display:none}
+@media (max-width:640px){
+  /* au téléphone, une étape = un bloc : les verdicts se lisent sans faire défiler de côté */
+  .tw-qa{mask-image:none;-webkit-mask-image:none;overflow-x:visible}
+  table.qa{min-width:0}
+  table.qa thead{display:none}
+  table.qa,table.qa tbody,table.qa tr,table.qa td{display:block;width:100%;box-sizing:border-box}
+  table.qa tr{padding:12px 0 8px;border-top:1px solid var(--filet)}
+  table.qa td{border:0;padding:2px 0;min-width:0}
+  table.qa td.num{display:none}
+  .num-inline{display:inline;color:var(--encre-3);font-weight:400}
+  table.qa td.front::before,table.qa td.back::before{display:block;color:var(--encre-3);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin:6px 0 1px}
+  table.qa td.front::before{content:"Le front — ce qu'elle voit"}
+  table.qa td.back::before{content:"Le back — ce que le serveur tient"}
+  table.qa td.verdicts{padding-top:8px}
+}
+/* ── le catalogue des pop-ups (14-09) : en couleur, le composant sous la légende ── */
+.flow.popups figcaption code{display:block;margin-top:3px;font-size:10px;line-height:13px;color:var(--encre-3);white-space:normal;word-break:break-word}

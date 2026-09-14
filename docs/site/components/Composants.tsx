@@ -166,12 +166,38 @@ export function Schema({ id, titre, legende, plie }: { id: string; titre?: strin
 }
 
 /* ── le hero de domaine ─────────────────────────────────────────────────── */
-type Ecran = { nom: string; legende: string; fichier: string | null; largeur?: number; hauteur?: number }
-type Captures = { flow: Ecran[]; onboarding?: Ecran[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
+type Ecran = { nom: string; legende: string; fichier: string | null; largeur?: number; hauteur?: number; composant?: string }
+type Captures = { flow: Ecran[]; onboarding?: Ecran[]; popups?: Ecran[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
 export function lireCaptures(): Captures {
   const p = join(SITE, 'content/captures.json')
-  if (!existsSync(p)) return { flow: [], onboarding: [], hero: {} }
-  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return { flow: [], onboarding: [], hero: {} } }
+  if (!existsSync(p)) return { flow: [], onboarding: [], popups: [], hero: {} }
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return { flow: [], onboarding: [], popups: [], hero: {} } }
+}
+
+/* ── le catalogue des pop-ups et des toasters (14-09) ─────────────────────── */
+// « Fais des screenshots de toutes les variantes de pop-up qu'on a, toutes les robes, et les
+// toaster notifications ; nomme-les bien en composant pour qu'on puisse éditer ou pas. »
+// Une figure par variante, EN COULEUR (on juge des robes, pas un flow), le composant Swift
+// sous la légende — c'est lui qu'on édite, ou pas. Les captures viennent du banc de chaque
+// composant (tools/docsite/capturer-popups.sh) ; une variante non capturée le dit.
+export function PopUps() {
+  const ecrans = lireCaptures().popups ?? []
+  return (
+    <>
+      <div className="flow-titre">
+        <h2>Le catalogue des pop-ups et des toasters</h2>
+        <p>Toutes les robes qui existent dans le code, une capture chacune, prise sur le banc du composant au simulateur (figée quand le banc le permet). Sous chaque capture : le composant Swift et sa robe — c&apos;est ce qu&apos;on décide d&apos;éditer, ou pas. Pour rejouer une capture : <code>tools/docsite/capturer-popups.sh</code>.</p>
+      </div>
+      <div className="flow flow-couleur popups">
+        {ecrans.length ? ecrans.map((f) => (
+          <figure key={f.nom} className={'ecran' + (f.fichier ? '' : ' vide')} data-ecran={f.nom}>
+            {f.fichier ? <img src={`/captures/popups/${f.fichier.split('/').pop()}`} width={f.largeur} height={f.hauteur} alt={f.legende} loading="lazy" decoding="async" /> : <span className="cadre-vide" />}
+            <figcaption>{f.legende}{f.fichier ? '' : ' · à capturer'}{f.composant ? <><br /><code>{f.composant}</code></> : null}</figcaption>
+          </figure>
+        )) : <p className="rien">`npm run captures` pour embarquer les captures.</p>}
+      </div>
+    </>
+  )
 }
 
 /* ── le bandeau de l'onboarding (13-09 : « une capture de chaque étape ») ─── */
