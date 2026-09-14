@@ -100,6 +100,11 @@ struct RewardPopup: View {
     var lignesGeantes: [String]? = nil
     var bouton: BoutonBas? = nil
     var scrim: Double = 0.68
+    /// LA TÊTE VIDÉO RÉDUITE (13-09, la robe « première fois » : « plus petit
+    /// la vidéo de Nosfy fondue ») — la part de la hauteur de la card que prend
+    /// la vidéo de tête. `nil` = la robe telle quelle (welcome 0,56 ; les autres
+    /// 0,42) ; le titre suit, posé dans le fondu quel que soit ce réglage.
+    var tete: CGFloat? = nil
 
     /// L'unique progrès de l'entrée [0,1] — toutes les rampes en dérivent.
     /// `-rewardFreeze <p>` le CLOUE : deux tours de fouettage se comparent
@@ -132,7 +137,8 @@ struct RewardPopup: View {
                     videoNom: videoNom,
                     naissance: naissance, enSortie: enSortie,
                     posee: posee, fermer: fermer, onClaim: onClaim,
-                    lignesGeantes: lignesGeantes, bouton: bouton, scrim: scrim)
+                    lignesGeantes: lignesGeantes, bouton: bouton, scrim: scrim,
+                    tete: tete)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
             .onAppear {
@@ -206,6 +212,14 @@ private struct RewardScene: View, Animatable {
     var lignesGeantes: [String]? = nil
     var bouton: BoutonBas? = nil
     var scrim: Double = 0.68
+    var tete: CGFloat? = nil
+
+    /// La part de la hauteur de la card que prend la vidéo de tête — `tete` si
+    /// elle est posée, sinon la robe telle quelle (welcome 0,56 ; les autres
+    /// 0,42). Le bloc de tête (titre) en dérive : il se pose dans le fondu.
+    private var partTete: CGFloat { tete ?? (style == .welcome ? 0.56 : 0.42) }
+    /// Le noir au-dessus de la vidéo quand la tête est réduite (verdict : 20 px).
+    private static let noirTete: CGFloat = 20
 
     /// Le compteur de relance de la vidéo — un tap dessus la rejoue.
     @State private var videoRelance = 0
@@ -451,10 +465,12 @@ private struct RewardScene: View, Animatable {
                             // le cadre.
                             .scaleEffect(lignesGeantes.map { Self.echelleGeante($0, largeur: largeur) } ?? 0.96)
                             .frame(width: largeur, height: hauteur)
-                            // TOUT EN HAUT (« fais FOUR en haut ») — trois
-                            // rangées descendent un peu plus : le chiffre se
-                            // pose SUR les dernières (« sur le texte »).
-                            .offset(y: -hauteur * (lignesGeantes == nil ? 0.355 : 0.25))
+                            // TOUT EN HAUT (« fais FOUR en haut ») — mais PAS les
+                            // trois rangées de Nosfy : à 0,31 « ALLEZ collait trop le
+                            // haut de la pop-up » (13-09, la petite régression) ; à
+                            // 0,20 le bloc respire sous la crête, et le chiffre se
+                            // pose SUR les dernières rangées.
+                            .offset(y: -hauteur * (lignesGeantes == nil ? 0.355 : 0.20))
                             // SA LUMIÈRE VIENT DU HAUT DE LA CARD : la
                             // source est au-dessus de lui, hors card —
                             // donc il est CLAIR EN CRÊTE et s'éteint en
@@ -646,12 +662,15 @@ private struct RewardScene: View, Animatable {
                 //    joue UNE fois et gèle sur sa dernière frame.
                 if let nom = videoNom, robe == .video {
                     VStack(spacing: 0) {
+                        // LA TÊTE RÉDUITE (`tete` posée) : 20 pt de noir AU-DESSUS
+                        // de la vidéo (verdict « plus de noir au-dessus de la vidéo
+                        // Nosfy, écart de 20 px ») — la robe d'origine n'en a pas.
+                        if tete != nil { Color.clear.frame(height: Self.noirTete) }
                         VideoVivante(nom: nom, relance: videoRelance,
                                      pente: penteCard,
                                      boucle: style == .welcome,
                                      entier: style == .welcome)
-                            .frame(height: hauteur
-                                   * (style == .welcome ? 0.56 : 0.42))
+                            .frame(height: hauteur * partTete)
                             .overlay(
                                 LinearGradient(
                                     stops: [
@@ -689,6 +708,24 @@ private struct RewardScene: View, Animatable {
                                     ],
                                     startPoint: .leading,
                                     endPoint: .trailing))
+                            // LA TÊTE RÉDUITE (`tete` posée) FOND AUSSI PAR LE
+                            // HAUT (verdict 14-09 : « on voit la bordure du haut
+                            // coupée avec le background noir ») : le bord haut de
+                            // la vidéo se dissout dans les 20 pt de noir au lieu
+                            // de s'y couper. La robe d'origine ne bouge pas.
+                            .mask(
+                                LinearGradient(
+                                    stops: tete != nil ? [
+                                        .init(color: .clear, location: 0),
+                                        .init(color: .white.opacity(0.35),
+                                              location: 0.14),
+                                        .init(color: .white, location: 0.30),
+                                        .init(color: .white, location: 1)
+                                    ] : [
+                                        .init(color: .white, location: 0),
+                                        .init(color: .white, location: 1)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom))
                             // Le tap RELANCE la vidéo (verdict) — le
                             // drag de la card garde son geste (min 3 pt).
                             .contentShape(Rectangle())
@@ -814,8 +851,12 @@ private struct RewardScene: View, Animatable {
                     .offset(y: 5 * (1 - sstep(0.36, 0.62, p)))
                     // Avec vidéo, le bloc de tête descend SOUS elle — le
                     // titre se pose dans le fondu, comme la réf du plan.
+                    // Tête RÉDUITE (`tete` posée) : le bloc de texte est RABAISSÉ
+                    // sous la vidéo (verdict), pas dans son fondu — 20 pt de noir
+                    // du haut + la vidéo + 5 % de la card.
                     .padding(.top, videoNom == nil ? 26
-                             : hauteur * (style == .welcome ? 0.53 : 0.40))
+                             : tete != nil ? Self.noirTete + hauteur * (partTete + 0.05)
+                             : hauteur * (partTete - (style == .welcome ? 0.03 : 0.02)))
                 Text(subtitle)
                     .font(.inter(13.5))
                     .foregroundStyle(Color.white.opacity(0.55))
@@ -919,7 +960,9 @@ private struct RewardScene: View, Animatable {
             }
             // LE BOUTON CLAIM (welcome) — la capsule de VRAI verre avec
             // la pièce de la maison ; ailleurs, le lien nu.
-            if style == .welcome {
+            // Le Claim — sauf quand la card porte SON bouton (la robe « première
+            // fois » de Nosfy : « Démarrer », rien à encaisser).
+            if style == .welcome, bouton == nil {
                 BoutonClaim(montant: count, action: { onClaim?(); fermer() })
                     .opacity(sstep(0.58, 0.86, p))
                     .padding(.bottom, 6)

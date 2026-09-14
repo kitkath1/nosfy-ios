@@ -112,10 +112,20 @@ enum ProfilServeur {
         var minutesEnSeance: Int
         var derniereSeance: Date?
         var seancesTotal: Int
+        /// LA PREMIÈRE ARRIVÉE (migration 20260913230000, session back-end) :
+        /// `premiere_fois` = onboarding terminé ET aucune séance finie ;
+        /// `visite_home` = la visite guidée a été faite (marquer_visite_home).
+        var premiereFois: Bool
+        var visiteHome: Bool
+        /// La langue de la personne (`profils.langue`) — le cache `woop.langue` la suit.
+        var langue: String?
 
         init(json o: [String: Any]) {
             prenom = (o["prenom"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             onboardingTermine = o["onboarding_termine"] as? Bool ?? false
+            premiereFois = o["premiere_fois"] as? Bool ?? false
+            visiteHome = o["visite_home"] as? Bool ?? false
+            langue = o["langue"] as? String
             faites = (o["faites"] as? NSNumber)?.intValue ?? 0
             objectif = (o["objectif"] as? NSNumber)?.intValue ?? Goal.weeklyTarget
             reste = (o["reste"] as? NSNumber)?.intValue ?? max(objectif - faites, 0)
@@ -134,8 +144,19 @@ enum ProfilServeur {
     /// `home()` — un appel, le journal `[home-serveur]` dit ce qui est revenu.
     static func accueil() async throws -> Accueil {
         let a = Accueil(json: try await objet("home"))
-        print("[home-serveur] home() → prénom \(a.prenom ?? "—") · \(a.faites) / \(a.objectif), reste \(a.reste) · en séance \(a.enSeance) (\(a.minutesEnSeance) min) · \(a.seancesTotal) séances en tout")
+        print("[home-serveur] home() → prénom \(a.prenom ?? "—") · \(a.faites) / \(a.objectif), reste \(a.reste) · en séance \(a.enSeance) (\(a.minutesEnSeance) min) · \(a.seancesTotal) séances en tout · première fois \(a.premiereFois) · visite \(a.visiteHome) · langue \(a.langue ?? "—")")
+        Langue.poser(a.langue)                        // le serveur gagne (le contrat § 9)
+        PremiereArrivee.poserPremiereFois(a.premiereFois) // idem : la phrase et la card ROUTE
+        dernierAccueil = a
         return a
+    }
+
+    /// Le dernier `home()` lu — la racine s'en sert pour la première arrivée.
+    static var dernierAccueil: Accueil?
+
+    /// `marquer_visite_home()` — la visite guidée est faite ; la date se pose une fois.
+    static func marquerVisiteHome() async throws -> Profil {
+        Profil(json: try await objet("marquer_visite_home"))
     }
 
     /// `profil()` — l'aiguillage et tout ce qu'on sait de la personne.

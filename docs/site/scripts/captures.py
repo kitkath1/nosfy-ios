@@ -36,8 +36,11 @@ import tempfile
 
 # ── le manifeste ───────────────────────────────────────────────────────────────
 
-LARGEUR_FLOW, QUALITE_FLOW = 300, 78
-LARGEUR_HERO, QUALITE_HERO = 480, 72
+# 13-09 : les 18 captures du dépôt réunies faisaient un livrable de 2,25 Mo (l'inliner
+# refuse au-delà de 2 Mo, « on baisse la qualité JPEG, jamais le nombre ») : flow q78 → 70,
+# hero 480 px q72 → 400 px q58 (q64 → q58 le 14-09, livrable à 2,006 Mo) (1,67× des 240 px CSS, assez pour un fondu au noir).
+LARGEUR_FLOW, QUALITE_FLOW = 300, 68
+LARGEUR_HERO, QUALITE_HERO = 400, 58
 MAX_JPEG, MAX_TOTAL = 70_000, 900_000
 RATIO_ECRAN = (1206, 2622)          # le format des captures du téléphone (largeur, hauteur)
 
@@ -56,6 +59,28 @@ FLOW = [
     ('booster',    'Booster',    None),
     ('calendrier', 'Calendrier', None),
     ('profil',     'Profil',     None),
+]
+
+# L'ONBOARDING (13-09, Kathryn : « une capture de chaque étape de l'onboarding dans la
+# documentation ») — (nom, légende) ; la source est tools/docsite/shots/<nom>.png, prise au
+# simulateur (`-nosfy -nosfyAuto -rewardAuto`, et une course naturelle pour la citation).
+# Même bandeau que le flow, sur la page Compte. Les quatre temps de la visite guidée (v1,
+# 14-09) sont pris au banc `-skipAuth -visiteHome <1-4>`, 14 s après le lancement.
+ONBOARDING = [
+    ('onb-01-nuit',       'La nuit'),
+    ('onb-02-nietzsche',  'Nietzsche'),
+    ('onb-03-accueil',    'La rencontre'),
+    ('onb-04-langue',     'La langue'),
+    ('onb-05-prenom',     'Le prénom'),
+    ('onb-06-but',        'Le but'),
+    ('onb-07-jours',      'Les jours'),
+    ('onb-08-bien',       '« Bien. »'),
+    ('onb-09-fin',        'La fin'),
+    ('onb-10-sortie',     'La sortie'),
+    ('onb-11-visite-galets',   'Visite · les galets'),
+    ('onb-12-visite-progres',  'Visite · la progression'),
+    ('onb-13-visite-profil',   'Visite · le profil'),
+    ('onb-14-visite-pieces',   'Visite · les pièces'),
 ]
 
 # (page, source, geste)
@@ -176,26 +201,36 @@ def vide(**champs):
 
 def produire(atelier):
     """Produit tout dans `atelier` ; rend (manifeste, [(chemin dans l'atelier, chemin public)], erreurs)."""
-    manifeste = {'flow': [], 'hero': {}}
+    manifeste = {'flow': [], 'onboarding': [], 'hero': {}}
     fichiers, erreurs, total = [], [], 0
 
-    print('── flow (%d px · JPEG q%d · ≤ %s o chacune)' % (LARGEUR_FLOW, QUALITE_FLOW, n(MAX_JPEG)))
-    for nom, legende, repli in FLOW:
-        src = source_flow(nom, repli)
-        if not src:
-            manifeste['flow'].append(vide(nom=nom, legende=legende))
-            print('  ○ %-11s %20s' % (nom, 'à capturer'))
-            continue
-        out = os.path.join(atelier, 'flow', nom + '.jpg')
-        l, h = reduire(src, out, LARGEUR_FLOW, 'jpeg', QUALITE_FLOW)
-        o = os.path.getsize(out)
-        total += o
-        if o > MAX_JPEG:
-            erreurs.append('flow/%s.jpg : %s o > %s' % (nom, n(o), n(MAX_JPEG)))
-        manifeste['flow'].append({'nom': nom, 'legende': legende, 'fichier': 'captures/flow/%s.jpg' % nom,
-                                  'largeur': l, 'hauteur': h, 'source': rel(src), 'octets': o})
-        fichiers.append((out, os.path.join(PUBLIC, 'flow', nom + '.jpg')))
-        print('  ● %-11s %9s o  %4d×%-5d ← %s' % (nom, n(o), l, h, rel(src)))
+    # Un bandeau = une liste de (nom, légende, repli) → dossier `cle` de public/captures.
+    def bandeau(cle, liste, largeur=LARGEUR_FLOW, qualite=QUALITE_FLOW):
+        nonlocal total
+        os.makedirs(os.path.join(atelier, cle), exist_ok=True)     # le flow a son dossier d'avance, pas les autres
+        print('── %s (%d px · JPEG q%d · ≤ %s o chacune)' % (cle, largeur, qualite, n(MAX_JPEG)))
+        for nom, legende, repli in liste:
+            src = source_flow(nom, repli)
+            if not src:
+                manifeste[cle].append(vide(nom=nom, legende=legende))
+                print('  ○ %-20s %20s' % (nom, 'à capturer'))
+                continue
+            out = os.path.join(atelier, cle, nom + '.jpg')
+            l, h = reduire(src, out, largeur, 'jpeg', qualite)
+            o = os.path.getsize(out)
+            total += o
+            if o > MAX_JPEG:
+                erreurs.append('%s/%s.jpg : %s o > %s' % (cle, nom, n(o), n(MAX_JPEG)))
+            manifeste[cle].append({'nom': nom, 'legende': legende, 'fichier': 'captures/%s/%s.jpg' % (cle, nom),
+                                   'largeur': l, 'hauteur': h, 'source': rel(src), 'octets': o})
+            fichiers.append((out, os.path.join(PUBLIC, cle, nom + '.jpg')))
+            print('  ● %-20s %9s o  %4d×%-5d ← %s' % (nom, n(o), l, h, rel(src)))
+
+    bandeau('flow', FLOW)
+    # L'onboarding est presque noir : 240 px (les 220 px CSS de `.ecran`) et q42 suffisent —
+    # l'inliner refuse un livrable > 2 Mo (« on baisse la qualité JPEG, jamais le nombre ») :
+    # q55 → q42 le 14-09 quand les quatre temps de la visite sont entrés (2,04 Mo sinon).
+    bandeau('onboarding', [(nom, legende, None) for nom, legende in ONBOARDING], largeur=240, qualite=42)
 
     print('── hero (%d px · JPEG q%d, ou PNG alpha)' % (LARGEUR_HERO, QUALITE_HERO))
     for page, source, geste in HERO:
@@ -240,6 +275,7 @@ def ecrire(manifeste, fichiers):
                 os.unlink(p)
                 print('  – orphelin retiré : %s' % rel(p))
     for src, dest in fichiers:
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
         shutil.copyfile(src, dest)
     os.makedirs(os.path.dirname(MANIFESTE), exist_ok=True)
     with open(MANIFESTE, 'w', encoding='utf-8') as f:

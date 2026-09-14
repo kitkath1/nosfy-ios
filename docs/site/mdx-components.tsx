@@ -1,8 +1,8 @@
 import type { MDXComponents } from 'mdx/types'
-import { Brique, Liste, Renvois, Schema, Decision, Savoir, Hero, Tableau, Lexique, Sondes } from '@/components/Composants'
+import { Brique, Liste, Renvois, Schema, Decision, Savoir, Hero, Tableau, Lexique, Sondes, Onboarding } from '@/components/Composants'
 
 // Les composants disponibles dans la prose MDX des pages (content/pages/*.mdx).
 // La prose ne porte JAMAIS un état : elle place une <Brique id/> qui le lit.
 export function useMDXComponents(components: MDXComponents): MDXComponents {
-  return { Brique, Liste, Renvois, Schema, Decision, Savoir, Hero, Tableau, Lexique, Sondes, ...components }
+  return { Brique, Liste, Renvois, Schema, Decision, Savoir, Hero, Tableau, Lexique, Sondes, Onboarding, ...components }
 }

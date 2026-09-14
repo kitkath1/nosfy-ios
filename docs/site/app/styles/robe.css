@@ -375,6 +375,8 @@ dl.prompts dd span{display:block;margin-top:4px;padding-left:10px;border-left:1p
 .flow{display:flex;gap:20px;padding:16px 40px 0;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 .flow::-webkit-scrollbar{display:none}
+/* le bandeau de l'onboarding (13-09) : des captures en noir et blanc — la sonde du hero de Compte refuse toute couleur sous lui, et la robe n'en porte qu'à quatre endroits */
+.flow-sourd img{filter:grayscale(1)}
 .ecran{flex:0 0 220px;margin:0;scroll-snap-align:start;position:relative}
 .ecran img{display:block;width:220px;aspect-ratio:1206/2622;border-radius:28px;border:1px solid var(--filet-verre);background:#000;
   -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);mask-image:linear-gradient(180deg,#000 55%,transparent 100%)}

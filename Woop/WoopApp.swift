@@ -102,8 +102,12 @@ struct WoopApp: App {
                 // par jour de la maison : `retour_disponible` est LU sans payer
                 // (M1), donc la card ne promet que ce qu'elle peut encaisser.
                 // Jamais par-dessus une séance en cours ni un manège.
+                // NI LE JOUR DE LA PREMIÈRE ARRIVÉE (14-09) : sur son iPhone, cette
+                // card s'est ouverte en même temps que la pop-up de première fois
+                // (compte avec séances → retour_disponible vrai) et l'a cachée ;
+                // tant que `premiere_fois`, c'est la pop-up de Nosfy qui parle.
                 let eco = EconomieWoop.shared
-                if eco.serveur, eco.retourDisponible,
+                if eco.serveur, eco.retourDisponible, !PremiereArrivee.premiereFois,
                    !SacreEtat.shared.manegeOuvert, !SacreEtat.shared.popupOuverte {
                     DepartEtat.shared.welcomeOuverte = true
                 }
@@ -351,6 +355,8 @@ struct RootView: View {
     /// d'onboarding (c'est elle que `profil()` lit à la porte). En maquette, rien
     /// ne part au réseau. Une panne s'imprime : la home n'attend pas le serveur.
     private func ecrireProfil(_ reponses: NosfyOnboarding.Reponses) {
+        Langue.poser(reponses.langue)               // le cache, avant même le serveur (§ 9)
+        PremiereArrivee.poserPremiereFois(true)     // la Home qui suit est la première
         guard !AppleAuth.Maquette.active else {
             print("[NOSFY] maquette : le profil n'est pas écrit au serveur")
             return
@@ -1707,6 +1713,39 @@ struct RootView: View {
                     .zIndex(8)
                     .transition(.opacity)
             }
+            // LA POP-UP WELCOME « PREMIÈRE FOIS » (13-09, PremiereArrivee.swift) : la
+            // même card, une vidéo en tête (fondue par la robe, RÉDUITE à 40 % de la
+            // card avec 20 pt de noir au-dessus — verdicts), un titre et un sous-titre
+            // qui INVITENT À LA VISITE (le wording parle SPORT), et UNE capsule
+            // « Commencer » / « Start » (son mot, 14-09) — ni Claim ni Later. Tout en
+            // Inter. DEUX ROBES (`PremiereArrivee.robe`) : `.nosfyGaletOnboarding` (« Nosfy_galet_onboarding », LA VRAIE :
+            // Nosfy saute sur les galets, gel puis boucle) et `.popNosfyOnboardingTest`
+            // (« pop-nosfy_onboarding/test » : Nosfy de face — gardée sur son ordre).
+            // Elle s'ouvre 3 s après la première arrivée sur la Home ; « Commencer »
+            // (ou un tap partout) la ferme ET ouvre la visite (VisiteHome).
+            if depart.welcomePremiereOuverte {
+                RewardPopup(count: 0,
+                            title: L("Bienvenue", "Welcome"),
+                            subtitle: L("Laisse Nosfy te guider :\nséances, progrès, récompenses.",
+                                        "Let Nosfy guide you:\nworkouts, progress, rewards."),
+                            unit: "",
+                            style: .welcome,
+                            robe: .video,
+                            videoNom: PremiereArrivee.robe.videoNom,
+                            onClose: {
+                                PremiereArrivee.vue()
+                                depart.welcomePremiereOuverte = false
+                                // La visite monte quand la card est sortie.
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(0.5))
+                                    PremiereArrivee.ouvrirVisite()
+                                }
+                            },
+                            bouton: .capsule(L("Commencer", "Start")),
+                            tete: 0.40)
+                    .zIndex(8)
+                    .transition(.opacity)
+            }
             if sacre.manegeOuvert {
                 BoosterLab(appMode: true,
                            // LA MORSURE de la card (BoosterCard.swift) : si
@@ -1920,6 +1959,23 @@ struct RootView: View {
                 .zIndex(30)
             }
         }
+        // LA VISITE GUIDÉE DE LA HOME (13/14-09, VisiteHome.swift) : à la RACINE,
+        // au-dessus de la Home ET de la nav (l'onglet Profil est un temps). Les
+        // quatre éléments publient leur cadre (`visiteAncre`), la racine les lit
+        // ici. DÉMONTÉE à la fin (pas cachée), jamais avec `-sansVisite`.
+        // LA PAGE RECULE (v2, « la lampe ») : toute la racine à 0,965 pendant la
+        // visite — une transform, pas une mise en page ; les ancres restent en
+        // coordonnées de layout, VisiteHome les ramène à l'écran (`VisiteHome.recul`).
+        .scaleEffect(depart.visiteReculee ? VisiteHome.recul : 1)
+        .animation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.7), value: depart.visiteReculee)
+        .overlayPreferenceValue(VisiteAncreKey.self) { ancres in
+            if depart.visiteOuverte {
+                VisiteHome(ancres: ancres, depart: depart.visiteEtape,
+                           onFin: { PremiereArrivee.finirVisite() })
+                    .transition(.opacity)
+                    .zIndex(29)
+            }
+        }
         .defersSystemGestures(on: .bottom)
         .persistentSystemOverlays(.hidden)
         // Les bancs du parcours booster :
@@ -1930,6 +1986,12 @@ struct RootView: View {
         // home (`tools/sacre/PARCOURS-BOOSTER.md`).
         // `id:` et non un `.task` nu : au premier passage le splash tient
         // encore l'écran — sans la clé, le banc ne se rejouerait jamais.
+        // LA PREMIÈRE ARRIVÉE (13-09) : 3 s après la Home, la pop-up Welcome
+        // « première fois » si le serveur dit premiere_fois — voir PremiereArrivee.
+        .task(id: showSplash || showAuth) {
+            guard !showSplash, !showAuth else { return }
+            await PremiereArrivee.ouvrirWelcomeSiDue()
+        }
         .task(id: showSplash || showAuth) {
             guard !showSplash, !showAuth else { return }
             if CommandLine.arguments.contains("-clotureTest") {

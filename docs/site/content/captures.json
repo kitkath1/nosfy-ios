@@ -16,7 +16,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/j4-home-serpentin.png",
-   "octets": 39107
+   "octets": 32747
   },
   {
    "nom": "chemin",
@@ -25,7 +25,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/road-2-etats-etape5.png",
-   "octets": 26960
+   "octets": 23310
   },
   {
    "nom": "depart",
@@ -34,7 +34,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/road/shots/road-1-branchee.png",
-   "octets": 28928
+   "octets": 24706
   },
   {
    "nom": "player",
@@ -61,7 +61,7 @@
    "largeur": 300,
    "hauteur": 652,
    "source": "tools/stop/captures/stop-134059.png",
-   "octets": 16977
+   "octets": 14520
   },
   {
    "nom": "bravo",
@@ -118,20 +118,148 @@
    "octets": 0
   }
  ],
+ "onboarding": [
+  {
+   "nom": "onb-01-nuit",
+   "legende": "La nuit",
+   "fichier": "captures/onboarding/onb-01-nuit.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-01-nuit.png",
+   "octets": 5588
+  },
+  {
+   "nom": "onb-02-nietzsche",
+   "legende": "Nietzsche",
+   "fichier": "captures/onboarding/onb-02-nietzsche.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-02-nietzsche.png",
+   "octets": 7223
+  },
+  {
+   "nom": "onb-03-accueil",
+   "legende": "La rencontre",
+   "fichier": "captures/onboarding/onb-03-accueil.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-03-accueil.png",
+   "octets": 5927
+  },
+  {
+   "nom": "onb-04-langue",
+   "legende": "La langue",
+   "fichier": "captures/onboarding/onb-04-langue.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-04-langue.png",
+   "octets": 8347
+  },
+  {
+   "nom": "onb-05-prenom",
+   "legende": "Le prénom",
+   "fichier": "captures/onboarding/onb-05-prenom.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-05-prenom.png",
+   "octets": 4745
+  },
+  {
+   "nom": "onb-06-but",
+   "legende": "Le but",
+   "fichier": "captures/onboarding/onb-06-but.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-06-but.png",
+   "octets": 6986
+  },
+  {
+   "nom": "onb-07-jours",
+   "legende": "Les jours",
+   "fichier": "captures/onboarding/onb-07-jours.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-07-jours.png",
+   "octets": 7063
+  },
+  {
+   "nom": "onb-08-bien",
+   "legende": "« Bien. »",
+   "fichier": "captures/onboarding/onb-08-bien.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-08-bien.png",
+   "octets": 8345
+  },
+  {
+   "nom": "onb-09-fin",
+   "legende": "La fin",
+   "fichier": "captures/onboarding/onb-09-fin.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-09-fin.png",
+   "octets": 5404
+  },
+  {
+   "nom": "onb-10-sortie",
+   "legende": "La sortie",
+   "fichier": "captures/onboarding/onb-10-sortie.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-10-sortie.png",
+   "octets": 8974
+  },
+  {
+   "nom": "onb-11-visite-galets",
+   "legende": "Visite · les galets",
+   "fichier": "captures/onboarding/onb-11-visite-galets.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/onb-11-visite-galets.png",
+   "octets": 7527
+  },
+  {
+   "nom": "onb-12-visite-progres",
+   "legende": "Visite · la progression",
+   "fichier": "captures/onboarding/onb-12-visite-progres.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/onb-12-visite-progres.png",
+   "octets": 7157
+  },
+  {
+   "nom": "onb-13-visite-profil",
+   "legende": "Visite · le profil",
+   "fichier": "captures/onboarding/onb-13-visite-profil.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/onb-13-visite-profil.png",
+   "octets": 5264
+  },
+  {
+   "nom": "onb-14-visite-pieces",
+   "legende": "Visite · les pièces",
+   "fichier": "captures/onboarding/onb-14-visite-pieces.jpg",
+   "largeur": 240,
+   "hauteur": 521,
+   "source": "tools/docsite/shots/onb-14-visite-pieces.png",
+   "octets": 5201
+  }
+ ],
  "hero": {
   "flow": {
    "fichier": "captures/hero/flow.jpg",
-   "largeur": 480,
-   "hauteur": 1043,
+   "largeur": 400,
+   "hauteur": 869,
    "source": "tools/road/shots/j4-home-serpentin.png",
-   "octets": 69237
+   "octets": 39851
   },
   "coffre": {
    "fichier": "captures/hero/coffre.jpg",
-   "largeur": 480,
-   "hauteur": 1043,
+   "largeur": 400,
+   "hauteur": 869,
    "source": "tools/coffre-v2/ARCHIVE/coffre-v1.jpg",
-   "octets": 44216
+   "octets": 25668
   },
   "annonces": {
    "fichier": null,
@@ -142,10 +270,10 @@
   },
   "forge": {
    "fichier": "captures/hero/forge.png",
-   "largeur": 480,
-   "hauteur": 641,
+   "largeur": 400,
+   "hauteur": 534,
    "source": "Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png",
-   "octets": 440076
+   "octets": 316275
   },
   "histoire": {
    "fichier": null,
@@ -156,10 +284,10 @@
   },
   "porte": {
    "fichier": "captures/hero/porte.jpg",
-   "largeur": 480,
-   "hauteur": 1044,
+   "largeur": 400,
+   "hauteur": 870,
    "source": "Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg",
-   "octets": 61810
+   "octets": 34956
   }
  }
 }

@@ -166,11 +166,35 @@ export function Schema({ id, titre, legende, plie }: { id: string; titre?: strin
 }
 
 /* ── le hero de domaine ─────────────────────────────────────────────────── */
-type Captures = { flow: { nom: string; legende: string; fichier: string | null; largeur?: number; hauteur?: number }[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
+type Ecran = { nom: string; legende: string; fichier: string | null; largeur?: number; hauteur?: number }
+type Captures = { flow: Ecran[]; onboarding?: Ecran[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
 export function lireCaptures(): Captures {
   const p = join(SITE, 'content/captures.json')
-  if (!existsSync(p)) return { flow: [], hero: {} }
-  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return { flow: [], hero: {} } }
+  if (!existsSync(p)) return { flow: [], onboarding: [], hero: {} }
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return { flow: [], onboarding: [], hero: {} } }
+}
+
+/* ── le bandeau de l'onboarding (13-09 : « une capture de chaque étape ») ─── */
+// La même robe que « Le flow » de l'accueil : de vraies captures du simulateur, fondues
+// au noir, dans l'ordre du film ; les étapes qui n'existent pas encore restent « à capturer ».
+export function Onboarding() {
+  const ecrans = lireCaptures().onboarding ?? []
+  return (
+    <>
+      <div className="flow-titre">
+        <h2>L'onboarding, étape par étape</h2>
+        <p>Le film de Nosfy tel qu'il joue au simulateur (`-nosfy -nosfyAuto -rewardAuto`), en noir et blanc — la robe du site ne porte la couleur qu'à quatre endroits, et le halo de Nosfy n'en fait pas partie. Les quatre temps de la visite guidée de la Home restent à capturer : elle n'existe pas encore.</p>
+      </div>
+      <div className="flow flow-sourd">
+        {ecrans.length ? ecrans.map((f) => (
+          <figure key={f.nom} className={'ecran' + (f.fichier ? '' : ' vide')} data-ecran={f.nom}>
+            {f.fichier ? <img src={`/captures/onboarding/${f.fichier.split('/').pop()}`} width={f.largeur} height={f.hauteur} alt={f.legende} loading="lazy" decoding="async" /> : <span className="cadre-vide" />}
+            <figcaption>{f.legende}{f.fichier ? '' : ' · à capturer'}</figcaption>
+          </figure>
+        )) : <p className="rien">`npm run captures` pour embarquer les captures.</p>}
+      </div>
+    </>
+  )
 }
 
 export function Hero({ page }: { page: Page }) {

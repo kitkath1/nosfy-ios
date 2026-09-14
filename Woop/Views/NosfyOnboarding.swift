@@ -1272,7 +1272,7 @@ private enum IntroPoeme {
     // tout : la séance qu'on redoute est la lumière.
     static let citation = "La nuit aussi est un soleil."
     static let citationEn = "Night, too, is a sun."
-    static let auteur = "Nietzsche — Ainsi parlait Zarathoustra"
+    static let auteur = "Friedrich Nietzsche, Ainsi parlait Zarathoustra — 1885"
 }
 
 // MARK: - LA BÊTE : le lecteur de l'accueil
@@ -1432,6 +1432,9 @@ enum NosfySon {
 
     static func tap() { bruit("NosfyTap", "wav", volume: 0.6) }
     static func paillette() { bruit("NosfyPaillette", "wav", volume: 0.55) }
+    /// LE TIC de la visite de la Home (14-09 : le `tap` de la porte, grave et
+    /// lent, faisait « triste » entre deux temps) — le tic clair de la molette.
+    static func tic() { bruit("DialTick", "wav", volume: 0.45) }
 
     private static func bruit(_ nom: String, _ ext: String, volume: Float) {
         preparerSession()

@@ -232,6 +232,11 @@ struct CardRoute: View {
 
     private var apercu: EcranSpec.Apercu { EcranSpec.apercu(lecture) }
 
+    /// LE CHEMIN VIERGE (13-09, PLAN-PREMIERE-ARRIVEE ④) : chapitre 1, étape 1,
+    /// rien de fait — un compte qui n'a fini aucune séance. La card dit alors
+    /// « Commencer ici » au lieu de l'odomètre, et le galet 1 respire.
+    private var vierge: Bool { !enSeance && lecture.etape == 0 && lecture.faits.isEmpty }
+
     /// LE DOIGT EST SUR LA BANDE — 0 au repos, 1 pendant le geste. Il allume
     /// le bord de la card, et rien d'autre.
     @State private var defile = false
@@ -404,6 +409,16 @@ struct CardRoute: View {
         Group {
             if enSeance {
                 MinutesSeance(depuis: debutSeance)
+            } else if vierge {
+                // « Commence ton entraînement » / « Start your workout » (verdict
+                // 14-09 : « Commence ici, ça veut rien dire ») : une identité de
+                // vue de plus, en fondu — jamais l'odomètre sur des lettres. Deux
+                // lignes à 15 pt : la colonne fait 196 pt, la phrase 232 à 17 pt.
+                // (`L` est ici la largeur de la card — on lit `Langue` en clair.)
+                Text(Langue.en ? "Start your workout" : "Commence ton entraînement")
+                    .font(.system(size: 15, weight: .semibold))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("Étape \(apercu.rang) sur \(apercu.total)")
                     .contentTransition(.numericText())
@@ -413,7 +428,7 @@ struct CardRoute: View {
         .foregroundStyle(LinearGradient(
             colors: [Color(white: 1.0), Color(white: 0.82)],
             startPoint: .top, endPoint: .bottom))
-        .id(enSeance)
+        .id(enSeance ? "seance" : vierge ? "vierge" : "etape")
         .transition(.opacity)
     }
 
@@ -638,8 +653,44 @@ struct CardRoute: View {
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,
                           inerte: true)
+            // LE GALET 1 RESPIRE (13-09, chemin vierge) : une lueur sous lui, en
+            // valeur animée `repeatForever` — jamais une horloge (la loi du
+            // 05-09). La feuille porte sa propre phase (le piège du
+            // `repeatForever` avalé par un parent ré-évalué).
+            .background {
+                if vierge, rang == 0, !Self.sansGalet {
+                    HaloVierge(taille: taille)
+                }
+            }
             .position(x: geo.axeX + dx(rang),
                       y: geo.hauteur / 2 + CGFloat(rang) * geo.pas)
+    }
+}
+
+/// LA LUEUR DU GALET VIERGE — la feuille qui respire. Sa phase vit ICI, armée
+/// à son montage : un `repeatForever` posé chez le parent serait avalé à la
+/// première ré-évaluation de la card (le piège payé dans PageCard).
+private struct HaloVierge: View {
+    let taille: CGFloat
+    @State private var phase: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Circle()
+            .fill(.white)
+            .frame(width: taille * 1.45, height: taille * 1.45)
+            .blur(radius: 11)
+            .opacity(0.10 + 0.24 * phase)
+            .scaleEffect(0.92 + 0.12 * phase)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { phase = 0.5; return }
+                phase = 0
+                withAnimation(.easeInOut(duration: 1.3)
+                    .repeatForever(autoreverses: true)) {
+                    phase = 1
+                }
+            }
     }
 }
 

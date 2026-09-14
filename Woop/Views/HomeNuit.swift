@@ -335,6 +335,23 @@ enum PhraseTexte {
         ]
     }
 
+    /// LA PHRASE DE LA PREMIÈRE FOIS (13-09, PLAN-PREMIERE-ARRIVEE ②) — tant
+    /// qu'aucune séance n'est finie. Quatre fragments, clair/sourd/clair/sourd,
+    /// fin sur un sourd, chacun sous les 300 pt de `PhraseParams.largeur`
+    /// (« ta première séance » : 18 lettres, le plus long — « you've been at it »
+    /// en fait 17 et tient). Dans les deux langues (le contrat de la langue, § 9).
+    /// Le wording parle SPORT et dit quelque chose (verdict 14-09 : « Hey Margaux
+    /// bien, mais le reste ne veut rien dire ») : la séance attend, on y va.
+    static func fragmentsPremiereFois(prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
+        let hey = (prenom?.isEmpty ?? true) ? "Hey," : "Hey \(prenom!),"
+        return [
+            PhraseFragment(hey, clair: true),
+            PhraseFragment(L("ta première séance", "your first workout"), clair: false),
+            PhraseFragment(L("t'attend.", "is waiting."), clair: true),
+            PhraseFragment(L("On y va.", "Let's go."), clair: false)
+        ]
+    }
+
     /// LA PHRASE PENDANT UNE SÉANCE (02-09).
     ///
     /// ⚠️ **QUATRE LIGNES, ET CE N'EST PAS NÉGOCIABLE.** La phrase d'accueil
@@ -1959,9 +1976,17 @@ struct HomeNuitPage: View {
     /// NULLE et flou de 30 pt. Il n'y a rigoureusement rien à voir à cet
     /// instant, donc rien à cacher : c'est le seul échange qui ne se voit pas.
     private func fragmentsPhrase() -> [PhraseFragment] {
-        phraseSeance
-            ? PhraseTexte.fragmentsSeance(minutes: minutesSeance, prenom: prenom.isEmpty ? nil : prenom)
-            : PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus, prenom: prenom.isEmpty ? nil : prenom)
+        let qui = prenom.isEmpty ? nil : prenom
+        if phraseSeance {
+            return PhraseTexte.fragmentsSeance(minutes: minutesSeance, prenom: qui)
+        }
+        // LA PREMIÈRE FOIS (13-09, PremiereArrivee.swift) : tant qu'aucune séance
+        // n'est finie (`home().premiere_fois`, en cache), la phrase accueille au
+        // lieu de compter — même forme, même verre, même alternance.
+        if PremiereArrivee.premiereFois {
+            return PhraseTexte.fragmentsPremiereFois(prenom: qui)
+        }
+        return PhraseTexte.fragments(faits: faitsAffiche, prevus: prevus, prenom: qui)
     }
 
     /// LA PHRASE SE RÉÉCRIT — l'entrée en scène, rejouée.
@@ -2968,6 +2993,15 @@ struct HomeNuitPage: View {
     /// d'un état local : la card doit montrer une récompense GRAVÉE si elle a
     /// été prise, sinon elle proposerait un cadeau déjà reçu.
     private func majLectureChemin() {
+        // LA LECTURE VIERGE (13-09, PLAN-PREMIERE-ARRIVEE ④) : à un compte qui
+        // n'a fini AUCUNE séance (`home().premiere_fois`, en cache), la card
+        // montre le chapitre 1, étape 1, rien de fait — jamais la démo. La
+        // dérivation du chemin (`etapeEtFaits`) ne change pas d'une ligne.
+        if PremiereArrivee.premiereFois {
+            lectureChemin = EcranSpec.Lecture(
+                etape: 0, reclamees: DepartEtat.shared.reclamees)
+            return
+        }
         let c = cheminEtat
         lectureChemin = EcranSpec.Lecture(
             etape: c.etape, faits: c.faits, datesFaites: c.dates,
@@ -3397,6 +3431,8 @@ struct HomeNuitPage: View {
                                 // le doigt.
                                 demandes: demandes,
                                 editable: true)
+                        // LA VISITE (13-09) : la progression, deuxième temps.
+                        .visiteAncre("visite-progression")
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
                         .padding(.top, Self.yCards(geo.size.height))
@@ -3472,6 +3508,9 @@ struct HomeNuitPage: View {
                               },
                               enSeance: enSeance,
                               debutSeance: debutSeance)
+                        // LA VISITE (13-09, VisiteHome.swift) : les galets
+                        // sont son premier temps.
+                        .visiteAncre("visite-galets")
                         .padding(.leading, 24)
                         .padding(.top, Self.yRoute(geo.size.height))
                         .offset(y: 8 * net)
@@ -3663,6 +3702,8 @@ struct HomeNuitPage: View {
                     CoffreFortCoinButton(onPress: { toucherPiece($0) },
                                          action: { ouvrirCoffre() },
                                          matte: 1)
+                        // LA VISITE (13-09) : les pièces, quatrième temps.
+                        .visiteAncre("visite-pieces")
                         .padding(.top, 43)
                         .padding(.trailing, 24)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,

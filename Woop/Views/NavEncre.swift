@@ -542,6 +542,9 @@ struct NavEncre: View {
             .font(.system(size: 21, weight: .medium))
             .foregroundStyle(.white.opacity(actif ? 1 : 0.34))
             .frame(width: NavGeo.cible, height: NavGeo.cible)
+            // LA VISITE DE LA HOME (13-09, VisiteHome.swift) : l'onglet Profil
+            // publie son cadre — c'est le troisième temps de la visite.
+            .visiteAncre(d == .profil ? "visite-profil" : "visite-nav-\(i)")
             // ⚠️ LE VERRE AU TOUCHER (04-09) — et c'est SA précision qui
             // le rend possible : « le verre reflète l'icône elle-même ».
             // La loi payée dit qu'une vitre sur du noir uniforme est
