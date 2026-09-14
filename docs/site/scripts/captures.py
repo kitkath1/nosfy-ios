@@ -81,6 +81,7 @@ ONBOARDING = [
     ('onb-12-visite-progres',  'Visite · la progression'),
     ('onb-13-visite-profil',   'Visite · le profil'),
     ('onb-14-visite-pieces',   'Visite · les pièces'),
+    ('onb-15-route-vivante',   'Card ROUTE vivante · vide / déjà fait'),
 ]
 
 # (page, source, geste)
@@ -229,8 +230,9 @@ def produire(atelier):
     bandeau('flow', FLOW)
     # L'onboarding est presque noir : 240 px (les 220 px CSS de `.ecran`) et q42 suffisent —
     # l'inliner refuse un livrable > 2 Mo (« on baisse la qualité JPEG, jamais le nombre ») :
-    # q55 → q42 le 14-09 quand les quatre temps de la visite sont entrés (2,04 Mo sinon).
-    bandeau('onboarding', [(nom, legende, None) for nom, legende in ONBOARDING], largeur=240, qualite=42)
+    # q55 → q42 le 14-09 quand les quatre temps de la visite sont entrés (2,04 Mo sinon) ;
+    # q42 → q38 le 14-09 (matin) quand la card ROUTE vivante est entrée (2,004 Mo sinon).
+    bandeau('onboarding', [(nom, legende, None) for nom, legende in ONBOARDING], largeur=240, qualite=38)
 
     print('── hero (%d px · JPEG q%d, ou PNG alpha)' % (LARGEUR_HERO, QUALITE_HERO))
     for page, source, geste in HERO:

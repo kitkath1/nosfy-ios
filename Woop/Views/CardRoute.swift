@@ -237,6 +237,35 @@ struct CardRoute: View {
     /// « Commencer ici » au lieu de l'odomètre, et le galet 1 respire.
     private var vierge: Bool { !enSeance && lecture.etape == 0 && lecture.faits.isEmpty }
 
+    /// « DÉJÀ FAIT » (14-09, PLAN-WIDGET-ROUTE-VIVANT § 3) : au moins une séance
+    /// finie, et pas de séance ouverte. La card montre alors ce qu'on vient
+    /// d'accomplir — le trait de progression, l'éclat du dernier galet fait.
+    private var dejaFait: Bool { !enSeance && !lecture.faits.isEmpty }
+    /// Le dernier galet accompli — celui qui reçoit l'éclat.
+    private var dernierFait: Int? { lecture.faits.max() }
+    /// La part du chapitre déjà faite, 0 → 1 (les séances faites du chapitre
+    /// courant sur ses nœuds) — la longueur du trait.
+    private var partFaite: Double {
+        let ids = Set(chapitreNoeuds.map(\.id))
+        let n = lecture.faits.intersection(ids).count
+        return Double(n) / Double(max(apercu.total, 1))
+    }
+
+    /// LE DOIGT EST POSÉ SUR LA CARD — elle recule et son bord s'allume (le
+    /// press, PLAN-WIDGET-ROUTE-VIVANT T1). Lu par `onLongPressGesture`, la
+    /// forme tranchée de la maison (le glyphe de la nav) : un
+    /// `DragGesture(minimumDistance: 0)` affamerait le tap.
+    @State private var presse = false
+
+    /// `-sansVieRoute` : LE BARREAU de la vie de la card (14-09) — la lampe,
+    /// le reflet, le chevron, l'onde, l'éclat, le trait. Tout nouveau moteur
+    /// arrive avec son barreau, sinon on ne pourra jamais l'accuser.
+    static let sansVie = CommandLine.arguments.contains("-sansVieRoute")
+    /// `-sansPlateau` : le barreau du PLATEAU seul (les flaques qui dérivent, la
+    /// crête du liseré, le balayage de nacre) — pour accuser la matière sans
+    /// éteindre le reste de la vie.
+    static let sansPlateau = CommandLine.arguments.contains("-sansPlateau")
+
     /// LE DOIGT EST SUR LA BANDE — 0 au repos, 1 pendant le geste. Il allume
     /// le bord de la card, et rien d'autre.
     @State private var defile = false
@@ -267,6 +296,11 @@ struct CardRoute: View {
     var enSeance: Bool = false
     /// Le début de la séance ouverte, pour le compteur de minutes.
     var debutSeance: Date? = nil
+    /// LA ROBE DU FOND (14-09, son ordre : « un dégradé liquid glass noir →
+    /// transparent qui change et qui bouge dans le background ») — trois robes
+    /// au banc `-fondRobe a|b|c` / `-fondPlanche` ; son choix : « le verre qui
+    /// respire », dans les deux états.
+    var fondRobe: FondRobe = FondRobe.choisie
 
     var body: some View {
         // ⚠️ **UNE SEULE HORLOGE POUR LE POINT ET POUR LE HALO**, et elle
@@ -314,7 +348,26 @@ struct CardRoute: View {
                         // serait tranché deux fois. Et `GaletEtape` est PARTAGÉ
                         // avec la page route, qui est validée.
                         lueur: enSeance ? s
-                             : ((defile || lueurForcee) ? 1 : 0))
+                             : ((defile || lueurForcee || presse) ? 1 : 0))
+            // LE FOND LIQUIDE (14-09, PLAN-FOND-ARDOISE) : un dégradé NOIR →
+            // TRANSPARENT qui change et qui bouge sur la matière — là où il est
+            // noir, l'obsidienne ; là où il est clair, le verre et ce qu'il y a
+            // dessous. Trois robes (`-fondRobe a|b|c`), une crête lente sur le
+            // liseré par-dessus. Des valeurs animées (rotation, offset, échelle)
+            // sur des dégradés construits une fois. Pas en séance (le Foyer).
+            // ⚠️ Ses verdicts : « pas d'effet balayage » (retiré), « là tu
+            // changes rien » (les flaques floues, 7/255 de variation, retirées).
+            if !enSeance, !Self.sansVie, !Self.sansPlateau {
+                FondLiquide(robe: fondRobe, largeur: Self.L, hauteur: geo.hauteur,
+                            rayon: 26, presse: presse)
+                LisereTournant(largeur: Self.L, hauteur: geo.hauteur, rayon: 26,
+                               presse: presse, intensite: vierge ? 1 : 0.6)
+            }
+            // LA LAMPE QUI APPELLE (V1) : dans l'état vide, la lueur de bord
+            // respire seule, lentement — une feuille, sa phase chez elle.
+            if vierge, !Self.sansVie {
+                LueurAppel(largeur: Self.L, hauteur: geo.hauteur, rayon: 26)
+            }
             texte(s)
             if Self.colonneSeule {
                 colonne
@@ -327,6 +380,16 @@ struct CardRoute: View {
         // LA PORTE — une seule surface, celle de la card entière.
         .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .onTapGesture(perform: onTap)
+        // LE PRESS (T1) : le doigt se pose, la card recule et s'allume ; il se
+        // lève, elle revient. `maximumDistance` court : un doigt qui part
+        // faire défiler la bande la relâche tout de suite.
+        .onLongPressGesture(minimumDuration: 10, maximumDistance: 24,
+                            perform: {}) { enCours in
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
+                presse = enCours
+            }
+        }
+        .scaleEffect(presse ? 0.982 : 1)
         .opacity(pose)
         .offset(y: 14 * (1 - pose))
     }
@@ -385,11 +448,17 @@ struct CardRoute: View {
                               : "CHAPITRE \(apercu.chapitre)")
                     .font(.system(size: 11, weight: .semibold))
                     .kerning(1.6)
+                    // V6 : dans l'état vide le sur-titre est plus présent.
                     .foregroundStyle(enSeance
                                      ? Color(white: 0.72)
-                                     : Color(white: 0.52))
+                                     : Color(white: vierge ? 0.66 : 0.52))
             }
             ligneBasse
+            // LE TRAIT DE PROGRESSION (F1) : sous l'odomètre, la part faite du
+            // chapitre s'étire à l'arrivée — le premier pas, qu'on voit.
+            if dejaFait, !Self.sansVie {
+                TraitProgres(part: partFaite, largeur: 120)
+            }
         }
         .lineLimit(1)
         .padding(.leading, 22)
@@ -415,10 +484,26 @@ struct CardRoute: View {
                 // vue de plus, en fondu — jamais l'odomètre sur des lettres. Deux
                 // lignes à 15 pt : la colonne fait 196 pt, la phrase 232 à 17 pt.
                 // (`L` est ici la largeur de la card — on lit `Langue` en clair.)
-                Text(Langue.en ? "Start your workout" : "Commence ton entraînement")
-                    .font(.system(size: 15, weight: .semibold))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .lastTextBaseline, spacing: 5) {
+                    Text(Langue.en ? "Start your workout" : "Commence ton entraînement")
+                        .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        // ⚠️ BLANC CASSÉ, PAS BLANC : mesuré au banc, une bande
+                        // blanche sur un texte blanc n'éclaire rien (+6 % de
+                        // luminance au passage, invisible). Le glint d'Apple est
+                        // un texte gris clair que la lumière traverse : 0,80 au
+                        // repos, 1,0 sous la bande.
+                        .foregroundStyle(Color(white: Self.sansVie ? 0.92 : 0.80))
+                        // LE REFLET (V2) : une bande de lumière traverse le
+                        // titre — le « slide to unlock », masqué par les lettres.
+                        // Sur SA propre horloge (`Balayage`) : le balayage du
+                        // plateau qui la partageait a été refusé (« pas d'effet
+                        // balayage en background »).
+                        .modifier(RefletTexte(largeur: 150, actif: !Self.sansVie))
+                    // LE CHEVRON QUI INVITE (V3) : il avance de 3 pt et revient.
+                    if !Self.sansVie { ChevronInvite() }
+                }
             } else {
                 Text("Étape \(apercu.rang) sur \(apercu.total)")
                     .contentTransition(.numericText())
@@ -600,6 +685,26 @@ struct CardRoute: View {
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,
                           inerte: true)
+            // LE GALET 1 RESPIRE PLUS FORT (V5) : sa lueur sous lui, feuille
+            // `repeatForever` — jamais une horloge (la loi du 05-09).
+            .background {
+                if vierge, actif, !Self.sansVie {
+                    HaloVierge(taille: taille)
+                }
+            }
+            .overlay {
+                // L'ONDE D'APPEL (V4 / F3) : un anneau naît du galet
+                // d'aujourd'hui et s'élargit en s'éteignant — « c'est ici ».
+                // Plus rare une fois la première séance faite.
+                if (vierge || dejaFait), actif, !Self.sansVie {
+                    OndeAppel(taille: taille, periode: vierge ? 3.8 : 6.0)
+                }
+                // L'ÉCLAT DU GALET FAIT (F2) : une onde brève et blanche sur le
+                // dernier galet accompli, une fois, à l'arrivée.
+                if dejaFait, e.id == dernierFait, !Self.sansVie {
+                    EclatFait(taille: taille)
+                }
+            }
             // Le serpentin retrouve son axe NATUREL : le `dx` de la route est
             // un écart horizontal, et la bande défile maintenant à la
             // verticale — c'est la même courbe que la page, pas une copie.
@@ -694,6 +799,488 @@ private struct HaloVierge: View {
     }
 }
 
+// MARK: - LA VIE DE LA CARD (14-09, PLAN-WIDGET-ROUTE-VIVANT)
+//
+// Six feuilles. Chacune porte SA phase et l'arme à `.task` : un
+// `repeatForever` posé chez la card serait avalé à sa première ré-évaluation
+// (la page arrive, la bande défile). Tout est une valeur animée — opacité,
+// échelle, offset — jamais une horloge, jamais un rayon de flou animé.
+
+/// Les secondes d'une durée d'horloge (les échéances recalées, loi § 6.4).
+private func secondes(_ d: Duration) -> Double {
+    Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
+}
+
+/// V1 — LA LAMPE QUI APPELLE : les deux traits de la lueur de bord de
+/// l'ardoise (ceux qui s'allument au doigt), qui respirent seuls.
+private struct LueurAppel: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    let rayon: CGFloat
+    @State private var phase: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let forme = RoundedRectangle(cornerRadius: rayon, style: .continuous)
+        ZStack {
+            forme.stroke(cardLisereConique, lineWidth: 2.2).opacity(0.55)
+            forme.stroke(Color.white.opacity(0.30), lineWidth: 1)
+        }
+        .frame(width: largeur, height: hauteur)
+        .opacity(0.42 * phase)
+        .allowsHitTesting(false)
+        .task {
+            guard !reduceMotion else { phase = 0.5; return }
+            phase = 0
+            withAnimation(.easeInOut(duration: 1.8)
+                .repeatForever(autoreverses: true)) {
+                phase = 1
+            }
+        }
+    }
+}
+
+/// V2 — LE REFLET SUR LE TITRE : une bande de lumière (clair / blanc / clair,
+/// 70 pt, inclinée) qui traverse le texte de gauche à droite, masquée par les
+/// lettres. Une traversée de 1,5 s, puis le silence — la remise à gauche se
+/// fait hors du masque, invisible, jamais dans le tour de la montée.
+private struct RefletTexte: ViewModifier {
+    let largeur: CGFloat
+    /// Le décalage du texte par rapport au centre de la card, pour que la
+    /// trace sur les lettres et le balayage du plateau soient UN rayon.
+    var decalage: CGFloat = 0
+    let actif: Bool
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if actif {
+                // ⚠️ LE MASQUE EST POSÉ SUR LE CADRE DU TEXTE, PAS SUR LA BANDE
+                // (payé au banc : masquée directement, la bande de 96 pt
+                // emportait le masque avec elle — le texte apparaissait
+                // DÉDOUBLÉ et glissant). Le cadre plein prend la taille de
+                // l'overlay, donc celle du texte ; la bande bouge dedans.
+                RefletBande(largeur: largeur, decalage: decalage)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .mask(content)
+            }
+        }
+    }
+}
+
+/// L'HORLOGE DU REFLET DU TITRE (V2) : une traversée de 1,5 s toutes les 3,4 s,
+/// la première à 1 s. (Elle a porté un instant le balayage du plateau aussi —
+/// refusé : « pas d'effet balayage en background ».)
+private enum Balayage {
+    static let delai = 1.0
+    static let duree = 1.5
+    static let periode = 3.4
+}
+
+/// La boucle d'un balayage : `x` part de `depart`, glisse à `arrivee` en
+/// `Balayage.duree`, puis revient à `depart` SANS animation une fois hors du
+/// masque (invisible, jamais dans le tour de la montée) ; échéances recalées
+/// sur l'horloge (loi § 6.4 du skill : une suspension ne rejoue pas mille
+/// cycles en rafale).
+@MainActor
+private func balayer(depart: CGFloat, arrivee: CGFloat,
+                     poser: @MainActor (CGFloat) -> Void) async {
+    let clock = ContinuousClock()
+    let debut = clock.now
+    var k = 0
+    var tr = Transaction()
+    tr.disablesAnimations = true
+    withTransaction(tr) { poser(depart) }
+    try? await clock.sleep(for: .seconds(Balayage.delai))
+    while !Task.isCancelled {
+        withAnimation(.easeInOut(duration: Balayage.duree)) { poser(arrivee) }
+        try? await clock.sleep(for: .seconds(Balayage.duree + 0.1))
+        if Task.isCancelled { return }
+        withTransaction(tr) { poser(depart) }
+        k = max(k + 1, Int(ceil((secondes(clock.now - debut) - Balayage.delai)
+                                / Balayage.periode)))
+        try? await clock.sleep(until: debut.advanced(
+            by: .seconds(Balayage.delai + Balayage.periode * Double(k))))
+    }
+}
+
+private struct RefletBande: View {
+    let largeur: CGFloat
+    var decalage: CGFloat = 0
+    @State private var x: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        LinearGradient(stops: [
+            .init(color: .clear, location: 0),
+            .init(color: .white.opacity(0.85), location: 0.42),
+            .init(color: .white, location: 0.5),
+            .init(color: .white.opacity(0.85), location: 0.58),
+            .init(color: .clear, location: 1)
+        ], startPoint: .leading, endPoint: .trailing)
+            .frame(width: 96)
+            .rotationEffect(.degrees(18))
+            .offset(x: x)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { return }
+                await balayer(depart: -largeur + decalage,
+                              arrivee: largeur + decalage) { x = $0 }
+            }
+    }
+}
+
+/// V3 — LE CHEVRON QUI INVITE : « › » après le titre, qui avance de 3 pt et
+/// revient. Le glyphe système, fin, gris clair — pas un bouton.
+private struct ChevronInvite: View {
+    @State private var phase: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color(white: 0.62))
+            .offset(x: 3 * phase)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { return }
+                phase = 0
+                withAnimation(.easeInOut(duration: 0.75)
+                    .repeatForever(autoreverses: true)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+/// V4 / F3 — L'ONDE D'APPEL : un anneau de 1,5 pt naît du galet et s'élargit
+/// (0,9 → 2,1) en s'éteignant. Trois temps par cycle, jamais deux animations
+/// sur le même attribut dans le même tour : l'opacité monte (0,22 s) pendant
+/// que l'échelle part (1,3 s) ; l'opacité redescend à 0,3 s ; la remise à
+/// l'échelle de départ se fait éteinte, invisible. Échéances recalées.
+private struct OndeAppel: View {
+    let taille: CGFloat
+    let periode: Double
+    @State private var echelle: CGFloat = 0.9
+    @State private var opacite: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Circle()
+            .stroke(Color.white, lineWidth: 1.5)
+            .frame(width: taille, height: taille)
+            .scaleEffect(echelle)
+            .opacity(opacite)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { return }
+                let clock = ContinuousClock()
+                let debut = clock.now
+                var k = 0
+                try? await clock.sleep(for: .seconds(1.2))
+                while !Task.isCancelled {
+                    withAnimation(.easeOut(duration: 0.22)) { opacite = 0.45 }
+                    withAnimation(.easeOut(duration: 1.3)) { echelle = 2.1 }
+                    try? await clock.sleep(for: .seconds(0.3))
+                    if Task.isCancelled { return }
+                    withAnimation(.easeOut(duration: 1.0)) { opacite = 0 }
+                    try? await clock.sleep(for: .seconds(1.15))
+                    if Task.isCancelled { return }
+                    var tr = Transaction()
+                    tr.disablesAnimations = true
+                    withTransaction(tr) { echelle = 0.9 }
+                    k = max(k + 1, Int(ceil(secondes(clock.now - debut) / periode)))
+                    try? await clock.sleep(
+                        until: debut.advanced(by: .seconds(periode * Double(k))))
+                }
+            }
+    }
+}
+
+/// F2 — L'ÉCLAT DU GALET FAIT : un anneau de 2 pt, blanc, 0,8 → 1,9, une
+/// fois, 0,9 s après l'arrivée — l'éclat d'un objet qu'on vient de poser.
+private struct EclatFait: View {
+    let taille: CGFloat
+    @State private var echelle: CGFloat = 0.8
+    @State private var opacite: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Circle()
+            .stroke(Color.white, lineWidth: 2)
+            .frame(width: taille, height: taille)
+            .scaleEffect(echelle)
+            .opacity(opacite)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { return }
+                try? await Task.sleep(for: .seconds(0.9))
+                if Task.isCancelled { return }
+                withAnimation(.easeOut(duration: 0.2)) { opacite = 0.7 }
+                withAnimation(.easeOut(duration: 0.9)) { echelle = 1.9 }
+                try? await Task.sleep(for: .seconds(0.28))
+                if Task.isCancelled { return }
+                withAnimation(.easeOut(duration: 0.65)) { opacite = 0 }
+            }
+    }
+}
+
+/// F1 — LE TRAIT DE PROGRESSION : un fil de 2 pt (blanc 14 %) et sa part
+/// faite (blanc, une lueur) qui s'ÉTIRE à l'arrivée — `scaleEffect(x:)`, pas
+/// une largeur : rien ne se re-layoute.
+private struct TraitProgres: View {
+    let part: Double
+    let largeur: CGFloat
+    @State private var ouvert = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Capsule()
+                .fill(Color.white.opacity(0.14))
+                .frame(width: largeur, height: 2)
+            Capsule()
+                .fill(LinearGradient(colors: [Color(white: 0.86), .white],
+                                     startPoint: .leading, endPoint: .trailing))
+                .frame(width: max(8, largeur * part), height: 2)
+                .shadow(color: .white.opacity(0.55), radius: 4)
+                .scaleEffect(x: ouvert ? 1 : 0.001, anchor: .leading)
+        }
+        .padding(.top, 5)
+        .allowsHitTesting(false)
+        .task {
+            guard !reduceMotion else { ouvert = true; return }
+            try? await Task.sleep(for: .seconds(0.5))
+            if Task.isCancelled { return }
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+                ouvert = true
+            }
+        }
+    }
+}
+
+// MARK: - LE PLATEAU VIVANT (14-09, PLAN § 10)
+
+/// LES TROIS ROBES DU FOND — son ordre du 14-09 : « un dégradé liquid glass
+/// noir → transparent qui change et qui bouge dans le background ». Chaque
+/// robe est un dégradé construit UNE fois, et ce qui bouge est une rotation,
+/// un offset ou une échelle. Là où le dégradé est noir, la card est de
+/// l'obsidienne ; là où il est clair, le verre montre ce qu'il y a dessous.
+///   a — LA MARÉE : une frontière noir → clair qui TOURNE lentement (38 s) et
+///       glisse (11 s) — la moitié sombre de la card fait le tour.
+///   b — LE VERRE QUI RESPIRE : deux frontières qui tournent en sens inverse
+///       (47 s et 61 s) — la fenêtre claire est là où les deux s'ouvrent, et
+///       elle change de forme sans jamais se répéter.
+///   c — LA GOUTTE : un trou clair et rond dans le noir, qui ERRE (13 s / 19 s)
+///       et respire (7 s) — une goutte d'eau sur l'obsidienne.
+enum FondRobe: String {
+    case maree = "a", respire = "b", goutte = "c"
+
+    /// `-fondRobe a|b|c` ; LE DÉFAUT EST « LE VERRE QUI RESPIRE » — son choix du
+    /// 14-09 (« ok le verre qui respire, et fais pareil pour l'état à faire »),
+    /// dans les deux états (vide et déjà fait). Les deux autres restent au banc.
+    static let choisie: FondRobe = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-fondRobe"), i + 1 < a.count,
+              let r = FondRobe(rawValue: a[i + 1]) else { return .respire }
+        return r
+    }()
+
+    var nom: String {
+        switch self {
+        case .maree: return "a — la marée"
+        case .respire: return "b — le verre qui respire"
+        case .goutte: return "c — la goutte"
+        }
+    }
+}
+
+private struct FondLiquide: View {
+    let robe: FondRobe
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    let rayon: CGFloat
+    let presse: Bool
+
+    var body: some View {
+        let forme = RoundedRectangle(cornerRadius: rayon, style: .continuous)
+        Group {
+            switch robe {
+            case .maree: MareeNoire(largeur: largeur, hauteur: hauteur)
+            case .respire: VerreRespire(largeur: largeur, hauteur: hauteur)
+            case .goutte: GoutteNoire(largeur: largeur, hauteur: hauteur)
+            }
+        }
+        .frame(width: largeur, height: hauteur)
+        .clipShape(forme)
+        // LE DOIGT OUVRE LE VERRE : sous la pression, le noir s'efface d'un
+        // tiers — la card se laisse voir à travers.
+        .opacity(presse ? 0.68 : 1)
+        .allowsHitTesting(false)
+    }
+}
+
+/// Le côté d'un carré qui couvre la card quelle que soit sa rotation.
+private func coteTournant(_ l: CGFloat, _ h: CGFloat) -> CGFloat {
+    sqrt(l * l + h * h) * 1.25
+}
+
+/// a — LA MARÉE.
+private struct MareeNoire: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    @State private var angle: Double = 0
+    @State private var glisse: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let cote = coteTournant(largeur, hauteur)
+        Rectangle()
+            .fill(LinearGradient(stops: [
+                .init(color: .black.opacity(0.94), location: 0.00),
+                .init(color: .black.opacity(0.94), location: 0.30),
+                .init(color: .black.opacity(0.58), location: 0.47),
+                .init(color: .black.opacity(0.14), location: 0.62),
+                .init(color: .clear, location: 0.74),
+                .init(color: .clear, location: 1.00)
+            ], startPoint: .leading, endPoint: .trailing))
+            .frame(width: cote, height: cote)
+            .offset(x: -50 + 100 * glisse)
+            .rotationEffect(.degrees(angle))
+            .task {
+                guard !reduceMotion else { angle = 25; glisse = 0.5; return }
+                angle = 0; glisse = 0
+                withAnimation(.linear(duration: 38)
+                    .repeatForever(autoreverses: false)) { angle = 360 }
+                withAnimation(.easeInOut(duration: 11 / 2)
+                    .repeatForever(autoreverses: true)) { glisse = 1 }
+            }
+    }
+}
+
+/// b — LE VERRE QUI RESPIRE : deux frontières en sens inverse.
+private struct VerreRespire: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    @State private var a1: Double = 0
+    @State private var a2: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var voile: LinearGradient {
+        LinearGradient(stops: [
+            .init(color: .black.opacity(0.86), location: 0.00),
+            .init(color: .black.opacity(0.86), location: 0.34),
+            .init(color: .black.opacity(0.30), location: 0.52),
+            .init(color: .clear, location: 0.66),
+            .init(color: .clear, location: 1.00)
+        ], startPoint: .leading, endPoint: .trailing)
+    }
+
+    var body: some View {
+        let cote = coteTournant(largeur, hauteur)
+        ZStack {
+            Rectangle().fill(voile)
+                .frame(width: cote, height: cote)
+                .rotationEffect(.degrees(a1))
+            Rectangle().fill(voile)
+                .frame(width: cote, height: cote)
+                .rotationEffect(.degrees(200 + a2))
+        }
+        .task {
+            guard !reduceMotion else { a1 = 30; a2 = -30; return }
+            a1 = 0; a2 = 0
+            withAnimation(.linear(duration: 47)
+                .repeatForever(autoreverses: false)) { a1 = 360 }
+            withAnimation(.linear(duration: 61)
+                .repeatForever(autoreverses: false)) { a2 = -360 }
+        }
+    }
+}
+
+/// c — LA GOUTTE : un trou clair qui erre et respire dans le noir.
+private struct GoutteNoire: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    @State private var x: CGFloat = 0
+    @State private var y: CGFloat = 0
+    @State private var souffle: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let cote = coteTournant(largeur, hauteur) * 1.6
+        Rectangle()
+            .fill(RadialGradient(stops: [
+                .init(color: .clear, location: 0.00),
+                .init(color: .clear, location: 0.22),
+                .init(color: .black.opacity(0.42), location: 0.40),
+                .init(color: .black.opacity(0.90), location: 0.62),
+                .init(color: .black.opacity(0.90), location: 1.00)
+            ], center: .center, startRadius: 0, endRadius: 210))
+            .frame(width: cote, height: cote)
+            .scaleEffect(0.88 + 0.26 * souffle)
+            .offset(x: -95 + 190 * x, y: -40 + 80 * y)
+            .task {
+                guard !reduceMotion else { x = 0.5; y = 0.5; souffle = 0.5; return }
+                x = 0; y = 0; souffle = 0
+                withAnimation(.easeInOut(duration: 13 / 2)
+                    .repeatForever(autoreverses: true)) { x = 1 }
+                withAnimation(.easeInOut(duration: 19 / 2)
+                    .repeatForever(autoreverses: true)) { y = 1 }
+                withAnimation(.easeInOut(duration: 7 / 2)
+                    .repeatForever(autoreverses: true)) { souffle = 1 }
+            }
+    }
+}
+
+/// P2 — LA LUMIÈRE QUI TOURNE SUR LE LISERÉ : une crête blanche parcourt le
+/// contour sans fin (22 s) — la technique de `LisereRespirant` : on ne tourne
+/// pas la vue (le cadre tournerait, visible), on tourne LA PEINTURE — un carré
+/// de dégradé conique plus grand que la card, masqué par le trait du contour,
+/// construit une fois.
+private struct LisereTournant: View {
+    let largeur: CGFloat
+    let hauteur: CGFloat
+    let rayon: CGFloat
+    let presse: Bool
+    let intensite: Double
+    @State private var angle: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let forme = RoundedRectangle(cornerRadius: rayon, style: .continuous)
+        let cote = sqrt(largeur * largeur + hauteur * hauteur)
+        Rectangle()
+            .fill(AngularGradient(stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .clear, location: 0.40),
+                .init(color: .white.opacity(0.30), location: 0.465),
+                .init(color: .white, location: 0.50),
+                .init(color: .white.opacity(0.30), location: 0.535),
+                .init(color: .clear, location: 0.60),
+                .init(color: .clear, location: 1)
+            ], center: .center))
+            .frame(width: cote, height: cote)
+            .rotationEffect(.degrees(angle))
+            .frame(width: largeur, height: hauteur)
+            .mask {
+                ZStack {
+                    forme.stroke(.white, lineWidth: 1.4)
+                    forme.stroke(.white, lineWidth: 5)
+                        .blur(radius: 2.6)
+                        .opacity(0.5)
+                }
+                .frame(width: largeur, height: hauteur)
+            }
+            .opacity((presse ? 0.9 : 0.55) * intensite)
+            .allowsHitTesting(false)
+            .task {
+                guard !reduceMotion else { angle = 0; return }
+                angle = 0
+                withAnimation(.linear(duration: 22)
+                    .repeatForever(autoreverses: false)) { angle = 360 }
+            }
+    }
+}
+
 // MARK: - Le banc (`-duoLab -routeCard <cas>`)
 
 /// LE BANC DE LA CARD — la card SEULE, sur le noir, dans les cinq situations
@@ -739,13 +1326,47 @@ struct RouteCardLab: View {
     /// `-bandeLueur` : la card comme si un doigt était en train de la faire
     /// défiler — le seul moyen de juger l'intensité de la lueur sans appareil.
     private static let lueur = CommandLine.arguments.contains("-bandeLueur")
+    /// `-deuxEtats` (14-09) : l'état VIDE et l'état DÉJÀ FAIT l'un sous
+    /// l'autre, vivants — c'est là qu'elle juge les micro-animations.
+    private static let deuxEtats = CommandLine.arguments.contains("-deuxEtats")
+    /// `-fondPlanche` (14-09) : les TROIS robes du fond l'une sous l'autre, en
+    /// verre, sur un fond qui bouge (ce que la Home met sous la card) — c'est
+    /// là qu'elle choisit. `-deuxEtats` et `-fondPlanche` montent la card en
+    /// VERRE, comme la Home : un dégradé noir → transparent ne se juge pas sur
+    /// une ardoise opaque.
+    private static let fondPlanche = CommandLine.arguments.contains("-fondPlanche")
     @State private var pas = 0
     @State private var horloge: Timer?
 
     var body: some View {
         ZStack {
             Color.black
-            if Self.planCas {
+            if Self.deuxEtats || Self.fondPlanche { SceneDuBanc() }
+            if Self.fondPlanche {
+                VStack(spacing: 22) {
+                    ForEach([FondRobe.maree, .respire, .goutte], id: \.rawValue) { r in
+                        VStack(spacing: 6) {
+                            CardRoute(lecture: Self.lecture("vide"), verre: true,
+                                      geo: .compacte, fondRobe: r)
+                            Text(r.nom)
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(Color(white: 0.55))
+                        }
+                    }
+                }
+            } else if Self.deuxEtats {
+                VStack(spacing: 26) {
+                    ForEach(["vide", "fait"], id: \.self) { c in
+                        VStack(spacing: 6) {
+                            CardRoute(lecture: Self.lecture(c), verre: true,
+                                      geo: .compacte)
+                            Text(Self.legende(c) + "  ·  fond " + FondRobe.choisie.rawValue)
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(Color(white: 0.42))
+                        }
+                    }
+                }
+            } else if Self.planCas {
                 VStack(spacing: 4) {
                     ForEach(Self.cas4, id: \.self) { c in
                         VStack(spacing: 2) {
@@ -832,6 +1453,8 @@ struct RouteCardLab: View {
         let base: Int = {
             switch cas {
             case "debut": return 0          // chapitre 1, rang 1
+            case "vide": return 0           // 14-09 : rien de fait, « Commence »
+            case "fait": return 1           // 14-09 : la 1re séance faite, hier
             case "apresReward": return 4    // rang 5, la pièce est derrière
             case "finChapitre": return 7    // rang 8, le trésor est dessous
             case "chap2": return 9 + 4      // chapitre 2, rang 5
@@ -874,6 +1497,37 @@ struct RouteCardLab: View {
         }
         return "\(cas)  ·  \(a.nom)  ·  avant \(nom(a.avant))"
             + "  ·  après \(nom(a.apres))"
+    }
+}
+
+/// LE FOND DU BANC (14-09) : ce que la Home met sous la card — une lumière
+/// chaude en haut (l'aurore) et une froide en bas, qui dérivent lentement. Sans
+/// lui, un verre sur du noir est une ardoise opaque, et un dégradé noir →
+/// transparent n'a rien à révéler.
+private struct SceneDuBanc: View {
+    @State private var d: CGFloat = 0
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color(red: 0.95, green: 0.42, blue: 0.22).opacity(0.55), .clear],
+                    center: .center, startRadius: 0, endRadius: 330))
+                .frame(width: 660, height: 660)
+                .offset(x: -140 + 260 * d, y: -300 + 140 * d)
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color(red: 0.55, green: 0.62, blue: 0.95).opacity(0.38), .clear],
+                    center: .center, startRadius: 0, endRadius: 280))
+                .frame(width: 560, height: 560)
+                .offset(x: 170 - 220 * d, y: 260 - 120 * d)
+        }
+        .allowsHitTesting(false)
+        .task {
+            d = 0
+            withAnimation(.easeInOut(duration: 9)
+                .repeatForever(autoreverses: true)) { d = 1 }
+        }
     }
 }
 

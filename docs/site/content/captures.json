@@ -126,7 +126,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-01-nuit.png",
-   "octets": 5588
+   "octets": 5212
   },
   {
    "nom": "onb-02-nietzsche",
@@ -135,7 +135,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-02-nietzsche.png",
-   "octets": 7223
+   "octets": 6697
   },
   {
    "nom": "onb-03-accueil",
@@ -144,7 +144,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-03-accueil.png",
-   "octets": 5927
+   "octets": 5547
   },
   {
    "nom": "onb-04-langue",
@@ -153,7 +153,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-04-langue.png",
-   "octets": 8347
+   "octets": 7699
   },
   {
    "nom": "onb-05-prenom",
@@ -162,7 +162,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-05-prenom.png",
-   "octets": 4745
+   "octets": 4516
   },
   {
    "nom": "onb-06-but",
@@ -171,7 +171,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-06-but.png",
-   "octets": 6986
+   "octets": 6534
   },
   {
    "nom": "onb-07-jours",
@@ -180,7 +180,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-07-jours.png",
-   "octets": 7063
+   "octets": 6581
   },
   {
    "nom": "onb-08-bien",
@@ -189,7 +189,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-08-bien.png",
-   "octets": 8345
+   "octets": 7717
   },
   {
    "nom": "onb-09-fin",
@@ -198,7 +198,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-09-fin.png",
-   "octets": 5404
+   "octets": 5102
   },
   {
    "nom": "onb-10-sortie",
@@ -207,7 +207,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-10-sortie.png",
-   "octets": 8974
+   "octets": 8153
   },
   {
    "nom": "onb-11-visite-galets",
@@ -216,7 +216,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-11-visite-galets.png",
-   "octets": 7235
+   "octets": 6649
   },
   {
    "nom": "onb-12-visite-progres",
@@ -225,7 +225,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-12-visite-progres.png",
-   "octets": 7731
+   "octets": 7046
   },
   {
    "nom": "onb-13-visite-profil",
@@ -234,7 +234,7 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-13-visite-profil.png",
-   "octets": 5085
+   "octets": 4812
   },
   {
    "nom": "onb-14-visite-pieces",
@@ -243,7 +243,16 @@
    "largeur": 240,
    "hauteur": 520,
    "source": "tools/docsite/shots/onb-14-visite-pieces.png",
-   "octets": 5557
+   "octets": 5225
+  },
+  {
+   "nom": "onb-15-route-vivante",
+   "legende": "Card ROUTE vivante · vide / déjà fait",
+   "fichier": "captures/onboarding/onb-15-route-vivante.jpg",
+   "largeur": 240,
+   "hauteur": 520,
+   "source": "tools/docsite/shots/onb-15-route-vivante.png",
+   "octets": 6217
   }
  ],
  "hero": {
