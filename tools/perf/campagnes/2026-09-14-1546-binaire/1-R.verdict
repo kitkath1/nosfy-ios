@@ -1,0 +1,21 @@
+{
+ "fichier": "1-R.jsonl",
+ "n": 56,
+ "img": 29.8,
+ "pire_ms": 171,
+ "pire_max_ms": 1238,
+ "cpu": 18,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  12,
+  0,
+  14
+ ]
+}

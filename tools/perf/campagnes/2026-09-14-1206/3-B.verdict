@@ -1,0 +1,21 @@
+{
+ "fichier": "3-B.jsonl",
+ "n": 62,
+ "img": 58.2,
+ "pire_ms": 38,
+ "pire_max_ms": 267,
+ "cpu": 32,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "exercises,home",
+ "seance": 1,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  14,
+  0,
+  14
+ ]
+}

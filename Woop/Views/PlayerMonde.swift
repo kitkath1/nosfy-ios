@@ -595,7 +595,9 @@ struct PlayerMondeHote: View {
             try? await Task.sleep(for: .seconds(1.3))
             etat.fermer()
             try? await Task.sleep(for: .seconds(1.4))
-            SondeHit.rapporter()
+            #if DEBUG
+            SondeHit.rapporter()   // la sonde n'existe qu'en DEBUG (14-09 : la Release ne compilait plus)
+            #endif
         }
     }
 
@@ -622,7 +624,9 @@ struct PlayerMondeHote: View {
             try? await Task.sleep(for: .seconds(2.2))
             etat.fermer()
             try? await Task.sleep(for: .seconds(1.6))
-            SondeHit.rapporter()
+            #if DEBUG
+            SondeHit.rapporter()   // la sonde n'existe qu'en DEBUG (14-09 : la Release ne compilait plus)
+            #endif
         }
     }
 }
