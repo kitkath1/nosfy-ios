@@ -131,14 +131,26 @@ struct BraisesVague: View {
                         let r = CGRect(x: x + pas * 0.10,
                                        y: size.height - hCol,
                                        width: pas * 0.80, height: hCol)
+                        // ⚠️ LA RAMPE EST ROUGE·BLANC·NOIR (verdict Kathryn
+                        // 06-09 : « pas de braises marrons !! on a jamais
+                        // voulu cette couleur »). MESURÉ sur capture, pixels
+                        // clairs de la flamme : l'ancien stop (1 · 0,54 ·
+                        // 0,18) rendait G/R = 0,52 — un vert à 0,54 EST de
+                        // l'orange, et flouté sur noir il se lit MARRON. La
+                        // loi anti-brun (« R reste à 1,00, on désature le
+                        // vert ») était tenue à la lettre ; le vert n'était
+                        // simplement jamais descendu assez bas. Un ROUGE se
+                        // mesure : G/R ≤ 0,22 sur les pixels clairs du corps.
+                        // La crête reste BLANCHE et FINE : c'est elle qui
+                        // porte la clarté, jamais un orange intermédiaire.
                         let grad = Gradient(stops: [
                             .init(color: .white.opacity(0.85 * niveau),
                                   location: 0),
-                            .init(color: Color(red: 1, green: 0.54,
-                                               blue: 0.18)
+                            .init(color: Color(red: 1, green: 0.18,
+                                               blue: 0.08)
                                 .opacity(0.75 * niveau), location: 0.35),
-                            .init(color: Color(red: 1, green: 0.20,
-                                               blue: 0.05)
+                            .init(color: Color(red: 1, green: 0.07,
+                                               blue: 0.03)
                                 .opacity(0.45 * niveau), location: 0.75),
                             .init(color: .clear, location: 1)
                         ])

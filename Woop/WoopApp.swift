@@ -1095,6 +1095,26 @@ struct RootView: View {
     /// continue qu'au banc : il MONTE du bas, rien ne grandit).
     @State private var morphPlayer: CGFloat = 0
 
+    /// L'ONGLET ACCUEIL, SORTI DU MUR (06-09). La home v2 rouge, son menu qui
+    /// route, son slider qui ouvre le chemin — et le Foyer qui ouvre LE GRAND
+    /// PLAYER (le dernier composant, jamais l'ancien `PlayerMonde`). La porte
+    /// d'onglet (chantier chauffe 03-09, item 4) reste ici : le TabView garde
+    /// les onglets visités MONTÉS, chaque page doit savoir si elle est
+    /// affichée pour mettre ses moteurs en pose.
+    private var ongletHome: some View {
+        // ⚠️ L'ORDRE DES ARGUMENTS EST CELUI DES PROPRIÉTÉS (init memberwise) :
+        // `onDetailSeance` AVANT `exoParRoute`. Inversés, Swift ne dit pas
+        // « ordre faux » — il part dans la recherche d'overloads la plus chère
+        // et rend « unable to type-check in reasonable time » : le faux mur
+        // qui a bloqué trois sessions le 06-09 (diagnostic : la session
+        // pastille, sur sa copie jetable).
+        HomeNuitPage(onRoute: routerVers,
+                     onDetailSeance: ouvrirGrandPlayer,
+                     exoParRoute: true)
+            .toolbarVisibility(.hidden, for: .tabBar)
+            .environment(\.ongletCache, selection != .home)
+    }
+
     private func ouvrirGrandPlayer() {
         Haptique.leger()
         // ⚠️ LA CORDE QUE PERSONNE NE TIRAIT (05-09, audit + lecture).
@@ -1239,19 +1259,15 @@ struct RootView: View {
                 && !(Self.cheminSeul && depart.cheminOuvert) {
             TabView(selection: $selection) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
-                    // §23 LE BRANCHEMENT — LA HOME V2 ROUGE prend l'onglet
-                    // (la porte y atterrit après la connexion). Son menu
-                    // route (onRoute), son slider ouvre LE CHEMIN, le
-                    // chemin démarre la séance et route vers Exercices.
-                    // L'ancienne home (HomeAuroraView) reste en archive.
-                    HomeNuitPage(onRoute: routerVers, exoParRoute: true)
-                        .toolbarVisibility(.hidden, for: .tabBar)
-                        // LA PORTE D'ONGLET (chantier chauffe 03-09, item
-                        // 4) : le TabView garde les onglets visités MONTÉS
-                        // — chaque page sait désormais si elle est
-                        // affichée, et ses moteurs (fonds vidéo, comète,
-                        // horloges) se mettent en POSE sans se démonter.
-                        .environment(\.ongletCache, selection != .home)
+                    // §23 LE BRANCHEMENT — LA HOME V2 ROUGE prend l'onglet.
+                    // ⚠️ LE CONTENU EST SORTI EN `ongletHome` (le mur de
+                    // 337a6e3, rejoué DEUX fois le 06-09 : la fermeture
+                    // inline, PUIS la référence nommée — vert en
+                    // incrémental, ROUGE en build propre, vu par les deux
+                    // sessions voisines). La seule forme qui tient est le
+                    // DÉCOUPAGE : une sous-vue nommée, hors de l'expression
+                    // géante du TabView.
+                    ongletHome
                 }
                 Tab("Exercices", systemImage: "figure.strengthtraining.functional",
                     value: WoopTab.exercises) {
@@ -1550,7 +1566,17 @@ struct RootView: View {
             // (avec `withAnimation`, c'est le RENDU que SwiftUI interpole,
             // pas la valeur) : la démonter sur ce seuil la ferait
             // disparaître D'UN COUP pendant que le player monte encore.
-            if let a = active {
+            // ⚠️ LE FOYER GATE LA PASTILLE (Kathryn, 06-09 : « pas de
+            // pastille dans la Dynamic Island, c'est redondant ») : en
+            // séance, la HOME affiche l'écran de séance — chrono, séries,
+            // feu — et la pastille redirait la même chose PLUS une deuxième
+            // lampe (son île orange) sur un écran qui n'a droit qu'à une.
+            // Le gate vit ICI, au châssis, parce que `selection` y est connu :
+            // posé dans la home, la pastille disparaîtrait de TOUTE l'app
+            // pendant la séance (le TabView garde les onglets montés) — y
+            // compris de la fiche exo où elle est le seul accès au player.
+            // Sur les AUTRES onglets, rien ne change.
+            if let a = active, selection != .home {
                 PiluleVagabonde(
                     // ⚠️ LA BORNE BASSE TIENT COMPTE DE LA NAV ET DU
                     // TICKET (relecture adverse 04-09). À `H − 96`, le

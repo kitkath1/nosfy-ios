@@ -400,6 +400,32 @@ enum PhraseTexte {
     /// quatre fragments, clair/sourd/clair/sourd, en anglais, chacun tenant
     /// dans les 300 pt de `PhraseParams.largeur`.
     static func fragmentsSeance(minutes: Int, prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
+        // FRANÇAIS + ANGLAIS (verdict 14-09) — la langue vient de
+        // `Langue.swift` (cache `woop.langue`, posé quand home() répond).
+        // Ceci n'est que le REPLI d'avant la première réponse serveur :
+        // en régime normal la home lit `PhraseTexte.serveur("seance…")`.
+        // ⚠️ UN REPLI DOIT RESSEMBLER À LA VÉRITÉ : ces mots sont ceux que le
+        // serveur sert (home().phrases, clés `seance_debut` / `seance`) et
+        // qu'elle a validés le 14-09 — MOT POUR MOT, sinon la première image
+        // dirait autre chose que la phrase qui arrive une seconde après.
+        if Langue.en == false {
+            let mot = minutes == 1 ? "minute" : "minutes"
+            let salut = (prenom?.isEmpty ?? true) ? "Allez," : "Allez \(prenom!),"
+            if minutes < 1 {
+                return [
+                    PhraseFragment(salut, clair: true),
+                    PhraseFragment("on y est,", clair: false),
+                    PhraseFragment("la séance", clair: true),
+                    PhraseFragment("commence.", clair: false)
+                ]
+            }
+            return [
+                PhraseFragment(salut, clair: true),
+                PhraseFragment("déjà", clair: false),
+                PhraseFragment("\(minutes) \(mot)", clair: true),
+                PhraseFragment("dans les jambes.", clair: false)
+            ]
+        }
         let mot = minutes == 1 ? "minute" : "minutes"
         if minutes < 1 {
             return [
@@ -1946,6 +1972,14 @@ struct HomeNuitPage: View {
     /// et le jour où la v2 prend l'onglet, le même point d'appel pilotera
     /// `selection`. On n'invente pas une navigation qui n'existe pas.
     var onRoute: (WoopTab) -> Void = { _ in }
+    /// LE DÉTAIL DE LA SÉANCE (Foyer, 06-09) : le tap sur le bloc-chrono ouvre
+    /// LE GRAND PLAYER — le composant de la pastille, LE DERNIER (verdict
+    /// Kathryn : « tu as pris l'ancien player ! il faut prendre le dernier
+    /// composant updaté »). La porte vit au châssis (`ouvrirGrandPlayer()`,
+    /// privée à RootView) : elle descend ici en closure, comme `onRoute`.
+    /// ⚠️ PAS `PlayerEtat.shared.ouvrir()` — ça montait `PlayerMonde`,
+    /// l'ANCIEN player global.
+    var onDetailSeance: () -> Void = {}
     /// §23 — dans le monde TabView, le départ du chemin ROUTE vers
     /// l'onglet exercices (une seule RED PAGE EXO montée) au lieu
     /// d'empiler un cover par-dessus le chemin.
@@ -2896,7 +2930,25 @@ struct HomeNuitPage: View {
                          galetCache: true) {
                     // ⚠️ LE VOILE NOIR EST MORT (verdict 22-08 : « l'écran noir
                     // non ! »). La card CHAUDE reste, c'est elle la scène.
-                    fondPage(e)
+                    // ⚠️ LE FOYER (06-09) — « un écran QUASI FULL NOIR ». En
+                    // séance, la grande card vidéo est DÉMONTÉE (on démonte,
+                    // on ne cache pas : une vue montée est rendue).
+                    // ⚠️ Et je dis pourquoi, parce que la raison a changé : ce
+                    // N'EST PAS pour la cadence. Le skill `woop-performance` a
+                    // MESURÉ la vidéo INNOCENTE (37 % contre 38 % avec une
+                    // image de pose) — le vrai poste est le VERRE, un quart.
+                    // On la démonte parce que l'écran de séance est noir.
+                    if enSeance {
+                        // La sonde de cadence survit au démontage : c'est le
+                        // seul instrument monté ici, il ne dessine rien.
+                        if CommandLine.arguments.contains("-fps") {
+                            SondeCadence(quoi: "home-seance")
+                                .frame(width: 1, height: 1)
+                                .allowsHitTesting(false)
+                        }
+                    } else {
+                        fondPage(e)
+                    }
                 } contenu: {
                     // ⚠️ LA SONDE DU PULL (`-pullSonde <n>`) : elle éteint une
                     // couche à la fois pour savoir laquelle coûte les trous de
@@ -2930,6 +2982,13 @@ struct HomeNuitPage: View {
                     // ⚠️ PAS une `TimelineView` à la place : celle du body de
                     // la home est volontairement pausée au repos, la réveiller
                     // rejouerait le piège de la page ré-évaluée par image.
+                    // ⚠️ LE FOYER (06-09) — UN SEUL `if` qui démonte tout le
+                    // mobilier de la home : widgets, card route, slider,
+                    // invite, fumée, pièce du trésor et son gyroscope. Le
+                    // plan : `tools/foyer/PLAN-FOYER.md`.
+                    if enSeance {
+                        foyerEnSeance()
+                    } else {
                     Chambre(p: arrivee) { a in
                         mobilierScene(geo, g, e, a)
                     }
@@ -2941,8 +3000,12 @@ struct HomeNuitPage: View {
                     // … et SOUS LA ROUTE (jalon 1) : la home dort, son verre
                     // aussi — du verre natif sur une vidéo vivante sous une
                     // page opaque, c'était la moitié des 12-21 img/s mesurés.
+                    // ⚠️ IL VIT DANS LA BRANCHE, PAS APRÈS ELLE (06-09) : posé
+                    // après le `}` du `if`, il ne s'attache à rien — « instance
+                    // member 'environment' cannot be used on type 'View' ».
                     .environment(\.verreDemonte,
                                   menuOuvert || DepartEtat.shared.homeDort)
+                    }
                     }
                 }
                 // ⚠️ **LE TIRAGE VIT ICI, ET EN SIMULTANÉ** (26-08) — voir la
@@ -3148,6 +3211,29 @@ struct HomeNuitPage: View {
     @State private var libelleSlider = DepartMots.boutons[0]
     private var motsArrivee: [(String, Bool)] {
         [(ligneUne, true), ("slide to start", false), ("your session.", true)]
+    }
+
+    /// LE FOYER — ce que la home montre PENDANT une séance (06-09).
+    ///
+    /// ⚠️ Une vue NOMMÉE, et pas une fermeture posée dans le corps : toute
+    /// fermeture de plus de deux lignes rapproche du mur du type-checker, et
+    /// le mur ne se voit qu'en build PROPRE (payé au commit `337a6e3`).
+    ///
+    /// ⚠️ **`onDetail` est un POINT DE COUTURE.** Le plan veut
+    /// `ouvrirGrandPlayer()` au châssis (`WoopApp.swift:1057`) — mais ce
+    /// fichier appartient à une autre session. En attendant, on passe par
+    /// l'état partagé, qui est le chemin que le châssis documente lui-même
+    /// (« les dalles des pages appellent `PlayerEtat.shared.ouvrir()` »).
+    private func foyerEnSeance() -> some View {
+        FoyerPage(depuisSeance: debutSeance ?? Date(),
+                  series: seancesOuvertes.first?.seriesPayantes ?? 0,
+                  minutes: minutesSeance,
+                  arrivee: arrivee,
+                  sticker: seancesOuvertes.first
+                      .map { WoopSticker.pour($0).asset } ?? "sticker-flamme",
+                  onChoisir: { onRoute(.exercises) },
+                  onDetail: onDetailSeance,
+                  onTerminer: { DepartEtat.shared.pauseOuverte = true })
     }
 
     @ViewBuilder
