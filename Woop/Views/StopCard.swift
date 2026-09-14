@@ -142,14 +142,19 @@ struct StopCard: View, Animatable {
     /// La forme de la famille (RewardScene) : rayon 36 continu.
     private static let forme = RoundedRectangle(cornerRadius: 36,
                                                 style: .continuous)
-    /// 332 × 480 pt : plus haute que la reward (1,32) — elle porte un slider.
-    /// CONDENSÉE (04-09, Kathryn) : 480 → 372 pour 332 de large — elle
-    /// prenait presque tout l'écran, elle redevient une CARD. Les cotes
-    /// internes suivent (l'air, pas le contenu : titre, bilan, slider et
-    /// « Cancel » gardent leurs tailles de lecture).
-    private static let ratio: CGFloat = 372.0 / 332.0
+    /// LA HAUTEUR DE LA FAMILLE (verdict 14-09 : « même taille que la
+    /// famille des pop-ups — la tienne ne doit jamais exister ») : 332 × 438,
+    /// le ratio 1,32 de la reward. La condensation du 04-09 (372) est
+    /// annulée par ce verdict-là.
+    private static let ratio: CGFloat = 438.0 / 332.0
     /// Le centre du mot, depuis le bord haut (§2.1 du plan).
-    private static let centreMot: CGFloat = 86
+    private static let centreMot: CGFloat = 110
+    /// L'échelle de la bête (14-09, quatre verdicts) : 66 % « trop petit » →
+    /// 80 % → 96 % → « encore 10 % et on est bon » → 1,06. Elle DÉBORDE la
+    /// card : normal, elle est clippée par la robe et son bas est dissous ;
+    /// l'ancrage descend à 28 pt pour que les oreilles ne se coupent pas.
+    private static let kBete: CGFloat = 1.06
+    private static let yBete: CGFloat = 10
 
     var body: some View {
         GeometryReader { g in
@@ -181,8 +186,15 @@ struct StopCard: View, Animatable {
             //    La bête ENTRE DANS LA LUMIÈRE (fondu).
             if !StopBanc.sansVideo {
                 VideoBoucle(nom: "stop-bat-loop")
-                    .frame(width: l, height: h)
-                    .opacity(sstep(0.30, 0.60, p))
+                    // 66 % et collée en haut (verdict 14-09 : « la vidéo
+                    // doit être PLUS PETITE — on dirait une image posée ») :
+                    // la bête vit dans la BANDE 1, le texte n'a plus rien
+                    // au-dessus de lui. Taille FIXE — jamais un resize vivant.
+                    .frame(width: l * Self.kBete, height: h * Self.kBete)
+                    .offset(y: -(h - h * Self.kBete) / 2 + Self.yBete)
+                    // Elle s'ENFONCE dans le noir (0,82, jamais 1) : une
+                    // présence dans l'ombre, pas une image plaquée.
+                    .opacity(0.90 * sstep(0.30, 0.60, p))
             }
 
             // 3. LE MUR — ce qui vit DERRIÈRE la bête (le fond gris → noir
@@ -193,7 +205,33 @@ struct StopCard: View, Animatable {
             // 4. LE CÔNE — NON masqué, en écran : il éclaire le mot ET la
             //    bête. La lumière vit DEVANT le plan, la seule place permise.
             LampeEventail(naissance: naissance)
-                .opacity(sstep(0.25, 0.70, p))
+                .opacity(0.78 * sstep(0.25, 0.70, p))
+
+            // 4bis. LE NOIR FONDU (verdict 13-09 : « le Nosfy est trop
+            //    blanc, pas assez fondu — du noir fondu à sa moitié et le
+            //    background noir de la card »). UN CALQUE statique posé sur
+            //    la vidéo ET la lampe — jamais un masque (loi payée : un
+            //    masque sur une couche vidéo = rendu hors écran par image).
+            //    Le pied de la bête finit en NOIR EXACT : il devient la
+            //    dalle, sans couture.
+            //    ⚠️ Verdict 14-09 (« Nosfy est COUPÉ ! ») : la première
+            //    version montait de 0 à 0,45 en 20 % de card — une MARCHE,
+            //    pile sur ses pattes. Un fondu se juge à sa PENTE : ici la
+            //    montée s'étale sur ~45 % de la hauteur (les ~30 % du bas de
+            //    la bête), aucun cran ne saute de plus de ~0,3, et le noir
+            //    n'est total qu'au pied de la card.
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .clear, location: 0.30),
+                .init(color: .black.opacity(0.22), location: 0.37),
+                .init(color: .black.opacity(0.58), location: 0.43),
+                .init(color: .black.opacity(0.88), location: 0.47),
+                .init(color: .black, location: 0.51),
+                .init(color: .black, location: 1)
+            ], startPoint: .top, endPoint: .bottom)
+                .frame(width: l, height: h)
+                .opacity(sstep(0.30, 0.60, p))
+                .allowsHitTesting(false)
 
             // 5. LA POUDRE — devant tout, comme sur toutes les cards.
             PoudreDiamant(largeur: l, hauteur: h, naissance: naissance)
@@ -260,9 +298,25 @@ struct StopCard: View, Animatable {
                 .offset(y: Self.centreMot - h / 2 - 6)
         }
         .mask {
-            Image("stop-bat-masque")
-                .resizable()
-                .frame(width: l, height: h)
+            // Le trou SUIT la bête réduite. ⚠️ Piège payé (woop-piege-mask-
+            // alpha) : UN MASQUE LIT L'ALPHA — poser la silhouette SUR du
+            // blanc REBOUCHE son trou (l'alpha du blanc gagne, le mur couvre
+            // tout, la bête disparaît — vu à la capture du 14-09). La forme
+            // juste : PERCER le blanc au rectangle de la bête
+            // (`destinationOut`), puis REPOSER l'alpha de la silhouette dans
+            // le trou.
+            ZStack {
+                Color.white
+                Rectangle()
+                    .frame(width: l * Self.kBete, height: h * Self.kBete)
+                    .offset(y: -(h - h * Self.kBete) / 2 + Self.yBete)
+                    .blendMode(.destinationOut)
+                Image("stop-bat-masque")
+                    .resizable()
+                    .frame(width: l * Self.kBete, height: h * Self.kBete)
+                    .offset(y: -(h - h * Self.kBete) / 2 + Self.yBete)
+            }
+            .compositingGroup()
         }
         .opacity(sstep(0.10, 0.45, p))
         .allowsHitTesting(false)
@@ -309,14 +363,16 @@ struct StopCard: View, Animatable {
         }
         // 36 → 22 (04-09, condensation) : le bloc respire encore du bord
         // bas, mais la card ne s'étire plus pour ça.
-        .padding(.bottom, 22)
+        .padding(.bottom, 30)
         .frame(width: l, height: h, alignment: .bottom)
     }
 
     /// Titre et bilan RESPIRENT (verdict Kathryn 29-08 : +4 pt) — collés,
     /// ils se lisaient comme une seule masse.
     private var titres: some View {
-        VStack(spacing: 7) {
+        // 7 → 12 (verdict 13-09 : « espacer davantage ») ; `-stopTitres16`
+        // = le cran B de l'A/B sur capture.
+        VStack(spacing: StopBanc.titres16 ? 16 : 12) {
             Text("Stop the session?")
                 .font(.inter(22, .semibold))
                 .foregroundStyle(
@@ -338,27 +394,15 @@ struct StopCard: View, Animatable {
     /// droite (il fuit le pouce), et « STOP » ne tombait pas sur l'axe de
     /// « Cancel » juste dessous — ça se lisait comme un défaut d'alignement.
     private var commandes: some View {
-        VStack(spacing: 2) {
-            SliderObsidienne(label: "Stop",
-                             height: 58,
-                             auto: StopBanc.sliderAuto,
-                             labelCentre: true,
-                             onConfirm: onStop)
-                .padding(.horizontal, 20)
-                // 28 → 20 (04-09) : le texte reste décollé du slider, la
-                // décision n'est toujours pas dans la question.
-                .padding(.top, 20)
-            // LE BOUTON LIEN — de l'encre nue, la zone de toucher reste large.
-            // (Aucun drag d'ancêtre dans cette card : un `Button` suffit.)
-            Button(action: onCancel) {
-                Text("Cancel")
-                    .font(.inter(15, .medium))
-                    .foregroundStyle(Color.white.opacity(0.55))
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
+        // « CANCEL » EST MORT (verdict 14-09 : « enlève cancel ») — le scrim
+        // reste la porte d'annulation (tap hors de la card, ligne ~166).
+        SliderObsidienne(label: "Stop",
+                         height: 58,
+                         auto: StopBanc.sliderAuto,
+                         labelCentre: true,
+                         onConfirm: onStop)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
     }
 }
 
@@ -432,6 +476,8 @@ enum StopBanc {
     static let fige = CommandLine.arguments.contains("-stopFige")
     /// `-stopNu` — pas de bandeau.
     static let nu = CommandLine.arguments.contains("-stopNu")
+    /// `-stopTitres16` — le cran B de l'espacement titre/sous-titre (A = 12).
+    static let titres16 = CommandLine.arguments.contains("-stopTitres16")
     /// `-stopAuto` — ouvre / ferme en boucle : c'est celui qu'on FILME.
     static let auto = CommandLine.arguments.contains("-stopAuto")
     /// `-stopSliderAuto` — le slider rejoue son geste seul (le sim n'a pas

@@ -332,12 +332,20 @@ struct SliderObsidienne: View {
         // Le texte s'éteint sur la fin de course : à l'armement il n'y a plus
         // rien à lire, on ne lit pas ce qu'on est en train de faire.
         let vie = Double(1 - min(1, max(0, (p - 0.35) / 0.35)))
+        // MUET AU REPOS (verdict 13-09 : « enlève le texte — il apparaît
+        // quand le user commence à slider ») : le mot NAÎT sur les premiers
+        // 8 % de course, et meurt comme avant à l'armement. Zéro texte
+        // dormant — dans TOUS les écrans qui montent ce composant.
+        let naissance = Double(min(1, max(0, p / 0.08)))
 
         // La casse des boutons (30-08, « pareil dans le switch ») : une phrase,
         // comme le primaire — l'interlettrage des capitales tombe avec elles.
+        // LA VOIX DU PRIMAIRE (verdict 13-09 : « même taille de font que
+        // les boutons primary, pour consistance ») — le label vivait en
+        // système ~10 pt pendant que le primaire parle en Inter 18 semibold.
         let encre = Text(label.enPhrase)
-            .font(.system(size: height * 0.169, weight: .medium))
-            .tracking(height * 0.004)
+            .font(.inter(18, .semibold))
+            .tracking(-0.2)
 
         // LA LARGEUR UTILE : la course LIBRE, pas la piste. Centré sur la
         // piste, le texte a son premier caractère sous le pouce au repos —
@@ -390,7 +398,7 @@ struct SliderObsidienne: View {
                 .position(x: centre, y: height / 2)
         }
         .frame(width: W, height: height)
-        .opacity(vie)
+        .opacity(vie * naissance)
         // LE TROU DU POUCE. Un `Rectangle` moins la capsule, en
         // `destinationOut`, le bord adouci de 4 pt DANS un calque du Canvas —
         // un `.blur` posé sur une forme SwiftUI, lui, déposerait son voile

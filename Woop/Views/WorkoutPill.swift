@@ -22,6 +22,11 @@ struct MedaillonStop: View {
     var symbol: String = "stop.fill"
     var neon: Bool = false
     var lueur: Bool = true
+    /// La taille du DISQUE (13-09, le Foyer le veut Ø 68) : le dessin reste
+    /// FIN à grande taille — liserés et glyphe suivent en proportion douce,
+    /// jamais un `scaleEffect` qui épaissirait tout. Défaut 34 : aucun site
+    /// existant ne bouge.
+    var taille: CGFloat = 34
     var action: () -> Void = {}
 
     var body: some View {
@@ -46,17 +51,17 @@ struct MedaillonStop: View {
                 .opacity(lueur ? 1.0 : 0.62)
             if neon {
                 Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: taille * 0.353, weight: .bold))
                     .foregroundStyle(FlammePalette.neon)
                     .shadow(color: FlammePalette.coeur.opacity(0.45),
                             radius: 3)
             } else {
                 Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: taille * 0.353, weight: .bold))
                     .foregroundStyle(FlammePalette.blanc.opacity(0.92))
             }
         }
-        .frame(width: 34, height: 34)
+        .frame(width: taille, height: taille)
         // Le liseré premium, aux crans du médaillon.
         .overlay {
             Circle()
@@ -71,7 +76,7 @@ struct MedaillonStop: View {
                 .stroke(AngularGradient(stops: LisereMedaillon.bague,
                                         center: .center, angle: .zero),
                         lineWidth: 2.4)
-                .frame(width: 36.5, height: 36.5)
+                .frame(width: taille + 2.5, height: taille + 2.5)
                 .blur(radius: 1.0)
                 .blendMode(.plusLighter)
                 .opacity(0.85)
@@ -79,7 +84,7 @@ struct MedaillonStop: View {
         .contentShape(Circle())
         // LA ZONE DE TAP passe le disque : 34 pt de médaillon, 44 pt de
         // doigt (le minimum d'Apple), posée AVANT le geste.
-        .padding(8)
+        .padding(max(8, taille * 0.235))
         .contentShape(Circle())
         .highPriorityGesture(TapGesture().onEnded { action() })
     }
