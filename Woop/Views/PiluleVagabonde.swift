@@ -1697,18 +1697,19 @@ struct GrandPlayer: View {
     }
 
     /// LE PIED — le retour à la page exercices de l'ancien player.
+    /// ⚠️ INVERSÉ le 14-09 (verdict Kathryn : « consistance avec la nouvelle
+    /// home ») : l'ACTION en haut (« Page exercices »), le STOP en bas —
+    /// exactement l'ordre de la home en séance (bouton primaire puis
+    /// médaillon). Un seul ordre dans toute l'app.
     private func piedExercices(encre: CGFloat, enGeste: Bool) -> some View {
         VStack(spacing: 10) {
-            // LE MÉDAILLON STOP — il MANQUAIT (verdict 04-09). Comme
-            // dans l'ancien player : au-dessus de « Page exercices »,
-            // en grand, c'est l'action forte de l'écran.
+            piedTexte(encre: encre, enGeste: enGeste)
             MedaillonStop(lueur: true, action: {
                 Haptique.moyen()
                 onStop()
             })
                 .scaleEffect(1.35)
                 .frame(width: 96, height: 96)
-            piedTexte(encre: encre, enGeste: enGeste)
         }
         // Le stop DESCEND encore (verdict 04-09, 2e passe).
         .padding(.bottom, 14)
