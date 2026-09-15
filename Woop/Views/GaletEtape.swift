@@ -227,7 +227,11 @@ struct GaletEtape: View {
     /// annulé ; c'est lui qui garantit le `onPort(false)`.
     @GestureState private var portTenu = false
     @State private var debutDrag: CGPoint? = nil
+    @Environment(\.decorHomeAuRepos) private var decorAuRepos
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var visible = false
+    @State private var transitionEnCours = false
 
     /// Le pad du raster : le liseré, son halo et l'ombre vivent au bord —
     /// toute énergie meurt AVANT le bord du pad (le CADRE FANTÔME).
@@ -241,21 +245,21 @@ struct GaletEtape: View {
         // la grammaire du refus dans cette maison.
         let verrouille = etat == .verrouille || etat == .prochain
             || etat == .lune(dispo: false) || etat == .piece(dispo: false)
-        // La timeline ne tourne que si quelque chose vit : la respiration
-        // de l'actif, ou une rampe de press/refus en vol (± une seconde).
-        // ⚠️ 30 Hz, PAS LA CADENCE DE L'ÉCRAN (05-09). `minimumInterval:
-        // nil` suit ProMotion : 120 images par seconde pour une
-        // respiration de quatre secondes et un shader + deux flous +
-        // un `plusLighter`. Trois images sur quatre étaient rendues pour
-        // RIEN — invisible à l'œil, mais c'est le compositeur qui repasse
-        // sur tout l'écran à travers le verre à chaque fois. Le dessin ne
-        // change pas d'un pixel : seule la fréquence baisse.
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: pauseTimeline
-                                    || RythmeEcran.dortHome)) { ctx in
-                let _ = SondeVol.shared.tic(2)
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            let press = rampePress(ctx.date)
+        // Le temps ne redessine la matière que pendant le geste. Au repos,
+        // les deux poses de lumière sont constantes : leur opacité respire
+        // côté rendu. Le témoin conserve la Timeline continue pour l'A/B.
+        // On garde le conteneur monté en pause pour préserver l'identité des
+        // feuilles respirantes à la prise et au lâcher.
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                paused: animationsDormantes
+                                    || (GaletRenduBanc.horloge
+                                        ? pauseTimeline : !transitionEnCours))) { ctx in
+            let _ = SondeVol.shared.tic(2)
+            // À l'extinction, on peint bien la FIN de la rampe, même si le
+            // dernier tic à 20 Hz était légèrement avant son échéance.
+            let now = !GaletRenduBanc.horloge && !transitionEnCours ? Date() : ctx.date
+            let t = now.timeIntervalSinceReferenceDate
+            let press = rampePress(now)
             corps(t: t, press: press, verrouille: verrouille)
         }
         .frame(width: taille + 2 * pad, height: taille + 2 * pad)
@@ -335,6 +339,31 @@ struct GaletEtape: View {
                 presseDepuis = nil
                 relacheA = Date()
             }
+        }
+        .onAppear { visible = true }
+        .onDisappear {
+            visible = false
+            transitionEnCours = false
+        }
+        .task(id: ReveilGalet(fin: finTransition, dort: animationsDormantes)) {
+            guard !GaletRenduBanc.horloge else { return }
+            guard !animationsDormantes else {
+                transitionEnCours = false
+                return
+            }
+            let reste = finTransition.timeIntervalSinceNow
+            guard reste > 0 else {
+                transitionEnCours = false
+                return
+            }
+            transitionEnCours = true
+            do {
+                try await Task.sleep(for: .seconds(reste))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            transitionEnCours = false
         }
         // ⚠️ LA VITRINE — posé EN DERNIER, après les deux gestes : aucun
         // toucher ne les atteint, donc aucun ne peut naître. Retirer les
@@ -439,6 +468,20 @@ struct GaletEtape: View {
             && now.timeIntervalSince(fumeeA) > 1.5
     }
 
+    private var animationsDormantes: Bool {
+        figee || reduceMotion || !visible || scenePhase != .active || RythmeEcran.dortHome
+    }
+
+    /// Date() dans `paused:` ne se réévalue pas quand seule la fermeture
+    /// Timeline bat. Sans cette échéance qui écrit un état, un simple tap
+    /// pouvait donc laisser l'horloge vivre indéfiniment après la fumée.
+    private var finTransition: Date {
+        max(presseDepuis?.addingTimeInterval(0.10) ?? .distantPast,
+            relacheA.addingTimeInterval(0.26),
+            refusA.addingTimeInterval(0.12),
+            fumeeA.addingTimeInterval(1.3))
+    }
+
     /// La rampe horodatée : montée 0,10 s, descente 0,26 s, en smoothstep —
     /// un interrupteur claque, une matière se repose (école JewelTabBar).
     /// Un verrouillé n'accorde que 1 % : le press s'avorte.
@@ -516,13 +559,16 @@ struct GaletEtape: View {
         let haloR: CGFloat = (etat == .actif ? D * 0.95 : D * 0.68) + 6 * press
         ZStack {
             if halo > 0.001 {
-                Circle()
-                    .fill(RadialGradient(
-                        colors: [.white.opacity(halo * (0.78 + 0.22 * souffle)),
-                                 .white.opacity(halo * 0.22), .clear],
-                        center: .center, startRadius: D * 0.14,
-                        endRadius: haloR))
-                    .frame(width: haloR * 2.3, height: haloR * 2.3)
+                Group {
+                    if GaletRenduBanc.horloge {
+                        haloPeint(souffle: souffle, halo: halo, rayon: haloR)
+                    } else {
+                        GaletFondu(
+                            actif: vivant && !animationsDormantes && !decorAuRepos && !GaletRenduBanc.pose,
+                            creux: haloPeint(souffle: 0, halo: halo, rayon: haloR),
+                            sommet: haloPeint(souffle: 1, halo: halo, rayon: haloR))
+                    }
+                }
                     .position(centre)
                     .blendMode(.plusLighter)
                     .allowsHitTesting(false)
@@ -559,11 +605,14 @@ struct GaletEtape: View {
             }
             // LA GOUTTE PEINTE — la fumée semi-transparente + les cheveux
             // de lumière du shader `goutteVerre`, AU-DESSUS du natif.
-            Rectangle()
-                .fill(.white)
-                .frame(width: D + 2 * pad, height: D + 2 * pad)
-                .colorEffect(goutteShader(souffle: souffle,
-                                          press: press, refus: refus))
+            if GaletRenduBanc.horloge {
+                gouttePeinte(souffle: souffle, press: press, refus: refus)
+            } else {
+                GaletFondu(
+                    actif: vivant && !animationsDormantes && !decorAuRepos && !GaletRenduBanc.pose,
+                    creux: gouttePeinte(souffle: 0, press: press, refus: refus),
+                    sommet: gouttePeinte(souffle: 1, press: press, refus: refus))
+            }
             // ⚠️ **LE LISERÉ D'ÉTAT — IL N'EXISTAIT PAS** (26-08, verdict
             // n° 5 : « la différence entre accompli / actif / à venir n'est
             // pas assez évidente… les galets futurs doivent avoir des
@@ -620,6 +669,22 @@ struct GaletEtape: View {
             .degrees(4 * press),
             axis: axeTilt,
             anchor: .center, perspective: 0.6)
+    }
+
+    private func haloPeint(souffle: Double, halo: Double, rayon: CGFloat) -> some View {
+        Circle()
+            .fill(RadialGradient(
+                colors: [.white.opacity(halo * (0.78 + 0.22 * souffle)),
+                         .white.opacity(halo * 0.22), .clear],
+                center: .center, startRadius: taille * 0.14, endRadius: rayon))
+            .frame(width: rayon * 2.3, height: rayon * 2.3)
+    }
+
+    private func gouttePeinte(souffle: Double, press: Double, refus: Double) -> some View {
+        Rectangle()
+            .fill(.white)
+            .frame(width: taille + 2 * pad, height: taille + 2 * pad)
+            .colorEffect(goutteShader(souffle: souffle, press: press, refus: refus))
     }
 
     // MARK: la matière par état
@@ -836,6 +901,55 @@ struct GaletEtape: View {
     }
 }
 
+private enum GaletRenduBanc {
+    /// L'ancien moteur pour comparer un seul poste sur le téléphone.
+    static let horloge = CommandLine.arguments.contains("-galetsHorloge")
+    /// Les mêmes galets sans respiration : mesure du coût de composition.
+    static var pose: Bool {
+        CommandLine.arguments.contains("-sansSouffleGalets")
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
+}
+
+private struct ReveilGalet: Equatable {
+    let fin: Date
+    let dort: Bool
+}
+
+/// Deux peintures constantes, une seule composition pondérée. `plusLighter`
+/// additionne les couleurs prémultipliées ET les alphas : une superposition
+/// normale épaissirait les bords semi-transparents au milieu du fondu.
+///
+/// Le halo est linéaire, donc son interpolation est exacte. Le shader garde
+/// sa géométrie et ses états ; son soft-clip exponentiel est approché entre
+/// les deux poses. Le témoin permet de vérifier cet écart sur le téléphone.
+/// Les vues sont des valeurs stockées : le verre, le glyphe et les reflets
+/// floutés restent hors de ces deux feuilles de lumière.
+private struct GaletFondu<Peinture: View>: View {
+    let actif: Bool
+    let creux: Peinture
+    let sommet: Peinture
+
+    var body: some View {
+        if actif {
+            PhaseAnimator([0.0, 1.0]) { phase in
+                ZStack {
+                    creux.opacity(1 - phase)
+                    sommet.opacity(phase).blendMode(.plusLighter)
+                }
+                .compositingGroup()
+            } animation: { phase in
+                // x(u) = u, y(u) = 3u² − 2u³ : le smoothstep exact de
+                // LaunchPebble.breath, montée 38 %, descente 62 %.
+                .timingCurve(1.0 / 3.0, 0, 2.0 / 3.0, 1,
+                             duration: (2 * .pi / 0.63) * (phase == 1 ? 0.38 : 0.62))
+            }
+        } else {
+            creux
+        }
+    }
+}
+
 // MARK: - La mire des matières (`-pillMire`, §20 Pil-1)
 
 /// LA MIRE DES MATIÈRES — les candidats du « à faire » (A natif /
@@ -1016,7 +1130,7 @@ private struct PressDemo: View {
 
     var body: some View {
         let D: CGFloat = 84
-        TimelineView(.animation(minimumInterval: nil,
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                 paused: pauseTimeline || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(2)
             let now = ctx.date

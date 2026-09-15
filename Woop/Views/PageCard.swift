@@ -741,7 +741,10 @@ struct VerreOuMat: ViewModifier {
 /// tomber 60 → 14 img/s : ici la cadence TIENT à 60, donc s'il coûte,
 /// il coûte en CHALEUR — ce qu'aucune mesure de cadence ne pouvait dire.
 enum VerreHomeBanc {
-    static let eteint = CommandLine.arguments.contains("-sansVerreHome")
+    static var eteint: Bool {
+        CommandLine.arguments.contains("-sansVerreHome")
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
 }
 
 extension View {

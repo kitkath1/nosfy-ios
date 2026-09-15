@@ -35,6 +35,7 @@ struct CoffreFortCoinBounds: PreferenceKey {
 /// points. Une overlay n'est pas rognée par SwiftUI, donc la lumière sort
 /// librement.
 struct CoffreFortCoinButton: View {
+    @Environment(\.decorHomeAuRepos) private var decorAuRepos
     var onPress: (Bool) -> Void
     var action: () -> Void
     /// Le MAT de la pièce, passé tel quel au shader : 0 = l'or du header
@@ -72,7 +73,8 @@ struct CoffreFortCoinButton: View {
                         onPress(false)
                     }
                     action()
-                }, figee: Self.sansPiece)
+                }, figee: Self.sansPiece || decorAuRepos
+                    || ProtectionThermique.shared.ambianceAuRepos)
             }
     }
 }

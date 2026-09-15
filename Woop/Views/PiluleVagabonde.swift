@@ -1506,6 +1506,7 @@ struct GrandPlayer: View {
     var onExos: () -> Void = {}
 
     @State private var fermeture: CGFloat = 0
+    @State private var fermeturePrise = false
     @State private var deplies: Set<String> = []
 
     private var setsFaits: Int { groupes.reduce(0) { $0 + $1.done } }
@@ -1614,6 +1615,7 @@ struct GrandPlayer: View {
         // saura si le trou est au RENDU ou dans les ÉVÉNEMENTS.
         // ⚠️ PAR LE MODIFIER : appelée en direct, elle sautait la garde.
         .sondeCadence("player-morph")
+        .onDisappear { CouvertureFoyer.shared.retirer() }
     }
 
     /// L'EN-TÊTE FIXE — il ne scrolle jamais, et c'est LUI qui porte le
@@ -1750,6 +1752,10 @@ struct GrandPlayer: View {
                 guard v.translation.height > 0,
                       abs(v.translation.height) > abs(v.translation.width)
                 else { return }
+                if !fermeturePrise {
+                    fermeturePrise = true
+                    CouvertureFoyer.shared.commencerDeplacement()
+                }
                 #if DEBUG
                 if Self.crieGeste {
                     let m = CACurrentMediaTime()
@@ -1765,12 +1771,21 @@ struct GrandPlayer: View {
                 fermeture = v.translation.height
             }
             .onEnded { v in
+                guard fermeturePrise else { return }
+                fermeturePrise = false
                 if v.translation.height > 120 || v.velocity.height > 480 {
                     fermer()
                 } else {
+                    let couverture = CouvertureFoyer.shared
+                    let jeton = couverture.commencerDeplacement()
                     withAnimation(.spring(response: 0.34,
-                                          dampingFraction: 0.82)) {
+                                          dampingFraction: 0.82),
+                                  completionCriteria: .removed) {
                         fermeture = 0
+                    } completion: {
+                        guard morph >= 0.98, !fermeturePrise,
+                              fermeture == 0 else { return }
+                        couverture.terminerDeplacement(jeton)
                     }
                 }
             }
@@ -1802,6 +1817,7 @@ struct GrandPlayer: View {
 
     func fermer() {
         Haptique.leger()
+        CouvertureFoyer.shared.retirer()
         withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) {
             morph = 0
             fermeture = 0

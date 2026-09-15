@@ -1506,7 +1506,26 @@ struct RondAvatar: View {
     /// L'anneau d'XP éphémère (0 → 1) : un arc fin autour du rond.
     var anneau: CGFloat = 0
 
+    // ⚠️ LE ROND NE SE REDESSINE PLUS, IL S'ANIME (05-09, voir
+    // `LisereRespirant`) : l'horloge refabriquait le Text, les deux passes
+    // du neonGlow, la bille de verre et l'anneau vingt fois par seconde
+    // pour DEUX rotations pures. On tourne LA PEINTURE, jamais le dessin :
+    // le fil = un conique tourné sous un masque strokeBorder (exact — un
+    // conique tourné de θ EST le conique à l'angle θ) ; les braises = un
+    // carré de dégradé tourné sous le masque des lettres.
+    // ⚠️ Écart DÉCLARÉ : la dérive d'origine des lettres vivait dans
+    // l'espace unitaire du cadre du TEXTE (pas carré) — son étalement
+    // « respirait » avec l'orientation ; la peinture tournée est isotrope.
+    // Subtil mais pas nul : à trancher sur capture.
+    // `-souffleHorloge` rejoue l'ancienne forme.
     var body: some View {
+        if SouffleBanc.horloge { corpsHorloge } else {
+            RondAvatarAnime(initiales: initiales, taille: taille,
+                            flambe: flambe, anneau: anneau)
+        }
+    }
+
+    private var corpsHorloge: some View {
         TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                 paused: RythmeEcran.dort("profile"))) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
@@ -1594,6 +1613,178 @@ struct RondAvatar: View {
                         .frame(width: taille + 12, height: taille + 12)
                         .opacity(Double(anneau)))
         }
+    }
+}
+
+/// La forme animée du rond : tout est construit UNE fois, deux phases de
+/// rotation vivent ICI (la feuille — le body du trône est ré-évalué au
+/// scroll, un `repeatForever` posé chez lui serait avalé). Le wrap
+/// 360° → 0° d'un `linear.repeatForever(autoreverses: false)` est
+/// invisible (360° ≡ 0°) ; périodes 8 s et 13 s au degré près.
+private struct RondAvatarAnime: View {
+    var initiales: String
+    var taille: CGFloat = 72
+    var flambe: CGFloat = 0
+    var anneau: CGFloat = 0
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var monte = false
+    @State private var visibleDansScroll = true
+
+    private var immobile: Bool {
+        !monte || !visibleDansScroll || ongletCache
+            || scenePhase != .active || reduceMotion
+            || RythmeEcran.dort("profile")
+    }
+
+    /// Les deux phases — les seules choses qui bougent.
+    @State private var tourFil: Double = 0
+    @State private var tourBraise: Double = 0
+    /// La boîte des lettres, mesurée sur un jumeau caché : la rampe de
+    /// l'original vivait dans l'espace du TEXTE — la peinture tournée doit
+    /// étaler la rampe sur la même largeur, pas sur tout le rond.
+    @State private var boiteLettres: CGSize = .zero
+
+    var body: some View {
+        let k = taille / 72
+        let f = Double(flambe)
+        // LES BRAISES : la peinture tournée sous le masque des lettres —
+        // le masque est construit une fois. Le carré couvre la boîte à
+        // toute rotation (côté = sa diagonale) et la rampe s'étale sur la
+        // LARGEUR de la boîte (= la phase 0 exacte de l'original).
+        // ⚠️ Écart déclaré : l'original étirait la rampe selon l'axe
+        // instantané dans une boîte non carrée (l'étalement « respirait ») ;
+        // la peinture tournée garde un étalement constant.
+        let boite = boiteLettres == .zero
+            ? CGSize(width: taille * 0.55, height: 22 * k)
+            : boiteLettres
+        let cote = max(hypot(boite.width, boite.height), 1)
+        let demi = (boite.width / cote) / 2
+        Rectangle()
+            .fill(LinearGradient(
+                colors: [Color(red: 1.00, green: 0.96, blue: 0.90),
+                         Color(red: 1.00, green: 0.80, blue: 0.32),
+                         Color(red: 1.00, green: 0.48 + 0.20 * f,
+                               blue: 0.14 + 0.20 * f)],
+                startPoint: UnitPoint(x: 0.5 + demi, y: 0.5),
+                endPoint: UnitPoint(x: 0.5 - demi, y: 0.5)))
+            .frame(width: cote, height: cote)
+            .rotationEffect(.degrees(tourBraise))
+            .frame(width: taille, height: taille)
+            .mask {
+                Text(initiales)
+                    .font(.inter(22 * k, .light))
+                    .tracking(3.5 * k)
+            }
+            .background {
+                // Le jumeau caché qui mesure la boîte des lettres.
+                Text(initiales)
+                    .font(.inter(22 * k, .light))
+                    .tracking(3.5 * k)
+                    .hidden()
+                    .onGeometryChange(for: CGSize.self,
+                                      of: { $0.size }) { boiteLettres = $0 }
+            }
+            .neonGlow(.profilBraise, radius: 7 * k,
+                      opacity: 0.30 + 0.50 * f)
+            .frame(width: taille, height: taille)
+            .background {
+                // LE VERRE NOIR (verdict : « verre noir sublime et
+                // reflet blanc ») — inchangé, sorti du temps.
+                ZStack {
+                    Circle().fill(RadialGradient(
+                        colors: [Color(white: 0.17),
+                                 Color(white: 0.05),
+                                 Color(white: 0.01)],
+                        center: UnitPoint(x: 0.38, y: 0.24),
+                        startRadius: 1, endRadius: taille * 0.85))
+                    Ellipse()
+                        .fill(LinearGradient(
+                            colors: [.white.opacity(0.30),
+                                     .white.opacity(0.0)],
+                            startPoint: .top, endPoint: .bottom))
+                        .frame(width: taille * 0.70,
+                               height: taille * 0.32)
+                        .offset(y: -taille * 0.27)
+                        .blur(radius: 1)
+                    Circle()
+                        .fill(Color.white.opacity(0.55))
+                        .frame(width: taille * 0.055)
+                        .offset(x: -taille * 0.17, y: -taille * 0.31)
+                        .blur(radius: 0.4)
+                }
+            }
+            .clipShape(Circle())
+            // LE FIL : le conique construit à angle zéro, TOURNÉ — le
+            // carré couvre son cercle inscrit à toute rotation (côté ≥
+            // taille + 2) ; le masque strokeBorder porte SEUL
+            // l'anti-crénelage du filet, construit une fois.
+            .overlay {
+                Rectangle()
+                    .fill(AngularGradient(stops: [
+                        .init(color: .white.opacity(0.05), location: 0.0),
+                        .init(color: .white.opacity(0.85), location: 0.12),
+                        .init(color: .white.opacity(0.10), location: 0.30),
+                        .init(color: .white.opacity(0.05), location: 0.55),
+                        .init(color: .white.opacity(0.45), location: 0.78),
+                        .init(color: .white.opacity(0.05), location: 1.0),
+                    ], center: .center, angle: .zero))
+                    .frame(width: taille + 2, height: taille + 2)
+                    .rotationEffect(.degrees(tourFil))
+                    .mask {
+                        Circle().strokeBorder(.white, lineWidth: 0.7)
+                    }
+            }
+            .overlay(
+                Circle()
+                    .trim(from: 0, to: 0.30 * anneau)
+                    .stroke(LinearGradient(
+                        colors: [.profilBraise,
+                                 Color(red: 1.0, green: 0.75,
+                                       blue: 0.40)],
+                        startPoint: .leading, endPoint: .trailing),
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: taille + 12, height: taille + 12)
+                    .opacity(Double(anneau)))
+            // La trace du 15-09 montre encore les deux rotations après
+            // défilement hors écran. Remplacer le dessin à la fermeture
+            // de sa porte retire aussi les interpolations déjà installées.
+            .id(immobile)
+            .task(id: immobile) {
+                guard !Task.isCancelled else { return }
+                armer(immobile)
+            }
+            .onAppear { monte = true }
+            .onDisappear {
+                monte = false
+                // Annuler la task ne retire pas un repeatForever déjà
+                // installé : ses deux valeurs doivent aussi se reposer.
+                armer(true)
+            }
+            .onGeometryChange(for: Bool.self) { geo in
+                guard let viewport = geo.bounds(of: .scrollView(axis: .vertical))
+                else { return true }
+                let visible = CGRect(origin: .zero, size: geo.size)
+                    .intersection(viewport)
+                return !visible.isNull && !visible.isEmpty
+            } action: { visibleDansScroll = $0 }
+            .onChange(of: immobile, initial: true) { _, repos in
+                NavDiagnostic.noter("avatar-repos", destination: repos ? "1" : "0")
+            }
+    }
+
+    private func armer(_ immobile: Bool) {
+        var tr = Transaction()
+        tr.disablesAnimations = true
+        withTransaction(tr) { tourFil = 0; tourBraise = 0 }
+        guard !immobile else { return }
+        withAnimation(.linear(duration: 8)
+            .repeatForever(autoreverses: false)) { tourFil = 360 }
+        withAnimation(.linear(duration: 13)
+            .repeatForever(autoreverses: false)) { tourBraise = 360 }
     }
 }
 

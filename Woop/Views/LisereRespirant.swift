@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - LE LISERÉ QUI RESPIRE SANS SE REDESSINER (05-09)
+// MARK: - LE LISERÉ QUI RESPIRE (05-09)
 //
 // LE GESTE ① du plan `tools/nav/PLAN-DEBUG-PERF.md`, et la réponse à sa
 // question : « c'est quand même possible d'optimiser sans perdre les vidéos
@@ -16,10 +16,11 @@ import SwiftUI
 // Trois degrés. Et le verre posé dessus ne peut RIEN mettre en cache,
 // puisque ce qu'il y a dessous vient de changer.
 //
-// CE QUI SE PASSE MAINTENANT : le dégradé et les traits floutés sont
-// construits UNE SEULE FOIS. Seule une ROTATION est animée — et une
-// rotation, le système sait l'interpoler lui-même, image par image, sans
-// jamais reconstruire ce qu'il fait tourner.
+// Le chemin SwiftUI anime une rotation, mais la trace du 15-09 montre
+// encore AnimatableAttribute/DisplayList par image : cela ne prouve PAS
+// une peinture mise en cache. Le prototype `-lisereCoreAnimation` rend
+// explicitement ses images une fois par taille/forme/échelle, puis confie
+// la rotation à Core Animation. Le témoin SwiftUI reste le défaut.
 //
 // ⚠️ POURQUOI ON TOURNE LA PEINTURE ET PAS LE DESSIN. Faire tourner la vue
 // de 3° ferait tourner LE CADRE DE LA CARD — parfaitement visible. Ce qui
@@ -46,7 +47,25 @@ enum SouffleBanc {
     static let horloge = CommandLine.arguments.contains("-souffleHorloge")
 }
 
+/// A/B du liseré seulement. `-liserePose <degrés>` fige la composante de
+/// respiration sur les deux chemins (la pression et penche s'y ajoutent).
+/// Le témoin est LisereRespirant SwiftUI, sans `-souffleHorloge`.
+enum LisereAnimationBanc {
+    static let images = CommandLine.arguments.contains("-lisereImages")
+    static let coreAnimation = CommandLine.arguments
+        .contains("-lisereCoreAnimation")
+    static let pose: Double? = {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-liserePose"),
+              args.indices.contains(i + 1),
+              let angle = Double(args[i + 1]), angle.isFinite
+        else { return nil }
+        return angle
+    }()
+}
+
 struct LisereRespirant<F: Shape>: View {
+    @Environment(\.decorHomeAuRepos) private var decorAuRepos
     var forme: F
     var W: CGFloat
     var H: CGFloat
@@ -63,16 +82,55 @@ struct LisereRespirant<F: Shape>: View {
     /// LA PHASE — la seule chose qui bouge. `@State` dans la FEUILLE :
     /// aucun parent ne peut avaler son animation.
     @State private var phase: Double = 0
+    @State private var monte = false
+    @State private var prototypeDisponible = true
 
-    var body: some View {
-        peinture
-            .frame(width: W, height: H)
-            .mask { masque }
-            .task { armer() }
-            .onChange(of: immobile) { _, _ in armer() }
+    private var dort: Bool {
+        immobile || decorAuRepos || !monte || ProtectionThermique.shared.ambianceAuRepos
     }
 
-    /// LA PEINTURE — le dégradé conique, construit une fois, tourné.
+    var body: some View {
+        Group {
+            if LisereAnimationBanc.images {
+                LisereImages(forme: forme, W: W, H: H,
+                             chambre: chambre, penche: penche,
+                             phase: LisereAnimationBanc.pose ?? phase,
+                             dort: dort || LisereAnimationBanc.pose != nil,
+                             armer: {
+                                armer(dort || LisereAnimationBanc.pose != nil)
+                             }) {
+                    peinture
+                        .frame(width: W, height: H)
+                        .mask { masque }
+                }
+            } else if LisereAnimationBanc.coreAnimation, prototypeDisponible {
+                LisereCoreAnimation(forme: forme, W: W, H: H,
+                                    chambre: chambre, penche: penche,
+                                    dort: dort, amplitude: amplitude,
+                                    periode: periode,
+                                    pose: LisereAnimationBanc.pose,
+                                    onEchec: { prototypeDisponible = false })
+                    .frame(width: W, height: H)
+                    .allowsHitTesting(false)
+            } else {
+                peinture
+                    .frame(width: W, height: H)
+                    .mask { masque }
+                    .task(id: dort) {
+                        guard !Task.isCancelled else { return }
+                        armer(dort || LisereAnimationBanc.pose != nil)
+                    }
+            }
+        }
+        .onAppear { monte = true }
+        .onDisappear {
+            monte = false
+            // Annuler la task seule ne retire pas le repeatForever.
+            armer(true)
+        }
+    }
+
+    /// LA PEINTURE — le dégradé conique tourné par SwiftUI (le témoin).
     /// Le carré est plus grand que la card (√2) : même tourné, il la
     /// couvre entièrement, donc aucun coin ne se vide.
     private var peinture: some View {
@@ -80,12 +138,12 @@ struct LisereRespirant<F: Shape>: View {
         return Rectangle()
             .fill(cardLisereConique(.degrees(16 * chambre - penche)))
             .frame(width: cote, height: cote)
-            .rotationEffect(.degrees(phase))
+            .rotationEffect(.degrees(LisereAnimationBanc.pose ?? phase))
     }
 
     /// LE MASQUE — les trois traits et leurs deux gaussiennes. Il ne
-    /// dépend que de `chambre` : il n'est refait que lorsqu'on appuie,
-    /// jamais au fil du temps.
+    /// dépend que de `chambre`, mais SwiftUI peut encore recomposer ce
+    /// masque pendant la rotation ; son cache n'est pas garanti.
     private var masque: some View {
         ZStack {
             forme.stroke(.white, lineWidth: 1.6)
@@ -106,8 +164,8 @@ struct LisereRespirant<F: Shape>: View {
     /// demi-période. `easeInOut` autoreversé est, à l'œil, le sinus
     /// d'origine — et il est interpolé par le rendu, donc plus lisse que
     /// les vingt échantillons par seconde d'avant.
-    private func armer() {
-        guard !immobile else {
+    private func armer(_ dort: Bool) {
+        guard !dort else {
             var t = Transaction(); t.disablesAnimations = true
             withTransaction(t) { phase = 0 }
             return

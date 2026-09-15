@@ -233,7 +233,7 @@ static float nrfbm(float2 p) {
 // panache pleine hauteur les traverserait. Elle met à l'échelle les trois
 // enveloppes ET l'ondulation d'un coup : un panache réduit doit rester un
 // panache, pas une version écrasée de lui-même.
-[[ stitchable ]] half4 panacheInvite(float2 position, half4 color,
+static half4 panacheCouleur(float2 position, half4 color,
                                      float2 size, float t, float2 src,
                                      float souffle, float echelle) {
     if (souffle < 0.004) { return half4(0.0); }
@@ -245,6 +245,13 @@ static float nrfbm(float2 p) {
     // LA COLONNE S'ÉVASE en montant, et elle ONDULE. Une colonne droite est un
     // tuyau ; c'est la dérive latérale qui fait la fumée.
     float k = max(echelle, 0.05);
+    // Les fragments transparents ne paient pas les neuf octaves de bruit.
+    // Même support et mêmes enveloppes que le rendu d'origine.
+    float pied = smoothstep(0.0, 30.0 * k, montee);
+    float haut = 1.0 - smoothstep(64.0 * k, 186.0 * k, montee);
+    float2 toEdge = min(position, size - position);
+    float hostFade = smoothstep(0.0, 14.0, min(toEdge.x, toEdge.y));
+    if (pied * haut * hostFade == 0.0) { return half4(0.0); }
     float ondule = sin(montee * 0.034 / k + t * 0.55) * (3.0 + montee * 0.055)
                  + sin(montee * 0.017 / k - t * 0.31) * (2.0 + montee * 0.030);
     float demi = 22.0 * k + montee * 0.40;
@@ -264,8 +271,6 @@ static float nrfbm(float2 p) {
     // TROIS ENVELOPPES. Le pied : la fumée NAÎT, elle n'est pas posée en bloc
     // sur le chevron. Le sommet : elle se dilue. Les flancs : une gaussienne,
     // jamais un bord.
-    float pied = smoothstep(0.0, 30.0 * k, montee);
-    float haut = 1.0 - smoothstep(64.0 * k, 186.0 * k, montee);
     float flanc = exp(-lat * lat * 2.1);
     float amp = souffle * s * pied * haut * flanc;
 
@@ -273,10 +278,26 @@ static float nrfbm(float2 p) {
 
     // Émissif prémultiplié + fondu d'hôte : la lumière porte sa couverture, et
     // rien ne meurt contre le bord du rectangle.
-    float2 toEdge = min(position, size - position);
-    float hostFade = smoothstep(0.0, 14.0, min(toEdge.x, toEdge.y));
     float a = clamp(max(fumee.r, max(fumee.g, fumee.b)) * 2.4, 0.0, 1.0)
             * hostFade;
     float3 c = clamp(fumee, 0.0, 1.0) * hostFade;
     return half4(half3(min(c, float3(a))), half(a)) * color.a;
+}
+
+[[ stitchable ]] half4 panacheInvite(float2 position, half4 color,
+                                     float2 size, float t, float2 src,
+                                     float souffle, float echelle) {
+    return panacheCouleur(position, color, size, t, src, souffle, echelle);
+}
+
+vertex float4 panacheSommet(uint id [[vertex_id]]) {
+    const float2 sommets[] = { float2(-1, -1), float2(3, -1), float2(-1, 3) };
+    return float4(sommets[id], 0, 1);
+}
+
+fragment half4 panacheFragment(float4 position [[position]],
+                               constant float4 &uniforms [[buffer(0)]]) {
+    float2 size = float2(210, 200);
+    return panacheCouleur(position.xy * size / uniforms.xy, half4(1),
+                          size, uniforms.z, float2(105, 182), uniforms.w, 1.0);
 }

@@ -238,6 +238,17 @@ struct CardCorps<Contenu: View>: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// La même card vit aussi dans la porte et les aperçus : son hôte
+    /// fournit la visibilité, sans supposer qu'elle appartient à la Home.
+    /// Le grand player ne ferme la porte qu'une fois réellement couvrant.
+    private var lisereImmobile: Bool {
+        reduceMotion || ongletCache || scenePhase != .active
+            || CouvertureFoyer.shared.recouvert
+    }
+
     var body: some View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
@@ -267,7 +278,7 @@ struct CardCorps<Contenu: View>: View {
                     // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
                     if SouffleBanc.horloge {
                     TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                            paused: reduceMotion
+                                            paused: lisereImmobile
                                                 || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(0)
                         let t = tl.date.timeIntervalSinceReferenceDate
@@ -300,7 +311,7 @@ struct CardCorps<Contenu: View>: View {
                     } else {
                         LisereRespirant(forme: dehors, W: W, H: H,
                                         chambre: chambre, penche: penche,
-                                        immobile: reduceMotion)
+                                        immobile: lisereImmobile)
                     }
                 }
                 if verre, !verreDemonte {

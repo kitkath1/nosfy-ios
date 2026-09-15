@@ -1150,6 +1150,7 @@ struct RootView: View {
     }
 
     private func ouvrirGrandPlayer() {
+        guard active != nil, morphPlayer < 0.98 else { return }
         Haptique.leger()
         // ⚠️ LA CORDE QUE PERSONNE NE TIRAIT (05-09, audit + lecture).
         // `PlayerEtat.couvre` a QUATRE lecteurs — les deux vidéos de
@@ -1160,8 +1161,14 @@ struct RootView: View {
         // de tourner DERRIÈRE lui. C'est la loi du rideau, à l'échelle
         // de l'app, et ça coûtait une ligne.
         PlayerEtat.shared.couvre = true
-        withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
+        let couverture = CouvertureFoyer.shared
+        let jeton = couverture.commencerOuverture()
+        withAnimation(.spring(response: 0.62, dampingFraction: 0.86),
+                      completionCriteria: .removed) {
             morphPlayer = 1
+        } completion: {
+            guard active != nil, morphPlayer >= 0.98 else { return }
+            couverture.terminerOuverture(jeton)
         }
     }
 

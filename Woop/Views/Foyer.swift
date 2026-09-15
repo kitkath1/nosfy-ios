@@ -56,6 +56,67 @@ enum FoyerBanc {
     }
 }
 
+/// Une tâche annulée ne retire pas une animation `repeatForever` déjà confiée
+/// à SwiftUI. La cible revient au repos sans animation quand la page dort ;
+/// le prochain réveil peut alors réarmer le même mouvement.
+private func poserFoyerSansAnimation(_ mutation: () -> Void) {
+    var transaction = Transaction(animation: nil)
+    transaction.disablesAnimations = true
+    withTransaction(transaction, mutation)
+}
+
+/// Le grand player couvre le Foyer seulement après son arrivée ET son retour
+/// éventuel au repos. `PlayerEtat.couvre` décrit déjà l'intention d'ouverture :
+/// il ne suffit pas pour arrêter un décor encore visible pendant le mouvement.
+@MainActor
+@Observable
+final class CouvertureFoyer {
+    static let shared = CouvertureFoyer()
+    private init() {}
+
+    private(set) var recouvert = false
+    @ObservationIgnored private var ouverture: UInt = 0
+    @ObservationIgnored private var deplacement: UInt = 0
+    @ObservationIgnored private var arriveeTerminee = false
+    @ObservationIgnored private var deplacementTermine = false
+
+    func commencerOuverture() -> UInt {
+        retirer()
+        deplacementTermine = true
+        return ouverture
+    }
+
+    func terminerOuverture(_ jeton: UInt) {
+        guard jeton == ouverture else { return }
+        arriveeTerminee = true
+        recouvert = deplacementTermine
+    }
+
+    @discardableResult
+    func commencerDeplacement() -> UInt {
+        deplacement &+= 1
+        deplacementTermine = false
+        recouvert = false
+        return deplacement
+    }
+
+    func terminerDeplacement(_ jeton: UInt) {
+        guard jeton == deplacement else { return }
+        deplacementTermine = true
+        recouvert = arriveeTerminee
+    }
+
+    /// Une fermeture ou un démontage invalide aussi les fins d'animations
+    /// déjà en attente : aucune ancienne arrivée ne peut endormir le Foyer.
+    func retirer() {
+        ouverture &+= 1
+        deplacement &+= 1
+        arriveeTerminee = false
+        deplacementTermine = false
+        recouvert = false
+    }
+}
+
 // MARK: - Les cotes — depuis B, jamais depuis l'écran physique
 
 /// ⚠️ `B` = la hauteur RÉELLE du slot de page (709 sur iPhone 15). La racine de
@@ -273,6 +334,11 @@ private struct FondRasant: View {
     }
 
     private func armer() {
+        poserFoyerSansAnimation {
+            souffle = false
+            voleA = false
+            voleB = false
+        }
         guard !dort, !FoyerBanc.fige else { return }
         withAnimation(.easeInOut(duration: 7.3).repeatForever(autoreverses: true)) {
             souffle.toggle()
@@ -319,6 +385,7 @@ private struct SouffleTexte: ViewModifier {
     }
 
     private func armer() {
+        poserFoyerSansAnimation { pousse = false }
         guard !dort, !FoyerBanc.fige else { return }
         withAnimation(.easeInOut(duration: 7.0).repeatForever(autoreverses: true)) {
             pousse.toggle()
@@ -343,6 +410,7 @@ private struct PointVeille: View {
             .task(id: dort) { armer() }
     }
     private func armer() {
+        poserFoyerSansAnimation { vif = false }
         guard !dort, !FoyerBanc.fige else { return }
         withAnimation(.easeInOut(duration: 2.9).repeatForever(autoreverses: true)) {
             vif.toggle()
@@ -427,6 +495,7 @@ private struct Dalle: View {
     }
 
     private func armer() {
+        poserFoyerSansAnimation { vole = false }
         guard !dort, !FoyerBanc.fige else { return }
         withAnimation(.easeInOut(duration: periode).repeatForever(autoreverses: true)) {
             vole.toggle()
@@ -500,7 +569,15 @@ struct FoyerPage: View {
     /// boucle à silence (rien ne tourne entre deux impulsions).
     @State private var impulsion = false
 
-    private var dort: Bool { RythmeEcran.dortHome }
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var dort: Bool {
+        RythmeEcran.dortHome || DepartEtat.shared.homeDort
+            || CouvertureFoyer.shared.recouvert
+            || ProtectionThermique.shared.ambianceAuRepos
+            || scenePhase != .active || reduceMotion
+    }
     private var feu: Bool { !FoyerBanc.sansFlammes }
     private var chaleur: Double { FoyerChaleur.chaleur(series: series) }
     private var seriesAffichees: Int { FoyerBanc.palier ?? series }
@@ -690,12 +767,15 @@ struct FoyerPage: View {
     /// « ça propose d'ouvrir ». Boucle à silence, réarmée par `.task(id:)`,
     /// morte sous un onglet caché.
     private func battreImpulsion() async {
+        poserFoyerSansAnimation { impulsion = false }
         guard !dort, !FoyerBanc.fige else { return }
         while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(9.3))
-            guard !Task.isCancelled, !presse else { continue }
+            do { try await Task.sleep(for: .seconds(9.3)) }
+            catch { return }
+            guard !presse else { continue }
             withAnimation(.easeInOut(duration: 0.35)) { impulsion = true }
-            try? await Task.sleep(for: .milliseconds(360))
+            do { try await Task.sleep(for: .milliseconds(360)) }
+            catch { return }
             withAnimation(.easeInOut(duration: 0.35)) { impulsion = false }
         }
     }

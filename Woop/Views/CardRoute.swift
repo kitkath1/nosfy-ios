@@ -260,7 +260,12 @@ struct CardRoute: View {
     /// `-sansVieRoute` : LE BARREAU de la vie de la card (14-09) — la lampe,
     /// le reflet, le chevron, l'onde, l'éclat, le trait. Tout nouveau moteur
     /// arrive avec son barreau, sinon on ne pourra jamais l'accuser.
-    static let sansVie = CommandLine.arguments.contains("-sansVieRoute")
+    @Environment(\.decorHomeAuRepos) private var decorAuRepos
+    private var sansVie: Bool {
+        CommandLine.arguments.contains("-sansVieRoute")
+            || decorAuRepos
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
     /// `-sansPlateau` : le barreau du PLATEAU seul (les flaques qui dérivent, la
     /// crête du liseré, le balayage de nacre) — pour accuser la matière sans
     /// éteindre le reste de la vie.
@@ -357,16 +362,19 @@ struct CardRoute: View {
             // sur des dégradés construits une fois. Pas en séance (le Foyer).
             // ⚠️ Ses verdicts : « pas d'effet balayage » (retiré), « là tu
             // changes rien » (les flaques floues, 7/255 de variation, retirées).
-            if !enSeance, !Self.sansVie, !Self.sansPlateau {
+            if !enSeance, !sansVie, !Self.sansPlateau {
                 FondLiquide(robe: fondRobe, largeur: Self.L, hauteur: geo.hauteur,
                             rayon: 26, presse: presse)
+                    .modifier(ReposAmbianceRoute())
                 LisereTournant(largeur: Self.L, hauteur: geo.hauteur, rayon: 26,
                                presse: presse, intensite: vierge ? 1 : 0.6)
+                    .modifier(ReposAmbianceRoute())
             }
             // LA LAMPE QUI APPELLE (V1) : dans l'état vide, la lueur de bord
             // respire seule, lentement — une feuille, sa phase chez elle.
-            if vierge, !Self.sansVie {
+            if vierge, !sansVie {
                 LueurAppel(largeur: Self.L, hauteur: geo.hauteur, rayon: 26)
+                    .modifier(ReposAmbianceRoute())
             }
             texte(s)
             if Self.colonneSeule {
@@ -456,7 +464,7 @@ struct CardRoute: View {
             ligneBasse
             // LE TRAIT DE PROGRESSION (F1) : sous l'odomètre, la part faite du
             // chapitre s'étire à l'arrivée — le premier pas, qu'on voit.
-            if dejaFait, !Self.sansVie {
+            if dejaFait, !sansVie {
                 TraitProgres(part: partFaite, largeur: 120)
             }
         }
@@ -494,15 +502,17 @@ struct CardRoute: View {
                         // luminance au passage, invisible). Le glint d'Apple est
                         // un texte gris clair que la lumière traverse : 0,80 au
                         // repos, 1,0 sous la bande.
-                        .foregroundStyle(Color(white: Self.sansVie ? 0.92 : 0.80))
+                        .foregroundStyle(Color(white: sansVie ? 0.92 : 0.80))
                         // LE REFLET (V2) : une bande de lumière traverse le
                         // titre — le « slide to unlock », masqué par les lettres.
                         // Sur SA propre horloge (`Balayage`) : le balayage du
                         // plateau qui la partageait a été refusé (« pas d'effet
                         // balayage en background »).
-                        .modifier(RefletTexte(largeur: 150, actif: !Self.sansVie))
+                        .modifier(RefletTexte(largeur: 150, actif: !sansVie))
                     // LE CHEVRON QUI INVITE (V3) : il avance de 3 pt et revient.
-                    if !Self.sansVie { ChevronInvite() }
+                    if !sansVie {
+                        ChevronInvite().modifier(ReposAmbianceRoute())
+                    }
                 }
             } else {
                 Text("Étape \(apercu.rang) sur \(apercu.total)")
@@ -688,20 +698,22 @@ struct CardRoute: View {
             // LE GALET 1 RESPIRE PLUS FORT (V5) : sa lueur sous lui, feuille
             // `repeatForever` — jamais une horloge (la loi du 05-09).
             .background {
-                if vierge, actif, !Self.sansVie {
+                if vierge, actif, !sansVie {
                     HaloVierge(taille: taille)
+                        .modifier(ReposAmbianceRoute())
                 }
             }
             .overlay {
                 // L'ONDE D'APPEL (V4 / F3) : un anneau naît du galet
                 // d'aujourd'hui et s'élargit en s'éteignant — « c'est ici ».
                 // Plus rare une fois la première séance faite.
-                if (vierge || dejaFait), actif, !Self.sansVie {
+                if (vierge || dejaFait), actif, !sansVie {
                     OndeAppel(taille: taille, periode: vierge ? 3.8 : 6.0)
+                        .modifier(ReposAmbianceRoute())
                 }
                 // L'ÉCLAT DU GALET FAIT (F2) : une onde brève et blanche sur le
                 // dernier galet accompli, une fois, à l'arrivée.
-                if dejaFait, e.id == dernierFait, !Self.sansVie {
+                if dejaFait, e.id == dernierFait, !sansVie {
                     EclatFait(taille: taille)
                 }
             }
@@ -765,6 +777,7 @@ struct CardRoute: View {
             .background {
                 if vierge, rang == 0, !Self.sansGalet {
                     HaloVierge(taille: taille)
+                        .modifier(ReposAmbianceRoute())
                 }
             }
             .position(x: geo.axeX + dx(rang),
@@ -775,10 +788,45 @@ struct CardRoute: View {
 /// LA LUEUR DU GALET VIERGE — la feuille qui respire. Sa phase vit ICI, armée
 /// à son montage : un `repeatForever` posé chez le parent serait avalé à la
 /// première ré-évaluation de la card (le piège payé dans PageCard).
+/// Le TabView conserve la card quand son onglet est caché. Annuler une
+/// task seule n'arrête pas son repeatForever : seule la feuille décorative
+/// change d'identité, jamais la card, sa bande défilante ou ses gestes.
+/// Le nouveau dessin reçoit la pause avant de monter sa task ; il
+/// reste en pose et se réarme une seule fois au retour de la Home.
+private struct AmbianceRouteAuReposKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+private extension EnvironmentValues {
+    var ambianceRouteAuRepos: Bool {
+        get { self[AmbianceRouteAuReposKey.self] }
+        set { self[AmbianceRouteAuReposKey.self] = newValue }
+    }
+}
+
+private struct ReposAmbianceRoute: ViewModifier {
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var dort: Bool {
+        ongletCache || scenePhase != .active || reduceMotion
+            || DepartEtat.shared.homeDort || CouvertureFoyer.shared.recouvert
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.ambianceRouteAuRepos, dort)
+            .id(dort)
+    }
+}
+
 private struct HaloVierge: View {
     let taille: CGFloat
     @State private var phase: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         Circle()
@@ -789,7 +837,7 @@ private struct HaloVierge: View {
             .scaleEffect(0.92 + 0.12 * phase)
             .allowsHitTesting(false)
             .task {
-                guard !reduceMotion else { phase = 0.5; return }
+                guard !reduceMotion, !ambianceAuRepos else { phase = 0.5; return }
                 phase = 0
                 withAnimation(.easeInOut(duration: 1.3)
                     .repeatForever(autoreverses: true)) {
@@ -819,6 +867,7 @@ private struct LueurAppel: View {
     let rayon: CGFloat
     @State private var phase: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         let forme = RoundedRectangle(cornerRadius: rayon, style: .continuous)
@@ -830,7 +879,7 @@ private struct LueurAppel: View {
         .opacity(0.42 * phase)
         .allowsHitTesting(false)
         .task {
-            guard !reduceMotion else { phase = 0.5; return }
+            guard !reduceMotion, !ambianceAuRepos else { phase = 0.5; return }
             phase = 0
             withAnimation(.easeInOut(duration: 1.8)
                 .repeatForever(autoreverses: true)) {
@@ -860,6 +909,7 @@ private struct RefletTexte: ViewModifier {
                 // DÉDOUBLÉ et glissant). Le cadre plein prend la taille de
                 // l'overlay, donc celle du texte ; la bande bouge dedans.
                 RefletBande(largeur: largeur, decalage: decalage)
+                    .modifier(ReposAmbianceRoute())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .mask(content)
             }
@@ -908,6 +958,7 @@ private struct RefletBande: View {
     var decalage: CGFloat = 0
     @State private var x: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         LinearGradient(stops: [
@@ -922,7 +973,7 @@ private struct RefletBande: View {
             .offset(x: x)
             .allowsHitTesting(false)
             .task {
-                guard !reduceMotion else { return }
+                guard !reduceMotion, !ambianceAuRepos else { return }
                 await balayer(depart: -largeur + decalage,
                               arrivee: largeur + decalage) { x = $0 }
             }
@@ -934,6 +985,7 @@ private struct RefletBande: View {
 private struct ChevronInvite: View {
     @State private var phase: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         Image(systemName: "chevron.right")
@@ -942,7 +994,7 @@ private struct ChevronInvite: View {
             .offset(x: 3 * phase)
             .allowsHitTesting(false)
             .task {
-                guard !reduceMotion else { return }
+                guard !reduceMotion, !ambianceAuRepos else { return }
                 phase = 0
                 withAnimation(.easeInOut(duration: 0.75)
                     .repeatForever(autoreverses: true)) {
@@ -963,6 +1015,7 @@ private struct OndeAppel: View {
     @State private var echelle: CGFloat = 0.9
     @State private var opacite: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         Circle()
@@ -972,7 +1025,7 @@ private struct OndeAppel: View {
             .opacity(opacite)
             .allowsHitTesting(false)
             .task {
-                guard !reduceMotion else { return }
+                guard !reduceMotion, !ambianceAuRepos else { return }
                 let clock = ContinuousClock()
                 let debut = clock.now
                 var k = 0
@@ -1131,6 +1184,7 @@ private struct MareeNoire: View {
     @State private var angle: Double = 0
     @State private var glisse: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         let cote = coteTournant(largeur, hauteur)
@@ -1147,7 +1201,7 @@ private struct MareeNoire: View {
             .offset(x: -50 + 100 * glisse)
             .rotationEffect(.degrees(angle))
             .task {
-                guard !reduceMotion else { angle = 25; glisse = 0.5; return }
+                guard !reduceMotion, !ambianceAuRepos else { angle = 25; glisse = 0.5; return }
                 angle = 0; glisse = 0
                 withAnimation(.linear(duration: 38)
                     .repeatForever(autoreverses: false)) { angle = 360 }
@@ -1164,6 +1218,7 @@ private struct VerreRespire: View {
     @State private var a1: Double = 0
     @State private var a2: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     private var voile: LinearGradient {
         LinearGradient(stops: [
@@ -1186,7 +1241,7 @@ private struct VerreRespire: View {
                 .rotationEffect(.degrees(200 + a2))
         }
         .task {
-            guard !reduceMotion else { a1 = 30; a2 = -30; return }
+            guard !reduceMotion, !ambianceAuRepos else { a1 = 30; a2 = -30; return }
             a1 = 0; a2 = 0
             withAnimation(.linear(duration: 47)
                 .repeatForever(autoreverses: false)) { a1 = 360 }
@@ -1204,6 +1259,7 @@ private struct GoutteNoire: View {
     @State private var y: CGFloat = 0
     @State private var souffle: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         let cote = coteTournant(largeur, hauteur) * 1.6
@@ -1219,7 +1275,7 @@ private struct GoutteNoire: View {
             .scaleEffect(0.88 + 0.26 * souffle)
             .offset(x: -95 + 190 * x, y: -40 + 80 * y)
             .task {
-                guard !reduceMotion else { x = 0.5; y = 0.5; souffle = 0.5; return }
+                guard !reduceMotion, !ambianceAuRepos else { x = 0.5; y = 0.5; souffle = 0.5; return }
                 x = 0; y = 0; souffle = 0
                 withAnimation(.easeInOut(duration: 13 / 2)
                     .repeatForever(autoreverses: true)) { x = 1 }
@@ -1244,6 +1300,7 @@ private struct LisereTournant: View {
     let intensite: Double
     @State private var angle: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ambianceRouteAuRepos) private var ambianceAuRepos
 
     var body: some View {
         let forme = RoundedRectangle(cornerRadius: rayon, style: .continuous)
@@ -1273,7 +1330,7 @@ private struct LisereTournant: View {
             .opacity((presse ? 0.9 : 0.55) * intensite)
             .allowsHitTesting(false)
             .task {
-                guard !reduceMotion else { angle = 0; return }
+                guard !reduceMotion, !ambianceAuRepos else { angle = 0; return }
                 angle = 0
                 withAnimation(.linear(duration: 22)
                     .repeatForever(autoreverses: false)) { angle = 360 }

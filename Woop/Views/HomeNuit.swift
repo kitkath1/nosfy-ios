@@ -206,8 +206,9 @@ struct HomeNuitFond: View {
     /// 30 Hz : c'est un fond qui respire sur 37 secondes, pas une cinématique.
     private var rasant: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.homeDort)) { tl in
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: DepartEtat.shared.homeDort || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(4)
                 let t = Float(RasantHorloge.t(tl.date))
                 let dx = reduceMotion ? 0 : Float(tilt.value.x)
                 let dy = reduceMotion ? 0 : Float(tilt.value.y)
@@ -2138,7 +2139,10 @@ struct HomeNuitPage: View {
     }
 
     /// `-pullSonde <n>` — la bisection du coût du geste.
-    private static let pullSonde: Int = {
+    private static var pullSonde: Int {
+        BancCoutHome.shared.pullSonde ?? pullSondeArgument
+    }
+    private static let pullSondeArgument: Int = {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: "-pullSonde"), i + 1 < a.count,
               let n = Int(a[i + 1]) else { return 0 }
@@ -2483,6 +2487,7 @@ struct HomeNuitPage: View {
                      page: { pageContenu(geo) },
                      dalle: { dalleHome },
                      nav: { NavBande(hauteur: NavEtat.shared.navH) })
+                .environment(\.decorHomeAuRepos, DecorHome.auRepos)
                 // LES SATELLITES — HORS card (clippés/étranglés dedans) :
                 // le panneau du départ et la vitrine, l'école mondeFlottant.
                 // ⚠️ Appliqués APRÈS PageCard, ils échappent aux trois
@@ -2865,6 +2870,7 @@ struct HomeNuitPage: View {
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
                                     paused: reduceMotion
                                         || (depart == nil && ferme == nil))) { tl in
+                let _ = SondeVol.shared.tic(4)
                 let e = eNow(tl.date)
                 MenuHote(ouvert: $menuOuvert,
                          onChoix: { i in
@@ -3533,7 +3539,8 @@ struct HomeNuitPage: View {
                     // 5/1000, il n'y a rien à voir — la garde est donc
                     // PROUVABLEMENT invisible, ce qui n'aurait pas été le cas
                     // d'un démontage à mi-course.
-                    if verreMonte, net < 0.995 {
+                    if verreMonte, net < 0.995,
+                       BancCoutHome.shared.phase != .sansWidgets {
                     CardsRangee(faites: faitsAffiche, prevues: prevus,
                                 volume: stats?.volumeValeur ?? "0",
                                 volumeUnite: stats?.volumeUnite ?? "kg",
@@ -3571,7 +3578,8 @@ struct HomeNuitPage: View {
                         // l'opération la plus chère de la page, et au-delà de
                         // 6 pt on ne distingue plus rien : on payait pour du
                         // vide, à chaque image du tirage.
-                        .blur(radius: 6 * net * flouCards)
+                        .modifier(FlouWidgetsParentBanc(
+                            rayon: 6 * net * flouCards))
                         .opacity(1 - net)
                         // ⚠️ ELLES NE SONT PLUS SOURDES. Le `false` datait du
                         // temps où les cards n'étaient que du mobilier ; avec
@@ -3613,6 +3621,7 @@ struct HomeNuitPage: View {
                     // rallumerait deux verres et deux gaussiennes pendant la
                     // séance — le régime que le dépôt a démonté exprès.
                     if verreMonte || enSeance, !Self.ardoiseThisWeek,
+                       BancCoutHome.shared.phase != .sansRoute,
                        net < 0.995 {
                     CardRoute(lecture: lectureChemin
                                 ?? EcranSpec.Lecture(etape: 0),
@@ -4894,8 +4903,9 @@ struct VerreGaletDur: View {
         let w = pan.width + 2 * Self.pad
         let h = cote + descente + pan.height + 2 * Self.pad
         // LA HOME DORT SOUS LA ROUTE (jalon 1) : le shader du verre se tait.
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0,
-                                paused: DepartEtat.shared.homeDort)) { tl in
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                paused: DepartEtat.shared.homeDort || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(4)
             let t = Float(RasantHorloge.t(tl.date))
             Rectangle()
                 // JAMAIS `.clear` sous un `colorEffect` : l'alpha nul de
@@ -5027,11 +5037,29 @@ private struct FumeeInvite: View {
     private static let assise: CGFloat = 96
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
+    private static var sansFumee: Bool {
+        CommandLine.arguments.contains("-sansFumeeInvite")
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
+    private static let ancienRendu = CommandLine.arguments.contains("-fumeeSwiftUI")
+    @Environment(\.decorHomeAuRepos) private var decorAuRepos
+
+    private var dort: Bool {
+        scenePhase != .active || DepartEtat.shared.homeDort || RythmeEcran.dortHome
+    }
 
     var body: some View {
-        if !reduceMotion {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                    paused: DepartEtat.shared.homeDort)) { tl in
+        if !reduceMotion && !Self.sansFumee && !decorAuRepos {
+            if !Self.ancienRendu && FumeeInviteMetal.disponible {
+                FumeeInviteMetal(dort: dort)
+                    .frame(width: Self.larg, height: Self.haut)
+                    .offset(y: Self.haut - Self.assise)
+            } else {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: dort)) { tl in
+                let _ = SondeVol.shared.tic(4)
                 let t = tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)
                 // ⚠️ DEUX PÉRIODES INCOMMENSURABLES (7,3 s et 11,7 s). Un seul
@@ -5055,6 +5083,7 @@ private struct FumeeInvite: View {
                     ))
                     .frame(width: Self.larg, height: Self.haut)
                     .offset(y: Self.haut - Self.assise)
+            }
             }
         }
     }
@@ -5146,9 +5175,10 @@ struct PoudreMini: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                 paused: salves.isEmpty || reduceMotion
-                                    || DepartEtat.shared.homeDort)) { tl in
+                                    || DepartEtat.shared.homeDort || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(4)
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
                 for s in salves { dessiner(s, ctx: &ctx, quand: tl.date) }
@@ -5229,4 +5259,22 @@ enum PilP {
 /// `-flouAvant` — l'A/B des deux flous, sur le même binaire.
 enum FlouBanc {
     static let avant = CommandLine.arguments.contains("-flouAvant")
+}
+
+/// Diagnostic du liseré natif sous un filtre SwiftUI : le drapeau retire
+/// entièrement le blur parent, même au rayon zéro. La branche est fixée
+/// au lancement ; elle ne remonte pas les cards pendant un geste.
+private struct FlouWidgetsParentBanc: ViewModifier {
+    private static let retire =
+        CommandLine.arguments.contains("-sansFlouWidgetsParent")
+    let rayon: CGFloat
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if Self.retire {
+            content
+        } else {
+            content.blur(radius: rayon)
+        }
+    }
 }
