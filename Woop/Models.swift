@@ -240,27 +240,27 @@ enum ExerciseCatalog {
         Exercise(
             id: "hiit-tapis", name: "HIIT sur tapis de course",
             category: .cardio, equipment: .machine, tracking: .intervals,
-            muscle: "Cardio-respiratoire",
-            cue: "Tu alternes des passages rapides et des récupérations, le buste droit, sans toucher les barres.",
-            mistake: "Partir trop vite sur le premier passage et s'écrouler sur les suivants."),
+            muscle: "Souffle et jambes",
+            cue: "Des passages rapides, des récupérations. Le buste droit.",
+            mistake: "Partir trop vite sur le premier passage."),
         Exercise(
             id: "escalier", name: "Escalier",
             category: .cardio, equipment: .machine, tracking: .steady,
-            muscle: "Fessiers et cardio",
-            cue: "Tu montes en continu, le pied entier sur la marche, le buste droit.",
-            mistake: "Se suspendre aux poignées, ce qui annule le travail des jambes."),
+            muscle: "Fessiers et jambes",
+            cue: "Tu montes en continu, le pied entier sur la marche.",
+            mistake: "Se suspendre aux poignées."),
         Exercise(
             id: "tapis-lent", name: "Tapis à allure modérée",
             category: .cardio, equipment: .machine, tracking: .steady,
             muscle: "Endurance fondamentale",
-            cue: "Tu tiens une allure où tu peux encore parler, longtemps, sans forcer.",
-            mistake: "Monter l'allure jusqu'à ne plus pouvoir tenir la durée."),
+            cue: "Une allure où tu peux encore parler, longtemps.",
+            mistake: "Monter l'allure jusqu'à ne plus tenir la durée."),
         Exercise(
             id: "piscine", name: "Piscine",
             category: .cardio, equipment: .poidsDuCorps, tracking: .steady,
-            muscle: "Cardio-respiratoire et corps entier",
-            cue: "Tu nages à allure régulière, le corps aligné à la surface, la respiration calée sur les bras.",
-            mistake: "Lever la tête pour respirer : le bassin descend et les jambes traînent.")
+            muscle: "Corps entier",
+            cue: "Allure régulière, corps aligné, respiration sur les bras.",
+            mistake: "Lever la tête pour respirer.")
     ]
 
     static func exercises(in category: ExerciseCategory) -> [Exercise] {

@@ -95,6 +95,14 @@ enum SacreServeur {
         /// sans bonus — et « aujourd'hui est-il fait ».
         let flammeJours: Int?
         let flammeAujourdhui: Bool?
+        // ── DEPUIS 20260915160000 (15-09, l'économie du cardio) — la piscine
+        //    se paie 20 la longueur, plafond 300 (`pieces_par_longueur`,
+        //    `cardio_piscine_max`). La fiche le DIT au « + » comme la série
+        //    dit ses 20 : elle lit le prix ici, elle ne le connaît pas.
+        //    Optionnels (la loi des deux dialectes) : rendus depuis
+        //    20260915190000 ; une base d'avant garde les défauts de l'app.
+        let piecesParLongueur: Int?
+        let piscineMax: Int?
     }
 
     private static let iso: ISO8601DateFormatter = {
@@ -132,7 +140,9 @@ enum SacreServeur {
                           retourProchain: date(j["retour_prochain"] as? String),
                           piecesRetourQuotidien: j["pieces_retour_quotidien"] as? Int,
                           flammeJours: flamme?["jours"] as? Int,
-                          flammeAujourdhui: flamme?["aujourdhui_fait"] as? Bool)
+                          flammeAujourdhui: flamme?["aujourdhui_fait"] as? Bool,
+                          piecesParLongueur: j["pieces_par_longueur"] as? Int,
+                          piscineMax: j["cardio_piscine_max"] as? Int)
     }
 
     /// Le solde de pièces d'ARGENT (dérivé côté serveur, jamais une colonne).

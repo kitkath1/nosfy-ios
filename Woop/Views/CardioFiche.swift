@@ -37,7 +37,7 @@ struct GrapheCardioFiche: View {
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.55))
                 .modifier(ArriveeDouce(vu: vu, retard: 0.48))
-            PaliersVue(segments: vide ? PaliersVue.silhouette : segments,
+            PaliersVue(segments: vide ? silhouette : segments,
                        vide: vide, echelle: echelle)
                 .frame(height: 138)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.60))
@@ -46,6 +46,23 @@ struct GrapheCardioFiche: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .chambreVide(vide)
+    }
+
+    /// La silhouette de la chambre est écrite en km/h (4 → 20). Sur une
+    /// autre échelle (les niveaux 1 → 15 de l'escalier), ses 16-18 km/h
+    /// dépassaient le plafond : les barres montaient à plein et touchaient
+    /// la ligne de tête (vu à la capture du 15-09). On la RAMÈNE dans
+    /// l'échelle, même dessin, même respiration — la loi du vide.
+    private var silhouette: [SegmentHiit] {
+        guard echelle != .tapis else { return PaliersVue.silhouette }
+        let de = EchellePaliers.tapis, vers = echelle
+        let etendue = max(de.max - de.min, 1)
+        return PaliersVue.silhouette.map { s in
+            let u = (min(max(s.vitesse, de.min), de.max) - de.min) / etendue
+            return SegmentHiit(secondes: s.secondes,
+                               vitesse: vers.min + u * (vers.max - vers.min),
+                               effort: s.effort)
+        }
     }
 }
 

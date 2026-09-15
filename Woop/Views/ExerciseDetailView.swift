@@ -45,6 +45,11 @@ struct ExerciseDetailView: View {
     /// attend qu'elle se referme (verdict §12 : « une fois la pill ou la pop-up
     /// Reward fermée, on affiche l'overlay avec la flamme »).
     @State private var pillGain: (gain: Int, total: Int)?
+    /// Le jeton de la pill de la PISCINE (15-09) : chaque « + » la relance
+    /// deux secondes ; seule la dernière relance a le droit de l'éteindre.
+    @State private var pillJeton = 0
+    /// Le « − » de la piscine a demandé : l'alerte système est ouverte.
+    @State private var retraitDemande = false
     @State private var issueEnCours: IssueSerie?
     /// LE RANG de la série qui a produit l'issue en cours — mémorisé au
     /// moment de la décision, jamais relu dans `sets` (l'écriture est
@@ -905,9 +910,24 @@ struct ExerciseDetailView: View {
                     // place, le compteur de longueurs.
                     CompteurLongueursVue(compteur: compteur,
                                          onPlus: { plusUneLongueur() },
-                                         onMoins: { moinsUneLongueur() },
+                                         onMoins: { demanderRetrait() },
                                          onBassin: { poserBassin($0) })
                         .padding(.bottom, 18)
+                        // LE « − » DEMANDE (verdict Kathryn 15-09 : « si on
+                        // va en arrière avec moins, tu affiches la pop-up
+                        // basique Apple : êtes-vous sûr de retirer ») — une
+                        // longueur nagée ne s'efface pas d'un doigt qui
+                        // glisse. L'alerte système, telle quelle.
+                        .alert(L("Retirer une longueur ?", "Remove a length?"),
+                               isPresented: $retraitDemande) {
+                            Button(L("Retirer", "Remove"), role: .destructive) {
+                                moinsUneLongueur()
+                            }
+                            Button(L("Annuler", "Cancel"), role: .cancel) {}
+                        } message: {
+                            Text(L("Le compte passera à \(max(compteur.longueurs - 1, 0)).",
+                                   "The count will go down to \(max(compteur.longueurs - 1, 0))."))
+                        }
                 } else if seanceTapis == nil {
                     VStack(spacing: 0) {
                         // LA BULLE DE LA LENTILLE, du côté de la nuit :
@@ -1214,10 +1234,17 @@ struct ExerciseDetailView: View {
                 // tient deux secondes et repart toute seule ; la question
                 // « Recommencer ? » arrive derrière elle.
                 if let pg = pillGain {
+                    // SOUS LA PASTILLE, jamais derrière (15-09, Kathryn :
+                    // « il manque des fois la notification ») : posée à
+                    // 8 pt du bord, la pill naissait dans la capsule de
+                    // la pastille de séance (y 5 → 92 physique) et s'y
+                    // cachait. Elle descend sous la capsule, en points
+                    // PHYSIQUES — la même cote que la pastille elle-même.
                     PillGain(gain: pg.gain, total: pg.total)
-                        .padding(.top, 8)
+                        .padding(.top, IleGeo.capsuleBas + 10)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .top)
+                        .ignoresSafeArea(edges: .top)
                         .transition(.move(edge: .top)
                             .combined(with: .opacity))
                         .allowsHitTesting(false)
@@ -2168,10 +2195,21 @@ struct ExerciseDetailView: View {
                 .minimumScaleFactor(big ? 0.9 : 0.62)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: big ? 300 : nil, alignment: .leading)
-            Text("\(exercise.category.rawValue) • \(exercise.muscle)")
+            Text(sousTitre)
                 .font(.inter(13))
                 .foregroundStyle(Color.inkMuted)
         }
+    }
+
+    /// LE SOUS-TITRE. La muscu dit sa catégorie puis son muscle (« Fessiers •
+    /// Grand fessier »). Le cardio ne dit QUE ce qu'il travaille (verdict
+    /// Kathryn 15-09 : « enlève dans les exos cardio “Cardio” sous le titre,
+    /// allège à la Apple ») — « Cardio • Cardio-respiratoire » disait deux
+    /// fois la même chose sous un titre qui le dit déjà.
+    private var sousTitre: String {
+        exercise.category == .cardio
+            ? exercise.muscle
+            : "\(exercise.category.rawValue) • \(exercise.muscle)"
     }
 
     /// La photo NUE, fondue dans le noir de la carte : ni liseré, ni lueur,
@@ -2461,7 +2499,9 @@ struct ExerciseDetailView: View {
             compteur.metres = last.metresParLongueur
         }
         // LE BANC `-piscineAuto` : cinq « + » puis un « − », à 0,7 s d'écart
-        // — les mêmes fonctions que le doigt (le simulateur n'en a pas).
+        // — les mêmes fonctions que le doigt (le simulateur n'en a pas). Le
+        // « − » passe par la question, comme le doigt : l'alerte reste
+        // ouverte à la capture (`-piscineRetire` la confirme seule).
         if CommandLine.arguments.contains("-piscineAuto") {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(2.0))
@@ -2469,7 +2509,13 @@ struct ExerciseDetailView: View {
                     plusUneLongueur()
                     try? await Task.sleep(for: .seconds(0.7))
                 }
-                moinsUneLongueur()
+                try? await Task.sleep(for: .seconds(2.6))
+                demanderRetrait()
+                if CommandLine.arguments.contains("-piscineRetire") {
+                    try? await Task.sleep(for: .seconds(2.0))
+                    retraitDemande = false
+                    moinsUneLongueur()
+                }
             }
         }
     }
@@ -2478,6 +2524,45 @@ struct ExerciseDetailView: View {
         compteur.longueurs += 1
         ecrireLongueurs()
         Haptique.leger()
+        direLesPiecesDeLaLongueur()
+    }
+
+    /// LES PIÈCES DE LA LONGUEUR (verdict Kathryn 15-09 : « il manque les
+    /// pièces de récompense ») — exactement ce qu'une série dit quand elle
+    /// tombe : la volée de pièces vers la pastille, et la pill « +20 · 80
+    /// this session » qui descend du bord haut deux secondes. Le prix est LU
+    /// (`pieces_par_longueur`, plafond `cardio_piscine_max`), jamais deviné ;
+    /// le serveur PAIE à la clôture, la fiche ne fait que le dire. Au
+    /// plafond, plus rien ne vole : une longueur de plus ne vaut plus rien.
+    /// Pas de question « Recommencer ? » derrière : la piscine n'a pas de
+    /// série à reposer, le doigt continue d'ajouter.
+    private func direLesPiecesDeLaLongueur() {
+        let eco = EconomieWoop.shared
+        let par = max(eco.piecesParLongueur, 0)
+        let total = min(compteur.longueurs * par, eco.piscineMax)
+        let avant = min((compteur.longueurs - 1) * par, eco.piscineMax)
+        let gain = total - avant
+        guard gain > 0 else { return }
+        // La cible se lit UNE fois, à l'instant du tir (la loi de la série).
+        coinsCible = PiluleEtat.shared.ancreGlobale
+        coinsAt = .now
+        pillJeton += 1
+        let jeton = pillJeton
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+            pillGain = (gain: gain, total: total)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            // Un « + » plus récent a relancé la pill : c'est lui qui l'éteint.
+            guard pillJeton == jeton else { return }
+            withAnimation(.easeIn(duration: 0.30)) { pillGain = nil }
+        }
+    }
+
+    /// Le « − » ne retire rien lui-même : il POSE la question (l'alerte
+    /// système sur le compteur). À zéro, il n'y a rien à demander.
+    private func demanderRetrait() {
+        guard compteur.longueurs > 0 else { return }
+        retraitDemande = true
     }
 
     private func moinsUneLongueur() {

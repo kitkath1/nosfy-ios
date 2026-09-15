@@ -97,6 +97,28 @@ terminerSeance, groupesDeSeance, `-grandPlayerOuvert`), `Services/SacreServeur.s
 vol) → construit depuis une copie jetable sans ce fichier (`scratchpad/arbre`,
 `dd-cardio`), EXIT=0 à chaque tour.
 
+### ⚡ 15-09, 13 h — COMMITÉ `040d31e`, puis ses retours (commit suivant, sur son « commit »)
+
+**Le commit** (son ordre « ok commit c cool le cardio ») : tout le tableau ci-dessus,
+par hunks dans les fichiers partagés, SANS `docs/site/index.html` ni les lignes 🟢 du
+serveur (la session back-end passe juste derrière et régénère le livrable avec toute
+la source), SANS le pull piscine (dans le pull de la session compte). ⚠️ HEAD ne
+compile pas seul, et ce n'est pas ce commit : quatre sites d'appel déjà commités
+attendent des changements non commités d'autres sessions (`PlayerSeance.swift` non
+suivi → `VolDePieces` ; `RecentWorkoutCard` haut/bas ; `ActiveWorkoutView`
+`onStopViaPause` ; `JewelTabBar`). L'index a été construit à part avec ces quatre
+fichiers ajoutés : EXIT=0.
+
+**Ses retours après le commit** (« ah non ça marche, my bad » sur le galet ; puis) :
+
+| retour | fait | preuve |
+|---|---|---|
+| « il manque les pièces de récompense » / « il manque des fois la notification qui part dans la pastille + la notification pièce » | le « + » DIT SES PIÈCES comme une série : pill « +20 · 100 this session » + volée vers la pastille (`direLesPiecesDeLaLongueur`). Le prix est LU (`EtatCoffre.piecesParLongueur` / `piscineMax`, optionnels ; `EconomieWoop` défauts 20 / 300) — `etat_coffre` les rend depuis `20260915190000` (session back-end, commit `5dd45f4`, mesuré 20 · 300 sur le compte de test). **La cause du « des fois »** : la pill naissait à 8 pt du bord, DANS la capsule de la pastille de séance (y 5 → 92 physique), qui la cachait → posée à `IleGeo.capsuleBas + 10`, en points physiques | `captures/k1-piscine-plus-pill.png`, planche `planche-piscine-fixes-15-09.png` (la pièce en vol, image par image) |
+| « si on va en arrière avec moins, pop-up basique Apple : êtes-vous sûr » | `demanderRetrait()` → `.alert` système « Retirer une longueur ? · Le compte passera à N » (Annuler / Retirer) ; le banc `-piscineAuto` la laisse ouverte, `-piscineRetire` la confirme | `captures/k2-piscine-moins-alerte.png` |
+| « à ajouter aussi côté backend » | relayé, et CONFIRMÉ par la session back-end (commit `6014fff`) : `piscine_longueurs` est un simple upsert (aucun `greatest`), `pieces_cardio_seance` ne lit le compte qu'À LA CLÔTURE, `least(longueurs × 20, 300)` — baisser puis clôturer paie le compte réduit, rien à changer au serveur. `pieces_par_longueur` / `cardio_piscine_max` sont rendues par `etat_coffre` depuis `20260915190000` (commit `5dd45f4`) | sa réponse, 15-09 13 h |
+| « enlève un peu de wording sous les titres, que ça respire comme Apple » | les quatre `cue` en une phrase (≤ 60 signes), « À éviter » en quelques mots, piscine « Corps entier » | planche colonnes 1, 3, 4, 5 |
+| « enlève dans les exos cardio “Cardio” sous le titre, allège à la Apple » | `sousTitre` : le cardio ne dit que ce qu'il travaille (« Souffle et jambes », « Fessiers et jambes », « Endurance fondamentale », « Corps entier »), la muscu garde « Catégorie • muscle » ; au passage la silhouette du vide ramenée dans l'échelle en niveaux (`GrapheCardioFiche.silhouette`) | `captures/planche-soustitres-cardio-15-09.png` |
+
 ---
 
 ## 0. L'ÉTAT DES LIEUX — ce que le code et le site disent aujourd'hui

@@ -103,6 +103,12 @@ final class EconomieWoop {
     private(set) var prixBooster = 100
     /// Ce qu'une série rapporte. Lu, plus deviné.
     private(set) var piecesParSerie = 20
+    /// Ce qu'une LONGUEUR de piscine rapporte, et le plafond d'une séance
+    /// (15-09, `reward_rules.pieces_par_longueur` · `cardio_piscine_max`).
+    /// Les mêmes défauts que la base ; posés par `etat_coffre` dès qu'il les
+    /// rend. La fiche les DIT au « + » — le serveur PAIE à la clôture.
+    private(set) var piecesParLongueur = 20
+    private(set) var piscineMax = 300
     /// Le journal, du plus récent au plus ancien.
     private(set) var journal: [GainCoffre] = []
 
@@ -234,6 +240,8 @@ final class EconomieWoop {
         if let m = e.piecesRetourQuotidien { piecesRetourQuotidien = m }
         if let f = e.flammeJours { flammeJours = f }
         if let a = e.flammeAujourdhui { flammeAujourdhui = a }
+        if let l = e.piecesParLongueur { piecesParLongueur = l }
+        if let m = e.piscineMax { piscineMax = m }
         serveur = true
     }
 
