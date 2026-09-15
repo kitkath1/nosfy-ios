@@ -157,9 +157,25 @@ Deno.serve(async (req) => {
     // déploiement. `FORGE_DEV_USER` non renseigné = manettes fermées pour
     // tout le monde (et le banc `CarteLuneLab` perd ses leviers : c'est le
     // prix, et il se rend en une variable d'environnement).
-    if (user.id !== Deno.env.get("FORGE_DEV_USER")) {
+    const estAtelier = user.id === Deno.env.get("FORGE_DEV_USER");
+    if (!estAtelier) {
       delete corps.famille;
       delete corps.force_new;
+    }
+
+    // ── LA SERRURE (15-09) : PAS DE SACHET, PAS DE CARTE ────────────────
+    //
+    // Jusqu'ici un appel SANS `booster_id` tirait quand même une carte et
+    // l'écrivait dans la collection — « le tirage est libre » (site :
+    // m-garde-d-idempotence-serveur). L'app, elle, envoie toujours l'id du
+    // sachet qu'elle vient de consommer (BoosterLab : consommer PUIS forger,
+    // 9ef6da1) ; la porte ne servait donc qu'à qui appelle la forge à la
+    // main. Elle se ferme : 400 `sachet requis`. Le compte d'ATELIER garde
+    // le passage (peindre le pool commun sans dépenser un sachet), comme il
+    // garde déjà ses manettes — c'est la même variable qui le nomme.
+    const boosterIdBrut = typeof corps.booster_id === "string" ? corps.booster_id : null;
+    if (!boosterIdBrut && !estAtelier) {
+      return Response.json({ error: "sachet requis" }, { status: 400 });
     }
 
     // ── LE BOOSTER NOIR : la rareté vient du SERVEUR, jamais du client ──
@@ -173,13 +189,19 @@ Deno.serve(async (req) => {
     //
     // Sans `booster_id`, RIEN NE CHANGE : la table peut ne pas exister
     // encore (migration 20260828120000 non appliquée), on ne l'interroge pas.
-    const boosterId = typeof corps.booster_id === "string" ? corps.booster_id : null;
+    const boosterId = boosterIdBrut;
     let rareteImposee: string | null = null;
     if (boosterId) {
       const { data: b } = await admin.from("user_boosters")
-        .select("id, origine, card_id")
+        .select("id, origine, card_id, opened_at")
         .eq("id", boosterId).eq("user_id", user.id).maybeSingle();
       if (!b) return Response.json({ error: "booster inconnu" }, { status: 404 });
+      // Un sachet se CONSOMME avant de se forger (`ouvrir_booster` /
+      // `claim_booster_legendaire` posent `opened_at`). Sceller un sachet
+      // jamais ouvert laisserait dans la réserve un sachet fermé qui porte
+      // déjà une carte : un compte faux et une carte de trop. 409, pas 500 :
+      // c'est un refus métier, l'app peut le lire.
+      if (!b.opened_at) return Response.json({ error: "sachet non ouvert" }, { status: 409 });
       // IDEMPOTENCE : un sachet DÉJÀ scellé rend SA carte. Un double tap, un
       // réseau qui coupe, un retour arrière ne tirent jamais une deuxième
       // carte — c'est la garde de `claim_booster`, appliquée à la forge.

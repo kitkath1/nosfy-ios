@@ -4,7 +4,7 @@
  * Une pastille est UN enregistrement, écrit une fois, rendu partout. Sa preuve est
  * obligatoire : une brique sans `preuve` ne compile pas. Un état ne se déduit pas —
  * il se lit (`fichier:ligne`) ou se mesure (une sonde HTTP avec son témoin).
- * Les 22 « à mesurer » (◌) sont des `Mesure` : elles n'ont PAS d'état, seulement ce
+ * Les « à mesurer » (◌) sont des `Mesure` : elles n'ont PAS d'état, seulement ce
  * que le code laisse lire — elles ne sont jamais peintes tant qu'on n'a pas mesuré.
  */
 

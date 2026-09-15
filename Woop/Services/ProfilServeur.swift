@@ -87,6 +87,18 @@ enum ProfilServeur {
         if let a = try? await accueil(), let n = a.prenom, !n.isEmpty {
             UserDefaults.standard.set(n, forKey: clePrenom)
         }
+        // Les règles du rythme des annonces (15-09) : lues une fois par
+        // lancement, ici parce que la home apparaît AVANT toute séance.
+        await DecideurSerie.chargerRegles()
+        #if DEBUG
+        // Les bancs sans écran (15-09) — des gestes de debug, sur leur banc :
+        // `-bilanBanc` imprime les deux phrases du bilan IA, `-decideurBanc`
+        // les pop-ups de trente séries imaginaires (journal [annonces]).
+        if ChambreServeur.bancBilan {
+            Task.detached { await ChambreServeur.bilanBanc() }
+        }
+        if DecideurSerie.banc { await MainActor.run { DecideurSerie.jouerBanc() } }
+        #endif
     }
 
     // MARK: - home() : ce que la home demande au serveur, en un appel

@@ -304,6 +304,10 @@ struct ProfilLuneView: View {
         .onAppear { economie.poserMaquette(or: maquette) }
         // Les six nombres seulement — le journal ne sert qu'au coffre.
         .task { await economie.rafraichir() }
+        // LE MUR LIT LE SERVEUR (15-09) : `ma_collection()`, habillée hors
+        // du fil principal, publiée une fois — la réinstallation ne vide
+        // plus « Cartes collectées ». Sans session, il reste la mémoire.
+        .task { await collection.relire() }
         .onAppear {
             if Self.reglagesNow { showReglages = true }
             // LE FILET DE L'ONGLET PARESSEUX : quand l'envol bascule sur
@@ -746,14 +750,16 @@ struct ProfilLuneView: View {
         .padding(.bottom, 14)
     }
 
-    /// Le rang du haut : la flamme, puis les deux réserves de sachets.
+    /// Le rang du haut : les deux réserves de sachets. (La pastille de la
+    /// flamme qui ouvrait ce rang est RETIRÉE le 15-09 sur son verdict :
+    /// « il sert à rien » — le serveur compte toujours la flamme,
+    /// `etat_coffre().flamme`, personne ne l'affiche plus.)
     /// LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe devant l'orange :
     /// deux réserves qui ne se mélangent jamais (verdict 28-08) — une
     /// pastille sur la pill jaune aurait dit « des boosters, dont des
     /// noirs », alors que ce sont deux portes et deux manèges.
     private var rangReserves: some View {
         HStack(spacing: 8) {
-            pastilleFlamme
             PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
                         robe: .noire) {
                 ouvrirReserve(.noire)
@@ -825,61 +831,6 @@ struct ProfilLuneView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(
             "\(economie.argent) pièces d'argent — ouvrir le coffre")
-    }
-
-    /// La laque blanche de la flamme allumée — la robe du profil est
-    /// monochrome : jamais le néon de `FlammeJauge`.
-    private static let flammeLaque = LinearGradient(
-        colors: [Color(white: 0.96), Color(white: 0.72)],
-        startPoint: .top, endPoint: .bottom)
-
-    /// Vrai = la flamme est allumée (au moins un jour d'affilée).
-    private var flammeAllumee: Bool { economie.flammeJours > 0 }
-
-    private var flammeLabel: String {
-        let base = "Flamme : \(economie.flammeJours) jours d'affilée"
-        return economie.flammeAujourdhui
-            ? base + ", séance faite aujourd'hui" : base
-    }
-
-    /// LA FLAMME 🔥 (30-08 : « jours d'affilée, comptée au serveur, SANS
-    /// bonus ») — une pastille, pas un bouton : elle ne mène nulle part,
-    /// elle DIT. À 0 elle est mate (le contour `flame` en encre calme, la
-    /// flamme éteinte de `MiniCardJour`) ; au-delà elle s'allume — le
-    /// `flame.fill` en laque blanche. Le point après le nombre = la séance
-    /// d'AUJOURD'HUI est faite (`flammeAujourdhui`). Rien n'y bouge : pas
-    /// de verre animé, pas de Canvas (la loi du verre).
-    private var pastilleFlamme: some View {
-        HStack(spacing: 6) {
-            flammeGlyphe
-                .frame(width: 16, height: 24)
-            Text("\(economie.flammeJours)")
-                .font(.inter(15, .bold))
-                .foregroundStyle(flammeAllumee
-                    ? Color.inkPrimary : Color.inkSecondary)
-                .contentTransition(.numericText())
-            if economie.flammeAujourdhui {
-                Circle()
-                    .fill(Color.white.opacity(0.92))
-                    .frame(width: 4, height: 4)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .glassEffect(.regular.tint(Color.black.opacity(0.5)), in: .capsule)
-        .accessibilityLabel(flammeLabel)
-    }
-
-    @ViewBuilder private var flammeGlyphe: some View {
-        if flammeAllumee {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Self.flammeLaque)
-        } else {
-            Image(systemName: "flame")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.inkMuted)
-        }
     }
 
     /// La pastille de la page BRAVO, en petit, posée SUR la bannière. Au

@@ -306,7 +306,7 @@ export function Dictionnaire() {
         )
       })}
       <details className="bloc">
-        <summary><b>cards · user_cards · syntheses · booster_progress</b></summary>
+        <summary><b>cards · user_cards · syntheses · booster_progress (les deux dernières n'existent pas au serveur)</b></summary>
         <div className="tw"><table className="serveur table">
           <thead><tr><th></th><th>Table</th><th>État</th></tr></thead>
           <tbody>{autres.map((b) => (

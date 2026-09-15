@@ -31,17 +31,20 @@ Il y a DEUX comptes Supabase sur cette machine :
   en session VS Code non interactive il reste « auth requise » — passer
   par une session `claude` au terminal, ou par le CLI (préféré).
 
-## Les migrations (piège n° 2)
+## Les migrations (piège n° 2 — RÉGLÉ, mesuré le 15-09)
 
-`supabase/migrations/` contient `0001_init.sql` et
-`20260729120000_woop_schema.sql` — **appliquées au DASHBOARD en juillet**,
-donc inconnues de `schema_migrations` côté serveur. AVANT tout premier
-`db push` :
+`0001_init.sql` et `20260729120000_woop_schema.sql` avaient été appliquées au
+DASHBOARD en juillet, donc inconnues de `schema_migrations` — d'où les deux
+`migration repair --status applied` d'alors. **C'est fait** : le 15-09,
+`supabase migration list --linked` rend 35 locales = 35 distantes, de `0001` à
+`20260915090000`, rien en attente, rien d'orphelin. Le flux normal suffit :
+nouveau fichier dans `migrations/` → `db push --linked`, et
+`tools/serveur/verif_portes.py` recompare la liste à chaque passage.
 
-    … supabase migration repair --status applied 0001
-    … supabase migration repair --status applied 20260729120000
-
-Ensuite le flux normal : nouveau fichier dans `migrations/` → `db push`.
+⚠️ Deux pièges qui restent : le jeton est celui de `.secrets/supabase-access-token`
+(celui de `~/.zshenv` voit un AUTRE projet et rend « Unauthorized ») ; et `0001`
+n'est pas ce qui a été posé — `syntheses`, qu'il déclare, n'existe pas au serveur
+(404 PGRST205), `workouts.updated_at` non plus.
 
 ## L'app aujourd'hui
 

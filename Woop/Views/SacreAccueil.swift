@@ -91,6 +91,73 @@ final class CollectionLune: ObservableObject {
 
     func collectees(_ rarete: String) -> [Obtenue] { registres[rarete] ?? [] }
 
+    // MARK: Le serveur (15-09) — la collection ne repart plus de zéro
+
+    /// Vrai dès que le mur a été posé depuis le serveur au moins une fois :
+    /// une réinstallation ne le vide plus. Faux sans session — le store
+    /// reste alors ce que la mémoire du process en a fait (la v1).
+    @Published private(set) var lueAuServeur = false
+
+    /// LA RELECTURE — `ma_collection()` (SacreServeur), puis l'habillage de
+    /// chaque illustration nue (cadre + lunes + depth) exactement comme
+    /// après une forge. Appelée à l'apparition du profil. Silencieuse en
+    /// panne : sans session ou sans réseau, le mur garde ce qu'il montrait.
+    ///
+    /// ⚠️ LE SERVEUR GAGNE. La forge écrit `user_cards` AVANT de répondre :
+    /// une carte que l'envol vient de poser y est déjà, et un placeholder
+    /// parti avant la réponse (carte neuve, 60-90 s) est remplacé par la
+    /// vraie. Les PNG nus sont gardés sur disque (Caches/cartes-lune/) pour
+    /// ne pas retélécharger vingt-cinq cartes à chaque passage au profil.
+    /// Tout le travail (réseau, habillage) se fait HORS du fil principal ;
+    /// une seule publication à la fin — pas un rendu par carte.
+    func relire() async {
+        let jwt: String
+        do { jwt = try await SupabaseSession.shared.token() } catch { return }
+        do {
+            let familles = try await SacreServeur.maCollection(jwt: jwt)
+            var nouveaux: [String: [Obtenue]] = [:]
+            for f in familles {
+                guard let nue = await Self.illustration(f),
+                      let habit = try? LuneForge.habiller(illustration: nue,
+                                                          rarete: f.rarete)
+                else { continue }
+                nouveaux[f.rarete, default: []].append(
+                    Obtenue(famille: f.famille, count: f.nombre,
+                            art: GabaritCarte.vignette(habit.art),
+                            artPlein: habit.art, depth: habit.depth))
+            }
+            let poses = nouveaux
+            let cartes = familles.reduce(0) { $0 + $1.nombre }
+            await MainActor.run {
+                registres = poses
+                lueAuServeur = true
+            }
+            print("[collection] ma_collection() → \(familles.count) famille(s), "
+                  + "\(cartes) carte(s) · habillées \(poses.values.reduce(0) { $0 + $1.count })")
+        } catch {
+            print("[collection] ma_collection() a échoué : \(error.localizedDescription)")
+        }
+    }
+
+    /// L'illustration NUE d'une famille : le cache disque d'abord, le bucket
+    /// public `cards` sinon (puis mise en cache). nil = ni l'un ni l'autre.
+    private static func illustration(_ f: SacreServeur.FamilleCollection) async -> UIImage? {
+        let dossier = FileManager.default
+            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appending(path: "cartes-lune")
+        try? FileManager.default.createDirectory(at: dossier,
+                                                 withIntermediateDirectories: true)
+        let fichier = dossier.appending(path: "\(f.cardId).png")
+        if let data = try? Data(contentsOf: fichier), let img = UIImage(data: data) {
+            return img
+        }
+        guard let (data, rep) = try? await URLSession.shared.data(from: f.artURL),
+              (rep as? HTTPURLResponse)?.statusCode == 200,
+              let img = UIImage(data: data) else { return nil }
+        try? data.write(to: fichier)
+        return img
+    }
+
     /// LA RÉPARATION D'UN PLACEHOLDER : une forge qui répond APRÈS
     /// l'envol (carte neuve, 60-90 s) a laissé partir carte-lune-1 vers
     /// la collection alors que le serveur a consommé le tirage. On

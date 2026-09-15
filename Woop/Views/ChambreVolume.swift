@@ -99,6 +99,13 @@ struct ChambreVolume: View {
             BlocTitre(texte: "Répartition")
             PodiumSoie(categories: f.categories, vide: f.vide)
                 .frame(height: 226)
+            // LE CARDIO NE PÈSE RIEN ICI, et c'est DIT (15-09 — le ⚪ du site :
+            // « le cardio pèse 0 kg, dit nulle part »). Le volume compte la
+            // fonte ; les efforts du tapis se lisent dans HIIT.
+            Text("Le cardio ne pèse rien ici : ses efforts se lisent dans HIIT.")
+                .font(.system(size: 10))
+                .foregroundStyle(ChambreTon.encre4)
+                .padding(.top, 2)
         }
         .chambreVide(f.vide)
     }

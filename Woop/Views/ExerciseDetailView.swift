@@ -524,7 +524,8 @@ struct ExerciseDetailView: View {
             rangIssue = n
             jouerIssue(DecideurSerie.pour(serie: n, gain: gainParSerie,
                                           total: n * gainParSerie,
-                                          reps: f.reps, kilos: f.kilos), f,
+                                          reps: f.reps, kilos: f.kilos,
+                                          seance: active?.remoteID), f,
                        banc: true)
             return
         }
@@ -2400,7 +2401,8 @@ struct ExerciseDetailView: View {
         let issue = DecideurSerie.pour(serie: rang,
                                        gain: gainParSerie,
                                        total: rang * gainParSerie,
-                                       reps: f.reps, kilos: f.kilos)
+                                       reps: f.reps, kilos: f.kilos,
+                                       seance: active?.remoteID)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
         }

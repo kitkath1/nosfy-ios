@@ -1,5 +1,6 @@
 import { PAGES, TOUTES, MESURES, compterFamilles } from '@/content'
 import { Ic } from './Sprite'
+import { dernierePasse } from './passe'
 
 /**
  * Le rail : la lune, les 8 pages (30-08 : le coffre et les annonces à la place de « Économie & annonces »), la loi.
@@ -36,7 +37,7 @@ export function Rail() {
       </div>
       <div className="loi">
         <b>Un état se vérifie, il ne se déduit pas.</b>
-        <span>{total} pastilles · dernière passe le 30 août 2026</span>
+        <span>{total} pastilles · dernière passe le {dernierePasse()}</span>
       </div>
     </nav>
   )

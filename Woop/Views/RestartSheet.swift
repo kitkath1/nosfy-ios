@@ -605,26 +605,198 @@ enum IssueSerie: Equatable {
     case reward(style: RewardStyle, video: String?)
 }
 
+/// LES RÈGLES DU RYTHME DES ANNONCES — lues au serveur (`regles_annonces()`,
+/// reward_rules), les valeurs ci-dessous en REPLI hors ligne. Tranché le
+/// 30-08 (PLAN-COFFRE-ANNONCES.md §4 M2, §5.2) : les rangs fixes 3 / 5 / 10,
+/// puis un rang au hasard toutes les 5 à 8 séries ; 4 pop-ups par séance au
+/// plus, une en pièces, une vidéo ; pour les rangs tirés, 3 séries ET 6 min
+/// depuis la dernière. Changer le rythme = une ligne en base, pas une version.
+struct ReglesAnnonces: Equatable {
+    var rangsFixes: [Int] = [3, 5, 10]
+    var rangVideo: Int = 10
+    var hasardApres: Int = 10
+    var hasardEcartMin: Int = 5
+    var hasardEcartMax: Int = 8
+    var popupsMax: Int = 4
+    var rewardMonetaireMax: Int = 1
+    var videoMax: Int = 1
+    var ecartMinSeries: Int = 3
+    var ecartMinMinutes: Int = 6
+    var ecartExigeLesDeux: Bool = true
+
+    /// Une clé absente ou illisible garde le repli — jamais un zéro qui
+    /// éteindrait les pop-ups par accident.
+    static func lire(_ j: [String: Any]) -> ReglesAnnonces {
+        var r = ReglesAnnonces()
+        func n(_ k: String, _ v: inout Int) { if let x = j[k] as? Int, x >= 0 { v = x } }
+        if let l = j["popup_rangs_fixes"] as? [Int], !l.isEmpty { r.rangsFixes = l.sorted() }
+        n("popup_rang_video", &r.rangVideo)
+        n("popup_hasard_apres", &r.hasardApres)
+        n("popup_hasard_ecart_min", &r.hasardEcartMin)
+        n("popup_hasard_ecart_max", &r.hasardEcartMax)
+        n("popups_max_seance", &r.popupsMax)
+        n("reward_monetaire_max_seance", &r.rewardMonetaireMax)
+        n("video_max_seance", &r.videoMax)
+        n("ecart_min_series", &r.ecartMinSeries)
+        n("ecart_min_minutes", &r.ecartMinMinutes)
+        if let b = j["ecart_exige_les_deux"] as? Bool { r.ecartExigeLesDeux = b }
+        if r.hasardEcartMax < r.hasardEcartMin { r.hasardEcartMax = r.hasardEcartMin }
+        return r
+    }
+}
+
+/// LE DÉCIDEUR À BUDGET (15-09, étape 5 — le J4 du plan annonces).
+///
+/// ⚠️ Jusqu'ici il tirait TOUS les multiples de 3, 5 et 10 — sans hasard,
+/// sans budget, sans horloge, avec trois chiffres en dur (le site :
+/// « `regles_annonces()` sans appelant »). Il lit maintenant les règles du
+/// serveur, tient un budget PAR SÉANCE (d'où `seance`, l'identité de la
+/// séance ouverte — sans elle, le banc), et tire les rangs après le dernier
+/// fixe de façon DÉTERMINISTE (un hachage de la séance et du rang : la même
+/// séance rejouée donne les mêmes pop-ups, un banc est reproductible).
+/// La pill de chaque série n'est pas une pop-up : elle ne compte pas.
 enum DecideurSerie {
-    /// `serie` : le rang de la série qu'on vient de finir (1-based sur la
-    /// séance). `reps`/`kilos` : ce qu'elle a réellement pesé.
+    /// Les règles courantes — le repli tant que le serveur n'a pas répondu.
+    private(set) static var regles = ReglesAnnonces()
+    private(set) static var reglesLues = false
+
+    /// `regles_annonces()` — une fois par lancement, à l'apparition de la
+    /// home (ProfilServeur.rafraichirPrenom) ; silencieuse en panne.
+    static func chargerRegles() async {
+        guard !reglesLues, !CommandLine.arguments.contains("-sansServeur") else { return }
+        guard let jwt = try? await SupabaseSession.shared.token(),
+              let j = try? await SacreServeur.reglesAnnonces(jwt: jwt) else { return }
+        let r = ReglesAnnonces.lire(j)
+        // Le seuil d'effort des widgets voyage dans la même réponse
+        // (reward_rules entier) : un seul chiffre, celui de la base.
+        let seuil = (j["seuil_effort_kmh"] as? NSNumber)?.doubleValue
+        await MainActor.run {
+            regles = r
+            reglesLues = true
+            if let seuil, seuil > 0 { SemaineStats.seuilEffort = seuil }
+        }
+        print("[annonces] regles_annonces() → rangs \(r.rangsFixes), vidéo \(r.rangVideo), "
+              + "hasard \(r.hasardEcartMin)-\(r.hasardEcartMax) après \(r.hasardApres), "
+              + "budget \(r.popupsMax)/\(r.rewardMonetaireMax)/\(r.videoMax), "
+              + "écart \(r.ecartMinSeries) séries \(r.ecartExigeLesDeux ? "ET" : "OU") \(r.ecartMinMinutes) min")
+    }
+
+    /// Ce que la séance a déjà consommé.
+    private struct EtatSeance {
+        var cle: String
+        var popups = 0
+        var monetaires = 0
+        var videos = 0
+        var dernierRang: Int?
+        var derniereDate: Date?
+        /// Le prochain rang tiré (après le dernier fixe) ; nil = pas encore tiré.
+        var prochainHasard: Int?
+    }
+    private static var etat = EtatSeance(cle: "")
+    /// L'horloge de séance — remplacée par le banc (deux minutes par série).
+    static var horloge: () -> Date = { Date() }
+
+    /// Un hachage STABLE (FNV-1a) — `hashValue` change à chaque lancement.
+    private static func stable(_ s: String) -> UInt64 {
+        var h: UInt64 = 0xcbf29ce484222325
+        for o in s.utf8 { h = (h ^ UInt64(o)) &* 0x100000001b3 }
+        return h
+    }
+
+    /// Le prochain rang tiré après `apres` : + [écart min … écart max],
+    /// déterministe pour (séance, rang de départ).
+    private static func tirage(apres: Int, cle: String) -> Int {
+        let r = regles
+        let n = r.hasardEcartMax - r.hasardEcartMin + 1
+        return apres + r.hasardEcartMin + Int(stable("\(cle)|\(apres)") % UInt64(max(n, 1)))
+    }
+
+    /// `serie` : le rang de la série qu'on vient de finir (1-based).
+    /// `reps`/`kilos` : ce qu'elle a réellement pesé. `seance` : l'identité
+    /// de la séance ouverte (le budget est le sien).
     static func pour(serie: Int, gain: Int, total: Int,
-                     reps: Int, kilos: Double) -> IssueSerie {
-        // La série qui ferme une dizaine : le cas RARE, avec sa vidéo.
-        if serie % 10 == 0 {
-            return .reward(style: .fire, video: "reward-rare")
+                     reps: Int, kilos: Double, seance: UUID? = nil) -> IssueSerie {
+        if !reglesLues { Task { await chargerRegles() } }
+        let cle = seance?.uuidString ?? "banc"
+        if etat.cle != cle { etat = EtatSeance(cle: cle) }
+        let r = regles
+        let pill = IssueSerie.pill(gain: gain, total: total)
+
+        // Le rang est-il un rang de pop-up ?
+        let fixe = r.rangsFixes.contains(serie)
+        var tire = false
+        if !fixe, serie > r.hasardApres {
+            if etat.prochainHasard == nil {
+                etat.prochainHasard = tirage(apres: max(r.hasardApres, etat.dernierRang ?? 0), cle: cle)
+            }
+            if let p = etat.prochainHasard, serie >= p {
+                // l'écart depuis la dernière pop-up : séries ET/OU minutes
+                let dSeries = serie - (etat.dernierRang ?? 0)
+                let dMin = etat.derniereDate.map { horloge().timeIntervalSince($0) / 60 } ?? .infinity
+                let okSeries = dSeries >= r.ecartMinSeries
+                let okMin = dMin >= Double(r.ecartMinMinutes)
+                let ecartTenu = r.ecartExigeLesDeux ? (okSeries && okMin) : (okSeries || okMin)
+                if ecartTenu {
+                    tire = true
+                } else {
+                    // pas encore : on réessaie à la série suivante
+                    etat.prochainHasard = serie + 1
+                }
+            }
         }
-        // Une série sur cinq : la pop-up de récompense.
-        if serie % 5 == 0 {
-            return .reward(style: .halo, video: nil)
-        }
-        // Une série sur trois : un MOMENT, et il dit quelque chose de VRAI.
-        if serie % 3 == 0 {
+        guard fixe || tire else { return pill }
+
+        // Le budget de la séance.
+        guard etat.popups < r.popupsMax else { return pill }
+        let issue: IssueSerie
+        if fixe, serie == r.rangVideo, etat.videos < r.videoMax {
+            // Le dernier rang fixe : le cas RARE, avec sa vidéo — une par séance.
+            issue = .reward(style: .fire, video: "reward-rare")
+            etat.videos += 1
+        } else if fixe, r.rangsFixes.firstIndex(of: serie) == 0 {
+            // Le premier rang fixe : un MOMENT, et il dit quelque chose de VRAI.
             let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
-            return .moment(titre: "Set \(serie)",
-                           fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
-                           style: .galet)
+            issue = .moment(titre: "Set \(serie)",
+                            fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
+                            style: .galet)
+        } else if etat.monetaires < r.rewardMonetaireMax {
+            // La pop-up de récompense en pièces — une par séance.
+            issue = .reward(style: .halo, video: nil)
+            etat.monetaires += 1
+        } else {
+            // Le budget « pièces » est pris : un moment sans pièces.
+            let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
+            issue = .moment(titre: "Set \(serie)",
+                            fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
+                            style: .galet)
         }
-        return .pill(gain: gain, total: total)
+        etat.popups += 1
+        etat.dernierRang = serie
+        etat.derniereDate = horloge()
+        if tire { etat.prochainHasard = tirage(apres: serie, cle: cle) }
+        return issue
+    }
+
+    /// Le banc : `-decideurBanc` — trente séries d'une séance imaginaire,
+    /// les issues imprimées (journal `[annonces]`) : on doit lire 3, 5, 10,
+    /// puis un rang tous les 5 à 8, jamais 6 / 9 / 12, quatre pop-ups au plus.
+    static let banc = CommandLine.arguments.contains("-decideurBanc")
+    static func jouerBanc() {
+        let s = UUID()
+        var ligne: [String] = []
+        let depart = Date()
+        var rang = 0
+        horloge = { depart.addingTimeInterval(Double(rang) * 120) }   // 2 min par série
+        defer { horloge = { Date() } }
+        for n in 1 ... 30 {
+            rang = n
+            switch pour(serie: n, gain: 20, total: n * 20, reps: 10, kilos: 40, seance: s) {
+            case .pill: break
+            case .moment: ligne.append("\(n) moment")
+            case .reward(_, let v): ligne.append("\(n) reward" + (v == nil ? "" : "+vidéo"))
+            }
+        }
+        print("[annonces] banc 30 séries (\(reglesLues ? "règles serveur" : "repli")) → " + ligne.joined(separator: " · "))
+        etat = EtatSeance(cle: "")
     }
 }

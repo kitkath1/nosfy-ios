@@ -269,6 +269,37 @@ enum SacreServeur {
         /// Les sachets nés de ce crédit (100 pièces → 1), dans la même
         /// transaction — de quoi empiler une dalle « +N sachets ».
         let sachetsConvertis: Int
+        // ── DEPUIS 20260915120000 (15-09) ──
+        /// CE QUE CETTE SÉANCE A ÉTÉ, calculé et rangé par le serveur à la
+        /// clôture (`calculer_faits_seance`, les règles `top_*` du 30-08) :
+        /// `top_muscu` / `top_cardio` (elle s'est dépassée sur la fenêtre de
+        /// sept jours — mesure, valeur, précédent) et `double_jour` (la
+        /// deuxième séance du jour — `detail.heures`, `detail.minutes`, la
+        /// forme de `DoubleFait`). Vide tant que la séance n'est pas poussée
+        /// (`faitsRaison` = « seance_inconnue ») : la story choisit alors
+        /// sa page ordinaire. Un estampillage : rejouée, la même liste.
+        let faits: [Fait]
+        let faitsRaison: String?
+    }
+
+    /// Un fait de séance, tel que le serveur le range (`workout_facts`).
+    struct Fait {
+        /// `top_muscu` · `top_cardio` · `double_jour`
+        let kind: String
+        /// `series` · `volume_kg` · `hiit_secondes` · `vitesse_duree` — nil pour le ×2
+        let mesure: String?
+        let valeur: Double?
+        let precedent: Double?
+        /// Le ×2 : `heures` (["07:12","19:40"]) et `minutes` (le total du jour).
+        let detail: [String: Any]
+
+        static func lire(_ j: [String: Any]) -> Fait? {
+            guard let kind = j["kind"] as? String else { return nil }
+            return Fait(kind: kind, mesure: j["mesure"] as? String,
+                        valeur: (j["valeur"] as? NSNumber)?.doubleValue,
+                        precedent: (j["precedent"] as? NSNumber)?.doubleValue,
+                        detail: j["detail"] as? [String: Any] ?? [:])
+        }
     }
 
     static func cloturerSeance(_ workout: UUID, series: Int,
@@ -290,7 +321,10 @@ enum SacreServeur {
                              rejeu: (j["rejeu"] as? Bool) ?? false,
                              soldeArgent: j["solde_argent"] as? Int,
                              argentSeance: (j["argent_seance"] as? Bool) ?? argent,
-                             sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0)
+                             sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0,
+                             faits: ((j["faits"] as? [[String: Any]]) ?? [])
+                                .compactMap(Fait.lire),
+                             faitsRaison: j["faits_raison"] as? String)
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
@@ -479,6 +513,63 @@ enum SacreServeur {
         guard let lignes = try JSONSerialization.jsonObject(with: data)
                 as? [[String: Any]] else { throw Erreur.reponse }
         return Set(lignes.compactMap { $0["noeud_id"] as? Int })
+    }
+
+    /// UNE FAMILLE DE MA COLLECTION, telle que le mur du profil l'affiche :
+    /// un slot par famille, la pastille ×N, la carte la plus récente pour la
+    /// vignette. Le serveur rend le CHEMIN de l'illustration nue dans le
+    /// bucket public `cards` — jamais une image ; l'app l'habille (cadre,
+    /// lunes, depth) exactement comme après une forge.
+    struct FamilleCollection {
+        let famille: String
+        let rarete: String
+        let nombre: Int
+        let cardId: String
+        let artPath: String
+        let derniere: Date?
+        /// L'URL publique de l'illustration nue (le bucket est public en
+        /// lecture : c'est le set commun, pas une donnée du compte).
+        var artURL: URL {
+            WoopConfig.supabaseURL
+                .appending(path: "storage/v1/object/public/cards/\(artPath)")
+        }
+    }
+
+    /// MA COLLECTION LUE AU SERVEUR (15-09) — `ma_collection()`.
+    ///
+    /// ⚠️ `user_cards` se remplissait à chaque forge depuis le 14-08 et
+    /// AUCUNE ligne de l'app ne la lisait : le mur « Cartes collectées ·
+    /// N / 4 » comptait en mémoire et repartait à zéro à chaque
+    /// réinstallation. Le serveur groupe par famille (le slot) ; l'ordre
+    /// est celui de la première obtention. [] sans carte, 401 sans session.
+    static func maCollection(jwt: String) async throws -> [FamilleCollection] {
+        let data = try await rpc("ma_collection", jwt: jwt)
+        guard let lignes = try JSONSerialization.jsonObject(with: data)
+                as? [[String: Any]] else { throw Erreur.reponse }
+        return lignes.compactMap { l in
+            guard let famille = l["famille"] as? String,
+                  let rarete = l["rarete"] as? String,
+                  let cardId = l["card_id"] as? String,
+                  let artPath = l["art_path"] as? String else { return nil }
+            return FamilleCollection(famille: famille, rarete: rarete,
+                                     nombre: max(l["nombre"] as? Int ?? 1, 1),
+                                     cardId: cardId, artPath: artPath,
+                                     derniere: date(l["derniere"] as? String))
+        }
+    }
+
+    /// LES RÈGLES DU RYTHME DES ANNONCES — `regles_annonces()` (15-09, étape 5).
+    ///
+    /// Tout `reward_rules` sauf les `rare_*` (les dés restent au serveur), en
+    /// un appel : les rangs des pop-ups, le budget par séance, l'écart, les
+    /// bonus. Lue à l'apparition de la home par `DecideurSerie.chargerRegles`
+    /// ; jusqu'au 15-09, personne ne l'appelait et le décideur vivait sur
+    /// trois chiffres en dur.
+    static func reglesAnnonces(jwt: String) async throws -> [String: Any] {
+        let data = try await rpc("regles_annonces", jwt: jwt)
+        guard let j = try JSONSerialization.jsonObject(with: data)
+                as? [String: Any] else { throw Erreur.reponse }
+        return j
     }
 
     /// LA COMPOSITION D'UN CHAPITRE, LUE EN BASE.

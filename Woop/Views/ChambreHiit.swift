@@ -135,9 +135,13 @@ struct ChambreHiit: View {
                : f.picMax > f.picPrec ? "Tu montes plus haut que \(quand)."
                : f.efforts > f.effortsPrec ? "Plus d'efforts, un pic qui tient : la base s'élargit."
                : "Une fenêtre plus calme que la précédente.")
+        // LES MOTS VIENNENT DU SERVEUR quand il en a (15-09, `bilan-periode` :
+        // la phrase de l'IA sur les chiffres des widget_*, dans la langue du
+        // profil) ; la phrase à règles ci-dessus reste le repli hors ligne.
+        let serveur = f.vide ? nil : ChambreEtat.shared.bilanServeur[fenetre.rawValue]
         return BilanVue(titre: fenetre == .semaine ? "Le bilan de la semaine" : "Le bilan du mois",
                         monte: premiere ? [] : monte, recule: premiere ? [] : recule,
-                        phrase: phrase, vide: f.vide)
+                        phrase: serveur ?? phrase, vide: f.vide)
     }
 
     // ── TON RECORD DE VITESSE

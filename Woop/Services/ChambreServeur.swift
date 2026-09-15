@@ -56,6 +56,70 @@ enum ChambreServeur {
         return Int(a[i + 1])
     }
 
+    // MARK: - Le bilan écrit par l'IA (15-09) — bilan-periode
+
+    /// LA PHRASE DU BILAN, née au serveur dans la langue du profil.
+    ///
+    /// L'edge function `bilan-periode` lit ELLE-MÊME les quatre widget_* de
+    /// la personne (les mêmes nombres que la chambre — jamais un chiffre
+    /// envoyé par le téléphone), demande une phrase au modèle, la garde dans
+    /// `syntheses` (une par fenêtre, réécrite quand le nombre de séances de
+    /// la fenêtre bouge) et la rend. `phrase` nil = PAS DE PHRASE, et c'est
+    /// un état normal : fenêtre vide (`raison` sans_seance), pas de session,
+    /// pas de clé au serveur, modèle en panne — l'écran garde son repli SANS
+    /// phrase, jamais un spinner (la loi du 05-09). Elle se demande une fois
+    /// par ouverture de chambre, en tâche de fond ; la chambre ne l'attend
+    /// pas. Le site d'appel est chez la session des chambres (ChambreLongue).
+    struct Bilan {
+        let phrase: String?
+        /// `sans_seance` · `sans_session` · `cle_absente` · `modele_<code>` · nil si une phrase est là
+        let raison: String?
+        let langue: String?
+        let seances: Int
+        /// Vrai = la phrase stockée, sans rappeler le modèle (1-2 s au lieu de 3-4).
+        let cache: Bool
+        let modele: String?
+    }
+
+    static func bilan(_ fen: ChambreEtat.Fenetre) async -> Bilan {
+        if neutralise { return Bilan(phrase: nil, raison: "sans_serveur", langue: nil, seances: 0, cache: false, modele: nil) }
+        guard let jwt = try? await SupabaseSession.shared.token() else {
+            return Bilan(phrase: nil, raison: "sans_session", langue: nil, seances: 0, cache: false, modele: nil)
+        }
+        var req = URLRequest(url: WoopConfig.supabaseURL.appending(path: "functions/v1/bilan-periode"))
+        req.httpMethod = "POST"
+        req.timeoutInterval = 30
+        req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        req.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["periode": fen.rawValue])
+        guard let (data, rep) = try? await URLSession.shared.data(for: req),
+              let j = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            return Bilan(phrase: nil, raison: "reseau", langue: nil, seances: 0, cache: false, modele: nil)
+        }
+        let code = (rep as? HTTPURLResponse)?.statusCode ?? 0
+        let phrase = (j["phrase"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        return Bilan(phrase: code == 200 ? phrase : nil,
+                     raison: phrase == nil ? (j["raison"] as? String ?? "http_\(code)") : nil,
+                     langue: j["langue"] as? String,
+                     seances: j["seances"] as? Int ?? 0,
+                     cache: j["cache"] as? Bool ?? false,
+                     modele: j["modele"] as? String)
+    }
+
+    /// Le banc : `-bilanBanc` — les deux fenêtres, lues et imprimées au
+    /// lancement (journal `[bilan]`), sans écran : de quoi MESURER la phrase
+    /// avant que la chambre ne l'affiche.
+    static let bancBilan = CommandLine.arguments.contains("-bilanBanc")
+    static func bilanBanc() async {
+        guard bancBilan else { return }
+        for fen in ChambreEtat.Fenetre.allCases {
+            let b = await bilan(fen)
+            print("[bilan] \(fen.rawValue) → " + (b.phrase.map { "« \($0) »" } ?? "pas de phrase (\(b.raison ?? "?"))")
+                  + " · \(b.seances) séance(s) · \(b.langue ?? "-") · \(b.cache ? "cache" : (b.modele ?? "-"))")
+        }
+    }
+
     // MARK: - L'objectif
 
     /// `objectif_hebdo()` — celui de `user_prefs`, ou le défaut du jeu.

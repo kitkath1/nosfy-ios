@@ -1448,8 +1448,8 @@ struct CardHiitPeak: View {
     var vitesse: String = "17.0"
     var unite: String = "km/h"
     var legende: String = "Top interval this week"
-    var repetitions: String = "4 × 40 s"
-    var repsLegende: String = "best segment"
+    var repetitions: String = "4 efforts · 2:40"
+    var repsLegende: String = "efforts this week"
     /// La position du pic le long de la ligne (0 → 1) et sa largeur.
     var pic: Double = 0.62
     var picLargeur: Double = 0.26
@@ -2234,8 +2234,8 @@ struct SegmentHiit: Identifiable, Equatable {
 
 struct HiitPeakInfo {
     var vitesse = "17.0"
-    var repetitions = "4 × 40 s"
-    var chambreLigne = "17.0 km/h · 40 s · ×4"
+    var repetitions = "4 efforts · 2:40"
+    var chambreLigne = "17.0 km/h · 4 efforts · 2:40"
     var pic = 0.62
     var picLargeur = 0.26
     /// Les tours du segment — la chambre les dessine.
@@ -2396,7 +2396,23 @@ struct SemaineStats {
         // home et les chambres comptent sur les MÊMES fenêtres.
         ChambreEtat.shared.donnees = ChambreDonnees.calcule(
             ChambreEtat.bancVide ? [] : workouts, prevues: prevues, maintenant: maintenant)
+        if bancWidgets { imprimerBanc(ChambreEtat.shared.donnees) }
         return s
+    }
+
+    /// Le banc : `-widgetsBanc` — les chiffres du TÉLÉPHONE par fenêtre
+    /// (journal `[widgets]`), dans les mots du serveur, pour que
+    /// tools/serveur/verif_widgets.py les compare à `widget_*` sur le même
+    /// compte : la preuve que la home, la chambre et le serveur comptent PAREIL.
+    static let bancWidgets = CommandLine.arguments.contains("-widgetsBanc")
+    private static func imprimerBanc(_ d: ChambreDonnees) {
+        for fen in ChambreEtat.Fenetre.allCases {
+            let f = d.fenetre(fen)
+            print("[widgets] \(fen.rawValue) → faites \(f.faites) · precedent \(f.precedent)"
+                  + " · volume \(Int(f.volume.rounded())) · volume_precedent \(Int(f.volumePrec.rounded()))"
+                  + " · pic \(f.picMax) · efforts \(f.efforts) · temps_pics \(f.tempsPics)"
+                  + " · records_battus \(f.recordsBattus) · seuil \(seuilEffort)")
+        }
     }
 
     // ── HIIT PEAK : le meilleur segment haute intensité. Les répétitions
@@ -2404,65 +2420,55 @@ struct SemaineStats {
     // fiable sur le vrai flow (le même cycle répété), et le score est
     // vitesse × (durée × répétitions), départagé à la vitesse.
     private static func hiitPeak(_ cette: [Workout]) -> HiitPeakInfo? {
-        var best: (score: Double, v: Double, s: Int, n: Int)?
-        func candidat(_ v: Double, _ sec: Int, _ n: Int) {
-            // LA HAUTE INTENSITÉ D'ABORD. Un score linéaire en durée fait
-            // gagner la MARCHE (mesuré : « 5,5 km/h · 20:00 continuous »
-            // battait les sprints) : la vitesse pèse en puissance 2,2, la
-            // durée en racine — et sous 9,5 km/h ce n'est pas un peak.
-            guard v >= 9.5 else { return }
-            let score = pow(v, 2.2) * pow(Double(sec * n), 0.5)
-            if best == nil || score > best!.score
-                || (score == best!.score && v > best!.v) {
-                best = (score, v, sec, n)
-            }
-        }
+        // LA DÉFINITION DU SERVEUR, ET RIEN D'AUTRE (15-09 — le 🔴 du site :
+        // « hiitPeak() compte des répétitions qui n'existent pas »). Avant,
+        // les phases d'effort IDENTIQUES (genre | vitesse | durée) étaient
+        // groupées en « × N » — or une séance réelle n'a jamais deux phases
+        // pareilles (2:00 à 17,0 puis 0:30 à 19,0…) : chaque groupe valait
+        // n = 1 et la card disait « 2:00 continuous » là où la séance
+        // comptait quatre efforts. Désormais, comme `widget_hiit` et la
+        // chambre : un EFFORT = une phase à `seuilEffort` ou plus, le pic =
+        // la plus rapide d'entre elles, le temps de pics = leur somme. Rien
+        // ne se factorise. L'escalier reste exclu (sa « vitesse » est un
+        // niveau de machine), des deux côtés depuis 20260915150000.
+        var pic = 0.0, efforts = 0, temps = 0
         for w in cette {
             for ex in w.orderedExercises {
                 guard let e = ex.exercise, e.tracking != .setsRepsWeight,
                       ex.exerciseID != "escalier" else { continue }
-                if e.tracking == .intervals {
-                    var groupes: [String: (v: Double, s: Int, n: Int)] = [:]
-                    for ph in ex.orderedPhases where ph.isEffort {
-                        let cle = "\(ph.kindRaw)|\(ph.speed)|\(ph.seconds)"
-                        var g = groupes[cle] ?? (ph.speed, ph.seconds, 0)
-                        g.n += 1
-                        groupes[cle] = g
-                    }
-                    for g in groupes.values { candidat(g.v, g.s, g.n) }
-                } else {
-                    // Un steady concourt comme un segment continu ×1 :
-                    // « 15.1 km/h · 5:08 continuous ».
-                    for ph in ex.orderedPhases where ph.seconds >= 120 {
-                        candidat(ph.speed, ph.seconds, 1)
-                    }
+                for ph in ex.orderedPhases where ph.speed >= seuilEffort {
+                    efforts += 1
+                    temps += ph.seconds
+                    pic = max(pic, ph.speed)
                 }
             }
         }
-        guard let b = best else { return nil }
-        let v = vitesse(b.v)
+        guard efforts > 0 else { return nil }
+        let v = vitesse(pic)
         var info = HiitPeakInfo()
         info.vitesse = v
-        info.tours = max(b.n, 1)
-        if b.n > 1 {
-            info.repetitions = "\(b.n) × \(duree(b.s))"
-            info.chambreLigne = "\(v) km/h · \(duree(b.s)) · ×\(b.n)"
-        } else {
-            info.repetitions = "\(duree(b.s)) continuous"
-            info.chambreLigne = "\(v) km/h · \(duree(b.s))"
-        }
-        // ── LES SEGMENTS RÉELS de la séance qui porte le pic (05-09).
-        // On ne regroupe RIEN : chaque phase est un segment, avec SA durée et
-        // SA vitesse. C'est exactement ce que le groupage de `candidat(…)`
-        // ci-dessus ne sait pas voir — et c'est ce que la chambre dessine.
-        (info.segments, info.jour) = Self.segmentsDuPic(cette, pic: b.v)
+        // La fenêtre : « 8 efforts · 4:40 » — ce que la chambre appelle
+        // Efforts et Temps de pics, les mêmes nombres.
+        info.repetitions = "\(efforts) effort\(efforts > 1 ? "s" : "") · \(duree(temps))"
+        // ── LES SEGMENTS RÉELS de la séance qui porte le pic (05-09) : chaque
+        // phase est un segment, avec SA durée et SA vitesse — la chambre les
+        // dessine, l'onde de la card compte ses efforts (douze au plus).
+        (info.segments, info.jour) = Self.segmentsDuPic(cette, pic: pic)
+        let effortsSeance = info.segments.filter(\.effort).count
+        let tempsSeance = info.segments.filter(\.effort).reduce(0) { $0 + $1.secondes }
+        info.tours = min(max(effortsSeance, 1), 12)
+        info.chambreLigne = "\(v) km/h · \(effortsSeance) effort\(effortsSeance > 1 ? "s" : "") · \(duree(tempsSeance))"
         return info
     }
 
     /// La séance de la fenêtre qui a atteint `pic`, rendue segment par
-    /// segment. Le seuil d'effort est celui de la chambre (15 km/h) — le
-    /// même partout, sinon la card et la chambre comptent différemment.
-    static let seuilEffort: Double = 15.0
+    /// segment. Le seuil d'effort est celui de la chambre — et depuis le
+    /// 15-09 celui du SERVEUR : `seuil_effort_kmh` (reward_rules), posé par
+    /// `DecideurSerie.chargerRegles` à l'apparition de la home ; 15,0 en
+    /// repli hors ligne, la valeur de la base. Un seul chiffre pour une idée
+    /// (le ⚪ du site : « le seuil qui définit un effort n'existe nulle part »
+    /// — il existait en base, l'app avait le sien).
+    static var seuilEffort: Double = 15.0
 
     private static func segmentsDuPic(_ cette: [Workout],
                                       pic: Double) -> ([SegmentHiit], String) {

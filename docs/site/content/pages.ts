@@ -26,7 +26,7 @@ export const PAGES: PageInfo[] = [
     // 13-09 — demandé par Kathryn (« une section dédiée aux widgets et à leur back-end ») : les quatre
     // widgets de la home, leurs chambres, leurs données, et les fonctions serveur qui les recalculent.
     id: 'widgets', libelle: 'Widgets', glyphe: 'widgets',
-    phrase: 'Tout se calcule dans le téléphone ; le serveur sait faire pareil, et sert quand le téléphone n\'a rien.',
+    phrase: 'Le téléphone et le serveur comptent pareil — mesuré ; la chambre lit le serveur quand le téléphone n\'a rien.',
     hero: { capture: null },
   },
   {
@@ -44,7 +44,7 @@ export const PAGES: PageInfo[] = [
   },
   {
     id: 'forge', libelle: 'Forge', glyphe: 'flame',
-    phrase: 'La forge est déployée et sait tout faire — l\'app ne lui dit jamais quel sachet elle ouvre.',
+    phrase: 'La forge n\'ouvre plus rien sans sachet, et le mur du profil lit la collection au serveur.',
     hero: {
       capture: 'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png',
       teinte: { t1: '#9E3610', t2: '#9E5425', source: 'booster-orange.png (l\'objet du domaine) · #60210A h16 S90 (2e #924E23) · V posé à 62', part: 5.81 },
@@ -52,7 +52,7 @@ export const PAGES: PageInfo[] = [
   },
   {
     id: 'histoire', libelle: 'Stories', glyphe: 'book',
-    phrase: 'Les pages sont peintes ; rien ne calcule encore un record.',
+    phrase: 'Le serveur calcule les records à la clôture ; les pages attendent de les lire.',
     hero: { capture: null },
   },
   {

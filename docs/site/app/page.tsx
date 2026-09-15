@@ -4,6 +4,7 @@ import type { Page } from '@/content/types'
 import { Etat } from '@/components/Etat'
 import { Serveur } from '@/components/Serveur'
 import { Hero } from '@/components/Composants'
+import { dernierePasse } from '@/components/passe'
 import Flow from '@/content/pages/flow.mdx'
 import Widgets from '@/content/pages/widgets.mdx'
 import Coffre from '@/content/pages/coffre.mdx'
@@ -38,7 +39,7 @@ export default function Site() {
         )
       })}
       <p className="pied">
-        Woop · <span className="mono">ytnnyjkramgiqyxdrkcu</span> · les états sont écrits à la main dans <span className="mono">content/</span>, le build ne fait que la mise en forme · dernière passe le 30 août 2026.
+        Woop · <span className="mono">ytnnyjkramgiqyxdrkcu</span> · les états sont écrits à la main dans <span className="mono">content/</span>, le build ne fait que la mise en forme · dernière passe le {dernierePasse()}.
       </p>
     </>
   )

@@ -94,6 +94,13 @@ final class ChambreEtat {
     private(set) var serveur: [String: ChambreFenetre] = [:]
     /// Le journal des appels (le banc le lit ; `print` le sort en console).
     private(set) var journal: [String] = []
+    /// LA PHRASE DU BILAN, née au serveur (15-09, `bilan-periode`) — par
+    /// fenêtre (« semaine » / « mois »), dans la langue du profil, sur les
+    /// chiffres des widget_*. Lue à l'ouverture de la chambre HIIT (la seule
+    /// qui porte un bloc bilan), EN FOND : la chambre ne l'attend jamais.
+    /// Absente = la chambre garde sa phrase à règles — jamais un spinner.
+    private(set) var bilanServeur: [String: String] = [:]
+
 
     /// La fenêtre que la chambre dessine : le téléphone s'il a des séances,
     /// sinon le serveur s'il en a, sinon le vide du téléphone (ses dates).
@@ -161,13 +168,29 @@ final class ChambreEtat {
         }
     }
 
-    /// À l'ouverture : l'objectif (Regularity), puis les deux fenêtres.
+    /// La phrase du bilan, les deux fenêtres — en fond, après les chiffres.
+    @MainActor private func lireBilans() async {
+        guard serveurJoignable else { return }
+        for fen in Fenetre.allCases {
+            let b = await ChambreServeur.bilan(fen)
+            if let p = b.phrase {
+                withAnimation(.easeOut(duration: 0.35)) { bilanServeur[fen.rawValue] = p }
+                note("bilan-periode(\(fen.rawValue)) → « \(p) » (\(b.cache ? "cache" : (b.modele ?? "-")))")
+            } else {
+                note("bilan-periode(\(fen.rawValue)) → pas de phrase (\(b.raison ?? "?"))")
+            }
+        }
+    }
+
+    /// À l'ouverture : l'objectif (Regularity), puis les deux fenêtres — et
+    /// pour HIIT la phrase du bilan, en fond (3-4 s la première fois).
     @MainActor private func lireServeur(_ kind: WidgetKind) async {
         if kind == .regularite {
             await lireObjectif()
             if let n = ChambreServeur.bancObjectif { await ecrireObjectif(n) }
         }
         await lireFenetres(kind)
+        if kind == .hiitPeak { Task { @MainActor in await lireBilans() } }
     }
 
     private static let neutralisee = CommandLine.arguments.contains("-sansChambre")
