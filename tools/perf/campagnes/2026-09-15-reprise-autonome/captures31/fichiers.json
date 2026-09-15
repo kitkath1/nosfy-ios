@@ -1,0 +1,919 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "info",
+      "files",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--domain-type",
+      "appDataContainer",
+      "--domain-identifier",
+      "fr.kathryn.woop.NavRuntimeUITests.xctrunner",
+      "--subdirectory",
+      "Documents",
+      "--json-output",
+      "/private/tmp/woop-captures31/fichiers.json"
+    ],
+    "commandType" : "devicectl.device.info.files",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "domain" : "appDataContainer",
+    "domainIdentifier" : "fr.kathryn.woop.NavRuntimeUITests.xctrunner",
+    "files" : [
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:35.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1410684
+        },
+        "name" : "chapitre31-0.png",
+        "relativePath" : "chapitre31-0.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:36.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1429486
+        },
+        "name" : "chapitre31-1.png",
+        "relativePath" : "chapitre31-1.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:41.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1481014
+        },
+        "name" : "chapitre31-10.png",
+        "relativePath" : "chapitre31-10.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:42.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1487104
+        },
+        "name" : "chapitre31-11.png",
+        "relativePath" : "chapitre31-11.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:36.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1446201
+        },
+        "name" : "chapitre31-2.png",
+        "relativePath" : "chapitre31-2.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:37.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1435031
+        },
+        "name" : "chapitre31-3.png",
+        "relativePath" : "chapitre31-3.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:37.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1438167
+        },
+        "name" : "chapitre31-4.png",
+        "relativePath" : "chapitre31-4.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:38.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1445415
+        },
+        "name" : "chapitre31-5.png",
+        "relativePath" : "chapitre31-5.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:39.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1451595
+        },
+        "name" : "chapitre31-6.png",
+        "relativePath" : "chapitre31-6.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:40.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1470175
+        },
+        "name" : "chapitre31-7.png",
+        "relativePath" : "chapitre31-7.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:40.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1478775
+        },
+        "name" : "chapitre31-8.png",
+        "relativePath" : "chapitre31-8.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:41.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1465191
+        },
+        "name" : "chapitre31-9.png",
+        "relativePath" : "chapitre31-9.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T07:00:35.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 586825
+        },
+        "name" : "current-screen.png",
+        "relativePath" : "current-screen.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.TextEncoding" : "utf-8;134217984",
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T07:00:35.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1603
+        },
+        "name" : "current-tree.txt",
+        "relativePath" : "current-tree.txt",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T07:02:06.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 57881
+        },
+        "name" : "ecran-nu.png",
+        "relativePath" : "ecran-nu.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T05:23:08.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1165555
+        },
+        "name" : "home-build6.png",
+        "relativePath" : "home-build6.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:12:24.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1167428
+        },
+        "name" : "home-build9.png",
+        "relativePath" : "home-build9.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:22:46.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1419792
+        },
+        "name" : "home-mesure.png",
+        "relativePath" : "home-mesure.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T05:19:05.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1166085
+        },
+        "name" : "home-sans-bienvenue6.png",
+        "relativePath" : "home-sans-bienvenue6.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:36.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1414191
+        },
+        "name" : "invite-0.png",
+        "relativePath" : "invite-0.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:37.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1431814
+        },
+        "name" : "invite-1.png",
+        "relativePath" : "invite-1.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:37.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1443395
+        },
+        "name" : "invite-2.png",
+        "relativePath" : "invite-2.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:38.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1453593
+        },
+        "name" : "invite-3.png",
+        "relativePath" : "invite-3.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:38.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1452231
+        },
+        "name" : "invite-4.png",
+        "relativePath" : "invite-4.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:39.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1467585
+        },
+        "name" : "invite-5.png",
+        "relativePath" : "invite-5.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:40.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1467156
+        },
+        "name" : "invite-6.png",
+        "relativePath" : "invite-6.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:40.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1473832
+        },
+        "name" : "invite-7.png",
+        "relativePath" : "invite-7.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:54:36.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 146
+        },
+        "name" : "invite-cadre.json",
+        "relativePath" : "invite-cadre.json",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T05:19:55.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1365068
+        },
+        "name" : "profil-build6.png",
+        "relativePath" : "profil-build6.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:57:45.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1361351
+        },
+        "name" : "profil-build9.png",
+        "relativePath" : "profil-build9.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:36:22.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1393420
+        },
+        "name" : "profil-retour-sommet.png",
+        "relativePath" : "profil-retour-sommet.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:58:04.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 921066
+        },
+        "name" : "profil-scroll.png",
+        "relativePath" : "profil-scroll.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:45.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1093067
+        },
+        "name" : "pull31-ouvert-0.png",
+        "relativePath" : "pull31-ouvert-0.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:52.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1087472
+        },
+        "name" : "pull31-ouvert-1.png",
+        "relativePath" : "pull31-ouvert-1.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:38:00.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1040947
+        },
+        "name" : "pull31-ouvert-2.png",
+        "relativePath" : "pull31-ouvert-2.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:50.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1517644
+        },
+        "name" : "pull31-retour-0.png",
+        "relativePath" : "pull31-retour-0.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:37:57.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1465326
+        },
+        "name" : "pull31-retour-1.png",
+        "relativePath" : "pull31-retour-1.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+
+          },
+          "lastModDate" : "2026-09-15T20:38:04.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1386317
+        },
+        "name" : "pull31-retour-2.png",
+        "relativePath" : "pull31-retour-2.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.TextEncoding" : "utf-8;134217984",
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T07:15:16.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 25395
+        },
+        "name" : "reglages-build9-tree.txt",
+        "relativePath" : "reglages-build9-tree.txt",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T19:51:57.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1262059
+        },
+        "name" : "reglages-build9.png",
+        "relativePath" : "reglages-build9.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:37:40.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 1251205
+        },
+        "name" : "reglages-screen.png",
+        "relativePath" : "reglages-screen.png",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      },
+      {
+        "metadata" : {
+          "extendedAttributes" : {
+            "com.apple.TextEncoding" : "utf-8;134217984",
+            "com.apple.dataprotection.policy.exception-applied-by" : "com.apple.containermanagerd"
+          },
+          "lastModDate" : "2026-09-15T06:37:49.000Z",
+          "ownerGid" : 501,
+          "ownerUid" : 501,
+          "permissions" : 420,
+          "size" : 25395
+        },
+        "name" : "reglages-tree.txt",
+        "relativePath" : "reglages-tree.txt",
+        "resources" : {
+          "isDirectory" : false,
+          "isHidden" : false,
+          "isReadable" : true,
+          "isSymbolicLink" : false,
+          "isWritable" : true
+        }
+      }
+    ]
+  }
+}

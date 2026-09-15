@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-224132.jsonl",
+    "destination": "/private/tmp/woop-appel31-sans-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-224132.jsonl",
+    "destination": "/private/tmp/woop-appel31-sans-nav.jsonl"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-222642.jsonl",
+    "destination": "/private/tmp/woop-invite30-compare-sans-invite-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-222717.jsonl",
+    "destination": "/private/tmp/woop-invite30-compare-sans-invite-nav.jsonl"
+  }
+}

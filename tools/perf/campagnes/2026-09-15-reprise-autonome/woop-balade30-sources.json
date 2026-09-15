@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-221852.jsonl",
+    "destination": "/private/tmp/woop-balade30-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-222054.jsonl",
+    "destination": "/private/tmp/woop-balade30-nav.jsonl"
+  }
+}

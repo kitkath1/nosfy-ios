@@ -1,0 +1,88 @@
+[
+  {
+    "nom": "home-rendu",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansProtectionThermique"
+    ],
+    "code": 0,
+    "duree_s": 0.328,
+    "fin": "2026-09-15T22:37:30.109597"
+  },
+  {
+    "nom": "pull-chapitre",
+    "commande": [
+      "xcodebuild",
+      "test-without-building",
+      "-xctestrun",
+      "/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun",
+      "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testRetourPullEtChapitre",
+      "-destination",
+      "platform=iOS,id=00008120-001E4CDC0A85A01E",
+      "-destination-timeout",
+      "15",
+      "-parallel-testing-enabled",
+      "NO",
+      "-maximum-concurrent-test-device-destinations",
+      "1",
+      "-resultBundlePath",
+      "/private/tmp/woop-pull31/pull-chapitre.xcresult"
+    ],
+    "code": 0,
+    "duree_s": 39.636,
+    "fin": "2026-09-15T22:38:09.747336"
+  },
+  {
+    "nom": "collecte-nav",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-pull31",
+      "--nav-only"
+    ],
+    "code": 0,
+    "duree_s": 1.928,
+    "fin": "2026-09-15T22:38:11.676236"
+  },
+  {
+    "nom": "home-normale",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.431,
+    "fin": "2026-09-15T22:38:12.107295"
+  }
+]

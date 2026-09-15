@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-224829.jsonl",
+    "destination": "/private/tmp/woop-home33-sans-perle-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-224829.jsonl",
+    "destination": "/private/tmp/woop-home33-sans-perle-nav.jsonl"
+  }
+}

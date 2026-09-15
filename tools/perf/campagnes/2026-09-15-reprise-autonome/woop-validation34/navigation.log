@@ -1,0 +1,85 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testNavigationApresRelance" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-validation34/navigation.xcresult
+
+2026-09-15 22:57:15.192 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-validation34/navigation.xcresult
+
+2026-09-15 22:57:15.199 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 22:57:15.299 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 22:57:15.477 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 22:57:15.624 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 22:57:17.551995+0200 NavRuntimeUITests-Runner[26464:2049751] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 22:57:17.911.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 22:57:17.912.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 22:57:17.912.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testNavigationApresRelance]' started.
+    t =     0.00s Start Test at 2026-09-15 22:57:17.914
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.05s         Wait for fr.kathryn.woop to idle
+    t =     0.08s Checking existence of `"Later" Button`
+    t =     0.16s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+2026-09-15 22:57:17.916 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.16s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =     1.16s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =     1.23s Tap "figure.strengthtraining.functional" Button
+    t =     1.23s     Wait for fr.kathryn.woop to idle
+    t =     1.24s     Find the "figure.strengthtraining.functional" Button
+    t =     1.28s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =     1.32s     Synthesize event
+    t =     1.62s     Wait for fr.kathryn.woop to idle
+    t =     2.46s Waiting 5.0s for "Exercices" StaticText to exist
+    t =     3.50s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =     3.50s         Checking existence of `"Exercices" StaticText`
+    t =     3.59s Tap "house.fill" Button
+    t =     3.59s     Wait for fr.kathryn.woop to idle
+    t =     3.60s     Find the "house.fill" Button
+    t =     3.64s     Check for interrupting elements affecting "house.fill" Button
+    t =     3.68s     Synthesize event
+    t =     3.98s     Wait for fr.kathryn.woop to idle
+    t =     4.77s Tap "person" Button
+    t =     4.77s     Wait for fr.kathryn.woop to idle
+    t =     4.78s     Find the "person" Button
+    t =     4.84s     Check for interrupting elements affecting "person" Button
+    t =     4.89s     Synthesize event
+    t =     5.19s     Wait for fr.kathryn.woop to idle
+    t =     6.20s Waiting 5.0s for "Réglages" Button to exist
+    t =     7.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =     7.24s         Checking existence of `"Réglages" Button`
+    t =     7.34s Tap "Réglages" Button
+    t =     7.34s     Wait for fr.kathryn.woop to idle
+    t =     7.35s     Find the "Réglages" Button
+    t =     7.40s     Check for interrupting elements affecting "Réglages" Button
+    t =     7.46s     Synthesize event
+    t =     7.75s     Wait for fr.kathryn.woop to idle
+    t =     7.76s Waiting 5.0s for "Se déconnecter" StaticText to exist
+    t =     8.79s     Checking `Expect predicate `existsNoRetry == 1` for object "Se déconnecter" StaticText`
+    t =     8.80s         Checking existence of `"Se déconnecter" StaticText`
+    t =     8.89s Checking existence of `"Supprimer mon compte" StaticText`
+    t =     8.94s Find the Application 'fr.kathryn.woop'
+WOOP_NAVIGATION_APRES_RELANCE_OK
+    t =     9.15s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testNavigationApresRelance]' passed (9.231 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 22:57:27.146.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.231 (9.234) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 22:57:27.147.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.231 (9.235) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 22:57:27.147.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.231 (9.236) seconds
+2026-09-15 22:57:27.038 xcodebuild[72028:14901493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 22:57:27.248 xcodebuild[72028:14901493] [MT] IDETestOperationsObserverDebug: 11.768 elapsed -- Testing started completed.
+2026-09-15 22:57:27.248 xcodebuild[72028:14901493] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 22:57:27.248 xcodebuild[72028:14901493] [MT] IDETestOperationsObserverDebug: 11.768 sec, +11.768 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-validation34/navigation.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

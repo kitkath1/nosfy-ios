@@ -1,0 +1,3732 @@
+import SwiftUI
+
+// MARK: - LES DEUX CARDS DE LA HOME (jalon V3, plan § 12)
+//
+// La commande du 21-08, référence en main : « je veux exactement ça à
+// 100 %, tous les détails, tout ». Deux widgets noirs, très travaillés :
+//
+//   CARD GAUCHE  « 4 / 5 · sessions this week » — sept pastilles, et en
+//                pied un anneau d'ambre avec sa phrase.
+//   CARD DROITE  « 8.4 t · weekly volume » — un bouton haltère, un graphe
+//                de sept barres à segments d'ambre, un pied à deux colonnes.
+//
+// LA SIGNATURE, et c'est elle qu'il ne faut pas rater : DEUX TRAÎNÉES DE
+// LUMIÈRE posées HORS du corps, séparées de lui par un jour de nuit — une
+// DORÉE qui contourne le coin haut-droit, une BLANCHE au coin bas-gauche.
+// Ce ne sont pas des liserés : ce sont des reflets, avec leur bloom, leurs
+// bouts arrondis et leur extinction aux deux extrémités.
+//
+// TOUT est en FRACTION du corps de la card (largeur pour l'horizontal,
+// hauteur pour le vertical) : la card doit survivre à sa taille. Les
+// valeurs viennent de la sonde sur la référence (corps 607 × 613 px).
+//
+// Banc : `-cardsLab`. Note : `tools/home-v2/compare_widget.py` note le
+// rendu contre la référence, région par région — la cible est 9,8/10.
+
+// MARK: - La palette (échantillonnée sur la référence)
+
+enum CardTon {
+    /// L'ambre des segments et des chiffres de gain — mesuré #fbb566 au
+    /// plus clair.
+    static let ambreVif = Color(red: 0.98, green: 0.71, blue: 0.40)
+    static let ambre = Color(red: 0.85, green: 0.63, blue: 0.37)
+    static let ambreSombre = Color(red: 0.71, green: 0.50, blue: 0.27)
+    /// L'or des traînées — presque crème à son sommet.
+    static let orVif = Color(red: 1.00, green: 0.93, blue: 0.79)
+    static let orChaud = Color(red: 0.99, green: 0.75, blue: 0.40)
+    /// Les encres, mesurées : #fdfdfd · #959392 · #7f7e7e · #595959.
+    static let encre = Color(white: 0.99)
+    static let encreDouce = Color(white: 0.581)
+    static let encreSourde = Color(white: 0.569)
+    static let encreJour = Color(white: 0.589)
+    /// Le corps : #171717 en haut, #0b0b0b au milieu et en bas.
+    static let corpsHaut = Color(white: 0.090)
+    static let corpsBas = Color(white: 0.043)
+    /// Le rail des barres et le filet.
+    static let railHaut = Color(white: 0.200)
+    static let railBas = Color(white: 0.110)
+    static let filet = Color(white: 0.155)
+
+    // MARK: LA CHALEUR PARTAGÉE (plan §13, verdict « orange très pâle »)
+    //
+    // Rien ne se peint « ambre » : tout se peint « à telle CHALEUR ». La
+    // rampe est CELLE de la flamme (`FlammePalette`, FlammeJauge.swift) —
+    // braise → cœur → flamme → or → blanc chauffé, cinq arrêts qui ne
+    // perdent JAMAIS leur saturation. L'interpolation ne se fait qu'ENTRE
+    // arrêts adjacents de la rampe : un chemin droit vers un gris ou un
+    // crème fabrique du brun (loi payée au J1 de la home).
+    static let rampe: [(Double, Double, Double)] = [
+        (1.00, 0.22, 0.02),   // braise
+        (1.00, 0.40, 0.04),   // cœur
+        (1.00, 0.55, 0.10),   // flamme
+        (1.00, 0.78, 0.38),   // or
+        (1.00, 0.94, 0.80),   // blanc chauffé
+    ]
+
+    /// 0 = braise, 1 = blanc chauffé.
+    static func chaleur(_ t: Double) -> Color {
+        let x = min(max(t, 0), 1) * 4
+        let i = min(Int(x), 3)
+        let f = x - Double(i)
+        let a = rampe[i], b = rampe[i + 1]
+        return Color(red: a.0 + (b.0 - a.0) * f,
+                     green: a.1 + (b.1 - a.1) * f,
+                     blue: a.2 + (b.2 - a.2) * f)
+    }
+
+    /// L'encre CHAUDE des gains et des accents — or en tête, flamme au
+    /// pied (l'école `encreTitre`, en chaleur). Remplace les aplats.
+    static var encreChaude: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: chaleur(0.80), location: 0.00),
+                .init(color: chaleur(0.55), location: 0.62),
+                .init(color: chaleur(0.42), location: 1.00),
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
+}
+
+// MARK: - Les traînées de lumière
+
+/// UN REFLET sur l'arête : la MÊME forme que le corps, agrandie du jour,
+/// tracée au trait fin — puis MASQUÉE pour n'exister qu'autour d'un coin.
+///
+/// ⚠️ Le premier jet traçait un arc de CERCLE au rayon du corps. Or le
+/// corps a des coins CONTINUS (la squircle d'Apple) : un arc circulaire du
+/// même rayon s'en décolle au milieu du virage, et le reflet flotte à côté
+/// de la card au lieu de l'épouser. La seule façon juste est de reprendre
+/// la forme elle-même, agrandie.
+///
+/// Le masque fait deux choses d'un coup : il choisit le coin, ET il donne
+/// l'extinction aux deux bouts — un reflet d'intensité constante serait un
+/// liseré, donc un pictogramme.
+struct CardTrainee: View {
+    enum Coin { case hautDroit, basGauche }
+
+    var coin: Coin
+    /// Le rayon du corps, en fraction de la largeur.
+    var rayon: CGFloat
+    /// Le jour entre le bord du corps et le reflet.
+    var jour: CGFloat = 0.017
+    var epaisseur: CGFloat = 0.008
+    var chaud = true
+    /// La portée du reflet le long des bords, en fraction de la largeur.
+    var portee: CGFloat = 0.47
+    var lueur: Double = 0.55
+
+    var body: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let j = jour * W
+            let e = max(0.8, epaisseur * W)
+            let forme = RoundedRectangle(cornerRadius: rayon * W + j,
+                                         style: .continuous)
+            ZStack {
+                forme.stroke(teinteVive, lineWidth: e * 3.4)
+                    .blur(radius: e * 2.8)
+                    .opacity(lueur)
+                forme.stroke(teinteVive, lineWidth: e)
+            }
+            .frame(width: W + 2 * j, height: H + 2 * j)
+            .position(x: W / 2, y: H / 2)
+            .mask {
+                RadialGradient(
+                    stops: [
+                        .init(color: .white, location: 0.00),
+                        .init(color: .white.opacity(0.98), location: 0.42),
+                        .init(color: .white.opacity(0.55), location: 0.70),
+                        .init(color: .clear, location: 1.00),
+                    ],
+                    center: coin == .hautDroit ? .topTrailing
+                                               : .bottomLeading,
+                    startRadius: 0, endRadius: portee * W)
+                .frame(width: W + 2 * j, height: H + 2 * j)
+                .position(x: W / 2, y: H / 2)
+            }
+        }
+    }
+
+    private var teinteVive: LinearGradient {
+        chaud
+            ? LinearGradient(colors: [CardTon.orChaud, CardTon.orVif,
+                                      CardTon.orChaud],
+                             startPoint: .leading, endPoint: .trailing)
+            : LinearGradient(colors: [Color(white: 1.0), Color(white: 0.86)],
+                             startPoint: .bottom, endPoint: .top)
+    }
+}
+
+// MARK: - Le corps
+
+/// L'écrin commun aux deux cards. Deux découvertes de la sonde, et elles
+/// changent tout :
+///
+/// 1. **LE CORPS N'EST PAS UNE SQUIRCLE.** Ajustement d'une superellipse sur
+///    200 points du contour : n = 2,0 — c'est un ARC DE CERCLE PUR, de rayon
+///    **14,6 % de la largeur**. Un coin continu d'Apple y met un galbe que
+///    la référence n'a pas.
+/// 2. **LE LISERÉ EST UN DÉGRADÉ ANGULAIRE.** Il fait le tour, et son
+///    intensité tourne avec l'angle : deux POINTS MORTS aux coins haut-gauche
+///    (#1B1A1A) et bas-droit (#141414), et deux CRÊTES aux coins haut-droit
+///    (l'or, #FEF6D0 écrêté au blanc) et bas-gauche (le blanc pur). Les
+///    « traînées » ne sont pas des objets posés à côté : **c'est ce liseré
+///    lui-même, saturé sur un arc** — 141° au coin d'or, 118° au coin blanc.
+///
+/// Et la card est faite de DEUX coques : la bezel, puis un panneau encastré
+/// de **3,45 % de la largeur**, avec son propre liseré (plus clair que
+/// l'extérieur sur le bord haut) et sa bavure vers l'intérieur.
+/// Aucune ombre portée, aucun halo ambiant : à 6 px du bord on est au fond.
+// MARK: - Le verre démonté (la scène du menu)
+
+/// LE MENU ÉTEINT LE MOBILIER — mais le verre natif IGNORE `.opacity` (la loi
+/// est écrite dix lignes plus bas, sur la chambre). À 12 % d'encre, les
+/// CARCASSES de verre des widgets restaient donc entières sous le voile
+/// (verdict 26-08 : « j'ai toujours ce design dégueu, on voit la card !!
+/// non !! »). On ne voile pas du verre : on le DÉMONTE — la card retombe sur
+/// sa doublure mate (`verre: false` existe depuis toujours) le temps que le
+/// menu tient la scène, et le verre revient posé.
+private struct VerreDemonteKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var verreDemonte: Bool {
+        get { self[VerreDemonteKey.self] }
+        set { self[VerreDemonteKey.self] = newValue }
+    }
+}
+
+struct CardCorps<Contenu: View>: View {
+    /// Le rayon extérieur, en fraction de la largeur — CIRCULAIRE.
+    var rayon: CGFloat = 0.152
+    /// L'encastrement du panneau : 3,45 % de la largeur (21 px sur 607).
+    var encastre: CGFloat = 0.0345
+    /// LE LISERÉ ANGULAIRE et son bloom. Apple n'en met pas — mais il porte
+    /// ici les deux crêtes de lumière qui font la bezel. À trancher à l'œil.
+    var lisere: Bool = true
+    /// LE FOND EN VERRE NATIF, à l'essai. ⚠️ La loi dit qu'il GIVRE ce qui
+    /// est net, et une card de 170 pt n'est QUE de l'encre nette : on s'attend
+    /// donc à un frost, pas à une lentille. Le banc est là pour le voir.
+    var verre: Bool = false
+    /// La scène du menu démonte le verre (voir `VerreDemonteKey`).
+    @Environment(\.verreDemonte) private var verreDemonte
+    /// LA CHAMBRE NOIRE, 0 → 1. Sous le doigt, le verre se FERME : une plaque
+    /// noire tombe derrière l'encre et le fond vidéo cesse de passer.
+    /// ⚠️ Ce n'est PAS le verre qu'on éteint — il ignore `.opacity`. On pose
+    /// une plaque PAR-DESSUS lui et SOUS l'encre.
+    ///
+    /// Et ce n'est pas un ornement : quand le globe clair de la vidéo passe
+    /// derrière « 8.4 kg », la lisibilité tombe. Le noir arrive exactement au
+    /// moment où l'on REGARDE — le verre pour l'ambiance, le noir pour lire.
+    var chambre: Double = 0
+    /// LA PLAQUE NOIRE, DÉCOUPLÉE de la chambre. `nil` = comportement
+    /// d'origine (la chambre la pilote). `0` = jamais de plaque : l'intérieur
+    /// s'ouvre SANS boucher le verre — c'est ce que veut la porte, où le mois
+    /// doit se lire à travers un Liquid Glass vivant.
+    var plaque: Double? = nil
+    /// LA PLACE DU DOIGT dans la card, en points. La lumière la suit — la
+    /// même loi que les halos du menu, déjà validée : la lumière suit la main.
+    var doigt: CGPoint?
+    /// L'INCLINAISON DE LA CARD (le mode édition), en degrés. La crête du
+    /// liseré CONTRE-TOURNE de cet angle : la lampe reste fixe dans la pièce
+    /// pendant que l'objet penche — la loi 1 de la maison appliquée au
+    /// wiggle. Sans elle, la lumière voyagerait avec la card et l'oscillation
+    /// se lirait comme un calque qui tourne, pas comme un objet qui respire.
+    var penche: Double = 0
+    @ViewBuilder var contenu: () -> Contenu
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// La même card vit aussi dans la porte et les aperçus : son hôte
+    /// fournit la visibilité, sans supposer qu'elle appartient à la Home.
+    /// Le grand player ne ferme la porte qu'une fois réellement couvrant.
+    private var lisereImmobile: Bool {
+        reduceMotion || ongletCache || scenePhase != .active
+            || CouvertureFoyer.shared.recouvert
+    }
+
+    var body: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let e = encastre * W
+            let dehors = RoundedRectangle(cornerRadius: rayon * W,
+                                          style: .circular)
+            let dedans = RoundedRectangle(cornerRadius: 0.1175 * W,
+                                          style: .circular)
+            ZStack {
+                // ── 1. LA BEZEL. ⚠️ Presque noire en mode plein, mais
+                // ABSENTE en mode verre : un fond opaque derrière un verre,
+                // c'est un verre posé sur un mur — il ne peut rien réfracter.
+                if !verre { dehors.fill(Color(white: 0.014)) }
+
+                // ── 2. LE LISERÉ ANGULAIRE, d'un seul trait : il porte à la
+                // fois le gris des bords ordinaires ET les deux crêtes.
+                if lisere {
+                    // ⚠️ L'HORLOGE DORT sous Reduce Motion, et elle est LENTE
+                    // (12 Hz) : une dérive de 3° sur 9 s n'a aucun besoin de
+                    // 60 images par seconde.
+                    // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME
+                    // (05-09) — voir `LisereRespirant` et le §① de
+                    // `tools/nav/PLAN-DEBUG-PERF.md`. Ce bloc refabriquait
+                    // un dégradé conique, trois traits et DEUX GAUSSIENNES
+                    // vingt fois par seconde, sous un verre natif, pour
+                    // tourner la lumière de TROIS DEGRÉS.
+                    // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
+                    if SouffleBanc.horloge {
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                            paused: lisereImmobile
+                                                || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                        let t = tl.date.timeIntervalSinceReferenceDate
+                        // LA RESPIRATION DU REPOS : ±3° sur 9,4 s. On ne la
+                        // voit pas, on la sent. La période est volontairement
+                        // bâtarde pour que deux cards voisines ne battent
+                        // jamais ensemble.
+                        let souffle = reduceMotion ? 0
+                            : 3.0 * sin(t * 2 * .pi / 9.4)
+                        // ET LA CRÊTE GLISSE SOUS LE DOIGT : 16° pendant que
+                        // la chambre se ferme. C'est LE signal « objet réel » —
+                        // un verre ne se prouve pas en bougeant son contenu,
+                        // mais en déplaçant la lumière sur sa surface.
+                        let gr = cardLisereConique(
+                            .degrees(souffle + 16 * chambre - penche))
+                        ZStack {
+                            dehors.stroke(gr, lineWidth: 1.6)
+                            dehors.stroke(gr, lineWidth: 4.4)
+                                .blur(radius: 2.4)
+                                .opacity(0.46)
+                            // LE CADRE S'ALLUME QUAND LA CHAMBRE SE FERME : ce
+                            // qui identifie l'objet ne bouge jamais, seul son
+                            // intérieur change — il devient PLUS présent.
+                            dehors.stroke(gr, lineWidth: 2.6)
+                                .blur(radius: 1.2)
+                                .opacity(0.55 * chambre)
+                        }
+                        .frame(width: W, height: H)
+                    }
+                    } else {
+                        LisereRespirant(forme: dehors, W: W, H: H,
+                                        chambre: chambre, penche: penche,
+                                        immobile: lisereImmobile)
+                    }
+                }
+                if verre, !verreDemonte {
+                    GlassEffectContainer(spacing: 0) {
+                        Color.clear
+                            .frame(width: W, height: H)
+                            .verreHome(.clear, in: dehors)
+                    }
+                }
+
+                // ── 3. LE PANNEAU ENCASTRÉ
+                ZStack {
+                    // LA MATIÈRE, modèle exact de la sonde : ce n'est ni un
+                    // aplat ni un dégradé linéaire, mais un plancher très bas
+                    // et DEUX lueurs radiales posées sur l'anti-diagonale —
+                    // la haut-droite qui culmine à #282828, la bas-gauche aux
+                    // deux tiers de sa force (#1B1B1B). Strictement NEUTRE :
+                    // |R−B| ≤ 0,7/255 partout, toute la chaleur de la card
+                    // vient des reflets et du contenu, jamais du fond.
+                    dedans.fill(Color(white: 0.012))
+                        .opacity(verre && !verreDemonte ? 0 : 1)
+                    // Les deux lueurs de l'anti-diagonale survivent en mode
+                    // verre, mais au TIERS : elles disent la lumière posée
+                    // sans reboucher ce qu'on vient d'ouvrir.
+                    // Les deux lueurs GLISSENT VERS LE DOIGT de 7 pt au
+                    // plus : au-delà, la lumière n'accompagne plus la main,
+                    // elle la poursuit.
+                    let dx = ((doigt.map { $0.x / W } ?? 0.5) - 0.5) * 0.090
+                    let dy = ((doigt.map { $0.y / H } ?? 0.5) - 0.5) * 0.090
+                    dedans.fill(RadialGradient(
+                        colors: [Color(white: 0.157), .clear],
+                        center: UnitPoint(x: 1 + dx, y: 0 + dy),
+                        startRadius: 0, endRadius: W * 1.12))
+                        .opacity(verre ? 0.34 : 1)
+                    dedans.fill(RadialGradient(
+                        colors: [Color(white: 0.106), .clear],
+                        center: UnitPoint(x: 0 + dx, y: 1 + dy),
+                        startRadius: 0, endRadius: W * 0.77))
+                        .opacity(verre ? 0.34 : 1)
+                    // son liseré : même loi angulaire, mais il ne SATURE
+                    // jamais — il reste du gris, plus clair en haut.
+                    dedans.stroke(cardLisereDedans, lineWidth: 1.1)
+                    // LA PLAQUE : sur le verre, sous l'encre.
+                    // ⚠️ `plaque` la DÉCOUPLE de la chambre (la porte, 25-08).
+                    // La grille du mois n'existe que chambre ouverte, et la
+                    // chambre fait TOMBER cette plaque — le mois et le verre
+                    // étaient donc exclusifs par construction. C'est un
+                    // arbitrage de LISIBILITÉ (« le verre pour l'ambiance, le
+                    // noir pour lire »), juste pour la home où un globe clair
+                    // de la vidéo passe derrière « 8.4 kg ». Sur la porte,
+                    // l'encre du mois est de gros points orange sur une nuit
+                    // déjà sombre : elle tient sans plaque. La home garde son
+                    // comportement (défaut = la chambre pilote), la porte pose
+                    // `plaque: 0` et garde son verre.
+                    dedans.fill(Color.black)
+                        .opacity(0.93 * (plaque ?? chambre))
+                }
+                .padding(e)
+
+                contenu()
+            }
+        }
+    }
+
+}
+
+// MARK: - Les deux liserés angulaires
+
+/// Le liseré de la bezel. `AngularGradient` part de l'est et tourne dans
+    /// le sens des aiguilles (y vers le bas) : 0,125 = coin bas-droit,
+    /// 0,375 = bas-gauche, 0,625 = haut-gauche, 0,875 = haut-droit.
+/// LE LISERÉ, ORIENTABLE. ⚠️ On ne fait PAS tourner la forme — on fait tourner
+/// le DÉGRADÉ : les deux crêtes glissent le long d'un contour qui, lui, ne
+/// bouge pas d'un pixel. Faire pivoter la card entière aurait déplacé son
+/// encre ; c'est la lumière qui se promène, pas l'objet.
+func cardLisereConique(_ a: Angle) -> AngularGradient {
+    AngularGradient(stops: cardLisereStops, center: .center, angle: a)
+}
+
+let cardLisereStops: [Gradient.Stop] = [
+    // Le balayage des deux crêtes est MESURÉ : 141° au coin d'or,
+    // 118° au coin blanc — soit 0,39 et 0,33 de tour. Des épaules
+    // franches, sinon la lumière bave sur tout le contour.
+    .init(color: Color(white: 0.20), location: 0.000),
+    .init(color: Color(white: 0.075), location: 0.125),   // MORT (bas-droit)
+    .init(color: Color(white: 0.11), location: 0.255),
+    .init(color: Color(white: 0.30), location: 0.335),
+    .init(color: Color(white: 1.00), location: 0.366),    // BLANC (bas-gauche)
+    .init(color: Color(white: 1.00), location: 0.386),
+    .init(color: Color(white: 0.30), location: 0.412),
+    .init(color: Color(white: 0.13), location: 0.470),
+    .init(color: Color(white: 0.085), location: 0.625),   // MORT (haut-gauche)
+    .init(color: Color(white: 0.13), location: 0.770),
+    .init(color: CardTon.orChaud.opacity(0.60), location: 0.830),
+    .init(color: CardTon.orVif, location: 0.862),         // OR (haut-droit)
+    .init(color: Color(white: 1.00), location: 0.888),
+    .init(color: CardTon.orChaud, location: 0.910),
+    .init(color: Color(white: 0.19), location: 0.945),
+    .init(color: Color(white: 0.20), location: 1.000),
+]
+
+let cardLisereConique = AngularGradient(stops: cardLisereStops,
+                                        center: .center)
+
+/// Le liseré du panneau : la même loi, sans jamais saturer.
+let cardLisereDedans = AngularGradient(stops: [
+    .init(color: Color(white: 0.17), location: 0.000),
+    .init(color: Color(white: 0.075), location: 0.125),
+    .init(color: Color(white: 0.24), location: 0.300),
+    .init(color: Color(white: 0.40), location: 0.375),
+    .init(color: Color(white: 0.26), location: 0.480),
+    .init(color: Color(white: 0.115), location: 0.625),
+    .init(color: Color(white: 0.30), location: 0.800),
+    .init(color: Color(white: 0.36), location: 0.880),
+    .init(color: Color(white: 0.17), location: 1.000),
+], center: .center)
+
+
+// MARK: - L'ARDOISE — la matière de la troisième card
+
+/// LA COQUILLE DE L'ARDOISE, sortie de `SemaineStrip` le 29-08 (J2 de la card
+/// ROUTE de la home). Deux cards la portent désormais : l'ardoise « This
+/// week », qu'on met de côté, et la card de la ROUTE qui prend sa place. Deux
+/// objets qui doivent s'accorder LISENT la même source — la recopier, c'était
+/// s'assurer qu'elles divergeraient au premier réglage.
+///
+/// Les cotes sont celles mesurées sur le wireframe (verdict 21-08) : un
+/// plancher très bas — L 27, exactement le `white: 0.11` de la pochette du
+/// bac —, DEUX lueurs radiales neutres posées sur l'anti-diagonale (jamais un
+/// dégradé linéaire), le grain, la lueur d'angle, et le liseré ANGULAIRE des
+/// cards.
+///
+/// ⚠️ Le liseré n'est pas un cheveu blanc plat : il meurt dans deux coins et
+/// culmine dans les deux autres (le blanc en bas-gauche, l'or en haut-droite).
+/// Un trait d'intensité constante lit « bordure » ; deux crêtes lisent « objet
+/// éclairé ». C'est par ses BORDS qu'un Liquid Glass se lit, jamais par son
+/// corps.
+///
+/// ⚠️ Elle reste TRANSLUCIDE en mode verre : ce qui est posé dessus mange
+/// encore la vidéo à travers elle — une ardoise opaque l'affamerait.
+struct ArdoiseFond: View {
+    var largeur: CGFloat
+    var hauteur: CGFloat
+    var rayon: CGFloat = 26
+    /// L'ardoise en VERRE NATIF — la même matière que les deux widgets. Le
+    /// fond vidéo bouge dessous, et c'est ce qu'on veut voir.
+    var verre: Bool = false
+    var lisere: Bool = true
+    /// ⚠️ **LA LUEUR DU BORD, 0 → 1** (30-08 : « les bordures s'illuminent
+    /// légèrement autour du widget quand on scrolle »). C'est une OPACITÉ
+    /// posée sur le liseré qui existe déjà — jamais une taille, jamais un
+    /// `.blur` de plus : ce qui bouge par image ne doit pas re-layouter, et un
+    /// flou par objet coûte 27 img/s ici.
+    ///
+    /// Elle reste discrète par construction : le liseré angulaire est le même,
+    /// on ne fait que le rendre une fois de plus, un peu plus large et très
+    /// transparent. Un objet qu'on touche s'allume ; il ne change pas de robe.
+    var lueur: Double = 0
+
+    private var forme: RoundedRectangle {
+        RoundedRectangle(cornerRadius: rayon, style: .continuous)
+    }
+
+    var body: some View {
+        ZStack {
+            if verre {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .frame(width: largeur, height: hauteur)
+                        .verreHome(.clear, in: forme)
+                }
+            } else {
+                forme.fill(Color(white: 0.016).opacity(0.94))
+            }
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.150).opacity(0.94), .clear],
+                center: .topTrailing, startRadius: 0,
+                endRadius: largeur * 0.95))
+                .opacity(verre ? 0.34 : 1)
+            forme.fill(RadialGradient(
+                colors: [Color(white: 0.100).opacity(0.94), .clear],
+                center: .bottomLeading, startRadius: 0,
+                endRadius: largeur * 0.62))
+                .opacity(verre ? 0.34 : 1)
+            GrainTexture.tuile
+                .resizable(resizingMode: .tile)
+                .opacity(0.05).blendMode(.overlay).clipShape(forme)
+            forme.fill(EllipticalGradient(
+                stops: [.init(color: .white.opacity(0.06), location: 0),
+                        .init(color: .white.opacity(0.015), location: 0.5),
+                        .init(color: .clear, location: 1)],
+                center: UnitPoint(x: 0.18, y: 0.06),
+                startRadiusFraction: 0, endRadiusFraction: 1.1))
+                .blendMode(.plusLighter)
+            if lisere {
+                forme.stroke(cardLisereConique, lineWidth: 1.6)
+                forme.stroke(cardLisereConique, lineWidth: 4.4)
+                    .blur(radius: 2.4)
+                    .opacity(0.46)
+                // LA LUEUR : le MÊME liseré, une passe de plus, montée à
+                // l'opacité. Elle n'existe pas au repos (`lueur` = 0 → rien
+                // n'est composé), donc elle ne coûte que pendant le geste.
+                if lueur > 0.01 {
+                    forme.stroke(cardLisereConique, lineWidth: 2.2)
+                        .opacity(0.55 * lueur)
+                    forme.stroke(Color.white.opacity(0.30), lineWidth: 1)
+                        .opacity(lueur)
+                }
+            }
+        }
+        .frame(width: largeur, height: hauteur)
+    }
+}
+
+// MARK: - Le graphe à barres
+
+/// Une journée du graphe : sa hauteur de rail et son nombre de segments.
+struct CardJour: Identifiable {
+    let lettre: String
+    /// La hauteur du rail, en fraction de la hauteur de la card.
+    let rail: Double
+    let segments: Int
+    var id: String { lettre + String(rail) }
+
+    /// Les sept jours de la référence, mesurés (rails et segments).
+    /// La semaine VIDE (13-09) : sept lettres, aucun rail, aucun segment.
+    /// (`id` = lettre + rail : un rail infime et DISTINCT par jour, sinon les
+    /// deux T et les deux S se confondent dans le ForEach.)
+    static let semaineVide: [CardJour] = ["M", "T", "W", "T", "F", "S", "S"].enumerated().map {
+        CardJour(lettre: $1, rail: 0.001 * Double($0 + 1), segments: 0)
+    }
+    static let semaineRef: [CardJour] = [
+        CardJour(lettre: "M", rail: 0.123, segments: 2),
+        CardJour(lettre: "T", rail: 0.105, segments: 2),
+        CardJour(lettre: "W", rail: 0.165, segments: 3),
+        CardJour(lettre: "T", rail: 0.188, segments: 3),
+        CardJour(lettre: "F", rail: 0.230, segments: 5),
+        CardJour(lettre: "S", rail: 0.136, segments: 2),
+        CardJour(lettre: "S", rail: 0.048, segments: 1),
+    ]
+}
+
+/// UNE BARRE : un RAIL sombre rempli par le bas d'une pile de SEGMENTS
+/// d'ambre. Chaque segment est une petite touche LAQUÉE — dégradé vertical
+/// et arête claire en haut — et non un rectangle plat : c'est ce relief qui
+/// fait la valeur de la pièce.
+private struct CardBarre: View {
+    var jour: CardJour
+    var W: CGFloat
+    var H: CGFloat
+    /// 0 → 1, la pousse de la barre à l'arrivée.
+    var p: Double
+    /// 0 → 1, le BRAISILLEMENT du sommet (la pointe de la mini-flamme
+    /// frémit — piloté par le parent, une phase par pile). ⚠️ Ce chemin
+    /// n'est plus emprunté que par le témoin `-souffleHorloge`.
+    var vive: Double = 0
+    /// LE BRAISILLEMENT QUI S'ANIME SANS SE REDESSINER (05-09, l'école de
+    /// `LisereRespirant`) : les DEUX robes du segment du sommet sont
+    /// construites une fois — celle du repos et celle du pic — et seule
+    /// l'opacité de la seconde respire. La phase vit ICI, dans la feuille :
+    /// aucun parent (sweep de chambre, doigt) ne peut avaler son animation.
+    var respire: Bool = false
+    /// La période propre de cette pile (elles sont incommensurables).
+    var per: Double = 0
+    /// L'échelonnement du départ : les piles ne partent pas ensemble.
+    var retard: Double = 0
+    /// La porte : même expression que l'ancien `paused:`, désarme et pose
+    /// la robe du repos (l'équivalent d'`immobile` dans LisereRespirant).
+    var dort: Bool = false
+
+    /// Mesurés : barre 5,4 % de la largeur, segment 2,7 % de la hauteur,
+    /// écart 0,16 %.
+    private var larg: CGFloat { 0.054 * W }
+    private var hSeg: CGFloat { 0.0272 * H }
+    private var ecart: CGFloat { 0.0016 * H }
+
+    var body: some View {
+        let hRail = max(hSeg, CGFloat(jour.rail) * H * CGFloat(p))
+        let n = Int((Double(jour.segments) * p).rounded(.down))
+        ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: larg * 0.255, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [CardTon.railHaut, CardTon.railBas],
+                    startPoint: .top, endPoint: .bottom))
+                .overlay(alignment: .top) {
+                    // l'arête du haut : le rail est un OBJET, pas un trou
+                    RoundedRectangle(cornerRadius: larg * 0.255,
+                                     style: .continuous)
+                        .strokeBorder(LinearGradient(
+                            colors: [.white.opacity(0.26), .clear],
+                            startPoint: .top, endPoint: .center),
+                            lineWidth: 0.7)
+                }
+                .frame(width: larg, height: hRail)
+
+            VStack(spacing: ecart) {
+                ForEach(0..<max(0, n), id: \.self) { i in
+                    // ⚠️ CHAQUE PILE EST UNE MINI-FLAMME (plan §13 — le
+                    // verdict « orange très pâle ») : le segment du PIED en
+                    // blanc chauffé, la montée or → flamme → braise vers le
+                    // sommet — la grammaire exacte de la flamme-jauge
+                    // (blanc au pied, braise à la pointe), en colonne.
+                    // L'ancien dégradé horizontal 3 tons de la référence
+                    // meurt : il vivait hors de la rampe de la maison.
+                    // ⚠️ `i = 0` est le SOMMET du VStack : la fraction
+                    // depuis le pied vaut (n−1−i)/(n−1) — et c'est le PIED
+                    // qui est blanc chauffé, la pointe qui est braise (la
+                    // grammaire de la flamme ; le premier jet l'avait
+                    // inversée : du blanc au sommet = de la crème glacée).
+                    let duPied = Double(n - 1 - i) / Double(max(n - 1, 1))
+                    // La POINTE frémit : la chaleur du sommet monte d'un
+                    // souffle avec `vive` — une braise, pas un clignotant.
+                    let base = n == 1 ? 0.86 : 0.90 - 0.72 * duPied
+                    if respire, i == 0 {
+                        // ⚠️ La feuille N'EXISTE que quand le sommet existe
+                        // (n ≥ 1) : son .task s'arme à sa naissance — le trou
+                        // « armé avant que la pousse ne crée le segment » est
+                        // impossible par construction (verdict contradicteur).
+                        SommetRespirant(t0: base, per: per, retard: retard,
+                                        dort: dort, larg: larg, hSeg: hSeg)
+                    } else {
+                        let t = base + (i == 0 ? 0.08 * vive : 0)
+                        RoundedRectangle(cornerRadius: larg * 0.121,
+                                         style: .continuous)
+                            .fill(LinearGradient(
+                                colors: [CardTon.chaleur(max(t - 0.07, 0)),
+                                         CardTon.chaleur(min(t + 0.07, 1))],
+                                startPoint: .top, endPoint: .bottom))
+                            .overlay(alignment: .top) {
+                                Capsule().fill(Color.white.opacity(
+                                    0.34 + (i == 0 ? 0.14 * vive : 0)))
+                                    .frame(height: 0.7)
+                                    .padding(.horizontal, larg * 0.16)
+                                    .padding(.top, 0.7)
+                            }
+                            .frame(width: larg, height: hSeg)
+                    }
+                }
+            }
+        }
+        .frame(width: larg, alignment: .bottom)
+    }
+}
+
+/// LE SOMMET QUI RESPIRE : la robe du repos (vive = 0) et, par-dessus,
+/// la robe du pic (vive = 1) sous `.opacity(phase)` — construites une
+/// fois, jamais redessinées. UN SEUL CLIP : deux formes arrondies
+/// empilées densifieraient l'anti-crénelage du bord avec la phase.
+/// La capsule de l'arête n'est pas doublée non plus : son opacité EST
+/// la valeur animée (0,34 → 0,48, l'arithmétique exacte de l'ancienne).
+///
+/// La phase vit ICI, dans une feuille qui n'existe que quand le sommet
+/// existe (le piège du `repeatForever` avalé, ET celui de l'armement
+/// avant la naissance du segment pendant la pousse).
+///
+/// ⚠️ Écarts DÉCLARÉS : le profil d'origine était vive² (la braise
+/// s'attarde éteinte, culmine bref), l'easeInOut autoreversé est
+/// symétrique ; et quand [t0, t0+0,08] enjambe un coude de la rampe
+/// (0,25/0,5/0,75), le fondu coupe le coin — teinte mi-course d'un
+/// écart minuscule mais non nul. À trancher sur capture.
+private struct SommetRespirant: View {
+    var t0: Double
+    var per: Double
+    var retard: Double
+    var dort: Bool
+    var larg: CGFloat
+    var hSeg: CGFloat
+
+    @State private var phase: Double = 0
+
+    var body: some View {
+        let t1 = t0 + 0.08
+        Rectangle()
+            .fill(LinearGradient(
+                colors: [CardTon.chaleur(max(t0 - 0.07, 0)),
+                         CardTon.chaleur(min(t0 + 0.07, 1))],
+                startPoint: .top, endPoint: .bottom))
+            .overlay {
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [CardTon.chaleur(max(t1 - 0.07, 0)),
+                                 CardTon.chaleur(min(t1 + 0.07, 1))],
+                        startPoint: .top, endPoint: .bottom))
+                    .opacity(phase)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: larg * 0.121,
+                                        style: .continuous))
+            .overlay(alignment: .top) {
+                Capsule().fill(.white)
+                    .opacity(0.34 + 0.14 * phase)
+                    .frame(height: 0.7)
+                    .padding(.horizontal, larg * 0.16)
+                    .padding(.top, 0.7)
+            }
+            .frame(width: larg, height: hSeg)
+            .task(id: dort) { armer() }
+    }
+
+    private func armer() {
+        guard !dort else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { phase = 0 }
+            return
+        }
+        phase = 0
+        withAnimation(.easeInOut(duration: per / 2)
+            .repeatForever(autoreverses: true)
+            .delay(retard)) {
+            phase = 1
+        }
+    }
+}
+
+// MARK: - Le bouton haltère
+
+/// Le glyphe : une barre centrale, deux disques épais au contact, deux
+/// disques fins à l'extérieur — de chaque côté. Ses proportions font tout.
+struct HaltereGlyphe: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let w = r.width, h = r.height
+        func bloc(_ cx: Double, _ dw: Double, _ dh: Double) {
+            let bw = dw * w, bh = dh * h
+            p.addRoundedRect(in: CGRect(x: r.minX + cx * w - bw / 2,
+                                        y: r.midY - bh / 2,
+                                        width: bw, height: bh),
+                             cornerSize: CGSize(width: bw * 0.30,
+                                                height: bw * 0.30))
+        }
+        bloc(0.50, 0.34, 0.115)   // la barre
+        bloc(0.305, 0.105, 0.70)  // disque épais gauche
+        bloc(0.695, 0.105, 0.70)  // disque épais droit
+        bloc(0.155, 0.090, 0.44)  // disque fin gauche
+        bloc(0.845, 0.090, 0.44)  // disque fin droit
+        return p
+    }
+}
+
+private struct CardBoutonHaltere: View {
+    var W: CGFloat
+    var H: CGFloat
+
+    var body: some View {
+        let d = 0.183 * H
+        ZStack {
+            Circle().fill(Color.white.opacity(0.042))
+            Circle().strokeBorder(Color.white.opacity(0.135), lineWidth: 0.9)
+            HaltereGlyphe()
+                .fill(LinearGradient(
+                    colors: [CardTon.orChaud, CardTon.ambre],
+                    startPoint: .top, endPoint: .bottom))
+                .frame(width: d * 0.64, height: d * 0.50)
+        }
+        .frame(width: d, height: d)
+    }
+}
+
+// MARK: - Le geste des cards (les trois grammaires)
+
+/// CE QUE LE DOIGT A LE DROIT DE FAIRE sur une card, selon l'endroit où
+/// elle vit. ⚠️ UN SEUL `DragGesture(minimumDistance: 0)` porte tout — un
+/// `onLongPressGesture`, même à 0,01 s, VOLE le tap qui le suit (loi payée
+/// trois fois : l'iPod, le galet du menu, et ici même).
+enum CardMode {
+    /// Le banc : tap = chambre (elle reste), appui tenu = aperçu refermé
+    /// au relâchement. La grammaire d'origine, intacte.
+    case libre
+    /// LA HOME : tap = chambre ; **0,50 s immobile = le mode édition**.
+    /// L'aperçu d'appui tenu meurt ici (sa fenêtre 0,28 → 0,50 s est trop
+    /// courte pour exister) — il renaît dans la vitrine, où le long press
+    /// n'a plus d'emploi. Arbitrage A du plan édition-widgets.
+    case home(onEdition: () -> Void)
+    /// LA VITRINE : tap = confirmer ; appui 0,18 s = l'aperçu de la
+    /// chambre (ouvert tant que le doigt est posé). Le retard des 0,18 s
+    /// n'est pas un style : sans lui, chaque départ de swipe ferait
+    /// clignoter la chambre du widget central.
+    case vitrine(onTap: () -> Void)
+    /// LE MODE ÉDITION : la card ne répond plus au doigt — seule sa
+    /// pastille parle. (Comme le springboard : une app qui frétille ne se
+    /// lance pas.)
+    case inerte
+}
+
+/// Le geste partagé des quatre cards. Les états du toucher vivent ICI (et
+/// pas dans chaque card) pour que la grammaire soit une seule fois vraie.
+/// La CHAMBRE, elle, reste l'état de la card : le modificateur ne fait que
+/// la piloter à travers un binding.
+struct CardTouche: ViewModifier {
+    var mode: CardMode
+    @Binding var chambre: Double
+    @Binding var doigt: CGPoint?
+    /// Quelle chambre le double tap ouvre — posé par `CardsRangee`.
+    @Environment(\.widgetKind) private var widgetKind
+
+    @State private var presseAt: Date?
+    @State private var etaitOuverte = false
+    @State private var aBouge = false
+    /// Invalide les rendez-vous (`asyncAfter`) d'une presse déjà finie.
+    @State private var jeton = 0
+    /// Le long press a tiré : le relâchement n'a plus rien à dire.
+    @State private var editionTiree = false
+    /// LE DOUBLE TAP (07-09) — la fin du relâchement précédent.
+    ///
+    /// ⚠️ Il est détecté ICI, dans le drag qui existe déjà, et surtout PAS
+    /// par un `onTapGesture(count: 2)` : celui-là RETARDE tous les taps
+    /// simples de sa zone (le système attend le second) — payé aujourd'hui
+    /// par la session nav sur les taps de la home. Ici le premier tap agit
+    /// immédiatement (la card se retourne, et elle RESTE : c'est le verdict
+    /// de Kathryn), et c'est le second qui ouvre la chambre.
+    @State private var finPrecedente: Date?
+    /// 0,45 s — au-delà, deux taps sont deux intentions (0,32 le 07-09 ;
+    /// élargi le 13-09, verdict B : « j'arrive pas à bien cliquer »).
+    private static let seuilDouble = 0.45
+
+    /// 0,50 s — l'arbitrage F du plan (0,4-0,5 s chez Apple ; la tolérance
+    /// de mouvement est de 10 pt, au-delà c'est un drag, pas un appui).
+    private static let seuilEdition = 0.50
+    private static let seuilApercu = 0.18
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if case .inerte = mode {
+            content
+        } else {
+            content.gesture(geste)
+        }
+    }
+
+    private var geste: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { v in
+                doigt = v.location
+                if presseAt != nil {
+                    // Le doigt a fui : plus un appui. (12 pt depuis le 13-09,
+                    // verdict B — 10 chez Apple, un doigt réel tremble.)
+                    if max(abs(v.translation.width),
+                           abs(v.translation.height)) > 12 {
+                        aBouge = true
+                    }
+                    return
+                }
+                presseAt = Date()
+                etaitOuverte = chambre > 0.5
+                aBouge = false
+                editionTiree = false
+                jeton += 1
+                let mien = jeton
+                switch mode {
+                case .libre:
+                    guard !etaitOuverte else { return }
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    ouvrir()
+                case .home(let onEdition):
+                    if !etaitOuverte {
+                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                        ouvrir()
+                    }
+                    // LE RENDEZ-VOUS DE L'ÉDITION. Un `DragGesture` ne
+                    // rappelle pas un doigt immobile : le seuil se tient à
+                    // l'horloge, et le jeton le tue si la presse finit avant.
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + Self.seuilEdition) {
+                        guard jeton == mien, presseAt != nil, !aBouge
+                        else { return }
+                        editionTiree = true
+                        // La chambre se range : l'édition est un mode de la
+                        // PAGE, pas un état de la card.
+                        withAnimation(.timingCurve(0.30, 0, 0.40, 1,
+                                                   duration: 0.30)) {
+                            chambre = 0
+                        }
+                        onEdition()
+                    }
+                case .vitrine:
+                    DispatchQueue.main.asyncAfter(
+                        deadline: .now() + Self.seuilApercu) {
+                        guard jeton == mien, presseAt != nil, !aBouge
+                        else { return }
+                        ouvrir()
+                    }
+                case .inerte:
+                    break
+                }
+            }
+            .onEnded { _ in
+                let court = Date()
+                    .timeIntervalSince(presseAt ?? Date()) < 0.28
+                let bouge = aBouge
+                let edition = editionTiree
+                presseAt = nil
+                jeton += 1
+                withAnimation(.easeOut(duration: 0.28)) { doigt = nil }
+                switch mode {
+                case .libre:
+                    guard etaitOuverte || !court else { return }
+                    fermer()
+                case .home(let onEdition):
+                    _ = onEdition
+                    // L'édition a pris la main : le relâchement se tait.
+                    guard !edition else { return }
+                    // ── LA PORTE DE LA CHAMBRE LONGUE (verdicts A + B, 13-09).
+                    // A : LA FACE RETOURNÉE EST LA PORTE — un tap court sur la
+                    // card déjà retournée (le mini-détail) ouvre la chambre,
+                    // quel que soit le délai, sans glyphe (« pas de mini
+                    // chevron, trop cheap »). La card se range en même temps.
+                    // B : deux relâchements courts à moins de `seuilDouble`
+                    // ouvrent aussi — pour qui double-tape vite.
+                    if court, !bouge {
+                        let n = Date()
+                        let double = finPrecedente.map { n.timeIntervalSince($0) < Self.seuilDouble } ?? false
+                        if etaitOuverte || double {
+                            finPrecedente = nil
+                            UIImpactFeedbackGenerator(style: .rigid)
+                                .impactOccurred()
+                            fermer()
+                            ChambreEtat.shared.ouvrir(widgetKind)
+                            return
+                        }
+                        finPrecedente = n
+                    } else {
+                        finPrecedente = nil
+                    }
+                    guard etaitOuverte || !court else { return }
+                    fermer()
+                case .vitrine(let onTap):
+                    // La chambre de la vitrine ne survit JAMAIS au doigt :
+                    // c'est un aperçu, pas un état.
+                    if chambre > 0.01 { fermer() }
+                    if court, !bouge { onTap() }
+                case .inerte:
+                    break
+                }
+            }
+    }
+
+    private func ouvrir() {
+        withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.52)) {
+            chambre = 1
+        }
+    }
+
+    private func fermer() {
+        // Un retour LÉGER à la fermeture (verdict 22-08 : « les haptiques
+        // quand on clique sur les cards ») — plus doux que la pose, pour
+        // que l'aller et le retour ne claquent pas pareil.
+        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.55)
+        withAnimation(.timingCurve(0.30, 0, 0.40, 1, duration: 0.34)) {
+            chambre = 0
+        }
+    }
+}
+
+// MARK: - LA CARD DU VOLUME
+
+struct CardVolume: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var valeur: String = "8.4"
+    var unite: String = "kg"
+    var legende: String = L("Volume de la semaine", "Weekly volume")
+    var jours: [CardJour] = CardJour.semaineRef
+    var gain: String = "+12%"
+    var gainLegende: String = L("vs la semaine passée", "vs last week")
+    var moyenneLegende: String = L("moy. par séance", "avg per session")
+    var moyenne: String = "1.2 kg"
+    /// 0 → 1 : l'arrivée (les barres poussent, l'encre se pose).
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
+    /// LES QUATRE DERNIÈRES SEMAINES, normalisées — l'intérieur de la chambre.
+    /// La plus récente en dernier, et c'est elle qui brille.
+    var semaines: [[Double]] = [
+        [0.32, 0.20, 0.44, 0.28, 0.52, 0.16, 0.10],
+        [0.40, 0.34, 0.30, 0.56, 0.44, 0.22, 0.14],
+        [0.28, 0.46, 0.52, 0.38, 0.62, 0.30, 0.18],
+        [0.44, 0.36, 0.58, 0.50, 0.78, 0.34, 0.12],
+    ]
+    var totalMois: String = "31.6"
+    var record: String = "8.4"
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
+    /// L'inclinaison du mode édition (degrés) — transmise au liseré, qui
+    /// contre-tourne.
+    var penche: Double = 0
+    /// La grammaire du doigt (banc / home / vitrine / inerte).
+    var interaction: CardMode = .libre
+
+    /// `-chambre` fige la chambre OUVERTE : le simulateur ne sait pas
+    /// tenir un doigt, et une chambre ne se juge qu'ouverte.
+    @State private var chambre: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  plaque: plaque, doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    quatreSemaines(ChambreTemps.fond(c))
+                }
+            }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
+        }
+        // ⚠️ Un `Rectangle`, et c'est la CORRECTION : l'ancien rayon 26 était
+        // codé en dur (juste à 170 pt, faux partout ailleurs — au banc 330 le
+        // rayon réel fait 50). Les cards sont posées à 14 pt l'une de
+        // l'autre : les coins d'une prise rectangulaire ne peuvent voler le
+        // doigt à personne.
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
+    }
+
+    /// L'INTÉRIEUR — QUATRE SEMAINES, QUATRE BARRES, DEUX CHIFFRES.
+    ///
+    /// ⚠️ Les quatre COURBES sont mortes, et le verdict était juste : à 170 pt,
+    /// quatre polylignes grises superposées sur du noir sont illisibles par
+    /// CONSTRUCTION — ce n'était pas un réglage de gris. Une barre par semaine
+    /// se lit d'un coup d'œil, et c'est **la même matière que la surface** :
+    /// les sept barres du jour se rassemblent en une seule.
+    ///
+    /// Et les deux chiffres du pied sont ceux qu'on a RETIRÉS du dessus : on ne
+    /// les a pas supprimés, on les a rangés à l'étage où ils ont de la place.
+    @ViewBuilder
+    private func quatreSemaines(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                let totaux = semaines.map { $0.reduce(0, +) }
+                let hautMax = max(totaux.max() ?? 1, 0.001)
+                let sol = 0.720 * H
+                let pas = 0.150 * W
+                let x0 = 0.500 * W - 1.5 * pas
+
+                // LE SOL : un seul filet, celui sur lequel les barres posent.
+                Rectangle()
+                    .fill(Color.white.opacity(0.10))
+                    .frame(width: 0.640 * W, height: 0.5)
+                    .position(x: 0.500 * W, y: sol)
+                    .opacity(f)
+
+                ForEach(0..<totaux.count, id: \.self) { k in
+                    let rang = totaux.count - 1 - k
+                    let retard = Double(rang) * 0.12
+                    let a = min(max((f - retard)
+                                    / max(1 - retard, 0.001), 0), 1)
+                    let h = 0.300 * H * CGFloat(totaux[k] / hautMax)
+                    Capsule()
+                        .fill(rang == 0
+                              ? LinearGradient(
+                                    colors: [CardTon.chaleur(0.88),
+                                             CardTon.chaleur(0.60),
+                                             CardTon.chaleur(0.34)],
+                                    startPoint: .bottom, endPoint: .top)
+                              : LinearGradient(
+                                    colors: [Color(white: 0.42
+                                                   - 0.06 * Double(rang))],
+                                    startPoint: .top, endPoint: .bottom))
+                        .frame(width: 0.095 * W, height: max(h * CGFloat(a), 1))
+                        .position(x: x0 + CGFloat(k) * pas,
+                                  y: sol - h * CGFloat(a) / 2)
+                        .shadow(color: rang == 0
+                                ? CardTon.chaleur(0.45).opacity(0.45 * a)
+                                : .clear,
+                                radius: 0.030 * W)
+                }
+
+                Text("this week")
+                    .font(.system(size: 0.0327 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .opacity(f)
+                    .position(x: x0 + 3 * pas, y: sol + 0.055 * H)
+
+                // LE GROS CHIFFRE ET SON TITRE.
+                HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                    Text(totalMois)
+                        .font(interUnifie
+                              ? .inter(0.1750 * H, .semibold)
+                              : .system(size: 0.1750 * H, weight: .regular))
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color(white: 1.00), Color(white: 0.863)],
+                            startPoint: .top, endPoint: .bottom))
+                    Text("kg")
+                        .font(.system(size: 0.0700 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .modifier(AncrageGauche(x: 0.129 * W, y: 0.0694 * H))
+                Text("This month")
+                    .font(.system(size: 0.0500 * H, weight: .regular))
+                    .tracking(0.0500 * H * 0.030)
+                    .foregroundStyle(CardTon.encreDouce)
+                    .modifier(AncrageGauche(x: 0.129 * W, y: 0.277 * H))
+
+                // LE PIED : les deux chiffres retirés de la surface.
+                Text(record)
+                    .font(.system(size: 0.0606 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encre)
+                    .position(x: 0.290 * W, y: 0.858 * H)
+                Text("best week")
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.290 * W, y: 0.912 * H)
+                Text(moyenne)
+                    .font(.system(size: 0.0606 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encre)
+                    .position(x: 0.700 * W, y: 0.858 * H)
+                Text("avg / session")
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.700 * W, y: 0.912 * H)
+            }
+            .opacity(f)
+        }
+    }
+
+    private var surface: some View {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                let marge = 0.129 * W
+
+                // ── L'EN-TÊTE. Hauteur de capitale mesurée : 13,54 % de H
+                // pour le gros chiffre, 4,08 % pour la légende ; une
+                // capitale d'Inter vaut 0,715 de son corps.
+                HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                    Text(valeur)
+                        .font(interUnifie
+                              ? .inter(0.1750 * H, .semibold)
+                              : .system(size: 0.1750 * H,
+                                        weight: .regular))
+                        // pas un blanc plat : un dégradé métallique vertical
+                        // (#FFFFFF au sommet, #DCDCDC à la base — mesuré)
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color(white: 1.00), Color(white: 0.863)],
+                            startPoint: .top, endPoint: .bottom))
+                    Text(unite)
+                        .font(.system(size: 0.0700 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .modifier(AncrageGauche(x: marge, y: 0.0694 * H))
+
+                Text(legende)
+                    // 0,0430 × 170 = 7,31 pt : juste sur la référence, illisible
+                    // en vrai sous un chiffre de 29,75. Porté à 0,0500 —
+                    // le rapport légende/chiffre passe de 0,246 à 0,286,
+                    // ce qui reste une légende.
+                    .font(.system(size: 0.0500 * H, weight: .regular))
+                    .tracking(0.0500 * H * 0.030)
+                    .foregroundStyle(CardTon.encreDouce)
+                    .modifier(AncrageGauche(x: marge, y: 0.277 * H))
+
+                // ── LE GRAPHE. Base des rails à 63,5 % — et pas 69,2 : ce
+                // que je prenais pour le pied des barres était la LETTRE du
+                // jour, qui vit dessous.
+                // ⚠️ LE BRAISILLEMENT NE SE REDESSINE PLUS, IL S'ANIME
+                // (05-09) — voir `LisereRespirant` : l'horloge refabriquait
+                // les 7 rails, leurs segments et les 7 lettres vingt fois
+                // par seconde pour bouger la pointe de 7 sommets. La phase
+                // vit dans CardBarre ; chaque pile garde SA période (elles
+                // ne battent jamais ensemble) — et LE CADRE RESTE FORCÉ (le
+                // piège de la TimelineView qui se dimensionne sur son
+                // contenu vaut pour toute pile d'enfants en `.position`).
+                // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
+                if SouffleBanc.horloge {
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: reduceMotion || vide
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
+                            let cx = (0.156 + 0.1115 * Double(i)) * W
+                            let per = 3.1 + 1.9
+                                * (Double((i &* 41) % 100) / 100)
+                            let vive = reduceMotion || vide ? 0
+                                : 0.5 + 0.5 * sin(t * 2 * .pi / per
+                                                  + Double(i) * 2.1)
+                            CardBarre(jour: j, W: W, H: H, p: p,
+                                      vive: vive * vive)
+                                .position(x: cx,
+                                          y: 0.635 * H
+                                            - CGFloat(j.rail) * H * p / 2)
+                            Text(j.lettre)
+                                .font(.system(size: 0.0327 * H,
+                                              weight: .regular))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: cx, y: 0.6857 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+                } else {
+                    // La MÊME porte que l'ancien `paused:`, passée à la
+                    // feuille : elle désarme l'animation et pose la robe du
+                    // repos. Les retards échelonnent les départs à la place
+                    // des phases absolues 2,1·i d'avant.
+                    let dort = reduceMotion || vide
+                        || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+                    ZStack {
+                        ForEach(Array(jours.enumerated()), id: \.offset) { i, j in
+                            let cx = (0.156 + 0.1115 * Double(i)) * W
+                            let per = 3.1 + 1.9
+                                * (Double((i &* 41) % 100) / 100)
+                            CardBarre(jour: j, W: W, H: H, p: p,
+                                      respire: true, per: per,
+                                      retard: 0.21 * Double(i), dort: dort)
+                                .position(x: cx,
+                                          y: 0.635 * H
+                                            - CGFloat(j.rail) * H * p / 2)
+                            Text(j.lettre)
+                                .font(.system(size: 0.0327 * H,
+                                              weight: .regular))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: cx, y: 0.6857 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+
+                // ── LE FILET : de 12,4 % à 86,9 %, à 75,3 % de hauteur.
+                Rectangle()
+                    .fill(Color.white.opacity(0.090))
+                    .frame(width: 0.7196 * W, height: 0.0033 * W)
+                    .position(x: 0.4964 * W, y: 0.7567 * H)
+
+                // ── LE PIED : DEUX COLONNES CENTRÉES (et non alignées à
+                // gauche — mesuré : centres à 27 % et 70 % de la largeur).
+                // Seul au pied, il se CENTRE : une colonne restée à 27 %
+                // laisserait un vide à droite qui se lirait comme un oubli.
+                Text(gain)
+                    .font(.system(size: 0.0606 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: 0.500 * W, y: 0.808 * H)
+                Text(gainLegende)
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.500 * W, y: 0.861 * H)
+
+                // ⚠️ LA DEUXIÈME COLONNE EST MORTE (« 1,2 kg / avg per
+                // session »), et son filet séparateur avec elle. Deux
+                // chiffres au pied d'une card de 170 pt, c'est un tableau de
+                // bord : on lit le premier, on subit le second. Il ne reste
+                // que le gain — la seule ligne qui dise quelque chose.
+                // L'HALTÈRE aussi : un pictogramme dans un rond, c'est un
+                // bouton qui ne fait rien.
+            }
+    }
+}
+
+// MARK: - LA CARD DES SÉANCES
+
+struct CardSeances: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var faites: Int = 4
+    var prevues: Int = 5
+    var legende: String = L("Séances cette semaine", "Sessions this week")
+    var jours: [String] = ["M", "T", "W", "T", "F", "S", "S"]
+    /// LES JOURS RÉELLEMENT FAITS, en index de semaine (0 = lundi). `nil` →
+    /// les perles retombent sur le compteur de progression d'origine (les
+    /// `faites` premières), ce que veulent les bancs et les aperçus sans
+    /// calendrier. Voir le commentaire des perles pour le défaut que ça règle.
+    var joursFaits: Set<Int>? = nil
+    var pied: String = L("1 à faire", "1 session left")
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    /// LES JOURS DU MOIS DÉJÀ FAITS — l'intérieur de la chambre. Le câblage
+    /// aux vraies séances vient au jalon du flow ; ici, une trame plausible.
+    var moisFaits: Set<Int> = [2, 3, 5, 8, 9, 12, 14, 15, 18, 19, 20, 21]
+    var moisJours: Int = 31
+    /// LE CAS VIDE (verdict 22-08) : pas de données → le design RESTE,
+    /// mais GRISÉ — la chaleur s'éteint, rien ne respire.
+    var vide: Bool = false
+    var penche: Double = 0
+    var interaction: CardMode = .libre
+    /// LA CHAMBRE PILOTÉE DU DEHORS (la porte, 23-08). Non-nil, elle prend la
+    /// main sur le doigt : l'hôte anime l'ouverture lui-même. Née pour montrer
+    /// LE MOIS sur un écran où les cards sont inertes — la grille des trente
+    /// et un points n'existe qu'ouverte, et sans doigt elle ne s'ouvrait
+    /// jamais. `nil` = le comportement d'origine, au pixel.
+    var chambreImposee: Double? = nil
+    /// La plaque noire, découplée (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
+
+    /// `-chambre` fige la chambre OUVERTE : le simulateur ne sait pas
+    /// tenir un doigt, et une chambre ne se juge qu'ouverte.
+    @State private var chambreDoigt: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    private var chambre: Double { chambreImposee ?? chambreDoigt }
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  plaque: plaque, doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    mois(ChambreTemps.fond(c))
+                }
+            }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
+        }
+        // ⚠️ Un `Rectangle` — voir CardVolume : l'ancien rayon 26 en dur
+        // mentait à toute autre taille que 170.
+        .contentShape(Rectangle())
+        // ⚠️ UN SEUL GESTE : un `onLongPressGesture` volerait le tap.
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambreDoigt, doigt: $doigt))
+    }
+
+    /// L'INTÉRIEUR — LE MOIS. Les sept pastilles de la semaine s'écartent en
+    /// une grille de trente et un points : une seule matière, deux échelles.
+    /// Ils arrivent en CASCADE, dans l'ordre de lecture — une grille qui
+    /// apparaît d'un bloc est une image, pas une révélation.
+    @ViewBuilder
+    private func mois(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                let pas = 0.101 * W
+                let x0 = 0.500 * W - 3 * pas
+                // LES LETTRES DES JOURS — sans elles, trente et un points ne
+                // sont qu'une trame : c'est la colonne qui leur donne un sens.
+                // Même corps que les lettres de la card voisine (0,0327 × H),
+                // sinon les deux intérieurs ne se lisent pas pareil.
+                ForEach(0..<7, id: \.self) { c in
+                    Text(jours[c])
+                        .font(.system(size: 0.0327 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreJour)
+                        .opacity(f)
+                        .position(x: x0 + CGFloat(c) * pas, y: 0.262 * H)
+                }
+                // ⚠️ LE SCINTILLEMENT NE SE REDESSINE PLUS, IL S'ANIME
+                // (05-09) — voir `LisereRespirant` : l'horloge refabriquait
+                // les 31 points vingt fois par seconde pour trois attributs
+                // animables (opacité du cœur, halo, échelle). La phase vit
+                // dans PointMois. L'ancienne porte est reprise à l'identique
+                // (f < 0.02, chemin, onglet) — Reduce Motion n'y était PAS :
+                // on ne l'ajoute pas en douce, même comportement qu'avant.
+                // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
+                // ⚠️ LE CADRE RESTE FORCÉ. Une `TimelineView` se dimensionne
+                // sur SON contenu : les `.position()` visaient le cadre de
+                // la TimelineView et non celui de la card, et la grille
+                // partait en DIAGONALE (chaque point se posait dans un
+                // cadre plus grand que le précédent). C'est la cousine du
+                // piège de la couche sans taille intrinsèque — et un ZStack
+                // d'enfants en `.position` n'a pas plus de taille
+                // intrinsèque qu'une TimelineView.
+                if SouffleBanc.horloge {
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: f < 0.02
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(0..<moisJours, id: \.self) { j in
+                            point(j, t: t, f: f, W: W, H: H,
+                                  pas: pas, x0: x0)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+                } else {
+                    let dort = f < 0.02
+                        || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+                    ZStack {
+                        ForEach(0..<moisJours, id: \.self) { j in
+                            PointMois(j: j, fait: moisFaits.contains(j + 1),
+                                      f: f, W: W, H: H, pas: pas, x0: x0,
+                                      dort: dort)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+                // Aligné comme la légende de la card voisine — un titre
+                // centré ici tombait pile sur le « 4 » de la surface qui
+                // transparaît encore.
+                Text("This month")
+                    .font(.system(size: 0.0500 * H, weight: .regular))
+                    .tracking(0.0500 * H * 0.030)
+                    .foregroundStyle(CardTon.encreDouce)
+                    .opacity(f)
+                    .modifier(AncrageGauche(x: 0.129 * W, y: 0.120 * H))
+            }
+        }
+    }
+
+    /// UN POINT DU MOIS. Les faits SCINTILLENT en blanc néon par-dessus leur
+    /// ambre — un cœur blanc qui monte et redescend, et son halo court.
+    ///
+    /// ⚠️ Chaque point a sa PROPRE période, et elles sont volontairement
+    /// incommensurables (2,3 s + une fraction tirée de son rang) : des
+    /// périodes voisines finissent par battre ENSEMBLE, et une grille qui
+    /// pulse d'un bloc n'est plus un scintillement, c'est un clignotant.
+    @ViewBuilder
+    private func point(_ j: Int, t: Double, f: Double,
+                       W: CGFloat, H: CGFloat,
+                       pas: CGFloat, x0: CGFloat) -> some View {
+        let fait = moisFaits.contains(j + 1)
+        let retard = Double(j) * 0.011
+        let a = min(max((f - retard) / max(1 - retard, 0.001), 0), 1)
+        let per = 2.3 + 1.7 * (Double((j &* 37) % 100) / 100)
+        let br = 0.5 + 0.5 * sin(t * 2 * .pi / per + Double(j) * 1.618)
+        let sc = fait ? br * br : 0
+        ZStack {
+            Circle()
+                .fill(fait ? CardTon.chaleur(0.58) : Color(white: 0.26))
+            if fait {
+                Circle()
+                    .fill(Color.white)
+                    .opacity(0.10 + 0.62 * sc)
+                    .blur(radius: 0.3)
+            }
+        }
+        .frame(width: 0.050 * W, height: 0.050 * W)
+        .shadow(color: .white.opacity(0.55 * sc), radius: 0.055 * W)
+        .opacity(a * (fait ? 1 : 0.6))
+        .scaleEffect((0.35 + 0.65 * a) * (1 + 0.10 * sc))
+        .position(x: x0 + CGFloat(j % 7) * pas,
+                  y: 0.345 * H + CGFloat(j / 7) * pas)
+    }
+
+    /// UN POINT QUI SCINTILLE SANS SE REDESSINER (05-09) — la sœur animée
+    /// de `point()` ci-dessus, qui ne survit que pour le témoin
+    /// `-souffleHorloge`. Le point est construit UNE fois ; seuls trois
+    /// attributs animables respirent (opacité du cœur, halo, échelle),
+    /// interpolés par le rendu. La phase vit dans LA FEUILLE : le sweep de
+    /// chambre (`Chambre` est Animatable, il rejoue `mois(f)` image par
+    /// image) ne peut pas avaler son `repeatForever`.
+    ///
+    /// Un point non fait n'arme RIEN : il cesse d'être reconstruit pour
+    /// rien (19 sur 31 avec la trame par défaut).
+    private struct PointMois: View {
+        var j: Int
+        var fait: Bool
+        var f: Double
+        var W: CGFloat
+        var H: CGFloat
+        var pas: CGFloat
+        var x0: CGFloat
+        var dort: Bool
+
+        /// s : le scintillement, 0 éteint → 1 au pic — LA seule chose qui
+        /// bouge. L'ancien profil était sin⁴ (le point traîne éteint,
+        /// flashe court) : la timingCurve(0.9, 0, 0.55, 1) autoreversée en
+        /// garde l'asymétrie ; le délai pseudo-aléatoire ∈ [0, per)
+        /// remplace la phase absolue j·1,618 et garde la grille
+        /// désynchronisée.
+        @State private var s: Double = 0
+
+        private var per: Double { 2.3 + 1.7 * (Double((j &* 37) % 100) / 100) }
+
+        var body: some View {
+            let retard = Double(j) * 0.011
+            let a = min(max((f - retard) / max(1 - retard, 0.001), 0), 1)
+            ZStack {
+                Circle()
+                    .fill(fait ? CardTon.chaleur(0.58) : Color(white: 0.26))
+                if fait {
+                    Circle()
+                        .fill(Color.white)
+                        .opacity(0.10 + 0.62 * s)
+                        .blur(radius: 0.3)
+                }
+            }
+            .frame(width: 0.050 * W, height: 0.050 * W)
+            .shadow(color: .white.opacity(0.55 * s), radius: 0.055 * W)
+            .opacity(a * (fait ? 1 : 0.6))
+            // ⚠️ SCINDÉ, pas multiplié : l'attribut qui porte le
+            // `repeatForever` (s) ne doit JAMAIS être réécrit par le sweep
+            // de chambre (a) — deux scaleEffect empilés font le même
+            // produit, même ancre, et le sweep ne retarge que le sien.
+            .scaleEffect(1 + 0.10 * s)
+            .scaleEffect(0.35 + 0.65 * a)
+            .position(x: x0 + CGFloat(j % 7) * pas,
+                      y: 0.345 * H + CGFloat(j / 7) * pas)
+            .task(id: "\(dort)-\(fait)") { armer() }
+        }
+
+        private func armer() {
+            guard fait, !dort else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { s = 0 }
+                return
+            }
+            s = 0
+            withAnimation(.timingCurve(0.9, 0.0, 0.55, 1.0, duration: per / 2)
+                .repeatForever(autoreverses: true)
+                .delay(per * Double((j &* 61) % 100) / 100)) {
+                s = 1
+            }
+        }
+    }
+
+    /// UNE PERLE DE LA SEMAINE QUI RESPIRE SANS SE REDESSINER (05-09) — la
+    /// sœur animée des perles de l'horloge témoin. Les deux robes (repos et
+    /// pic) sont construites une fois ; seule l'opacité de la seconde et
+    /// l'échelle respirent. Les six perles immobiles ne coûtent plus rien.
+    private struct PerleSemaine: View {
+        private static let ancienSouffle = CommandLine.arguments.contains("-perleSwiftUI")
+        var on: Bool
+        var derniere: Bool
+        var i: Int
+        var W: CGFloat
+        var H: CGFloat
+        var dort: Bool
+
+        /// s : la respiration (4,7 s), 0 → 1 — LA seule chose qui bouge.
+        /// L'ancien profil 0,5 + 0,5·sin démarrait à mi-course ; l'easeInOut
+        /// autoreversé part du repos — même famille que le liseré validé.
+        @State private var s: Double = 0
+
+        private func robe(_ v: Double) -> RadialGradient {
+            RadialGradient(
+                stops: [
+                    .init(color: CardTon.chaleur(0.92 + 0.08 * v),
+                          location: 0.00),
+                    .init(color: CardTon.chaleur(0.60), location: 0.55),
+                    .init(color: CardTon.chaleur(0.26), location: 1.00),
+                ],
+                center: UnitPoint(x: 0.38, y: 0.30),
+                startRadius: 0,
+                endRadius: 0.046 * W)
+        }
+
+        var body: some View {
+            // UN SEUL CLIP : deux cercles empilés densifieraient
+            // l'anti-crénelage du bord avec la phase (l'ancienne forme n'a
+            // qu'un cercle) — les deux robes se croisent en rectangles,
+            // le cercle est découpé une fois.
+            Group {
+                if on, derniere, !Self.ancienSouffle {
+                    PerleSemaineNative(largeurWidget: W,
+                        immobile: dort || CommandLine.arguments.contains("-sansSoufflePerle"))
+                } else if on, derniere {
+                    Rectangle()
+                        .fill(robe(0))
+                        .overlay {
+                            Rectangle()
+                                .fill(robe(1))
+                                .opacity(s)
+                        }
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(on
+                              ? AnyShapeStyle(robe(0))
+                              : AnyShapeStyle(LinearGradient(
+                                    colors: [Color(white: 0.20),
+                                             Color(white: 0.135)],
+                                    startPoint: .top,
+                                    endPoint: .bottom)))
+                }
+            }
+            .frame(width: 0.052 * W, height: 0.052 * W)
+            .scaleEffect(1 + 0.06 * s)
+            // ⚠️ PAS DE HALO SUR LE JOUR EN COURS (verdict 02-09) : les
+            // jours faits gardent le leur, la dernière se distingue par
+            // son souffle, pas par une couronne.
+            .shadow(color: on && !derniere
+                    ? CardTon.chaleur(0.38).opacity(0.55)
+                    : .clear,
+                    radius: 0.030 * W)
+            .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                      y: 0.578 * H)
+            .task(id: "\(dort)-\(derniere)-\(on)") { armer() }
+        }
+
+        private func armer() {
+            guard Self.ancienSouffle, on, derniere, !dort,
+                  !CommandLine.arguments.contains("-sansSoufflePerle") else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { s = 0 }
+                return
+            }
+            s = 0
+            withAnimation(.easeInOut(duration: 4.7 / 2)
+                .repeatForever(autoreverses: true)) {
+                s = 1
+            }
+        }
+    }
+
+    private var surface: some View {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                let marge = 0.129 * W
+
+                // Le « 4 / 5 » s'aligne sur le « 8.4 » de la card voisine —
+                // même gouttière, même ligne d'œil — et il est POSÉ
+                // AU-DESSUS de sa légende : il la recouvrait.
+                HStack(alignment: .lastTextBaseline, spacing: 0.024 * W) {
+                    Text("\(faites)")
+                        .font(interUnifie
+                              ? .inter(0.1750 * H, .semibold)
+                              : .system(size: 0.1750 * H,
+                                        weight: .regular))
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color(white: 1.00), Color(white: 0.788)],
+                            startPoint: .top, endPoint: .bottom))
+                    Text("/ \(prevues)")
+                        .font(.system(size: 0.0817 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .modifier(AncrageGauche(x: marge, y: 0.0694 * H))
+
+                Text(legende)
+                    // 0,0430 × 170 = 7,31 pt : juste sur la référence, illisible
+                    // en vrai sous un chiffre de 29,75. Porté à 0,0500 —
+                    // le rapport légende/chiffre passe de 0,246 à 0,286,
+                    // ce qui reste une légende.
+                    .font(.system(size: 0.0500 * H, weight: .regular))
+                    .tracking(0.0500 * H * 0.030)
+                    .foregroundStyle(CardTon.encreDouce)
+                    .modifier(AncrageGauche(x: marge, y: 0.277 * H))
+
+                // LES SEPT PERLES DE FLAMME (plan §13) : cœur blanc chauffé
+                // décentré haut, corps or → flamme, extinction braise au
+                // bord — et LA DERNIÈRE FAITE RESPIRE (l'école des cinq
+                // points : « la plus récente », pas une décoration).
+                // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME (05-09,
+                // voir `LisereRespirant`) : l'horloge refabriquait les sept
+                // perles et les sept lettres vingt fois par seconde pour la
+                // respiration d'UNE seule. Le crossfade des deux robes est
+                // EXACT : la rampe `chaleur` est linéaire par morceaux et
+                // [0,92 ; 1,0] tient dans le morceau or → blanc chauffé.
+                // `-souffleHorloge` rejoue l'ancienne forme (l'A/B) — et LE
+                // CADRE RESTE FORCÉ (le piège de la TimelineView).
+                if SouffleBanc.horloge {
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: reduceMotion || vide
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(0..<jours.count, id: \.self) { i in
+                            // ⚠️ **LES PERLES SE POSENT SUR LES VRAIS JOURS**
+                            // (correctif 25-08). Elles s'allumaient de gauche
+                            // à droite, « les `faites` premières » : un mardi
+                            // avec cinq séances, la card affirmait donc que
+                            // MERCREDI, JEUDI et VENDREDI étaient faits —
+                            // sous les lettres M T W T F, et à côté d'une card
+                            // Volume qui, elle, ne montrait de barres que sur
+                            // M et T. Deux cards voisines, les mêmes sept
+                            // lettres, deux vérités contraires : le défaut
+                            // saute aux yeux dès que la semaine est pleine.
+                            //
+                            // `joursFaits` porte les index des jours qui ont
+                            // vraiment une séance. `nil` = l'ancien
+                            // comportement, au pixel — les bancs et les
+                            // aperçus qui n'ont pas de calendrier gardent leur
+                            // compteur de progression.
+                            let on: Bool = {
+                                if let f = joursFaits { return f.contains(i) }
+                                return Double(i) < Double(faites) * p
+                            }()
+                            let derniere = on && i == (joursFaits.map { f in
+                                f.max() ?? -1
+                            } ?? faites - 1)
+                            let s = derniere && !reduceMotion && !vide
+                                ? 0.5 + 0.5 * sin(t * 2 * .pi / 4.7) : 0
+                            Circle()
+                                .fill(on
+                                      ? AnyShapeStyle(RadialGradient(
+                                            stops: [
+                                                .init(color: CardTon.chaleur(
+                                                    0.92 + 0.08 * s),
+                                                    location: 0.00),
+                                                .init(color: CardTon.chaleur(0.60),
+                                                    location: 0.55),
+                                                .init(color: CardTon.chaleur(0.26),
+                                                    location: 1.00),
+                                            ],
+                                            center: UnitPoint(x: 0.38, y: 0.30),
+                                            startRadius: 0,
+                                            endRadius: 0.046 * W))
+                                      : AnyShapeStyle(LinearGradient(
+                                            colors: [Color(white: 0.20),
+                                                     Color(white: 0.135)],
+                                            startPoint: .top,
+                                            endPoint: .bottom)))
+                                .frame(width: 0.052 * W, height: 0.052 * W)
+                                .scaleEffect(1 + 0.06 * s)
+                                // ⚠️ **PAS DE HALO SUR LE JOUR EN COURS**
+                                // (verdict 02-09). Il en portait un, et il
+                                // PULSAIT avec `s` : le seul point de la
+                                // rangée à la fois plus gros, plus clair ET
+                                // auréolé — trois signaux pour dire une seule
+                                // chose. Les jours faits gardent le leur ;
+                                // celui d'aujourd'hui se distingue par son
+                                // souffle, pas par une couronne.
+                                .shadow(color: on && !derniere
+                                        ? CardTon.chaleur(0.38).opacity(0.55)
+                                        : .clear,
+                                        radius: 0.030 * W)
+                                .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                                          y: 0.578 * H)
+                            Text(jours[i])
+                                .font(.system(size: 0.046 * H,
+                                              weight: .medium))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                                          y: 0.680 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+                } else {
+                    let dort = reduceMotion || vide
+                        || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+                    ZStack {
+                        ForEach(0..<jours.count, id: \.self) { i in
+                            let on: Bool = {
+                                if let f = joursFaits { return f.contains(i) }
+                                return Double(i) < Double(faites) * p
+                            }()
+                            let derniere = on && i == (joursFaits.map { f in
+                                f.max() ?? -1
+                            } ?? faites - 1)
+                            PerleSemaine(on: on, derniere: derniere, i: i,
+                                         W: W, H: H, dort: dort)
+                            Text(jours[i])
+                                .font(.system(size: 0.046 * H,
+                                              weight: .medium))
+                                .foregroundStyle(CardTon.encreJour)
+                                .position(x: (0.156 + 0.1115 * Double(i)) * W,
+                                          y: 0.680 * H)
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [.clear, CardTon.filet, CardTon.filet, .clear],
+                        startPoint: .leading, endPoint: .trailing))
+                    .frame(width: W - marge * 2, height: 0.8)
+                    .position(x: W / 2, y: 0.756 * H)
+
+                HStack(spacing: 0.038 * W) {
+                    ZStack {
+                        Circle().strokeBorder(CardTon.encreChaude,
+                                              lineWidth: 1.2)
+                        Circle().fill(CardTon.chaleur(0.72))
+                            .frame(width: 0.016 * W, height: 0.016 * W)
+                    }
+                    .frame(width: 0.058 * W, height: 0.058 * W)
+                    Text(pied)
+                        .font(.system(size: 0.0500 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .modifier(AncrageGauche(x: marge, y: 0.787 * H))
+            }
+    }
+}
+
+// MARK: - LA CARD HIIT PEAK (widget 03)
+
+/// LE MEILLEUR SEGMENT HAUTE INTENSITÉ DE LA SEMAINE — surtout pas un
+/// graphe cardio. **La ligne de vitesse** : une ligne de minuscules
+/// segments PEINTS (la loi des 9 pt interdit les micro-verres, et N verres
+/// = N passes) dont la meilleure portion devient plus dense et plus
+/// lumineuse. La rampe de chaleur s'écrit EN CANAUX (on allume le vert puis
+/// le bleu quand la chaleur monte) — jamais un `mix` entre deux teintes, le
+/// chemin droit passe par le brun. Et le rail froid ne se MÉLANGE jamais à
+/// l'ambre : un segment est froid OU chaud, c'est la hauteur qui fait la
+/// continuité.
+struct CardHiitPeak: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var vitesse: String = "17.0"
+    var unite: String = "km/h"
+    var legende: String = L("Meilleur intervalle", "Top interval this week")
+    var repetitions: String = "4 efforts · 2:40"
+    var repsLegende: String = L("efforts cette semaine", "efforts this week")
+    /// La position du pic le long de la ligne (0 → 1) et sa largeur.
+    var pic: Double = 0.62
+    var picLargeur: Double = 0.26
+    /// Les tours du segment (le « × 4 ») — la chambre les DESSINE.
+    var tours: Int = 4
+    var chambreLigne: String = "17.0 km/h · 40 s · ×4"
+    var chambreSous: String = L("le pic de la semaine", "this week's peak")
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
+    var penche: Double = 0
+    var interaction: CardMode = .libre
+
+    @State private var chambre: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  plaque: plaque, doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    interieur(ChambreTemps.fond(c))
+                }
+            }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
+        }
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
+    }
+
+    /// LA CHAMBRE-ONDE (v3 — les quatre capsules plates lisaient « barre
+    /// de chargement Android », verdict « trop cheap »). Le tap révèle LA
+    /// SÉANCE ELLE-MÊME : le langage de la soie de la face, en grand — un
+    /// fil froid pleine largeur, et les `tours` pics de l'effort qui
+    /// S'EMBRASENT en cascade sur la rampe complète, le foyer qui respire
+    /// dessous, les sommets qui scintillent. On VOIT « × 4 » brûler.
+    @ViewBuilder
+    private func interieur(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                // Le héros.
+                HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                    Text(vitesse)
+                        .font(interUnifie
+                              ? .inter(0.1300 * H, .semibold)
+                              : .system(size: 0.1300 * H, weight: .regular))
+                        .foregroundStyle(LinearGradient(
+                            colors: [Color(white: 1.00), Color(white: 0.863)],
+                            startPoint: .top, endPoint: .bottom))
+                    Text(unite)
+                        .font(.system(size: 0.0600 * H, weight: .regular))
+                        .foregroundStyle(CardTon.encreDouce)
+                }
+                .position(x: 0.500 * W, y: 0.280 * H)
+                .opacity(min(f * 1.6, 1))
+
+                // L'ONDE. ⚠️ 12 Hz, endormie sous Reduce Motion et tant que
+                // la chambre n'est pas là ; LE CADRE EST FORCÉ (le piège).
+                let nT = max(tours, 1)
+                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                        paused: reduceMotion || f < 0.3
+                                            || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                    let tps = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        // le foyer, sous l'onde — il respire
+                        let souffle = reduceMotion ? 0.5
+                            : 0.5 + 0.5 * sin(tps * 2 * .pi / 9.4)
+                        Ellipse()
+                            .fill(RadialGradient(
+                                colors: [CardTon.chaleur(0.28)
+                                    .opacity(0.09 + 0.05 * souffle), .clear],
+                                center: .center,
+                                startRadius: 0, endRadius: 0.34 * W))
+                            .frame(width: 0.78 * W, height: 0.34 * W)
+                            .position(x: 0.500 * W, y: 0.560 * H)
+                            .opacity(min(max((f - 0.25) / 0.5, 0), 1))
+
+                        let n = 44
+                        let sig = 0.20 / Double(nT)
+                        ForEach(0..<n, id: \.self) { i in
+                            let u = Double(i) / Double(n - 1)
+                            // la somme des pics : chacun s'embrase à son
+                            // tour (cascade de 90 ms), la récup reste un fil
+                            var e = 0.0
+                            var _ = (0..<nT).map { k -> Double in
+                                let c = (Double(k) + 0.5) / Double(nT)
+                                let ak = min(max((f - 0.26
+                                                  - 0.09 * Double(k))
+                                                 / 0.40, 0), 1)
+                                let d = (u - c) / sig
+                                e += ak * exp(-d * d)
+                                return 0
+                            }
+                            let eC = min(e, 1)
+                            let chaud = eC > 0.10
+                            let per = 2.7 + 1.9
+                                * (Double((i &* 37) % 100) / 100)
+                            let sc = chaud && !reduceMotion
+                                ? 0.5 + 0.5 * sin(tps * 2 * .pi / per
+                                                  + Double(i) * 1.6) : 0
+                            let t = chaud
+                                ? (0.12 + 0.86 * (eC - 0.10) / 0.90)
+                                    + 0.06 * sc * eC : 0
+                            let h = H * (0.014 + 0.100 * eC)
+                            Capsule()
+                                .fill(chaud
+                                      ? AnyShapeStyle(LinearGradient(
+                                            colors: [CardTon.chaleur(
+                                                        min(t + 0.10, 1)),
+                                                     CardTon.chaleur(
+                                                        max(t - 0.14, 0))],
+                                            startPoint: .top,
+                                            endPoint: .bottom))
+                                      : AnyShapeStyle(Color(white: 0.24)))
+                                .frame(width: 0.0082 * W, height: max(h, 1))
+                                .shadow(color: chaud
+                                        ? CardTon.chaleur(0.32)
+                                            .opacity((0.28 + 0.36 * eC)
+                                                     * (0.75 + 0.25 * sc))
+                                        : .clear,
+                                        radius: 0.016 * W)
+                                .position(x: (0.129 + 0.742 * u) * W,
+                                          y: 0.545 * H)
+                                .opacity(chaud ? 1
+                                         : 0.80 * min(max((f - 0.15) / 0.4,
+                                                          0), 1))
+                            // LE REFLET — l'onde renversée sous elle, comme
+                            // sur une laque : court, faible, qui meurt vite.
+                            if chaud {
+                                Capsule()
+                                    .fill(LinearGradient(
+                                        colors: [CardTon.chaleur(
+                                                    max(t - 0.10, 0))
+                                                    .opacity(0.22),
+                                                 .clear],
+                                        startPoint: .top,
+                                        endPoint: .bottom))
+                                    .frame(width: 0.0082 * W,
+                                           height: max(h * 0.42, 1))
+                                    .position(x: (0.129 + 0.742 * u) * W,
+                                              y: 0.545 * H + h / 2
+                                                + h * 0.21 + 2)
+                                    .opacity(Double(eC))
+                            }
+                        }
+
+                        // LES ÉTINCELLES — elles montent des pics et
+                        // meurent : deux par pic, déphasées, déterministes.
+                        if !reduceMotion {
+                            ForEach(0..<(nT * 2), id: \.self) { s in
+                                let k = s / 2
+                                let c = (Double(k) + 0.5) / Double(nT)
+                                let seed = Double((s &* 2654435761)
+                                                  % 1000) / 1000
+                                let per = 2.1 + 1.3 * seed
+                                let ph = ((tps / per) + seed)
+                                    .truncatingRemainder(dividingBy: 1)
+                                let dx = 0.018 * W
+                                    * sin(ph * 6.0 + seed * 9)
+                                Circle()
+                                    .fill(CardTon.chaleur(0.80 + 0.2 * seed))
+                                    .frame(width: 1.8, height: 1.8)
+                                    .position(
+                                        x: (0.129 + 0.742 * c) * W + dx,
+                                        y: 0.545 * H - 0.062 * H
+                                            - 0.085 * H * ph)
+                                    .opacity(min(max((f - 0.6) / 0.4, 0), 1)
+                                             * (1 - ph) * 0.85
+                                             * min(ph * 6, 1))
+                            }
+                        }
+                    }
+                    .frame(width: W, height: H)
+                }
+
+                Text(repetitions)
+                    .font(.system(size: 0.0520 * H, weight: .medium))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: 0.500 * W, y: 0.740 * H)
+                    .opacity(min(max((f - 0.45) / 0.55, 0), 1))
+                Text(chambreSous)
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.500 * W, y: 0.805 * H)
+                    .opacity(min(max((f - 0.55) / 0.45, 0), 1))
+            }
+            .opacity(f)
+        }
+    }
+
+    private var surface: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let marge = 0.129 * W
+
+            HStack(alignment: .lastTextBaseline, spacing: 0.012 * W) {
+                Text(vitesse)
+                    .font(interUnifie
+                          ? .inter(0.1750 * H, .semibold)
+                          : .system(size: 0.1750 * H, weight: .regular))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom))
+                Text(unite)
+                    .font(.system(size: 0.0700 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreDouce)
+            }
+            .modifier(AncrageGauche(x: marge, y: 0.0694 * H))
+
+            Text(legende)
+                .font(.system(size: 0.0500 * H, weight: .regular))
+                .tracking(0.0500 * H * 0.030)
+                .foregroundStyle(CardTon.encreDouce)
+                .modifier(AncrageGauche(x: marge, y: 0.277 * H))
+
+            // ── LA LIGNE DE VITESSE, en SOIE : 34 segments fins (1,4 pt) —
+            // une trame, pas des tirets. Le pic prend la rampe ENTIÈRE
+            // (braise aux épaules → flamme → or → pointe blanc chauffé) et
+            // son sommet SCINTILLE (périodes incommensurables, l'école des
+            // points du mois).
+            // ⚠️ LA SOIE NE SE REDESSINE PLUS, ELLE S'ANIME (05-09, voir
+            // `LisereRespirant`) : l'horloge refabriquait les 34 capsules,
+            // leurs dégradés et leurs ombres vingt fois par seconde pour le
+            // scintillement des seules chaudes et le souffle du foyer.
+            // `-souffleHorloge` rejoue l'ancienne forme (l'A/B) — et LE
+            // CADRE RESTE FORCÉ (le piège de la TimelineView).
+            if SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: reduceMotion || vide
+                                        || chambre > 0.5
+                                        || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                let tps = tl.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    // ── LE FOYER (plan §13.4) : sous le pic, une lueur de
+                    // braise très basse qui RESPIRE (9,4 s) — le noir n'est
+                    // plus vide, il PORTE la chaleur. En canaux, ancré au
+                    // pic, jamais un voile.
+                    let souffleFoyer = reduceMotion ? 0.5
+                        : 0.5 + 0.5 * sin(tps * 2 * .pi / 9.4)
+                    Ellipse()
+                        .fill(RadialGradient(
+                            colors: [CardTon.chaleur(0.28)
+                                        .opacity(0.085 + 0.05 * souffleFoyer),
+                                     .clear],
+                            center: .center,
+                            startRadius: 0, endRadius: 0.30 * W))
+                        .frame(width: 0.62 * W, height: 0.36 * W)
+                        .position(x: (0.129 + 0.742 * pic) * W,
+                                  y: 0.590 * H)
+                        .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+
+                    let n = 34
+                    ForEach(0..<n, id: \.self) { i in
+                        let u = Double(i) / Double(n - 1)
+                        let ecart = (u - pic) / (picLargeur * 0.55)
+                        let e = exp(-ecart * ecart)
+                        let chaud = e > 0.10
+                        let per = 2.7 + 1.9 * (Double((i &* 37) % 100) / 100)
+                        let sc = chaud && !reduceMotion
+                            ? 0.5 + 0.5 * sin(tps * 2 * .pi / per
+                                              + Double(i) * 1.6) : 0
+                        let t = chaud
+                            ? (0.12 + 0.86 * (e - 0.10) / 0.90)
+                                + 0.06 * sc * e : 0
+                        let a = min(max((p - 0.4 * u) / 0.6, 0), 1)
+                        let h = H * (0.020 + 0.070 * e) * a
+                        Capsule()
+                            .fill(chaud
+                                  ? AnyShapeStyle(LinearGradient(
+                                        colors: [CardTon.chaleur(
+                                                    min(t + 0.10, 1)),
+                                                 CardTon.chaleur(
+                                                    max(t - 0.14, 0))],
+                                        startPoint: .top,
+                                        endPoint: .bottom))
+                                  : AnyShapeStyle(Color(white: 0.24)))
+                            .frame(width: 0.0082 * W, height: max(h, 1))
+                            .shadow(color: chaud
+                                    ? CardTon.chaleur(0.32)
+                                        .opacity((0.28 + 0.34 * e)
+                                                 * (0.75 + 0.25 * sc) * a)
+                                    : .clear,
+                                    radius: 0.016 * W)
+                            .position(x: (0.129 + 0.742 * u) * W,
+                                      y: 0.575 * H)
+                            .opacity(Double(a) * (chaud ? 1 : 0.80))
+                    }
+                }
+                .frame(width: W, height: H)
+            }
+            } else {
+                let dort = reduceMotion || vide || chambre > 0.5
+                    || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+                ZStack {
+                    // LE FOYER — le dégradé d'alpha est CONSTANT (plein), et
+                    // c'est l'opacité de la vue qui respire : α(r) =
+                    // k·(1−r) dans les deux formes, à l'arithmétique près.
+                    // Sous Reduce Motion il se pose à mi-souffle (0,5),
+                    // comme avant.
+                    FoyerSoie(pic: pic, p: p, W: W, H: H, dort: dort)
+
+                    let n = 34
+                    ForEach(0..<n, id: \.self) { i in
+                        BrinSoie(i: i, u: Double(i) / Double(n - 1),
+                                 pic: pic, picLargeur: picLargeur, p: p,
+                                 W: W, H: H, dort: dort)
+                    }
+                }
+                .frame(width: W, height: H)
+            }
+
+            // ── LE FILET de la maison, puis le pied en colonne centrée.
+            Rectangle()
+                .fill(Color.white.opacity(0.090))
+                .frame(width: 0.7196 * W, height: 0.0033 * W)
+                .position(x: 0.4964 * W, y: 0.7567 * H)
+
+            Text(repetitions)
+                .font(.system(size: 0.0606 * H, weight: .regular))
+                .foregroundStyle(CardTon.encre)
+                .position(x: 0.500 * W, y: 0.818 * H)
+            Text(repsLegende)
+                .font(.system(size: 0.0350 * H, weight: .regular))
+                .foregroundStyle(CardTon.encreSourde)
+                .position(x: 0.500 * W, y: 0.872 * H)
+        }
+    }
+
+    /// LE FOYER QUI RESPIRE SANS SE REDESSINER (05-09). Le dégradé radial
+    /// est construit une fois à pleine force ; l'opacité de la vue porte le
+    /// souffle (9,4 s, 0,085 → 0,135) — c'est la même arithmétique, un
+    /// alpha linéaire multiplié dehors au lieu de dedans.
+    private struct FoyerSoie: View {
+        var pic: Double
+        var p: Double
+        var W: CGFloat
+        var H: CGFloat
+        var dort: Bool
+
+        /// s : le souffle, 0 → 1. Sous Reduce Motion (contenu dans `dort`) :
+        /// posé à 0,5, la valeur fixe de l'ancienne forme.
+        @State private var s: Double = 0.5
+
+        var body: some View {
+            Ellipse()
+                .fill(RadialGradient(
+                    colors: [CardTon.chaleur(0.28), .clear],
+                    center: .center,
+                    startRadius: 0, endRadius: 0.30 * W))
+                .frame(width: 0.62 * W, height: 0.36 * W)
+                .position(x: (0.129 + 0.742 * pic) * W,
+                          y: 0.590 * H)
+                // ⚠️ SCINDÉES, pas multipliées : l'attribut qui porte le
+                // repeatForever (s) n'est jamais réécrit par le sweep de
+                // la pousse (p) — même produit, deux opacités empilées.
+                .opacity(0.085 + 0.05 * s)
+                .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+                .task(id: dort) { armer() }
+        }
+
+        private func armer() {
+            guard !dort else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { s = 0.5 }
+                return
+            }
+            s = 0
+            withAnimation(.easeInOut(duration: 9.4 / 2)
+                .repeatForever(autoreverses: true)) {
+                s = 1
+            }
+        }
+    }
+
+    /// UN BRIN DE LA SOIE QUI SCINTILLE SANS SE REDESSINER (05-09). Les
+    /// brins froids sont immobiles et n'arment RIEN ; un brin chaud croise
+    /// ses deux robes (sc = 0 et sc = 1) dans UN SEUL clip — deux capsules
+    /// empilées densifieraient l'anti-crénelage du bord — et son ombre
+    /// respire par son alpha (affine en sc, donc interpolée juste).
+    private struct BrinSoie: View {
+        var i: Int
+        var u: Double
+        var pic: Double
+        var picLargeur: Double
+        var p: Double
+        var W: CGFloat
+        var H: CGFloat
+        var dort: Bool
+
+        /// s : le scintillement, 0 → 1. Le délai pseudo-aléatoire ∈ [0, per)
+        /// remplace la phase absolue i·1,6 et garde la trame désynchronisée.
+        @State private var s: Double = 0
+
+        private var per: Double { 2.7 + 1.9 * (Double((i &* 37) % 100) / 100) }
+
+        var body: some View {
+            let ecart = (u - pic) / (picLargeur * 0.55)
+            let e = exp(-ecart * ecart)
+            let chaud = e > 0.10
+            let t0 = chaud ? 0.12 + 0.86 * (e - 0.10) / 0.90 : 0
+            let t1 = t0 + 0.06 * e
+            let a = min(max((p - 0.4 * u) / 0.6, 0), 1)
+            let h = H * (0.020 + 0.070 * e) * a
+            Group {
+                if chaud {
+                    Rectangle()
+                        .fill(LinearGradient(
+                            colors: [CardTon.chaleur(min(t0 + 0.10, 1)),
+                                     CardTon.chaleur(max(t0 - 0.14, 0))],
+                            startPoint: .top, endPoint: .bottom))
+                        .overlay {
+                            Rectangle()
+                                .fill(LinearGradient(
+                                    colors: [CardTon.chaleur(min(t1 + 0.10, 1)),
+                                             CardTon.chaleur(max(t1 - 0.14, 0))],
+                                    startPoint: .top, endPoint: .bottom))
+                                .opacity(s)
+                        }
+                        .clipShape(Capsule())
+                } else {
+                    Capsule().fill(Color(white: 0.24))
+                }
+            }
+            .frame(width: 0.0082 * W, height: max(h, 1))
+            // ⚠️ L'alpha de l'ombre est PUR en `s` : le `.opacity(a·…)`
+            // final fade déjà l'ombre avec la pousse. Écart DÉCLARÉ :
+            // pendant la seule fenêtre d'entrée (a < 1, transitoire),
+            // l'ombre suit a et non a² — invisible, dit quand même.
+            .shadow(color: chaud
+                    ? CardTon.chaleur(0.32)
+                        .opacity((0.28 + 0.34 * e)
+                                 * (0.75 + 0.25 * s))
+                    : .clear,
+                    radius: 0.016 * W)
+            .position(x: (0.129 + 0.742 * u) * W,
+                      y: 0.575 * H)
+            .opacity(Double(a) * (chaud ? 1 : 0.80))
+            .task(id: "\(dort)-\(chaud)") { armer(chaud: chaud) }
+        }
+
+        private func armer(chaud: Bool) {
+            guard chaud, !dort else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { s = 0 }
+                return
+            }
+            s = 0
+            withAnimation(.easeInOut(duration: per / 2)
+                .repeatForever(autoreverses: true)
+                .delay(per * Double((i &* 61) % 100) / 100)) {
+                s = 1
+            }
+        }
+    }
+}
+
+// MARK: - LA CARD PEAK EFFORT (widget 04)
+
+/// LE MOMENT LE PLUS FORT DE LA SEMAINE, tous types confondus — un
+/// highlight sportif, pas un score. Une seule forme liquide noire au
+/// centre, discrète, qui attrape un REFLET quand un nouveau peak est
+/// détecté (le liseré par événements, la loi du médaillon à flamme). Mais
+/// l'encre garde les données : à côté de deux cards denses, un widget
+/// presque vide se lirait comme un bug.
+struct CardPeakEffort: View {
+    @Environment(\.harmonieInter) private var interUnifie
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var titre: String = "Hip Thrust"
+    var valeur: String = "60 kg"
+    /// L'ascension : le delta (« +10 ») et le record précédent (« 55 »).
+    /// `nil` = pas de record cette semaine, pas de marche à dessiner.
+    var delta: String? = "+10"
+    var precedent: String? = "55"
+    var contexte: String = "This week's highlight"
+    var chambreHaut: String = "60 kg × 8"
+    var chambreBas: String = "previous best · 55 kg"
+    /// Un nouveau peak vient d'être détecté : la forme attrape le reflet.
+    var nouveau: Bool = true
+    /// LE CAS VIDE : le design reste, la chaleur s'éteint.
+    var vide: Bool = false
+    var p: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    /// La plaque noire, découplée de la chambre (voir `CardCorps.plaque`).
+    var plaque: Double? = nil
+    var penche: Double = 0
+    var interaction: CardMode = .libre
+
+    @State private var chambre: Double =
+        CommandLine.arguments.contains("-chambre") ? 1 : 0
+    @State private var doigt: CGPoint?
+
+    var body: some View {
+        CardCorps(lisere: lisere, verre: verre, chambre: chambre,
+                  plaque: plaque, doigt: doigt, penche: penche) {
+            Chambre(p: chambre) { c in
+                ZStack {
+                    surface
+                        .opacity(1 - 0.93 * ChambreTemps.recul(c))
+                        .blur(radius: 2.2 * ChambreTemps.recul(c))
+                        .scaleEffect(1 - 0.05 * ChambreTemps.recul(c))
+                    interieur(ChambreTemps.fond(c))
+                }
+            }
+            .saturation(vide ? 0 : 1)
+            .opacity(vide ? 0.55 : 1)
+        }
+        .contentShape(Rectangle())
+        .modifier(CardTouche(mode: interaction,
+                             chambre: $chambre, doigt: $doigt))
+    }
+
+    /// LA CHAMBRE-MARCHE (v4 — le trait vertical seul était maigre,
+    /// verdict « à revoir dans les deux sens »). Le même vocabulaire que
+    /// l'onde du HIIT, décliné : une soie de segments dont le profil est
+    /// UNE MARCHE — le plateau froid de l'ancien record à gauche, qui
+    /// S'EMBRASE en franchissant vers le plateau du nouveau, plus haut, en
+    /// chaleur pleine. On VOIT le record monter.
+    @ViewBuilder
+    private func interieur(_ f: Double) -> some View {
+        if f > 0.001 {
+            GeometryReader { g in
+                let W = g.size.width, H = g.size.height
+                Text(chambreHaut)
+                    .font(interUnifie
+                          ? .inter(0.0800 * H, .semibold)
+                          : .system(size: 0.0800 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: 0.500 * W, y: 0.280 * H)
+                    .opacity(min(f * 1.7, 1))
+
+                if precedent != nil {
+                    // ⚠️ 12 Hz, endormie sous Reduce Motion ; CADRE FORCÉ.
+                    TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                            paused: reduceMotion
+                                                || f < 0.3
+                                                || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                        let tps = tl.date.timeIntervalSinceReferenceDate
+                        ZStack {
+                            // le foyer, sous le plateau du record
+                            let souffle = reduceMotion ? 0.5
+                                : 0.5 + 0.5 * sin(tps * 2 * .pi / 9.4)
+                            Ellipse()
+                                .fill(RadialGradient(
+                                    colors: [CardTon.chaleur(0.28)
+                                        .opacity(0.09 + 0.05 * souffle),
+                                        .clear],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 0.30 * W))
+                                .frame(width: 0.60 * W, height: 0.32 * W)
+                                .position(x: 0.660 * W, y: 0.560 * H)
+                                .opacity(min(max((f - 0.3) / 0.5, 0), 1))
+
+                            let n = 40
+                            ForEach(0..<n, id: \.self) { i in
+                                let u = Double(i) / Double(n - 1)
+                                // LA MARCHE : une sigmoïde à 0,5 — plateau
+                                // bas et froid, franchissement, plateau
+                                // haut et chaud.
+                                let niveau = 1
+                                    / (1 + exp(-(u - 0.5) / 0.075))
+                                let a = min(max((f - 0.22 - 0.38 * u)
+                                                / 0.35, 0), 1)
+                                let chaud = niveau > 0.15
+                                let per = 2.7 + 1.9
+                                    * (Double((i &* 37) % 100) / 100)
+                                let sc = chaud && !reduceMotion
+                                    ? 0.5 + 0.5 * sin(tps * 2 * .pi / per
+                                                      + Double(i) * 1.6)
+                                    : 0
+                                let t = chaud
+                                    ? 0.15 + 0.80 * niveau
+                                        + 0.05 * sc * niveau : 0
+                                let h = H * (0.026 + 0.095 * niveau) * a
+                                Capsule()
+                                    .fill(chaud
+                                          ? AnyShapeStyle(LinearGradient(
+                                                colors: [CardTon.chaleur(
+                                                            min(t + 0.10, 1)),
+                                                         CardTon.chaleur(
+                                                            max(t - 0.14, 0))],
+                                                startPoint: .top,
+                                                endPoint: .bottom))
+                                          : AnyShapeStyle(
+                                                Color(white: 0.24)))
+                                    .frame(width: 0.0082 * W,
+                                           height: max(h, 1))
+                                    .shadow(color: chaud
+                                            ? CardTon.chaleur(0.32)
+                                                .opacity((0.25
+                                                          + 0.38 * niveau)
+                                                         * (0.75 + 0.25 * sc)
+                                                         * a)
+                                            : .clear,
+                                            radius: 0.016 * W)
+                                    // ancrées au SOL : la marche se lit à
+                                    // la hauteur, comme un relief
+                                    .position(x: (0.129 + 0.742 * u) * W,
+                                              y: 0.610 * H - h / 2)
+                                    .opacity(Double(a)
+                                             * (chaud ? 1 : 0.80))
+                                // LE REFLET de la marche, sous le sol.
+                                if chaud, niveau > 0.5 {
+                                    Capsule()
+                                        .fill(LinearGradient(
+                                            colors: [CardTon.chaleur(
+                                                        max(t - 0.10, 0))
+                                                        .opacity(0.20),
+                                                     .clear],
+                                            startPoint: .top,
+                                            endPoint: .bottom))
+                                        .frame(width: 0.0082 * W,
+                                               height: max(h * 0.38, 1))
+                                        .position(
+                                            x: (0.129 + 0.742 * u) * W,
+                                            y: 0.610 * H + h * 0.19 + 2)
+                                        .opacity(Double(a) * niveau)
+                                }
+                            }
+
+                            // LES ÉTINCELLES du plateau du record.
+                            if !reduceMotion {
+                                ForEach(0..<3, id: \.self) { s in
+                                    let seed = Double((s &* 2654435761)
+                                                      % 1000) / 1000
+                                    let per = 2.3 + 1.4 * seed
+                                    let ph = ((tps / per) + seed)
+                                        .truncatingRemainder(dividingBy: 1)
+                                    let cx = 0.62 + 0.18 * seed
+                                    let dx = 0.016 * W
+                                        * sin(ph * 6.0 + seed * 9)
+                                    Circle()
+                                        .fill(CardTon.chaleur(
+                                            0.80 + 0.2 * seed))
+                                        .frame(width: 1.8, height: 1.8)
+                                        .position(
+                                            x: cx * W + dx,
+                                            y: 0.610 * H - 0.125 * H
+                                                - 0.080 * H * ph)
+                                        .opacity(
+                                            min(max((f - 0.6) / 0.4, 0), 1)
+                                            * (1 - ph) * 0.85
+                                            * min(ph * 6, 1))
+                                }
+                            }
+
+                            // les deux repères : l'ancien, sourd, sous son
+                            // plateau — le delta, chaud, sur le sien
+                            Text(precedent ?? "")
+                                .font(.system(size: 0.0350 * H,
+                                              weight: .regular))
+                                .foregroundStyle(CardTon.encreSourde)
+                                .position(x: 0.270 * W, y: 0.670 * H)
+                                .opacity(min(max((f - 0.35) / 0.4, 0), 1))
+                            if let d = delta {
+                                Text(d)
+                                    .font(.system(size: 0.0440 * H,
+                                                  weight: .medium))
+                                    .foregroundStyle(CardTon.encreChaude)
+                                    .position(x: 0.730 * W, y: 0.415 * H)
+                                    .opacity(min(max((f - 0.6) / 0.4,
+                                                     0), 1))
+                            }
+                        }
+                        .frame(width: W, height: H)
+                    }
+                }
+
+                Text(chambreBas)
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: 0.500 * W, y: 0.790 * H)
+                    .opacity(min(max((f - 0.5) / 0.5, 0), 1))
+            }
+            .opacity(f)
+        }
+    }
+
+    private var surface: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let marge = 0.129 * W
+
+            // Le sur-titre : PEAK, tracké large — c'est lui le glyphe.
+            Text("PEAK")
+                .font(.system(size: 0.0560 * H, weight: .regular))
+                .tracking(0.0560 * H * 0.16)
+                .foregroundStyle(CardTon.encreDouce)
+                .modifier(AncrageGauche(x: marge, y: 0.0770 * H))
+
+            // ── LA BRAISE DE L'ÉVÉNEMENT : quand un record vient de
+            // tomber, le coin bas-droit couve (l'écho du foyer HIIT).
+            if nouveau {
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [CardTon.chaleur(0.25).opacity(0.10),
+                                 .clear],
+                        center: .center,
+                        startRadius: 0, endRadius: 0.30 * W))
+                    .frame(width: 0.60 * W, height: 0.42 * W)
+                    .position(x: 0.840 * W, y: 0.900 * H)
+                    .opacity(min(max((p - 0.4) / 0.5, 0), 1))
+            }
+
+            // ── LA VALEUR HÉRO — LE RECORD LUI-MÊME (« 60 kg », plus
+            // jamais un « +10 kg » orphelin qui ne raconte rien) : en
+            // CHALEUR quand c'est un record, en métal sinon.
+            Text(valeur)
+                .font(interUnifie
+                      ? .inter(0.1350 * H, .semibold)
+                      : .system(size: 0.1350 * H, weight: .regular))
+                .foregroundStyle(nouveau
+                    ? AnyShapeStyle(LinearGradient(
+                        stops: [
+                            .init(color: CardTon.chaleur(0.95),
+                                  location: 0.00),
+                            .init(color: CardTon.chaleur(0.72),
+                                  location: 0.55),
+                            .init(color: CardTon.chaleur(0.50),
+                                  location: 1.00),
+                        ],
+                        startPoint: .top, endPoint: .bottom))
+                    : AnyShapeStyle(LinearGradient(
+                        colors: [Color(white: 1.00), Color(white: 0.863)],
+                        startPoint: .top, endPoint: .bottom)))
+                .position(x: 0.500 * W, y: 0.335 * H)
+                .opacity(min(max((p - 0.3) / 0.5, 0), 1))
+
+            Text(titre)
+                .font(.system(size: 0.0550 * H, weight: .regular))
+                .tracking(0.0550 * H * 0.030)
+                .foregroundStyle(CardTon.encreDouce)
+                .position(x: 0.500 * W, y: 0.448 * H)
+                .opacity(min(max((p - 0.4) / 0.5, 0), 1))
+
+            // ── L'ASCENSION — la marche franchie, DESSINÉE : le trait de
+            // chaleur monte de l'ancien record (sourd) au nouveau (blanc
+            // chauffé). C'est ça que « +10 » veut dire.
+            if delta != nil, precedent != nil {
+                ascension(W: W, H: H)
+            }
+
+            Text(contexte)
+                .font(.system(size: 0.0350 * H, weight: .regular))
+                .foregroundStyle(CardTon.encreSourde)
+                .position(x: 0.500 * W, y: 0.895 * H)
+                .opacity(min(max((p - 0.5) / 0.5, 0), 1))
+        }
+    }
+
+    /// L'ASCENSION (v3 — le galet-bowling est mort). Micro-vie : le trait
+    /// POUSSE à l'arrivée, le point du record POP puis RESPIRE (4,7 s), et
+    /// une ÉTINCELLE remonte la pente toutes les 5,3 s — une braise qui
+    /// grimpe, pas un gyrophare. ⚠️ 12 Hz, l'horloge dort sous Reduce
+    /// Motion et sous la chambre ; LE CADRE EST FORCÉ (piège TimelineView).
+    @ViewBuilder
+    private func ascension(W: CGFloat, H: CGFloat) -> some View {
+        let sx = 0.330 * W, sy = 0.700 * H
+        let ex = 0.670 * W, ey = 0.598 * H
+        let aL = min(max((p - 0.45) / 0.45, 0), 1)
+        // ⚠️ L'ASCENSION NE SE REDESSINE PLUS, ELLE S'ANIME (05-09, voir
+        // `LisereRespirant`) : l'horloge refabriquait le reflet flouté, le
+        // trait, la comète, les jalons et les textes vingt fois par seconde
+        // pour la respiration d'UN point et une étincelle de 0,9 s toutes
+        // les 5,3 s. Tout ce qui ne dépend pas du temps est désormais NU ;
+        // le point et l'étincelle sont des feuilles animées.
+        // `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
+        if SouffleBanc.horloge {
+        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                paused: reduceMotion || vide
+                                    || chambre > 0.5
+                                    || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+            let t = tl.date.timeIntervalSinceReferenceDate
+            let souffle = reduceMotion ? 0.0
+                : 0.5 + 0.5 * sin(t * 2 * .pi / 4.7)
+            ZStack {
+                // LE REFLET DE BRAISE — la chaleur du trait pose sur le
+                // sol : la même pente, décalée, large et floue.
+                Path { path in
+                    path.move(to: CGPoint(x: sx, y: sy + 5))
+                    path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                             y: sy + (ey - sy) * aL + 5))
+                }
+                .stroke(CardTon.chaleur(0.35).opacity(0.28 * aL),
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .blur(radius: 5)
+
+                // le trait — braise au départ, blanc chauffé à l'arrivée
+                Path { path in
+                    path.move(to: CGPoint(x: sx, y: sy))
+                    path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                             y: sy + (ey - sy) * aL))
+                }
+                .stroke(LinearGradient(
+                    colors: [CardTon.chaleur(0.28),
+                             CardTon.chaleur(0.62),
+                             CardTon.chaleur(0.95)],
+                    startPoint: .bottomLeading, endPoint: .topTrailing),
+                    style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                .shadow(color: CardTon.chaleur(0.40).opacity(0.35 * aL),
+                        radius: 3)
+                // LA COMÈTE : le trait s'épaissit vers le record — un
+                // second trait, plus court et plus gras, sur le dernier
+                // tiers de la course.
+                if aL > 0.66 {
+                    Path { path in
+                        path.move(to: CGPoint(x: sx + (ex - sx) * 0.66,
+                                              y: sy + (ey - sy) * 0.66))
+                        path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                                 y: sy + (ey - sy) * aL))
+                    }
+                    .stroke(LinearGradient(
+                        colors: [CardTon.chaleur(0.70),
+                                 CardTon.chaleur(0.95)],
+                        startPoint: .bottomLeading, endPoint: .topTrailing),
+                        style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                }
+
+                // LES JALONS DE TRAME — le rythme de la progression, la
+                // même trame froide que les soies.
+                ForEach([0.25, 0.50, 0.75], id: \.self) { u in
+                    Circle().fill(Color.white.opacity(0.22))
+                        .frame(width: 2, height: 2)
+                        .position(x: sx + (ex - sx) * CGFloat(u),
+                                  y: sy + (ey - sy) * CGFloat(u))
+                        .opacity(aL > u ? 1 : 0)
+                }
+
+                // l'ancien record : un repère sourd, et son chiffre
+                Circle().fill(Color.white.opacity(0.30))
+                    .frame(width: 3, height: 3)
+                    .position(x: sx, y: sy)
+                Text(precedent ?? "")
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: sx, y: sy + 0.052 * H)
+
+                // LE POINT DU RECORD — il pop (dépassement), puis respire
+                let pop = aL > 0.94 ? (aL - 0.94) / 0.06 : 0
+                Circle()
+                    .fill(CardTon.chaleur(0.92 + 0.08 * souffle))
+                    .frame(width: 5.5, height: 5.5)
+                    .scaleEffect((0.4 + 0.6 * pop
+                                  + (pop >= 1 ? 0.10 * souffle : 0)))
+                    .shadow(color: CardTon.chaleur(0.55)
+                        .opacity((0.55 + 0.25 * souffle) * pop),
+                        radius: 0.026 * W)
+                    .position(x: ex, y: ey)
+                    .opacity(pop)
+                Text(delta ?? "")
+                    .font(.system(size: 0.0480 * H, weight: .medium))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: ex, y: ey - 0.058 * H)
+                    .opacity(pop)
+
+                // L'ÉTINCELLE — elle remonte la pente toutes les 5,3 s
+                if !reduceMotion, aL > 0.99 {
+                    let cycle = t.truncatingRemainder(dividingBy: 5.3)
+                    let ph = min(max(cycle / 0.9, 0), 1)
+                    Circle()
+                        .fill(Color.white.opacity(0.85))
+                        .frame(width: 2.6, height: 2.6)
+                        .position(x: sx + (ex - sx) * CGFloat(ph),
+                                  y: sy + (ey - sy) * CGFloat(ph))
+                        .shadow(color: CardTon.chaleur(0.80).opacity(0.7),
+                                radius: 2.5)
+                        .opacity(ph <= 0 || ph >= 1 ? 0 : sin(.pi * ph) * 0.9)
+                }
+            }
+            .frame(width: W, height: H)
+        }
+        } else {
+            let dort = reduceMotion || vide || chambre > 0.5
+                || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+            ZStack {
+                // LE REFLET DE BRAISE — la chaleur du trait pose sur le
+                // sol : la même pente, décalée, large et floue.
+                Path { path in
+                    path.move(to: CGPoint(x: sx, y: sy + 5))
+                    path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                             y: sy + (ey - sy) * aL + 5))
+                }
+                .stroke(CardTon.chaleur(0.35).opacity(0.28 * aL),
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .blur(radius: 5)
+
+                // le trait — braise au départ, blanc chauffé à l'arrivée
+                Path { path in
+                    path.move(to: CGPoint(x: sx, y: sy))
+                    path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                             y: sy + (ey - sy) * aL))
+                }
+                .stroke(LinearGradient(
+                    colors: [CardTon.chaleur(0.28),
+                             CardTon.chaleur(0.62),
+                             CardTon.chaleur(0.95)],
+                    startPoint: .bottomLeading, endPoint: .topTrailing),
+                    style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                .shadow(color: CardTon.chaleur(0.40).opacity(0.35 * aL),
+                        radius: 3)
+                // LA COMÈTE : le trait s'épaissit vers le record — un
+                // second trait, plus court et plus gras, sur le dernier
+                // tiers de la course.
+                if aL > 0.66 {
+                    Path { path in
+                        path.move(to: CGPoint(x: sx + (ex - sx) * 0.66,
+                                              y: sy + (ey - sy) * 0.66))
+                        path.addLine(to: CGPoint(x: sx + (ex - sx) * aL,
+                                                 y: sy + (ey - sy) * aL))
+                    }
+                    .stroke(LinearGradient(
+                        colors: [CardTon.chaleur(0.70),
+                                 CardTon.chaleur(0.95)],
+                        startPoint: .bottomLeading, endPoint: .topTrailing),
+                        style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+                }
+
+                // LES JALONS DE TRAME — le rythme de la progression, la
+                // même trame froide que les soies.
+                ForEach([0.25, 0.50, 0.75], id: \.self) { u in
+                    Circle().fill(Color.white.opacity(0.22))
+                        .frame(width: 2, height: 2)
+                        .position(x: sx + (ex - sx) * CGFloat(u),
+                                  y: sy + (ey - sy) * CGFloat(u))
+                        .opacity(aL > u ? 1 : 0)
+                }
+
+                // l'ancien record : un repère sourd, et son chiffre
+                Circle().fill(Color.white.opacity(0.30))
+                    .frame(width: 3, height: 3)
+                    .position(x: sx, y: sy)
+                Text(precedent ?? "")
+                    .font(.system(size: 0.0350 * H, weight: .regular))
+                    .foregroundStyle(CardTon.encreSourde)
+                    .position(x: sx, y: sy + 0.052 * H)
+
+                // LE POINT DU RECORD — il pop (dépassement), puis respire
+                PointRecord(aL: aL, W: W, ex: ex, ey: ey, dort: dort)
+                Text(delta ?? "")
+                    .font(.system(size: 0.0480 * H, weight: .medium))
+                    .foregroundStyle(CardTon.encreChaude)
+                    .position(x: ex, y: ey - 0.058 * H)
+                    .opacity(aL > 0.94 ? (aL - 0.94) / 0.06 : 0)
+
+                // L'ÉTINCELLE — elle remonte la pente toutes les 5,3 s
+                if !reduceMotion, aL > 0.99 {
+                    EtincellePente(sx: sx, sy: sy, ex: ex, ey: ey,
+                                   dort: dort)
+                }
+            }
+            .frame(width: W, height: H)
+        }
+    }
+
+    /// LE POINT DU RECORD QUI RESPIRE SANS SE REDESSINER (05-09). Ses deux
+    /// robes (souffle 0 et 1) se croisent — [0,92 ; 1,0] tient dans le
+    /// dernier morceau linéaire de la rampe, le crossfade est exact — et
+    /// l'échelle du souffle est SCINDÉE de celle du pop : l'attribut qui
+    /// porte le `repeatForever` n'est jamais réécrit par la pousse.
+    private struct PointRecord: View {
+        var aL: Double
+        var W: CGFloat
+        var ex: CGFloat
+        var ey: CGFloat
+        var dort: Bool
+
+        /// s : le souffle (4,7 s), 0 → 1. Sous Reduce Motion l'ancien code
+        /// posait souffle = 0 : le repos est identique.
+        @State private var s: Double = 0
+
+        var body: some View {
+            let pop = aL > 0.94 ? (aL - 0.94) / 0.06 : 0
+            // UN SEUL CLIP (deux cercles empilés densifieraient le bord).
+            Rectangle()
+                .fill(CardTon.chaleur(0.92))
+                .overlay {
+                    Rectangle()
+                        .fill(CardTon.chaleur(1.0))
+                        .opacity(s)
+                }
+                .clipShape(Circle())
+                .frame(width: 5.5, height: 5.5)
+                // ⚠️ DÉ-GATÉS (verdict contradicteur) : les attributs qui
+                // portent le souffle ne dépendent QUE de `s` — un gate sur
+                // `pop` les ferait réécrire par le sweep d'arrivée, et le
+                // repeatForever serait remplacé au lieu de survivre.
+                // Écart DÉCLARÉ : pendant la brève fenêtre pop ∈ (0,1)
+                // (quelques images de la pousse, le point encore sous
+                // `.opacity(pop)`), le souffle d'échelle s'applique déjà,
+                // et l'alpha de l'ombre suit pop et non pop² — invisible
+                // en pratique, dit quand même.
+                .scaleEffect(1 + 0.10 * s)
+                .scaleEffect(0.4 + 0.6 * pop)
+                .shadow(color: CardTon.chaleur(0.55)
+                    .opacity(0.55 + 0.25 * s),
+                    radius: 0.026 * W)
+                .position(x: ex, y: ey)
+                .opacity(pop)
+                .task(id: dort) { armer() }
+        }
+
+        private func armer() {
+            guard !dort else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { s = 0 }
+                return
+            }
+            s = 0
+            withAnimation(.easeInOut(duration: 4.7 / 2)
+                .repeatForever(autoreverses: true)) {
+                s = 1
+            }
+        }
+    }
+
+    /// L'ÉTINCELLE QUI REMONTE SANS SE REDESSINER (05-09). Sa position et
+    /// son alpha sont animables : une boucle async pose trois animations
+    /// par cycle de 5,3 s (la montée linéaire de 0,9 s, l'allumage et
+    /// l'extinction en demi-sinus) et dort le reste du temps — contre 106
+    /// battements d'horloge. Même rattrapage que `ChevronAppel` : les
+    /// échéances sont RECALÉES sur l'horloge, jamais incrémentées à
+    /// l'aveugle (le piège de la rafale après suspension).
+    /// ⚠️ Écart DÉCLARÉ : l'origine de phase change — l'ancienne forme
+    /// vivait sur l'horloge absolue (t mod 5,3 : l'étincelle pouvait
+    /// apparaître à mi-pente au montage) ; la nouvelle grimpe une première
+    /// fois dès l'armement, puis toutes les 5,3 s.
+    private struct EtincellePente: View {
+        var sx: CGFloat
+        var sy: CGFloat
+        var ex: CGFloat
+        var ey: CGFloat
+        var dort: Bool
+
+        @State private var ph: Double = 0
+        @State private var lueur: Double = 0
+
+        private static let periode = 5.3
+        private static let course = 0.9
+
+        var body: some View {
+            Circle()
+                .fill(Color.white.opacity(0.85))
+                .frame(width: 2.6, height: 2.6)
+                .position(x: sx + (ex - sx) * CGFloat(ph),
+                          y: sy + (ey - sy) * CGFloat(ph))
+                .shadow(color: CardTon.chaleur(0.80).opacity(0.7),
+                        radius: 2.5)
+                .opacity(lueur)
+                .task(id: dort) { await grimper() }
+        }
+
+        @MainActor
+        private func grimper() async {
+            guard !dort else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { ph = 0; lueur = 0 }
+                return
+            }
+            let horloge = ContinuousClock()
+            let origine = horloge.now
+            var k = 0
+            while !Task.isCancelled {
+                let ecoule = origine.duration(to: horloge.now)
+                let sec = Double(ecoule.components.seconds)
+                    + Double(ecoule.components.attoseconds) / 1e18
+                k = max(k, Int((sec / Self.periode).rounded(.up)))
+                let echeance = origine + .seconds(Double(k) * Self.periode)
+                try? await horloge.sleep(until: echeance)
+                guard !Task.isCancelled else { return }
+                // ⚠️ AUCUNE remise à zéro ici : deux écritures du même
+                // attribut au même tour de runloop = le double withAnimation
+                // (piège payé). La remise à plat vit APRÈS l'extinction,
+                // quand l'étincelle est invisible.
+                withAnimation(.linear(duration: Self.course)) { ph = 1 }
+                withAnimation(.timingCurve(0.39, 0.575, 0.565, 1,
+                                           duration: Self.course / 2)) {
+                    lueur = 0.9
+                }
+                try? await horloge.sleep(until: echeance
+                    + .seconds(Self.course / 2))
+                guard !Task.isCancelled else { return }
+                withAnimation(.timingCurve(0.47, 0, 0.745, 0.715,
+                                           duration: Self.course / 2)) {
+                    lueur = 0
+                }
+                try? await horloge.sleep(until: echeance
+                    + .seconds(Self.course))
+                guard !Task.isCancelled else { return }
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { ph = 0; lueur = 0 }
+                k += 1
+            }
+        }
+    }
+}
+
+// MARK: - LE FANTÔME DE SLOT
+
+/// UN SLOT VIDE N'EST PAS UN TROU : c'est un fantôme — la grammaire des
+/// mini-cards « à faire » de la semaine (verre `.clear` nu, la vidéo passe
+/// au travers). Il dit « il y a une place ici » sans le crier, et son tap
+/// ouvre la vitrine : c'est LE chemin d'ajout. Bounds constants (170), la
+/// matérialisation d'une card se fait par-dessus, le verre ne se démonte
+/// jamais.
+struct CardFantome: View {
+    /// 0 → 1 : le mode édition (le + s'affirme un peu).
+    var edition: Double = 0
+
+    var body: some View {
+        GeometryReader { g in
+            let W = g.size.width, H = g.size.height
+            let forme = RoundedRectangle(cornerRadius: 0.152 * W,
+                                         style: .circular)
+            ZStack {
+                GlassEffectContainer(spacing: 0) {
+                    Color.clear
+                        .frame(width: W, height: H)
+                        .verreHome(.clear, in: forme)
+                }
+                forme.strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                ZStack {
+                    Capsule().frame(width: 0.13 * W, height: 1.2)
+                    Capsule().frame(width: 1.2, height: 0.13 * W)
+                }
+                .foregroundStyle(.white.opacity(0.25 + 0.25 * edition))
+            }
+        }
+    }
+}
+
+// MARK: - Les données des widgets
+
+/// Ce que la card HIIT Peak affiche — calculé par `SemaineStats`, ou les
+/// défauts de banc.
+/// UN SEGMENT RÉEL d'une séance. ⚠️ Une séance HIIT n'est PAS un motif
+/// répété : c'est une suite de segments dont aucun n'a la même durée ni la
+/// même vitesse (verdict du 05-09 : « 2 min à 9, puis 1 min à 17, et après
+/// je peux reprendre 30 secondes à 19 »). La chambre les dessine un par un ;
+/// rien ici ne se factorise en « × N ».
+struct SegmentHiit: Identifiable, Equatable {
+    let id = UUID()
+    var secondes: Int
+    var vitesse: Double
+    /// Au-dessus du seuil : un EFFORT. En dessous : récup, échauffement ou
+    /// retour au calme — le graphite, jamais la braise.
+    var effort: Bool
+}
+
+struct HiitPeakInfo {
+    var vitesse = "17.0"
+    var repetitions = "4 efforts · 2:40"
+    var chambreLigne = "17.0 km/h · 4 efforts · 2:40"
+    var pic = 0.62
+    var picLargeur = 0.26
+    /// Les tours du segment — la chambre les dessine.
+    var tours = 4
+    /// LA SÉANCE, segment par segment — ce que la chambre longue dessine.
+    /// Vide = on n'a rien à montrer, et la chambre le DIT (elle n'invente pas
+    /// un fractionné régulier pour remplir).
+    var segments: [SegmentHiit] = []
+    /// Le libellé de la séance dont viennent ces segments.
+    var jour = ""
+}
+
+extension HiitPeakInfo {
+    /// L'ÉTAT VIDE (13-09, Kathryn : « tout doit être empty quand c'est empty ») :
+    /// des zéros et des tirets, jamais la maquette. La géométrie du tracé garde
+    /// des valeurs sûres (`picLargeur` divise) ; sans tour, il ne dessine rien.
+    static let vide = HiitPeakInfo(vitesse: "0,0", repetitions: "—", chambreLigne: "",
+                                   pic: 0.5, picLargeur: 0.26, tours: 0)
+}
+
+/// Ce que la card Peak Effort affiche. Le héros est LE RECORD LUI-MÊME
+/// (« 60 kg ») — pas le delta seul, qui ne racontait rien (« +10 kg de
+/// quoi ? », verdict du 22-08). Le delta et le précédent nourrissent
+/// L'ASCENSION : le trait qui monte de l'ancien au nouveau.
+struct PeakEffortInfo {
+    var titre = "Hip Thrust"
+    var valeur = "60 kg"
+    var delta: String? = "+10"
+    var precedent: String? = "55"
+    var chambreHaut = "60 kg × 8"
+    var chambreBas = "previous best · 55 kg"
+    var nouveau = true
+}
+
+extension PeakEffortInfo {
+    /// L'ÉTAT VIDE (13-09) : un tiret, zéro kilo, rien de battu.
+    static let vide = PeakEffortInfo(titre: "—", valeur: "0 kg", delta: nil, precedent: nil,
+                                     chambreHaut: "0 kg", chambreBas: "", nouveau: false)
+}
+
+/// LES CHIFFRES DE LA SEMAINE — calculés UNE fois (à l'apparition de la
+/// page, jamais dans un `body` : la home vit sous une TimelineView 60 Hz,
+/// et le piège de la page ré-évaluée par image a déjà été payé).
+///
+/// Les décisions du plan (arbitrage E) :
+///  · une séance TERMINÉE (`endedAt != nil`) vaut exécution de son plan —
+///    `CardioPhase` n'a aucune notion de réalisé, et `totalVolume` ignore
+///    `isDone` : on ne filtre pas ce que le modèle ne sait pas dire ;
+///  · l'escalier est EXCLU du HIIT peak (son `speed` est un niveau de
+///    machine, pas des km/h) ;
+///  · la semaine commence LUNDI (la convention du calendrier).
+struct SemaineStats {
+    var faites = 0
+    var pied = ""
+    var volumeValeur = "0"
+    var volumeUnite = "kg"
+    var gain = "—"
+    var moyenne = "—"
+    var jours: [CardJour] = CardJour.semaineRef
+    /// Les index de semaine (0 = lundi) où une séance a vraiment eu lieu.
+    /// C'est ce que la card des séances allume — pas un compteur.
+    var joursFaits: Set<Int> = []
+    var moisFaits: Set<Int> = []
+    var hiit: HiitPeakInfo?
+    var peak: PeakEffortInfo?
+
+    static func calcule(_ workouts: [Workout], prevues: Int,
+                        maintenant: Date = .now) -> SemaineStats {
+        var cal = Calendar.current
+        cal.firstWeekday = 2
+        guard let semaine = cal.dateInterval(of: .weekOfYear,
+                                             for: maintenant)
+        else { return SemaineStats() }
+        let finies = workouts.filter { !$0.isActive }
+        let cette = finies.filter {
+            $0.startedAt >= semaine.start && $0.startedAt < semaine.end
+        }
+        // ⚠️ **ON COMPARE DEUX MOITIÉS DE SEMAINE, PAS UNE MOITIÉ À UN TOUT**
+        // (correctif 25-08). `precedente` prenait la semaine d'avant ENTIÈRE
+        // et la mettait face à la semaine courante ARRÊTÉE À AUJOURD'HUI. Un
+        // mardi, c'est deux jours contre sept : le widget annonçait « −16 % »
+        // à quelqu'un qui avait fait cinq séances en deux jours, et il aurait
+        // annoncé une baisse presque tous les lundis, mardis et mercredis de
+        // l'année. Ce n'était pas une mesure, c'était un artefact de fenêtre.
+        //
+        // On borne donc la semaine précédente au MÊME temps écoulé : de son
+        // lundi jusqu'au même moment, sept jours plus tôt. La comparaison
+        // redevient honnête dans les deux sens — et elle peut enfin être
+        // mauvaise pour une vraie raison.
+        let memeInstantAvant = maintenant.addingTimeInterval(-7 * 86400)
+        let avant = finies.filter { $0.startedAt < semaine.start }
+        let precedente0 = avant.filter {
+            $0.startedAt >= semaine.start.addingTimeInterval(-7 * 86400)
+        }
+        /// La semaine d'avant, arrêtée au MÊME instant (sept jours plus tôt).
+        let precedente = precedente0.filter { $0.startedAt < memeInstantAvant }
+
+        var s = SemaineStats()
+        s.faites = cette.count
+        let restent = max(prevues - cette.count, 0)
+        // 13-09 (Kathryn : « mets juste "3 sessions left", pour que ça passe en
+        // français aussi ») : le pied dit le reste, rien d'autre. Le serveur
+        // rend le même nombre (`widget_regularite.reste`), le mot est à l'écran.
+        s.pied = restent == 0 ? L("objectif atteint", "goal reached")
+            : L("\(restent) à faire", "\(restent) session\(restent > 1 ? "s" : "") left")
+
+        // ── LE VOLUME
+        let v = cette.reduce(0) { $0 + $1.totalVolume }
+        let vPrev = precedente.reduce(0) { $0 + $1.totalVolume }
+        (s.volumeValeur, s.volumeUnite) = Self.kg(v)
+        if vPrev > 0 {
+            let d = Int(((v - vPrev) / vPrev * 100).rounded())
+            s.gain = d >= 0 ? "+\(d)%" : "−\(-d)%"
+        } else {
+            s.gain = L("nouveau", "new")
+        }
+        if s.faites > 0 {
+            let (mv, mu) = Self.kg(v / Double(s.faites))
+            s.moyenne = "\(mv) \(mu)"
+        }
+
+        // ── LA RÉGULARITÉ : les rails du graphe, jour par jour (lundi en
+        // tête). L'« effort » d'un jour = volume + un proxy pour le cardio
+        // (20 kg-équivalent la minute) — c'est une jauge, pas un bilan.
+        var efforts = [Double](repeating: 0, count: 7)
+        var segments = [Int](repeating: 0, count: 7)
+        for w in cette {
+            let wd = cal.component(.weekday, from: w.startedAt)
+            let i = (wd + 5) % 7
+            efforts[i] += w.totalVolume + 20 * Double(w.cardioMinutes)
+            segments[i] += 1
+            // Le jour est FAIT dès qu'une séance s'y trouve — c'est ce que
+            // les perles de la card voisine doivent allumer, et rien d'autre.
+            s.joursFaits.insert(i)
+        }
+        let maxE = max(efforts.max() ?? 1, 1)
+        let lettres = ["M", "T", "W", "T", "F", "S", "S"]
+        s.jours = (0..<7).map { i in
+            let f = efforts[i] / maxE
+            return CardJour(lettre: lettres[i],
+                            rail: 0.048 + 0.182 * f,
+                            segments: efforts[i] > 0
+                                ? min(max(Int((f * 5).rounded()), 1), 5) : 0)
+        }
+
+        // ── LE MOIS (l'intérieur de la chambre des séances)
+        if let mois = cal.dateInterval(of: .month, for: maintenant) {
+            s.moisFaits = Set(finies
+                .filter { $0.startedAt >= mois.start && $0.startedAt < mois.end }
+                .map { cal.component(.day, from: $0.startedAt) })
+        }
+
+        s.hiit = Self.hiitPeak(cette)
+        s.peak = Self.peakEffort(cette: cette, avant: avant)
+        // LES CHAMBRES LONGUES lisent la même passe (13-09). Publié ICI, hors
+        // de tout `body` (cette fonction est appelée à l'apparition et au
+        // changement de séance, jamais pendant une évaluation de vue) : la
+        // home et les chambres comptent sur les MÊMES fenêtres.
+        ChambreEtat.shared.donnees = ChambreDonnees.calcule(
+            ChambreEtat.bancVide ? [] : workouts, prevues: prevues, maintenant: maintenant)
+        if bancWidgets { imprimerBanc(ChambreEtat.shared.donnees) }
+        return s
+    }
+
+    /// Le banc : `-widgetsBanc` — les chiffres du TÉLÉPHONE par fenêtre
+    /// (journal `[widgets]`), dans les mots du serveur, pour que
+    /// tools/serveur/verif_widgets.py les compare à `widget_*` sur le même
+    /// compte : la preuve que la home, la chambre et le serveur comptent PAREIL.
+    static let bancWidgets = CommandLine.arguments.contains("-widgetsBanc")
+    private static func imprimerBanc(_ d: ChambreDonnees) {
+        for fen in ChambreEtat.Fenetre.allCases {
+            let f = d.fenetre(fen)
+            print("[widgets] \(fen.rawValue) → faites \(f.faites) · precedent \(f.precedent)"
+                  + " · volume \(Int(f.volume.rounded())) · volume_precedent \(Int(f.volumePrec.rounded()))"
+                  + " · pic \(f.picMax) · efforts \(f.efforts) · temps_pics \(f.tempsPics)"
+                  + " · records_battus \(f.recordsBattus) · seuil \(seuilEffort)")
+        }
+    }
+
+    // ── HIIT PEAK : le meilleur segment haute intensité. Les répétitions
+    // s'INFÈRENT en matchant (kind, vitesse, durée) à travers les cycles —
+    // fiable sur le vrai flow (le même cycle répété), et le score est
+    // vitesse × (durée × répétitions), départagé à la vitesse.
+    private static func hiitPeak(_ cette: [Workout]) -> HiitPeakInfo? {
+        // LA DÉFINITION DU SERVEUR, ET RIEN D'AUTRE (15-09 — le 🔴 du site :
+        // « hiitPeak() compte des répétitions qui n'existent pas »). Avant,
+        // les phases d'effort IDENTIQUES (genre | vitesse | durée) étaient
+        // groupées en « × N » — or une séance réelle n'a jamais deux phases
+        // pareilles (2:00 à 17,0 puis 0:30 à 19,0…) : chaque groupe valait
+        // n = 1 et la card disait « 2:00 continuous » là où la séance
+        // comptait quatre efforts. Désormais, comme `widget_hiit` et la
+        // chambre : un EFFORT = une phase à `seuilEffort` ou plus, le pic =
+        // la plus rapide d'entre elles, le temps de pics = leur somme. Rien
+        // ne se factorise. L'escalier reste exclu (sa « vitesse » est un
+        // niveau de machine), des deux côtés depuis 20260915150000.
+        var pic = 0.0, efforts = 0, temps = 0
+        for w in cette {
+            for ex in w.orderedExercises {
+                guard let e = ex.exercise, e.tracking != .setsRepsWeight,
+                      ex.exerciseID != "escalier" else { continue }
+                for ph in ex.orderedPhases where ph.speed >= seuilEffort {
+                    efforts += 1
+                    temps += ph.seconds
+                    pic = max(pic, ph.speed)
+                }
+            }
+        }
+        guard efforts > 0 else { return nil }
+        let v = vitesse(pic)
+        var info = HiitPeakInfo()
+        info.vitesse = v
+        // La fenêtre : « 8 efforts · 4:40 » — ce que la chambre appelle
+        // Efforts et Temps de pics, les mêmes nombres.
+        info.repetitions = "\(efforts) effort\(efforts > 1 ? "s" : "") · \(duree(temps))"
+        // ── LES SEGMENTS RÉELS de la séance qui porte le pic (05-09) : chaque
+        // phase est un segment, avec SA durée et SA vitesse — la chambre les
+        // dessine, l'onde de la card compte ses efforts (douze au plus).
+        (info.segments, info.jour) = Self.segmentsDuPic(cette, pic: pic)
+        let effortsSeance = info.segments.filter(\.effort).count
+        let tempsSeance = info.segments.filter(\.effort).reduce(0) { $0 + $1.secondes }
+        info.tours = min(max(effortsSeance, 1), 12)
+        info.chambreLigne = "\(v) km/h · \(effortsSeance) effort\(effortsSeance > 1 ? "s" : "") · \(duree(tempsSeance))"
+        return info
+    }
+
+    /// La séance de la fenêtre qui a atteint `pic`, rendue segment par
+    /// segment. Le seuil d'effort est celui de la chambre — et depuis le
+    /// 15-09 celui du SERVEUR : `seuil_effort_kmh` (reward_rules), posé par
+    /// `DecideurSerie.chargerRegles` à l'apparition de la home ; 15,0 en
+    /// repli hors ligne, la valeur de la base. Un seul chiffre pour une idée
+    /// (le ⚪ du site : « le seuil qui définit un effort n'existe nulle part »
+    /// — il existait en base, l'app avait le sien).
+    static var seuilEffort: Double = 15.0
+
+    private static func segmentsDuPic(_ cette: [Workout],
+                                      pic: Double) -> ([SegmentHiit], String) {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = "EEEE dd.MM"
+        for w in cette.sorted(by: { $0.startedAt > $1.startedAt }) {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                let phases = ex.orderedPhases
+                guard phases.contains(where: { abs($0.speed - pic) < 0.001 })
+                else { continue }
+                let segs = phases.map {
+                    SegmentHiit(secondes: $0.seconds, vitesse: $0.speed,
+                                effort: $0.speed >= seuilEffort)
+                }
+                guard !segs.isEmpty else { continue }
+                return (segs, f.string(from: w.startedAt).capitalized)
+            }
+        }
+        return ([], "")
+    }
+
+    // ── PEAK EFFORT : le moment le plus fort, priorité charge > vitesse >
+    // volume (l'ordre du plan, à fouetter). À défaut de record battu, la
+    // plus grosse charge de la semaine — un widget vide serait un bug.
+    private static func peakEffort(cette: [Workout],
+                                   avant: [Workout]) -> PeakEffortInfo? {
+        var maxAvant: [String: Double] = [:]
+        for w in avant {
+            for ex in w.orderedExercises where ex.maxWeight > 0 {
+                maxAvant[ex.exerciseID] =
+                    max(maxAvant[ex.exerciseID] ?? 0, ex.maxWeight)
+            }
+        }
+        // 1. LA CHARGE — « Hip Thrust · +10 kg ».
+        var charge: (nom: String, delta: Double, poids: Double, reps: Int)?
+        var plusLourd: (nom: String, poids: Double, reps: Int)?
+        for w in cette {
+            for ex in w.orderedExercises where ex.maxWeight > 0 {
+                let reps = ex.orderedSets
+                    .filter { $0.weight == ex.maxWeight }
+                    .map(\.reps).max() ?? 0
+                if plusLourd == nil || ex.maxWeight > plusLourd!.poids {
+                    plusLourd = (ex.name, ex.maxWeight, reps)
+                }
+                guard let prev = maxAvant[ex.exerciseID], prev > 0,
+                      ex.maxWeight > prev else { continue }
+                let delta = ex.maxWeight - prev
+                if charge == nil || delta > charge!.delta {
+                    charge = (ex.name, delta, ex.maxWeight, reps)
+                }
+            }
+        }
+        if let c = charge {
+            return PeakEffortInfo(
+                titre: c.nom,
+                valeur: "\(poids(c.poids)) kg",
+                delta: "+\(poids(c.delta))",
+                precedent: poids(c.poids - c.delta),
+                chambreHaut: "\(poids(c.poids)) kg × \(c.reps)",
+                chambreBas: "previous best · \(poids(c.poids - c.delta)) kg",
+                nouveau: true)
+        }
+        // 2. LA VITESSE — « HIIT · 17.0 km/h ».
+        var vAvant: Double = 0
+        for w in avant {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                for ph in ex.orderedPhases where ph.isEffort {
+                    vAvant = max(vAvant, ph.speed)
+                }
+            }
+        }
+        var vitesse: (nom: String, v: Double, s: Int, n: Int)?
+        for w in cette {
+            for ex in w.orderedExercises where ex.exerciseID != "escalier" {
+                for ph in ex.orderedPhases where ph.isEffort {
+                    if ph.speed > vAvant,
+                       vitesse == nil || ph.speed > vitesse!.v {
+                        let n = ex.orderedPhases.filter {
+                            $0.isEffort && $0.speed == ph.speed
+                                && $0.seconds == ph.seconds
+                        }.count
+                        vitesse = (ex.name, ph.speed, ph.seconds, n)
+                    }
+                }
+            }
+        }
+        if let v = vitesse {
+            let vs = Self.vitesse(v.v)
+            return PeakEffortInfo(
+                titre: v.nom,
+                valeur: "\(vs) km/h",
+                delta: vAvant > 0 ? "+\(Self.vitesse(v.v - vAvant))" : nil,
+                precedent: vAvant > 0 ? Self.vitesse(vAvant) : nil,
+                chambreHaut: "\(duree(v.s))\(v.n > 1 ? " × \(v.n)" : "")",
+                chambreBas: "fastest ever",
+                nouveau: true)
+        }
+        // 3. À DÉFAUT : la plus grosse charge de la semaine, sans le reflet
+        // ni l'ascension (pas de record = pas de marche à dessiner).
+        if let p = plusLourd {
+            return PeakEffortInfo(
+                titre: p.nom,
+                valeur: "\(poids(p.poids)) kg",
+                delta: nil,
+                precedent: nil,
+                chambreHaut: "\(poids(p.poids)) kg × \(p.reps)",
+                chambreBas: "heaviest this week",
+                nouveau: false)
+        }
+        return nil
+    }
+
+    // ── Les formats. ⚠️ TOUJOURS le POINT décimal : les cards parlent
+    // anglais, et `formatted(.number)` suit la locale du téléphone —
+    // mesuré : « 5,5 km/h » sur une card qui dit « continuous ».
+    private static func kg(_ v: Double) -> (String, String) {
+        if v >= 10000 {
+            return (String(format: "%.1f", v / 1000), "t")
+        }
+        if v >= 100 { return ("\(Int(v.rounded()))", "kg") }
+        return (String(format: "%.1f", v), "kg")
+    }
+    private static func poids(_ v: Double) -> String {
+        v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v)
+    }
+    private static func vitesse(_ v: Double) -> String {
+        String(format: "%.1f", v)
+    }
+    private static func duree(_ s: Int) -> String {
+        s < 90 ? "\(s) s" : String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+// MARK: - Le catalogue
+
+/// LES QUATRE WIDGETS de la home. L'ordre est celui de la vitrine.
+enum WidgetKind: String, CaseIterable, Identifiable {
+    case regularite, volume, hiitPeak, peakEffort
+
+    var id: String { rawValue }
+
+    var numero: String {
+        switch self {
+        case .regularite: return "01"
+        case .volume: return "02"
+        case .hiitPeak: return "03"
+        case .peakEffort: return "04"
+        }
+    }
+
+    /// Le nom de la vitrine — la zone widgets parle anglais (arbitrage D).
+    var nom: String {
+        switch self {
+        case .regularite: return "REGULARITY"
+        case .volume: return "VOLUME"
+        case .hiitPeak: return "HIIT PEAK"
+        case .peakEffort: return "PEAK EFFORT"
+        }
+    }
+}
+
+// MARK: - L'ancrage
+
+/// Poser un bloc par son coin HAUT-GAUCHE dans un `GeometryReader` : SwiftUI
+/// ne sait le faire qu'au centre (`position`), et mesurer chaque texte pour
+/// recentrer serait une usine. Un `alignmentGuide` fait le travail.
+private struct AncrageGauche: ViewModifier {
+    var x: CGFloat
+    var y: CGFloat
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity,
+                   alignment: .topLeading)
+            .offset(x: x, y: y)
+    }
+}
+
+// MARK: - Le banc
+
+/// `-cardsLab` : une card en grand (la taille de la référence) et les
+/// quatre à leur taille de home, avec l'arrivée qui rejoue en boucle.
+/// `-widgetHiit` / `-widgetPeak` mettent le widget neuf en grand.
+struct CardsLab: View {
+    @State private var p: Double = 0
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 22) {
+                Text("LES CARDS")
+                    .font(.system(size: 11, weight: .semibold)).tracking(2.4)
+                    .foregroundStyle(.white.opacity(0.38))
+                if CommandLine.arguments.contains("-widgetHiit") {
+                    CardHiitPeak(p: p).frame(width: 330, height: 333)
+                } else if CommandLine.arguments.contains("-widgetPeak") {
+                    CardPeakEffort(p: p).frame(width: 330, height: 333)
+                } else {
+                    CardVolume(p: p).frame(width: 330, height: 333)
+                }
+                HStack(spacing: 16) {
+                    CardSeances(p: p).frame(width: 169, height: 171)
+                    CardVolume(p: p).frame(width: 169, height: 171)
+                }
+                HStack(spacing: 16) {
+                    CardHiitPeak(p: p).frame(width: 169, height: 171)
+                    CardPeakEffort(p: p).frame(width: 169, height: 171)
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.0)) { p = 1 }
+            Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
+                withAnimation(.easeIn(duration: 0.3)) { p = 0 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    withAnimation(.easeOut(duration: 1.0)) { p = 1 }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - La respiration du mode édition
+
+/// L'OSCILLATION DU MODE ÉDITION — pas le jiggle d'iOS : ±1,4°, lent, une
+/// période PROPRE à chaque card (2,9 s / 3,7 s, premières entre elles,
+/// sinon elles battent ensemble), en opposition de phase. L'angle est
+/// LIVRÉ au contenu : la card l'applique en `rotationEffect` ET le passe au
+/// liseré qui contre-tourne (la lampe reste fixe).
+///
+/// ⚠️ L'horloge n'existe qu'en mode édition (20 Hz suffisent à 1,4° sur
+/// 3 s) et JAMAIS sous Reduce Motion — hors édition le sous-arbre est le
+/// contenu nu, pas une TimelineView en pause (la page a déjà ses horloges).
+private struct RespireEdition<C: View>: View {
+    var edition: Double
+    var periode: Double
+    var phase: Double
+    @ViewBuilder var contenu: (Double) -> C
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if edition < 0.005 || reduceMotion {
+            contenu(0)
+        } else {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
+                let _ = SondeVol.shared.tic(0)
+                let t = tl.date.timeIntervalSinceReferenceDate
+                contenu(1.4 * edition
+                        * sin(t * 2 * .pi / periode + phase))
+            }
+        }
+    }
+}
+
+// MARK: - La rangée de la home
+
+/// Les deux slots de widgets de la home. Gouttière 24 (celle de la phrase
+/// et de l'ardoise de la semaine), écart 14 : les deux cards remplissent la
+/// largeur utile, et elles sont CARRÉES (la référence l'est à 1 %).
+///
+/// LE MODE ÉDITION vit ici : le zoom arrière de la zone, la respiration de
+/// chaque card, les pastilles lune. L'ÉTAT, lui, vit AU-DESSUS (la page) —
+/// tout `@State` posé ici serait perdu au démontage `verreMonte`.
+/// LE PORTE-DEMANDES DE LA RANGÉE — une RÉFÉRENCE stable, à la place de
+/// quatre closures.
+///
+/// ⚠️ Il n'existe que pour une raison, et elle est mesurée : une closure
+/// stockée en propriété rend une vue **inégalable**, donc re-rendue à chaque
+/// passage du parent. Sur ces cards-là — verre natif + gaussienne — ça
+/// coûtait la fluidité du geste de la home (36,8 img/s de médiane, des trous
+/// à 681 ms). Une classe se compare par identité : la rangée redevient
+/// prouvablement égale et SwiftUI ne l'appelle plus.
+///
+/// Elle ne PORTE pas les actions, elle les DEMANDE : l'hôte écoute `jeton`
+/// et exécute. Sans ça on aurait déplacé le problème, pas résolu — une
+/// closure capturée dans un objet capture aussi un `self` périmé.
+@Observable final class DemandesCards {
+    enum Demande: Equatable {
+        case edition(Int), pastille(Int), fantome(Int), sortieEdition
+    }
+    private(set) var derniere: Demande?
+    /// Il s'incrémente à chaque demande : deux demandes identiques d'affilée
+    /// doivent tout de même se voir.
+    private(set) var jeton = 0
+
+    func demander(_ d: Demande) {
+        derniere = d
+        jeton &+= 1
+    }
+}
+
+struct CardsRangee: View {
+    var faites: Int = 4
+    var prevues: Int = 5
+    var volume: String = "8.4"
+    var volumeUnite: String = "kg"
+    var moyenne: String = "1.2 kg"
+    var gain: String = "+12%"
+    var jours: [CardJour] = CardJour.semaineRef
+    var pied: String = L("1 à faire", "1 session left")
+    /// Les jours de la semaine réellement faits (0 = lundi). Transmis à la
+    /// card des séances : ses perles se posent dessus au lieu de compter.
+    var joursFaits: Set<Int>? = nil
+    var moisFaits: Set<Int>? = nil
+    var hiit: HiitPeakInfo = HiitPeakInfo()
+    var peak: PeakEffortInfo = PeakEffortInfo()
+    /// 0 → 1, l'arrivée de la page.
+    var arrivee: Double = 1
+    var lisere: Bool = true
+    var verre: Bool = false
+    /// LES DEUX SLOTS — `nil` = le fantôme. Persistés par la page
+    /// (`widgetSlot0/1` en `@AppStorage`).
+    var slots: [WidgetKind?] = [.regularite, .volume]
+    /// LES WIDGETS VIDES (pas de données) : le design reste, GRISÉ.
+    var vides: Set<WidgetKind> = []
+    /// 0 → 1, l'entrée du mode édition (curseur animé par la page, livré
+    /// image par image via `Chambre`).
+    var edition: Double = 0
+    /// Le mode édition est ACTIF : les cards deviennent inertes, seules
+    /// les pastilles parlent.
+    var editionActive: Bool = false
+    /// Le slot dont la card VOLE dans la vitrine : il garde sa place,
+    /// vide (le clone est dans l'overlay).
+    var masque: Int? = nil
+    /// ⚠️ **LES CLOSURES SONT DES ENTRÉES INSTABLES, ET C'ÉTAIT LE BUG DU
+    /// PULL** (26-08). Cette rangée recevait QUATRE closures. La loi n°3
+    /// d'`ExercisesView` le dit en toutes lettres depuis sa propre guérison :
+    /// « une closure en propriété suffit à les faire re-jouer à chaque passage
+    /// du parent : SwiftUI ne peut plus prouver l'égalité ». Conséquence
+    /// mesurée : à CHAQUE événement du doigt, SwiftUI re-rendait ces deux
+    /// cards — leur `glassEffect` NATIF **et** la gaussienne de 6 pt posée
+    /// dessus, c'est-à-dire deux passes hors écran chacune, soixante fois par
+    /// seconde. Sonde de cadence sur la home pendant un tirage : **36,8 img/s
+    /// de médiane, des trous jusqu'à 681 ms** — plus d'une demi-seconde sans
+    /// une image, pendant que le doigt bouge.
+    ///
+    /// Une RÉFÉRENCE de classe, elle, se compare par identité : la rangée
+    /// redevient prouvablement égale, et SwiftUI ne l'appelle plus du tout.
+    var demandes: DemandesCards? = nil
+    /// La rangée est éditable (l'hôte écoute les demandes). Remplace le
+    /// `onEdition == nil` d'avant, qui portait cette information dans la
+    /// présence d'une closure.
+    var editable: Bool = false
+    // (Le tap qui sort du mode édition passe lui aussi par `demandes` :
+    // il n'existait pas du tout sur la card — en édition elle passe en
+    // `.inerte`, et `CardTouche` ne pose alors aucun geste.)
+
+    var body: some View {
+        Chambre(p: edition) { ed in
+            HStack(spacing: 14) {
+                slotVue(0, ed)
+                slotVue(1, ed)
+            }
+            // LE ZOOM ARRIÈRE de la zone — un transform, jamais un frame :
+            // les bounds du verre ne bougent pas (précédent licite : le
+            // retrait du menu scale déjà le mobilier verre compris).
+            .scaleEffect(1 - 0.04 * ed, anchor: .center)
+        }
+        .opacity(pose)
+        .offset(y: 12 * (1 - pose))
+    }
+
+    @ViewBuilder
+    private func slotVue(_ i: Int, _ ed: Double) -> some View {
+        if masque == i {
+            // La card est partie dans la vitrine : le slot tient sa place.
+            Color.clear.frame(width: 170, height: 170)
+        } else if let kind = slots[i] {
+            RespireEdition(edition: ed,
+                           periode: i == 0 ? 2.9 : 3.7,
+                           phase: i == 0 ? 0 : .pi) { angle in
+                carte(kind, slot: i, penche: angle)
+                    .frame(width: 170, height: 170)
+                    // La sortie au tap. ⚠️ Elle n'existe QUE pendant l'édition :
+                    // posée en permanence, elle affamerait `CardTouche` (le
+                    // doigt qui incline la card, l'appui qui entre en édition).
+                    // Et elle passe AVANT la pastille, qui est un overlay :
+                    // celle-ci reste au-dessus et garde son propre tap.
+                    .overlay {
+                        if editionActive {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    UIImpactFeedbackGenerator(style: .light)
+                                        .impactOccurred(intensity: 0.5)
+                                    demandes?.demander(.sortieEdition)
+                                }
+                        }
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        // LA PASTILLE — posée SUR le coin (elle déborde de
+                        // 8 pt), elle suit la respiration de sa card : elle
+                        // est DE la card. 70 ms d'écart entre les deux.
+                        PastilleLune(p: pastilleP(i, ed)) {
+                            demandes?.demander(.pastille(i))
+                        }
+                        .offset(x: 8, y: -8)
+                    }
+                    .rotationEffect(.degrees(angle))
+            }
+            .frame(width: 170, height: 170)
+        } else {
+            CardFantome(edition: ed)
+                .frame(width: 170, height: 170)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    demandes?.demander(.fantome(i))
+                }
+        }
+    }
+
+    /// La carte, plus SON identité posée dans l'environnement (07-09) — c'est
+    /// par là que `CardTouche` sait quelle chambre ouvrir au double tap, sans
+    /// qu'aucune des quatre cards ait à changer de signature.
+    @ViewBuilder
+    private func carte(_ kind: WidgetKind, slot: Int,
+                       penche: Double) -> some View {
+        carteBrute(kind, slot: slot, penche: penche)
+            .environment(\.widgetKind, kind)
+    }
+
+    @ViewBuilder
+    private func carteBrute(_ kind: WidgetKind, slot: Int,
+                            penche: Double) -> some View {
+        let mode: CardMode = editionActive
+            ? .inerte
+            : (editable
+               ? CardMode.home(onEdition: {
+                   demandes?.demander(.edition(slot))
+                 })
+               : .libre)
+        let mort = vides.contains(kind)
+        switch kind {
+        case .regularite:
+            if let mf = moisFaits {
+                CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits, pied: pied,
+                            p: pose, lisere: lisere, verre: verre,
+                            moisFaits: mf, vide: mort,
+                            penche: penche, interaction: mode)
+            } else {
+                CardSeances(faites: faites, prevues: prevues,
+                            joursFaits: joursFaits, pied: pied,
+                            p: pose, lisere: lisere, verre: verre,
+                            vide: mort,
+                            penche: penche, interaction: mode)
+            }
+        case .volume:
+            CardVolume(valeur: volume, unite: volumeUnite, jours: jours,
+                       gain: gain, moyenne: moyenne, p: pose,
+                       lisere: lisere, verre: verre, vide: mort,
+                       penche: penche, interaction: mode)
+        case .hiitPeak:
+            CardHiitPeak(vitesse: hiit.vitesse,
+                         repetitions: hiit.repetitions,
+                         pic: hiit.pic, picLargeur: hiit.picLargeur,
+                         tours: hiit.tours,
+                         chambreLigne: hiit.chambreLigne, vide: mort,
+                         p: pose, lisere: lisere, verre: verre,
+                         penche: penche, interaction: mode)
+        case .peakEffort:
+            CardPeakEffort(titre: peak.titre, valeur: peak.valeur,
+                           delta: peak.delta, precedent: peak.precedent,
+                           chambreHaut: peak.chambreHaut,
+                           chambreBas: peak.chambreBas,
+                           nouveau: peak.nouveau, vide: mort,
+                           p: pose, lisere: lisere, verre: verre,
+                           penche: penche, interaction: mode)
+        }
+    }
+
+    /// La fenêtre d'arrivée de la pastille du slot `i` : 70 ms d'écart.
+    private func pastilleP(_ i: Int, _ ed: Double) -> Double {
+        let a = 0.55 + 0.165 * Double(i)
+        return min(max((ed - a) / (1 - a), 0), 1)
+    }
+
+    /// Les cards prennent le courant APRÈS la phrase et AVANT la semaine :
+    /// la lumière, les mots, les mesures, les objets.
+    private var pose: Double { min(max((arrivee - 0.55) / 0.30, 0), 1) }
+}
+
+// MARK: - Le pont entre une animation et un `body`
+
+/// ⚠️ **UN `withAnimation` N'INTERPOLE QUE LES `animatableData` DES
+/// MODIFICATEURS.** Une valeur lue dans un `body` — pour en dériver des
+/// fenêtres échelonnées, par exemple — saute à sa cible sur-le-champ. Ce petit
+/// pont existe pour ça : il est `Animatable`, donc SwiftUI lui livre `p` image
+/// par image, et son contenu peut enfin s'en servir pour calculer des retards.
+///
+/// C'est la forme déjà payée sur la phrase de la home (`PhraseVue`), rendue
+/// générique — une chorégraphie à plusieurs pièces n'en a pas d'autre.
+struct Chambre<Contenu: View>: View, Animatable {
+    var p: Double
+    @ViewBuilder var contenu: (Double) -> Contenu
+
+    var animatableData: Double {
+        get { p }
+        set { p = newValue }
+    }
+
+    var body: some View { contenu(p) }
+}
+
+/// Les fenêtres de la chorégraphie, partagées par les deux cards : le noir
+/// tombe d'abord, la surface recule ensuite, l'intérieur arrive en dernier.
+/// La lumière avant la géométrie, comme partout dans cette maison.
+enum ChambreTemps {
+    static func fen(_ p: Double, _ a: Double, _ b: Double) -> Double {
+        min(max((p - a) / (b - a), 0), 1)
+    }
+    /// Le noir et le cadre : les premiers, et vite.
+    static func nuit(_ p: Double) -> Double { fen(p, 0.00, 0.18) }
+    /// La surface recule — elle ne DISPARAÎT pas : on doit la sentir derrière.
+    static func recul(_ p: Double) -> Double { fen(p, 0.12, 0.55) }
+    /// L'intérieur arrive du fond, en dernier.
+    static func fond(_ p: Double) -> Double { fen(p, 0.30, 1.00) }
+}

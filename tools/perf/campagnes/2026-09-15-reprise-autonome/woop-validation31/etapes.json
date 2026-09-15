@@ -1,0 +1,83 @@
+[
+  {
+    "nom": "installation",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "30",
+      "/private/tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app"
+    ],
+    "code": 0,
+    "duree_s": 1.998,
+    "fin": "2026-09-15T22:35:59.097435"
+  },
+  {
+    "nom": "home-mesure",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-sondeAnimations",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.212,
+    "fin": "2026-09-15T22:35:59.310771"
+  },
+  {
+    "nom": "collecte-mesure",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home31-premiere",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.683,
+    "fin": "2026-09-15T22:36:45.004540"
+  },
+  {
+    "nom": "home-finale-sans-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.21,
+    "fin": "2026-09-15T22:36:45.214630"
+  }
+]

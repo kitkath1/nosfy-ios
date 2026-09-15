@@ -1,0 +1,86 @@
+[
+  {
+    "nom": "processus",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "info",
+      "processes",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "15",
+      "--json-output",
+      "/private/tmp/woop-home30-power/processus.json"
+    ],
+    "code": 0,
+    "duree_s": 0.196,
+    "fin": "2026-09-15T22:22:57.353495"
+  },
+  {
+    "nom": "power",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "record",
+      "--template",
+      "Power Profiler",
+      "--device",
+      "00008120-001E4CDC0A85A01E",
+      "--attach",
+      "26117",
+      "--time-limit",
+      "15s",
+      "--output",
+      "/private/tmp/woop-home30-power/home30.trace"
+    ],
+    "code": 0,
+    "duree_s": 22.264,
+    "fin": "2026-09-15T22:23:19.618911"
+  },
+  {
+    "nom": "toc",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-home30-power/home30.trace",
+      "--toc",
+      "--output",
+      "/private/tmp/woop-home30-power/home30-toc.xml"
+    ],
+    "code": 0,
+    "duree_s": 1.585,
+    "fin": "2026-09-15T22:23:21.203810"
+  },
+  {
+    "nom": "export",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-home30-power/home30.trace",
+      "--xpath",
+      "/trace-toc/run[@number=\"1\"]/data/table[@schema=\"ProcessSubsystemPowerImpact\" or @schema=\"SystemPowerLevel\" or @schema=\"device-thermal-state-intervals\" or @schema=\"metal-perf-overview-process-metric\" or @schema=\"DeviceChargingState\" or @schema=\"time-profile\" or @schema=\"life-cycle-period\"]",
+      "--output",
+      "/private/tmp/woop-home30-power/home30-mesures.xml"
+    ],
+    "code": 0,
+    "duree_s": 1.619,
+    "fin": "2026-09-15T22:23:22.823292"
+  },
+  {
+    "nom": "analyse",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-analyse-power.py",
+      "/private/tmp/woop-home30-power/home30"
+    ],
+    "code": 0,
+    "duree_s": 0.09,
+    "fin": "2026-09-15T22:23:22.913552"
+  }
+]

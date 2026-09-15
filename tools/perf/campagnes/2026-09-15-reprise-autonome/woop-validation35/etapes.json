@@ -1,0 +1,20 @@
+[
+  {
+    "nom": "installation",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "30",
+      "/private/tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app"
+    ],
+    "code": 1,
+    "duree_s": 18.108,
+    "fin": "2026-09-15T23:28:19.205570"
+  }
+]

@@ -1,0 +1,99 @@
+[
+  {
+    "nom": "lancement-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.258,
+    "fin": "2026-09-15T22:59:15.761552"
+  },
+  {
+    "nom": "navigation-repetee",
+    "commande": [
+      "xcodebuild",
+      "test-without-building",
+      "-xctestrun",
+      "/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun",
+      "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testAllersRetoursMesures",
+      "-destination",
+      "platform=iOS,id=00008120-001E4CDC0A85A01E",
+      "-destination-timeout",
+      "15",
+      "-parallel-testing-enabled",
+      "NO",
+      "-maximum-concurrent-test-device-destinations",
+      "1",
+      "-resultBundlePath",
+      "/private/tmp/woop-balade34/navigation-repetee.xcresult"
+    ],
+    "code": 0,
+    "duree_s": 69.601,
+    "fin": "2026-09-15T23:00:41.376997"
+  },
+  {
+    "nom": "collecte-mesure",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-balade34",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.743,
+    "fin": "2026-09-15T23:02:12.127917"
+  },
+  {
+    "nom": "retour-normal-sans-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.318,
+    "fin": "2026-09-15T23:02:12.445738"
+  },
+  {
+    "nom": "collecte-restauration",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-balade34-restauration",
+      "--nav-only"
+    ],
+    "code": 0,
+    "duree_s": 0.417,
+    "fin": "2026-09-15T23:02:12.863164"
+  }
+]

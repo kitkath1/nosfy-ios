@@ -1,0 +1,102 @@
+[
+  {
+    "nom": "avec-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.264,
+    "fin": "2026-09-15T22:40:56.097780"
+  },
+  {
+    "nom": "avec-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-appel31-avec",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.663,
+    "fin": "2026-09-15T22:41:31.771023"
+  },
+  {
+    "nom": "sans-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansAppelChapitre"
+    ],
+    "code": 0,
+    "duree_s": 0.27,
+    "fin": "2026-09-15T22:41:32.041381"
+  },
+  {
+    "nom": "sans-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-appel31-sans",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.683,
+    "fin": "2026-09-15T22:42:07.734919"
+  },
+  {
+    "nom": "home-finale",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.327,
+    "fin": "2026-09-15T22:42:08.062781"
+  }
+]

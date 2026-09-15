@@ -1,0 +1,155 @@
+[
+  {
+    "nom": "swiftui-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansProtectionThermique",
+      "-chevronsSwiftUI"
+    ],
+    "code": 0,
+    "duree_s": 0.318,
+    "fin": "2026-09-15T22:26:05.736662"
+  },
+  {
+    "nom": "swiftui-retour-normal",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.314,
+    "fin": "2026-09-15T22:26:41.058259"
+  },
+  {
+    "nom": "swiftui-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-invite30-compare-swiftui",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.609,
+    "fin": "2026-09-15T22:26:41.667629"
+  },
+  {
+    "nom": "sans-invite-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansProtectionThermique",
+      "-sansInvite"
+    ],
+    "code": 0,
+    "duree_s": 0.256,
+    "fin": "2026-09-15T22:26:41.924211"
+  },
+  {
+    "nom": "sans-invite-retour-normal",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.33,
+    "fin": "2026-09-15T22:27:17.265119"
+  },
+  {
+    "nom": "sans-invite-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-invite30-compare-sans-invite",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.611,
+    "fin": "2026-09-15T22:27:17.876609"
+  },
+  {
+    "nom": "home-finale-sans-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.256,
+    "fin": "2026-09-15T22:27:18.133003"
+  }
+]

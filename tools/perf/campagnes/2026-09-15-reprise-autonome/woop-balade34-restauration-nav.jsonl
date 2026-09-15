@@ -1,0 +1,4 @@
+{"applicationState":1,"bande":false,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"ecran-eveille-debut","page":"home","selection":"?","t":811198932.71947706,"therm":1,"visite":false}
+{"applicationState":1,"bande":false,"destination":"home","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"selection","page":"home","selection":"home","t":811198932.72724199,"therm":1,"visite":false}
+{"applicationState":1,"bande":false,"destination":"rayon=23.0;repos=true","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811198932.80761302,"therm":1,"visite":false}
+{"applicationState":1,"bande":true,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"scene-active","page":"home","selection":"home","t":811198932.87554598,"therm":1,"visite":false}

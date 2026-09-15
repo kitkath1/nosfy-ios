@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-222605.jsonl",
+    "destination": "/private/tmp/woop-invite30-compare-swiftui-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-222641.jsonl",
+    "destination": "/private/tmp/woop-invite30-compare-swiftui-nav.jsonl"
+  }
+}

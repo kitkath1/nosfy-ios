@@ -1,0 +1,215 @@
+[
+  {
+    "nom": "installation",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "30",
+      "/private/tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app"
+    ],
+    "code": 0,
+    "duree_s": 1.868,
+    "fin": "2026-09-15T22:53:28.541090"
+  },
+  {
+    "nom": "home-mesure",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-sondeAnimations",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.188,
+    "fin": "2026-09-15T22:53:28.729473"
+  },
+  {
+    "nom": "collecte-0",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home34-0",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.626,
+    "fin": "2026-09-15T22:53:59.360539"
+  },
+  {
+    "nom": "collecte-2",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home34-2",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.651,
+    "fin": "2026-09-15T22:55:00.030474"
+  },
+  {
+    "nom": "collecte-5",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home34-5",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.67,
+    "fin": "2026-09-15T22:56:30.724533"
+  },
+  {
+    "nom": "home-sans-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.323,
+    "fin": "2026-09-15T22:56:31.047682"
+  },
+  {
+    "nom": "pull-chapitre",
+    "commande": [
+      "xcodebuild",
+      "test-without-building",
+      "-xctestrun",
+      "/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun",
+      "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testRetourPullEtChapitre",
+      "-destination",
+      "platform=iOS,id=00008120-001E4CDC0A85A01E",
+      "-destination-timeout",
+      "15",
+      "-parallel-testing-enabled",
+      "NO",
+      "-maximum-concurrent-test-device-destinations",
+      "1",
+      "-resultBundlePath",
+      "/private/tmp/woop-validation34/pull-chapitre.xcresult"
+    ],
+    "code": 0,
+    "duree_s": 39.02,
+    "fin": "2026-09-15T22:57:10.069148"
+  },
+  {
+    "nom": "collecte-pull",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-pull34",
+      "--nav-only"
+    ],
+    "code": 0,
+    "duree_s": 4.317,
+    "fin": "2026-09-15T22:57:14.386027"
+  },
+  {
+    "nom": "home-avant-navigation",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.321,
+    "fin": "2026-09-15T22:57:14.707323"
+  },
+  {
+    "nom": "navigation",
+    "commande": [
+      "xcodebuild",
+      "test-without-building",
+      "-xctestrun",
+      "/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun",
+      "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testNavigationApresRelance",
+      "-destination",
+      "platform=iOS,id=00008120-001E4CDC0A85A01E",
+      "-destination-timeout",
+      "15",
+      "-parallel-testing-enabled",
+      "NO",
+      "-maximum-concurrent-test-device-destinations",
+      "1",
+      "-resultBundlePath",
+      "/private/tmp/woop-validation34/navigation.xcresult"
+    ],
+    "code": 0,
+    "duree_s": 12.569,
+    "fin": "2026-09-15T22:57:27.277238"
+  },
+  {
+    "nom": "home-finale",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 2.978,
+    "fin": "2026-09-15T22:57:30.255888"
+  }
+]

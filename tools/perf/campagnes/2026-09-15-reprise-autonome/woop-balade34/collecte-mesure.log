@@ -1,0 +1,7 @@
+vol vol-20260915-225916.jsonl last {'t': 175.8, 'img': 60.1, 'pire': 17, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 1, 'therm': 1, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1, 'bancHome': 'inactif', 'welcome': 0, 'premiere': 0}
+last30s 30 cpu 1.0 therm [1] onglets ['home']
+nav nav-20260915-225916.jsonl lastViews [{'alpha': 1, 'alphaCumule': 1, 'bounds': {'hauteur': 700, 'largeur': 560, 'x': 0, 'y': 0}, 'cacheeDansHierarchie': False, 'cadreFenetre': None, 'fenetrePrincipale': False, 'identite': 'ObjectIdentifier(0x00000001486bea80)', 'isHidden': False, 'isPlaying': False, 'rendersContinuously': False, 'rendusTermines': 580, 'role': 'booster', 'scenePaused': None, 'taille': {'hauteur': 700, 'largeur': 560}, 'windowNonNil': False}]
+811198928.815276 [('booster', 580, False, 1, False)]
+811198929.830221 [('booster', 580, False, 1, False)]
+811198930.845344 [('booster', 580, False, 1, False)]
+811198931.86001 [('booster', 580, False, 1, False)]

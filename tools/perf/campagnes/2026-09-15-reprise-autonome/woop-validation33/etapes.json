@@ -1,0 +1,121 @@
+[
+  {
+    "nom": "installation",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "30",
+      "/private/tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app"
+    ],
+    "code": 0,
+    "duree_s": 2.042,
+    "fin": "2026-09-15T22:47:53.481029"
+  },
+  {
+    "nom": "normale-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sondeAnimations"
+    ],
+    "code": 0,
+    "duree_s": 0.241,
+    "fin": "2026-09-15T22:47:53.723627"
+  },
+  {
+    "nom": "normale-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home33-normale",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.677,
+    "fin": "2026-09-15T22:48:29.406660"
+  },
+  {
+    "nom": "sans-perle-lancement",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansSoufflePerle"
+    ],
+    "code": 0,
+    "duree_s": 0.297,
+    "fin": "2026-09-15T22:48:29.704466"
+  },
+  {
+    "nom": "sans-perle-collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-home33-sans-perle",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 0.676,
+    "fin": "2026-09-15T22:49:05.383212"
+  },
+  {
+    "nom": "home-finale",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.298,
+    "fin": "2026-09-15T22:49:05.681733"
+  }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "fichier": "woop-invite30-compare-sans-invite-vol.jsonl",
+    "fenetre": "15<t<=35",
+    "n": 20,
+    "cpu_mediane": 9.0,
+    "therm": [
+      1
+    ],
+    "protection": [
+      0
+    ]
+  },
+  {
+    "fichier": "woop-invite30-compare-swiftui-vol.jsonl",
+    "fenetre": "15<t<=35",
+    "n": 20,
+    "cpu_mediane": 10.0,
+    "therm": [
+      0,
+      1
+    ],
+    "protection": [
+      0
+    ]
+  },
+  {
+    "fichier": "woop-balade30-vol.jsonl",
+    "fenetre": "15<t<=35",
+    "n": 20,
+    "cpu_mediane": 33.5,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  }
+]

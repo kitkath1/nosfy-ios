@@ -1,0 +1,64 @@
+
+> woop-chambre-des-machines@2.0.0 verif
+> ../../tools/docsite/verifier.sh
+
+
+── 0. les prérequis
+   ✔ node v24.16.0 · Chrome présent
+
+── 1. le retard — le livrable est-il plus vieux que sa source ?
+   ✔ index.html est plus récent que content/ app/ components/ public/ fonts/ scripts/
+
+── 2. tsc --noEmit — une brique sans preuve ne compile pas
+   ✔ types
+
+── 3. la source — tests/contenu (ids, titres, preuves qui se lisent, SVG à jour)
+
+ RUN  v4.1.11 /private/tmp/woop-commit-review30/docs/site
+
+ ❯ tests/contenu.test.ts (9 tests | 1 failed) 63ms
+     × preuve.fichier existe dans le dépôt, et lignes ≤ longueur du fichier 22ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/contenu.test.ts > content/ (briques, serveur, mesures) > preuve.fichier existe dans le dépôt, et lignes ≤ longueur du fichier
+AssertionError: preuves qui ne se lisent pas :
+absent : b-flow-pastille-contrat → tools/nav/PLAN-ILE-TOUCHABLE.md
+absent : b-wb-porte → Woop/Services/Compte.swift
+absent : b-po-welcome-back-jamais-avant → Woop/Services/Compte.swift
+absent : b-po-supprimer → Woop/Services/Compte.swift
+absent : b-po-deconnecter → Woop/Services/Compte.swift
+lignes : b-st-historique → Woop/Services/SupabaseSync.swift:142-230 (le fichier a 197 lignes): expected [ …(6) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "absent : b-flow-pastille-contrat → tools/nav/PLAN-ILE-TOUCHABLE.md",
++   "absent : b-wb-porte → Woop/Services/Compte.swift",
++   "absent : b-po-welcome-back-jamais-avant → Woop/Services/Compte.swift",
++   "absent : b-po-supprimer → Woop/Services/Compte.swift",
++   "absent : b-po-deconnecter → Woop/Services/Compte.swift",
++   "lignes : b-st-historique → Woop/Services/SupabaseSync.swift:142-230 (le fichier a 197 lignes)",
++ ]
+
+ ❯ tests/contenu.test.ts:102:76
+    100|     }
+    101|     const fautes = [...manquants.map((m) => 'absent : ' + m), ...horsF…
+    102|     expect(fautes, 'preuves qui ne se lisent pas :\n' + fautes.join('\…
+       |                                                                            ^
+    103|   })
+    104| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 8 passed (9)
+   Start at  23:30:48
+   Duration  133ms (transform 41ms, setup 0ms, import 16ms, tests 63ms, environment 0ms)
+
+   ✗ la source ment
+
+✗ refusé après 1 s
