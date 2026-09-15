@@ -1339,6 +1339,13 @@ struct CardSeances: View {
                 // points : « la plus récente », pas une décoration).
                 // ⚠️ 12 Hz, l'horloge dort sous Reduce Motion, et LE CADRE
                 // EST FORCÉ (le piège de la TimelineView).
+                // Même rangée, seul son petit point actif anime des couches natives.
+                if PerlesSemaineNatives.actives {
+                    PerlesSemaineNatives(jours: jours, joursFaits: joursFaits,
+                        faites: faites, p: p, largeur: W, hauteur: H,
+                        immobile: reduceMotion || vide || DepartEtat.shared.cheminOuvert
+                            || RythmeEcran.dortHome)
+                } else {
                 TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: reduceMotion || vide
                                             || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { tl in
@@ -1416,6 +1423,7 @@ struct CardSeances: View {
                         }
                     }
                     .frame(width: W, height: H)
+                }
                 }
 
                 Rectangle()
