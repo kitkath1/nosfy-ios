@@ -62,7 +62,21 @@ actor SupabaseSync {
             let position: Int
             let sets: [(id: String, reps: Int, weight: Double, position: Int)]
             let phases: [(id: String, kind: String, seconds: Int, speed: Double, incline: Double, cycleIndex: Int, position: Int)]
+            /// LA PISCINE (15-09, session cardio) : les longueurs nagées et le
+            /// bassin — une ligne `piscine_longueurs` par exercice, seulement
+            /// s'il y en a (0 = rien à pousser).
+            var longueurs: Int = 0
+            var metresParLongueur: Int = 25
         }
+    }
+
+    /// `piscine_longueurs` (20260915160000) : une ligne par exercice de
+    /// piscine, clé = l'exercice (upsert `merge-duplicates` sur la pk).
+    private struct PiscineRow: Encodable {
+        let logged_exercise_id: String
+        let user_id: String
+        let longueurs: Int
+        let metres_par_longueur: Int
     }
 
     // MARK: Envoi
@@ -109,11 +123,20 @@ actor SupabaseSync {
                 }
             }
 
+            let piscines = snapshots.flatMap(\.exercises)
+                .filter { $0.longueurs > 0 }
+                .map {
+                    PiscineRow(logged_exercise_id: $0.id, user_id: userID,
+                               longueurs: $0.longueurs,
+                               metres_par_longueur: $0.metresParLongueur)
+                }
+
             // L'ordre compte : les clés étrangères pointent vers la table précédente.
             try await upsert(workouts, into: "workouts", token: token)
             try await upsert(exercises, into: "logged_exercises", token: token)
             try await upsert(sets, into: "strength_sets", token: token)
             try await upsert(phases, into: "cardio_phases", token: token)
+            try await upsert(piscines, into: "piscine_longueurs", token: token)
         } catch {
             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
             await SupabaseSession.shared.invalidate()
@@ -164,7 +187,9 @@ extension Workout {
                         (id: $0.remoteID.uuidString, kind: $0.kindRaw, seconds: $0.seconds,
                          speed: $0.speed, incline: $0.incline,
                          cycleIndex: $0.cycleIndex, position: $0.order)
-                    }
+                    },
+                    longueurs: logged.longueurs,
+                    metresParLongueur: logged.metresParLongueur
                 )
             }
         )

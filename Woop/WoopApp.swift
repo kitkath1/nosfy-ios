@@ -531,8 +531,14 @@ struct RootView: View {
         // de `reward_rules.pieces_par_serie`.
         let series = a.seriesPayantes
         let gain = series * EconomieWoop.shared.piecesParSerie
+        // LE CARDIO OUVRE LA CLÔTURE (15-09, plan cardio §B) : une séance sans
+        // série de muscu mais avec des intervalles ou des longueurs se clôt,
+        // se fête et se PAIE — par le serveur, au barème de séance
+        // (`pieces_cardio_seance`) ; le téléphone n'envoie aucun montant.
+        let cardio = a.cardioFait
+        let ouvre = gain > 0 || cardio
         print("[flow] terminerSeance : exos=\(a.exerciseCount) "
-              + "séries=\(series) gain=\(gain)")
+              + "séries=\(series) gain=\(gain) cardio=\(cardio)")
         withAnimation(.easeOut(duration: 0.22)) {
             depart.pauseOuverte = false
         }
@@ -540,9 +546,10 @@ struct RootView: View {
         try? modelContext.save()
         WorkoutActivityController.end()
         // LE TROPHÉE ET LE BOOSTER SE MÉRITENT : une séance sans une
-        // seule série ne remplit rien et ne propose rien (l'économie
-        // dit 20 pièces PAR SÉRIE — une séance vide vaut zéro).
-        if gain > 0 { WoopCelebration.shared.workoutFinished() }
+        // seule série ni un intervalle ne remplit rien et ne propose rien
+        // (l'économie dit 20 pièces PAR SÉRIE, et un barème par séance
+        // cardio — une séance vide vaut zéro).
+        if ouvre { WoopCelebration.shared.workoutFinished() }
         // LA REDIRECTION EST EXPLICITE — jamais suspendue aux gardes
         // de la célébration (« il ne se passe rien » payé : Terminer
         // doit RAMENER À LA HOME, d'où qu'on vienne).
@@ -569,9 +576,11 @@ struct RootView: View {
         let seance = a.remoteID
         Task.detached {
             await SupabaseSync.shared.push([snapshot])
-            await SacreServeur.reglerFinDeSeance(seance, series: series)
+            await SacreServeur.reglerFinDeSeance(seance, series: series,
+                                                 cardio: cardio)
         }
-        guard gain > 0 else { return }
+        guard ouvre else { return }
+        storyCardio = cardio
         // LA PROMESSE LOCALE (PARCOURS-BOOSTER.md §7 : « promis localement et
         // réclamé au premier lancement connecté ») : le sachet de fin de
         // séance entre dans la réserve MAQUETTE tout de suite — sans compte,
@@ -597,6 +606,9 @@ struct RootView: View {
 
     /// Le gain à annoncer quand la story se ferme (posé avec elle).
     @State private var storyGain = 0
+    /// La séance avait du cardio fait : ses pièces arrivent avec la réponse
+    /// du serveur (`EconomieWoop.appliquer` pousse la dalle), pas d'ici.
+    @State private var storyCardio = false
 
     /// APRÈS LA STORY : LA PILE (30-08 soir) — les pièces, puis le sachet
     /// forfaitaire, l'une sous l'autre (+0,3 s, puis +0,45 s d'écart), et la
@@ -606,11 +618,19 @@ struct RootView: View {
     /// réponse, puis le chemin animé, puis « Ouvrir » — ici, l'empilement seul.
     private func enchainerApresStory() {
         let gain = storyGain
+        let cardio = storyCardio
         storyGain = 0
-        guard gain > 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
+        storyCardio = false
+        guard gain > 0 || cardio else { return }
+        // Les pièces de muscu et le sachet : le téléphone les connaît, il
+        // les dit tout de suite. Les pièces CARDIO, seul le serveur les
+        // connaît (le barème) : leur dalle arrive avec sa réponse.
+        if gain > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
+            }
         }
+        // Le sachet est forfaitaire — une séance finie, muscu ou cardio.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
             SacreEtat.shared.proposer()
         }
@@ -1144,13 +1164,11 @@ struct RootView: View {
         }
         return lignes.compactMap { le in
             guard let exo = le.exercise else { return nil }
+            // Séries, intervalles cardio faits ou longueurs de piscine — la
+            // même ligne, trois contenus (15-09, plan cardio §D).
             return SlateGroupe(id: le.exerciseID, exercise: exo,
-                               rows: le.orderedSets.map {
-                SlateLigne(reps: $0.reps, kilos: $0.weight,
-                           seconds: $0.isDone ? $0.durationSeconds
-                               : le.restSeconds,
-                           done: $0.isDone)
-            })
+                               rows: SlateGroupe.lignes(de: le,
+                                                        restSeconds: le.restSeconds))
         }
     }
 
@@ -2106,6 +2124,27 @@ struct RootView: View {
             // (captures d'écran automatisées uniquement).
             if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
                 sheetWorkout = active
+            }
+            // `-grandPlayerOuvert` (15-09, banc cardio) : le grand player
+            // s'ouvre seul sur la séance en cours, 2 s après la home — le
+            // simulateur n'a pas de doigt pour la pastille. Captures
+            // d'écran automatisées uniquement.
+            if CommandLine.arguments.contains("-grandPlayerOuvert") {
+                // 6 s : le temps que la @Query rende la séance et que la
+                // pastille ait fini son vol vers l'île (0,55 s après).
+                try? await Task.sleep(for: .seconds(6.0))
+                print("[banc] -grandPlayerOuvert : séance=\(active != nil) morph=\(morphPlayer)")
+                ouvrirGrandPlayer()
+            }
+            // `-terminerSeanceAuto <s>` (15-09, banc cardio) : la séance en
+            // cours se termine seule après s secondes — le chemin EXACT du
+            // « Terminer » du panneau (poussée, clôture, story, pile). Le
+            // simulateur n'a pas de doigt pour le médaillon.
+            let auto = UserDefaults.standard.integer(forKey: "terminerSeanceAuto")
+            if auto > 0 {
+                try? await Task.sleep(for: .seconds(Double(auto)))
+                print("[banc] -terminerSeanceAuto : séance=\(active != nil) cardio=\(active?.cardioFait ?? false)")
+                if active != nil { terminerSeance() }
             }
             // La cuisson du studio HDR du booster (1024×512 pixel par
             // pixel, CPU + écriture disque) se paie ICI, en fond de cale —

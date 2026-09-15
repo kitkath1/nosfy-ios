@@ -280,6 +280,23 @@ enum SacreServeur {
         /// sa page ordinaire. Un estampillage : rejouée, la même liste.
         let faits: [Fait]
         let faitsRaison: String?
+        // ── DEPUIS 20260915160000 (15-09, l'économie du cardio) ──
+        /// Ce que le CARDIO de la séance a rapporté — le barème calculé par le
+        /// serveur (`pieces_cardio_seance`, tools/cardio/PLAN-ECONOMIE-CARDIO.md),
+        /// bonus compris. 0 sans cardio, ou sur une base d'avant (clé absente).
+        let piecesCardio: Int
+        /// Séries × taux + cardio.
+        let piecesTotal: Int
+        /// Le sachet forfaitaire accordé PAR LE CARDIO (aucune série de muscu).
+        let sachetCardio: Bool
+        /// Le détail par exercice, tel que le serveur le rend (`exercices: [...]`).
+        let cardioDetail: [String: Any]
+        /// Le cardio de cette séance était DÉJÀ payé (le stocké relu) : rien
+        /// de neuf à dire.
+        let cardioRejeu: Bool
+        /// Le bonus « tu t'es dépassée » (30) quand un fait `top_cardio` a été
+        /// rangé — une règle, pas un avis (option A' du plan économie).
+        let bonusProgres: Int
     }
 
     /// Un fait de séance, tel que le serveur le range (`workout_facts`).
@@ -324,7 +341,14 @@ enum SacreServeur {
                              sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0,
                              faits: ((j["faits"] as? [[String: Any]]) ?? [])
                                 .compactMap(Fait.lire),
-                             faitsRaison: j["faits_raison"] as? String)
+                             faitsRaison: j["faits_raison"] as? String,
+                             piecesCardio: (j["pieces_cardio"] as? Int) ?? 0,
+                             piecesTotal: (j["pieces_total"] as? Int)
+                                ?? ((j["pieces"] as? Int) ?? 0),
+                             sachetCardio: (j["sachet_cardio"] as? Bool) ?? false,
+                             cardioDetail: j["cardio_detail"] as? [String: Any] ?? [:],
+                             cardioRejeu: (j["cardio_rejeu"] as? Bool) ?? false,
+                             bonusProgres: (j["bonus_progres"] as? Int) ?? 0)
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
@@ -353,11 +377,15 @@ enum SacreServeur {
     ///
     /// Les gardes (`-demoData`, configuration, session) vivent maintenant
     /// dans l'outbox — un seul endroit pour toutes les écritures d'argent.
-    static func reglerFinDeSeance(_ seance: UUID, series: Int) async {
-        // Une séance sans une seule série ne paie rien — la même garde qu'à
-        // l'écran (`terminerSeance` ne propose le sachet que si gain > 0) et
-        // que côté serveur. Trois endroits, une seule règle.
-        guard series > 0 else { return }
+    static func reglerFinDeSeance(_ seance: UUID, series: Int,
+                                  cardio: Bool = false) async {
+        // Une séance sans une seule série ni un intervalle ne paie rien — la
+        // même garde qu'à l'écran (`terminerSeance` ne propose le sachet que
+        // si gain > 0 ou cardio fait) et que côté serveur. Trois endroits,
+        // une seule règle. Le cardio (15-09) : `p_series` reste les séries
+        // de muscu (0, ici) — le serveur lit les phases poussées juste avant
+        // et calcule le barème lui-même.
+        guard series > 0 || cardio else { return }
         await OutboxGains.shared.poster(.finDeSeance(seance: seance,
                                                      series: series))
     }

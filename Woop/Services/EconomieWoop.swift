@@ -260,6 +260,20 @@ final class EconomieWoop {
         boostersServeur += c.sachetsConvertis
         serveur = true
         var pile: [Annonce] = []
+        // LE CARDIO (15-09) : seul le serveur connaît son montant (le
+        // barème). Il se dit ICI, à la réponse — jamais avant, et jamais
+        // sur un rejeu (le stocké n'est pas un gain neuf). Le sachet que le
+        // cardio seul a accordé (aucune série de muscu) se dit avec.
+        if c.piecesCardio > 0, !c.rejeu, !c.cardioRejeu {
+            pile.append(.cardio(c.piecesCardio))
+            print("[flow] cardio payé : \(c.piecesCardio) pièces (bonus \(c.bonusProgres)) · total \(c.piecesTotal) · détail \(c.cardioDetail)")
+        }
+        // Le sachet du cardio seul : `_brut` ne l'a pas compté dans
+        // `booster_neuf` (0 série) — il se compte et se dit ici, une fois.
+        if c.sachetCardio, !c.rejeu, !c.cardioRejeu, !c.boosterNeuf {
+            boostersServeur += 1
+            pile.append(.sachet(1))
+        }
         if c.sachetsConvertis > 0 { pile.append(.sachet(c.sachetsConvertis)) }
         if c.argent { pile.append(.argent(1)) }
         if !pile.isEmpty { FileAnnonces.shared.pousser(pile) }

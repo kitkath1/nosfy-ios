@@ -34,10 +34,14 @@ enum Annonce: Equatable {
     case argent(Int)
     /// « +N · retour du jour » — le Welcome Back, au tap du Claim.
     case retour(Int)
+    /// « +N cardio » — le barème de séance calculé par le serveur (15-09),
+    /// dit quand `cloturer_seance` répond.
+    case cardio(Int)
 
     var montant: Int {
         switch self {
-        case .pieces(let n), .sachet(let n), .argent(let n), .retour(let n): return n
+        case .pieces(let n), .sachet(let n), .argent(let n), .retour(let n),
+             .cardio(let n): return n
         }
     }
 }
@@ -129,6 +133,7 @@ struct DalleAnnonce: View {
     private var libelle: String {
         switch annonce {
         case .pieces:        return "pièces lune"
+        case .cardio:        return "cardio"
         case .retour:        return "retour du jour"
         case .sachet(let n): return n > 1 ? "sachets" : "sachet"
         case .argent(let n): return n > 1 ? "pièces d'argent" : "pièce d'argent"
@@ -168,7 +173,7 @@ struct DalleAnnonce: View {
     @ViewBuilder
     private var glyphe: some View {
         switch annonce {
-        case .pieces, .retour:
+        case .pieces, .retour, .cardio:
             // La petite pièce d'or : le disque de braise au liseré (la même
             // que `PiecesNotif`, pour que la dalle des pièces ne change pas).
             ZStack {

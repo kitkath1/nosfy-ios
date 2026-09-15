@@ -34,6 +34,68 @@ import SwiftUI
 // dérivent de dates-ancres — jamais un `withAnimation` sur
 // un état, jamais une accumulation. Le chrono survit à l'arrière-plan.
 
+// MARK: - Le MODE : HIIT, escalier, tapis modéré (15-09, plan cardio §B)
+
+/// Ce qui change d'un cardio à l'autre sur le double galet — et RIEN d'autre :
+/// la plage de la commande, sa valeur de départ, son unité, et ce qu'un
+/// segment devient une fois écrit. Le dessin, le geste, la fête, le fond par
+/// paliers sont les mêmes pour les trois (« même layout », verdict 15-09).
+struct ModeCardio: Equatable {
+    /// La plage de la commande du bas de l'écran.
+    let plage: ClosedRange<Double>
+    /// La vitesse d'EFFORT au départ (10 km/h : « zéro n'est pas une vitesse
+    /// de course », verdict 31-08) et la vitesse de RÉCUP au départ.
+    let depart: Double
+    let departRecup: Double
+    /// « km/h » — ou rien : l'escalier compte en NIVEAUX de machine.
+    let unite: String
+    /// Ce que l'encre écrit sous la valeur.
+    let libelle: String
+    /// Points de glisse par cran : toute la plage tient en deux largeurs
+    /// d'écran (40 pt × 20 crans = 800 pt ; 53 × 15 = 800 pt).
+    let pasGlisse: Double
+    /// L'escalier n'est JAMAIS un sprint (verdict 15-09) : ses montées sont
+    /// des accélérations, et tout ce qui monte est un effort.
+    let estNiveau: Bool
+
+    /// Le genre d'un segment d'EFFORT à cette vitesse — c'est ce que la
+    /// phase écrite portera. HIIT / tapis : sprint au-dessus du seuil de la
+    /// maison (15 km/h, `SemaineStats.seuilEffort`), accélération dessous.
+    func kindEffort(_ v: Double) -> PhaseKind {
+        if estNiveau { return .acceleration }
+        return v >= SemaineStats.seuilEffort ? .sprint : .acceleration
+    }
+    /// Le genre d'une RÉCUP : récupération si on avance encore (« 1 min à
+    /// 9 km/h », son exemple), repos si la machine est à zéro.
+    func kindRecup(_ v: Double) -> PhaseKind { v > 0 ? .recuperation : .repos }
+    /// Le récap de la dalle : « 17 km/h » / « niveau 11 ».
+    func valeur(_ v: Double) -> String {
+        let n = v.formatted(.number.precision(.fractionLength(0...1)))
+        return estNiveau ? "NIVEAU \(n)" : "\(n) KM/H"
+    }
+
+    static let hiit = ModeCardio(plage: 0...20, depart: 10, departRecup: 7,
+                                 unite: "km/h", libelle: "km/h", pasGlisse: 40,
+                                 estNiveau: false)
+    static let tapisModere = ModeCardio(plage: 0...20, depart: 7, departRecup: 5,
+                                        unite: "km/h", libelle: "km/h", pasGlisse: 40,
+                                        estNiveau: false)
+    static let escalier = ModeCardio(plage: 1...15, depart: 6, departRecup: 1,
+                                     unite: "", libelle: "NIVEAU", pasGlisse: 53,
+                                     estNiveau: true)
+
+    /// Le mode d'un exercice du catalogue — nil pour tout ce qui n'a pas de
+    /// double galet (la muscu, et la piscine qui se saisit à la main).
+    static func pour(_ exercise: Exercise) -> ModeCardio? {
+        switch exercise.id {
+        case "hiit-tapis": return .hiit
+        case "escalier": return .escalier
+        case "tapis-lent": return .tapisModere
+        default: return nil
+        }
+    }
+}
+
 // MARK: - L'état de la séance tapis
 
 /// L'état vivant du mode tapis — UN observable, jamais des @State éparpillés
@@ -43,6 +105,8 @@ import SwiftUI
 final class SeanceTapis {
     enum Etat { case court, repos }
 
+    /// Le mode : ce que la commande règle, et ce qu'un segment devient.
+    let mode: ModeCardio
     /// L'instant où les pastilles ARRIVENT (l'ancre de toute la scène).
     let naissance: Date
     private(set) var etat: Etat = .court
@@ -54,17 +118,23 @@ final class SeanceTapis {
     private(set) var setDebut: Date?
     /// L'ancre du repos (l'entre-sets montre le temps écoulé, pas un compte).
     private(set) var reposDebut: Date?
-    /// Le km/h courant — la molette l'écrit, la phase (J2) le lira.
-    /// ⚠️ 10 PAR DÉFAUT (verdict 31-08). Zéro n'est pas une vitesse de course :
-    /// démarrer là obligeait à traverser toute la plage avant d'être utile.
-    /// Depuis 10, les deux extrêmes sont à un seul arc de pouce.
-    var vitesse: Double = 10
+    /// La vitesse COURANTE — la commande l'écrit ; c'est elle que la phase
+    /// emporte au stop (l'intervalle) et à la relance (la récup).
+    var vitesse: Double
+    /// LES DEUX MÉMOIRES (verdict Q2/Q15 du 15-09 : « 30 s à 15 km/h puis
+    /// 1 min à 9 km/h, il faut le noter »). Au stop la commande BASCULE sur
+    /// la vitesse de récup ; à la relance elle revient à celle de l'effort.
+    /// Sans ça une récup non réglée hériterait des 17 km/h de l'effort et le
+    /// serveur la compterait comme un effort. Ce qu'elle règle pendant la
+    /// récup devient la nouvelle mémoire de récup, et réciproquement.
+    private(set) var vitesseEffort: Double
+    private(set) var vitesseRecup: Double
     /// L'instant où la vitesse a été SCELLÉE — l'ancre du halo ET de la dalle
     /// de confirmation. Une date, pas un booléen : les deux sont des fonctions
     /// pures du temps, ils ne s'animent pas par un état qu'on pousse.
     var vitesseScellee: Date?
-    /// Le km/h qu'on vient de choisir — ce que la dalle annonce.
-    var vitesseChoisie: Int = 10
+    /// La valeur qu'on vient de choisir — ce que la dalle annonce.
+    var vitesseChoisie: Int
     /// Le bilan du dernier set fini — ce que la dalle « SET n END » raconte.
     private(set) var dernierBilan: BilanSet?
     /// La dalle est à l'écran (elle se retire seule).
@@ -72,37 +142,57 @@ final class SeanceTapis {
     /// La pop-up flammes est à l'écran (elle attend un tap).
     var popupVisible = false
 
+    /// CE QUE LA SCÈNE RAPPORTE (15-09) : l'intervalle fini au stop, la récup
+    /// finie à la relance. La scène ne connaît pas SwiftData — c'est la fiche
+    /// qui écrit les `CardioPhase` (faites) dans le bloc de son passage.
+    var onSetFini: ((BilanSet) -> Void)?
+    var onRecupFinie: ((_ secondes: Int, _ vitesse: Double) -> Void)?
+
     struct BilanSet: Equatable {
         let rang: Int
         let secondes: Int
         let vitesse: Double
-        /// « 0:45 · 17 km/h » — le mini-récap de la dalle.
+        let mode: ModeCardio
+        /// « 0:45 · 17 KM/H » / « 0:45 · NIVEAU 11 » — le mini-récap.
         var recap: String {
-            let v = vitesse.formatted(.number.precision(.fractionLength(0...1)))
-            return String(format: "%d:%02d", secondes / 60, secondes % 60) + " · \(v) KM/H"
+            String(format: "%d:%02d", secondes / 60, secondes % 60) + " · " + mode.valeur(vitesse)
         }
     }
 
     /// La durée de l'arrivée : le set 1 démarre quand les pastilles se posent.
     static let arrivee: Double = 0.85
 
-    init(naissance: Date = .now, figee: Bool = false, setsFaits: Int = 0) {
+    init(mode: ModeCardio = .hiit, naissance: Date = .now, figee: Bool = false,
+         setsFaits: Int = 0) {
+        self.mode = mode
         self.naissance = figee ? naissance.addingTimeInterval(-30) : naissance
         self.setsFaits = setsFaits
         self.setIndex = setsFaits + 1
         self.setDebut = self.naissance.addingTimeInterval(Self.arrivee)
+        self.vitesse = mode.depart
+        self.vitesseEffort = mode.depart
+        self.vitesseRecup = mode.departRecup
+        self.vitesseChoisie = Int(mode.depart.rounded())
     }
 
     /// Le tap sur la pastille chrono pendant l'effort : le set est FAIT.
-    /// (J2 : c'est ici que la CardioPhase s'écrira et que la fête partira.)
+    /// L'intervalle est RAPPORTÉ (la fiche l'écrit), la commande bascule sur
+    /// la récup, la fête part.
     func stopper(_ now: Date = .now) {
         guard etat == .court else { return }
         let secondes = setDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
-        dernierBilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse)
+        let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
+        dernierBilan = bilan
         etat = .repos
         setsFaits += 1
         setDebut = nil
         reposDebut = now
+        // La bascule effort → récup : on garde ce qu'on courait, on propose
+        // ce qu'on récupérait la dernière fois.
+        vitesseEffort = vitesse
+        vitesse = vitesseRecup
+        vitesseChoisie = Int(vitesse.rounded())
+        onSetFini?(bilan)
         lancerLaFete()
     }
 
@@ -129,14 +219,22 @@ final class SeanceTapis {
         }
     }
 
-    /// Le tap sur la pastille chrono au repos : le set suivant part.
+    /// Le tap sur la pastille chrono au repos : la récup est FAITE (elle est
+    /// rapportée, à la vitesse qu'on tenait), le set suivant part, la
+    /// commande revient à la vitesse d'effort.
     func relancer(_ now: Date = .now) {
         guard etat == .repos else { return }
         popupVisible = false
+        let secondes = reposDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
+        let vRecup = vitesse
         etat = .court
         setIndex = setsFaits + 1
         setDebut = now
         reposDebut = nil
+        vitesseRecup = vRecup
+        vitesse = vitesseEffort
+        vitesseChoisie = Int(vitesse.rounded())
+        if secondes > 0 { onRecupFinie?(secondes, vRecup) }
     }
 
     /// Le palier de braise : `k = min(setsFaits, 6)` — 7 valeurs, pas plus
@@ -189,26 +287,44 @@ enum TapisBraise {
 
 struct TapisScene: View {
     var seance: SeanceTapis
-    /// La fin de session : le slider commet (tranché §10.1).
+    /// LA FIN DE L'EXERCICE — pas de la séance (verdict 15-09 : « Finish
+    /// dans le double galet termine l'exercice, pas la séance » ; la séance
+    /// se termine par la dalle, comme partout). Le slider commet.
     var onFinish: () -> Void = {}
     /// BANC : les horloges clouées à cet instant après la naissance.
     var tempsFige: Double? = nil
     /// L'état de la vitesse. Il vit ICI et pas dans `SeanceTapis` : sa
     /// position continue s'écrit à chaque événement de doigt, et elle ne doit
     /// pas réveiller les shaders de feu.
-    @State private var vit = EtatVitesse()
+    @State private var vit: EtatVitesse
+
+    init(seance: SeanceTapis, onFinish: @escaping () -> Void = {},
+         tempsFige: Double? = nil) {
+        self.seance = seance
+        self.onFinish = onFinish
+        self.tempsFige = tempsFige
+        _vit = State(initialValue: EtatVitesse(depart: seance.vitesse))
+    }
+
+    /// LA PORTE DES HORLOGES (skill perf §5.①) : la scène s'endort quand son
+    /// onglet n'est pas affiché ou qu'un player la recouvre — sauf au banc,
+    /// où elle est seule à l'écran.
+    private var dort: Bool {
+        !TapisBanc.actif
+            && (RythmeEcran.dort("exercises") || PlayerEtat.shared.couvre)
+    }
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack {
                 Color.black.ignoresSafeArea()
-                TimelineView(.animation(minimumInterval: 1 / 60)) { tl in
+                TimelineView(.animation(minimumInterval: 1 / 60, paused: dort)) { tl in
                     vivante(w: w, h: h, now: date(tl.date))
                 }
                 // L'ARC et la FUMÉE : deux vues à part, chacune sur son
                 // horloge. L'arc est la SEULE qui suive la position continue.
-                AnneauHote(etat: vit,
+                AnneauHote(etat: vit, mode: seance.mode,
                            centre: CGPoint(x: w / 2, y: h * Self.yVitesseF),
                            rayon: TapisCotes.rayonAnneau)
                 FumeeVitesse(etat: vit,
@@ -236,12 +352,11 @@ struct TapisScene: View {
     private var fete: some View {
         if let b = seance.dernierBilan, seance.dalleVisible {
             VStack {
-                NotifJauge(sousTitre: "SET \(b.rang) END",
-                           libelle: b.recap,
-                           gain: EconomieWoop.shared.piecesParSerie,
-                           fraction: fractionCoffre,
-                           pose: true,
-                           naissance: seance.naissance)
+                // ⚠️ SANS MONTANT (verdict 15-09 : « pas 20 par intervalle,
+                // la séance est jugée à l'intensité » — le serveur paie à la
+                // clôture). La dalle est une QUITTANCE : ce set est écrit,
+                // voilà ce qu'il a été.
+                DalleSetFini(rang: b.rang, recap: b.recap)
                     .padding(.horizontal, NotifGeo.margeH)
                     .padding(.top, 10)
                 Spacer(minLength: 0)
@@ -260,14 +375,6 @@ struct TapisScene: View {
                 .transition(.opacity)
                 .zIndex(60)
         }
-    }
-
-    /// La jauge du coffre — LUE, jamais inventée : depuis la conversion, le
-    /// solde jaune reste sous le prix d'un sachet par construction.
-    private var fractionCoffre: Double {
-        let eco = EconomieWoop.shared
-        let prix = max(eco.prixBooster, 1)
-        return min(Double(eco.or) / Double(prix), 1.0)
     }
 
     private func fermerPopup() {
@@ -289,6 +396,9 @@ struct TapisScene: View {
     // MARK: la scène vivante (fonction pure de `now`)
 
     private func vivante(w: CGFloat, h: CGFloat, now: Date) -> some View {
+        // La famille 4 de la sonde : « tapis » — sans ce tic, la scène
+        // n'existe pas dans `tics[]` (l'angle mort du skill perf §6.8).
+        SondeVol.shared.tic(4)
         let age = now.timeIntervalSince(seance.naissance)
         // L'ARRIVÉE — l'école nightLens : e2 lissé, deux oscillations à la pose.
         let u = min(max(age / SeanceTapis.arrivee, 0), 1)
@@ -392,13 +502,9 @@ struct TapisScene: View {
                 .position(x: w / 2, y: yVitesse)
                 .offset(y: offVitesse)
                 .zIndex(10)
-            phrase(now: now)
-                .position(x: w / 2, y: h * 0.125)
-                .zIndex(10)
-            enTete
-                .position(x: w / 2, y: h * 0.062)
-                .opacity(sstep(0.5, 1.0, u))
-                .zIndex(10)
+            // (« Tap to stop » et « N MIN · N SETS » sont MORTS — verdict
+            // Kathryn 15-09 : « enlève le wording, mets juste le temps ». Les
+            // deux vues restent ci-dessous, sans site d'appel.)
         }
         .allowsHitTesting(false)
     }
@@ -433,31 +539,29 @@ struct TapisScene: View {
     /// PERMANENT n'a plus rien à apprendre à personne — et garder les deux,
     /// ce serait un glyphe qui clignote à côté d'un glyphe fixe : du bruit.
     /// Le glyphe dit l'ÉTAT, la phrase au-dessus dit le GESTE.
+    /// ⚠️ JUSTE LE TEMPS (verdict Kathryn 15-09 : « enlève le wording,
+    /// mets juste le temps ») : plus de « SET n », plus de « REST » — le
+    /// chrono du set pendant l'effort, le chrono de la récup pendant la
+    /// récup (un ton plus bas), et le glyphe qui dit l'état : ⏹ petit et
+    /// fixe sous l'effort, ▶ au repos. La braise dit le reste.
     private func encreChrono(now: Date) -> some View {
         let court = seance.etat == .court
-        let elapsed: Int = {
-            guard court, let d0 = seance.setDebut else { return 0 }
-            return max(0, Int(now.timeIntervalSince(d0)))
+        let secondes: Int = {
+            if court, let d0 = seance.setDebut { return max(0, Int(now.timeIntervalSince(d0))) }
+            if let r0 = seance.reposDebut { return max(0, Int(now.timeIntervalSince(r0))) }
+            return 0
         }()
-        let repos = seance.reposDebut.map { max(0, Int(now.timeIntervalSince($0))) }
         return VStack(spacing: court ? 4 : 8) {
-            Text(court ? "SET \(seance.setIndex)" : "REST \(chrono(repos ?? 0))")
-                .font(.inter(12, .semibold))
-                .tracking(3.0)
-                .foregroundStyle(Color.white.opacity(court ? 0.50 : 0.62))
+            Text(chrono(secondes))
+                .font(.inter(52, .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color.white.opacity(court ? 0.94 : 0.66))
             if court {
-                Text(chrono(elapsed))
-                    .font(.inter(52, .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.white.opacity(0.94))
-                // Le stop, PETIT et FIXE : il accompagne le chrono, il ne le
-                // remplace pas. Au repos, c'est le ▶ qui devient le héros —
-                // c'est lui l'action du moment.
                 glyphe("stop.fill", corps: 19)
                     .opacity(0.78)
                     .padding(.top, 2)
             } else {
-                glyphe("play.fill", corps: 48)
+                glyphe("play.fill", corps: 34)
             }
         }
         .allowsHitTesting(false)
@@ -477,7 +581,7 @@ struct TapisScene: View {
                 .foregroundStyle(LinearGradient(
                     colors: [.white, .white.opacity(0.70)],
                     startPoint: .top, endPoint: .bottom))
-            Text("KM/H")
+            Text(seance.mode.estNiveau ? "NIVEAU" : "KM/H")
                 .font(.inter(11, .semibold))
                 .tracking(2.2)
                 .foregroundStyle(Color.white.opacity(0.55))
@@ -546,12 +650,18 @@ struct TapisScene: View {
         // Pastille à la taille du chrono (01-09) = encre à sa grammaire
         // (52/12, la même que `encreChrono`) — une grande lentille sur
         // une petite encre se lisait vide.
-        VStack(spacing: 4) {
+        // Au repos, l'encre dit RÉCUP : la commande règle la vitesse de
+        // récupération (la mémoire a basculé au stop), et ça doit se lire.
+        let repos = seance.etat == .repos
+        let libelle = repos
+            ? (seance.mode.estNiveau ? "RÉCUP · NIVEAU" : "RÉCUP · km/h")
+            : seance.mode.libelle
+        return VStack(spacing: 4) {
             Text(Int(seance.vitesse.rounded()).formatted())
                 .font(.inter(52, .medium))
                 .monospacedDigit()
-                .foregroundStyle(Color.white.opacity(0.92))
-            Text("km/h")
+                .foregroundStyle(Color.white.opacity(repos ? 0.72 : 0.92))
+            Text(libelle)
                 .font(.inter(12, .semibold))
                 .tracking(3.0)
                 .foregroundStyle(Color.white.opacity(0.48))
@@ -581,6 +691,10 @@ struct TapisScene: View {
         case .court: seance.stopper()      // la fête part du MODÈLE
         case .repos: seance.relancer()
         }
+        // LA COMMANDE SUIT LA MÉMOIRE : le modèle vient de basculer
+        // (effort ⇄ récup), la position de la prise se recale dessus —
+        // sinon le prochain glissement partirait de l'ancienne valeur.
+        vit.recaler(sur: seance.vitesse)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
@@ -658,25 +772,74 @@ private struct PastilleBraise: View {
     let pulse: Double
 
     var body: some View {
-        let c = Float(cote / 2)
-        let rayon = Float(cote / (2 * TapisBraise.demiSurR))
-        let sh = ShaderLibrary.braiseGlow(
-            .float2(Float(cote), Float(cote)), .float2(c, c), .float(rayon),
-            .float(Float(t)), .float(Float(ig)), .float(Float(pulse)),
-            .float(Float(chaleur)))
-        Rectangle()
-            .fill(.white)
-            .colorEffect(sh)
-            .frame(width: cote, height: cote)
-            // Le masque ne coupe plus la braise : il fond de 0,72 à 1,00 du
-            // demi-côté (il fondait de 0,44 à 0,86 et jetait l'anneau).
-            .mask(RadialGradient(
-                gradient: Gradient(stops: [
-                    .init(color: .white, location: 0.0),
-                    .init(color: .white, location: 0.72),
-                    .init(color: .clear, location: 1.0)]),
-                center: .center, startRadius: 0, endRadius: cote / 2))
-            .allowsHitTesting(false)
+        if TapisBanc.sansBraise {
+            // LE BARREAU `-sansBraiseTapis` (skill perf : « tout nouveau
+            // moteur coûteux arrive avec son barreau ») : la même place, la
+            // même taille, un disque de braise PEINT (né flou, aucun shader).
+            // C'est l'essai B de la campagne ABBA sur son téléphone.
+            RadialGradient(
+                colors: [Color(red: 1.0, green: 0.36, blue: 0.02).opacity(0.55 * ig + 0.15),
+                         Color(red: 1.0, green: 0.13, blue: 0.0).opacity(0.25 * ig),
+                         .clear],
+                center: .center, startRadius: 0, endRadius: cote / 2)
+                .frame(width: cote, height: cote)
+                .allowsHitTesting(false)
+        } else {
+            let c = Float(cote / 2)
+            let rayon = Float(cote / (2 * TapisBraise.demiSurR))
+            let sh = ShaderLibrary.braiseGlow(
+                .float2(Float(cote), Float(cote)), .float2(c, c), .float(rayon),
+                .float(Float(t)), .float(Float(ig)), .float(Float(pulse)),
+                .float(Float(chaleur)))
+            Rectangle()
+                .fill(.white)
+                .colorEffect(sh)
+                .frame(width: cote, height: cote)
+                // Le masque ne coupe plus la braise : il fond de 0,72 à 1,00 du
+                // demi-côté (il fondait de 0,44 à 0,86 et jetait l'anneau).
+                .mask(RadialGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .white, location: 0.0),
+                        .init(color: .white, location: 0.72),
+                        .init(color: .clear, location: 1.0)]),
+                    center: .center, startRadius: 0, endRadius: cote / 2))
+                .allowsHitTesting(false)
+        }
+    }
+}
+
+// MARK: - La dalle « SET n END » — une quittance, sans montant
+
+/// Ce que le stop laisse à l'écran pendant 3,2 s : le set est ÉCRIT, et
+/// voilà ce qu'il a été. Pas de pièce, pas de jauge (verdict 15-09 : le
+/// cardio est payé par un barème de séance, au serveur, à la clôture — pas
+/// à l'intervalle). La robe est le socle des dalles de la maison
+/// (`RobeSocle`), pour que ça se lise comme une notification et non comme un
+/// panneau.
+private struct DalleSetFini: View {
+    let rang: Int
+    let recap: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("SET \(rang) END")
+                .font(.inter(11.5, .semibold))
+                .tracking(2.6)
+                .foregroundStyle(Color.white.opacity(0.52))
+            Text(recap)
+                .font(.inter(24, .medium))
+                .monospacedDigit()
+                .foregroundStyle(TapisScene.encreApple)
+            Spacer(minLength: 0)
+            Text("Saved")
+                .font(.inter(12, .medium))
+                .foregroundStyle(Color.white.opacity(0.38))
+        }
+        .padding(NotifGeo.pad)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .modifier(RobeSocle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Set \(rang) terminé, \(recap)")
     }
 }
 
@@ -715,15 +878,15 @@ private struct PastilleBraise: View {
 @MainActor @Observable
 final class EtatVitesse {
     /// La position CONTINUE, en km/h fractionnaires. Elle ne sort jamais d'ici.
-    var continu: Double = 10
+    var continu: Double
     /// La valeur CRANTÉE — la seule qui parte dans l'état de séance.
-    var valeur: Double = 10
+    var valeur: Double
     /// La valeur au moment où le doigt s'est posé, et la course morte du seuil.
     /// ⚠️ C'EST ÇA, LA POSITION ABSOLUE : on ne cumule RIEN. Un événement
     /// perdu, une reprise, un doigt qui s'arrête — rien ne peut faire dériver
     /// une soustraction faite depuis le point de pose. L'entrée angulaire,
     /// elle, additionnait des deltas : elle dérivait à la moindre coupure.
-    var base: Double = 10
+    var base: Double
     var morte: CGFloat = 0
     var prise = false
     var dernierClic: Date?
@@ -734,6 +897,22 @@ final class EtatVitesse {
     /// choisie (verdict 01-09) : en courant, l'écran doit revenir au calme —
     /// on ne laisse pas une règle graduée sous les yeux pendant l'effort.
     var arcOuvert = false
+
+    /// Le départ vient du MODE (10 km/h pour le HIIT, niveau 6 pour
+    /// l'escalier…) — plus jamais un 10 en dur à trois endroits.
+    init(depart: Double = 10) {
+        continu = depart
+        valeur = depart
+        base = depart
+    }
+
+    /// Recaler la commande sur une valeur que le MODÈLE vient de poser (la
+    /// bascule effort ⇄ récup) — sans clic, sans halo : rien n'a été choisi.
+    func recaler(sur v: Double) {
+        continu = v
+        valeur = v
+        base = v
+    }
 }
 
 /// LA PRISE — une bande FRANCHE, avec un vrai cadre de layout, construite
@@ -746,14 +925,14 @@ private struct PriseVitesse: View {
     let haut: CGFloat
     let bas: CGFloat
 
-    /// Points de glisse par km/h. La molette de la maison qui marche en
-    /// demande 62 ; ici 40, parce que la course entière (0-20) doit tenir en
-    /// UN balayage d'écran quand on court : 20 × 40 = 800 pt, soit deux
-    /// largeurs d'écran pour toute la plage, et depuis 10 km/h chaque extrême
-    /// est à une seule traversée.
-    private static let pasGlisse: Double = 40
-    private static let vMin: Double = 0
-    private static let vMax: Double = 20
+    /// Points de glisse par cran et bornes : ils viennent du MODE (la
+    /// molette de la maison qui marche en demande 62 ; le HIIT 40, parce que
+    /// la course entière 0-20 doit tenir en deux largeurs d'écran quand on
+    /// court, et l'escalier 53 pour que ses 15 niveaux tiennent la même
+    /// course). Un seul endroit, plus deux copies qui divergent.
+    private var pasGlisse: Double { seance.mode.pasGlisse }
+    private var vMin: Double { seance.mode.plage.lowerBound }
+    private var vMax: Double { seance.mode.plage.upperBound }
 
     @State private var clic = UIImpactFeedbackGenerator(style: .rigid)
     /// Le jeton du repli différé : un nouveau toucher l'invalide.
@@ -788,10 +967,10 @@ private struct PriseVitesse: View {
                 // vitesse — le sens d'un curseur, et celui que les chiffres
                 // suivent à l'écran.
                 var p = etat.base
-                    + Double(v.translation.width - etat.morte) / Self.pasGlisse
+                    + Double(v.translation.width - etat.morte) / pasGlisse
                 // Élastique aux bornes : la matière RÉSISTE, elle ne bute pas.
-                if p < Self.vMin { p = Self.vMin + (p - Self.vMin) * 0.30 }
-                if p > Self.vMax { p = Self.vMax + (p - Self.vMax) * 0.30 }
+                if p < vMin { p = vMin + (p - vMin) * 0.30 }
+                if p > vMax { p = vMax + (p - vMax) * 0.30 }
                 etat.continu = p
                 poser(p)
             }
@@ -802,7 +981,7 @@ private struct PriseVitesse: View {
     /// lue par la scène, qui porte les deux shaders de feu. L'écrire soixante
     /// fois par seconde les réveillerait à chaque image.
     private func poser(_ p: Double) {
-        let cran = min(max(p.rounded(), Self.vMin), Self.vMax)
+        let cran = min(max(p.rounded(), vMin), vMax)
         guard cran != etat.valeur else { return }
         etat.valeur = cran
         seance.vitesse = cran
@@ -850,12 +1029,14 @@ private struct PriseVitesse: View {
 /// page exos, découpée en trois pour cette raison exacte).
 private struct AnneauHote: View {
     let etat: EtatVitesse
+    let mode: ModeCardio
     let centre: CGPoint
     let rayon: CGFloat
 
     var body: some View {
         AnneauCrans(continu: etat.continu, prise: etat.prise ? 1 : 0,
-                    centre: centre, rayon: rayon)
+                    centre: centre, rayon: rayon,
+                    vMin: mode.plage.lowerBound, vMax: mode.plage.upperBound)
             .opacity(etat.arcOuvert ? 1 : 0)
             .allowsHitTesting(false)
     }
@@ -904,8 +1085,8 @@ enum TapisCotes {
     static let rayonValeurs: CGFloat = 180
     /// Le pas angulaire de l'AFFICHAGE (l'entrée, elle, est linéaire).
     static let pasCran: Double = .pi / 12       // 15°
-    static let vMin: Double = 0
-    static let vMax: Double = 20
+    // (vMin / vMax vivaient ici ET dans la prise — deux copies. Depuis le
+    // 15-09 les bornes viennent du MODE, un seul endroit.)
 }
 private struct AnneauCrans: View, Animatable {
     /// La position CONTINUE, en km/h — elle décide de tout : quels chiffres
@@ -915,6 +1096,9 @@ private struct AnneauCrans: View, Animatable {
     var prise: Double
     var centre: CGPoint
     var rayon: CGFloat
+    /// Les bornes du mode (0-20 km/h, niveaux 1-15).
+    var vMin: Double = 0
+    var vMax: Double = 20
 
     var animatableData: AnimatablePair<Double, Double> {
         get { AnimatablePair(continu, prise) }
@@ -936,7 +1120,7 @@ private struct AnneauCrans: View, Animatable {
             var k = -4.0
             while k <= 4 {
                 let v = courante + k
-                if v < TapisCotes.vMin || v > TapisCotes.vMax { k += 1; continue }
+                if v < vMin || v > vMax { k += 1; continue }
                 // L'angle : la valeur courante tombe sur le focal, et `cran`
                 // fait glisser tout l'anneau entre deux crans.
                 let theta = Self.focal + (v - continu) * pas

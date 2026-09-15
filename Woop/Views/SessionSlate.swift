@@ -201,16 +201,12 @@ struct SessionSlate: View {
                                rows: courant))
         for le in workout?.orderedExercises ?? []
         where le.exerciseID != exercise.id {
-            guard let exo = le.exercise, !le.orderedSets.isEmpty
-            else { continue }
-            out.append(SlateGroupe(
-                id: le.exerciseID, exercise: exo,
-                rows: le.orderedSets.map {
-                    SlateLigne(reps: $0.reps, kilos: $0.weight,
-                               seconds: $0.isDone ? $0.durationSeconds
-                                                  : le.restSeconds,
-                               done: $0.isDone)
-                }))
+            guard let exo = le.exercise else { continue }
+            // Séries, intervalles faits ou longueurs — un exercice sans rien
+            // de fait n'a pas de rangée (15-09 : le cardio entre ici).
+            let rows = SlateGroupe.lignes(de: le, restSeconds: le.restSeconds)
+            guard !rows.isEmpty else { continue }
+            out.append(SlateGroupe(id: le.exerciseID, exercise: exo, rows: rows))
         }
         return out
     }
@@ -260,10 +256,36 @@ struct SessionSlate: View {
 // MARK: - Les données figées de l'ardoise
 
 struct SlateLigne {
-    var reps: Int
-    var kilos: Double
+    /// LE GENRE (15-09, plan cardio §D) — « dans l'overlay on indique HIIT
+    /// et en dessous les intervalles, pour garder la constance avec les
+    /// exercices de base » : la même ligne, trois contenus.
+    enum Genre: Equatable {
+        /// La série de muscu : reps · kg.
+        case serie(reps: Int, kilos: Double)
+        /// Un intervalle cardio : sa vitesse (km/h, ou un niveau).
+        case intervalle(vitesse: Double, niveau: Bool)
+        /// La piscine : les longueurs, le bassin.
+        case longueurs(n: Int, metres: Int)
+    }
+    var genre: Genre
     var seconds: Int
     var done: Bool
+
+    /// Le constructeur d'avant — la série de muscu, telle quelle.
+    init(reps: Int, kilos: Double, seconds: Int, done: Bool) {
+        genre = .serie(reps: reps, kilos: kilos)
+        self.seconds = seconds
+        self.done = done
+    }
+    init(genre: Genre, seconds: Int, done: Bool) {
+        self.genre = genre
+        self.seconds = seconds
+        self.done = done
+    }
+
+    var reps: Int { if case .serie(let r, _) = genre { return r }; return 0 }
+    var kilos: Double { if case .serie(_, let k) = genre { return k }; return 0 }
+    var estSerie: Bool { if case .serie = genre { return true }; return false }
 }
 
 struct SlateGroupe: Identifiable {
@@ -271,9 +293,50 @@ struct SlateGroupe: Identifiable {
     var exercise: Exercise
     var rows: [SlateLigne]
     var done: Int { rows.filter(\.done).count }
-    /// La clé bon marché de l'équatabilité — id, compte, faites : tout
-    /// ce qui peut changer l'affichage.
-    var cle: String { "\(id)-\(rows.count)-\(done)" }
+    /// CARDIO : la rangée n'a pas de flammes (verdict 15-09 : « sans les
+    /// flammes que les exos de base ont ») — une ligne de résumé à leur
+    /// place. Vrai dès qu'une ligne n'est pas une série.
+    var cardio: Bool { rows.contains { !$0.estSerie } }
+    /// « 3 intervalles · 6:40 », « 20 longueurs · 500 m ».
+    var resume: String {
+        if let l = rows.first, case .longueurs(let n, let m) = l.genre {
+            return "\(n) longueur\(n > 1 ? "s" : "") · \(n * m) m"
+        }
+        let n = rows.filter(\.done).count
+        let s = rows.filter(\.done).reduce(0) { $0 + $1.seconds }
+        return "\(n) intervalle\(n > 1 ? "s" : "") · \(ChambreFmt.mmss(s))"
+    }
+    /// La clé bon marché de l'équatabilité — id, compte, faites, et le
+    /// temps cardio (une longueur de plus change la ligne sans changer
+    /// `done`) : tout ce qui peut changer l'affichage.
+    var cle: String {
+        "\(id)-\(rows.count)-\(done)-\(cardio ? resume : "")"
+    }
+}
+
+extension SlateGroupe {
+    /// LES LIGNES D'UN EXERCICE DE SÉANCE — muscu, cardio ou piscine — pour
+    /// les deux constructeurs de groupes (l'ardoise et le grand player).
+    /// Une série par ligne ; un INTERVALLE fait par ligne (les récups sont
+    /// dans le graphe de la fiche, pas ici) ; une ligne pour la piscine.
+    static func lignes(de le: LoggedExercise, restSeconds: Int) -> [SlateLigne] {
+        if !le.orderedSets.isEmpty {
+            return le.orderedSets.map {
+                SlateLigne(reps: $0.reps, kilos: $0.weight,
+                           seconds: $0.isDone ? $0.durationSeconds : restSeconds,
+                           done: $0.isDone)
+            }
+        }
+        if le.longueurs > 0 {
+            return [SlateLigne(genre: .longueurs(n: le.longueurs, metres: le.metresParLongueur),
+                               seconds: 0, done: true)]
+        }
+        let niveau = le.exerciseID == "escalier"
+        return le.phasesFaites.filter(\.isEffort).map {
+            SlateLigne(genre: .intervalle(vitesse: $0.speed, niveau: niveau),
+                       seconds: $0.seconds, done: true)
+        }
+    }
 }
 
 // MARK: - La partition de séance
@@ -483,11 +546,23 @@ private struct SlateRang: View {
 
             Spacer(minLength: 8)
 
-            // Les flammes-stickers, GELÉES (t = 0, aucune horloge, aucune
-            // cérémonie) : la partition est un replay, pas une séance.
-            FlammesRow(done: groupe.done, total: groupe.rows.count,
-                       t: 0, date: .distantPast, igniteAt: nil,
-                       corps: 22, ceremonie: false)
+            if groupe.cardio {
+                // CARDIO, SANS LES FLAMMES (verdict 15-09 : « même UI, sans
+                // les flammes ») — les flammes comptent des séries. À leur
+                // place, la ligne de résumé : « 3 intervalles · 6:40 ».
+                Text(groupe.resume)
+                    .font(.inter(12, .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.white.opacity(depliee ? 0.62 : 0.36))
+                    .lineLimit(1)
+                    .fixedSize()
+            } else {
+                // Les flammes-stickers, GELÉES (t = 0, aucune horloge, aucune
+                // cérémonie) : la partition est un replay, pas une séance.
+                FlammesRow(done: groupe.done, total: groupe.rows.count,
+                           t: 0, date: .distantPast, igniteAt: nil,
+                           corps: 22, ceremonie: false)
+            }
         }
         // Le chevron et la vignette sont MORTS (26-08) : « les chevrons
         // c'est pas fou », et la photo décodait 6,3 Mo pour 30 pt.
@@ -505,10 +580,7 @@ private struct SlateRang: View {
             VStack(spacing: 4) {
                 ForEach(groupe.rows.indices, id: \.self) { i in
                     SetHistoryRow(rank: i + 1,
-                                  reps: groupe.rows[i].reps,
-                                  kilos: groupe.rows[i].kilos,
-                                  seconds: groupe.rows[i].seconds,
-                                  done: groupe.rows[i].done)
+                                  ligne: groupe.rows[i])
                 }
             }
             .transition(.opacity)

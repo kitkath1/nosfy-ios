@@ -232,30 +232,35 @@ enum ExerciseCatalog {
             mistake: "Terminer en cambrant le dos plutôt qu'en serrant les fessiers."),
 
         // MARK: Cardio
+        // Les quatre descriptions RÉÉCRITES le 15-09 (verdict Q1 du plan
+        // cardio : « oui, une courte description comme les exercices ») —
+        // une phrase, français simple, le même ton que les 25 exos de muscu.
+        // ⚠️ La table `exercices` du serveur est un MIROIR généré depuis ce
+        // fichier (tools/widgets/catalogue_sql.py) : à regénérer un jour.
         Exercise(
             id: "hiit-tapis", name: "HIIT sur tapis de course",
             category: .cardio, equipment: .machine, tracking: .intervals,
             muscle: "Cardio-respiratoire",
-            cue: "Alterne phases rapides et récupérations. Un cycle regroupe plusieurs phases.",
-            mistake: "Partir trop vite sur le premier cycle et s'écrouler sur les suivants."),
+            cue: "Tu alternes des passages rapides et des récupérations, le buste droit, sans toucher les barres.",
+            mistake: "Partir trop vite sur le premier passage et s'écrouler sur les suivants."),
         Exercise(
             id: "escalier", name: "Escalier",
             category: .cardio, equipment: .machine, tracking: .steady,
             muscle: "Fessiers et cardio",
-            cue: "Montée continue, buste droit, sans s'appuyer sur les barres.",
+            cue: "Tu montes en continu, le pied entier sur la marche, le buste droit.",
             mistake: "Se suspendre aux poignées, ce qui annule le travail des jambes."),
         Exercise(
             id: "tapis-lent", name: "Tapis à allure modérée",
             category: .cardio, equipment: .machine, tracking: .steady,
             muscle: "Endurance fondamentale",
-            cue: "Allure conversationnelle, tenue longtemps.",
-            mistake: "Monter l'allure jusqu'à sortir de la zone d'endurance."),
+            cue: "Tu tiens une allure où tu peux encore parler, longtemps, sans forcer.",
+            mistake: "Monter l'allure jusqu'à ne plus pouvoir tenir la durée."),
         Exercise(
             id: "piscine", name: "Piscine",
             category: .cardio, equipment: .poidsDuCorps, tracking: .steady,
             muscle: "Cardio-respiratoire et corps entier",
-            cue: "Allure régulière, corps aligné à la surface, la respiration calée sur le cycle de bras.",
-            mistake: "Lever la tête pour respirer : le bassin descend et les jambes se mettent à traîner.")
+            cue: "Tu nages à allure régulière, le corps aligné à la surface, la respiration calée sur les bras.",
+            mistake: "Lever la tête pour respirer : le bassin descend et les jambes traînent.")
     ]
 
     static func exercises(in category: ExerciseCategory) -> [Exercise] {
@@ -361,6 +366,17 @@ final class Workout {
         orderedExercises.reduce(0) { $0 + $1.completedSets }
     }
 
+    /// LE CARDIO A ÉTÉ FAIT (15-09, plan cardio §B) : au moins un intervalle
+    /// mesuré au double galet, ou au moins une longueur nagée. ⚠️ Il ne
+    /// s'ajoute PAS à `seriesPayantes` — verdict de Kathryn du 15-09 : le
+    /// cardio n'est pas payé à l'intervalle mais par un barème de SÉANCE que
+    /// le serveur calcule à la clôture (`pieces_cardio_seance`,
+    /// tools/cardio/PLAN-ECONOMIE-CARDIO.md). Ce booléen ne sert qu'à OUVRIR
+    /// la clôture (les gardes « séries > 0 ») quand la muscu est à zéro.
+    var cardioFait: Bool {
+        orderedExercises.contains { $0.intervallesFaits > 0 || $0.longueurs > 0 }
+    }
+
     /// Volume total (charge × répétitions) de la séance.
     var totalVolume: Double {
         orderedExercises.reduce(0) { $0 + $1.volume }
@@ -432,6 +448,13 @@ final class LoggedExercise {
     var order: Int = 0
     /// Temps de récupération prévu entre les séries, en secondes. 0 = non renseigné.
     var restSeconds: Int = 0
+    /// LA PISCINE (15-09, plan cardio §E) : le nombre de longueurs nagées,
+    /// saisi à la main sur la fiche (le compteur), et la longueur du bassin.
+    /// Deux champs sur l'exercice — JAMAIS une `CardioPhase` détournée : une
+    /// phase piscine entrerait telle quelle dans le widget HIIT, l'intensité
+    /// du jour et le graphe. 0 = pas une piscine, ou rien nagé.
+    var longueurs: Int = 0
+    var metresParLongueur: Int = 25
     var workout: Workout?
 
     @Relationship(deleteRule: .cascade, inverse: \StrengthSet.loggedExercise)
@@ -461,6 +484,16 @@ final class LoggedExercise {
     }
 
     var completedSets: Int { orderedSets.filter(\.isDone).count }
+
+    /// Les phases FAITES au double galet (jamais le prévu de l'ancien
+    /// éditeur) — efforts ET récups, dans l'ordre : ce que le graphe dessine.
+    var phasesFaites: [CardioPhase] { orderedPhases.filter(\.isDone) }
+    /// Les INTERVALLES faits : les phases d'effort seulement (sprint,
+    /// accélération). Une récup n'est pas un intervalle — l'overlay et la
+    /// pastille comptent ceux-là.
+    var intervallesFaits: Int { phasesFaites.filter(\.isEffort).count }
+    /// Les mètres nagés : longueurs × bassin.
+    var metresNages: Int { longueurs * metresParLongueur }
 
     var volume: Double {
         orderedSets.reduce(0) { $0 + $1.weight * Double($1.reps) }
@@ -532,16 +565,25 @@ final class CardioPhase {
     /// Numéro du cycle auquel appartient la phase.
     var cycleIndex: Int = 0
     var order: Int = 0
+    /// FAITE (15-09, plan cardio §B) — mesurée au double galet (le tap stop
+    /// écrit l'intervalle, la relance écrit la récup), par opposition au
+    /// PRÉVU de l'ancien éditeur de cycles. LOCAL seulement : le serveur ne
+    /// porte pas le fait/prévu (la muscu ne pousse pas non plus son
+    /// `isDone`) ; le pull pose `true` sur une séance finie. Le miroir de
+    /// `StrengthSet.isDone`.
+    var isDone: Bool = false
     var loggedExercise: LoggedExercise?
 
     init(kind: PhaseKind, seconds: Int, speed: Double,
-         cycleIndex: Int = 0, order: Int = 0, incline: Double = 0) {
+         cycleIndex: Int = 0, order: Int = 0, incline: Double = 0,
+         isDone: Bool = false) {
         self.kindRaw = kind.rawValue
         self.seconds = seconds
         self.speed = speed
         self.cycleIndex = cycleIndex
         self.order = order
         self.incline = incline
+        self.isDone = isDone
     }
 
     var kind: PhaseKind { PhaseKind(rawValue: kindRaw) ?? .recuperation }

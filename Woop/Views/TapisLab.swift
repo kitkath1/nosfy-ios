@@ -32,6 +32,19 @@ enum TapisBanc {
     /// sans). Gardée : c'est elle qui m'a évité de réécrire les chiffres en
     /// vues pour rien.
     static let sansChiffres = CommandLine.arguments.contains("-tapisSansChiffres")
+    /// `-sansBraiseTapis` — LE BARREAU du moteur (skill perf) : les deux
+    /// pastilles en braise PEINTE (aucun shader), même place, même taille.
+    /// L'essai B de la campagne ABBA sur son téléphone ; sans lui on ne
+    /// pourra jamais accuser ni disculper les deux `braiseGlow` à 60 Hz.
+    static let sansBraise = CommandLine.arguments.contains("-sansBraiseTapis")
+    /// `-tapisMode escalier|modere` — le banc dans un autre mode que le HIIT.
+    static let mode: ModeCardio = {
+        switch valeur("-tapisMode") {
+        case "escalier": return .escalier
+        case "modere": return .tapisModere
+        default: return .hiit
+        }
+    }()
 
     /// `-tapisT 6.5` — l'instant cloué (secondes après la naissance).
     static let tempsFige: Double? = valeur("-tapisT").flatMap(Double.init)
@@ -53,6 +66,7 @@ enum TapisBanc {
 
 struct TapisLab: View {
     @State private var seance = SeanceTapis(
+        mode: TapisBanc.mode,
         figee: TapisBanc.fige || TapisBanc.tempsFige != nil,
         setsFaits: TapisBanc.setsFaits)
     /// L'identité de la scène : elle change à chaque relance, sinon SwiftUI
@@ -102,7 +116,7 @@ struct TapisLab: View {
 
     private func rejouer() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            seance = SeanceTapis(figee: false,
+            seance = SeanceTapis(mode: TapisBanc.mode, figee: false,
                                  setsFaits: TapisBanc.setsFaits)
             tour += 1
         }

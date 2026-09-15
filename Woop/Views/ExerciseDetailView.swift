@@ -430,6 +430,53 @@ struct ExerciseDetailView: View {
     private var active: Workout? { workouts.first { $0.isActive } }
     private var isStrength: Bool { exercise.tracking == .setsRepsWeight }
 
+    // MARK: - LA ROBE (15-09, plan cardio §A)
+
+    /// TROIS ROBES, UNE PAGE. Jusqu'au 15-09 un seul booléen (`isStrength`)
+    /// commandait deux mondes : la page noire de la muscu, et pour le cardio
+    /// l'ANCIENNE feuille modale — une carte noire, des steppers, un bouton
+    /// « Enregistrer » qui écrivait du PRÉVU. Verdict de Kathryn : « refais
+    /// les pages cardio au même design que les exercices de base (layout,
+    /// image, palet…) ». Donc : la même photo, le même titre, la même
+    /// description, le même galet — et ce qui change vit APRÈS le galet.
+    enum RobeFiche: Equatable {
+        /// La muscu : le galet monte la lentille (« SET n »).
+        case muscu
+        /// HIIT, escalier, tapis modéré : le galet monte le DOUBLE GALET
+        /// (`TapisScene`), paramétré par son mode.
+        case galetCardio(ModeCardio)
+        /// La piscine : pas de galet — un compteur de longueurs à sa place.
+        case piscine
+    }
+
+    private var robe: RobeFiche {
+        if isStrength { return .muscu }
+        if exercise.id == "piscine" { return .piscine }
+        if let m = ModeCardio.pour(exercise) { return .galetCardio(m) }
+        return .muscu
+    }
+    private var modeCardio: ModeCardio? {
+        if case .galetCardio(let m) = robe { return m }
+        return nil
+    }
+    private var estPiscine: Bool { robe == .piscine }
+
+    /// LA SÉANCE TAPIS EN COURS — le double galet est monté quand elle
+    /// existe ; il REMPLACE la fiche (jamais un overlay : une fiche montée
+    /// sous la scène continuerait de rendre sa photo et ses horloges — le
+    /// rideau). `nil` = la fiche. Finish le remet à nil (verdict 15-09 :
+    /// Finish termine l'EXERCICE, pas la séance).
+    @State private var seanceTapis: SeanceTapis?
+    /// LE GRAPHE (plan §C) — les segments FAITS de cet exercice, en cache :
+    /// ce passage s'il en a, sinon la dernière séance. Rafraîchi à
+    /// l'apparition et à chaque phase écrite, JAMAIS relu dans le corps
+    /// (une lecture SwiftData par image, c'est la page ré-évaluée).
+    @State private var segmentsCardio: [SegmentHiit] = []
+    @State private var segmentsTitre: String = ""
+    /// LE COMPTEUR DE LA PISCINE (plan §E) — son propre observable : le
+    /// « + » ne réveille que la pastille, jamais la fiche.
+    @State private var compteur = CompteurLongueurs()
+
     // MARK: Le banc de l'aube — le simulateur ne drague pas (l'école -cineTest)
 
     /// `-aubeAuto` rejoue en boucle la montée de lumière du galet, sans
@@ -651,7 +698,11 @@ struct ExerciseDetailView: View {
                  // galet (`flood` monte dès le drive) ni pendant la série
                  // (`running`, la lentille et son chrono) — la bande
                  // disparaît, la card prend presque tout.
-                 bandeVisible: running == nil && flood < 0.01,
+                 // ⚠️ NI PENDANT LE DOUBLE GALET (verdict Kathryn 15-09 :
+                 // « pas de menu (nav) avec les deux galets, jamais — juste
+                 // le slider ») : la scène est seule à l'écran, nav comprise.
+                 bandeVisible: running == nil && flood < 0.01
+                     && seanceTapis == nil,
                  page: { pageContenu },
                  // §3 : la dalle est un BOUTON — le déployé vit à la
                  // RACINE (PlayerMonde), plus ici.
@@ -705,13 +756,17 @@ struct ExerciseDetailView: View {
             // sur l'orange. La musculation ne défile pas : elle n'a rien à
             // couper, donc elle n'a plus de carte du tout. Le noir lui vient
             // du socle, en fond, comme à tout le monde.
+            // LA ROBE MUSCU POUR TOUT LE MONDE (15-09). `cardioPage` — la
+            // carte noire et ses steppers — est ARCHIVÉE : son site d'appel
+            // meurt, le composant reste (la loi du 05-09). Quand le double
+            // galet tourne, la scène PREND le slot : la fiche n'est plus
+            // montée dessous.
             ZStack(alignment: .top) {
-                if isStrength {
-                    strengthPage
+                if let st = seanceTapis {
+                    TapisScene(seance: st, onFinish: { finirTapis() })
+                        .transition(.opacity)
                 } else {
-                    cardioPage
-                        .background(Self.pageShape.fill(Color.black))
-                        .clipShape(Self.pageShape)
+                    strengthPage
                 }
             }
             // ⚠️ **LE PLAYER EST UN ÉTAT GLOBAL DE SÉANCE** (26-08, verdict
@@ -739,16 +794,10 @@ struct ExerciseDetailView: View {
             // carte-braise a déjà fait dérailler la largeur de la page une
             // fois — plus rien d'elle ne participe à la mise en page.
             .background {
-                ZStack(alignment: .top) {
-                    Color.black
-                    // La braise se tait pendant la lentille : elle brûle à
-                    // 30 Hz sous un plein écran qui, lui, tourne à 60.
-                    // En muscu elle n'est plus ICI, en fond, mais AU-DESSUS,
-                    // en lumière (l'overlay juste dessous) ; le cardio, qui
-                    // garde sa carte noire, garde son feu derrière elle.
-                    if !isStrength, running == nil { HeaderEmberCard() }
-                }
-                .ignoresSafeArea()
+                // (Le feu `HeaderEmberCard` que le cardio gardait derrière
+                // sa carte noire est parti avec elle, 15-09 : la robe muscu
+                // n'a plus de lumière posée sur sa photo depuis le 15-08.)
+                Color.black.ignoresSafeArea()
             }
             // LA LUMIÈRE DE LA PAGE — au-dessus du contenu, et c'est une
             // nécessité, pas une coquetterie. La photo est un fichier à fond
@@ -770,7 +819,9 @@ struct ExerciseDetailView: View {
             .overlay(alignment: .top) {
                 // Au banc du verre, la photo meurt : sa place devient la
                 // zone de réglage (le HUD), et rien ne pollue la nuit.
-                if isStrength, !Self.verreLab { collapsingHeaderBack }
+                // Pendant le double galet, la scène a le slot : pas de
+                // photo au-dessus d'elle.
+                if !Self.verreLab, seanceTapis == nil { collapsingHeaderBack }
             }
             // (LES HALOS ORANGE DU HEADER SONT MORTS — 15-08, « ils font
             // cheap au-dessus de l'image ». La musculation n'a plus de
@@ -809,6 +860,9 @@ struct ExerciseDetailView: View {
                 // LA VAGUE DU TEXTE (titre + description) part ICI, à
                 // l'arrivée de la PAGE — pas au montage de chaque vue.
                 texteApparu = true
+                // Le graphe et le compteur lisent SwiftData UNE fois, ici.
+                rafraichirSegments()
+                if estPiscine { chargerCompteur() }
                 if geo.size.height > 100 {
                     pageFull = CGSize(
                         width: geo.size.width,
@@ -846,7 +900,15 @@ struct ExerciseDetailView: View {
             // La carte des séries OUVERTE compense ses 160 pt elle-même
             // (voir `carteSeries`) pour garder le même bas qu'avant.
             .overlay(alignment: .bottom) {
-                if isStrength {
+                if estPiscine, seanceTapis == nil {
+                    // LA PISCINE N'A PAS DE GALET (verdict 15-09) : à sa
+                    // place, le compteur de longueurs.
+                    CompteurLongueursVue(compteur: compteur,
+                                         onPlus: { plusUneLongueur() },
+                                         onMoins: { moinsUneLongueur() },
+                                         onBassin: { poserBassin($0) })
+                        .padding(.bottom, 18)
+                } else if seanceTapis == nil {
                     VStack(spacing: 0) {
                         // LA BULLE DE LA LENTILLE, du côté de la nuit :
                         // même course, même écriture de `flood` que le
@@ -879,7 +941,8 @@ struct ExerciseDetailView: View {
                                 // (`finished` est mort avec la page BRAVO :
                                 // le panneau « Recommencer ? » ne couvre pas
                                 // le fond, il se pose dessus.)
-                                asleep: running != nil || restartAsk != nil,
+                                asleep: running != nil || restartAsk != nil
+                                    || seanceTapis != nil,
                                 onDrive: { p, vy in driveMoved(p, vy) },
                                 onRelease: { p, vy in driveEnded(p, vy) },
                                 onLaunch: launch
@@ -888,11 +951,9 @@ struct ExerciseDetailView: View {
                     }
                 }
             }
-            // Le cardio, lui, garde sa RÉSERVATION : `primaryAction`
-            // participe au layout de sa page — hors périmètre §2.16.
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !isStrength { primaryAction }
-            }
+            // (Le bouton « Enregistrer l'exercice » du cardio — `primaryAction`
+            // en `safeAreaInset` — est ARCHIVÉ le 15-09 : le double galet et
+            // le compteur ont pris sa place. Le composant reste.)
         }
         // LA PLONGÉE DANS LE GALET — la troisième caméra de la maison
         // (connexion → la lune ; sommet → la pastille ; ici → le galet).
@@ -1607,11 +1668,32 @@ struct ExerciseDetailView: View {
                     titleBlock(big: true)
                         .modifier(ArriveeDouce(vu: texteApparu,
                                                retard: 0.15))
+                    // LE GRAPHE À LA PLACE DE LA DESCRIPTION (verdict
+                    // 15-09 : « une fois la session terminée on retrouve à
+                    // la place de la description le graphe du widget HIIT,
+                    // exactement le même composant ») — dès que cet
+                    // exercice a des segments FAITS (ce passage, sinon la
+                    // dernière séance). Un `if`, jamais deux vues montées.
+                    // ⚠️ SUR LE CARDIO AU DOUBLE GALET, LE GRAPHE EST TOUJOURS
+                    // LÀ (verdict Kathryn 15-09 : « mets en courbe en mode
+                    // empty quand on n'a pas commencé la séance ») : la
+                    // silhouette grise de la chambre (la loi du vide) tant
+                    // qu'aucun segment n'existe, les vrais segments ensuite.
+                    // La description ne vit plus que sur la muscu et la
+                    // piscine (il n'y a pas la place pour les deux).
                     if !Self.carteSeriesVisible {
-                        DescriptionExo(cue: exercise.cue,
-                                       mistake: exercise.mistake,
-                                       enSeance: active != nil,
-                                       vu: texteApparu)
+                        if let mode = modeCardio {
+                            GrapheCardioFiche(segments: segmentsCardio,
+                                              titre: segmentsTitre,
+                                              echelle: mode.estNiveau ? .escalier : .tapis,
+                                              vide: segmentsCardio.isEmpty,
+                                              vu: texteApparu)
+                        } else {
+                            DescriptionExo(cue: exercise.cue,
+                                           mistake: exercise.mistake,
+                                           enSeance: active != nil,
+                                           vu: texteApparu)
+                        }
                     }
                 }
                     .padding(.horizontal, 20)
@@ -2197,6 +2279,9 @@ struct ExerciseDetailView: View {
     }
 
     private func launch() {
+        // LE CARDIO : le même galet, la même montée — mais au sommet ce
+        // n'est pas la lentille qui arrive, c'est le DOUBLE GALET.
+        if let mode = modeCardio { lancerTapis(mode); return }
         rangeCarte()
         let index: Int
         let appended: Bool
@@ -2213,6 +2298,214 @@ struct ExerciseDetailView: View {
         launchBeat += 1
     }
 
+    // MARK: - Le double galet (15-09, plan cardio §B)
+
+    /// La nuit se referme sur la fiche et la scène prend le slot. La scène
+    /// ne connaît pas SwiftData : elle RAPPORTE (le set fini au stop, la
+    /// récup finie à la relance) et c'est ici qu'on écrit — dans le bloc de
+    /// CE passage, comme une série de muscu.
+    private func lancerTapis(_ mode: ModeCardio) {
+        guard seanceTapis == nil else { return }
+        closeBack()
+        let st = SeanceTapis(mode: mode)
+        st.onSetFini = { bilan in
+            ecrirePhase(kind: mode.kindEffort(bilan.vitesse),
+                        secondes: bilan.secondes, vitesse: bilan.vitesse,
+                        rang: bilan.rang, ordre: 0)
+        }
+        st.onRecupFinie = { [weak st] secondes, vitesse in
+            // La récup suit le set qu'elle repose : même rang, ordre 1.
+            let rang = st?.setsFaits ?? 0
+            ecrirePhase(kind: mode.kindRecup(vitesse),
+                        secondes: secondes, vitesse: vitesse,
+                        rang: rang, ordre: 1)
+        }
+        // On court : l'écran ne s'éteint pas sous le chrono.
+        UIApplication.shared.isIdleTimerDisabled = true
+        withAnimation(.easeOut(duration: 0.35)) { seanceTapis = st }
+        launchBeat += 1
+        print("[flow] double galet : exo=\(exercise.id) mode=\(mode.libelle) départ=\(mode.depart)")
+        // LE BANC `-cardioAuto` (le simulateur n'a pas de doigt) : trois
+        // sets, deux récups — à la vitesse de récup baissée comme le ferait
+        // un doigt — puis Finish. Il passe par le MODÈLE (`stopper`,
+        // `relancer`), donc par les mêmes callbacks que le tap : ce qu'il
+        // écrit est ce que le doigt écrirait. Il ne prouve PAS le toucher.
+        if CommandLine.arguments.contains("-cardioAuto") {
+            // `-cardioSet <s>` : la durée d'un set (4 s par défaut — trop
+            // court pour le barème, qui veut 20 s d'effort : mesurer la paie
+            // demande `-cardioSet 25`).
+            let dureeSet = Double(UserDefaults.standard.integer(forKey: "cardioSet"))
+            Task { @MainActor [weak st] in
+                for tour in 0..<3 {
+                    let attente = dureeSet > 0 ? dureeSet : (tour == 0 ? 5.0 : 4.0)
+                    try? await Task.sleep(for: .seconds(attente))
+                    guard let st, seanceTapis === st else { return }
+                    st.vitesse = mode.depart + Double(tour) * 3   // 10 · 13 · 16
+                    st.stopper()
+                    try? await Task.sleep(for: .seconds(2.5))
+                    guard seanceTapis === st else { return }
+                    if tour < 2 { st.relancer() }
+                }
+                try? await Task.sleep(for: .seconds(1.5))
+                guard seanceTapis === st else { return }
+                finirTapis()
+            }
+        }
+    }
+
+    /// FINISH = la fin de l'EXERCICE, pas de la séance (verdict 15-09). La
+    /// scène se démonte, la fiche revient avec son graphe ; la séance, elle,
+    /// se termine par la dalle, comme partout.
+    private func finirTapis() {
+        UIApplication.shared.isIdleTimerDisabled = false
+        withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
+        rafraichirSegments()
+        Haptique.moyen()
+        print("[flow] double galet fini : exo=\(exercise.id) "
+              + "segments=\(bloc?.phasesFaites.count ?? 0) "
+              + "intervalles=\(bloc?.intervallesFaits ?? 0)")
+    }
+
+    /// LE BLOC DE CE PASSAGE, créé au premier besoin — la règle exacte
+    /// d'`ancrerSerie` : une séance s'il n'y en a pas, un `LoggedExercise`
+    /// neuf par passage (deux passages = deux blocs).
+    private func blocDuPassage() -> (Workout, LoggedExercise) {
+        let seance: Workout
+        if let active {
+            seance = active
+        } else {
+            seance = Workout()
+            context.insert(seance)
+        }
+        if let deja = bloc, deja.workout === seance { return (seance, deja) }
+        let logged = LoggedExercise(exerciseID: exercise.id,
+                                    order: seance.exerciseCount)
+        logged.workout = seance
+        context.insert(logged)
+        bloc = logged
+        return (seance, logged)
+    }
+
+    /// UNE PHASE FAITE — le miroir de `StrengthSet.isDone` : elle a été
+    /// mesurée au chrono, pas prévue. Écrite à l'instant, jamais différée :
+    /// une app tuée en pleine séance ne perd que le set en cours.
+    private func ecrirePhase(kind: PhaseKind, secondes: Int, vitesse: Double,
+                             rang: Int, ordre: Int) {
+        guard secondes > 0 else { return }
+        let (seance, logged) = blocDuPassage()
+        let phase = CardioPhase(kind: kind, seconds: secondes, speed: vitesse,
+                                cycleIndex: rang, order: ordre, isDone: true)
+        phase.loggedExercise = logged
+        context.insert(phase)
+        try? context.save()
+        // LA TRACE EST LA PREUVE (la même loi que la série ancrée) : c'est
+        // elle que le banc lit pour dire que la phase a touché le disque.
+        print("[flow] phase écrite : exo=\(exercise.id) kind=\(kind.rawValue) "
+              + "s=\(secondes) v=\(vitesse) rang=\(rang) ordre=\(ordre) "
+              + "faites=\(logged.phasesFaites.count) "
+              + "intervalles=\(logged.intervallesFaits) "
+              + "cardioFait=\(seance.cardioFait)")
+        WorkoutActivityController.ensure(seance)
+        WorkoutActivityController.sync(seance)
+        rafraichirSegments()
+    }
+
+    /// LE GRAPHE lit SwiftData ICI, une fois par événement — jamais dans le
+    /// corps. Ce passage s'il a des segments faits, sinon la dernière séance
+    /// qui en a (« une fois la session terminée on retrouve le graphe »).
+    private func rafraichirSegments() {
+        guard let mode = modeCardio else { segmentsCardio = []; return }
+        let source: LoggedExercise?
+        if let b = bloc, !b.phasesFaites.isEmpty { source = b }
+        else { source = dernierPassageAvecSegments }
+        guard let l = source, let w = l.workout else {
+            segmentsCardio = []; segmentsTitre = ""; return
+        }
+        let seuil = SemaineStats.seuilEffort
+        let segs = l.phasesFaites.map { ph in
+            // L'escalier : tout ce qui monte est un effort. HIIT / tapis :
+            // la définition de la maison, au-dessus du seuil.
+            SegmentHiit(secondes: ph.seconds, vitesse: ph.speed,
+                        effort: mode.estNiveau ? ph.isEffort && ph.speed > 0
+                                               : ph.speed >= seuil)
+        }
+        let duree = segs.reduce(0) { $0 + $1.secondes }
+        let fmt = DateFormatter(); fmt.locale = Locale(identifier: "fr_FR")
+        fmt.dateFormat = "EEEE dd.MM"
+        let jour = w.isActive ? "Maintenant" : fmt.string(from: w.startedAt).capitalized
+        segmentsCardio = segs
+        segmentsTitre = "\(jour) · \(ChambreFmt.mmss(duree)) · \(segs.count) segment\(segs.count > 1 ? "s" : "")"
+    }
+
+    /// La dernière séance où cet exercice a des segments FAITS (l'ancien
+    /// prévu de l'éditeur ne compte pas), séance en cours comprise si ce
+    /// n'est pas ce passage.
+    private var dernierPassageAvecSegments: LoggedExercise? {
+        for w in workouts {
+            for l in w.orderedExercises.reversed()
+            where l.exerciseID == exercise.id && !l.phasesFaites.isEmpty {
+                return l
+            }
+        }
+        return nil
+    }
+
+    // MARK: - La piscine (15-09, plan cardio §E)
+
+    /// Le compteur relit ce passage (ou le bassin de la dernière fois).
+    private func chargerCompteur() {
+        if let b = bloc {
+            compteur.longueurs = b.longueurs
+            compteur.metres = b.metresParLongueur
+        } else if let last = lastLogged, last.longueurs > 0 {
+            compteur.metres = last.metresParLongueur
+        }
+        // LE BANC `-piscineAuto` : cinq « + » puis un « − », à 0,7 s d'écart
+        // — les mêmes fonctions que le doigt (le simulateur n'en a pas).
+        if CommandLine.arguments.contains("-piscineAuto") {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2.0))
+                for _ in 0..<5 {
+                    plusUneLongueur()
+                    try? await Task.sleep(for: .seconds(0.7))
+                }
+                moinsUneLongueur()
+            }
+        }
+    }
+
+    private func plusUneLongueur() {
+        compteur.longueurs += 1
+        ecrireLongueurs()
+        Haptique.leger()
+    }
+
+    private func moinsUneLongueur() {
+        guard compteur.longueurs > 0 else { return }
+        compteur.longueurs -= 1
+        ecrireLongueurs()
+        Haptique.leger()
+    }
+
+    private func poserBassin(_ metres: Int) {
+        compteur.metres = metres
+        // Un bassin choisi avant la première longueur n'ouvre pas de séance.
+        if bloc != nil || compteur.longueurs > 0 { ecrireLongueurs() }
+    }
+
+    /// Chaque « + » ÉCRIT (la loi de la série : ce qui est fait touche le
+    /// disque tout de suite). Le serveur paiera à la clôture, par longueur.
+    private func ecrireLongueurs() {
+        let (seance, logged) = blocDuPassage()
+        logged.longueurs = compteur.longueurs
+        logged.metresParLongueur = compteur.metres
+        try? context.save()
+        print("[flow] piscine : longueurs=\(logged.longueurs) × \(logged.metresParLongueur) m "
+              + "= \(logged.metresNages) m · cardioFait=\(seance.cardioFait)")
+        WorkoutActivityController.ensure(seance)
+        WorkoutActivityController.sync(seance)
+    }
+
     // MARK: Le geste unique
 
     /// Le doigt du galet, en points plein écran. La fiche blanchit la
@@ -2221,6 +2514,10 @@ struct ExerciseDetailView: View {
     /// lui transmet le doigt vivant : un seul geste, de la nuit de la
     /// fiche au sommet du monde blanc.
     private func driveMoved(_ p: CGPoint, _ vy: CGFloat) {
+        // Le double galet a pris le slot : le galet d'aube n'est plus monté,
+        // et un événement de doigt en retard (ou le banc `-aubeFire`, qui
+        // continue sa montée) ne doit pas re-blanchir la page sous la scène.
+        guard seanceTapis == nil else { return }
         let c = Self.climbGlobal(y: p.y, h: pageFull.height)
         driveClimb = c
         // Temps 1 : le voile se réchauffe à peine (13 % à la fin de la
@@ -2981,7 +3278,7 @@ private struct DescriptionExo: View {
 ///
 /// ⚠️ Le rayon retombe à ZÉRO EXACT une fois posé — un `.blur` non nul,
 /// même de 0,3, force une passe hors écran à chaque image, pour toujours.
-private struct ArriveeDouce: ViewModifier {
+struct ArriveeDouce: ViewModifier {
     let vu: Bool
     let retard: Double
 

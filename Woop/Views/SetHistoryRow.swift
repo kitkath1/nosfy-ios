@@ -21,6 +21,34 @@ struct SetHistoryRow: View {
     let seconds: Int
     let done: Bool
     var coins: Int = CoffreFortPurse.perSeries
+    /// LE GENRE (15-09, plan cardio §D) : une série (le défaut), un
+    /// intervalle cardio, ou les longueurs de la piscine — le MÊME gabarit
+    /// de 66 pt (l'invariant PageCard), trois contenus.
+    var genre: SlateLigne.Genre = .serie(reps: 0, kilos: 0)
+
+    init(rank: Int, reps: Int, kilos: Double, seconds: Int, done: Bool,
+         coins: Int = CoffreFortPurse.perSeries) {
+        self.rank = rank
+        self.reps = reps
+        self.kilos = kilos
+        self.seconds = seconds
+        self.done = done
+        self.coins = coins
+        self.genre = .serie(reps: reps, kilos: kilos)
+    }
+
+    /// La ligne de l'ardoise, quel que soit son genre.
+    init(rank: Int, ligne: SlateLigne) {
+        self.rank = rank
+        self.reps = ligne.reps
+        self.kilos = ligne.kilos
+        self.seconds = ligne.seconds
+        self.done = ligne.done
+        self.coins = CoffreFortPurse.perSeries
+        self.genre = ligne.genre
+    }
+
+    private var estSerie: Bool { if case .serie = genre { return true }; return false }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -30,7 +58,7 @@ struct SetHistoryRow: View {
             // néon, 18 cubiques chacune), un blur offscreen, et surtout
             // une animation `repeatForever` PAR LIGNE, sans garde
             // `reduceMotion`, qui maintenait le calque vivant à vie.
-            Text("Set \(rank)")
+            Text(titre)
                 .font(.inter(15, .medium))
                 .foregroundStyle(Color.white.opacity(done ? 0.94 : 0.55))
                 .lineLimit(1)
@@ -41,21 +69,22 @@ struct SetHistoryRow: View {
             // fixedSize : les métriques ne se REPLIENT jamais — à
             // l'étroit, c'est le titre qui cède (payé : les valeurs
             // passaient à la ligne dans la vraie fiche).
-            HStack(spacing: 8) {
-                metric("\(reps)", "reps")
-                sep
-                metric(kiloText, "kg")
-                sep
-                metric("\(seconds)", "s")
-            }
-            .fixedSize()
-            .layoutPriority(1)
+            metriques
+                .fixedSize()
+                .layoutPriority(1)
 
             Spacer(minLength: 6)
 
-            gain
-                .fixedSize()
-                .layoutPriority(1)
+            // ⚠️ PAS DE GAIN SUR LE CARDIO (verdict 15-09) : la séance est
+            // payée par un barème au serveur, pas la ligne. La place reste,
+            // vide — comme une série à venir.
+            if estSerie {
+                gain
+                    .fixedSize()
+                    .layoutPriority(1)
+            } else {
+                Color.clear.frame(width: 28, height: 28)
+            }
         }
         .padding(.leading, 10)
         .padding(.trailing, 12)
@@ -83,6 +112,46 @@ struct SetHistoryRow: View {
         .accessibilityLabel(done
             ? "Série \(rank) faite : \(reps) répétitions, \(kiloText) kilos"
             : "Série \(rank) à venir")
+    }
+
+    /// « Set 3 » — pour la piscine, « Piscine » (une seule ligne).
+    private var titre: String {
+        if case .longueurs = genre { return "Piscine" }
+        return "Set \(rank)"
+    }
+
+    /// Les trois contenus : « 12 reps · 40 kg · 45 s », « 1:30 · 17 km/h »
+    /// ou « 0:52 · niveau 11 », « 20 longueurs · 25 m · 500 m ».
+    @ViewBuilder
+    private var metriques: some View {
+        switch genre {
+        case .serie:
+            HStack(spacing: 8) {
+                metric("\(reps)", "reps")
+                sep
+                metric(kiloText, "kg")
+                sep
+                metric("\(seconds)", "s")
+            }
+        case .intervalle(let v, let niveau):
+            HStack(spacing: 8) {
+                metric(ChambreFmt.mmss(seconds), "")
+                sep
+                if niveau {
+                    metric("\(Int(v.rounded()))", "niveau")
+                } else {
+                    metric(ChambreFmt.kmh(v), "km/h")
+                }
+            }
+        case .longueurs(let n, let m):
+            HStack(spacing: 8) {
+                metric("\(n)", n > 1 ? "longueurs" : "longueur")
+                sep
+                metric("\(m)", "m")
+                sep
+                metric("\(n * m)", "m")
+            }
+        }
     }
 
     /// La lune noire de la maison — le halo ne brûle que pour le vécu.

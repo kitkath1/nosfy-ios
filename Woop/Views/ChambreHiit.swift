@@ -84,21 +84,7 @@ struct ChambreHiit: View {
         .chambreVide(seance == nil)
     }
 
-    private var legende: some View {
-        HStack(spacing: 20) {
-            HStack(spacing: 6) {
-                Capsule().fill(ChambreTon.graphite).frame(width: 9, height: 5)
-                Text("Repos").font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
-            }
-            HStack(spacing: 3) {
-                ForEach(0..<4, id: \.self) { i in
-                    Capsule().fill(CardTon.chaleur(0.25 * Double(i) + 0.12)).frame(width: 9, height: 5)
-                }
-                Text("15 → 19 km/h").font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
-                    .padding(.leading, 3)
-            }
-        }
-    }
+    private var legende: some View { LegendePaliers(echelle: .tapis) }
 
     // ── LE BILAN
     private var bilan: some View {
@@ -156,6 +142,77 @@ struct ChambreHiit: View {
     }
 }
 
+// MARK: - L'ÉCHELLE DES PALIERS (15-09, plan cardio §C)
+
+/// UN composant, DEUX échelles. Le graphe de la chambre HIIT lit des km/h
+/// (4 → 20, l'effort au-dessus du seuil de la maison) ; sur la fiche de
+/// l'escalier il lit des NIVEAUX de machine (« en vitesse-niveau, comme un
+/// tapis de salle », verdict 15-09) où tout ce qui monte est un effort. Le
+/// défaut `.tapis` reproduit EXACTEMENT les nombres qui étaient en dur : la
+/// chambre ne bouge pas d'un pixel.
+/// ⚠️ Un `enum`, pas un struct de closures : une closure en propriété d'une
+/// vue la rend inégalable, donc rejouée à chaque passage du parent (loi §2.3).
+enum EchellePaliers: Equatable {
+    /// La chambre HIIT et les fiches HIIT / tapis modéré : des km/h.
+    case tapis
+    /// L'escalier : niveaux 1-15, chaleur = niveau / 15, la récup en graphite
+    /// sombre (elle est à l'arrêt ou au niveau 1).
+    case escalier
+
+    /// Les bornes de la hauteur des barres.
+    var min: Double { self == .tapis ? 4 : 0 }
+    var max: Double { self == .tapis ? 20 : 15 }
+    /// Le mot des cotes et de la légende.
+    var unite: String { self == .tapis ? "km/h" : "niveau" }
+    /// La chaleur d'un EFFORT [0,1] selon sa vitesse.
+    func chaleur(_ v: Double) -> Double {
+        switch self {
+        case .tapis: return Swift.min(Swift.max((v - SemaineStats.seuilEffort) / 4, 0), 1)
+        case .escalier: return Swift.min(Swift.max(v / 15, 0), 1)
+        }
+    }
+    /// L'éclaircissement du GRAPHITE d'une récup [0,1] selon sa vitesse.
+    func graphite(_ v: Double) -> Double {
+        switch self {
+        case .tapis: return Swift.min(Swift.max((v - 5) / 4.5, 0), 1)
+        case .escalier: return Swift.min(Swift.max(v / 15, 0), 1) * 0.5
+        }
+    }
+    /// L'écriture d'une valeur.
+    func fmt(_ v: Double) -> String {
+        self == .tapis ? ChambreFmt.kmh(v) : "\(Int(v.rounded()))"
+    }
+    /// La légende du code couleur : « 15,0 → 19,0 km/h » / « niveau 1 → 15 ».
+    var legendeChaleur: String {
+        switch self {
+        case .tapis: return "\(ChambreFmt.kmh(SemaineStats.seuilEffort)) → \(ChambreFmt.kmh(SemaineStats.seuilEffort + 4)) km/h"
+        case .escalier: return "niveau 1 → 15"
+        }
+    }
+}
+
+/// La légende sous le graphe — partagée par la chambre et la fiche.
+struct LegendePaliers: View {
+    var echelle: EchellePaliers = .tapis
+
+    var body: some View {
+        HStack(spacing: 20) {
+            HStack(spacing: 6) {
+                Capsule().fill(ChambreTon.graphite).frame(width: 9, height: 5)
+                Text(L("Repos", "Rest")).font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
+            }
+            HStack(spacing: 3) {
+                ForEach(0..<4, id: \.self) { i in
+                    Capsule().fill(CardTon.chaleur(0.25 * Double(i) + 0.12)).frame(width: 9, height: 5)
+                }
+                // La légende du code couleur suit la règle du seuil (jamais un 15 en dur).
+                Text(echelle.legendeChaleur).font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
+                    .padding(.leading, 3)
+            }
+        }
+    }
+}
+
 // MARK: - LES PALIERS
 
 /// Une barre par segment réel. Dessin PUR : aucune horloge — il ne bouge
@@ -163,11 +220,12 @@ struct ChambreHiit: View {
 struct PaliersVue: View {
     var segments: [SegmentHiit]
     var vide = false
+    /// L'échelle : km/h par défaut (la chambre), niveaux sur l'escalier.
+    var echelle: EchellePaliers = .tapis
 
     @State private var choisi: Int?
     @State private var apparu = false
 
-    private static let seuil = SemaineStats.seuilEffort
     private static let plancher: CGFloat = 7
     /// La silhouette du vide : un HIIT en gris — repos et efforts qui
     /// alternent, jamais deux pareils. La loi du vide veut le MÊME dessin
@@ -245,7 +303,7 @@ struct PaliersVue: View {
     private func barre(_ s: SegmentHiit, largeur: CGFloat, choisie: Bool, estPic: Bool) -> some View {
         let r: CGFloat = largeur < 9 ? 1.5 : 2
         if s.effort {
-            let t = min(max((s.vitesse - Self.seuil) / 4, 0), 1)
+            let t = echelle.chaleur(s.vitesse)
             ZStack(alignment: .top) {
                 UnevenRoundedRectangle(topLeadingRadius: r, bottomLeadingRadius: 0,
                                        bottomTrailingRadius: 0, topTrailingRadius: r, style: .continuous)
@@ -265,7 +323,7 @@ struct PaliersVue: View {
         } else {
             // le graphite : il s'éclaircit quand la vitesse monte — 9,0 n'est
             // visiblement pas 6,5. Jamais de braise sous le seuil.
-            let fct = min(max((s.vitesse - 5) / 4.5, 0), 1)
+            let fct = echelle.graphite(s.vitesse)
             UnevenRoundedRectangle(topLeadingRadius: r, bottomLeadingRadius: 0,
                                    bottomTrailingRadius: 0, topTrailingRadius: r, style: .continuous)
                 .fill(Color(white: 0.353 + 0.23 * fct).opacity(0.34 + 0.32 * fct))
@@ -281,7 +339,7 @@ struct PaliersVue: View {
             Pointe().fill(CardTon.chaleur(1))
                 .frame(width: w, height: 7)
                 .offset(x: x, y: top - 7)
-            Text(vide ? "—" : ChambreFmt.kmh(segments[p].vitesse))
+            Text(vide ? "—" : echelle.fmt(segments[p].vitesse))
                 .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(LinearGradient(colors: [CardTon.chaleur(1), CardTon.chaleur(0.75)],
                                                 startPoint: .top, endPoint: .bottom))
@@ -304,11 +362,11 @@ struct PaliersVue: View {
             if y(eMin, sol) - y(eMax, sol) >= 9 {
                 cote(eMin, sol: sol, x: x, couleur: CardTon.chaleur(0.75), op: 0.55)
             } else {
-                Text(vide ? "→ —" : "→ \(ChambreFmt.kmh(eMin))").font(.system(size: 7.5, design: .monospaced))
+                Text(vide ? "→ —" : "→ \(echelle.fmt(eMin))").font(.system(size: 7.5, design: .monospaced))
                     .foregroundStyle(CardTon.chaleur(0.75).opacity(0.7))
                     .offset(x: x + 6, y: y(eMax, sol) + 6)
             }
-            Text("km/h").font(.system(size: 7.5, design: .monospaced)).foregroundStyle(ChambreTon.encre4)
+            Text(echelle.unite).font(.system(size: 7.5, design: .monospaced)).foregroundStyle(ChambreTon.encre4)
                 .offset(x: x + 6, y: y(eMax, sol) - 12)
         }
         if !recups.isEmpty {
@@ -322,7 +380,7 @@ struct PaliersVue: View {
     private func cote(_ v: Double, sol: CGFloat, x: CGFloat, couleur: Color, op: Double) -> some View {
         HStack(spacing: 2) {
             Rectangle().fill(couleur).frame(width: 4, height: 0.5)
-            Text(vide ? "—" : ChambreFmt.kmh(v)).font(.system(size: 8.5, design: .monospaced)).foregroundStyle(couleur)
+            Text(vide ? "—" : echelle.fmt(v)).font(.system(size: 8.5, design: .monospaced)).foregroundStyle(couleur)
         }
         .opacity(op)
         .offset(x: x, y: y(v, sol) - 5)
@@ -332,7 +390,7 @@ struct PaliersVue: View {
     private func laque(_ L: Largeurs, sol: CGFloat) -> some View {
         ForEach(Array(segments.enumerated()), id: \.offset) { i, s in
             if s.effort {
-                let t = min(max((s.vitesse - Self.seuil) / 4, 0), 1)
+                let t = echelle.chaleur(s.vitesse)
                 let h = min(hauteur(s.vitesse) * 0.28, 22)
                 Rectangle()
                     .fill(LinearGradient(colors: [CardTon.chaleur(max(t - 0.10, 0)).opacity(0.22), .clear],
@@ -362,10 +420,10 @@ struct PaliersVue: View {
     private func lecture(sol: CGFloat) -> some View {
         if let i = choisi, segments.indices.contains(i) {
             let s = segments[i]
-            let col: Color = s.effort ? CardTon.chaleur(min(max((s.vitesse - Self.seuil) / 4, 0), 1)) : ChambreTon.graphite
+            let col: Color = s.effort ? CardTon.chaleur(echelle.chaleur(s.vitesse)) : ChambreTon.graphite
             HStack(spacing: 6) {
                 Capsule().fill(col).frame(width: 20, height: 6)
-                Text("\(ChambreFmt.mmss(s.secondes)) · \(ChambreFmt.kmh(s.vitesse)) km/h").foregroundStyle(CardTon.encre)
+                Text("\(ChambreFmt.mmss(s.secondes)) · \(echelle.fmt(s.vitesse)) \(echelle.unite)").foregroundStyle(CardTon.encre)
                 Text("\(i + 1)/\(segments.count) · \(role(i))").foregroundStyle(CardTon.encreSourde)
             }
             .font(.system(size: 12, weight: .medium))
@@ -383,8 +441,12 @@ struct PaliersVue: View {
         return plusLongue ? "La plus longue récup" : "Récup"
     }
 
+    /// 10 pt au plancher, 110 au plafond de l'échelle — pour l'échelle
+    /// tapis (4 → 20) c'est exactement le `10 + (v − 4) × 6,25` d'avant.
     private func hauteur(_ v: Double) -> CGFloat {
-        CGFloat(10 + (min(max(v, 4), 20) - 4) * 6.25)
+        let etendue = max(echelle.max - echelle.min, 1)
+        let u = (min(max(v, echelle.min), echelle.max) - echelle.min) / etendue
+        return CGFloat(10 + u * 100)
     }
     private func y(_ v: Double, _ sol: CGFloat) -> CGFloat { sol - hauteur(v) }
 
