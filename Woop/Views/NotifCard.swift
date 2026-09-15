@@ -151,6 +151,16 @@ struct NotifJauge: View {
     /// L'horloge des grains et du tour de pièce.
     var naissance: Date
 
+    /// LA ROBE (robe 4, verdict Kathryn 15-09) : la pièce d'or (un gain de
+    /// pièces) ou le SACHET ORANGE (un booster gagné). En `.booster`, la jauge
+    /// dit le coffre qui se remplit vers le prochain sachet — gris → blanc,
+    /// « c'est connecté, ça monte » — et le sachet détouré flotte à la place
+    /// de la pièce. Surtout pour la home.
+    enum Robe { case piece, booster }
+    var robe: Robe = .piece
+    /// Le flottement doux du sachet (une valeur animable, jamais un redessin).
+    @State private var flotte = false
+
     /// La largeur réservée à la pièce — le texte et la barre s'arrêtent
     /// avant elle (la réf OPAL : la jauge fait les deux tiers de la dalle).
     private static let reservePiece: CGFloat = 86
@@ -188,7 +198,8 @@ struct NotifJauge: View {
                 .padding(.top, 5)
             Spacer(minLength: 8)
             BarreParticules(fraction: pose ? fraction : 0,
-                            naissance: naissance)
+                            naissance: naissance,
+                            grains: robe == .piece)
         }
     }
 
@@ -204,22 +215,57 @@ struct NotifJauge: View {
         }
     }
 
-    // ── LA PIÈCE QUI TOUCHE, ET QUI TOURNE
+    // ── LE CÔTÉ DROIT : LA PIÈCE QUI TOURNE, OU LE SACHET QUI FLOTTE
 
+    @ViewBuilder
     private var piece: some View {
-        PieceQuiTourne(diametre: Self.diametrePiece,
-                       periode: Self.periodePiece,
-                       naissance: naissance)
+        switch robe {
+        case .piece:
+            PieceQuiTourne(diametre: Self.diametrePiece,
+                           periode: Self.periodePiece,
+                           naissance: naissance)
+                .background {
+                    RadialGradient(
+                        colors: [Color(red: 1.00, green: 0.74, blue: 0.34)
+                            .opacity(0.13), .clear],
+                        center: .center, startRadius: 2,
+                        endRadius: Self.diametrePiece * 0.68)
+                }
+                .shadow(color: .black.opacity(0.65), radius: 12, y: 7)
+                .offset(x: Self.morsure)
+                .allowsHitTesting(false)
+        case .booster:
+            boosterSprite
+        }
+    }
+
+    /// LE SACHET ORANGE détouré (`booster-orange`, déjà dans la pop-up du
+    /// chemin) : il FLOTTE doucement — un `rotationEffect`/`offset` ANIMABLE,
+    /// jamais un redessin (loi n°3 du skill perf) — et se fige à un tilt fixe
+    /// sous l'horloge clouée du banc (`-notifT`), pour une capture immobile.
+    private var boosterSprite: some View {
+        Image("booster-orange")
+            .resizable()
+            .scaledToFit()
+            .frame(width: Self.diametrePiece * 0.78,
+                   height: Self.diametrePiece * 0.78)
+            .rotationEffect(.degrees(flotte ? 3.5 : -3.5))
+            .offset(y: flotte ? -3 : 3)
             .background {
                 RadialGradient(
-                    colors: [Color(red: 1.00, green: 0.74, blue: 0.34)
-                        .opacity(0.13), .clear],
+                    colors: [Color(red: 1.00, green: 0.58, blue: 0.20)
+                        .opacity(0.18), .clear],
                     center: .center, startRadius: 2,
-                    endRadius: Self.diametrePiece * 0.68)
+                    endRadius: Self.diametrePiece * 0.70)
             }
-            .shadow(color: .black.opacity(0.65), radius: 12, y: 7)
-            .offset(x: Self.morsure)
+            .shadow(color: .black.opacity(0.6), radius: 12, y: 7)
+            .offset(x: -12)
             .allowsHitTesting(false)
+            .onAppear {
+                if NotifBanc.tFige != nil { flotte = true; return }
+                withAnimation(.easeInOut(duration: 1.9)
+                    .repeatForever(autoreverses: true)) { flotte = true }
+            }
     }
 }
 
@@ -245,6 +291,11 @@ struct NotifJauge: View {
 struct BarreParticules: View, Animatable {
     var fraction: Double
     let naissance: Date
+    /// Les grains de lumière qui dérivent dans le remplissage. La robe pièces
+    /// les garde ; le booster les ENLÈVE (verdict Kathryn 15-09 : « barre
+    /// propre, elle s'active d'un coup »). Sans grains, rien ne dépend du
+    /// temps → pas de TimelineView (loi du skill perf).
+    var grains: Bool = true
 
     var animatableData: Double {
         get { fraction }
@@ -265,11 +316,25 @@ struct BarreParticules: View, Animatable {
 
     var body: some View {
         let f = min(max(fraction, 0), 1)
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-            let t = NotifBanc.horloge(tl.date.timeIntervalSince(naissance))
-            Canvas { ctx, size in
-                var c = ctx
-                Self.dessiner(&c, size, f, t)
+        Group {
+            if grains {
+                // La robe pièces : les grains dérivent → le contenu change dans
+                // le temps, une TimelineView se justifie.
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    let t = NotifBanc.horloge(tl.date.timeIntervalSince(naissance))
+                    Canvas { ctx, size in
+                        var c = ctx
+                        Self.dessiner(&c, size, f, t, grains: true)
+                    }
+                }
+            } else {
+                // Le booster : barre propre. Rien ne dépend du temps — un Canvas
+                // STATIQUE, redessiné SEULEMENT quand `fraction` s'anime (elle
+                // « s'active d'un coup » à la pose, puis se fige).
+                Canvas { ctx, size in
+                    var c = ctx
+                    Self.dessiner(&c, size, f, 0, grains: false)
+                }
             }
         }
         .frame(height: Self.bande)
@@ -280,24 +345,27 @@ struct BarreParticules: View, Animatable {
 
     private static func dessiner(_ ctx: inout GraphicsContext,
                                  _ size: CGSize,
-                                 _ f: Double, _ t: Double) {
+                                 _ f: Double, _ t: Double,
+                                 grains: Bool) {
         let y = size.height / 2
         piste(&ctx, size, y)
         let w = size.width * f
         guard w > 0.5 else { return }
         remplissage(&ctx, size, y, w)
-        // ⚠️ LES GRAINS SONT CLIPPÉS, PAS RÉGLÉS. Baisser leur amplitude
-        // avait déjà été essayé (±5,8 → ±4 pt) et ça n'a PAS suffi : sur
-        // la capture du 28-08 des grains vivaient encore hors du trait.
-        // Un réglage, un grain un peu gros ou un peu rapide revient le
-        // violer. Le chemin du remplissage posé en clip est une GARANTIE :
-        // à partir d'ici aucune particule ne PEUT sortir — ni au-dessus,
-        // ni au-dessous, ni au-delà du front.
-        var dedans = ctx
-        dedans.clip(to: Path(roundedRect: CGRect(x: 0, y: y - trait / 2,
-                                                 width: w, height: trait),
-                             cornerRadius: trait / 2))
-        grainsDeLumiere(&dedans, size, y, f, t)
+        if grains {
+            // ⚠️ LES GRAINS SONT CLIPPÉS, PAS RÉGLÉS. Baisser leur amplitude
+            // avait déjà été essayé (±5,8 → ±4 pt) et ça n'a PAS suffi : sur
+            // la capture du 28-08 des grains vivaient encore hors du trait.
+            // Un réglage, un grain un peu gros ou un peu rapide revient le
+            // violer. Le chemin du remplissage posé en clip est une GARANTIE :
+            // à partir d'ici aucune particule ne PEUT sortir — ni au-dessus,
+            // ni au-dessous, ni au-delà du front.
+            var dedans = ctx
+            dedans.clip(to: Path(roundedRect: CGRect(x: 0, y: y - trait / 2,
+                                                     width: w, height: trait),
+                                 cornerRadius: trait / 2))
+            grainsDeLumiere(&dedans, size, y, f, t)
+        }
         // Le halo et la tête, EUX, ont le droit de déborder : c'est de la
         // lumière, pas de la matière. Ils se dessinent hors du clip.
         lueurDuFront(&ctx, y, w)

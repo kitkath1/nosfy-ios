@@ -48,20 +48,35 @@ struct NotifLab: View {
 
     private var pile: some View {
         VStack(spacing: 20) {
-            if NotifBanc.seule != 2 {
+            if montre(1) {
                 NotifJauge(pose: pose, naissance: naissance)
                     .modifier(EntreeNotif(pose: pose))
             }
-            if NotifBanc.seule != 1 && NotifBanc.seule != 3 {
+            if montre(4) {
+                // ROBE 4 — le booster (sachet orange + jauge « connectée »
+                // gris → blanc), surtout pour la home. `-notifSeule 4`.
+                NotifJauge(sousTitre: "VAULT PROGRESS", libelle: "BOOSTER",
+                           gain: 1, fraction: 0.9,
+                           pose: pose, naissance: naissance, robe: .booster)
+                    .modifier(EntreeNotif(pose: pose))
+            }
+            if montre(2) {
                 NotifGrosTexte(pose: pose, naissance: naissance)
                     .modifier(EntreeNotif(pose: pose))
             }
-            if NotifBanc.seule != 1 && NotifBanc.seule != 2 {
+            if montre(3) {
                 NotifChasse(pose: pose, naissance: naissance)
                     .modifier(EntreeNotif(pose: pose))
             }
         }
         .id(tour)
+    }
+
+    /// Une robe est à l'écran si le banc entier est demandé (`seule == 0`) ou
+    /// si c'est celle qu'on isole (`-notifSeule <n>` : 1 jauge · 2 gros texte ·
+    /// 3 châsse · 4 booster).
+    private func montre(_ n: Int) -> Bool {
+        NotifBanc.seule == 0 || NotifBanc.seule == n
     }
 
     /// LA SONDE — `-fps`. Le seul juge fiable du « ça lag » : un
