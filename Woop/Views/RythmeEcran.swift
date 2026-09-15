@@ -28,6 +28,9 @@ enum DecorHome {
 final class ProtectionThermique {
     static let shared = ProtectionThermique()
     private(set) var ambianceAuRepos: Bool
+    /// Le petit repère du chapitre reste disponible à « fair » ; il s'arrête
+    /// à « serious », indépendamment du banc des grands décors.
+    private(set) var appelAuRepos = ProcessInfo.processInfo.thermalState.rawValue >= 2
     @ObservationIgnored private var observation: NSObjectProtocol?
     private static let diagnosticDemande = CommandLine.arguments.contains("-sansProtectionThermique")
     @ObservationIgnored private var diagnosticActif = false
@@ -55,6 +58,7 @@ final class ProtectionThermique {
     }
 
     private func actualiser() {
+        appelAuRepos = ProcessInfo.processInfo.thermalState.rawValue >= 2
         ambianceAuRepos = !diagnosticActif
             && ProcessInfo.processInfo.thermalState != .nominal
     }

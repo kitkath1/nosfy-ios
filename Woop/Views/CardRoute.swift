@@ -707,7 +707,11 @@ struct CardRoute: View {
                 // L'ONDE D'APPEL (V4 / F3) : un anneau naît du galet
                 // d'aujourd'hui et s'élargit en s'éteignant — « c'est ici ».
                 // Plus rare une fois la première séance faite.
-                if (vierge || dejaFait), actif, !sansVie {
+                if actif, !enSeance, decorAuRepos,
+                   !CommandLine.arguments.contains("-sansAppelChapitre"),
+                   !CommandLine.arguments.contains("-sansVieRoute") {
+                    AppelChapitre(taille: taille)
+                } else if (vierge || dejaFait), actif, !sansVie {
                     OndeAppel(taille: taille, periode: vierge ? 3.8 : 6.0)
                         .modifier(ReposAmbianceRoute())
                 }
