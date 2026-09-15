@@ -8,6 +8,8 @@ enum NavDiagnostic {
     static let actif = CommandLine.arguments.contains("-navProbe")
     private static var sortie: FileHandle?
     private static var ouvert = false
+    private static var releveAnimations = false
+    private static let debut = ProcessInfo.processInfo.systemUptime
     /// Ne prolonge ni la vue ni son coordinateur : une vue détachée ne doit
     /// apparaître que si le moteur la conserve réellement en vie.
     private final class VueSceneKitFaible {
@@ -145,10 +147,41 @@ enum NavDiagnostic {
                 }
                 visiter(fenetre)
                 ligne["barresSysteme"] = barres
+                if CommandLine.arguments.contains("-sondeAnimations"),
+                   !releveAnimations, ProcessInfo.processInfo.systemUptime - debut > 20 {
+                    releveAnimations = true
+                    // Valeurs textuelles uniquement : une valeur d'animation
+                    // non sérialisable a fait avorter le diagnostic31.
+                    var animations: [[String: String]] = []
+                    var vues = Set<ObjectIdentifier>()
+                    func lire(_ c: CALayer, chemin: String, alpha: Float) {
+                        guard vues.count < 1500,
+                              vues.insert(ObjectIdentifier(c)).inserted else { return }
+                        let a = alpha * c.opacity * (c.isHidden ? 0 : 1)
+                        for cle in c.animationKeys() ?? [] {
+                            guard let animation = c.animation(forKey: cle) else { continue }
+                            animations.append([
+                                "chemin": chemin, "cle": cle,
+                                "type": String(describing: type(of: animation)),
+                                "propriete": String(describing: (animation as? CAPropertyAnimation)?.keyPath),
+                                "duree": String(describing: animation.duration),
+                                "repetitions": String(describing: animation.repeatCount),
+                                "alphaAncetres": String(describing: a),
+                                "cadre": String(describing: c.frame)
+                            ])
+                        }
+                        for (i, enfant) in (c.sublayers ?? []).enumerated() {
+                            lire(enfant, chemin: chemin + "/\(i):\(type(of: enfant))", alpha: a)
+                        }
+                    }
+                    lire(fenetre.layer, chemin: "fenetre", alpha: 1)
+                    ligne["animationsNatives"] = animations
+                }
             }
             ligne["vuesSceneKit"] = vuesSceneKit
         }
-        guard let donnees = try? JSONSerialization.data(withJSONObject: ligne,
+        guard JSONSerialization.isValidJSONObject(ligne),
+              let donnees = try? JSONSerialization.data(withJSONObject: ligne,
                                                          options: [.sortedKeys]) else { return }
         sortie?.write(donnees + Data([10]))
     }
