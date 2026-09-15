@@ -2298,6 +2298,8 @@ struct HomeNuitPage: View {
     /// instantanément sur l'état posé — de 0,6 à 1,95 en UNE image. Maintenant
     /// le doigt GÈLE la scène là où elle en est, et la reprise repart de là.
     @State private var eGele: Double?
+    /// Origine du geste : ne pas écraser une scène prise en vol par T × g.
+    @State private var ePrise: Double?
     /// Le verrou de l'armement : le cran ne se sent qu'au franchissement, pas à
     /// chaque image passée au-delà.
     @State private var cranSenti = false
@@ -3972,6 +3974,7 @@ struct HomeNuitPage: View {
                 // l'école déjà écrite dans ExercisesView (l. 731).
                 if tirageDebut != g.startLocation {
                     tirageDebut = g.startLocation
+                    ePrise = nil
                     axeVertical = nil
                     cranSenti = false
                     luneSentie = false
@@ -3989,6 +3992,10 @@ struct HomeNuitPage: View {
                     axeVertical = dy > dx
                 }
                 guard axeVertical == true else { return }
+                if ePrise == nil {
+                    ePrise = eNow(Date())
+                    NavDiagnostic.noter("scene-prise", destination: "e=\(ePrise ?? 0)")
+                }
                 var t = g.translation.height
                 // EN SÉANCE, LA CARD NE SE REFERME PAS. Elle résiste au
                 // doigt qui la pousse vers le bas (course divisée par 4,
@@ -4048,8 +4055,10 @@ struct HomeNuitPage: View {
                 // ⚠️ `self.g` : la closure du geste s'appelle déjà `g`, et elle
                 // masque le curseur. Et c'est posé APRÈS la mise à jour de
                 // `tirage`, sinon on lirait la valeur de l'image précédente.
-                if tiroirOuvert, t > 0 {
-                    eGele = DepartCine.T * self.g
+                if let origine = ePrise, origine > 0 {
+                    let courseScene = DepartCine.T
+                        * tanh(Double(net) / Double(Self.leveeTiroir))
+                    eGele = min(DepartCine.T, max(0, origine - courseScene))
                 }
                 // `-phraseScroll <pt>` FIGE la course : une dissolution ne
                 // se juge pas sans la voir à mi-chemin.
@@ -4197,6 +4206,7 @@ struct HomeNuitPage: View {
         // l'horloge de ce qui est déjà joué, la reprise est CONTINUE : un
         // aller-retour ne rejoue jamais le début du film.
         let deja = eGele ?? 0
+        ferme = nil
         // LE TIRAGE, ICI ET NULLE PART AILLEURS. Dans un `body` il rejouerait
         // plusieurs fois par image et le texte changerait en plein fondu.
         // On ne re-tire pas sur une REPRISE (le film n'a pas fini) : la phrase
@@ -4258,7 +4268,8 @@ struct HomeNuitPage: View {
     private func fermer() {
         // Elle part de LÀ OÙ ON EN EST, pas de T : un aller-retour interrompu à
         // un quart de film ne doit pas défaire une seconde et quart de scène.
-        let depuis = eGele ?? (depart != nil ? DepartCine.T : (tiroirOuvert ? DepartCine.T : 0))
+        let depuis = eNow(Date())
+        NavDiagnostic.noter("scene-fermeture", destination: "e=\(depuis)")
         depart = nil
         eGele = nil
         gCran = 0

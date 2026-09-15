@@ -660,7 +660,14 @@ struct FondDeuxCalques: View {
     /// sont TOUS dans la page, et aucun barreau de bloc (widgets, galet,
     /// pièce, grain) ne les a bougés. Restent ces deux lecteurs, qui
     /// tournent en boucle sur une page immobile.
-    private var poseSeule: Bool { dort || FondPoseBanc.actif }
+    private var poseSeule: Bool { dort || CommandLine.arguments.contains("-fondPose") }
+    /// À chaud, garder l'image courante. Remonter le poster changeait la
+    /// pose interne de la pilule au milieu du geste. Les lecteurs sont
+    /// désormais réellement arrêtés par leur rate, y compris leurs réveils.
+    private var lectureEnPause: Bool {
+        ProtectionThermique.shared.ambianceAuRepos
+            || scenePhase != .active || PlayerEtat.shared.couvre
+    }
 
     // ⚠️ L'ÉCHELLE DES DEUX CALQUES EST CONSTANTE, ET C'EST CELLE DU REPOS.
     // C'était LA deuxième cause du bug : `aspectFill` remplit par la HAUTEUR
@@ -723,8 +730,12 @@ struct FondDeuxCalques: View {
     }
 
     private static let fondMetal = CommandLine.arguments.contains("-fondMetal")
-    // Le témoin conserve les deux lecteurs, sur le même binaire.
-    private static let fondPrecompose = !CommandLine.arguments.contains("-fondDeuxLecteurs")
+    // Les deux calques gardent leur identité pendant le départ ET le retour.
+    // Le montage précalculé changeait de lecteurs dès e > 0, puis les
+    // recréait à e = 0 : reprise du film et de la pose visible au raccord.
+    // Témoin conservé pour mesurer le coût du choix sur le même binaire.
+    private static let fondPrecompose = CommandLine.arguments.contains("-fondPrecompose")
+        && !CommandLine.arguments.contains("-fondDeuxLecteurs")
 
     @ViewBuilder
     var body: some View {
@@ -738,7 +749,7 @@ struct FondDeuxCalques: View {
                    abs(geo.size.height - 709) < 0.1 {
                     CalqueVideo(nom: "home-fond-precompose-393x709",
                                 pose: "home-fond-precompose-393x709",
-                                rate: PlayerEtat.shared.couvre || scenePhase != .active ? 0 : 1)
+                                rate: lectureEnPause ? 0 : 1)
                         .onAppear {
                             NavDiagnostic.noter("fond-precompose",
                                 destination: "393x709;unLecteur;24fps;masqueIntegre")
@@ -753,7 +764,7 @@ struct FondDeuxCalques: View {
         } else if Self.fondMetal, abs(e) < 0.0001, !poseSeule,
            FondVideoMetal.disponible {
             FondVideoMetal(pilule: pilule,
-                           arret: PlayerEtat.shared.couvre || scenePhase != .active)
+                           arret: lectureEnPause)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .top) { scrim }
         } else {
@@ -797,7 +808,7 @@ struct FondDeuxCalques: View {
                 } else {
                     CalqueVideo(nom: "home-fond-flamme",
                                 pose: "home-fond-flamme-poster",
-                                rate: PlayerEtat.shared.couvre ? 0 : 1,
+                                rate: lectureEnPause ? 0 : 1,
                                 fondHome: true)
                         .frame(width: Self.braL, height: Self.braH)
                 }
@@ -828,7 +839,7 @@ struct FondDeuxCalques: View {
                     } else {
                         CalqueVideo(nom: "home-fond-pilule",
                                     pose: "home-fond-pilule-poster",
-                                    rate: PlayerEtat.shared.couvre ? 0 : DepartCine.rate(e),
+                                    rate: lectureEnPause ? 0 : DepartCine.rate(e),
                                     fondHome: true)
                             .frame(width: Self.pilL, height: Self.pilH)
                     }
