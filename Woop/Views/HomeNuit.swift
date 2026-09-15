@@ -5095,14 +5095,47 @@ struct InviteTirage: View {
     var actif: Bool = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
+    private var immobile: Bool {
+        !actif || reduceMotion || scenePhase != .active
+            || DepartEtat.shared.homeDort || RythmeEcran.dortHome
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
+
+    // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME (05-09) — l'école de
+    // `LisereRespirant`. L'ancienne horloge reconstruisait la VStack entière
+    // (les deux chevrons, le Text, le contentShape) vingt fois par seconde
+    // pour deux scalaires animables : un alpha et un offset de 2 pt.
+    // `-souffleHorloge` rejoue l'ancienne forme (le témoin de l'A/B).
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30,
-                                paused: DepartEtat.shared.homeDort)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
+        if SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: immobile)) { ctx in
+                    let _ = SondeVol.shared.tic(4)
+                let t = ctx.date.timeIntervalSinceReferenceDate
+                VStack(spacing: 3) {
+                    chevron(souffle(t, 0))
+                    chevron(souffle(t, 0.18))
+                    Text("pull to start")
+                        .font(.inter(11, .medium))
+                        .tracking(1.6)
+                        .foregroundStyle(.white.opacity(0.46))
+                        .padding(.top, 5)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 62)
+                .contentShape(Rectangle())
+            }
+        } else {
+            // `immobile` absorbe aussi `!actif` et Reduce Motion, que
+            // l'ancienne porte ne couvrait PAS : l'horloge battait à 20 Hz
+            // pour dessiner v = 0. Mêmes lectures observables que le
+            // `paused:` d'avant — la ré-évaluation arrive aux mêmes rares
+            // bascules (onglet, scène de départ).
             VStack(spacing: 3) {
-                chevron(souffle(t, 0))
-                chevron(souffle(t, 0.18))
+                ChevronAppel(retard: 0, immobile: immobile)
+                ChevronAppel(retard: 0.18, immobile: immobile)
                 Text("pull to start")
                     .font(.inter(11, .medium))
                     .tracking(1.6)
@@ -5133,6 +5166,98 @@ struct InviteTirage: View {
                                        lineJoin: .round))
             .frame(width: 17, height: 6)
             .offset(y: CGFloat(-2 * v))
+    }
+}
+
+/// Depuis le build30, le chemin normal utilise ChevronAppelNatif : les
+/// deux propriétés sont interpolées par Core Animation. Le commentaire
+/// ci-dessous décrit le témoin SwiftUI conservé sous -chevronsSwiftUI ;
+/// sa boucle async ne fait plus partie du rendu normal.
+///
+/// UN CHEVRON QUI APPELLE SANS SE REDESSINER. Le trait est construit UNE
+/// fois ; seuls son alpha (0,34 → 0,80) et son offset (−2 pt) s'animent —
+/// le rendu les interpole image par image, sans reconstruire la vue.
+///
+/// L'impulsion d'origine (`souffle()` : demi-sinus de 0,884 s puis silence
+/// de 1,716 s, période 2,6 s) n'est pas exprimable en `repeatForever`
+/// autoreversé : une boucle async pose DEUX `withAnimation` par cycle
+/// (montée easeOutSine, descente easeInSine — écart au sinus MESURÉ ≈ 3 %
+/// de la course, soit ≤ 0,014 d'alpha et ≤ 0,06 pt d'offset) et dort le
+/// reste du temps. Le `@State` vit dans la FEUILLE (le piège du
+/// repeatForever avalé), la task se ré-arme sur `immobile`.
+/// ⚠️ Écart DÉCLARÉ : l'origine de phase change — l'ancienne forme battait
+/// sur l'horloge absolue (phase arbitraire à l'apparition, et un chevron
+/// endormi restait FIGÉ mi-impulsion) ; la nouvelle pulse dès l'armement
+/// et se pose au repos quand la page dort. Chaque chevron a sa propre
+/// origine : le décalage de 0,18 s hérite du micro-écart de lancement des
+/// deux .task (sous-image, aucune dérive ensuite).
+///
+/// ⚠️ LE RATTRAPAGE : `ContinuousClock` avance pendant que le process est
+/// suspendu. Au réveil, `k` est RECALÉ sur l'horloge à chaque tour — jamais
+/// incrémenté à l'aveugle — sinon la boucle rejouerait en rafale tous les
+/// cycles manqués (une heure de fond ≈ 1 385 cycles, deux écritures
+/// chacun, le piège du double withAnimation en salve).
+private struct ChevronAppel: View {
+    var retard: Double
+    var immobile: Bool
+    /// v : 0 au repos, 1 au sommet de l'appel — LA seule chose qui bouge.
+    @State private var v: Double = 0
+
+    private static let periode = 2.6
+    private static let montee = 0.442
+    /// Témoin du rendu avant30 ; le chemin normal ne monte aucune task.
+    private static let renduSwiftUI = CommandLine.arguments.contains("-chevronsSwiftUI")
+
+    @ViewBuilder
+    var body: some View {
+        if Self.renduSwiftUI {
+            ancienRendu
+        } else {
+            ChevronAppelNatif(retard: retard, immobile: immobile)
+                .frame(width: 17, height: 6)
+        }
+    }
+
+    private var ancienRendu: some View {
+        Chevron()
+            .stroke(.white, style: StrokeStyle(lineWidth: 1.6, lineCap: .round,
+                                               lineJoin: .round))
+            .frame(width: 17, height: 6)
+            .opacity(0.34 + 0.46 * v)
+            .offset(y: CGFloat(-2 * v))
+            .task(id: immobile) { await battre() }
+    }
+
+    @MainActor
+    private func battre() async {
+        guard !immobile else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { v = 0 }
+            return
+        }
+        let horloge = ContinuousClock()
+        let origine = horloge.now
+        var k = 0
+        while !Task.isCancelled {
+            // Recalé sur l'horloge : la prochaine échéance est toujours
+            // dans le futur ou l'immédiat, jamais une dette de cycles.
+            let ecoule = origine.duration(to: horloge.now)
+            let sec = Double(ecoule.components.seconds)
+                + Double(ecoule.components.attoseconds) / 1e18
+            k = max(k, Int(((sec - retard) / Self.periode).rounded(.up)))
+            let echeance = origine
+                + .seconds(retard + Double(k) * Self.periode)
+            try? await horloge.sleep(until: echeance)
+            guard !Task.isCancelled else { return }
+            withAnimation(.timingCurve(0.39, 0.575, 0.565, 1,
+                                       duration: Self.montee)) { v = 1 }
+            try? await horloge.sleep(until: echeance + .seconds(Self.montee))
+            guard !Task.isCancelled else { return }
+            withAnimation(.timingCurve(0.47, 0, 0.745, 0.715,
+                                       duration: Self.montee)) { v = 0 }
+            k += 1
+        }
     }
 }
 
