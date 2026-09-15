@@ -1265,6 +1265,9 @@ struct BoosterStage: UIViewRepresentable {
     /// MÊME à 60 fps — le géant du profil scrollé hors de vue coûtait
     /// 560×700 en continu sous toute la page.
     var paused: Bool = false
+    /// Le profil présente son sachet à 30 Hz ; les autres hôtes gardent
+    /// leur cadence, notamment la cérémonie à 60 Hz.
+    var preferredFramesPerSecond: Int = 60
     /// LE DÉCOR INTERACTIF (la porte, 22-08, PLAN-V2-MANEGE.md) : PAN
     /// SEULEMENT. Le tap et le maintien ne sont pas installés — l'engagement
     /// (commitGallery, dont le tap est le SEUL appelant) devient
@@ -1286,6 +1289,12 @@ struct BoosterStage: UIViewRepresentable {
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
+        if NavDiagnostic.actif {
+            NavDiagnostic.enregistrer(view, role: "booster") {
+                [weak coordinateur = context.coordinator] in
+                coordinateur?.nombreRendusDiagnostic
+            }
+        }
         // Transparent (15-08) : le sachet vit aussi hors des bancs — sur
         // la page profil, il émerge du sol sans boîte noire.
         view.backgroundColor = .clear
@@ -1297,9 +1306,9 @@ struct BoosterStage: UIViewRepresentable {
         #else
         view.antialiasingMode = .multisampling2X
         #endif
-        view.preferredFramesPerSecond = 60
-        view.isPlaying = true
-        view.rendersContinuously = true
+        view.preferredFramesPerSecond = preferredFramesPerSecond
+        view.isPlaying = !paused
+        view.rendersContinuously = !paused
         context.coordinator.forgeActive = forge
         context.coordinator.attach(to: view, still: still, dos: startDos,
                                    mylar: mylar, yawDeg: frozenYawDeg,
@@ -1358,6 +1367,7 @@ struct BoosterStage: UIViewRepresentable {
         if CommandLine.arguments.contains("-boosterHoldDemo") {
             context.coordinator.holdDemo()
         }
+        context.coordinator.setPaused(paused)
         return view
     }
 
@@ -1368,10 +1378,10 @@ struct BoosterStage: UIViewRepresentable {
         // frame doit dormir sous la CarteVivante — un updateUIView de
         // scroll la relançait.
         guard !context.coordinator.frozen else { return }
-        if uiView.isPlaying == paused {
-            uiView.isPlaying = !paused
-            uiView.rendersContinuously = !paused
+        if uiView.preferredFramesPerSecond != preferredFramesPerSecond {
+            uiView.preferredFramesPerSecond = preferredFramesPerSecond
         }
+        context.coordinator.setPaused(paused)
     }
 
     /// LE MANÈGE NE DOIT PAS SURVIVRE À SON ÉCRAN. Sans ce démontage, sa
@@ -1396,11 +1406,17 @@ struct BoosterStage: UIViewRepresentable {
         /// l'ANCIENNE scène qui se complète après le re-gate ne doit
         /// pas ouvrir la porte.
         private let renderGate = OSAllocatedUnfairLock<
-            (rendered: Bool, scene: ObjectIdentifier?)>(
-            initialState: (false, nil))
+            (rendered: Bool, scene: ObjectIdentifier?, rendusDiagnostic: UInt64)>(
+            initialState: (false, nil, 0))
 
         var sceneDidRender: Bool {
             renderGate.withLock { $0.rendered }
+        }
+
+        /// Total des callbacks de rendu terminés par ce coordinateur ;
+        /// lu à 1 Hz par le diagnostic, sans accès au moteur SceneKit.
+        var nombreRendusDiagnostic: UInt64 {
+            renderGate.withLock { $0.rendusDiagnostic }
         }
 
         // Fil de rendu SceneKit : ne toucher NI SceneKit NI UIKit ici.
@@ -1408,6 +1424,7 @@ struct BoosterStage: UIViewRepresentable {
                       didRenderScene scene: SCNScene,
                       atTime time: TimeInterval) {
             renderGate.withLock {
+                if NavDiagnostic.actif { $0.rendusDiagnostic &+= 1 }
                 if $0.scene == ObjectIdentifier(scene) {
                     $0.rendered = true
                 }
@@ -1501,9 +1518,16 @@ struct BoosterStage: UIViewRepresentable {
         /// L'horloge de l'invite : tant que le sachet posé n'est pas
         /// mordu, la lueur fantôme balaie la ligne toutes les ~4 s.
         private var inviteTimer: Timer?
+        private var inviteWanted = false
+        private var hostPaused = false
+        private var sceneSuspendue: (scene: SCNScene, camera: SCNNode?,
+                                      temps: TimeInterval)?
 
         private func startInvite() {
+            inviteWanted = true
             inviteTimer?.invalidate()
+            inviteTimer = nil
+            guard !hostPaused else { return }
             let timer = Timer(fire: Date().addingTimeInterval(1.4),
                               interval: 4.2, repeats: true) { [weak self] _ in
                 guard let self, let stage = self.stage else { return }
@@ -1526,8 +1550,74 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         private func stopInvite() {
+            inviteWanted = false
             inviteTimer?.invalidate()
             inviteTimer = nil
+        }
+
+        /// Sur téléphone, isPlaying/rendersContinuously à false et une
+        /// scène pausée rendaient encore à 30 Hz derrière le profil invisible.
+        /// On détache la scène du renderer, en gardant ses objets, sa caméra
+        /// et son temps pour le retour. Aucun attach/teardown ni Sacre.
+        func setPaused(_ paused: Bool) {
+            guard !frozen, let view else { return }
+            if paused {
+                if view.isPlaying { view.isPlaying = false }
+                if view.rendersContinuously { view.rendersContinuously = false }
+                if let scene = view.scene {
+                    scene.isPaused = true
+                    sceneSuspendue = (scene, view.pointOfView, view.sceneTime)
+                    view.scene = nil
+                }
+            } else {
+                if let suspendue = sceneSuspendue {
+                    // Un replay peut avoir posé une nouvelle scène : ne
+                    // jamais lui rendre la caméra ou le temps de l'ancienne.
+                    if view.scene == nil, let scene = stage?.scene,
+                       scene === suspendue.scene {
+                        view.scene = scene
+                        view.pointOfView = suspendue.camera
+                        view.sceneTime = suspendue.temps
+                    }
+                    sceneSuspendue = nil
+                }
+                if view.scene?.isPaused == true { view.scene?.isPaused = false }
+                if !view.isPlaying { view.isPlaying = true }
+                if !view.rendersContinuously { view.rendersContinuously = true }
+            }
+            guard hostPaused != paused else { return }
+            hostPaused = paused
+            if NavDiagnostic.actif {
+                let scene = paused ? sceneSuspendue?.scene : view.scene
+                let camera = paused ? sceneSuspendue?.camera : view.pointOfView
+                let idScene = scene.map { String(describing: ObjectIdentifier($0)) } ?? "nil"
+                let idCamera = camera.map { String(describing: ObjectIdentifier($0)) } ?? "nil"
+                let temps = paused ? sceneSuspendue?.temps ?? view.sceneTime : view.sceneTime
+                NavDiagnostic.noter(paused ? "booster-pause" : "booster-reprise",
+                    destination: "vue=\(ObjectIdentifier(view));scene=\(idScene);"
+                        + "camera=\(idCamera);sceneTime=\(temps);rendus=\(nombreRendusDiagnostic)")
+            }
+            for link in [holdLink, spinLink, scrollLink, placingLink,
+                         ringSpinLink, gyroLink] {
+                link?.isPaused = paused
+            }
+            if paused {
+                // Garder l'intention, pas le Timer : aucun réveil à 4,2 s.
+                inviteTimer?.invalidate()
+                inviteTimer = nil
+                if motionClient {
+                    motionClient = false
+                    LuneMotion.shared.stop()
+                }
+                if holdLink != nil { haptics.bedStop() }
+            } else {
+                if inviteWanted { startInvite() }
+                if gyroLink != nil, !motionClient {
+                    motionClient = true
+                    LuneMotion.shared.start()
+                }
+                if holdLink != nil { haptics.bedStart() }
+            }
         }
         // ---- LA CHARGE AU MAINTIEN (le doigt posé sans déchirer) ----
         /// La lune monte en incandescence sous le doigt immobile ; le
@@ -1568,6 +1658,7 @@ struct BoosterStage: UIViewRepresentable {
             haptics.bedStart()
             let link = CADisplayLink(target: self,
                                      selector: #selector(holdStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             holdLink = link
         }
@@ -1758,7 +1849,8 @@ struct BoosterStage: UIViewRepresentable {
             // attend SA première frame rendue), et le delegate ici —
             // attach est le chemin commun makeUIView + replay.
             renderGate.withLock {
-                $0 = (false, ObjectIdentifier(stage.scene))
+                $0.rendered = false
+                $0.scene = ObjectIdentifier(stage.scene)
             }
             view.delegate = self
             view.scene = stage.scene
@@ -1898,12 +1990,13 @@ struct BoosterStage: UIViewRepresentable {
 
         private func startGalleryGyro() {
             guard gyroLink == nil else { return }
-            if !motionClient {
+            if !motionClient, !hostPaused {
                 motionClient = true
                 LuneMotion.shared.start()
             }
             let link = CADisplayLink(target: self,
                                      selector: #selector(gyroStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             gyroLink = link
         }
@@ -1952,6 +2045,7 @@ struct BoosterStage: UIViewRepresentable {
         private func startSpin() {
             stopSpin()
             let link = CADisplayLink(target: self, selector: #selector(spinStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             spinLink = link
         }
@@ -2001,6 +2095,7 @@ struct BoosterStage: UIViewRepresentable {
             landed = false
             let link = CADisplayLink(target: self,
                                      selector: #selector(placingStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             placingLink = link
         }
@@ -2142,6 +2237,7 @@ struct BoosterStage: UIViewRepresentable {
             stopRingSpin()
             let link = CADisplayLink(target: self,
                                      selector: #selector(ringSpinStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             ringSpinLink = link
         }
@@ -2200,6 +2296,7 @@ struct BoosterStage: UIViewRepresentable {
             stopScroll()
             let link = CADisplayLink(target: self,
                                      selector: #selector(scrollStep(_:)))
+            link.isPaused = hostPaused
             link.add(to: .main, forMode: .common)
             scrollLink = link
         }

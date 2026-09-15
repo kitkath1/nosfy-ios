@@ -1029,6 +1029,9 @@ struct ProfilLuneView: View {
 /// l'overlay descend et le sachet RESAUTILLE (ressort + haptique).
 /// `-profilTirage` ouvre le sheet au lancement (captures).
 struct TirageBooster: View {
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+
     var pieces: Int
     /// Le scroll de la page : le géant s'efface dans la nuit dès qu'on
     /// descend, et revient en haut de course.
@@ -1069,6 +1072,22 @@ struct TirageBooster: View {
     /// dépasse. L'état persiste entre les visites.
     @State private var enterre =
         UserDefaults.standard.bool(forKey: "profilBoosterEnterre")
+
+    /// TabView garde le profil monté derrière la home : son SCNView ne
+    /// doit pas continuer à rendre. La même porte couvre les deux sachets.
+    private var dort: Bool {
+        ongletCache || scenePhase != .active || SacreEtat.shared.manegeOuvert
+    }
+    /// À 110 pt de scroll, le fondu du footer vaut exactement zéro.
+    /// L'invitation a sa propre porte : elle ne pilote ni le rendu 3D
+    /// ni les gestes, et ne se réveille pas pour vérifier une invisibilité.
+    private var invitationAuRepos: Bool {
+        dort || scrollY >= 110 || ouvert || enterre || planque
+            || tire != 0 || pousse != 0
+    }
+    private var cadenceBooster: Int {
+        CommandLine.arguments.contains("-profil60Hz") ? 60 : 30
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -1119,8 +1138,8 @@ struct TirageBooster: View {
                                      // manège : le rendu se SUSPEND
                                      // (l'opacité seule ne suspend pas
                                      // un SCNView — 60 fps pour rien).
-                                     paused: fondu < 0.02
-                                         || SacreEtat.shared.manegeOuvert)
+                                     paused: dort || fondu < 0.02,
+                                     preferredFramesPerSecond: cadenceBooster)
                             .frame(width: 560, height: 700)
                             .rotationEffect(.degrees(-8))
                             .allowsHitTesting(false)
@@ -1138,7 +1157,7 @@ struct TirageBooster: View {
                         // `if fondu > 0.1` structurel insérait/retirait
                         // ce sous-arbre à CHAQUE frame de scroll autour
                         // du seuil : le « beug sévère » des réapparitions.
-                        FlechesInvite(taille: 15)
+                        FlechesInvite(taille: 15, paused: dort || fondu <= 0)
                             .offset(x: 0,
                                     y: -152 + enfoui + pousse
                                         - tire - invite)
@@ -1195,7 +1214,13 @@ struct TirageBooster: View {
                         // blanches l'invitent. Un tap (ou un tirage) et
                         // le géant rejaillit.
                         VStack(spacing: 7) {
-                            FlechesInvite(taille: 12)
+                            FlechesInvite(taille: 12, paused: dort || fondu <= 0)
+                            // ⚠️ LA BRAISE NE SE REDESSINE PLUS, ELLE
+                            // S'ANIME (05-09, voir `LisereRespirant`) :
+                            // l'horloge refabriquait deux gaussiennes et le
+                            // cœur vingt fois par seconde pour bouger deux
+                            // alphas. `-souffleHorloge` rejoue l'ancienne.
+                            if SouffleBanc.horloge {
                             TimelineView(.animation(
                                 minimumInterval: RythmeEcran.pas,
                                 paused: RythmeEcran.dort("profile"))) { tl in
@@ -1223,6 +1248,9 @@ struct TirageBooster: View {
                                 }
                             }
                             .frame(width: 40, height: 40)
+                            } else {
+                                PoigneeBraise(paused: dort || fondu <= 0)
+                            }
                         }
                         .offset(y: 6)
                         .padding(18)
@@ -1248,20 +1276,34 @@ struct TirageBooster: View {
             }
             .frame(width: geo.size.width, height: geo.size.height,
                    alignment: .bottom)
-            .task {
+            .task(id: invitationAuRepos) {
                 // La remontée d'INVITATION : toutes les ~7 s, le sachet
                 // se soulève d'un souffle et se repose — « tire-moi »
-                // sans un mot. Jamais pendant un geste ou enterré.
+                // sans un mot. Aucun réveil périodique hors de l'écran.
+                defer {
+                    var tr = Transaction()
+                    tr.disablesAnimations = true
+                    withTransaction(tr) { invite = 0 }
+                }
+                guard !invitationAuRepos, !Task.isCancelled else { return }
+                let horloge = ContinuousClock()
+                var prochaine = horloge.now
+                    + .seconds(Double.random(in: 6.0...8.5))
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(
-                        Double.random(in: 6.0...8.5)))
-                    guard !Task.isCancelled, !ouvert, !enterre, !planque,
-                          tire == 0, pousse == 0 else { continue }
+                    do { try await horloge.sleep(until: prochaine) }
+                    catch { return }
+                    guard !Task.isCancelled, !invitationAuRepos else { return }
+                    prochaine = horloge.now
+                        + .seconds(Double.random(in: 6.0...8.5))
                     withAnimation(.easeInOut(duration: 0.55)) {
                         invite = 9
                     }
-                    withAnimation(.easeInOut(duration: 0.75)
-                        .delay(0.55)) {
+                    // Le retour attend dans la task annulable : aucun
+                    // délai d'animation ne survit à la sortie de l'écran.
+                    do { try await horloge.sleep(for: .seconds(0.55)) }
+                    catch { return }
+                    guard !Task.isCancelled, !invitationAuRepos else { return }
+                    withAnimation(.easeInOut(duration: 0.75)) {
                         invite = 0
                     }
                 }
@@ -1380,10 +1422,11 @@ struct TirageBooster: View {
                 // sa respiration interne, une DANSE lente : balancement
                 // ±2,5° et souffle d'échelle, périodes premières.
                 TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                        paused: RythmeEcran.dort("profile"))) { tl in
+                                        paused: dort)) { tl in
                     let t = tl.date.timeIntervalSinceReferenceDate
                     BoosterStage(still: false, frozenTear: nil,
-                                 startOpen: false)
+                                 startOpen: false, paused: dort,
+                                 preferredFramesPerSecond: cadenceBooster)
                         .frame(width: 240, height: 300)
                         .rotationEffect(.degrees(
                             2.5 * sin(t * 2 * .pi / 7.3)))
@@ -1774,12 +1817,21 @@ struct CGUPage: View {
 /// la main sent un petit grain sec. Les lunes de rareté du registre sont
 /// posées par le code, comme sur les vraies cartes.
 struct DosVide: View {
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var pips: Int
+    @State private var visibleDansViewport = false
     @State private var pulse: CGFloat = 0
-    /// Le RÊVE (lot A) : toutes les 8-15 s, un frisson de liseré très bas
-    /// parcourt un dos au hasard — la collection respire. Chaque dos tire
-    /// sa propre horloge : jamais deux frissons synchronisés.
+    /// Le RÊVE : toutes les 5–9 s visibles, un frisson de liseré très bas.
+    /// Les 25 dos restent montés : seuls ceux qu'on regarde se réveillent.
     @State private var frisson: CGFloat = 0
+
+    private var dort: Bool {
+        ongletCache || scenePhase != .active || reduceMotion
+            || !visibleDansViewport
+    }
 
     private static let dos: Image = {
         guard let p = Bundle.main.path(forResource: "carte-dos-vide",
@@ -1813,6 +1865,7 @@ struct DosVide: View {
         Button {
             UIImpactFeedbackGenerator(style: .rigid)
                 .impactOccurred(intensity: 0.7)
+            guard !dort else { return }
             withAnimation(.easeOut(duration: 0.16)) { pulse = 1 }
             withAnimation(.easeOut(duration: 0.7).delay(0.16)) { pulse = 0 }
         } label: {
@@ -1820,7 +1873,7 @@ struct DosVide: View {
             // sombre) et il S'ALLUME en orange — au tap (pleine flamme),
             // ou quand son horloge le décide (une braise DISCRÈTE, à
             // peine 45 % — verdict « plus discret et subtil »).
-            let allume = max(pulse, frisson * 0.45)
+            let allume = dort ? 0 : max(pulse, frisson * 0.45)
             ZStack {
                 Self.dos
                     .resizable()
@@ -1852,19 +1905,41 @@ struct DosVide: View {
             .frame(width: GabaritCarte.largeur, height: GabaritCarte.hauteur)
             .clipShape(RoundedRectangle(cornerRadius: GabaritCarte.rayon,
                                         style: .continuous))
-            .scaleEffect(1 + 0.035 * pulse)
+            .scaleEffect(1 + 0.035 * (dort ? 0 : pulse))
+            // Une extinction différée a déjà posé le modèle à zéro :
+            // lui réassigner zéro ne suffit pas à couper son interpolation.
+            // Seul le dessin se remonte au changement de porte, en pose ;
+            // le Button et ses gestes gardent leur identité.
+            .id(dort)
+            .transaction { tr in
+                if dort {
+                    tr.animation = nil
+                    tr.disablesAnimations = true
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Emplacement de carte vide")
-        .task {
-            // L'ALLUMAGE (verdict : « toutes les 4 secondes certaines
-            // s'allument orange ») : chaque dos tire son horloge autour
-            // de 4 s — décalées entre elles, quelques cartes s'embrasent
-            // à chaque instant, jamais toutes ensemble. Coût nul entre
-            // deux allumages (pas de TimelineView).
+        .onGeometryChange(for: Bool.self) { geo in
+            // Deux défilements imbriqués : être dans la rangée ne prouve
+            // pas que cette rangée est encore dans le viewport de la page.
+            guard let vertical = geo.bounds(of: .scrollView(axis: .vertical)),
+                  let horizontal = geo.bounds(of: .scrollView(axis: .horizontal))
+            else { return false }
+            let visible = CGRect(origin: .zero, size: geo.size)
+                .intersection(vertical).intersection(horizontal)
+            return !visible.isNull && !visible.isEmpty
+        } action: { visibleDansViewport = $0 }
+        .task(id: dort) {
+            poser()
+            guard !dort else { return }
+            // Reprise avec un délai neuf : aucun rattrapage des allumages
+            // manqués, aucune horloge ni travail périodique hors écran.
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(Double.random(in: 5.0...9.0)))
-                guard !Task.isCancelled else { break }
+                do {
+                    try await Task.sleep(for: .seconds(Double.random(in: 5.0...9.0)))
+                } catch { return }
+                guard !Task.isCancelled, !dort else { return }
                 // La braise se réveille LENTEMENT et s'éteint encore plus
                 // lentement — un souffle, pas un clignotement.
                 withAnimation(.easeInOut(duration: 0.9)) { frisson = 1 }
@@ -1872,6 +1947,17 @@ struct DosVide: View {
                     frisson = 0
                 }
             }
+        }
+        .onDisappear { poser() }
+    }
+
+    private func poser() {
+        var tr = Transaction()
+        tr.animation = nil
+        tr.disablesAnimations = true
+        withTransaction(tr) {
+            pulse = 0
+            frisson = 0
         }
     }
 }
@@ -1883,32 +1969,188 @@ extension Color {
 
 // MARK: - Les flèches d'invite
 
+/// LA POIGNÉE QUI RESPIRE SANS SE REDESSINER (05-09) — la sœur animée de
+/// la poignée de braise du géant enterré. Les deux halos floutés et le
+/// cœur sont construits UNE fois (gaussiennes rasterisées et mises en
+/// cache) ; seuls deux alphas de calque sont interpolés par le rendu.
+/// La phase vit ICI, dans la feuille : le body de TirageBooster est
+/// ré-évalué à chaque image de scroll (`scrollY`), un `repeatForever`
+/// posé chez lui serait avalé (le piège PageCard).
+/// ⚠️ Écarts DÉCLARÉS : easeInOut autoreversé ≈ le sinus (l'école) ; la
+/// respiration repart du creux au remontage ; et Reduce Motion pose la
+/// braise à mi-course (0,75) — l'ancienne forme l'ignorait.
+private struct PoigneeBraise: View {
+    var paused: Bool = false
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var monte = false
+
+    private var dort: Bool {
+        paused || !monte || ongletCache || scenePhase != .active
+            || reduceMotion || RythmeEcran.dort("profile")
+    }
+
+    /// LA phase — la seule chose qui bouge. Au repos : le point milieu.
+    @State private var vie: Double = 0.75
+
+    var body: some View {
+        ZStack {
+            // Le halo large — l'air embrasé.
+            GlypheLune()
+                .fill(Color.profilBraise)
+                .frame(width: 34, height: 34)
+                .blur(radius: 9)
+                .opacity(0.75 * vie)
+            // Le halo serré — le verre du tube.
+            GlypheLune()
+                .fill(Color.profilBraise)
+                .frame(width: 34, height: 34)
+                .blur(radius: 2.5)
+                .opacity(0.95 * vie)
+            // Le cœur crème — le gaz incandescent.
+            GlypheLune()
+                .fill(Color(red: 1.0, green: 0.93, blue: 0.80))
+                .frame(width: 30, height: 30)
+        }
+        .frame(width: 40, height: 40)
+        .task(id: dort) {
+            guard !Task.isCancelled else { return }
+            armer(dort)
+        }
+        .onAppear { monte = true }
+        .onDisappear {
+            monte = false
+            armer(true)
+        }
+    }
+
+    private func armer(_ dort: Bool) {
+        guard !dort else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { vie = 0.75 }
+            return
+        }
+        vie = 0.5
+        withAnimation(.easeInOut(duration: 3.1 / 2)
+            .repeatForever(autoreverses: true)) {
+            vie = 1.0
+        }
+    }
+}
+
 /// LES DEUX FLÈCHES minimales en dégradé de blanc — l'invite « tire vers
 /// le haut », élégante : une onde d'opacité remonte de l'une à l'autre,
 /// jamais un clignotement.
+/// ⚠️ L'ONDE NE SE REDESSINE PLUS, ELLE S'ANIME (05-09) — le jumeau de
+/// `ChevronAppel` (HomeNuit) : arceau demi-sinus de 0,85 s (montée
+/// easeOutSine, descente easeInSine, écart ≈ 3 % de la course) puis
+/// plancher 0,85 s à coût NUL ; déphasage 0,2435 s préservé (0,9 rad).
+/// Échéances RECALÉES sur l'horloge (jamais k += 1 : la rafale après
+/// suspension). Écarts DÉCLARÉS : Reduce Motion pose au plancher 0,30
+/// (l'ancienne forme l'ignorait) ; l'onde repart recalée au réveil au
+/// lieu de geler mi-arceau. `-souffleHorloge` rejoue l'ancienne forme.
 struct FlechesInvite: View {
     var taille: CGFloat = 15
+    /// Le footer reste monté quand son fondu l'a entièrement effacé.
+    /// Cette porte vient de l'hôte qui connaît ce fondu.
+    var paused: Bool = false
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var immobile: Bool {
+        paused || ongletCache || scenePhase != .active
+            || reduceMotion || RythmeEcran.dort("profile")
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                paused: RythmeEcran.dort("profile"))) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-            VStack(spacing: -taille * 0.34) {
-                ForEach(0..<2, id: \.self) { i in
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: taille, weight: .medium))
-                        .foregroundStyle(LinearGradient(
-                            colors: [.white.opacity(0.95),
-                                     .white.opacity(0.35)],
-                            startPoint: .top, endPoint: .bottom))
-                        .opacity(0.30 + 0.55 * max(0,
-                            sin(t * 2 * .pi / 1.7
-                                + Double(1 - i) * 0.9)))
+        if SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
+                                    paused: immobile)) { tl in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                VStack(spacing: -taille * 0.34) {
+                    ForEach(0..<2, id: \.self) { i in
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: taille, weight: .medium))
+                            .foregroundStyle(LinearGradient(
+                                colors: [.white.opacity(0.95),
+                                         .white.opacity(0.35)],
+                                startPoint: .top, endPoint: .bottom))
+                            .opacity(0.30 + 0.55 * max(0,
+                                sin(t * 2 * .pi / 1.7
+                                    + Double(1 - i) * 0.9)))
+                    }
                 }
+                .shadow(color: .black.opacity(0.5), radius: 3)
+            }
+            .allowsHitTesting(false)
+        } else {
+            VStack(spacing: -taille * 0.34) {
+                // Le haut (i = 0) a +0,9 rad d'avance sur le bas :
+                // 0,9 / 2π × 1,7 s ≈ 0,2435 s de retard pour le bas.
+                FlecheOnde(taille: taille, retard: 0, immobile: immobile)
+                FlecheOnde(taille: taille, retard: 0.2435, immobile: immobile)
             }
             .shadow(color: .black.opacity(0.5), radius: 3)
+            .allowsHitTesting(false)
         }
-        .allowsHitTesting(false)
+    }
+}
+
+/// Une flèche de l'onde : le chevron bâti une fois, seul son alpha bouge.
+private struct FlecheOnde: View {
+    var taille: CGFloat
+    var retard: Double
+    var immobile: Bool
+
+    @State private var v: Double = 0
+
+    private static let periode = 1.7
+    private static let arceau = 0.425
+
+    var body: some View {
+        Image(systemName: "chevron.up")
+            .font(.system(size: taille, weight: .medium))
+            .foregroundStyle(LinearGradient(
+                colors: [.white.opacity(0.95),
+                         .white.opacity(0.35)],
+                startPoint: .top, endPoint: .bottom))
+            .opacity(0.30 + 0.55 * v)
+            .task(id: immobile) { await onduler() }
+    }
+
+    @MainActor
+    private func onduler() async {
+        guard !immobile else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { v = 0 }
+            return
+        }
+        let horloge = ContinuousClock()
+        let origine = horloge.now
+        var k = 0
+        while !Task.isCancelled {
+            let ecoule = origine.duration(to: horloge.now)
+            let sec = Double(ecoule.components.seconds)
+                + Double(ecoule.components.attoseconds) / 1e18
+            k = max(k, Int(((sec - retard) / Self.periode).rounded(.up)))
+            let echeance = origine
+                + .seconds(retard + Double(k) * Self.periode)
+            try? await horloge.sleep(until: echeance)
+            guard !Task.isCancelled else { return }
+            withAnimation(.timingCurve(0.39, 0.575, 0.565, 1,
+                                       duration: Self.arceau)) { v = 1 }
+            try? await horloge.sleep(until: echeance + .seconds(Self.arceau))
+            guard !Task.isCancelled else { return }
+            withAnimation(.timingCurve(0.47, 0, 0.745, 0.715,
+                                       duration: Self.arceau)) { v = 0 }
+            k += 1
+        }
     }
 }
 
@@ -1992,10 +2234,25 @@ struct BanniereHalos: View {
     /// coque qui grandit, et c'est autant de passes de shader en moins.
     var cadence: Double = 1.0 / 30.0
 
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var monte = false
+    // Hors ScrollView, la vue reste visible. Dans le profil, seule cette
+    // feuille reçoit les franchissements du viewport : aucun offset de
+    // défilement ni recalcul par image ne remonte à toute la page.
+    @State private var visibleDansScroll = true
+
+    private var dort: Bool {
+        !monte || !visibleDansScroll || ongletCache
+            || scenePhase != .active || reduceMotion
+            || RythmeEcran.dort("profile")
+    }
+
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: cadence,
-                                    paused: RythmeEcran.dort("profile"))) { tl in
+                                    paused: dort)) { tl in
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
                 Rectangle()
@@ -2005,6 +2262,20 @@ struct BanniereHalos: View {
                                 norme ?? geo.size.height),
                         .float(t)))
             }
+        }
+        .onAppear { monte = true }
+        .onDisappear { monte = false }
+        // Mesurer cette feuille dans le viewport, y compris lorsqu'elle
+        // est le fond d'un enfant du VStack du profil.
+        .onGeometryChange(for: Bool.self) { geo in
+            guard let viewport = geo.bounds(of: .scrollView(axis: .vertical))
+            else { return true }
+            let visible = CGRect(origin: .zero, size: geo.size)
+                .intersection(viewport)
+            return !visible.isNull && !visible.isEmpty
+        } action: { visibleDansScroll = $0 }
+        .onChange(of: dort, initial: true) { _, repos in
+            NavDiagnostic.noter("banniere-repos", destination: repos ? "1" : "0")
         }
     }
 }

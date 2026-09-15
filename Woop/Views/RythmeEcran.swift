@@ -1,14 +1,78 @@
 import SwiftUI
 
+/// La Home garde son fond vidéo ; ses ornements n'animent plus en boucle.
+/// Portée locale : les mêmes composants ailleurs gardent leur comportement.
+/// `-decorHomeAnime` permet de retrouver le témoin pour une mesure ciblée.
+private struct DecorHomeAuReposKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var decorHomeAuRepos: Bool {
+        get { self[DecorHomeAuReposKey.self] }
+        set { self[DecorHomeAuReposKey.self] = newValue }
+    }
+}
+
+enum DecorHome {
+    static let auRepos = !CommandLine.arguments.contains("-decorHomeAnime")
+}
+
+/// Le dessin reste posé quand iOS commence à limiter son budget thermique.
+/// Ce groupe précis a tenu 60 callbacks/s, pire 17 ms, sur l'iPhone chaud :
+/// fond vidéo en pose, fumée arrêtée, galets en pose, vie Route et lentilles
+/// natives suspendues. Les gestes, textes et retours d'appui restent actifs.
+/// Ce filet évite d'attendre l'état « serious » pour réagir ; il ne constitue
+/// pas une preuve que le coût de l'ambiance à froid est résolu.
+@Observable
+final class ProtectionThermique {
+    static let shared = ProtectionThermique()
+    private(set) var ambianceAuRepos: Bool
+    @ObservationIgnored private var observation: NSObjectProtocol?
+    private static let diagnosticDemande = CommandLine.arguments.contains("-sansProtectionThermique")
+    @ObservationIgnored private var diagnosticActif = false
+
+    private init() {
+        ambianceAuRepos = !Self.diagnosticDemande && ProcessInfo.processInfo.thermalState != .nominal
+        diagnosticActif = Self.diagnosticDemande
+        observation = NotificationCenter.default.addObserver(
+            forName: ProcessInfo.thermalStateDidChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.actualiser()
+        }
+        // Le câble a coupé après un profilage réel : la commande de retour
+        // au rendu protégé n'a pas atteint le téléphone. Le banc ne doit
+        // donc jamais pouvoir laisser la protection désactivée indéfiniment.
+        if diagnosticActif {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
+                guard let self else { return }
+                self.diagnosticActif = false
+                self.actualiser()
+                NavDiagnostic.noter("protection-thermique-banc-termine")
+            }
+        }
+    }
+
+    private func actualiser() {
+        ambianceAuRepos = !diagnosticActif
+            && ProcessInfo.processInfo.thermalState != .nominal
+    }
+
+    deinit {
+        if let observation { NotificationCenter.default.removeObserver(observation) }
+    }
+}
+
 // MARK: - LE RYTHME DE L'ÉCRAN (05-09) — un onglet qu'on ne regarde pas se tait
 //
 // CE QUI A ÉTÉ MESURÉ SUR SON IPHONE 15, et qui a conduit ici :
 //   · écran nu, aucune page ............  1 % de processeur
 //   · n'importe quelle page, immobile ... 27 % (jusqu'à 39 % sur le Profil)
 //   · corps de la page recalculé ........ 0 fois par seconde
-// SwiftUI ne refaisait AUCUN calcul de mise en page — et pourtant ça brûlait.
-// La cause, comptée horloge par horloge sur l'accueil au repos, personne n'y
-// touchant :
+// Ce compteur ne couvre que le corps instrumenté : il n'exclut pas le
+// travail des feuilles ou du graphe SwiftUI. Les 27–39 % sont le défaut,
+// pas un budget acceptable. Comptage historique sur l'accueil au repos :
 //   · les deux widgets ....... 18 battements/seconde
 //   · les galets du chemin ... 14
 //   · la nappe du menu ....... 10
@@ -16,9 +80,10 @@ import SwiftUI
 // verre. C'est ça qui chauffe — verdict d'usage : « ça chauffe avant ET
 // pendant la séance », alors que la cadence, elle, tenait 60.
 //
-// Sont innocents, et mesurés tels : le fond vidéo (image de pose : 27 % contre
-// 27 %), le ciel nébuleuse (plus monté sur les pages actuelles), le gyroscope,
-// le galet seul, la pièce, l'invite, le grain.
+// Le témoin vidéo du 05-09 (27 % contre 27 % CPU) ne mesure ni le GPU ni
+// l'énergie et ne l'innocente pas. Les essais à chaud du 14-09 améliorent
+// les intervalles avec un fond en pose, sans attribution exclusive. Le ciel
+// nébuleuse est archivé ; la fumée d'invitation actuelle reste distincte.
 //
 // ⚠️ LA RÈGLE, TRANCHÉE PAR KATHRYN LE 05-09 : « OUI, ELLE RESPIRE EN
 // PERMANENCE. » La page qu'on REGARDE ne se fige jamais — c'est son dessin, et
@@ -28,7 +93,9 @@ import SwiftUI
 //   ② les cadences invisibles à l'œil (une horloge à la cadence de l'écran sur
 //      un objet qui respire en quatre secondes ne se lit pas plus fin à 120 Hz
 //      qu'à 30 — c'est trois images sur quatre rendues pour rien).
-// Tout ce qui toucherait à l'allure attend son verdict.
+// L'ordre de réparer la chauffe du 14-09 autorise le filet thermique décrit
+// plus haut ; il immobilise les décors à chaud. Cela ne valide ni leur coût
+// à froid ni le rendu : voir tools/perf/CORRECTIF-CHAUFFE-2026-09-14.md.
 
 enum RythmeBanc {
     /// `-sansRepos` : le mécanisme débranché (les trois onglets animent en

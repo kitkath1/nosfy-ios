@@ -516,8 +516,6 @@ struct NavEncre: View {
     var serrage: CGFloat = 0
     /// L'action, remontée à l'hôte.
     var onChoix: (NavDest) -> Void = { _ in }
-    /// Le glyphe SOUS LE DOIGT — c'est lui qui porte le verre.
-    @State private var presse: NavDest?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -528,51 +526,28 @@ struct NavEncre: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// UNE CIBLE. Ce n'est PAS un `Button` et pas un `.onTapGesture` : la
-    /// forme tranchée du dépôt est `contentShape` + zone portée à 44 pt AVANT
-    /// le geste + `highPriorityGesture` (`WorkoutPill.swift:79-84`). Un
-    /// `Button` se fait annuler dès qu'un recognizer simultané reconnaît —
-    /// c'est le « bouton Stop qui ne répond pas », payé le 26-08.
-    ///
-    /// ⚠️ `highPriorityGesture` ne bat que les ANCÊTRES : il gagne contre le
-    /// drag de l'hôte (qui EST son ancêtre), jamais contre un frère.
+    /// UNE SEULE reconnaissance pour appui et activation. Sur le téléphone,
+    /// cinq appuis atteignaient l'ancien long press, mais aucun TapGesture
+    /// ne se terminait : long press, tap prioritaire et tap de la visite
+    /// se disputaient la même cible. Le style lit désormais isPressed du
+    /// bouton ; l'ancre de visite publie seulement sa géométrie.
     private func cible(_ d: NavDest, _ i: Int) -> some View {
         let actif = etat.page == d
-        return Image(systemName: d.glyphe)
-            .font(.system(size: 21, weight: .medium))
-            .foregroundStyle(.white.opacity(actif ? 1 : 0.34))
-            .frame(width: NavGeo.cible, height: NavGeo.cible)
-            // LA VISITE DE LA HOME (13-09, VisiteHome.swift) : l'onglet Profil
-            // publie son cadre — c'est le troisième temps de la visite.
-            .visiteAncre(d == .profil ? "visite-profil" : "visite-nav-\(i)")
-            // ⚠️ LE VERRE AU TOUCHER (04-09) — et c'est SA précision qui
-            // le rend possible : « le verre reflète l'icône elle-même ».
-            // La loi payée dit qu'une vitre sur du noir uniforme est
-            // invisible (« le contenu EST le verre ») : ici le contenu
-            // est le GLYPHE, il y a donc bien de la matière à réfracter.
-            // La capsule naît SOUS le doigt, à taille FIXE (un verre aux
-            // bounds vivants devient un blur plat), et meurt au relâcher.
-            .background {
-                if presse == d {
-                    Capsule()
-                        .fill(Color.white.opacity(0.10))
-                        .glassEffect(.clear.interactive(), in: .capsule)
-                        .frame(width: NavGeo.cible + 8,
-                               height: NavGeo.cible - 4)
-                        .transition(.opacity)
+        return Button {
+            NavDiagnostic.noter("tap", destination: d.rawValue)
+            if DepartEtat.shared.visiteOuverte { PremiereArrivee.finirVisite() }
+            onChoix(d)
+        } label: {
+            Image(systemName: d.glyphe)
+                .font(.system(size: 21, weight: .medium))
+                .foregroundStyle(.white.opacity(actif ? 1 : 0.34))
+                .frame(width: NavGeo.cible, height: NavGeo.cible)
+                .anchorPreference(key: VisiteAncreKey.self, value: .bounds) {
+                    [d == .profil ? "visite-profil" : "visite-nav-\(i)": $0]
                 }
-            }
-            .contentShape(Rectangle())
-            .highPriorityGesture(TapGesture().onEnded { onChoix(d) })
-            // L'ÉTAT PRESSÉ — `onLongPressGesture` est la forme SwiftUI
-            // propre pour le lire : un `DragGesture(minimumDistance: 0)`
-            // AFFAMERAIT le tap (la loi payée du bouton stop).
-            .onLongPressGesture(minimumDuration: 10, maximumDistance: 60,
-                                perform: {}) { enCours in
-                withAnimation(.easeOut(duration: 0.16)) {
-                    presse = enCours ? d : nil
-                }
-            }
+                .contentShape(Rectangle())
+        }
+            .buttonStyle(NavAppuiStyle(destination: d))
             .opacity(Double(encre))
             .scaleEffect(0.4 + 0.6 * encre)
             // LE DÉPLACEMENT EST UN OFFSET, PAS UN SPACING : rien ne se
@@ -581,6 +556,30 @@ struct NavEncre: View {
                 * (NavGeo.pas(serrage) - NavGeo.cible))
             .accessibilityLabel(d.nom)
             .accessibilityAddTraits(actif ? [.isSelected] : [])
+    }
+}
+
+private struct NavAppuiStyle: ButtonStyle {
+    let destination: NavDest
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                if configuration.isPressed {
+                    Capsule()
+                        .fill(Color.white.opacity(0.10))
+                        .glassEffect(.clear.interactive(), in: .capsule)
+                        .frame(width: NavGeo.cible + 8,
+                               height: NavGeo.cible - 4)
+                        .transition(.opacity)
+                        .allowsHitTesting(false)
+                }
+            }
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, presse in
+                NavDiagnostic.noter(presse ? "appui" : "relache",
+                                    destination: destination.rawValue)
+            }
     }
 }
 
@@ -673,6 +672,7 @@ struct NavBande: View {
     //  appelle les mêmes `NavEtat.suivre`/`commettre`.)
 
     private func aller(_ d: NavDest) {
+        NavDiagnostic.noter("aller", destination: d.rawValue)
         // ⚠️ JAMAIS pendant un geste ou un vol (même garde que le tap de
         // bande — le tap SwiftUI peut survivre à un drag court sous le
         // pan coopératif et écraserait le commit à l'élan).

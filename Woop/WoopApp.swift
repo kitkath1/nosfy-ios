@@ -74,7 +74,19 @@ struct WoopApp: App {
                     if SondeVolBanc.actif { SondeVolHUD() }
                 }
                 .task {
+                    if BancCoutHome.demande {
+                        await BancCoutHome.shared.executer()
+                    }
+                    guard !Task.isCancelled else { return }
                     if SondeVolBanc.actif { SondeVol.shared.demarrer() }
+                    else if SondeVolBanc.ecranEveille {
+                        UIApplication.shared.isIdleTimerDisabled = true
+                        NavDiagnostic.noter("ecran-eveille-debut")
+                        do { try await Task.sleep(for: .seconds(1800)) }
+                        catch { /* L'écran reprend aussi sa veille si la tâche est annulée. */ }
+                        UIApplication.shared.isIdleTimerDisabled = false
+                        NavDiagnostic.noter("ecran-eveille-fin")
+                    }
                 }
         }
         .modelContainer(container)
@@ -86,6 +98,7 @@ struct WoopApp: App {
         // séance finie dans le métro, app revenue à la surface deux stations
         // plus loin sans jamais avoir été tuée.
         .onChange(of: phase) { _, nouvelle in
+            NavDiagnostic.noter("scene-\(nouvelle)")
             guard nouvelle == .active else { return }
             Task {
                 await OutboxGains.semer()          // banc `-outboxSemer`
@@ -800,6 +813,7 @@ struct RootView: View {
 
     /// Le menu de la home route vers un onglet.
     private func routerVers(_ dest: WoopTab) {
+        NavDiagnostic.noter("menu", destination: dest.rawValue)
         withAnimation(.easeOut(duration: 0.3)) { selection = dest }
     }
 
@@ -1340,6 +1354,7 @@ struct RootView: View {
             // change par un autre chemin (route, chevron). Deux `onChange`,
             // aucun état nouveau — la sélection reste la vérité du châssis.
             .onChange(of: NavEtat.shared.page) { _, p in
+                NavDiagnostic.noter("page", destination: p.rawValue)
                 let cible = p.ongletWoop
                 if selection != cible {
                     withAnimation(.easeOut(duration: 0.3)) { selection = cible }
@@ -1348,6 +1363,7 @@ struct RootView: View {
             .onChange(of: selection, initial: true) { _, s in
                 // Le contexte de la boîte noire — POSÉ, jamais deviné.
                 SondeVol.shared.onglet = s.rawValue
+                NavDiagnostic.noter("selection", destination: s.rawValue)
                 // ⚠️ ET LA PORTE DES HORLOGES (05-09) : le TabView garde
                 // les trois pages MONTÉES, donc les trois animaient en
                 // même temps — mesuré 18 + 14 + 10 battements/seconde sur
@@ -2213,6 +2229,7 @@ struct RootView: View {
                           .first else { return }
                 let four = SCNView(frame: CGRect(x: 0, y: 0,
                                                  width: 2, height: 2))
+                NavDiagnostic.enregistrer(four, role: "four")
                 four.alpha = 0.001
                 four.isUserInteractionEnabled = false
                 four.scene = stage.scene

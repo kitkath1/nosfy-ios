@@ -2,24 +2,28 @@ import SwiftUI
 import UIKit
 import QuartzCore
 
-// MARK: - LA BOÎTE NOIRE (05-09) — la cadence RÉELLE, sur SON téléphone
+// MARK: - LA BOÎTE NOIRE (05-09) — les callbacks d'affichage, sur SON téléphone
 //
 // Demande de Kathryn : « tu pourras mettre une sonde sur mon tel, je me
 // baladerai, et tu mesureras les latences en direct ».
 //
-// C'est la SEULE mesure valable : la loi du dépôt dit que la vraie
-// cadence se mesure sur le TÉLÉPHONE, et l'A/B joué au simulateur le
+// La loi du dépôt demande une mesure sur le TÉLÉPHONE : l'A/B joué au simulateur le
 // 04-09 l'a reprouvé (5 img/s contre 8, les deux effondrés — le
 // simulateur ne mesurait que le simulateur).
 //
 // CE QU'ELLE ENREGISTRE, une ligne par seconde :
-//   · la cadence réelle (images comptées par un CADisplayLink) ;
+//   · la cadence des callbacks CADisplayLink servis par le fil principal ;
 //   · LE PIRE TROU de la seconde — c'est ÇA qu'on sent au doigt, pas la
 //     moyenne : 58 img/s avec un trou de 300 ms, ça « lague » ;
 //   · le CONTEXTE, posé par le châssis et jamais deviné : quel onglet,
 //     séance ou pas, player ouvert, pastille en main, île ;
 //   · ses MARQUES : elle tape la pastille de la sonde quand ça lague, et
 //     l'instant est estampillé. C'est ce qui relie son ressenti au chiffre.
+//
+// `img` n'est PAS un compteur de nouvelles images présentées par le GPU.
+// Les trous montrent que les callbacks n'ont pas été servis régulièrement ;
+// ils ne disent pas, seuls, si le fil calcule, attend, ou subit une cadence
+// réduite par le système. La preuve GPU demande une trace de rendu.
 //
 // Elle écrit dans `Documents/vol-<date>.jsonl` — on le récupère après sa
 // balade avec `devicectl device copy from`. Rien ne part sur le réseau.
@@ -30,6 +34,10 @@ import QuartzCore
 // aucune horloge SwiftUI.
 
 enum SondeVolBanc {
+    /// Mesurer avec Instruments sans ajouter le display link ni le HUD.
+    /// Non mémorisé ; le maintien de l'écran expire après trente minutes.
+    static let ecranEveille = CommandLine.arguments.contains("-ecranEveille")
+
     /// Allumée par le drapeau de lancement OU par la mémoire : une fois
     /// posée depuis le Mac, elle SURVIT aux lancements à la main (elle
     /// ouvre l'app en tapant l'icône, pas depuis Xcode — sans ça la
@@ -57,25 +65,17 @@ final class SondeVol {
     // Ce que le HUD montre (relu 1×/s, jamais par image).
     private(set) var img: Double = 0
     private(set) var pireMs: Double = 0
-    /// LE PROCESSEUR, en % (100 = un cœur saturé). ⚠️ C'EST L'INSTRUMENT
-    /// DE LA CHALEUR, et il ne se déduit PAS de la cadence : une app peut
-    /// tenir 60 img/s en brûlant deux cœurs. Verdict du 05-09 : « ça
-    /// chauffe avant ET pendant la séance » — alors que la cadence hors
-    /// séance était à 60. Les deux mesures ne disent pas la même chose.
+    /// La charge CPU récente des threads du process, lissée par
+    /// l'ordonnanceur (100 = un cœur). Ce n'est ni le temps CPU exact de
+    /// l'intervalle, ni une mesure du GPU, de l'énergie ou de la température.
     private(set) var cpu: Double = 0
-    /// L'état thermique que le SYSTÈME déclare : 0 normal, 1 tiède,
-    /// 2 chaud (il commence à brider), 3 critique. C'est le seul juge
-    /// non discutable de « ça chauffe ».
+    /// L'état thermique déclaré par iOS : 0 nominal, 1 fair, 2 serious,
+    /// 3 critical. Il n'indique ni une température en degrés, ni le moment
+    /// exact où un composant commence à réduire ses performances.
     private(set) var thermique: Int = 0
-    /// ⚠️ COMBIEN DE FOIS LE CORPS DE LA PAGE EST RECALCULÉ PAR SECONDE.
-    /// C'est la mesure qui MANQUAIT, et elle coupe le problème en deux :
-    ///   · ≈ 0  → plus rien ne se recalcule ; les 27 % sont de la
-    ///            COMPOSITION (verres, flous, ombres, vidéo). Le remède
-    ///            est d'avoir moins de couches chères, pas moins d'horloges.
-    ///   · 30-60 → quelque chose INVALIDE la page en continu, et il n'y a
-    ///            plus qu'à trouver qui écrit.
-    /// Sans elle, on éteint des interrupteurs au hasard — ce qu'on a fait
-    /// une demi-journée le 05-09, pour rien.
+    /// Nombre de passages dans les corps INSTRUMENTÉS depuis la dernière
+    /// ligne (environ une seconde, davantage lors d'un gel). Zéro ne dit
+    /// rien des sous-vues non instrumentées ni du coût du compositeur.
     private(set) var corpsParSeconde: Int = 0
     private(set) var secondes: Int = 0
     private(set) var marques: Int = 0
@@ -157,11 +157,11 @@ final class SondeVol {
     @inline(__always)
     func corps() { corpsCompte &+= 1 }
 
-    /// LES HORLOGES, comptées SÉPARÉMENT (05-09). Le corps de la page ne
-    /// se recalcule pas (mesuré : 0/s) — donc ce qui redessine est
-    /// PROFOND dans l'arbre. Chaque tranche compte un groupe :
+    /// Les passages dans les closures instrumentées, par groupe :
     ///   0 widgets · 1 nappe/menu · 2 galets · 3 route · 4 semaine.
-    /// Celle qui bat est celle qui force la recomposition.
+    /// Ce sont des comptes par intervalle de publication, pas des images
+    /// GPU ni nécessairement des Hz : plusieurs vues partagent un groupe,
+    /// et un intervalle de gel peut durer plus d'une seconde.
     @inline(__always)
     func tic(_ i: Int) {
         guard i >= 0, i < 5 else { return }
@@ -208,20 +208,26 @@ final class SondeVol {
         let marque = marqueEnAttente
         marqueEnAttente = false
         ecrire(t: t - t0, cadence: img, pireMs: pireMs, marque: marque)
+        NavDiagnostic.noter("etat")
     }
 
-    // MARK: LE PROCESSEUR — la vraie mesure de la chaleur
+    // MARK: LE PROCESSEUR — la charge récente du process
 
-    /// La somme du temps processeur de TOUS les fils de l'app, en % d'un
-    /// cœur. 100 = un cœur saturé, 250 = deux cœurs et demi. On lit les
-    /// fils du process, jamais la machine : ce qui nous intéresse, c'est
-    /// ce que WOOP brûle, pas ce que le téléphone fait par ailleurs.
+    /// Somme des `cpu_usage` Mach : charge récente lissée par thread,
+    /// en % d'un cœur. Ce n'est pas un delta de user_time + system_time.
+    /// Les autres process et le GPU ne sont pas compris dans cette somme.
     private static func cpuPourcent() -> Double {
         var fils: thread_act_array_t?
         var n: mach_msg_type_number_t = 0
         guard task_threads(mach_task_self_, &fils, &n) == KERN_SUCCESS,
               let fils else { return -1 }
         defer {
+            // task_threads rend un droit de port POUR CHAQUE thread en
+            // plus du tableau. Libérer seulement le tableau accumulait
+            // une référence de plus par thread à chaque échantillon.
+            for i in 0 ..< Int(n) {
+                mach_port_deallocate(mach_task_self_, fils[i])
+            }
             vm_deallocate(mach_task_self_,
                           vm_address_t(UInt(bitPattern: fils)),
                           vm_size_t(Int(n) * MemoryLayout<thread_t>.stride))
@@ -229,7 +235,8 @@ final class SondeVol {
         var total: Double = 0
         for i in 0 ..< Int(n) {
             var info = thread_basic_info()
-            var taille = mach_msg_type_number_t(THREAD_INFO_MAX)
+            var taille = mach_msg_type_number_t(
+                MemoryLayout<thread_basic_info>.size / MemoryLayout<integer_t>.size)
             let ok = withUnsafeMutablePointer(to: &info) { p in
                 p.withMemoryRebound(to: integer_t.self,
                                     capacity: Int(taille)) { q in
@@ -268,22 +275,25 @@ final class SondeVol {
         // pendant le splash et la porte, personne ne l'a encore posé, et
         // une ligne qui dit « ? » ne sert à rien.
         if onglet == "?" { onglet = NavEtat.shared.page.rawValue }
-        let ligne = String(
-            format: "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,"
-                + "\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,"
-                + "\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,"
-                + "\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,"
-                + "\"tics\":[%d,%d,%d,%d,%d]}\n",
+        let bancHome: String = BancCoutHome.demande ? BancCoutHome.shared.phase.rawValue : "inactif"
+        // Un format littéral évite une longue résolution des surcharges de +.
+        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d}\n"
+        let ligne = String(format: format,
             t, cadence, min(pireMs, 2000), onglet,
             enSeance ? 1 : 0,
-            p.ouvert ? 1 : 0,
+            (p.ouvert || p.couvre) ? 1 : 0,
             pi.dansIle ? 1 : 0,
             (pi.enDrag || pi.enVol) ? 1 : 0,
             marque ? 1 : 0,
             pireMs > 2000 ? 1 : 0,
             cpu, thermique, corpsParSeconde,
             ticsParSeconde[0], ticsParSeconde[1], ticsParSeconde[2],
-            ticsParSeconde[3], ticsParSeconde[4])
+            ticsParSeconde[3], ticsParSeconde[4],
+            DepartEtat.shared.cheminOuvert ? 1 : 0,
+            ProtectionThermique.shared.ambianceAuRepos ? 1 : 0,
+            bancHome,
+            DepartEtat.shared.welcomeOuverte ? 1 : 0,
+            DepartEtat.shared.welcomePremiereOuverte ? 1 : 0)
         if let d = ligne.data(using: .utf8) { sortie.write(d) }
     }
 }
@@ -313,8 +323,7 @@ struct SondeVolHUD: View {
             Text("\(Int(sonde.pireMs))ms")
                 .font(.system(size: 11, weight: .medium)).monospacedDigit()
                 .foregroundStyle(.white.opacity(0.65))
-            // LE PROCESSEUR — ce qui CHAUFFE. Il monte alors même que la
-            // cadence tient : c'est exactement ce qu'elle décrit.
+            // La charge CPU, indépendante de la cadence des callbacks.
             Text("\(Int(sonde.cpu))%")
                 .font(.system(size: 11, weight: .semibold)).monospacedDigit()
                 .foregroundStyle(sonde.cpu > 120

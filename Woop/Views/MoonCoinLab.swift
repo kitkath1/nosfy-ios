@@ -70,6 +70,8 @@ struct MoonCoinView: View {
     static let hostScale: CGFloat = 3.4
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
     @State private var dragging = false
     @State private var yawAtGrab: Float = 0
     @State private var yawLive: Float = 0
@@ -113,14 +115,17 @@ struct MoonCoinView: View {
 
     var body: some View {
         let side = coinR * Self.hostScale
+        // Chaque pièce suit SON hôte : les coffres et les cérémonies
+        // visibles ne dépendent pas de la sélection de l'onglet Home.
+        let auRepos = figee || ongletCache || scenePhase != .active
         TimelineView(.animation(minimumInterval: 1.0 / fps,
-                                paused: figee
+                                paused: auRepos
                                     || (reduceMotion && !dragging))) { tl in
             let t = Float(tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900))
-            // Gelée, la pièce NE LIT PAS le tilt : le lire abonnerait la
-            // vue à l'`@Observable` et le gyro la réveillerait quand même.
-            let tilt = figee ? .zero : SkyMotion.shared.tilt
+            // Même horloge pausée, lire le tilt abonnerait encore la vue
+            // cachée à l'Observable et le gyro continuerait à la réveiller.
+            let tilt = auRepos ? .zero : SkyMotion.shared.tilt
             Rectangle()
                 .fill(.white)
                 .frame(width: side, height: side)
@@ -156,6 +161,11 @@ struct MoonCoinView: View {
         .accessibilityAddTraits(onTap == nil ? [] : .isButton)
         .accessibilityAction { onTap?() }
         .onAppear { if onTap != nil { CoinChime.shared.prepare() } }
+        .onChange(of: auRepos, initial: true) { _, repos in
+            guard NavDiagnostic.actif else { return }
+            NavDiagnostic.noter("piece-repos",
+                destination: "rayon=\(coinR);repos=\(repos)")
+        }
     }
 
     private var drag: some Gesture {
