@@ -1,0 +1,83 @@
+GPU first,last 0.329195833 9.618694375
+
+GROUP process
+backboardd (70) rows 138870 sum_ms 3227.857032 union_ms 2994.346502 union_share_trace 31.102519054061016 latency {'n': 138870, 'sum': 386939.9945090024, 'min': 0.058542, 'median': 2.6202915, 'p95': 5.62775, 'p99': 7.347625, 'max': 11.913833}
+Woop (17148) rows 973 sum_ms 42.715047 union_ms 41.118134 union_share_trace 0.4270973801289327 latency {'n': 973, 'sum': 1944.0758319999989, 'min': 0.093167, 'median': 0.61175, 'p95': 9.115167, 'p99': 13.97725, 'max': 19.104833}
+None rows 303 sum_ms 8.651329 union_ms 8.077164 union_share_trace 0.08389815508825696 latency {'n': 0}
+
+GROUP channel-name
+Fragment rows 69787 sum_ms 2888.439793 union_ms 2871.136925 union_share_trace 29.822731222650816 latency {'n': 69629, 'sum': 212013.16874600062, 'min': 0.092333, 'median': 2.821792, 'p95': 6.102667, 'p99': 7.968459, 'max': 19.104833}
+Vertex rows 69798 sum_ms 358.487028 union_ms 358.487028 union_share_trace 3.723633724940129 latency {'n': 69654, 'sum': 174145.22846400007, 'min': 0.058542, 'median': 2.414479, 'p95': 4.898083, 'p99': 6.188875, 'max': 18.855167}
+Compute rows 561 sum_ms 32.296587 union_ms 32.296587 union_share_trace 0.3354672586748744 latency {'n': 560, 'sum': 2725.6731309999977, 'min': 2.613666, 'median': 5.004479, 'p95': 7.4455, 'p99': 8.319666, 'max': 9.88225}
+
+GROUP event-depth
+0 rows 137950 sum_ms 3228.210262 union_ms 3008.847506 union_share_trace 31.25314215426394 latency {'n': 137651, 'sum': 383112.5729830012, 'min': 0.058542, 'median': 2.6115, 'p95': 5.640625, 'p99': 7.390958, 'max': 18.855167}
+1 rows 2184 sum_ms 48.208562 union_ms 48.204145 union_share_trace 0.5007003489228181 latency {'n': 2180, 'sum': 5717.470731999995, 'min': 0.141834, 'median': 2.6767705, 'p95': 5.007334, 'p99': 7.317542, 'max': 19.104833}
+2 rows 12 sum_ms 2.804584 union_ms 2.804584 union_share_trace 0.029131440613319726 latency {'n': 12, 'sum': 54.02662600000001, 'min': 3.224833, 'median': 4.194395999999999, 'p95': 8.022125, 'p99': 8.022125, 'max': 8.022125}
+
+GROUP channel-subtitle
+ rows 140146 sum_ms 3279.223408 union_ms 3021.758769 union_share_trace 31.38725248625166 latency {'n': 139843, 'sum': 388884.0703410026, 'min': 0.058542, 'median': 2.612416, 'p95': 5.632208, 'p99': 7.390417, 'max': 19.104833}
+
+GROUP iosurface-accesses
+ rows 116900 sum_ms 2041.939404 union_ms 1885.92465 union_share_trace 19.589251718854133 latency {'n': 116597, 'sum': 313341.5048820002, 'min': 0.058542, 'median': 2.537416, 'p95': 5.420042, 'p99': 7.143583, 'max': 18.855167}
+Write Surface: 514(1179×2556:83b&) rows 7266 sum_ms 216.33799 union_ms 216.33799 union_share_trace 2.247120181848701 latency {'n': 7266, 'sum': 21440.23598699998, 'min': 0.128625, 'median': 2.8091255000000004, 'p95': 5.545042, 'p99': 6.988959, 'max': 11.239458}
+Write Surface: 121(1179×2556:83b&) rows 6044 sum_ms 166.41677 union_ms 166.41677 union_share_trace 1.7285844361643252 latency {'n': 6044, 'sum': 20352.305468000042, 'min': 0.099541, 'median': 3.1634585, 'p95': 6.651041, 'p99': 8.773667, 'max': 11.844708}
+Read Surface: 713(256×256:AGB&) rows 280 sum_ms 163.589489 union_ms 163.589489 union_share_trace 1.6992172399781291 latency {'n': 280, 'sum': 1672.928591, 'min': 4.6195, 'median': 5.669791999999999, 'p95': 7.814667, 'p99': 9.261, 'max': 9.91775}
+Write Surface: 441(1179×2556:83b&) rows 5777 sum_ms 158.755795 union_ms 158.755795 union_share_trace 1.6490092698463874 latency {'n': 5777, 'sum': 19846.97303500003, 'min': 0.148125, 'median': 3.292875, 'p95': 6.647125, 'p99': 8.39425, 'max': 11.459041}
+Read Surface: 659(1080×2348:80AL) rows 283 sum_ms 60.489091 union_ms 60.489091 union_share_trace 0.6283050756262578 latency {'n': 283, 'sum': 1069.5423739999997, 'min': 2.100958, 'median': 3.263625, 'p95': 6.015833, 'p99': 7.120459, 'max': 7.590792}
+Read Surface: 514(1179×2556:83b&) rows 335 sum_ms 50.455966 union_ms 50.455966 union_share_trace 0.5240901955928863 latency {'n': 335, 'sum': 1634.9524880000006, 'min': 2.550541, 'median': 4.86975, 'p95': 7.574875, 'p99': 8.284166, 'max': 9.844}
+Read Surface: 668(1206×964:f024) rows 283 sum_ms 39.239955 union_ms 39.239955 union_share_trace 0.40758858310246315 latency {'n': 283, 'sum': 983.6505080000001, 'min': 1.848833, 'median': 2.967917, 'p95': 5.686875, 'p99': 6.70725, 'max': 7.162458}
+Read Surface: 121(1179×2556:83b&) rows 262 sum_ms 37.58817 union_ms 37.58817 union_share_trace 0.3904313588462197 latency {'n': 262, 'sum': 1188.866622, 'min': 2.579125, 'median': 4.3999375, 'p95': 6.671, 'p99': 7.703084, 'max': 8.769959}
+Read Surface: 441(1179×2556:83b&) rows 247 sum_ms 35.767042 union_ms 35.767042 union_share_trace 0.3715151551663678 latency {'n': 247, 'sum': 1141.3341439999997, 'min': 2.642958, 'median': 4.462416, 'p95': 6.927667, 'p99': 8.022125, 'max': 8.462083}
+Read Surface: 671(604×642:f024) rows 283 sum_ms 26.859831 union_ms 26.859831 union_share_trace 0.278995234822813 latency {'n': 283, 'sum': 900.7576260000009, 'min': 1.583791, 'median': 2.675917, 'p95': 5.25525, 'p99': 6.183375, 'max': 6.704792}
+Read Surface: 696(864×768:AGB&) rows 25 sum_ms 19.30504 union_ms 19.30504 union_share_trace 0.20052301029235062 latency {'n': 25, 'sum': 119.142083, 'min': 4.083667, 'median': 4.4215, 'p95': 6.30975, 'p99': 6.924, 'max': 6.924}
+
+PER SECOND UNION_MS total/backboard/Woop
+0 320.289 316.812 3.74
+1 353.143 351.231 3.094
+2 422.641 419.755 7.684
+3 425.752 423.338 5.804
+4 412.642 409.709 5.49
+5 438.288 435.463 5.157
+6 73.58 73.253 1.43
+7 36.188 30.419 0.565
+8 345.122 342.487 5.55
+9 194.114 191.881 2.604
+
+TOP DISPLAY DURATION
+{'start': '6039154875', 'duration': '1880435541', 'cpu-to-display-latency': None, 'display-name': 'Display 1', 'connection-UUID': '9595', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '1196589583', 'duration': '499258958', 'cpu-to-display-latency': None, 'display-name': 'Display 1', 'connection-UUID': '550', 'surface-id': '514', 'pixel-format': '', 'color': '0', 'event-priority': '1', 'event-label': 'Surface  514', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2061961291', 'duration': '49934209', 'cpu-to-display-latency': '50764291', 'display-name': 'Display 1', 'connection-UUID': '1127', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  94 :Surface  651  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '7919590416', 'duration': '49931292', 'cpu-to-display-latency': '1793130458', 'display-name': 'Display 1', 'connection-UUID': '9688', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  341 :Surface  713  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2594462708', 'duration': '49931000', 'cpu-to-display-latency': '51398958', 'display-name': 'Display 1', 'connection-UUID': '1878', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  127 :Surface  697  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '1762411625', 'duration': '49930750', 'cpu-to-display-latency': '50723167', 'display-name': 'Display 1', 'connection-UUID': '686', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  76 :Surface  704  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2661029666', 'duration': '49930417', 'cpu-to-display-latency': '50088166', 'display-name': 'Display 1', 'connection-UUID': '2001', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  131 :Surface  651  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2527899416', 'duration': '49929750', 'cpu-to-display-latency': '62676000', 'display-name': 'Display 1', 'connection-UUID': '1773', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  123 :Surface  696  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2993853166', 'duration': '49924084', 'cpu-to-display-latency': '51648958', 'display-name': 'Display 1', 'connection-UUID': '2555', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  152 :Surface  714  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2927288208', 'duration': '49923667', 'cpu-to-display-latency': '51160042', 'display-name': 'Display 1', 'connection-UUID': '2487', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  147 :Surface  693  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2195087666', 'duration': '49922667', 'cpu-to-display-latency': '50331166', 'display-name': 'Display 1', 'connection-UUID': '1323', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  102 :Surface  663  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2794158875', 'duration': '49922500', 'cpu-to-display-latency': '50879209', 'display-name': 'Display 1', 'connection-UUID': '2233', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  139 :Surface  752  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+
+TOP CPU TO DISPLAY LATENCY
+{'start': '7919590416', 'duration': '49931292', 'cpu-to-display-latency': '1793130458', 'display-name': 'Display 1', 'connection-UUID': '9688', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  341 :Surface  713  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '1695848541', 'duration': '16642834', 'cpu-to-display-latency': '266830083', 'display-name': 'Display 1', 'connection-UUID': '561', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  68 :Surface  651  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '1712491375', 'duration': '33285166', 'cpu-to-display-latency': '247370500', 'display-name': 'Display 1', 'connection-UUID': '613', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  72 :Surface  747  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '8551963916', 'duration': '16648250', 'cpu-to-display-latency': '68479291', 'display-name': 'Display 1', 'connection-UUID': '10822', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  382 :Surface  700  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '2511265750', 'duration': '16633666', 'cpu-to-display-latency': '67695459', 'display-name': 'Display 1', 'connection-UUID': '1710', 'surface-id': '514', 'pixel-format': '', 'color': '0', 'event-priority': '1', 'event-label': 'Surface  514  ( Woop (17148) :Frame  120 :Surface  747  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '9500532958', 'duration': '33290458', 'cpu-to-display-latency': '67673833', 'display-name': 'Display 1', 'connection-UUID': '12550', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  442 :Surface  702  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '8968015958', 'duration': '33289792', 'cpu-to-display-latency': '67406042', 'display-name': 'Display 1', 'connection-UUID': '11660', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  408 :Surface  693  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '8901452083', 'duration': '33284042', 'cpu-to-display-latency': '67082292', 'display-name': 'Display 1', 'connection-UUID': '11536', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  404 :Surface  717  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '8768312625', 'duration': '33289583', 'cpu-to-display-latency': '67016792', 'display-name': 'Display 1', 'connection-UUID': '11288', 'surface-id': '441', 'pixel-format': '', 'color': '1', 'event-priority': '1', 'event-label': 'Surface  441  ( Woop (17148) :Frame  395 :Surface  717  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+{'start': '9367402500', 'duration': '33289375', 'cpu-to-display-latency': '67005500', 'display-name': 'Display 1', 'connection-UUID': '12358', 'surface-id': '121', 'pixel-format': '', 'color': '1002', 'event-priority': '1', 'event-label': 'Surface  121  ( Woop (17148) :Frame  433 :Surface  679  )', 'category': 'Display', 'event-depth': '0', 'direct-to-display': '0', 'detachment-reason': None, 'detachment-suggestion': None}
+
+DISPLAY counts/sec/starttime
+0 32
+1 23
+2 30
+3 41
+4 38
+5 42
+6 2
+7 3
+8 33
+9 18

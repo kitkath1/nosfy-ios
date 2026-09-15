@@ -1,0 +1,21 @@
+Sep 15 15:33:56.724877 SpringBoard[35] <Notice>: Received trusted open application request for "fr.kathryn.woop" from <FBProcess: 0x816078780; anon<dtappserviced>:21635(vEEFD)>.
+Sep 15 15:33:56.725001 SpringBoard(FrontBoard)[35] <Debug>: Pending: <FBWorkspaceEvent: 0x82d901d60; FBSystemService-TrustedRequest: fr.kathryn.woop>; queue position: back
+Sep 15 15:33:56.725071 SpringBoard(FrontBoard)[35] <Debug>: Executing: <FBWorkspaceEvent: 0x82d901d60; FBSystemService-TrustedRequest: fr.kathryn.woop>
+Sep 15 15:33:56.807137 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:56.962948 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:56.973390 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:57.348732 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Received action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.348778 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Dropping unhandled action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.368221 SpringBoard(FrontBoardServices)[35] <Debug>: [app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>:22325] Invalidating <FBProcessWatchdog: 0x81c0f9f20; name: scene-create; time: 19.87s>
+Sep 15 15:33:57.368230 SpringBoard(FrontBoardServices)[35] <Debug>: [app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>:22325] [realTime] Invalidated
+Sep 15 15:33:57.371127 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:57.401615 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:57.415174 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:57.434734 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Received action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.434787 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Dropping unhandled action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.514414 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Received action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.531331 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Dropping unhandled action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:33:57.598154 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:33:58.111939 SpringBoard(RunningBoardServices)[35] <Notice>: Received state update for 22325 (app<fr.kathryn.woop(88DDB5B8-CFD3-49D4-A85E-97E97C8CB139)>, running-active-Visible
+Sep 15 15:34:00.369737 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Received action(s): BLSInvalidateFrameSpecifiersAction
+Sep 15 15:34:00.369775 SpringBoard(FrontBoard)[35] <Notice>: [(FBSceneManager):sceneID:fr.kathryn.woop-E91EFE3B-5D8C-4591-B59D-678C64DB2938] Dropping unhandled action(s): BLSInvalidateFrameSpecifiersAction

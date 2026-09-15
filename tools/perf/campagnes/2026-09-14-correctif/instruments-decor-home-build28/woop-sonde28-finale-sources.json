@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-211124.jsonl",
+    "destination": "/private/tmp/woop-sonde28-finale-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-211200.jsonl",
+    "destination": "/private/tmp/woop-sonde28-finale-nav.jsonl"
+  }
+}

@@ -1,0 +1,59 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result15-fond-pose.xcresult
+
+2026-09-15 09:18:19.139 xcodebuild[57201:13528252] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result15-fond-pose.xcresult
+
+2026-09-15 09:18:19.144 xcodebuild[57201:13528252] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 09:18:19.242 xcodebuild[57201:13528252] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 09:18:19.420 xcodebuild[57201:13528252] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 09:18:19.541 xcodebuild[57201:13528252] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 09:18:21.593975+0200 NavRuntimeUITests-Runner[17989:1453100] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 09:18:21.957.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 09:18:21.957.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 09:18:21.957.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testHomePretePourMesure]' started.
+    t =     0.00s Start Test at 2026-09-15 09:18:21.958
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.11s         Wait for fr.kathryn.woop to idle
+    t =     0.18s Checking existence of `"Later" Button`
+    t =     0.33s Tap "Later" Button
+    t =     0.33s     Wait for fr.kathryn.woop to idle
+    t =     0.39s     Find the "Later" Button
+    t =     0.59s     Check for interrupting elements affecting "Later" Button
+    t =     0.91s     Synthesize event
+    t =     1.40s     Wait for fr.kathryn.woop to idle
+    t =     1.49s Waiting 5.0s for "Later" Button to not exist
+    t =     2.51s     Checking `Expect predicate `existsNoRetry == 0` for object "Later" Button`
+    t =     2.51s         Checking existence of `"Later" Button`
+    t =     2.59s Waiting 5.0s for "person" Button to exist
+    t =     3.61s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     3.62s         Checking existence of `"person" Button`
+    t =     3.72s Find the "person" Button
+    t =     3.93s Find the Application 'fr.kathryn.woop'
+WOOP_HOME_PRETE_MESURE
+    t =     4.38s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testHomePretePourMesure]' passed (4.433 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 09:18:26.392.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.433 (4.435) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 09:18:26.393.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.433 (4.436) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 09:18:26.394.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.433 (4.438) seconds
+2026-09-15 09:18:26.522 xcodebuild[57201:13528252] [MT] IDETestOperationsObserverDebug: 7.100 elapsed -- Testing started completed.
+2026-09-15 09:18:26.522 xcodebuild[57201:13528252] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 09:18:26.522 xcodebuild[57201:13528252] [MT] IDETestOperationsObserverDebug: 7.100 sec, +7.100 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result15-fond-pose.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

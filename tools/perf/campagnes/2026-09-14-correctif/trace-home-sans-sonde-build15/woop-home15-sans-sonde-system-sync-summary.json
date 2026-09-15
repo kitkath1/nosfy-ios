@@ -1,0 +1,23 @@
+{
+  "groups": {
+    "CA_commit_handlers_queue": {
+      "count": 357,
+      "duration_ns": 3582752,
+      "wait_ns": 1299834
+    },
+    "waitForCommitId": {
+      "count": 430,
+      "duration_ns": 4967586788,
+      "wait_ns": 4962603909
+    },
+    "CA_commit_mutex": {
+      "count": 21,
+      "duration_ns": 505490044,
+      "wait_ns": 505218081
+    }
+  },
+  "union_ns": 5476659584,
+  "blocked_inside_ns": 5463562993,
+  "state_start_ns": 472430416,
+  "state_end_ns": 9250294923
+}

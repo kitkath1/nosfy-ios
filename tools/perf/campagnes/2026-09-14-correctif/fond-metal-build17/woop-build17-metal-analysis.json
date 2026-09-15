@@ -1,0 +1,354 @@
+{
+  "metal": {
+    "n": 29,
+    "t_debut": 15.6,
+    "t_fin": 44.0,
+    "img": {
+      "mediane": 56.6,
+      "moyenne_lignes": 54.41034482758621,
+      "min": 17.4,
+      "max": 60.1
+    },
+    "cpu": {
+      "mediane": 27,
+      "moyenne_lignes": 26.79310344827586,
+      "min": 13,
+      "max": 32
+    },
+    "pire": {
+      "mediane": 45,
+      "moyenne_lignes": 44.172413793103445,
+      "min": 17,
+      "max": 161
+    },
+    "therm": {
+      "1": 29
+    },
+    "protection": {
+      "0": 29
+    },
+    "onglet": {
+      "home": 29
+    },
+    "seance": {
+      "0": 29
+    },
+    "player": {
+      "0": 29
+    },
+    "ile": {
+      "0": 29
+    },
+    "drag": {
+      "0": 29
+    },
+    "gel": {
+      "0": 29
+    },
+    "img_moins_30": 1,
+    "img_moins_50": 4,
+    "pire_plus_100": 1,
+    "pire_plus_300": 0,
+    "pire_plus_1000": 0,
+    "integration_approximative": {
+      "duree": 29.0,
+      "callbacks_moyens": 54.932758620689654,
+      "cpu_moyen": 26.986206896551725
+    }
+  },
+  "reference": {
+    "n": 19,
+    "t_debut": 15.5,
+    "t_fin": 45.0,
+    "img": {
+      "mediane": 8.1,
+      "moyenne_lignes": 13.057894736842105,
+      "min": 1.8,
+      "max": 30.9
+    },
+    "cpu": {
+      "mediane": 2,
+      "moyenne_lignes": 4.578947368421052,
+      "min": 0,
+      "max": 13
+    },
+    "pire": {
+      "mediane": 634,
+      "moyenne_lignes": 793.6842105263158,
+      "min": 64,
+      "max": 2000
+    },
+    "therm": {
+      "2": 19
+    },
+    "protection": {
+      "0": 19
+    },
+    "onglet": {
+      "home": 19
+    },
+    "seance": {
+      "0": 19
+    },
+    "player": {
+      "0": 19
+    },
+    "ile": {
+      "0": 19
+    },
+    "drag": {
+      "0": 19
+    },
+    "gel": {
+      "0": 15,
+      "1": 4
+    },
+    "img_moins_30": 18,
+    "img_moins_50": 19,
+    "pire_plus_100": 16,
+    "pire_plus_300": 14,
+    "pire_plus_1000": 5,
+    "integration_approximative": {
+      "duree": 30.0,
+      "callbacks_moyens": 10.476333333333326,
+      "cpu_moyen": 3.053333333333332
+    }
+  },
+  "metal_evenements": [
+    {
+      "gpuComplete": 1,
+      "deuxVideos": "false",
+      "braise": "pose",
+      "b": 0,
+      "pilule": "pose",
+      "p": 0,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153246.593796,
+      "rel_selection": 0.3565889596939087
+    },
+    {
+      "gpuComplete": 4,
+      "deuxVideos": "true",
+      "braise": "604x642@0.000",
+      "b": 1,
+      "pilule": "1206x964@0.000",
+      "p": 1,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153246.69515,
+      "rel_selection": 0.4579429626464844
+    },
+    {
+      "gpuComplete": 97,
+      "deuxVideos": "true",
+      "braise": "604x642@3.167",
+      "b": 76,
+      "pilule": "1206x964@3.167",
+      "p": 74,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153257.973125,
+      "rel_selection": 11.735917925834656
+    },
+    {
+      "gpuComplete": 184,
+      "deuxVideos": "true",
+      "braise": "604x642@8.167",
+      "b": 148,
+      "pilule": "1206x964@8.167",
+      "p": 148,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153262.986293,
+      "rel_selection": 16.749085903167725
+    },
+    {
+      "gpuComplete": 335,
+      "deuxVideos": "true",
+      "braise": "604x642@13.208",
+      "b": 267,
+      "pilule": "1206x964@13.167",
+      "p": 267,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153268.011208,
+      "rel_selection": 21.774001002311707
+    },
+    {
+      "gpuComplete": 485,
+      "deuxVideos": "true",
+      "braise": "604x642@18.250",
+      "b": 380,
+      "pilule": "1206x964@18.208",
+      "p": 383,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153273.036478,
+      "rel_selection": 26.79927098751068
+    },
+    {
+      "gpuComplete": 631,
+      "deuxVideos": "true",
+      "braise": "604x642@23.250",
+      "b": 492,
+      "pilule": "1206x964@23.250",
+      "p": 498,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153278.043769,
+      "rel_selection": 31.806561946868896
+    },
+    {
+      "gpuComplete": 779,
+      "deuxVideos": "true",
+      "braise": "604x642@28.292",
+      "b": 608,
+      "pilule": "1206x964@28.292",
+      "p": 611,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153283.09826,
+      "rel_selection": 36.86105298995972
+    },
+    {
+      "gpuComplete": 925,
+      "deuxVideos": "true",
+      "braise": "604x642@33.333",
+      "b": 721,
+      "pilule": "1206x964@33.292",
+      "p": 722,
+      "drawable": "1179x1980",
+      "format": "BGRA8",
+      "cadenceDemandee": "24",
+      "t": 811153288.112046,
+      "rel_selection": 41.87483894824982
+    }
+  ],
+  "metal_segments": [
+    {
+      "debut": 0.3565889596939087,
+      "fin": 0.4579429626464844,
+      "secondes_nav": 0.10135400295257568,
+      "gpuComplete_par_seconde_nav": 29.599225611283682,
+      "b_par_seconde_nav": 9.86640853709456,
+      "p_par_seconde_nav": 9.86640853709456
+    },
+    {
+      "debut": 0.4579429626464844,
+      "fin": 11.735917925834656,
+      "secondes_nav": 11.277974963188171,
+      "gpuComplete_par_seconde_nav": 8.246161239367552,
+      "b_par_seconde_nav": 6.650130031748026,
+      "p_par_seconde_nav": 6.472793230901412,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 11.735917925834656,
+      "fin": 16.749085903167725,
+      "secondes_nav": 5.013167977333069,
+      "gpuComplete_par_seconde_nav": 17.354295805241044,
+      "b_par_seconde_nav": 14.362175838820173,
+      "p_par_seconde_nav": 14.761125167676289,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 16.749085903167725,
+      "fin": 21.774001002311707,
+      "secondes_nav": 5.024915099143982,
+      "gpuComplete_par_seconde_nav": 30.0502589637233,
+      "b_par_seconde_nav": 23.68199216346406,
+      "p_par_seconde_nav": 23.68199216346406,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 21.774001002311707,
+      "fin": 26.79927098751068,
+      "secondes_nav": 5.025269985198975,
+      "gpuComplete_par_seconde_nav": 29.84914252205313,
+      "b_par_seconde_nav": 22.486354033280023,
+      "p_par_seconde_nav": 23.083336883721085,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 26.79927098751068,
+      "fin": 31.806561946868896,
+      "secondes_nav": 5.007290959358215,
+      "gpuComplete_par_seconde_nav": 29.1574827955899,
+      "b_par_seconde_nav": 22.367384062370334,
+      "p_par_seconde_nav": 22.966510421183823,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 31.806561946868896,
+      "fin": 36.86105298995972,
+      "secondes_nav": 5.05449104309082,
+      "gpuComplete_par_seconde_nav": 29.280890744144642,
+      "b_par_seconde_nav": 22.94988734000526,
+      "p_par_seconde_nav": 22.356355770867193,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    },
+    {
+      "debut": 36.86105298995972,
+      "fin": 41.87483894824982,
+      "secondes_nav": 5.0137859582901,
+      "gpuComplete_par_seconde_nav": 29.119711374713688,
+      "b_par_seconde_nav": 22.53785880371676,
+      "p_par_seconde_nav": 22.138958647898765,
+      "braise_retour_temps": false,
+      "pilule_retour_temps": false
+    }
+  ],
+  "metal_regime": {
+    "debut": 16.749085903167725,
+    "fin": 41.87483894824982,
+    "secondes_nav": 25.125753045082092,
+    "gpuComplete_par_seconde_nav": 29.49165339126173,
+    "b_par_seconde_nav": 22.80528663048984,
+    "p_par_seconde_nav": 22.84508643263729
+  },
+  "piece_repos": [
+    {
+      "t": 0.17710089683532715,
+      "destination": "rayon=23.0;repos=true"
+    },
+    {
+      "t": 0.33115994930267334,
+      "destination": "rayon=23.0;repos=false"
+    },
+    {
+      "t": 3.2749329805374146,
+      "destination": "rayon=12.0;repos=false"
+    },
+    {
+      "t": 3.6362009048461914,
+      "destination": "rayon=23.0;repos=true"
+    },
+    {
+      "t": 3.6437569856643677,
+      "destination": "rayon=12.0;repos=true"
+    },
+    {
+      "t": 11.702325940132141,
+      "destination": "rayon=23.0;repos=false"
+    },
+    {
+      "t": 11.708162903785706,
+      "destination": "rayon=12.0;repos=false"
+    }
+  ]
+}

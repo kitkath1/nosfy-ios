@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-160254.jsonl",
+    "destination": "/private/tmp/woop-banc23-decor-repos-core-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-160249.jsonl",
+    "destination": "/private/tmp/woop-banc23-decor-repos-core-nav.jsonl"
+  }
+}

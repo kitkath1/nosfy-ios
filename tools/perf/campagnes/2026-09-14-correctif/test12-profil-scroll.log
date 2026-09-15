@@ -1,0 +1,69 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testDefilerProfil" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result12-profil-scroll.xcresult
+
+2026-09-15 08:35:35.845 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result12-profil-scroll.xcresult
+
+2026-09-15 08:35:35.851 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 08:35:35.948 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 08:35:36.136 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 08:35:36.254 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 08:35:38.368157+0200 NavRuntimeUITests-Runner[17604:1418906] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 08:35:38.742.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 08:35:38.743.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 08:35:38.743.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDefilerProfil]' started.
+    t =     0.00s Start Test at 2026-09-15 08:35:38.746
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.05s         Wait for fr.kathryn.woop to idle
+    t =     0.08s Checking existence of `"Later" Button`
+2026-09-15 08:35:38.502 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.22s Tap "Later" Button
+    t =     0.22s     Wait for fr.kathryn.woop to idle
+    t =     0.24s     Find the "Later" Button
+    t =     0.29s     Check for interrupting elements affecting "Later" Button
+    t =     0.33s     Synthesize event
+    t =     0.61s     Wait for fr.kathryn.woop to idle
+    t =     0.62s Waiting 5.0s for "Later" Button to not exist
+    t =     1.65s     Checking `Expect predicate `existsNoRetry == 0` for object "Later" Button`
+    t =     1.65s         Checking existence of `"Later" Button`
+    t =     1.73s Waiting 5.0s for "Réglages" Button to exist
+    t =     2.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =     2.77s         Checking existence of `"Réglages" Button`
+    t =     2.85s Checking existence of `"Deux Lunes" StaticText`
+    t =     2.90s Find the "Deux Lunes" StaticText
+    t =     2.96s Swipe up Application 'fr.kathryn.woop'
+    t =     2.96s     Wait for fr.kathryn.woop to idle
+    t =     2.97s     Find the Application 'fr.kathryn.woop'
+    t =     3.11s     Check for interrupting elements affecting "Woop" Application
+    t =     3.16s     Synthesize event
+    t =     3.61s     Wait for fr.kathryn.woop to idle
+    t =     4.41s Find the "Deux Lunes" StaticText
+    t =     4.50s Find the Application 'fr.kathryn.woop'
+WOOP_PROFIL_DEFILE_OK
+    t =     4.69s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDefilerProfil]' passed (4.728 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 08:35:43.474.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.728 (4.731) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 08:35:43.474.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.728 (4.732) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 08:35:43.474.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.728 (4.732) seconds
+2026-09-15 08:35:43.167 xcodebuild[45473:13401097] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 08:35:43.330 xcodebuild[45473:13401097] [MT] IDETestOperationsObserverDebug: 7.192 elapsed -- Testing started completed.
+2026-09-15 08:35:43.330 xcodebuild[45473:13401097] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 08:35:43.330 xcodebuild[45473:13401097] [MT] IDETestOperationsObserverDebug: 7.192 sec, +7.192 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result12-profil-scroll.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

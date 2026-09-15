@@ -1,0 +1,6 @@
+{"applicationState":1,"bande":false,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"ecran-eveille-debut","page":"home","selection":"?","t":811168173.897753,"therm":1,"visite":false}
+{"applicationState":1,"bande":false,"destination":"home","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"selection","page":"home","selection":"home","t":811168173.90747702,"therm":1,"visite":false}
+{"applicationState":1,"bande":false,"destination":"rayon=23.0;repos=true","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811168174.03331804,"therm":1,"visite":false}
+{"applicationState":1,"bande":true,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"scene-active","page":"home","selection":"home","t":811168174.12835503,"therm":1,"visite":false}
+{"applicationState":0,"bande":true,"destination":"rayon=23.0;repos=false","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811168174.14346302,"therm":1,"visite":false}
+{"applicationState":0,"bande":true,"destination":"rayon=12.0;repos=false","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811168174.95135105,"therm":1,"visite":false}

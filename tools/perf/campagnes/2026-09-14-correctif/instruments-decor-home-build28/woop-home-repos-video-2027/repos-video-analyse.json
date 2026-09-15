@@ -1,0 +1,219 @@
+{
+  "trace": "/private/tmp/woop-home-repos-video-2027/repos-video",
+  "debut": "2026-09-15T20:27:52.944+02:00",
+  "fin": "2026-09-15T20:28:09.986+02:00",
+  "duree_s": 17.041489,
+  "fin_raison": "Time limit reached",
+  "lignes": {
+    "life-cycle-period": 1,
+    "metal-perf-overview-process-metric": 0,
+    "device-thermal-state-intervals": 1,
+    "DeviceChargingState": 1,
+    "ProcessSubsystemPowerImpact": 48,
+    "time-profile": 787,
+    "SystemPowerLevel": 24
+  },
+  "thermique": [
+    "Serious"
+  ],
+  "metriques_processus": {},
+  "cpu_apres_4s": {
+    "n": 638,
+    "poids_ms": 638.0,
+    "pourcent_echantillonne": 4.892079424366344,
+    "main_pourcent_echantillonne": 1.0198221997503507,
+    "bibliotheques_feuille_ms": [
+      [
+        "libswiftCore.dylib",
+        155.0
+      ],
+      [
+        "SwiftUICore",
+        149.0
+      ],
+      [
+        "AttributeGraph",
+        75.0
+      ],
+      [
+        "libsystem_malloc.dylib",
+        50.0
+      ],
+      [
+        "libsystem_kernel.dylib",
+        48.0
+      ],
+      [
+        "libobjc.A.dylib",
+        31.0
+      ],
+      [
+        "QuartzCore",
+        22.0
+      ],
+      [
+        "CoreFoundation",
+        18.0
+      ],
+      [
+        "libsystem_pthread.dylib",
+        16.0
+      ],
+      [
+        "libsystem_platform.dylib",
+        15.0
+      ],
+      [
+        "RenderBox",
+        12.0
+      ],
+      [
+        "?",
+        12.0
+      ]
+    ],
+    "piles_main_ms": [
+      [
+        "runApp<A>(_:)",
+        129.0
+      ],
+      [
+        "static App.main()",
+        129.0
+      ],
+      [
+        "closure #1 in KitRendererCommon(_:)",
+        129.0
+      ],
+      [
+        "GSEventRunModal",
+        129.0
+      ],
+      [
+        "start",
+        129.0
+      ],
+      [
+        "-[UIApplication _run]",
+        129.0
+      ],
+      [
+        "_CFRunLoopRunSpecificWithOptions",
+        129.0
+      ],
+      [
+        "main",
+        129.0
+      ],
+      [
+        "UIApplicationMain",
+        129.0
+      ],
+      [
+        "__CFRunLoopRun",
+        128.0
+      ],
+      [
+        "UC::DriverCore::continueProcessing()",
+        108.0
+      ],
+      [
+        "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__",
+        107.0
+      ],
+      [
+        "__CFRunLoopDoSource0",
+        107.0
+      ],
+      [
+        "__CFRunLoopDoSources0",
+        107.0
+      ],
+      [
+        "schedulerStepScheduledMainSectionContinue",
+        106.0
+      ],
+      [
+        "_UIUpdateSequenceRunNext",
+        106.0
+      ],
+      [
+        "0x18d72e7f0",
+        78.0
+      ],
+      [
+        "ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        53.0
+      ],
+      [
+        "closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        51.0
+      ],
+      [
+        "<deduplicated_symbol>",
+        47.0
+      ],
+      [
+        "specialized GraphHost.runTransaction(_:do:id:)",
+        44.0
+      ],
+      [
+        "static Update.ensure<A>(_:)",
+        42.0
+      ],
+      [
+        "0x18d806250",
+        42.0
+      ],
+      [
+        "0x18d8061dc",
+        42.0
+      ],
+      [
+        "0x18d76468c",
+        42.0
+      ],
+      [
+        "partial apply for closure #1 in closure #1 in _UIHostingView.beginTransaction()",
+        42.0
+      ],
+      [
+        "ViewGraphRootValueUpdater.updateGraph<A>(body:)",
+        42.0
+      ],
+      [
+        "partial apply for closure #1 in closure #1 in closure #1 in _UIHostingView.beginTransaction()",
+        42.0
+      ],
+      [
+        "closure #1 in closure #1 in closure #1 in _UIHostingView.beginTransaction()",
+        42.0
+      ],
+      [
+        "0x18e007f34",
+        42.0
+      ],
+      [
+        "static Update.dispatchImmediately<A>(reason:_:)",
+        42.0
+      ],
+      [
+        "GraphHost.flushTransactions()",
+        42.0
+      ],
+      [
+        "closure #1 in static Update.ensure<A>(_:)",
+        42.0
+      ],
+      [
+        "ViewGraphRootValueUpdater._updateViewGraph<A>(body:)",
+        42.0
+      ],
+      [
+        "static ViewGraphHostUpdate.dispatchImmediately<A>(_:)",
+        42.0
+      ]
+    ]
+  },
+  "limites": "CPU échantillonné, instructions/s documentées dans la table Apple. Ne pas interpréter les colonnes sans nom comme des watts. Comparaison thermique et vérification de la Home nécessaires."
+}

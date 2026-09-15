@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-102046.jsonl",
+    "destination": "/private/tmp/woop-build17-metal-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-102046.jsonl",
+    "destination": "/private/tmp/woop-build17-metal-nav.jsonl"
+  }
+}

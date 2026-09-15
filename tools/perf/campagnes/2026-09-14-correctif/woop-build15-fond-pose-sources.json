@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-091819.jsonl",
+    "destination": "/private/tmp/woop-build15-fond-pose-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-091819.jsonl",
+    "destination": "/private/tmp/woop-build15-fond-pose-nav.jsonl"
+  }
+}

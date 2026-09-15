@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-090634.jsonl",
+    "destination": "/private/tmp/woop-build15-home-froid-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-090634.jsonl",
+    "destination": "/private/tmp/woop-build15-home-froid-nav.jsonl"
+  }
+}

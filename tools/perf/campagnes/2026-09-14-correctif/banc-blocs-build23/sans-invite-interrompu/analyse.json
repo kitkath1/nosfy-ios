@@ -1,0 +1,68 @@
+{
+  "vol": "/private/tmp/woop-banc23-sans-invite-usb/vol-20260915-155705.jsonl",
+  "nav": "/private/tmp/woop-banc23-sans-invite-usb/nav-20260915-155659.jsonl",
+  "phases_attendues": [
+    "complete",
+    "sansWidgets",
+    "sansRoute",
+    "fondSeul",
+    "nu",
+    "complete"
+  ],
+  "parcours_complet": false,
+  "resultats": [
+    {
+      "phase": "complete",
+      "observations": 5,
+      "debut": 1.0,
+      "fin": 5.1,
+      "exclusion_initiale_s": 15,
+      "n_stables": 0
+    }
+  ],
+  "evenements_banc": [
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811173425.028844,
+      "therm": 2,
+      "visite": false
+    },
+    {
+      "applicationState": 2,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811173431.270631,
+      "therm": 2,
+      "visite": false
+    },
+    {
+      "applicationState": 2,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-fin",
+      "page": "home",
+      "selection": "home",
+      "t": 811173431.270843,
+      "therm": 2,
+      "visite": false
+    }
+  ],
+  "limites": "CPU Mach récent, callbacks CADisplayLink, pas énergie ni images GPU. Phases chaudes avec fond protégé potentiellement immobile."
+}

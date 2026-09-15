@@ -1,0 +1,44 @@
+10:04:32  Acquired tunnel connection to device.
+10:04:32  Enabling developer disk image services.
+10:04:32  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+10:04:43  Acquired tunnel connection to device.
+10:04:43  Enabling developer disk image services.
+10:04:43  Acquired usage assertion.
+File received from Device
+/private/tmp/woop-home16-racine2.png
+vol vol-20260915-100432.jsonl last {'t': 44.9, 'img': 29.8, 'pire': 83, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 14, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 16], 'chemin': 0, 'protection': 0}
+last30s 27 cpu 10 therm [2] onglets ['home']
+nav nav-20260915-100432.jsonl lastViews []
+811152315.53867 []
+811152316.789336 []
+811152317.803455 []
+811152318.802066 []
+10:05:19  Acquired tunnel connection to device.
+10:05:19  Enabling developer disk image services.
+10:05:19  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+10:05:29  Acquired tunnel connection to device.
+10:05:29  Enabling developer disk image services.
+10:05:29  Acquired usage assertion.
+File received from Device
+/private/tmp/woop-home16-reference2.png
+vol vol-20260915-100519.jsonl last {'t': 45.3, 'img': 40.5, 'pire': 89, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 16, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 17], 'chemin': 0, 'protection': 0}
+last30s 29 cpu 12 therm [2] onglets ['home']
+nav nav-20260915-100519.jsonl lastViews []
+811152361.759177 []
+811152362.760041 []
+811152363.927927 []
+811152364.936235 []
+10:06:05  Acquired tunnel connection to device.
+10:06:05  Enabling developer disk image services.
+10:06:05  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.
+Traceback (most recent call last):
+  File "/private/tmp/woop-compare16-retry.py", line 18, in <module>
+    ready('normal2')
+  File "/private/tmp/woop-compare16-retry.py", line 7, in ready
+    subprocess.run(['xcodebuild','test-without-building','-xctestrun',str(qa/'dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun'),'-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure','-destination',f'platform=iOS,id={udid}','-destination-timeout','30','-parallel-testing-enabled','NO','-maximum-concurrent-test-device-destinations','1','-resultBundlePath',str(qa/f'result16-{label}.xcresult')],check=True,stdout=out,stderr=subprocess.STDOUT,timeout=40)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['xcodebuild', 'test-without-building', '-xctestrun', '/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun', '-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure', '-destination', 'platform=iOS,id=00008120-001E4CDC0A85A01E', '-destination-timeout', '30', '-parallel-testing-enabled', 'NO', '-maximum-concurrent-test-device-destinations', '1', '-resultBundlePath', '/private/tmp/woop-nav-runtime-qa/result16-normal2.xcresult']' returned non-zero exit status 65.

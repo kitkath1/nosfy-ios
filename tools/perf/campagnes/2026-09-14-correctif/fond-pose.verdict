@@ -1,0 +1,21 @@
+{
+ "fichier": "fond-pose.jsonl",
+ "n": 124,
+ "img": 43.1,
+ "pire_ms": 83,
+ "pire_max_ms": 220,
+ "cpu": 19,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  18
+ ]
+}

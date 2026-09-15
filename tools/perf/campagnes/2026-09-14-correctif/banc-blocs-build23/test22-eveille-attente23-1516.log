@@ -1,0 +1,19 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testOuvrirHomeEveillee" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 20 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result22-eveille-attente23-1516.xcresult
+
+2026-09-15 15:15:12.647 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result22-eveille-attente23-1516.xcresult
+
+2026-09-15 15:15:12.907 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:13.720 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:14.030 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:15.507 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:15.666 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:19.242 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:15:19.448 xcodebuild[15684:14298028] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+xcodebuild: error: Timed out waiting for all destinations matching the provided destination specifier to become available
+
+
+	Ineligible destinations for the "NavRuntimeUITests" scheme:
+		{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric, error:Device is busy (Connecting to iPhone de Frédéric) }

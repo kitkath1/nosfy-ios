@@ -1,0 +1,86 @@
+[
+  {
+    "nom": "processus",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "info",
+      "processes",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "15",
+      "--json-output",
+      "/private/tmp/woop-puissance28-sans-verre/processus.json"
+    ],
+    "code": 0,
+    "duree_s": 0.508,
+    "fin": "2026-09-15T21:28:11.429084"
+  },
+  {
+    "nom": "power",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "record",
+      "--template",
+      "Power Profiler",
+      "--device",
+      "00008120-001E4CDC0A85A01E",
+      "--attach",
+      "25567",
+      "--time-limit",
+      "15s",
+      "--output",
+      "/private/tmp/woop-puissance28-sans-verre/home28.trace"
+    ],
+    "code": 0,
+    "duree_s": 22.839,
+    "fin": "2026-09-15T21:28:34.269015"
+  },
+  {
+    "nom": "toc",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-puissance28-sans-verre/home28.trace",
+      "--toc",
+      "--output",
+      "/private/tmp/woop-puissance28-sans-verre/home28-toc.xml"
+    ],
+    "code": 0,
+    "duree_s": 1.543,
+    "fin": "2026-09-15T21:28:35.812299"
+  },
+  {
+    "nom": "export",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-puissance28-sans-verre/home28.trace",
+      "--xpath",
+      "/trace-toc/run[@number=\"1\"]/data/table[@schema=\"ProcessSubsystemPowerImpact\" or @schema=\"SystemPowerLevel\" or @schema=\"device-thermal-state-intervals\" or @schema=\"metal-perf-overview-process-metric\" or @schema=\"DeviceChargingState\" or @schema=\"time-profile\" or @schema=\"life-cycle-period\"]",
+      "--output",
+      "/private/tmp/woop-puissance28-sans-verre/home28-mesures.xml"
+    ],
+    "code": 0,
+    "duree_s": 1.644,
+    "fin": "2026-09-15T21:28:37.457395"
+  },
+  {
+    "nom": "analyse",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-analyse-power.py",
+      "/private/tmp/woop-puissance28-sans-verre/home28"
+    ],
+    "code": 0,
+    "duree_s": 0.076,
+    "fin": "2026-09-15T21:28:37.533516"
+  }
+]

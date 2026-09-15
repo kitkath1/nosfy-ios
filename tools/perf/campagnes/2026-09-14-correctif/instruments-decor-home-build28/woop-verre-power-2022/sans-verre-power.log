@@ -1,0 +1,6 @@
+Arguments : ['xcrun', 'xctrace', 'record', '--template', 'Power Profiler', '--device', '00008120-001E4CDC0A85A01E', '--attach', 'Woop', '--time-limit', '15s', '--output', '/private/tmp/woop-verre-power-2022/sans-verre.trace']
+Starting recording with the Power Profiler template. Attaching to: Woop (24557). Time limit: 15.0 s
+Ctrl-C to stop the recording
+Reached specified time limit, ending recording...
+Recording completed. Saving output file...
+Output file saved as: sans-verre.trace

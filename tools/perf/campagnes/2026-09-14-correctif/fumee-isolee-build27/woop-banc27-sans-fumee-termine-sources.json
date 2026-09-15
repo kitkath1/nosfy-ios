@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-195422.jsonl",
+    "destination": "/private/tmp/woop-banc27-sans-fumee-termine-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-195321.jsonl",
+    "destination": "/private/tmp/woop-banc27-sans-fumee-termine-nav.jsonl"
+  }
+}

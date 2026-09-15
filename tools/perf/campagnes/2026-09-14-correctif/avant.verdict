@@ -1,0 +1,21 @@
+{
+ "fichier": "avant.jsonl",
+ "n": 103,
+ "img": 10.5,
+ "pire_ms": 512,
+ "pire_max_ms": 1981,
+ "cpu": 4,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  7,
+  0,
+  6
+ ]
+}

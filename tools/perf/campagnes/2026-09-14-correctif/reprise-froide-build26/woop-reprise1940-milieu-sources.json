@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-193821.jsonl",
+    "destination": "/private/tmp/woop-reprise1940-milieu-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-193957.jsonl",
+    "destination": "/private/tmp/woop-reprise1940-milieu-nav.jsonl"
+  }
+}

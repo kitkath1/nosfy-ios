@@ -1,0 +1,397 @@
+[
+  {
+    "hang_start": 2996560000,
+    "worker_calls": [
+      {
+        "start": 2993153750,
+        "thread": "Woop (0x159348) (Woop, pid: 17521)",
+        "call": "mach_msg2_trap",
+        "duration": 368398916,
+        "process": "Woop (17521)",
+        "cputime": 76541,
+        "waittime": 368378375,
+        "arg1": "6105016128",
+        "arg2": "17179869187",
+        "arg3": "103080465683",
+        "arg4": "534169377596419",
+        "return": "0",
+        "errno": "0",
+        "backtrace": [
+          {
+            "name": "0x237150cd5",
+            "addr": "0x237150cd5",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x23715422b",
+            "addr": "0x23715422c",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x237154077",
+            "addr": "0x237154078",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "CA::Context::ping()",
+            "addr": "0x1885dbf48",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "-[CAContext waitForCommitId:timeout:]",
+            "addr": "0x1885cfc50",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "RB::CommitMarker::Observer::test_displayed(bool, double)",
+            "addr": "0x19b0f2914",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&)",
+            "addr": "0x19b168204",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*)",
+            "addr": "0x19b169f18",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "_dispatch_client_callout",
+            "addr": "0x1c26241e4",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_serial_drain",
+            "addr": "0x1c2612fb0",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_invoke",
+            "addr": "0x1c2613aac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_root_queue_drain_deferred_wlh",
+            "addr": "0x1c261ddac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_workloop_worker_thread",
+            "addr": "0x1c261d6ac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_pthread_wqthread",
+            "addr": "0x1e748f3b0",
+            "binary": "libsystem_pthread.dylib"
+          },
+          {
+            "name": "start_wqthread",
+            "addr": "0x1e748e8c0",
+            "binary": "libsystem_pthread.dylib"
+          }
+        ],
+        "note": null,
+        "signature": "mach_msg2_trap",
+        "overlap_ns": 364992666
+      }
+    ]
+  },
+  {
+    "hang_start": 5359178083,
+    "worker_calls": [
+      {
+        "start": 5355593125,
+        "thread": "Woop (0x159354) (Woop, pid: 17521)",
+        "call": "mach_msg2_trap",
+        "duration": 369741166,
+        "process": "Woop (17521)",
+        "cputime": 80124,
+        "waittime": 369719459,
+        "arg1": "6107883328",
+        "arg2": "17179869187",
+        "arg3": "103080465683",
+        "arg4": "542484434281475",
+        "return": "0",
+        "errno": "0",
+        "backtrace": [
+          {
+            "name": "0x237150cd5",
+            "addr": "0x237150cd5",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x23715422b",
+            "addr": "0x23715422c",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x237154077",
+            "addr": "0x237154078",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "CA::Context::ping()",
+            "addr": "0x1885dbf48",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "-[CAContext waitForCommitId:timeout:]",
+            "addr": "0x1885cfc50",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "RB::CommitMarker::Observer::test_displayed(bool, double)",
+            "addr": "0x19b0f2914",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&)",
+            "addr": "0x19b168204",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*)",
+            "addr": "0x19b169f18",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "_dispatch_client_callout",
+            "addr": "0x1c26241e4",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_serial_drain",
+            "addr": "0x1c2612fb0",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_invoke",
+            "addr": "0x1c2613aac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_root_queue_drain_deferred_wlh",
+            "addr": "0x1c261ddac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_workloop_worker_thread",
+            "addr": "0x1c261d6ac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_pthread_wqthread",
+            "addr": "0x1e748f3b0",
+            "binary": "libsystem_pthread.dylib"
+          },
+          {
+            "name": "start_wqthread",
+            "addr": "0x1e748e8c0",
+            "binary": "libsystem_pthread.dylib"
+          }
+        ],
+        "note": null,
+        "signature": "mach_msg2_trap",
+        "overlap_ns": 366156208
+      }
+    ]
+  },
+  {
+    "hang_start": 5758756666,
+    "worker_calls": [
+      {
+        "start": 5755010583,
+        "thread": "Woop (0x159354) (Woop, pid: 17521)",
+        "call": "mach_msg2_trap",
+        "duration": 373130000,
+        "process": "Woop (17521)",
+        "cputime": 75750,
+        "waittime": 373095542,
+        "arg1": "6107883328",
+        "arg2": "17179869187",
+        "arg3": "103080465683",
+        "arg4": "542484434281475",
+        "return": "0",
+        "errno": "0",
+        "backtrace": [
+          {
+            "name": "0x237150cd5",
+            "addr": "0x237150cd5",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x23715422b",
+            "addr": "0x23715422c",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x237154077",
+            "addr": "0x237154078",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "CA::Context::ping()",
+            "addr": "0x1885dbf48",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "-[CAContext waitForCommitId:timeout:]",
+            "addr": "0x1885cfc50",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "RB::CommitMarker::Observer::test_displayed(bool, double)",
+            "addr": "0x19b0f2914",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&)",
+            "addr": "0x19b168204",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*)",
+            "addr": "0x19b169f18",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "_dispatch_client_callout",
+            "addr": "0x1c26241e4",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_serial_drain",
+            "addr": "0x1c2612fb0",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_invoke",
+            "addr": "0x1c2613aac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_root_queue_drain_deferred_wlh",
+            "addr": "0x1c261ddac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_workloop_worker_thread",
+            "addr": "0x1c261d6ac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_pthread_wqthread",
+            "addr": "0x1e748f3b0",
+            "binary": "libsystem_pthread.dylib"
+          },
+          {
+            "name": "start_wqthread",
+            "addr": "0x1e748e8c0",
+            "binary": "libsystem_pthread.dylib"
+          }
+        ],
+        "note": null,
+        "signature": "mach_msg2_trap",
+        "overlap_ns": 369383917
+      },
+      {
+        "start": 6128202500,
+        "thread": "Woop (0x159354) (Woop, pid: 17521)",
+        "call": "mach_msg2_trap",
+        "duration": 13732375,
+        "process": "Woop (17521)",
+        "cputime": 78125,
+        "waittime": 13715250,
+        "arg1": "6107883328",
+        "arg2": "17179869187",
+        "arg3": "103080465683",
+        "arg4": "542484434281475",
+        "return": "0",
+        "errno": "0",
+        "backtrace": [
+          {
+            "name": "0x237150cd5",
+            "addr": "0x237150cd5",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x23715422b",
+            "addr": "0x23715422c",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "0x237154077",
+            "addr": "0x237154078",
+            "binary": "libsystem_kernel.dylib"
+          },
+          {
+            "name": "CA::Context::ping()",
+            "addr": "0x1885dbf48",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "-[CAContext waitForCommitId:timeout:]",
+            "addr": "0x1885cfc50",
+            "binary": "QuartzCore"
+          },
+          {
+            "name": "RB::CommitMarker::Observer::test_displayed(bool, double)",
+            "addr": "0x19b0f2914",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&)",
+            "addr": "0x19b168204",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*)",
+            "addr": "0x19b169f18",
+            "binary": "RenderBox"
+          },
+          {
+            "name": "_dispatch_client_callout",
+            "addr": "0x1c26241e4",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_serial_drain",
+            "addr": "0x1c2612fb0",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_lane_invoke",
+            "addr": "0x1c2613aac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_root_queue_drain_deferred_wlh",
+            "addr": "0x1c261ddac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_dispatch_workloop_worker_thread",
+            "addr": "0x1c261d6ac",
+            "binary": "libdispatch.dylib"
+          },
+          {
+            "name": "_pthread_wqthread",
+            "addr": "0x1e748f3b0",
+            "binary": "libsystem_pthread.dylib"
+          },
+          {
+            "name": "start_wqthread",
+            "addr": "0x1e748e8c0",
+            "binary": "libsystem_pthread.dylib"
+          }
+        ],
+        "note": null,
+        "signature": "mach_msg2_trap",
+        "overlap_ns": 13732375
+      }
+    ]
+  }
+]

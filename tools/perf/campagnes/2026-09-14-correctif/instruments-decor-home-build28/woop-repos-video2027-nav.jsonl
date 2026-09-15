@@ -1,0 +1,6 @@
+{"applicationState":1,"bande":false,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"ecran-eveille-debut","page":"home","selection":"?","t":811189641.38428497,"therm":2,"visite":false}
+{"applicationState":1,"bande":false,"destination":"home","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"selection","page":"home","selection":"home","t":811189641.39668095,"therm":2,"visite":false}
+{"applicationState":1,"bande":false,"destination":"rayon=23.0;repos=true","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811189641.48728502,"therm":2,"visite":false}
+{"applicationState":1,"bande":true,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"scene-active","page":"home","selection":"home","t":811189641.55862999,"therm":2,"visite":false}
+{"applicationState":0,"bande":true,"destination":"393x709;unLecteur;24fps;masqueIntegre","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"fond-precompose","page":"home","selection":"home","t":811189641.895383,"therm":2,"visite":false}
+{"applicationState":0,"bande":true,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"protection-thermique-banc-termine","page":"home","selection":"home","t":811189701.450351,"therm":2,"visite":false}

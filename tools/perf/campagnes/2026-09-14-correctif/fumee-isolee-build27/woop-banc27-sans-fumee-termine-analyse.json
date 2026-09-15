@@ -1,0 +1,483 @@
+{
+  "vol": "/private/tmp/woop-banc27-sans-fumee-termine-vol.jsonl",
+  "nav": "/private/tmp/woop-banc27-sans-fumee-termine-nav.jsonl",
+  "phases_attendues": [
+    "complete",
+    "sansWidgets",
+    "sansRoute",
+    "fondSeul",
+    "nu",
+    "complete"
+  ],
+  "parcours_complet": true,
+  "absence_popup_instrumentee": true,
+  "resultats": [
+    {
+      "phase": "complete",
+      "observations": 36,
+      "debut": 1.0,
+      "fin": 36.9,
+      "exclusion_initiale_s": 15,
+      "n_stables": 21,
+      "cpu_mediane": 14,
+      "callbacks_mediane": 44.8,
+      "pire_max_ms": 196,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "sansWidgets",
+      "observations": 26,
+      "debut": 37.9,
+      "fin": 63.3,
+      "exclusion_initiale_s": 10,
+      "n_stables": 16,
+      "cpu_mediane": 15.0,
+      "callbacks_mediane": 60.1,
+      "pire_max_ms": 17,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "sansRoute",
+      "observations": 26,
+      "debut": 64.3,
+      "fin": 89.8,
+      "exclusion_initiale_s": 10,
+      "n_stables": 16,
+      "cpu_mediane": 10.0,
+      "callbacks_mediane": 49.099999999999994,
+      "pire_max_ms": 124,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "fondSeul",
+      "observations": 26,
+      "debut": 90.8,
+      "fin": 116.2,
+      "exclusion_initiale_s": 10,
+      "n_stables": 16,
+      "cpu_mediane": 1.0,
+      "callbacks_mediane": 60.1,
+      "pire_max_ms": 17,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "nu",
+      "observations": 26,
+      "debut": 117.2,
+      "fin": 142.6,
+      "exclusion_initiale_s": 10,
+      "n_stables": 16,
+      "cpu_mediane": 1.0,
+      "callbacks_mediane": 60.1,
+      "pire_max_ms": 17,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "complete",
+      "observations": 26,
+      "debut": 143.9,
+      "fin": 169.5,
+      "exclusion_initiale_s": 10,
+      "n_stables": 16,
+      "cpu_mediane": 12.5,
+      "callbacks_mediane": 47.3,
+      "pire_max_ms": 67,
+      "therm": [
+        0
+      ],
+      "protection": [
+        0
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    }
+  ],
+  "evenements_banc": [
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "nu",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187609.050372,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187609.050859,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187619.505558,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187629.959302,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187640.407938,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187650.930439,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-refroidissement",
+      "page": "home",
+      "selection": "home",
+      "t": 811187661.177382,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-depart-froid",
+      "page": "home",
+      "selection": "home",
+      "t": 811187662.1791,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187662.187754,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-0-complete.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187662.9364,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "sansWidgets",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187699.478392,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-1-sansWidgets.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187699.994095,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "sansRoute",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187725.679505,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-2-sansRoute.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187726.313682,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "fondSeul",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187752.413026,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-3-fondSeul.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187752.844218,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "nu",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187778.776445,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-4-nu.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187779.177262,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187805.439938,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "banc-home-1789494862-5-complete.png",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-capture",
+      "page": "home",
+      "selection": "home",
+      "t": 811187806.101808,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811187831.828302,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-fin",
+      "page": "home",
+      "selection": "home",
+      "t": 811187831.828429,
+      "therm": 0,
+      "visite": false
+    }
+  ],
+  "limites": "CPU Mach récent, callbacks CADisplayLink, pas énergie ni images GPU. Phases chaudes avec fond protégé potentiellement immobile."
+}

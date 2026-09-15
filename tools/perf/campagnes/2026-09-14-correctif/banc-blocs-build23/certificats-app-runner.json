@@ -1,0 +1,34 @@
+{
+  "app": {
+    "certificat_sha256": "7d6e97ea67eb3a60952f81e1eb6df7ab4dd9eb6956d1567a6530340ff4fa0020",
+    "certificat_dans_profil": true,
+    "team": [
+      "V45F4LUU8D"
+    ],
+    "expiration": "2027-09-06 07:50:15",
+    "entitlements": {
+      "application-identifier": "V45F4LUU8D.fr.kathryn.woop",
+      "com.apple.developer.applesignin": [
+        "Default"
+      ],
+      "com.apple.developer.team-identifier": "V45F4LUU8D",
+      "get-task-allow": true
+    }
+  },
+  "runner": {
+    "certificat_sha256": "7d6e97ea67eb3a60952f81e1eb6df7ab4dd9eb6956d1567a6530340ff4fa0020",
+    "certificat_dans_profil": true,
+    "team": [
+      "V45F4LUU8D"
+    ],
+    "expiration": "2027-09-14 15:45:08",
+    "entitlements": {
+      "application-identifier": "V45F4LUU8D.fr.kathryn.woop.NavRuntimeUITests.xctrunner",
+      "com.apple.developer.team-identifier": "V45F4LUU8D",
+      "get-task-allow": true,
+      "keychain-access-groups": [
+        "V45F4LUU8D.fr.kathryn.woop.NavRuntimeUITests.xctrunner"
+      ]
+    }
+  }
+}

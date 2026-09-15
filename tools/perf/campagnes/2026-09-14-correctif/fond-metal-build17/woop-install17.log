@@ -1,0 +1,10 @@
+10:20:18  Acquired tunnel connection to device.
+10:20:18  Enabling developer disk image services.
+10:20:18  Acquired usage assertion.
+App installed:
+• bundleID: fr.kathryn.woop
+• installationURL: file:///private/var/containers/Bundle/Application/A673A05A-ADB3-49B1-B437-E955C1307D71/Woop.app/
+• launchServicesIdentifier: unknown
+• databaseUUID: FE981B78-F54C-4B45-A3FB-830237BAB82B
+• databaseSequenceNumber: 5068
+• options: 

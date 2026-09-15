@@ -1,0 +1,143 @@
+[0;30m[47mafc:[m[1;33m[44m/[m > Available commands:
+help - print list of available commands
+devinfo - print device information
+info PATH - print file attributes of file at PATH
+ls [-l] PATH - print directory contents of PATH
+mv OLD NEW - rename file OLD to NEW
+mkdir PATH - create directory at PATH
+ln [-s] FILE [LINK] - create a (symbolic) link to file named LINKNAME
+        NOTE: This feature has been disabled in newer versions of iOS.
+rm PATH - remove item at PATH
+get [-rf] PATH [LOCALPATH] - transfer file at PATH from device to LOCALPATH
+put [-rf] LOCALPATH [PATH] - transfer local file at LOCALPATH to device at PATH
+
+[0;30m[47mafc:[m[1;33m[44m/[m > vol-20260915-082138.jsonl
+vol-20260915-082529.jsonl
+vol-20260915-091704.jsonl
+vol-20260914-155254.jsonl
+nav-20260915-120821.jsonl
+vol-20260915-071611.jsonl
+vol-20260915-111052.jsonl
+vol-20260914-172754.jsonl
+nav-20260915-071858.jsonl
+nav-20260915-091625.jsonl
+nav-20260915-142933.jsonl
+nav-20260915-102410.jsonl
+vol-20260914-162657.jsonl
+vol-20260914-163102.jsonl
+vol-20260915-085919.jsonl
+vol-20260914-155446.jsonl
+vol-20260915-080419.jsonl
+nav-20260915-102708.jsonl
+nav-20260915-095819.jsonl
+nav-20260915-103204.jsonl
+vol-20260915-091745.jsonl
+nav-20260915-100519.jsonl
+vol-20260915-100606.jsonl
+vol-20260914-164018.jsonl
+nav-20260915-095906.jsonl
+vol-20260914-164241.jsonl
+nav-20260915-102046.jsonl
+nav-20260915-143854.jsonl
+vol-20260915-153402.jsonl
+nav-20260915-112408.jsonl
+vol-20260915-091009.jsonl
+vol-20260914-163840.jsonl
+vol-20260915-102046.jsonl
+vol-20260914-211733.jsonl
+vol-20260915-112408.jsonl
+nav-20260915-153357.jsonl
+nav-20260915-091009.jsonl
+vol-20260915-100519.jsonl
+nav-20260915-091745.jsonl
+vol-20260915-071119.jsonl
+nav-20260915-100606.jsonl
+vol-20260914-165636.jsonl
+vol-20260915-095906.jsonl
+vol-20260915-102708.jsonl
+vol-20260914-165729.jsonl
+vol-20260915-095819.jsonl
+vol-20260915-103204.jsonl
+vol-20260915-091625.jsonl
+vol-20260915-080032.jsonl
+vol-20260915-085611.jsonl
+vol-20260915-102410.jsonl
+vol-20260914-160332.jsonl
+vol-20260915-082041.jsonl
+nav-20260915-111928.jsonl
+vol-20260915-071858.jsonl
+nav-20260914-172754.jsonl
+nav-20260915-071611.jsonl
+nav-20260915-111052.jsonl
+vol-20260915-101133.jsonl
+nav-20260915-091704.jsonl
+nav-20260915-082138.jsonl
+vol-20260915-091819.jsonl
+vol-20260915-102217.jsonl
+vol-20260914-162427.jsonl
+vol-20260915-083850.jsonl
+vol-20260914-163702.jsonl
+nav-20260915-142823.jsonl
+nav-20260915-143025.jsonl
+vol-20260915-085423.jsonl
+vol-20260915-113128.jsonl
+vol-20260915-083402.jsonl
+nav-20260915-100412.jsonl
+vol-20260914-163354.jsonl
+nav-20260914-174424.jsonl
+vol-20260914-164458.jsonl
+vol-20260914-161556.jsonl
+vol-20260915-084544.jsonl
+vol-20260915-090634.jsonl
+nav-20260915-102928.jsonl
+vol-20260915-074340.jsonl
+nav-20260915-154219.jsonl
+vol-20260915-102538.jsonl
+nav-20260915-112459.jsonl
+nav-20260915-144246.jsonl
+vol-20260915-084405.jsonl
+vol-20260915-084311.jsonl
+vol-20260915-080805.jsonl
+vol-20260914-154806.jsonl
+vol-20260915-082420.jsonl
+vol-20260915-074614.jsonl
+vol-20260915-083526.jsonl
+vol-20260915-075736.jsonl
+nav-20260915-091448.jsonl
+nav-20260915-115915.jsonl
+nav-20260914-172955.jsonl
+nav-20260915-100432.jsonl
+nav-20260915-102131.jsonl
+vol-20260915-073023.jsonl
+vol-20260914-163213.jsonl
+nav-20260915-102355.jsonl
+vol-20260915-100432.jsonl
+vol-20260914-172955.jsonl
+vol-20260914-211837.jsonl
+vol-20260915-102131.jsonl
+vol-20260915-102355.jsonl
+nav-20260915-083526.jsonl
+nav-20260915-120934.jsonl
+vol-20260915-091448.jsonl
+vol-20260914-173132.jsonl
+vol-20260914-155125.jsonl
+vol-20260914-174049.jsonl
+vol-20260915-111845.jsonl
+nav-20260915-080805.jsonl
+nav-20260915-102538.jsonl
+nav-20260915-120048.jsonl
+nav-20260915-143145.jsonl
+vol-20260915-112459.jsonl
+vol-20260915-154224.jsonl
+vol-20260914-174424.jsonl
+nav-20260915-090634.jsonl
+vol-20260915-102928.jsonl
+vol-20260915-110435.jsonl
+nav-20260915-113128.jsonl
+vol-20260915-085248.jsonl
+vol-20260915-100412.jsonl
+nav-20260915-091819.jsonl
+nav-20260915-115758.jsonl
+vol-20260915-080026.jsonl
+nav-20260915-102217.jsonl
+[0;30m[47mafc:[m[1;33m[44m/[m > 

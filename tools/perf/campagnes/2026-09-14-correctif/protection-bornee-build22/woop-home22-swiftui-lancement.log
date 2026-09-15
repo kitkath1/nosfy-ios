@@ -1,0 +1,24 @@
+woop-home22-swiftui-lancement-143718
+ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+Traceback (most recent call last):
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 7, in <module>
+    run(['xcrun','devicectl','device','info','processes','--device',d,'--timeout','15','--json-output',str(pro)],stdout=subprocess.DEVNULL)
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 3, in run
+    def run(a,t=30,**kw):return subprocess.run(a,check=True,timeout=t,**kw)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['xcrun', 'devicectl', 'device', 'info', 'processes', '--device', '022244AD-484B-5489-A884-6B781A82E372', '--timeout', '15', '--json-output', '/private/tmp/woop-home22-swiftui-lancement-143718-processes.json']' returned non-zero exit status 1.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 14, in <module>
+    run(['xcrun','devicectl','device','process','launch','--device',d,'--terminate-existing','--timeout','20','fr.kathryn.woop','--']+f)
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 3, in run
+    def run(a,t=30,**kw):return subprocess.run(a,check=True,timeout=t,**kw)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['xcrun', 'devicectl', 'device', 'process', 'launch', '--device', '022244AD-484B-5489-A884-6B781A82E372', '--terminate-existing', '--timeout', '20', 'fr.kathryn.woop', '--', '-sansSondeVol', '-ecranEveille', '-navProbe', '-openTab', 'home']' returned non-zero exit status 1.

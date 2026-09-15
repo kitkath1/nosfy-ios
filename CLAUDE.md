@@ -92,6 +92,12 @@ pas et on **dit** que ça n'a pas été mesuré.
 
 Son mode d'emploi complet : `docs/site/README.md`.
 
+## Chauffe et fluidité
+
+**Avant de reprendre ce bug : [registre des échecs, mesures invalides et preuves](tools/perf/ECHECS-CHAUFFE-HOME.md).**
+La navigation rétablie ne valide pas la résolution de la chauffe.
+Les 27–39 % CPU historiques sont le défaut signalé, pas une norme acceptable.
+
 ## Commits
 
 Les commits sont TOUJOURS de Kathryn, jamais de Claude.

@@ -1,0 +1,21 @@
+{
+ "fichier": "sans-souffle-galets.jsonl",
+ "n": 76,
+ "img": 28.3,
+ "pire_ms": 142,
+ "pire_max_ms": 1597,
+ "cpu": 14,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  15
+ ]
+}

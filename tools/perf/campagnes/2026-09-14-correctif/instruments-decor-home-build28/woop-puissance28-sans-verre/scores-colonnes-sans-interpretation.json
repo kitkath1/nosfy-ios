@@ -1,0 +1,44 @@
+{
+  "ProcessSubsystemPowerImpact:col9:subsystem-power-impact": {
+    "moyenne": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 3
+  },
+  "ProcessSubsystemPowerImpact:col8:subsystem-power-impact": {
+    "moyenne": 2.9164197627139186,
+    "min": 1.0,
+    "max": 5.0,
+    "n": 19
+  },
+  "ProcessSubsystemPowerImpact:col5:subsystem-power-impact": {
+    "moyenne": 3.84325274146147,
+    "min": 3.0,
+    "max": 5.0,
+    "n": 20
+  },
+  "ProcessSubsystemPowerImpact:col6:subsystem-power-impact": {
+    "moyenne": 2.0,
+    "min": 2.0,
+    "max": 2.0,
+    "n": 20
+  },
+  "SystemPowerLevel:col4:fixed-decimal": {
+    "moyenne": 19.291620081048862,
+    "min": 17.0,
+    "max": 21.403846153,
+    "n": 21
+  },
+  "SystemPowerLevel:col5:fixed-decimal": {
+    "moyenne": 34.81012982508467,
+    "min": 26.666666666,
+    "max": 46.551724137,
+    "n": 21
+  },
+  "SystemPowerLevel:col6:display-brightness": {
+    "moyenne": 27.00000000000001,
+    "min": 27.0,
+    "max": 27.0,
+    "n": 21
+  }
+}

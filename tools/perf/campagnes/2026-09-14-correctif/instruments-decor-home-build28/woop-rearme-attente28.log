@@ -1,0 +1,13 @@
+20:54:44  Enabling developer disk image services.
+20:54:44  Acquired usage assertion.
+ERROR: The application failed to launch. (com.apple.dt.CoreDeviceError error 10002 (0x2712))
+       BundleIdentifier = fr.kathryn.woop
+       ----------------------------------------
+           The request to open "fr.kathryn.woop" failed. (FBSOpenApplicationServiceErrorDomain error 1 (0x01))
+           NSLocalizedFailureReason = The request was denied by service delegate (SBMainWorkspace) for reason: Locked ("Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked").
+           BSErrorCodeDescription = RequestDenied
+           FBSOpenApplicationRequestID = 0xb6b4
+       ----------------------------------------
+               The operation couldn’t be completed. Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked. (FBSOpenApplicationErrorDomain error 7 (0x07))
+               NSLocalizedFailureReason = Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked.
+               BSErrorCodeDescription = Locked

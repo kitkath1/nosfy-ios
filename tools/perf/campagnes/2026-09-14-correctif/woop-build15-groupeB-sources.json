@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-091704.jsonl",
+    "destination": "/private/tmp/woop-build15-groupeB-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-091704.jsonl",
+    "destination": "/private/tmp/woop-build15-groupeB-nav.jsonl"
+  }
+}

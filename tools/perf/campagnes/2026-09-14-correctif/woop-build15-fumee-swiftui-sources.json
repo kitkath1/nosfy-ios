@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-091745.jsonl",
+    "destination": "/private/tmp/woop-build15-fumee-swiftui-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-091745.jsonl",
+    "destination": "/private/tmp/woop-build15-fumee-swiftui-nav.jsonl"
+  }
+}

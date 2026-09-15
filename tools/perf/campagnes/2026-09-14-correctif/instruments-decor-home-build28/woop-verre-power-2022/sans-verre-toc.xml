@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+
+<trace-toc>
+    <run number="1">
+        <info>
+            <target>
+                <device platform="iOS" model="iPhone 15" name="iPhone de Frédéric" os-version="26.6.1 (23G83)" uuid="00008120-001E4CDC0A85A01E"/>
+                <host-device platform="macOS" model="MacBook Air" name="MacBook Air de Kathryn (2)" os-version="26.5.1 (25F80)" uuid="C7E57B72-DF17-549A-994A-21EA2827A93E"/>
+                <process type="attached" return-exit-status="0" name="Woop" pid="24557" termination-reason="exit(0)"/>
+            </target>
+            <summary>
+                <start-date>2026-09-15T20:23:02.302+02:00</start-date>
+                <end-date>2026-09-15T20:23:19.855+02:00</end-date>
+                <duration>17.552231</duration>
+                <end-reason>Time limit reached</end-reason>
+                <instruments-version>16.0 (17F42)</instruments-version>
+                <template-name>Power Profiler</template-name>
+                <recording-mode>Deferred</recording-mode>
+                <time-limit>15 seconds</time-limit>
+                <intruments-recording-settings>
+                    <instrument name="Metal Performance Overview">
+                        <options>
+                            <option key="Game Performance Overview Per-Frame Metrics" value="Enabled"/>
+                        </options>
+                    </instrument>
+                </intruments-recording-settings>
+            </summary>
+        </info>
+        <processes>
+            <process name="kernel" pid="0" path="Unknown"/>
+            <process name="Woop" pid="24557" path="/var/containers/Bundle/Application/86216D40-E35C-49AE-80A9-08228946864F/Woop.app/Woop"/>
+        </processes>
+        <data>
+            <table schema="tick" frequency="10" documentation="Provides modelers with a regular reference time for modeling fixed time-based statistics. The ticks are evenly spaced with a configurable frequency specifying the number of events to generate per second, so a tick schema with a frequency of 10 will generate a row every 100ms."/>
+            <table schema="life-cycle-period" target-pid="SINGLE" documentation="Identifies where an application is in its lifecycle."/>
+            <table schema="cl-energy-level" target-pid="SINGLE" documentation="Represents the modeled power requirement of CoreLocation at a given point in time."/>
+            <table schema="metal-perf-overview-process-metric"/>
+            <table schema="tick" frequency="1" documentation="Provides modelers with a regular reference time for modeling fixed time-based statistics. The ticks are evenly spaced with a configurable frequency specifying the number of events to generate per second, so a tick schema with a frequency of 10 will generate a row every 100ms."/>
+            <table schema="metal-perf-overview-layer-per-frame-interval-metric"/>
+            <table swift-table="&quot;ProcessQOSExecution()&quot;" schema="ProcessQOSExecution"/>
+            <table schema="device-thermal-state-intervals" documentation="Denotes the current thermal state of the device."/>
+            <table swift-table="&quot;DeviceChargingState()&quot;" schema="DeviceChargingState"/>
+            <table schema="metal-perf-overview-layer-duration-metric" records-per-frame-data="1"/>
+            <table schema="os-signpost" category="InduceCondition" subsystem="&quot;com.apple.ConditionInducer.LowSeverity&quot;" documentation="Holds a signpost event from the OS's Unified Logging and Tracing component."/>
+            <table target-pid="ALL" schema="os-signpost" category="PowerMetrics" subsystem="&quot;com.apple.PerfPowerMetricMonitor&quot;" documentation="Holds a signpost event from the OS's Unified Logging and Tracing component."/>
+            <table schema="cl-trace" target-pid="SINGLE" documentation="Marks a transition in the Core Location API.  For example, when a thread chooses a higher accuracy level."/>
+            <table swift-table="&quot;ProcessSubsystemPowerImpact()&quot;" schema="ProcessSubsystemPowerImpact"/>
+            <table target-pid="SINGLE" context-switch-sampling="0" high-frequency-sampling="0" schema="time-profile" needs-kernel-callstack="0" record-waiting-threads="0" documentation="When combined with other time-profile samples, creates a statistical picture of where your application is spending its time."/>
+            <table schema="network-interface-detection" documentation="Determines when a new network interface has been detected."/>
+            <table codes="&quot;0x1f,0x05&quot;" target="SINGLE" schema="kdebug-strings" documentation="Associates numeric arguments with strings in kdebug trace points."/>
+            <table schema="dyld-library-load" target-pid="SINGLE"/>
+            <table schema="process-info" documentation="Associates processes with their process names."/>
+            <table codes="&quot;0x2b,0x65&quot;" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x07,0x00&quot; &quot;0x1f,0x05&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x1f,0x7&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x1,0x25&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0xd8&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0xdc&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x07,0x00&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table schema="metal-perf-overview-layer-count-metric"/>
+            <table codes="&quot;0x31,0xca&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0x87&quot;" target="SINGLE" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2d,*&quot;" schema="kdebug" callstack="user" target="SINGLE" documentation="Tracing the kernel and some system frameworks."/>
+            <table schema="metal-perf-overview-layer-per-frame-metric"/>
+            <table schema="metal-perf-overview-ips-stacked-metric"/>
+            <table schema="network-connection-update" documentation="A statistical update related to a given connection."/>
+            <table schema="network-connection-detected" target-pid="SINGLE" documentation="Marks when a new network connection has been detected."/>
+            <table schema="thread-info" documentation="Associates threads with their owning process."/>
+            <table swift-table="&quot;SystemPowerLevel()&quot;" schema="SystemPowerLevel" documentation="Tracks system power consumption levels, display power usage, and brightness over time intervals"/>
+            <table schema="configured-network-interface" documentation="Maps the BSD network interface identifiers to user-friendly, displayable names."/>
+            <table schema="network-connection-stat" target-pid="SINGLE" documentation="Provides statistical information about a connection over a given time interval."/>
+            <table sample-rate-micro-seconds="1000" target="SINGLE" schema="time-sample" callstack="user" all-thread-states="NO" documentation="Holds a raw CPU profiling sample."/>
+        </data>
+        <tracks/>
+    </run>
+</trace-toc>

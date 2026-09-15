@@ -1,0 +1,35 @@
+{
+  "n": 20,
+  "t_min": 15.2,
+  "t_max": 34.5,
+  "cpu_median": 1.0,
+  "cpu_min": 0,
+  "cpu_max": 1,
+  "callbacks_median": 60.1,
+  "pire_max_ms": 17,
+  "therm_initial": 1,
+  "therm": [
+    1
+  ],
+  "protection": [
+    1
+  ],
+  "onglet": [
+    "home"
+  ],
+  "seance": [
+    0
+  ],
+  "player": [
+    0
+  ],
+  "welcome": [
+    0
+  ],
+  "premiere": [
+    0
+  ],
+  "gel": [
+    0
+  ]
+}

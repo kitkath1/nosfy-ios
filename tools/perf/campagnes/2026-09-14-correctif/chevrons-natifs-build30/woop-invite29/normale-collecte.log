@@ -1,0 +1,3 @@
+vol vol-20260915-214051.jsonl last {'t': 34.5, 'img': 60.1, 'pire': 17, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 9, 'therm': 0, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 0, 'bancHome': 'inactif', 'welcome': 0, 'premiere': 0}
+last30s 20 cpu 3.0 therm [0] onglets ['home']
+nav nav-20260915-214126.jsonl lastViews pas de sondage périodique

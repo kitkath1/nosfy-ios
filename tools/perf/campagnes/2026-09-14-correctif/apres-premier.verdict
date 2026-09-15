@@ -1,0 +1,21 @@
+{
+ "fichier": "apres-premier.jsonl",
+ "n": 189,
+ "img": 27.9,
+ "pire_ms": 156,
+ "pire_max_ms": 1819,
+ "cpu": 13,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  15
+ ]
+}

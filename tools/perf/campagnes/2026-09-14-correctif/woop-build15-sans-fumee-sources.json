@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-095819.jsonl",
+    "destination": "/private/tmp/woop-build15-sans-fumee-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-095819.jsonl",
+    "destination": "/private/tmp/woop-build15-sans-fumee-nav.jsonl"
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "groups": {
+    "SwiftUICore": {
+      "count": 1118,
+      "weight_ms": 1118.0,
+      "percent_all": 48.79965080750764,
+      "main_ms": 1118.0,
+      "workers_ms": 0.0
+    },
+    "ViewGraphRootValueUpdater.render": {
+      "count": 1054,
+      "weight_ms": 1054.0,
+      "percent_all": 46.006110868616325,
+      "main_ms": 1054.0,
+      "workers_ms": 0.0
+    },
+    "DisplayList.ViewUpdater.render": {
+      "count": 658,
+      "weight_ms": 658.0,
+      "percent_all": 28.721082496726318,
+      "main_ms": 658.0,
+      "workers_ms": 0.0
+    },
+    "CA.commit_transaction": {
+      "count": 232,
+      "weight_ms": 232.0,
+      "percent_all": 10.126582278481013,
+      "main_ms": 232.0,
+      "workers_ms": 0.0
+    },
+    "FondVideoMetal": {
+      "count": 281,
+      "weight_ms": 281.0,
+      "percent_all": 12.265386294194675,
+      "main_ms": 5.0,
+      "workers_ms": 276.0
+    },
+    "FondVideoMetal.Flux.lire": {
+      "count": 231,
+      "weight_ms": 231.0,
+      "percent_all": 10.082933216935835,
+      "main_ms": 0.0,
+      "workers_ms": 231.0
+    },
+    "copyPixelBuffer": {
+      "count": 134,
+      "weight_ms": 134.0,
+      "percent_all": 5.848974247053689,
+      "main_ms": 0.0,
+      "workers_ms": 134.0
+    },
+    "hasNewPixelBuffer": {
+      "count": 42,
+      "weight_ms": 42.0,
+      "percent_all": 1.8332605848974246,
+      "main_ms": 0.0,
+      "workers_ms": 42.0
+    },
+    "CVMetalTextureCreate": {
+      "count": 36,
+      "weight_ms": 36.0,
+      "percent_all": 1.5713662156263641,
+      "main_ms": 0.0,
+      "workers_ms": 36.0
+    },
+    "FumeeInviteMetal": {
+      "count": 37,
+      "weight_ms": 37.0,
+      "percent_all": 1.6150152771715407,
+      "main_ms": 2.0,
+      "workers_ms": 35.0
+    },
+    "VideoToolbox": {
+      "count": 12,
+      "weight_ms": 12.0,
+      "percent_all": 0.5237887385421214,
+      "main_ms": 0.0,
+      "workers_ms": 12.0
+    },
+    "vImage_functions": {
+      "count": 0,
+      "weight_ms": 0.0,
+      "percent_all": 0.0,
+      "main_ms": 0.0,
+      "workers_ms": 0.0
+    },
+    "VTPixelTransfer": {
+      "count": 0,
+      "weight_ms": 0.0,
+      "percent_all": 0.0,
+      "main_ms": 0.0,
+      "workers_ms": 0.0
+    },
+    "SondeVol": {
+      "count": 20,
+      "weight_ms": 20.0,
+      "percent_all": 0.8729812309035356,
+      "main_ms": 20.0,
+      "workers_ms": 0.0
+    },
+    "NavDiagnostic": {
+      "count": 7,
+      "weight_ms": 7.0,
+      "percent_all": 0.30554343081623747,
+      "main_ms": 7.0,
+      "workers_ms": 0.0
+    },
+    "AnimatableAttribute": {
+      "count": 38,
+      "weight_ms": 38.0,
+      "percent_all": 1.6586643387167175,
+      "main_ms": 38.0,
+      "workers_ms": 0.0
+    },
+    "TimelineView": {
+      "count": 29,
+      "weight_ms": 29.0,
+      "percent_all": 1.2658227848101267,
+      "main_ms": 29.0,
+      "workers_ms": 0.0
+    },
+    "ImageRenderer": {
+      "count": 0,
+      "weight_ms": 0.0,
+      "percent_all": 0.0,
+      "main_ms": 0.0,
+      "workers_ms": 0.0
+    }
+  },
+  "examples": {
+    "copyPixelBufferForItemTime": {
+      "time_s": 0.560687833,
+      "thread": "Woop (0x172f22) (Woop, pid: 18831)",
+      "frames": [
+        "_platform_memset",
+        "dispatch_mach_send_with_result_and_wait_for_reply",
+        "xpc_connection_send_message_with_reply_sync",
+        "FigXPCConnectionSendSyncMessageCreatingReply",
+        "FigXPCRemoteClientSendSyncMessageCreatingReply",
+        "rvcCopyImageForTime",
+        "-[AVPlayerItemVideoOutput _copyPixelBufferForItemTimeWithOptions:itemTimeForDisplay:options:]",
+        "-[AVPlayerItemVideoOutput copyPixelBufferForItemTime:itemTimeForDisplay:]",
+        "FondVideoMetal.Flux.lire(hostTime:cache:) (in Woop) (FondVideoMetal.swift:143)",
+        "FondVideoMetal.Renderer.dessiner(layer:uniformes:) (in Woop) (FondVideoMetal.swift:338)",
+        "partial apply for closure #1 in FondVideoMetal.Renderer.draw(in:) (in Woop) (/<compiler-generated>:0)",
+        "<deduplicated_symbol> (in Woop) + 28",
+        "_dispatch_call_block_and_release",
+        "_dispatch_client_callout",
+        "_dispatch_lane_serial_drain",
+        "_dispatch_lane_invoke",
+        "_dispatch_root_queue_drain_deferred_wlh",
+        "_dispatch_workloop_worker_thread",
+        "_pthread_wqthread",
+        "start_wqthread"
+      ]
+    },
+    "CVMetalTextureCacheCreateTextureFromImage": {
+      "time_s": 0.777685791,
+      "thread": "Woop (0x172f22) (Woop, pid: 18831)",
+      "frames": [
+        "__CFStringEqual",
+        "CFXNotificationRegistrarFind",
+        "_CFXNotificationPost",
+        "CFNotificationCenterPostNotificationWithOptions",
+        "CVBufferBacking::finalize()",
+        "_CFRelease",
+        "CVMetalTextureBacking::setImageBacking(CVImageBacking*)",
+        "CVMetalTextureCache::createTextureBackingFromImageBacking(__CFAllocator const*, CVImageBacking*, CVImageBuffer*, __CFDictionary const*, int*)",
+        "CVMetalTextureCache::createTextureFromImageWithParams(__CFAllocator const*, CVImageBuffer*, __CFDictionary const*, unsigned long, int, int, unsigned long, unsigned long, unsigned char, int*)",
+        "CVMetalTextureCacheCreateTextureFromImage",
+        "FondVideoMetal.ImageVideo.init(buffer:temps:cache:) (in Woop) (FondVideoMetal.swift:0)",
+        "FondVideoMetal.Flux.lire(hostTime:cache:) (in Woop) (FondVideoMetal.swift:145)",
+        "FondVideoMetal.Renderer.dessiner(layer:uniformes:) (in Woop) (FondVideoMetal.swift:339)",
+        "partial apply for closure #1 in FondVideoMetal.Renderer.draw(in:) (in Woop) (/<compiler-generated>:0)",
+        "<deduplicated_symbol> (in Woop) + 28",
+        "_dispatch_call_block_and_release",
+        "_dispatch_client_callout",
+        "_dispatch_lane_serial_drain",
+        "_dispatch_lane_invoke",
+        "_dispatch_root_queue_drain_deferred_wlh",
+        "_dispatch_workloop_worker_thread",
+        "_pthread_wqthread",
+        "start_wqthread"
+      ]
+    },
+    "VTPixelBufferConformerCopyConformedPixelBuffer": {
+      "time_s": 0.916686708,
+      "thread": "Woop (0x172f22) (Woop, pid: 18831)",
+      "frames": [
+        "___chkstk_darwin",
+        "_SwiftDeferredNSDictionary.object(forKey:)",
+        "@objc _SwiftDeferredNSDictionary.object(forKey:)",
+        "CVPixelBufferIsCompatibleWithAttributes",
+        "VTPixelBufferConformerIsConformantPixelBuffer",
+        "VTPixelBufferConformerCopyConformedPixelBuffer",
+        "-[AVPlayerItemVideoOutput _copyPixelBufferForItemTimeWithOptions:itemTimeForDisplay:options:]",
+        "-[AVPlayerItemVideoOutput copyPixelBufferForItemTime:itemTimeForDisplay:]",
+        "FondVideoMetal.Flux.lire(hostTime:cache:) (in Woop) (FondVideoMetal.swift:143)",
+        "FondVideoMetal.Renderer.dessiner(layer:uniformes:) (in Woop) (FondVideoMetal.swift:339)",
+        "partial apply for closure #1 in FondVideoMetal.Renderer.draw(in:) (in Woop) (/<compiler-generated>:0)",
+        "<deduplicated_symbol> (in Woop) + 28",
+        "_dispatch_call_block_and_release",
+        "_dispatch_client_callout",
+        "_dispatch_lane_serial_drain",
+        "_dispatch_lane_invoke",
+        "_dispatch_root_queue_drain_deferred_wlh",
+        "_dispatch_workloop_worker_thread",
+        "_pthread_wqthread",
+        "start_wqthread"
+      ]
+    },
+    "FumeeInviteMetal": {
+      "time_s": 0.404686166,
+      "thread": "Woop (0x172f91) (Woop, pid: 18831)",
+      "frames": [
+        "0x237150a55",
+        "_dispatch_event_loop_poke",
+        "+[FPCAMetalLayerState _updateLayerState:block:]",
+        "+[FPCAMetalLayerState drawableLifetimeStart:drawableID:surfaceID:acquisitionWaitStart:acquiredTime:]",
+        "-[CAMetalDrawable initWithDrawablePrivate:layer:waitStart:]",
+        "CAMetalLayerPrivateNextDrawableLocked(CAMetalLayer*, CAMetalDrawable**, unsigned long*)",
+        "-[CAMetalLayer nextDrawable]",
+        "FumeeInviteMetal.Renderer.dessiner(layer:uniforms:) (in Woop) (FumeeInviteMetal.swift:0)",
+        "partial apply for closure #1 in FumeeInviteMetal.Renderer.draw(in:) (in Woop) (/<compiler-generated>:0)",
+        "<deduplicated_symbol> (in Woop) + 28",
+        "_dispatch_call_block_and_release",
+        "_dispatch_client_callout",
+        "_dispatch_lane_serial_drain",
+        "_dispatch_lane_invoke",
+        "_dispatch_root_queue_drain_deferred_wlh",
+        "_dispatch_workloop_worker_thread",
+        "_pthread_wqthread",
+        "start_wqthread"
+      ]
+    },
+    "ViewGraphRootValueUpdater.render": {
+      "time_s": 0.278685833,
+      "thread": "Main Thread (0x172f1b) (Woop, pid: 18831)",
+      "frames": [
+        "objc_retainAutoreleasedReturnValue",
+        "DisplayList.ViewUpdater.Platform.updateState(_:item:size:state:)",
+        "DisplayList.ViewUpdater.ViewCache.update(item:platform:state:tag:in:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        "DisplayList.ViewUpdater.render(rootView:from:time:version:maxVersion:environment:)",
+        "closure #1 in renderOnMainThread #1 () in ViewGraph.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:)",
+        "0x18d9cb584",
+        "0x18d72e7f0",
+        "0x18d764618",
+        "+[UIView(Animation) performWithoutAnimation:]",
+        "0x18d9053ec",
+        "ViewGraph.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:)",
+        "protocol witness for ViewGraphRenderHost.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:) in conformance ViewGraph",
+        "closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        "ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        "ViewGraphHost.displayLinkTimer(timestamp:targetTimestamp:isAsyncThread:)",
+        "ViewGraphDisplayLink.displayLinkTimer(_:)",
+        "@objc ViewGraphDisplayLink.displayLinkTimer(_:)",
+        "CA::Display::DisplayLinkItem::dispatch_(CA::SignPost::Interval<(CA::SignPost::CAEventCode)835322056>&)",
+        "CA::Display::DisplayLink::dispatch_items(unsigned long long, unsigned long long, unsigned long long)",
+        "CA::Display::DisplayLink::dispatch_deferred_display_links(unsigned int)",
+        "_UIUpdateSequenceRunNext",
+        "schedulerStepScheduledMainSectionContinue",
+        "UC::DriverCore::continueProcessing()",
+        "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__",
+        "__CFRunLoopDoSource0",
+        "__CFRunLoopDoSources0",
+        "__CFRunLoopRun",
+        "_CFRunLoopRunSpecificWithOptions",
+        "GSEventRunModal",
+        "-[UIApplication _run]",
+        "UIApplicationMain",
+        "closure #1 in KitRendererCommon(_:)",
+        "runApp<A>(_:)",
+        "static App.main()",
+        "main (in Woop) (WoopApp.swift:0)",
+        "start"
+      ]
+    }
+  },
+  "trace_start": "2026-09-15T10:30:36.479000+02:00",
+  "trace_end": "2026-09-15T10:30:45.726000+02:00",
+  "trace_duration_s": 9.246915,
+  "nav_near": [
+    {
+      "bande": true,
+      "destination": "gpuComplete=1786;deuxVideos=true;braise=604x642@29.542;b=1381;pilule=1206x964@29.542;p=1379;drawable=1179x1980;format=BGRA8;cadenceDemandee=24",
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "fond-metal",
+      "page": "home",
+      "selection": "home",
+      "t": 811153834.17066,
+      "therm": 2,
+      "visite": false,
+      "date": "2026-09-15T08:30:34.170660+00:00"
+    },
+    {
+      "bande": true,
+      "destination": "gpuComplete=1917;deuxVideos=true;braise=604x642@34.542;b=1481;pilule=1206x964@34.542;p=1481;drawable=1179x1980;format=BGRA8;cadenceDemandee=24",
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "fond-metal",
+      "page": "home",
+      "selection": "home",
+      "t": 811153839.133978,
+      "therm": 2,
+      "visite": false,
+      "date": "2026-09-15T08:30:39.133978+00:00"
+    },
+    {
+      "bande": true,
+      "destination": "gpuComplete=2058;deuxVideos=true;braise=604x642@3.792;b=1596;pilule=1206x964@3.792;p=1596;drawable=1179x1980;format=BGRA8;cadenceDemandee=24",
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "fond-metal",
+      "page": "home",
+      "selection": "home",
+      "t": 811153844.161197,
+      "therm": 2,
+      "visite": false,
+      "date": "2026-09-15T08:30:44.161197+00:00"
+    },
+    {
+      "bande": true,
+      "destination": "gpuComplete=2188;deuxVideos=true;braise=604x642@8.833;b=1694;pilule=1206x964@8.833;p=1694;drawable=1179x1980;format=BGRA8;cadenceDemandee=24",
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "fond-metal",
+      "page": "home",
+      "selection": "home",
+      "t": 811153849.16699,
+      "therm": 2,
+      "visite": false,
+      "date": "2026-09-15T08:30:49.166990+00:00"
+    }
+  ]
+}

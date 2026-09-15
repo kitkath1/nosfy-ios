@@ -1,0 +1,54 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testOuvrirHomeEveillee" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result22-eveille-1429.xcresult
+
+2026-09-15 14:28:09.862 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result22-eveille-1429.xcresult
+
+2026-09-15 14:28:09.869 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:28:09.980 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:28:10.320 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:28:10.570 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 14:28:14.888 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:28:15.412 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:28:18.262414+0200 NavRuntimeUITests-Runner[21714:1707971] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 14:28:21.955.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 14:28:21.956.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 14:28:21.956.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirHomeEveillee]' started.
+    t =     0.00s Start Test at 2026-09-15 14:28:21.960
+    t =     0.05s Set Up
+    t =     0.07s Open fr.kathryn.woop
+    t =     0.07s     Launch fr.kathryn.woop
+    t =     0.07s         Terminate fr.kathryn.woop:21707
+2026-09-15 14:28:22.380 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.21s         Setting up automation session
+    t =     1.33s         Wait for fr.kathryn.woop to idle
+    t =     2.92s Waiting 15.0s for "person" Button to exist
+    t =     2.92s     Device orientation changed to Face Up
+    t =     3.95s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     3.95s         Checking existence of `"person" Button`
+WOOP_HOME_EVEILLEE
+    t =     4.09s Tear Down
+2026-09-15 14:28:26.350 xcodebuild[5634:14132060] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirHomeEveillee]' passed (4.358 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 14:28:26.319.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.358 (4.362) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 14:28:26.321.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.358 (4.365) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 14:28:26.322.
+	 Executed 1 test, with 0 failures (0 unexpected) in 4.358 (4.367) seconds
+2026-09-15 14:28:26.736 xcodebuild[5634:14132060] [MT] IDETestOperationsObserverDebug: 11.839 elapsed -- Testing started completed.
+2026-09-15 14:28:26.736 xcodebuild[5634:14132060] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 14:28:26.736 xcodebuild[5634:14132060] [MT] IDETestOperationsObserverDebug: 11.839 sec, +11.839 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result22-eveille-1429.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

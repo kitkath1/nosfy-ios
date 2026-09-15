@@ -1,0 +1,20 @@
+{
+  "build": "8",
+  "configuration": "Release",
+  "source_head": "c313012",
+  "working_tree": "dirty, pre-existing changes preserved",
+  "build_result": "BUILD SUCCEEDED",
+  "installed_at_local": "2026-09-15T07:30:43+02:00",
+  "bundle_id": "fr.kathryn.woop",
+  "device": "iPhone 15 de Frédéric",
+  "installation_container": "1CC189F7-9D58-40D1-8526-08263B008015",
+  "binary_sha256": "0fe0ce66c40ebbc4afa7e898b2a2b615f61fe016c6bb53423d9a5ea1f7dd81f7",
+  "dsym_uuid": "382D237C-48A2-3B29-968B-18275EFC9388",
+  "last_device_lock_check": "2026-09-15T07:29:17+02:00",
+  "passcode_required": true,
+  "launch_validation": "pending device unlock; build7 launch denied Locked",
+  "last_tested_build": "6",
+  "account_deleted": false,
+  "logged_out": false,
+  "reward_claimed": false
+}

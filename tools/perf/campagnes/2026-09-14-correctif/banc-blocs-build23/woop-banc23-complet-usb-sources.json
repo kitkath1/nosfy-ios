@@ -1,0 +1,14 @@
+{
+  "vol": {
+    "source": "vol-20260915-154224.jsonl",
+    "destination": "/private/tmp/woop-banc23-complet-usb-vol.jsonl",
+    "lignes": 163,
+    "transport": "afcclient --container fr.kathryn.woop"
+  },
+  "nav": {
+    "source": "nav-20260915-154219.jsonl",
+    "destination": "/private/tmp/woop-banc23-complet-usb-nav.jsonl",
+    "lignes": 187,
+    "transport": "afcclient --container fr.kathryn.woop"
+  }
+}

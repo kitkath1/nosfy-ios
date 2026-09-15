@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-214051.jsonl",
+    "destination": "/private/tmp/woop-invite29-normale-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-214126.jsonl",
+    "destination": "/private/tmp/woop-invite29-normale-nav.jsonl"
+  }
+}

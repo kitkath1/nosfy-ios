@@ -1,0 +1,227 @@
+{
+  "tables": [
+    {
+      "file": "display-compositor-interval.xml",
+      "schema": "display-compositor-interval",
+      "rows": 0
+    },
+    {
+      "file": "displayed-surfaces-per-second.xml",
+      "schema": "displayed-surfaces-per-second",
+      "rows": 0
+    },
+    {
+      "file": "drawable-waits.xml",
+      "schema": "ca-client-buffer-wait-interval",
+      "rows": 0
+    },
+    {
+      "file": "gpu-counter-value.xml",
+      "schema": "gpu-counter-value",
+      "rows": 0
+    },
+    {
+      "file": "gpu-intervals.xml",
+      "schema": "metal-gpu-intervals",
+      "rows": 0
+    },
+    {
+      "file": "gpu-performance.xml",
+      "schema": "gpu-performance-state-intervals",
+      "rows": 0
+    },
+    {
+      "file": "hangs.xml",
+      "schema": "potential-hangs",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "kdebug.xml",
+      "schema": "kdebug",
+      "rows": 0
+    },
+    {
+      "file": "life-cycle-period.xml",
+      "schema": "life-cycle-period",
+      "rows": 1
+    },
+    {
+      "file": "metal-application-intervals.xml",
+      "schema": "metal-application-intervals",
+      "rows": 0
+    },
+    {
+      "file": "metal-command-buffer-completed.xml",
+      "schema": "metal-command-buffer-completed",
+      "rows": 0
+    },
+    {
+      "file": "process-info.xml",
+      "schema": "process-info",
+      "rows": 0
+    },
+    {
+      "file": "runloop-events.xml",
+      "schema": "runloop-events",
+      "rows": 0
+    },
+    {
+      "file": "thermal.xml",
+      "schema": "device-thermal-state-intervals",
+      "rows": 1
+    },
+    {
+      "file": "thread-info.xml",
+      "schema": "thread-info",
+      "rows": 0
+    },
+    {
+      "file": "time-profile.xml",
+      "schema": "time-profile",
+      "rows": 0
+    },
+    {
+      "file": "time-sample.xml",
+      "schema": "time-sample",
+      "rows": 0
+    }
+  ],
+  "runIssues": [
+    {
+      "type": 2,
+      "subtype": 0,
+      "relativeTimestamp": 0,
+      "message": "Data stream: Time Mapping"
+    }
+  ]
+}

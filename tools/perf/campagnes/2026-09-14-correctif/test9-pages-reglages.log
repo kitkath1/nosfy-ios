@@ -1,0 +1,65 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testPagesEtReglages" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result9-pages-reglages.xcresult
+
+2026-09-15 07:59:19.246 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result9-pages-reglages.xcresult
+
+2026-09-15 07:59:19.247 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 07:59:19.347 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 07:59:19.972 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 07:59:20.098 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 07:59:22.033071+0200 NavRuntimeUITests-Runner[17309:1400031] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 07:59:22.424.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 07:59:22.424.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 07:59:22.425.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testPagesEtReglages]' started.
+    t =     0.00s Start Test at 2026-09-15 07:59:22.427
+    t =     0.02s Set Up
+/tmp/woop-nav-runtime-qa/NavRuntimeUITests.swift:104: error: -[NavRuntimeUITests.NavRuntimeUITests testPagesEtReglages] : XCTAssertNotEqual failed: ("XCUIApplicationState(rawValue: 1)") is equal to ("XCUIApplicationState(rawValue: 1)")
+    t =     0.04s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testPagesEtReglages]' failed (0.049 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-15 07:59:22.476.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.049 (0.051) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-15 07:59:22.476.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.049 (0.052) seconds
+Test Suite 'Selected tests' failed at 2026-09-15 07:59:22.476.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.049 (0.052) seconds
+2026-09-15 07:59:22.350 xcodebuild[36596:13311908] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 07:59:22.608 xcodebuild[36596:13311912]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-nav-runtime-qa/result9-pages-reglages.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-nav-runtime-qa/result9-pages-reglages.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-15 07:59:22.611 xcodebuild[36596:13311908] [MT] IDETestOperationsObserverDebug: 2.636 elapsed -- Testing started completed.
+2026-09-15 07:59:22.611 xcodebuild[36596:13311908] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 07:59:22.611 xcodebuild[36596:13311908] [MT] IDETestOperationsObserverDebug: 2.636 sec, +2.636 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result9-pages-reglages.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testPagesEtReglages()
+
+** TEST EXECUTE FAILED **
+
+Testing started

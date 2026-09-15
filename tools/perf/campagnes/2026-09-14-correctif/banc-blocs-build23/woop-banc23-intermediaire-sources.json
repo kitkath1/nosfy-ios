@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-153402.jsonl",
+    "destination": "/private/tmp/woop-banc23-intermediaire-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-153357.jsonl",
+    "destination": "/private/tmp/woop-banc23-intermediaire-nav.jsonl"
+  }
+}

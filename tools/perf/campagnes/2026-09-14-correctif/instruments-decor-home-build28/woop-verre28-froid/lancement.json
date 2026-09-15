@@ -1,0 +1,72 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "--json-output",
+      "/private/tmp/woop-verre28-froid/lancement.json",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansVerreHome"
+    ],
+    "commandType" : "devicectl.device.process.launch",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "launchOptions" : {
+      "activatedWhenStarted" : true,
+      "arguments" : [
+        "--",
+        "-sansSondeVol",
+        "-ecranEveille",
+        "-navProbe",
+        "-openTab",
+        "home",
+        "-sansVerreHome"
+      ],
+      "environmentVariables" : {
+        "TERM" : "dumb"
+      },
+      "platformSpecificOptions" : {
+
+      },
+      "startStopped" : false,
+      "terminateExistingInstances" : true,
+      "user" : {
+        "active" : true
+      }
+    },
+    "process" : {
+      "auditToken" : [
+        4294967295,
+        501,
+        501,
+        501,
+        501,
+        25567,
+        0,
+        72235
+      ],
+      "executable" : "file:///private/var/containers/Bundle/Application/974E5B9E-0066-478C-980F-C20C4885B25B/Woop.app/Woop",
+      "processIdentifier" : 25567
+    }
+  }
+}

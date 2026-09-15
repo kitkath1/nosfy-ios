@@ -1,0 +1,6 @@
+{
+  "vol": {
+    "source": "vol-20260915-111845.jsonl",
+    "destination": "/private/tmp/woop-build18-normal-avant-arret-sonde-vol.jsonl"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "groups": {
+    "CA_commit_handlers_queue": {
+      "count": 304,
+      "duration_ns": 5743753,
+      "wait_ns": 3837373
+    },
+    "waitForCommitId": {
+      "count": 335,
+      "duration_ns": 5427843381,
+      "wait_ns": 5423815378
+    },
+    "CA_commit_mutex": {
+      "count": 18,
+      "duration_ns": 1056849419,
+      "wait_ns": 1056636332
+    }
+  },
+  "union_ns": 6119989636,
+  "blocked_inside_ns": 6109582087,
+  "state_start_ns": 537285375,
+  "state_end_ns": 9265953063
+}
+CA_commit_handlers_queue
+kevent_id 7.567395125 0.353416 4466093568
+kevent_id 2.9206455 0.350291 4466093568
+kevent_id 2.254768208 0.339833 4466093568
+kevent_id 3.421260541 0.339417 4466093568
+waitForCommitId
+mach_msg2_trap 0.575353083 424.149417 6122209872
+mach_msg2_trap 1.878794125 375.911791 6122209872
+psynch_mutexwait 1.299449875 370.435625 4465068240
+mach_msg2_trap 2.297913416 247.239167 6122209872
+CA_commit_mutex
+psynch_mutexwait 1.299449875 370.435625 4465068240
+psynch_mutexwait 3.962861166 203.858167 4465068240
+psynch_mutexwait 3.13060275 162.224 4465068240
+psynch_mutexwait 4.944494916 52.247834 4465068240
+MUTEX 0x10a2388d0 Counter({('Main Thread (0x160db7) (Woop, pid: 17908)', 'psynch_mutexwait'): 18, ('Main Thread (0x160db7) (Woop, pid: 17908)', 'psynch_mutexdrop'): 17, ('Woop (0x160dd0) (Woop, pid: 17908)', 'psynch_mutexdrop'): 6, ('Woop (0x161705) (Woop, pid: 17908)', 'psynch_mutexwait'): 4, ('Woop (0x16195b) (Woop, pid: 17908)', 'psynch_mutexwait'): 4, ('Woop (0x16195b) (Woop, pid: 17908)', 'psynch_mutexdrop'): 4, ('Woop (0x1612a5) (Woop, pid: 17908)', 'psynch_mutexdrop'): 3, ('Woop (0x1612a5) (Woop, pid: 17908)', 'psynch_mutexwait'): 3, ('Woop (0x161705) (Woop, pid: 17908)', 'psynch_mutexdrop'): 3, ('Woop (0x1619e1) (Woop, pid: 17908)', 'psynch_mutexwait'): 3, ('Woop (0x160dd0) (Woop, pid: 17908)', 'psynch_mutexwait'): 2, ('Woop (0x1619e2) (Woop, pid: 17908)', 'psynch_mutexdrop'): 2, ('Woop (0x1619e2) (Woop, pid: 17908)', 'psynch_mutexwait'): 1})
+Woop (0x1612a5) (Woop, pid: 17908) psynch_mutexdrop 1.669870125 0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::ping() -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+Woop (0x1612a5) (Woop, pid: 17908) psynch_mutexdrop 1.669898833 0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+Woop (0x1612a5) (Woop, pid: 17908) psynch_mutexwait 1.670062333 0x2371570c9 -> _pthread_mutex_firstfit_lock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+WORKER 1.297185541 Woop (0x1612a5) (Woop, pid: 17908) mach_msg2_trap 1.299385333 370.476333 0x237150cd5 -> 0x23715422b -> 0x237154077 -> CA::Context::ping() -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke
+WORKER 1.863187666 Woop (0x161705) (Woop, pid: 17908) psynch_mutexwait 1.885271083 369.502708 0x2371570c9 -> _pthread_mutex_firstfit_lock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh
+WORKER 2.29581575 Woop (0x161705) (Woop, pid: 17908) psynch_mutexwait 2.300801333 244.378583 0x2371570c9 -> _pthread_mutex_firstfit_lock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh
+cold20plus 27 t 20.6 47.5 cpu 13 img 29.3 worstmax 417 maxgapmedian 152
+protected49plus 161 t 49.5 211.9 cpu 13 img 60.1 worstmax 67 maxgapmedian 17

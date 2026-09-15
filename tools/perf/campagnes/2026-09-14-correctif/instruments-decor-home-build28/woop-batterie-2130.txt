@@ -1,0 +1,7 @@
+BatteryCurrentCapacity: 93
+BatteryIsCharging: true
+ExternalChargeCapable: false
+ExternalConnected: true
+FullyCharged: false
+GasGaugeCapability: true
+HasBattery: true

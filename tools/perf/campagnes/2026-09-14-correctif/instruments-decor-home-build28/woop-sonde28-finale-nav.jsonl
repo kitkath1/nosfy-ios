@@ -1,0 +1,5 @@
+{"applicationState":1,"bande":false,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"ecran-eveille-debut","page":"home","selection":"?","t":811192320.44749796,"therm":0,"visite":false}
+{"applicationState":1,"bande":false,"destination":"home","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"selection","page":"home","selection":"home","t":811192320.46307695,"therm":0,"visite":false}
+{"applicationState":1,"bande":false,"destination":"rayon=23.0;repos=true","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"piece-repos","page":"home","selection":"home","t":811192320.62103105,"therm":0,"visite":false}
+{"applicationState":1,"bande":true,"destination":"","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"scene-active","page":"home","selection":"home","t":811192320.74842298,"therm":0,"visite":false}
+{"applicationState":0,"bande":true,"destination":"393x709;unLecteur;24fps;masqueIntegre","ecranEveille":true,"enSuivi":false,"enVol":false,"evenement":"fond-precompose","page":"home","selection":"home","t":811192321.01648796,"therm":0,"visite":false}

@@ -1,0 +1,46 @@
+[
+  {
+    "nom": "home-prete",
+    "commande": [
+      "xcodebuild",
+      "test-without-building",
+      "-xctestrun",
+      "/private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun",
+      "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure",
+      "-destination",
+      "platform=iOS,id=00008120-001E4CDC0A85A01E",
+      "-destination-timeout",
+      "15",
+      "-parallel-testing-enabled",
+      "NO",
+      "-maximum-concurrent-test-device-destinations",
+      "1",
+      "-resultBundlePath",
+      "/private/tmp/woop-puissance28-protegee/home-prete.xcresult"
+    ],
+    "code": 0,
+    "duree_s": 10.075,
+    "fin": "2026-09-15T21:22:46.634016"
+  },
+  {
+    "nom": "power",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "record",
+      "--template",
+      "Power Profiler",
+      "--device",
+      "00008120-001E4CDC0A85A01E",
+      "--attach",
+      "Woop",
+      "--time-limit",
+      "15s",
+      "--output",
+      "/private/tmp/woop-puissance28-protegee/protegee.trace"
+    ],
+    "code": 19,
+    "duree_s": 3.153,
+    "fin": "2026-09-15T21:22:49.789857"
+  }
+]

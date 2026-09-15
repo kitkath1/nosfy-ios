@@ -1,0 +1,85 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testNavigationApresRelance" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-validation30/navigation.xcresult
+
+2026-09-15 21:51:45.736 xcodebuild[65089:14845671] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-validation30/navigation.xcresult
+
+2026-09-15 21:51:45.737 xcodebuild[65089:14845671] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 21:51:46.337 xcodebuild[65089:14845671] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 21:51:48.260705+0200 NavRuntimeUITests-Runner[25854:2010977] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 21:51:48.636.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 21:51:48.637.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 21:51:48.637.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testNavigationApresRelance]' started.
+    t =     0.00s Start Test at 2026-09-15 21:51:48.639
+    t =     0.01s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.04s         Wait for fr.kathryn.woop to idle
+    t =     0.07s Checking existence of `"Later" Button`
+    t =     0.14s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+2026-09-15 21:51:48.795 xcodebuild[65089:14845671] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.14s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =     1.14s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =     1.20s Tap "figure.strengthtraining.functional" Button
+    t =     1.20s     Wait for fr.kathryn.woop to idle
+    t =     1.21s     Find the "figure.strengthtraining.functional" Button
+    t =     1.23s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =     1.26s     Synthesize event
+    t =     1.28s         Device orientation changed to Portrait
+    t =     1.55s     Wait for fr.kathryn.woop to idle
+    t =     2.40s Waiting 5.0s for "Exercices" StaticText to exist
+    t =     3.33s     Device orientation changed to Face Up
+    t =     3.43s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =     3.44s         Checking existence of `"Exercices" StaticText`
+    t =     3.52s Tap "house.fill" Button
+    t =     3.52s     Wait for fr.kathryn.woop to idle
+    t =     3.53s     Find the "house.fill" Button
+    t =     3.58s     Check for interrupting elements affecting "house.fill" Button
+    t =     3.62s     Synthesize event
+    t =     3.91s     Wait for fr.kathryn.woop to idle
+    t =     4.72s Tap "person" Button
+    t =     4.72s     Wait for fr.kathryn.woop to idle
+    t =     4.73s     Find the "person" Button
+    t =     4.88s     Check for interrupting elements affecting "person" Button
+    t =     4.92s     Synthesize event
+    t =     5.21s     Wait for fr.kathryn.woop to idle
+    t =     6.22s Waiting 5.0s for "Réglages" Button to exist
+    t =     7.25s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =     7.25s         Checking existence of `"Réglages" Button`
+    t =     7.35s Tap "Réglages" Button
+    t =     7.35s     Wait for fr.kathryn.woop to idle
+    t =     7.36s     Find the "Réglages" Button
+    t =     7.41s     Check for interrupting elements affecting "Réglages" Button
+    t =     7.47s     Synthesize event
+    t =     7.76s     Wait for fr.kathryn.woop to idle
+    t =     7.77s Waiting 5.0s for "Se déconnecter" StaticText to exist
+    t =     8.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Se déconnecter" StaticText`
+    t =     8.80s         Checking existence of `"Se déconnecter" StaticText`
+    t =     8.89s Checking existence of `"Supprimer mon compte" StaticText`
+    t =     8.94s Find the Application 'fr.kathryn.woop'
+WOOP_NAVIGATION_APRES_RELANCE_OK
+    t =     9.15s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testNavigationApresRelance]' passed (9.267 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 21:51:57.906.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.267 (9.269) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 21:51:57.906.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.267 (9.269) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 21:51:57.907.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.267 (9.270) seconds
+2026-09-15 21:51:57.935 xcodebuild[65089:14845671] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 21:51:58.178 xcodebuild[65089:14845671] [MT] IDETestOperationsObserverDebug: 11.839 elapsed -- Testing started completed.
+2026-09-15 21:51:58.178 xcodebuild[65089:14845671] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 21:51:58.178 xcodebuild[65089:14845671] [MT] IDETestOperationsObserverDebug: 11.839 sec, +11.839 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-validation30/navigation.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

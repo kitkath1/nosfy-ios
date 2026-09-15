@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260915-200447.jsonl",
+    "destination": "/private/tmp/woop-banc27-lisere-complet-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260915-200324.jsonl",
+    "destination": "/private/tmp/woop-banc27-lisere-complet-nav.jsonl"
+  }
+}

@@ -61,15 +61,15 @@ Ce qu'elle enregistre, et pourquoi chaque champ existe :
 
 | champ | ce qu'il dit | pourquoi il est là |
 |---|---|---|
-| `img` | images par seconde | la fluidité |
-| `pire` | **le pire trou de la seconde, en ms** | c'est LUI qu'on sent au doigt. 58 img/s avec un trou de 300 ms, ça « lague ». La moyenne ment. |
-| `cpu` | % processeur du process | **la chaleur**. 100 = un cœur saturé. |
-| `therm` | état thermique iOS (0-3) | le seul juge non discutable de « ça chauffe » ; ≥ 1 invalide la comparaison |
+| `img` | callbacks CADisplayLink par seconde | cadence servie par le fil principal, pas images présentées par le GPU |
+| `pire` | **plus grand intervalle entre callbacks, en ms** | signale une irrégularité ; ne distingue pas, seul, calcul, attente et adaptation de cadence par iOS |
+| `cpu` | charge récente lissée des threads du process | 100 = un cœur ; ne mesure ni GPU, ni énergie, ni température |
+| `therm` | état thermique iOS (0-3) | catégorie système, pas température physique ; même catégorie ne garantit pas des fréquences CPU/GPU identiques |
 | `corps` | recalculs du corps de page /s | sépare « SwiftUI refait la mise en page » de « le compositeur redessine » |
 | `tics[]` | battements par groupe d'horloges | dit QUELLE famille anime, sans deviner |
 | `onglet`, `seance`, `player`, `ile`, `drag` | le contexte | la preuve qu'on mesure le bon écran |
 | `marque` | **elle a tapé la pastille** | relie son ressenti au chiffre |
-| `gel` | trou > 2 s (arrière-plan) | à exclure : ce n'est pas une saccade |
+| `gel` | trou > 2 s, intervalle publié plafonné | peut être un vrai blocage au premier plan ; vérifier le contexte avant toute exclusion |
 
 **Elle dort avec l'app** (sinon un écran éteint s'enregistre comme un gel de
 20 s) et **tient l'écran éveillé** pendant qu'elle mesure.
@@ -95,7 +95,9 @@ xcrun devicectl device copy from --device <UDID> \
   --source "Documents/vol-….jsonl" --destination ./vol.jsonl
 ```
 
-**La lecture** : médiane des secondes, `t > 15`, `gel == 0`, et on annonce
+**La lecture** : médiane des secondes, `t > 15`, contexte au premier plan
+vérifié dans le journal de navigation. Conserver `gel == 1` si l'app était
+active : ce peut être précisément le blocage recherché. On annonce
 `(cadence, processeur, thermique, n)`. Jamais un chiffre nu.
 
 ### La campagne honnête
@@ -119,11 +121,23 @@ cherche à l'endroit qu'elle montre.**
 — combien de fois chaque type de vue est reconstruit, et pour combien de temps.
 C'est le seul outil qui CLASSE les coûts au lieu de les deviner.
 
-**État au 05-09 : INJOIGNABLE sur ce téléphone.** « Timed out waiting for device
+**État historique au 05-09 : INJOIGNABLE sur ce téléphone.** « Timed out waiting for device
 to boot », alors que tout est correct — vérifié :
 `developerModeStatus: enabled`, `pairingState: paired`, `transportType: wired`,
 `ddiServicesAvailable: true`. Essayé en `--launch`, en `--attach`, par UDID et
 par `--device-name`. Ce n'est pas la configuration.
+
+**Actualisation du 15-09 : les traces réelles fonctionnent.** SwiftUI, Time
+Profiler, Metal System Trace et System Trace ont produit des captures lisibles
+sur cet iPhone. Le rapport `tools/perf/CORRECTIF-CHAUFFE-2026-09-14.md` relie
+leurs résultats aux builds et aux écrans. Une trace vide reste sans preuve.
+Time Profiler « Running » ne mesure pas les durées d'attente : les attentes
+Core Animation/RenderBox ont été établies séparément avec les tables de
+System Trace, sur le prototype B11 puis sur la Home normale du build 15
+(6,110 s de blocage dans ces synchronisations sur 8,729 s attribuées,
+capture en thermique 2). Le journal distinct du build 15 montre déjà des
+saccades à thermique 0. Ces preuves ne désignent ni un calque précis ni une
+saturation GPU : ne pas transformer l'hypothèse de bridage en cause acquise.
 
 **Avant de re-perdre une heure dessus :** relancer l'essai, et si ça échoue
 encore, ne pas insister — on a la sonde. Autres pistes non épuisées :
@@ -140,6 +154,15 @@ charge la batterie donc chauffe. Le chiffre reste la sonde, téléphone débranc
 
 ### Les chiffres de référence (iPhone 15, 05-09)
 
+**Rectification du 15-09 : ces chiffres décrivent le défaut signalé, pas un
+budget acceptable.** Les essais et limites actualisés sont dans
+`tools/perf/CORRECTIF-CHAUFFE-2026-09-14.md`. La navigation se vérifie par
+des appuis et des écrans effectivement ouverts, indépendamment de la sonde.
+`img` compte des callbacks CADisplayLink, pas les images présentées par le
+GPU ; `cpu` est une charge récente lissée des threads, pas l'énergie.
+Toujours vérifier aussi les panneaux visibles : `onglet=home` peut désigner
+une Home recouverte par Welcome Back, et `profile` par Réglages.
+
 | | processeur |
 |---|---|
 | écran NU (le châssis rend du noir, aucune page) | **1 %** |
@@ -150,10 +173,12 @@ charge la batterie donc chauffe. Le chiffre reste la sonde, téléphone débranc
 
 ### La découverte centrale
 
-**Le corps de la page est recalculé 0 fois par seconde** — SwiftUI ne refait
-aucune mise en page — **et pourtant ça brûle**. Le coût n'est donc pas
-l'invalidation : c'est que **des horloges profondes redessinent en continu**, et
-que chaque battement force à recomposer l'écran **à travers le verre**.
+**Le corps instrumenté de la page est recalculé 0 fois par seconde**, mais
+ce compteur ne couvre ni les feuilles ni le graphe SwiftUI. Il n'exclut donc
+pas leurs invalidations ou leur mise en page. La trace réelle du Profil avec
+Réglages (14-09, build 5) trouve un travail soutenu dans SwiftUICore,
+AttributeGraph et le runtime Swift. Des horloges profondes et la composition
+à travers le verre restent des pistes ; ce relevé ne mesure pas le GPU.
 
 Compté sur l'accueil immobile : la home 32 battements/s · les widgets 30 · la
 nappe 16 · les galets 15 → **≈ 93 à 128 par seconde**.
@@ -163,16 +188,20 @@ nappe 16 · les galets 15 → **≈ 93 à 128 par seconde**.
 - **LE VERRE : le quart.** Six verres natifs éteints → 37 % → 28 %. Un verre
   posé **sur une vidéo** ne peut RIEN mettre en cache : ce qu'il y a dessous
   change à chaque image, il refait son flou en boucle.
-- **LES VIDÉOS : rien.** Remplacer les deux calques du fond par une image fixe :
-  37 % contre 38 %. **Innocentées, ne pas y revenir.**
+- **LES VIDÉOS : résultat historique limité au CPU.** Le 05-09, remplacer
+  les deux calques par une pose donnait 37 % contre 38 %. Cela ne les innocente
+  pas côté GPU/énergie. Le 14-09, sur téléphone chaud, le fond en pose améliore
+  les intervalles sans suffire seul ; essais non alternés, pas de causalité
+  exclusive établie. Ne pas interdire leur réévaluation sur de nouvelles preuves.
 - **LES HORLOGES DÉSACCORDÉES : beaucoup.** Quatre familles à 12, 20, 24 et
   30 Hz ne tombent pas sur les mêmes images : leurs redessins s'ajoutent au lieu
   de se confondre. Les aligner sur un pas commun + fermer les onglets cachés :
   **37,5 % → 27,5 %**.
 - **UN RUBAN ANIMÉ PLEIN CADRE** (3 flous + masque + `blendMode` à 20 Hz, sur
   CHAQUE page montée) : en séance, **9,3 → 30,2 img/s** une fois retiré. ×3,2.
-- **HORS DE CAUSE, mesurés** : le ciel nébuleuse (plus monté), le gyroscope, le
-  fond vidéo.
+- **Hors du montage Home actuel** : le ciel nébuleuse archivé. La fumée
+  d'invitation est un autre moteur, effectivement monté. Le gyroscope et les
+  vidéos se réévaluent selon la page et l'état, sans exclusion générale.
 
 ### Les lois de rendu (héritées, toujours vraies)
 

@@ -1,0 +1,57 @@
+{
+  "build": 28,
+  "uuid": "E5520DC9-E54F-3BDA-BCFB-352E1CA34751",
+  "lignes_totales": 34,
+  "lignes_stables": 19,
+  "premieres_secondes_ecartees": 15,
+  "debut_stable_s": 16.2,
+  "fin_stable_s": 34.5,
+  "cpu_median": 5,
+  "cpu_min": 1,
+  "cpu_max": 11,
+  "callbacks_medians": 60.1,
+  "pire_max_ms": 17,
+  "etats": {
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ],
+    "onglet": [
+      "home"
+    ],
+    "bancHome": [
+      "inactif"
+    ],
+    "welcome": [
+      0
+    ],
+    "premiere": [
+      0
+    ],
+    "gel": [
+      0
+    ],
+    "seance": [
+      0
+    ],
+    "player": [
+      0
+    ],
+    "ile": [
+      0
+    ],
+    "drag": [
+      0
+    ]
+  },
+  "tics_max": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "limites": "Sonde Mach et callbacks CADisplayLink ; ni watts, ni cadence GPU. Mesure courte, chauffe en usage à confirmer."
+}

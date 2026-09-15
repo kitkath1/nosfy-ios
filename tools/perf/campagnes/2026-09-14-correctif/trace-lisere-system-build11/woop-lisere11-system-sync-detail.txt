@@ -1,0 +1,32 @@
+Mutex 0x10b78c010 calls 103
+Counter({('Main Thread (0x158ec7) (Woop, pid: 17521)', 'psynch_mutexwait'): 48, ('Woop (0x159354) (Woop, pid: 17521)', 'psynch_mutexdrop'): 21, ('Woop (0x159348) (Woop, pid: 17521)', 'psynch_mutexdrop'): 12, ('Woop (0x158ee0) (Woop, pid: 17521)', 'psynch_mutexdrop'): 11, ('Main Thread (0x158ec7) (Woop, pid: 17521)', 'psynch_mutexdrop'): 4, ('Woop (0x15913d) (Woop, pid: 17521)', 'psynch_mutexdrop'): 4, ('Woop (0x158ee0) (Woop, pid: 17521)', 'psynch_mutexwait'): 2, ('Woop (0x159348) (Woop, pid: 17521)', 'psynch_mutexwait'): 1})
+
+INTERVAL 2.998 3.364
+2.998598958 362.989792 Main Thread (0x158ec7) (Woop, pid: 17521) psynch_mutexwait
+3.361561375 0.00975 Woop (0x159348) (Woop, pid: 17521) psynch_mutexdrop
+0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::ping() -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+3.361593875 0.0035 Main Thread (0x158ec7) (Woop, pid: 17521) psynch_mutexwait
+3.361595375 0.000625 Woop (0x159348) (Woop, pid: 17521) psynch_mutexdrop
+0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+
+INTERVAL 5.36 5.727
+5.360823416 364.552 Main Thread (0x158ec7) (Woop, pid: 17521) psynch_mutexwait
+5.725345458 0.010875 Woop (0x159354) (Woop, pid: 17521) psynch_mutexdrop
+0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::ping() -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+
+INTERVAL 5.76 6.143
+5.760484916 367.68 Main Thread (0x158ec7) (Woop, pid: 17521) psynch_mutexwait
+6.128150416 0.010834 Woop (0x159354) (Woop, pid: 17521) psynch_mutexdrop
+0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::ping() -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+6.128168958 0.014917 Main Thread (0x158ec7) (Woop, pid: 17521) psynch_mutexwait
+6.128178791 0.002 Woop (0x159354) (Woop, pid: 17521) psynch_mutexdrop
+0x237157065 -> _pthread_mutex_firstfit_unlock_slow -> CA::Context::synchronize(unsigned int, int, bool) -> -[CAContext waitForCommitId:timeout:] -> RB::CommitMarker::Observer::test_displayed(bool, double) -> RB::SharedSurfaceGroup::test_markers(RB::vector<RB::CommitMarker, 0ul, unsigned int>&) -> RB::SharedSurfaceGroup::prune_removed_locked()::$_0::__invoke(void*) -> _dispatch_client_callout -> _dispatch_lane_serial_drain -> _dispatch_lane_invoke -> _dispatch_root_queue_drain_deferred_wlh -> _dispatch_workloop_worker_thread -> _pthread_wqthread -> start_wqthread
+
+ALL_SYNC_UNION_MS 6275.713759 BLOCKED_INSIDE_MS 6269.159959
+STATE_RANGE 0.5490275 9.071007966
+VOL woop-build11-lisere-b-complet-vol.jsonl count 457
+[{'t': 1.0, 'img': 43.9, 'pire': 209, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 43, 'therm': 2, 'corps': 14, 'tics': [0, 0, 126, 0, 14], 'chemin': 0, 'protection': 1}]
+[{'t': 495.8, 'img': 17.1, 'pire': 362, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 2, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}, {'t': 496.9, 'img': 12.7, 'pire': 379, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 2, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}, {'t': 497.9, 'img': 16.8, 'pire': 263, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 3, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}]
+VOL woop-build11-native-pose0-vol.jsonl count 50
+[{'t': 1.0, 'img': 43.0, 'pire': 225, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 51, 'therm': 2, 'corps': 11, 'tics': [0, 0, 113, 0, 11], 'chemin': 0, 'protection': 1}]
+[{'t': 48.7, 'img': 60.1, 'pire': 17, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 8, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}, {'t': 49.7, 'img': 60.1, 'pire': 17, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 9, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}, {'t': 50.7, 'img': 60.1, 'pire': 17, 'onglet': 'home', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 14, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1}]

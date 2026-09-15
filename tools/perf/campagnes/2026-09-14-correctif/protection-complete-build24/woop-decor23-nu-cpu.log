@@ -1,0 +1,6 @@
+Waiting for device to boot
+Starting recording with the Time Profiler template. Attaching to: Woop (22637). Time limit: 8.0 s
+Ctrl-C to stop the recording
+Device got disconnected, ending recording...
+Recording completed. Saving output file...
+Output file saved as: woop-decor23-nu-cpu.trace

@@ -1,0 +1,21 @@
+{
+ "fichier": "sans-fumee.jsonl",
+ "n": 109,
+ "img": 24.4,
+ "pire_ms": 236,
+ "pire_max_ms": 1470,
+ "cpu": 10,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

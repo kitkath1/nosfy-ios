@@ -1,5 +1,13 @@
 # LE GROS BUG : LA HOME QUI CHAUFFE, PUIS QUI GÈLE — le dossier de mesure du 14-09 (RIEN N'EST CORRIGÉ)
 
+**À lire avant de reprendre : [registre des échecs et mesures invalides](ECHECS-CHAUFFE-HOME.md).**
+
+**Document historique du commit c313012.** Les affirmations causales des §§3–4
+étaient trop fortes : les compteurs seuls ne prouvent ni une attente du main
+ni un GPU saturé/bridé. Les traces ultérieures et leurs limites sont reliées
+dans le registre ci-dessus (E02–E04). La chauffe reste ouverte ; l’accès au
+Profil a depuis été rétabli. Les observations initiales restent conservées ici.
+
 Son ordre du 14-09, 16 h : « commit pour documenter ce gros bug et le contexte de la QA,
 ne fixe pas ». Ce fichier dit ce qui a été MESURÉ sur son iPhone 15 aujourd'hui, ce qui
 est exclu, ce qui reste une hypothèse, et par où reprendre. Aucun chiffre n'est déduit.

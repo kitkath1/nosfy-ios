@@ -1,0 +1,65 @@
+[
+  {
+    "nom": "lancement-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home",
+      "-sansProtectionThermique"
+    ],
+    "code": 0,
+    "duree_s": 0.353,
+    "fin": "2026-09-15T21:11:24.936449"
+  },
+  {
+    "nom": "home-normale-sans-sonde",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ],
+    "code": 0,
+    "duree_s": 0.462,
+    "fin": "2026-09-15T21:12:00.404865"
+  },
+  {
+    "nom": "collecte",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop-sonde28-finale",
+      "--nav"
+    ],
+    "code": 0,
+    "duree_s": 1.155,
+    "fin": "2026-09-15T21:12:01.560552"
+  }
+]

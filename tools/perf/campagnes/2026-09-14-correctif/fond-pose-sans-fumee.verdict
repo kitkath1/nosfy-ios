@@ -1,0 +1,21 @@
+{
+ "fichier": "fond-pose-sans-fumee.jsonl",
+ "n": 135,
+ "img": 48.3,
+ "pire_ms": 62,
+ "pire_max_ms": 173,
+ "cpu": 18,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

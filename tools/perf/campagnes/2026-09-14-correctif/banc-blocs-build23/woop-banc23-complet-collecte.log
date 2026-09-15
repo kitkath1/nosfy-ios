@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/private/tmp/woop-collect-id22.py", line 8, in <module>
+    run(['device','info','files']+common+['--subdirectory','Documents','--json-output',str(base/'woop-files-latest.json')])
+  File "/private/tmp/woop-collect-id22.py", line 7, in run
+    if r.returncode: raise RuntimeError(r.stdout+r.stderr)
+RuntimeError: ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+

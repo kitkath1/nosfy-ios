@@ -1,0 +1,150 @@
+{
+  "vol": "/private/tmp/woop-banc23-intermediaire-vol.jsonl",
+  "nav": "/private/tmp/woop-banc23-intermediaire-nav.jsonl",
+  "phases_attendues": [
+    "complete",
+    "sansWidgets",
+    "sansRoute",
+    "fondSeul",
+    "nu",
+    "complete"
+  ],
+  "parcours_complet": false,
+  "resultats": [
+    {
+      "phase": "complete",
+      "observations": 35,
+      "debut": 1.0,
+      "fin": 35.5,
+      "exclusion_initiale_s": 15,
+      "n_stables": 20,
+      "cpu_mediane": 16.0,
+      "callbacks_mediane": 48.75,
+      "pire_max_ms": 69,
+      "therm": [
+        0,
+        1
+      ],
+      "protection": [
+        0,
+        1
+      ],
+      "tics_max": [
+        0,
+        0,
+        3,
+        0,
+        21
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "sansWidgets",
+      "observations": 25,
+      "debut": 36.6,
+      "fin": 60.9,
+      "exclusion_initiale_s": 10,
+      "n_stables": 15,
+      "cpu_mediane": 8,
+      "callbacks_mediane": 60.1,
+      "pire_max_ms": 17,
+      "therm": [
+        1
+      ],
+      "protection": [
+        1
+      ],
+      "tics_max": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gels_retenus": 0,
+      "pire_plafonne": false
+    },
+    {
+      "phase": "sansRoute",
+      "observations": 2,
+      "debut": 61.9,
+      "fin": 62.9,
+      "exclusion_initiale_s": 10,
+      "n_stables": 0
+    }
+  ],
+  "evenements_banc": [
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811172042.095771,
+      "therm": 0,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "sansWidgets",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811172078.251202,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 0,
+      "bande": true,
+      "destination": "sansRoute",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811172103.794306,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 1,
+      "bande": true,
+      "destination": "complete",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-phase",
+      "page": "home",
+      "selection": "home",
+      "t": 811172105.851865,
+      "therm": 1,
+      "visite": false
+    },
+    {
+      "applicationState": 1,
+      "bande": true,
+      "destination": "",
+      "ecranEveille": true,
+      "enSuivi": false,
+      "enVol": false,
+      "evenement": "banc-home-fin",
+      "page": "home",
+      "selection": "home",
+      "t": 811172105.85204,
+      "therm": 1,
+      "visite": false
+    }
+  ],
+  "limites": "CPU Mach récent, callbacks CADisplayLink, pas énergie ni images GPU. Phases chaudes avec fond protégé potentiellement immobile."
+}

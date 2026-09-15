@@ -1,0 +1,5 @@
+Arguments : ['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', '022244AD-484B-5489-A884-6B781A82E372', '--timeout', '20', 'fr.kathryn.woop', '--', '-sansSondeVol', '-ecranEveille', '-navProbe', '-bancCoutHome', '-bancFroidHome', '-sansFumeeInvite', '-sansPiece', '-openTab', 'home']
+19:58:25  Acquired tunnel connection to device.
+19:58:25  Enabling developer disk image services.
+19:58:25  Acquired usage assertion.
+Launched application with fr.kathryn.woop bundle identifier.

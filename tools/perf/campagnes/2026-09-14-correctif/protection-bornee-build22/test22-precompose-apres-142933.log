@@ -1,0 +1,52 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result22-precompose-apres-142933.xcresult
+
+2026-09-15 14:31:12.370 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result22-precompose-apres-142933.xcresult
+
+2026-09-15 14:31:12.380 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:31:12.496 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:31:12.628 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 14:31:13.582 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:31:16.267835+0200 NavRuntimeUITests-Runner[21780:1712823] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 14:31:16.650.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 14:31:16.650.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 14:31:16.650.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testHomePretePourMesure]' started.
+    t =     0.00s Start Test at 2026-09-15 14:31:16.651
+    t =     0.01s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.04s         Wait for fr.kathryn.woop to idle
+    t =     0.07s Checking existence of `"Later" Button`
+    t =     0.10s Waiting 5.0s for "person" Button to exist
+2026-09-15 14:31:16.859 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.11s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     1.11s         Checking existence of `"person" Button`
+    t =     1.21s Find the "person" Button
+    t =     1.35s Find the Application 'fr.kathryn.woop'
+WOOP_HOME_PRETE_MESURE
+    t =     2.08s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testHomePretePourMesure]' passed (2.097 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-15 14:31:18.749.
+	 Executed 1 test, with 0 failures (0 unexpected) in 2.097 (2.099) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-15 14:31:18.752.
+	 Executed 1 test, with 0 failures (0 unexpected) in 2.097 (2.102) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 14:31:18.752.
+	 Executed 1 test, with 0 failures (0 unexpected) in 2.097 (2.102) seconds
+2026-09-15 14:31:19.000 xcodebuild[6751:14143398] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 14:31:19.076 xcodebuild[6751:14143398] [MT] IDETestOperationsObserverDebug: 5.479 elapsed -- Testing started completed.
+2026-09-15 14:31:19.076 xcodebuild[6751:14143398] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 14:31:19.076 xcodebuild[6751:14143398] [MT] IDETestOperationsObserverDebug: 5.479 sec, +5.479 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result22-precompose-apres-142933.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

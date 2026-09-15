@@ -1,0 +1,38 @@
+{
+  "groups": {
+    "CA_commit_handlers_queue": {
+      "count": 357,
+      "duration_ns": 3582752,
+      "wait_ns": 1299834
+    },
+    "waitForCommitId": {
+      "count": 430,
+      "duration_ns": 4967586788,
+      "wait_ns": 4962603909
+    },
+    "CA_commit_mutex": {
+      "count": 21,
+      "duration_ns": 505490044,
+      "wait_ns": 505218081
+    }
+  },
+  "union_ns": 5476659584,
+  "blocked_inside_ns": 5463562993,
+  "state_start_ns": 472430416,
+  "state_end_ns": 9250294923
+}
+CA_commit_handlers_queue
+kevent_id 1.810559916 0.270084 5743349248
+kevent_id 8.006415541 0.172209 5743349248
+kevent_id 3.225509125 0.156125 5743349248
+kevent_id 2.971592 0.153583 5743349248
+waitForCommitId
+mach_msg2_trap 5.633620083 303.403917 6094226016
+mach_msg2_trap 2.740154916 231.370625 6094226016
+mach_msg2_trap 0.498001166 230.218875 6094226016
+mach_msg2_trap 8.129943 133.793041 6094226016
+CA_commit_mutex
+psynch_mutexwait 1.255811166 56.782834 5706598608
+psynch_mutexwait 1.09058075 44.684458 5706598608
+psynch_mutexwait 3.420048791 43.432709 5706598608
+psynch_mutexwait 7.297930208 42.379167 5706598608

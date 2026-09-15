@@ -1,0 +1,60 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 30 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult
+
+2026-09-15 12:10:15.257 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult
+
+2026-09-15 12:10:15.265 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 12:10:15.358 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 12:10:15.477 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 12:10:15.777 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 12:10:16.155 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 12:10:16.292 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult
+
+2026-09-15 12:10:16.307 xcodebuild[92166:13950127]  Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-13 "iPhone de Frédéric will not connect because it is ignored" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0x7bb9184b0>, NSLocalizedRecoveryOptions=(
+    Cancel,
+    Retry
+), NSLocalizedRecoverySuggestion=The device has been ignored with reason deviceIsUnavailable, DVTRecoveryBlockKey=<__NSMallocBlock__: 0x7b9ab8480>, NSLocalizedDescription=iPhone de Frédéric will not connect because it is ignored}
+2026-09-15 12:10:16.307 xcodebuild[92166:13950127]  Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-15 12:10:16.444 xcodebuild[92166:13950107] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 12:10:16.881 xcodebuild[92166:13950116]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-15 12:10:16.895 xcodebuild[92166:13950107] [MT] IDETestOperationsObserverDebug: 1.113 elapsed -- Testing started completed.
+2026-09-15 12:10:16.895 xcodebuild[92166:13950107] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 12:10:16.895 xcodebuild[92166:13950107] [MT] IDETestOperationsObserverDebug: 1.113 sec, +1.113 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result21-precompose-apres-120934.xcresult
+
+Testing failed:
+	NavRuntimeUITests-Runner encountered an error (Failed to establish communication with the test runner. (Underlying Error: A connection to this device has not been established. (DeviceIdentifier: (ecid_8528757254365214, uuid: 022244AD-484B-5489-A884-6B781A82E372), State: Unavailable)))
+
+** TEST EXECUTE FAILED **
+
+Testing started

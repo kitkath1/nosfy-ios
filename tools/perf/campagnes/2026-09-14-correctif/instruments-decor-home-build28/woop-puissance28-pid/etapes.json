@@ -1,0 +1,86 @@
+[
+  {
+    "nom": "processus",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "info",
+      "processes",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "15",
+      "--json-output",
+      "/private/tmp/woop-puissance28-pid/processus.json"
+    ],
+    "code": 0,
+    "duree_s": 0.4,
+    "fin": "2026-09-15T21:24:36.208617"
+  },
+  {
+    "nom": "power",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "record",
+      "--template",
+      "Power Profiler",
+      "--device",
+      "00008120-001E4CDC0A85A01E",
+      "--attach",
+      "25506",
+      "--time-limit",
+      "15s",
+      "--output",
+      "/private/tmp/woop-puissance28-pid/home28.trace"
+    ],
+    "code": 0,
+    "duree_s": 29.368,
+    "fin": "2026-09-15T21:25:05.578095"
+  },
+  {
+    "nom": "toc",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-puissance28-pid/home28.trace",
+      "--toc",
+      "--output",
+      "/private/tmp/woop-puissance28-pid/home28-toc.xml"
+    ],
+    "code": 0,
+    "duree_s": 3.091,
+    "fin": "2026-09-15T21:25:08.674665"
+  },
+  {
+    "nom": "export",
+    "commande": [
+      "xcrun",
+      "xctrace",
+      "export",
+      "--input",
+      "/private/tmp/woop-puissance28-pid/home28.trace",
+      "--xpath",
+      "/trace-toc/run[@number=\"1\"]/data/table[@schema=\"ProcessSubsystemPowerImpact\" or @schema=\"SystemPowerLevel\" or @schema=\"device-thermal-state-intervals\" or @schema=\"metal-perf-overview-process-metric\" or @schema=\"DeviceChargingState\" or @schema=\"time-profile\" or @schema=\"life-cycle-period\"]",
+      "--output",
+      "/private/tmp/woop-puissance28-pid/home28-mesures.xml"
+    ],
+    "code": 0,
+    "duree_s": 3.136,
+    "fin": "2026-09-15T21:25:11.811656"
+  },
+  {
+    "nom": "analyse",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-analyse-power.py",
+      "/private/tmp/woop-puissance28-pid/home28"
+    ],
+    "code": 0,
+    "duree_s": 0.241,
+    "fin": "2026-09-15T21:25:12.053595"
+  }
+]

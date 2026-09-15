@@ -1,0 +1,21 @@
+{
+ "fichier": "profil-direct.jsonl",
+ "n": 83,
+ "img": 60.1,
+ "pire_ms": 17,
+ "pire_max_ms": 48,
+ "cpu": 49,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "profile",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

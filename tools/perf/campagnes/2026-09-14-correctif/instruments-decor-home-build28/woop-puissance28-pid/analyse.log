@@ -1,0 +1,22 @@
+{
+  "trace": "/private/tmp/woop-puissance28-pid/home28",
+  "debut": "2026-09-15T21:24:41.696+02:00",
+  "fin": "2026-09-15T21:24:58.814+02:00",
+  "duree_s": 17.118478,
+  "fin_raison": "Time limit reached",
+  "lignes": {
+    "life-cycle-period": 1,
+    "metal-perf-overview-process-metric": 0,
+    "device-thermal-state-intervals": 1,
+    "DeviceChargingState": 1,
+    "ProcessSubsystemPowerImpact": 32,
+    "time-profile": 822,
+    "SystemPowerLevel": 15
+  },
+  "thermique": [
+    "Nominal"
+  ],
+  "metriques_processus": {},
+  "limites": "CPU échantillonné, instructions/s documentées dans la table Apple. Ne pas interpréter les colonnes sans nom comme des watts. Comparaison thermique et vérification de la Home nécessaires."
+}
+CPU après4s 4.962465920208121

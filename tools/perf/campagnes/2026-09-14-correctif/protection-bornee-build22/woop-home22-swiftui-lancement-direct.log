@@ -1,0 +1,52 @@
+woop-home22-swiftui-lancement-143846
+Name                 Hostname                              Identifier                             State         Model                 
+------------------   -----------------------------------   ------------------------------------   -----------   ----------------------
+iPhone               iPhone.coredevice.local               404B8458-7E09-5A58-B845-D7583F8ED28D   unavailable   iPhone 13 (iPhone14,5)
+iPhone (3)           iPhone-3.coredevice.local             44FCC57B-9828-5A29-BDB8-7B125E498AB4   unavailable   iPhone 15 (iPhone15,4)
+iPhone de Frédéric   iPhone-de-Frederic.coredevice.local   022244AD-484B-5489-A884-6B781A82E372   connected     iPhone 15 (iPhone15,4)
+14:38:47  Acquired tunnel connection to device.
+14:38:47  Enabling developer disk image services.
+14:38:47  Acquired usage assertion.
+Sent signal to terminate process sent to pid 21785
+Starting recording with the SwiftUI template. Launching process: fr.kathryn.woop. Time limit: 25.0 s
+Ctrl-C to stop the recording
+Device got disconnected, ending recording...
+Recording completed. Saving output file...
+Output file saved as: woop-home22-swiftui-lancement-143846.trace
+Traceback (most recent call last):
+  File "/private/tmp/woop-collect-id22.py", line 8, in <module>
+    run(['device','info','files']+common+['--subdirectory','Documents','--json-output',str(base/'woop-files-latest.json')])
+  File "/private/tmp/woop-collect-id22.py", line 7, in run
+    if r.returncode: raise RuntimeError(r.stdout+r.stderr)
+RuntimeError: ERROR: The tunnel was interrupted while establishing connectivity to coredevice-868. (com.apple.dt.CoreDeviceError error 4000 (0xFA0))
+       DeviceIdentifier = 022244AD-484B-5489-A884-6B781A82E372
+       ----------------------------------------
+           The operation couldn’t be completed. (Network.NWError error 89 - Operation canceled)
+           NSDescription = Operation canceled
+
+Name                 Hostname                              Identifier                             State         Model                 
+------------------   -----------------------------------   ------------------------------------   -----------   ----------------------
+iPhone               iPhone.coredevice.local               404B8458-7E09-5A58-B845-D7583F8ED28D   unavailable   iPhone 13 (iPhone14,5)
+iPhone (3)           iPhone-3.coredevice.local             44FCC57B-9828-5A29-BDB8-7B125E498AB4   unavailable   iPhone 15 (iPhone15,4)
+iPhone de Frédéric   iPhone-de-Frederic.coredevice.local   022244AD-484B-5489-A884-6B781A82E372   unavailable   iPhone 15 (iPhone15,4)
+ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+Traceback (most recent call last):
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 13, in <module>
+    run(['python3',str(p/'woop-collect-id22.py'),n,'--nav-only'])
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 3, in run
+    def run(a,t=30,**kw):return subprocess.run(a,check=True,timeout=t,**kw)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '/private/tmp/woop-collect-id22.py', 'woop-home22-swiftui-lancement-143846', '--nav-only']' returned non-zero exit status 1.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 16, in <module>
+    run(['xcrun','devicectl','device','process','launch','--device',d,'--terminate-existing','--timeout','20','fr.kathryn.woop','--']+f)
+  File "/private/tmp/woop-home22-swiftui-lancement.py", line 3, in run
+    def run(a,t=30,**kw):return subprocess.run(a,check=True,timeout=t,**kw)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['xcrun', 'devicectl', 'device', 'process', 'launch', '--device', '022244AD-484B-5489-A884-6B781A82E372', '--terminate-existing', '--timeout', '20', 'fr.kathryn.woop', '--', '-sansSondeVol', '-ecranEveille', '-navProbe', '-openTab', 'home']' returned non-zero exit status 1.

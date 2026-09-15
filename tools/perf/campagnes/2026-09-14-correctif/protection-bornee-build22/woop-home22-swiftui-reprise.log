@@ -1,0 +1,17 @@
+woop-home22-swiftui-143327
+Traceback (most recent call last):
+  File "/private/tmp/woop-collect-nom.py", line 8, in <module>
+    run(['device','info','files']+common+['--subdirectory','Documents','--json-output',str(base/'woop-files-latest.json')])
+  File "/private/tmp/woop-collect-nom.py", line 7, in run
+    if r.returncode: raise RuntimeError(r.stdout+r.stderr)
+RuntimeError: ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+
+Traceback (most recent call last):
+  File "/private/tmp/woop-home22-swiftui.py", line 5, in <module>
+    run(['python3',str(p/'woop-collect-nom.py'),name,'--nav-only'])
+  File "/private/tmp/woop-home22-swiftui.py", line 4, in run
+    def run(a,timeout=30,**kw):return subprocess.run(a,check=True,timeout=timeout,**kw)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', '/private/tmp/woop-collect-nom.py', 'woop-home22-swiftui-143327', '--nav-only']' returned non-zero exit status 1.

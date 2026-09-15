@@ -1,0 +1,226 @@
+{
+  "trace": "/private/tmp/woop-verre-power-2022/normal",
+  "debut": "2026-09-15T20:22:33.237+02:00",
+  "fin": "2026-09-15T20:22:50.636+02:00",
+  "duree_s": 17.398935,
+  "fin_raison": "Time limit reached",
+  "lignes": {
+    "life-cycle-period": 1,
+    "metal-perf-overview-process-metric": 10,
+    "device-thermal-state-intervals": 1,
+    "DeviceChargingState": 1,
+    "metal-perf-overview-layer-duration-metric": 608,
+    "ProcessSubsystemPowerImpact": 33,
+    "time-profile": 3061,
+    "SystemPowerLevel": 16
+  },
+  "thermique": [
+    "Fair"
+  ],
+  "metriques_processus": {
+    "CPU Instructions/s": 139937802.88198525,
+    "Peak Physical Footprint": 211.141822814,
+    "Disk Write/s": 0.0,
+    "Disk Read/s": 0.0,
+    "Disk Logical Write/s": 0.0
+  },
+  "cpu_apres_4s": {
+    "n": 2076,
+    "poids_ms": 2076.0,
+    "pourcent_echantillonne": 15.493768721170747,
+    "main_pourcent_echantillonne": 12.321874835574617,
+    "bibliotheques_feuille_ms": [
+      [
+        "SwiftUICore",
+        367.0
+      ],
+      [
+        "libswiftCore.dylib",
+        356.0
+      ],
+      [
+        "AttributeGraph",
+        197.0
+      ],
+      [
+        "libobjc.A.dylib",
+        181.0
+      ],
+      [
+        "libsystem_kernel.dylib",
+        170.0
+      ],
+      [
+        "libsystem_pthread.dylib",
+        158.0
+      ],
+      [
+        "QuartzCore",
+        143.0
+      ],
+      [
+        "IOKit",
+        83.0
+      ],
+      [
+        "libsystem_malloc.dylib",
+        71.0
+      ],
+      [
+        "CoreFoundation",
+        51.0
+      ],
+      [
+        "RenderBox",
+        48.0
+      ],
+      [
+        "AGXMetalG15",
+        38.0
+      ]
+    ],
+    "piles_main_ms": [
+      [
+        "runApp<A>(_:)",
+        1649.0
+      ],
+      [
+        "main",
+        1649.0
+      ],
+      [
+        "-[UIApplication _run]",
+        1649.0
+      ],
+      [
+        "start",
+        1649.0
+      ],
+      [
+        "__CFRunLoopRun",
+        1649.0
+      ],
+      [
+        "static App.main()",
+        1649.0
+      ],
+      [
+        "UIApplicationMain",
+        1649.0
+      ],
+      [
+        "closure #1 in KitRendererCommon(_:)",
+        1649.0
+      ],
+      [
+        "GSEventRunModal",
+        1649.0
+      ],
+      [
+        "_CFRunLoopRunSpecificWithOptions",
+        1649.0
+      ],
+      [
+        "UC::DriverCore::continueProcessing()",
+        1576.0
+      ],
+      [
+        "schedulerStepScheduledMainSectionContinue",
+        1566.0
+      ],
+      [
+        "_UIUpdateSequenceRunNext",
+        1565.0
+      ],
+      [
+        "__CFRunLoopDoSource0",
+        1438.0
+      ],
+      [
+        "__CFRunLoopDoSources0",
+        1438.0
+      ],
+      [
+        "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__",
+        1438.0
+      ],
+      [
+        "CA::Display::DisplayLink::dispatch_deferred_display_links(unsigned int)",
+        1260.0
+      ],
+      [
+        "CA::Display::DisplayLink::dispatch_items(unsigned long long, unsigned long long, unsigned long long)",
+        1259.0
+      ],
+      [
+        "CA::Display::DisplayLinkItem::dispatch_(CA::SignPost::Interval<(CA::SignPost::CAEventCode)835322056>&)",
+        1250.0
+      ],
+      [
+        "ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        1241.0
+      ],
+      [
+        "@objc ViewGraphDisplayLink.displayLinkTimer(_:)",
+        1240.0
+      ],
+      [
+        "ViewGraphHost.displayLinkTimer(timestamp:targetTimestamp:isAsyncThread:)",
+        1239.0
+      ],
+      [
+        "ViewGraphDisplayLink.displayLinkTimer(_:)",
+        1239.0
+      ],
+      [
+        "closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:)",
+        1235.0
+      ],
+      [
+        "ViewGraph.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:)",
+        769.0
+      ],
+      [
+        "protocol witness for ViewGraphRenderHost.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:) in conformance ViewGraph",
+        769.0
+      ],
+      [
+        "0x18d9053ec",
+        754.0
+      ],
+      [
+        "0x18d9cb584",
+        745.0
+      ],
+      [
+        "0x18d764618",
+        745.0
+      ],
+      [
+        "+[UIView(Animation) performWithoutAnimation:]",
+        745.0
+      ],
+      [
+        "0x18d72e7f0",
+        745.0
+      ],
+      [
+        "closure #1 in renderOnMainThread #1 () in ViewGraph.renderDisplayList(_:asynchronously:time:nextTime:targetTimestamp:version:maxVersion:)",
+        744.0
+      ],
+      [
+        "DisplayList.ViewUpdater.render(rootView:from:time:version:maxVersion:environment:)",
+        742.0
+      ],
+      [
+        "DisplayList.ViewUpdater.updateInheritedView(container:from:parentState:)",
+        710.0
+      ],
+      [
+        "DisplayList.ViewUpdater.update(container:from:parentState:)",
+        710.0
+      ]
+    ]
+  },
+  "limites": "CPU échantillonné, instructions/s documentées dans la table Apple. Ne pas interpréter les colonnes sans nom comme des watts. Comparaison thermique et vérification de la Home nécessaires."
+}

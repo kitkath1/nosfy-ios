@@ -1,0 +1,71 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testOuvrirBancCoutHome" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 20 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-nav-runtime-qa/result23-banc-1530.xcresult
+
+2026-09-15 15:29:35.752 xcodebuild[19391:14337666] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-nav-runtime-qa/result23-banc-1530.xcresult
+
+2026-09-15 15:29:35.753 xcodebuild[19391:14337666] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-15 15:29:36.806 xcodebuild[19391:14337666] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:29:36.933 xcodebuild[19391:14337666] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:29:41.229 xcodebuild[19391:14337666] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0x8f98ec0b0>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0x8f8e44180>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-15 15:29:41.229 xcodebuild[19391:14337666] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-15 15:29:46.134986+0200 NavRuntimeUITests-Runner[22278:1768717] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-15 15:29:46.642.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-15 15:29:46.642.
+Test Suite 'NavRuntimeUITests' started at 2026-09-15 15:29:46.643.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirBancCoutHome]' started.
+    t =     0.00s Start Test at 2026-09-15 15:29:46.645
+    t =     0.03s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+/tmp/woop-nav-runtime-qa/NavRuntimeUITests.swift:9: error: -[NavRuntimeUITests.NavRuntimeUITests testOuvrirBancCoutHome] : Failed to launch fr.kathryn.woop: The request to open "fr.kathryn.woop" failed. The request was denied by service delegate (SBMainWorkspace) for reason: Security ("Unable to launch fr.kathryn.woop because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user"). (Underlying Error: L’opération n’a pas pu s’achever. Unable to launch fr.kathryn.woop because it has an invalid code signature, inadequate entitlements or its profile has not been explicitly trusted by the user.)
+    t =     0.13s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirBancCoutHome]' failed (0.164 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-15 15:29:46.809.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.164 (0.166) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-15 15:29:46.810.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.164 (0.168) seconds
+Test Suite 'Selected tests' failed at 2026-09-15 15:29:46.811.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.164 (0.169) seconds
+2026-09-15 15:29:46.951 xcodebuild[19391:14337666] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-15 15:29:47.329 xcodebuild[19391:14337716]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-nav-runtime-qa/result23-banc-1530.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-nav-runtime-qa/result23-banc-1530.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-15 15:29:47.332 xcodebuild[19391:14337666] [MT] IDETestOperationsObserverDebug: 10.524 elapsed -- Testing started completed.
+2026-09-15 15:29:47.332 xcodebuild[19391:14337666] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-15 15:29:47.332 xcodebuild[19391:14337666] [MT] IDETestOperationsObserverDebug: 10.524 sec, +10.524 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-nav-runtime-qa/result23-banc-1530.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testOuvrirBancCoutHome()
+
+** TEST EXECUTE FAILED **
+
+Testing started

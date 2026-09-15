@@ -1,0 +1,21 @@
+{
+ "fichier": "build6-home-avant-profil.jsonl",
+ "n": 30,
+ "img": 60.1,
+ "pire_ms": 17,
+ "pire_max_ms": 17,
+ "cpu": 16,
+ "therm": 2,
+ "therm_depart": 2,
+ "therm_max": 2,
+ "onglet": "home",
+ "seance": 0,
+ "marques": 0,
+ "tics": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}
