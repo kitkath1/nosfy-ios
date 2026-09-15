@@ -76,6 +76,15 @@ enum ExosBanc {
     /// pilote pas au doigt : sans ce banc, la lumière des touches ne peut être
     /// jugée par personne.
     static let touche: Int? = valeur("-exosTouche").map { Int($0) }
+    /// `-exosListe` / `-exosCards` : le mode posé au lancement, malgré le
+    /// choix mémorisé (`exosModeListe`) — un banc ne doit pas dépendre de ce
+    /// que le dernier passage a laissé dans les préférences.
+    static let liste: Bool? = CommandLine.arguments.contains("-exosListe") ? true
+        : CommandLine.arguments.contains("-exosCards") ? false : nil
+    /// `-sansVerreListe` : LE BARREAU de la liste — ses rangées peintes en
+    /// nuit opaque à la place du verre (la loi : tout moteur coûteux arrive
+    /// avec de quoi l'accuser ou le disculper, au téléphone, en ABBA).
+    static let sansVerreListe = CommandLine.arguments.contains("-sansVerreListe")
 
     private static func valeur(_ cle: String) -> Double? {
         let args = CommandLine.arguments
@@ -396,6 +405,15 @@ struct ExercisesView: View {
     @State private var q = ""
     @State private var cherche = false
 
+    /// LE MODE LISTE (15-09, Kathryn : « un bouton, même look que Recherche,
+    /// pour afficher les exercices en mode liste minimal avec liquid glass,
+    /// comme ça on peut switcher de mode card à list »). Un choix qu'on fait
+    /// une fois et qu'on retrouve au prochain lancement — `@AppStorage`, comme
+    /// l'objectif de la home (`Goal.cleHebdo`), jamais un `@State` qui
+    /// oublie. Même famille que `cherche` : il ne change qu'au TAP, il ne va
+    /// pas dans l'`@Observable` du par-image.
+    @AppStorage("exosModeListe") private var modeListe = false
+
     /// LE CATALOGUE CACHÉ. Il était recalculé — `flatMap` sur les catégories —
     /// TROIS fois par évaluation de corps, donc trois fois par image de
     /// scroll. Il ne change qu'au filtre. Rempli DÈS L'INIT : le remplir à
@@ -484,6 +502,11 @@ struct ExercisesView: View {
                 .overlayPreferenceValue(SlotAnchorKey.self) { anchors in
                     tutoCouche(anchors)
                 }
+                // LE CLAVIER DU SYSTÈME NE POUSSE PAS LA PAGE (15-09, clavier
+                // natif) : l'invariant PageCard « taille fixe » est sacré —
+                // le clavier se pose SUR l'écran, comme le faisait celui de
+                // braise, il ne rétrécit rien.
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             .onAppear { arrivee() }
             // La roue libre ne survit pas à la page : une tâche qui écrit
             // `etat.pos` toutes les 16 ms sur un écran démonté, c'est le
@@ -556,6 +579,12 @@ struct ExercisesView: View {
                 }
                 ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
             }
+            // CARDS ↔ LISTE : une ordonnée de scroll ne se traduit pas d'une
+            // géométrie à l'autre (200 pt par rang de deux, 64 pt par rangée)
+            // — on repart en tête, comme au changement de section.
+            .onChange(of: modeListe) { _, _ in
+                ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
+            }
             .task {
                 if let id = UserDefaults.standard.string(forKey: "openExercise") {
                     deepLinked = ExerciseCatalog.exercise(id: id)
@@ -571,6 +600,7 @@ struct ExercisesView: View {
         guard !deja else { return }
         deja = true
         withAnimation(.easeOut(duration: 0.45)) { naissance = 1 }
+        if let l = ExosBanc.liste { modeListe = l }
         if let t = ExosBanc.tirage { etat.tirage = t }
         if let y = ExosBanc.scroll {
             // Le scroll n'existe pas encore à la première image : on le laisse
@@ -667,7 +697,7 @@ struct ExercisesView: View {
         let cardW = w - 2 * GrandeCardExos.margeCote
         ZStack(alignment: .top) {
             GrilleExos(items: items, reserve: reserve, etat: etat,
-                       ordre: ordre, tuto: tutoActif,
+                       ordre: ordre, tuto: tutoActif, liste: modeListe,
                        deepLinked: $deepLinked)
             // LE BANDEAU DE NUIT, par-dessus la grille : les cartes passent
             // DESSOUS, elles ne s'arrêtent pas à son bord. Et c'est LA POIGNÉE
@@ -678,7 +708,7 @@ struct ExercisesView: View {
                         // choisie au tambour c'est ELLE qu'on lit. Le titre
                         // n'annonce pas l'écran, il annonce le contenu.
                         titre: filter?.rawValue ?? "Exercices",
-                        q: $q, cherche: $cherche,
+                        q: $q, cherche: $cherche, liste: $modeListe,
                         retour: {
                             withAnimation(.easeOut(duration: 0.3)) {
                                 selection = .home
@@ -736,21 +766,13 @@ struct ExercisesView: View {
                     }
                 }
         }
-        // LE CLAVIER DE BRAISE — DERNIER, donc au-dessus de la molette et de la
-        // prise du bouton : quand il est là, c'est lui qui prend le pouce. Il
-        // ne MONTE PAS avec la card (pas de `MonteAvecLaCard`) : un clavier
-        // n'est pas dans la page, il est posé sur l'écran, comme celui du
-        // système.
-        .overlay(alignment: .bottom) {
-            if etat.clavier {
-                ClavierBraise(q: $q, safeB: safeB, valider: {
-                    withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
-                        etat.clavier = false
-                    }
-                })
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
+        // (LE CLAVIER DE BRAISE EST ARCHIVÉ — verdict Kathryn 15-09 : « mets
+        // le clavier natif Apple, enlève le custom à la recherche ». Le
+        // composant `ClavierBraise` reste dans le dépôt avec son banc
+        // `-notifLab`-style (`-exosTouche`, `-exosFrappe` sur les touches) ;
+        // son site d'appel meurt ici. `etat.clavier` garde son sens — « le
+        // clavier est ouvert » — et c'est lui qui donne et retire le FOCUS du
+        // champ système (`ChampRecherche`) ; le scroll le referme toujours.)
     }
 
     // MARK: - Les gestes
@@ -1281,6 +1303,8 @@ private struct BandeauExos: View {
     /// LE MOT CHERCHÉ, et si le champ a pris la place du titre.
     @Binding var q: String
     @Binding var cherche: Bool
+    /// CARDS OU LISTE — le chip à gauche de la loupe.
+    @Binding var liste: Bool
     var retour: () -> Void
     var tirer: (DragGesture.Value) -> Void
     var reposer: () -> Void
@@ -1304,7 +1328,7 @@ private struct BandeauExos: View {
                         // On n'ouvre pas une barre de recherche par-dessus la
                         // page — le titre DEVIENT le champ, et la braise prend
                         // au bout des lettres.
-                        ChampRecherche(q: $q, reveiller: { etat.clavier = true })
+                        ChampRecherche(q: $q, etat: etat)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .transition(.opacity.combined(with: .offset(y: 8)))
                     } else {
@@ -1323,7 +1347,9 @@ private struct BandeauExos: View {
                                 removal: .opacity.combined(with: .offset(y: -8))))
                         Spacer(minLength: 0)
                     }
-                    Color.clear.frame(width: 44, height: 44)
+                    // Deux chips à droite (liste, loupe) : le fantôme tient
+                    // leur largeur à eux deux, gouttière comprise.
+                    Color.clear.frame(width: 44 + 14 + 44, height: 44)
                 }
                 .padding(.horizontal, ExercisesView.encart)
                 .padding(.top, 4)
@@ -1370,12 +1396,28 @@ private struct BandeauExos: View {
                 ChipVerre(symbole: "chevron.left", label: "Retour",
                           action: retour)
                 Spacer(minLength: 0)
+                // CARDS ↔ LISTE (15-09) : le même chip que la loupe, à sa
+                // gauche — le glyphe dit ce qu'on OBTIENT en tapant (la
+                // liste quand on est en cards, la grille quand on est en
+                // liste), comme la loupe devient une croix.
+                ChipVerre(symbole: liste ? "square.grid.2x2" : "list.bullet",
+                          label: liste ? "Afficher en cards" : "Afficher en liste",
+                          action: basculerListe)
                 ChipVerre(symbole: cherche ? "xmark" : "magnifyingglass",
                           label: cherche ? "Fermer la recherche" : "Chercher",
                           action: basculer)
             }
             .padding(.horizontal, ExercisesView.encart)
             .padding(.top, haut + 4)
+        }
+    }
+
+    /// Cards ↔ liste, dans la même transaction que la recherche : c'est elle
+    /// qui fait jouer la cascade des rangées (un `.transition` sans
+    /// transaction animée téléporte).
+    private func basculerListe() {
+        withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
+            liste.toggle()
         }
     }
 
@@ -1399,16 +1441,23 @@ private struct BandeauExos: View {
 /// ligne — des lettres blanches dans une braise, ça ne se lit pas « un halo
 /// sous du texte », ça se lit « des lettres allumées ».
 ///
-/// ⚠️ CE N'EST PAS UN `TextField`. Le clavier du système ne se dessine pas :
-/// pour que la lumière prenne aussi DANS LES TOUCHES, le clavier est à nous
-/// (`ClavierBraise`) — et un clavier à nous n'a rien à dire à un champ du
-/// système. Le texte est donc du `Text`, et le curseur est peint par la braise.
-/// On y perd le collage et la dictée ; on y gagne la seule chose qui comptait.
+/// C'EST UN `TextField` DEPUIS LE 15-09 (verdict Kathryn : « mets le clavier
+/// natif Apple, enlève le custom à la recherche »). Jusque-là le texte était
+/// du `Text` et le clavier à nous (`ClavierBraise`, archivé) pour que la
+/// lumière prenne aussi dans les touches ; on retrouve le collage, la dictée,
+/// la correction — et la braise garde les lettres : elle vit DERRIÈRE le
+/// champ, nourrie par `q`, comme avant.
 private struct ChampRecherche: View {
     @Binding var q: String
-    /// Rouvrir le clavier en tapant sur le mot — une fois rangé (la coche), il
-    /// n'y a plus que ça pour le rappeler.
-    var reveiller: () -> Void
+    /// L'état de la page : `clavier` est « le clavier est ouvert » — le champ
+    /// le LIT pour prendre le focus, l'ÉCRIT quand le système le lui rend ou
+    /// le lui retire (la coche, le geste du bord) ; le scroll continue de le
+    /// refermer depuis la grille.
+    let etat: EtatExos
+
+    /// LE FOCUS DU CHAMP SYSTÈME (15-09, clavier natif) — miroir de
+    /// `etat.clavier`, dans les deux sens.
+    @FocusState private var focus: Bool
 
     /// L'instant de la dernière touche et le compte des touches : TOUTE la
     /// lumière s'écrit dessus. Ils ne changent qu'à la frappe — jamais par
@@ -1417,25 +1466,23 @@ private struct ChampRecherche: View {
     @State private var coups = 0
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            if q.isEmpty {
-                Text("Chercher")
-                    .font(.inter(30, .semibold))
-                    .tracking(-0.4)
-                    .foregroundStyle(Color.white.opacity(0.22))
-            } else {
-                Text(q)
-                    .font(.inter(30, .semibold))
-                    .tracking(-0.4)
-                    .foregroundStyle(WoopGradient.silverText)
-                    .lineLimit(1)
-                    // Un mot plus long que la ligne se SERRE au lieu de pousser
-                    // la loupe hors de l'écran.
-                    .minimumScaleFactor(0.7)
-            }
-        }
-        .frame(height: 44, alignment: .leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // LE CHAMP DU SYSTÈME, dans la fonte du titre (verdict 15-09 : « le
+        // clavier natif Apple »). L'encre argent du titre est un dégradé, et
+        // un champ n'en prend pas : l'encre pleine de la maison, le curseur
+        // à la braise — la lumière derrière les lettres, elle, ne change pas.
+        TextField("", text: $q,
+                  prompt: Text("Chercher").foregroundStyle(Color.white.opacity(0.22)))
+            .font(.inter(30, .semibold))
+            .tracking(-0.4)
+            .foregroundStyle(Color.inkPrimary)
+            .tint(Color(red: 1.0, green: 0.62, blue: 0.30))
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .submitLabel(.search)
+            .focused($focus)
+            .onSubmit { etat.clavier = false }
+            .frame(height: 44, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         // LA LUMIÈRE, DERRIÈRE. Sa bande est plus haute que la ligne (68 contre
         // 44) : un `Canvas` DÉCOUPE à son cadre, et un souffle plus grand que
         // lui s'y coupe en deux traits horizontaux nets. Elle déborde donc de
@@ -1451,7 +1498,20 @@ private struct ChampRecherche: View {
             .allowsHitTesting(false)
         }
         .contentShape(Rectangle())
-        .onTapGesture { reveiller() }
+        // Les deux sens du miroir : la page ouvre (basculer, le banc) → le
+        // champ prend le focus ; le système rend le clavier (la coche, le
+        // geste) → la page le sait. Le scroll écrit `clavier = false` depuis
+        // la grille et le focus tombe avec.
+        .onChange(of: etat.clavier, initial: true) { _, ouvert in
+            if focus != ouvert { focus = ouvert }
+        }
+        .onChange(of: focus) { _, f in
+            if etat.clavier != f {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+                    etat.clavier = f
+                }
+            }
+        }
         .onChange(of: q) { _, _ in
             coups += 1
             frappe = .now
@@ -1780,6 +1840,10 @@ private struct GrilleExos: View {
     /// elle ne publie RIEN — une ancre qui change à chaque image de scroll
     /// rappelle la couche de tuto par image, pour une couche éteinte.
     let tuto: Bool
+    /// LE MODE LISTE (15-09) : le MÊME ScrollView, la MÊME sonde, le même
+    /// tap — seule la géométrie change : une colonne de rangées de 64 pt
+    /// à la place des deux colonnes de cards de 200.
+    let liste: Bool
     @Binding var deepLinked: Exercise?
 
     @State private var sp = ScrollPosition(edge: .top)
@@ -1790,6 +1854,9 @@ private struct GrilleExos: View {
     static let gutter: CGFloat = 13
     static let stagger: CGFloat = 30
     static let topPad: CGFloat = 8
+    /// La rangée du mode liste : sa hauteur et sa gouttière.
+    static let rowHeight: CGFloat = 64
+    static let rowGutter: CGFloat = 8
     /// Le lit de la molette : le contenu se termine 210 pt avant le bord, la
     /// distance exacte où le voile du bas laisse une carte NETTE. À 150, en
     /// fin de course le dernier rang tombait dans la rampe et restait à moitié
@@ -1836,10 +1903,16 @@ private struct GrilleExos: View {
 
     var body: some View {
         ScrollView {
-            HStack(alignment: .top, spacing: Self.gutter) {
-                cardColumn(columnsIdx.0)
-                cardColumn(columnsIdx.1)
-                    .padding(.top, Self.stagger)
+            Group {
+                if liste {
+                    rangees
+                } else {
+                    HStack(alignment: .top, spacing: Self.gutter) {
+                        cardColumn(columnsIdx.0)
+                        cardColumn(columnsIdx.1)
+                            .padding(.top, Self.stagger)
+                    }
+                }
             }
             .scrollTargetLayout()
             // La réserve du bandeau : les cartes commencent SOUS lui et passent
@@ -1944,16 +2017,111 @@ private struct GrilleExos: View {
     /// qu'on n'avait pas pu lire.
     private func veilT(_ i: Int) -> Double {
         let minY = tete(i) - etat.scroll
-        return max(Self.voileBas(etat.viewportH - minY - Self.cardHeight),
-                   Self.voileHaut(reserve - minY))
+        let h = liste ? Self.rowHeight : Self.cardHeight
+        let d = etat.viewportH - minY - h
+        // La même rampe que le dessin (les deux DOIVENT rester accordées).
+        let bas = liste ? min(1, Self.voileBas(d - 60) * 1.5) : Self.voileBas(d)
+        return max(bas, Self.voileHaut(reserve - minY))
     }
 
     /// Le haut de la carte `i` dans le contenu du scroll — l'arithmétique des
-    /// hauteurs FIXES, aucune mesure.
+    /// hauteurs FIXES, aucune mesure. En liste : une colonne, une rangée par
+    /// exercice.
     private func tete(_ i: Int) -> CGFloat {
+        if liste {
+            return reserve + Self.topPad
+                 + CGFloat(i) * (Self.rowHeight + Self.rowGutter)
+        }
         let col = CGFloat(i % 2), row = CGFloat(i / 2)
         return reserve + Self.topPad + col * Self.stagger
              + row * (Self.cardHeight + Self.gutter)
+    }
+
+    /// LE TAP, le même pour une card et une rangée : nette, elle ouvre ;
+    /// prise dans un voile, le scroll la REJOINT d'abord (souffle, impact,
+    /// posée 16 pt sous le bandeau — collée à son bord elle arriverait dans
+    /// le voile du haut, donc floutée).
+    ///
+    /// ⚠️ **MAIS SI LE SCROLL NE PEUT PAS AIDER, ON OUVRE** (26-08 : « dans
+    /// la section Tout je peux sélectionner les exercices, mais dans Abdos le
+    /// tap ne déclenche rien »). Dans une section COURTE le contenu tient
+    /// presque dans le viewport : la fin de course vaut zéro, une carte
+    /// assise dans le voile demandait au scroll de la remonter vers une
+    /// position qu'il occupe DÉJÀ — rien ne bougeait, et le tap suivant
+    /// retombait dans la même branche. La cible est bornée à la course
+    /// RÉELLE ; si elle est déjà atteinte, rejoindre n'a aucun sens.
+    ///
+    /// ⚠️ SNAP FRANC (0,5 → 0,32) : l'auto-scroll d'un mur de cartes en
+    /// verre natif tombe vers 14 img/s — une demi-seconde de dérive se lit
+    /// « janky » ; raccourci, il se lit comme une décision.
+    private func taper(_ exercise: Exercise, _ i: Int) {
+        if veilT(i) < 0.35 {
+            deepLinked = exercise
+            return
+        }
+        let cible = min(max(0, tete(i) - reserve - 16), etat.finCourse)
+        guard abs(cible - etat.scroll) > 2 else {
+            deepLinked = exercise
+            return
+        }
+        etat.pulse += 1
+        ArcChime.shared.card()
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
+            sp.scrollTo(y: cible)
+        }
+    }
+
+    /// LES RANGÉES DU MODE LISTE — une colonne, clé par `exercise.id` (§3 :
+    /// l'identité descend dans la donnée), la même cascade que les cards.
+    /// Les voiles du haut et du bas sont les MÊMES lois que la grille, mais
+    /// en OPACITÉ seule — pas de flou à rayon vivant sur 28 verres (la loi
+    /// perf : on fait respirer l'opacité, jamais le rayon).
+    private var rangees: some View {
+        let reserve = self.reserve
+        let rangs = items.enumerated().map { i, e in
+            RangCarte(exercise: e, i: i, row: i)
+        }
+        return LazyVStack(spacing: Self.rowGutter) {
+            ForEach(rangs) { rc in
+                Button { taper(rc.exercise, rc.i) } label: {
+                    RangeeExo(exercise: rc.exercise)
+                }
+                .buttonStyle(CardPressStyle())
+                .overlay {
+                    if tuto, rc.i == 0 {
+                        Color.clear
+                            .anchorPreference(key: SlotAnchorKey.self,
+                                              value: .bounds) {
+                                ["tuto-card": $0]
+                            }
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: AnyTransition.opacity
+                        .combined(with: .offset(y: 18))
+                        .animation(.spring(response: 0.45, dampingFraction: 0.84)
+                            .delay(Double(min(rc.row, 12)) * 0.03)),
+                    removal: AnyTransition.opacity
+                        .combined(with: .offset(y: 8))
+                        .animation(.easeIn(duration: 0.14))
+                ))
+                .visualEffect { content, proxy in
+                    let f = proxy.frame(in: .scrollView)
+                    let vh = proxy.bounds(of: .scrollView)?.height ?? 780
+                    // La loi des cards est calée sur 200 pt : pour une
+                    // rangée de 64, sans flou pour l'éteindre, elle restait
+                    // lisible sous « Tout » (vu à la capture, deux fois). La
+                    // même loi, remontée de 60 pt et la rampe raccourcie :
+                    // (d − 60 : la rangée s'éteint plus HAUT) — éteinte à 183 pt du
+                    // bord, intacte au-delà de 270.
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                    let b = bas * bas * (3 - 2 * bas)
+                    let h = haut * haut
+                    return content.opacity(min(1 - b, 1 - 0.55 * h))
+                }
+            }
+        }
     }
 
     /// Une rangée de la colonne : l'exercice, sa POSITION dans `items` (`i`,
@@ -1985,54 +2153,10 @@ private struct GrilleExos: View {
                 let exercise = rc.exercise
                 let i = rc.i
                 let row = rc.row
-                Button {
-                    if veilT(i) < 0.35 {
-                        deepLinked = exercise
-                    } else {
-                        // Une carte prise dans le voile se REJOINT d'abord : le
-                        // scroll la remonte, avec le souffle et l'impact. Elle
-                        // se pose 16 pt SOUS le bandeau — collée à son bord,
-                        // elle arriverait dans le voile du haut, donc floutée.
-                        //
-                        // ⚠️ **MAIS SI LE SCROLL NE PEUT PAS AIDER, ON OUVRE**
-                        // (26-08). C'est ÇA, le verdict « dans la section Tout
-                        // je peux sélectionner les exercices, mais dans Abdos
-                        // le tap ne déclenche rien » — et c'est pour ça que ça
-                        // dépendait de la section.
-                        //
-                        // Dans une section COURTE (Abdos 10, Bas 4, Fessiers 5,
-                        // Cardio 3 — contre 28 pour Tout), le contenu tient
-                        // presque dans le viewport : la fin de course vaut zéro
-                        // ou presque. Une carte assise dans le voile du bas
-                        // demandait donc au scroll de la remonter… vers une
-                        // position qu'il occupe DÉJÀ. Rien ne bougeait, le
-                        // voile ne changeait pas, et le tap suivant retombait
-                        // exactement dans la même branche : la carte était
-                        // définitivement inatteignable. Dans « Tout », le
-                        // contenu est long, le scroll a toujours de la marge —
-                        // d'où l'impression que seule cette section marchait.
-                        //
-                        // La cible est bornée à la course RÉELLE. Si elle est
-                        // déjà atteinte, rejoindre n'a aucun sens : on ouvre.
-                        let cible = min(max(0, tete(i) - reserve - 16),
-                                        etat.finCourse)
-                        guard abs(cible - etat.scroll) > 2 else {
-                            deepLinked = exercise
-                            return
-                        }
-                        etat.pulse += 1
-                        ArcChime.shared.card()
-                        // ⚠️ SNAP FRANC (0,5 → 0,32) : l'auto-scroll d'un mur de
-                        // cartes en verre natif tombe vers 14 img/s (le verre
-                        // bouge par rapport à la vidéo et rejoue son voile) — une
-                        // demi-seconde de dérive se lit « janky ». Raccourci, il
-                        // se lit comme une décision, pas un glissement.
-                        withAnimation(.spring(response: 0.32,
-                                              dampingFraction: 0.85)) {
-                            sp.scrollTo(y: cible)
-                        }
-                    }
-                } label: {
+                // (Le tap — nette on ouvre, voilée on rejoint, et si le
+                // scroll ne peut pas aider on ouvre (verdict 26-08) — vit
+                // dans `taper`, le même pour une card et une rangée.)
+                Button { taper(exercise, i) } label: {
                     ExerciseCard(exercise: exercise)
                 }
                 .buttonStyle(CardPressStyle())
@@ -2625,6 +2749,107 @@ struct ExerciseCard: View {
                 // verre n'existe pas ; là où elle s'efface, la vidéo remonte au
                 // travers.
                 Self.shape.fill(Self.nuitFondue)
+            }
+        }
+        .clipShape(Self.shape)
+    }
+}
+
+// MARK: - La rangée du mode liste (15-09)
+
+/// LA LISTE MINIMALE — verdict Kathryn 15-09 : « afficher les exercices en
+/// mode liste minimal avec liquid glass, comme ça on peut switcher de mode
+/// card à list ». Une rangée de 64 pt : la vignette à gauche, le nom et le
+/// muscle, le chevron — rien d'autre (pas la capsule d'équipement : c'est
+/// une liste, pas une card en plus petit).
+///
+/// LA MATIÈRE : la recette de la card, couchée — une seule dalle de verre
+/// `.clear` (jamais `.regular`, le givré laiteux), et la NUIT peinte par-dessus
+/// qui se dissout de gauche à droite : pleine sous la vignette et le texte
+/// (l'encre se lit sur du noir, pas sur le verre), fenêtre à droite où la
+/// vidéo remonte au travers, sous le chevron seul. C'est ce qui rend la
+/// rangée moins chère qu'une card en dépit du même verre : le texte n'est
+/// jamais net SUR le verre, et il n'y a pas de flou au scroll — l'opacité
+/// seule (voir `GrilleExos.rangees`).
+///
+/// ⚠️ LE BARREAU : `-sansVerreListe` peint la rangée en nuit opaque — c'est
+/// lui qui dira, sur son téléphone, ce que ce verre coûte (ABBA, thermique
+/// 0 au départ), jamais le simulateur.
+struct RangeeExo: View {
+    let exercise: Exercise
+
+    static let hauteur: CGFloat = GrilleExos.rowHeight
+    private static let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+    private static let vignette = RoundedRectangle(cornerRadius: 12, style: .continuous)
+
+    /// La nuit qui se dissout, COUCHÉE : pleine jusqu'aux deux tiers (la
+    /// vignette et le texte), fenêtre au dernier quart. Aucune teinte
+    /// chaude : la chaleur vient de la vidéo à travers le verre.
+    private static let nuitCouchee = LinearGradient(
+        stops: [
+            .init(color: .black, location: 0.0),
+            .init(color: .black, location: 0.58),
+            .init(color: .black.opacity(0.72), location: 0.70),
+            .init(color: .black.opacity(0.30), location: 0.82),
+            .init(color: .black.opacity(0.0), location: 0.94)
+        ],
+        startPoint: .leading, endPoint: .trailing
+    )
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ExercisePhoto(exercise: exercise)
+                .frame(width: 46, height: 46)
+                .clipShape(Self.vignette)
+                // La vignette est une photo à fond noir sur une rangée noire :
+                // les bords se fondent d'eux-mêmes, un léger voile aux quatre
+                // bords finit de la coudre (l'école de la card).
+                .mask {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.55), location: 0.0),
+                            .init(color: .white, location: 0.22),
+                            .init(color: .white, location: 0.78),
+                            .init(color: .white.opacity(0.55), location: 1.0)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(exercise.name)
+                    .font(.inter(13, .semibold))
+                    .foregroundStyle(Color.inkPrimary)
+                    .lineLimit(1)
+                Text(exercise.muscle)
+                    .font(.inter(10.5))
+                    .foregroundStyle(Color.white.opacity(0.46))
+                    .lineLimit(1)
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.38))
+                .padding(.trailing, 4)
+        }
+        .padding(.leading, 9)
+        .padding(.trailing, 14)
+        .frame(height: Self.hauteur)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            if ExosBanc.sansVerreListe {
+                // LE BARREAU : la même rangée, sans le verre.
+                Self.shape.fill(Color(white: 0.055))
+            } else {
+                ZStack {
+                    Self.shape
+                        .fill(Color.clear)
+                        .glassEffect(.clear, in: Self.shape)
+                    Self.shape.fill(Self.nuitCouchee)
+                }
             }
         }
         .clipShape(Self.shape)
