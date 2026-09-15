@@ -29,7 +29,7 @@ struct ChambrePeak: View {
 
     private var ascension: some View {
         VStack(alignment: .leading, spacing: 14) {
-            BlocTitre(texte: "L'ascension",
+            BlocTitre(texte: L("L'ascension", "The climb"),
                       droite: vide ? "—" : "\(f.ascension.count) marche\(f.ascension.count > 1 ? "s" : "")")
             AscensionVue(marches: f.ascension, vide: vide)
                 .frame(height: 190)
@@ -39,12 +39,12 @@ struct ChambrePeak: View {
 
     private var compte: some View {
         VStack(alignment: .leading, spacing: 10) {
-            BlocTitre(texte: "Le compte")
+            BlocTitre(texte: L("Le compte", "The count"))
             Portee(items: [
                 PorteeItem(valeur: f.peak?.valeur ?? "0 kg",
                            libelle: f.peak.map { "La charge, × \(reps($0))" } ?? "La charge", chaud: !vide),
                 PorteeItem(valeur: vide ? "0 kg" : "\(ChambreFmt.poids(f.e1rm)) kg", libelle: "1RM estimé"),
-                PorteeItem(valeur: f.depuisRecord.map { "\($0) j" } ?? "— j", libelle: "Depuis le dernier record"),
+                PorteeItem(valeur: f.depuisRecord.map { "\($0) j" } ?? "— j", libelle: L("Depuis le dernier record", "Since last record")),
             ])
         }
         .chambreVide(vide)
@@ -56,7 +56,7 @@ struct ChambrePeak: View {
 
     private var autres: some View {
         VStack(alignment: .leading, spacing: 6) {
-            BlocTitre(texte: "Autres pics", droite: fenetre == .semaine ? "Cette semaine" : "Ce mois")
+            BlocTitre(texte: L("Autres pics", "Other peaks"), droite: fenetre == .semaine ? L("Cette semaine", "This week") : L("Ce mois", "This month"))
             if f.autres.isEmpty {
                 ForEach(0..<2, id: \.self) { _ in
                     RangExo(sticker: nil, nom: "—", sous: "× — · —", valeur: "0 kg", part: 0, vide: true, barre: false)
@@ -64,7 +64,7 @@ struct ChambrePeak: View {
             } else {
                 ForEach(f.autres.prefix(4)) { a in
                     RangExo(sticker: a.sticker, nom: a.nom,
-                            sous: "× \(a.reps) · \(a.delta == nil ? "Premier" : (a.delta! > 0 ? "Record" : "Égalé"))",
+                            sous: L("× \(a.reps) · \(a.delta == nil ? "Premier" : (a.delta! > 0 ? "Record" : "Égalé"))", "× \(a.reps) · \(a.delta == nil ? "First" : (a.delta! > 0 ? "Record" : "Tied"))"),
                             valeur: "\(ChambreFmt.poids(a.charge)) kg",
                             part: 0,
                             delta: (a.delta ?? 0) > 0 ? "+\(ChambreFmt.poids(a.delta!))" : nil,
@@ -78,7 +78,7 @@ struct ChambrePeak: View {
     /// Les records battus dans la fenêtre : un galet par record, chaud.
     private var records: some View {
         VStack(alignment: .leading, spacing: 12) {
-            BlocTitre(texte: "Records", droite: vide ? "—" : "\(f.recordsBattus) battu\(f.recordsBattus > 1 ? "s" : "")")
+            BlocTitre(texte: L("Records", "Records"), droite: vide ? "—" : L("\(f.recordsBattus) battu\(f.recordsBattus > 1 ? "s" : "")", "\(f.recordsBattus) beaten"))
             HStack(spacing: 8) {
                 ForEach(0..<max(f.recordsBattus, 5), id: \.self) { i in
                     let on = i < f.recordsBattus

@@ -25,7 +25,7 @@ struct ChambreRegularite: View {
 
     private var calendrier: some View {
         VStack(alignment: .leading, spacing: 14) {
-            BlocTitre(texte: fenetre == .semaine ? "Cette semaine" : "Cinq semaines", droite: f.libelle)
+            BlocTitre(texte: fenetre == .semaine ? L("Cette semaine", "This week") : L("Cinq semaines", "Five weeks"), droite: f.libelle)
             ChambreGrille(jours: f.jours, montrerPic: false, stickers: true)
             LegendeHalo().padding(.top, 2)
         }
@@ -34,15 +34,15 @@ struct ChambreRegularite: View {
 
     private var resume: some View {
         VStack(alignment: .leading, spacing: 4) {
-            BlocTitre(texte: "Résumé")
+            BlocTitre(texte: L("Résumé", "Summary"))
             ligne(valeur: "\(f.faites)",
-                  nom: fenetre == .semaine ? "Séances cette semaine" : "Séances ce mois-ci",
+                  nom: fenetre == .semaine ? L("Séances cette semaine", "Sessions this week") : L("Séances ce mois-ci", "Sessions this month"),
                   sous: f.precedent == 0
                       ? "Aucune \(fenetre == .semaine ? "la semaine passée" : "le mois passé")"
-                      : "Contre \(f.precedent) \(fenetre == .semaine ? "la semaine passée" : "le mois passé")",
+                      : L("Contre \(f.precedent) \(fenetre == .semaine ? "la semaine passée" : "le mois passé")", "Vs \(f.precedent) \(fenetre == .semaine ? "last week" : "last month")"),
                   delta: f.delta)
-            ligne(valeur: "\(f.suite)", nom: "Semaine\(f.suite > 1 ? "s" : "") d'affilée",
-                  sous: "Ton record : \(f.recordSuite) semaine\(f.recordSuite > 1 ? "s" : "")", delta: nil)
+            ligne(valeur: "\(f.suite)", nom: L("Semaine\(f.suite > 1 ? "s" : "") d'affilée", "Week\(f.suite > 1 ? "s" : "") in a row"),
+                  sous: L("Ton record : \(f.recordSuite) semaine\(f.recordSuite > 1 ? "s" : "")", "Your best: \(f.recordSuite) week\(f.recordSuite > 1 ? "s" : "")"), delta: nil)
         }
         .chambreVide(f.vide && f.suite == 0)
     }
@@ -75,7 +75,7 @@ struct ChambreRegularite: View {
     private var defi: some View {
         let d = f.defi
         return VStack(alignment: .leading, spacing: 0) {
-            BlocTitre(texte: "Le défi")
+            BlocTitre(texte: L("Le défi", "The challenge"))
             HStack(alignment: .firstTextBaseline, spacing: 14) {
                 Text(defiChiffre(d)).font(.inter(40, .semibold)).encreMetal()
                 VStack(alignment: .leading, spacing: 6) {
@@ -112,14 +112,14 @@ struct ChambreRegularite: View {
     }
 
     private func defiPhrase(_ d: ChambreDefi?) -> String {
-        guard let d else { return "Séances pour battre ton meilleur mois" }
-        if d.battu { return "Séances ce mois-ci · \(d.moisCible.capitalized) est battu" }
+        guard let d else { return L("Séances pour battre ton meilleur mois", "Sessions to beat your best month") }
+        if d.battu { return L("Séances ce mois-ci · \(d.moisCible.capitalized) est battu", "Sessions this month · \(d.moisCible.capitalized) beaten") }
         return "Séance\(d.reste > 1 ? "s" : "") pour battre \(d.moisCible)"
     }
 
     private func defiSous(_ d: ChambreDefi?) -> String {
-        guard let d else { return "Ton record : —" }
-        return d.battu ? "Ton nouveau record · \(d.moisCible.capitalized) : \(d.cible)" : "Ton record : \(d.cible)"
+        guard let d else { return L("Ton record : —", "Your best: —") }
+        return d.battu ? L("Ton nouveau record · \(d.moisCible.capitalized) : \(d.cible)", "Your new best · \(d.moisCible.capitalized): \(d.cible)") : L("Ton record : \(d.cible)", "Your best: \(d.cible)")
     }
 
     /// La ligne sous la piste : une date — celle du record projeté, ou celle

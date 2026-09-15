@@ -199,6 +199,19 @@ body.filtre .hero .reste .tout{display:inline-flex}   /* « tout voir » n'appar
   border:1px solid color-mix(in srgb,var(--fc) 38%,transparent);background:color-mix(in srgb,var(--fc) 10%,transparent)}
 .dom .badge .pt{width:7px;height:7px;box-shadow:none}
 .dom.trancher .badge{color:#fff;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.12)}
+/* LE DÉTAIL (15-09, « le détail en vert, ou pas ») : les lignes de la card — ce qui manque avec sa bille, ce qui
+   est bon en vert ; une ligne chacune, coupée au bord, jamais deux ; « + N » pour le reste. */
+.dom .detail{list-style:none;margin:12px 0 0;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.08);display:grid;gap:5px;align-self:start}
+.dom .detail li{display:flex;align-items:center;gap:8px;font-size:11.5px;line-height:15px;color:rgba(255,255,255,.62);min-width:0}
+.dom .detail li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dom .detail li code{font-size:10.5px}
+.dom .detail li .pt{width:6px;height:6px;flex:none;box-shadow:none}
+.dom .detail li.trancher{color:rgba(255,255,255,.92)}
+.dom .detail li.valider{color:var(--men)}
+.dom .detail li.bon{color:color-mix(in srgb,var(--ok) 82%,#fff)}
+.dom .detail li.plus{color:rgba(255,255,255,.38);font-size:10.5px;padding-left:14px}
+.dom.bon .detail{border-top-color:rgba(95,201,140,.22)}
+.dom{grid-template-rows:auto auto auto auto;align-content:start}
 /* LA BARRE : la part de bon, verte — pleine quand tout est bon ; la ligne dessous la chiffre (« 5 bons sur 9 ») */
 .dom .barre i{display:block;height:100%;border-radius:2px;background:var(--ok)}
 /* L'ACCUEIL, ALLÉGÉ (30-08, « trop de pilules, on sait pas quoi faire ») : la rangée = bille · titre · domaine · chevron ;

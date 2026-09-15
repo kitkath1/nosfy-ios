@@ -41,9 +41,9 @@ struct ChambreHiit: View {
     // ── LA SYNTHÈSE DE LA FENÊTRE
     private var synthese: some View {
         Portee(items: [
-            PorteeItem(valeur: f.vide ? "0,0" : ChambreFmt.kmh(f.picMax), libelle: "Pic max", unite: "km/h"),
-            PorteeItem(valeur: ChambreFmt.mmss(f.tempsPics), libelle: "Temps de pics"),
-            PorteeItem(valeur: "\(f.efforts)", libelle: "Efforts · + de 15 km/h"),
+            PorteeItem(valeur: f.vide ? "0,0" : ChambreFmt.kmh(f.picMax), libelle: L("Pic max", "Peak"), unite: "km/h"),
+            PorteeItem(valeur: ChambreFmt.mmss(f.tempsPics), libelle: L("Temps de pics", "Peak time")),
+            PorteeItem(valeur: "\(f.efforts)", libelle: L("Efforts · + de 15 km/h", "Efforts · over 15 km/h")),
         ], grand: true)
         .chambreVide(f.vide)
     }
@@ -51,7 +51,7 @@ struct ChambreHiit: View {
     // ── ÉTAGE 1 · la vue globale
     private var etage1: some View {
         VStack(alignment: .leading, spacing: 14) {
-            BlocTitre(texte: fenetre == .semaine ? "La semaine" : "Le mois")
+            BlocTitre(texte: fenetre == .semaine ? L("La semaine", "This week") : L("Le mois", "This month"))
             ChambreGrille(jours: f.jours, selection: seance?.date,
                           montrerPic: true, stickers: false) { j in
                 if let s = f.seancesHiit.first(where: { Calendar.current.isDate($0.date, inSameDayAs: j.date) }) {
@@ -69,7 +69,7 @@ struct ChambreHiit: View {
     // ── ÉTAGE 2 · la séance
     private var etage2: some View {
         VStack(alignment: .leading, spacing: 0) {
-            BlocTitre(texte: "La séance")
+            BlocTitre(texte: L("La séance", "The session"))
             Text(seance?.jour ?? "—").font(.inter(15, .medium)).foregroundStyle(CardTon.encre)
                 .padding(.top, 7)
             Text(seance.map { "\(ChambreFmt.mmss($0.duree)) · \($0.segments.count) segments" } ?? "0:00 · 0 segment")
@@ -89,7 +89,7 @@ struct ChambreHiit: View {
     // ── LE BILAN
     private var bilan: some View {
         var monte: [BilanFait] = [], recule: [BilanFait] = []
-        let quand = fenetre == .semaine ? "la semaine passée" : "le mois passé"
+        let quand = fenetre == .semaine ? L("la semaine passée", "last week") : L("le mois passé", "last month")
         func pose(_ nom: String, _ cur: Double, _ prev: Double, _ fmt: (Double) -> String,
                   plusEstMieux: Bool, detail: String) {
             let d = cur - prev
@@ -98,15 +98,15 @@ struct ChambreHiit: View {
             let fait = BilanFait(nom: nom, delta: (d > 0 ? "+" : "−") + fmt(abs(d)), detail: detail)
             if mieux { monte.append(fait) } else { recule.append(fait) }
         }
-        pose("Pic", f.picMax, f.picPrec, ChambreFmt.kmh, plusEstMieux: true,
+        pose(L("Pic", "Peak"), f.picMax, f.picPrec, ChambreFmt.kmh, plusEstMieux: true,
              detail: "\(ChambreFmt.kmh(f.picMax)) km/h contre \(ChambreFmt.kmh(f.picPrec)) \(quand)")
-        pose("Temps de pics", Double(f.tempsPics), Double(f.tempsPicsPrec), { ChambreFmt.mmss(Int($0)) },
+        pose(L("Temps de pics", "Peak time"), Double(f.tempsPics), Double(f.tempsPicsPrec), { ChambreFmt.mmss(Int($0)) },
              plusEstMieux: true, detail: "\(ChambreFmt.mmss(f.tempsPics)) contre \(ChambreFmt.mmss(f.tempsPicsPrec))")
-        pose("Efforts", Double(f.efforts), Double(f.effortsPrec), { "\(Int($0))" }, plusEstMieux: true,
+        pose(L("Efforts", "Efforts"), Double(f.efforts), Double(f.effortsPrec), { "\(Int($0))" }, plusEstMieux: true,
              detail: "\(f.efforts) contre \(f.effortsPrec) passages au-dessus de 15 km/h")
-        pose("Récups", Double(f.recupMoy), Double(f.recupMoyPrec), { "\(Int($0)) s" }, plusEstMieux: false,
+        pose(L("Récups", "Rests"), Double(f.recupMoy), Double(f.recupMoyPrec), { "\(Int($0)) s" }, plusEstMieux: false,
              detail: "\(ChambreFmt.mmss(f.recupMoy)) de moyenne contre \(ChambreFmt.mmss(f.recupMoyPrec))")
-        pose("Plus long trou", Double(f.plusLongTrou), Double(f.plusLongTrouPrec), { "\(Int($0)) j" }, plusEstMieux: false,
+        pose(L("Plus long trou", "Longest gap"), Double(f.plusLongTrou), Double(f.plusLongTrouPrec), { "\(Int($0)) j" }, plusEstMieux: false,
              detail: "\(f.plusLongTrou) jours sans courir, contre \(f.plusLongTrouPrec)")
         // LA PREMIÈRE FENÊTRE NE SE COMPARE À RIEN. Sans intervalle sur la
         // fenêtre d'avant, chaque fait serait « +17,0 contre 0,0 » : des
@@ -114,18 +114,18 @@ struct ChambreHiit: View {
         let premiere = !f.vide && f.picPrec == 0 && f.effortsPrec == 0
         let phrase: String = f.vide ? ""
             : premiere ? (fenetre == .semaine
-                          ? "Première semaine d'intervalles : la prochaine se comparera à celle-ci."
-                          : "Premier mois d'intervalles : le prochain se comparera à celui-ci.")
+                          ? L("Première semaine d'intervalles : la prochaine se comparera à celle-ci.", "First week of intervals: the next one compares to this.")
+                          : L("Premier mois d'intervalles : le prochain se comparera à celui-ci.", "First month of intervals: the next one compares to this."))
             : (f.picMax > f.picPrec && f.recupMoy > f.recupMoyPrec
-               ? "Tu montes plus haut, mais tu récupères plus lentement : le pic se paie."
-               : f.picMax > f.picPrec ? "Tu montes plus haut que \(quand)."
-               : f.efforts > f.effortsPrec ? "Plus d'efforts, un pic qui tient : la base s'élargit."
-               : "Une fenêtre plus calme que la précédente.")
+               ? L("Tu montes plus haut, mais tu récupères plus lentement : le pic se paie.", "You go higher, but recover slower: the peak has a price.")
+               : f.picMax > f.picPrec ? L("Tu montes plus haut que \(quand).", "You go higher than \(quand).")
+               : f.efforts > f.effortsPrec ? L("Plus d'efforts, un pic qui tient : la base s'élargit.", "More efforts, a peak that holds: the base widens.")
+               : L("Une fenêtre plus calme que la précédente.", "A quieter window than the previous one."))
         // LES MOTS VIENNENT DU SERVEUR quand il en a (15-09, `bilan-periode` :
         // la phrase de l'IA sur les chiffres des widget_*, dans la langue du
         // profil) ; la phrase à règles ci-dessus reste le repli hors ligne.
         let serveur = f.vide ? nil : ChambreEtat.shared.bilanServeur[fenetre.rawValue]
-        return BilanVue(titre: fenetre == .semaine ? "Le bilan de la semaine" : "Le bilan du mois",
+        return BilanVue(titre: fenetre == .semaine ? L("Le bilan de la semaine", "The week in review") : L("Le bilan du mois", "The month in review"),
                         monte: premiere ? [] : monte, recule: premiere ? [] : recule,
                         phrase: serveur ?? phrase, vide: f.vide)
     }
@@ -133,7 +133,7 @@ struct ChambreHiit: View {
     // ── TON RECORD DE VITESSE
     private var record: some View {
         VStack(alignment: .leading, spacing: 6) {
-            BlocTitre(texte: "Ton record de vitesse")
+            BlocTitre(texte: L("Ton record de vitesse", "Your speed record"))
             MarchesVitesse(pics: f.pics4, vide: f.pics4.allSatisfy { $0 == 0 })
                 .frame(height: 150)
                 .padding(.top, 14)
@@ -497,7 +497,7 @@ struct MarchesVitesse: View {
     @State private var choisie: Int?
     @State private var apparu = false
 
-    private static let noms = ["S-3", "S-2", "S-1", "Cette sem."]
+    private static let noms = ["S-3", "S-2", "S-1", L("Cette sem.", "This wk")]
     private var vals: [Double] { vide ? [12, 13, 12.5, 14] : pics }
 
     var body: some View {

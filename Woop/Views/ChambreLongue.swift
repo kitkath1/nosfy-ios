@@ -59,7 +59,7 @@ final class ChambreEtat {
 
     enum Fenetre: String, CaseIterable {
         case semaine, mois
-        var nom: String { self == .semaine ? "Semaine" : "Mois" }
+        var nom: String { self == .semaine ? L("Semaine", "Week") : L("Mois", "Month") }
     }
 
     /// nil = rien n'est monté. C'est la loi ① : l'hôte est vide au repos.
@@ -523,14 +523,14 @@ enum ChambreTextes {
 
     static func sous(_ k: WidgetKind, _ f: ChambreFenetre,
                      _ fen: ChambreEtat.Fenetre, objectif: Int) -> String {
-        let quand = fen == .semaine ? "de la semaine" : "des 30 derniers jours"
+        let quand = fen == .semaine ? L("de la semaine", "this week") : L("des 30 derniers jours", "in the last 30 days")
         switch k {
         case .regularite:
             // Rien : « 8 / 5 séances » se suffit (verdict du 13-09 — « enlève
             // le sous-titre, tous ces mini-textes parasites »).
             return ""
-        case .volume:     return "Soulevés \(fen == .semaine ? "cette semaine" : "en 30 jours")"
-        case .hiitPeak:   return "Meilleur intervalle \(quand)"
+        case .volume:     return L("Soulevés \(fen == .semaine ? "cette semaine" : "en 30 jours")", "Lifted \(fen == .semaine ? "this week" : "in 30 days")")
+        case .hiitPeak:   return L("Meilleur intervalle \(quand)", "Top interval \(quand)")
         case .peakEffort: return f.peak.map { "\($0.titre) · × \($0.chambreHaut.split(separator: "×").last.map { String($0).trimmingCharacters(in: .whitespaces) } ?? "")" }
                                  ?? ""
         }
@@ -674,8 +674,8 @@ struct BilanVue: View {
         VStack(alignment: .leading, spacing: 4) {
             BlocTitre(texte: titre)
             HStack(alignment: .top, spacing: 22) {
-                colonne("En progrès", monte, true)
-                colonne("En recul", recule, false)
+                colonne(L("En progrès", "Up"), monte, true)
+                colonne(L("En recul", "Down"), recule, false)
             }
             .padding(.top, 4)
             phraseVue.padding(.top, 20)

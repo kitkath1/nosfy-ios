@@ -1,6 +1,6 @@
 import type { Brique, Mesure } from '@/content/types'
 import type { Famille } from '@/content'
-import { PAGES, LIBELLE_FAMILLE, LIBELLE_LIGNE, badge, QUI_AGIT, compter, compterFamilles, comptePage, aFaire, bons, famille, familleDe, verdict, verdictCourt, ORDRE_CHANTIER } from '@/content'
+import { PAGES, LIBELLE_FAMILLE, LIBELLE_LIGNE, badge, QUI_AGIT, compter, compterFamilles, comptePage, aFaire, bons, famille, familleDe, verdict, verdictCourt, ORDRE_CHANTIER, parPage, mesuresPar } from '@/content'
 import { Rangee, RangeeMesure, Texte, lireCaptures } from './Composants'
 import { Ic } from './Sprite'
 
@@ -30,6 +30,19 @@ const CARDS = PAGES.filter((p) => p.id !== 'etat' && p.id !== 'qa')   // 14-09 :
   .map((p, i) => ({ p, i, f: familleDe(comptePage(p.id)) }))
   .sort((a, b) => URGENCE.indexOf(a.f) - URGENCE.indexOf(b.f) || a.i - b.i)
   .map((x) => x.p)
+
+/**
+ * LE DÉTAIL D'UNE CARD (15-09, Kathryn : « les cards doivent passer vert avec le détail en vert, ou pas,
+ * pour voir ce qu'il manque ou ce qui est ok ») : sous le compte, les lignes elles-mêmes — d'abord CE QUI
+ * MANQUE (à trancher, à valider, en chantier, chacune avec sa bille), puis CE QUI EST BON en vert. Six lignes
+ * au plus par card, le reste en « + N » ; la page dit tout. Une card verte ne liste que du vert.
+ */
+const DETAIL_MAX = 6
+const URG: Record<Famille, number> = { trancher: 0, valider: 1, chantier: 2, bon: 3 }
+function detailDe(page: string): { fam: Famille; titre: string; id: string }[] {
+  const xs: (Brique | Mesure)[] = [...parPage(page as Brique['page']).filter((b) => !b.reference), ...mesuresPar(page as Brique['page'])]
+  return xs.map((x) => ({ fam: famille(x), titre: x.titre, id: x.id })).sort((a, b) => URG[a.fam] - URG[b.fam])
+}
 
 const SECTIONS: { fam: Famille; titre: string; plie?: boolean }[] = [
   { fam: 'trancher', titre: 'À trancher — toi' },
@@ -100,6 +113,22 @@ export function Etat() {
               {/* une seule ligne de compte, en toutes lettres ; la barre verte est partie : elle répétait ce texte,
                   et sur une card rouge elle affichait 67 % de vert — la seule couleur disait l'inverse du badge. */}
               <p className="sous">{fd.bon} branchée{fd.bon > 1 ? 's' : ''} sur {fd.total} · {verdictCourt(fd)}</p>
+              {(() => {
+                const d = detailDe(p.id)
+                const manque = d.filter((x) => x.fam !== 'bon')
+                const bon = d.filter((x) => x.fam === 'bon')
+                // ce qui manque d'abord ; une card verte ne montre que du vert
+                const montre = [...manque, ...bon].slice(0, DETAIL_MAX)
+                const reste = d.length - montre.length
+                return (
+                  <ul className="detail" aria-label={manque.length ? 'Ce qui manque, puis ce qui est bon' : 'Tout est bon'}>
+                    {montre.map((x) => (
+                      <li key={x.id} className={x.fam}><i className="pt" data-fam={x.fam} /><span><Texte t={x.titre} /></span></li>
+                    ))}
+                    {reste > 0 && <li className="plus">+ {reste} autre{reste > 1 ? 's' : ''}{manque.length > DETAIL_MAX ? ` (dont ${manque.length - DETAIL_MAX} qui manque${manque.length - DETAIL_MAX > 1 ? 'nt' : ''})` : bon.length > montre.filter((x) => x.fam === 'bon').length ? ', toutes bonnes' : ''}</li>}
+                  </ul>
+                )
+              })()}
             </a>
           )
         })}

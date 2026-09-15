@@ -868,11 +868,11 @@ struct CardVolume: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var valeur: String = "8.4"
     var unite: String = "kg"
-    var legende: String = "Weekly volume"
+    var legende: String = L("Volume de la semaine", "Weekly volume")
     var jours: [CardJour] = CardJour.semaineRef
     var gain: String = "+12%"
-    var gainLegende: String = "vs last week"
-    var moyenneLegende: String = "avg per session"
+    var gainLegende: String = L("vs la semaine passée", "vs last week")
+    var moyenneLegende: String = L("moy. par séance", "avg per session")
     var moyenne: String = "1.2 kg"
     /// 0 → 1 : l'arrivée (les barres poussent, l'encre se pose).
     var p: Double = 1
@@ -1138,14 +1138,14 @@ struct CardSeances: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var faites: Int = 4
     var prevues: Int = 5
-    var legende: String = "Sessions this week"
+    var legende: String = L("Séances cette semaine", "Sessions this week")
     var jours: [String] = ["M", "T", "W", "T", "F", "S", "S"]
     /// LES JOURS RÉELLEMENT FAITS, en index de semaine (0 = lundi). `nil` →
     /// les perles retombent sur le compteur de progression d'origine (les
     /// `faites` premières), ce que veulent les bancs et les aperçus sans
     /// calendrier. Voir le commentaire des perles pour le défaut que ça règle.
     var joursFaits: Set<Int>? = nil
-    var pied: String = "1 session left"
+    var pied: String = L("1 à faire", "1 session left")
     var p: Double = 1
     var lisere: Bool = true
     var verre: Bool = false
@@ -1447,16 +1447,16 @@ struct CardHiitPeak: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var vitesse: String = "17.0"
     var unite: String = "km/h"
-    var legende: String = "Top interval this week"
+    var legende: String = L("Meilleur intervalle", "Top interval this week")
     var repetitions: String = "4 efforts · 2:40"
-    var repsLegende: String = "efforts this week"
+    var repsLegende: String = L("efforts cette semaine", "efforts this week")
     /// La position du pic le long de la ligne (0 → 1) et sa largeur.
     var pic: Double = 0.62
     var picLargeur: Double = 0.26
     /// Les tours du segment (le « × 4 ») — la chambre les DESSINE.
     var tours: Int = 4
     var chambreLigne: String = "17.0 km/h · 40 s · ×4"
-    var chambreSous: String = "this week's peak"
+    var chambreSous: String = L("le pic de la semaine", "this week's peak")
     /// LE CAS VIDE : le design reste, la chaleur s'éteint.
     var vide: Bool = false
     var p: Double = 1
@@ -2339,8 +2339,8 @@ struct SemaineStats {
         // 13-09 (Kathryn : « mets juste "3 sessions left", pour que ça passe en
         // français aussi ») : le pied dit le reste, rien d'autre. Le serveur
         // rend le même nombre (`widget_regularite.reste`), le mot est à l'écran.
-        s.pied = restent == 0 ? "goal reached"
-            : "\(restent) session\(restent > 1 ? "s" : "") left"
+        s.pied = restent == 0 ? L("objectif atteint", "goal reached")
+            : L("\(restent) à faire", "\(restent) session\(restent > 1 ? "s" : "") left")
 
         // ── LE VOLUME
         let v = cette.reduce(0) { $0 + $1.totalVolume }
@@ -2350,7 +2350,7 @@ struct SemaineStats {
             let d = Int(((v - vPrev) / vPrev * 100).rounded())
             s.gain = d >= 0 ? "+\(d)%" : "−\(-d)%"
         } else {
-            s.gain = "new"
+            s.gain = L("nouveau", "new")
         }
         if s.faites > 0 {
             let (mv, mu) = Self.kg(v / Double(s.faites))
@@ -2770,7 +2770,7 @@ struct CardsRangee: View {
     var moyenne: String = "1.2 kg"
     var gain: String = "+12%"
     var jours: [CardJour] = CardJour.semaineRef
-    var pied: String = "1 session left"
+    var pied: String = L("1 à faire", "1 session left")
     /// Les jours de la semaine réellement faits (0 = lundi). Transmis à la
     /// card des séances : ses perles se posent dessus au lieu de compter.
     var joursFaits: Set<Int>? = nil

@@ -32,7 +32,7 @@ struct ChambreVolume: View {
     private var cumul: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                BlocTitre(texte: "Le cumul")
+                BlocTitre(texte: L("Le cumul", "The total"))
                 Spacer(minLength: 8)
                 legendeBouton
             }
@@ -63,11 +63,11 @@ struct ChambreVolume: View {
     // ── LE COMPTE
     private var compte: some View {
         VStack(alignment: .leading, spacing: 10) {
-            BlocTitre(texte: "Le compte")
+            BlocTitre(texte: L("Le compte", "The count"))
             Portee(items: [
                 PorteeItem(valeur: ChambreFmt.kg(f.parSeance), libelle: "Par séance"),
                 PorteeItem(valeur: ChambreFmt.kg(f.recordSemaine),
-                           libelle: fenetre == .semaine ? "Record de la semaine" : "Meilleure semaine du mois"),
+                           libelle: fenetre == .semaine ? L("Record de la semaine", "Best of the week") : L("Meilleure semaine du mois", "Best week of the month")),
             ])
         }
         .chambreVide(f.vide)
@@ -77,7 +77,7 @@ struct ChambreVolume: View {
     private var exos: some View {
         let part = Int((f.exos.reduce(0) { $0 + $1.part } * 100).rounded())
         return VStack(alignment: .leading, spacing: 6) {
-            BlocTitre(texte: "Trois exercices", droite: f.vide ? "— % du total" : "\(part) % du total")
+            BlocTitre(texte: L("Trois exercices", "Three exercises"), droite: f.vide ? L("— % du total", "— % of total") : L("\(part) % du total", "\(part) % of total"))
             if f.exos.isEmpty {
                 ForEach(0..<3, id: \.self) { _ in
                     RangExo(sticker: nil, nom: "—", sous: "0 rép. · 0 kg", valeur: "0 kg", part: 0, vide: true)
@@ -96,13 +96,13 @@ struct ChambreVolume: View {
     // ── RÉPARTITION · le podium de soie
     private var repartition: some View {
         VStack(alignment: .leading, spacing: 12) {
-            BlocTitre(texte: "Répartition")
+            BlocTitre(texte: L("Répartition", "Breakdown"))
             PodiumSoie(categories: f.categories, vide: f.vide)
                 .frame(height: 226)
             // LE CARDIO NE PÈSE RIEN ICI, et c'est DIT (15-09 — le ⚪ du site :
             // « le cardio pèse 0 kg, dit nulle part »). Le volume compte la
             // fonte ; les efforts du tapis se lisent dans HIIT.
-            Text("Le cardio ne pèse rien ici : ses efforts se lisent dans HIIT.")
+            Text(L("Le cardio ne pèse rien ici : ses efforts se lisent dans HIIT.", "Cardio weighs nothing here — its efforts show in HIIT."))
                 .font(.system(size: 10))
                 .foregroundStyle(ChambreTon.encre4)
                 .padding(.top, 2)
