@@ -4,7 +4,7 @@
 
 **15-09 à21:55 : build30 installé, navigation PASS9,267s, chevrons natifs visiblement animés. Chauffe toujours ouverte.** Retour utilisateur sur30 : « je trouve que ça chauffe beaucoup moins ». Amélioration nette ressentie, durée prolongée encore à confirmer. La mesure30 à1 % CPU est en thermique1/protection1 : elle ne prouve pas le gain du rendu animé. La Home normale restaurée à21:54:42 repasse de0 à1 ; le branchement pendant le retour utilisateur n’est pas précisé. [État30, captures, sources et mesures](campagnes/2026-09-14-correctif/chevrons-natifs-build30/etat.md).
 
-Le verre n’est pas retiré : les traces28 nominales donnent4,962 % CPU avec verre contre4,897 % sans, sans gain clair des scores de puissance disponibles. L’invitation29 isole3 % CPU normale contre1 % retirée (20 relevés,15<t≤35s ; l’ancien résumé4 % retenait19 relevés,t≥16). Le30 garde le texte et le mouvement avec Core Animation ; sa mesure froide reste à faire. Le29 ferme les lecteurs Home/Exos au démontage, journaux rate0/items0 vérifiés. QA04 reste KO ; aucun cycle complet de compte ni suppression. Registre50 entrées.
+Le verre n’est pas retiré : les traces28 nominales donnent4,962 % CPU avec verre contre4,897 % sans, sans gain clair des scores de puissance disponibles. L’invitation29 isole3 % CPU normale contre1 % retirée (20 relevés,15<t≤35s ; l’ancien résumé4 % retenait19 relevés,t≥16). Le30 garde le texte et le mouvement avec Core Animation ; sa mesure froide reste à faire. Le29 ferme les lecteurs Home/Exos au démontage, journaux rate0/items0 vérifiés. QA04 reste KO ; aucun cycle complet de compte ni suppression. Registre51 entrées.
 
 
 Mis à jour le **15 septembre 2026**. Point d'entrée demandé par Kathryn pour
@@ -40,6 +40,7 @@ gel ne sont pas des preuves de résolution thermique.
 | Attache Instruments par nom, verre sans gain clair | [E48](#e48) |
 | Invitation coûteuse, mesure30 protégée non concluante | [E49](#e49) |
 | Chapitre figé : concession visuelle insuffisamment signalée | [E50](#e50) |
+| Commits isolés : dépendance au compte et arbre partagé incomplet | [E51](#e51) |
 | Nouveaux tests à froid : fumée, pièce, bordures | [E45](#e45) |
 | Banc abandonné pendant le chargement, ancien journal récupéré | [E44](#e44) |
 | Mauvais écran possible dans les bancs23/24 | [E43](#e43) |
@@ -630,7 +631,7 @@ mais l’utilisateur confirme « Oui, les flammes bougent » sur l’iPhone.
 
 **15-09 à21:55 : build30 installé, navigation PASS9,267s, chevrons natifs visiblement animés. Chauffe toujours ouverte.** Retour utilisateur sur30 : « je trouve que ça chauffe beaucoup moins ». Amélioration nette ressentie, durée prolongée encore à confirmer. La mesure30 à1 % CPU est en thermique1/protection1 : elle ne prouve pas le gain du rendu animé. La Home normale restaurée à21:54:42 repasse de0 à1 ; le branchement pendant le retour utilisateur n’est pas précisé. [État30, captures, sources et mesures](campagnes/2026-09-14-correctif/chevrons-natifs-build30/etat.md).
 
-Le verre n’est pas retiré : les traces28 nominales donnent4,962 % CPU avec verre contre4,897 % sans, sans gain clair des scores de puissance disponibles. L’invitation29 isole3 % CPU normale contre1 % retirée (20 relevés,15<t≤35s ; l’ancien résumé4 % retenait19 relevés,t≥16). Le30 garde le texte et le mouvement avec Core Animation ; sa mesure froide reste à faire. Le29 ferme les lecteurs Home/Exos au démontage, journaux rate0/items0 vérifiés. QA04 reste KO ; aucun cycle complet de compte ni suppression. Registre50 entrées.
+Le verre n’est pas retiré : les traces28 nominales donnent4,962 % CPU avec verre contre4,897 % sans, sans gain clair des scores de puissance disponibles. L’invitation29 isole3 % CPU normale contre1 % retirée (20 relevés,15<t≤35s ; l’ancien résumé4 % retenait19 relevés,t≥16). Le30 garde le texte et le mouvement avec Core Animation ; sa mesure froide reste à faire. Le29 ferme les lecteurs Home/Exos au démontage, journaux rate0/items0 vérifiés. QA04 reste KO ; aucun cycle complet de compte ni suppression. Registre51 entrées.
 
 ### État historique28
 
@@ -718,3 +719,15 @@ Complément E37, finalisation30 : premier script documentaire refusé avant écr
 **Concession visuelle confirmée par l’utilisateur sur30 : le widget Chapitre a perdu ses animations.** Le fond liquide (`FondLiquide`) et le liseré tournant (`LisereTournant`) ne sont plus montés quand `decorHomeAuRepos` est vrai ; les halos/ondes d’appel sont retirés et la respiration du halo interne du galet est figée. Ce changement est permanent sur la Home actuelle, même à froid ; ce n’est pas seulement la protection thermique. Il contribue potentiellement au gain global28, sans attribution isolée de chacun de ces effets. Le rendu complet demandé reste donc à restaurer avec un coût maîtrisé. Les deux chevrons natifs30 sont un autre composant, pas une remise en animation du Chapitre.
 
 Ne pas présenter30 comme un dessin intégralement préservé ni le gain global comme celui des seuls chevrons. Le retour utilisateur de chaleur est positif, le retour sur le Chapitre révèle un objectif visuel encore incomplet. Aucun effet rallumé à l’aveugle pendant cette clarification.
+
+<a id="e51"></a>
+
+### E51 — Vérifier les commits indépendamment du working tree partagé
+
+Le15-09, à la demande de commits séparés, la série est extraite dans un checkout isolé. La compilation révèle une dépendance de notre `BancCoutHome` à `CompteEtat`, encore non commité par l’autre chantier. Corrigée : la racine publie directement au banc si splash/porte/onboarding tiennent l’écran ; état fermé par défaut, aucun modèle de compte requis. Le second build ne rapporte plus cette erreur.
+
+Le checkout reste en échec sur des dépendances hors de cette sélection : `IleGeo.capsuleBas`, `VolDePieces`, switch de `RecentWorkoutCard`, argument `onStopViaPause`, puis erreur de type-check de la racine. Ne pas affirmer que le checkout est compilable au motif que le working tree complet a produit le build30. Les modifications des autres sessions sont conservées localement, pas absorbées pour masquer ces erreurs.
+
+La documentation isolée se génère et passe les types, mais son test des preuves révèle6 références invalides déjà portées par le contenu hors de nos deux notes QA : PLAN-ILE-TOUCHABLE absent, Compte.swift absent (4 références), bornes de SupabaseSync. Le livrable commité est généré depuis les sources commitées + nos notes QA ; celui du working tree conserve aussi les publications des autres sessions. Aucun résultat « tout vert » annoncé pour le checkout isolé. Les journaux sont conservés dans `campagnes/2026-09-14-correctif/commits-base30/`.
+
+Incidents de préparation : contrôle des espaces lancé à tort sur les journaux bruts (sortie énorme, aucun journal normalisé) ; commentaire de Réglages inclus par la découpe Avatar, retiré immédiatement du seul commit local nouveau avant de poursuivre. Aucun fichier de travail d’autrui réécrit.

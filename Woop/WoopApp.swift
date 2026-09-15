@@ -2040,6 +2040,10 @@ struct RootView: View {
                     .zIndex(29)
             }
         }
+        .onChange(of: showAuth || showSplash || nosfyOuvert || nosfyRejoue,
+                  initial: true) { _, ouverte in
+            BancCoutHome.shared.porteOuverte = ouverte
+        }
         .defersSystemGestures(on: .bottom)
         .persistentSystemOverlays(.hidden)
         // Les bancs du parcours booster :

@@ -14,6 +14,9 @@ final class BancCoutHome {
 
     private(set) var phase: Phase = .complete
     @ObservationIgnored private var lance = false
+    /// Publié par la racine visuelle ; fermé tant que l'état n'est pas connu.
+    /// Le diagnostic ne dépend pas du modèle de compte d'un autre chantier.
+    @ObservationIgnored var porteOuverte = true
 
     var pullSonde: Int? {
         guard Self.demande else { return nil }
@@ -139,7 +142,7 @@ final class BancCoutHome {
         if DepartEtat.shared.visiteOuverte { return "visite" }
         if DepartEtat.shared.welcomeOuverte { return "welcome" }
         if DepartEtat.shared.welcomePremiereOuverte { return "premiere-arrivee" }
-        if CompteEtat.shared.enPorte { return "porte" }
+        if porteOuverte || CommandLine.arguments.contains("-nosfy") { return "porte" }
         if SacreEtat.shared.popupOuverte { return "sacre" }
         if SacreEtat.shared.manegeOuvert { return "manege" }
         if PlayerEtat.shared.couvre { return "player" }
