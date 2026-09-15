@@ -90,14 +90,14 @@ struct ExosFondVideo: UIViewRepresentable {
         c.statut = p.observe(\.status, options: [.new]) { [weak c] joueur, _ in
             guard joueur.status == .readyToPlay else { return }
             joueur.preroll(atRate: 1) { fini in
-                guard fini, let c, c.rate > 0 else { return }
+                guard fini, let c, c.rate > 0, c.player === joueur else { return }
                 joueur.rate = c.rate
             }
         }
         c.retour = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil, queue: .main) { [weak p, weak c] _ in
-                guard let p, let c, c.rate > 0 else { return }
+                guard let p, let c, c.rate > 0, c.player === p else { return }
                 p.rate = c.rate
             }
         return v
@@ -112,9 +112,20 @@ struct ExosFondVideo: UIViewRepresentable {
 
     static func dismantleUIView(_ v: BoosterLoopLayerView,
                                 coordinator: Coordinator) {
-        coordinator.player?.pause()
-        coordinator.looper?.disableLooping()
+        let c = coordinator
+        c.rate = 0
+        if let retour = c.retour { NotificationCenter.default.removeObserver(retour) }
+        c.retour = nil
+        c.statut?.invalidate(); c.statut = nil
+        let p = c.player
+        p?.cancelPendingPrerolls()
+        p?.pause()
+        c.looper?.disableLooping(); c.looper = nil
+        p?.removeAllItems()
         v.playerLayer.player = nil
+        c.player = nil
+        NavDiagnostic.noter("video-demontage",
+            destination: "exos-fond-loop;rate=\(p?.rate ?? 0);items=\(p?.items().count ?? 0)")
     }
 }
 

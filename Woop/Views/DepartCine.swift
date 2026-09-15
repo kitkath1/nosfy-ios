@@ -339,10 +339,26 @@ struct CalqueVideo: UIViewRepresentable {
     let pose: String
     /// La cadence de lecture. 1,0 au repos, 2,2 pendant la chute.
     var rate: Float = 1.0
+    /// Seul FondDeuxCalques autorise l'essai : d'autres pages réutilisent
+    /// le fichier de flamme, sans devoir changer leur lecteur.
+    var fondHome: Bool = false
 
-    final class Vue: UIView {
+    /// Essai de structure, pas un gain acquis : un AVPlayerLayer racine
+    /// retire le conteneur UIKit, mais le blend et le verre SwiftUI restent.
+    /// Le drapeau ne concerne que les deux calques du fond de la Home.
+    private static let fondCoucheRacine =
+        CommandLine.arguments.contains("-fondCoucheRacine")
+    private var coucheRacine: Bool {
+        Self.fondCoucheRacine && fondHome
+            && (nom == "home-fond-flamme" || nom == "home-fond-pilule")
+    }
+
+    class Vue: UIView {
         let pose = UIImageView()
-        let playerLayer = AVPlayerLayer()
+        private lazy var sousCouche = AVPlayerLayer()
+        var playerLayer: AVPlayerLayer {
+            (layer as? AVPlayerLayer) ?? sousCouche
+        }
         override init(frame: CGRect) {
             super.init(frame: frame)
             backgroundColor = .clear
@@ -352,7 +368,12 @@ struct CalqueVideo: UIViewRepresentable {
             addSubview(pose)
             playerLayer.videoGravity = .resizeAspectFill
             playerLayer.backgroundColor = UIColor.clear.cgColor
-            layer.addSublayer(playerLayer)
+            if !(layer is AVPlayerLayer) {
+                layer.addSublayer(playerLayer)
+            }
+            // Sur VueRacine, la pose enfant est AU-DESSUS de la vidéo.
+            // Elle ne se retire qu'à isReadyForDisplay ; les lecteurs
+            // ordinaires conservent leur pose sous la sous-couche vidéo.
             // ⚠️ **LE FILET DU DÉBORDEMENT** (ajouté 22-08, chantier de la
             // porte). Un `AVPlayerLayer` en `resizeAspectFill` sort de ses
             // bornes, et **le `clipShape` de SwiftUI ne rattrape PAS une couche
@@ -369,6 +390,9 @@ struct CalqueVideo: UIViewRepresentable {
         override func layoutSubviews() {
             super.layoutSubviews()
             pose.frame = bounds
+            // SwiftUI/UIKit règlent la géométrie de la couche racine.
+            // Ne pas lui réécrire frame depuis le layout de sa propre vue.
+            guard !(layer is AVPlayerLayer) else { return }
             // Pas d'animation implicite sur la frame du calque : au premier
             // layout elle glisserait depuis .zero.
             CATransaction.begin()
@@ -378,12 +402,17 @@ struct CalqueVideo: UIViewRepresentable {
         }
     }
 
+    final class VueRacine: Vue {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+    }
+
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
         var retour: NSObjectProtocol?
         var statut: NSKeyValueObservation?
         var pret: NSKeyValueObservation?
+        var nom = ""
         var rate: Float = 1
         deinit {
             if let r = retour { NotificationCenter.default.removeObserver(r) }
@@ -395,7 +424,7 @@ struct CalqueVideo: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> Vue {
-        let v = Vue()
+        let v: Vue = coucheRacine ? VueRacine() : Vue()
         v.pose.image = UIImage(named: pose)
         // L'asset vient du cellier : chaud, il ne se re-parse pas.
         guard let modele = AssetsVideo.item(nom)
@@ -404,6 +433,7 @@ struct CalqueVideo: UIViewRepresentable {
         p.isMuted = true
         p.automaticallyWaitsToMinimizeStalling = false
         let c = context.coordinator
+        c.nom = nom
         c.looper = AVPlayerLooper(player: p, templateItem: modele)
         c.player = p
         v.playerLayer.player = p
@@ -422,12 +452,16 @@ struct CalqueVideo: UIViewRepresentable {
         c.statut = p.observe(\.status, options: [.new]) { [weak c] joueur, _ in
             guard joueur.status == .readyToPlay else { return }
             joueur.preroll(atRate: 1) { fini in
-                guard fini, let c, c.rate > 0 else { return }
+                guard fini, let c, c.rate > 0, c.player === joueur else { return }
                 joueur.rate = c.rate
             }
         }
         // La pose s'efface quand la première image est là, pas avant.
-        c.pret = v.playerLayer.observe(\.isReadyForDisplay, options: [.new]) {
+        // Une pose au-dessus ne doit pas rester coincée si la première
+        // image était déjà prête lors de l'installation de l'observateur.
+        let options: NSKeyValueObservingOptions = coucheRacine
+            ? [.initial, .new] : [.new]
+        c.pret = v.playerLayer.observe(\.isReadyForDisplay, options: options) {
             couche, _ in
             guard couche.isReadyForDisplay else { return }
             DispatchQueue.main.async { v.pose.isHidden = true }
@@ -435,7 +469,7 @@ struct CalqueVideo: UIViewRepresentable {
         c.retour = NotificationCenter.default.addObserver(
             forName: UIApplication.willEnterForegroundNotification,
             object: nil, queue: .main) { [weak p, weak c] _ in
-                guard let p, let c, c.rate > 0 else { return }
+                guard let p, let c, c.rate > 0, c.player === p else { return }
                 p.rate = c.rate
             }
         return v
@@ -452,9 +486,23 @@ struct CalqueVideo: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ v: Vue, coordinator: Coordinator) {
-        coordinator.player?.pause()
-        coordinator.looper?.disableLooping()
+        // Un preroll déjà lancé ou un réveil déjà en file peut survivre
+        // au démontage. Fermer sa porte AVANT d'annuler les opérations.
+        let c = coordinator
+        c.rate = 0
+        if let retour = c.retour { NotificationCenter.default.removeObserver(retour) }
+        c.retour = nil
+        c.statut?.invalidate(); c.statut = nil
+        c.pret?.invalidate(); c.pret = nil
+        let p = c.player
+        p?.cancelPendingPrerolls()
+        p?.pause()
+        c.looper?.disableLooping(); c.looper = nil
+        p?.removeAllItems()
         v.playerLayer.player = nil
+        c.player = nil
+        NavDiagnostic.noter("video-demontage",
+            destination: "\(c.nom);rate=\(p?.rate ?? 0);items=\(p?.items().count ?? 0)")
     }
 }
 
@@ -600,6 +648,7 @@ struct FondDeuxCalques: View {
     /// LA HOME DORT SOUS LA ROUTE (jalon 1) : les deux lecteurs cèdent la
     /// place à leur pose.
     @Environment(\.dort) private var dort
+    @Environment(\.scenePhase) private var scenePhase
 
     /// ⚠️ LE BARREAU DU FOND VIDÉO (05-09) — `-fondPose` force les deux
     /// calques sur leur IMAGE DE POSE, comme quand la home dort. Rien
@@ -673,7 +722,54 @@ struct FondDeuxCalques: View {
                   y: Double((Self.centrePilule - Self.pilTop) / Self.pilH))
     }
 
+    private static let fondMetal = CommandLine.arguments.contains("-fondMetal")
+    // Le témoin conserve les deux lecteurs, sur le même binaire.
+    private static let fondPrecompose = !CommandLine.arguments.contains("-fondDeuxLecteurs")
+
+    @ViewBuilder
     var body: some View {
+        // Le fond précalculé conserve le lecteur natif. Le banc Metal reste
+        // séparé. Le départ animé garde ses calques et leurs ancrages.
+        if Self.fondPrecompose, abs(e) < 0.0001, pilule > 0.999, !poseSeule {
+            GeometryReader { geo in
+                // La cuisson garde deux ancrages distincts. Une autre taille
+                // reprend les calques : étirer le film déplacerait le dessin.
+                if abs(geo.size.width - 393) < 0.1,
+                   abs(geo.size.height - 709) < 0.1 {
+                    CalqueVideo(nom: "home-fond-precompose-393x709",
+                                pose: "home-fond-precompose-393x709",
+                                rate: PlayerEtat.shared.couvre || scenePhase != .active ? 0 : 1)
+                        .onAppear {
+                            NavDiagnostic.noter("fond-precompose",
+                                destination: "393x709;unLecteur;24fps;masqueIntegre")
+                        }
+                } else {
+                    fondHabituel.onAppear {
+                        NavDiagnostic.noter("fond-precompose-repli",
+                            destination: "\(geo.size.width)x\(geo.size.height)")
+                    }
+                }
+            }
+        } else if Self.fondMetal, abs(e) < 0.0001, !poseSeule,
+           FondVideoMetal.disponible {
+            FondVideoMetal(pilule: pilule,
+                           arret: PlayerEtat.shared.couvre || scenePhase != .active)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .top) { scrim }
+        } else {
+            fondHabituel
+        }
+    }
+
+    private var scrim: some View {
+        Image("home-fond-scrim")
+            .resizable()
+            .frame(width: Self.largeur, height: Self.hauteur)
+            .allowsHitTesting(false)
+            .opacity(1 - DepartCine.sstep(0.10, 0.90, e))
+    }
+
+    private var fondHabituel: some View {
         // ⚠️ **`Color.clear` EN HÔTE, ET C'EST UN PIÈGE DÉJÀ PAYÉ ICI** (voir
         // « la fente detail gonfle son hôte »). Un `ZStack` prend la taille de
         // son plus grand enfant : mes deux calques font 864 pt de HAUT FIXE,
@@ -701,7 +797,8 @@ struct FondDeuxCalques: View {
                 } else {
                     CalqueVideo(nom: "home-fond-flamme",
                                 pose: "home-fond-flamme-poster",
-                                rate: PlayerEtat.shared.couvre ? 0 : 1)
+                                rate: PlayerEtat.shared.couvre ? 0 : 1,
+                                fondHome: true)
                         .frame(width: Self.braL, height: Self.braH)
                 }
             }
@@ -731,7 +828,8 @@ struct FondDeuxCalques: View {
                     } else {
                         CalqueVideo(nom: "home-fond-pilule",
                                     pose: "home-fond-pilule-poster",
-                                    rate: PlayerEtat.shared.couvre ? 0 : DepartCine.rate(e))
+                                    rate: PlayerEtat.shared.couvre ? 0 : DepartCine.rate(e),
+                                    fondHome: true)
                             .frame(width: Self.pilL, height: Self.pilH)
                     }
                 }
@@ -748,24 +846,18 @@ struct FondDeuxCalques: View {
                     .offset(y: d)
                     .blendMode(.plusLighter)
             }
-            // ⚠️ **UN SEUL GROUPE, ET IL ARRIVE EN DERNIER.** Posé sur la seule
-            // pilule, elle s'isolerait et fusionnerait contre le NOIR de la
-            // card : additif sur noir = identité, le foyer sortirait du calcul
-            // et la pilule OCCULTERAIT la braise au lieu de s'y fondre — le tout
-            // sans une seule erreur de compilation. C'est aussi pour ça que la
-            // braise, le foyer et la pilule sont trois `overlay` du MÊME hôte et
-            // pas une sous-vue groupée : ils doivent se composer entre eux.
-            .compositingGroup()
+            // Les trois plans se composent directement sur le noir OPAQUE
+            // de GrandeCardVideo, leur unique hôte. Isoler toute la page dans
+            // une texture intermédiaire force aussi les deux AVPlayerLayer à
+            // y repasser à chaque image. Ne surtout pas isoler la pilule seule :
+            // elle doit toujours additionner sa lumière à celle de la braise.
+            // Le témoin -fondGroupe conserve l'ancienne passe plein écran.
+            .modifier(CompositionFondBanc())
             // ⑤ LE SCRIM — il protégeait la phrase du dôme. Il sort du fichier
             // vidéo (cuit dans la pilule il VOYAGERAIT avec elle et noircirait la
             // braise à l'arrivée) et s'éteint quand la pilule a quitté le haut.
             .overlay(alignment: .top) {
-                Image("home-fond-scrim")
-                    .resizable()
-                    .frame(width: Self.largeur, height: Self.hauteur)
-                    .allowsHitTesting(false)
-                    .opacity(1 - DepartCine.sstep(0.10, 0.90, e))
-                    .allowsHitTesting(false)
+                scrim
             }
     }
 
@@ -834,9 +926,22 @@ struct FondDeuxCalques: View {
     }
 }
 
+private struct CompositionFondBanc: ViewModifier {
+    private static let groupe = CommandLine.arguments.contains("-fondGroupe")
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if Self.groupe { content.compositingGroup() }
+        else { content }
+    }
+}
+
 
 /// `-fondPose` : les deux calques vidéo de la home rendent leur image de
 /// pose au lieu de tourner. Le seul but est de MESURER ce qu'ils coûtent.
 enum FondPoseBanc {
-    static let actif = CommandLine.arguments.contains("-fondPose")
+    static var actif: Bool {
+        CommandLine.arguments.contains("-fondPose")
+            || ProtectionThermique.shared.ambianceAuRepos
+    }
 }
