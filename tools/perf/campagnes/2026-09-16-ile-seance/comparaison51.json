@@ -1,0 +1,32 @@
+{
+  "natif": {
+    "contexte": "Lab du composant île, pas la vraie Home",
+    "n": 17,
+    "debut": 15.2,
+    "fin": 31.5,
+    "cpu_median": 1,
+    "callbacks_medians": 60.1,
+    "pire_ms": 17,
+    "groupes": [
+      [
+        0,
+        0
+      ]
+    ]
+  },
+  "swiftui": {
+    "contexte": "Lab du composant île, pas la vraie Home",
+    "n": 17,
+    "debut": 15.2,
+    "fin": 31.5,
+    "cpu_median": 16,
+    "callbacks_medians": 60.1,
+    "pire_ms": 17,
+    "groupes": [
+      [
+        0,
+        0
+      ]
+    ]
+  }
+}

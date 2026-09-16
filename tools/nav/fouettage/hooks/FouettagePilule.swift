@@ -47,6 +47,9 @@ final class FouettagePiluleFaits {
     /// dit si le toucher ATTEINT seulement la vue, avant de se demander
     /// pourquoi le geste intérieur ne le voit pas.
     var nbDehors = 0
+    /// Le STOP à droite de l'île a été pressé : compté dans l'action
+    /// du médaillon, indépendamment de son dessin.
+    var nbStop = 0
 }
 
 /// LA SONDE D'ÉTAT — overlay de la racine, grain 2 pt intouchable.
@@ -77,7 +80,8 @@ private struct FouettagePiluleSondeCorps: View {
             + "drag=\(faits.nbDrag);"
             + "chg=\(faits.nbChanged);"
             + "tap=\(faits.nbTap);"
-            + "out=\(faits.nbDehors)"
+            + "out=\(faits.nbDehors);"
+            + "stop=\(faits.nbStop)"
     }
 
     var body: some View {

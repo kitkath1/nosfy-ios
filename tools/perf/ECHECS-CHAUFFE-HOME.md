@@ -1,5 +1,144 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E67 — Halo52 : distinguer build installé et candidat Git isolé
+
+**16-09.** Halo renforcé hors Home noire, validé par Kathryn. Release52
+compilée/installée et parcours iPhone passé50,175s. Coût du composant :
+1 % CPU médian,17 lignes/16,3s, therm0/protection0 ; pas de nouvelle A/B52.
+La collecte d’abord refusée est autorisée après vérification du schéma
+technique et du scénario synthétique, puis archivée sans données de compte.
+
+Le banc du seul commit se monte, mais compile en échec sur
+HomeAuroraView:196 → VolDePieces. Même référence dans HEAD fc06e4b,
+aucune définition suivie ; fichier inchangé. Ne pas importer les autres
+sessions pour annoncer un build isolé vert. La Release de l’arbre partagé
+et le test physique ne suppriment pas cette limite.
+[Preuves52 et périmètre](campagnes/2026-09-16-ile-seance/halo52.md).
+
+### E66 — Halo51 : gain CPU mesuré, sans généraliser à la chauffe de la Home
+
+**16-09.** Le design blanc et la sortie50 sont validés par l'utilisatrice.
+Le halo SwiftUI coûte encore16 % CPU dans le lab à therm0/protection0.
+51 garde les gestes et confie le fondu de deux textures au compositeur.
+Comparaison dans51, même appareil, ordre natif puis SwiftUI : **1 % /16 %**
+CPU médian,17 lignes par fenêtre t15,2–31,5,60,1 callbacks/s, pire17ms,
+therm0/protection0. Les deux parcours du composant passent49,269s/49,818s.
+La rotation àt48 du premier test est hors fenêtre de coût et reste signalée.
+
+Les champs de contexte du lab ne décrivent pas la Home de l'app ; analyser
+la fenêtre du composant explicitement, pas les valeurs Home par défaut.
+Pas de troisième retour mesuré, ni watts/GPU/endurance. Ne pas clôturer la
+QA chauffe. La prise latérale50 avait également passé le test physique
+(chrono x100,5/y33) : la première inquiétude utilisateur sur le drag est
+levée par sa confirmation, aucun nouveau seuil de geste livré.51 installée,
+version relue17:38:40 ; retour normal sans sonde réussi17:42:43.
+[Protocole et données51](campagnes/2026-09-16-ile-seance/performance51.md).
+
+### E65 — Le bon geste ne valide pas un mauvais placement
+
+**16-09,49–50.**49 rétablit le composant dans Woop après l'absence47/48,
+mais garde stop à gauche et chrono à droite sous le capteur. Refus explicite :
+les placer de part et d'autre à hauteur de l'île, halo blanc intérieur Home.
+50 corrige ce dessin. La première capture constate un chevauchement de la
+barre de statut : masquée en séance avant installation. Les éléments internes
+d'accessibilité doivent être contenus, sinon l'id du parent masque le chrono.
+
+Le contrôle50 valide au simulateur le stop visé directementy33, la sortie,
+le drag, la pose, le jet et le retour, ainsi que Home → détail. Les tests
+natifs de retour passent aussi. Le premier lancement de plusieurs lots garde
+un processus sans sonde ; rejeté, puis arrêt explicite dans le lanceur XCTest
+et Profil positif12,162s. Ne pas modifier l'auth ni annoncer un lot complet
+vert sur cette base. Compilation générique Intel inutile et reprise avec DB
+encore verrouillée consignées dans la campagne ; ne pas redémarrer avant
+l'arrêt effectif de sa propre compilation.
+
+49 sur iPhone : un parcours du composant en lab passe49,922s. Sonde protégée
+therm1/protection1,17 lignes stables, CPU médian0 %,60,1 callbacks/s : pas une
+Home réelle ni une mesure d'animation active.50 installée/lancée17:22:46 ;
+contrôle de séance ignoré car aucune active. Mesures50/51 terminées ; voir E66.
+[Preuves et limites50](campagnes/2026-09-16-ile-seance/rendu50.md).
+
+### E64 — Demande d'île native : ne pas valider une imitation ni zéro test
+
+**16-09.** Kathryn tranche : la vraie Dynamic Island iOS. Le décor SwiftUI
+des versions43/44 et sa zone tactile ne sont plus montés dans le parcours
+normal. La Live Activity WidgetKit porte le rendu. Le système contrôle
+sa visibilité et ses gestes : ne pas promettre le souffle infini ou le
+drag de l'ancien prototype dans ce composant.
+
+La première compilation de test45 contient bien `IleNativeUITests` (symbole
+de classe présent dans le binaire), mais XCTest annonce **0 test exécuté**
+avec « TEST SUCCEEDED ». Ce résultat est rejeté. Le simulateur présente
+encore une app de version1 lors de la relecture, puis il est retrouvé
+Shutdown au premier essai de purge du runner (SimError405). Reprise sur
+le même simulateur isolé après boot et retrait du seul runner de test.
+La cause du chargement de zéro test n'est pas établie par le succès de
+compilation. Vérifier les cas réellement exécutés et la version installée.
+
+46 montre bien l'île dans SpringBoard et son agrandissement, mais le callback
+de retour implicite rouvre l'app sans atteindre la destination. La sonde
+historique `seance` de PageCard n'est pas valable sur Profil ; le test natif
+vérifie l'activité dans SpringBoard et part après le splash (`-porteVue`).
+47 ajoute le lien de séance explicite et passe les deux parcours natifs
+(37,773s et15,978s). Aucune validation de chauffe physique n'en est déduite.
+
+Après déverrouillage,47 est lancée sur l’iPhone à15:41. Le contrôle physique
+capture une Home sans séance active : **1 cas ignoré**, aucun agrandissement
+ni retour natif testé. Ne pas transformer ce « TEST EXECUTE SUCCEEDED » en
+validation d’île. Les traces montrent thermique0 puis1 ; sans séance et avec
+une réouverture sans navProbe, elles ne mesurent pas le coût de l’île.
+
+À16:14, précision décisive : l’absence concerne **Woop ouvert**. L’activité
+native ne remplace pas le repère au premier plan, puisqu’iOS la masque alors.
+Les tests d’arrière-plan ne suffisent donc pas à déclarer le besoin résolu.
+La capture physique16:11 était déjà sur la story de fin ; ce cas ignoré ne
+prouve pas non plus une activité manquante pendant une séance. Le nettoyage
+de build demandé ensuite ne change pas cette règle de visibilité.
+
+Rebuild propre48 réussi et installé à16:29, numéro relu sur l’iPhone.
+L’ouverture automatique est ensuite refuséeLocked : ne pas confondre ce
+nettoyage réussi avec un lancement48, un repère au premier plan ou un test
+de chauffe validé. Aucune relance en boucle. Après « ok réessaie »,48 est
+ouverte à16:31 : Home sans sonde capturée et relue, contrôle3,713s réussi.
+Cela valide l’ouverture, pas le besoin d’île au premier plan ni la chauffe.
+
+[État du parcours natif](campagnes/2026-09-16-ile-seance/native.md).
+
+### E63 — L’île intégrée : réserver aussi la prise tactile, et distinguer installation et lancement
+
+**16-09,43.** Premier contour intégré : la capture révèle que le safeAreaInset
+ne déplace pas le titre dans le cadrage explicite de PageCard. Le padding de
+la page corrige le dessin, puis l’assertion constate encore titre y94 / prise
+jusqu’à y104 : la marge tactile invisible doit elle aussi être réservée.
+Onze autres cas tactiles passent ; la réserve est corrigée et le douzième
+cas ciblé passe en13,284s. Les premiers tests sans assertion de titre ne
+validaient donc pas son dégagement. Profil capturé séparément sur simulateur.
+
+Le hook historique du player est réancré après préparation de copie refusée.
+L’export xcresult en sandbox est refusé puis réussi avec l’accès Xcode.
+La Release43 est compilée et sa version installée relue. Le lancement physique
+est refuséLocked : aucune mesure CPU/GPU ni validation de chauffe sur43.
+Le runner est interrompu et le déverrouillage demandé, sans relances en boucle.
+Le chrono visible a été séparé de l’arrêt thermique du souffle : protéger le
+décor ne doit pas figer l’heure de la séance.
+
+[Preuves et limites de la reprise](campagnes/2026-09-16-ile-seance/etat.md).
+
+**Verdict utilisateur sur43 : refus du contour « pyramide » et des pages
+abaissées, Profil cité explicitement.** Les tests de géométrie validaient un
+placement que l’utilisatrice n’avait pas demandé. La reprise supprime le
+contour à épaules et tout EspaceIleSeance ; la capsule se compacte dans le haut
+disponible. Ne pas réintroduire une réserve de page pour résoudre ce rendu.
+[Correction de la capsule](campagnes/2026-09-16-ile-seance/capsule.md).
+
+**Rendu44 refusé aussi : l’animation doit être DANS l’île.** Le noir opaque
+couvre les braises et ne laisse que leur halo à l’extérieur. Cinq tests de
+geste et de coordonnées passent, mais ils ne valident pas le dessin. Ne pas
+présenter cette version comme corrigée ni l’installer comme solution validée.
+La capsule SwiftUI dessinée dans l’app et la Live Activity du système sont
+deux composants distincts ; préciser lequel doit porter l’animation avant
+d’inventer une autre extension autour du capteur.
+
 ### E62 — Ne pas confondre le gain42 et une endurance interrompue
 
 **16-09,42 : natif/ancien/natif à thermique0/protection0 =3 % /20 % /3 % CPU

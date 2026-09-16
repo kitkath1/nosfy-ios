@@ -40,6 +40,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D47000000000000000000001 /* App Info.plist */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (Info.plist, );
+			target = A00000000000000000000006 /* Woop */;
+		};
 		B0000000000000000000000F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -50,7 +55,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A00000000000000000000002 /* Woop */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Woop; sourceTree = "<group>"; };
+		A00000000000000000000002 /* Woop */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D47000000000000000000001 /* App Info.plist */, ); explicitFileTypes = {}; explicitFolders = (); path = Woop; sourceTree = "<group>"; };
 		B00000000000000000000002 /* WoopWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (B0000000000000000000000F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WoopWidgets; sourceTree = "<group>"; };
 		B00000000000000000000003 /* WoopShared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WoopShared; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -300,6 +305,7 @@
 				DEVELOPMENT_TEAM = V45F4LUU8D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Woop/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Woop;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -333,6 +339,7 @@
 				DEVELOPMENT_TEAM = V45F4LUU8D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Woop/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Woop;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

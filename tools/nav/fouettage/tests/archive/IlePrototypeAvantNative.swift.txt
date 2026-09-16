@@ -1,0 +1,164 @@
+// Archive du contrat remplacé par IleNativeUITests le 16-09.
+    // MARK: — LE CAS CENTRAL : l'île n'est pas une impasse
+
+    // ⚠️ LE CONTRAT A CHANGÉ LE 05-09 (Kathryn : « partout, à la simple
+    // tap ou drag peu importe où sur la display island, je peux faire
+    // sortir la pilule — comme les appels iPhone »). Le tap n'ouvre PLUS
+    // le player : il SORT la pastille, posée JUSTE SOUS l'île (yRatio 0).
+    // Le player s'ouvre depuis la pastille (test03, inchangé).
+    func test06_seance_ile_sonTapSortLaPastille_sousLIle() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        // 1) on l'envoie EN HAUT — la porte volontaire de l'île.
+        b.gesteAttendu("cas06a-entre-dans-ile",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        XCTAssertTrue(b.ile.waitForExistence(timeout: 4),
+            "l'île n'est pas à l'écran alors que l'état dit qu'on y est")
+        // 2) UN TAP SUR L'ÎLE JOUE LA CHAÎNE : baby → grande → la
+        //    pastille NORMALE descend à sa place COMMISE (07-09 — plus
+        //    jamais « posée sous l'île » : le vol matched rend le voyage
+        //    visible, la place basse n'est plus une téléportation).
+        b.gesteAttendu("cas06b-tap-ile-sort",
+                       geste: { b.taper(b.centreIle()) },
+                       attendu: { !$0.dansIle })
+        XCTAssertTrue(b.pilule.waitForExistence(timeout: 4),
+            "LE TAP DE L'ÎLE NE SORT PAS LA PASTILLE")
+    }
+
+    // V2 (06-09) : la sortie ne part plus au touch-down mais au SEUIL
+    // (12 pt) ou au relâcher. Un doigt qui TREMBLE pendant son tap (6 pt
+    // de dérive, sous le seuil) doit rester un TAP : posée sous l'île.
+    // C'est la garde contre « le seuil a mangé mes taps ».
+    func test06b_seance_ile_unTapTremblant_sortQuandMeme() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        b.gesteAttendu("cas06b2-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        b.gesteAttendu("cas06b2-tap-tremblant",
+                       geste: { b.glisser(b.centreIle(), dy: 6) },
+                       attendu: { !$0.dansIle })
+        XCTAssertTrue(b.pilule.waitForExistence(timeout: 4),
+            "LE SEUIL A MANGÉ LE TAP TREMBLANT")
+    }
+
+    // V2 (07-09) : LE STOP DE LA BABY, à gauche sur la ligne 71 — en
+    // pleine zone vivante (la baby vit ENTIÈREMENT sous la bande morte
+    // du trou). Ce cas prouve que son disque CLAIME le doigt : le
+    // compteur du stop monte et la pastille ne sort PAS.
+    func test06c_seance_ile_leStopBabyClaqueSansSortir() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        b.gesteAttendu("cas06c-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        let stop0 = b.etat()?.nbStop ?? -1
+        let ecran = b.app.frame
+        // Stop de la capsule compacte : ligne59, dans sa bande tactile.
+        b.taper(b.pointEcran(x: ecran.midX - 44, y: 59))
+        XCTAssertTrue(b.attendre(4) { $0.nbStop > stop0 },
+            "LE STOP BABY N'A PAS RÉPONDU ; sonde=\(b.etat()?.brut ?? "?")")
+        XCTAssertTrue(b.etat()?.dansIle ?? false,
+            "le tap du stop a fait SORTIR la pastille au lieu de stopper")
+    }
+
+    func test07_seance_ileSeQuitteAuDrag() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        b.gesteAttendu("cas07a-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        // LE DRAG SORT — et depuis le 05-09 il sort DANS LA MAIN : la
+        // pastille naît sous l'île et suit le doigt du même geste.
+        b.gesteAttendu("cas07b-sort",
+                       geste: { b.glisser(b.centreIle(), dy: 160) },
+                       attendu: { !$0.dansIle })
+        XCTAssertTrue(b.pilule.waitForExistence(timeout: 4),
+            "la pilule n'est pas revenue après la sortie d'île")
+    }
+
+    // ⚠️ LA CARTE DU TOUCHER (05-09 soir). Kathryn : « je devrais pouvoir
+    // la sortir en tapant JUSTE SUR L'ÎLE » — et rien ne se passe sous son
+    // doigt. Avant tout remède : mesurer OÙ un tap arrive vraiment.
+    // Des taps en grille autour de l'île ; après chacun, la sonde dit
+    // si la pastille est sortie (le tap est ARRIVÉ) ou non (zone morte).
+    // La carte s'imprime en lignes FOUET-CARTE.
+    //
+    // ⚠️ GRILLE FINE (06-09) : mesurée AVANT de coder les cotes. VERDICT
+    // (21/21, onglet Exercices) : TOUT ARRIVE dès y 55, ailes comprises —
+    // le « mort 55-70 » de la carte V1 n'était PAS le système, c'était un
+    // mangeur de touchers de la HOME (menu de fumée, corrigé 5c21bd3) ;
+    // la V1 se mesurait sur la home, la capsule n'y vit plus (gate du
+    // Foyer). Le vrai bloc mort = la bande du trou (y ≤ ~50).
+    // ⚠️ LEÇON du 06-09 : une carte dont une case OUVRE une UI (le stop →
+    // sa card) empoisonne les cases suivantes — le stop se juge par
+    // test06c, jamais par la carte. Sur la BABY (07-09), son disque vit
+    // à (midX−50, 71) : aucune colonne de la grille ne le touche.
+    func test99_carteDuToucher_autourDeLile() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        let ecran = b.app.frame
+        let xs: [(String, CGFloat)] = [("aile-G", ecran.midX - 108),
+                                       ("centre", ecran.midX),
+                                       ("aile-D", ecran.midX + 90)]
+        let ys: [CGFloat] = [55, 58, 65, 70, 72, 75, 80]
+        // On commence DANS l'île.
+        b.gesteAttendu("carte-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        for y in ys {
+            for (nom, x) in xs {
+                guard b.attendre(4, { $0.dansIle }) else {
+                    print("FOUET-CARTE y=\(Int(y)) \(nom) : PAS TESTÉ (retour d'île manqué)")
+                    continue
+                }
+                b.taper(b.pointEcran(x: x, y: y))
+                Thread.sleep(forTimeInterval: 1.2)
+                let sorti = !(b.etat()?.dansIle ?? true)
+                print("FOUET-CARTE y=\(Int(y)) \(nom) x=\(Int(x)) : \(sorti ? "ARRIVE — la pastille sort" : "mort")")
+                if sorti {
+                    // on la renvoie dans l'île pour le point suivant
+                    b.gesteAttendu("carte-rentre",
+                                   geste: { b.jeter(b.centrePilule(), dy: -700) },
+                                   attendu: { $0.dansIle })
+                }
+            }
+        }
+    }
+
+    // MARK: — « l'application devient impraticable » : la nav qui part
+
+    func test09_home_ileBlancheOuvreLeDetailSansSortirLaPastille() {
+        let b = BancPilule(); b.lancer(["-activeWorkout"])
+        b.attendreSeance()
+        let ile = b.app.buttons["ile-seance-home"]
+        XCTAssertTrue(ile.waitForExistence(timeout: 5))
+        XCTAssertFalse(b.pilule.exists, "la Home doit cacher la pastille libre")
+        let avant = XCTAttachment(screenshot: b.app.screenshot())
+        avant.name = "ile-home-blanche"; avant.lifetime = .keepAlways
+        add(avant)
+        // Le capteur ne livre aucun toucher : viser le bas visible du bloc.
+        b.taper(b.pointEcran(x: b.app.frame.midX, y: 66))
+        XCTAssertTrue(b.grandPlayer.waitForExistence(timeout: 5),
+                      "le tap de l'île blanche doit ouvrir le détail")
+        let apres = XCTAttachment(screenshot: b.app.screenshot())
+        apres.name = "ile-home-detail"; apres.lifetime = .keepAlways
+        add(apres)
+    }
+
+    func test10_ile_leCadreEnglobeLeCapteurEtDegageLeTitre() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        b.gesteAttendu("cadre-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        XCTAssertTrue(b.ile.waitForExistence(timeout: 4))
+        Thread.sleep(forTimeInterval: 1)
+        let cadre = b.ile.frame
+        XCTAssertLessThan(cadre.minY, 11, "le cadre doit entourer le capteur dès le repos")
+        XCTAssertGreaterThan(cadre.maxY, 66, "le contenu doit rester dans le bloc")
+        let titre = b.app.staticTexts["Exercices"].firstMatch
+        XCTAssertTrue(titre.exists)
+        XCTAssertLessThanOrEqual(cadre.maxY, 72.5,
+                                 "la capsule doit tenir au-dessus du dessin des lettres")
+        XCTAssertLessThan(titre.frame.minY, 65,
+                          "la page doit conserver sa hauteur d'origine")
+        let capture = XCTAttachment(screenshot: b.app.screenshot())
+        capture.name = "ile-integree-exercices"; capture.lifetime = .keepAlways
+        add(capture)
+    }

@@ -1,0 +1,607 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/woop-ile-20260916-banc/Woop.xcodeproj -scheme WoopUITests -configuration Debug -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" -derivedDataPath /tmp/woop-ile-20260916-dd -parallel-testing-enabled NO -resultBundlePath /tmp/woop-ile-native45.xcresult "-only-testing:WoopUITests/IleNativeUITests" CURRENT_PROJECT_VERSION=45 CODE_SIGNING_ALLOWED=NO test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    CURRENT_PROJECT_VERSION = 45
+
+Writing result bundle at path:
+	/tmp/woop-ile-native45.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'WoopUITests' in project 'Woop'
+        ➜ Explicit dependency on target 'Woop' in project 'Woop'
+    Target 'Woop' in project 'Woop'
+        ➜ Explicit dependency on target 'WoopWidgets' in project 'Woop'
+    Target 'WoopWidgets' in project 'Woop' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/woop-ile-20260916-banc/Woop/AppIcon.icon /tmp/woop-ile-20260916-banc/Woop/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 1846cdc44cb3ac6da928022f8bcbd26f
+Build description path: /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/XCBuildData/1846cdc44cb3ac6da928022f8bcbd26f.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/woop-ile-20260916-banc/Woop.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+SwiftDriver WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ WoopWidgets (in target 'WoopWidgets' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ WorkoutLiveActivity.swift /tmp/woop-ile-20260916-banc/WoopWidgets/WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopWidgets/WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for WoopWidgets (in target 'WoopWidgets' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftsourceinfo (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftdoc (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftdoc /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+SwiftDriver Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ WoopWidgetsBundle.swift /tmp/woop-ile-20260916-banc/WoopWidgets/WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopWidgets/WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftDriver\ Compilation WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.LinkFileList -install_name @rpath/WoopWidgets.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat -fapplication-extension -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-linker-args.resp -Xlinker -alias -Xlinker _NSExtensionMain -Xlinker ___debug_main_executable_dylib_entry_point -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -install_name @rpath/WoopWidgets.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib
+
+ConstructStubExecutorLinkFileList /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    construct-stub-executor-link-file-list /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'WoopWidgets' from project 'Woop')
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_entry -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugEntryPoint-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets
+
+ExtractAppIntentsMetadata (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name WoopWidgets --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopWidgets --output /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets --dependency-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat --stringsdata-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 14:43:37.448 appintentsmetadataprocessor[63086:15972922] Starting appintentsmetadataprocessor export
+2026-09-16 14:43:39.486 appintentsmetadataprocessor[63086:15972922] Extracted no relevant App Intents symbols, skipping writing output
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist /tmp/woop-ile-20260916-banc/WoopWidgets/Info.plist (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-banc/WoopWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist
+
+AppIntentsSSUTraining (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist --temp-dir-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/ssu --bundle-id fr.kathryn.woop.WoopWidgets --product-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex --extracted-metadata-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Metadata.appintents --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList --source-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist --archive-ssu-assets
+2026-09-16 14:43:40.551 appintentsnltrainingprocessor[63109:15973105] Parsing options for appintentsnltrainingprocessor
+2026-09-16 14:43:40.570 appintentsnltrainingprocessor[63109:15973105] Starting AppIntents SSU YAML Generation
+2026-09-16 14:43:40.581 appintentsnltrainingprocessor[63109:15973105] No AppShortcuts found - Skipping.
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/CoreSpotlight-L88MS3FZ16NDV12DCXTV11VU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/RelevanceKit-1DPBUAGUNTSXYKS3WUFX3RZE4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/ExtensionFoundation-1G7PK2B1RHED7J6AS0LU2YY5N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Intents-859R0RGNQKN0HOH1PC3D3UAPJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/AppIntents-7HMQ51AOG1UG0M0PCQVYTKD8C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile-20260916-dd/ModuleCache.noindex/WidgetKit-D1CILWJMYTHE13QGPOFAO8SXP.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Woop' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ TapisScene.swift /tmp/woop-ile-20260916-banc/Woop/Views/TapisScene.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/TapisScene.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ RestartSheet.swift /tmp/woop-ile-20260916-banc/Woop/Views/RestartSheet.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/RestartSheet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ FouettagePilule.swift /tmp/woop-ile-20260916-banc/Woop/Views/FouettagePilule.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/FouettagePilule.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ WoopApp.swift /tmp/woop-ile-20260916-banc/Woop/WoopApp.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/WoopApp.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1264:44: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+            MiniCardJour(date: a.startedAt ?? .now,
+                               ~~~~~~~~~~~~^~~~~~~
+                                          
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1289:58: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                             ~~~~~~~~~~~~^~~~~~~
+                                                        
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1292:56: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                                           ~~~~~~~~~~~~^~~~~~~
+                                                      
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1677:47: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    departSeance: a.startedAt ?? .now,
+                                  ~~~~~~~~~~~~^~~~~~~
+                                             
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1703:41: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    depart: a.startedAt ?? .now,
+                            ~~~~~~~~~~~~^~~~~~~
+                                       
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1702:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    ecranTaille: UIScreen.main.bounds.size,
+                                          ^
+
+SwiftCompile normal arm64 Compiling\ PageCard.swift /tmp/woop-ile-20260916-banc/Woop/Views/PageCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/PageCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ PiluleVagabonde.swift /tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:377:25: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        130...(UIScreen.main.bounds.height - 138)
+                        ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:390:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:447:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:801:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:973:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1067:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1365:36: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .frame(width: UIScreen.main.bounds.width - NotifGeo.margeH * 2,
+                                   ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1440:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2, y: y)
+                                  ^
+
+SwiftCompile normal arm64 Compiling\ Compte.swift,\ WorkoutActivityController.swift /tmp/woop-ile-20260916-banc/Woop/Services/Compte.swift /tmp/woop-ile-20260916-banc/Woop/Services/WorkoutActivityController.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Services/Compte.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Services/WorkoutActivityController.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ ChambreHiit.swift /tmp/woop-ile-20260916-banc/Woop/Views/ChambreHiit.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ChambreHiit.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ TapisLab.swift /tmp/woop-ile-20260916-banc/Woop/Views/TapisLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/TapisLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ ExerciseDetailView.swift /tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift:2123:13: warning: initialization of immutable value 'naissance' was never used; consider replacing with assignment to '_' or removing it
+        let naissance = Self.sstep(0.45, 0.92, u)
+        ~~~~^~~~~~~~~
+        _
+
+SwiftDriverJobDiscovery normal arm64 Compiling TapisLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling FouettagePilule.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Compte.swift, WorkoutActivityController.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PageCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ HomeNuit.swift /tmp/woop-ile-20260916-banc/Woop/Views/HomeNuit.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/HomeNuit.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/HomeNuit.swift:3387:13: warning: initialization of immutable value 'flou' was never used; consider replacing with assignment to '_' or removing it
+        let flou = DepartCine.sstep(DepartCine.flouAt,
+        ~~~~^~~~
+        _
+/tmp/woop-ile-20260916-banc/Woop/Views/HomeNuit.swift:3389:13: warning: initialization of immutable value 'mort' was never used; consider replacing with assignment to '_' or removing it
+        let mort = DepartCine.sstep(DepartCine.fadeAt,
+        ~~~~^~~~
+        _
+
+SwiftCompile normal arm64 Compiling\ ActiveWorkoutView.swift /tmp/woop-ile-20260916-banc/Woop/Views/ActiveWorkoutView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ActiveWorkoutView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ HomeView.swift /tmp/woop-ile-20260916-banc/Woop/Views/HomeView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/HomeView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ HomeAuroraView.swift /tmp/woop-ile-20260916-banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling RestartSheet.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChambreHiit.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ CardioFiche.swift /tmp/woop-ile-20260916-banc/Woop/Views/CardioFiche.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/CardioFiche.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling TapisScene.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ExercisesView.swift /tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:2117:49: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                                                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:2118:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:2206:42: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = GrilleExos.voileBas(vh - f.maxY)
+                                         ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:2207:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile-20260916-banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling CardioFiche.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ActiveWorkoutView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ExercisesView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeNuit.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling WoopApp.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ NavEncre.swift /tmp/woop-ile-20260916-banc/Woop/Views/NavEncre.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/NavEncre.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ ProfilLune.swift /tmp/woop-ile-20260916-banc/Woop/Views/ProfilLune.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ProfilLune.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling NavEncre.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProfilLune.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.LinkFileList -install_name @rpath/Woop.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/__preview.dylib normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -install_name @rpath/Woop.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/__preview.dylib
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+ConstructStubExecutorLinkFileList /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    construct-stub-executor-link-file-list /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Woop' from project 'Woop')
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns
+
+ExtractAppIntentsMetadata (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop --dependency-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat --stringsdata-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 14:48:21.485 appintentsmetadataprocessor[63987:15983622] Starting appintentsmetadataprocessor export
+2026-09-16 14:48:21.939 appintentsmetadataprocessor[63987:15983622] Extracted no relevant App Intents symbols, skipping writing output
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/empty-Woop.plist (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/empty-Woop.plist -producttype com.apple.product-type.application -genpkginfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+WriteAuxiliaryFile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    write-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList
+
+WriteAuxiliaryFile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    write-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    write-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList
+
+WriteAuxiliaryFile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    write-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json
+
+SwiftDriver WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+AppIntentsSSUTraining (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist --temp-dir-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/ssu --bundle-id fr.kathryn.woop --product-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app --extracted-metadata-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Metadata.appintents --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --source-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist --archive-ssu-assets
+2026-09-16 14:48:22.087 appintentsnltrainingprocessor[63988:15983652] Parsing options for appintentsnltrainingprocessor
+2026-09-16 14:48:22.092 appintentsnltrainingprocessor[63988:15983652] Starting AppIntents SSU YAML Generation
+2026-09-16 14:48:22.094 appintentsnltrainingprocessor[63988:15983652] No AppShortcuts found - Skipping.
+
+CopySwiftLibs /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/SystemExtensions --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ValidateEmbeddedBinary /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -info-plist-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+Validate /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-validationUtility /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app -shallow-bundle -infoplist-subpath Info.plist
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ WoopUITests (in target 'WoopUITests' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ DiagGestePilule.swift /tmp/woop-ile-20260916-banc/WoopUITests/DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ FouettagePiluleUITests.swift /tmp/woop-ile-20260916-banc/WoopUITests/FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ BancPilule.swift /tmp/woop-ile-20260916-banc/WoopUITests/BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ IleNativeUITests.swift /tmp/woop-ile-20260916-banc/WoopUITests/IleNativeUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/IleNativeUITests.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for WoopUITests (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftdoc (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftdoc /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.abi.json (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftsourceinfo (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling IleNativeUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriver\ Compilation WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ProductTypeInfoPlistAdditions.plist -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests normal (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests
+
+ExtractAppIntentsMetadata (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name WoopUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopUITests --output /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --dependency-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat --stringsdata-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 14:48:31.453 appintentsmetadataprocessor[64011:15983976] Starting appintentsmetadataprocessor export
+2026-09-16 14:48:31.469 appintentsmetadataprocessor[64011:15983976] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/PlugIns --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/SystemExtensions --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --temp-dir-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ssu --bundle-id fr.kathryn.woop.WoopUITests --product-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest --extracted-metadata-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Metadata.appintents --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList --source-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --archive-ssu-assets
+2026-09-16 14:48:31.555 appintentsnltrainingprocessor[64013:15983990] Parsing options for appintentsnltrainingprocessor
+2026-09-16 14:48:31.556 appintentsnltrainingprocessor[64013:15983990] Starting AppIntents SSU YAML Generation
+2026-09-16 14:48:31.556 appintentsnltrainingprocessor[64013:15983990] No AppShortcuts found - Skipping.
+
+CopyPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Info.plist /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copyPlist --validate --convert xml1 --macro-expansion WRAPPEDPRODUCTNAME WoopUITests-Runner --macro-expansion WRAPPEDPRODUCTBUNDLEIDENTIFIER fr.kathryn.woop.WoopUITests.xctrunner --macro-expansion TESTPRODUCTNAME WoopUITests --macro-expansion TESTPRODUCTBUNDLEIDENTIFIER fr.kathryn.woop.WoopUITests --copy-value UIDeviceFamily /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --outdir /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app -- /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist
+
+2026-09-16 14:51:50.298571+0200 WoopUITests-Runner[64748:15995823] [Default] Running tests...
+objc[64748]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109da8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109204398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 14:52:01.569.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 14:52:01.570.
+Test Suite 'WoopUITests.xctest' passed at 2026-09-16 14:52:01.570.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 14:52:01.571.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+2026-09-16 14:52:01.954 xcodebuild[62491:15965393] [MT] IDETestOperationsObserverDebug: 210.146 elapsed -- Testing started completed.
+2026-09-16 14:52:01.954 xcodebuild[62491:15965393] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 14:52:01.954 xcodebuild[62491:15965393] [MT] IDETestOperationsObserverDebug: 210.146 sec, +210.146 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile-native45.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

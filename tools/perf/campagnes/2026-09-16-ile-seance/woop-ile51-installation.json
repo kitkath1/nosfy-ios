@@ -1,0 +1,39 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "install",
+      "app",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "45",
+      "--json-output",
+      "/tmp/woop-ile51-installation.json",
+      "/tmp/woop-ile48-propre-dd/Build/Products/Release-iphoneos/Woop.app"
+    ],
+    "commandType" : "devicectl.device.install.app",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "installedApplications" : [
+      {
+        "bundleID" : "fr.kathryn.woop",
+        "databaseSequenceNumber" : 6052,
+        "databaseUUID" : "FE981B78-F54C-4B45-A3FB-830237BAB82B",
+        "installationURL" : "file:///private/var/containers/Bundle/Application/E131C5F2-C19B-44B1-9469-383539A3FF71/Woop.app/",
+        "launchServicesIdentifier" : "unknown",
+        "options" : {
+
+        }
+      }
+    ]
+  }
+}

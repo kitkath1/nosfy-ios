@@ -79,41 +79,7 @@ final class FouettagePiluleUITests: XCTestCase {
         b.auPremierPlan("cas05")
     }
 
-    // MARK: — LE CAS CENTRAL : l'île n'est pas une impasse
-
-    func test06_seance_ile_seRempli_puisSonTapOuvreLePlayer() {
-        let b = BancPilule(); b.lancer(["-activeWorkout"])
-        b.attendreSeance()
-        // 1) on l'envoie EN HAUT — la porte volontaire de l'île.
-        b.gesteAttendu("cas06a-entre-dans-ile",
-                       geste: { b.jeter(b.centrePilule(), dy: -700) },
-                       attendu: { $0.dansIle })
-        XCTAssertTrue(b.ile.waitForExistence(timeout: 4),
-            "l'île n'est pas à l'écran alors que l'état dit qu'on y est")
-        // 2) UN TAP SUR L'ÎLE DOIT OUVRIR LE PLAYER. C'était le trou : il
-        //    ne faisait que l'en sortir, donc « pas d'overlay ».
-        b.gesteAttendu("cas06b-tap-ile-ouvre",
-                       geste: { b.taper(b.centreIle()) },
-                       attendu: { $0.grandPlayer >= 1 })
-        XCTAssertTrue(b.grandPlayer.waitForExistence(timeout: 4),
-            "LE TAP DE L'ÎLE N'OUVRE TOUJOURS PAS LE PLAYER")
-    }
-
-    func test07_seance_ileSeQuitteAuDrag() {
-        let b = BancPilule(); b.lancer(["-activeWorkout"])
-        b.attendreSeance()
-        b.gesteAttendu("cas07a-entre",
-                       geste: { b.jeter(b.centrePilule(), dy: -700) },
-                       attendu: { $0.dansIle })
-        // Le drag reste la sortie — sinon on est enfermé (le tap ouvre).
-        b.gesteAttendu("cas07b-sort",
-                       geste: { b.glisser(b.centreIle(), dy: 160) },
-                       attendu: { !$0.dansIle })
-        XCTAssertTrue(b.pilule.waitForExistence(timeout: 4),
-            "la pilule n'est pas revenue après la sortie d'île")
-    }
-
-    // MARK: — « l'application devient impraticable » : la nav qui part
+    // La vraie île système et ses retours sont testés par IleNativeUITests.
 
     func test08_navRevientApresUnAllerRetourDansUnOnglet() {
         let b = BancPilule(); b.lancer(["-activeWorkout"])

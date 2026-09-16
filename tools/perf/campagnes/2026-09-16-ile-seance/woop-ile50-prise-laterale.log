@@ -1,0 +1,87 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile47-runtime/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testPriseLateraleSurIPhone" -resultBundlePath /tmp/woop-ile50-prise-laterale.xcresult -parallel-testing-enabled NO
+
+2026-09-16 17:31:11.470 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile50-prise-laterale.xcresult
+
+2026-09-16 17:31:11.472 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:31:11.572 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 17:31:12.146 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:31:12.300 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:31:14.407384+0200 NavRuntimeUITests-Runner[33633:2596246] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 17:31:14.789.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 17:31:14.790.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 17:31:14.790.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testPriseLateraleSurIPhone]' started.
+    t =     0.00s Start Test at 2026-09-16 17:31:14.791
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:33602
+2026-09-16 17:31:15.074 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.04s Open fr.kathryn.woop
+    t =     1.05s     Launch fr.kathryn.woop
+    t =     1.13s         Setting up automation session
+    t =     1.21s         Wait for fr.kathryn.woop to idle
+    t =     2.31s Waiting 15.0s for "seance-pastille" Any to exist
+    t =     3.34s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-pastille" Any`
+    t =     3.34s         Checking existence of `"seance-pastille" Any`
+    t =     3.39s Find the "seance-pastille" Any
+    t =     3.41s Find the "seance-pastille" Image
+    t =     3.43s Find the Application 'fr.kathryn.woop'
+    t =     3.45s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 622.0) for 0.0 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 5.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =     3.45s     Wait for fr.kathryn.woop to idle
+    t =     3.45s     Find the Application 'fr.kathryn.woop'
+    t =     3.46s     Check for interrupting elements affecting "Woop" Application
+    t =     3.48s     Synthesize event
+    t =     3.48s         Find the Application 'fr.kathryn.woop'
+    t =     3.49s         Find the Application 'fr.kathryn.woop'
+    t =     3.50s         Find the Application 'fr.kathryn.woop'
+    t =     3.51s         Find the Application 'fr.kathryn.woop'
+    t =     3.63s         Find the Application 'fr.kathryn.woop'
+    t =     4.16s     Wait for fr.kathryn.woop to idle
+    t =     4.17s Waiting 7.0s for "seance-ile" Any to exist
+    t =     5.20s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-ile" Any`
+    t =     5.20s         Checking existence of `"seance-ile" Any`
+    t =     6.22s Find the Application 'fr.kathryn.woop'
+    t =     6.39s Added attachment named 'prise-laterale-avant'
+    t =     6.39s Find the Application 'fr.kathryn.woop'
+    t =     6.40s Find the Application 'fr.kathryn.woop'
+    t =     6.42s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (100.5, 33.0) for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (100.5, 250.0) with velocity of 250.00 pixels per second, and then hold for 0.3 seconds 
+    t =     6.42s     Wait for fr.kathryn.woop to idle
+    t =     6.42s     Find the Application 'fr.kathryn.woop'
+    t =     6.43s     Check for interrupting elements affecting "Woop" Application
+    t =     6.44s     Synthesize event
+    t =     6.44s         Find the Application 'fr.kathryn.woop'
+    t =     6.45s         Find the Application 'fr.kathryn.woop'
+    t =     6.46s         Find the Application 'fr.kathryn.woop'
+    t =     6.47s         Find the Application 'fr.kathryn.woop'
+    t =     6.48s         Find the Application 'fr.kathryn.woop'
+    t =     7.97s     Wait for fr.kathryn.woop to idle
+    t =     7.97s Waiting 5.0s for "seance-pastille" Image to exist
+    t =     9.01s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-pastille" Image`
+    t =     9.01s         Checking existence of `"seance-pastille" Image`
+    t =     9.02s Find the Application 'fr.kathryn.woop'
+    t =     9.19s Added attachment named 'prise-laterale-sortie'
+    t =     9.19s Tear Down
+2026-09-16 17:31:24.213 xcodebuild[99367:16434015] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testPriseLateraleSurIPhone]' passed (9.442 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 17:31:24.234.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.442 (9.444) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 17:31:24.235.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.442 (9.445) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 17:31:24.236.
+	 Executed 1 test, with 0 failures (0 unexpected) in 9.442 (9.447) seconds
+2026-09-16 17:31:24.601 xcodebuild[99367:16434015] [MT] IDETestOperationsObserverDebug: 12.453 elapsed -- Testing started completed.
+2026-09-16 17:31:24.601 xcodebuild[99367:16434015] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 17:31:24.601 xcodebuild[99367:16434015] [MT] IDETestOperationsObserverDebug: 12.453 sec, +12.453 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile50-prise-laterale.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

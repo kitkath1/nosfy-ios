@@ -6,8 +6,8 @@ import WidgetKit
 
 /// L'île et l'écran verrouillé pendant une séance. Une Live Activity est un
 /// instantané : pas d'animation continue — le mouvement vient de deux sources
-/// seulement : le chrono système (`Text(_, style: .timer)`, gratuit) et les
-/// transitions animées entre deux mises à jour d'état (l'orbe se déplace à
+/// seulement : le chrono système (`Text(_, style: .timer)`) et les
+/// transitions animées entre deux mises à jour d'état (la braise se déplace à
 /// chaque série cochée / exercice ajouté). Tout le dessin est donc statique
 /// et déterministe, dérivé de l'état.
 struct WorkoutLiveActivity: Widget {
@@ -17,13 +17,14 @@ struct WorkoutLiveActivity: Widget {
             // le mini overlay de l'app, décliné sans verre (pas de backdrop à
             // réfracter ici).
             WorkoutBanner(context: context)
+                .widgetURL(context.attributes.sessionURL)
                 .activityBackgroundTint(Color(red: 0.016, green: 0.016, blue: 0.024))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
-                        ImpGlyph(size: 22, gaze: Self.gaze(context.state))
+                        WorkoutEmber(size: 26, state: context.state)
                         Text("Séance")
                             .font(.system(.footnote, design: .rounded, weight: .semibold))
                             .foregroundStyle(.white)
@@ -47,16 +48,17 @@ struct WorkoutLiveActivity: Widget {
                     .padding(.horizontal, 4)
                 }
             } compactLeading: {
-                ImpGlyph(size: 17, gaze: Self.gaze(context.state))
+                WorkoutEmber(size: 22, state: context.state)
             } compactTrailing: {
                 WorkoutTimer(startedAt: context.attributes.startedAt)
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
                     .frame(maxWidth: 52)
             } minimal: {
-                ImpGlyph(size: 17, gaze: Self.gaze(context.state))
+                WorkoutEmber(size: 22, state: context.state)
             }
-            .keylineTint(.white)
+            .widgetURL(context.attributes.sessionURL)
+            .keylineTint(Color(red: 1, green: 0.54, blue: 0.18))
         }
     }
 
@@ -90,7 +92,7 @@ private struct WorkoutBanner: View {
                 .frame(height: 34)
 
             HStack(spacing: 11) {
-                ImpGlyph(size: 26, gaze: WorkoutLiveActivity.gaze(context.state))
+                WorkoutEmber(size: 30, state: context.state)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Séance en cours")
@@ -110,6 +112,38 @@ private struct WorkoutBanner: View {
             }
         }
         .padding(.init(top: 14, leading: 16, bottom: 14, trailing: 16))
+    }
+}
+
+/// Une braise DANS les régions fournies par iOS. Ses gradients sont statiques ;
+/// le système anime uniquement le déplacement du cœur à une mise à jour réelle.
+/// Aucun repeatForever, TimelineView, lecteur ni réveil périodique de l'app.
+private struct WorkoutEmber: View {
+    let size: CGFloat
+    let state: WorkoutActivityAttributes.ContentState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isLuminanceReduced) private var luminanceReduced
+
+    var body: some View {
+        let regard = WorkoutLiveActivity.gaze(state)
+        ZStack {
+            Circle().fill(RadialGradient(
+                colors: [Color(red: 1, green: 0.54, blue: 0.18),
+                         Color(red: 1, green: 0.20, blue: 0.05).opacity(0.5),
+                         .clear],
+                center: .center, startRadius: 0, endRadius: size / 2))
+            Circle().fill(RadialGradient(
+                colors: [.white, Color(red: 1, green: 0.7, blue: 0.3), .clear],
+                center: .center, startRadius: 0, endRadius: size * 0.24))
+                .frame(width: size * 0.48, height: size * 0.48)
+                .offset(x: regard.width * size * 0.14,
+                        y: regard.height * size * 0.14)
+        }
+        .frame(width: size, height: size)
+        .clipped()
+        .animation(reduceMotion || luminanceReduced ? nil : .easeInOut(duration: 0.6),
+                   value: state)
+        .accessibilityLabel("Séance en cours")
     }
 }
 

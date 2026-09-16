@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import CoreText
 import SceneKit
+import WidgetKit
 
 @main
 struct WoopApp: App {
@@ -1139,6 +1140,12 @@ struct RootView: View {
     /// L'OUVERTURE DU GRAND PLAYER — 0 fermé, 1 ouvert (la même valeur
     /// continue qu'au banc : il MONTE du bas, rien ne grandit).
     @State private var morphPlayer: CGFloat = 0
+    /// Le lancement depuis l'île peut précéder la fin du splash et la @Query.
+    @State private var retourDepuisIle = false
+
+    private var peutReprendreDepuisIle: Bool {
+        retourDepuisIle && active != nil && !showSplash && !showAuth && !nosfyOuvert && !nosfyRejoue
+    }
 
     /// L'ONGLET ACCUEIL, SORTI DU MUR (06-09). La home v2 rouge, son menu qui
     /// route, son slider qui ouvre le chemin — et le Foyer qui ouvre LE GRAND
@@ -1421,25 +1428,10 @@ struct RootView: View {
             }
             .onChange(of: active != nil, initial: true) { _, enSeance in
                 SondeVol.shared.enSeance = enSeance
-                // ⚠️ ELLE Y VOLE, ELLE N'Y NAÎT PAS (05-09, Kathryn :
-                // « dès qu'une session se lance, il vole directement dans
-                // le Dynamic Island » — et « j'aimerais beaucoup qu'on
-                // comprenne qu'on peut la tirer »). Posée à `true` sec,
-                // la pastille naissait DÉJÀ dans l'île : personne ne
-                // voyait le voyage, donc personne n'apprenait qu'il
-                // existe un chemin de retour. Elle naît donc à sa place
-                // sur la page, et s'envole une demi-seconde plus tard —
-                // le temps d'être vue.
-                PiluleEtat.shared.dansIle = false
-                if enSeance, !PiluleBanc.horsIle {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                        // La séance a pu mourir entre-temps (un stop
-                        // immédiat, un banc qui enchaîne) : on ne fait
-                        // pas voler une pastille qui n'existe plus.
-                        guard active != nil else { return }
-                        PiluleEtat.shared.envolerVersIle()
-                    }
-                }
+                // Chaque séance retrouve son repère tactile dans l'app.
+                // WidgetKit assure séparément le suivi en arrière-plan.
+                PiluleEtat.shared.gesteMort()
+                PiluleEtat.shared.dansIle = enSeance && !PiluleBanc.horsIle
                 morphPlayer = 0
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -1618,17 +1610,9 @@ struct RootView: View {
             // (avec `withAnimation`, c'est le RENDU que SwiftUI interpole,
             // pas la valeur) : la démonter sur ce seuil la ferait
             // disparaître D'UN COUP pendant que le player monte encore.
-            // ⚠️ LE FOYER GATE LA PASTILLE (Kathryn, 06-09 : « pas de
-            // pastille dans la Dynamic Island, c'est redondant ») : en
-            // séance, la HOME affiche l'écran de séance — chrono, séries,
-            // feu — et la pastille redirait la même chose PLUS une deuxième
-            // lampe (son île orange) sur un écran qui n'a droit qu'à une.
-            // Le gate vit ICI, au châssis, parce que `selection` y est connu :
-            // posé dans la home, la pastille disparaîtrait de TOUTE l'app
-            // pendant la séance (le TabView garde les onglets montés) — y
-            // compris de la fiche exo où elle est le seul accès au player.
-            // Sur les AUTRES onglets, rien ne change.
-            if let a = active, selection != .home {
+            // Le repère dans Woop garde les gestes île ⇄ pastille ⇄ détail.
+            // WorkoutLiveActivity assure l'île système hors de l'app.
+            if let a = active {
                 PiluleVagabonde(
                     // ⚠️ LA BORNE BASSE TIENT COMPTE DE LA NAV ET DU
                     // TICKET (relecture adverse 04-09). À `H − 96`, le
@@ -1653,6 +1637,7 @@ struct RootView: View {
                     // entier — c'est l'appel qui se tait, comme pour la
                     // carte des séries.
                     figee: morphPlayer > 0.98,
+                    surHome: selection == .home,
                     onOuvrir: { ouvrirGrandPlayer() },
                     onStop: { DepartEtat.shared.pauseOuverte = true }) {
                     contenuPilule(a)
@@ -2056,6 +2041,7 @@ struct RootView: View {
             BancCoutHome.shared.porteOuverte = ouverte
         }
         .defersSystemGestures(on: .bottom)
+        .statusBarHidden(active != nil)
         .persistentSystemOverlays(.hidden)
         // Les bancs du parcours booster :
         //   `-boosterPopup` propose la pop-up au lancement (elle se juge
@@ -2147,6 +2133,27 @@ struct RootView: View {
                 }
             } else {
                 homeEclipsee = false
+            }
+        }
+        // Le lien WidgetKit porte la séance : un ancien lien ne doit pas
+        // ouvrir la séance suivante. Il ne termine jamais une séance.
+        .onOpenURL { url in
+            guard let a = active,
+                  url == WorkoutActivityAttributes(startedAt: a.startedAt).sessionURL
+            else { return }
+            retourDepuisIle = true
+        }
+        // Compatibilité avec une activité créée avant l'ajout du lien.
+        .onContinueUserActivity(NSUserActivityTypeLiveActivity) { _ in
+            retourDepuisIle = active != nil
+        }
+        .task(id: peutReprendreDepuisIle) {
+            guard peutReprendreDepuisIle else { return }
+            retourDepuisIle = false
+            if selection == .home {
+                ouvrirGrandPlayer()
+            } else {
+                PiluleEtat.shared.sortirEnMain(vers: .placeCommise)
             }
         }
         // Live Activity : une séance restée ouverte retrouve son île au

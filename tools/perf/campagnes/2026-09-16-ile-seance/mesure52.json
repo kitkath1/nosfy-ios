@@ -1,0 +1,21 @@
+{
+  "scenario": "PiluleLab, halo rouge natif renforcé, iPhone15 par câble, protections actives",
+  "version": 52,
+  "source_iphone": "Documents/vol-20260916-180317.jsonl",
+  "fenetre": [
+    15.2,
+    31.5
+  ],
+  "n": 17,
+  "duree": 16.3,
+  "therm_protection": [
+    [
+      0,
+      0
+    ]
+  ],
+  "cpu_mediane": 1,
+  "callbacks_mediane": 60.1,
+  "pire_intervalle_ms": 17,
+  "limites": "Test court du composant, pas la vraie Home, ni GPU/watts/endurance. Pas de comparaison A/B52 exécutée."
+}

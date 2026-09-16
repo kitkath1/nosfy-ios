@@ -1,0 +1,111 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile49-sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination platform=iOS,id=AA36EA2C-0220-4292-9190-A78E13C759AE "-only-testing:WoopUITests/IleDansAppUITests" -resultBundlePath /tmp/woop-ile49-app-tests.xcresult -parallel-testing-enabled NO
+
+2026-09-16 17:03:45.486 xcodebuild[93958:16351080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile49-app-tests.xcresult
+
+2026-09-16 17:03:45.591 xcodebuild[93958:16351080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:04:45.791 xcodebuild[93958:16351080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+xcodebuild: error: Unable to find a device matching the provided destination specifier:
+		{ platform:iOS, id:AA36EA2C-0220-4292-9190-A78E13C759AE }
+
+	The requested device could not be found because no available devices matched the request.
+
+	Available destinations for the "WoopUITests" scheme:
+		{ platform:macOS, arch:arm64e, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:x86_64, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64e, variant:Mac Catalyst, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:x86_64, variant:Mac Catalyst, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64e, variant:DriverKit, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64, variant:DriverKit, id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64e, variant:Designed for [iPad,iPhone], id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+		{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+		{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+		{ platform:macOS, name:Any Mac }
+		{ platform:macOS, variant:Mac Catalyst, name:Any Mac }
+		{ platform:tvOS, id:dvtdevice-DVTiOSDevicePlaceholder-appletvos:placeholder, name:Any tvOS Device }
+		{ platform:tvOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-appletvsimulator:placeholder, name:Any tvOS Simulator Device }
+		{ platform:visionOS, id:dvtdevice-DVTiOSDevicePlaceholder-xros:placeholder, name:Any visionOS Device }
+		{ platform:visionOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-xrsimulator:placeholder, name:Any visionOS Simulator Device }
+		{ platform:watchOS, id:dvtdevice-DVTiOSDevicePlaceholder-watchos:placeholder, name:Any watchOS Device }
+		{ platform:watchOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-watchsimulator:placeholder, name:Any watchOS Simulator Device }
+		{ platform:iOS Simulator, arch:arm64, id:CD9A78F6-7E2A-4D60-8711-8E575C94113B, OS:26.5, name:AxioSense-3D }
+		{ platform:iOS Simulator, arch:arm64, id:F190D93D-97D3-4CC7-94E0-B7668A3DEC5A, OS:26.5, name:ShaderProbe }
+		{ platform:iOS Simulator, arch:arm64, id:9D29151B-F9B7-442D-A0F8-01DE2CEFDAE7, OS:26.5, name:Woop }
+		{ platform:iOS Simulator, arch:arm64, id:7E065098-9FD2-4E0B-A73F-83729753BE65, OS:26.5, name:Woop Textes 36 QA }
+		{ platform:iOS Simulator, arch:arm64, id:E70024B0-10EF-41EE-A956-4614AFAAE33E, OS:26.5, name:Woop-Aurora }
+		{ platform:iOS Simulator, arch:arm64, id:F5F194DA-8B95-4619-9294-84CE52151BD4, OS:26.5, name:Woop-AuroraBg }
+		{ platform:iOS Simulator, arch:arm64, id:3EB15D6E-2195-4FE6-A6B9-7622B94C035A, OS:26.5, name:Woop-Ember }
+		{ platform:iOS Simulator, arch:arm64, id:C33BBAE3-A253-4615-B41F-DFC83D307468, OS:26.5, name:Woop-Exo }
+		{ platform:iOS Simulator, arch:arm64, id:ED58DBDF-D143-4599-8E39-7EC9BA81A9CB, OS:26.5, name:Woop-ExosSession }
+		{ platform:iOS Simulator, arch:arm64, id:66262C77-DF78-4898-BAD7-BE6DD8AFCE8D, OS:26.5, name:Woop-Halo }
+		{ platform:iOS Simulator, arch:arm64, id:85D02A02-7E4F-4E40-8169-91FE2E3BD1B9, OS:26.5, name:Woop-Icons }
+		{ platform:iOS Simulator, arch:arm64, id:34C6647F-8886-4B7D-B51E-2288EE2BBC68, OS:26.5, name:Woop-Logo }
+		{ platform:iOS Simulator, arch:arm64, id:73766A4B-2A3E-4B17-A1FD-6DAC68280E30, OS:26.5, name:Woop-MoonSplash }
+		{ platform:iOS Simulator, arch:arm64, id:BB199161-125C-4B1B-9CC5-F75A6226BFCF, OS:26.5, name:Woop-Nav }
+		{ platform:iOS Simulator, arch:arm64, id:D765503D-0DAD-41B6-9494-D467D1A3E603, OS:26.5, name:Woop-Obsidian }
+		{ platform:iOS Simulator, arch:arm64, id:3C692AC6-5C6C-4AAF-B04D-4FBC7EA7867A, OS:26.5, name:Woop-Story }
+		{ platform:iOS Simulator, arch:arm64, id:CA493EE0-389A-400B-8C26-A384731B03AE, OS:26.5, name:Woop-Success }
+		{ platform:iOS Simulator, arch:arm64, id:C7F4B9AA-0363-4F18-A571-8E8F6DDE4E5B, OS:26.4.1, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:7D1231B4-434F-4DE6-AF33-2D9E8FA6FBDD, OS:26.5, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:4BDA8DEC-F081-4881-8475-B8F5981815C7, OS:26.4.1, name:iPad Air 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:90E2F687-127A-4BAE-8E8B-0428302A3851, OS:26.5, name:iPad Air 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:EE20DEE3-6341-457E-80FB-607BA12EBA2A, OS:26.4.1, name:iPad Air 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:49366D71-57C7-4C5C-B685-572581A32F17, OS:26.5, name:iPad Air 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:645FDB7B-3DD0-40BE-A11A-7B8EB1894D60, OS:26.4.1, name:iPad Pro 11-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:0E35508E-3101-4C92-9776-281BD265489B, OS:26.5, name:iPad Pro 11-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:1E28B5BD-E576-4E8E-9E7F-570FF07BE9C9, OS:26.4.1, name:iPad Pro 13-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:8DACAD2D-8846-48DD-9C68-AB44DE35163A, OS:26.5, name:iPad Pro 13-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:D5B1D452-6E24-4427-8556-1DE1BDB6E5A7, OS:26.4.1, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:0627B7CB-E2D2-4BAA-AB3F-F4DC9BF01A4F, OS:26.5, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:44609C11-ED43-463A-AD2E-65F6EF9557FC, OS:26.5, name:iPhone 12 }
+		{ platform:iOS Simulator, arch:arm64, id:71BD1735-E226-4B78-8B81-693133A1A46A, OS:26.5, name:iPhone 13 }
+		{ platform:iOS Simulator, arch:arm64, id:4E087AD7-0BE1-47BD-97FC-FD3F73F1F3F7, OS:26.5, name:iPhone 14 }
+		{ platform:iOS Simulator, arch:arm64, id:C1ED2678-BA31-4359-9EBE-49FDFBC1B803, OS:26.4.1, name:iPhone 14 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:FD3651DD-7D4E-4C70-B4C3-B6C4D90818F0, OS:26.5, name:iPhone 15 }
+		{ platform:iOS Simulator, arch:arm64, id:12F47224-E344-4FB6-9936-8AE176F7545F, OS:26.4.1, name:iPhone 16 (kat-porte) }
+		{ platform:iOS Simulator, arch:arm64, id:C0BD251D-455E-4423-BCBB-A2EB78EC0C57, OS:26.4.1, name:iPhone 17 }
+		{ platform:iOS Simulator, arch:arm64, id:6E9A491F-72B9-49D3-897D-5D430A670DE4, OS:26.5, name:iPhone 17 }
+		{ platform:iOS Simulator, arch:arm64, id:D8A31930-1D84-42BF-A129-051BB6B9195B, OS:26.4.1, name:iPhone 17 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:8E519C66-0DF3-4977-9D5C-BAD88FF05620, OS:26.4.1, name:iPhone 17 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:B772B591-0A7C-4822-A76B-59D8C05F3023, OS:26.5, name:iPhone 17 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:412EF929-490F-469A-B981-494F1C4CEA87, OS:26.4.1, name:iPhone 17e }
+		{ platform:iOS Simulator, arch:arm64, id:28F66CD7-E011-48DE-B5EB-8FD35F6A8B0E, OS:26.5, name:iPhone 17e }
+		{ platform:iOS Simulator, arch:arm64, id:3247C0C5-77D8-4B49-9707-B51AEC5F5D0F, OS:26.4.1, name:iPhone Air }
+		{ platform:iOS Simulator, arch:arm64, id:419F4B76-4FC9-4F83-AB15-DDF29E519DF0, OS:26.5, name:iPhone Air }
+		{ platform:iOS Simulator, arch:arm64, id:DF8B0597-3D8D-4F96-B237-3B8ACFF5B46C, OS:26.4.1, name:iPhone SE (3rd gen) }
+		{ platform:iOS Simulator, arch:arm64, id:7F34BF44-5E05-4470-8530-CEDBE797DC99, OS:26.5, name:kat-booster }
+		{ platform:iOS Simulator, arch:arm64, id:E307BE14-B36F-48DE-ABB1-CD933B5C6EAD, OS:26.4.1, name:kat-cal-18 }
+		{ platform:iOS Simulator, arch:arm64, id:CAA8ED6A-0322-4902-A19E-FAEFE5AD94AA, OS:26.5, name:kat-cardroute }
+		{ platform:iOS Simulator, arch:arm64, id:86BAE8EA-25BC-480B-AE8C-FAC762496383, OS:26.5, name:kat-carnet-a }
+		{ platform:iOS Simulator, arch:arm64, id:0154F915-2C2B-4EE4-A4F6-3DB26F94A1A4, OS:26.5, name:kat-carnet-b }
+		{ platform:iOS Simulator, arch:arm64, id:58BA26FE-8252-462A-8785-4061C052C767, OS:26.5, name:kat-catalogue }
+		{ platform:iOS Simulator, arch:arm64, id:5FF5AD67-F97E-47E4-AC22-D0782CD541B8, OS:26.5, name:kat-coffre }
+		{ platform:iOS Simulator, arch:arm64, id:B39832A8-2811-41E8-9BE2-C00F1B56BE17, OS:26.5, name:kat-duo }
+		{ platform:iOS Simulator, arch:arm64, id:5DE4F827-0F75-47E3-950F-FFE3B6FCC1FB, OS:26.5, name:kat-entree }
+		{ platform:iOS Simulator, arch:arm64, id:EC0CCAC9-5A15-400B-92E7-9CC50A6C4250, OS:26.5, name:kat-exos }
+		{ platform:iOS Simulator, arch:arm64, id:B89066A6-6B94-47DA-B95B-53962B42E9BF, OS:26.5, name:kat-flow-15 }
+		{ platform:iOS Simulator, arch:arm64, id:3F532E9A-CCE8-4D51-832B-B7613C17A01A, OS:26.5, name:kat-foyer }
+		{ platform:iOS Simulator, arch:arm64, id:CCA96F0A-E950-4059-A5D9-F3A56F99A8C9, OS:26.4.1, name:kat-galet }
+		{ platform:iOS Simulator, arch:arm64, id:A6CB7A87-E904-48E2-9DE1-29B578FD5DB0, OS:26.5, name:kat-home2 }
+		{ platform:iOS Simulator, arch:arm64, id:25594175-691C-40A1-9DC6-EB0CCAC02D39, OS:26.5, name:kat-ipod }
+		{ platform:iOS Simulator, arch:arm64, id:CE16AC53-70C4-46D0-99FB-63B8D5F5B77A, OS:26.5, name:kat-lens }
+		{ platform:iOS Simulator, arch:arm64, id:438D6B78-0A21-44C2-B57D-24148C31F9A0, OS:26.5, name:kat-nav }
+		{ platform:iOS Simulator, arch:arm64, id:793977E8-595E-46F7-8E14-F2DF9EB79206, OS:26.5, name:kat-notif }
+		{ platform:iOS Simulator, arch:arm64, id:AAA47DD0-4F2A-4088-A775-1E26519C6355, OS:26.5, name:kat-pagecard }
+		{ platform:iOS Simulator, arch:arm64, id:52895E2D-474F-4602-B4D0-3B470F943E08, OS:26.5, name:kat-pilule }
+		{ platform:iOS Simulator, arch:arm64, id:DE53BBC7-B05F-4A17-BBB8-550904656F56, OS:26.5, name:kat-popup }
+		{ platform:iOS Simulator, arch:arm64, id:4DA91F1B-CF13-47DC-A2A6-9BE3BD9AC2B7, OS:26.5, name:kat-progress }
+		{ platform:iOS Simulator, arch:arm64, id:E6A4E963-E90F-4534-AAF5-059657408D7D, OS:26.5, name:kat-road }
+		{ platform:iOS Simulator, arch:arm64, id:C2B87454-2176-4816-99C2-647AF1F4DECA, OS:26.5, name:kat-slider }
+		{ platform:iOS Simulator, arch:arm64, id:E9241D2D-EB46-43C8-A76A-DE5319DE48D6, OS:26.5, name:kat-stop }
+		{ platform:iOS Simulator, arch:arm64, id:58183E61-2F08-4A03-BD65-7F0BC1B19BA1, OS:26.5, name:kat-story }
+		{ platform:iOS Simulator, arch:arm64, id:E500AB23-1A6D-47B4-8506-8D3922038DD4, OS:26.5, name:kat-tapis }
+		{ platform:iOS Simulator, arch:arm64, id:E8223D4B-69E5-4FDF-BCE7-C614E94940AA, OS:26.5, name:kat-vitrine }
+		{ platform:iOS Simulator, arch:arm64, id:AA36EA2C-0220-4292-9190-A78E13C759AE, OS:26.5, name:woop-ile-20260916 }

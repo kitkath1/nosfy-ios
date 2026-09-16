@@ -1,0 +1,94 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile49-sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" "-only-testing:WoopUITests/IleDansAppUITests/test01_reperePresentPuisTapDetailSansQuitterWoop" -resultBundlePath /tmp/woop-ile50-profil-final.xcresult -parallel-testing-enabled NO
+
+2026-09-16 17:21:45.682 xcodebuild[98181:16415929] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile50-profil-final.xcresult
+
+2026-09-16 17:21:45.715 xcodebuild[98181:16415929] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:21:46.697 xcodebuild[98181:16415929] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:21:46.952 xcodebuild[98181:16415929] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 17:21:48.103607+0200 WoopUITests-Runner[98189:16416242] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 17:21:48.814.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 17:21:48.815.
+Test Suite 'IleDansAppUITests' started at 2026-09-16 17:21:48.815.
+Test Case '-[WoopUITests.IleDansAppUITests test01_reperePresentPuisTapDetailSansQuitterWoop]' started.
+    t =     0.00s Start Test at 2026-09-16 17:21:48.816
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 17:21:49.017 xcodebuild[98181:16415929] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 17:21:49.017 xcodebuild[98181:16415929] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[98189]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1084e0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107d74398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.22s         Setting up automation session
+    t =     2.44s         Wait for fr.kathryn.woop to idle
+    t =     5.46s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     6.49s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     6.49s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.57s Find the "fouettage-pilule-sonde" Any
+    t =     6.62s Waiting 8.0s for "fouettage-ile" Any to exist
+    t =     7.64s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-ile" Any`
+    t =     7.64s         Checking existence of `"fouettage-ile" Any`
+    t =     7.66s Checking existence of `"fouettage-pilule" Any`
+    t =     7.95s Checking existence of `"seance-ile-chrono" StaticText`
+    t =     8.00s Checking existence of `"seance-ile-stop" Button`
+    t =     8.05s Find the "seance-ile-chrono" StaticText
+    t =     8.10s Find the Target Application 'fr.kathryn.woop'
+    t =     8.13s Find the "seance-ile-stop" Button
+    t =     8.17s Find the Target Application 'fr.kathryn.woop'
+    t =     8.21s Find the "seance-ile-chrono" StaticText
+    t =     8.25s Find the "seance-ile-stop" Button
+    t =     8.30s Find the Target Application 'fr.kathryn.woop'
+    t =     8.46s Added attachment named 'repere-profil'
+    t =     8.46s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(39.666666666666664, 6.0, 314.0, 54.0)
+    t =     8.49s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 57.0)
+    t =     8.49s     Wait for fr.kathryn.woop to idle
+    t =     8.49s     Find the Target Application 'fr.kathryn.woop'
+    t =     8.52s     Check for interrupting elements affecting "Woop" Application
+    t =     8.56s     Synthesize event
+    t =     8.56s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.59s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.62s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.93s     Wait for fr.kathryn.woop to idle
+    t =     8.94s Find the "fouettage-pilule-sonde" Any
+    t =     8.98s Waiting 5.0s for "fouettage-pilule" Any to exist
+    t =    10.01s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    10.01s         Checking existence of `"fouettage-pilule" Any`
+    t =    10.02s Find the Target Application 'fr.kathryn.woop'
+    t =    10.23s Added attachment named 'pastille-sortie-profil'
+    t =    10.23s Find the "fouettage-pilule" Any
+    t =    10.24s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0)
+    t =    10.24s     Wait for fr.kathryn.woop to idle
+    t =    10.25s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.28s     Check for interrupting elements affecting "Woop" Application
+    t =    10.31s     Synthesize event
+    t =    10.31s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.34s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.37s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.69s     Wait for fr.kathryn.woop to idle
+    t =    10.69s Waiting 6.0s for Any (First Match) to exist
+    t =    11.72s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    11.72s         Checking existence of `Any (First Match)`
+    t =    11.73s Find the Target Application 'fr.kathryn.woop'
+    t =    11.91s Added attachment named 'detail-depuis-pastille'
+    t =    11.91s Tear Down
+Test Case '-[WoopUITests.IleDansAppUITests test01_reperePresentPuisTapDetailSansQuitterWoop]' passed (12.162 seconds).
+Test Suite 'IleDansAppUITests' passed at 2026-09-16 17:22:00.978.
+	 Executed 1 test, with 0 failures (0 unexpected) in 12.162 (12.163) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-16 17:22:00.978.
+	 Executed 1 test, with 0 failures (0 unexpected) in 12.162 (12.163) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 17:22:00.979.
+	 Executed 1 test, with 0 failures (0 unexpected) in 12.162 (12.164) seconds
+2026-09-16 17:22:01.306 xcodebuild[98181:16415929] [MT] IDETestOperationsObserverDebug: 14.605 elapsed -- Testing started completed.
+2026-09-16 17:22:01.306 xcodebuild[98181:16415929] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 17:22:01.306 xcodebuild[98181:16415929] [MT] IDETestOperationsObserverDebug: 14.605 sec, +14.605 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile50-profil-final.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

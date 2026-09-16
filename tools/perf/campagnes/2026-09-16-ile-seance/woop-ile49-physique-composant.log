@@ -1,0 +1,151 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile47-runtime/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testGestesDuComposantSurIPhone" -resultBundlePath /tmp/woop-ile49-physique-composant.xcresult -parallel-testing-enabled NO
+
+2026-09-16 16:56:55.784 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile49-physique-composant.xcresult
+
+2026-09-16 16:56:55.786 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 16:56:55.885 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 16:56:56.036 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 16:56:57.837130+0200 NavRuntimeUITests-Runner[33226:2559424] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 16:56:58.177.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 16:56:58.178.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 16:56:58.178.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testGestesDuComposantSurIPhone]' started.
+    t =     0.00s Start Test at 2026-09-16 16:56:58.178
+    t =     0.01s Set Up
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Launch fr.kathryn.woop
+    t =     0.01s         Terminate fr.kathryn.woop:33211
+2026-09-16 16:56:58.394 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.12s         Setting up automation session
+    t =     1.30s         Wait for fr.kathryn.woop to idle
+    t =     2.70s Waiting 15.0s for "In session · 7 min" StaticText to exist
+    t =     3.72s     Checking `Expect predicate `existsNoRetry == 1` for object "In session · 7 min" StaticText`
+    t =     3.73s         Checking existence of `"In session · 7 min" StaticText`
+    t =     3.79s Waiting 5.0s for "seance-pastille" Any to exist
+    t =     4.82s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-pastille" Any`
+    t =     4.82s         Checking existence of `"seance-pastille" Any`
+    t =     4.84s Find the "seance-pastille" Any
+    t =     4.87s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 622.0) for 0.0 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 5.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =     4.87s     Wait for fr.kathryn.woop to idle
+    t =     4.87s     Find the Application 'fr.kathryn.woop'
+    t =     4.90s     Check for interrupting elements affecting "Woop" Application
+    t =     4.95s     Synthesize event
+    t =     4.95s         Find the Application 'fr.kathryn.woop'
+    t =     4.97s         Find the Application 'fr.kathryn.woop'
+    t =     5.00s         Find the Application 'fr.kathryn.woop'
+    t =     5.01s         Find the Application 'fr.kathryn.woop'
+    t =     5.03s         Find the Application 'fr.kathryn.woop'
+    t =     5.54s     Wait for fr.kathryn.woop to idle
+    t =     5.55s Waiting 7.0s for "seance-ile" Any to exist
+    t =     6.57s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-ile" Any`
+    t =     6.57s         Checking existence of `"seance-ile" Any`
+    t =     8.59s Find the Application 'fr.kathryn.woop'
+    t =     8.78s Added attachment named 'composant-iphone-repere-1'
+    t =     9.78s Find the Application 'fr.kathryn.woop'
+    t =     9.95s Added attachment named 'composant-iphone-repere-2'
+WOOP_REPERE_PALIER_DEBUT
+WOOP_REPERE_PALIER_FIN
+    t =    34.95s Find the Application 'fr.kathryn.woop'
+    t =    34.97s Tap Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 62.0)
+    t =    34.97s     Wait for fr.kathryn.woop to idle
+    t =    34.98s     Find the Application 'fr.kathryn.woop'
+    t =    35.00s     Check for interrupting elements affecting "Woop" Application
+    t =    35.02s     Synthesize event
+    t =    35.03s         Find the Application 'fr.kathryn.woop'
+    t =    35.04s         Find the Application 'fr.kathryn.woop'
+    t =    35.07s         Find the Application 'fr.kathryn.woop'
+    t =    35.36s     Wait for fr.kathryn.woop to idle
+    t =    35.37s Waiting 7.0s for "seance-pastille" Image to exist
+    t =    36.39s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-pastille" Image`
+    t =    36.39s         Checking existence of `"seance-pastille" Image`
+    t =    38.41s Find the Application 'fr.kathryn.woop'
+    t =    38.58s Added attachment named 'composant-iphone-sortie-tap'
+    t =    38.59s Find the "seance-pastille" Image
+    t =    38.60s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 622.0) for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 472.0) with velocity of 250.00 pixels per second, and then hold for 0.3 seconds 
+    t =    38.60s     Wait for fr.kathryn.woop to idle
+    t =    38.60s     Find the Application 'fr.kathryn.woop'
+    t =    38.62s     Check for interrupting elements affecting "Woop" Application
+    t =    38.63s     Synthesize event
+    t =    38.64s         Find the Application 'fr.kathryn.woop'
+    t =    38.65s         Find the Application 'fr.kathryn.woop'
+    t =    38.66s         Find the Application 'fr.kathryn.woop'
+    t =    38.67s         Find the Application 'fr.kathryn.woop'
+    t =    38.68s         Find the Application 'fr.kathryn.woop'
+    t =    39.89s     Wait for fr.kathryn.woop to idle
+    t =    41.40s Checking existence of `"seance-pastille" Image`
+    t =    41.42s Find the "seance-pastille" Image
+    t =    41.44s Find the "seance-pastille" Image
+    t =    41.46s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 472.0) for 0.0 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 5.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =    41.46s     Wait for fr.kathryn.woop to idle
+    t =    41.47s     Find the Application 'fr.kathryn.woop'
+    t =    41.49s     Check for interrupting elements affecting "Woop" Application
+    t =    41.52s     Synthesize event
+    t =    41.53s         Find the Application 'fr.kathryn.woop'
+    t =    41.55s         Find the Application 'fr.kathryn.woop'
+    t =    41.57s         Find the Application 'fr.kathryn.woop'
+    t =    41.58s         Find the Application 'fr.kathryn.woop'
+    t =    41.60s         Find the Application 'fr.kathryn.woop'
+    t =    42.07s     Wait for fr.kathryn.woop to idle
+    t =    42.08s Waiting 7.0s for "seance-ile" Any to exist
+    t =    43.08s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-ile" Any`
+    t =    43.08s         Checking existence of `"seance-ile" Any`
+    t =    43.10s Find the Application 'fr.kathryn.woop'
+    t =    43.12s Find the Application 'fr.kathryn.woop'
+    t =    43.14s Press Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 62.0) for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 270.0) with velocity of 250.00 pixels per second, and then hold for 0.3 seconds 
+    t =    43.14s     Wait for fr.kathryn.woop to idle
+    t =    43.15s     Find the Application 'fr.kathryn.woop'
+    t =    43.18s     Check for interrupting elements affecting "Woop" Application
+    t =    43.21s     Synthesize event
+    t =    43.21s         Find the Application 'fr.kathryn.woop'
+    t =    43.23s         Find the Application 'fr.kathryn.woop'
+    t =    43.25s         Find the Application 'fr.kathryn.woop'
+    t =    43.27s         Find the Application 'fr.kathryn.woop'
+    t =    43.29s         Find the Application 'fr.kathryn.woop'
+    t =    44.74s     Wait for fr.kathryn.woop to idle
+    t =    44.75s Waiting 7.0s for "seance-pastille" Image to exist
+    t =    45.81s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-pastille" Image`
+    t =    45.81s         Checking existence of `"seance-pastille" Image`
+    t =    47.83s Find the Application 'fr.kathryn.woop'
+    t =    48.01s Added attachment named 'composant-iphone-sortie-drag'
+    t =    48.01s Find the "seance-pastille" Image
+    t =    48.03s Find the "seance-pastille" Image
+    t =    48.04s Tap Application 'fr.kathryn.woop'[0.00, 0.00] -> (72.0, 130.0)
+    t =    48.04s     Wait for fr.kathryn.woop to idle
+    t =    48.04s     Find the Application 'fr.kathryn.woop'
+    t =    48.06s     Check for interrupting elements affecting "Woop" Application
+    t =    48.08s     Synthesize event
+    t =    48.08s         Find the Application 'fr.kathryn.woop'
+    t =    48.09s         Find the Application 'fr.kathryn.woop'
+    t =    48.10s         Find the Application 'fr.kathryn.woop'
+    t =    48.39s     Wait for fr.kathryn.woop to idle
+    t =    48.39s Waiting 7.0s for "seance-detail" Any to exist
+    t =    49.41s     Checking `Expect predicate `existsNoRetry == 1` for object "seance-detail" Any`
+    t =    49.41s         Checking existence of `"seance-detail" Any`
+    t =    49.43s Find the Application 'fr.kathryn.woop'
+    t =    49.62s Added attachment named 'composant-iphone-detail'
+    t =    49.62s Tear Down
+2026-09-16 16:57:48.014 xcodebuild[92370:16333471] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testGestesDuComposantSurIPhone]' passed (49.922 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 16:57:48.102.
+	 Executed 1 test, with 0 failures (0 unexpected) in 49.922 (49.924) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 16:57:48.103.
+	 Executed 1 test, with 0 failures (0 unexpected) in 49.922 (49.925) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 16:57:48.104.
+	 Executed 1 test, with 0 failures (0 unexpected) in 49.922 (49.926) seconds
+2026-09-16 16:57:48.445 xcodebuild[92370:16333471] [MT] IDETestOperationsObserverDebug: 52.408 elapsed -- Testing started completed.
+2026-09-16 16:57:48.445 xcodebuild[92370:16333471] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 16:57:48.445 xcodebuild[92370:16333471] [MT] IDETestOperationsObserverDebug: 52.408 sec, +52.408 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile49-physique-composant.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

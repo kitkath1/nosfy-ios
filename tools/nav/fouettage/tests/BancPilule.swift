@@ -30,6 +30,8 @@ struct EtatPilule {
     var nbChanged: Int { Int(d["chg"] ?? "") ?? -1 }
     var nbTap: Int { Int(d["tap"] ?? "") ?? -1 }
     var nbDehors: Int { Int(d["out"] ?? "") ?? -1 }
+    /// Le STOP de l'île a été pressé (V2 : il vit à DROITE de la fine).
+    var nbStop: Int { Int(d["stop"] ?? "") ?? -1 }
     /// Le geste est COMMIS : ni doigt, ni vol de rappel en cours.
     var pose: Bool { !enDrag && !enVol }
 }
@@ -61,7 +63,9 @@ final class BancPilule {
     }
     var grandPlayer: XCUIElement {
         app.descendants(matching: .any)
-            .matching(identifier: "fouettage-grand-player").firstMatch
+            .matching(NSPredicate(format: "identifier IN %@",
+                                  ["fouettage-grand-player", "seance-detail"]))
+            .firstMatch
     }
     var bande: XCUIElement {
         app.descendants(matching: .any)
@@ -90,13 +94,8 @@ final class BancPilule {
         let r = ile.frame
         XCTAssertTrue(r.height > 10, "l'île n'a pas de rect (r=\(r))")
         print("FOUET-PILULE rect ile=\(r)")
-        // ⚠️ ON NE VISE PAS LE CENTRE DE L'ÎLE (04-09, mesuré) : son
-        // centre tombe à y≈30, c'est-à-dire DANS le trou physique de la
-        // Dynamic Island, que le système se réserve — un toucher n'y
-        // arrive pas à l'app. Seule la lèvre BASSE de la capsule (sous le
-        // trou) est atteignable au doigt. Si un jour le tap doit marcher
-        // « sur l'île », c'est cette lèvre qu'il faut épaissir.
-        return pointEcran(x: r.midX, y: r.maxY - 6)
+        // La capsule finit à y60 ; sa lèvre basse est accessible à y57.
+        return pointEcran(x: r.midX, y: 57)
     }
 
     /// Le centre d'un glyphe de nav (0 = accueil, 1 = exercices, 2 = profil).

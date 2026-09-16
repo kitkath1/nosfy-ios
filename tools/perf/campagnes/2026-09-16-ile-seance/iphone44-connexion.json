@@ -1,0 +1,251 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "list",
+      "devices",
+      "--timeout",
+      "10",
+      "--json-output",
+      "/tmp/woop-ile-44-devices.json"
+    ],
+    "commandType" : "devicectl.list.devices",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "devices" : [
+      {
+        "capabilities" : [
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.tags",
+            "name" : "Modify Tags"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.default.user.credentials",
+            "name" : "Modify credentials for default users for a device"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.unpairdevice",
+            "name" : "Unpair Device"
+          }
+        ],
+        "connectionProperties" : {
+          "authenticationType" : "manualPairing",
+          "isMobileDeviceOnly" : false,
+          "lastConnectionDate" : "2026-06-02T14:07:00.000Z",
+          "pairingState" : "paired",
+          "potentialHostnames" : [
+            "iPhone.coredevice.local",
+            "404B8458-7E09-5A58-B845-D7583F8ED28D.coredevice.local",
+            "00008110-001464260120401E.coredevice.local"
+          ],
+          "tunnelState" : "unavailable"
+        },
+        "deviceProperties" : {
+          "ddiServicesAvailable" : false,
+          "developerModeStatus" : "disabled",
+          "hasInternalOSBuild" : false,
+          "name" : "iPhone",
+          "osBuildUpdate" : "23F77",
+          "osVersionNumber" : "26.5"
+        },
+        "hardwareProperties" : {
+          "cpuType" : {
+            "name" : "arm64e",
+            "subType" : 2,
+            "type" : 16777228
+          },
+          "deviceType" : "iPhone",
+          "ecid" : 5739613924638750,
+          "hardwareModel" : "D17AP",
+          "isProductionFused" : true,
+          "marketingName" : "iPhone 13",
+          "platform" : "iOS",
+          "productType" : "iPhone14,5",
+          "reality" : "physical",
+          "serialNumber" : "G79HQCWT6C",
+          "supportedCPUTypes" : [
+            {
+              "name" : "arm64e",
+              "subType" : 2,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64",
+              "subType" : 0,
+              "type" : 16777228
+            }
+          ],
+          "supportedDeviceFamilies" : [
+            1
+          ],
+          "thinningProductType" : "iPhone14,5",
+          "udid" : "00008110-001464260120401E"
+        },
+        "identifier" : "404B8458-7E09-5A58-B845-D7583F8ED28D",
+        "tags" : [
+
+        ],
+        "visibilityClass" : "default"
+      },
+      {
+        "capabilities" : [
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.tags",
+            "name" : "Modify Tags"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.default.user.credentials",
+            "name" : "Modify credentials for default users for a device"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.unpairdevice",
+            "name" : "Unpair Device"
+          }
+        ],
+        "connectionProperties" : {
+          "authenticationType" : "manualPairing",
+          "isMobileDeviceOnly" : false,
+          "lastConnectionDate" : "2026-07-29T15:53:00.000Z",
+          "pairingState" : "paired",
+          "potentialHostnames" : [
+            "iPhone-3.coredevice.local",
+            "44FCC57B-9828-5A29-BDB8-7B125E498AB4.coredevice.local",
+            "00008120-001928D201FB601E.coredevice.local"
+          ],
+          "tunnelState" : "unavailable"
+        },
+        "deviceProperties" : {
+          "ddiServicesAvailable" : false,
+          "developerModeStatus" : "disabled",
+          "hasInternalOSBuild" : false,
+          "name" : "iPhone (3)",
+          "osBuildUpdate" : "23F84",
+          "osVersionNumber" : "26.5.2"
+        },
+        "hardwareProperties" : {
+          "cpuType" : {
+            "name" : "arm64e",
+            "subType" : 2,
+            "type" : 16777228
+          },
+          "deviceType" : "iPhone",
+          "ecid" : 7081756859260958,
+          "hardwareModel" : "D37AP",
+          "isProductionFused" : true,
+          "marketingName" : "iPhone 15",
+          "platform" : "iOS",
+          "productType" : "iPhone15,4",
+          "reality" : "physical",
+          "serialNumber" : "JCHX5M7452",
+          "supportedCPUTypes" : [
+            {
+              "name" : "arm64e",
+              "subType" : 2,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64",
+              "subType" : 0,
+              "type" : 16777228
+            }
+          ],
+          "supportedDeviceFamilies" : [
+            1
+          ],
+          "thinningProductType" : "iPhone15,4",
+          "udid" : "00008120-001928D201FB601E"
+        },
+        "identifier" : "44FCC57B-9828-5A29-BDB8-7B125E498AB4",
+        "tags" : [
+
+        ],
+        "visibilityClass" : "default"
+      },
+      {
+        "capabilities" : [
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.tags",
+            "name" : "Modify Tags"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.default.user.credentials",
+            "name" : "Modify credentials for default users for a device"
+          },
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.unpairdevice",
+            "name" : "Unpair Device"
+          }
+        ],
+        "connectionProperties" : {
+          "authenticationType" : "manualPairing",
+          "isMobileDeviceOnly" : false,
+          "lastConnectionDate" : "2026-09-16T11:49:00.000Z",
+          "pairingState" : "paired",
+          "potentialHostnames" : [
+            "iPhone-de-Frederic.coredevice.local",
+            "022244AD-484B-5489-A884-6B781A82E372.coredevice.local",
+            "00008120-001E4CDC0A85A01E.coredevice.local"
+          ],
+          "tunnelState" : "unavailable"
+        },
+        "deviceProperties" : {
+          "bootedFromSnapshot" : true,
+          "bootedSnapshotName" : "com.apple.os.update-7EAF4BDA240E9682C862DD316F6375BC698919D256F7B016503B59104A2737EC",
+          "ddiServicesAvailable" : false,
+          "developerModeStatus" : "enabled",
+          "hasInternalOSBuild" : false,
+          "name" : "iPhone de Frédéric",
+          "osBuildUpdate" : "23G83",
+          "osVersionNumber" : "26.6.1",
+          "rootFileSystemIsWritable" : false,
+          "supportsCheckedAllocations" : false
+        },
+        "hardwareProperties" : {
+          "cpuType" : {
+            "name" : "arm64e",
+            "subType" : 2,
+            "type" : 16777228
+          },
+          "deviceType" : "iPhone",
+          "ecid" : 8528757254365214,
+          "hardwareModel" : "D37AP",
+          "internalStorageCapacity" : 128000000000,
+          "isProductionFused" : true,
+          "marketingName" : "iPhone 15",
+          "platform" : "iOS",
+          "productType" : "iPhone15,4",
+          "reality" : "physical",
+          "serialNumber" : "MG4G73QGF0",
+          "supportedCPUTypes" : [
+            {
+              "name" : "arm64e",
+              "subType" : 2,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64",
+              "subType" : 0,
+              "type" : 16777228
+            }
+          ],
+          "supportedDeviceFamilies" : [
+            1
+          ],
+          "thinningProductType" : "iPhone15,4",
+          "udid" : "00008120-001E4CDC0A85A01E"
+        },
+        "identifier" : "022244AD-484B-5489-A884-6B781A82E372",
+        "tags" : [
+
+        ],
+        "visibilityClass" : "default"
+      }
+    ]
+  }
+}

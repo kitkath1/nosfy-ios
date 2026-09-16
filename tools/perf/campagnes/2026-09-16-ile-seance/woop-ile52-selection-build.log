@@ -1,0 +1,1241 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild build-for-testing -project /tmp/woop-ile52-selection-banc/Woop.xcodeproj -scheme WoopUITests -configuration Debug -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" -derivedDataPath /tmp/woop-ile52-selection-dd -jobs 2 CURRENT_PROJECT_VERSION=52
+
+Build settings from command line:
+    CURRENT_PROJECT_VERSION = 52
+
+Build Preparation
+Build task concurrency set to 2 via user default IDEBuildOperationMaxNumberOfConcurrentCompileTasks
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'WoopUITests' in project 'Woop'
+        ➜ Explicit dependency on target 'Woop' in project 'Woop'
+    Target 'Woop' in project 'Woop'
+        ➜ Explicit dependency on target 'WoopWidgets' in project 'Woop'
+    Target 'WoopWidgets' in project 'Woop' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/woop-ile52-selection-banc/Woop/AppIcon.icon /tmp/woop-ile52-selection-banc/Woop/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: baccaac7b8d69fe87cc2e7d2512fe300
+Build description path: /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/XCBuildData/baccaac7b8d69fe87cc2e7d2512fe300.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Products
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Products
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop-9e0f0030f2e32aa9ae7b1264fa6f96ac-VFS-iphonesimulator/all-product-headers.yaml
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop-9e0f0030f2e32aa9ae7b1264fa6f96ac-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /tmp/woop-ile52-selection-banc/Woop.xcodeproj
+    builtin-create-build-directory /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyStaticMetadataFileList (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-non-framework-target-headers.hmap (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugEntryPoint-normal-arm64.txt (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugEntryPoint-normal-arm64.txt
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibPath-normal-arm64.txt (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibInstallName-normal-arm64.txt (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftConstValuesFileList (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.LinkFileList (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.LinkFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/Entitlements-Simulated.plist (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/Entitlements-Simulated.plist
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyStaticMetadataFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-non-framework-target-headers.hmap (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ProductTypeInfoPlistAdditions.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ProductTypeInfoPlistAdditions.plist
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/Entitlements-Simulated.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/Entitlements-Simulated.plist
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyStaticMetadataFileList (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-non-framework-target-headers.hmap (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibPath-normal-arm64.txt (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibInstallName-normal-arm64.txt (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftConstValuesFileList (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.LinkFileList (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.LinkFileList
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json
+
+WriteAuxiliaryFile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/Entitlements-Simulated.plist (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    write-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/Entitlements-Simulated.plist
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app
+
+ProcessProductPackaging "" /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "V45F4LUU8D.fr.kathryn.woop.WoopWidgets";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent
+
+ProcessProductPackagingDER /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent.der (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /usr/bin/derq query -f xml -i /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent.der --raw
+
+Ld /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -install_name @rpath/WoopWidgets.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib
+
+ProcessInfoPlistFile /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist /tmp/woop-ile52-selection-banc/WoopWidgets/Info.plist (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-infoPlistUtility /tmp/woop-ile52-selection-banc/WoopWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist
+
+SwiftDriver WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile52-selection-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdarg-C06L7FQWER0A84QK5ZY66EAO4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stddef-5UNXQTDDG3ULO5PPSIGWV6X1J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ptrcheck-44UL0Q7YFAK4JSCDH9ME6GR7M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_float-DLUW148JTQ17PIO49QI5FTC8V.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_SwiftConcurrencyShims-QL0QVHTZOCSC7TFFAQVSRPLM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdbool-5HPSM6LEOX3FGEUAZ38AT5HB4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftShims-5I9PZNWLD223IIQPMXUGJOLA7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ptrauth-6YXD0SPFRHVOIZMEBHVRJ9YLJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/DeveloperToolsSupport-BELP42COSLWC5J5CCRVG0QOY9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_AvailabilityInternal-4QAXOC7390J6RPG210H82MZSI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ActivityKit-7S6CKTEOEBRYLLUFT5PB3O2IQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation1-6YTEIIPLO4S56EM248LCTXPEB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation2-356GBJXUGDBQ9CF6N36U0B7HQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ExtensionFoundation-DLVA14L3GGSV5XJ2ZTC4CVD67.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_limits-ERN4QG51IY5DIQMGGWJNR0E5G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_tgmath-EXWH2PPWG4YBMRGBWZI2CO18J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdint-DBHBC839GA2SHPNORGLZOR7CI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/sys_types-716SIFAWBHCH70JDVLFNU758B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_intrinsics-II1K5BYRGXF9VPZDX275APFP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdatomic-CF32SG1HSDNSJNBTO5M9U0USP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation3-D7H30LBYXWIMNYSYLPJTHSH6A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_inttypes-16CG0846RT3ZFH71AZBM95SMQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/simd-74P3ZZVOF8E1E88CRI0WB3ZF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Darwin-873T7Q0H4QZT3IOBUG9WZTR51.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ObjectiveC-8QHV5WV4UUY157X3Q9JSTBCQC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/MachO-6HZGCE0PPDL74HB5EWOYQIPCO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os_object-3PF9AAYPQMHJRI3NHSRCCE5GT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Spatial-DSV2VKOUTZKEQ1R02DW1TX6K6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os_workgroup-9UW46VHNIE19A8XOSMIUC91YW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Dispatch-EHV9JNHX4LPGX4L28TSJFIO25.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/dnssd-53MUPWT341PUHZUM7RCYEX81A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreFoundation-C0L3X7N4F6FW9RG8BK9LZN8F1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/XPC-61A6DZA9F3DK7QWBRQE0KLB2F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os-10IKP1X0LZHN5L9E6QQYCXFVD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CFNetwork-CZGTP6VZI41J7U52DATIFYMW6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreGraphics-34DPPLSVZ3LR1U9N8ZPL2SLLV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Security-927DH0UEDY6TV08RAV9ZRVB87.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ImageIO-4YGZS1GLD80WY6LW9D7XY91JZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreText-D7CMGSD85LHRY58LMKMOVJVS1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Foundation-1F7JU8ENLDQF97MCUIZOSK4HJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_LocationEssentials-4F7F1TJ0W4WK7EMPPSN8QK2SQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/OSLog-800NRPIHZDXC1MO8IBRBRGCIK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/WidgetKit-4TUT9FIAN36MMGLWKU37BVT2G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/DataDetection-BHZQ3OCX5KKBRHIOT1S17FFDK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Accessibility-ALNXWNV2PJQVJYXETWYOQD751.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/RelevanceKit-7B28AM5D7L7I9K0WGEJESQTL7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UniformTypeIdentifiers-47BXB2GWGDE6K0LL4FPQPP4OD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/FileProvider-EZ3K1AWCV381GGWK2KYRG3FSE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreTransferable-9JJQG92RFU7LU9B9YL8LTFSEY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/IOSurface-6VB2HOKAVNPIADS31E9L8WP44.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/OpenGLES-7XFJOB8TF4L7HYJ1EGAIM21B0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UIUtilities-7ADFFUDYKW39IWQNN0KZS718Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Metal-4J4DZCWJ5NEL08TQZEO7E472L.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AppIntents-8FW6RGMX83H9WSQ4J622CFBK0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Symbols-AUTKIRC1YIW7NAZYZXEKY63CZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreLocation-8C1KN1C5F40L8DBU40EFLUUPX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreData-B5VUPCLIYB7I3Q9MKO4I19J7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreVideo-2OALGZ5ZPED262RL1K0I3C81A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UserNotifications-8V0AJ2NUX02NIRZSTZTDQM5PQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreSpotlight-C5Q3RLL2L61KLT23AB8001PM2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreImage-7U4LSADBGAYO05X4PC1JFRVGH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Intents-CQ969NLLB24L199LOCXT5QLYP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/QuartzCore-E2UW5GOLKIC6I4P33YDCFSKV5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Network-AIHYZALUOFDNPL51KLEDHYCG4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UIKit-21PW5OCU8L26EDTCBUHRENMLS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftUICore-2SYCXGNW6PSHV5A1GL39OF07J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftUI-DIQH65LKI1Z35V87S6EVQ8SUH.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ WoopWidgets (in target 'WoopWidgets' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 Compiling\ ImpGlyph.swift /tmp/woop-ile52-selection-banc/WoopShared/ImpGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopShared/ImpGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 Compiling\ WoopWidgetsBundle.swift /tmp/woop-ile52-selection-banc/WoopWidgets/WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopWidgets/WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for WoopWidgets (in target 'WoopWidgets' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile52-selection-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling ImpGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ProgressComet.swift /tmp/woop-ile52-selection-banc/WoopShared/ProgressComet.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopShared/ProgressComet.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftMergeGeneratedHeaders /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/WoopWidgets-Swift.h /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-swiftHeaderTool -arch arm64 /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/WoopWidgets-Swift.h
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProgressComet.swift (in target 'WoopWidgets' from project 'Woop')
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftdoc (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftdoc /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftsourceinfo (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftsourceinfo /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ WorkoutLiveActivity.swift /tmp/woop-ile52-selection-banc/WoopWidgets/WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopWidgets/WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WoopWidgetsBundle.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ WorkoutActivity.swift /tmp/woop-ile52-selection-banc/WoopShared/WorkoutActivity.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopShared/WorkoutActivity.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 Compiling\ MoonGlyph.swift /tmp/woop-ile52-selection-banc/WoopShared/MoonGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/WoopShared/MoonGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WorkoutLiveActivity.swift (in target 'WoopWidgets' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling WorkoutActivity.swift (in target 'WoopWidgets' from project 'Woop')
+
+ProcessProductPackaging /tmp/woop-ile52-selection-banc/Woop/Woop.entitlements /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Entitlements:
+    
+    {
+}
+    
+    builtin-productPackagingUtility /tmp/woop-ile52-selection-banc/Woop/Woop.entitlements -entitlements -format xml -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent
+
+ProcessProductPackaging /tmp/woop-ile52-selection-banc/Woop/Woop.entitlements /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "V45F4LUU8D.fr.kathryn.woop";
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+}
+    
+    builtin-productPackagingUtility /tmp/woop-ile52-selection-banc/Woop/Woop.entitlements -entitlements -format xml -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent
+
+ProcessProductPackagingDER /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent.der (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /usr/bin/derq query -f xml -i /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent.der --raw
+
+ProcessProductPackagingDER /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent.der (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /usr/bin/derq query -f xml -i /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent.der --raw
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/unthinned (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/unthinned
+
+MkDir /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /bin/mkdir -p /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /tmp/woop-ile52-selection-banc/Woop/AppIcon.icon /tmp/woop-ile52-selection-banc/Woop/Assets.xcassets (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /tmp/woop-ile52-selection-banc/Woop/AppIcon.icon /tmp/woop-ile52-selection-banc/Woop/Assets.xcassets --compile /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app --output-format human-readable-text --notices --warnings --export-dependency-info /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_dependencies --output-partial-info-plist /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region fr --target-device iphone --minimum-deployment-target 26.0 --platform iphonesimulator --bundle-identifier fr.kathryn.woop --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.h
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+SwiftDriverJobDiscovery normal arm64 Compiling MoonGlyph.swift (in target 'WoopWidgets' from project 'Woop')
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/WahouAura.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/WahouAura.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/WahouAura.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/WahouAura.dat /tmp/woop-ile52-selection-banc/Woop/WahouAura.metal
+
+SwiftDriver\ Compilation WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile52-selection-banc -experimental-emit-module-separately -disable-cmo
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/VerreGalet.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreGalet.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreGalet.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreGalet.dat /tmp/woop-ile52-selection-banc/Woop/VerreGalet.metal
+
+Ld /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.LinkFileList -install_name @rpath/WoopWidgets.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat -fapplication-extension -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-linker-args.resp -Xlinker -alias -Xlinker _NSExtensionMain -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/VerreCoulant.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreCoulant-8881f8be22e4cf296c7e471e5ba7019e.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreCoulant-8881f8be22e4cf296c7e471e5ba7019e.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreCoulant-8881f8be22e4cf296c7e471e5ba7019e.dat /tmp/woop-ile52-selection-banc/Woop/VerreCoulant.metal
+/tmp/woop-ile52-selection-banc/Woop/VerreCoulant.metal:138:11: warning: unused variable 'swell' [-Wunused-variable]
+    float swell = 1.0 + 0.050 * sin(t * 6.2832 / 8.7)
+          ^
+1 warning generated.
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/TreasureBadge.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/TreasureBadge.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/TreasureBadge.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/TreasureBadge.dat /tmp/woop-ile52-selection-banc/Woop/TreasureBadge.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/PorteCaresse.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PorteCaresse.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PorteCaresse.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PorteCaresse.dat /tmp/woop-ile52-selection-banc/Woop/PorteCaresse.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/PieceVerre.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PieceVerre.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PieceVerre.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PieceVerre.dat /tmp/woop-ile52-selection-banc/Woop/PieceVerre.metal
+
+ConstructStubExecutorLinkFileList /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    construct-stub-executor-link-file-list /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'WoopWidgets' from project 'Woop')
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/PebbleDust.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PebbleDust.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PebbleDust.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PebbleDust.dat /tmp/woop-ile52-selection-banc/Woop/PebbleDust.metal
+
+Ld /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets normal (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_entry -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugEntryPoint-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-ExecutorLinkFileList-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.appex-Simulated.xcent.der /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib -Xlinker -no_adhoc_codesign -o /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/ObsidianCard.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObsidianCard-bb496b3f31316fdcc24077c75c3d9779.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObsidianCard-bb496b3f31316fdcc24077c75c3d9779.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObsidianCard-bb496b3f31316fdcc24077c75c3d9779.dat /tmp/woop-ile52-selection-banc/Woop/ObsidianCard.metal
+/tmp/woop-ile52-selection-banc/Woop/ObsidianCard.metal:72:14: warning: unused function 'olobe' [-Wunused-function]
+static float olobe(float2 p, float2 c, float2 s) {
+             ^
+/tmp/woop-ile52-selection-banc/Woop/ObsidianCard.metal:89:17: warning: unused variable 'kWarm' [-Wunused-const-variable]
+constant float3 kWarm = float3(1.000, 0.456, 0.154);   // la source chaude
+                ^
+/tmp/woop-ile52-selection-banc/Woop/ObsidianCard.metal:97:17: warning: unused variable 'kRim' [-Wunused-const-variable]
+constant float3 kRim  = float3(1.000, 0.600, 0.320);
+                ^
+3 warnings generated.
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/ObjectiveJewel.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObjectiveJewel.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObjectiveJewel.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObjectiveJewel.dat /tmp/woop-ile52-selection-banc/Woop/ObjectiveJewel.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/NeonPrimary.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NeonPrimary.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NeonPrimary.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NeonPrimary.dat /tmp/woop-ile52-selection-banc/Woop/NeonPrimary.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/NebulaShaders.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NebulaShaders.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NebulaShaders.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NebulaShaders.dat /tmp/woop-ile52-selection-banc/Woop/NebulaShaders.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/NavMonolith.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NavMonolith.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NavMonolith.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NavMonolith.dat /tmp/woop-ile52-selection-banc/Woop/NavMonolith.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/MoonCoin.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/MoonCoin.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/MoonCoin.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/MoonCoin.dat /tmp/woop-ile52-selection-banc/Woop/MoonCoin.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/LogoMonolith.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LogoMonolith.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LogoMonolith.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LogoMonolith.dat /tmp/woop-ile52-selection-banc/Woop/LogoMonolith.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/LoginAurora.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LoginAurora.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LoginAurora.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LoginAurora.dat /tmp/woop-ile52-selection-banc/Woop/LoginAurora.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/LiquidLens.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LiquidLens.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LiquidLens.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LiquidLens.dat /tmp/woop-ile52-selection-banc/Woop/LiquidLens.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/JaugeLacque.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/JaugeLacque.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/JaugeLacque.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/JaugeLacque.dat /tmp/woop-ile52-selection-banc/Woop/JaugeLacque.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/HomeNuit.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HomeNuit-376d862332e53d811a0c1e187fbbac1f.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HomeNuit-376d862332e53d811a0c1e187fbbac1f.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HomeNuit-376d862332e53d811a0c1e187fbbac1f.dat /tmp/woop-ile52-selection-banc/Woop/HomeNuit.metal
+/tmp/woop-ile52-selection-banc/Woop/HomeNuit.metal:41:17: warning: unused variable 'NR_BRAISE' [-Wunused-const-variable]
+constant float3 NR_BRAISE = float3(1.00, 0.62, 0.24);
+                ^
+1 warning generated.
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/HaloDawn.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HaloDawn.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HaloDawn.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HaloDawn.dat /tmp/woop-ile52-selection-banc/Woop/HaloDawn.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/GaletStage.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletStage.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletStage.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletStage.dat /tmp/woop-ile52-selection-banc/Woop/GaletStage.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/GaletMedaillon.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletMedaillon.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletMedaillon.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletMedaillon.dat /tmp/woop-ile52-selection-banc/Woop/GaletMedaillon.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/GaletLisere.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletLisere.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletLisere.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletLisere.dat /tmp/woop-ile52-selection-banc/Woop/GaletLisere.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/FumeeX2.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FumeeX2.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FumeeX2.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FumeeX2.dat /tmp/woop-ile52-selection-banc/Woop/FumeeX2.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/FondVideoMetal.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FondVideoMetal-54469aa63d28c3bc773a491ee8d04da2.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FondVideoMetal-54469aa63d28c3bc773a491ee8d04da2.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FondVideoMetal-54469aa63d28c3bc773a491ee8d04da2.dat /tmp/woop-ile52-selection-banc/Woop/FondVideoMetal.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/FlameJewel.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FlameJewel.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FlameJewel.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FlameJewel.dat /tmp/woop-ile52-selection-banc/Woop/FlameJewel.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/Figures/InkGrain.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/InkGrain.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/InkGrain.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/InkGrain.dat /tmp/woop-ile52-selection-banc/Woop/Figures/InkGrain.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/Figures/GlassFX.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GlassFX.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GlassFX.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GlassFX.dat /tmp/woop-ile52-selection-banc/Woop/Figures/GlassFX.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/ExosHalo.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExosHalo.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExosHalo.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExosHalo.dat /tmp/woop-ile52-selection-banc/Woop/ExosHalo.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/ExoHeaderGlow.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExoHeaderGlow.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExoHeaderGlow.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExoHeaderGlow.dat /tmp/woop-ile52-selection-banc/Woop/ExoHeaderGlow.metal
+/tmp/woop-ile52-selection-banc/Woop/ExoHeaderGlow.metal:57:17: warning: unused variable 'EHG_CREME' [-Wunused-const-variable]
+constant float3 EHG_CREME  = float3(1.000, 0.938, 0.790);  // le cœur
+                ^
+1 warning generated.
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/EmberFlame.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EmberFlame.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EmberFlame.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EmberFlame.dat /tmp/woop-ile52-selection-banc/Woop/EmberFlame.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/EclipseHalo.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EclipseHalo.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EclipseHalo.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EclipseHalo.dat /tmp/woop-ile52-selection-banc/Woop/EclipseHalo.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/DiamondButton.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DiamondButton.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DiamondButton.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DiamondButton.dat /tmp/woop-ile52-selection-banc/Woop/DiamondButton.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/DemonSky.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DemonSky-b525db8e43275b86cfc91ae446bf6254.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DemonSky-b525db8e43275b86cfc91ae446bf6254.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DemonSky-b525db8e43275b86cfc91ae446bf6254.dat /tmp/woop-ile52-selection-banc/Woop/DemonSky.metal
+/tmp/woop-ile52-selection-banc/Woop/DemonSky.metal:34:19: warning: unused variable 'kStrip' [-Wunused-const-variable]
+constexpr sampler kStrip(s_address::repeat, t_address::clamp_to_edge,
+                  ^
+1 warning generated.
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/CorpsLisere.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CorpsLisere.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CorpsLisere.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CorpsLisere.dat /tmp/woop-ile52-selection-banc/Woop/CorpsLisere.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/CarteLune.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarteLune.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarteLune.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarteLune.dat /tmp/woop-ile52-selection-banc/Woop/CarteLune.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/CarnetCuir.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarnetCuir.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarnetCuir.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarnetCuir.dat /tmp/woop-ile52-selection-banc/Woop/CarnetCuir.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/BravoPill.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/BravoPill.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/BravoPill.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/BravoPill.dat /tmp/woop-ile52-selection-banc/Woop/BravoPill.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/AuthNebula.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuthNebula.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuthNebula.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuthNebula.dat /tmp/woop-ile52-selection-banc/Woop/AuthNebula.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/AuroraHome.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraHome.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraHome.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraHome.dat /tmp/woop-ile52-selection-banc/Woop/AuroraHome.metal
+
+CompileMetalFile /tmp/woop-ile52-selection-banc/Woop/AuroraBg.metal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -c -target air64-apple-ios26.0-simulator -gline-tables-only -frecord-sources -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -F/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -fmetal-math-mode\=fast -fmetal-math-fp32-functions\=fast -serialize-diagnostics /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraBg.dia -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraBg.air -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -MMD -MT dependencies -MF /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraBg.dat /tmp/woop-ile52-selection-banc/Woop/AuroraBg.metal
+
+CompileAssetCatalogVariant thinned /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app /tmp/woop-ile52-selection-banc/Woop/AppIcon.icon /tmp/woop-ile52-selection-banc/Woop/Assets.xcassets (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /tmp/woop-ile52-selection-banc/Woop/AppIcon.icon /tmp/woop-ile52-selection-banc/Woop/Assets.xcassets --compile /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_dependencies_thinned --output-partial-info-plist /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone15,4 --filter-for-device-os-version 26.5 --development-region fr --target-device iphone --minimum-deployment-target 26.0 --platform iphonesimulator
+2026-09-16 18:01:22.217 AssetCatalogSimulatorAgent[4257:16500354] The filter 'CIPortraitEffectSpillCorrection' is not implemented in the bundle at /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/CoreImage/PortraitFilters.cifilter.
+/* com.apple.actool.compilation-results */
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist_thinned
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_output/thinned/Assets.car
+
+
+MetalLink /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app/default.metallib (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain/usr/bin/metal -target air64-apple-ios26.0-simulator -frecord-sources -o /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.app/default.metallib /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GlassFX.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/InkGrain.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraBg.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuroraHome.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/AuthNebula.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/BravoPill.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarnetCuir.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CarteLune.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/CorpsLisere.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DemonSky-b525db8e43275b86cfc91ae446bf6254.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/DiamondButton.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EclipseHalo.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/EmberFlame.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExoHeaderGlow.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ExosHalo.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FlameJewel.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FondVideoMetal-54469aa63d28c3bc773a491ee8d04da2.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/FumeeX2.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletLisere.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletMedaillon.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/GaletStage.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HaloDawn.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/HomeNuit-376d862332e53d811a0c1e187fbbac1f.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/JaugeLacque.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LiquidLens.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LoginAurora.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/LogoMonolith.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/MoonCoin.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NavMonolith.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NebulaShaders.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/NeonPrimary.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObjectiveJewel.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/ObsidianCard-bb496b3f31316fdcc24077c75c3d9779.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PebbleDust.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PieceVerre.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/PorteCaresse.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/TreasureBadge.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreCoulant-8881f8be22e4cf296c7e471e5ba7019e.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/VerreGalet.air /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Metal/WahouAura.air
+
+ExtractAppIntentsMetadata (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name WoopWidgets --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopWidgets --output /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets --dependency-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_dependency_info.dat --stringsdata-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList --metadata-file-list /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 18:01:16.815 appintentsmetadataprocessor[4260:16500090] Starting appintentsmetadataprocessor export
+2026-09-16 18:01:16.837 appintentsmetadataprocessor[4260:16500090] Extracted no relevant App Intents symbols, skipping writing output
+
+AppIntentsSSUTraining (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist --temp-dir-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/ssu --bundle-id fr.kathryn.woop.WoopWidgets --product-path /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex --extracted-metadata-path /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Metadata.appintents --metadata-file-list /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets.DependencyMetadataFileList --source-file /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist --archive-ssu-assets
+2026-09-16 18:01:16.870 appintentsnltrainingprocessor[4261:16500093] Parsing options for appintentsnltrainingprocessor
+2026-09-16 18:01:16.871 appintentsnltrainingprocessor[4261:16500093] Starting AppIntents SSU YAML Generation
+2026-09-16 18:01:16.873 appintentsnltrainingprocessor[4261:16500093] No AppShortcuts found - Skipping.
+
+SwiftDriver Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile52-selection-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_AvailabilityInternal-38BUBGNBE38AB6CJFXVV3FGAJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdarg-9CPOO9E6OXWMPC3M10RCT5C90.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ptrcheck-DZJMW9Z8H6GBF2X1XWCO65TQX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdbool-8NX0MOKLTG9Q6L4H4ZGKJVPEK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation1-7JWLN1469D9B98VKQ133L17PA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftShims-DIPWBI5C0I7DI9ITGOHUEN15R.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_limits-BEIDLRNBS1CIZYL1N2OOMZSGQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ExtensionFoundation-B7ZJL7BXP38247DZ32QSAE80T.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stddef-1S55HT98HEVEXTJZH7AUOFPKP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ActivityKit-D38ADHT6WSBLEW1DS4AYIE5YF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation2-4G21LLH49WQH2IOYOOTW9KTA2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_SwiftConcurrencyShims-1L1RCEIWVNMN2REASHV95A3Y2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_tgmath-DWQZ4F4G4HN583QBTNBW3SDFX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdint-4246G59D5VQI8FYOPEYEFCC8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/DeveloperToolsSupport-50Q3N5NV1X3FG3PHZS4R8Q9JF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_DarwinFoundation3-33XKJFZRWQUTMMQQZDXBQOBP0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_intrinsics-7VL7D5V5YYPA3DS6BCMPI1PNP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_inttypes-6NI3XB9ZSGSH6FJEG7H88NZAJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/simd-8RGBK3U90EE29CY261M5KU6AQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Darwin-CQU0U7MY5OPEZ314HNA2NGE4O.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Spatial-C2ZCER1AHQUM7NIF57NBW268Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ObjectiveC-38XVYGV6RXFOKIB2MMIJLWGGX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_stdatomic-3A3USPDC2Z1T1ZCDEHPQQCQC7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os_object-1EXU7EB8I99JWK0L4D88XSMCU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/MachO-7HP7UTX52JDWJIP8W7HV2QIX1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os_workgroup-4WB38JIWZL9KMHQLSAN3YETXW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/sys_types-2CQ9ILU6ZK4WZRBBNMBUX96V6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Dispatch-EU3IPNNQVRILUCI7EYROL2WQ7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_Builtin_float-6E3SU32I67LH9FZ1NGAYBRJ8U.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/XPC-7OUW7EFONFYO60EHETX3TAD4M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/dnssd-9X5NAXP5YU1VI0IW7OQRRQDXW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/os-E0SHQRB41UAAV598TLXAMLTB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ptrauth-3IPXKBCA5YW3V6BPFJISR76OC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreFoundation-AZ8DQ2IW1VJCKVSHJ8MQW7QMJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreAudioTypes-2F27DDNWV1CWSQS0TKHNKG09B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CFNetwork-28KHIUQ7GIE4C5FJHP2EEHL9Q.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreAudio-DGNS6ITN3JRM3BZL1PPFYV6DB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Security-EU60W3A449H3XQ99XWA9WJEAB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreGraphics-7JGGR7AOKYB1973YRPIQYG2PW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Foundation-2KGFFZJDA4NIF9K2ZC9JDY7KQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreText-CC2D7EWCTH2Z7LRSS2C4P0PZ6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreMIDI-C0TNIISZ6IOMVWAB84B5GIG0C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/WidgetKit-5YSZUM15A9PHNMRK5KOZAK5SP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Network-9J62O7TY39M11IA5O7TS359R9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/LocalAuthentication-AMZ0KCQM3HBX5XY2KGF0DMZCE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ModelIO-ECFBD70EDWPLE47JBFCEABCZU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AudioToolbox-DHDBF72J09HMLA2JU434VEFD8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/IOSurface-2TMOOAJ4374U5HTR455OILZ6P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/DataDetection-2198Q495HF7XHYQXDVFCEMH9P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/OpenGLES-5590MQCPL5YY2YE82YMOJGCIL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreData-E5DSTE2BY4B5I4LNYGHZC0K8J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreTransferable-EZ7JC376V7428J1VXTRZN0VA1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Symbols-4T9LBMBJI5EOGDZEKR2I0E2KU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AVRouting-CLJL529Y7TPL1D68C0FBHXJ28.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreHaptics-CUXWAKZRQPXSZN4NC7RUHSRGA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/_LocationEssentials-1EQE0122TIRBJA5O1EUEMVNG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Metal-4O871WCY0FX214AN6RU1FU2Q9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreLocation-3SIO4DBLVKTABBSUTQMQL96AS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreVideo-2S426NS36M8XIRAGF7X9GEFJO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreMotion-AAMPMUOW5C48OTCCC3X59B950.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/QuartzCore-2UUFYZ4Y70462KFOSY7HUL0T8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UniformTypeIdentifiers-4D951WZZ3W03QWGOF38XZ2UIG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UserNotifications-DBPGFM7DIYJ9DD61W7IAYDIA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreSpotlight-D30IAAKFPBPL5HKQGZ004G5UY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Intents-8C6NQ2LIPO4HQZQRC7XNLV69P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftUICore-35282F9J32U4PLOHBYUL2XA0Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/ImageIO-1H4C088BM1OK0Y0YURFIPQHI2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreMedia-40BR8MBNBEY9EXJFBLGKXYR16.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/CoreImage-4W54V1PK9D2NRSL7M9CJU9SNC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/MediaToolbox-4W2SZKET0RY316WFSG01SFEU2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AVFAudio-990TGR14DDDH2G6QM1VQ75VNC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Accessibility-908FH4AFRDL0DJ6Y3NEL37I8M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AVFoundation-5EN3DDMH8HW102AV2TZA1QFW7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/FileProvider-J8UGV1DSR3WEV4TCENSIRNQR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/RelevanceKit-A81XLH57JD64UB6CPVR3QQKF9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AppIntents-8BRKLIV3VFTD8YLEEOG4I7NXS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UIUtilities-AO7CX906J2E10YQVIN45TPF4B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/OSLog-5X90Q6J3UFQA3TET8Q6C4AMK5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/UIKit-DFHBXU8RJSL6HJE6VS0JNBE0H.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/AuthenticationServices-1PHAE878TAJT8U3V317354N9E.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/MetalKit-BJ3JG35OJ5CNY2O0XXT8DJ5FU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SwiftUI-ATFPTGTFRBTYUV7IWHQKUBL9S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/GLKit-85TH8PL0FKNB7AFWP2X7ZE9X1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /tmp/woop-ile52-selection-dd/ModuleCache.noindex/SceneKit-CEB08LFGBU0MU93YP6STQPIAM.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Woop' from project 'Woop')
+EmitSwiftModule normal arm64 (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+CodeSign /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/WoopWidgets.debug.dylib
+
+SwiftCompile normal arm64 Compiling\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ FouettagePilule.swift,\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift,\ HomeView.swift,\ JewelTabBar.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExerciseSetupCard.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExosFond.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlameLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJauge.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJaugeLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/FondVideoMetal.swift /tmp/woop-ile52-selection-banc/Woop/Views/FouettagePilule.swift /tmp/woop-ile52-selection-banc/Woop/Views/Foyer.swift /tmp/woop-ile52-selection-banc/Woop/Views/FumeeInviteMetal.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletEtape.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletSlide.swift /tmp/woop-ile52-selection-banc/Woop/Views/HaloDawnLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/HarmonieLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeView.swift /tmp/woop-ile52-selection-banc/Woop/Views/JewelTabBar.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/ExerciseSetupCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:2117:49: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                                                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:2118:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:2206:42: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = GrilleExos.voileBas(vh - f.maxY)
+                                         ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:2207:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/ExosFond.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FlameLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJauge.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJaugeLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FondVideoMetal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FouettagePilule.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/Foyer.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/FumeeInviteMetal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/GaletEtape.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+/tmp/woop-ile52-selection-banc/Woop/Views/GaletEtape.swift:88:13: warning: initialization of immutable value 's' was never used; consider replacing with assignment to '_' or removing it
+        let s = graine
+        ~~~~^
+        _
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/GaletLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/GaletSlide.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HaloDawnLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HarmonieLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+/tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift:196:25: error: cannot find 'VolDePieces' in scope
+                        VolDePieces(
+                        ^~~~~~~~~~~
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+/tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift:3387:13: warning: initialization of immutable value 'flou' was never used; consider replacing with assignment to '_' or removing it
+        let flou = DepartCine.sstep(DepartCine.flouAt,
+        ~~~~^~~~
+        _
+/tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift:3389:13: warning: initialization of immutable value 'mort' was never used; consider replacing with assignment to '_' or removing it
+        let mort = DepartCine.sstep(DepartCine.fadeAt,
+        ~~~~^~~~
+        _
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HomeView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/JewelTabBar.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/sources-1 -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/ExerciseSetupCard.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/ExosFond.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FlameLab.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJauge.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJaugeLab.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FondVideoMetal.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FouettagePilule.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/Foyer.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/FumeeInviteMetal.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/GaletEtape.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/GaletLab.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/GaletSlide.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/HaloDawnLab.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/HarmonieLab.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/HomeView.swift -primary-file /tmp/woop-ile52-selection-banc/Woop/Views/JewelTabBar.swift -supplementary-output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/supplementaryOutputs-5 -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -target arm64-apple-ios26.0-simulator -module-can-import-version DeveloperToolsSupport 23.40.26 23.40.26 -disable-cross-import-overlay-search -swift-module-cross-import AuthenticationServices /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Cryptexes/OS/System/Library/Frameworks/AuthenticationServices.framework/Modules/AuthenticationServices.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AuthenticationServices /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/AuthenticationServices.framework/Modules/AuthenticationServices.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import SceneKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/SceneKit.framework/Modules/SceneKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/CoreData.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libAppIntentsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#AppIntentsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftDataMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftDataMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-dependencies-1.json -debug-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -Xllvm -aarch64-use-tbi -enable-objc-interop -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /tmp/woop-ile52-selection-banc -enable-anonymous-context-mangled-names -file-compilation-dir /tmp/woop-ile52-selection-banc -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name Woop -frontend-parseable-output -disable-clang-spi -clang-target arm64-apple-ios26.5-simulator -target-sdk-version 26.5 -target-sdk-name iphonesimulator26.5 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExerciseSetupCard.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExercisesView.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExosFond.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlameLab.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlammeJauge.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlammeJaugeLab.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FondVideoMetal-7c4f343e3775c8330e4e5b27d874db0d.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FouettagePilule.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Foyer.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FumeeInviteMetal.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletEtape.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletLab.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletSlide.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HaloDawnLab.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HarmonieLab.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeAuroraView.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeNuit-99c17c740373623b85949fa757c86b7a.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeView.o -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/JewelTabBar.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExerciseSetupCard.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExercisesView.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExosFond.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlameLab.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlammeJauge.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FlammeJaugeLab.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FondVideoMetal-7c4f343e3775c8330e4e5b27d874db0d.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FouettagePilule.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Foyer.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/FumeeInviteMetal.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletEtape.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletLab.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/GaletSlide.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HaloDawnLab.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HarmonieLab.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeAuroraView.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeNuit-99c17c740373623b85949fa757c86b7a.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/HomeView.o -index-unit-output-path /Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/JewelTabBar.o -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -index-system-modules
+CodeSign /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/__preview.dylib
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile52-selection-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile52-selection-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile52-selection-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile52-selection-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile52-selection-banc -experimental-emit-module-separately -disable-cmo
+
+CodeSign /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex
+
+SwiftMergeGeneratedHeaders /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/Woop-Swift.h /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-swiftHeaderTool -arch arm64 /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -o /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/Woop-Swift.h
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/woop-ile52-selection-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ SondeVol.swift,\ StopCard.swift,\ StopLab.swift,\ StopSessionSheet.swift,\ StoryEnded.swift,\ StoryFlow.swift,\ StorySuite.swift,\ StoryVideo.swift,\ SuccessLab.swift,\ SwapCardSurface.swift,\ SwapEmptyCard.swift,\ SynthesisCard.swift,\ TapisLab.swift,\ TapisScene.swift,\ VerreCoulant.swift,\ VisiteHome.swift,\ WahouReveal.swift,\ WidgetEdition.swift /tmp/woop-ile52-selection-banc/Woop/Views/SondeVol.swift /tmp/woop-ile52-selection-banc/Woop/Views/StopCard.swift /tmp/woop-ile52-selection-banc/Woop/Views/StopLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/StopSessionSheet.swift /tmp/woop-ile52-selection-banc/Woop/Views/StoryEnded.swift /tmp/woop-ile52-selection-banc/Woop/Views/StoryFlow.swift /tmp/woop-ile52-selection-banc/Woop/Views/StorySuite.swift /tmp/woop-ile52-selection-banc/Woop/Views/StoryVideo.swift /tmp/woop-ile52-selection-banc/Woop/Views/SuccessLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/SwapCardSurface.swift /tmp/woop-ile52-selection-banc/Woop/Views/SwapEmptyCard.swift /tmp/woop-ile52-selection-banc/Woop/Views/SynthesisCard.swift /tmp/woop-ile52-selection-banc/Woop/Views/TapisLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/TapisScene.swift /tmp/woop-ile52-selection-banc/Woop/Views/VerreCoulant.swift /tmp/woop-ile52-selection-banc/Woop/Views/VisiteHome.swift /tmp/woop-ile52-selection-banc/Woop/Views/WahouReveal.swift /tmp/woop-ile52-selection-banc/Woop/Views/WidgetEdition.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/SondeVol.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StopCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StopLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StopSessionSheet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StoryEnded.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StoryFlow.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StorySuite.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/StoryVideo.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/SuccessLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/SwapCardSurface.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/SwapEmptyCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/SynthesisCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/TapisLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/TapisScene.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/VerreCoulant.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/VisiteHome.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/WahouReveal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/WidgetEdition.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile52-selection-banc
+    
+
+SwiftCompile normal arm64 Compiling\ WidgetsCards.swift,\ WorkoutPill.swift,\ WorkoutsListView.swift,\ Atmosphere.swift,\ DemonSky.swift,\ Models.swift,\ MoonPath.swift,\ MoonSDF.swift,\ NebulaConfiguration.swift,\ NebulaNoise.swift,\ NebulaStrip.swift,\ ImpGlyph.swift,\ MoonGlyph.swift,\ ProgressComet.swift,\ WorkoutActivity.swift,\ Theme.swift,\ WoopApp.swift,\ GeneratedAssetSymbols.swift /tmp/woop-ile52-selection-banc/Woop/Views/WidgetsCards.swift /tmp/woop-ile52-selection-banc/Woop/Views/WorkoutPill.swift /tmp/woop-ile52-selection-banc/Woop/Views/WorkoutsListView.swift /tmp/woop-ile52-selection-banc/Woop/Atmosphere.swift /tmp/woop-ile52-selection-banc/Woop/DemonSky.swift /tmp/woop-ile52-selection-banc/Woop/Models.swift /tmp/woop-ile52-selection-banc/Woop/MoonPath.swift /tmp/woop-ile52-selection-banc/Woop/MoonSDF.swift /tmp/woop-ile52-selection-banc/Woop/NebulaConfiguration.swift /tmp/woop-ile52-selection-banc/Woop/NebulaNoise.swift /tmp/woop-ile52-selection-banc/Woop/NebulaStrip.swift /tmp/woop-ile52-selection-banc/WoopShared/ImpGlyph.swift /tmp/woop-ile52-selection-banc/WoopShared/MoonGlyph.swift /tmp/woop-ile52-selection-banc/WoopShared/ProgressComet.swift /tmp/woop-ile52-selection-banc/WoopShared/WorkoutActivity.swift /tmp/woop-ile52-selection-banc/Woop/Theme.swift /tmp/woop-ile52-selection-banc/Woop/WoopApp.swift /tmp/woop-ile52-selection-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Woop' from project 'Woop')
+
+** TEST BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal arm64 /tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+	SwiftCompile normal arm64 Compiling\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ FouettagePilule.swift,\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift,\ HomeView.swift,\ JewelTabBar.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExerciseSetupCard.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExercisesView.swift /tmp/woop-ile52-selection-banc/Woop/Views/ExosFond.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlameLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJauge.swift /tmp/woop-ile52-selection-banc/Woop/Views/FlammeJaugeLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/FondVideoMetal.swift /tmp/woop-ile52-selection-banc/Woop/Views/FouettagePilule.swift /tmp/woop-ile52-selection-banc/Woop/Views/Foyer.swift /tmp/woop-ile52-selection-banc/Woop/Views/FumeeInviteMetal.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletEtape.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/GaletSlide.swift /tmp/woop-ile52-selection-banc/Woop/Views/HaloDawnLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/HarmonieLab.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeAuroraView.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeNuit.swift /tmp/woop-ile52-selection-banc/Woop/Views/HomeView.swift /tmp/woop-ile52-selection-banc/Woop/Views/JewelTabBar.swift (in target 'Woop' from project 'Woop')
+	Building project Woop for testing with scheme WoopUITests
+(3 failures)

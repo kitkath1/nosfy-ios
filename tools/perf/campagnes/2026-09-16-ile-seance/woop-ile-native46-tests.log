@@ -1,0 +1,251 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile-20260916-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" -parallel-testing-enabled NO -resultBundlePath /tmp/woop-ile-native46.xcresult "-only-testing:WoopUITests/IleNativeUITests" "-only-testing:WoopUITests/FouettagePiluleUITests/test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle"
+
+2026-09-16 15:01:46.610 xcodebuild[66641:16025265] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile-native46.xcresult
+
+2026-09-16 15:01:46.629 xcodebuild[66641:16025265] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:01:48.000 xcodebuild[66641:16025265] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:01:50.575370+0200 WoopUITests-Runner[66654:16025597] [Default] Running tests...
+2026-09-16 15:01:50.612910+0200 WoopUITests-Runner[66654:16025690] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-09-16 15:01:50.654299+0200 WoopUITests-Runner[66654:16025690] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[66654]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106bbc310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109a38398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 15:01:55.457.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 15:01:55.458.
+Test Suite 'FouettagePiluleUITests' started at 2026-09-16 15:01:55.458.
+Test Case '-[WoopUITests.FouettagePiluleUITests test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle]' started.
+    t =     0.00s Start Test at 2026-09-16 15:01:55.459
+    t =     0.27s Set Up
+    t =     0.27s Open fr.kathryn.woop
+    t =     0.28s     Launch fr.kathryn.woop
+    t =     0.28s         Terminate fr.kathryn.woop:66493
+2026-09-16 15:01:57.101 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 15:01:57.101 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     4.41s         Setting up automation session
+    t =     6.60s         Wait for fr.kathryn.woop to idle
+    t =     9.12s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =    10.44s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =    10.50s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =    10.76s Find the "fouettage-pilule-sonde" Any
+    t =    12.33s Find the "fouettage-pilule-sonde" Any
+    t =    12.54s Find the "fouettage-pilule-sonde" Any
+    t =    13.49s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =    14.53s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    14.53s         Checking existence of `"fouettage-pilule" Any`
+    t =    14.56s Find the Target Application 'fr.kathryn.woop'
+    t =    14.67s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =    14.71s Find the "fouettage-pilule-sonde" Any
+    t =    14.78s Find the "fouettage-pilule" Any
+    t =    14.82s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -220.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =    14.82s     Wait for fr.kathryn.woop to idle
+    t =    14.83s     Find the Target Application 'fr.kathryn.woop'
+    t =    14.89s     Check for interrupting elements affecting "Woop" Application
+    t =    14.97s     Synthesize event
+    t =    14.99s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.03s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.09s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.13s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.19s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.42s     Wait for fr.kathryn.woop to idle
+    t =    16.44s Find the "fouettage-pilule-sonde" Any
+    t =    16.57s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas04-pose t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.443;gp=0;ile=0;navCachee=0;drag=1;chg=26;tap=0;out=0;stop=0
+    t =    16.62s Find the "fouettage-pilule-sonde" Any
+    t =    16.69s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle]' passed (16.948 seconds).
+Test Suite 'FouettagePiluleUITests' passed at 2026-09-16 15:02:12.408.
+	 Executed 1 test, with 0 failures (0 unexpected) in 16.948 (16.950) seconds
+Test Suite 'IleNativeUITests' started at 2026-09-16 15:02:12.408.
+Test Case '-[WoopUITests.IleNativeUITests test01_agrandissementNatifPuisRetourPastilleProfil]' started.
+    t =     0.00s Start Test at 2026-09-16 15:02:12.409
+    t =     0.03s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.03s         Terminate fr.kathryn.woop:66695
+2026-09-16 15:02:13.535 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 15:02:13.535 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.63s         Setting up automation session
+    t =     3.23s         Wait for fr.kathryn.woop to idle
+    t =     5.59s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     6.65s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     6.65s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.76s Find the "fouettage-pilule-sonde" Any
+    t =     6.97s Find the "fouettage-pilule-sonde" Any
+    t =     7.19s Find the "fouettage-pilule-sonde" Any
+    t =     7.40s Find the "fouettage-pilule-sonde" Any
+    t =     7.60s Find the "fouettage-pilule-sonde" Any
+    t =     7.82s Find the "fouettage-pilule-sonde" Any
+    t =     8.03s Find the "fouettage-pilule-sonde" Any
+    t =     8.23s Find the "fouettage-pilule-sonde" Any
+    t =     8.44s Find the "fouettage-pilule-sonde" Any
+    t =     8.65s Find the "fouettage-pilule-sonde" Any
+    t =     8.86s Find the "fouettage-pilule-sonde" Any
+    t =     9.06s Find the "fouettage-pilule-sonde" Any
+    t =     9.97s Find the "fouettage-pilule-sonde" Any
+    t =    10.20s Find the "fouettage-pilule-sonde" Any
+    t =    10.45s Find the "fouettage-pilule-sonde" Any
+    t =    10.71s Find the "fouettage-pilule-sonde" Any
+    t =    10.99s Find the "fouettage-pilule-sonde" Any
+    t =    11.29s Find the "fouettage-pilule-sonde" Any
+    t =    11.56s Find the "fouettage-pilule-sonde" Any
+    t =    11.77s Find the "fouettage-pilule-sonde" Any
+    t =    11.98s Find the "fouettage-pilule-sonde" Any
+    t =    12.18s Find the "fouettage-pilule-sonde" Any
+    t =    12.38s Find the "fouettage-pilule-sonde" Any
+    t =    12.60s Find the "fouettage-pilule-sonde" Any
+    t =    12.80s Find the "fouettage-pilule-sonde" Any
+    t =    12.99s Find the "fouettage-pilule-sonde" Any
+    t =    13.19s Find the "fouettage-pilule-sonde" Any
+    t =    13.40s Find the "fouettage-pilule-sonde" Any
+    t =    13.63s Find the "fouettage-pilule-sonde" Any
+    t =    13.84s Find the "fouettage-pilule-sonde" Any
+    t =    14.09s Find the "fouettage-pilule-sonde" Any
+    t =    14.31s Find the "fouettage-pilule-sonde" Any
+    t =    14.50s Find the "fouettage-pilule-sonde" Any
+    t =    14.70s Find the "fouettage-pilule-sonde" Any
+    t =    14.90s Find the "fouettage-pilule-sonde" Any
+    t =    15.10s Find the "fouettage-pilule-sonde" Any
+    t =    15.30s Find the "fouettage-pilule-sonde" Any
+    t =    15.49s Find the "fouettage-pilule-sonde" Any
+    t =    15.70s Find the "fouettage-pilule-sonde" Any
+    t =    15.90s Find the "fouettage-pilule-sonde" Any
+    t =    16.10s Find the "fouettage-pilule-sonde" Any
+    t =    16.31s Find the "fouettage-pilule-sonde" Any
+    t =    16.50s Find the "fouettage-pilule-sonde" Any
+    t =    16.70s Find the "fouettage-pilule-sonde" Any
+    t =    16.89s Find the "fouettage-pilule-sonde" Any
+    t =    17.07s Find the "fouettage-pilule-sonde" Any
+    t =    17.27s Find the "fouettage-pilule-sonde" Any
+    t =    17.46s Find the "fouettage-pilule-sonde" Any
+    t =    17.65s Find the "fouettage-pilule-sonde" Any
+    t =    17.84s Find the "fouettage-pilule-sonde" Any
+    t =    18.02s Find the "fouettage-pilule-sonde" Any
+    t =    18.21s Find the "fouettage-pilule-sonde" Any
+    t =    18.40s Find the "fouettage-pilule-sonde" Any
+    t =    18.58s Find the "fouettage-pilule-sonde" Any
+    t =    18.77s Find the "fouettage-pilule-sonde" Any
+    t =    18.96s Find the "fouettage-pilule-sonde" Any
+    t =    19.22s Find the "fouettage-pilule-sonde" Any
+    t =    19.53s Find the "fouettage-pilule-sonde" Any
+    t =    19.85s Find the "fouettage-pilule-sonde" Any
+2026-09-16 15:02:32.339 xcodebuild[66641:16025265] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    20.21s Find the "fouettage-pilule-sonde" Any
+    t =    20.53s Find the "fouettage-pilule-sonde" Any
+    t =    20.81s Find the "fouettage-pilule-sonde" Any
+    t =    21.10s Find the "fouettage-pilule-sonde" Any
+    t =    21.29s Find the "fouettage-pilule-sonde" Any
+    t =    21.49s Find the "fouettage-pilule-sonde" Any
+    t =    21.68s Find the "fouettage-pilule-sonde" Any
+/tmp/woop-ile-20260916-banc/WoopUITests/IleNativeUITests.swift:17: error: -[WoopUITests.IleNativeUITests test01_agrandissementNatifPuisRetourPastilleProfil] : XCTAssertTrue failed
+    t =    22.29s Tear Down
+Test Case '-[WoopUITests.IleNativeUITests test01_agrandissementNatifPuisRetourPastilleProfil]' failed (22.651 seconds).
+Test Case '-[WoopUITests.IleNativeUITests test02_homeTapNatifOuvreLeDetail]' started.
+    t =     0.00s Start Test at 2026-09-16 15:02:35.061
+    t =     0.03s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+    t =     0.04s         Terminate fr.kathryn.woop:66729
+2026-09-16 15:02:36.110 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 15:02:36.110 xcodebuild[66641:16025265] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.26s         Setting up automation session
+    t =     2.83s         Wait for fr.kathryn.woop to idle
+    t =     5.01s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     6.01s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     6.02s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.18s Find the "fouettage-pilule-sonde" Any
+    t =     6.38s Find the "fouettage-pilule-sonde" Any
+    t =     6.70s Find the "fouettage-pilule-sonde" Any
+    t =     6.90s Find the "fouettage-pilule-sonde" Any
+    t =     7.10s Find the "fouettage-pilule-sonde" Any
+    t =     7.30s Find the "fouettage-pilule-sonde" Any
+    t =     7.53s Find the "fouettage-pilule-sonde" Any
+    t =     7.74s Find the "fouettage-pilule-sonde" Any
+    t =     7.96s Find the "fouettage-pilule-sonde" Any
+    t =     8.18s Find the "fouettage-pilule-sonde" Any
+    t =     8.38s Find the "fouettage-pilule-sonde" Any
+    t =     8.57s Find the "fouettage-pilule-sonde" Any
+    t =     9.10s Checking existence of `"fouettage-ile" Any`
+    t =     9.36s Checking existence of `"ile-seance-home" Button`
+    t =     9.41s Checking existence of `"fouettage-pilule" Any`
+    t =     9.60s Find the Target Application 'fr.kathryn.woop'
+    t =     9.88s Added attachment named 'app-home-sans-fausse-ile'
+    t =     9.88s Pressing Home button
+    t =    10.36s Waiting 12.0s for Any (First Match) to exist
+    t =    11.39s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    11.39s         Checking existence of `Any (First Match)`
+    t =    11.68s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    12.89s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    12.99s Added attachment named 'arbre-SpringBoard'
+    t =    12.99s Find the Application 'com.apple.springboard'
+    t =    13.27s Added attachment named 'ile-native-compacte'
+    t =    13.27s Find the Application 'com.apple.springboard'
+    t =    13.32s Tap Application 'com.apple.springboard'[0.00, 0.00] -> (196.5, 30.0)
+    t =    13.32s     Wait for com.apple.springboard to idle
+    t =    13.32s     Find the Application 'com.apple.springboard'
+    t =    13.36s     Check for interrupting elements affecting " " Application
+    t =    13.42s     Synthesize event
+    t =    13.42s         Find the Application 'com.apple.springboard'
+    t =    13.47s         Find the Application 'com.apple.springboard'
+    t =    13.52s         Find the Application 'com.apple.springboard'
+    t =    13.87s     Wait for com.apple.springboard to idle
+    t =    15.55s Wait for fr.kathryn.woop to become Running Foreground
+    t =    15.55s Waiting 10.0s for "fouettage-grand-player" Any to exist
+    t =    16.57s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    16.58s         Checking existence of `"fouettage-grand-player" Any`
+    t =    17.00s         Capturing element debug description
+    t =    17.57s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    17.57s         Checking existence of `"fouettage-grand-player" Any`
+    t =    17.87s         Capturing element debug description
+    t =    18.58s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    18.58s         Checking existence of `"fouettage-grand-player" Any`
+    t =    18.82s         Capturing element debug description
+    t =    19.64s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    19.64s         Checking existence of `"fouettage-grand-player" Any`
+    t =    20.06s         Capturing element debug description
+    t =    20.57s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    20.57s         Checking existence of `"fouettage-grand-player" Any`
+    t =    20.70s         Capturing element debug description
+    t =    21.62s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    21.62s         Checking existence of `"fouettage-grand-player" Any`
+    t =    21.96s         Capturing element debug description
+    t =    22.56s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    22.56s         Checking existence of `"fouettage-grand-player" Any`
+    t =    22.96s         Capturing element debug description
+    t =    23.58s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    23.58s         Checking existence of `"fouettage-grand-player" Any`
+    t =    23.82s         Capturing element debug description
+    t =    24.63s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    24.63s         Checking existence of `"fouettage-grand-player" Any`
+    t =    24.82s         Capturing element debug description
+    t =    25.56s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    25.56s         Checking existence of `"fouettage-grand-player" Any`
+    t =    25.70s         Capturing element debug description
+    t =    25.70s     Checking existence of `"fouettage-grand-player" Any`
+    t =    25.86s Collecting debug information to assist test failure triage
+    t =    25.87s     Requesting snapshot of accessibility hierarchy for app with pid 66778
+/tmp/woop-ile-20260916-banc/WoopUITests/IleNativeUITests.swift:82: error: -[WoopUITests.IleNativeUITests test02_homeTapNatifOuvreLeDetail] : XCTAssertTrue failed
+    t =    25.94s Tear Down
+Test Case '-[WoopUITests.IleNativeUITests test02_homeTapNatifOuvreLeDetail]' failed (26.221 seconds).
+Test Suite 'IleNativeUITests' failed at 2026-09-16 15:03:01.282.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 48.872 (48.874) seconds
+Test Suite 'WoopUITests.xctest' failed at 2026-09-16 15:03:01.282.
+	 Executed 3 tests, with 2 failures (0 unexpected) in 65.821 (65.825) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 15:03:01.283.
+	 Executed 3 tests, with 2 failures (0 unexpected) in 65.821 (65.826) seconds
+2026-09-16 15:03:17.093 xcodebuild[66641:16025265] [MT] IDETestOperationsObserverDebug: 89.087 elapsed -- Testing started completed.
+2026-09-16 15:03:17.093 xcodebuild[66641:16025265] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 15:03:17.093 xcodebuild[66641:16025265] [MT] IDETestOperationsObserverDebug: 89.087 sec, +89.087 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile-native46.xcresult
+
+Failing tests:
+	IleNativeUITests.test01_agrandissementNatifPuisRetourPastilleProfil()
+	IleNativeUITests.test02_homeTapNatifOuvreLeDetail()
+
+** TEST EXECUTE FAILED **
+
+Testing started

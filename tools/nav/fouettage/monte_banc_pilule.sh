@@ -33,6 +33,8 @@ python3 "$ICI/applique_hooks_pilule.py" "$COPIE" || exit 1
 mkdir -p "$COPIE/WoopUITests"
 cp "$ICI/tests/BancPilule.swift" \
    "$ICI/tests/FouettagePiluleUITests.swift" \
+   "$ICI/tests/IleNativeUITests.swift" \
+   "$ICI/tests/IleDansAppUITests.swift" \
    "$ICI/tests/DiagGestePilule.swift" "$COPIE/WoopUITests/"
 
 # 5) la preuve que la structure tient

@@ -15,4 +15,9 @@ struct WorkoutActivityAttributes: ActivityAttributes {
 
     /// Le début de la séance, figé pour toute la vie de l'activity.
     var startedAt: Date
+
+    /// Le lien désigne cette séance, jamais une action de clôture.
+    var sessionURL: URL {
+        URL(string: "woop://session/\(startedAt.timeIntervalSince1970)")!
+    }
 }

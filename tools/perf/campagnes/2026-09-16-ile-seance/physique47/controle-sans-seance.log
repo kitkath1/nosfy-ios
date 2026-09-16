@@ -1,0 +1,132 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile47-runtime/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testIleNativeSurSeanceExistante" -resultBundlePath /tmp/woop-ile47-physique.xcresult -parallel-testing-enabled NO
+
+2026-09-16 15:43:55.547 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile47-physique.xcresult
+
+2026-09-16 15:43:55.554 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:43:55.721 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:43:55.853 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 15:43:58.948 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:44:03.084192+0200 NavRuntimeUITests-Runner[32427:2497490] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 15:44:07.916.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 15:44:07.917.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 15:44:07.917.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testIleNativeSurSeanceExistante]' started.
+    t =     0.00s Start Test at 2026-09-16 15:44:07.917
+    t =     0.03s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Activate fr.kathryn.woop
+    t =     0.06s         Wait for fr.kathryn.woop to idle
+    t =     0.17s Waiting 3.0s for "Later" Button to exist
+2026-09-16 15:44:08.138 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     1.21s         Checking existence of `"Later" Button`
+    t =     1.33s         Capturing element debug description
+    t =     2.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     2.25s         Checking existence of `"Later" Button`
+    t =     2.30s         Capturing element debug description
+    t =     3.18s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     3.18s         Checking existence of `"Later" Button`
+    t =     3.23s         Capturing element debug description
+    t =     3.23s     Checking existence of `"Later" Button`
+    t =     3.26s Collecting debug information to assist test failure triage
+    t =     3.26s     Requesting snapshot of accessibility hierarchy for app with pid 32417
+    t =     6.34s Find the Application 'fr.kathryn.woop'
+    t =     6.61s Added attachment named 'physique47-home-avant'
+    t =     6.61s Requesting snapshot of accessibility hierarchy for app with pid 32417
+    t =     6.79s Requesting snapshot of accessibility hierarchy for app with pid 32417
+    t =     6.86s Added attachment named 'physique47-home-avant-arbre'
+    t =     6.86s Pressing Home button
+    t =     7.44s Waiting 10.0s for Any (First Match) to exist
+    t =     8.51s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =     8.51s         Checking existence of `Any (First Match)`
+    t =     8.80s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =     8.81s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =     8.82s         Capturing element debug description
+    t =     9.52s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =     9.52s         Checking existence of `Any (First Match)`
+    t =     9.74s             Device orientation changed to Face Up
+    t =     9.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =     9.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =     9.76s         Capturing element debug description
+    t =    10.48s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    10.48s         Checking existence of `Any (First Match)`
+    t =    10.71s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    10.71s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    10.72s         Capturing element debug description
+    t =    11.44s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    11.45s         Checking existence of `Any (First Match)`
+    t =    11.68s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    11.69s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    11.69s         Capturing element debug description
+    t =    12.52s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    12.53s         Checking existence of `Any (First Match)`
+    t =    12.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    12.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    12.76s         Capturing element debug description
+    t =    13.49s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    13.49s         Checking existence of `Any (First Match)`
+    t =    13.72s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    13.72s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    13.73s         Capturing element debug description
+    t =    14.45s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    14.45s         Checking existence of `Any (First Match)`
+    t =    14.68s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    14.69s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    14.70s         Capturing element debug description
+    t =    15.52s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    15.52s         Checking existence of `Any (First Match)`
+    t =    15.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    15.75s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    15.76s         Capturing element debug description
+    t =    16.48s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    16.49s         Checking existence of `Any (First Match)`
+    t =    16.71s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    16.72s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    16.73s         Capturing element debug description
+    t =    17.44s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    17.45s         Checking existence of `Any (First Match)`
+    t =    17.68s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    17.68s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    17.69s         Capturing element debug description
+    t =    17.70s     Checking existence of `Any (First Match)`
+    t =    17.87s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    17.88s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    17.89s Collecting debug information to assist test failure triage
+    t =    17.89s     Requesting snapshot of accessibility hierarchy for app with pid 35
+    t =    18.10s Find the Application 'com.apple.springboard'
+    t =    18.16s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    18.16s Ignoring failure to get hierarchy for remote element in process 28700 (Error getting main window kAXErrorServerNotFound)
+    t =    18.31s Added attachment named 'physique47-compacte'
+    t =    18.31s Requesting snapshot of accessibility hierarchy for app with pid 35
+    t =    18.81s Requesting snapshot of accessibility hierarchy for app with pid 35
+    t =    19.01s Added attachment named 'physique47-compacte-arbre'
+    t =    19.01s Open fr.kathryn.woop
+    t =    19.01s     Activate fr.kathryn.woop
+    t =    19.08s         Wait for fr.kathryn.woop to idle
+/tmp/woop-ile47-runtime/NavRuntimeUITests.swift:31: -[NavRuntimeUITests.NavRuntimeUITests testIleNativeSurSeanceExistante] : Test skipped - Aucune activité native visible ; aucune séance créée par le banc.
+    t =    19.12s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testIleNativeSurSeanceExistante]' skipped (19.371 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 15:44:27.291.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 19.371 (19.374) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 15:44:27.292.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 19.371 (19.375) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 15:44:27.294.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 19.371 (19.378) seconds
+2026-09-16 15:44:28.079 xcodebuild[76720:16145044] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:44:30.372 xcodebuild[76720:16145044] [MT] IDETestOperationsObserverDebug: 31.416 elapsed -- Testing started completed.
+2026-09-16 15:44:30.372 xcodebuild[76720:16145044] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 15:44:30.372 xcodebuild[76720:16145044] [MT] IDETestOperationsObserverDebug: 31.416 sec, +31.416 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile47-physique.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,1023 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/woop-ile-20260916-banc/Woop.xcodeproj -scheme WoopUITests -configuration Debug -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" -derivedDataPath /tmp/woop-ile-20260916-dd -parallel-testing-enabled NO -resultBundlePath /tmp/woop-ile-20260916-gestes.xcresult "-only-testing:WoopUITests/FouettagePiluleUITests" "-skip-testing:WoopUITests/FouettagePiluleUITests/test99_carteDuToucher_autourDeLile" CODE_SIGNING_ALLOWED=NO test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/woop-ile-20260916-gestes.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'WoopUITests' in project 'Woop'
+        ➜ Explicit dependency on target 'Woop' in project 'Woop'
+    Target 'Woop' in project 'Woop'
+        ➜ Explicit dependency on target 'WoopWidgets' in project 'Woop'
+    Target 'WoopWidgets' in project 'Woop' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/woop-ile-20260916-banc/Woop/AppIcon.icon /tmp/woop-ile-20260916-banc/Woop/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 79222d6c47532c4b2546bc2be6baaa24
+Build description path: /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/XCBuildData/79222d6c47532c4b2546bc2be6baaa24.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/woop-ile-20260916-banc/Woop.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+SwiftDriver WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver\ Compilation\ Requirements WoopWidgets normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopWidgets -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/WoopWidgets-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopWidgets.build/Objects-normal/arm64/WoopWidgets.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist /tmp/woop-ile-20260916-banc/WoopWidgets/Info.plist (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-banc/WoopWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist
+
+SwiftDriver Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Woop' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ WoopApp.swift /tmp/woop-ile-20260916-banc/Woop/WoopApp.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/WoopApp.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1246:44: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+            MiniCardJour(date: a.startedAt ?? .now,
+                               ~~~~~~~~~~~~^~~~~~~
+                                          
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1271:58: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                             ~~~~~~~~~~~~^~~~~~~
+                                                        
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1274:56: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                                           ~~~~~~~~~~~~^~~~~~~
+                                                      
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1675:47: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    departSeance: a.startedAt ?? .now,
+                                  ~~~~~~~~~~~~^~~~~~~
+                                             
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1701:41: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    depart: a.startedAt ?? .now,
+                            ~~~~~~~~~~~~^~~~~~~
+                                       
+/tmp/woop-ile-20260916-banc/Woop/WoopApp.swift:1700:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    ecranTaille: UIScreen.main.bounds.size,
+                                          ^
+
+SwiftCompile normal arm64 Compiling\ FouettagePilule.swift /tmp/woop-ile-20260916-banc/Woop/Views/FouettagePilule.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/FouettagePilule.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ PiluleVagabonde.swift /tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:377:25: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        130...(UIScreen.main.bounds.height - 138)
+                        ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:390:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:447:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:867:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1039:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1133:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1432:36: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .frame(width: UIScreen.main.bounds.width - NotifGeo.margeH * 2,
+                                   ^
+/tmp/woop-ile-20260916-banc/Woop/Views/PiluleVagabonde.swift:1507:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2, y: y)
+                                  ^
+
+SwiftCompile normal arm64 Compiling\ PageCard.swift /tmp/woop-ile-20260916-banc/Woop/Views/PageCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/PageCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling FouettagePilule.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PageCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ SondeVol.swift /tmp/woop-ile-20260916-banc/Woop/Views/SondeVol.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/SondeVol.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ Foyer.swift /tmp/woop-ile-20260916-banc/Woop/Views/Foyer.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/Foyer.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ ExerciseDetailView.swift /tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+/tmp/woop-ile-20260916-banc/Woop/Views/ExerciseDetailView.swift:2123:13: warning: initialization of immutable value 'naissance' was never used; consider replacing with assignment to '_' or removing it
+        let naissance = Self.sstep(0.45, 0.92, u)
+        ~~~~^~~~~~~~~
+        _
+
+SwiftDriverJobDiscovery normal arm64 Compiling SondeVol.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Foyer.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling WoopApp.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.LinkFileList -install_name @rpath/Woop.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib
+
+ConstructStubExecutorLinkFileList /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    construct-stub-executor-link-file-list /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Woop' from project 'Woop')
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns
+
+ExtractAppIntentsMetadata (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop --dependency-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat --stringsdata-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 13:34:06.584 appintentsmetadataprocessor[50024:15799691] Starting appintentsmetadataprocessor export
+2026-09-16 13:34:06.587 appintentsmetadataprocessor[50024:15799691] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+SwiftDriver WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/empty-Woop.plist (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/empty-Woop.plist -producttype com.apple.product-type.application -genpkginfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+CopySwiftLibs /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/SystemExtensions --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ValidateEmbeddedBinary /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -info-plist-path /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ WoopUITests (in target 'WoopUITests' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ DiagGestePilule.swift /tmp/woop-ile-20260916-banc/WoopUITests/DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ BancPilule.swift /tmp/woop-ile-20260916-banc/WoopUITests/BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftCompile normal arm64 Compiling\ FouettagePiluleUITests.swift /tmp/woop-ile-20260916-banc/WoopUITests/FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-ile-20260916-banc/WoopUITests/FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for WoopUITests (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftsourceinfo (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftsourceinfo /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Copy /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.abi.json (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.abi.json /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+SwiftDriverJobDiscovery normal arm64 Compiling DiagGestePilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BancPilule.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling FouettagePiluleUITests.swift (in target 'WoopUITests' from project 'Woop')
+
+SwiftDriver\ Compilation WoopUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WoopUITests -Onone @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-ile-20260916-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-ile-20260916-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-ile-20260916-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-ile-20260916-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-generated-files.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-own-target-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests-project-headers.hmap -Xcc -I/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources/arm64 -Xcc -I/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-Swift.h -working-directory /tmp/woop-ile-20260916-banc -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-infoPlistUtility /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ProductTypeInfoPlistAdditions.plist -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist
+
+Ld /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests normal (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule @/tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests
+
+CopySwiftLibs /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/PlugIns --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/SystemExtensions --scan-folder /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-ile-20260916-banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name WoopUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopUITests --output /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-ile-20260916-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --dependency-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat --stringsdata-file /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList --metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-ile-20260916-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 13:34:07.238 appintentsmetadataprocessor[50035:15799789] Starting appintentsmetadataprocessor export
+2026-09-16 13:34:07.238 appintentsmetadataprocessor[50035:15799789] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+2026-09-16 13:34:08.300973+0200 WoopUITests-Runner[50036:15799971] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 13:34:08.789.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 13:34:08.790.
+Test Suite 'FouettagePiluleUITests' started at 2026-09-16 13:34:08.790.
+Test Case '-[WoopUITests.FouettagePiluleUITests test01_seance_navResteEntiere]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:08.790
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 13:34:08.945 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:34:08.945 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[50036]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108a00310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108294398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     0.77s         Setting up automation session
+    t =     1.57s         Wait for fr.kathryn.woop to idle
+    t =     3.18s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     4.22s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     4.22s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     4.29s Find the "fouettage-pilule-sonde" Any
+    t =     5.81s Find the "fouettage-pilule-sonde" Any
+    t =     6.00s Find the "fouettage-pilule-sonde" Any
+    t =     6.18s Find the "fouettage-pilule-sonde" Any
+    t =     6.36s Find the "fouettage-pilule-sonde" Any
+    t =     6.54s Find the "fouettage-pilule-sonde" Any
+    t =     6.72s Find the "fouettage-pilule-sonde" Any
+    t =     7.11s Find the "fouettage-pilule-sonde" Any
+    t =     7.14s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test01_seance_navResteEntiere]' passed (7.353 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test02_seance_leTapDeNavNavigueDuPremierCoup]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:16.143
+    t =     0.01s Set Up
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Launch fr.kathryn.woop
+    t =     0.01s         Terminate fr.kathryn.woop:50043
+2026-09-16 13:34:17.213 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:34:17.213 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.28s         Setting up automation session
+    t =     1.89s         Wait for fr.kathryn.woop to idle
+    t =     3.47s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     4.50s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     4.50s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     4.55s Find the "fouettage-pilule-sonde" Any
+    t =     6.07s Find the "fouettage-pilule-sonde" Any
+    t =     6.28s Find the "fouettage-pilule-sonde" Any
+    t =     6.46s Find the "fouettage-pilule-sonde" Any
+    t =     6.63s Find the "fouettage-pilule-sonde" Any
+    t =     6.81s Find the "fouettage-pilule-sonde" Any
+    t =     6.99s Find the "fouettage-pilule-sonde" Any
+    t =     7.24s Find the "fouettage-pilule-sonde" Any
+    t =     9.78s Checking existence of `"Exercices" Button`
+    t =     9.84s Find the Target Application 'fr.kathryn.woop'
+    t =     9.85s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 813.0)
+    t =     9.85s     Wait for fr.kathryn.woop to idle
+    t =     9.86s     Find the Target Application 'fr.kathryn.woop'
+    t =     9.88s     Check for interrupting elements affecting "Woop" Application
+    t =     9.90s     Synthesize event
+    t =     9.90s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.92s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.94s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.27s     Wait for fr.kathryn.woop to idle
+    t =    11.41s Find the "fouettage-pilule-sonde" Any
+    t =    11.43s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test02_seance_leTapDeNavNavigueDuPremierCoup]' passed (11.670 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test03_seance_tapPilule_ouvreLeGrandPlayer]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:27.814
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50063
+2026-09-16 13:34:28.912 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:34:28.912 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.32s         Setting up automation session
+    t =     2.26s         Wait for fr.kathryn.woop to idle
+    t =     3.99s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.03s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.03s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     5.11s Find the "fouettage-pilule-sonde" Any
+    t =     6.63s Find the "fouettage-pilule-sonde" Any
+    t =     6.82s Find the "fouettage-pilule-sonde" Any
+    t =     7.00s Find the "fouettage-pilule-sonde" Any
+    t =     7.18s Find the "fouettage-pilule-sonde" Any
+    t =     7.37s Find the "fouettage-pilule-sonde" Any
+    t =     7.55s Find the "fouettage-pilule-sonde" Any
+    t =     7.85s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     8.88s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     8.88s         Checking existence of `"fouettage-pilule" Any`
+    t =     8.90s Find the Target Application 'fr.kathryn.woop'
+    t =     8.95s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     8.98s Find the "fouettage-pilule" Any
+    t =     9.01s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0)
+    t =     9.01s     Wait for fr.kathryn.woop to idle
+    t =     9.01s     Find the Target Application 'fr.kathryn.woop'
+    t =     9.05s     Check for interrupting elements affecting "Woop" Application
+    t =     9.08s     Synthesize event
+    t =     9.09s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.11s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.14s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.45s     Wait for fr.kathryn.woop to idle
+    t =     9.46s Find the "fouettage-pilule-sonde" Any
+    t =     9.49s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas03-tap-ouvre t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.820;gp=1;ile=0;navCachee=0;drag=0;chg=0;tap=1;out=0;stop=0
+    t =     9.55s Waiting 4.0s for "fouettage-grand-player" Any to exist
+    t =    10.58s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    10.58s         Checking existence of `"fouettage-grand-player" Any`
+    t =    10.60s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test03_seance_tapPilule_ouvreLeGrandPlayer]' passed (10.835 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:38.649
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50312
+2026-09-16 13:34:39.728 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:34:39.729 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.29s         Setting up automation session
+    t =     2.11s         Wait for fr.kathryn.woop to idle
+    t =     3.72s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     4.75s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     4.75s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     4.80s Find the "fouettage-pilule-sonde" Any
+    t =     6.32s Find the "fouettage-pilule-sonde" Any
+    t =     6.50s Find the "fouettage-pilule-sonde" Any
+    t =     6.68s Find the "fouettage-pilule-sonde" Any
+    t =     6.86s Find the "fouettage-pilule-sonde" Any
+    t =     7.04s Find the "fouettage-pilule-sonde" Any
+    t =     7.22s Find the "fouettage-pilule-sonde" Any
+    t =     7.40s Find the "fouettage-pilule-sonde" Any
+    t =     7.55s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     8.58s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     8.58s         Checking existence of `"fouettage-pilule" Any`
+    t =     8.59s Find the Target Application 'fr.kathryn.woop'
+    t =     8.63s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     8.64s Find the "fouettage-pilule-sonde" Any
+    t =     8.66s Find the "fouettage-pilule" Any
+    t =     8.68s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -220.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =     8.68s     Wait for fr.kathryn.woop to idle
+    t =     8.68s     Find the Target Application 'fr.kathryn.woop'
+    t =     8.71s     Check for interrupting elements affecting "Woop" Application
+    t =     8.73s     Synthesize event
+    t =     8.74s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.76s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.78s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.79s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.82s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.82s     Wait for fr.kathryn.woop to idle
+    t =     9.82s Find the "fouettage-pilule-sonde" Any
+    t =     9.84s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas04-pose t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.443;gp=0;ile=0;navCachee=0;drag=1;chg=27;tap=0;out=0;stop=0
+    t =     9.87s Find the "fouettage-pilule-sonde" Any
+    t =     9.88s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle]' passed (10.120 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test05_seance_deplacementLateralLent_nAspirePasDansLIle]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:48.769
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50410
+2026-09-16 13:34:49.849 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:34:49.849 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.29s         Setting up automation session
+    t =     2.04s         Wait for fr.kathryn.woop to idle
+    t =     3.70s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     4.72s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     4.73s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     4.78s Find the "fouettage-pilule-sonde" Any
+    t =     6.30s Find the "fouettage-pilule-sonde" Any
+    t =     6.48s Find the "fouettage-pilule-sonde" Any
+    t =     6.66s Find the "fouettage-pilule-sonde" Any
+    t =     6.84s Find the "fouettage-pilule-sonde" Any
+    t =     7.03s Find the "fouettage-pilule-sonde" Any
+    t =     7.20s Find the "fouettage-pilule-sonde" Any
+    t =     7.48s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     8.50s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     8.50s         Checking existence of `"fouettage-pilule" Any`
+    t =     8.51s Find the Target Application 'fr.kathryn.woop'
+    t =     8.56s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     8.57s Find the "fouettage-pilule" Any
+    t =     8.59s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (-150.0, 0.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =     8.59s     Wait for fr.kathryn.woop to idle
+    t =     8.60s     Find the Target Application 'fr.kathryn.woop'
+    t =     8.62s     Check for interrupting elements affecting "Woop" Application
+    t =     8.65s     Synthesize event
+    t =     8.65s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.67s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.70s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.72s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.74s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.60s     Wait for fr.kathryn.woop to idle
+    t =     9.60s Find the "fouettage-pilule-sonde" Any
+    t =     9.77s Find the "fouettage-pilule-sonde" Any
+    t =     9.95s Find the "fouettage-pilule-sonde" Any
+    t =     9.97s Find the "fouettage-pilule-sonde" Any
+    t =     9.99s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test05_seance_deplacementLateralLent_nAspirePasDansLIle]' passed (10.219 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test06_seance_ile_sonTapSortLaPastille_sousLIle]' started.
+    t =     0.00s Start Test at 2026-09-16 13:34:58.988
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50436
+2026-09-16 13:35:00.071 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:35:00.071 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.29s         Setting up automation session
+    t =     2.06s         Wait for fr.kathryn.woop to idle
+    t =     4.00s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.03s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.03s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     5.08s Find the "fouettage-pilule-sonde" Any
+    t =     6.60s Find the "fouettage-pilule-sonde" Any
+    t =     6.77s Find the "fouettage-pilule-sonde" Any
+    t =     6.95s Find the "fouettage-pilule-sonde" Any
+    t =     7.13s Find the "fouettage-pilule-sonde" Any
+    t =     7.31s Find the "fouettage-pilule-sonde" Any
+    t =     7.49s Find the "fouettage-pilule-sonde" Any
+    t =     7.72s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     8.73s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     8.73s         Checking existence of `"fouettage-pilule" Any`
+    t =     8.75s Find the Target Application 'fr.kathryn.woop'
+    t =     8.80s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     8.82s Find the "fouettage-pilule" Any
+    t =     8.84s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =     8.84s     Wait for fr.kathryn.woop to idle
+    t =     8.85s     Find the Target Application 'fr.kathryn.woop'
+    t =     8.88s     Check for interrupting elements affecting "Woop" Application
+    t =     8.91s     Synthesize event
+    t =     8.92s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.94s         Find the Target Application 'fr.kathryn.woop'
+    t =     8.97s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.00s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.03s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.61s     Wait for fr.kathryn.woop to idle
+    t =     9.62s Find the "fouettage-pilule-sonde" Any
+    t =     9.64s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06a-entre-dans-ile t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =     9.67s Waiting 4.0s for "fouettage-ile" Any to exist
+    t =    10.69s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-ile" Any`
+    t =    10.69s         Checking existence of `"fouettage-ile" Any`
+    t =    10.77s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(88.66666666666667, 5.0, 215.99999999999994, 99.0)
+    t =    10.80s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 86.0)
+    t =    10.80s     Wait for fr.kathryn.woop to idle
+    t =    10.80s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.83s     Check for interrupting elements affecting "Woop" Application
+    t =    10.85s     Synthesize event
+    t =    10.85s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.87s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.89s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.19s     Wait for fr.kathryn.woop to idle
+    t =    11.20s Find the "fouettage-pilule-sonde" Any
+    t =    11.21s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06b-tap-ile-sort t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    11.23s Waiting 4.0s for "fouettage-pilule" Any to exist
+    t =    12.26s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    12.26s         Checking existence of `"fouettage-pilule" Any`
+    t =    12.27s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test06_seance_ile_sonTapSortLaPastille_sousLIle]' passed (12.515 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test06b_seance_ile_unTapTremblant_sortQuandMeme]' started.
+    t =     0.00s Start Test at 2026-09-16 13:35:11.504
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50465
+2026-09-16 13:35:12.599 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:35:12.599 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.31s         Setting up automation session
+    t =     2.42s         Wait for fr.kathryn.woop to idle
+    t =     4.12s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.14s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.14s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     5.19s Find the "fouettage-pilule-sonde" Any
+    t =     6.72s Find the "fouettage-pilule-sonde" Any
+    t =     6.90s Find the "fouettage-pilule-sonde" Any
+    t =     7.08s Find the "fouettage-pilule-sonde" Any
+    t =     7.26s Find the "fouettage-pilule-sonde" Any
+    t =     7.45s Find the "fouettage-pilule-sonde" Any
+    t =     7.63s Find the "fouettage-pilule-sonde" Any
+    t =     7.81s Find the "fouettage-pilule-sonde" Any
+    t =     8.04s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     9.08s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     9.08s         Checking existence of `"fouettage-pilule" Any`
+    t =     9.10s Find the Target Application 'fr.kathryn.woop'
+    t =     9.17s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     9.19s Find the "fouettage-pilule" Any
+    t =     9.22s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =     9.22s     Wait for fr.kathryn.woop to idle
+    t =     9.22s     Find the Target Application 'fr.kathryn.woop'
+    t =     9.26s     Check for interrupting elements affecting "Woop" Application
+    t =     9.31s     Synthesize event
+    t =     9.31s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.34s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.38s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.41s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.45s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.03s     Wait for fr.kathryn.woop to idle
+    t =    10.04s Find the "fouettage-pilule-sonde" Any
+    t =    10.07s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06b2-entre t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    10.10s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(109.33333333333331, 144.66666666666666, 216.0, 99.0)
+    t =    10.12s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (217.3, 225.7) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (217.3, 225.7) -> (0.0, 6.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =    10.12s     Wait for fr.kathryn.woop to idle
+    t =    10.12s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.15s     Check for interrupting elements affecting "Woop" Application
+    t =    10.19s     Synthesize event
+    t =    10.19s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.22s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.25s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.28s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.31s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.88s     Wait for fr.kathryn.woop to idle
+    t =    11.96s Find the "fouettage-pilule-sonde" Any
+    t =    12.28s Find the "fouettage-pilule-sonde" Any
+    t =    12.47s Find the "fouettage-pilule-sonde" Any
+    t =    12.66s Find the "fouettage-pilule-sonde" Any
+    t =    12.86s Find the "fouettage-pilule-sonde" Any
+    t =    13.06s Find the "fouettage-pilule-sonde" Any
+    t =    13.26s Find the "fouettage-pilule-sonde" Any
+    t =    13.46s Find the "fouettage-pilule-sonde" Any
+    t =    13.66s Find the "fouettage-pilule-sonde" Any
+    t =    13.86s Find the "fouettage-pilule-sonde" Any
+    t =    14.07s Find the "fouettage-pilule-sonde" Any
+    t =    14.27s Find the "fouettage-pilule-sonde" Any
+    t =    14.46s Find the "fouettage-pilule-sonde" Any
+    t =    14.64s Find the "fouettage-pilule-sonde" Any
+    t =    14.83s Find the "fouettage-pilule-sonde" Any
+    t =    15.03s Find the "fouettage-pilule-sonde" Any
+    t =    15.23s Find the "fouettage-pilule-sonde" Any
+    t =    15.42s Find the "fouettage-pilule-sonde" Any
+    t =    15.61s Find the "fouettage-pilule-sonde" Any
+    t =    15.80s Find the "fouettage-pilule-sonde" Any
+    t =    16.00s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06b2-tap-tremblant t1 ok=false sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    16.04s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(88.66666666666667, 5.0, 215.99999999999994, 99.0)
+    t =    16.09s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 86.0) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 86.0) -> (0.0, 6.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =    16.09s     Wait for fr.kathryn.woop to idle
+    t =    16.09s     Find the Target Application 'fr.kathryn.woop'
+    t =    16.13s     Check for interrupting elements affecting "Woop" Application
+    t =    16.19s     Synthesize event
+    t =    16.19s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.22s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.25s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.28s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.31s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.88s     Wait for fr.kathryn.woop to idle
+    t =    16.89s Find the "fouettage-pilule-sonde" Any
+    t =    16.95s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06b2-tap-tremblant t2 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+FOUET-PILULE cas06b2-tap-tremblant : ok tentative 2
+    t =    16.98s Waiting 4.0s for "fouettage-pilule" Any to exist
+    t =    17.99s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    17.99s         Checking existence of `"fouettage-pilule" Any`
+    t =    18.06s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test06b_seance_ile_unTapTremblant_sortQuandMeme]' passed (18.335 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test06c_seance_ile_leStopBabyClaqueSansSortir]' started.
+    t =     0.00s Start Test at 2026-09-16 13:35:29.840
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50495
+2026-09-16 13:35:30.923 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:35:30.924 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.29s         Setting up automation session
+    t =     2.40s         Wait for fr.kathryn.woop to idle
+    t =     4.65s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.70s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.70s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     5.75s Find the "fouettage-pilule-sonde" Any
+    t =     7.28s Find the "fouettage-pilule-sonde" Any
+    t =     7.47s Find the "fouettage-pilule-sonde" Any
+    t =     7.65s Find the "fouettage-pilule-sonde" Any
+    t =     7.83s Find the "fouettage-pilule-sonde" Any
+    t =     8.01s Find the "fouettage-pilule-sonde" Any
+    t =     8.19s Find the "fouettage-pilule-sonde" Any
+    t =     8.55s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     9.57s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     9.58s         Checking existence of `"fouettage-pilule" Any`
+    t =     9.60s Find the Target Application 'fr.kathryn.woop'
+    t =     9.67s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =     9.71s Find the "fouettage-pilule" Any
+    t =     9.73s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =     9.73s     Wait for fr.kathryn.woop to idle
+    t =     9.74s     Find the Target Application 'fr.kathryn.woop'
+    t =     9.81s     Check for interrupting elements affecting "Woop" Application
+    t =     9.88s     Synthesize event
+    t =     9.88s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.92s         Find the Target Application 'fr.kathryn.woop'
+    t =     9.97s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.01s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.06s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.66s     Wait for fr.kathryn.woop to idle
+    t =    10.68s Find the "fouettage-pilule-sonde" Any
+    t =    10.72s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas06c-entre t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    10.75s Find the "fouettage-pilule-sonde" Any
+    t =    10.78s Find the Target Application 'fr.kathryn.woop'
+    t =    10.81s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (146.5, 71.0)
+    t =    10.81s     Wait for fr.kathryn.woop to idle
+    t =    10.82s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.85s     Check for interrupting elements affecting "Woop" Application
+    t =    10.89s     Synthesize event
+    t =    10.90s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.93s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.97s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.29s     Wait for fr.kathryn.woop to idle
+    t =    11.30s Find the "fouettage-pilule-sonde" Any
+    t =    11.35s Find the "fouettage-pilule-sonde" Any
+    t =    11.42s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test06c_seance_ile_leStopBabyClaqueSansSortir]' passed (11.663 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test07_seance_ileSeQuitteAuDrag]' started.
+    t =     0.00s Start Test at 2026-09-16 13:35:41.503
+    t =     0.02s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.03s         Terminate fr.kathryn.woop:50519
+2026-09-16 13:35:42.540 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:35:42.541 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.25s         Setting up automation session
+    t =     2.73s         Wait for fr.kathryn.woop to idle
+    t =     4.85s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.88s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.88s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.00s Find the "fouettage-pilule-sonde" Any
+    t =     7.59s Find the "fouettage-pilule-sonde" Any
+    t =     7.79s Find the "fouettage-pilule-sonde" Any
+    t =     7.99s Find the "fouettage-pilule-sonde" Any
+    t =     8.19s Find the "fouettage-pilule-sonde" Any
+    t =     8.39s Find the "fouettage-pilule-sonde" Any
+    t =     8.94s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =     9.95s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =     9.95s         Checking existence of `"fouettage-pilule" Any`
+    t =     9.98s Find the Target Application 'fr.kathryn.woop'
+    t =    10.06s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =    10.10s Find the "fouettage-pilule" Any
+    t =    10.14s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =    10.14s     Wait for fr.kathryn.woop to idle
+    t =    10.15s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.20s     Check for interrupting elements affecting "Woop" Application
+    t =    10.28s     Synthesize event
+    t =    10.28s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.33s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.38s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.43s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.49s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.10s     Wait for fr.kathryn.woop to idle
+    t =    11.12s Find the "fouettage-pilule-sonde" Any
+    t =    11.20s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas07a-entre t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    11.26s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(93.66666666666667, 39.33333333333333, 215.99999999999994, 98.99999999999999)
+    t =    11.33s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (201.7, 120.3) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (201.7, 120.3) -> (0.0, 160.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =    11.33s     Wait for fr.kathryn.woop to idle
+    t =    11.35s     Find the Target Application 'fr.kathryn.woop'
+    t =    11.42s     Check for interrupting elements affecting "Woop" Application
+    t =    11.47s     Synthesize event
+    t =    11.48s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.53s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.57s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.61s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.66s         Find the Target Application 'fr.kathryn.woop'
+    t =    12.58s     Wait for fr.kathryn.woop to idle
+    t =    12.61s Find the "fouettage-pilule-sonde" Any
+    t =    12.82s Find the "fouettage-pilule-sonde" Any
+    t =    13.02s Find the "fouettage-pilule-sonde" Any
+    t =    13.22s Find the "fouettage-pilule-sonde" Any
+    t =    13.41s Find the "fouettage-pilule-sonde" Any
+    t =    13.60s Find the "fouettage-pilule-sonde" Any
+    t =    13.80s Find the "fouettage-pilule-sonde" Any
+    t =    13.99s Find the "fouettage-pilule-sonde" Any
+    t =    14.18s Find the "fouettage-pilule-sonde" Any
+    t =    14.38s Find the "fouettage-pilule-sonde" Any
+    t =    14.58s Find the "fouettage-pilule-sonde" Any
+    t =    14.79s Find the "fouettage-pilule-sonde" Any
+    t =    15.00s Find the "fouettage-pilule-sonde" Any
+    t =    15.20s Find the "fouettage-pilule-sonde" Any
+    t =    15.41s Find the "fouettage-pilule-sonde" Any
+    t =    15.61s Find the "fouettage-pilule-sonde" Any
+    t =    15.80s Find the "fouettage-pilule-sonde" Any
+    t =    16.05s Find the "fouettage-pilule-sonde" Any
+    t =    16.25s Find the "fouettage-pilule-sonde" Any
+    t =    16.49s Find the "fouettage-pilule-sonde" Any
+    t =    16.71s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas07b-sort t1 ok=false sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=15;tap=0;out=0;stop=0
+    t =    16.77s Find the "fouettage-ile" Any
+FOUET-PILULE rect ile=(88.66666666666667, 5.0, 215.99999999999994, 99.0)
+    t =    16.79s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 86.0) for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.7, 86.0) -> (0.0, 160.0) with velocity of 500.00 pixels per second, and then hold for 0.2 seconds 
+    t =    16.79s     Wait for fr.kathryn.woop to idle
+    t =    16.80s     Find the Target Application 'fr.kathryn.woop'
+    t =    16.84s     Check for interrupting elements affecting "Woop" Application
+    t =    16.89s     Synthesize event
+    t =    16.89s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.93s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.97s         Find the Target Application 'fr.kathryn.woop'
+    t =    17.00s         Find the Target Application 'fr.kathryn.woop'
+    t =    17.04s         Find the Target Application 'fr.kathryn.woop'
+    t =    17.98s     Wait for fr.kathryn.woop to idle
+    t =    17.98s Find the "fouettage-pilule-sonde" Any
+    t =    18.03s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cas07b-sort t2 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=0;enDrag=0;enVol=0;yRatio=0.000;gp=0;ile=1;navCachee=0;drag=2;chg=15;tap=0;out=0;stop=0
+FOUET-PILULE cas07b-sort : ok tentative 2
+    t =    18.29s Waiting 4.0s for "fouettage-pilule" Any to exist
+    t =    19.31s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    19.31s         Checking existence of `"fouettage-pilule" Any`
+    t =    19.42s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test07_seance_ileSeQuitteAuDrag]' passed (19.711 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test08_navRevientApresUnAllerRetourDansUnOnglet]' started.
+    t =     0.00s Start Test at 2026-09-16 13:36:01.216
+    t =     0.03s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+    t =     0.04s         Terminate fr.kathryn.woop:50568
+2026-09-16 13:36:02.346 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:36:02.346 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.54s         Setting up automation session
+    t =     2.75s         Wait for fr.kathryn.woop to idle
+    t =     4.82s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     5.85s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     5.86s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     5.93s Find the "fouettage-pilule-sonde" Any
+    t =     7.48s Find the "fouettage-pilule-sonde" Any
+    t =     7.67s Find the "fouettage-pilule-sonde" Any
+    t =     7.86s Find the "fouettage-pilule-sonde" Any
+    t =     8.05s Find the "fouettage-pilule-sonde" Any
+    t =     8.24s Find the "fouettage-pilule-sonde" Any
+    t =     8.78s Find the "fouettage-pilule-sonde" Any
+    t =    11.33s Checking existence of `"Exercices" Button`
+    t =    11.40s Find the Target Application 'fr.kathryn.woop'
+    t =    11.42s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 813.0)
+    t =    11.42s     Wait for fr.kathryn.woop to idle
+    t =    11.42s     Find the Target Application 'fr.kathryn.woop'
+    t =    11.45s     Check for interrupting elements affecting "Woop" Application
+    t =    11.48s     Synthesize event
+    t =    11.48s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.50s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.53s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.84s     Wait for fr.kathryn.woop to idle
+    t =    12.89s Find the "fouettage-pilule-sonde" Any
+    t =    12.93s Find the Target Application 'fr.kathryn.woop'
+    t =    13.01s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (120.5, 813.0)
+    t =    13.01s     Wait for fr.kathryn.woop to idle
+    t =    13.02s     Find the Target Application 'fr.kathryn.woop'
+    t =    13.07s     Check for interrupting elements affecting "Woop" Application
+    t =    13.15s     Synthesize event
+    t =    13.15s         Find the Target Application 'fr.kathryn.woop'
+    t =    13.19s         Find the Target Application 'fr.kathryn.woop'
+    t =    13.24s         Find the Target Application 'fr.kathryn.woop'
+    t =    13.57s     Wait for fr.kathryn.woop to idle
+    t =    14.47s Find the "fouettage-pilule-sonde" Any
+    t =    14.51s Find the "fouettage-pilule-sonde" Any
+    t =    14.55s Find the Target Application 'fr.kathryn.woop'
+    t =    14.59s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 813.0)
+    t =    14.59s     Wait for fr.kathryn.woop to idle
+    t =    14.59s     Find the Target Application 'fr.kathryn.woop'
+    t =    14.62s     Check for interrupting elements affecting "Woop" Application
+    t =    14.66s     Synthesize event
+    t =    14.66s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.69s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.72s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.04s     Wait for fr.kathryn.woop to idle
+    t =    15.87s Find the "fouettage-pilule-sonde" Any
+    t =    15.90s Find the Target Application 'fr.kathryn.woop'
+    t =    15.94s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (120.5, 813.0)
+    t =    15.94s     Wait for fr.kathryn.woop to idle
+    t =    15.94s     Find the Target Application 'fr.kathryn.woop'
+    t =    15.98s     Check for interrupting elements affecting "Woop" Application
+    t =    16.03s     Synthesize event
+    t =    16.03s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.07s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.12s         Find the Target Application 'fr.kathryn.woop'
+    t =    16.45s     Wait for fr.kathryn.woop to idle
+    t =    17.34s Find the "fouettage-pilule-sonde" Any
+    t =    17.45s Find the "fouettage-pilule-sonde" Any
+    t =    17.57s Find the Target Application 'fr.kathryn.woop'
+    t =    17.62s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 813.0)
+    t =    17.62s     Wait for fr.kathryn.woop to idle
+    t =    17.62s     Find the Target Application 'fr.kathryn.woop'
+    t =    17.67s     Check for interrupting elements affecting "Woop" Application
+    t =    17.73s     Synthesize event
+    t =    17.74s         Find the Target Application 'fr.kathryn.woop'
+    t =    17.78s         Find the Target Application 'fr.kathryn.woop'
+    t =    17.84s         Find the Target Application 'fr.kathryn.woop'
+    t =    18.17s     Wait for fr.kathryn.woop to idle
+    t =    19.05s Find the "fouettage-pilule-sonde" Any
+    t =    19.21s Find the Target Application 'fr.kathryn.woop'
+    t =    19.44s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (120.5, 813.0)
+    t =    19.44s     Wait for fr.kathryn.woop to idle
+    t =    19.44s     Find the Target Application 'fr.kathryn.woop'
+    t =    19.49s     Check for interrupting elements affecting "Woop" Application
+    t =    19.55s     Synthesize event
+    t =    19.55s         Find the Target Application 'fr.kathryn.woop'
+    t =    19.60s         Find the Target Application 'fr.kathryn.woop'
+    t =    19.66s         Find the Target Application 'fr.kathryn.woop'
+    t =    20.01s     Wait for fr.kathryn.woop to idle
+    t =    20.89s Find the "fouettage-pilule-sonde" Any
+    t =    20.93s Find the "fouettage-pilule-sonde" Any
+    t =    20.98s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test08_navRevientApresUnAllerRetourDansUnOnglet]' passed (21.266 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test09_home_ileBlancheOuvreLeDetailSansSortirLaPastille]' started.
+    t =     0.00s Start Test at 2026-09-16 13:36:22.482
+    t =     0.03s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.03s         Terminate fr.kathryn.woop:50692
+2026-09-16 13:36:23.556 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:36:23.556 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.49s         Setting up automation session
+    t =     3.06s         Wait for fr.kathryn.woop to idle
+    t =     5.21s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     6.22s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     6.22s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.35s Find the "fouettage-pilule-sonde" Any
+    t =     7.90s Find the "fouettage-pilule-sonde" Any
+    t =     8.09s Find the "fouettage-pilule-sonde" Any
+    t =     8.28s Find the "fouettage-pilule-sonde" Any
+    t =     8.46s Find the "fouettage-pilule-sonde" Any
+    t =     8.65s Find the "fouettage-pilule-sonde" Any
+    t =     9.28s Waiting 5.0s for "ile-seance-home" Button to exist
+    t =    10.30s     Checking `Expect predicate `existsNoRetry == 1` for object "ile-seance-home" Button`
+    t =    10.31s         Checking existence of `"ile-seance-home" Button`
+    t =    10.39s Checking existence of `"fouettage-pilule" Any`
+    t =    10.55s Find the Target Application 'fr.kathryn.woop'
+    t =    10.81s Added attachment named 'ile-home-blanche'
+    t =    10.81s Find the Target Application 'fr.kathryn.woop'
+    t =    10.85s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 66.0)
+    t =    10.86s     Wait for fr.kathryn.woop to idle
+    t =    10.86s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.91s     Check for interrupting elements affecting "Woop" Application
+    t =    10.96s     Synthesize event
+    t =    10.96s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.00s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.05s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.37s     Wait for fr.kathryn.woop to idle
+    t =    11.39s Waiting 5.0s for "fouettage-grand-player" Any to exist
+    t =    12.41s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    12.41s         Checking existence of `"fouettage-grand-player" Any`
+    t =    12.43s Find the Target Application 'fr.kathryn.woop'
+    t =    12.63s Added attachment named 'ile-home-detail'
+    t =    12.63s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test09_home_ileBlancheOuvreLeDetailSansSortirLaPastille]' passed (12.866 seconds).
+Test Case '-[WoopUITests.FouettagePiluleUITests test10_ile_leCadreEnglobeLeCapteurEtDegageLeTitre]' started.
+    t =     0.00s Start Test at 2026-09-16 13:36:35.348
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:50748
+2026-09-16 13:36:36.429 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 13:36:36.429 xcodebuild[49964:15799262] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.29s         Setting up automation session
+    t =     2.82s         Wait for fr.kathryn.woop to idle
+    t =     5.10s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     6.12s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     6.12s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     6.24s Find the "fouettage-pilule-sonde" Any
+    t =     7.80s Find the "fouettage-pilule-sonde" Any
+    t =     8.00s Find the "fouettage-pilule-sonde" Any
+    t =     8.20s Find the "fouettage-pilule-sonde" Any
+    t =     8.40s Find the "fouettage-pilule-sonde" Any
+    t =     8.60s Find the "fouettage-pilule-sonde" Any
+    t =     9.16s Waiting 10.0s for "fouettage-pilule" Any to exist
+    t =    10.20s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    10.20s         Checking existence of `"fouettage-pilule" Any`
+    t =    10.23s Find the Target Application 'fr.kathryn.woop'
+    t =    10.33s Find the "fouettage-pilule" Any
+FOUET-PILULE rects : écran=(0.0, 0.0, 393.0, 852.0) pilule=(23.0, 561.0, 347.0, 96.0)
+    t =    10.36s Find the "fouettage-pilule" Any
+    t =    10.40s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =    10.40s     Wait for fr.kathryn.woop to idle
+    t =    10.40s     Find the Target Application 'fr.kathryn.woop'
+    t =    10.45s     Check for interrupting elements affecting "Woop" Application
+    t =    10.52s     Synthesize event
+    t =    10.53s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.58s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.63s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.69s         Find the Target Application 'fr.kathryn.woop'
+    t =    10.75s         Find the Target Application 'fr.kathryn.woop'
+    t =    11.37s     Wait for fr.kathryn.woop to idle
+    t =    11.40s Find the "fouettage-pilule-sonde" Any
+    t =    11.45s Find the "fouettage-pilule-sonde" Any
+FOUET-PILULE cadre-entre t1 ok=true sonde=navVis=1;navH=42;mini=0;page=exos;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=1;chg=14;tap=0;out=0;stop=0
+    t =    11.50s Waiting 4.0s for "fouettage-ile" Any to exist
+    t =    12.52s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-ile" Any`
+    t =    12.52s         Checking existence of `"fouettage-ile" Any`
+    t =    13.55s Find the "fouettage-ile" Any
+    t =    13.60s Checking existence of `"Exercices" StaticText`
+    t =    13.66s Find the "Exercices" StaticText
+/tmp/woop-ile-20260916-banc/WoopUITests/FouettagePiluleUITests.swift:238: error: -[WoopUITests.FouettagePiluleUITests test10_ile_leCadreEnglobeLeCapteurEtDegageLeTitre] : XCTAssertGreaterThan failed: ("94.0") is not greater than ("104.0") - l'île ne doit plus recouvrir le titre de page
+    t =    14.18s Tear Down
+Test Case '-[WoopUITests.FouettagePiluleUITests test10_ile_leCadreEnglobeLeCapteurEtDegageLeTitre]' failed (14.423 seconds).
+Test Suite 'FouettagePiluleUITests' failed at 2026-09-16 13:36:49.772.
+	 Executed 12 tests, with 1 failure (0 unexpected) in 160.976 (160.982) seconds
+Test Suite 'WoopUITests.xctest' failed at 2026-09-16 13:36:49.773.
+	 Executed 12 tests, with 1 failure (0 unexpected) in 160.976 (160.983) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 13:36:49.773.
+	 Executed 12 tests, with 1 failure (0 unexpected) in 160.976 (160.984) seconds
+2026-09-16 13:37:09.169 xcodebuild[49964:15799262] [MT] IDETestOperationsObserverDebug: 181.921 elapsed -- Testing started completed.
+2026-09-16 13:37:09.169 xcodebuild[49964:15799262] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 13:37:09.169 xcodebuild[49964:15799262] [MT] IDETestOperationsObserverDebug: 181.921 sec, +181.921 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile-20260916-gestes.xcresult
+
+Failing tests:
+	FouettagePiluleUITests.test10_ile_leCadreEnglobeLeCapteurEtDegageLeTitre()
+
+** TEST FAILED **
+
+Testing started

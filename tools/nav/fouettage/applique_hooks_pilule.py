@@ -50,30 +50,49 @@ edite(base + "/Woop/Views/PageCard.swift",
 # C) PiluleVagabonde — la marque du CORPS de la pilule (son rect visible).
 edite(base + "/Woop/Views/PiluleVagabonde.swift",
       """            .sondeCadence("pilule")
+            .accessibilityIdentifier("seance-pastille")
     }""",
       """            .sondeCadence("pilule")
+            .accessibilityIdentifier("seance-pastille")
             .modifier(FouettagePiluleMarque())
     }""",
       "FouettagePiluleMarque()")
 
 # D) PiluleVagabonde — la marque de L'ÎLE (dernier modificateur de `ile`).
+# (05-09 : `isSource:` est arrivé avec le fondu croisé ; 06-09 V2 : la
+#  position suit l'état fine/gonflée — l'ancre suit, encore.)
 edite(base + "/Woop/Views/PiluleVagabonde.swift",
-      """        .matchedGeometryEffect(id: "pilule-vol", in: vol)
-        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+      """        .position(x: UIScreen.main.bounds.width / 2,
+                  y: doigtIle || SouffleBanc.horloge
+                      ? IleGeo.capsuleCentreY : IleGeo.babyCentreY)
+        .accessibilityIdentifier("seance-ile")
     }""",
-      """        .matchedGeometryEffect(id: "pilule-vol", in: vol)
-        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+      """        .position(x: UIScreen.main.bounds.width / 2,
+                  y: doigtIle || SouffleBanc.horloge
+                      ? IleGeo.capsuleCentreY : IleGeo.babyCentreY)
+        .accessibilityIdentifier("seance-ile")
         .modifier(FouettageIleMarque())
     }""",
       "FouettageIleMarque()")
 
+# D bis) Compter l'action réelle du stop, maintenant placé à droite.
+edite(base + "/Woop/Views/PiluleVagabonde.swift",
+      """                    .highPriorityGesture(TapGesture().onEnded {
+                        Haptique.moyen()
+                        onStop()
+                    })""",
+      """                    .highPriorityGesture(TapGesture().onEnded {
+                        FouettagePiluleFaits.shared.nbStop += 1
+                        Haptique.moyen()
+                        onStop()
+                    })""",
+      "nbStop += 1")
+
 # E) PiluleVagabonde — la marque du GRAND PLAYER (sa présence EST le test).
 edite(base + "/Woop/Views/PiluleVagabonde.swift",
+      """        .sondeCadence("player-morph")""",
       """        .sondeCadence("player-morph")
-    }""",
-      """        .sondeCadence("player-morph")
-        .modifier(FouettageGrandPlayerMarque())
-    }""",
+        .modifier(FouettageGrandPlayerMarque())""",
       "FouettageGrandPlayerMarque()")
 
 # F) DIAGNOSTIC DE GESTE — des prints DANS le geste de la pastille (copie
@@ -107,7 +126,8 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
 import os
 if os.environ.get("FOUET_SANS_MATCHED") == "1":
     edite(base + "/Woop/Views/PiluleVagabonde.swift",
-          """            .matchedGeometryEffect(id: "pilule-vol", in: vol)
+          """            .matchedGeometryEffect(id: "pilule-vol", in: vol,
+                                   isSource: !etat.dansIle)
             .position(x: UIScreen.main.bounds.width / 2, y: y)""",
           """            .position(x: UIScreen.main.bounds.width / 2, y: y)""",
           "// SANS-MATCHED")

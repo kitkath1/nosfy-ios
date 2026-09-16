@@ -1,0 +1,205 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile-20260916-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=AA36EA2C-0220-4292-9190-A78E13C759AE" -parallel-testing-enabled NO -resultBundlePath /tmp/woop-ile-native47.xcresult "-only-testing:WoopUITests/IleNativeUITests"
+
+2026-09-16 15:13:31.655 xcodebuild[68667:16061719] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-ile-native47.xcresult
+
+2026-09-16 15:13:31.705 xcodebuild[68667:16061719] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:13:33.698 xcodebuild[68667:16061719] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:13:34.344 xcodebuild[68667:16061719] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 15:13:36.066739+0200 WoopUITests-Runner[68683:16062169] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 15:13:36.997.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 15:13:36.998.
+Test Suite 'IleNativeUITests' started at 2026-09-16 15:13:36.998.
+Test Case '-[WoopUITests.IleNativeUITests test01_agrandissementNatifPuisRetourPastilleProfil]' started.
+    t =     0.00s Start Test at 2026-09-16 15:13:36.999
+    t =     0.06s Set Up
+    t =     0.07s Open fr.kathryn.woop
+    t =     0.07s     Launch fr.kathryn.woop
+    t =     0.07s         Terminate fr.kathryn.woop:68597
+objc[68683]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109fc8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a4a4398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-09-16 15:13:38.332 xcodebuild[68667:16061719] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 15:13:38.332 xcodebuild[68667:16061719] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.93s         Setting up automation session
+    t =     4.92s         Wait for fr.kathryn.woop to idle
+    t =     8.70s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     9.78s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     9.78s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =    10.06s Find the "fouettage-pilule-sonde" Any
+    t =    10.14s Find the "fouettage-pilule-sonde" Any
+ILE-NATIVE lancement profile : navVis=0;navH=42;mini=0;page=profil;seance=0;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=0;chg=0;tap=0;out=0;stop=0
+    t =    10.22s Checking existence of `"fouettage-ile" Any`
+    t =    10.94s Checking existence of `"ile-seance-home" Button`
+    t =    11.04s Checking existence of `"fouettage-pilule" Any`
+    t =    11.56s Find the Target Application 'fr.kathryn.woop'
+    t =    11.84s Added attachment named 'app-profile-sans-fausse-ile'
+    t =    11.85s Pressing Home button
+    t =    12.34s Waiting 12.0s for Any (First Match) to exist
+    t =    13.38s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    13.38s         Checking existence of `Any (First Match)`
+    t =    13.63s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    14.78s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    14.89s Added attachment named 'arbre-SpringBoard'
+    t =    14.89s Find the Application 'com.apple.springboard'
+    t =    15.18s Added attachment named 'ile-native-compacte'
+    t =    15.18s Find the Application 'com.apple.springboard'
+    t =    15.23s Press Application 'com.apple.springboard'[0.00, 0.00] -> (196.5, 30.0) for 1.2 seconds
+    t =    15.23s     Wait for com.apple.springboard to idle
+    t =    15.24s     Find the Application 'com.apple.springboard'
+    t =    15.28s     Check for interrupting elements affecting " " Application
+    t =    15.37s     Synthesize event
+    t =    15.37s         Find the Application 'com.apple.springboard'
+    t =    15.43s         Find the Application 'com.apple.springboard'
+    t =    15.51s         Find the Application 'com.apple.springboard'
+    t =    16.99s     Wait for com.apple.springboard to idle
+    t =    17.70s Waiting 6.0s for "Séance" StaticText to exist
+    t =    18.71s     Checking `Expect predicate `existsNoRetry == 1` for object "Séance" StaticText`
+    t =    18.71s         Checking existence of `"Séance" StaticText`
+    t =    18.77s Find the Application 'com.apple.springboard'
+    t =    19.00s Added attachment named 'ile-native-agrandie'
+    t =    19.00s Tap Application 'com.apple.springboard'[0.50, 0.50]
+    t =    19.00s     Wait for com.apple.springboard to idle
+    t =    19.00s     Find the Application 'com.apple.springboard'
+    t =    19.05s     Check for interrupting elements affecting " " Application
+    t =    19.10s     Synthesize event
+    t =    19.10s         Find the Application 'com.apple.springboard'
+    t =    19.14s         Find the Application 'com.apple.springboard'
+    t =    19.18s         Find the Application 'com.apple.springboard'
+    t =    19.51s     Wait for com.apple.springboard to idle
+    t =    21.38s Find the Application 'com.apple.springboard'
+    t =    21.42s Tap Application 'com.apple.springboard'[0.00, 0.00] -> (196.5, 30.0)
+    t =    21.42s     Wait for com.apple.springboard to idle
+    t =    21.42s     Find the Application 'com.apple.springboard'
+    t =    21.46s     Check for interrupting elements affecting " " Application
+    t =    21.51s     Synthesize event
+    t =    21.51s         Find the Application 'com.apple.springboard'
+    t =    21.55s         Find the Application 'com.apple.springboard'
+    t =    21.59s         Find the Application 'com.apple.springboard'
+    t =    21.93s     Wait for com.apple.springboard to idle
+    t =    24.06s Wait for fr.kathryn.woop to become Running Foreground
+    t =    24.06s Find the "fouettage-pilule-sonde" Any
+    t =    24.14s Waiting 5.0s for "fouettage-pilule" Any to exist
+    t =    25.17s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    25.17s         Checking existence of `"fouettage-pilule" Any`
+    t =    25.20s Find the Target Application 'fr.kathryn.woop'
+    t =    25.50s Added attachment named 'retour-ile-vers-pastille'
+    t =    25.50s Find the "fouettage-pilule" Any
+    t =    25.55s Press Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) for 0.0 seconds, then drag to Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0) -> (0.0, -700.0) with velocity of 2400.00 pixels per second, and then hold for 0.0 seconds 
+    t =    25.55s     Wait for fr.kathryn.woop to idle
+    t =    25.56s     Find the Target Application 'fr.kathryn.woop'
+    t =    25.62s     Check for interrupting elements affecting "Woop" Application
+    t =    25.70s     Synthesize event
+    t =    25.71s         Find the Target Application 'fr.kathryn.woop'
+    t =    25.76s         Find the Target Application 'fr.kathryn.woop'
+    t =    25.82s         Find the Target Application 'fr.kathryn.woop'
+    t =    25.88s         Find the Target Application 'fr.kathryn.woop'
+    t =    25.94s         Find the Target Application 'fr.kathryn.woop'
+    t =    26.56s     Wait for fr.kathryn.woop to idle
+    t =    26.59s Find the "fouettage-pilule-sonde" Any
+    t =    26.77s Checking existence of `"fouettage-ile" Any`
+    t =    27.82s Checking existence of `"fouettage-pilule" Any`
+    t =    28.59s Pressing Home button
+    t =    29.06s Waiting 12.0s for Any (First Match) to exist
+    t =    30.10s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    30.10s         Checking existence of `Any (First Match)`
+    t =    30.28s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    31.43s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    31.52s Added attachment named 'arbre-SpringBoard'
+    t =    31.52s Find the Application 'com.apple.springboard'
+    t =    31.77s Added attachment named 'ile-native-compacte'
+    t =    31.77s Find the Application 'com.apple.springboard'
+    t =    31.81s Tap Application 'com.apple.springboard'[0.00, 0.00] -> (196.5, 30.0)
+    t =    31.81s     Wait for com.apple.springboard to idle
+    t =    31.82s     Find the Application 'com.apple.springboard'
+    t =    31.86s     Check for interrupting elements affecting " " Application
+    t =    31.91s     Synthesize event
+    t =    31.92s         Find the Application 'com.apple.springboard'
+    t =    31.96s         Find the Application 'com.apple.springboard'
+    t =    32.00s         Find the Application 'com.apple.springboard'
+    t =    32.34s     Wait for com.apple.springboard to idle
+    t =    34.45s Wait for fr.kathryn.woop to become Running Foreground
+    t =    34.45s Waiting 8.0s for "fouettage-pilule" Any to exist
+    t =    35.50s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule" Any`
+    t =    35.50s         Checking existence of `"fouettage-pilule" Any`
+    t =    35.52s Find the "fouettage-pilule" Any
+    t =    35.56s Tap Target Application 'fr.kathryn.woop'[0.00, 0.00] -> (196.5, 609.0)
+    t =    35.56s     Wait for fr.kathryn.woop to idle
+    t =    35.57s     Find the Target Application 'fr.kathryn.woop'
+    t =    35.66s     Check for interrupting elements affecting "Woop" Application
+    t =    35.75s     Synthesize event
+    t =    35.75s         Find the Target Application 'fr.kathryn.woop'
+    t =    35.81s         Find the Target Application 'fr.kathryn.woop'
+    t =    35.90s         Find the Target Application 'fr.kathryn.woop'
+    t =    36.26s     Wait for fr.kathryn.woop to idle
+    t =    36.29s Waiting 8.0s for "fouettage-grand-player" Any to exist
+    t =    37.32s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    37.32s         Checking existence of `"fouettage-grand-player" Any`
+    t =    37.37s Tear Down
+Test Case '-[WoopUITests.IleNativeUITests test01_agrandissementNatifPuisRetourPastilleProfil]' passed (37.773 seconds).
+Test Case '-[WoopUITests.IleNativeUITests test02_homeTapNatifOuvreLeDetail]' started.
+    t =     0.00s Start Test at 2026-09-16 15:14:14.774
+    t =     0.03s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+    t =     0.04s         Terminate fr.kathryn.woop:68690
+2026-09-16 15:14:15.915 xcodebuild[68667:16061719] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 15:14:15.916 xcodebuild[68667:16061719] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.57s         Setting up automation session
+    t =     3.28s         Wait for fr.kathryn.woop to idle
+    t =     6.00s Waiting 60.0s for "fouettage-pilule-sonde" Any to exist
+    t =     7.01s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-pilule-sonde" Any`
+    t =     7.02s         Checking existence of `"fouettage-pilule-sonde" Any`
+    t =     7.15s Find the "fouettage-pilule-sonde" Any
+    t =     7.21s Find the "fouettage-pilule-sonde" Any
+ILE-NATIVE lancement home : navVis=1;navH=42;mini=0;page=home;seance=1;dansIle=1;enDrag=0;enVol=0;yRatio=0.820;gp=0;ile=1;navCachee=0;drag=0;chg=0;tap=0;out=0;stop=0
+    t =     7.27s Checking existence of `"fouettage-ile" Any`
+    t =     7.57s Checking existence of `"ile-seance-home" Button`
+    t =     7.64s Checking existence of `"fouettage-pilule" Any`
+    t =     7.96s Find the Target Application 'fr.kathryn.woop'
+    t =     8.22s Added attachment named 'app-home-sans-fausse-ile'
+    t =     8.22s Pressing Home button
+    t =     8.68s Waiting 12.0s for Any (First Match) to exist
+    t =     9.71s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =     9.71s         Checking existence of `Any (First Match)`
+    t =     9.93s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    11.07s Requesting snapshot of accessibility hierarchy for app with pid 65732
+    t =    11.17s Added attachment named 'arbre-SpringBoard'
+    t =    11.17s Find the Application 'com.apple.springboard'
+    t =    11.46s Added attachment named 'ile-native-compacte'
+    t =    11.46s Find the Application 'com.apple.springboard'
+    t =    11.50s Tap Application 'com.apple.springboard'[0.00, 0.00] -> (196.5, 30.0)
+    t =    11.50s     Wait for com.apple.springboard to idle
+    t =    11.50s     Find the Application 'com.apple.springboard'
+    t =    11.55s     Check for interrupting elements affecting " " Application
+    t =    11.60s     Synthesize event
+    t =    11.61s         Find the Application 'com.apple.springboard'
+    t =    11.64s         Find the Application 'com.apple.springboard'
+    t =    11.69s         Find the Application 'com.apple.springboard'
+    t =    12.02s     Wait for com.apple.springboard to idle
+    t =    13.69s Wait for fr.kathryn.woop to become Running Foreground
+    t =    13.69s Waiting 10.0s for "fouettage-grand-player" Any to exist
+    t =    14.72s     Checking `Expect predicate `existsNoRetry == 1` for object "fouettage-grand-player" Any`
+    t =    14.72s         Checking existence of `"fouettage-grand-player" Any`
+    t =    14.94s Checking existence of `"fouettage-pilule" Any`
+    t =    15.42s Find the Target Application 'fr.kathryn.woop'
+    t =    15.69s Added attachment named 'retour-ile-vers-detail-home'
+    t =    15.69s Tear Down
+Test Case '-[WoopUITests.IleNativeUITests test02_homeTapNatifOuvreLeDetail]' passed (15.978 seconds).
+Test Suite 'IleNativeUITests' passed at 2026-09-16 15:14:30.752.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 53.751 (53.753) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-16 15:14:30.752.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 53.751 (53.754) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 15:14:30.753.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 53.751 (53.755) seconds
+2026-09-16 15:14:52.046 xcodebuild[68667:16061719] [MT] IDETestOperationsObserverDebug: 78.309 elapsed -- Testing started completed.
+2026-09-16 15:14:52.046 xcodebuild[68667:16061719] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 15:14:52.046 xcodebuild[68667:16061719] [MT] IDETestOperationsObserverDebug: 78.309 sec, +78.309 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-ile-native47.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
