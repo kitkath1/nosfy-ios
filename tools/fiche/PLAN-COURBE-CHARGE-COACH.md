@@ -52,7 +52,7 @@ lecteurs, fichier:ligne) ; le site de doc reste la référence des états.
 > près : la pilule S · M · 6M a la matière des chips (verre `.regular` fumé noir) ; la
 > capsule du lollipop est un `chartOverlay` (une annotation au-dessus du tracé se faisait
 > couper) ; le fil se révèle par un masque (0,9 s) ; le voile de chaleur est à 0,20 ;
-> `-sansCourbe` n'est PAS encore posé. Côté serveur : GO donné à la session back-end
+> `-sansCourbe` est posé (16-09, après le commit d82538d : la fiche muscu sans courbe ni coach, l'ancienne description — l'ABBA au téléphone reste à faire). Côté serveur : GO donné à la session back-end
 > (§2, contrat : phrase ≤ 60 signes, sans tiret, un chiffre ; `premier` sans IA), qui
 > demande le feu vert du déploiement (modèle payant) à Kathryn en direct. Côté app :
 > `CoachServeur.conseil` (8 s, `-sansServeur`) est branché, mesuré contre l'edge absente
