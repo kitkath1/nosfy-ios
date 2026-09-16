@@ -26,6 +26,14 @@ struct GrapheCardioFiche: View {
     /// le même dessin, jamais une phrase « rien à afficher ».
     var vide: Bool = false
     let vu: Bool
+    /// La barre choisie sous le doigt : la ligne de tête s'efface pendant
+    /// que la ligne de lecture parle à sa place (elles vivent au même
+    /// endroit — vu par Kathryn le 16-09 : les deux se superposaient).
+    /// `-grapheChoisi <i>` : le banc la pose (le simulateur n'a pas de doigt).
+    @State private var choisi: Int? = {
+        let n = UserDefaults.standard.integer(forKey: "grapheChoisi")
+        return CommandLine.arguments.contains("-grapheChoisi") ? n : nil
+    }()
 
     var body: some View {
         // ⚠️ 200 pt, pas plus : c'est la place entre le sous-titre et la
@@ -36,9 +44,13 @@ struct GrapheCardioFiche: View {
                 .font(.inter(14, .medium))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.55))
+                .opacity(choisi == nil ? 1 : 0)
+                .animation(.easeOut(duration: 0.18), value: choisi == nil)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.48))
+            // 60 pt de plafond (la chambre garde 100) : à 138 pt de graphe la
+            // barre du pic et son étiquette restent DANS le cadre.
             PaliersVue(segments: vide ? silhouette : segments,
-                       vide: vide, echelle: echelle)
+                       vide: vide, echelle: echelle, plafond: 60, choix: $choisi)
                 .frame(height: 138)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.60))
             LegendePaliers(echelle: echelle)

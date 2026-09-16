@@ -144,31 +144,42 @@ struct ChambreHiit: View {
 
 // MARK: - L'ÉCHELLE DES PALIERS (15-09, plan cardio §C)
 
-/// UN composant, DEUX échelles. Le graphe de la chambre HIIT lit des km/h
+/// UN composant, TROIS échelles. Le graphe de la chambre HIIT lit des km/h
 /// (4 → 20, l'effort au-dessus du seuil de la maison) ; sur la fiche de
 /// l'escalier il lit des NIVEAUX de machine (« en vitesse-niveau, comme un
-/// tapis de salle », verdict 15-09) où tout ce qui monte est un effort. Le
-/// défaut `.tapis` reproduit EXACTEMENT les nombres qui étaient en dur : la
-/// chambre ne bouge pas d'un pixel.
+/// tapis de salle », verdict 15-09) où tout ce qui monte est un effort ; sur
+/// le tapis lent (16-09, G9) il lit SA course : tout ce qui avance est un
+/// effort, chaleur 4 → 12 km/h — avec la règle du HIIT, à 5-9 km/h tout
+/// sortait gris (« on dirait que c'est empty alors que la session est
+/// enregistrée »). Le défaut `.tapis` reproduit EXACTEMENT les nombres qui
+/// étaient en dur : la chambre ne bouge pas d'un pixel.
 /// ⚠️ Un `enum`, pas un struct de closures : une closure en propriété d'une
 /// vue la rend inégalable, donc rejouée à chaque passage du parent (loi §2.3).
 enum EchellePaliers: Equatable {
-    /// La chambre HIIT et les fiches HIIT / tapis modéré : des km/h.
+    /// La chambre HIIT et la fiche HIIT : des km/h, l'effort au seuil.
     case tapis
     /// L'escalier : niveaux 1-15, chaleur = niveau / 15, la récup en graphite
     /// sombre (elle est à l'arrêt ou au niveau 1).
     case escalier
+    /// Le tapis lent : des km/h, 3 → 12, chaleur 4 → 12 ; le graphite n'est
+    /// que l'arrêt (une pause n'est jamais écrite).
+    case tapisLent
 
     /// Les bornes de la hauteur des barres.
-    var min: Double { self == .tapis ? 4 : 0 }
-    var max: Double { self == .tapis ? 20 : 15 }
+    var min: Double {
+        switch self { case .tapis: return 4; case .escalier: return 0; case .tapisLent: return 3 }
+    }
+    var max: Double {
+        switch self { case .tapis: return 20; case .escalier: return 15; case .tapisLent: return 12 }
+    }
     /// Le mot des cotes et de la légende.
-    var unite: String { self == .tapis ? "km/h" : "niveau" }
+    var unite: String { self == .escalier ? "niveau" : "km/h" }
     /// La chaleur d'un EFFORT [0,1] selon sa vitesse.
     func chaleur(_ v: Double) -> Double {
         switch self {
         case .tapis: return Swift.min(Swift.max((v - SemaineStats.seuilEffort) / 4, 0), 1)
         case .escalier: return Swift.min(Swift.max(v / 15, 0), 1)
+        case .tapisLent: return Swift.min(Swift.max((v - 4) / 8, 0), 1)
         }
     }
     /// L'éclaircissement du GRAPHITE d'une récup [0,1] selon sa vitesse.
@@ -176,19 +187,27 @@ enum EchellePaliers: Equatable {
         switch self {
         case .tapis: return Swift.min(Swift.max((v - 5) / 4.5, 0), 1)
         case .escalier: return Swift.min(Swift.max(v / 15, 0), 1) * 0.5
+        case .tapisLent: return Swift.min(Swift.max(v / 8, 0), 1) * 0.5
         }
     }
     /// L'écriture d'une valeur.
     func fmt(_ v: Double) -> String {
-        self == .tapis ? ChambreFmt.kmh(v) : "\(Int(v.rounded()))"
+        self == .escalier ? "\(Int(v.rounded()))" : ChambreFmt.kmh(v)
     }
-    /// La légende du code couleur : « 15,0 → 19,0 km/h » / « niveau 1 → 15 ».
+    /// La légende du code couleur : « 15,0 → 19,0 km/h » / « niveau 1 → 15 »
+    /// / « 4,0 → 12,0 km/h ».
     var legendeChaleur: String {
         switch self {
         case .tapis: return "\(ChambreFmt.kmh(SemaineStats.seuilEffort)) → \(ChambreFmt.kmh(SemaineStats.seuilEffort + 4)) km/h"
         case .escalier: return "niveau 1 → 15"
+        case .tapisLent: return "\(ChambreFmt.kmh(4)) → \(ChambreFmt.kmh(12)) km/h"
         }
     }
+    /// Les mots de la légende et de la ligne de lecture : au long, ce qui
+    /// n'avance pas est une PAUSE, pas un repos ; ce qui avance, une allure.
+    var motRepos: String { self == .tapisLent ? L("Pause", "Pause") : L("Repos", "Rest") }
+    var motEffort: String { self == .tapisLent ? "Allure" : "Effort" }
+    var motRecup: String { self == .tapisLent ? "Pause" : "Récup" }
 }
 
 /// La légende sous le graphe — partagée par la chambre et la fiche.
@@ -199,7 +218,7 @@ struct LegendePaliers: View {
         HStack(spacing: 20) {
             HStack(spacing: 6) {
                 Capsule().fill(ChambreTon.graphite).frame(width: 9, height: 5)
-                Text(L("Repos", "Rest")).font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
+                Text(echelle.motRepos).font(.system(size: 10)).foregroundStyle(ChambreTon.encre4)
             }
             HStack(spacing: 3) {
                 ForEach(0..<4, id: \.self) { i in
@@ -222,9 +241,22 @@ struct PaliersVue: View {
     var vide = false
     /// L'échelle : km/h par défaut (la chambre), niveaux sur l'escalier.
     var echelle: EchellePaliers = .tapis
+    /// La hauteur de la barre au plafond de l'échelle (100 pt : la chambre,
+    /// inchangée). La fiche, à 138 pt de graphe, en demande moins : à 100 la
+    /// barre du pic sortait du cadre et son étiquette montait sur la ligne
+    /// de tête (vu par Kathryn le 16-09).
+    var plafond: CGFloat = 100
+    /// LA SÉLECTION, partagée avec l'hôte quand il la demande : la fiche
+    /// efface sa ligne de tête pendant que la ligne de lecture parle à sa
+    /// place (les deux vivent au même endroit, 26 pt au-dessus du tracé).
+    var choix: Binding<Int?>? = nil
 
-    @State private var choisi: Int?
+    @State private var choisiInterne: Int?
     @State private var apparu = false
+    private var choisi: Int? { choix?.wrappedValue ?? choisiInterne }
+    private func choisir(_ i: Int?) {
+        if let choix { choix.wrappedValue = i } else { choisiInterne = i }
+    }
 
     private static let plancher: CGFloat = 7
     /// La silhouette du vide : un HIIT en gris — repos et efforts qui
@@ -266,7 +298,7 @@ struct PaliersVue: View {
                 let cx = L.x[i] + L.l[i] / 2
                 guard abs(location.x - cx) <= cible / 2 + 4 else { return }
                 UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.5)
-                withAnimation(.easeOut(duration: 0.18)) { choisi = choisi == i ? nil : i }
+                withAnimation(.easeOut(duration: 0.18)) { choisir(choisi == i ? nil : i) }
             }
         }
         .task { withAnimation(.timingCurve(0.2, 0.9, 0.25, 1, duration: 0.5)) { apparu = true } }
@@ -361,7 +393,9 @@ struct PaliersVue: View {
             cote(eMax, sol: sol, x: x, couleur: CardTon.chaleur(0.75), op: 0.78)
             if y(eMin, sol) - y(eMax, sol) >= 9 {
                 cote(eMin, sol: sol, x: x, couleur: CardTon.chaleur(0.75), op: 0.55)
-            } else {
+            } else if eMin != eMax || vide {
+                // (un seul effort : « → 16,0 » répéterait la cote, et sur la
+                // fiche il tombait sur la cote grise du dessous — 16-09.)
                 Text(vide ? "→ —" : "→ \(echelle.fmt(eMin))").font(.system(size: 7.5, design: .monospaced))
                     .foregroundStyle(CardTon.chaleur(0.75).opacity(0.7))
                     .offset(x: x + 6, y: y(eMax, sol) + 6)
@@ -435,10 +469,10 @@ struct PaliersVue: View {
     private func role(_ i: Int) -> String {
         let s = segments[i]
         if s.effort {
-            return pic == i ? "Le plus rapide" : "Effort"
+            return pic == i ? "Le plus rapide" : echelle.motEffort
         }
         let plusLongue = recups.map(\.secondes).max() == s.secondes
-        return plusLongue ? "La plus longue récup" : "Récup"
+        return plusLongue ? "La plus longue \(echelle.motRecup.lowercased())" : echelle.motRecup
     }
 
     /// 10 pt au plancher, 110 au plafond de l'échelle — pour l'échelle
@@ -446,7 +480,7 @@ struct PaliersVue: View {
     private func hauteur(_ v: Double) -> CGFloat {
         let etendue = max(echelle.max - echelle.min, 1)
         let u = (min(max(v, echelle.min), echelle.max) - echelle.min) / etendue
-        return CGFloat(10 + u * 100)
+        return CGFloat(10 + u * Double(plafond))
     }
     private func y(_ v: Double, _ sol: CGFloat) -> CGFloat { sol - hauteur(v) }
 

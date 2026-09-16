@@ -77,7 +77,7 @@ struct TapisLab: View {
         ZStack {
             Color.black.ignoresSafeArea()
             TapisScene(seance: seance,
-                       onFinish: { rejouer() },
+                       onFinish: { finir() },
                        tempsFige: TapisBanc.tempsFige)
                 .id(tour)
             if !TapisBanc.nu { bandeau }
@@ -95,12 +95,13 @@ struct TapisLab: View {
         }
         .task {
             guard TapisBanc.auto else { return }
-            // Le cycle qu'on filme : 4 s de set, stop, 2,2 s de repos, start.
+            // Le cycle qu'on filme : 4 s de set, stop, 2,2 s de repos, start
+            // — par `basculer`, l'acte du tap (au long : pause / reprise).
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(4.0))
-                seance.stopper()
+                seance.basculer()
                 try? await Task.sleep(for: .seconds(2.2))
-                seance.relancer()
+                seance.basculer()
             }
         }
     }
@@ -112,6 +113,15 @@ struct TapisLab: View {
             .frame(maxHeight: .infinity, alignment: .bottom)
             .padding(.bottom, 26)
             .allowsHitTesting(false)
+    }
+
+    /// Le Finish LIVRÉ : `finir()` (ce qui court est écrit, la quittance),
+    /// puis la scène rejoue son arrivée — jamais à côté du modèle.
+    private func finir() {
+        let quittance = seance.finir()
+        DispatchQueue.main.asyncAfter(deadline: .now() + (quittance == nil ? 0 : 1.3)) {
+            rejouer()
+        }
     }
 
     private func rejouer() {

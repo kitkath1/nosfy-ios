@@ -57,6 +57,14 @@ struct ModeCardio: Equatable {
     /// L'escalier n'est JAMAIS un sprint (verdict 15-09) : ses montées sont
     /// des accélérations, et tout ce qui monte est un effort.
     let estNiveau: Bool
+    /// LA GRAMMAIRE (16-09, plan cardio « 16-09 », G5) : le HIIT se court en
+    /// SETS et RÉCUPS (un tap = un set fini, le suivant = il repart) ; le
+    /// tapis lent et l'escalier se courent AU LONG — une seule course, le
+    /// chrono depuis le lancement, le tap = une PAUSE (jamais écrite), un
+    /// segment par allure scellée, Finish écrit ce qui court. Payé : elle a
+    /// tapé « pour lancer » un tapis lent, c'était un stop, elle a couru
+    /// vingt minutes en récup et Finish n'a rien écrit → 0 pièce.
+    let auLong: Bool
 
     /// Le genre d'un segment d'EFFORT à cette vitesse — c'est ce que la
     /// phase écrite portera. HIIT / tapis : sprint au-dessus du seuil de la
@@ -73,16 +81,37 @@ struct ModeCardio: Equatable {
         let n = v.formatted(.number.precision(.fractionLength(0...1)))
         return estNiveau ? "NIVEAU \(n)" : "\(n) KM/H"
     }
+    /// L'échelle du graphe de la fiche (G9) : le HIIT garde la définition de
+    /// la maison (braise ≥ 15 km/h), l'escalier ses niveaux, le tapis lent
+    /// SA course (tout ce qui avance est un effort, chaleur 4 → 12 km/h) —
+    /// à 5-9 km/h tout sortait gris (« on dirait que c'est empty »).
+    var echelle: EchellePaliers {
+        if estNiveau { return .escalier }
+        return auLong ? .tapisLent : .tapis
+    }
+
+    /// LE PLANCHER DU BARÈME, lu dans `reward_rules` (`cardio_tapis_min_minutes`,
+    /// `cardio_escalier_min_minutes`) par `DecideurSerie.chargerRegles` — la
+    /// même réponse que `seuil_effort_kmh`. 5 en repli hors ligne, la valeur
+    /// de la base. La quittance de Finish s'en sert pour DIRE « sous 5 min,
+    /// pas payé » au lieu de laisser croire.
+    static var minMinutesTapis: Double = 5
+    static var minMinutesEscalier: Double = 5
+    /// `cardio_hiit_effort_min_s` : un HIIT n'est payé comme un HIIT que si
+    /// un set d'au moins 20 s a atteint le seuil ; sinon le serveur le paie
+    /// comme un tapis (toutes les minutes à vitesse > 0, plancher tapis).
+    static var hiitEffortMinS: Double = 20
+    var minMinutes: Double { estNiveau ? Self.minMinutesEscalier : Self.minMinutesTapis }
 
     static let hiit = ModeCardio(plage: 0...20, depart: 10, departRecup: 7,
                                  unite: "km/h", libelle: "km/h", pasGlisse: 40,
-                                 estNiveau: false)
+                                 estNiveau: false, auLong: false)
     static let tapisModere = ModeCardio(plage: 0...20, depart: 7, departRecup: 5,
                                         unite: "km/h", libelle: "km/h", pasGlisse: 40,
-                                        estNiveau: false)
+                                        estNiveau: false, auLong: true)
     static let escalier = ModeCardio(plage: 1...15, depart: 6, departRecup: 1,
                                      unite: "", libelle: "NIVEAU", pasGlisse: 53,
-                                     estNiveau: true)
+                                     estNiveau: true, auLong: true)
 
     /// Le mode d'un exercice du catalogue — nil pour tout ce qui n'a pas de
     /// double galet (la muscu, et la piscine qui se saisit à la main).
@@ -103,7 +132,10 @@ struct ModeCardio: Equatable {
 /// réveille que les vues qui lisent).
 @MainActor @Observable
 final class SeanceTapis {
-    enum Etat { case court, repos }
+    /// `court` = on avance (un set en HIIT, la course au long) ; `repos` =
+    /// l'entre-sets du HIIT (la récup, écrite à la relance) ; `pause` = la
+    /// course au long figée (jamais écrite : une pause n'est pas une allure).
+    enum Etat { case court, repos, pause }
 
     /// Le mode : ce que la commande règle, et ce qu'un segment devient.
     let mode: ModeCardio
@@ -114,10 +146,40 @@ final class SeanceTapis {
     private(set) var setIndex = 1
     /// Les sets terminés — le pilote du palier de braise ET du crescendo.
     private(set) var setsFaits = 0
-    /// L'ancre du chrono du set en cours.
+    /// L'ancre du chrono du set en cours — au long, celle de la FOULÉE en
+    /// cours (depuis le lancement ou la reprise) : c'est elle qui fait battre
+    /// la braise et se rallumer au départ.
     private(set) var setDebut: Date?
-    /// L'ancre du repos (l'entre-sets montre le temps écoulé, pas un compte).
+    /// L'ancre du repos (l'entre-sets montre le temps écoulé, pas un compte)
+    /// — et de la pause au long (la même respiration lente).
     private(set) var reposDebut: Date?
+    /// AU LONG : le temps couru AVANT la foulée en cours (les pauses ne
+    /// comptent pas), l'ancre du segment d'allure en cours et son allure.
+    /// Le chrono = `couruAvant + (now − setDebut)` ; un segment = ce qui a
+    /// été couru à UNE allure, écrit au sceau suivant, à la pause, à Finish.
+    private(set) var couruAvant: TimeInterval = 0
+    private(set) var segmentDebut: Date?
+    private(set) var segmentVitesse: Double
+    /// Ce qui a été ÉCRIT (sets en HIIT, segments au long) — la quittance.
+    private(set) var segmentsFaits = 0
+    private(set) var secondesEcrites = 0
+    private(set) var vitesseParSeconde: Double = 0
+    /// CE QUE LE BARÈME VERRA : les secondes à vitesse > 0 (sets, récups,
+    /// segments — le serveur filtre `speed > 0`), et « un set d'au moins 20 s
+    /// au seuil » (la porte du barème HIIT). Les deux comptent aussi ce qui
+    /// était DÉJÀ écrit dans ce passage avant cette scène (`dejaSecondes`) :
+    /// la quittance juge l'exercice, pas la scène.
+    private(set) var secondesAvancees = 0
+    private(set) var effortAuSeuil = false
+    /// Finish a été glissé : plus aucun tap ne compte, la quittance est là.
+    private(set) var terminee = false
+    /// Le jeton du POINTAGE au long : un segment qui dure plus de cinq
+    /// minutes à la même allure est écrit par tranches — une app tuée, un
+    /// STOP par la pilule, ne perdent que la tranche en cours, jamais la
+    /// course (loi d'`ecrirePhase` : « une app tuée ne perd que le set en
+    /// cours »).
+    private var pointageJeton = 0
+    static let tranchePointage: TimeInterval = 300
     /// La vitesse COURANTE — la commande l'écrit ; c'est elle que la phase
     /// emporte au stop (l'intervalle) et à la relance (la récup).
     var vitesse: Double
@@ -135,18 +197,23 @@ final class SeanceTapis {
     var vitesseScellee: Date?
     /// La valeur qu'on vient de choisir — ce que la dalle annonce.
     var vitesseChoisie: Int
-    /// Le bilan du dernier set fini — ce que la dalle « SET n END » raconte.
+    /// Le bilan du dernier set fini — ce que la pop-up flammes raconte.
     private(set) var dernierBilan: BilanSet?
+    /// CE QUE LA DALLE DIT — « SET 1 END · 0:45 · 10 KM/H · Saved » au stop,
+    /// la quittance « SAVED · 20:00 · 7 KM/H · paid at session end » à Finish.
+    private(set) var dalle: TexteDalle?
     /// La dalle est à l'écran (elle se retire seule).
     var dalleVisible = false
     /// La pop-up flammes est à l'écran (elle attend un tap).
     var popupVisible = false
 
     /// CE QUE LA SCÈNE RAPPORTE (15-09) : l'intervalle fini au stop, la récup
-    /// finie à la relance. La scène ne connaît pas SwiftData — c'est la fiche
-    /// qui écrit les `CardioPhase` (faites) dans le bloc de son passage.
+    /// finie à la relance — et, au long (16-09), le segment d'allure fini au
+    /// sceau, à la pause, à Finish. La scène ne connaît pas SwiftData — c'est
+    /// la fiche qui écrit les `CardioPhase` (faites) dans le bloc de son passage.
     var onSetFini: ((BilanSet) -> Void)?
     var onRecupFinie: ((_ secondes: Int, _ vitesse: Double) -> Void)?
+    var onSegmentFini: ((_ rang: Int, _ secondes: Int, _ vitesse: Double) -> Void)?
 
     struct BilanSet: Equatable {
         let rang: Int
@@ -159,30 +226,98 @@ final class SeanceTapis {
         }
     }
 
+    struct TexteDalle: Equatable {
+        let titre: String
+        let recap: String
+        let pied: String
+    }
+
+    /// LA QUITTANCE DE FINISH (G8) : ce qui est écrit, et si le barème le
+    /// paiera — « sous 5 min, pas payé » se DIT, il ne se découvre pas à la
+    /// clôture avec zéro pièce.
+    struct Quittance: Equatable {
+        let segments: Int
+        let secondes: Int
+        /// L'allure moyenne pondérée par le temps (au long) ; en HIIT, la
+        /// vitesse n'a pas de moyenne qui parle : 0.
+        let vitesse: Double
+        let payable: Bool
+    }
+
     /// La durée de l'arrivée : le set 1 démarre quand les pastilles se posent.
     static let arrivee: Double = 0.85
 
+    /// `avance` : le banc `-cardioAvance <s>` fait naître la scène comme si
+    /// elle courait depuis s secondes — la seule façon de mesurer un barème
+    /// à cinq minutes sans attendre cinq minutes.
+    /// `setsFaits` : ce que ce PASSAGE a déjà écrit (une seconde course sur
+    /// la même fiche continue la numérotation : rang unique par phase, le
+    /// graphe reste dans l'ordre) ; `dejaSecondes` / `dejaAuSeuil` : ce que
+    /// le barème en verra, pour que la quittance ne dise pas « pas payé » à
+    /// un exercice que le serveur paiera.
     init(mode: ModeCardio = .hiit, naissance: Date = .now, figee: Bool = false,
-         setsFaits: Int = 0) {
+         setsFaits: Int = 0, avance: TimeInterval = 0,
+         dejaSecondes: Int = 0, dejaAuSeuil: Bool = false) {
         self.mode = mode
-        self.naissance = figee ? naissance.addingTimeInterval(-30) : naissance
+        self.naissance = (figee ? naissance.addingTimeInterval(-30) : naissance)
+            .addingTimeInterval(-avance)
         self.setsFaits = setsFaits
+        self.segmentsFaits = setsFaits
         self.setIndex = setsFaits + 1
-        self.setDebut = self.naissance.addingTimeInterval(Self.arrivee)
+        self.secondesAvancees = dejaSecondes
+        self.effortAuSeuil = dejaAuSeuil
+        let depart = self.naissance.addingTimeInterval(Self.arrivee)
+        self.setDebut = depart
+        self.segmentDebut = depart
         self.vitesse = mode.depart
+        self.segmentVitesse = mode.depart
         self.vitesseEffort = mode.depart
         self.vitesseRecup = mode.departRecup
         self.vitesseChoisie = Int(mode.depart.rounded())
+        armerLePointage()
+    }
+
+    /// LE RANG ÉCRIT au-dessus du chrono (G2) : « SET 1 » pendant l'effort,
+    /// et dès le stop « SET 2 » — la récup appartient au set qui vient.
+    var rangAffiche: Int { setsFaits + 1 }
+
+    /// LE CHRONO. HIIT : le set en cours, ou la récup écoulée. Au long : le
+    /// temps couru depuis le lancement, pauses déduites, figé en pause.
+    func secondes(_ now: Date) -> Int {
+        if mode.auLong {
+            let foulee = setDebut.map { max(0, now.timeIntervalSince($0)) } ?? 0
+            return Int(couruAvant + foulee)
+        }
+        if etat == .court, let d0 = setDebut { return max(0, Int(now.timeIntervalSince(d0))) }
+        if let r0 = reposDebut { return max(0, Int(now.timeIntervalSince(r0))) }
+        return 0
+    }
+
+    /// LE TAP SUR LA PASTILLE CHRONO — un seul geste, l'acte que la pastille
+    /// écrit : stop / start set (HIIT), pause / reprise (au long). Le banc et
+    /// le lab passent par ici, jamais à côté (deux chemins = un banc qui ment).
+    func basculer(_ now: Date = .now) {
+        guard !terminee else { return }
+        switch etat {
+        case .court: mode.auLong ? pauser(now) : stopper(now)
+        case .repos: relancer(now)
+        case .pause: reprendre(now)
+        }
     }
 
     /// Le tap sur la pastille chrono pendant l'effort : le set est FAIT.
     /// L'intervalle est RAPPORTÉ (la fiche l'écrit), la commande bascule sur
     /// la récup, la fête part.
     func stopper(_ now: Date = .now) {
-        guard etat == .court else { return }
+        guard etat == .court, !mode.auLong else { return }
         let secondes = setDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
+        // Un tap dans la première seconde n'est pas un set : rien à écrire,
+        // rien à fêter, rien à compter (`ecrirePhase` refuse 0 s — la scène
+        // ne doit pas dire « Saved » pour ce qu'il refuse).
+        guard secondes > 0 else { return }
         let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
         dernierBilan = bilan
+        dalle = TexteDalle(titre: "SET \(bilan.rang) END", recap: bilan.recap, pied: "Saved")
         etat = .repos
         setsFaits += 1
         setDebut = nil
@@ -192,8 +327,177 @@ final class SeanceTapis {
         vitesseEffort = vitesse
         vitesse = vitesseRecup
         vitesseChoisie = Int(vitesse.rounded())
+        compter(secondes, vitesse: bilan.vitesse)
         onSetFini?(bilan)
         lancerLaFete()
+    }
+
+    /// LE POINTAGE (au long) : cinq minutes à la même allure, et le segment
+    /// est écrit puis rouvert à cette allure. Un jeton par segment ouvert :
+    /// un sceau, une pause, Finish l'invalident.
+    private func armerLePointage() {
+        guard mode.auLong else { return }
+        pointageJeton += 1
+        let jeton = pointageJeton
+        guard let d0 = segmentDebut else { return }
+        let echeance = d0.addingTimeInterval(Self.tranchePointage)
+        Task { @MainActor [weak self] in
+            let reste = echeance.timeIntervalSinceNow
+            if reste > 0 { try? await Task.sleep(for: .seconds(reste)) }
+            guard let self, self.pointageJeton == jeton, !self.terminee,
+                  self.etat == .court, self.segmentDebut != nil else { return }
+            let now = Date()
+            self.fermerSegment(now)
+            self.segmentDebut = now
+            self.armerLePointage()
+        }
+    }
+
+    // MARK: au long — la pause, la reprise, le sceau, et ce qui s'écrit
+
+    /// LA PAUSE (G6) : le segment couru est écrit à son allure, le chrono se
+    /// fige, rien de la pause ne s'écrit. Aucune fête : on n'a rien fini.
+    func pauser(_ now: Date = .now) {
+        guard etat == .court, mode.auLong else { return }
+        fermerSegment(now)
+        if let d0 = setDebut { couruAvant += max(0, now.timeIntervalSince(d0)) }
+        etat = .pause
+        setDebut = nil
+        segmentDebut = nil
+        reposDebut = now
+        pointageJeton += 1
+    }
+
+    /// LA REPRISE : la foulée repart, un segment neuf à l'allure courante.
+    func reprendre(_ now: Date = .now) {
+        guard etat == .pause, !terminee else { return }
+        etat = .court
+        setDebut = now
+        segmentDebut = now
+        segmentVitesse = vitesse
+        reposDebut = nil
+        armerLePointage()
+    }
+
+    /// LE SCEAU D'UNE ALLURE (G7) : la commande relâchée sur une autre valeur
+    /// ferme le segment courant et en ouvre un à la nouvelle allure — c'est
+    /// ce qui donne au graphe un profil et au barème ses minutes × km/h.
+    /// Sous 5 s de segment, on ne découpe pas : les secondes vont à la
+    /// nouvelle allure (un segment de 2 s n'est qu'un tremblement).
+    func sceller(_ v: Double, _ now: Date = .now) {
+        guard mode.auLong, !terminee else { return }
+        guard v != segmentVitesse else { return }
+        guard etat == .court, let d0 = segmentDebut else {
+            segmentVitesse = v          // en pause : le prochain segment part à cette allure
+            return
+        }
+        if now.timeIntervalSince(d0) >= 5 {
+            fermerSegment(now)
+            segmentDebut = now
+            armerLePointage()
+        }
+        segmentVitesse = v
+    }
+
+    /// Le segment en cours est ÉCRIT (rapporté à la fiche) à son allure.
+    /// À 0 (la machine arrêtée, la commande scellée à zéro) rien ne s'écrit
+    /// et rien ne se compte : c'est une pause qui ne dit pas son nom, et le
+    /// serveur ne voit que `speed > 0` — la quittance doit voir pareil.
+    private func fermerSegment(_ now: Date) {
+        guard let d0 = segmentDebut else { return }
+        let secondes = max(0, Int(now.timeIntervalSince(d0)))
+        guard secondes > 0, segmentVitesse > 0 else { return }
+        segmentsFaits += 1
+        compter(secondes, vitesse: segmentVitesse)
+        onSegmentFini?(segmentsFaits, secondes, segmentVitesse)
+    }
+
+    private func compter(_ secondes: Int, vitesse v: Double) {
+        secondesEcrites += secondes
+        vitesseParSeconde += v * Double(secondes)
+        if v > 0 { secondesAvancees += secondes }
+        if v >= SemaineStats.seuilEffort, Double(secondes) >= Self.effortMinS { effortAuSeuil = true }
+    }
+    private static var effortMinS: Double { ModeCardio.hiitEffortMinS }
+
+    /// L'ABANDON : la séance s'est fermée sous la scène (le STOP de la
+    /// pilule). Plus rien ne s'écrit, plus rien ne se tape, pas de quittance
+    /// — la clôture est déjà partie, un segment de plus n'irait nulle part.
+    func abandonner(_ now: Date = .now) {
+        terminee = true
+        popupVisible = false
+        pointageJeton += 1
+        feteJeton += 1
+        if etat == .court, let d0 = setDebut { couruAvant += max(0, now.timeIntervalSince(d0)) }
+        setDebut = nil
+        segmentDebut = nil
+    }
+
+    /// FINISH ÉCRIT CE QUI COURT (P1 ④, G3, G8) : le set en cours en HIIT,
+    /// le segment en cours au long — un set couru n'est jamais perdu. La
+    /// récup du HIIT interrompue par Finish n'est pas un segment : rien. Rend
+    /// la quittance (nil si rien n'a jamais été écrit : pas de dalle pour
+    /// rien) et la pose à l'écran ; la scène se démonte après elle.
+    @discardableResult
+    func finir(_ now: Date = .now) -> Quittance? {
+        guard !terminee else { return nil }
+        terminee = true
+        popupVisible = false
+        if mode.auLong {
+            if etat == .court { fermerSegment(now) }
+        } else if etat == .court,
+                  let secondes = setDebut.map({ max(0, Int(now.timeIntervalSince($0))) }),
+                  secondes > 0 {
+            let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
+            dernierBilan = bilan
+            setsFaits += 1
+            compter(secondes, vitesse: vitesse)
+            onSetFini?(bilan)
+        }
+        // La foulée en cours se replie dans le temps couru (le palier de
+        // braise et le chrono ne retombent pas) ; la braise ne se rembobine
+        // pas si l'on était déjà au repos (le feu ne re-flashe pas).
+        if etat == .court {
+            if let d0 = setDebut { couruAvant += max(0, now.timeIntervalSince(d0)) }
+            reposDebut = now
+        }
+        etat = mode.auLong ? .pause : .repos
+        setDebut = nil
+        segmentDebut = nil
+        pointageJeton += 1
+        feteJeton += 1
+        guard secondesEcrites > 0 else { return nil }
+        let moyenne = vitesseParSeconde / Double(secondesEcrites)
+        // CE QUE LE BARÈME FERA (lu dans `pieces_cardio_seance`) : au long,
+        // les minutes à vitesse > 0 contre le plancher ; en HIIT, la porte
+        // « un set ≥ 20 s au seuil », sinon le repli tapis (les mêmes minutes,
+        // récups comprises, contre le plancher tapis). Sur l'EXERCICE entier
+        // (`dejaSecondes`), pas sur cette scène seule.
+        let plancher = mode.minMinutes * 60
+        let repli = Double(secondesAvancees) >= plancher
+        let payable = mode.auLong ? repli : (effortAuSeuil || repli)
+        let q = Quittance(segments: mode.auLong ? segmentsFaits : setsFaits,
+                          secondes: secondesEcrites,
+                          vitesse: mode.auLong ? moyenne : 0,
+                          payable: payable)
+        let duree = String(format: "%d:%02d", q.secondes / 60, q.secondes % 60)
+        let recap = mode.auLong
+            ? duree + " · " + mode.valeur((moyenne * 2).rounded() / 2)
+            : "\(q.segments) SET\(q.segments > 1 ? "S" : "") · " + duree
+        let minutes = Int(mode.minMinutes.rounded())
+        let pied: String
+        if payable {
+            pied = "Paid at session end"
+        } else if mode.auLong {
+            pied = "Under \(minutes) min · not paid"
+        } else {
+            let seuil = Int(SemaineStats.seuilEffort.rounded())
+            let minS = Int(ModeCardio.hiitEffortMinS.rounded())
+            pied = "No \(minS) s at \(seuil) km/h, under \(minutes) min · not paid"
+        }
+        dalle = TexteDalle(titre: "SAVED", recap: recap, pied: pied)
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) { dalleVisible = true }
+        return q
     }
 
     /// LA FÊTE vit DANS LE MODÈLE, pas dans le geste : le banc `-tapisAuto`
@@ -206,24 +510,29 @@ final class SeanceTapis {
     /// maison). La pop-up, elle, attend le tap : c'est l'instant de repos, et
     /// une card qui s'enfuit n'encourage personne.
     private func lancerLaFete() {
+        feteJeton += 1
+        let jeton = feteJeton
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
             dalleVisible = true
         }
+        // Un jeton : Finish dans les 3,2 s d'un stop ne doit ni voir la
+        // pop-up remonter, ni sa quittance retirée par le minuteur du set.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) { [weak self] in
-            guard let self else { return }
+            guard let self, self.feteJeton == jeton else { return }
             withAnimation(.easeOut(duration: 0.30)) { self.popupVisible = true }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.20) { [weak self] in
-            guard let self else { return }
+            guard let self, self.feteJeton == jeton else { return }
             withAnimation(.easeIn(duration: 0.28)) { self.dalleVisible = false }
         }
     }
+    private var feteJeton = 0
 
     /// Le tap sur la pastille chrono au repos : la récup est FAITE (elle est
     /// rapportée, à la vitesse qu'on tenait), le set suivant part, la
     /// commande revient à la vitesse d'effort.
     func relancer(_ now: Date = .now) {
-        guard etat == .repos else { return }
+        guard etat == .repos, !terminee else { return }
         popupVisible = false
         let secondes = reposDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
         let vRecup = vitesse
@@ -234,12 +543,33 @@ final class SeanceTapis {
         vitesseRecup = vRecup
         vitesse = vitesseEffort
         vitesseChoisie = Int(vitesse.rounded())
-        if secondes > 0 { onRecupFinie?(secondes, vRecup) }
+        if secondes > 0 {
+            // La récup compte pour le barème de repli (minutes à vitesse > 0),
+            // pas pour le récap des sets.
+            if vRecup > 0 { secondesAvancees += secondes }
+            onRecupFinie?(secondes, vRecup)
+        }
     }
 
-    /// Le palier de braise : `k = min(setsFaits, 6)` — 7 valeurs, pas plus
-    /// (au-delà l'écran serait blanc de rouge).
-    var palier: Int { min(setsFaits, TapisBraise.paliers.count - 1) }
+    /// LA BRAISE (effort, repos) à cet instant. HIIT : le palier des sets
+    /// faits, `k = min(setsFaits, 6)` — 7 valeurs, pas plus (au-delà l'écran
+    /// serait blanc de rouge). Au long il n'y a pas de set : la braise monte
+    /// avec le TEMPS COURU, un palier par trois minutes (plein feu à 18 min),
+    /// interpolée entre deux paliers — la course se voit chauffer, sans cran.
+    func braise(_ now: Date) -> (p: (ig: Double, chaleur: Double), q: (ig: Double, chaleur: Double)) {
+        let n = TapisBraise.paliers.count - 1
+        guard mode.auLong else {
+            let k = min(setsFaits, n)
+            return (TapisBraise.paliers[k], TapisBraise.repos(k))
+        }
+        let x = min(Double(secondes(now)) / 180.0, Double(n))
+        let k = Int(x), f = x - Double(k), k1 = min(k + 1, n)
+        func lerp(_ a: (ig: Double, chaleur: Double), _ b: (ig: Double, chaleur: Double)) -> (ig: Double, chaleur: Double) {
+            (a.ig + (b.ig - a.ig) * f, a.chaleur + (b.chaleur - a.chaleur) * f)
+        }
+        return (lerp(TapisBraise.paliers[k], TapisBraise.paliers[k1]),
+                lerp(TapisBraise.repos(k), TapisBraise.repos(k1)))
+    }
 }
 
 // MARK: - La palette, cuite au banc
@@ -350,13 +680,14 @@ struct TapisScene: View {
     /// qui s'enfuit n'encourage personne.
     @ViewBuilder
     private var fete: some View {
-        if let b = seance.dernierBilan, seance.dalleVisible {
+        if let d = seance.dalle, seance.dalleVisible {
             VStack {
                 // ⚠️ SANS MONTANT (verdict 15-09 : « pas 20 par intervalle,
                 // la séance est jugée à l'intensité » — le serveur paie à la
                 // clôture). La dalle est une QUITTANCE : ce set est écrit,
-                // voilà ce qu'il a été.
-                DalleSetFini(rang: b.rang, recap: b.recap)
+                // voilà ce qu'il a été. À Finish, la même robe dit ce qui est
+                // écrit en tout, et si le barème le paiera (G8).
+                DalleSetFini(titre: d.titre, recap: d.recap, pied: d.pied)
                     .padding(.horizontal, NotifGeo.margeH)
                     .padding(.top, 10)
                 Spacer(minLength: 0)
@@ -429,8 +760,9 @@ struct TapisScene: View {
         let ancre = court ? seance.setDebut : seance.reposDebut
         let depuis = ancre.map { max(0, now.timeIntervalSince($0)) } ?? 99
         let bascule = court ? sstep(0, 0.25, depuis) : sstep(0, 0.80, depuis)
-        let p = TapisBraise.paliers[seance.palier]
-        let q = TapisBraise.repos(seance.palier)
+        // Au long, la braise monte CONTINÛMENT avec le temps couru (un
+        // palier par trois minutes, interpolé) — pas un cran en une image.
+        let (p, q) = seance.braise(now)
         let ig = court ? (q.ig + (p.ig - q.ig) * bascule)
                        : (p.ig + (q.ig - p.ig) * bascule)
         let chaleur = court ? (q.chaleur + (p.chaleur - q.chaleur) * bascule)
@@ -540,31 +872,65 @@ struct TapisScene: View {
     /// ce serait un glyphe qui clignote à côté d'un glyphe fixe : du bruit.
     /// Le glyphe dit l'ÉTAT, la phrase au-dessus dit le GESTE.
     /// ⚠️ JUSTE LE TEMPS (verdict Kathryn 15-09 : « enlève le wording,
-    /// mets juste le temps ») : plus de « SET n », plus de « REST » — le
-    /// chrono du set pendant l'effort, le chrono de la récup pendant la
-    /// récup (un ton plus bas), et le glyphe qui dit l'état : ⏹ petit et
-    /// fixe sous l'effort, ▶ au repos. La braise dit le reste.
+    /// mets juste le temps ») — puis, le 16-09, TROIS MOTS QUI MANQUAIENT
+    /// (« on ne comprend pas dans quel set on est ; quand je tape je veux
+    /// voir set 2 apparaître ; Start Set dans la pill ») : le RANG au-dessus
+    /// du chrono (« SET 1 », et « SET 2 » dès le stop — le chiffre roule), et
+    /// au repos, à la place du grand ▶ muet, L'ACTE dans la pastille :
+    /// « ▶ START SET 2 ». Le tap fait exactement ce qu'il dit. Au long : pas
+    /// de rang, le chrono de la course, ⏸ sous l'effort, « ▶ RESUME » en pause.
     private func encreChrono(now: Date) -> some View {
         let court = seance.etat == .court
-        let secondes: Int = {
-            if court, let d0 = seance.setDebut { return max(0, Int(now.timeIntervalSince(d0))) }
-            if let r0 = seance.reposDebut { return max(0, Int(now.timeIntervalSince(r0))) }
-            return 0
-        }()
+        // Finish glissé : le chrono se fige sur ce qui est ÉCRIT (le total
+        // de la quittance), plus de rang, plus d'acte — il n'y a plus rien à
+        // taper pendant la seconde où la dalle parle.
+        let fini = seance.terminee
+        let secondes = fini && !seance.mode.auLong ? seance.secondesEcrites : seance.secondes(now)
         return VStack(spacing: court ? 4 : 8) {
+            if !seance.mode.auLong, !fini {
+                Text("SET \(seance.rangAffiche)")
+                    .font(.inter(11, .semibold))
+                    .tracking(2.8)
+                    .monospacedDigit()
+                    .foregroundStyle(Color.white.opacity(0.42))
+                    .contentTransition(.numericText(countsDown: false))
+                    .animation(.easeOut(duration: 0.45), value: seance.rangAffiche)
+                    .padding(.bottom, 2)
+            }
             Text(chrono(secondes))
                 .font(.inter(52, .medium))
                 .monospacedDigit()
                 .foregroundStyle(Color.white.opacity(court ? 0.94 : 0.66))
-            if court {
-                glyphe("stop.fill", corps: 19)
+            if fini {
+                EmptyView()
+            } else if court {
+                glyphe(seance.mode.auLong ? "pause.fill" : "stop.fill", corps: 19)
                     .opacity(0.78)
                     .padding(.top, 2)
             } else {
-                glyphe("play.fill", corps: 34)
+                acte(seance.mode.auLong ? "RESUME" : "START SET \(seance.rangAffiche)")
             }
         }
         .allowsHitTesting(false)
+    }
+
+    /// L'ACTE DANS LA PILL : le glyphe ET le mot, dans une capsule à la robe
+    /// de la dalle de vitesse — ce que le tap va faire.
+    private func acte(_ mot: String) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 12, weight: .bold))
+            Text(mot)
+                .font(.inter(11.5, .semibold))
+                .tracking(2.4)
+                .monospacedDigit()
+        }
+        .foregroundStyle(Self.encreApple)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 9)
+        .background(Capsule().fill(Color.white.opacity(0.10)))
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8))
+        .padding(.top, 2)
     }
 
     /// LA DALLE DE VITESSE — la confirmation NOMMÉE. Elle entre par le haut,
@@ -650,22 +1016,45 @@ struct TapisScene: View {
         // Pastille à la taille du chrono (01-09) = encre à sa grammaire
         // (52/12, la même que `encreChrono`) — une grande lentille sur
         // une petite encre se lisait vide.
-        // Au repos, l'encre dit RÉCUP : la commande règle la vitesse de
-        // récupération (la mémoire a basculé au stop), et ça doit se lire.
-        let repos = seance.etat == .repos
-        let libelle = repos
-            ? (seance.mode.estNiveau ? "RÉCUP · NIVEAU" : "RÉCUP · km/h")
-            : seance.mode.libelle
+        // Au repos, la commande règle la vitesse de RÉCUP (la mémoire a
+        // basculé au stop). Le 15-09 ça se lisait « RÉCUP · km/h » en petit
+        // sous le chiffre, trop discret : le saut 10 → 7 passait pour « mes
+        // km/h ont changé tout seuls ». Le 16-09 (P1 ③) LA BASCULE EST
+        // RACONTÉE : le chiffre ROULE (numericText, 0,5 s) et une capsule
+        // « RÉCUP » s'allume au-dessus ; à la relance elle s'éteint.
+        let repos = seance.etat == .repos && !seance.terminee
+        let pause = seance.etat == .pause
         return VStack(spacing: 4) {
+            if repos {
+                Text("RÉCUP")
+                    .font(.inter(10.5, .semibold))
+                    .tracking(2.4)
+                    .foregroundStyle(Color.white.opacity(0.72))
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8))
+                    .padding(.bottom, 4)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
             Text(Int(seance.vitesse.rounded()).formatted())
                 .font(.inter(52, .medium))
                 .monospacedDigit()
-                .foregroundStyle(Color.white.opacity(repos ? 0.72 : 0.92))
-            Text(libelle)
+                .foregroundStyle(Color.white.opacity(repos || pause ? 0.72 : 0.92))
+                // `value:` : les chiffres roulent dans le sens de la valeur
+                // (10 → 7 descend), pas toujours vers le haut.
+                .contentTransition(.numericText(value: seance.vitesse))
+            Text(seance.mode.libelle)
                 .font(.inter(12, .semibold))
                 .tracking(3.0)
                 .foregroundStyle(Color.white.opacity(0.48))
         }
+        // Le chiffre ne roule QUE quand le modèle bascule (stop / relance) :
+        // sous le doigt il suit le cran sec, sinon il traînerait 0,5 s
+        // derrière la prise et le clic mentirait.
+        // (une seule animation : la capsule change dans la même transaction
+        // que le chiffre, elle suit son tempo.)
+        .animation(vit.prise ? nil : .easeOut(duration: 0.5), value: seance.vitesse)
         .allowsHitTesting(false)
     }
 
@@ -686,16 +1075,22 @@ struct TapisScene: View {
     }
 
     private func tapChrono() {
-        guard !seance.popupVisible else { return }
-        switch seance.etat {
-        case .court: seance.stopper()      // la fête part du MODÈLE
-        case .repos: seance.relancer()
-        }
+        guard !seance.popupVisible, !seance.terminee else { return }
+        let arret = seance.etat == .court
+        seance.basculer()                  // la fête part du MODÈLE
         // LA COMMANDE SUIT LA MÉMOIRE : le modèle vient de basculer
         // (effort ⇄ récup), la position de la prise se recale dessus —
-        // sinon le prochain glissement partirait de l'ancienne valeur.
-        vit.recaler(sur: seance.vitesse)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // sinon le prochain glissement partirait de l'ancienne valeur. L'arc
+        // GLISSE avec le chiffre (P1 ③), au lieu de sauter.
+        vit.recaler(sur: seance.vitesse, anime: true)
+        // L'HAPTIQUE DIT L'ACTE (P1 ⑤) : un arrêt = .medium (existe) ; un
+        // départ = .rigid léger — ce n'est pas le même geste, ça ne doit pas
+        // faire le même bruit dans la main.
+        if arret {
+            UIImpactFeedbackGenerator(style: seance.mode.auLong ? .soft : .medium).impactOccurred()
+        } else {
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.7)
+        }
     }
 
 
@@ -817,12 +1212,13 @@ private struct PastilleBraise: View {
 /// (`RobeSocle`), pour que ça se lise comme une notification et non comme un
 /// panneau.
 private struct DalleSetFini: View {
-    let rang: Int
+    let titre: String
     let recap: String
+    let pied: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("SET \(rang) END")
+            Text(titre)
                 .font(.inter(11.5, .semibold))
                 .tracking(2.6)
                 .foregroundStyle(Color.white.opacity(0.52))
@@ -831,7 +1227,7 @@ private struct DalleSetFini: View {
                 .monospacedDigit()
                 .foregroundStyle(TapisScene.encreApple)
             Spacer(minLength: 0)
-            Text("Saved")
+            Text(pied)
                 .font(.inter(12, .medium))
                 .foregroundStyle(Color.white.opacity(0.38))
         }
@@ -839,7 +1235,7 @@ private struct DalleSetFini: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .modifier(RobeSocle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Set \(rang) terminé, \(recap)")
+        .accessibilityLabel("\(titre), \(recap), \(pied)")
     }
 }
 
@@ -908,10 +1304,20 @@ final class EtatVitesse {
 
     /// Recaler la commande sur une valeur que le MODÈLE vient de poser (la
     /// bascule effort ⇄ récup) — sans clic, sans halo : rien n'a été choisi.
-    func recaler(sur v: Double) {
-        continu = v
+    /// `anime` : l'arc glisse vers la valeur (0,5 s, le même tempo que le
+    /// chiffre qui roule) ; la valeur crantée et la base, elles, sont posées
+    /// tout de suite — un doigt qui arrive pendant le glissement part du bon
+    /// endroit.
+    func recaler(sur v: Double, anime: Bool = false) {
         valeur = v
         base = v
+        // Le glissement ne s'anime que si l'arc est VISIBLE : caché (opacité
+        // 0), il rendrait quand même ses 0,5 s de Canvas (la loi du rideau).
+        if anime && arcOuvert {
+            withAnimation(.easeOut(duration: 0.5)) { continu = v }
+        } else {
+            continu = v
+        }
     }
 }
 
@@ -937,6 +1343,7 @@ private struct PriseVitesse: View {
     @State private var clic = UIImpactFeedbackGenerator(style: .rigid)
     /// Le jeton du repli différé : un nouveau toucher l'invalide.
     @State private var tourFermeture = 0
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Color.clear
@@ -944,6 +1351,17 @@ private struct PriseVitesse: View {
             .contentShape(Rectangle())
             .highPriorityGesture(glisse)
             .position(x: largeur / 2, y: (haut + bas) / 2)
+            // Après Finish, plus rien ne se règle : un sceau de plus dirait
+            // « c'est enregistré » pour une allure qui ne s'écrit plus.
+            .allowsHitTesting(!seance.terminee)
+            // LE CHIEN DE GARDE (loi §4 : « un DragGesture n'appelle pas
+            // toujours onEnded » — l'app qui passe en arrière-plan pendant le
+            // glissement). Pas un minuteur : un doigt immobile n'est pas un
+            // doigt parti. La sortie de scène COMMET le sceau — au long, le
+            // segment ferme à l'allure choisie, il ne reste pas à l'ancienne.
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active, etat.prise { relacher() }
+            }
     }
 
     private var glisse: some Gesture {
@@ -1004,6 +1422,9 @@ private struct PriseVitesse: View {
         // Le halo blanc + la dalle disent « c'est enregistré ».
         seance.vitesseScellee = Date()
         seance.vitesseChoisie = Int(etat.valeur.rounded())
+        // AU LONG (G7) : le sceau d'une autre allure ferme le segment couru
+        // et en ouvre un — le graphe a son profil, le barème ses minutes.
+        seance.sceller(etat.valeur)
         withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
             etat.continu = etat.valeur
         }

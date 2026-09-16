@@ -546,6 +546,9 @@ struct ExerciseDetailView: View {
 
     private static let aubeAuto = CommandLine.arguments.contains("-aubeAuto")
     private static let aubeFire = CommandLine.arguments.contains("-aubeFire")
+    /// `-sansCourbe` : la fiche muscu sans la courbe de charge ni la coach
+    /// (16-09) — le barreau de ce moteur, pour la mesure ABBA au téléphone.
+    private static let sansCourbe = CommandLine.arguments.contains("-sansCourbe")
     private static let aubeFreeze: Double? = {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "-aubeFreeze"), i + 1 < args.count,
@@ -791,6 +794,21 @@ struct ExerciseDetailView: View {
                 } else {
                     strengthPage
                 }
+            }
+            // LA SÉANCE FERMÉE SOUS LA SCÈNE (16-09, relecture) : un STOP par
+            // la pilule (montée à la racine, au-dessus de la fiche) termine la
+            // séance pendant que le double galet tourne. La scène ne doit
+            // alors RIEN écrire de plus — `blocDuPassage` ouvrirait une
+            // séance neuve pour un segment que la clôture, déjà payée, ne
+            // verra jamais. Elle se ferme sans quittance ; ce qui était
+            // pointé (tranches de 5 min, sets, segments scellés) est écrit.
+            .onChange(of: active == nil) { _, fermee in
+                guard fermee, let st = seanceTapis, !st.terminee else { return }
+                st.abandonner()
+                UIApplication.shared.isIdleTimerDisabled = false
+                print("[flow] double galet abandonné : la séance s'est fermée sous la scène, "
+                      + "segments=\(bloc?.phasesFaites.count ?? 0)")
+                withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
             }
             // ⚠️ **LE PLAYER EST UN ÉTAT GLOBAL DE SÉANCE** (26-08, verdict
             // n° 1 : « lorsque je reviens sur la partie détail exercice sous
@@ -1736,9 +1754,19 @@ struct ExerciseDetailView: View {
                         if let mode = modeCardio {
                             GrapheCardioFiche(segments: segmentsCardio,
                                               titre: segmentsTitre,
-                                              echelle: mode.estNiveau ? .escalier : .tapis,
+                                              echelle: mode.echelle,
                                               vide: segmentsCardio.isEmpty,
                                               vu: texteApparu)
+                        } else if isStrength, Self.sansCourbe {
+                            // LE BARREAU `-sansCourbe` (la loi : tout moteur
+                            // coûteux arrive avec de quoi l'accuser ou le
+                            // disculper) : la fiche muscu SANS Swift Charts ni
+                            // coach — l'ancienne description, telle quelle —
+                            // pour l'ABBA sur son téléphone.
+                            DescriptionExo(cue: exercise.cue,
+                                           mistake: exercise.mistake,
+                                           enSeance: active != nil,
+                                           vu: texteApparu)
                         } else if isStrength {
                             // LA MUSCU : LA COURBE DE CHARGE ET LA LIGNE DE
                             // COACH à la place de la description (verdict
@@ -2388,7 +2416,21 @@ struct ExerciseDetailView: View {
     private func lancerTapis(_ mode: ModeCardio) {
         guard seanceTapis == nil else { return }
         closeBack()
-        let st = SeanceTapis(mode: mode)
+        // `-cardioAvance <s>` : la scène naît comme si elle courait depuis s
+        // secondes — mesurer un barème à cinq minutes sans les attendre.
+        let avance = Double(UserDefaults.standard.integer(forKey: "cardioAvance"))
+        // UNE SECONDE COURSE SUR LA MÊME FICHE écrit dans le même bloc : la
+        // numérotation continue (un rang par phase, le graphe reste dans
+        // l'ordre) et la quittance juge l'exercice entier — ce que le barème
+        // verra — pas la scène seule.
+        let deja = bloc.map(\.phasesFaites) ?? []
+        let dejaSets = deja.filter { $0.order == 0 }.count
+        let dejaSecondes = deja.filter { $0.speed > 0 }.reduce(0) { $0 + $1.seconds }
+        let dejaAuSeuil = deja.contains {
+            $0.speed >= SemaineStats.seuilEffort && Double($0.seconds) >= ModeCardio.hiitEffortMinS
+        }
+        let st = SeanceTapis(mode: mode, setsFaits: dejaSets, avance: max(avance, 0),
+                             dejaSecondes: dejaSecondes, dejaAuSeuil: dejaAuSeuil)
         st.onSetFini = { bilan in
             ecrirePhase(kind: mode.kindEffort(bilan.vitesse),
                         secondes: bilan.secondes, vitesse: bilan.vitesse,
@@ -2401,31 +2443,65 @@ struct ExerciseDetailView: View {
                         secondes: secondes, vitesse: vitesse,
                         rang: rang, ordre: 1)
         }
+        // AU LONG (16-09) : un segment par allure — toujours un effort (tout
+        // ce qui avance en est un : accélération, jamais sprint sous 15,
+        // `kindEffort`), au rang du segment. Une pause n'écrit rien.
+        st.onSegmentFini = { rang, secondes, vitesse in
+            ecrirePhase(kind: mode.kindEffort(vitesse),
+                        secondes: secondes, vitesse: vitesse,
+                        rang: rang, ordre: 0)
+        }
         // On court : l'écran ne s'éteint pas sous le chrono.
         UIApplication.shared.isIdleTimerDisabled = true
         withAnimation(.easeOut(duration: 0.35)) { seanceTapis = st }
         launchBeat += 1
-        print("[flow] double galet : exo=\(exercise.id) mode=\(mode.libelle) départ=\(mode.depart)")
-        // LE BANC `-cardioAuto` (le simulateur n'a pas de doigt) : trois
+        print("[flow] double galet : exo=\(exercise.id) mode=\(mode.libelle) départ=\(mode.depart) "
+              + "grammaire=\(mode.auLong ? "au long" : "sets") avance=\(Int(avance))")
+        // LE BANC `-cardioAuto` (le simulateur n'a pas de doigt). HIIT : trois
         // sets, deux récups — à la vitesse de récup baissée comme le ferait
-        // un doigt — puis Finish. Il passe par le MODÈLE (`stopper`,
-        // `relancer`), donc par les mêmes callbacks que le tap : ce qu'il
-        // écrit est ce que le doigt écrirait. Il ne prouve PAS le toucher.
+        // un doigt — puis Finish. Au long : une allure scellée, une pause, une
+        // reprise, une autre allure, puis Finish (qui écrit ce qui court). Il
+        // passe par le MODÈLE (`basculer`, `sceller`), donc par les mêmes
+        // callbacks que le doigt : ce qu'il écrit est ce que le doigt
+        // écrirait. Il ne prouve PAS le toucher.
         if CommandLine.arguments.contains("-cardioAuto") {
             // `-cardioSet <s>` : la durée d'un set (4 s par défaut — trop
             // court pour le barème, qui veut 20 s d'effort : mesurer la paie
             // demande `-cardioSet 25`).
             let dureeSet = Double(UserDefaults.standard.integer(forKey: "cardioSet"))
             Task { @MainActor [weak st] in
+                if mode.auLong {
+                    // 6 s, pas 5 : le segment doit dépasser les 5 s sous
+                    // lesquels `sceller` ne découpe pas (l'arrivée en mange
+                    // 0,85) — sinon le banc écrit 2 ou 3 phases selon la
+                    // dérive du sommeil.
+                    let pas = dureeSet > 0 ? dureeSet : 6.0
+                    try? await Task.sleep(for: .seconds(pas))
+                    guard let st, seanceTapis === st else { return }
+                    st.vitesse = mode.depart + 2; st.sceller(st.vitesse)     // 7 → 9
+                    try? await Task.sleep(for: .seconds(pas))
+                    guard seanceTapis === st else { return }
+                    st.basculer()                                             // pause
+                    try? await Task.sleep(for: .seconds(2.5))
+                    guard seanceTapis === st else { return }
+                    st.basculer()                                             // reprise
+                    try? await Task.sleep(for: .seconds(pas))
+                    guard seanceTapis === st else { return }
+                    st.vitesse = mode.depart - 1; st.sceller(st.vitesse)     // 9 → 6
+                    try? await Task.sleep(for: .seconds(pas))
+                    guard seanceTapis === st else { return }
+                    finirTapis()
+                    return
+                }
                 for tour in 0..<3 {
                     let attente = dureeSet > 0 ? dureeSet : (tour == 0 ? 5.0 : 4.0)
                     try? await Task.sleep(for: .seconds(attente))
                     guard let st, seanceTapis === st else { return }
                     st.vitesse = mode.depart + Double(tour) * 3   // 10 · 13 · 16
-                    st.stopper()
+                    st.basculer()                                 // stop
                     try? await Task.sleep(for: .seconds(2.5))
                     guard seanceTapis === st else { return }
-                    if tour < 2 { st.relancer() }
+                    if tour < 2 { st.basculer() }                 // start set
                 }
                 try? await Task.sleep(for: .seconds(1.5))
                 guard seanceTapis === st else { return }
@@ -2437,14 +2513,28 @@ struct ExerciseDetailView: View {
     /// FINISH = la fin de l'EXERCICE, pas de la séance (verdict 15-09). La
     /// scène se démonte, la fiche revient avec son graphe ; la séance, elle,
     /// se termine par la dalle, comme partout.
+    /// ⚠️ FINISH ÉCRIT D'ABORD CE QUI COURT (16-09, P1 ④ / G8) : jusqu'ici il
+    /// démontait la scène sans rien écrire — un set en cours était perdu, et
+    /// une course au long entière (payé : 20 min de tapis lent → 0 pièce).
+    /// Puis la quittance tient 1,3 s (« SAVED · 20:00 · 7 KM/H · paid at
+    /// session end », ou « under 5 min · not paid »), et la scène se retire.
     private func finirTapis() {
+        guard let st = seanceTapis, !st.terminee else { return }
+        let quittance = st.finir()
         UIApplication.shared.isIdleTimerDisabled = false
-        withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
-        rafraichirSegments()
         Haptique.moyen()
         print("[flow] double galet fini : exo=\(exercise.id) "
               + "segments=\(bloc?.phasesFaites.count ?? 0) "
-              + "intervalles=\(bloc?.intervallesFaits ?? 0)")
+              + "intervalles=\(bloc?.intervallesFaits ?? 0) "
+              + (quittance.map { "quittance=\($0.segments)×\($0.secondes)s "
+                                 + "v=\(String(format: "%.1f", $0.vitesse)) payable=\($0.payable)" }
+                 ?? "quittance=aucune"))
+        let delai = quittance == nil ? 0.0 : 1.3
+        DispatchQueue.main.asyncAfter(deadline: .now() + delai) {
+            guard seanceTapis === st else { return }
+            withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
+            rafraichirSegments()
+        }
     }
 
     /// LE BLOC DE CE PASSAGE, créé au premier besoin — la règle exacte
@@ -2504,16 +2594,23 @@ struct ExerciseDetailView: View {
         }
         let seuil = SemaineStats.seuilEffort
         let segs = l.phasesFaites.map { ph in
-            // L'escalier : tout ce qui monte est un effort. HIIT / tapis :
-            // la définition de la maison, au-dessus du seuil.
+            // AU LONG (escalier, tapis lent — G9) : tout ce qui avance est un
+            // effort ; le graphite n'est que l'arrêt. HIIT : la définition de
+            // la maison, au-dessus du seuil. ⚠️ Payé le 16-09 : le tapis lent
+            // portait la règle du HIIT — à 5-9 km/h tout sortait gris, « on
+            // dirait que c'est empty alors que la session est enregistrée ».
+            // (`isEffort` en plus : une récup écrite par l'ancienne grammaire
+            // sets/récups — les séances escalier du 15-09, au niveau 1 —
+            // reste en graphite.)
             SegmentHiit(secondes: ph.seconds, vitesse: ph.speed,
-                        effort: mode.estNiveau ? ph.isEffort && ph.speed > 0
-                                               : ph.speed >= seuil)
+                        effort: mode.auLong ? ph.isEffort && ph.speed > 0 : ph.speed >= seuil)
         }
         let duree = segs.reduce(0) { $0 + $1.secondes }
-        let fmt = DateFormatter(); fmt.locale = Locale(identifier: "fr_FR")
+        let fmt = DateFormatter(); fmt.locale = Locale(identifier: L("fr_FR", "en_US"))
         fmt.dateFormat = "EEEE dd.MM"
-        let jour = w.isActive ? "Maintenant" : fmt.string(from: w.startedAt).capitalized
+        // « Aujourd'hui », pas « Maintenant » (Kathryn, 16-09), dans la
+        // langue du profil.
+        let jour = w.isActive ? L("Aujourd'hui", "Today") : fmt.string(from: w.startedAt).capitalized
         segmentsCardio = segs
         segmentsTitre = "\(jour) · \(ChambreFmt.mmss(duree)) · \(segs.count) segment\(segs.count > 1 ? "s" : "")"
     }
@@ -2571,7 +2668,7 @@ struct ExerciseDetailView: View {
     /// `-coachPhrase <texte>` rend une phrase sans serveur, `-coachAttente`
     /// fige l'étoile en « il écrit ».
     private func demanderLeCoach() {
-        guard isStrength else { return }
+        guard isStrength, !Self.sansCourbe else { return }
         let args = CommandLine.arguments
         if args.contains("-coachAttente") {
             coachAttend = true

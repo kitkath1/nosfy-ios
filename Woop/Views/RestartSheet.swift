@@ -679,16 +679,28 @@ enum DecideurSerie {
         // Le seuil d'effort des widgets voyage dans la même réponse
         // (reward_rules entier) : un seul chiffre, celui de la base.
         let seuil = (j["seuil_effort_kmh"] as? NSNumber)?.doubleValue
+        // Les planchers du barème cardio (16-09) : la quittance de Finish
+        // dit « under 5 min · not paid » avec le chiffre de la base, jamais
+        // un 5 en dur.
+        let minTapis = (j["cardio_tapis_min_minutes"] as? NSNumber)?.doubleValue
+        let minEscalier = (j["cardio_escalier_min_minutes"] as? NSNumber)?.doubleValue
+        let hiitMinS = (j["cardio_hiit_effort_min_s"] as? NSNumber)?.doubleValue
         await MainActor.run {
             regles = r
             reglesLues = true
             if let seuil, seuil > 0 { SemaineStats.seuilEffort = seuil }
+            if let minTapis, minTapis > 0 { ModeCardio.minMinutesTapis = minTapis }
+            if let minEscalier, minEscalier > 0 { ModeCardio.minMinutesEscalier = minEscalier }
+            if let hiitMinS, hiitMinS > 0 { ModeCardio.hiitEffortMinS = hiitMinS }
         }
         print("[annonces] regles_annonces() → rangs \(r.rangsFixes), vidéo \(r.rangVideo), "
               + "hasard \(r.hasardEcartMin)-\(r.hasardEcartMax) après \(r.hasardApres), "
               + "budget \(r.popupsMax)/\(r.rewardMonetaireMax)/\(r.videoMax), "
               + "écart \(r.ecartMinSeries) séries \(r.ecartExigeLesDeux ? "ET" : "OU") \(r.ecartMinMinutes) min, "
               + "rare \(r.videoRare), pool \(r.videosReward.count) vidéos \(r.videosReward)")
+        print("[cardio] planchers du barème lus : tapis \(minTapis.map { "\($0)" } ?? "absent") min, "
+              + "escalier \(minEscalier.map { "\($0)" } ?? "absent") min, seuil \(seuil.map { "\($0)" } ?? "absent") km/h, "
+              + "effort HIIT \(hiitMinS.map { "\($0)" } ?? "absent") s")
     }
 
     /// Ce que la séance a déjà consommé.

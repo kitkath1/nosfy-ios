@@ -121,6 +121,241 @@ fichiers ajoutés : EXIT=0.
 
 ---
 
+## ⚡ 16-09 — LE DOUBLE GALET : ON NE SAIT PAS DANS QUEL SET ON EST (analyse + proposition → CODÉ ET MESURÉ)
+
+### L'ÉTAT (16-09 après-midi) — « ok vas y, fais backend, notifie, tu commiteras »
+
+Toutes les recos G1-G10 sont posées telles quelles (P1, set 1 qui part seul, la récup
+HIIT interrompue par Finish non écrite, les mots de la scène en anglais sauf « RÉCUP »,
+au long pour le tapis lent ET l'escalier, la pause non écrite, le sceau qui ferme un
+segment (sous 5 s on ne découpe pas), la quittance 1,3 s, l'échelle `.tapisLent`, le HIIT
+sous 15 reste gris).
+
+| fait | où | preuve |
+|---|---|---|
+| `ModeCardio.auLong` (tapis lent, escalier), `.echelle`, `minMinutes` lus dans reward_rules | TapisScene.swift 43-128, RestartSheet.swift `chargerRegles` | journal `[cardio] planchers du barème lus : tapis 5.0 min, escalier 5.0 min, seuil 15.0 km/h` |
+| `SeanceTapis` : `Etat.pause`, `basculer`, `pauser`, `reprendre`, `sceller`, `fermerSegment`, `finir` → `Quittance`, `palier(now)` au temps couru au long | TapisScene.swift 130-458 | bancs ci-dessous |
+| la scène : « SET n » (numericText), « ▶ START SET n+1 » / « ▶ RESUME » dans la pastille, ⏸ au long, capsule RÉCUP + chiffre qui roule + arc qui glisse, haptique .rigid au départ / .soft à la pause, chrono figé sur l'écrit après Finish | TapisScene.swift `encreChrono`, `acte`, `encreVitesse`, `tapChrono`, `EtatVitesse.recaler(anime:)` | films `captures/film-galet-hiit-16-09.png`, `film-galet-tapis-16-09.png` (planches `planche-galet-*`) |
+| Finish écrit ce qui court, puis la quittance « SAVED · … · Paid at session end / Under 5 min · not paid », démontage 1,3 s après | ExerciseDetailView `finirTapis`, `onSegmentFini` | journal `[flow] double galet fini … quittance=4×1219s v=7.0 payable=true` |
+| le graphe du tapis lent en braise (`EchellePaliers.tapisLent`, `effort: ph.speed > 0` au long, mots Pause / Allure) | ChambreHiit.swift 147-238, ExerciseDetailView `rafraichirSegments` | film tapis : barres 9,0 / 9,0 / 6,0, légende « Pause · 4,0 → 12,0 km/h » |
+| bancs : `-cardioAuto` au long (sceau 9, pause, reprise, sceau 6, Finish), `-cardioAvance <s>` (la scène naît comme si elle courait depuis s secondes), `-tapisAuto` du lab par `basculer` | ExerciseDetailView `lancerTapis`, TapisLab | journaux `[flow] phase écrite` |
+| **DE BOUT EN BOUT, compte de test, deux fois** : tapis lent `-cardioAvance 1200 -cardioAuto -terminerSeanceAuto 70` → 4 puis 5 phases (le pointage écrit les 1199 s à 7 d'un coup, puis 6 s à 7, 6 s à 9, 6 s à 9, 6 s à 6) → `cloturer_seance` → **65 pièces** (barème tapis-lent : 30 + 20,4 × 7 / 4 = 65,7 → 65) | | `[flow] cardio payé : 65 pièces · détail {bareme tapis-lent, minutes 20.4, km_h 7}` — le cas de Kathryn (0 pièce la veille) est fermé |
+
+**La relecture** (un workflow : trois relecteurs — machine à états, lois SwiftUI/perf,
+contrat serveur — puis deux réfutateurs par constat) a fermé, avant le commit :
+la quittance HIIT qui disait toujours « paid » (elle juge maintenant comme le barème :
+un set ≥ 20 s au seuil, sinon le repli tapis sur les minutes à vitesse > 0, récups
+comprises) ; le segment scellé à 0 km/h (ni écrit ni compté) ; RIEN n'était écrit avant
+Finish sur une course à allure constante → LE POINTAGE (5 min à la même allure = écrit et
+rouvert ; une app tuée ou un STOP par la pilule ne perdent que la tranche) ; la séance
+fermée SOUS la scène (STOP de la pilule) → `abandonner`, rien de plus n'est écrit, pas de
+séance neuve ouverte par `blocDuPassage` ; la seconde course sur la même fiche (rangs
+qui repartaient à 1, quittance qui jugeait la scène et non l'exercice) ; le set fantôme
+de 0 s ; les minuteurs de la fête sans jeton (un Finish dans les 3,2 s d'un stop) ; le
+chrono, la braise (repli de la foulée dans `couruAvant`, pas de rembobinage au repos) et
+la capsule RÉCUP qui sautaient à Finish ; la braise au long qui montait d'un cran en une
+image (interpolée) ; le chiffre qui roulait dans le mauvais sens (`numericText(value:)`) ;
+l'arc animé caché (rendu pour rien) ; la prise encore vivante après Finish ; le lab
+`-tapisLab` dont Finish contournait `finir()` ; le banc au long dont le premier sceau
+tombait sous les 5 s. Et le chien de garde de la prise (loi §4) : la sortie de scène (`scenePhase`) commet le
+sceau — pas un minuteur, un doigt immobile n'est pas un doigt parti.
+
+Serveur : RIEN à changer (confirmé par la session 05 : `regles_annonces()` expose les
+trois clés ; le barème tapis-lent / escalier compte toutes les phases à vitesse > 0).
+Non prouvé : le toucher réel (le banc passe par `basculer` / `sceller`, les chemins du
+doigt) ; le coût sur le téléphone (aucune horloge ni verre ajoutés : deux
+`contentTransition`, une capsule, une animation d'arc de 0,5 s — pas de barreau
+nouveau, le `-sansBraiseTapis` existant reste le barreau de la scène).
+
+Trois retours le même matin, UNE cause commune : **la scène et le graphe parlent la
+grammaire du HIIT (set / récup / seuil 15 km/h) à des courses qui ne la parlent pas**,
+et Finish n'écrit jamais ce qui court. ① le HIIT : on ne sait pas dans quel set on est ;
+② le tapis lent : elle a dû taper la pastille « pour lancer », a couru en récup, Finish n'a
+rien écrit → 0 pièce ; ③ le graphe du tapis lent : tout gris sous 15 km/h. Dix questions
+G1-G10, mes recos en premier.
+
+Son premier retour (16-09 matin) : *« sur le HIIT on ne comprend pas dans quel set on est
+quand je lance l'exo — j'imagine que je suis sur le set 1 en cours, et quand je tape je
+veux voir set 2 apparaître ; l'interaction entre le stop et les km/h n'est pas claire au
+tap ; j'imagine Start Set dans la pill, au-dessus le set en cours, un truc du genre, car on
+ne comprend pas bien. »*
+
+### Ce que l'écran fait AUJOURD'HUI (lu dans `TapisScene.swift` / `SeanceTapis`)
+
+| moment | ce que le modèle fait | ce que l'écran DIT | ce qui manque |
+|---|---|---|---|
+| **le lancement** (le galet d'aube monte la scène) | `etat = .court`, le set 1 part seul 0,85 s après l'arrivée des pastilles (`setDebut = naissance + 0,85`) | le chrono 0:00 qui monte, un petit ⏹ dessous, la pastille vitesse à 10 « KM/H », le slider « Finish » | **rien ne dit « set 1 »** — le « SET n » a été retiré le 15-09 sur « enlève le wording, mets juste le temps » ; il ne reste que le ⏹ pour deviner qu'on est en course |
+| **le tap sur le chrono pendant l'effort** | `stopper()` : l'intervalle est ÉCRIT à la vitesse courante, `etat = .repos`, `setsFaits += 1`, le chrono repart de 0 (le temps de récup ÉCOULÉ), **la commande bascule sur la vitesse de récup** (10 → 7) | le chrono à 0:00 en ton plus bas avec un grand ▶, la pastille vitesse qui saute à **7** avec « RÉCUP · km/h » en petit, la dalle « SET 1 END · 0:45 · 10 KM/H » 3,2 s, puis la pop-up flammes « 1 SETS » qui attend un tap | **trois choses changent d'un coup** et aucune ne dit « récup avant le set 2 ». Le saut 10 → 7 se lit « mes km/h ont changé tout seuls » (c'est la mémoire de récup, la loi Q2/Q15 — juste, mais MUET). Le ▶ dit « quelque chose se lance » sans dire quoi |
+| **le tap sur le chrono au repos** | `relancer()` : la récup est ÉCRITE à sa vitesse, le set 2 part, la commande revient à la vitesse d'effort (7 → 10) | le chrono à 0:00 avec ⏹, la pastille à 10 | **rien ne dit « set 2 »** — le rang n'est visible que 3 s dans la dalle du set PRÉCÉDENT |
+| **le slider « Finish »** (toujours là) | `onFinish` → `finirTapis()` : la scène se démonte, la fiche revient | « Finish » | ⚠️ **pendant un set, Finish ne l'écrit PAS** (`finirTapis` ne stoppe rien) : le set en cours est perdu. Et au repos après le dernier set, c'est le seul chemin de sortie — il est juste |
+
+Le fond du problème : la scène a été dessinée « juste le temps » (la pastille chrono
++ la pastille vitesse + le slider), et **le RANG et le PROCHAIN ACTE ne sont plus
+écrits nulle part**. Le geste est le même (un tap sur le chrono) pour deux actes
+opposés (finir un set / lancer le suivant), et la bascule de vitesse qui l'accompagne
+n'est pas racontée.
+
+### La proposition — la grammaire du set (P1, recommandée)
+
+Trois mots, pas plus, et le même geste qu'aujourd'hui :
+
+1. **Le rang, toujours écrit** au-dessus du chrono, petites capitales espacées
+   (`inter 11 semibold, tracking 2.8`, la même encre que l'ancien « 0 MIN · 0 SET ») :
+   **« SET 1 »** pendant l'effort. Au tap, **« SET 2 » apparaît AUSSITÔT** (verdict :
+   « quand je tape je veux voir set 2 apparaître ») — la récup appartient au set qui
+   vient, c'est son élan. Le passage 1 → 2 se joue en `contentTransition(.numericText())`
+   (le chiffre roule vers le haut), une seule fois.
+2. **La pastille chrono dit l'acte** : pendant l'effort, le chrono + ⏹ (inchangé) ;
+   au repos, le chrono de récup (ton bas) et, à la place du grand ▶ muet,
+   **« ▶ START SET 2 »** — le glyphe ET le mot, petites capitales, dans la pastille
+   (c'est « Start Set dans la pill » : la pill = la pastille qu'on tape). Le tap fait
+   exactement ce qu'il dit. Le slider reste **Finish**, seul chemin de sortie — un
+   seul geste par acte, rien de nouveau à apprendre.
+3. **La bascule des km/h est RACONTÉE, pas subie** : au stop, le chiffre de la
+   pastille vitesse ROULE de 10 à 7 (0,5 s, `numericText`), l'arc glisse avec lui, et
+   une capsule **« RÉCUP »** s'allume sur la pastille (au-dessus du chiffre, graphite,
+   à la place du libellé « RÉCUP · km/h » trop discret) ; à la relance, retour 7 → 10,
+   la capsule s'éteint. Ce que le doigt règle pendant la récup reste la vitesse de
+   récup (la loi Q2/Q15, inchangée). Aucune phrase : le mouvement du chiffre et la
+   capsule suffisent.
+4. **Finish pendant un set** : le slider ÉCRIT d'abord le set en cours (le même
+   `stopper()`), puis termine — un set couru n'est jamais perdu. Au repos, Finish
+   termine tel quel (la récup en cours n'est pas un set : elle n'est pas écrite —
+   à trancher, voir Q3).
+5. **L'haptique** (sa demande d'hier sur la courbe vaut ici) : stop = `.medium`
+   (existe) ; start set = `.rigid` léger (un départ, pas un arrêt) ; le roulement
+   des km/h = rien.
+6. **La dalle et la pop-up** ne bougent pas (elles disent « SET 1 END · 0:45 · 10 KM/H »
+   et encouragent) ; avec le rang écrit au-dessus du chrono, la dalle cesse d'être le
+   seul endroit où il se lit.
+
+**Ce que ça coûte** : zéro horloge de plus (deux `contentTransition` et une capsule
+d'opacité), aucun changement de ce qui est écrit (les phases, le serveur, le barème :
+rien), un soir de Swift dans `TapisScene.swift` + une ligne dans `finirTapis`.
+
+### L'alternative (P2) — le slider qui alterne
+
+Le slider dit **« Start set 2 »** au repos et **« Finish »** pendant l'effort ; le tap
+sur le chrono ne sert plus qu'à STOPPER. C'est la lecture littérale de « Start Set
+dans la pill ». Son prix : au repos, Finish n'a plus de place (il faut un second
+contrôle, ou un slider à deux libellés selon le sens), et le geste du départ change
+de nature (un slide au lieu d'un tap) — deux contrôles à apprendre au lieu d'un.
+Je ne la recommande pas, sauf si « la pill » voulait dire le slider.
+
+### À trancher (mes recos en premier ; G = les questions du galet, pour ne pas les confondre avec les Q du 15-09)
+
+| | question | reco |
+|---|---|---|
+| **G1** | « la pill » = la pastille chrono (P1) ou le slider du bas (P2) ? | **P1** |
+| **G2** | Le set 1 part seul au lancement (comme aujourd'hui) ou attend « ▶ START SET 1 » ? | **il part seul**, avec « SET 1 » écrit — tu as dit « j'imagine que je suis sur le set 1 en cours » ; un tap de plus avant de courir, c'est un tap de trop |
+| **G3** | Finish au repos : la récup en cours est-elle écrite ? | **non** — une récup qu'on interrompt pour finir n'est pas un segment, elle n'entre pas dans le graphe |
+| **G4** | Les mots, en français ou en anglais ? | **la langue de la scène aujourd'hui** (« Finish », « KM/H ») — donc « SET 2 » / « START SET 2 » ; le jour où la scène passe au profil (`L()`), tout passe ensemble |
+
+### Le cardio « basique » (tapis modéré, escalier sans intervalle) — RIEN CODÉ
+
+Son second retour : *« pareil pour une session cardio basique : j'ai été obligée
+d'appuyer sur la pastille du haut pour lancer le set (imagine tapis lent sans
+intervalle), je n'avais pas compris, du coup je n'ai pas reçu de pièces. »*
+
+**Ce qui s'est passé, pas à pas** (la scène est la même pour les trois modes) :
+1. le tapis modéré monte le double galet : le set 1 part SEUL, rien ne l'écrit ;
+2. elle croit devoir « lancer » et tape la pastille du haut → c'est un STOP : le set 1
+   est écrit avec quelques secondes, la scène passe en récup (le chrono repart, la
+   vitesse saute 7 → 5, « RÉCUP » en tout petit) ;
+3. elle court ses 20 minutes DANS l'état récup, à la vitesse qu'elle règle ;
+4. elle glisse Finish → `finirTapis()` démonte la scène **sans rien écrire** : la récup
+   n'est écrite qu'à la RELANCE (`relancer()` → `onRecupFinie`), qui n'a jamais eu lieu ;
+5. à la clôture, le serveur ne voit qu'un set de quelques secondes : le barème tapis
+   exige 5 minutes (`cardio_tapis_min_minutes`) → **0 pièce**. Si ses 20 minutes à
+   5 km/h avaient été écrites, le barème aurait payé 30 + 20 × 5 / 4 = 55 (il compte
+   toutes les minutes à vitesse > 0, récup comprise).
+
+Deux causes, l'une de grammaire, l'autre de code :
+- **la grammaire du set n'a pas de sens sans intervalles** : sur un tapis à allure
+  modérée il n'y a ni set ni récup, il y a UNE course ; lui montrer ⏹ et ▶ c'est lui
+  demander de découper ce qu'elle ne découpe pas ;
+- **Finish n'écrit jamais ce qui court** (set ou récup) : c'est le même défaut que sur
+  le HIIT (point 4 de P1), et ici il coûte la séance entière.
+
+**La proposition — deux grammaires, un seul principe : ce qui a couru est écrit.**
+
+| | HIIT (intervalles) | tapis modéré, escalier « au long » |
+|---|---|---|
+| ce qu'on écrit | des sets et des récups, à leur vitesse | UNE course continue, découpée AUTOMATIQUEMENT à chaque changement de vitesse scellé (un segment par allure : le graphe montre le profil, le barème a ses minutes × km/h) |
+| la pastille chrono | « SET 1 » + ⏹ ; au repos « ▶ START SET 2 » (P1) | **« EN COURS »** (ou rien) + le chrono qui monte depuis le lancement ; le tap = **PAUSE** (⏸ / ▶, le chrono se fige, la pause n'est pas écrite), jamais un set |
+| la pastille vitesse | effort / récup (deux mémoires, la capsule RÉCUP) | une seule vitesse ; la sceller ferme le segment courant et en ouvre un à la nouvelle allure |
+| Finish | écrit d'abord le set en cours, puis termine | écrit le segment en cours, puis termine — **une quittance** avant de se démonter : « 20:00 · 5 km/h · enregistré » (la dalle qui existe, une seconde), pour qu'elle sache que c'est pris |
+| les pièces | à la clôture, le barème HIIT | à la clôture, le barème tapis / escalier ; et à Finish, si la course est sous les 5 minutes, la quittance le DIT (« moins de 5 min : pas encore payé ») plutôt que de laisser croire |
+
+Le mode le sait déjà (`ModeCardio.tapisModere` / `.escalier` / `.hiit`) : c'est lui qui
+choisit la grammaire, la scène reste une. L'escalier garde le choix : « le temps qu'on
+peut stopper ou pas » (ton verdict du 15-09) — au long par défaut, et un tap long ?
+non : l'escalier se comporte comme le tapis (au long) ; si des intervalles d'escalier
+existent un jour, ce sera un exercice à part.
+
+**À trancher en plus** :
+
+| | question | reco |
+|---|---|---|
+| **G5** | Le tapis modéré et l'escalier : au long (pause / reprise), sans set ? | **oui** |
+| **G6** | La pause est-elle écrite ? | **non** — une pause n'est pas une allure ; le chrono se fige, le segment reprend à la reprise |
+| **G7** | Un changement de vitesse ferme-t-il un segment ? | **oui**, au sceau (2 s sans toucher, comme aujourd'hui) — c'est ce qui donne au graphe un profil et au barème des minutes justes |
+| **G8** | La quittance à Finish (« 20:00 · 5 km/h · enregistré », ou « moins de 5 min ») ? | **oui**, 1,2 s, la dalle qui existe, sans montant (le serveur paie à la clôture) |
+
+### Le graphe du tapis lent est GRIS (« on dirait que c'est empty ») — RIEN CODÉ
+
+Son troisième retour : *« au cardio tout est gris dans le résultat du graphe, on dirait
+que c'est empty alors que la session est enregistrée, car je ne suis pas à haute
+vitesse. »*
+
+**Deux lectures possibles, la ligne de tête les départage** :
+- `— · 0:00 · 0 segment` + la silhouette grise → RIEN n'a été écrit : c'est le défaut
+  de Finish ci-dessus (la course est restée en récup, jamais écrite) ; la séance
+  existe dans l'historique, mais sans phase ;
+- `Mardi 16.09 · 20:00 · 1 segment` + des barres grises → les phases SONT là, et le
+  graphe les peint en « repos ».
+
+**Le second cas est un défaut à part entière, et il touche tout tapis lent** : le graphe
+de la fiche (`GrapheCardioFiche` → `PaliersVue`, échelle `.tapis`) porte la GRAMMAIRE DU
+HIIT : braise au-dessus du seuil de la maison (`seuil_effort_kmh` = 15 km/h, la règle de
+la base), graphite en dessous (`rafraichirSegments` : `effort: ph.speed >= seuil`). Un
+tapis lent se court à 5, 7, 9 km/h : **aucune barre n'atteint 15, tout est graphite**,
+la légende dit « Repos · 15,0 → 19,0 km/h », le pic n'existe pas. Le graphe dit « tu
+t'es reposée vingt minutes ». Le serveur, lui, ne se trompe pas : le barème `tapis-lent`
+paie toutes les minutes à vitesse > 0, sans seuil (`pieces_cardio_seance`, §④). C'est
+l'écran qui ment, pas la caisse.
+
+**La proposition** : le seuil de 15 km/h reste la définition d'un EFFORT DE HIIT (widgets,
+faits, barème HIIT : rien ne bouge au serveur). Mais **le graphe suit le mode**, comme le
+barème le fait déjà :
+
+| mode | ce qui est un effort | la chaleur | le graphite | la légende |
+|---|---|---|---|---|
+| HIIT | vitesse ≥ seuil (15) | 15 → 19 km/h | la récup (5 → 9,5 s'éclaircit) | « Repos · 15,0 → 19,0 km/h » (inchangé) |
+| **tapis lent** | **tout ce qui avance** (vitesse > 0, comme l'escalier) | **4 → 12 km/h** | la pause seule (vitesse 0) | « Pause · 4,0 → 12,0 km/h » |
+| escalier | tout ce qui monte (déjà le cas) | niveau 1 → 15 | l'arrêt | « Repos · niveau 1 → 15 » (inchangé) |
+
+C'est un troisième cas d'`EchellePaliers` (`.tapisLent` : min 3, max 12, chaleur
+(v − 4) / 8) et une ligne dans `rafraichirSegments` (`effort: ph.speed > 0` quand le
+mode est le tapis lent). Le pic redevient possible (la meilleure allure de la course),
+la bande d'effort aussi. Un HIIT couru sous 15 km/h reste gris : c'est la définition de
+la maison, et le barème le paie déjà « comme un tapis » (repli §④) — à dire dans la
+légende un jour, pas ici.
+
+| | question | reco |
+|---|---|---|
+| **G9** | Le tapis lent : tout ce qui avance est un effort, chaleur 4 → 12 km/h ? | **oui** |
+| **G10** | Le HIIT sous 15 km/h reste gris (la définition de la maison) ? | **oui**, et le repli du barème (payé comme un tapis) est déjà là |
+
+**Ordre** : ton verdict sur G1-G10 → le code (la scène, `finirTapis`, la quittance) → le
+banc `-cardioAuto` re-filmé pour le HIIT (lancement, stop, récup, relance, Finish) et un
+banc `-tapisAuto` pour le tapis (lancement, changement de vitesse, pause, Finish) →
+montré → une séance de test sur le compte de test pour LIRE les pièces (tapis 20 min →
+55, la preuve que le défaut est fermé) → le site (b-flow-phases-faites : le défaut
+constaté 🔴 puis fermé).
+
+---
+
 ## 0. L'ÉTAT DES LIEUX — ce que le code et le site disent aujourd'hui
 
 ### 0.1 Les quatre exercices cardio (`Models.swift:234-258`)
