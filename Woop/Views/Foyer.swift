@@ -537,11 +537,13 @@ struct FoyerPage: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var dort: Bool {
+    private var pageInactive: Bool {
         RythmeEcran.dortHome || DepartEtat.shared.homeDort
             || CouvertureFoyer.shared.recouvert
-            || ProtectionThermique.shared.ambianceAuRepos
             || scenePhase != .active || reduceMotion
+    }
+    private var dort: Bool {
+        pageInactive || ProtectionThermique.shared.ambianceAuRepos
     }
     private var feu: Bool { !FoyerBanc.sansFlammes }
     private var chaleur: Double { FoyerChaleur.chaleur(series: series) }
@@ -651,7 +653,9 @@ struct FoyerPage: View {
             ?? PhraseTexte.fragmentsSeance(minutes: minutes)
         return PhraseVue(p: arrivee, fragments: mots,
                   cleParole: "\(languePhrase)|\(revisionTextes)|\(prenomPhrase)|\(etat)|\(HomeTextes.palier(minutes))",
-                  paroleActive: !dort,
+                  // Une réplique finie reste possible à « fair », comme les
+                  // retours d'appui ; les décors gardent leur repos thermique.
+                  paroleActive: !pageInactive && !ProtectionThermique.shared.appelAuRepos,
                   objectif: $objectifInerte,
                   reglageOuvert: $reglageInerte)
             .opacity(0.88)

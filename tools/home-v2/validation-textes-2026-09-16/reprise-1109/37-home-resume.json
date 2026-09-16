@@ -1,0 +1,75 @@
+{
+  "source": "/private/tmp/woop-textes37-rouge-fin-vol.jsonl",
+  "fenetre": {
+    "debut_exclu": 15.0,
+    "fin_incluse": null
+  },
+  "lignes_journal": 142,
+  "lignes_fenetre": 128,
+  "contexte_exclu": {},
+  "home_retenue": {
+    "n": 128,
+    "premier_t": 15.2,
+    "dernier_t": 144.1,
+    "etendue_s": 128.9,
+    "cpu_median_pct_un_coeur": 1.0,
+    "cpu_max_pct_un_coeur": 4,
+    "callbacks_median_par_s": 60.1,
+    "callbacks_min_par_s": 60.0,
+    "intervalle_max_ms": 17,
+    "lignes_intervalle_sup_100ms": 0,
+    "lignes_gel_signale": 0
+  },
+  "groupes": [
+    {
+      "therm": 0,
+      "protection": 0,
+      "n": 4,
+      "premier_t": 141.1,
+      "dernier_t": 144.1,
+      "etendue_s": 3.0,
+      "cpu_median_pct_un_coeur": 1.5,
+      "cpu_max_pct_un_coeur": 4,
+      "callbacks_median_par_s": 60.1,
+      "callbacks_min_par_s": 60.1,
+      "intervalle_max_ms": 17,
+      "lignes_intervalle_sup_100ms": 0,
+      "lignes_gel_signale": 0
+    },
+    {
+      "therm": 1,
+      "protection": 1,
+      "n": 124,
+      "premier_t": 15.2,
+      "dernier_t": 140.1,
+      "etendue_s": 124.9,
+      "cpu_median_pct_un_coeur": 1.0,
+      "cpu_max_pct_un_coeur": 2,
+      "callbacks_median_par_s": 60.1,
+      "callbacks_min_par_s": 60.0,
+      "intervalle_max_ms": 17,
+      "lignes_intervalle_sup_100ms": 0,
+      "lignes_gel_signale": 0
+    }
+  ],
+  "transitions_fenetre": [
+    {
+      "t": 15.2,
+      "therm": 1,
+      "protection": 1
+    },
+    {
+      "t": 141.1,
+      "therm": 0,
+      "protection": 0
+    }
+  ],
+  "ecarts_journal_sup_2_5s": [],
+  "limites": [
+    "CPU et callbacks ne mesurent ni watts, ni GPU, ni température en degrés.",
+    "Les catégories thermiques égales ne garantissent pas des fréquences égales.",
+    "L'étendue d'un groupe peut contenir des interruptions : ce n'est pas sa durée continue.",
+    "Corroborer le contexte avec nav et l'écran ; les surcouches non instrumentées restent invisibles.",
+    "Les écarts du journal peuvent être des gels ou des suspensions ; lire le contexte."
+  ]
+}

@@ -1,5 +1,21 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E59 — La protection des décors coupait aussi la parole ponctuelle
+
+**16-09, reprise 11:09 : 37 lancée, navigation complète PASS 10,754 s, trois
+retours du pull puis Profil PASS 36,242 s.** Dans le code 37, la Home noire
+utilisait `!dort` pour ses mots : l’état thermique fair coupait aussi leur
+apparition et l’haptique. **38 sépare l’inactivité de la page du repos des
+décors**, sans supprimer leur protection ; la parole finie reste coupée à
+serious/critical. Installation et lancement 38 réussis à 11:17.
+
+Home rouge 37 : CPU médian 1 % sur 128 lignes, dont 124 protégées ; seulement
+4 nominales. Home noire 38 au banc : 150 lignes, CPU médian 2,5 %, toutes
+protégées. **Ni ces médianes, ni la capture du chrono ne valident la chauffe
+prolongée.** Le champ sonde `seance=0` ne reconnaît pas le banc `-homeSeance` :
+corroborer avec le lancement et l’écran. Sonde coupée après collecte.
+[Données, gestes et limites](../home-v2/validation-textes-2026-09-16/reprise-1109/etat.md).
+
 ### E58 — Texte compilé, mais prise de parole non validée
 
 **16-09 : le rendu 36 est rejeté par l’utilisateur (« je ne vois pas l’animation

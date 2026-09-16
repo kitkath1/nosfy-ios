@@ -1,0 +1,291 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testAllersRetoursMesures" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -resultBundlePath /private/tmp/woop-textes38-cycles.xcresult
+
+2026-09-16 11:20:49.369 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-textes38-cycles.xcresult
+
+2026-09-16 11:20:49.371 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 11:20:49.474 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 11:20:49.662 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 11:20:49.785 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 11:20:51.336946+0200 NavRuntimeUITests-Runner[29993:2287078] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 11:20:51.696.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 11:20:51.696.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 11:20:51.696.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAllersRetoursMesures]' started.
+    t =     0.00s Start Test at 2026-09-16 11:20:51.697
+    t =     0.01s Set Up
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Activate fr.kathryn.woop
+    t =     0.04s         Wait for fr.kathryn.woop to idle
+    t =     0.07s Checking existence of `"Later" Button`
+    t =     0.16s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+2026-09-16 11:20:51.897 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.64s     Device orientation changed to Face Up
+    t =     1.16s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =     1.16s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =     1.23s Tap "figure.strengthtraining.functional" Button
+    t =     1.23s     Wait for fr.kathryn.woop to idle
+    t =     1.24s     Find the "figure.strengthtraining.functional" Button
+    t =     1.27s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =     1.30s     Synthesize event
+    t =     1.60s     Wait for fr.kathryn.woop to idle
+    t =     2.50s Waiting 5.0s for "Exercices" StaticText to exist
+    t =     3.54s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =     3.54s         Checking existence of `"Exercices" StaticText`
+    t =     3.63s Swipe up Application 'fr.kathryn.woop'
+    t =     3.63s     Wait for fr.kathryn.woop to idle
+    t =     3.64s     Find the Application 'fr.kathryn.woop'
+    t =     3.67s     Check for interrupting elements affecting "Woop" Application
+    t =     3.72s     Synthesize event
+    t =     4.16s     Wait for fr.kathryn.woop to idle
+    t =     6.20s Tap "house.fill" Button
+    t =     6.20s     Wait for fr.kathryn.woop to idle
+    t =     6.21s     Find the "house.fill" Button
+    t =     6.27s     Check for interrupting elements affecting "house.fill" Button
+    t =     6.32s     Synthesize event
+    t =     6.62s     Wait for fr.kathryn.woop to idle
+    t =     7.41s Waiting 5.0s for "person" Button to exist
+    t =     8.45s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     8.45s         Checking existence of `"person" Button`
+    t =     8.51s Tap "person" Button
+    t =     8.51s     Wait for fr.kathryn.woop to idle
+    t =     8.52s     Find the "person" Button
+    t =     8.56s     Check for interrupting elements affecting "person" Button
+    t =     8.61s     Synthesize event
+    t =     8.90s     Wait for fr.kathryn.woop to idle
+    t =     9.86s Waiting 5.0s for "Réglages" Button to exist
+    t =    10.89s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    10.90s         Checking existence of `"Réglages" Button`
+    t =    11.00s Swipe up Application 'fr.kathryn.woop'
+    t =    11.00s     Wait for fr.kathryn.woop to idle
+    t =    11.01s     Find the Application 'fr.kathryn.woop'
+    t =    11.05s     Check for interrupting elements affecting "Woop" Application
+    t =    11.09s     Synthesize event
+    t =    11.52s     Wait for fr.kathryn.woop to idle
+    t =    12.33s Swipe down Application 'fr.kathryn.woop'
+    t =    12.33s     Wait for fr.kathryn.woop to idle
+    t =    12.33s     Find the Application 'fr.kathryn.woop'
+    t =    12.40s     Check for interrupting elements affecting "Woop" Application
+    t =    12.45s     Synthesize event
+    t =    12.88s     Wait for fr.kathryn.woop to idle
+    t =    13.67s Waiting 5.0s for "Retour" Button to exist
+    t =    14.69s     Checking `Expect predicate `existsNoRetry == 1` for object "Retour" Button`
+    t =    14.69s         Checking existence of `"Retour" Button`
+    t =    14.77s Tap "Retour" Button
+    t =    14.77s     Wait for fr.kathryn.woop to idle
+    t =    14.94s     Find the "Retour" Button
+    t =    15.01s     Check for interrupting elements affecting "Retour" Button
+    t =    15.07s     Synthesize event
+    t =    15.37s     Wait for fr.kathryn.woop to idle
+    t =    16.24s Waiting 5.0s for "person" Button to exist
+    t =    17.27s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    17.27s         Checking existence of `"person" Button`
+WOOP_ALLER_RETOUR_0_OK
+    t =    17.34s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+    t =    18.35s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =    18.35s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =    18.52s Tap "figure.strengthtraining.functional" Button
+    t =    18.52s     Wait for fr.kathryn.woop to idle
+    t =    18.53s     Find the "figure.strengthtraining.functional" Button
+    t =    18.57s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =    18.61s     Synthesize event
+    t =    18.90s     Wait for fr.kathryn.woop to idle
+    t =    19.72s Waiting 5.0s for "Exercices" StaticText to exist
+    t =    20.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =    20.76s         Checking existence of `"Exercices" StaticText`
+    t =    20.85s Swipe up Application 'fr.kathryn.woop'
+    t =    20.85s     Wait for fr.kathryn.woop to idle
+    t =    20.86s     Find the Application 'fr.kathryn.woop'
+    t =    20.89s     Check for interrupting elements affecting "Woop" Application
+    t =    20.93s     Synthesize event
+    t =    21.36s     Wait for fr.kathryn.woop to idle
+    t =    23.45s Tap "house.fill" Button
+    t =    23.46s     Wait for fr.kathryn.woop to idle
+    t =    23.46s     Find the "house.fill" Button
+    t =    23.52s     Check for interrupting elements affecting "house.fill" Button
+    t =    23.56s     Synthesize event
+    t =    23.86s     Wait for fr.kathryn.woop to idle
+    t =    24.67s Waiting 5.0s for "person" Button to exist
+    t =    25.70s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    25.71s         Checking existence of `"person" Button`
+    t =    25.77s Tap "person" Button
+    t =    25.78s     Wait for fr.kathryn.woop to idle
+    t =    25.78s     Find the "person" Button
+    t =    25.82s     Check for interrupting elements affecting "person" Button
+    t =    25.87s     Synthesize event
+    t =    26.16s     Wait for fr.kathryn.woop to idle
+    t =    27.02s Waiting 5.0s for "Réglages" Button to exist
+    t =    28.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    28.05s         Checking existence of `"Réglages" Button`
+    t =    28.14s Swipe up Application 'fr.kathryn.woop'
+    t =    28.14s     Wait for fr.kathryn.woop to idle
+    t =    28.15s     Find the Application 'fr.kathryn.woop'
+    t =    28.19s     Check for interrupting elements affecting "Woop" Application
+    t =    28.24s     Synthesize event
+    t =    28.67s     Wait for fr.kathryn.woop to idle
+    t =    29.45s Swipe down Application 'fr.kathryn.woop'
+    t =    29.45s     Wait for fr.kathryn.woop to idle
+    t =    29.46s     Find the Application 'fr.kathryn.woop'
+    t =    29.63s     Check for interrupting elements affecting "Woop" Application
+    t =    29.70s     Synthesize event
+    t =    30.13s     Wait for fr.kathryn.woop to idle
+    t =    30.92s Waiting 5.0s for "Retour" Button to exist
+    t =    31.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Retour" Button`
+    t =    31.95s         Checking existence of `"Retour" Button`
+    t =    32.03s Tap "Retour" Button
+    t =    32.03s     Wait for fr.kathryn.woop to idle
+    t =    32.19s     Find the "Retour" Button
+    t =    32.28s     Check for interrupting elements affecting "Retour" Button
+    t =    32.34s     Synthesize event
+    t =    32.63s     Wait for fr.kathryn.woop to idle
+    t =    33.50s Waiting 5.0s for "person" Button to exist
+    t =    34.52s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    34.52s         Checking existence of `"person" Button`
+WOOP_ALLER_RETOUR_1_OK
+    t =    34.58s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+    t =    35.59s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =    35.59s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =    35.64s Tap "figure.strengthtraining.functional" Button
+    t =    35.65s     Wait for fr.kathryn.woop to idle
+    t =    35.65s     Find the "figure.strengthtraining.functional" Button
+    t =    35.68s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =    35.72s     Synthesize event
+    t =    36.02s     Wait for fr.kathryn.woop to idle
+    t =    36.83s Waiting 5.0s for "Exercices" StaticText to exist
+    t =    37.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =    37.86s         Checking existence of `"Exercices" StaticText`
+    t =    38.05s Swipe up Application 'fr.kathryn.woop'
+    t =    38.05s     Wait for fr.kathryn.woop to idle
+    t =    38.05s     Find the Application 'fr.kathryn.woop'
+    t =    38.10s     Check for interrupting elements affecting "Woop" Application
+    t =    38.14s     Synthesize event
+    t =    38.57s     Wait for fr.kathryn.woop to idle
+    t =    39.33s Tap "house.fill" Button
+    t =    39.33s     Wait for fr.kathryn.woop to idle
+    t =    39.34s     Find the "house.fill" Button
+    t =    39.39s     Check for interrupting elements affecting "house.fill" Button
+    t =    39.43s     Synthesize event
+    t =    39.73s     Wait for fr.kathryn.woop to idle
+    t =    40.53s Waiting 5.0s for "person" Button to exist
+    t =    41.55s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    41.56s         Checking existence of `"person" Button`
+    t =    41.71s Tap "person" Button
+    t =    41.71s     Wait for fr.kathryn.woop to idle
+    t =    41.72s     Find the "person" Button
+    t =    41.75s     Check for interrupting elements affecting "person" Button
+    t =    41.78s     Synthesize event
+    t =    42.07s     Wait for fr.kathryn.woop to idle
+    t =    42.95s Waiting 5.0s for "Réglages" Button to exist
+    t =    43.97s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    43.98s         Checking existence of `"Réglages" Button`
+    t =    44.05s Swipe up Application 'fr.kathryn.woop'
+    t =    44.05s     Wait for fr.kathryn.woop to idle
+    t =    44.06s     Find the Application 'fr.kathryn.woop'
+    t =    44.11s     Check for interrupting elements affecting "Woop" Application
+    t =    44.17s     Synthesize event
+    t =    44.60s     Wait for fr.kathryn.woop to idle
+    t =    45.37s Swipe down Application 'fr.kathryn.woop'
+    t =    45.37s     Wait for fr.kathryn.woop to idle
+    t =    45.38s     Find the Application 'fr.kathryn.woop'
+    t =    45.45s     Check for interrupting elements affecting "Woop" Application
+    t =    45.50s     Synthesize event
+    t =    45.92s     Wait for fr.kathryn.woop to idle
+    t =    46.72s Waiting 5.0s for "Retour" Button to exist
+    t =    47.75s     Checking `Expect predicate `existsNoRetry == 1` for object "Retour" Button`
+    t =    47.75s         Checking existence of `"Retour" Button`
+    t =    47.83s Tap "Retour" Button
+    t =    47.83s     Wait for fr.kathryn.woop to idle
+    t =    47.99s     Find the "Retour" Button
+    t =    48.07s     Check for interrupting elements affecting "Retour" Button
+    t =    48.13s     Synthesize event
+    t =    48.43s     Wait for fr.kathryn.woop to idle
+    t =    49.28s Waiting 5.0s for "person" Button to exist
+    t =    50.31s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    50.31s         Checking existence of `"person" Button`
+WOOP_ALLER_RETOUR_2_OK
+    t =    50.38s Waiting 5.0s for "figure.strengthtraining.functional" Button to exist
+    t =    51.41s     Checking `Expect predicate `existsNoRetry == 1` for object "figure.strengthtraining.functional" Button`
+    t =    51.41s         Checking existence of `"figure.strengthtraining.functional" Button`
+    t =    51.47s Tap "figure.strengthtraining.functional" Button
+    t =    51.47s     Wait for fr.kathryn.woop to idle
+    t =    51.48s     Find the "figure.strengthtraining.functional" Button
+    t =    51.50s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =    51.55s     Synthesize event
+    t =    51.85s     Wait for fr.kathryn.woop to idle
+    t =    52.65s Waiting 5.0s for "Exercices" StaticText to exist
+    t =    53.69s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =    53.69s         Checking existence of `"Exercices" StaticText`
+    t =    53.76s Swipe up Application 'fr.kathryn.woop'
+    t =    53.76s     Wait for fr.kathryn.woop to idle
+    t =    53.77s     Find the Application 'fr.kathryn.woop'
+    t =    53.80s     Check for interrupting elements affecting "Woop" Application
+    t =    53.83s     Synthesize event
+    t =    54.26s     Wait for fr.kathryn.woop to idle
+    t =    54.75s Tap "house.fill" Button
+    t =    54.75s     Wait for fr.kathryn.woop to idle
+    t =    54.76s     Find the "house.fill" Button
+    t =    54.81s     Check for interrupting elements affecting "house.fill" Button
+    t =    54.86s     Synthesize event
+    t =    55.16s     Wait for fr.kathryn.woop to idle
+    t =    55.97s Waiting 5.0s for "person" Button to exist
+    t =    56.99s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    56.99s         Checking existence of `"person" Button`
+    t =    57.05s Tap "person" Button
+    t =    57.05s     Wait for fr.kathryn.woop to idle
+    t =    57.06s     Find the "person" Button
+    t =    57.09s     Check for interrupting elements affecting "person" Button
+    t =    57.13s     Synthesize event
+    t =    57.41s     Wait for fr.kathryn.woop to idle
+    t =    58.30s Waiting 5.0s for "Réglages" Button to exist
+    t =    59.32s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    59.32s         Checking existence of `"Réglages" Button`
+    t =    59.41s Swipe up Application 'fr.kathryn.woop'
+    t =    59.41s     Wait for fr.kathryn.woop to idle
+    t =    59.42s     Find the Application 'fr.kathryn.woop'
+    t =    59.46s     Check for interrupting elements affecting "Woop" Application
+    t =    59.51s     Synthesize event
+    t =    59.94s     Wait for fr.kathryn.woop to idle
+    t =    60.74s Swipe down Application 'fr.kathryn.woop'
+    t =    60.74s     Wait for fr.kathryn.woop to idle
+    t =    60.74s     Find the Application 'fr.kathryn.woop'
+    t =    60.80s     Check for interrupting elements affecting "Woop" Application
+    t =    60.84s     Synthesize event
+    t =    61.27s     Wait for fr.kathryn.woop to idle
+    t =    62.08s Waiting 5.0s for "Retour" Button to exist
+    t =    63.08s     Checking `Expect predicate `existsNoRetry == 1` for object "Retour" Button`
+    t =    63.08s         Checking existence of `"Retour" Button`
+    t =    63.17s Tap "Retour" Button
+    t =    63.17s     Wait for fr.kathryn.woop to idle
+    t =    63.35s     Find the "Retour" Button
+    t =    63.43s     Check for interrupting elements affecting "Retour" Button
+    t =    63.49s     Synthesize event
+    t =    63.80s     Wait for fr.kathryn.woop to idle
+    t =    64.64s Waiting 5.0s for "person" Button to exist
+    t =    65.67s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    65.67s         Checking existence of `"person" Button`
+WOOP_ALLER_RETOUR_3_OK
+    t =    65.74s Tear Down
+2026-09-16 11:21:57.630 xcodebuild[29939:15560456] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAllersRetoursMesures]' passed (66.259 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 11:21:57.961.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.259 (66.265) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 11:21:57.964.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.259 (66.268) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 11:21:57.966.
+	 Executed 1 test, with 0 failures (0 unexpected) in 66.259 (66.270) seconds
+2026-09-16 11:21:58.284 xcodebuild[29939:15560456] [MT] IDETestOperationsObserverDebug: 68.619 elapsed -- Testing started completed.
+2026-09-16 11:21:58.284 xcodebuild[29939:15560456] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 11:21:58.284 xcodebuild[29939:15560456] [MT] IDETestOperationsObserverDebug: 68.619 sec, +68.619 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-textes38-cycles.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

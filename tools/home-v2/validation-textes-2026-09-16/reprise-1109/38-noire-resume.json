@@ -1,0 +1,17 @@
+{
+  "contexte": "Home noire banc -homeSeance, aucune séance en base ; sonde seance=0 ne décrit pas ce banc",
+  "n": 150,
+  "debut": 15.2,
+  "fin": 166.5,
+  "cpu_median": 2.5,
+  "cpu_max": 37,
+  "callbacks_mediane": 60.1,
+  "pire_ms": 69,
+  "thermiques": {
+    "1": 150
+  },
+  "protections": {
+    "1": 150
+  },
+  "gels": 0
+}

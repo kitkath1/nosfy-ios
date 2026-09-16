@@ -1,0 +1,20 @@
+
+CodeSign /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    
+    Signing Identity:     "Apple Development: kathryn@soluo-avocats.fr (8UAK4GS75B)"
+    Provisioning Profile: "iOS Team Provisioning Profile: fr.kathryn.woop"
+                          (acfd3093-9378-4dc3-906a-00a012b0a22b)
+    
+    /usr/bin/codesign --force --sign 4121E22A5C5DCAA7A798527EE2DDE51FC97B4AD0 --entitlements /tmp/woop-chauffe-dd/Build/Intermediates.noindex/Woop.build/Release-iphoneos/Woop.build/Woop.app.xcent --timestamp\=none --generate-entitlement-der /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app
+
+ValidateEmbeddedBinary /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app/PlugIns/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app/PlugIns/WoopWidgets.appex -signing-cert 4121E22A5C5DCAA7A798527EE2DDE51FC97B4AD0 -info-plist-path /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app/Info.plist
+
+Validate /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    builtin-validationUtility /tmp/woop-chauffe-dd/Build/Products/Release-iphoneos/Woop.app -validate-for-store -shallow-bundle -infoplist-subpath Info.plist
+
+** BUILD SUCCEEDED **
+

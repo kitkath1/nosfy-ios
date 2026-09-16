@@ -1,5 +1,14 @@
 # Textes des deux Homes et du pull — réalisation du 16 septembre
 
+**Actualisation après déverrouillage, 11:09 : 37 lancée, navigation et trois
+retours du pull réussis sur iPhone. 38 installée et lancée à 11:17 : correction
+de la parole sur Home noire lorsque les décors sont au repos thermique.**
+La capture montre le chrono et le texte cohérents. Les relevés restent presque
+entièrement protégés : aucune validation de chauffe durable. [Preuves et limites
+de cette reprise](validation-textes-2026-09-16/reprise-1109/etat.md).
+
+## Historique de la première livraison
+
 Le plan a été autorisé puis développé. **Version 37 compilée en Release et
 installée sur l’iPhone à 09:44 ; lancement refusé par iOS (« Locked »).** La
 version 36 avait été ouverte, mais l’utilisateur n’y voyait pas la prise de

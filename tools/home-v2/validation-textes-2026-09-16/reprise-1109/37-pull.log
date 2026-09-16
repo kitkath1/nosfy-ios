@@ -1,0 +1,151 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testRetourPullEtChapitre" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -resultBundlePath /private/tmp/woop-textes37-pull.xcresult
+
+2026-09-16 11:14:40.422 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-textes37-pull.xcresult
+
+2026-09-16 11:14:40.424 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 11:14:40.526 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 11:14:40.678 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 11:14:42.323739+0200 NavRuntimeUITests-Runner[29942:2280606] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 11:14:42.685.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 11:14:42.685.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 11:14:42.686.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRetourPullEtChapitre]' started.
+    t =     0.00s Start Test at 2026-09-16 11:14:42.689
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.05s         Wait for fr.kathryn.woop to idle
+    t =     0.06s Checking existence of `"Later" Button`
+    t =     0.12s Waiting 5.0s for "pull to start" StaticText to exist
+2026-09-16 11:14:42.865 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.13s     Checking `Expect predicate `existsNoRetry == 1` for object "pull to start" StaticText`
+    t =     1.14s         Checking existence of `"pull to start" StaticText`
+    t =     1.20s Find the Application 'fr.kathryn.woop'
+    t =     1.86s Find the Application 'fr.kathryn.woop'
+    t =     2.51s Find the Application 'fr.kathryn.woop'
+    t =     3.29s Find the Application 'fr.kathryn.woop'
+    t =     3.95s Find the Application 'fr.kathryn.woop'
+    t =     4.55s Find the Application 'fr.kathryn.woop'
+    t =     5.18s Find the Application 'fr.kathryn.woop'
+    t =     5.90s Find the Application 'fr.kathryn.woop'
+    t =     6.53s Find the Application 'fr.kathryn.woop'
+    t =     7.24s Find the Application 'fr.kathryn.woop'
+    t =     7.98s Find the Application 'fr.kathryn.woop'
+    t =     8.73s Find the Application 'fr.kathryn.woop'
+    t =     9.38s Find the "pull to start" StaticText
+    t =     9.47s Tap "pull to start" StaticText
+    t =     9.47s     Wait for fr.kathryn.woop to idle
+    t =     9.47s     Find the "pull to start" StaticText
+    t =     9.62s     Check for interrupting elements affecting "pull to start" StaticText
+    t =     9.69s     Synthesize event
+    t =     9.99s     Wait for fr.kathryn.woop to idle
+    t =    12.20s Find the Application 'fr.kathryn.woop'
+    t =    12.42s Press Application 'fr.kathryn.woop'[0.50, 0.23] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.53] with velocity of 250.00 pixels per second, and then hold for 0.0 seconds 
+    t =    12.42s     Wait for fr.kathryn.woop to idle
+    t =    12.42s     Find the Application 'fr.kathryn.woop'
+    t =    12.45s     Check for interrupting elements affecting "Woop" Application
+    t =    12.48s     Synthesize event
+    t =    12.49s         Find the Application 'fr.kathryn.woop'
+    t =    12.50s         Find the Application 'fr.kathryn.woop'
+    t =    12.52s         Find the Application 'fr.kathryn.woop'
+    t =    12.53s         Find the Application 'fr.kathryn.woop'
+    t =    12.55s         Find the Application 'fr.kathryn.woop'
+    t =    13.90s     Wait for fr.kathryn.woop to idle
+    t =    15.31s Waiting 5.0s for "pull to start" StaticText to exist
+    t =    16.34s     Checking `Expect predicate `existsNoRetry == 1` for object "pull to start" StaticText`
+    t =    16.34s         Checking existence of `"pull to start" StaticText`
+    t =    16.40s Find the "pull to start" StaticText
+    t =    16.46s Find the Application 'fr.kathryn.woop'
+    t =    16.68s Find the "pull to start" StaticText
+    t =    16.73s Tap "pull to start" StaticText
+    t =    16.73s     Wait for fr.kathryn.woop to idle
+    t =    16.73s     Find the "pull to start" StaticText
+    t =    16.76s     Check for interrupting elements affecting "pull to start" StaticText
+    t =    16.79s     Synthesize event
+    t =    17.08s     Wait for fr.kathryn.woop to idle
+    t =    19.31s Find the Application 'fr.kathryn.woop'
+    t =    19.52s Press Application 'fr.kathryn.woop'[0.50, 0.23] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.53] with velocity of 250.00 pixels per second, and then hold for 0.0 seconds 
+    t =    19.52s     Wait for fr.kathryn.woop to idle
+    t =    19.53s     Find the Application 'fr.kathryn.woop'
+    t =    19.56s     Check for interrupting elements affecting "Woop" Application
+    t =    19.59s     Synthesize event
+    t =    19.59s         Find the Application 'fr.kathryn.woop'
+    t =    19.60s         Find the Application 'fr.kathryn.woop'
+    t =    19.62s         Find the Application 'fr.kathryn.woop'
+    t =    19.64s         Find the Application 'fr.kathryn.woop'
+    t =    19.65s         Find the Application 'fr.kathryn.woop'
+    t =    20.99s     Wait for fr.kathryn.woop to idle
+    t =    22.40s Waiting 5.0s for "pull to start" StaticText to exist
+    t =    23.43s     Checking `Expect predicate `existsNoRetry == 1` for object "pull to start" StaticText`
+    t =    23.44s         Checking existence of `"pull to start" StaticText`
+    t =    23.50s Find the "pull to start" StaticText
+    t =    23.56s Find the Application 'fr.kathryn.woop'
+    t =    23.79s Find the "pull to start" StaticText
+    t =    23.85s Tap "pull to start" StaticText
+    t =    23.85s     Wait for fr.kathryn.woop to idle
+    t =    23.85s     Find the "pull to start" StaticText
+    t =    23.89s     Check for interrupting elements affecting "pull to start" StaticText
+    t =    23.92s     Synthesize event
+    t =    24.21s     Wait for fr.kathryn.woop to idle
+    t =    26.43s Find the Application 'fr.kathryn.woop'
+    t =    26.64s Press Application 'fr.kathryn.woop'[0.50, 0.23] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.53] with velocity of 250.00 pixels per second, and then hold for 0.0 seconds 
+    t =    26.64s     Wait for fr.kathryn.woop to idle
+    t =    26.64s     Find the Application 'fr.kathryn.woop'
+    t =    26.68s     Check for interrupting elements affecting "Woop" Application
+    t =    26.71s     Synthesize event
+    t =    26.71s         Find the Application 'fr.kathryn.woop'
+    t =    26.72s         Find the Application 'fr.kathryn.woop'
+    t =    26.74s         Find the Application 'fr.kathryn.woop'
+    t =    26.75s         Find the Application 'fr.kathryn.woop'
+    t =    26.77s         Find the Application 'fr.kathryn.woop'
+    t =    28.11s     Wait for fr.kathryn.woop to idle
+    t =    29.53s Waiting 5.0s for "pull to start" StaticText to exist
+    t =    30.55s     Checking `Expect predicate `existsNoRetry == 1` for object "pull to start" StaticText`
+    t =    30.55s         Checking existence of `"pull to start" StaticText`
+    t =    30.63s Find the "pull to start" StaticText
+    t =    30.69s Find the Application 'fr.kathryn.woop'
+    t =    30.88s Tap "person" Button
+    t =    30.88s     Wait for fr.kathryn.woop to idle
+    t =    30.88s     Find the "person" Button
+    t =    30.93s     Check for interrupting elements affecting "person" Button
+    t =    30.96s     Synthesize event
+    t =    31.24s     Wait for fr.kathryn.woop to idle
+    t =    32.19s Waiting 5.0s for "Réglages" Button to exist
+    t =    33.22s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    33.22s         Checking existence of `"Réglages" Button`
+    t =    33.43s Tap "Retour" Button
+    t =    33.43s     Wait for fr.kathryn.woop to idle
+    t =    33.44s     Find the "Retour" Button
+    t =    33.51s     Check for interrupting elements affecting "Retour" Button
+    t =    33.57s     Synthesize event
+    t =    33.98s     Wait for fr.kathryn.woop to idle
+    t =    34.85s Waiting 5.0s for "pull to start" StaticText to exist
+    t =    35.88s     Checking `Expect predicate `existsNoRetry == 1` for object "pull to start" StaticText`
+    t =    35.88s         Checking existence of `"pull to start" StaticText`
+WOOP_RETOURS_PULL_CHAPITRE_OK
+    t =    35.95s Tear Down
+2026-09-16 11:15:18.801 xcodebuild[29256:15550142] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRetourPullEtChapitre]' passed (36.242 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 11:15:18.931.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.242 (36.245) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 11:15:18.933.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.242 (36.248) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 11:15:18.935.
+	 Executed 1 test, with 0 failures (0 unexpected) in 36.242 (36.250) seconds
+2026-09-16 11:15:19.226 xcodebuild[29256:15550142] [MT] IDETestOperationsObserverDebug: 38.546 elapsed -- Testing started completed.
+2026-09-16 11:15:19.226 xcodebuild[29256:15550142] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 11:15:19.226 xcodebuild[29256:15550142] [MT] IDETestOperationsObserverDebug: 38.546 sec, +38.546 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-textes37-pull.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

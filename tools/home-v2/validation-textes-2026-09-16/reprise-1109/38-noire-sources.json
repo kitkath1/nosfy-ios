@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260916-111709.jsonl",
+    "destination": "/private/tmp/woop-textes38-noire-fin-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260916-111709.jsonl",
+    "destination": "/private/tmp/woop-textes38-noire-fin-nav.jsonl"
+  }
+}
