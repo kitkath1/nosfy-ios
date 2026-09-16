@@ -482,6 +482,24 @@ struct ExerciseDetailView: View {
     /// « + » ne réveille que la pastille, jamais la fiche.
     @State private var compteur = CompteurLongueurs()
 
+    /// LA COURBE DE CHARGE (15-09, tools/fiche/PLAN-COURBE-CHARGE-COACH.md) —
+    /// les passages FAITS de cet exercice, en cache, comme les segments du
+    /// cardio : lus UNE fois à l'apparition et après chaque série ancrée,
+    /// jamais dans le corps (`collapsingHeaderBack` est un GeometryReader
+    /// fonction du scroll : tout ce qu'il lit est ré-évalué au pixel).
+    @State private var passages: [PassageCharge] = []
+    @State private var recordKg: Double?
+    /// LA LIGNE DE COACH : la phrase du serveur (ou celle que le téléphone
+    /// sait écrire seul), et « il écrit encore » pour l'étoile.
+    @State private var phraseCoach: String?
+    @State private var coachAttend = false
+    /// Le compte des records battus dans ce passage : la courbe pulse et
+    /// vibre « succès » à chaque hausse.
+    @State private var recordsBattus = 0
+    /// Le jeton de la dernière demande au serveur : une réponse en retard
+    /// (l'exercice a changé de série entre-temps) ne parle pas par-dessus.
+    @State private var coachJeton = 0
+
     // MARK: Le banc de l'aube — le simulateur ne drague pas (l'école -cineTest)
 
     /// `-aubeAuto` rejoue en boucle la montée de lumière du galet, sans
@@ -868,6 +886,11 @@ struct ExerciseDetailView: View {
                 // Le graphe et le compteur lisent SwiftData UNE fois, ici.
                 rafraichirSegments()
                 if estPiscine { chargerCompteur() }
+                if isStrength {
+                    semerPassagesAuBanc()
+                    rafraichirPassages()
+                    demanderLeCoach()
+                }
                 if geo.size.height > 100 {
                     pageFull = CGSize(
                         width: geo.size.width,
@@ -1693,7 +1716,7 @@ struct ExerciseDetailView: View {
                     // LE TITRE ARRIVE COMME LE TEXTE (05-09 : « pareil
                     // pour le titre, ça s'affiche à l'Apple et c'est
                     // doux ») — il ouvre la vague, la description suit.
-                    titleBlock(big: true)
+                    titleBlock(big: true).allowsHitTesting(false)
                         .modifier(ArriveeDouce(vu: texteApparu,
                                                retard: 0.15))
                     // LE GRAPHE À LA PLACE DE LA DESCRIPTION (verdict
@@ -1716,7 +1739,21 @@ struct ExerciseDetailView: View {
                                               echelle: mode.estNiveau ? .escalier : .tapis,
                                               vide: segmentsCardio.isEmpty,
                                               vu: texteApparu)
+                        } else if isStrength {
+                            // LA MUSCU : LA COURBE DE CHARGE ET LA LIGNE DE
+                            // COACH à la place de la description (verdict
+                            // Kathryn 15-09 : « ok la courbe … on supprime la
+                            // description »). Le même slot, la même vague.
+                            CourbeChargeFiche(passages: passages,
+                                              recordKg: recordKg,
+                                              vide: passages.isEmpty,
+                                              recordsBattus: recordsBattus,
+                                              phraseCoach: phraseCoach,
+                                              coachAttend: coachAttend,
+                                              vu: texteApparu)
                         } else {
+                            // La piscine garde sa description : elle n'a ni
+                            // graphe ni courbe.
                             DescriptionExo(cue: exercise.cue,
                                            mistake: exercise.mistake,
                                            enSeance: active != nil,
@@ -1733,9 +1770,14 @@ struct ExerciseDetailView: View {
                 morphPhoto(p)
                     .offset(x: p.px, y: Self.lp(12, -8, u))
                     .opacity(1 - Self.sstep(0.06, 0.46, u))
+                    .allowsHitTesting(false)
             }
         }
-        .allowsHitTesting(false)
+        // ⚠️ Le header ne prenait AUCUN doigt (le galet et le scroll vivent
+        // dessous). Depuis les graphes (15-09) il en prend UN : celui posé sur
+        // la courbe ou sur les paliers — le titre et la photo restent sourds
+        // (`allowsHitTesting(false)` sur eux), et hors du texte le ZStack ne
+        // porte aucune forme tactile : le doigt traverse comme avant.
     }
 
     // MARK: La carte des séries qui prend l'écran
@@ -2489,6 +2531,140 @@ struct ExerciseDetailView: View {
         return nil
     }
 
+    // MARK: - La courbe de charge et la coach (15-09, tools/fiche/PLAN-COURBE-CHARGE-COACH.md)
+
+    /// LES PASSAGES de cet exercice, du plus ancien au plus récent : un
+    /// `LoggedExercise` par passage, ses séries FAITES seulement
+    /// (`maxWeight` du modèle ne filtre pas `isDone` — ici on filtre). Le
+    /// record se calcule sur TOUT l'historique ; la courbe n'en montre que
+    /// les douze derniers. Lu hors du corps, jamais dedans.
+    private func rafraichirPassages() {
+        guard isStrength else { return }
+        var tous: [PassageCharge] = []
+        for w in workouts {
+            for l in w.orderedExercises.reversed() where l.exerciseID == exercise.id {
+                let faites = l.orderedSets.filter(\.isDone)
+                guard !faites.isEmpty else { continue }
+                tous.append(PassageCharge(
+                    id: l.remoteID, date: w.startedAt, enCours: w.isActive,
+                    series: faites.map { .init(reps: $0.reps, kg: $0.weight) }))
+            }
+        }
+        // `workouts` est trié du plus récent au plus ancien : on renverse.
+        tous.reverse()
+        let record = tous.map(\.maxKg).max()
+        // UN RECORD BATTU pendant ce passage : la hausse du record entre deux
+        // lectures, la séance ouverte (jamais à la simple ouverture de la fiche).
+        if let avant = recordKg, let r = record, r > avant + 0.01, active != nil {
+            recordsBattus += 1
+        }
+        recordKg = record
+        // La courbe est dans le TEMPS (six mois) : on lui donne tout, elle
+        // garde ce qui tombe dans sa fenêtre.
+        passages = tous
+    }
+
+    /// LA COACH. Le serveur écrit la phrase (edge `conseil-exercice`, J2) ;
+    /// tant qu'il n'a pas répondu — ou s'il ne répond pas — le téléphone dit
+    /// ce qu'il sait sans rien inventer : « Dernière fois 45 kg × 12. »
+    /// Jamais une cible calculée ici (la règle vit au serveur). Les bancs :
+    /// `-coachPhrase <texte>` rend une phrase sans serveur, `-coachAttente`
+    /// fige l'étoile en « il écrit ».
+    private func demanderLeCoach() {
+        guard isStrength else { return }
+        let args = CommandLine.arguments
+        if args.contains("-coachAttente") {
+            coachAttend = true
+            phraseCoach = nil
+            return
+        }
+        if let i = args.firstIndex(of: "-coachPhrase"), i + 1 < args.count {
+            let phrase = args[i + 1]
+            // `-coachDelai <s>` : l'étoile respire s secondes, PUIS la phrase
+            // arrive — le film de l'arrivée (le serveur met 1,5 à 3,6 s).
+            if let j = args.firstIndex(of: "-coachDelai"), j + 1 < args.count,
+               let d = Double(args[j + 1]), d > 0 {
+                coachAttend = true
+                phraseCoach = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + d) {
+                    withAnimation(.easeOut(duration: 0.3)) { coachAttend = false }
+                    phraseCoach = phrase
+                }
+                return
+            }
+            coachAttend = false
+            phraseCoach = phrase
+            return
+        }
+        // LE SERVEUR : l'étoile respire pendant qu'il écrit ; sa phrase arrive
+        // au shimmer ; s'il se tait (hors ligne, 8 s, `-sansServeur`), la fiche
+        // dit ce qu'elle sait seule. Une réponse en retard ne parle pas
+        // par-dessus une demande plus récente (le jeton).
+        coachJeton += 1
+        let jeton = coachJeton
+        let exo = exercise.id
+        coachAttend = true
+        Task { @MainActor in
+            let t0 = Date()
+            let c = await CoachServeur.conseil(exo)
+            CoachServeur.journal(exo, c, ms: Int(Date().timeIntervalSince(t0) * 1000))
+            guard jeton == coachJeton else { return }
+            withAnimation(.easeOut(duration: 0.3)) { coachAttend = false }
+            phraseCoach = c.texte ?? phraseLocale()
+        }
+    }
+
+    /// Ce que le téléphone peut dire seul, sans règle : le dernier passage.
+    private func phraseLocale() -> String {
+        guard let d = passages.last, let s = d.series.max(by: { $0.kg < $1.kg }) else {
+            return L("Première fois ici. Pars léger, on mesure.",
+                     "First time here. Start light, we measure.")
+        }
+        return L("Dernière fois \(ChambreFmt.poids(s.kg)) kg × \(s.reps).",
+                 "Last time \(ChambreFmt.poids(s.kg)) kg × \(s.reps).")
+    }
+
+    /// LE BANC `-chargeBanc <n>` : le simulateur n'a pas d'historique — n
+    /// passages FAITS de cet exercice, semés une fois (jamais si l'exercice a
+    /// déjà des séries), tous les trois jours, de 40 kg au record, avec un
+    /// « tenir » au milieu. `-chargeBanc 0` = le vide.
+    private func semerPassagesAuBanc() {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: "-chargeBanc"), i + 1 < args.count,
+              let n = Int(args[i + 1]), n > 0 else { return }
+        let deja = workouts.contains { w in
+            w.orderedExercises.contains { $0.exerciseID == exercise.id && !$0.orderedSets.isEmpty }
+        }
+        guard !deja else { return }
+        // `-chargeEspace <jours>` : l'écart entre deux passages (3 par défaut ;
+        // 14 fait six mois en douze passages).
+        var espace = 3.0
+        if let j = args.firstIndex(of: "-chargeEspace"), j + 1 < args.count,
+           let e = Double(args[j + 1]), e > 0 { espace = e }
+        let charges: [Double] = (0..<n).map { k in
+            let base = 40.0 + 2.5 * Double(k)
+            // Un cran de recul au tiers et au deux tiers : la courbe n'est
+            // pas une rampe.
+            return (k == n / 3 || k == (2 * n) / 3) && n > 3 ? base - 5 : base
+        }
+        for (k, kg) in charges.enumerated() {
+            let w = Workout(startedAt: .now.addingTimeInterval(-Double(n - k) * espace * 86_400))
+            w.endedAt = w.startedAt.addingTimeInterval(50 * 60)
+            context.insert(w)
+            let l = LoggedExercise(exerciseID: exercise.id, order: 0)
+            l.workout = w
+            context.insert(l)
+            for (r, reps) in [12, 10, 8].enumerated() {
+                let set = StrengthSet(reps: reps, weight: kg, order: r, isDone: true,
+                                      durationSeconds: 40)
+                set.loggedExercise = l
+                context.insert(set)
+            }
+        }
+        try? context.save()
+        print("[banc] -chargeBanc : \(n) passages semés sur \(exercise.id)")
+    }
+
     // MARK: - La piscine (15-09, plan cardio §E)
 
     /// Le compteur relit ce passage (ou le bassin de la dernière fois).
@@ -3000,6 +3176,9 @@ struct ExerciseDetailView: View {
         // part.
         WorkoutActivityController.ensure(seance)
         WorkoutActivityController.sync(seance)
+        // La courbe et la coach lisent la série qui vient de tomber.
+        rafraichirPassages()
+        demanderLeCoach()
     }
 
     /// LA PORTE POSÉE : le cadran naît directement à demeure — pas de
