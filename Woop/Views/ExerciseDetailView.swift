@@ -1329,7 +1329,8 @@ struct ExerciseDetailView: View {
                             if case .moment(_, let fait, _) = iss { return fait }
                             return styleFinal == .welcome
                                 ? "Your next session is waiting for you."
-                                : "Congratulations, you've completed your training!"
+                                : L("Bravo, tu as terminé ton entraînement !",
+                                    "Congratulations, you've completed your training!")
                         }(),
                         unit: styleFinal == .welcome ? "Coins" : "Sets",
                         style: styleFinal,

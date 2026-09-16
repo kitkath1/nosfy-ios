@@ -778,7 +778,8 @@ enum DecideurSerie {
             // Le premier rang fixe : un MOMENT, et il dit quelque chose de VRAI.
             let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
             issue = .moment(titre: "Set \(serie)",
-                            fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
+                            fait: L("\(reps) reps à \(poids) kg — déjà \(total) pièces.",
+                                    "\(reps) reps at \(poids) kg — that's \(total) coins so far."),
                             style: .galet)
         } else if etat.monetaires < r.rewardMonetaireMax {
             // La pop-up de récompense en pièces — une par séance, avec une VIDÉO
@@ -789,7 +790,8 @@ enum DecideurSerie {
             // Le budget « pièces » est pris : un moment sans pièces.
             let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
             issue = .moment(titre: "Set \(serie)",
-                            fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
+                            fait: L("\(reps) reps à \(poids) kg — déjà \(total) pièces.",
+                                    "\(reps) reps at \(poids) kg — that's \(total) coins so far."),
                             style: .galet)
         }
         etat.popups += 1
