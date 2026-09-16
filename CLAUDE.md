@@ -96,6 +96,11 @@ Son mode d'emploi complet : `docs/site/README.md`.
 
 **Avant de reprendre ce bug : [registre des échecs, mesures invalides et preuves](tools/perf/ECHECS-CHAUFFE-HOME.md).**
 La navigation rétablie ne valide pas la résolution de la chauffe.
+
+**Skill chauffe demandé le16-09 : [woop-chauffe](.agents/skills/woop-chauffe/SKILL.md).**
+Le charger pour reprendre la chauffe ou vérifier le coût d'une animation/vidéo.
+Il porte la méthode actualisée, l'analyseur de sonde et les pièges à ne pas rejouer.
+Les chiffres historiques ci-dessous restent des observations datées, pas des budgets.
 Les 27–39 % CPU historiques sont le défaut signalé, pas une norme acceptable.
 
 ## Commits

@@ -5,6 +5,14 @@ description: À charger AVANT toute question de fluidité, de saccade, de chauff
 
 # Woop — la fluidité et la chaleur
 
+**Mise à jour du16-09 : charger [woop-chauffe](../../../.agents/skills/woop-chauffe/SKILL.md)
+pour le diagnostic thermique et la validation des animations.** Ce protocole
+actualisé sépare CPU, cadence, énergie et chauffe ressentie. Les observations du
+05-09 ci-dessous ne sont ni des budgets ni des garanties : `repeatForever` peut
+entretenir le graphe SwiftUI (E55), une vidéo matérielle reste à mesurer, et le
+faible CPU d'un écran protégé ne valide pas son rendu animé à froid. Lire le
+registre et sa dernière campagne avant de reprendre un ancien A/B.
+
 Ce fichier a été payé le 05-09-2026 par **une journée entière de mesures sur son
 iPhone 15**, dont une bonne moitié perdue à mesurer faux. Tout ce qui suit est
 soit un chiffre relevé sur le téléphone, soit une erreur de méthode commise ici.
