@@ -570,6 +570,29 @@ struct PhraseVue: View, Animatable {
     var hautEcran: Double = 108
     var cleParole: String? = nil
     var paroleActive: Bool = true
+    var animationParole: Bool = true
+    var etatVoix: String? = nil
+    var nombreVoix: Int = 0
+    var palierVoix: Int = 0
+    @State private var lecture = HomeLecture()
+    @State private var montee = false
+    @Environment(\.scenePhase) private var phaseVoix
+    @AppStorage(Langue.cle) private var langueVoix = Langue.courante
+    @AppStorage(HomeTextes.cleRevision) private var revisionVoix = ""
+    @AppStorage(ProfilServeur.clePrenom) private var prenomVoix = ""
+
+    private var contexteVoix: HomeLecture.Contexte {
+        .init(visible: montee && paroleActive && p > 0.04 && phaseVoix == .active
+                && !RythmeEcran.dortHome && !DepartEtat.shared.homeDort
+                && !DepartEtat.shared.welcomeOuverte && !DepartEtat.shared.welcomePremiereOuverte
+                && !PlayerEtat.shared.couvre && !CouvertureFoyer.shared.recouvert,
+              signature: "\(langueVoix)|\(revisionVoix)|\(prenomVoix)|\(etatVoix ?? "")|\(palierVoix)")
+    }
+    private var fragmentsDits: [PhraseFragment] {
+        guard etatVoix != nil, let variante = lecture.variante else { return fragments }
+        return variante.mots(prenom: ProfilServeur.prenomLocal, nombre: nombreVoix, langue: langueVoix)
+            .enumerated().map { PhraseFragment($0.element, clair: $0.offset.isMultiple(of: 2)) }
+    }
 
     var animatableData: Double {
         get { p }
@@ -604,7 +627,7 @@ struct PhraseVue: View, Animatable {
     /// Les lignes qui passent sous le dégradé du bloc — toutes, sauf celle qui
     /// porterait un galet.
     private var masquees: [PhraseFragment] {
-        horsMasque == nil ? fragments : Array(fragments.dropLast())
+        horsMasque == nil ? fragmentsDits : Array(fragmentsDits.dropLast())
     }
 
     var body: some View {
@@ -636,7 +659,15 @@ struct PhraseVue: View, Animatable {
         }
         .frame(width: params.largeur, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(fragments.map(\.texte).joined(separator: " "))
+        .accessibilityLabel(fragmentsDits.map(\.texte).joined(separator: " "))
+        // La protection/Reduce Motion coupe la lecture, jamais le texte posé.
+        .opacity(etatVoix != nil && contexteVoix.visible && !lecture.presente ? 0 : 1)
+        .onAppear { montee = true }
+        .onDisappear { montee = false }
+        .onChange(of: contexteVoix, initial: true) { _, contexte in
+            guard let etatVoix else { return }
+            lecture.actualiser(contexte) { HomeTextes.prochainePhrase(etatVoix) }
+        }
     }
 
     @ViewBuilder
@@ -659,11 +690,13 @@ struct PhraseVue: View, Animatable {
                 }
             } else {
                 ParoleLigne(texte: f.texte,
-                            replique: cleParole ?? fragments.map(\.texte).joined(separator: "|"),
+                            replique: etatVoix != nil ? "visite-\(lecture.numero)"
+                                : (cleParole ?? fragmentsDits.map(\.texte).joined(separator: "|")),
                             taille: params.taille, tracking: params.tracking,
                             opacite: f.clair ? 1 : sourd(index),
-                            retard: ParoleLigne.retard(apres: Array(fragments.prefix(index))),
-                            active: paroleActive && p > 0.04 && !RythmeEcran.dortHome && !DepartEtat.shared.homeDort)
+                            retard: ParoleLigne.retard(apres: Array(fragmentsDits.prefix(index))),
+                            active: contexteVoix.visible && animationParole
+                                && (etatVoix == nil || lecture.presente))
                     .frame(height: params.taille * 1.21)
             }
         }
@@ -1906,6 +1939,7 @@ struct SemaineStrip: View {
 /// s'y poser (jalons V3 à V7 du plan §9) — la page grandit, elle ne se
 /// réécrit pas.
 struct HomeNuitPage: View {
+    @Environment(\.scenePhase) private var phaseHome
     var rasant = RasantParams.retenus()
     var phrase = PhraseParams()
     var galet = GaletParams.retenus()
@@ -2060,6 +2094,16 @@ struct HomeNuitPage: View {
 
     private var enSeance: Bool {
         Self.bancSeance || !seancesOuvertes.isEmpty
+    }
+
+    private var minutesVisibles: Bool {
+        enSeance && phaseHome == .active && !RythmeEcran.dortHome
+            && !DepartEtat.shared.homeDort && !PlayerEtat.shared.couvre
+            && !CouvertureFoyer.shared.recouvert
+            && !DepartEtat.shared.welcomeOuverte && !DepartEtat.shared.welcomePremiereOuverte
+    }
+    private var etatPhraseRouge: String {
+        PremiereArrivee.premiereFois ? "vide" : (faitsAffiche == 0 ? "active_zero" : "active")
     }
 
     /// LES FRAGMENTS QU'ON MONTRE. L'échange se fait à l'instant où `mue`
@@ -2802,15 +2846,18 @@ struct HomeNuitPage: View {
         // LES MINUTES SE RAFRAÎCHISSENT PENDANT LA SÉANCE, et seulement
         // pendant. ⚠️ Un `.task(id:)` et non un `Timer` : il s'annule tout
         // seul quand l'état change ou que la vue part — un timer retenu
-        // survivrait à la page et écrirait dans le vide. Une réveil toutes les
-        // 30 s, et le nombre ROULE (chaque mot porte déjà
+        // survivrait à la page et écrirait dans le vide. Un réveil à chaque
+        // minute réelle, seulement visible, et le nombre ROULE (chaque mot porte déjà
         // `.contentTransition(.numericText())`) : pas de cloche pour ça, une
         // métamorphose pour changer de minute serait grotesque.
-        .task(id: enSeance) {
-            guard enSeance else { return }
+        .task(id: minutesVisibles) {
+            guard minutesVisibles else { return }
             while !Task.isCancelled {
                 majMinutes()
-                try? await Task.sleep(for: .seconds(30))
+                guard let debut = debutSeance else { return }
+                let ecoule = max(0, Date().timeIntervalSince(debut))
+                let attente = 60 - ecoule.truncatingRemainder(dividingBy: 60) + 0.05
+                do { try await Task.sleep(for: .seconds(attente)) } catch { return }
             }
         }
         .onChange(of: enSeance) { _, encore in
@@ -3500,7 +3547,9 @@ struct HomeNuitPage: View {
                               fragments: fragmentsPhrase(),
                               ecran: geo.size.width,
                               hautEcran: geo.safeAreaInsets.top + 48,
-                              paroleActive: !enSeance && bascule < 0.02,
+                              paroleActive: !enSeance && bascule < 0.02 && !menuOuvert
+                                && !coffreOuvert && !cheminOuvert && !exoOuvert && !reglageOuvert,
+                              etatVoix: etatPhraseRouge, nombreVoix: faitsAffiche, palierVoix: faitsAffiche,
                               galet: galet,
                               objectif: $prevus,
                               reglageOuvert: $reglageOuvert)

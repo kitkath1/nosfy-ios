@@ -1,0 +1,10 @@
+{
+  "base": "eab95f43194d47631d01f450596a1cf1a38b0e54",
+  "sha256": {
+    "Woop/Services/HomeTextes.swift": "28239e56611df33320068f4bb9e32b4aa04f0b0a69b7ff688e9271175d34c458",
+    "Woop/Views/ParoleLigne.swift": "7ead4143439ba40ee93f7d3bbedb7388569135656203f6dcd470e15928cf2476",
+    "Woop/Views/HomeNuit.swift": "f72dbaf8126c4ab57fcd75afa4df861855641cbe621845b5d1e92e4bc2896735",
+    "Woop/Views/Foyer.swift": "f50bc1b131ec9fd4994d1ca6fe009b70ceb916f251ada1c363a702c148c8fdad",
+    "tools/home-v2/TestHomeTextes.swift": "219ee5d9719cfe5295f7ba72aecbce790d83162913deaec822ecdbfa71d88fda"
+  }
+}

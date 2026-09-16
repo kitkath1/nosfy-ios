@@ -1,0 +1,53 @@
+
+> woop-chambre-des-machines@2.0.0 verif
+> ../../tools/docsite/verifier.sh
+
+
+── 0. les prérequis
+   ✔ node v24.16.0 · Chrome présent
+
+── 1. le retard — le livrable est-il plus vieux que sa source ?
+   ✔ index.html est plus récent que content/ app/ components/ public/ fonts/ scripts/
+
+── 2. tsc --noEmit — une brique sans preuve ne compile pas
+   ✔ types
+
+── 3. la source — tests/contenu (ids, titres, preuves qui se lisent, SVG à jour)
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/woochoper-ios/docs/site
+
+ ❯ tests/contenu.test.ts (9 tests | 1 failed) 65ms
+     × titre ≤ 60 caractères, sans emoji, JAMAIS coupé par … 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/contenu.test.ts > content/ (briques, serveur, mesures) > titre ≤ 60 caractères, sans emoji, JAMAIS coupé par …
+AssertionError: titres > 60 : m-foyer-chauffe-longue (65): expected [ 'm-foyer-chauffe-longue (65)' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "m-foyer-chauffe-longue (65)",
++ ]
+
+ ❯ tests/contenu.test.ts:77:56
+     75|     // 600 px de vide à droite. Un titre se RÉÉCRIT court ; il ne se c…
+     76|     const coupes = tous.filter((e) => /…\s*$/.test(e.titre)).map((e) =…
+     77|     expect(longs, 'titres > 60 : ' + longs.join(', ')).toEqual([])
+       |                                                        ^
+     78|     expect(emojis, 'titres avec emoji : ' + emojis.join(', ')).toEqual…
+     79|     expect(coupes, 'titres coupés par … (à réécrire, pas à tronquer) :…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 8 passed (9)
+   Start at  12:30:32
+   Duration  144ms (transform 45ms, setup 0ms, import 18ms, tests 65ms, environment 0ms)
+
+   ✗ la source ment
+
+✗ refusé après 1 s

@@ -1,0 +1,41 @@
+[
+  {
+    "nom": "native1-fin",
+    "therm": 0,
+    "protection": 0,
+    "n": 105,
+    "debut": 90.4,
+    "fin": 195.9,
+    "cpu_med": 3,
+    "cpu_max": 20,
+    "callbacks_med": 60.1,
+    "pire_ms": 17,
+    "gels": 0
+  },
+  {
+    "nom": "ancien",
+    "therm": 0,
+    "protection": 0,
+    "n": 31,
+    "debut": 20.7,
+    "fin": 51.2,
+    "cpu_med": 20,
+    "cpu_max": 26,
+    "callbacks_med": 60.1,
+    "pire_ms": 17,
+    "gels": 0
+  },
+  {
+    "nom": "endurance",
+    "therm": 0,
+    "protection": 0,
+    "n": 25,
+    "debut": 20.3,
+    "fin": 44.7,
+    "cpu_med": 3,
+    "cpu_max": 14,
+    "callbacks_med": 60.1,
+    "pire_ms": 17,
+    "gels": 0
+  }
+]

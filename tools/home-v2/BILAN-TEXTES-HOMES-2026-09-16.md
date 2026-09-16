@@ -1,11 +1,18 @@
 # Textes des deux Homes et du pull — réalisation du 16 septembre
 
-**Actualisation après déverrouillage, 11:09 : 37 lancée, navigation et trois
-retours du pull réussis sur iPhone. 38 installée et lancée à 11:17 : correction
-de la parole sur Home noire lorsque les décors sont au repos thermique.**
-La capture montre le chrono et le texte cohérents. Les relevés restent presque
-entièrement protégés : aucune validation de chauffe durable. [Preuves et limites
-de cette reprise](validation-textes-2026-09-16/reprise-1109/etat.md).
+**Actualisation du 16-09 : les textes changent à chaque arrivée/retour réel sur
+les deux Homes. La formulation de la Home noire se renouvelle toutes les cinq
+minutes visibles ; le nombre reste à la minute réelle.** Aucun rattrapage ni
+tirage en arrière-plan. Rouge 39 : trois variantes aux retours, PASS 21,732 s ;
+noire 41 : trois variantes à trois minutes, PASS 27,896 s. Les captures montrent
+le flou progressif. Haptique ressentie non confirmée.
+
+La reprise chauffe mesure encore21 % CPU sur Home noire40 à thermique0/protection0.
+42 réduit ce coût : natif/ancien/natif dans le même binaire,3 % /20 % /3 %,
+animations actives et protections inactives. L’endurance a été interrompue :
+[mesures et essais d’optimisation](../perf/campagnes/2026-09-16-retours-et-profil/etat.md).
+La validation longue reste ouverte tant que les mesures et le retour d’usage
+ne l’établissent pas.
 
 ## Historique de la première livraison
 
@@ -51,7 +58,8 @@ gestes ; les quatre lignes et le raccord du pull conservent leurs cotes.
 Les tâches s’arrêtent hors écran ou sous la bienvenue. Reduce Motion affiche
 le texte complet sans effet ni haptique ; VoiceOver lit une phrase complète.
 Sur la Home noire, le nombre de minutes évolue seul entre deux paliers ; une
-nouvelle formulation apparaît à 5, 15, 30, 45 minutes, puis toutes les 15 minutes.
+nouvelle formulation apparaît désormais toutes les 5 minutes pendant que la
+Home noire est visible (précision utilisateur après la version 38).
 L’ancien balayage `SouffleTexte` en boucle est retiré. Les nouvelles animations
 finissent après la phrase ; **cela ne constitue pas une mesure thermique**.
 

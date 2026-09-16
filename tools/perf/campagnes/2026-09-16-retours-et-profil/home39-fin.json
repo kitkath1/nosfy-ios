@@ -1,0 +1,55 @@
+{
+  "source": "/Users/kathryn/Desktop/woochoper-ios/tools/perf/campagnes/2026-09-16-retours-et-profil/woop-parole39-fin-vol.jsonl",
+  "fenetre": {
+    "debut_exclu": 280.0,
+    "fin_incluse": null
+  },
+  "lignes_journal": 325,
+  "lignes_fenetre": 50,
+  "contexte_exclu": {},
+  "home_retenue": {
+    "n": 50,
+    "premier_t": 280.7,
+    "dernier_t": 330.5,
+    "etendue_s": 49.8,
+    "cpu_median_pct_un_coeur": 1.0,
+    "cpu_max_pct_un_coeur": 1,
+    "callbacks_median_par_s": 60.1,
+    "callbacks_min_par_s": 60.1,
+    "intervalle_max_ms": 17,
+    "lignes_intervalle_sup_100ms": 0,
+    "lignes_gel_signale": 0
+  },
+  "groupes": [
+    {
+      "therm": 1,
+      "protection": 1,
+      "n": 50,
+      "premier_t": 280.7,
+      "dernier_t": 330.5,
+      "etendue_s": 49.8,
+      "cpu_median_pct_un_coeur": 1.0,
+      "cpu_max_pct_un_coeur": 1,
+      "callbacks_median_par_s": 60.1,
+      "callbacks_min_par_s": 60.1,
+      "intervalle_max_ms": 17,
+      "lignes_intervalle_sup_100ms": 0,
+      "lignes_gel_signale": 0
+    }
+  ],
+  "transitions_fenetre": [
+    {
+      "t": 280.7,
+      "therm": 1,
+      "protection": 1
+    }
+  ],
+  "ecarts_journal_sup_2_5s": [],
+  "limites": [
+    "CPU et callbacks ne mesurent ni watts, ni GPU, ni température en degrés.",
+    "Les catégories thermiques égales ne garantissent pas des fréquences égales.",
+    "L'étendue d'un groupe peut contenir des interruptions : ce n'est pas sa durée continue.",
+    "Corroborer le contexte avec nav et l'écran ; les surcouches non instrumentées restent invisibles.",
+    "Les écarts du journal peuvent être des gels ou des suspensions ; lire le contexte."
+  ]
+}

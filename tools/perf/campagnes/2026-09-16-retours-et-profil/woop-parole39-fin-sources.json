@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260916-114914.jsonl",
+    "destination": "/private/tmp/woop-parole39-fin-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260916-114914.jsonl",
+    "destination": "/private/tmp/woop-parole39-fin-nav.jsonl"
+  }
+}

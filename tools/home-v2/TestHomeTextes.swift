@@ -34,6 +34,33 @@ func L(_ fr: String, _ en: String) -> String { fr }
             let sansNom = nombre.mots(prenom: nil, nombre: 1, langue: lot.langue)
             precondition(!sansNom.joined().contains("Kathryn") && !sansNom[0].contains("nil"))
         }
+        var lecture = HomeLecture()
+        var tirages = 0
+        func contexte(_ visible: Bool, _ signature: String) -> HomeLecture.Contexte {
+            .init(visible: visible, signature: signature)
+        }
+        func choisir() -> HomeVariante? {
+            tirages += 1
+            return lots[0].variantes["seance"]![tirages % 3]
+        }
+        precondition(!lecture.actualiser(contexte(false, "fr:seance:0"), choisir: choisir))
+        precondition(tirages == 0 && lecture.numero == 0)
+        precondition(lecture.actualiser(contexte(true, "fr:seance:0"), choisir: choisir))
+        let premiere = lecture.variante
+        for _ in 0..<60 {
+            precondition(!lecture.actualiser(contexte(true, "fr:seance:0"), choisir: choisir))
+        }
+        precondition(tirages == 1 && lecture.variante == premiere)
+        for palier in 1...6 {
+            precondition(!lecture.actualiser(contexte(false, "fr:seance:\(palier)"), choisir: choisir))
+        }
+        precondition(tirages == 1 && !lecture.presente)
+        precondition(lecture.actualiser(contexte(true, "fr:seance:6"), choisir: choisir))
+        precondition(tirages == 2 && lecture.variante != premiere) // un seul retour, aucun rattrapage
+        precondition(lecture.actualiser(contexte(true, "fr:seance:7"), choisir: choisir))
+        precondition(lecture.actualiser(contexte(true, "en:seance:7"), choisir: choisir))
+        precondition(tirages == 4 && lecture.numero == 4)
+        print("Visibilité : aucun tirage caché, retour unique, relecture au palier/langue, aucun rejeu par recalcul : PASS")
         print("Modèle Swift : FR/EN, vrais nombres/prénom, singuliers, 3 sacs complets sans répétition : PASS")
     }
 }

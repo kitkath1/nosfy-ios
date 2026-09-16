@@ -27,6 +27,9 @@ struct ParoleLigne: View {
     }
 
     var body: some View {
+        // Une nouvelle réplique est floue dès sa première image ; aucun flash
+        // du texte complet avant le démarrage de la tâche. Hors écran : pose nette.
+        let net = !visible || reduceMotion || (poses && derniereLecture == replique)
         let mots = MotsFlou.partition([(texte, true)], base: retard)
         let font = UIFont(name: "Inter-SemiBold", size: taille)
             ?? .systemFont(ofSize: taille, weight: .semibold)
@@ -44,13 +47,13 @@ struct ParoleLigne: View {
                         .lineLimit(1)
                         .fixedSize()
                         .contentTransition(.numericText())
-                        .blur(radius: poses ? 0 : 12)
-                        .opacity(poses ? 1 : 0)
-                        .scaleEffect(poses ? 1 : 0.96)
-                        .offset(y: poses ? 0 : 5)
-                        .animation(reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1,
+                        .blur(radius: net ? 0 : 12)
+                        .opacity(net ? 1 : 0)
+                        .scaleEffect(net ? 1 : 0.96)
+                        .offset(y: net ? 0 : 5)
+                        .animation(!visible || reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1,
                             duration: 1.05).delay(mot.retard), value: poses)
-                        .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: mot.texte)
+                        .animation(!visible || reduceMotion ? nil : .easeOut(duration: 0.25), value: mot.texte)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)

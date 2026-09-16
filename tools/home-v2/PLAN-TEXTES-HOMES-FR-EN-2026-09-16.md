@@ -1,7 +1,7 @@
 # Les deux Homes parlent — plan FR / EN
 
 **16-09 : plan demandé, puis implémentation explicitement autorisée par
-l’utilisateur (« tu peux coder »). Réalisation et limites : [bilan du 16-09](BILAN-TEXTES-HOMES-2026-09-16.md). Le plan ci-dessous conserve les intentions initiales.** Les textes de la Home rouge, du pull
+l’utilisateur (« tu peux coder »). Réalisation et limites : [bilan du 16-09](BILAN-TEXTES-HOMES-2026-09-16.md). Le comportement ci-dessous intègre la précision suivante : parler à chaque retour visible, jamais en arrière-plan.** Les textes de la Home rouge, du pull
 de départ et de la Home noire doivent sembler être prononcés, comme ceux de
 l'onboarding et des histoires. La langue suit le choix de l'onboarding.
 
@@ -29,7 +29,9 @@ Repères : `DepartCine.swift:526-616`, `HomeNuit.swift:329-438,3218-3222`,
 - À l'arrivée, la phrase se révèle par mots ou petits groupes, avec un débit
   naturel, les pauses de ponctuation et l'alternance clair/sourd existante.
 - Le texte reste posé après sa dernière syllabe visuelle. Il ne se rejoue pas
-  à chaque recalcul de vue, retour d'un popup ou réponse réseau identique.
+  à chaque recalcul de vue ou réponse réseau identique. À chaque retour réel
+  sur la Home (onglet, réouverture, fin d’une couverture), choisir une variante
+  différente et rejouer son apparition douce.
 - Une évolution réelle de l'état (première séance, nouveau total, début/fin de
   séance) autorise une nouvelle phrase. Les chiffres restent ceux des widgets.
 
@@ -51,9 +53,10 @@ Repères : `DepartCine.swift:526-616`, `HomeNuit.swift:329-438,3218-3222`,
 - Le chrono continue normalement. Quand le nombre de minutes affiché change,
   animer doucement le nombre ou le groupe concerné, sans rejouer toute la tirade.
 - Proposer une nouvelle formulation à quelques paliers espacés. Point de départ
-  à valider visuellement : début, 5, 15, 30, 45, 60 min, puis toutes les 15 min.
+  retenu le 16-09 après précision utilisateur : toutes les 5 minutes écoulées,
+  uniquement quand la Home noire est visible.
   Ces paliers changent les mots, jamais le décompte réel de la séance.
-- Au retour après une absence, montrer directement la phrase du palier actuel ;
+- Au retour après une absence, choisir une nouvelle variante au temps actuel ;
   ne pas rejouer en rafale tous les paliers manqués.
 
 ## 3. Le backend à prévoir

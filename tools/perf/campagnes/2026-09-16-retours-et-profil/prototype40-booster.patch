@@ -1,0 +1,80 @@
+--- a/Woop/Views/BoosterLab.swift
++++ b/Woop/Views/BoosterLab.swift
+@@ -1268,6 +1268,10 @@
+     /// Le profil présente son sachet à 30 Hz ; les autres hôtes gardent
+     /// leur cadence, notamment la cérémonie à 60 Hz.
+     var preferredFramesPerSecond: Int = 60
++    /// Le balancement du petit sachet dans le panneau Profil : même sinus,
++    /// confié au compositeur, sans reconstruire le verre à chaque image.
++    var danseDouce: Bool = false
++    @Environment(\.accessibilityReduceMotion) private var mouvementReduit
+     /// LE DÉCOR INTERACTIF (la porte, 22-08, PLAN-V2-MANEGE.md) : PAN
+     /// SEULEMENT. Le tap et le maintien ne sont pas installés — l'engagement
+     /// (commitGallery, dont le tap est le SEUL appelant) devient
+@@ -1287,8 +1291,42 @@
+     /// demandent pas : ils gardent leur cadrage.
+     var cadreDecoupe: Bool = false
+ 
++    final class Vue: SCNView {
++        var danse = false
++        var auRepos = true
++        override func didMoveToWindow() {
++            super.didMoveToWindow()
++            actualiserDanse()
++        }
++        func actualiserDanse() {
++            let cles = ["danse-profil-angle", "danse-profil-echelle"]
++            guard danse, !auRepos, window != nil else {
++                for cle in cles { layer.removeAnimation(forKey: cle) }
++                return
++            }
++            guard layer.animation(forKey: cles[0]) == nil else { return }
++            let instant = Date().timeIntervalSinceReferenceDate
++            for (i, periode) in [7.3, 11.0].enumerated() {
++                let animation = CAKeyframeAnimation(keyPath:
++                    i == 0 ? "transform.rotation.z" : "transform.scale")
++                animation.values = (0...64).map { pas in
++                    let onde = sin(Double(pas) / 64 * 2 * .pi + (i == 0 ? 0 : 1.4))
++                    return i == 0 ? 2.5 * .pi / 180 * onde : 1 + 0.025 * onde
++                }
++                animation.duration = periode
++                animation.repeatCount = .infinity
++                animation.timeOffset = instant.truncatingRemainder(dividingBy: periode)
++                animation.beginTime = layer.convertTime(CACurrentMediaTime(), from: nil)
++                animation.calculationMode = .linear
++                layer.add(animation, forKey: cles[i])
++            }
++        }
++    }
++
+     func makeUIView(context: Context) -> SCNView {
+-        let view = SCNView()
++        let view = Vue()
++        view.danse = danseDouce && !mouvementReduit
++        view.auRepos = paused
+         if NavDiagnostic.actif {
+             NavDiagnostic.enregistrer(view, role: "booster") {
+                 [weak coordinateur = context.coordinator] in
+@@ -1378,6 +1416,11 @@
+         // frame doit dormir sous la CarteVivante — un updateUIView de
+         // scroll la relançait.
+         guard !context.coordinator.frozen else { return }
++        if let vue = uiView as? Vue {
++            vue.danse = danseDouce && !mouvementReduit
++            vue.auRepos = paused
++            vue.actualiserDanse()
++        }
+         if uiView.preferredFramesPerSecond != preferredFramesPerSecond {
+             uiView.preferredFramesPerSecond = preferredFramesPerSecond
+         }
+@@ -1390,6 +1433,10 @@
+     /// moteur audio — ne mouraient jamais. Voir `Coordinator.teardown()`.
+     static func dismantleUIView(_ uiView: SCNView,
+                                 coordinator: Coordinator) {
++        if let vue = uiView as? Vue {
++            vue.auRepos = true
++            vue.actualiserDanse()
++        }
+         coordinator.teardown()
+     }
+ 

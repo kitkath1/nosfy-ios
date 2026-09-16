@@ -1,0 +1,28 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "info",
+      "lockState",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "12",
+      "--json-output",
+      "/private/tmp/woop-parole42-lock.json"
+    ],
+    "commandType" : "devicectl.device.info.lockState",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "passcodeRequired" : true,
+    "unlockedSinceBoot" : true
+  }
+}

@@ -1,0 +1,121 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testParolesAuxRetours" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -resultBundlePath /private/tmp/woop-parole40-noire-retours.xcresult
+
+2026-09-16 12:01:49.039 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-parole40-noire-retours.xcresult
+
+2026-09-16 12:01:49.040 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 12:01:49.142 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 12:01:49.296 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 12:01:51.137363+0200 NavRuntimeUITests-Runner[30436:2324744] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 12:01:51.507.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 12:01:51.508.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 12:01:51.508.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParolesAuxRetours]' started.
+    t =     0.00s Start Test at 2026-09-16 12:01:51.509
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.05s         Wait for fr.kathryn.woop to idle
+    t =     0.06s Waiting 6.0s for "Later" Button to exist
+2026-09-16 12:01:51.695 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     1.07s         Checking existence of `"Later" Button`
+    t =     1.13s         Capturing element debug description
+    t =     2.09s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     2.10s         Checking existence of `"Later" Button`
+    t =     2.15s         Capturing element debug description
+    t =     3.09s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     3.09s         Checking existence of `"Later" Button`
+    t =     3.14s         Capturing element debug description
+    t =     4.07s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     4.08s         Checking existence of `"Later" Button`
+    t =     4.14s         Capturing element debug description
+    t =     5.07s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     5.07s         Checking existence of `"Later" Button`
+    t =     5.13s         Capturing element debug description
+    t =     6.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Later" Button`
+    t =     6.07s         Checking existence of `"Later" Button`
+    t =     6.13s         Capturing element debug description
+    t =     6.14s     Checking existence of `"Later" Button`
+    t =     6.17s Collecting debug information to assist test failure triage
+    t =     6.17s     Requesting snapshot of accessibility hierarchy for app with pid 30418
+    t =    10.26s Get all elements bound by index for: Elements matching predicate 'label CONTAINS "Kathryn"'
+    t =    10.33s Find the Other (Element at index 0)
+    t =    10.38s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    10.42s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    10.46s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    10.48s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    10.50s Tap "figure.strengthtraining.functional" Button
+    t =    10.50s     Wait for fr.kathryn.woop to idle
+    t =    10.51s     Find the "figure.strengthtraining.functional" Button
+    t =    10.53s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+    t =    10.55s     Synthesize event
+    t =    10.84s     Wait for fr.kathryn.woop to idle
+    t =    11.67s Waiting 5.0s for "Exercices" StaticText to exist
+    t =    12.71s     Checking `Expect predicate `existsNoRetry == 1` for object "Exercices" StaticText`
+    t =    12.71s         Checking existence of `"Exercices" StaticText`
+    t =    12.81s Tap "house.fill" Button
+    t =    12.81s     Wait for fr.kathryn.woop to idle
+    t =    12.82s     Find the "house.fill" Button
+    t =    12.97s     Check for interrupting elements affecting "house.fill" Button
+    t =    13.03s     Synthesize event
+    t =    13.34s     Wait for fr.kathryn.woop to idle
+    t =    14.30s Find the Application 'fr.kathryn.woop'
+    t =    14.85s Find the Application 'fr.kathryn.woop'
+    t =    15.41s Find the Application 'fr.kathryn.woop'
+    t =    15.96s Find the Application 'fr.kathryn.woop'
+    t =    19.53s Get all elements bound by index for: Elements matching predicate 'label CONTAINS "Kathryn"'
+    t =    19.58s Find the Other (Element at index 0)
+    t =    19.63s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    19.66s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    19.69s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+    t =    19.72s Find the "Alright Kathryn, In this session 2 minutes Settle into it" Other
+/tmp/woop-nav-runtime-qa/NavRuntimeUITests.swift:45: error: -[NavRuntimeUITests.NavRuntimeUITests testParolesAuxRetours] : XCTAssertNotEqual failed: ("Alright Kathryn, In this session 2 minutes Settle into it") is equal to ("Alright Kathryn, In this session 2 minutes Settle into it") - Le retour doit choisir une autre variante
+    t =    19.79s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParolesAuxRetours]' failed (19.839 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-16 12:02:11.349.
+	 Executed 1 test, with 1 failure (0 unexpected) in 19.839 (19.841) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-16 12:02:11.350.
+	 Executed 1 test, with 1 failure (0 unexpected) in 19.839 (19.843) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 12:02:11.352.
+	 Executed 1 test, with 1 failure (0 unexpected) in 19.839 (19.844) seconds
+2026-09-16 12:02:11.467 xcodebuild[34962:15625486] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 12:02:13.654 xcodebuild[34962:15625534]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-parole40-noire-retours.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-parole40-noire-retours.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 12:02:13.656 xcodebuild[34962:15625486] [MT] IDETestOperationsObserverDebug: 24.358 elapsed -- Testing started completed.
+2026-09-16 12:02:13.656 xcodebuild[34962:15625486] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 12:02:13.656 xcodebuild[34962:15625486] [MT] IDETestOperationsObserverDebug: 24.358 sec, +24.358 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-parole40-noire-retours.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testParolesAuxRetours()
+
+** TEST EXECUTE FAILED **
+
+Testing started

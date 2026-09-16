@@ -69,11 +69,36 @@ struct HomeSac {
     }
 }
 
+/// Une visite réelle, pas un recalcul de vue. Les événements hors écran ne
+/// consomment aucun texte et les paliers manqués ne sont jamais rejoués.
+struct HomeLecture {
+    struct Contexte: Equatable {
+        var visible: Bool
+        var signature: String
+    }
+    private(set) var presente = false
+    private(set) var variante: HomeVariante?
+    private(set) var numero = 0
+    private var signature = ""
+
+    @discardableResult
+    mutating func actualiser(_ contexte: Contexte, choisir: () -> HomeVariante?) -> Bool {
+        guard contexte.visible else { presente = false; return false }
+        guard !presente || signature != contexte.signature else { return false }
+        variante = choisir()
+        signature = contexte.signature
+        presente = true
+        numero += 1
+        return true
+    }
+}
+
 @MainActor
 enum HomeTextes {
     static let cleRevision = "woop.homeTextes.revision"
     private static var charges: [String: HomeLot] = [:]
     private static var sac = HomeSac()
+    private static var sacsHome: [String: HomeSac] = [:]
     private static let embarques: [String: HomeLot] = {
         guard let url = Bundle.main.url(forResource: "home-textes", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -114,6 +139,13 @@ enum HomeTextes {
         }
         return (v.mots(prenom: ProfilServeur.prenomLocal, nombre: 0, langue: lot.langue),
                 v.bouton ?? L("C'est parti", "Let's go"))
+    }
+
+    /// Appelée seulement à l'entrée visible, à un changement de faits ou de palier.
+    static func prochainePhrase(_ etat: String) -> HomeVariante? {
+        guard let lot = lot(), let choix = lot.variantes[etat] else { return nil }
+        let cle = "\(lot.langue):\(etat)"
+        return sacsHome[cle, default: HomeSac()].tirer(choix, cle: "\(cle):\(lot.revision)")
     }
 
     static func palier(_ minutes: Int) -> Int {

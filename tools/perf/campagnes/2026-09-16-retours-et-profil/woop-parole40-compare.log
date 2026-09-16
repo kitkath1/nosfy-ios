@@ -1,0 +1,4 @@
+woop-parole40-ancien-debut {'t': 9.2, 'img': 60.1, 'pire': 17, 'onglet': 'profile', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 41, 'therm': 1, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1, 'bancHome': 'inactif', 'welcome': 1, 'premiere': 0}
+woop-parole40-ancien {'t': 44.7, 'img': 60.1, 'pire': 17, 'onglet': 'profile', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 44, 'therm': 1, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1, 'bancHome': 'inactif', 'welcome': 1, 'premiere': 0}
+woop-parole40-native2-debut {'t': 13.2, 'img': 60.1, 'pire': 17, 'onglet': 'profile', 'seance': 0, 'player': 0, 'ile': 0, 'drag': 0, 'marque': 0, 'gel': 0, 'cpu': 45, 'therm': 2, 'corps': 0, 'tics': [0, 0, 0, 0, 0], 'chemin': 0, 'protection': 1, 'bancHome': 'inactif', 'welcome': 1, 'premiere': 0}
+Stress suspendu : thermique >=2

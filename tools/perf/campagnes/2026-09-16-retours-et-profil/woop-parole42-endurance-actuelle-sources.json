@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260916-122305.jsonl",
+    "destination": "/private/tmp/woop-parole42-endurance-actuelle-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260916-122305.jsonl",
+    "destination": "/private/tmp/woop-parole42-endurance-actuelle-nav.jsonl"
+  }
+}

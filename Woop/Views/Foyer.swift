@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - LE RASANT — LA HOME QUAND UNE SÉANCE EST EN COURS (V3, 06-09)
 //
@@ -40,6 +41,9 @@ enum FoyerBanc {
     /// Les barreaux — un moteur arrive toujours avec le sien.
     static let sansChambre = CommandLine.arguments.contains("-sansChambre")
     static let sansFond = CommandLine.arguments.contains("-sansFond")
+    static let fondSwiftUI = CommandLine.arguments.contains("-foyerFondSwiftUI")
+    static let braisesSwiftUI = CommandLine.arguments.contains("-foyerBraisesSwiftUI")
+    static let dallesSwiftUI = CommandLine.arguments.contains("-foyerDallesSwiftUI")
     /// §12.2 — le CRAN ② des flammes (hauteur 56, flou 9) : les deux crans se
     /// montrent côte à côte, elle tranche sur capture.
     static let flammesCran2 = CommandLine.arguments.contains("-foyerCran2")
@@ -353,6 +357,254 @@ private struct FondRasant: View {
 }
 
 
+/// Les neuf colonnes gardent exactement les niveaux et couleurs de BraisesVague.
+/// Hauteur et opacité suivent leurs deux sinus au compositeur ; plus de Canvas
+/// ni de reconstruction de la Home à 20 Hz. Le flou commun reste celui du dessin.
+private struct BraisesFoyerNatives: UIViewRepresentable {
+    var force: Double
+    var dort: Bool
+    final class Vue: UIView {
+        private var colonnes: [CAGradientLayer] = []
+        private var configuration = CGSize.zero
+        private var forcePosee = Double.nan
+        var force: Double = 1
+        var dort = true
+        private let periodes = [1.9, 2.7, 1.3, 3.1, 1.6, 2.3, 1.1, 2.9, 1.7]
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            isOpaque = false; isUserInteractionEnabled = false
+            for _ in periodes {
+                let c = CAGradientLayer()
+                c.colors = [UIColor.white.withAlphaComponent(0.85).cgColor,
+                    UIColor(red: 1, green: 0.18, blue: 0.08, alpha: 0.75).cgColor,
+                    UIColor(red: 1, green: 0.07, blue: 0.03, alpha: 0.45).cgColor,
+                    UIColor.clear.cgColor]
+                c.locations = [0, 0.35, 0.75, 1]
+                c.startPoint = CGPoint(x: 0.5, y: 1); c.endPoint = CGPoint(x: 0.5, y: 0)
+                c.anchorPoint = CGPoint(x: 0.5, y: 1); c.masksToBounds = true
+                colonnes.append(c); layer.addSublayer(c)
+            }
+        }
+        required init?(coder: NSCoder) { fatalError() }
+        override func layoutSubviews() { super.layoutSubviews(); actualiser() }
+        override func didMoveToWindow() { super.didMoveToWindow(); actualiser() }
+        func actualiser() {
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            let change = configuration != bounds.size || forcePosee != force
+            let arret = dort || window == nil
+            guard change || arret || colonnes[0].animation(forKey: "hauteur") == nil else { return }
+            configuration = bounds.size; forcePosee = force
+            let pas = bounds.width / CGFloat(colonnes.count)
+            let t = Date().timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 900)
+            for (i, c) in colonnes.enumerated() {
+                let k = periodes[i], ph = Double(i) * 0.8
+                func niveau(_ t: Double) -> Double {
+                    let a = 0.5 + 0.5 * sin(t * 2 * .pi / k + ph)
+                    let b = 0.5 + 0.5 * sin(t * 2 * .pi / (k * 1.7) + ph)
+                    return (0.30 + 0.55 * a * (0.55 + 0.45 * b)) * force
+                }
+                let courant = c.presentation()
+                let h = arret && !change ? courant?.bounds.height : nil
+                let alpha = arret && !change ? courant?.opacity : nil
+                CATransaction.begin(); CATransaction.setDisableActions(true)
+                c.bounds = CGRect(x: 0, y: 0, width: pas * 0.80,
+                                  height: h ?? bounds.height * niveau(t))
+                c.position = CGPoint(x: pas * (CGFloat(i) + 0.5), y: bounds.height)
+                c.cornerRadius = pas * 0.4
+                c.opacity = alpha ?? Float(niveau(t))
+                c.removeAllAnimations()
+                CATransaction.commit()
+                guard !arret else { continue }
+                // 17 périodes du premier sinus = 10 du second : raccord exact.
+                let duree = k * 17, n = Int(ceil(duree * 20))
+                let valeurs = (0...n).map { niveau(t + duree * Double($0) / Double(n)) }
+                for (cle, chemin, echelle) in [("hauteur", "bounds.size.height", Double(bounds.height)),
+                                               ("lumiere", "opacity", 1.0)] {
+                    let a = CAKeyframeAnimation(keyPath: chemin)
+                    a.values = valeurs.map { $0 * echelle }
+                    a.duration = duree; a.repeatCount = .infinity; a.calculationMode = .linear
+                    c.add(a, forKey: cle)
+                }
+            }
+        }
+    }
+    func makeUIView(context: Context) -> Vue { Vue(frame: .zero) }
+    func updateUIView(_ vue: Vue, context: Context) {
+        vue.force = force; vue.dort = dort || FoyerBanc.fige
+        vue.actualiser()
+    }
+    static func dismantleUIView(_ vue: Vue, coordinator: ()) {
+        vue.dort = true; vue.actualiser()
+    }
+}
+
+/// Une dalle se dessine avec son flou une fois à sa configuration courante.
+/// Seule sa position dérive ensuite, sans reconstruire ses dégradés et masques.
+private struct DalleFoyerNative<Contenu: View>: UIViewRepresentable {
+    var contenu: Contenu
+    var largeur: CGFloat
+    var hauteur: CGFloat
+    var flou: CGFloat
+    var derive: CGFloat
+    var periode: Double
+    var dort: Bool
+    var signature: String
+    @Environment(\.displayScale) private var echelle
+    final class Vue: UIImageView {
+        var signature = ""
+        var derive: CGFloat = 0
+        var periode = 1.0
+        var dort = true
+        override func didMoveToWindow() { super.didMoveToWindow(); actualiser() }
+        func actualiser() {
+            guard !dort, window != nil else {
+                layer.removeAnimation(forKey: "derive"); return
+            }
+            guard layer.animation(forKey: "derive") == nil else { return }
+            let a = CABasicAnimation(keyPath: "transform.translation.x")
+            a.fromValue = -derive; a.toValue = derive; a.duration = periode
+            a.autoreverses = true; a.repeatCount = .infinity
+            a.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            layer.add(a, forKey: "derive")
+        }
+    }
+    func makeUIView(context: Context) -> Vue {
+        let v = Vue(); v.isUserInteractionEnabled = false; v.contentMode = .center
+        return v
+    }
+    func updateUIView(_ vue: Vue, context: Context) {
+        let cle = "\(signature)|\(largeur)|\(hauteur)|\(flou)|\(echelle)"
+        if vue.signature != cle {
+            let rendu = ImageRenderer(content: contenu.frame(width: largeur, height: hauteur)
+                .compositingGroup().blur(radius: flou).padding(flou * 3))
+            rendu.scale = echelle
+            if let image = rendu.uiImage { vue.image = image; vue.signature = cle }
+        }
+        vue.derive = derive; vue.periode = periode; vue.dort = dort || FoyerBanc.fige
+        vue.actualiser()
+    }
+    static func dismantleUIView(_ vue: Vue, coordinator: ()) {
+        vue.dort = true; vue.actualiser()
+    }
+}
+
+/// Même bande cuite, rideau et deux voiles ; le compositeur porte les trois
+/// mouvements permanents. Aucun état SwiftUI n’interpole le fond à chaque image.
+private struct FondRasantNatif: UIViewRepresentable {
+    var series: Int
+    var minutes: Int
+    var dort: Bool
+
+    final class Vue: UIView {
+        let bande = CALayer()
+        let rideau = CAGradientLayer()
+        let voiles = [CAGradientLayer(), CAGradientLayer()]
+        var series = 0
+        var minutes = 0
+        var dort = true
+        private var taille = CGSize.zero
+        private var minutesPosees: Int?
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            isOpaque = false
+            isUserInteractionEnabled = false
+            layer.opacity = 0.78
+            layer.addSublayer(bande)
+            rideau.colors = [UIColor.black.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor]
+            rideau.locations = [0, 0.82, 1]
+            layer.addSublayer(rideau)
+            for voile in voiles {
+                voile.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.70).cgColor,
+                                UIColor.black.withAlphaComponent(0.70).cgColor, UIColor.clear.cgColor]
+                voile.locations = [0, 0.35, 0.65, 1]
+                voile.startPoint = CGPoint(x: 0, y: 0.5)
+                voile.endPoint = CGPoint(x: 1, y: 0.5)
+                layer.addSublayer(voile)
+            }
+        }
+        required init?(coder: NSCoder) { fatalError() }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            actualiser()
+        }
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            actualiser()
+        }
+        func actualiser() {
+            guard bounds.width > 0, bounds.height > 0 else { return }
+            let W = bounds.width, H = bounds.height, bandeH = H * 0.58
+            let nouvelleTaille = taille != bounds.size
+            let ancienY = rideau.presentation()?.position.y ?? rideau.position.y
+            let ancienneOpacite = bande.presentation()?.opacity ?? bande.opacity
+            let opacite = Float(0.625 + 0.375 * FoyerChaleur.chaleur(series: series))
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            if nouvelleTaille {
+                taille = bounds.size
+                bande.contents = FoyerCuisine.bande(largeur: W, hauteur: bandeH).cgImage
+                bande.frame = CGRect(x: 0, y: H - bandeH, width: W, height: bandeH)
+                for (i, voile) in voiles.enumerated() {
+                    let amp = W * (i == 0 ? 0.26 : -0.34)
+                    voile.frame = CGRect(x: -amp * 0.4, y: 0,
+                                         width: W * (i == 0 ? 0.62 : 0.48), height: H)
+                    voile.removeAnimation(forKey: "derive")
+                }
+            }
+            bande.opacity = opacite
+            let eclaire = (1 - FoyerChaleur.plafond(minutes: minutes)) * H
+            rideau.frame = CGRect(x: 0, y: H - (bandeH + 60) - (eclaire - 44),
+                                  width: W, height: bandeH + 60)
+            CATransaction.commit()
+            if !nouvelleTaille, !dort {
+                if minutesPosees != minutes {
+                    ponctuelle(rideau, cle: "position.y", de: ancienY, vers: rideau.position.y)
+                }
+                if abs(ancienneOpacite - opacite) > 0.0001 {
+                    ponctuelle(bande, cle: "opacity", de: Double(ancienneOpacite), vers: Double(opacite))
+                }
+            }
+            minutesPosees = minutes
+            guard !dort, window != nil else {
+                layer.removeAnimation(forKey: "souffle")
+                rideau.removeAllAnimations(); bande.removeAllAnimations()
+                voiles.forEach { $0.removeAnimation(forKey: "derive") }
+                return
+            }
+            boucle(layer, cle: "souffle", chemin: "opacity", de: 0.78, vers: 1, duree: 7.3)
+            for (i, voile) in voiles.enumerated() {
+                let amp = W * (i == 0 ? 0.26 : -0.34)
+                boucle(voile, cle: "derive", chemin: "transform.translation.x",
+                       de: 0, vers: amp * 1.4, duree: i == 0 ? 31 : 47)
+            }
+        }
+        private func boucle(_ cible: CALayer, cle: String, chemin: String,
+                            de: Double, vers: Double, duree: Double) {
+            guard cible.animation(forKey: cle) == nil else { return }
+            let a = CABasicAnimation(keyPath: chemin)
+            a.fromValue = de; a.toValue = vers; a.duration = duree
+            a.autoreverses = true; a.repeatCount = .infinity
+            a.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            cible.add(a, forKey: cle)
+        }
+        private func ponctuelle(_ cible: CALayer, cle: String, de: Double, vers: Double) {
+            let a = CABasicAnimation(keyPath: cle)
+            a.fromValue = de; a.toValue = vers; a.duration = 2.5
+            a.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            cible.add(a, forKey: cle)
+        }
+    }
+    func makeUIView(context: Context) -> Vue { Vue(frame: .zero) }
+    func updateUIView(_ vue: Vue, context: Context) {
+        vue.series = series; vue.minutes = minutes
+        vue.dort = dort || FoyerBanc.fige
+        vue.actualiser()
+    }
+    static func dismantleUIView(_ vue: Vue, coordinator: ()) {
+        vue.dort = true; vue.actualiser()
+    }
+}
+
 // Le texte parle une fois avec ParoleLigne, puis reste au repos.
 
 // MARK: - Le point de veille
@@ -407,6 +659,19 @@ private struct Dalle: View {
     }
 
     var body: some View {
+        Group {
+            if FoyerBanc.dallesSwiftUI {
+                ancienCorps
+            } else {
+                DalleFoyerNative(contenu: corps, largeur: largeur, hauteur: hauteur,
+                    flou: flou, derive: deriveX, periode: periode, dort: dort,
+                    signature: "\(distance)|\(chaleur)|\(feu)|\(fantome ?? "")")
+                    .frame(width: largeur, height: hauteur)
+            }
+        }
+    }
+
+    private var ancienCorps: some View {
         corps
             .frame(width: largeur, height: hauteur)
             // Contenu FIGÉ, UN groupe, UN flou à rayon FIXE — puis seulement
@@ -520,9 +785,6 @@ struct FoyerPage: View {
 
     /// La phrase exige deux liaisons pour un galet qui n'existe plus (02-09) :
     /// jamais lues, elles satisfont la signature.
-    @AppStorage(Langue.cle) private var languePhrase: String = Langue.courante
-    @AppStorage(HomeTextes.cleRevision) private var revisionTextes: String = ""
-    @AppStorage(ProfilServeur.clePrenom) private var prenomPhrase: String = ""
     @State private var objectifInerte = 4
     @State private var reglageInerte = false
     /// LA PRESSION (verdict 13-09 : « tout l'écran change pour comprendre
@@ -540,10 +802,10 @@ struct FoyerPage: View {
     private var pageInactive: Bool {
         RythmeEcran.dortHome || DepartEtat.shared.homeDort
             || CouvertureFoyer.shared.recouvert
-            || scenePhase != .active || reduceMotion
+            || scenePhase != .active
     }
     private var dort: Bool {
-        pageInactive || ProtectionThermique.shared.ambianceAuRepos
+        pageInactive || reduceMotion || ProtectionThermique.shared.ambianceAuRepos
     }
     private var feu: Bool { !FoyerBanc.sansFlammes }
     private var chaleur: Double { FoyerChaleur.chaleur(series: series) }
@@ -572,7 +834,13 @@ struct FoyerPage: View {
     @ViewBuilder
     private var fond: some View {
         if feu, !FoyerBanc.sansFond {
-            FondRasant(series: seriesAffichees, minutes: minutes, dort: dort)
+            Group {
+                if FoyerBanc.fondSwiftUI {
+                    FondRasant(series: seriesAffichees, minutes: minutes, dort: dort)
+                } else {
+                    FondRasantNatif(series: seriesAffichees, minutes: minutes, dort: dort)
+                }
+            }
                 // LA PRESSION ALLUME LA PIÈCE — « 10 fois plus marqué »
                 // (verdict 14-09) : le fond passe de 0,60 à 1,0 sous le
                 // doigt, ET une nappe d'ALLUMAGE monte par-dessus (ci-après).
@@ -611,12 +879,18 @@ struct FoyerPage: View {
     @ViewBuilder
     private var braises: some View {
         if feu {
-            BraisesVague(force: (0.62 + 0.20 * chaleur) * (presse ? 2.2 : 1.0),
-                         partBasse: 1.0,
-                         colonnes: 9,
-                         flou: FoyerBanc.flammesCran2 ? 11 : 30,
-                         fige: dort || FoyerBanc.fige,
-                         hz: 1 / RythmeEcran.pas)
+            Group {
+                if FoyerBanc.braisesSwiftUI {
+                    BraisesVague(force: (0.62 + 0.20 * chaleur) * (presse ? 2.2 : 1.0),
+                                 partBasse: 1.0, colonnes: 9,
+                                 flou: FoyerBanc.flammesCran2 ? 11 : 30,
+                                 fige: dort || FoyerBanc.fige, hz: 1 / RythmeEcran.pas)
+                } else {
+                    BraisesFoyerNatives(force: (0.62 + 0.20 * chaleur) * (presse ? 2.2 : 1.0), dort: dort)
+                        .blur(radius: FoyerBanc.flammesCran2 ? 11 : 30)
+                        .blendMode(.plusLighter)
+                }
+            }
                 .frame(height: FoyerGeo.braiseH)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .allowsHitTesting(false)
@@ -645,17 +919,19 @@ struct FoyerPage: View {
     }
 
 
-    /// Quatre fragments FR/EN, une prise de parole à l'entrée et aux paliers.
-    /// Entre deux paliers, seul le nombre de minutes se renouvelle.
+    /// Nouvelle phrase à chaque visite et toutes les cinq minutes visibles.
+    /// Les minutes courantes sont relues immédiatement au retour, sans rattrapage.
     private func phraseArrivee(_ B: CGFloat) -> some View {
-        let etat = minutes < 1 ? "seance_debut" : "seance"
-        let mots = PhraseTexte.serveur(etat, nombre: minutes < 1 ? nil : minutes)
-            ?? PhraseTexte.fragmentsSeance(minutes: minutes)
+        let courantes = max(0, Int(Date().timeIntervalSince(depuisSeance) / 60))
+        let etat = courantes < 1 ? "seance_debut" : "seance"
+        let mots = PhraseTexte.serveur(etat, nombre: courantes)
+            ?? PhraseTexte.fragmentsSeance(minutes: courantes)
         return PhraseVue(p: arrivee, fragments: mots,
-                  cleParole: "\(languePhrase)|\(revisionTextes)|\(prenomPhrase)|\(etat)|\(HomeTextes.palier(minutes))",
                   // Une réplique finie reste possible à « fair », comme les
                   // retours d'appui ; les décors gardent leur repos thermique.
-                  paroleActive: !pageInactive && !ProtectionThermique.shared.appelAuRepos,
+                  paroleActive: !pageInactive,
+                  animationParole: !ProtectionThermique.shared.appelAuRepos,
+                  etatVoix: etat, nombreVoix: courantes, palierVoix: courantes / 5,
                   objectif: $objectifInerte,
                   reglageOuvert: $reglageInerte)
             .opacity(0.88)

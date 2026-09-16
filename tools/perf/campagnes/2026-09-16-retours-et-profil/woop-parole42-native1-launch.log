@@ -1,0 +1,14 @@
+12:15:19  Acquired tunnel connection to device.
+12:15:19  Enabling developer disk image services.
+12:15:19  Acquired usage assertion.
+ERROR: The application failed to launch. (com.apple.dt.CoreDeviceError error 10002 (0x2712))
+       BundleIdentifier = fr.kathryn.woop
+       ----------------------------------------
+           The request to open "fr.kathryn.woop" failed. (FBSOpenApplicationServiceErrorDomain error 1 (0x01))
+           FBSOpenApplicationRequestID = 0xfa3e
+           BSErrorCodeDescription = RequestDenied
+           NSLocalizedFailureReason = The request was denied by service delegate (SBMainWorkspace) for reason: Locked ("Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked").
+       ----------------------------------------
+               The operation couldn’t be completed. Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked. (FBSOpenApplicationErrorDomain error 7 (0x07))
+               NSLocalizedFailureReason = Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked.
+               BSErrorCodeDescription = Locked

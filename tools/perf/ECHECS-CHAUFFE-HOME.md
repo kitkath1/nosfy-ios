@@ -1,5 +1,75 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E62 — Ne pas confondre le gain42 et une endurance interrompue
+
+**16-09,42 : natif/ancien/natif à thermique0/protection0 =3 % /20 % /3 % CPU
+médians.** Respectivement105,31 et25 lignes retenues ;60,1 callbacks/s, pire17ms.
+Le fond seul41 ne suffisait pas ;42 déplace aussi les braises au compositeur et
+met en cache les silhouettes floutées. Les moteurs restent animés à froid.
+Ce gain du processus ne mesure pas les watts ni le GPU et ne clôt pas la chauffe.
+
+Le lancement42 initial est refuséLocked après installation ; la capture copiée
+ensuite était encore celle de41, donc rejetée comme preuve42. Après déverrouillage,
+un bandeau d’appel apparaît : les premières secondes sont exclues, la capture
+portant le contact n’est pas archivée. L’essai long suivant devient inactif après
+56,4s, avec Welcome Back sur la dernière ligne. Les libellés accessibles restent
+présents sous la couverture ; ce n’est pas une preuve de visibilité. Le test
+palier est interrompu sans toucher à l’appel. Ne pas annoncer dix minutes ni
+un palier5min validé avec ces seules données. La collecte suivante montre
+399s sans lignes, trois lignes de reprise, puis `scene-background` : toujours
+aucune endurance continue. Le runner annulé laisse un xcresult incomplet.
+Le contrôle documentaire refuse ensuite un titre trop long, corrigé ; son
+lancement Chrome échoue dans le bac à sable après23 tests réussis, avant reprise
+avec le droit de lancement.
+
+[Fenêtres, sources et limites](campagnes/2026-09-16-retours-et-profil/etat.md).
+
+### E60 — Retour de Home assimilé à une réplique déjà lue
+
+**16-09, demande utilisateur : nouveau texte à chaque arrivée/retour, jamais de
+lecture en arrière-plan.** La clé précédente identifiait le texte et son palier,
+mais pas la visite : revenir sur le même état ne rejouait pas les mots. Le réveil
+des minutes tournait toutes les 30 secondes dès qu’une séance existait, même
+quand la Home était cachée. `HomeLecture` distingue désormais une visite réelle
+d’un recalcul ; le sac par état/langue évite la répétition immédiate. L’horloge
+se recale sur la prochaine minute et s’annule hors écran. Pas de rattrapage des
+paliers manqués ; formulation toutes les cinq minutes visibles.
+
+39 : Home rouge, trois phrases différentes aux retours Exercices/Profil,
+XCTest PASS 21,732 s ; captures montrant le flou progressif. Le test noir 40
+échoue : la protection serious coupait aussi le choix de la phrase. 41 sépare
+visibilité, sélection et animation ; le texte reste lisible et à jour même
+quand l’animation est coupée. Retours noirs PASS 27,896 s, trois formulations
+au même compteur de trois minutes. Les tests du modèle vérifient zéro tirage
+caché, absence de rejeu au recalcul et retour unique après plusieurs paliers.
+
+### E61 — Panneaux superposés et prototype du booster sans gain établi
+
+La référence 38 lancée sur Home finit sur Profil avec le panneau du booster,
+hors protocole ; le test qui attendait le bouton Home échoue à juste titre.
+La capture montre le panneau, pas une Home bloquée. Son SceneKit tourne à
+30 rendus/s et le CPU est élevé ; cela ne prouve pas qu’il est seul responsable.
+
+Le prototype 40 déplace son balancement de SwiftUI vers Core Animation. Sur
+le panneau dégagé : CPU médian 41,5 % (24 lignes, thermique1/protection1).
+Aucun gain suffisant établi : prototype archivé puis retiré. Le témoin A/B est
+invalide car Welcome Back apparaît **après** la première assertion du runner.
+Le runner attend désormais la bienvenue asynchrone avant de fermer Later et
+lire le contexte. Essai interrompu quand thermique2 apparaît ; aucune moyenne
+sous Welcome Back n’est attribuée au panneau seul. Une garde de préparation
+de l’archive échoue avant toute écriture (compte de hunks erroné) ; reprise après
+relecture du diff, sans toucher au travail des autres sessions.
+
+**La Home noire 40 revenue à thermique0/protection0 consomme encore 21 % CPU
+médian sur 119 lignes (t248,7–368,5).** Le faible CPU protégé ne valide donc pas
+l’usage animé. La trace SwiftUI expose du travail récurrent de cadres, opacités,
+flous et Canvas ; vues créées avant l’attache non nommées, donc pas d’attribution
+exclusive à une vue. 41 déplace seulement le fond au compositeur : coût encore
+voisin de 19–20 %, amélioration insuffisante. Les essais suivants concernent
+les braises et les silhouettes, en conservant leur dessin.
+
+[Campagne, données brutes et limites](campagnes/2026-09-16-retours-et-profil/etat.md).
+
 ### E59 — La protection des décors coupait aussi la parole ponctuelle
 
 **16-09, reprise 11:09 : 37 lancée, navigation complète PASS 10,754 s, trois
