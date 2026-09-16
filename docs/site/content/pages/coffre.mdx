@@ -27,6 +27,10 @@
 
 </div>
 
+<Decision titre="Tranché le 15-09">
+  <p><b>Le profil, quatre pastilles sur une ligne</b> : noir, orange, argent, or — la pièce d'or sans son mot ; <b>au tap, chacune ouvre le coffre à sa page</b> (plus de manège direct depuis une pill : c'est « Ouvrir » sur la page du sachet). <b>Le géant a deux variants</b> : « N sachets à ouvrir » avec OUVRIR ; sinon <b>la jauge du coffre</b> (le même composant, « 80 / 100 ») et « Verrouillé » — plus jamais « Utiliser 100 pièces », l'achat est mort. <b>Le coffre parle la langue du profil</b>, français ou anglais, comme les autres blocs. <b>Les nombres ne bougent pas</b> (20 la série, +10 le jour) : ce qui change, c'est que l'app les <i>lit</i> au serveur partout, elle ne les <i>connaît</i> plus. Le plan : <code>tools/coffre-v2/PLAN-COFFRE-VERT.md</code>.</p>
+</Decision>
+
 <Decision titre="Tranché le 30-08">
   <p><b>La jauge convertit.</b> À 100 pièces un sachet apparaît tout seul, le nombre monte, bouton « Ouvrir » ; les pièces retombent. La conversion vit au serveur (<code>convertir_pieces()</code>, privée, déclenchée par tout crédit jaune du carnet — clôture, versement du jour, nœud du chemin), jamais dans l'écran ; le témoin d'idempotence est le solde lui-même. <code>reste = solde % prix</code> est vrai depuis la pose du 30-08 soir : le stock d'avant a été converti (compte de test : 1 536 → 15 sachets + 36), sonde <code>tools/annonces/verif_backend_coffre.py</code> verte.</p>
   <p><b>Le bouton d'achat meurt.</b> Avec la conversion, le solde ne dépasse plus 99 : « 100 coins open one » (<code>claim_booster</code>) ne peut plus réussir — la fonction est FERMÉE au serveur depuis le 30-08 soir (403) ; l'app l'appelle encore quand <code>boosters == 0</code>, retirée au J2 (Q9, défaut). « Ouvrir » ouvre un sachet qui existe déjà, et va droit au manège (Q6, défaut).</p>

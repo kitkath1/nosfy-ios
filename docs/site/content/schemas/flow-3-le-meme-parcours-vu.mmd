@@ -3,9 +3,16 @@ sequenceDiagram
   participant A as 📱 l'app
   participant S as ☁️ Supabase
 
+  U->>A: Commencer depuis Route
+  A->>A: séance locale (UUID) et lecture count.mp4
+  A->>S: INSERT workouts · conflit UUID ignoré
+  S-->>A: séance ouverte (ou ligne existante relue)
+  Note over A,S: départ asynchrone · reprise si panne réseau
+  A->>A: fin du film ou tap → Exercices
+
   U->>A: je finis une série
   A->>A: 💾 la série s'écrit (SwiftData)
-  Note over A: rien ne part encore
+  Note over A: les séries restent locales jusqu’à la fin
   U->>A: je finis une autre série
   A->>A: 💾 idem
 
