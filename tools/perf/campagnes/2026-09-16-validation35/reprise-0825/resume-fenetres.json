@@ -1,0 +1,26 @@
+{
+  "1": {
+    "n": 79,
+    "debut": 15.2,
+    "fin": 94.4,
+    "cpu_median": 20,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "0": {
+    "n": 102,
+    "debut": 95.4,
+    "fin": 197.9,
+    "cpu_median": 1.0,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  }
+}

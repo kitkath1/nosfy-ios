@@ -1,5 +1,14 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+**16-09, 08:36 — complément E57 : automatisation rétablie après déverrouillage,
+contrôle Home 35 réussi. Deux endurances interrompues par changement de contexte ;
+aucune validation longue obtenue.** Observation courte sur Home noire : CPU médian
+20 %, thermique 0, protection 0 ; elle ne valide pas la chauffe prolongée.
+Sonde arrêtée à 08:36:11. La demande suivante porte sur un plan de textes FR/EN,
+sans code. [Reprise, interruptions et preuves](campagnes/2026-09-16-validation35/reprise-0825/etat.md).
+
+### État antérieur du 16-09, 07:30
+
 **16-09,07:30 :35 réellement installé. Les deux tentatives XCTest échouent avant le premier geste (activation du mode automatisation). Les relevés sous Welcome Back puis app inactive ne valident pas la Home35.** À07:36, lancement Profil accepté avec `-sansSondeVol` ; affichage interactif non confirmé. Skill `woop-chauffe` créé et validé ; registre57 entrées. [Preuves et suite précise](campagnes/2026-09-16-validation35/etat.md). La chauffe durable reste ouverte.
 
 ### Dernière validation complète de navigation :34 (historique15-09)

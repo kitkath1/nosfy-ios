@@ -1,0 +1,143 @@
+[
+  {
+    "heure": "2026-09-16T08:27:10.069203+02:00",
+    "nom": "collecte-debut-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35-endurance-debut",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:27:13.967096+02:00",
+    "nom": "collecte-debut-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:27:13.970263+02:00",
+    "nom": "mesure-debut",
+    "source": "vol-20260916-082530.jsonl",
+    "dernier": {
+      "t": 102.2,
+      "img": 60.1,
+      "pire": 17,
+      "onglet": "home",
+      "seance": 0,
+      "player": 0,
+      "ile": 0,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 1,
+      "therm": 0,
+      "corps": 0,
+      "tics": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "chemin": 0,
+      "protection": 0,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 1,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:27:13.971772+02:00",
+    "nom": "debut-thermique",
+    "therm": 0
+  },
+  {
+    "heure": "2026-09-16T08:27:13.971988+02:00",
+    "nom": "home-debut",
+    "duree_s": 600
+  },
+  {
+    "heure": "2026-09-16T08:27:43.978092+02:00",
+    "nom": "collecte-home-1-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35-endurance-home-1",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:27:48.507436+02:00",
+    "nom": "collecte-home-1-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:27:48.509509+02:00",
+    "nom": "mesure-home-1",
+    "source": "vol-20260916-082530.jsonl",
+    "dernier": {
+      "t": 135.7,
+      "img": 60.1,
+      "pire": 17,
+      "onglet": "exercises",
+      "seance": 0,
+      "player": 0,
+      "ile": 0,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 37,
+      "therm": 0,
+      "corps": 1,
+      "tics": [
+        0,
+        0,
+        14,
+        0,
+        1
+      ],
+      "chemin": 0,
+      "protection": 0,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 1,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:27:48.509902+02:00",
+    "nom": "campagne-interrompue",
+    "erreur": "La Home est recouverte ou le contexte a change"
+  },
+  {
+    "heure": "2026-09-16T08:27:48.510034+02:00",
+    "nom": "restauration-sans-sonde-debut",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:27:49.448659+02:00",
+    "nom": "restauration-sans-sonde-fin",
+    "code": 0
+  }
+]

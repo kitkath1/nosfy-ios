@@ -1,0 +1,253 @@
+[
+  {
+    "heure": "2026-09-16T08:30:00.946255+02:00",
+    "nom": "collecte-debut-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35b-endurance-debut",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:30:01.572119+02:00",
+    "nom": "collecte-debut-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:30:01.573007+02:00",
+    "nom": "mesure-debut",
+    "source": "vol-20260916-082912.jsonl",
+    "dernier": {
+      "t": 47.7,
+      "img": 60.1,
+      "pire": 17,
+      "onglet": "home",
+      "seance": 0,
+      "player": 0,
+      "ile": 0,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 1,
+      "therm": 0,
+      "corps": 0,
+      "tics": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "chemin": 0,
+      "protection": 0,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 1,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:30:01.573159+02:00",
+    "nom": "debut-thermique",
+    "therm": 0
+  },
+  {
+    "heure": "2026-09-16T08:30:01.573243+02:00",
+    "nom": "home-debut",
+    "duree_s": 600
+  },
+  {
+    "heure": "2026-09-16T08:30:31.579416+02:00",
+    "nom": "collecte-home-1-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35b-endurance-home-1",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:30:32.199705+02:00",
+    "nom": "collecte-home-1-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:30:32.201055+02:00",
+    "nom": "mesure-home-1",
+    "source": "vol-20260916-082912.jsonl",
+    "dernier": {
+      "t": 78.2,
+      "img": 60.1,
+      "pire": 17,
+      "onglet": "home",
+      "seance": 0,
+      "player": 0,
+      "ile": 0,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 1,
+      "therm": 0,
+      "corps": 0,
+      "tics": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "chemin": 0,
+      "protection": 0,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 1,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:30:32.201227+02:00",
+    "nom": "home-checkpoint",
+    "ecoule_s": 30.6,
+    "sonde_t": 78.2
+  },
+  {
+    "heure": "2026-09-16T08:31:02.207325+02:00",
+    "nom": "collecte-home-2-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35b-endurance-home-2",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:31:02.877694+02:00",
+    "nom": "collecte-home-2-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:31:02.879185+02:00",
+    "nom": "mesure-home-2",
+    "source": "vol-20260916-082912.jsonl",
+    "dernier": {
+      "t": 109.7,
+      "img": 60.1,
+      "pire": 17,
+      "onglet": "home",
+      "seance": 0,
+      "player": 0,
+      "ile": 0,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 1,
+      "therm": 1,
+      "corps": 0,
+      "tics": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "chemin": 0,
+      "protection": 1,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 1,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:31:02.879398+02:00",
+    "nom": "home-checkpoint",
+    "ecoule_s": 61.3,
+    "sonde_t": 109.7
+  },
+  {
+    "heure": "2026-09-16T08:31:32.885566+02:00",
+    "nom": "collecte-home-3-debut",
+    "commande": [
+      "python3",
+      "/private/tmp/woop-collect-id22.py",
+      "woop35b-endurance-home-3",
+      "--nav"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:31:33.502396+02:00",
+    "nom": "collecte-home-3-fin",
+    "code": 0
+  },
+  {
+    "heure": "2026-09-16T08:31:33.503935+02:00",
+    "nom": "mesure-home-3",
+    "source": "vol-20260916-082912.jsonl",
+    "dernier": {
+      "t": 140.2,
+      "img": 49.2,
+      "pire": 83,
+      "onglet": "exercises",
+      "seance": 1,
+      "player": 0,
+      "ile": 1,
+      "drag": 0,
+      "marque": 0,
+      "gel": 0,
+      "cpu": 36,
+      "therm": 0,
+      "corps": 0,
+      "tics": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "chemin": 0,
+      "protection": 0,
+      "bancHome": "inactif",
+      "welcome": 0,
+      "premiere": 0
+    },
+    "cpu_median_25s": 34,
+    "applicationState": 0
+  },
+  {
+    "heure": "2026-09-16T08:31:33.504100+02:00",
+    "nom": "campagne-interrompue",
+    "erreur": "La Home est recouverte ou le contexte a change"
+  },
+  {
+    "heure": "2026-09-16T08:31:33.504261+02:00",
+    "nom": "restauration-sans-sonde-debut",
+    "commande": [
+      "xcrun",
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-ecranEveille",
+      "-navProbe",
+      "-openTab",
+      "home"
+    ]
+  },
+  {
+    "heure": "2026-09-16T08:31:33.849273+02:00",
+    "nom": "restauration-sans-sonde-fin",
+    "code": 0
+  }
+]
