@@ -1,5 +1,9 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+**16-09,07:30 :35 réellement installé. Les deux tentatives XCTest échouent avant le premier geste (activation du mode automatisation). Les relevés sous Welcome Back puis app inactive ne valident pas la Home35.** À07:36, lancement Profil accepté avec `-sansSondeVol` ; affichage interactif non confirmé. Skill `woop-chauffe` créé et validé ; registre57 entrées. [Preuves et suite précise](campagnes/2026-09-16-validation35/etat.md). La chauffe durable reste ouverte.
+
+### Dernière validation complète de navigation :34 (historique15-09)
+
 **Concession visuelle confirmée par l’utilisateur sur30 : le widget Chapitre a perdu ses animations.** Le fond liquide (`FondLiquide`) et le liseré tournant (`LisereTournant`) ne sont plus montés quand `decorHomeAuRepos` est vrai ; les halos/ondes d’appel sont retirés et la respiration du halo interne du galet est figée. Ce changement est permanent sur la Home actuelle, même à froid ; ce n’est pas seulement la protection thermique. Il contribue potentiellement au gain global28, sans attribution isolée de chacun de ces effets. Le rendu complet demandé reste donc à restaurer avec un coût maîtrisé. Les deux chevrons natifs30 sont un autre composant, pas une remise en animation du Chapitre.
 
 **15-09,23:02 : build34 installé et vérifié. CPU Home1 % médian pendant3min ; onde du Chapitre, chevrons et respiration du point conservés. Navigation PASS9,231s,3 retours du pull PASS35,164s,4 cycles Exercices/Profil PASS66,481s.** Après la balade, CPU1 % en récupération mais thermique1 : ne pas clore la chaleur ressentie. Sur3min immobiles, retour nominal à143,1s.35 compile pour rendre l’intégration commitable sans dépendance étrangère ; installation refusée23:28, liaison indisponible. Dernière installation confirmée34, sonde éteinte23:02:12. QA04 reste ouverte. Registre56 entrées. [État, données et captures](campagnes/2026-09-15-reprise-autonome/etat.md).
@@ -151,3 +155,16 @@ Le premier patch de commit34 cherche `PerleSemaine` dans HEAD : la classe n’y 
 Complément E56 :35 compile. L’installation23:28 échoue sur CoreDeviceError4000/connexion invalidée, puis l’iPhone est unavailable. Ne pas transférer les validations34 à35. Les fichiers du refus sont conservés avec la campagne. Le travail indépendant de la liaison (commits et documentation) continue.
 
 Complément E37 : le vérificateur documentaire35 ne produit pas de fichier qa-390.png ; une ouverture de ce nom échoue. Les captures réellement produites Etat390/1440 sont ensuite ouvertes et relues. Aucun verdict visuel fondé sur le fichier inexistant.
+
+
+<a id="e57"></a>
+
+### E57 — Installation réussie, automatisation refusée avant le test
+
+16-09 : la liaison CoreDevice réseau installe35 et relit son numéro. Deux runners XCTest échouent avec `Timed out while enabling automation mode`, sans exécuter d'assertion ni fermer Later. USB absent des relevés avec accès aux services du Mac ; verrouillage contrôlé. Le réseau n'est pas pour autant prouvé cause de l'échec. Aucun nouveau parcours35 annoncé comme réussi.
+
+La collecte avant restauration donne269 lignes après15s, toutes `welcome=1` (CPU médian17 %, thermique0). La Home dégagée n'est pas mesurée. Autre invalidation : nav passe en inactive1 au lancement du runner,262 états sur284, alors que les callbacks de sonde continuent. Les compteurs qui bougent ne prouvent pas l'activité réelle de l'app. Lancement Profil sans sonde accepté07:36:24, puis app inactive ; aucune capture finale exploitable. La demande de rétablir la liaison est faite pendant le travail indépendant sur le skill. Pas de boucle de réessais ni de transfert des preuves34 à35. [Journaux](campagnes/2026-09-16-validation35/etat.md).
+
+Le validateur officiel du skill manque d'abord de PyYAML ; le venv temporaire dédié résout ce manque, validation PASS. L'analyseur reproduit34 et refuse les données35 sous bienvenue ; sept contrôles PASS. Aucun logiciel global remplacé.
+
+Complément E37 : le premier script documentaire16-09 est refusé avant toute écriture par une erreur de décodage UTF-8. La génération du site est néanmoins partie avec les anciennes notes : ce premier artefact n'est pas final. Le script est transféré dans un fichier UTF-8 explicite, exécuté puis relu avant une nouvelle génération. Ne pas poursuivre les opérations dépendantes après l'échec de leur préparation.

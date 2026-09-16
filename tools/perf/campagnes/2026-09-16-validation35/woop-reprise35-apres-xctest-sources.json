@@ -1,0 +1,10 @@
+{
+  "vol": {
+    "source": "vol-20260916-073113.jsonl",
+    "destination": "/private/tmp/woop-reprise35-apres-xctest-vol.jsonl"
+  },
+  "nav": {
+    "source": "nav-20260916-073113.jsonl",
+    "destination": "/private/tmp/woop-reprise35-apres-xctest-nav.jsonl"
+  }
+}

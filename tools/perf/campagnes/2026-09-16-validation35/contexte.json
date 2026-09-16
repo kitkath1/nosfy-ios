@@ -1,0 +1,10 @@
+{
+  "date": "2026-09-16",
+  "timezone": "Europe/Paris",
+  "build_installe": "35",
+  "transport": "localNetwork",
+  "usb_observe": false,
+  "derniere_validation_navigation": "34 le15-09",
+  "nouveau_parcours35": "bloqué avant test par initialisation XCTest",
+  "compte_modifie": false
+}

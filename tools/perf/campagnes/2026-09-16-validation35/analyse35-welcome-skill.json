@@ -1,0 +1,31 @@
+{
+  "source": "/private/tmp/woop-reprise35-apres-xctest-vol.jsonl",
+  "fenetre": {
+    "debut_exclu": 15,
+    "fin_incluse": null
+  },
+  "lignes_journal": 283,
+  "lignes_fenetre": 269,
+  "contexte_exclu": {
+    "welcome": 269
+  },
+  "home_retenue": {
+    "n": 0
+  },
+  "groupes": [],
+  "transitions_fenetre": [
+    {
+      "t": 15.3,
+      "therm": 0,
+      "protection": 0
+    }
+  ],
+  "ecarts_journal_sup_2_5s": [],
+  "limites": [
+    "CPU et callbacks ne mesurent ni watts, ni GPU, ni température en degrés.",
+    "Les catégories thermiques égales ne garantissent pas des fréquences égales.",
+    "L'étendue d'un groupe peut contenir des interruptions : ce n'est pas sa durée continue.",
+    "Corroborer le contexte avec nav et l'écran ; les surcouches non instrumentées restent invisibles.",
+    "Les écarts du journal peuvent être des gels ou des suspensions ; lire le contexte."
+  ]
+}

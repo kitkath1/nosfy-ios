@@ -1,0 +1,1 @@
+7 contrôles PASS : historique34 et groupes, bienvenue35 exclue, champ absent, infini, ordre temporel, catégorie invalide, fenêtre et contextes.

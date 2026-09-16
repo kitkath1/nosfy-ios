@@ -1,0 +1,55 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /private/tmp/woop-nav-runtime-qa/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testHomePretePourMesure" -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 -parallel-testing-enabled NO -maximum-concurrent-test-device-destinations 1 -resultBundlePath /private/tmp/woop-reprise-20260916/home-prete-reprise.xcresult
+
+2026-09-16 07:33:23.170 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/private/tmp/woop-reprise-20260916/home-prete-reprise.xcresult
+
+2026-09-16 07:33:23.171 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 07:33:23.275 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 07:33:23.685 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 07:33:23.988 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 07:33:24.462 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 07:33:24.578 xcodebuild[1579:15202127] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 07:33:28.825201+0200 NavRuntimeUITests-Runner[28024:2150694] [Default] Running tests...
+2026-09-16 07:34:28.960813+0200 NavRuntimeUITests-Runner[28024:2150694] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={NSLocalizedDescription=Timed out while enabling automation mode.}
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/woop-reprise-20260916/home-prete-reprise.xcresult
+
+2026-09-16 07:34:29.302 xcodebuild[1579:15203766]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-reprise-20260916/home-prete-reprise.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-reprise-20260916/home-prete-reprise.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 07:34:29.304 xcodebuild[1579:15202127] [MT] IDETestOperationsObserverDebug: 64.841 elapsed -- Testing started completed.
+2026-09-16 07:34:29.305 xcodebuild[1579:15202127] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 07:34:29.305 xcodebuild[1579:15202127] [MT] IDETestOperationsObserverDebug: 64.841 sec, +64.841 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-reprise-20260916/home-prete-reprise.xcresult
+
+Testing failed:
+	NavRuntimeUITests-Runner (28024) encountered an error (The test runner failed to initialize for UI testing. (Underlying Error: Timed out while enabling automation mode.))
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -26,3 +26,9 @@ ef39206 fix(home): préserver la pose de la pilule pendant les retours
 34 est la dernière version réellement installée et vérifiée.35 compile mais la liaison USB est absente après le refus CoreDevice23:28. Les validations34 ne sont pas transférées à35. Le livrable isolé se génère ; le vérificateur conserve les erreurs de références déjà décrites en E51. Détails et56 entrées dans le registre des échecs. Aucun push.
 
 Documentation locale complète : génération et vérification vertes. Documentation isolée destinée au commit : génération réussie,6 références hors sélection toujours invalides (E51). Les deux journaux sont archivés séparément.
+
+## Reprise du16 septembre
+
+5a39b01 feat(perf): mémoriser le diagnostic de chauffe dans un skill
+
+35 est installé à07:30, version réelle relue. Le pilotage XCTest échoue avant le premier geste ; aucun résultat de navigation ou de chauffe Home35 transféré depuis34. Données sous Welcome Back puis app inactive exclues. Skill `woop-chauffe` installé, validateur PASS et sept contrôles de l'analyseur PASS. Registre57 entrées ; [preuves et reprise précise](campagnes/2026-09-16-validation35/etat.md). Les journaux et les deux notes QA partent dans un commit documentaire distinct. Aucun push.
