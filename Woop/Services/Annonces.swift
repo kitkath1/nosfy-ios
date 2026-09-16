@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - LES ANNONCES : une file, des dalles qui S'EMPILENT
 //
@@ -59,44 +60,55 @@ final class FileAnnonces {
     static let shared = FileAnnonces()
     private init() {}
 
-    /// Ce qui est à l'écran, dans l'ordre d'arrivée (la plus ancienne en haut).
-    private(set) var visibles: [AnnonceVisible] = []
-    /// Combien de temps une dalle reste (la capsule d'avant : 3,0 s + sa sortie).
-    var duree: TimeInterval = 3.2
-    /// Jamais plus de quatre à l'écran : au-delà, la plus ancienne part.
-    var plafond = 4
+    /// LA dalle à l'écran — UNE seule (Option A, verdict Kathryn 15-09 : la
+    /// belle pastille est GRANDE, on ne l'empile pas ; les événements se
+    /// disent L'UN APRÈS L'AUTRE — les pièces, PUIS le sachet).
+    private(set) var visible: AnnonceVisible?
+    /// Ce qui attend son tour.
+    private var attente: [Annonce] = []
+    /// Le temps qu'une carte tient avant de céder la place.
+    var duree: TimeInterval = 2.8
+    /// Le souffle entre deux cartes (l'une sort, l'autre entre).
+    var entredeux: TimeInterval = 0.4
+    /// Invalide la minuterie d'une carte retirée par `vider()` ou remplacée.
+    private var jeton = 0
 
-    /// POUSSER UNE ANNONCE — elle descend, s'empile sous les précédentes, et se
-    /// retire toute seule après `duree`.
+    /// POUSSER UNE ANNONCE — elle prend la place libre, ou attend son tour.
     func pousser(_ a: Annonce) {
-        let v = AnnonceVisible(annonce: a)
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
-            visibles.append(v)
-            if visibles.count > plafond { visibles.removeFirst() }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duree) { [weak self] in
-            self?.retirer(v.id)
-        }
+        attente.append(a)
+        avancer()
     }
 
-    /// POUSSER UNE PILE — l'une après l'autre, à `espace` d'écart, pour que
-    /// l'œil les compte (la clôture : pièces, sachet, argent).
-    func pousser(_ liste: [Annonce], espace: TimeInterval = 0.45) {
-        for (i, a) in liste.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * espace) { [weak self] in
-                self?.pousser(a)
+    /// POUSSER UNE PILE — chacune son plein temps, l'une après l'autre (les
+    /// pièces, puis le sachet). La file séquence toute seule ; l'`espace`
+    /// d'antan n'a plus de rôle (gardé pour ne pas casser les appelants).
+    func pousser(_ liste: [Annonce], espace: TimeInterval = 0) {
+        attente.append(contentsOf: liste)
+        avancer()
+    }
+
+    /// Montre la suivante SI la place est libre ; sinon elle attend.
+    private func avancer() {
+        guard visible == nil, !attente.isEmpty else { return }
+        let v = AnnonceVisible(annonce: attente.removeFirst())
+        jeton += 1
+        let j = jeton
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
+            visible = v
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duree) { [weak self] in
+            guard let self, self.jeton == j else { return }
+            withAnimation(.easeOut(duration: 0.35)) { self.visible = nil }
+            DispatchQueue.main.asyncAfter(deadline: .now() + self.entredeux) {
+                self.avancer()
             }
         }
     }
 
-    func retirer(_ id: UUID) {
-        withAnimation(.easeOut(duration: 0.35)) {
-            visibles.removeAll { $0.id == id }
-        }
-    }
-
     func vider() {
-        withAnimation(.easeOut(duration: 0.25)) { visibles.removeAll() }
+        jeton += 1
+        attente.removeAll()
+        withAnimation(.easeOut(duration: 0.25)) { visible = nil }
     }
 }
 
@@ -107,16 +119,75 @@ final class FileAnnonces {
 struct PileAnnoncesHote: View {
     private var file = FileAnnonces.shared
 
+    /// LE DÉGAGEMENT DU HAUT, DEVICE PAR DEVICE (bug Kathryn 16-09 : « le toaster
+    /// disparaît dans le Dynamic Island »). Le 54 fixe passait sur un iPhone SANS
+    /// île mais PAS sur un iPhone à Dynamic Island (inset ~59) : on lit l'inset
+    /// RÉEL de la fenêtre (l'île + la barre d'état) et on pose le toaster JUSTE
+    /// dessous — aussi haut que possible, jamais une valeur qui ment selon le modèle.
+    private var degagementHaut: CGFloat {
+        let insetHaut = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 47
+        return insetHaut + 6
+    }
+
     var body: some View {
-        VStack(spacing: 8) {
-            ForEach(file.visibles) { v in
-                DalleAnnonce(annonce: v.annonce)
+        VStack(spacing: 0) {
+            if let v = file.visible {
+                ToasterAnnonce(annonce: v.annonce)
+                    .id(v.id)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
             Spacer(minLength: 0)
         }
-        .padding(.top, 8)
+        .frame(maxWidth: .infinity, alignment: .top)
+        // Sous le Dynamic Island (Kathryn 15-09 puis 16-09) — le dégagement est
+        // maintenant l'inset RÉEL de la fenêtre (device par device), pas un 54 fixe
+        // qui disparaissait dans l'île sur les iPhone à Dynamic Island.
+        .padding(.top, degagementHaut)
         .allowsHitTesting(false)
+        .onAppear {
+            // `-pileTest` : la séquence des annonces (pièces → sachet) se joue
+            // seule — le simulateur ne finit pas une séance pour de vrai.
+            guard CommandLine.arguments.contains("-pileTest") else { return }
+            // Après le splash (≈10 s), pour que la séquence se voie SUR la home.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 13) {
+                FileAnnonces.shared.pousser([.pieces(120), .sachet(1)])
+            }
+        }
+    }
+}
+
+/// LA DALLE D'ANNONCE, en BELLE pastille (Option A) : chaque événement dit par
+/// SA robe — les pièces (et cardio, retour) par la robe pièce, le sachet par la
+/// robe booster. La jauge lit toujours le coffre (reste / prix). Les gros mots
+/// restent en anglais.
+struct ToasterAnnonce: View {
+    let annonce: Annonce
+
+    private var fraction: Double {
+        Double(EconomieWoop.shared.reste)
+            / Double(max(EconomieWoop.shared.prixBooster, 1))
+    }
+
+    @ViewBuilder
+    var body: some View {
+        switch annonce {
+        case .pieces(let n):
+            ToasterGain(gain: n, fraction: fraction, libelle: "COINS EARNED")
+        case .cardio(let n):
+            ToasterGain(gain: n, fraction: fraction, libelle: "CARDIO COINS")
+        case .retour(let n):
+            ToasterGain(gain: n, fraction: fraction, libelle: "DAILY BONUS")
+        case .argent(let n):
+            // ⚠️ Pas encore de robe ARGENT (une pièce d'argent détourée à
+            // faire) : la robe pièce en attendant. Rare (1 sur 30).
+            ToasterGain(gain: n, fraction: fraction, libelle: "SILVER COINS")
+        case .sachet(let n):
+            ToasterGain(gain: n, fraction: fraction, robe: .booster,
+                        libelle: "BOOSTER")
+        }
     }
 }
 
