@@ -595,6 +595,15 @@ struct RootView: View {
         if ouvre { EconomieWoop.shared.debutFinSeance() }
         Task.detached {
             await SupabaseSync.shared.push([snapshot])
+            // Banc `-cardioLent <s>` : simule la latence réseau d'un VRAI
+            // téléphone (le simulateur répond en millisecondes) — c'est ce qui
+            // rend le bug de la story invisible au sim. Sert à PROUVER que la
+            // story attend bien la réponse cardio.
+            if let i = CommandLine.arguments.firstIndex(of: "-cardioLent"),
+               i + 1 < CommandLine.arguments.count,
+               let s = Double(CommandLine.arguments[i + 1]) {
+                try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000))
+            }
             await SacreServeur.reglerFinDeSeance(seance, series: series,
                                                  cardio: cardio)
         }
@@ -617,9 +626,30 @@ struct RootView: View {
         // c'était +1,6 s et +5,2 s sur une home nue, avant qu'une story
         // existe dans la chaîne (verdict Kathryn 30-08 : « elle doit
         // apparaître après la story »).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            storyGain = gain
-            storyFin = StoryLaunch(workout: a, rect: .zero)
+        // LA STORY PATIENTE (16-09) : le cardio n'a de pièces qu'APRÈS la
+        // réponse du serveur (le barème). On plancher à 2s (le temps que la
+        // home et le trophée se posent) PUIS on attend `clotureRepondue`
+        // jusqu'à un plafond de secours — sinon, sur un vrai réseau, la story
+        // s'ouvrait avant la réponse et roulait « 0 » (bug Kathryn 16-09,
+        // invisible au sim qui répond en millisecondes). La muscu connaît son
+        // gain : elle garde son minuteur de 2s (attendre la retarderait pour
+        // rien).
+        if cardio {
+            Task { @MainActor in
+                let debut = Date()
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                while !EconomieWoop.shared.clotureRepondue,
+                      Date().timeIntervalSince(debut) < 6.0 {
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+                storyGain = gain
+                storyFin = StoryLaunch(workout: a, rect: .zero)
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                storyGain = gain
+                storyFin = StoryLaunch(workout: a, rect: .zero)
+            }
         }
     }
 

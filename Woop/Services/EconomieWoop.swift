@@ -139,6 +139,14 @@ final class EconomieWoop {
     /// Le gain cardio de la dernière clôture — la story le DIT (le workout ne le
     /// connaît pas : c'est le barème du serveur, pas des séries × 20).
     private(set) var dernierGainCardio = 0
+    /// LA CLÔTURE A RÉPONDU (16-09) : passe à `true` dès qu'une réponse de
+    /// `cloturer_seance` est appliquée — quel que soit le gain (0 pièce au tapis
+    /// trop lent compte AUSSI comme « répondu »). La story de fin d'un cardio
+    /// ATTEND ce drapeau avant de rouler ses pièces (sinon, sur un vrai réseau,
+    /// elle s'ouvrait avant la réponse et affichait « 0 » — bug Kathryn 16-09,
+    /// invisible au simulateur qui répond en millisecondes). Remis à `false` au
+    /// début de chaque fin de séance (`debutFinSeance`).
+    private(set) var clotureRepondue = false
     /// Le jour de la maison (Europe/Paris), tel que le serveur le dit.
     private(set) var jour: String?
 
@@ -264,6 +272,9 @@ final class EconomieWoop {
     /// plusieurs sources. Refaire un aller-retour ici, ce serait recréer le
     /// défaut que cette réponse a été élargie pour supprimer.
     func appliquer(_ c: SacreServeur.ClotureSeance) {
+        // La clôture a répondu (avant tout early return) : la story de fin d'un
+        // cardio n'attend plus que ce signal pour rouler ses pièces.
+        clotureRepondue = true
         or = c.solde
         reste = c.reste
         prixBooster = c.prixBooster
@@ -284,9 +295,15 @@ final class EconomieWoop {
         // barème). Il se dit ICI, à la réponse — jamais avant, et jamais
         // sur un rejeu (le stocké n'est pas un gain neuf). Le sachet que le
         // cardio seul a accordé (aucune série de muscu) se dit avec.
+        // LA STORY AFFICHE TOUJOURS LE BARÈME (16-09) : le montant cardio que le
+        // serveur renvoie (`pieces_cardio_seance`, recalculé depuis les phases)
+        // vaut MÊME AU REJEU. Le poser hors de la garde `!rejeu` — sinon une
+        // séance rejouée (outbox, kill, reprise) affichait 0 à la story alors que
+        // le serveur connaît le montant. On ne RE-NOTIFIE (dalle + toaster) que si
+        // c'est FRAIS (rien de neuf à annoncer sur un rejeu).
+        if c.piecesCardio > 0 { dernierGainCardio = c.piecesCardio }
         if c.piecesCardio > 0, !c.rejeu, !c.cardioRejeu {
             pile.append(.cardio(c.piecesCardio))
-            dernierGainCardio = c.piecesCardio
             print("[flow] cardio payé : \(c.piecesCardio) pièces (bonus \(c.bonusProgres)) · total \(c.piecesTotal) · détail \(c.cardioDetail)")
         }
         // Le sachet du cardio seul : `_brut` ne l'a pas compté dans
@@ -312,6 +329,7 @@ final class EconomieWoop {
     func debutFinSeance() {
         pousserApresStory = true
         dernierGainCardio = 0
+        clotureRepondue = false
         pileFinSeance.removeAll()
     }
 
