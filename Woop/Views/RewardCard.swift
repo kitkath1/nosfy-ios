@@ -1953,6 +1953,14 @@ private struct BoutonClaim: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in appuye = true }
                 .onEnded { _ in appuye = false })
+        // ⚠️ LE +10 DU WELCOME BACK NE PARTAIT PAS AU TAP (bug Kathryn 16-09).
+        // Cause : le fond du bouton est un VERRE `.interactive()` (`glassEffect(
+        // .clear.interactive())`) — et un verre interactif VOLE le geste de son
+        // hôte (le `Button`), donc `action` (reclamerRetour) ne se déclenchait
+        // jamais. Remède du dépôt : un `highPriorityGesture(TapGesture)` qui
+        // gagne le tap sur le verre. Idempotent : reclamerRetour se garde
+        // (retourDisponible) si jamais le Button passait aussi.
+        .highPriorityGesture(TapGesture().onEnded { action() })
     }
 }
 

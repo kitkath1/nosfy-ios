@@ -127,6 +127,18 @@ final class EconomieWoop {
     private(set) var piecesRetourQuotidien = 10
     private(set) var retourDisponible = false
     private(set) var prochainRetour: Date?
+    /// FIN DE SÉANCE (16-09, bug Kathryn : « pas de toaster final ni de pièces
+    /// dans la story au HIIT »). Les dalles de la réponse de `cloturer_seance`
+    /// (cardio, sachet, argent) partaient DÈS la réponse — donc SOUS la story de
+    /// fin, invisibles. Quand une story de fin va s'ouvrir, `terminerSeance` lève
+    /// ce drapeau : les dalles attendent, et `enchainerApresStory` les vide APRÈS
+    /// la story (comme les pièces de muscu). Si la réponse arrive après la story,
+    /// le drapeau est déjà retombé → elles partent tout de suite (home visible).
+    var pousserApresStory = false
+    private var pileFinSeance: [Annonce] = []
+    /// Le gain cardio de la dernière clôture — la story le DIT (le workout ne le
+    /// connaît pas : c'est le barème du serveur, pas des séries × 20).
+    private(set) var dernierGainCardio = 0
     /// Le jour de la maison (Europe/Paris), tel que le serveur le dit.
     private(set) var jour: String?
 
@@ -274,6 +286,7 @@ final class EconomieWoop {
         // cardio seul a accordé (aucune série de muscu) se dit avec.
         if c.piecesCardio > 0, !c.rejeu, !c.cardioRejeu {
             pile.append(.cardio(c.piecesCardio))
+            dernierGainCardio = c.piecesCardio
             print("[flow] cardio payé : \(c.piecesCardio) pièces (bonus \(c.bonusProgres)) · total \(c.piecesTotal) · détail \(c.cardioDetail)")
         }
         // Le sachet du cardio seul : `_brut` ne l'a pas compté dans
@@ -284,7 +297,32 @@ final class EconomieWoop {
         }
         if c.sachetsConvertis > 0 { pile.append(.sachet(c.sachetsConvertis)) }
         if c.argent { pile.append(.argent(1)) }
-        if !pile.isEmpty { FileAnnonces.shared.pousser(pile) }
+        guard !pile.isEmpty else { return }
+        // Sous une story de fin : on GARDE les dalles (elles passeraient sous la
+        // story) ; enchainerApresStory les vide APRÈS. Sinon (rejeu tardif,
+        // etat_coffre hors séance) : tout de suite.
+        if pousserApresStory { pileFinSeance.append(contentsOf: pile) }
+        else { FileAnnonces.shared.pousser(pile) }
+    }
+
+    /// AU DÉBUT D'UNE FIN DE SÉANCE (`terminerSeance`) : on garde les dalles de
+    /// la réponse pour APRÈS la story, ET on repart d'un gain cardio à zéro —
+    /// sinon la story d'une séance de MUSCU afficherait le cardio de la séance
+    /// d'avant (`dernierGainCardio` persiste). La clôture le remettra si cardio.
+    func debutFinSeance() {
+        pousserApresStory = true
+        dernierGainCardio = 0
+        pileFinSeance.removeAll()
+    }
+
+    /// APRÈS LA STORY DE FIN — vide les dalles gardées (cardio, sachet, argent)
+    /// pour qu'elles se voient sur la home. Retombe le drapeau : une réponse
+    /// serveur plus tardive repartira alors tout de suite.
+    func viderFinSeance() {
+        pousserApresStory = false
+        guard !pileFinSeance.isEmpty else { return }
+        FileAnnonces.shared.pousser(pileFinSeance)
+        pileFinSeance.removeAll()
     }
 
     /// Un versement de connexion réglé : le solde est à jour sans relecture.

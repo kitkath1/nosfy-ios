@@ -587,6 +587,11 @@ struct RootView: View {
         // n'a pas dite. Il lisait `setCount` (les prévues) pendant que le
         // solde comptait les faites.
         let seance = a.remoteID
+        // La réponse de `cloturer_seance` (les pièces CARDIO, le sachet, l'argent)
+        // doit se dire APRÈS la story — sinon elle passe sous elle, invisible
+        // (bug Kathryn 16-09). On lève le drapeau AVANT de déclencher la clôture ;
+        // `enchainerApresStory` videra la pile.
+        if ouvre { EconomieWoop.shared.debutFinSeance() }
         Task.detached {
             await SupabaseSync.shared.push([snapshot])
             await SacreServeur.reglerFinDeSeance(seance, series: series,
@@ -642,6 +647,12 @@ struct RootView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
             }
+        }
+        // Les dalles gardées pendant la story (pièces CARDIO, sachet, argent de
+        // la réponse serveur) se disent maintenant, sur la home, l'une après
+        // l'autre. Cardio pur : c'est LA dalle finale que Kathryn ne voyait pas.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            EconomieWoop.shared.viderFinSeance()
         }
         // Le sachet est forfaitaire — une séance finie, muscu ou cardio.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {

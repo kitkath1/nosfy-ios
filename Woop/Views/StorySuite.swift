@@ -1283,7 +1283,10 @@ struct StoryWin: View {
         ProcessInfo.processInfo.arguments.contains("-winHolo") ? [1] : []
     @State private var saisies = 0
 
-    private var pieces: Int { session.series * 20 }
+    // Muscu : séries × 20. CARDIO : le barème du serveur (aucune série), lu au
+    // `dernierGainCardio` — sinon la story disait « 0 pièce » au HIIT (bug
+    // Kathryn 16-09). Remis à zéro à chaque fin de séance (debutFinSeance).
+    private var pieces: Int { session.series * 20 + EconomieWoop.shared.dernierGainCardio }
     private var boosters: Int { pieces / 100 }
 
     private var roule: Int {
