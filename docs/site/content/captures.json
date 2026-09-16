@@ -465,6 +465,96 @@
    "source": "tools/docsite/shots/pop-chemin-legendary.png",
    "octets": 4219,
    "composant": "RewardChemin(cas: legendary)"
+  },
+  {
+   "nom": "reward-piece-1",
+   "legende": "Moment fiche · chauve-souris pièces 1 (chauve_sourie_pièce_rewads_1)",
+   "fichier": "captures/popups/reward-piece-1.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-piece-1.mp4 (image extraite à ~45 %)",
+   "octets": 7086,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-1"
+  },
+  {
+   "nom": "reward-piece-2",
+   "legende": "Moment fiche · chauve-souris pièces 2 (chauve_sourie_pièce_rewads_2)",
+   "fichier": "captures/popups/reward-piece-2.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-piece-2.mp4 (image extraite à ~45 %)",
+   "octets": 12829,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-2"
+  },
+  {
+   "nom": "reward-piece-3",
+   "legende": "Moment fiche · chauve-souris pièces 3 (chauve_sourie_pièce_rewads_3)",
+   "fichier": "captures/popups/reward-piece-3.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-piece-3.mp4 (image extraite à ~45 %)",
+   "octets": 7610,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-3"
+  },
+  {
+   "nom": "reward-piece-4",
+   "legende": "Moment fiche · chauve-souris pièces 4 (chauve_sourie_pièce_rewads_4)",
+   "fichier": "captures/popups/reward-piece-4.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-piece-4.mp4 (image extraite à ~45 %)",
+   "octets": 6739,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-4"
+  },
+  {
+   "nom": "reward-piece-5",
+   "legende": "Moment fiche · chauve-souris pièces 5 (chauve_sourie_pièce_rewads_5)",
+   "fichier": "captures/popups/reward-piece-5.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-piece-5.mp4 (image extraite à ~45 %)",
+   "octets": 5574,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-5"
+  },
+  {
+   "nom": "reward-rare",
+   "legende": "Moment fiche · chauve-souris pièce noire rare (chauve_sourie_pièce_noire_rare)",
+   "fichier": "captures/popups/reward-rare.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-rare.mp4 (image extraite à ~45 %)",
+   "octets": 7230,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-rare"
+  },
+  {
+   "nom": "reward-fire",
+   "legende": "Moment fiche · chauve-souris feu (chauve_sourie_fire)",
+   "fichier": "captures/popups/reward-fire.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-fire.mp4 (image extraite à ~45 %)",
+   "octets": 4953,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-fire"
+  },
+  {
+   "nom": "reward-lune",
+   "legende": "Moment fiche · chauve-souris go to lune (chauve_sourie_go_to_lune)",
+   "fichier": "captures/popups/reward-lune.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-lune.mp4 (image extraite à ~45 %)",
+   "octets": 2808,
+   "composant": "Moment fiche — pop-up vidéo réglée backend · reward-lune"
+  },
+  {
+   "nom": "reward-nosfy-coins",
+   "legende": "Route Duolingo · chauve-souris Nosfy pièces (gagne que des pièces) — reward-nosfy-coins",
+   "fichier": "captures/popups/reward-nosfy-coins.jpg",
+   "largeur": 320,
+   "hauteur": 180,
+   "source": "Woop/Media/reward-nosfy-coins.mp4 (image extraite à ~45 %)",
+   "octets": 6616,
+   "composant": "RewardCheminVariants.RecompensePieces (route) · reward-nosfy-coins"
   }
  ],
  "hero": {

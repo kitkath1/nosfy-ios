@@ -614,6 +614,13 @@ enum IssueSerie: Equatable {
 struct ReglesAnnonces: Equatable {
     var rangsFixes: [Int] = [3, 5, 10]
     var rangVideo: Int = 10
+    /// La vidéo du cas RARE (rang vidéo) — en base (`popup_video_rare`).
+    var videoRare: String = "reward-rare"
+    /// Le POOL des vidéos chauve-souris des autres pop-ups reward, où l'app tire
+    /// AU HASARD (`popup_videos_reward`) — en base, comme le reste du barème.
+    var videosReward: [String] = ["reward-piece-1", "reward-piece-2",
+                                  "reward-piece-3", "reward-piece-4",
+                                  "reward-piece-5", "reward-fire", "reward-lune"]
     var hasardApres: Int = 10
     var hasardEcartMin: Int = 5
     var hasardEcartMax: Int = 8
@@ -631,6 +638,8 @@ struct ReglesAnnonces: Equatable {
         func n(_ k: String, _ v: inout Int) { if let x = j[k] as? Int, x >= 0 { v = x } }
         if let l = j["popup_rangs_fixes"] as? [Int], !l.isEmpty { r.rangsFixes = l.sorted() }
         n("popup_rang_video", &r.rangVideo)
+        if let s = j["popup_video_rare"] as? String, !s.isEmpty { r.videoRare = s }
+        if let l = j["popup_videos_reward"] as? [String], !l.isEmpty { r.videosReward = l }
         n("popup_hasard_apres", &r.hasardApres)
         n("popup_hasard_ecart_min", &r.hasardEcartMin)
         n("popup_hasard_ecart_max", &r.hasardEcartMax)
@@ -678,7 +687,8 @@ enum DecideurSerie {
         print("[annonces] regles_annonces() → rangs \(r.rangsFixes), vidéo \(r.rangVideo), "
               + "hasard \(r.hasardEcartMin)-\(r.hasardEcartMax) après \(r.hasardApres), "
               + "budget \(r.popupsMax)/\(r.rewardMonetaireMax)/\(r.videoMax), "
-              + "écart \(r.ecartMinSeries) séries \(r.ecartExigeLesDeux ? "ET" : "OU") \(r.ecartMinMinutes) min")
+              + "écart \(r.ecartMinSeries) séries \(r.ecartExigeLesDeux ? "ET" : "OU") \(r.ecartMinMinutes) min, "
+              + "rare \(r.videoRare), pool \(r.videosReward.count) vidéos \(r.videosReward)")
     }
 
     /// Ce que la séance a déjà consommé.
@@ -709,6 +719,17 @@ enum DecideurSerie {
         let r = regles
         let n = r.hasardEcartMax - r.hasardEcartMin + 1
         return apres + r.hasardEcartMin + Int(stable("\(cle)|\(apres)") % UInt64(max(n, 1)))
+    }
+
+    /// Une vidéo chauve-souris du POOL serveur, tirée AU HASARD mais DÉTERMINISTE
+    /// (par séance + rang) — la même série rejouée donne la même vidéo, un banc
+    /// est reproductible. Pool vide → nil, et l'écran retombe sur sa vidéo par
+    /// défaut (ExerciseDetailView `videoNom ?? …` — le comportement d'avant le
+    /// branchement) : jamais de pop-up sans header.
+    private static func videoReward(cle: String, serie: Int) -> String? {
+        let pool = regles.videosReward
+        guard !pool.isEmpty else { return nil }
+        return pool[Int(stable("\(cle)|vid|\(serie)") % UInt64(pool.count))]
     }
 
     /// `serie` : le rang de la série qu'on vient de finir (1-based).
@@ -751,7 +772,7 @@ enum DecideurSerie {
         let issue: IssueSerie
         if fixe, serie == r.rangVideo, etat.videos < r.videoMax {
             // Le dernier rang fixe : le cas RARE, avec sa vidéo — une par séance.
-            issue = .reward(style: .fire, video: "reward-rare")
+            issue = .reward(style: .fire, video: r.videoRare)
             etat.videos += 1
         } else if fixe, r.rangsFixes.firstIndex(of: serie) == 0 {
             // Le premier rang fixe : un MOMENT, et il dit quelque chose de VRAI.
@@ -760,8 +781,9 @@ enum DecideurSerie {
                             fait: "\(reps) reps at \(poids) kg — that's \(total) coins so far.",
                             style: .galet)
         } else if etat.monetaires < r.rewardMonetaireMax {
-            // La pop-up de récompense en pièces — une par séance.
-            issue = .reward(style: .halo, video: nil)
+            // La pop-up de récompense en pièces — une par séance, avec une VIDÉO
+            // chauve-souris tirée du pool serveur (au hasard, déterministe).
+            issue = .reward(style: .halo, video: Self.videoReward(cle: cle, serie: serie))
             etat.monetaires += 1
         } else {
             // Le budget « pièces » est pris : un moment sans pièces.
