@@ -139,6 +139,7 @@ enum ProfilServeur {
         /// chacune, clair / sourd / clair / sourd. Le cache `woop.phrases` les suit ;
         /// la Home compose son nombre (séances, minutes) dans le troisième.
         var phrases: [String: [String]]
+        var textes: HomeLot?
 
         init(json o: [String: Any]) {
             prenom = (o["prenom"] as? String).flatMap { $0.isEmpty ? nil : $0 }
@@ -154,6 +155,10 @@ enum ProfilServeur {
                 }
             }
             phrases = ph
+            textes = (o["textes"] as? [String: Any]).flatMap {
+                guard let data = try? JSONSerialization.data(withJSONObject: $0) else { return nil }
+                return try? JSONDecoder().decode(HomeLot.self, from: data)
+            }
             faites = (o["faites"] as? NSNumber)?.intValue ?? 0
             objectif = (o["objectif"] as? NSNumber)?.intValue ?? Goal.weeklyTarget
             reste = (o["reste"] as? NSNumber)?.intValue ?? max(objectif - faites, 0)
@@ -173,10 +178,12 @@ enum ProfilServeur {
     static func accueil() async throws -> Accueil {
         let a = Accueil(json: try await objet("home"))
         print("[home-serveur] home() → prénom \(a.prenom ?? "—") · \(a.faites) / \(a.objectif), reste \(a.reste) · en séance \(a.enSeance) (\(a.minutesEnSeance) min) · \(a.seancesTotal) séances en tout · première fois \(a.premiereFois) · visite \(a.visiteHome) · langue \(a.langue ?? "—")")
+        await MainActor.run { HomeTextes.garder(a.textes) }
         Langue.poser(a.langue)                        // le serveur gagne (le contrat § 9)
         PremiereArrivee.poserPremiereFois(a.premiereFois) // idem : la phrase et la card ROUTE
         if !a.phrases.isEmpty {                       // idem : les mots de la Home
             UserDefaults.standard.set(a.phrases, forKey: clePhrases)
+            UserDefaults.standard.set(a.langue, forKey: clePhrases + ".langue")
             print("[home-serveur] phrases → \(a.phrases.keys.sorted().joined(separator: ", "))")
         }
         dernierAccueil = a
@@ -192,7 +199,8 @@ enum ProfilServeur {
     /// textes de repli.
     static let clePhrases = "woop.phrases"
     static var phrasesLocales: [String: [String]] {
-        (UserDefaults.standard.dictionary(forKey: clePhrases) as? [String: [String]]) ?? [:]
+        guard UserDefaults.standard.string(forKey: clePhrases + ".langue") == Langue.courante else { return [:] }
+        return (UserDefaults.standard.dictionary(forKey: clePhrases) as? [String: [String]]) ?? [:]
     }
 
     /// `marquer_visite_home()` — la visite guidée est faite ; la date se pose une fois.

@@ -292,6 +292,7 @@ struct PhraseFragment: Equatable {
     }
 }
 
+@MainActor
 enum PhraseTexte {
     /// La voix est le **vous** (arbitrage du 20-08). Les retours à la ligne
     /// sont écrits à la main : ils portent le rythme.
@@ -327,13 +328,22 @@ enum PhraseTexte {
     }
 
     static func fragments(faits: Int, prevus: Int, prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
-        let mot = faits == 1 ? "workout" : "workouts"
-        return [
-            PhraseFragment(salut(prenom), clair: true),
-            PhraseFragment("you've done", clair: false),
-            PhraseFragment("\(faits) \(mot)", clair: true),
-            PhraseFragment("this week.", clair: false)
-        ]
+        let etat = faits == 0 ? "active_zero" : "active"
+        if let mots = HomeTextes.phrase(etat, nombre: faits) {
+            return mots.enumerated().map { PhraseFragment($0.element, clair: $0.offset.isMultiple(of: 2)) }
+        }
+        let salut = Langue.en ? salut(prenom) : (prenom?.isEmpty == false ? "Salut \(prenom!)," : "Salut,")
+        if faits > 0 {
+            let mot = L(faits == 1 ? "séance" : "séances", faits == 1 ? "workout" : "workouts")
+            return [PhraseFragment(salut, clair: true),
+                    PhraseFragment(L("déjà", "you’ve done"), clair: false),
+                    PhraseFragment("\(faits) \(mot)", clair: true),
+                    PhraseFragment(L("cette semaine.", "this week."), clair: false)]
+        }
+        return [PhraseFragment(salut, clair: true),
+                PhraseFragment(L("pas encore", "no workout yet"), clair: false),
+                PhraseFragment(L("de séance", "this week."), clair: true),
+                PhraseFragment(L("cette semaine.", "Let’s go."), clair: false)]
     }
 
     /// LA PHRASE DE LA PREMIÈRE FOIS (13-09, PLAN-PREMIERE-ARRIVEE ②) — tant
@@ -361,6 +371,9 @@ enum PhraseTexte {
     /// remplace le troisième fragment, le mot suit (« séance(s) », « workout(s) »,
     /// « minute(s) »). `nil` tant qu'aucun `home()` n'a répondu → les textes de repli.
     static func serveur(_ etat: String, nombre: Int? = nil) -> [PhraseFragment]? {
+        if let mots = HomeTextes.phrase(etat, nombre: nombre ?? 0) {
+            return mots.enumerated().map { PhraseFragment($0.element, clair: $0.offset.isMultiple(of: 2)) }
+        }
         guard let f = ProfilServeur.phrasesLocales[etat], f.count == 4 else { return nil }
         var mots = f
         // LE PRÉNOM NE MANQUE JAMAIS (verdict 14-09 : « dans la Home à l'état vide tu
@@ -555,6 +568,8 @@ struct PhraseVue: View, Animatable {
     /// Le haut du bloc, en points depuis le bord haut de l'écran (l'île
     /// comprise) : c'est la coordonnée que lit le champ du rasant.
     var hautEcran: Double = 108
+    var cleParole: String? = nil
+    var paroleActive: Bool = true
 
     var animatableData: Double {
         get { p }
@@ -620,6 +635,8 @@ struct PhraseVue: View, Animatable {
             }
         }
         .frame(width: params.largeur, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(fragments.map(\.texte).joined(separator: " "))
     }
 
     @ViewBuilder
@@ -641,7 +658,13 @@ struct PhraseVue: View, Animatable {
                         atenu: params.argent)
                 }
             } else {
-                mot(f.texte, clair: f.clair, index: index)
+                ParoleLigne(texte: f.texte,
+                            replique: cleParole ?? fragments.map(\.texte).joined(separator: "|"),
+                            taille: params.taille, tracking: params.tracking,
+                            opacite: f.clair ? 1 : sourd(index),
+                            retard: ParoleLigne.retard(apres: Array(fragments.prefix(index))),
+                            active: paroleActive && p > 0.04 && !RythmeEcran.dortHome && !DepartEtat.shared.homeDort)
+                    .frame(height: params.taille * 1.21)
             }
         }
         // Le flou vit sur le TEXTE (et sur le galet), jamais sur un conteneur
@@ -1899,6 +1922,8 @@ struct HomeNuitPage: View {
     /// Le prénom du profil (cache local de `profils.prenom`) — la phrase le lit,
     /// et se redessine quand le serveur le pose (13-09).
     @AppStorage(ProfilServeur.clePrenom) private var prenom: String = ""
+    @AppStorage(Langue.cle) private var languePhrase: String = Langue.courante
+    @AppStorage(HomeTextes.cleRevision) private var revisionTextes: String = ""
     /// Le panneau du galet est-il ouvert. `-galetOuvert` l'ouvre au
     /// lancement : le simulateur ne sait pas poser un doigt sur un galet.
     @State private var reglageOuvert =
@@ -2042,6 +2067,7 @@ struct HomeNuitPage: View {
     /// NULLE et flou de 30 pt. Il n'y a rigoureusement rien à voir à cet
     /// instant, donc rien à cacher : c'est le seul échange qui ne se voit pas.
     private func fragmentsPhrase() -> [PhraseFragment] {
+        _ = languePhrase; _ = revisionTextes
         // Le prénom : celui de la page, sinon le cache du profil (verdict 14-09 :
         // « tu as oublié le user name après Hey »).
         let qui = prenom.isEmpty ? (ProfilServeur.prenomLocal ?? PremiereArrivee.prenomBanc) : prenom
@@ -3215,10 +3241,13 @@ struct HomeNuitPage: View {
     /// BRAISE, pas sur la nuit — un gris de nuit s'y ferait manger.
     /// Seule la PREMIÈRE ligne change ; les deux autres sont la charnière de la
     /// phrase et ne bougent pas. Tirée dans `lancer()`, jamais dans un `body`.
-    @State private var ligneUne = DepartMots.lignes[0]
-    @State private var libelleSlider = DepartMots.boutons[0]
+    @State private var departMots: [String] = []
+    @State private var libelleSlider = L("C’est parti", "Let’s go")
     private var motsArrivee: [(String, Bool)] {
-        [(ligneUne, true), ("slide to start", false), ("your session.", true)]
+        let mots = departMots.isEmpty
+            ? [L("Allez,", "Alright,"), L("glisse pour lancer", "slide to start"), L("ta séance.", "your session.")]
+            : departMots
+        return mots.enumerated().map { ($0.element, $0.offset.isMultiple(of: 2)) }
     }
 
     /// LE FOYER — ce que la home montre PENDANT une séance (06-09).
@@ -3346,9 +3375,13 @@ struct HomeNuitPage: View {
                     // se déchire.
                     let r = Double(i) * 0.10
                     let net = DepartCine.poseLigne(e, retard: r)
-                    Text(m.0)
-                        .font(.inter(30, .semibold))
-                        .foregroundStyle(.white.opacity(m.1 ? 0.94 : 0.62))
+                    ParoleLigne(texte: m.0, replique: departMots.joined(separator: "|"),
+                                taille: 30, tracking: -0.4,
+                                opacite: m.1 ? 0.94 : 0.62,
+                                retard: ParoleLigne.retard(apres: motsArrivee.prefix(i).map {
+                                    PhraseFragment($0.0, clair: $0.1)
+                                }), active: depart != nil && net > 0.04 && !RythmeEcran.dortHome)
+                        .frame(height: 36.3)
                         // Le flou vit sur les GLYPHES. Posé sur un conteneur il
                         // pose un voile clair uniforme aux coins carrés, que ni
                         // masque ni blend ne rattrapent (piège payé).
@@ -3359,6 +3392,8 @@ struct HomeNuitPage: View {
             }
                 .fixedSize(horizontal: false, vertical: true)
                 .opacity(bascule * DepartCine.matiere(e))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(motsArrivee.map { $0.0 }.joined(separator: " "))
                 // ⚠️ ELLE EST ÉPINGLÉE À LA SAFE AREA, PAS À L'ARÊTE. Sa marge
                 // au-dessus de l'arête vaut `encart − levée + padBottom` : la
                 // règle `padBottom = levée + 6` la pose à 40 pt de l'arête, et
@@ -3465,6 +3500,7 @@ struct HomeNuitPage: View {
                               fragments: fragmentsPhrase(),
                               ecran: geo.size.width,
                               hautEcran: geo.safeAreaInsets.top + 48,
+                              paroleActive: !enSeance && bascule < 0.02,
                               galet: galet,
                               objectif: $prevus,
                               reglageOuvert: $reglageOuvert)
@@ -4212,8 +4248,8 @@ struct HomeNuitPage: View {
         // On ne re-tire pas sur une REPRISE (le film n'a pas fini) : la phrase
         // changerait sous le doigt.
         if deja < 0.01 {
-            let t = DepartMots.tirer()
-            ligneUne = t.ligne
+            let t = HomeTextes.depart()
+            departMots = t.fragments
             libelleSlider = t.bouton
         }
         eGele = nil
@@ -5128,7 +5164,7 @@ struct InviteTirage: View {
                 VStack(spacing: 3) {
                     chevron(souffle(t, 0))
                     chevron(souffle(t, 0.18))
-                    Text("pull to start")
+                    Text(L("tire pour commencer", "pull to start"))
                         .font(.inter(11, .medium))
                         .tracking(1.6)
                         .foregroundStyle(.white.opacity(0.46))
@@ -5147,7 +5183,7 @@ struct InviteTirage: View {
             VStack(spacing: 3) {
                 ChevronAppel(retard: 0, immobile: immobile)
                 ChevronAppel(retard: 0.18, immobile: immobile)
-                Text("pull to start")
+                Text(L("tire pour commencer", "pull to start"))
                     .font(.inter(11, .medium))
                     .tracking(1.6)
                     .foregroundStyle(.white.opacity(0.46))

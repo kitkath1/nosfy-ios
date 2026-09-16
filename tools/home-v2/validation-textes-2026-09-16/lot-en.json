@@ -1,0 +1,417 @@
+{
+  "lot": {
+    "schema": 1,
+    "langue": "en",
+    "revision": "ia-relue-20260916-03",
+    "variantes": {
+      "vide": [
+        {
+          "id": "en-vide-1",
+          "fragments": [
+            "{salut}",
+            "Ready when you are",
+            "Your time, your pace",
+            "Let’s begin."
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-vide-2",
+          "fragments": [
+            "{salut}",
+            "A fresh start.",
+            "Your first workout.",
+            "At your pace."
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-vide-3",
+          "fragments": [
+            "{salut}",
+            "Your first chapter",
+            "Tiny step, big mood",
+            "Start smoothly"
+          ],
+          "bouton": null
+        }
+      ],
+      "active_zero": [
+        {
+          "id": "en-active_zero-1",
+          "fragments": [
+            "{salut}",
+            "Week’s still open",
+            "Fancy a workout?",
+            "At your pace."
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-active_zero-2",
+          "fragments": [
+            "{salut}",
+            "No rush.",
+            "A short reset fits",
+            "Let’s ease in"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-active_zero-3",
+          "fragments": [
+            "{salut}",
+            "Time for you.",
+            "Find your flow.",
+            "We’ll guide you."
+          ],
+          "bouton": null
+        }
+      ],
+      "active": [
+        {
+          "id": "en-active-1",
+          "fragments": [
+            "{salut}",
+            "So far this week",
+            "{seances}",
+            "Fancy one more?"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-active-2",
+          "fragments": [
+            "{salut}",
+            "This week’s tally",
+            "{seances}",
+            "Ready for the next?"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-active-3",
+          "fragments": [
+            "{salut}",
+            "Your week so far",
+            "{seances}",
+            "Want a little extra?"
+          ],
+          "bouton": null
+        }
+      ],
+      "seance_debut": [
+        {
+          "id": "en-seance_debut-1",
+          "fragments": [
+            "{allez}",
+            "Settle and breathe",
+            "Find your rhythm",
+            "We’re right here"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-seance_debut-2",
+          "fragments": [
+            "{allez}",
+            "Light on the feet",
+            "Focus follows ease",
+            "Enjoy the start"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-seance_debut-3",
+          "fragments": [
+            "{allez}",
+            "You just pressed go",
+            "Stay curious",
+            "Flow at your pace"
+          ],
+          "bouton": null
+        }
+      ],
+      "seance": [
+        {
+          "id": "en-seance-1",
+          "fragments": [
+            "{allez}",
+            "In this session",
+            "{minutes}",
+            "Settle into it"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-seance-2",
+          "fragments": [
+            "{allez}",
+            "Current session",
+            "{minutes}",
+            "Keep it steady"
+          ],
+          "bouton": null
+        },
+        {
+          "id": "en-seance-3",
+          "fragments": [
+            "{allez}",
+            "Right now",
+            "{minutes}",
+            "Stay with the flow"
+          ],
+          "bouton": null
+        }
+      ],
+      "depart": [
+        {
+          "id": "en-depart-1",
+          "fragments": [
+            "{allez}",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Let’s go"
+        },
+        {
+          "id": "en-depart-2",
+          "fragments": [
+            "Set the tone,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-3",
+          "fragments": [
+            "A calm first step,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-4",
+          "fragments": [
+            "Make time yours,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start now"
+        },
+        {
+          "id": "en-depart-5",
+          "fragments": [
+            "Ease into motion,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Slide"
+        },
+        {
+          "id": "en-depart-6",
+          "fragments": [
+            "Gentle nudge,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-7",
+          "fragments": [
+            "Find your flow,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-8",
+          "fragments": [
+            "Take a small step,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-9",
+          "fragments": [
+            "Tune into you,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-10",
+          "fragments": [
+            "Smooth and simple,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-11",
+          "fragments": [
+            "Start with ease,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-12",
+          "fragments": [
+            "Light and easy,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-13",
+          "fragments": [
+            "A moment for you,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-14",
+          "fragments": [
+            "Your move now,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-15",
+          "fragments": [
+            "Settle, then move,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-16",
+          "fragments": [
+            "Time to arrive,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-17",
+          "fragments": [
+            "Breathe, then slide,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-18",
+          "fragments": [
+            "Step into calm,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-19",
+          "fragments": [
+            "Flow begins here,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-20",
+          "fragments": [
+            "Make it gentle,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-21",
+          "fragments": [
+            "Slide with ease,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-22",
+          "fragments": [
+            "Open the session,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-23",
+          "fragments": [
+            "Ready to flow,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-24",
+          "fragments": [
+            "A soft start,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        },
+        {
+          "id": "en-depart-25",
+          "fragments": [
+            "Claim your minute,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Go"
+        },
+        {
+          "id": "en-depart-26",
+          "fragments": [
+            "Move with care,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Begin"
+        },
+        {
+          "id": "en-depart-27",
+          "fragments": [
+            "Your pace, always,",
+            "slide to start",
+            "your session."
+          ],
+          "bouton": "Start"
+        }
+      ]
+    }
+  },
+  "modele": "gpt-5",
+  "publie": false,
+  "relecture": "Pas de série consécutive supposée, de matériel imposé ni de geste fictif."
+}

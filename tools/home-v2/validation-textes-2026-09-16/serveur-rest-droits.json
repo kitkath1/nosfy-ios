@@ -1,0 +1,19 @@
+{
+  "home_REST": {
+    "status": 200,
+    "langue": "fr",
+    "lot": "ia-relue-20260916-03"
+  },
+  "sans_jeton": {
+    "status": 401,
+    "raison": "administrateur_requis"
+  },
+  "utilisateur_QA": {
+    "status": 401,
+    "raison": "administrateur_requis"
+  },
+  "admin_action_invalide": {
+    "status": 400,
+    "raison": "demande_invalide"
+  }
+}

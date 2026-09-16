@@ -1,0 +1,25 @@
+    cd /Users/kathryn/Desktop/woochoper-ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Info.plist --temp-dir-path /tmp/woop-textes-sim-dd/Build/Intermediates.noindex/Woop.build/Release-iphonesimulator/Woop.build/ssu --bundle-id fr.kathryn.woop --product-path /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app --extracted-metadata-path /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Metadata.appintents --metadata-file-list /tmp/woop-textes-sim-dd/Build/Intermediates.noindex/Woop.build/Release-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --source-file /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Info.plist --archive-ssu-assets
+2026-09-16 09:50:59.620 appintentsnltrainingprocessor[19457:15427456] Parsing options for appintentsnltrainingprocessor
+2026-09-16 09:50:59.620 appintentsnltrainingprocessor[19457:15427456] Starting AppIntents SSU YAML Generation
+2026-09-16 09:50:59.621 appintentsnltrainingprocessor[19457:15427456] No AppShortcuts found - Skipping.
+
+CopySwiftLibs /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Woop --scan-folder /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Frameworks --scan-folder /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/PlugIns --scan-folder /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/SystemExtensions --scan-folder /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-textes-sim-dd/Build/Intermediates.noindex/Woop.build/Release-iphonesimulator/Woop.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+GenerateDSYMFile /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app.dSYM /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Woop (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Woop -o /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app.dSYM
+
+ValidateEmbeddedBinary /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -info-plist-path /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app/Info.plist
+
+Validate /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /Users/kathryn/Desktop/woochoper-ios
+    builtin-validationUtility /tmp/woop-textes-sim-dd/Build/Products/Release-iphonesimulator/Woop.app -validate-for-store -shallow-bundle -infoplist-subpath Info.plist
+
+** BUILD SUCCEEDED **
+

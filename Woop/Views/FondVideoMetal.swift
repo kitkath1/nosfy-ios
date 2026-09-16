@@ -360,9 +360,17 @@ struct FondVideoMetal: UIViewRepresentable {
             }
             if !presentationDemandee {
                 presentationDemandee = true
+                #if targetEnvironment(simulator)
+                // Le SDK simulateur n'expose pas addPresentedHandler.
+                buffer.addCompletedHandler { [weak self] commande in
+                    guard commande.status == .completed else { return }
+                    DispatchQueue.main.async { [weak self] in self?.vue?.retirerPose() }
+                }
+                #else
                 drawable.addPresentedHandler { [weak self] _ in
                     DispatchQueue.main.async { [weak self] in self?.vue?.retirerPose() }
                 }
+                #endif
             }
             let compteBraise = braise?.imagesRecues ?? 0
             let comptePilule = pilule?.imagesRecues ?? 0

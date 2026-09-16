@@ -1529,6 +1529,11 @@ struct MotsFlou: View {
         (calendrier(fragments, base: 0, lenteur: 1).last?.retard ?? 0) + 0.78
     }
 
+    /// Les Homes reprennent le rythme du film ; le rendu de l'onboarding reste identique.
+    static func partition(_ fragments: [(String, Bool)], base: Double = 0) -> [(texte: String, retard: Double)] {
+        calendrier(fragments, base: base, lenteur: 1).map { ($0.texte, $0.retard) }
+    }
+
     /// LE PHRASÉ, calculé une fois — voir la note ci-dessous.
     private static func calendrier(_ fragments: [(String, Bool)], base: Double,
                                    lenteur: Double) -> [Mot] {

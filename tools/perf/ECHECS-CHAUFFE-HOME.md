@@ -1,5 +1,21 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E58 — Texte compilé, mais prise de parole non validée
+
+**16-09 : le rendu 36 est rejeté par l’utilisateur (« je ne vois pas l’animation
+des mots »).** Le premier moteur natif ne reproduisait pas le flou demandé.
+37 utilise le phrasé de l’onboarding, flou mot par mot et haptique soft, avec
+des phrases de 7 à 12 mots. Les quatre films simulateur (rouge/noire, FR/EN)
+montrent l’apparition puis le repos. Installation iPhone 37 réussie à 09:44,
+mais lancement refusé « Locked » : ni haptique ni coût thermique 37 validés.
+Le test Profil 36 échouait sur `isHittable` ; la capture suivante n’était pas une
+preuve de navigation. Ne pas confondre compilation, installation, capture et
+parcours interactif. Les autres erreurs de ce chantier (génération, droits,
+compilation, largeurs et documentation) et leurs corrections sont conservées
+dans le [bilan des textes](../home-v2/BILAN-TEXTES-HOMES-2026-09-16.md).
+
+### Reprise du 16-09 à 08:36
+
 **16-09, 08:36 — complément E57 : automatisation rétablie après déverrouillage,
 contrôle Home 35 réussi. Deux endurances interrompues par changement de contexte ;
 aucune validation longue obtenue.** Observation courte sur Home noire : CPU médian

@@ -523,85 +523,8 @@ extension EnvironmentValues {
     }
 }
 
-/// LE SAC DES VARIANTES — la première ligne du bloc de départ, et le libellé du
-/// slider. Ils changent à chaque tirage.
-///
-/// ⚠️ **UN SAC MÉLANGÉ, PAS UN `random`.** On tire SANS REMISE ; quand le sac est
-/// vide on le remélange en interdisant que la première soit la dernière sortie.
-/// Conséquences : jamais deux fois de suite la même, et on voit les 27 avant
-/// d'en revoir une. Un `Int.random` pur redonnerait la même variante deux fois
-/// sur sept — assez pour qu'elle croie que ça ne marche pas.
-///
-/// ⚠️ **LE TIRAGE SE FAIT DANS `lancer()`, JAMAIS DANS UN `body`.** Un body doit
-/// rester pur : il est réévalué plusieurs fois par image, et le texte changerait
-/// en plein fondu.
-///
-/// ⚠️ **DEUX RÈGLES D'ÉCRITURE, ÉLIMINATOIRES**, pour toute variante future :
-///  1. **Virgule finale, sans exception.** La ligne 2 commence par un `s`
-///     minuscule : un point rendrait le bloc agrammatical (« Be on fire. slide
-///     to start your session. »).
-///  2. **Le test se fait à TROIS lignes**, jamais sur la ligne seule. Écartée
-///     sur ce seul motif : « Your excuses called, » — c'est une amorce de blague
-///     qui appelle sa chute, et « slide to start » n'est pas sa chute.
-///
-/// Toutes les cotes ci-dessous sont mesurées à **CoreText avec
-/// `Inter-SemiBold.otf` à 30 pt**, crénage GPOS compris. **Plafond : 300 pt**,
-/// pas 330 — la largeur du bloc vaut `écran − 72`, donc elle tombe à 303 sur un
-/// écran de 375 pt, et une ligne qui passerait à la ligne ferait grandir le bloc
-/// VERS LE HAUT (il est ancré par le bas), déplaçant la seule ligne qu'on lit.
-@MainActor
-enum DepartMots {
-
-    /// Écartées à la mesure, pour mémoire — elles débordent :
-    /// « Be more stronger today, » 348 · « Destroy something today, » 375 ·
-    /// « Terrify your future self, » 339 · « Time to be dangerous, » 325.
-    /// ⚠️ La préférée de Kathryn (« be more stronger today ») est impossible
-    /// deux fois : elle déborde ET l'anglais est cassé. « Be stronger today, »
-    /// la remplace — le seul endroit où on réécrit ses mots.
-    static let lignes = [
-        "Alright Kathryn,", "There you are,", "Good to see you,",
-        "Take your time,", "Nothing to prove,", "One more, Kathryn,",
-        "You showed up,", "Be stronger today,", "Be a better version,",
-        "Beat yesterday,", "No excuses today,", "Be on fire,",
-        "Be badass today,", "Be sexy today,", "Be funking badass,",
-        "Make it hurt,", "Zero mercy today,", "Wreck it, Kathryn,",
-        "Earn the shower,", "The couch will wait,", "Nobody's watching,",
-        "Feel free to panic,", "Legs, we're sorry,", "Scare the mirror,",
-        "Summon the beast,", "Gravity is optional,", "The iron misses you,"
-    ]
-
-    /// Le libellé du slider. Le pouce mange les 90 pt de gauche de la capsule,
-    /// d'où « Kick your ass » et non « Start Kick your Ass ».
-    static let boutons = [
-        "Start", "Begin", "Send it", "Let's go", "Unleash", "Just start",
-        "Start Hulk", "Start Dude", "Beast mode", "Slide, killer",
-        "Start, champ", "Kick your ass", "Start, dammit", "Start the fire",
-        "Wake the beast", "Start suffering", "Start, gorgeous"
-    ]
-
-    private static var sacLignes: [String] = []
-    private static var sacBoutons: [String] = []
-    private static var derniereLigne: String?
-    private static var dernierBouton: String?
-
-    static func tirer() -> (ligne: String, bouton: String) {
-        (piocher(&sacLignes, lignes, &derniereLigne),
-         piocher(&sacBoutons, boutons, &dernierBouton))
-    }
-
-    private static func piocher(_ sac: inout [String], _ tout: [String],
-                                _ derniere: inout String?) -> String {
-        if sac.isEmpty {
-            sac = tout.shuffled()
-            // Le seul cas où le sac peut répéter : la première du nouveau sac
-            // est la dernière de l'ancien. On l'échange avec sa voisine.
-            if sac.count > 1, sac[0] == derniere { sac.swapAt(0, 1) }
-        }
-        let m = sac.removeFirst()
-        derniere = m
-        return m
-    }
-}
+// Les variantes FR/EN du départ vivent dans HomeTextes ; le sac est tiré
+// uniquement par HomeNuit.lancer(), jamais pendant le rendu ou une reprise.
 
 /// LA COULEUR DU FEU — **le ratio de canaux MESURÉ du lit**, pas un goût :
 /// 1 : 0,272 : 0,015, teinte 15,7°, saturation 0,985.

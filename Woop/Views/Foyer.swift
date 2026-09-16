@@ -353,45 +353,7 @@ private struct FondRasant: View {
 }
 
 
-// MARK: - LE SOUFFLE DU TEXTE (§12.4 — il REVIENT, tranché par elle)
-
-/// La lueur qui traverse la phrase, en boucle. Elle ne change JAMAIS les mots.
-///
-/// ⚠️ LA SEULE FORME LICITE : un dégradé FIXE dans un cadre 2,2× plus large que
-/// le bloc, déplacé par `.offset(x:)` — l'offset EST animable, les `UnitPoint`
-/// d'un dégradé NON (un ShapeStyle ne s'interpole pas : le masque SAUTE au lieu
-/// de glisser — vérifié par le contradicteur sur les deux seuls balayages du
-/// dépôt). Et JAMAIS un rayon de flou animé (loi du skill : jamais mis en
-/// cache) — le flou vivant reste celui des réécritures aux paliers.
-private struct SouffleTexte: ViewModifier {
-    var largeur: CGFloat
-    var dort: Bool
-    @State private var pousse = false
-
-    func body(content: Content) -> some View {
-        content
-            .mask {
-                LinearGradient(stops: [
-                    .init(color: .white.opacity(0.74), location: 0.00),
-                    .init(color: .white.opacity(0.74), location: 0.32),
-                    .init(color: .white, location: 0.46),
-                    .init(color: .white.opacity(0.74), location: 0.60),
-                    .init(color: .white.opacity(0.74), location: 1.00)
-                ], startPoint: .leading, endPoint: .trailing)
-                .frame(width: largeur * 2.2)
-                .offset(x: pousse ? largeur * 0.6 : -largeur * 0.6)
-            }
-            .task(id: dort) { armer() }
-    }
-
-    private func armer() {
-        poserFoyerSansAnimation { pousse = false }
-        guard !dort, !FoyerBanc.fige else { return }
-        withAnimation(.easeInOut(duration: 7.0).repeatForever(autoreverses: true)) {
-            pousse.toggle()
-        }
-    }
-}
+// Le texte parle une fois avec ParoleLigne, puis reste au repos.
 
 // MARK: - Le point de veille
 
@@ -558,6 +520,9 @@ struct FoyerPage: View {
 
     /// La phrase exige deux liaisons pour un galet qui n'existe plus (02-09) :
     /// jamais lues, elles satisfont la signature.
+    @AppStorage(Langue.cle) private var languePhrase: String = Langue.courante
+    @AppStorage(HomeTextes.cleRevision) private var revisionTextes: String = ""
+    @AppStorage(ProfilServeur.clePrenom) private var prenomPhrase: String = ""
     @State private var objectifInerte = 4
     @State private var reglageInerte = false
     /// LA PRESSION (verdict 13-09 : « tout l'écran change pour comprendre
@@ -678,16 +643,17 @@ struct FoyerPage: View {
     }
 
 
-    /// La phrase de la home, telle quelle — 4 fragments, l'arrivée au flou qui
-    /// se résorbe, la réécriture aux paliers AU SOMMET du flou. Le balayage
-    /// continu est MORT (plan §6 — écart déclaré, il revient en une ligne si
-    /// elle le réclame).
+    /// Quatre fragments FR/EN, une prise de parole à l'entrée et aux paliers.
+    /// Entre deux paliers, seul le nombre de minutes se renouvelle.
     private func phraseArrivee(_ B: CGFloat) -> some View {
-        PhraseVue(p: arrivee,
-                  fragments: PhraseTexte.fragmentsSeance(minutes: minutes),
+        let etat = minutes < 1 ? "seance_debut" : "seance"
+        let mots = PhraseTexte.serveur(etat, nombre: minutes < 1 ? nil : minutes)
+            ?? PhraseTexte.fragmentsSeance(minutes: minutes)
+        return PhraseVue(p: arrivee, fragments: mots,
+                  cleParole: "\(languePhrase)|\(revisionTextes)|\(prenomPhrase)|\(etat)|\(HomeTextes.palier(minutes))",
+                  paroleActive: !dort,
                   objectif: $objectifInerte,
                   reglageOuvert: $reglageInerte)
-            .modifier(SouffleTexte(largeur: 300, dort: dort))
             .opacity(0.88)
             .padding(.leading, FoyerGeo.arete)
             .padding(.top, FoyerGeo.phraseHaut)
