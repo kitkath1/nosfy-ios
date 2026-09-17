@@ -1,5 +1,33 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E72 — Fermeture widgets : reproduction59 et simulateur perdu
+
+17-09 : le tirage depuis le contenu ne ferme pas la chambre, échec25,382s
+sur59. Le code remet aussi tirage à zéro au début de la sortie.60 conserve
+ce décalage et accepte la prise depuis le haut du contenu. Le runner reste
+bloqué après le verdict ; son arrêt ciblé est suivi d’une destination
+simulateur introuvable. Aucun redémarrage des services partagés. Le build
+appareil continue ; ne pas confondre correctif compilé et geste validé.
+Le simulateur revient ensuite, mais son build est arrêté à la demande
+« fais sur mon tel » pour prioriser l’iPhone ; aucun test60 simulé exécuté.
+Release60 ensuite compilée, installée et relue sur l’iPhone à11:19 ; lancement
+avec Regularity demandé. Retour utilisateur suivant : « ça glitch encore »
+pendant la descente.60 n’est donc pas une validation de fluidité. Reprise61
+en coordonnées globales, sans rebond concurrent, sortie par le même offset.
+Premier essai physique60 bloqué par Locked avant le test ; déverrouillage
+demandé, puis Lost connection to testmanagerd avant le scénario et appareil
+absent dans CoreDevice. Aucun verdict tactile issu de cette tentative.
+Release61 compilée ; installation arrêtée avant toute écriture sur l’iPhone
+(CoreDevice1011). Après reconnexion :61 installée et relue11:51, descente lente physique PASS
+en10,090s ; film sans retour supérieur à3px sur81 positions de poignée.
+Relance normale11:52:45, puis validation utilisateur (« top c cool »).
+Ce parcours ne clôt ni les autres gestes ni la chauffe. Pour le commit,
+l’export des sources HEAD refuse2 047 408o : sources story plus récentes que
+le livrable commité. Rendu de notre seul périmètre depuis la révision du
+livrable, sans embarquer ni écraser le travail documentaire concurrent.
+[Campagne](campagnes/2026-09-17-fermeture-widgets/etat.md).
+
+
 ### E71 — Visite58 : tester son montage sur une Home immobile
 
 17-09, trois parcours exercice passent, mais le banc Profil n’affiche aucune

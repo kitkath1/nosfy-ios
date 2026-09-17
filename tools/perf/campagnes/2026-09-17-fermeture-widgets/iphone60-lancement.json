@@ -1,0 +1,72 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "process",
+      "launch",
+      "--terminate-existing",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--timeout",
+      "20",
+      "--json-output",
+      "/tmp/woop-widget60-lancement.json",
+      "fr.kathryn.woop",
+      "--",
+      "-sansSondeVol",
+      "-sansVisite",
+      "-openTab",
+      "home",
+      "-chambreLongue",
+      "regularite"
+    ],
+    "commandType" : "devicectl.device.process.launch",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "launchOptions" : {
+      "activatedWhenStarted" : true,
+      "arguments" : [
+        "--",
+        "-sansSondeVol",
+        "-sansVisite",
+        "-openTab",
+        "home",
+        "-chambreLongue",
+        "regularite"
+      ],
+      "environmentVariables" : {
+        "TERM" : "dumb"
+      },
+      "platformSpecificOptions" : {
+
+      },
+      "startStopped" : false,
+      "terminateExistingInstances" : true,
+      "user" : {
+        "active" : true
+      }
+    },
+    "process" : {
+      "auditToken" : [
+        4294967295,
+        501,
+        501,
+        501,
+        501,
+        39478,
+        0,
+        111432
+      ],
+      "executable" : "file:///private/var/containers/Bundle/Application/BA0626AA-0F1B-4623-8B56-1BB8566CF023/Woop.app/Woop",
+      "processIdentifier" : 39478
+    }
+  }
+}

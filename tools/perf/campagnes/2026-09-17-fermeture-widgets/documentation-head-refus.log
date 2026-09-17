@@ -1,0 +1,34 @@
+
+> woop-chambre-des-machines@2.0.0 artefact
+> next build && node scripts/inliner.mjs
+
+▲ Next.js 16.3.3 (webpack)
+✓ Running next.config.ts took 33ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1612ms
+  Running TypeScript ...
+  Finished TypeScript in 1072ms ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 322ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+inliner : /private/tmp/woop-widgets-commit61/docs/site/out/index.html
+   retirés  : 24 <script> · 7 <link> · 1 attributs Next · 227 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (49636 o) · 1 url() (99780 o) · 59 média(s) (535881 o) · site.js (9066 o)
+   titre    : Documentation Woop
+   livrable : /private/tmp/woop-widgets-commit61/docs/site/index.html · 2047408 o (2.05 Mo) · 1 <script>
+✗ inliner : 2047408 o > 2000000 — on baisse la qualité JPEG, jamais le nombre de captures

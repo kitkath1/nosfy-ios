@@ -250,7 +250,7 @@ struct ChambreLongueHote: View {
         ZStack {
             if let kind = etat.ouverte {
                 ChambreLongue(kind: kind)
-                    .transition(.move(edge: .bottom))
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .identity))
             }
         }
         .ignoresSafeArea()
@@ -272,6 +272,11 @@ struct ChambreLongue: View {
     @State private var etat = ChambreEtat.shared
     /// Le tirage du doigt : il TRANSLATE la feuille (loi ③).
     @State private var tirage: CGFloat = 0
+    @State private var rouleauEnHaut = true
+    @State private var priseAcceptee: Bool?
+    @State private var fermeture = false
+    @State private var hauteur: CGFloat = 0
+    @GestureState private var doigtPose = false
     /// Regularity : la rangée d'objectif, ouverte par le héros.
     @State private var objectifOuvert = false
     /// Le check blanc « pris en compte », 1,6 s après un choix d'objectif.
@@ -284,25 +289,32 @@ struct ChambreLongue: View {
             voile
             feuille
         }
+        .accessibilityAction(.escape, fermer)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { hauteur = $0 }
+        .allowsHitTesting(!fermeture)
+        .onChange(of: doigtPose) { _, pose in
+            guard !pose, !fermeture, priseAcceptee != nil else { return }
+            priseAcceptee = nil
+            withAnimation(.easeOut(duration: 0.22)) { tirage = 0 }
+        }
     }
 
     private var voile: some View {
         Color.black.opacity(0.34 * (1 - min(tirage / 400, 1)))
             .ignoresSafeArea()
             .contentShape(Rectangle())
-            .onTapGesture { etat.fermer() }
+            .onTapGesture(perform: fermer)
     }
 
     private var feuille: some View {
         VStack(spacing: 0) {
-            // LE GESTE DE FERMETURE NE VIT QUE SUR LE TRAIT ET L'EN-TÊTE : posé
-            // sur toute la feuille il se battrait avec le ScrollView du rouleau.
+            // L'en-tête se tire toujours ; le contenu seulement depuis son haut.
             VStack(spacing: 0) {
                 grabber
                 entete
             }
             .contentShape(Rectangle())
-            .gesture(tirer)
+            .gesture(tirer(depuisContenu: false))
             rouleau
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -347,6 +359,9 @@ struct ChambreLongue: View {
             .frame(width: 36, height: 3.5)
             .padding(.top, 10)
             .padding(.bottom, 8)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: fermer)
     }
 
     // ── L'EN-TÊTE
@@ -444,6 +459,7 @@ struct ChambreLongue: View {
                 .padding(.horizontal, 28)
                 .padding(.top, 22)
                 .padding(.bottom, 140)
+                .background(ChambreRouleauSansRebond())
                 // Le passage du vide (gris) aux données se fait en fondu — le
                 // `.chambreVide` de chaque bloc (saturation, opacité) suit.
                 .animation(.easeOut(duration: 0.55), value: f.vide)
@@ -453,6 +469,13 @@ struct ChambreLongue: View {
         // passent par là). Un `scrollTo` différé n'a rien fait le 13-09 :
         // l'ancre par défaut, elle, est posée avant le premier rendu.
         .defaultScrollAnchor(ChambreEtat.bancBas ? .bottom : .top)
+        // Un booléen de frontière, pas une publication de chaque pixel défilé.
+        .onScrollGeometryChange(for: Bool.self) { g in
+            g.contentOffset.y + g.contentInsets.top <= 1
+        } action: { _, enHaut in
+            rouleauEnHaut = enHaut
+        }
+        .simultaneousGesture(tirer(depuisContenu: true))
         .mask {
             LinearGradient(stops: [
                 .init(color: .clear, location: 0.00),
@@ -463,20 +486,99 @@ struct ChambreLongue: View {
         }
     }
 
-    private var tirer: some Gesture {
-        DragGesture(minimumDistance: 8)
+    private func fermer() {
+        fermer(vitesse: 0)
+    }
+
+    private func fermer(vitesse: CGFloat) {
+        guard !fermeture else { return }
+        fermeture = true
+        // La sortie prolonge LE MÊME offset. La home et sa nav ne sont
+        // réactivées qu'une fois la feuille hors écran, sans second « move ».
+        let destination = max(hauteur, tirage + 1)
+        let elan = max(0, vitesse) / max(1, destination - tirage)
+        withAnimation(.interpolatingSpring(duration: 0.30, bounce: 0,
+                                          initialVelocity: Double(elan)),
+                      completionCriteria: .removed) {
+            tirage = destination
+        } completion: {
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { etat.fermer() }
+        }
+    }
+
+    private func tirer(depuisContenu: Bool) -> some Gesture {
+        // L'espace de mesure reste fixe quand la feuille et son rouleau bougent.
+        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+            .updating($doigtPose) { _, pose, _ in pose = true }
             .onChanged { v in
-                tirage = v.translation.height > 0
-                    ? v.translation.height : v.translation.height * 0.18
+                guard !fermeture else { return }
+                if priseAcceptee == nil {
+                    priseAcceptee = (!depuisContenu || rouleauEnHaut)
+                        && v.translation.height > abs(v.translation.width)
+                }
+                guard priseAcceptee == true else { return }
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { tirage = max(0, v.translation.height) }
             }
             .onEnded { v in
-                if tirage > 120 || v.predictedEndTranslation.height > 320 {
-                    etat.fermer(); tirage = 0
+                let prise = priseAcceptee == true
+                priseAcceptee = nil
+                guard prise, !fermeture else { return }
+                if tirage >= 72 || (tirage >= 16 && v.predictedEndTranslation.height > 180) {
+                    fermer(vitesse: v.velocity.height)
                 } else {
                     withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.38)) { tirage = 0 }
                 }
             }
     }
+}
+
+/// Le rouleau continue à défiler normalement, mais ne tire pas le contenu
+/// élastiquement pendant que le même doigt descend toute la feuille.
+/// Réglage local à CE ScrollView ; aucun delegate, timer ou geste supplémentaire.
+private struct ChambreRouleauSansRebond: UIViewRepresentable {
+    final class Repere: UIView {
+        weak var rouleau: UIScrollView?
+        private var rebondInitial = true
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window != nil { installer() }
+        }
+
+        func installer() {
+            var parent = superview
+            while let vue = parent {
+                if let scroll = vue as? UIScrollView {
+                    guard rouleau !== scroll else { return }
+                    restituer()
+                    rouleau = scroll
+                    rebondInitial = scroll.bounces
+                    scroll.bounces = false
+                    return
+                }
+                parent = vue.superview
+            }
+        }
+
+        func restituer() {
+            rouleau?.bounces = rebondInitial
+            rouleau = nil
+        }
+    }
+
+    func makeUIView(context: Context) -> Repere {
+        let vue = Repere()
+        vue.isUserInteractionEnabled = false
+        return vue
+    }
+
+    func updateUIView(_ vue: Repere, context: Context) { vue.installer() }
+
+    static func dismantleUIView(_ vue: Repere, coordinator: ()) { vue.restituer() }
 }
 
 // MARK: - Le contenu, par widget

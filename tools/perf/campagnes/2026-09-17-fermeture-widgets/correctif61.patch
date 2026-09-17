@@ -1,0 +1,140 @@
+--- a/Woop/Views/ChambreLongue.swift
++++ b/Woop/Views/ChambreLongue.swift
+@@ -266,7 +266,7 @@
+         ZStack {
+             if let kind = etat.ouverte {
+                 ChambreLongue(kind: kind)
+-                    .transition(.move(edge: .bottom))
++                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .identity))
+             }
+         }
+         .ignoresSafeArea()
+@@ -291,6 +291,7 @@
+     @State private var rouleauEnHaut = true
+     @State private var priseAcceptee: Bool?
+     @State private var fermeture = false
++    @State private var hauteur: CGFloat = 0
+     @GestureState private var doigtPose = false
+     /// Regularity : la rangée d'objectif, ouverte par le héros.
+     @State private var objectifOuvert = false
+@@ -305,6 +306,8 @@
+             feuille
+         }
+         .accessibilityAction(.escape, fermer)
++        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { hauteur = $0 }
++        .allowsHitTesting(!fermeture)
+         .onChange(of: doigtPose) { _, pose in
+             guard !pose, !fermeture, priseAcceptee != nil else { return }
+             priseAcceptee = nil
+@@ -472,6 +475,7 @@
+                 .padding(.horizontal, 28)
+                 .padding(.top, 22)
+                 .padding(.bottom, 140)
++                .background(ChambreRouleauSansRebond())
+                 // Le passage du vide (gris) aux données se fait en fondu — le
+                 // `.chambreVide` de chaque bloc (saturation, opacité) suit.
+                 .animation(.easeOut(duration: 0.55), value: f.vide)
+@@ -499,15 +503,30 @@
+     }
+ 
+     private func fermer() {
++        fermer(vitesse: 0)
++    }
++
++    private func fermer(vitesse: CGFloat) {
+         guard !fermeture else { return }
+         fermeture = true
+-        // Garder le dernier offset jusqu'au démontage : le remettre à zéro ici
+-        // faisait remonter la feuille avant sa transition vers le bas.
+-        etat.fermer()
++        // La sortie prolonge LE MÊME offset. La home et sa nav ne sont
++        // réactivées qu'une fois la feuille hors écran, sans second « move ».
++        let destination = max(hauteur, tirage + 1)
++        let elan = max(0, vitesse) / max(1, destination - tirage)
++        withAnimation(.interpolatingSpring(duration: 0.30, bounce: 0,
++                                          initialVelocity: Double(elan)),
++                      completionCriteria: .removed) {
++            tirage = destination
++        } completion: {
++            var transaction = Transaction(animation: nil)
++            transaction.disablesAnimations = true
++            withTransaction(transaction) { etat.fermer() }
++        }
+     }
+ 
+     private func tirer(depuisContenu: Bool) -> some Gesture {
+-        DragGesture(minimumDistance: 8)
++        // L'espace de mesure reste fixe quand la feuille et son rouleau bougent.
++        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+             .updating($doigtPose) { _, pose, _ in pose = true }
+             .onChanged { v in
+                 guard !fermeture else { return }
+@@ -516,19 +535,66 @@
+                         && v.translation.height > abs(v.translation.width)
+                 }
+                 guard priseAcceptee == true else { return }
+-                tirage = max(0, v.translation.height)
++                var transaction = Transaction(animation: nil)
++                transaction.disablesAnimations = true
++                withTransaction(transaction) { tirage = max(0, v.translation.height) }
+             }
+             .onEnded { v in
+                 let prise = priseAcceptee == true
+                 priseAcceptee = nil
+                 guard prise, !fermeture else { return }
+                 if tirage >= 72 || (tirage >= 16 && v.predictedEndTranslation.height > 180) {
+-                    fermer()
++                    fermer(vitesse: v.velocity.height)
+                 } else {
+                     withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.38)) { tirage = 0 }
+                 }
+             }
+     }
++}
++
++/// Le rouleau continue à défiler normalement, mais ne tire pas le contenu
++/// élastiquement pendant que le même doigt descend toute la feuille.
++/// Réglage local à CE ScrollView ; aucun delegate, timer ou geste supplémentaire.
++private struct ChambreRouleauSansRebond: UIViewRepresentable {
++    final class Repere: UIView {
++        weak var rouleau: UIScrollView?
++        private var rebondInitial = true
++
++        override func didMoveToWindow() {
++            super.didMoveToWindow()
++            if window != nil { installer() }
++        }
++
++        func installer() {
++            var parent = superview
++            while let vue = parent {
++                if let scroll = vue as? UIScrollView {
++                    guard rouleau !== scroll else { return }
++                    restituer()
++                    rouleau = scroll
++                    rebondInitial = scroll.bounces
++                    scroll.bounces = false
++                    return
++                }
++                parent = vue.superview
++            }
++        }
++
++        func restituer() {
++            rouleau?.bounces = rebondInitial
++            rouleau = nil
++        }
++    }
++
++    func makeUIView(context: Context) -> Repere {
++        let vue = Repere()
++        vue.isUserInteractionEnabled = false
++        return vue
++    }
++
++    func updateUIView(_ vue: Repere, context: Context) { vue.installer() }
++
++    static func dismantleUIView(_ vue: Repere, coordinator: ()) { vue.restituer() }
+ }
+ 
+ // MARK: - Le contenu, par widget

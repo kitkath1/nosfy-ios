@@ -1,0 +1,149 @@
+{
+  "root": {
+    "originalOffset.dx": 196.5,
+    "parentWindowSize": {
+      "NS.keys": [
+        "Width",
+        "Height"
+      ],
+      "NS.objects": [
+        0.0,
+        0.0
+      ]
+    },
+    "orientation": 1,
+    "targetProcessID": 39817,
+    "endsPersistentState": false,
+    "displayID": 0,
+    "systemAutomationProperties": {
+      "NS.keys": [],
+      "NS.objects": []
+    },
+    "originalOffset.dy": 383.40000000000003,
+    "beginsPersistentState": false,
+    "name": "press, hold, drag, and hold",
+    "eventPaths": {
+      "NS.objects": [
+        {
+          "targetFrame.width": 0.0,
+          "targetFrame.x": 0.0,
+          "pathType": 1,
+          "targetFrame.y": 0.0,
+          "deviceID": 0,
+          "pointerEvents": {
+            "NS.objects": [
+              {
+                "pressure": 0.0,
+                "eventType": 1,
+                "clickCount": 0,
+                "duration": 0.0,
+                "verticalLineScroll": 0,
+                "keyCode": 0,
+                "gesturePhase": 0,
+                "deltaVector.dy": 0.0,
+                "destination.y": 0.0,
+                "buttonType": 0,
+                "keyModifierFlags": 0,
+                "gestureStage": 0,
+                "typingSpeed": 0,
+                "destination.x": 0.0,
+                "deviceID": 0,
+                "offset": 0.0,
+                "deltaVector.dx": 0.0,
+                "coordinate.y": 383.40000000000003,
+                "mergeModifierFlagsWithCurrentFlags": false,
+                "coordinate.x": 196.5,
+                "keyPhase": 0,
+                "shouldRedact": false,
+                "string": "$null",
+                "key": "$null"
+              },
+              {
+                "pressure": 0.0,
+                "eventType": 2,
+                "clickCount": 0,
+                "duration": 0.0,
+                "verticalLineScroll": 0,
+                "keyCode": 0,
+                "gesturePhase": 0,
+                "deltaVector.dy": 0.0,
+                "destination.y": 0.0,
+                "buttonType": 0,
+                "keyModifierFlags": 0,
+                "gestureStage": 0,
+                "typingSpeed": 0,
+                "destination.x": 0.0,
+                "deviceID": 0,
+                "offset": 0.1,
+                "deltaVector.dx": 0.0,
+                "coordinate.y": 383.40000000000003,
+                "mergeModifierFlagsWithCurrentFlags": false,
+                "coordinate.x": 196.5,
+                "keyPhase": 0,
+                "shouldRedact": false,
+                "string": "$null",
+                "key": "$null"
+              },
+              {
+                "pressure": 0.0,
+                "eventType": 2,
+                "clickCount": 0,
+                "duration": 0.0,
+                "verticalLineScroll": 0,
+                "keyCode": 0,
+                "gesturePhase": 0,
+                "deltaVector.dy": 0.0,
+                "destination.y": 0.0,
+                "buttonType": 0,
+                "keyModifierFlags": 0,
+                "gestureStage": 0,
+                "typingSpeed": 0,
+                "destination.x": 0.0,
+                "deviceID": 0,
+                "offset": 2.1972307692307687,
+                "deltaVector.dx": 0.0,
+                "coordinate.y": 656.04,
+                "mergeModifierFlagsWithCurrentFlags": false,
+                "coordinate.x": 196.5,
+                "keyPhase": 0,
+                "shouldRedact": false,
+                "string": "$null",
+                "key": "$null"
+              },
+              {
+                "pressure": 0.0,
+                "eventType": 3,
+                "clickCount": 0,
+                "duration": 0.0,
+                "verticalLineScroll": 0,
+                "keyCode": 0,
+                "gesturePhase": 0,
+                "deltaVector.dy": 0.0,
+                "destination.y": 0.0,
+                "buttonType": 0,
+                "keyModifierFlags": 0,
+                "gestureStage": 0,
+                "typingSpeed": 0,
+                "destination.x": 0.0,
+                "deviceID": 0,
+                "offset": 2.397230769230769,
+                "deltaVector.dx": 0.0,
+                "coordinate.y": 656.04,
+                "mergeModifierFlagsWithCurrentFlags": false,
+                "coordinate.x": 196.5,
+                "keyPhase": 0,
+                "shouldRedact": false,
+                "string": "$null",
+                "key": "$null"
+              }
+            ]
+          },
+          "speedFactor": 0.0,
+          "eventStream": "$null",
+          "targetFrame.height": 0.0,
+          "index": 1
+        }
+      ]
+    }
+  }
+}

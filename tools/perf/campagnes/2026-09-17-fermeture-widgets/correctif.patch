@@ -1,0 +1,110 @@
+--- a/Woop/Views/ChambreLongue.swift
++++ b/Woop/Views/ChambreLongue.swift
+@@ -288,6 +288,10 @@
+     @State private var etat = ChambreEtat.shared
+     /// Le tirage du doigt : il TRANSLATE la feuille (loi ③).
+     @State private var tirage: CGFloat = 0
++    @State private var rouleauEnHaut = true
++    @State private var priseAcceptee: Bool?
++    @State private var fermeture = false
++    @GestureState private var doigtPose = false
+     /// Regularity : la rangée d'objectif, ouverte par le héros.
+     @State private var objectifOuvert = false
+     /// Le check blanc « pris en compte », 1,6 s après un choix d'objectif.
+@@ -300,25 +304,30 @@
+             voile
+             feuille
+         }
++        .accessibilityAction(.escape, fermer)
++        .onChange(of: doigtPose) { _, pose in
++            guard !pose, !fermeture, priseAcceptee != nil else { return }
++            priseAcceptee = nil
++            withAnimation(.easeOut(duration: 0.22)) { tirage = 0 }
++        }
+     }
+ 
+     private var voile: some View {
+         Color.black.opacity(0.34 * (1 - min(tirage / 400, 1)))
+             .ignoresSafeArea()
+             .contentShape(Rectangle())
+-            .onTapGesture { etat.fermer() }
++            .onTapGesture(perform: fermer)
+     }
+ 
+     private var feuille: some View {
+         VStack(spacing: 0) {
+-            // LE GESTE DE FERMETURE NE VIT QUE SUR LE TRAIT ET L'EN-TÊTE : posé
+-            // sur toute la feuille il se battrait avec le ScrollView du rouleau.
++            // L'en-tête se tire toujours ; le contenu seulement depuis son haut.
+             VStack(spacing: 0) {
+                 grabber
+                 entete
+             }
+             .contentShape(Rectangle())
+-            .gesture(tirer)
++            .gesture(tirer(depuisContenu: false))
+             rouleau
+         }
+         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+@@ -363,6 +372,9 @@
+             .frame(width: 36, height: 3.5)
+             .padding(.top, 10)
+             .padding(.bottom, 8)
++            .frame(maxWidth: .infinity)
++            .contentShape(Rectangle())
++            .onTapGesture(perform: fermer)
+     }
+ 
+     // ── L'EN-TÊTE
+@@ -469,6 +481,13 @@
+         // passent par là). Un `scrollTo` différé n'a rien fait le 13-09 :
+         // l'ancre par défaut, elle, est posée avant le premier rendu.
+         .defaultScrollAnchor(ChambreEtat.bancBas ? .bottom : .top)
++        // Un booléen de frontière, pas une publication de chaque pixel défilé.
++        .onScrollGeometryChange(for: Bool.self) { g in
++            g.contentOffset.y + g.contentInsets.top <= 1
++        } action: { _, enHaut in
++            rouleauEnHaut = enHaut
++        }
++        .simultaneousGesture(tirer(depuisContenu: true))
+         .mask {
+             LinearGradient(stops: [
+                 .init(color: .clear, location: 0.00),
+@@ -479,15 +498,32 @@
+         }
+     }
+ 
+-    private var tirer: some Gesture {
++    private func fermer() {
++        guard !fermeture else { return }
++        fermeture = true
++        // Garder le dernier offset jusqu'au démontage : le remettre à zéro ici
++        // faisait remonter la feuille avant sa transition vers le bas.
++        etat.fermer()
++    }
++
++    private func tirer(depuisContenu: Bool) -> some Gesture {
+         DragGesture(minimumDistance: 8)
++            .updating($doigtPose) { _, pose, _ in pose = true }
+             .onChanged { v in
+-                tirage = v.translation.height > 0
+-                    ? v.translation.height : v.translation.height * 0.18
++                guard !fermeture else { return }
++                if priseAcceptee == nil {
++                    priseAcceptee = (!depuisContenu || rouleauEnHaut)
++                        && v.translation.height > abs(v.translation.width)
++                }
++                guard priseAcceptee == true else { return }
++                tirage = max(0, v.translation.height)
+             }
+             .onEnded { v in
+-                if tirage > 120 || v.predictedEndTranslation.height > 320 {
+-                    etat.fermer(); tirage = 0
++                let prise = priseAcceptee == true
++                priseAcceptee = nil
++                guard prise, !fermeture else { return }
++                if tirage >= 72 || (tirage >= 16 && v.predictedEndTranslation.height > 180) {
++                    fermer()
+                 } else {
+                     withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.38)) { tirage = 0 }
+                 }

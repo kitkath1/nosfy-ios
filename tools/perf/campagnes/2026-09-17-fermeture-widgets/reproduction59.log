@@ -1,0 +1,75 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/FermetureChambreUITests/test01_tirerDepuisLeContenuEnHautFerme" -resultBundlePath /tmp/woop-widget60-baseline.xcresult -parallel-testing-enabled NO
+
+2026-09-17 10:43:13.727 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-widget60-baseline.xcresult
+
+2026-09-17 10:43:13.752 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:43:16.995 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:43:20.722 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:43:26.872985+0200 WoopUITests-Runner[46299:17034649] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 10:43:30.036.
+Test Suite 'WoopUITests.xctest' started at 2026-09-17 10:43:30.037.
+Test Suite 'FermetureChambreUITests' started at 2026-09-17 10:43:30.039.
+Test Case '-[WoopUITests.FermetureChambreUITests test01_tirerDepuisLeContenuEnHautFerme]' started.
+    t =     0.00s Start Test at 2026-09-17 10:43:30.042
+    t =     0.13s Set Up
+    t =     0.14s Open fr.kathryn.woop
+    t =     0.14s     Launch fr.kathryn.woop
+2026-09-17 10:43:30.764 xcodebuild[46168:17033840] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 10:43:30.764 xcodebuild[46168:17033840] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[46299]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1078b4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1037b4398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     4.89s         Setting up automation session
+    t =     6.83s         Wait for fr.kathryn.woop to idle
+    t =    11.60s Waiting 15.0s for "Semaine" StaticText to exist
+    t =    12.64s     Checking `Expect predicate `existsNoRetry == 1` for object "Semaine" StaticText`
+    t =    12.65s         Checking existence of `"Semaine" StaticText`
+    t =    13.45s Press Target Application 'fr.kathryn.woop'[0.50, 0.45] for 0.1 seconds, then drag to Target Application 'fr.kathryn.woop'[0.50, 0.69] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    13.45s     Wait for fr.kathryn.woop to idle
+    t =    13.60s     Find the Target Application 'fr.kathryn.woop'
+    t =    13.76s     Check for interrupting elements affecting "Woop" Application
+    t =    13.94s     Synthesize event
+    t =    13.99s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.30s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.45s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.62s         Find the Target Application 'fr.kathryn.woop'
+    t =    14.84s         Find the Target Application 'fr.kathryn.woop'
+    t =    15.81s     Wait for fr.kathryn.woop to idle
+    t =    16.17s Waiting 3.0s for "Semaine" StaticText to not exist
+    t =    17.26s     Checking `Expect predicate `existsNoRetry == 0` for object "Semaine" StaticText`
+    t =    17.26s         Checking existence of `"Semaine" StaticText`
+    t =    17.37s         Capturing element debug description
+    t =    18.24s     Checking `Expect predicate `existsNoRetry == 0` for object "Semaine" StaticText`
+    t =    18.24s         Checking existence of `"Semaine" StaticText`
+    t =    18.40s         Capturing element debug description
+    t =    19.18s     Checking `Expect predicate `existsNoRetry == 0` for object "Semaine" StaticText`
+    t =    19.18s         Checking existence of `"Semaine" StaticText`
+    t =    19.45s         Capturing element debug description
+    t =    19.45s     Checking existence of `"Semaine" StaticText`
+    t =    19.90s Collecting debug information to assist test failure triage
+    t =    19.90s     Requesting snapshot of accessibility hierarchy for app with pid 46333
+/tmp/woop-count53/banc/WoopUITests/VisiteDepartUITests.swift:158: error: -[WoopUITests.FermetureChambreUITests test01_tirerDepuisLeContenuEnHautFerme] : XCTAssertTrue failed
+    t =    24.86s Tear Down
+Test Case '-[WoopUITests.FermetureChambreUITests test01_tirerDepuisLeContenuEnHautFerme]' failed (25.382 seconds).
+Test Suite 'FermetureChambreUITests' failed at 2026-09-17 10:43:55.424.
+	 Executed 1 test, with 1 failure (0 unexpected) in 25.382 (25.385) seconds
+Test Suite 'WoopUITests.xctest' failed at 2026-09-17 10:43:55.426.
+	 Executed 1 test, with 1 failure (0 unexpected) in 25.382 (25.388) seconds
+Test Suite 'Selected tests' failed at 2026-09-17 10:43:55.427.
+	 Executed 1 test, with 1 failure (0 unexpected) in 25.382 (25.392) seconds
+2026-09-17 10:47:25.458 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:47:45.608 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:48:15.343 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:49:13.962 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:50:20.547 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:50:24.980 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:51:00.645 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:53:04.562 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:53:29.998 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:53:31.328 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:53:33.278 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:53:35.755 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:54:01.261 xcodebuild[46168:17033840] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+** BUILD INTERRUPTED **

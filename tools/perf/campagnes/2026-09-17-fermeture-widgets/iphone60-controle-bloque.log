@@ -1,0 +1,57 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-widget61/qa-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testFermetureContinueDepuisLeContenu" -resultBundlePath /tmp/woop-widget61/iphone60.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -maximum-test-execution-time-allowance 45
+
+2026-09-17 11:29:32.776 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-widget61/iphone60.xcresult
+
+2026-09-17 11:29:32.790 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:29:32.874 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-17 11:29:35.397 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:29:35.816 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:29:39.816 xcodebuild[56500:17111961] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0x90c2bd5d0>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0x90a0a2d90>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-17 11:29:39.816 xcodebuild[56500:17111961] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-17 11:30:49.069 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:30:50.933 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:31:11.684 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:31:12.323 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:31:12.829 xcodebuild[56500:17111961] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 11:31:52.643 xcodebuild[56500:17118668]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-widget61/iphone60.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-widget61/iphone60.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-17 11:31:52.680 xcodebuild[56500:17111961] [MT] IDETestOperationsObserverDebug: 137.276 elapsed -- Testing started completed.
+2026-09-17 11:31:52.680 xcodebuild[56500:17111961] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 11:31:52.680 xcodebuild[56500:17111961] [MT] IDETestOperationsObserverDebug: 137.276 sec, +137.276 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-widget61/iphone60.xcresult
+
+Testing failed:
+	NavRuntimeUITests-Runner encountered an error (Early unexpected exit, operation never finished bootstrapping - no restart will be attempted. (Underlying Error: Lost connection to testmanagerd))
+
+** TEST EXECUTE FAILED **
+
+Testing started

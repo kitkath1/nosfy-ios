@@ -1,0 +1,18 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/woop-count53/banc/Woop.xcodeproj -scheme WoopUITests -configuration Release -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" -derivedDataPath /tmp/woop-count53/sim-dd -jobs 2 ONLY_ACTIVE_ARCH=YES CURRENT_PROJECT_VERSION=60 build-for-testing
+
+Build settings from command line:
+    CURRENT_PROJECT_VERSION = 60
+    ONLY_ACTIVE_ARCH = YES
+
+2026-09-17 10:56:26.547 xcodebuild[47238:17051364] Writing error result bundle to /var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/ResultBundle_2026-17-09_10-56-0026.xcresult
+xcodebuild: error: Unable to find a device matching the provided destination specifier:
+		{ platform:iOS Simulator, id:6A504B5A-F76C-4EC1-B09A-E9CA4673B32A }
+
+	The requested device could not be found because no available devices matched the request.
+
+	Available destinations for the "WoopUITests" scheme:
+		{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008142-0000186C2E06401C, name:My Mac }
+		{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+		{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }

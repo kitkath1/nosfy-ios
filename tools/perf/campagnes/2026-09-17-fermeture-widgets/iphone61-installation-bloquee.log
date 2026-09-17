@@ -1,0 +1,10 @@
+ERROR: CoreDeviceService was unable to locate a device matching the requested device identifier. (DeviceIdentifier: ecid_8528757254365214) (com.apple.dt.CoreDeviceError error 1011 (0x3F3))
+       DeviceIdentifier = ecid_8528757254365214
+Traceback (most recent call last):
+  File "/tmp/woop-widget61/installer.py", line 11, in <module>
+    run(['device','info','apps','--device',device,'--bundle-id','fr.kathryn.woop','--timeout','20','--json-output',readback])
+  File "/tmp/woop-widget61/installer.py", line 9, in run
+    subprocess.run(['xcrun', 'devicectl'] + args, check=True)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py", line 528, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['xcrun', 'devicectl', 'device', 'info', 'apps', '--device', '022244AD-484B-5489-A884-6B781A82E372', '--bundle-id', 'fr.kathryn.woop', '--timeout', '20', '--json-output', '/tmp/woop-widget61/avant-install61.json']' returned non-zero exit status 1.
