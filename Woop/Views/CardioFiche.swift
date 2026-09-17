@@ -48,13 +48,15 @@ struct GrapheCardioFiche: View {
                 .animation(.easeOut(duration: 0.18), value: choisi == nil)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.48))
             // 60 pt de plafond (la chambre garde 100) : à 138 pt de graphe la
-            // barre du pic et son étiquette restent DANS le cadre.
+            // barre du pic et son étiquette restent DANS le cadre. MINIMAL
+            // (17-09) : ni cotes, ni rail, ni légende — les barres, le pic ;
+            // et le graphe cède (138 → 90) quand le galet remonte sur un
+            // petit écran, jamais la ligne de tête.
             PaliersVue(segments: vide ? silhouette : segments,
-                       vide: vide, echelle: echelle, plafond: 60, choix: $choisi)
-                .frame(height: 138)
+                       vide: vide, echelle: echelle, plafond: 60, choix: $choisi,
+                       minimal: true)
+                .frame(minHeight: 90, idealHeight: 138, maxHeight: 138)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.60))
-            LegendePaliers(echelle: echelle)
-                .modifier(ArriveeDouce(vu: vu, retard: 0.76))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .chambreVide(vide)

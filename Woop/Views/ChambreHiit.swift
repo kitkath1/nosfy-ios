@@ -250,6 +250,12 @@ struct PaliersVue: View {
     /// efface sa ligne de tête pendant que la ligne de lecture parle à sa
     /// place (les deux vivent au même endroit, 26 pt au-dessus du tracé).
     var choix: Binding<Int?>? = nil
+    /// MINIMAL (17-09, Kathryn : « trop de texte dans les graphes, pas assez
+    /// minimal ») : sur la fiche, ni gouttière de cotes, ni unité, ni rail
+    /// de durées — les barres, la pointe du pic et son chiffre, c'est tout ;
+    /// le détail vit sous le doigt (la ligne de lecture). La chambre garde
+    /// tout.
+    var minimal: Bool = false
 
     @State private var choisiInterne: Int?
     @State private var apparu = false
@@ -280,8 +286,8 @@ struct PaliersVue: View {
     var body: some View {
         GeometryReader { g in
             let W = g.size.width
-            let champ = W - 42                     // la gouttière des cotes
-            let sol = g.size.height - 46           // le rail + la laque dessous
+            let champ = minimal ? W : W - 42       // la gouttière des cotes
+            let sol = g.size.height - (minimal ? 22 : 46)   // le rail + la laque dessous
             let L = largeurs(dans: champ)
             ZStack(alignment: .topLeading) {
                 bandes(sol: sol, champ: champ)
@@ -289,8 +295,10 @@ struct PaliersVue: View {
                 laque(L, sol: sol)
                 barres(L, sol: sol)
                 picVue(L, sol: sol)
-                cotes(sol: sol, x: champ + 4)
-                rail(L, sol: sol)
+                if !minimal {
+                    cotes(sol: sol, x: champ + 4)
+                    rail(L, sol: sol)
+                }
             }
             .onTapGesture { location in
                 guard let i = L.x.lastIndex(where: { $0 <= location.x }), !vide else { return }

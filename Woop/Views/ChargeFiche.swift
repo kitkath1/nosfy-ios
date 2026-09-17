@@ -83,12 +83,15 @@ struct CourbeChargeFiche: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             entete.modifier(ArriveeDouce(vu: vu, retard: 0.48))
+            // 108 pt quand la page a la place, 60 au plancher : c'est la
+            // courbe qui cède quand le galet remonte (iPhone 15, titre de
+            // deux lignes) — jamais la ligne de coach.
             CourbeCharge(passages: vide ? PassageCharge.silhouette : passages,
                          recordKg: vide ? nil : recordKg,
                          periode: vide ? .sixMois : periode,
                          recordsBattus: recordsBattus,
                          vide: vide)
-                .frame(height: 108)
+                .frame(minHeight: 60, idealHeight: 108, maxHeight: 108)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.58))
                 .chambreVide(vide)
             LigneCoach(phrase: phraseCoach, attend: coachAttend)
@@ -320,16 +323,12 @@ struct CourbeCharge: View {
                     .foregroundStyle(dernier ? CardTon.chaleur(0.85) : Color(white: 0.6))
             }
             // LA LIGNE DU RECORD — la ligne d'objectif de Santé : pointillé
-            // chaleur, le chiffre à droite.
+            // chaleur, SANS chiffre (17-09, « trop de texte ») : le record
+            // se lit dans l'en-tête et sous le doigt, la ligne suffit.
             if let r = recordKg, !vide {
                 RuleMark(y: .value("record", r))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
                     .foregroundStyle(CardTon.chaleur(0.7).opacity(0.75))
-                    .annotation(position: .top, alignment: .trailing, spacing: 2) {
-                        Text(ChambreFmt.poids(r))
-                            .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                            .foregroundStyle(CardTon.encreChaude)
-                    }
             }
             // LE LOLLIPOP : le fil vertical, le point qui grossit avec son
             // anneau, la capsule au-dessus.
@@ -380,9 +379,10 @@ struct CourbeCharge: View {
         }
     }
 
-    /// Les kg à DROITE, trois lignes en pointillé à 7 % de blanc.
+    /// Les kg à DROITE, deux lignes en pointillé à 7 % de blanc (trois
+    /// disaient trop, 17-09).
     private var axeY: some AxisContent {
-        AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { v in
+        AxisMarks(position: .trailing, values: .automatic(desiredCount: 2)) { v in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 4]))
                 .foregroundStyle(Color.white.opacity(0.07))
             AxisValueLabel(anchor: .leading) {

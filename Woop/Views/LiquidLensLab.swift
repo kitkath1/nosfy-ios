@@ -470,11 +470,41 @@ struct LiquidLensLab: View {
                 .foregroundStyle(Color.black.opacity(0.35))
                 .opacity(1 - sstep(0.04, 0.22, climb))
                 .position(x: w / 2, y: h - 42)
+            // LE CHEMIN VERS LE HAUT (17-09, Kathryn : « les users sont
+            // perdus, ils ne captent pas qu'il faut le monter tout en
+            // haut ; mets des flèches, très minimal, élégant ») : trois
+            // chevrons dans l'axe de la bulle, sous le titre, qui s'allument
+            // l'un après l'autre en montant — une vague, pas un panneau —
+            // et s'effacent quand la bulle a compris le chemin.
+            montee(t: t, climb: climb, w: w, h: h)
         }
         .frame(width: w, height: h)
         .compositingGroup()
         .layerEffect(lensShader,
                      maxSampleOffset: CGSize(width: 110, height: 110))
+    }
+
+    /// Les trois chevrons de la montée : encre sourde, 22 pt d'écart, une
+    /// vague qui remonte (période 1,6 s, chacun un quart de temps après
+    /// celui du dessous). Ils vivent AU-DESSUS du titre, vers le haut de
+    /// l'écran — là où la bulle doit arriver, pas là où elle est — et
+    /// cèdent à la montée (éteints dès 0,45 de course : la bulle est en
+    /// route, plus rien à expliquer).
+    private func montee(t: Double, climb: Double, w: CGFloat, h: CGFloat) -> some View {
+        let vie = 1 - sstep(0.20, 0.45, climb)
+        let y0 = h * 0.33
+        return ZStack {
+            ForEach(0..<3, id: \.self) { i in
+                let ph = (t * 3.9 - Double(i) * 1.15).truncatingRemainder(dividingBy: 2 * .pi)
+                let onde = 0.5 + 0.5 * sin(ph)
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.10 + 0.22 * onde))
+                    .position(x: w / 2, y: y0 - CGFloat(i) * 22)
+            }
+        }
+        .opacity(vie)
+        .allowsHitTesting(false)
     }
 
     // MARK: La chorégraphie

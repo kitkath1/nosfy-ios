@@ -237,6 +237,12 @@ struct ExerciseDetailView: View {
     // (photo, titre, carte, PanneauMesures — ils lisent tous heroCap ou
     // expandedHeader).
     private static let heroCap: CGFloat = 175
+    /// Ce que le galet d'aube prend au bas de la page : sa crête est à
+    /// 140 pt du bas de son cadre (160 − 20), son bloom monte ~24 pt
+    /// au-dessus — et 8 pt d'air pour que la ligne de coach ne le frôle pas.
+    private static let reserveGalet: CGFloat = 172
+    /// `-ficheGeo` : imprime la géométrie de la pile (page, insets, dispo).
+    private static let ficheGeo = CommandLine.arguments.contains("-ficheGeo")
     /// La course du geste, en points de scroll. 140 au temps de la
     /// vignette ; le DÉPLIEMENT de la carte des séries (15-08) mérite
     /// plus long — la croissance se savoure sous le doigt.
@@ -1719,6 +1725,16 @@ struct ExerciseDetailView: View {
             let u = Self.sstep(0, Double(Self.collapseSpan),
                                Double(headerY))
             let p = HeaderPose(W: g.size.width, y: 0, aspect: heroAspect)
+            // LA PLACE ENTRE LE HAUT DU TITRE ET LE GALET (17-09, Kathryn :
+            // « la description IA touche le galet blanc sur presque toutes
+            // les fiches »). Le bloc partait d'une cote fixe sous la photo
+            // et le galet est ancré au bas : sur un iPhone 15 (852 pt) et
+            // un titre de deux lignes, la ligne de coach tombait DANS le
+            // halo de la crête. La pile reçoit sa hauteur disponible et
+            // c'est le GRAPHE qui cède (108 → jusqu'à 60 pt), jamais le
+            // texte ni l'air entre les lignes.
+            let blocHaut = 12 + Self.heroCap + 8
+            let dispo = max(g.size.height - blocHaut - Self.reserveGalet, 200)
             ZStack(alignment: .topLeading) {
                 // Le titre meurt le premier : la carte passe sur sa zone
                 // dès le début de la course.
@@ -1790,9 +1806,16 @@ struct ExerciseDetailView: View {
                     }
                 }
                     .padding(.horizontal, 20)
+                    .frame(height: dispo, alignment: .top)
                     .offset(y: Self.lp(12 + Self.heroCap + 8,
                                        12 + Self.heroCap - 22, u))
                     .opacity(1 - Self.sstep(0.03, 0.32, u))
+                    .onAppear {
+                        if Self.ficheGeo {
+                            print("[fiche] géométrie : page=\(g.size.height) insets=\(g.safeAreaInsets.top)/\(g.safeAreaInsets.bottom) "
+                                  + "bloc=\(blocHaut) dispo=\(dispo) réserve=\(Self.reserveGalet)")
+                        }
+                    }
                 // La photo s'éteint en dérivant à peine vers le haut —
                 // une sortie, pas un morphing.
                 morphPhoto(p)
