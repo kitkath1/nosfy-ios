@@ -147,6 +147,12 @@ final class EconomieWoop {
     /// invisible au simulateur qui répond en millisecondes). Remis à `false` au
     /// début de chaque fin de séance (`debutFinSeance`).
     private(set) var clotureRepondue = false
+    /// LES FAITS DE LA DERNIÈRE CLÔTURE (17-09, b-st-top) : ce que la séance A
+    /// ÉTÉ, estampillé par le serveur (`calculer_faits_seance` : `top_muscu` /
+    /// `top_cardio` = record battu sur 7 jours, `double_jour` = 2ᵉ séance du
+    /// jour). La story de fin les LIT pour ouvrir la bonne page (TOP / ×2) au
+    /// lieu d'un drapeau de banc. Vide au début de chaque fin de séance.
+    private(set) var dernierFaits: [SacreServeur.Fait] = []
     /// Le jour de la maison (Europe/Paris), tel que le serveur le dit.
     private(set) var jour: String?
 
@@ -275,6 +281,9 @@ final class EconomieWoop {
         // La clôture a répondu (avant tout early return) : la story de fin d'un
         // cardio n'attend plus que ce signal pour rouler ses pièces.
         clotureRepondue = true
+        // Les faits estampillés (top / ×2) — la story les lit pour sa page
+        // d'ouverture. Ils valent même au rejeu (un estampillage, jamais recalculé).
+        dernierFaits = c.faits
         or = c.solde
         reste = c.reste
         prixBooster = c.prixBooster
@@ -330,6 +339,7 @@ final class EconomieWoop {
         pousserApresStory = true
         dernierGainCardio = 0
         clotureRepondue = false
+        dernierFaits = []
         pileFinSeance.removeAll()
     }
 

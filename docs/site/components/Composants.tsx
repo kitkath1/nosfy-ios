@@ -167,7 +167,7 @@ export function Schema({ id, titre, legende, plie }: { id: string; titre?: strin
 
 /* ── le hero de domaine ─────────────────────────────────────────────────── */
 type Ecran = { nom: string; legende: string; fichier: string | null; largeur?: number; hauteur?: number; composant?: string }
-type Captures = { flow: Ecran[]; onboarding?: Ecran[]; popups?: Ecran[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
+type Captures = { flow: Ecran[]; onboarding?: Ecran[]; popups?: Ecran[]; story?: Ecran[]; hero: Record<string, { fichier: string | null; largeur?: number; hauteur?: number }> }
 export function lireCaptures(): Captures {
   const p = join(SITE, 'content/captures.json')
   if (!existsSync(p)) return { flow: [], onboarding: [], popups: [], hero: {} }
@@ -192,6 +192,31 @@ export function PopUps() {
         {ecrans.length ? ecrans.map((f) => (
           <figure key={f.nom} className={'ecran' + (f.fichier ? '' : ' vide')} data-ecran={f.nom}>
             {f.fichier ? <img src={`/captures/popups/${f.fichier.split('/').pop()}`} width={f.largeur} height={f.hauteur} alt={f.legende} loading="lazy" decoding="async" /> : <span className="cadre-vide" />}
+            <figcaption>{f.legende}{f.fichier ? '' : ' · à capturer'}{f.composant ? <><br /><code>{f.composant}</code></> : null}</figcaption>
+          </figure>
+        )) : <p className="rien">`npm run captures` pour embarquer les captures.</p>}
+      </div>
+    </>
+  )
+}
+
+/* ── le catalogue des variants de STORY (17-09) ──────────────────────────── */
+// Toutes les pages de fin de séance qui existent dans le code : SESSION ENDED (le jour ordinaire),
+// TOP SESSION muscu / cardio (record battu), ×2 (deuxième séance du jour), et la page reward de fin
+// (StoryWin) dans ses DEUX robes — pièces + boosters SAISISSABLES qu'on bouge à la main. La page qui
+// s'ouvre est décidée par les faits de la clôture (b-st-top). Captures : banc -storyLab -storyAuto.
+export function Story() {
+  const ecrans = lireCaptures().story ?? []
+  return (
+    <>
+      <div className="flow-titre">
+        <h2>Le catalogue des variants de story</h2>
+        <p>Toutes les pages de fin de séance qui existent dans le code, une capture chacune (banc <code>-storyLab -storyAuto</code> au simulateur, en couleur). Sous chaque capture : le composant Swift et sa robe. La page qui s&apos;ouvre est décidée par les faits de la clôture (record, deuxième séance) — voir <code>b-st-top</code>.</p>
+      </div>
+      <div className="flow flow-couleur story">
+        {ecrans.length ? ecrans.map((f) => (
+          <figure key={f.nom} className={'ecran' + (f.fichier ? '' : ' vide')} data-ecran={f.nom}>
+            {f.fichier ? <img src={`/captures/story/${f.fichier.split('/').pop()}`} width={f.largeur} height={f.hauteur} alt={f.legende} loading="lazy" decoding="async" /> : <span className="cadre-vide" />}
             <figcaption>{f.legende}{f.fichier ? '' : ' · à capturer'}{f.composant ? <><br /><code>{f.composant}</code></> : null}</figcaption>
           </figure>
         )) : <p className="rien">`npm run captures` pour embarquer les captures.</p>}

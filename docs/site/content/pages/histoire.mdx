@@ -9,7 +9,14 @@
 
 ## Comment on choisit un variant
 
-<Schema id="histoire-1-comment-on-choisit-un" legende="Trait plein = le variant est codé. Ce qui manque n'est pas le dessin, c'est la détection : rien ne calcule un record." />
+<Schema id="histoire-1-comment-on-choisit-un" legende="Tout est en trait plein depuis le 17-09 : le serveur calcule le record à la clôture (calculer_faits_seance) et la story LIT ces faits pour choisir sa robe — la détection existe, ce n'est plus un drapeau de banc." />
+
+</div>
+<div className="reveal">
+
+## Les variants, en images
+
+<Story />
 
 </div>
 <div className="reveal">
@@ -33,5 +40,5 @@
 
 <Savoir>
   <p>Le rangement des faits est posé (30-08) : la table <code>workout_facts</code> et <code>poser_faits_seance</code>. Le CALCUL est au serveur depuis le 15-09 (<code>calculer_faits_seance</code>, appelée par <code>cloturer_seance</code>) : le 30-08 avait tranché « l'app calcule » faute de séances au serveur — elles y sont depuis le 13-09, et la clôture arrive après la poussée.</p>
-  <p>La cause unique des « local » — <code>SupabaseSync</code> n'avait qu'un <code>push</code> — est levée depuis le 14-09 (le pull, <code>seances_depuis</code>). Calendrier, étape du chemin et jours faits dérivent de SwiftData — à la réinstallation, l'app repart vide devant un serveur plein. Le chemin a besoin de « ce jour-là a été fait », les stories de « ce jour-là a été un record » : même dérivation, un seul chantier bloque les deux écrans. L'audit des trois contradictions : <code>tools/road/AUDIT-CHEMIN-CALENDRIER-STORIES.md</code>.</p>
+  <p>La cause unique des « local » — <code>SupabaseSync</code> n'avait qu'un <code>push</code> — est levée depuis le 14-09 (le pull, <code>seances_depuis</code>). La story, elle, ne dérive plus rien de SwiftData : depuis le 17-09 elle lit « ce jour-là a été un record » directement dans la réponse de clôture (<code>faits</code>, b-st-top), estampillée par le serveur — un téléphone neuf ouvre donc la bonne robe sans avoir rejoué tout l'historique. Restent le calendrier et l'étape du chemin, qui dérivent encore de SwiftData et repartent vides à la réinstallation devant un serveur plein. L'audit des trois contradictions : <code>tools/road/AUDIT-CHEMIN-CALENDRIER-STORIES.md</code>.</p>
 </Savoir>

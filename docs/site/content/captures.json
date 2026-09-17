@@ -607,5 +607,67 @@
    "source": "Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg",
    "octets": 34956
   }
- }
+ },
+ "story": [
+  {
+   "nom": "story-top-muscu",
+   "legende": "TOP SESSION · muscu (record battu)",
+   "fichier": "captures/story/top-muscu.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-top-muscu.png",
+   "octets": 6278,
+   "composant": "StoryTopScene(sport: .muscu)"
+  },
+  {
+   "nom": "story-top-cardio",
+   "legende": "TOP SESSION · cardio (record battu)",
+   "fichier": "captures/story/top-cardio.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-top-cardio.png",
+   "octets": 6374,
+   "composant": "StoryTopScene(sport: .cardio)"
+  },
+  {
+   "nom": "story-double",
+   "legende": "×2 · deuxième séance du jour",
+   "fichier": "captures/story/double.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-double.png",
+   "octets": 6003,
+   "composant": "StoryDoubleScene"
+  },
+  {
+   "nom": "story-session-ended",
+   "legende": "SESSION ENDED · le résumé (jour ordinaire)",
+   "fichier": "captures/story/session-ended.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-session-ended.png",
+   "octets": 6095,
+   "composant": "StoryEnded(mode: .complet)"
+  },
+  {
+   "nom": "story-win-poche",
+   "legende": "Reward de fin · robe poche · pièces + boosters saisissables",
+   "fichier": "captures/story/win-poche.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-win-poche.png",
+   "octets": 4983,
+   "composant": "StoryWin(robe: .poche)"
+  },
+  {
+   "nom": "story-win-renverse",
+   "legende": "Reward de fin · robe renverse",
+   "fichier": "captures/story/win-renverse.jpg",
+   "largeur": 300,
+   "hauteur": 651,
+   "source": "tools/docsite/shots/story-win-renverse.png",
+   "octets": 4925,
+   "composant": "StoryWin(robe: .renverse)"
+  }
+ ]
 }

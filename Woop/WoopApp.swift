@@ -626,30 +626,29 @@ struct RootView: View {
         // c'était +1,6 s et +5,2 s sur une home nue, avant qu'une story
         // existe dans la chaîne (verdict Kathryn 30-08 : « elle doit
         // apparaître après la story »).
-        // LA STORY PATIENTE (16-09) : le cardio n'a de pièces qu'APRÈS la
-        // réponse du serveur (le barème). On plancher à 2s (le temps que la
-        // home et le trophée se posent) PUIS on attend `clotureRepondue`
+        // LA STORY PATIENTE (16-09, étendu le 17-09 pour b-st-top) : elle
+        // s'ouvre sur la BONNE robe ET avec les BONNES pièces, et les deux
+        // viennent de la réponse de clôture — le barème cardio (les pièces) ET
+        // les faits (la robe TOP muscu/cardio, ×2). On plancher à 2s (le temps
+        // que la home et le trophée se posent) PUIS on attend `clotureRepondue`
         // jusqu'à un plafond de secours — sinon, sur un vrai réseau, la story
-        // s'ouvrait avant la réponse et roulait « 0 » (bug Kathryn 16-09,
-        // invisible au sim qui répond en millisecondes). La muscu connaît son
-        // gain : elle garde son minuteur de 2s (attendre la retarderait pour
-        // rien).
-        if cardio {
-            Task { @MainActor in
-                let debut = Date()
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                while !EconomieWoop.shared.clotureRepondue,
-                      Date().timeIntervalSince(debut) < 6.0 {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
-                }
-                storyGain = gain
-                storyFin = StoryLaunch(workout: a, rect: .zero)
+        // s'ouvrait avant la réponse et roulait « 0 » (bug Kathryn 16-09) ou
+        // ratait la robe d'un record (b-st-top), invisible au sim qui répond en
+        // millisecondes.
+        // ⚠️ LA MUSCU ATTEND AUSSI depuis le 17-09 : « elle connaît son gain »
+        // était vrai pour les PIÈCES, faux pour la ROBE (les faits sont au
+        // serveur). Hors ligne, le plafond de 6s tombe et la story s'ouvre sur
+        // sa page ordinaire — elle ne peut pas savoir seule qu'une séance fut
+        // un record.
+        Task { @MainActor in
+            let debut = Date()
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            while !EconomieWoop.shared.clotureRepondue,
+                  Date().timeIntervalSince(debut) < 6.0 {
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
-        } else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                storyGain = gain
-                storyFin = StoryLaunch(workout: a, rect: .zero)
-            }
+            storyGain = gain
+            storyFin = StoryLaunch(workout: a, rect: .zero)
         }
     }
 
@@ -701,7 +700,7 @@ struct RootView: View {
     private var storyFinHote: some View {
         if let s = storyFin {
             StoryPortal(from: s.rect,
-                        session: StorySession(workout: s.workout)) {
+                        session: sessionAvecFaits(s.workout)) {
                 var tx = Transaction()
                 tx.disablesAnimations = true
                 withTransaction(tx) { storyFin = nil }
@@ -709,6 +708,27 @@ struct RootView: View {
             }
             .zIndex(15)
         }
+    }
+
+    /// LA STORY OUVRE LA BONNE PAGE (17-09, b-st-top) : plus un drapeau de banc.
+    /// La session lit les faits estampillés par le serveur à la clôture
+    /// (`EconomieWoop.dernierFaits`) — `top_muscu`/`top_cardio` → la robe TOP du
+    /// sport, `double_jour` → la page ×2 (StoryFlow.exception tranche : ×2 d'abord,
+    /// sinon TOP). Vide, c'est la page ordinaire. La story attend déjà
+    /// `clotureRepondue`, donc les faits sont là quand elle s'ouvre.
+    private func sessionAvecFaits(_ workout: Workout) -> StorySession {
+        var s = StorySession(workout: workout)
+        let faits = EconomieWoop.shared.dernierFaits
+        if faits.contains(where: { $0.kind == "top_muscu" }) { s.top = .muscu }
+        else if faits.contains(where: { $0.kind == "top_cardio" }) { s.top = .cardio }
+        if let d = faits.first(where: { $0.kind == "double_jour" }) {
+            s.double = DoubleFait(
+                heures: (d.detail["heures"] as? [String]) ?? [],
+                minutes: (d.detail["minutes"] as? NSNumber)?.intValue ?? s.minutes)
+        }
+        print("[flow] story variant : top=\(String(describing: s.top)) "
+              + "double=\(s.double != nil) · \(faits.count) fait(s)")
+        return s
     }
 
     /// « COMMENCER » DEPUIS LE CHEMIN (jalon 1) — la séance s'ouvre en base
