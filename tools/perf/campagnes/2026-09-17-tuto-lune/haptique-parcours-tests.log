@@ -1,0 +1,171 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test02_tapPuisPauseArrierePlan" "-only-testing:WoopUITests/VisiteDepartUITests/test01_routeFilmPuisInvitationFrancaiseEtPasser" -resultBundlePath /tmp/woop-tuto59-haptique-tests.xcresult -parallel-testing-enabled NO
+
+2026-09-17 10:34:27.642 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-tuto59-haptique-tests.xcresult
+
+2026-09-17 10:34:27.712 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:34:27.803 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:34:40.742 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:34:49.327029+0200 WoopUITests-Runner[44261:17003289] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 10:34:54.246.
+Test Suite 'WoopUITests.xctest' started at 2026-09-17 10:34:54.248.
+Test Suite 'CountdownUITests' started at 2026-09-17 10:34:54.249.
+Test Case '-[WoopUITests.CountdownUITests test02_tapPuisPauseArrierePlan]' started.
+    t =     0.00s Start Test at 2026-09-17 10:34:54.254
+    t =     0.21s Set Up
+    t =     0.26s Terminate fr.kathryn.woop:0
+    t =     0.26s Open fr.kathryn.woop
+    t =     0.27s     Launch fr.kathryn.woop
+2026-09-17 10:34:57.205 xcodebuild[41869:17001493] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 10:34:57.206 xcodebuild[41869:17001493] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[44261]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x107334310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106084398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+2026-09-17 10:34:59.016 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:35:00.803 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:35:09.824 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    20.02s         Setting up automation session
+    t =    23.16s         Wait for fr.kathryn.woop to idle
+    t =    27.05s Waiting 15.0s for "depart-compte-rebours" Button to exist
+    t =    28.08s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    28.08s         Checking existence of `"depart-compte-rebours" Button`
+    t =    28.33s Tap "depart-compte-rebours" Button
+    t =    28.34s     Wait for fr.kathryn.woop to idle
+    t =    28.39s     Find the "depart-compte-rebours" Button
+    t =    29.05s     Check for interrupting elements affecting "depart-compte-rebours" Button
+    t =    30.14s     Synthesize event
+    t =    30.78s     Wait for fr.kathryn.woop to idle
+    t =    30.81s Waiting 3.0s for "depart-rejouer" Button to exist
+    t =    31.83s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    31.84s         Checking existence of `"depart-rejouer" Button`
+    t =    32.02s Tap "depart-rejouer" Button
+    t =    32.02s     Wait for fr.kathryn.woop to idle
+    t =    32.07s     Find the "depart-rejouer" Button
+    t =    32.16s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    32.50s     Synthesize event
+    t =    33.27s     Wait for fr.kathryn.woop to idle
+    t =    33.39s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    34.45s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    34.45s         Checking existence of `"depart-compte-rebours" Button`
+    t =    34.49s Pressing Home button
+    t =    42.65s Open fr.kathryn.woop
+    t =    42.65s     Activate fr.kathryn.woop
+    t =    42.76s         Wait for fr.kathryn.woop to idle
+    t =    42.78s Waiting 2.0s for "depart-compte-rebours" Button to exist
+    t =    43.83s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    43.83s         Checking existence of `"depart-compte-rebours" Button`
+    t =    44.13s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    45.20s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    45.21s         Checking existence of `"depart-rejouer" Button`
+    t =    45.80s         Capturing element debug description
+    t =    45.81s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    45.85s             Find: Descendants matching type Button
+    t =    45.85s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    45.85s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    45.87s             Find: Descendants matching type Button
+    t =    45.88s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    46.20s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    46.21s         Checking existence of `"depart-rejouer" Button`
+    t =    46.26s         Capturing element debug description
+    t =    46.26s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    46.28s             Find: Descendants matching type Button
+    t =    46.28s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    46.28s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    46.30s             Find: Descendants matching type Button
+    t =    46.30s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    47.16s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    47.16s         Checking existence of `"depart-rejouer" Button`
+    t =    47.24s         Capturing element debug description
+    t =    47.24s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    47.27s             Find: Descendants matching type Button
+    t =    47.28s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    47.30s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    47.53s             Find: Descendants matching type Button
+    t =    47.70s             Requesting snapshot of accessibility hierarchy for app with pid 44312
+    t =    48.18s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    48.18s         Checking existence of `"depart-rejouer" Button`
+    t =    48.25s Terminate fr.kathryn.woop:44312
+    t =    49.33s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test02_tapPuisPauseArrierePlan]' passed (49.401 seconds).
+Test Suite 'CountdownUITests' passed at 2026-09-17 10:35:43.655.
+	 Executed 1 test, with 0 failures (0 unexpected) in 49.401 (49.406) seconds
+Test Suite 'VisiteDepartUITests' started at 2026-09-17 10:35:43.656.
+Test Case '-[WoopUITests.VisiteDepartUITests test01_routeFilmPuisInvitationFrancaiseEtPasser]' started.
+    t =     0.00s Start Test at 2026-09-17 10:35:43.657
+    t =     0.17s Set Up
+    t =     0.18s Terminate fr.kathryn.woop:0
+    t =     0.18s Open fr.kathryn.woop
+    t =     0.18s     Launch fr.kathryn.woop
+2026-09-17 10:35:44.710 xcodebuild[41869:17001493] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 10:35:44.710 xcodebuild[41869:17001493] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.56s         Setting up automation session
+    t =     4.92s         Wait for fr.kathryn.woop to idle
+    t =    12.44s Waiting 15.0s for "Start" Button to exist
+    t =    13.49s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    13.50s         Checking existence of `"Start" Button`
+    t =    18.03s Find the Target Application 'fr.kathryn.woop'
+    t =    20.55s Added attachment named 'start-des-arrivee'
+    t =    20.78s Tap "Start" Button
+    t =    20.78s     Wait for fr.kathryn.woop to idle
+    t =    23.78s     Find the "Start" Button
+    t =    30.59s     Check for interrupting elements affecting "Start" Button
+    t =    32.32s     Synthesize event
+    t =    33.99s     Wait for fr.kathryn.woop to idle
+    t =    37.01s Waiting 4.0s for "depart-compte-rebours" Button to exist
+    t =    38.13s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    38.13s         Checking existence of `"depart-compte-rebours" Button`
+    t =    38.95s Waiting 12.0s for "depart-compte-rebours" Button to not exist
+    t =    40.00s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    40.05s         Checking existence of `"depart-compte-rebours" Button`
+    t =    41.12s         Capturing element debug description
+    t =    41.99s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    42.00s         Checking existence of `"depart-compte-rebours" Button`
+    t =    43.16s         Capturing element debug description
+    t =    44.10s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    44.11s         Checking existence of `"depart-compte-rebours" Button`
+    t =    46.26s Waiting 4.0s for "visite-exercice-titre" Any to exist
+    t =    47.40s     Checking `Expect predicate `existsNoRetry == 1` for object "visite-exercice-titre" Any`
+    t =    47.43s         Checking existence of `"visite-exercice-titre" Any`
+    t =    49.78s Find the "visite-exercice-titre" Any
+    t =    54.55s Find the "visite-exercice-description" Any
+    t =    66.04s Find the Target Application 'fr.kathryn.woop'
+    t =    68.33s Added attachment named 'visite-exercice-fr'
+    t =    68.44s Find the "visite-exercice-passer" Button
+    t =    75.24s Tap "visite-exercice-passer" Button
+    t =    75.26s     Wait for fr.kathryn.woop to idle
+    t =    75.44s     Find the "visite-exercice-passer" Button
+    t =    80.03s     Check for interrupting elements affecting "visite-exercice-passer" Button
+    t =    86.03s     Synthesize event
+2026-09-17 10:37:12.730 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    91.31s     Wait for fr.kathryn.woop to idle
+    t =    92.20s Waiting 2.0s for "visite-exercice-passer" Button to not exist
+    t =    93.24s     Checking `Expect predicate `existsNoRetry == 0` for object "visite-exercice-passer" Button`
+    t =    93.25s         Checking existence of `"visite-exercice-passer" Button`
+    t =    94.89s     Checking existence of `"visite-exercice-passer" Button`
+    t =   102.17s Find the "Entraînements" Button
+    t =   107.38s Tap "Accueil" Button
+    t =   107.38s     Wait for fr.kathryn.woop to idle
+    t =   107.84s     Find the "Accueil" Button
+    t =   113.50s     Check for interrupting elements affecting "house.fill" Button
+    t =   118.37s     Synthesize event
+    t =   120.33s     Wait for fr.kathryn.woop to idle
+    t =   121.48s Tap "Entraînements" Button
+    t =   121.72s     Wait for fr.kathryn.woop to idle
+    t =   121.96s     Find the "Entraînements" Button
+    t =   124.37s     Check for interrupting elements affecting "figure.strengthtraining.functional" Button
+2026-09-17 10:37:50.780 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =   127.02s     Synthesize event
+    t =   130.75s     Wait for fr.kathryn.woop to idle
+    t =   131.86s Checking existence of `"visite-exercice-passer" Button`
+    t =   135.44s Terminate fr.kathryn.woop:44410
+2026-09-17 10:38:01.236 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =   137.60s Tear Down
+Test Case '-[WoopUITests.VisiteDepartUITests test01_routeFilmPuisInvitationFrancaiseEtPasser]' passed (137.878 seconds).
+Test Suite 'VisiteDepartUITests' passed at 2026-09-17 10:38:01.556.
+	 Executed 1 test, with 0 failures (0 unexpected) in 137.878 (137.900) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-17 10:38:01.560.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 187.280 (187.313) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 10:38:01.588.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 187.280 (187.342) seconds
+2026-09-17 10:38:10.442 xcodebuild[41869:17001493] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.

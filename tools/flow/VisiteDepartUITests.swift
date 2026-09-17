@@ -18,7 +18,7 @@ final class VisiteDepartUITests: XCTestCase {
 
     private func capturer(_ app: XCUIApplication, _ nom: String) {
         if nom.hasPrefix("visite-") || nom == "profil-visite-blanc" {
-            Thread.sleep(forTimeInterval: 1.5) // laisser finir le phrasé avant la capture
+            Thread.sleep(forTimeInterval: nom.hasPrefix("visite-") ? 3.5 : 1.5) // titre et description
         }
         let piece = XCTAttachment(screenshot: app.screenshot())
         piece.name = nom
@@ -39,6 +39,8 @@ final class VisiteDepartUITests: XCTestCase {
         let titre = app.descendants(matching: .any)["visite-exercice-titre"]
         XCTAssertTrue(titre.waitForExistence(timeout: 4))
         XCTAssertEqual(titre.label, "Choisissez un exercice")
+        XCTAssertEqual(app.descendants(matching: .any)["visite-exercice-description"].label,
+                       "Il s’ajoutera à votre séance.")
         capturer(app, "visite-exercice-fr")
         let passer = app.buttons["visite-exercice-passer"]
         XCTAssertEqual(passer.label, "Passer")
@@ -56,6 +58,8 @@ final class VisiteDepartUITests: XCTestCase {
         let titre = app.descendants(matching: .any)["visite-exercice-titre"]
         XCTAssertTrue(titre.waitForExistence(timeout: 15))
         XCTAssertEqual(titre.label, "Choose an exercise")
+        XCTAssertEqual(app.descendants(matching: .any)["visite-exercice-description"].label,
+                       "It will be added to your session.")
         XCTAssertEqual(app.buttons["visite-exercice-passer"].label, "Skip")
         capturer(app, "visite-exercice-en")
         let carte = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'exercice-'")).firstMatch
@@ -103,6 +107,20 @@ final class VisiteDepartUITests: XCTestCase {
         app.buttons["Profil"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Passer"].waitForNonExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Réglages"].waitForExistence(timeout: 3))
+    }
+
+    func test06_deProfilAuxPiecesPuisPasser() {
+        let app = lancer(["-openTab", "home", "-visiteHome", "3", "-woop.langue", "fr", "-fermeSeances"])
+        defer { app.terminate() }
+        XCTAssertTrue(app.staticTexts["profil."].waitForExistence(timeout: 15))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: 0.30)).tap()
+        XCTAssertTrue(app.staticTexts["pièces."].waitForExistence(timeout: 5))
+        capturer(app, "visite-lune-blanche")
+        Thread.sleep(forTimeInterval: 0.65)
+        capturer(app, "lune-souffle")
+        app.buttons["Passer"].tap()
+        XCTAssertTrue(app.buttons["Passer"].waitForNonExistence(timeout: 3))
+        capturer(app, "lune-apres-visite")
     }
 
 }

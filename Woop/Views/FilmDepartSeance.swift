@@ -47,6 +47,12 @@ struct FilmDepartSeance: View {
         private var video: AVPlayerLayer { layer as! AVPlayerLayer }
         private var lecteur: AVPlayer?
         private var observation: NSKeyValueObservation?
+        private var haptiqueObserver: Any?
+        private let chiffre = UIImpactFeedbackGenerator(style: .rigid)
+        private let depart = UIImpactFeedbackGenerator(style: .heavy)
+        private var dernierHaptique = -1
+        // Apparitions de 1, 2, 3 puis GO dans count.mp4 (24 images/s).
+        private static let tempsHaptiques: [Double] = [0.2, 1.9, 3.45, 4.8]
         private var notifications: [NSObjectProtocol] = []
         private var terminee = false
         var actif = false
@@ -82,6 +88,16 @@ struct FilmDepartSeance: View {
             player.actionAtItemEnd = .pause
             lecteur = player
             video.player = player
+            if !CommandLine.arguments.contains("-sansHaptiqueCount") {
+                let temps = Self.tempsHaptiques.map {
+                    NSValue(time: CMTime(seconds: $0, preferredTimescale: 600))
+                }
+                // Quatre frontières du temps vidéo : la pause suspend aussi
+                // l'haptique, sans minuterie ni réveil à chaque image.
+                haptiqueObserver = player.addBoundaryTimeObserver(forTimes: temps, queue: .main) { [weak self] in
+                    Task { @MainActor [weak self] in self?.jouerHaptique() }
+                }
+            }
             for nom in [AVPlayerItem.didPlayToEndTimeNotification,
                         AVPlayerItem.failedToPlayToEndTimeNotification,
                         AVPlayerItem.playbackStalledNotification] {
@@ -111,10 +127,28 @@ struct FilmDepartSeance: View {
         func actualiser() {
             guard !terminee else { return }
             if actif, window != nil, lecteur?.currentItem?.status == .readyToPlay {
-                if lecteur?.rate == 0 { lecteur?.play() }
+                if lecteur?.rate == 0 {
+                    if haptiqueObserver != nil { chiffre.prepare(); depart.prepare() }
+                    lecteur?.play()
+                }
             } else {
                 lecteur?.pause()
             }
+        }
+
+        private func jouerHaptique() {
+            guard !terminee, actif, window != nil,
+                  let temps = lecteur?.currentTime().seconds,
+                  let i = Self.tempsHaptiques.lastIndex(where: { $0 <= temps + 0.02 }),
+                  i > dernierHaptique else { return }
+            dernierHaptique = i
+            if i == Self.tempsHaptiques.count - 1 {
+                depart.impactOccurred(intensity: 1)
+            } else {
+                chiffre.impactOccurred(intensity: 0.7)
+                chiffre.prepare()
+            }
+            NavDiagnostic.noter("depart.haptique", destination: i == 3 ? "GO" : "\(i + 1)")
         }
 
         @objc private func passerFilm() { finir("tap") }
@@ -141,6 +175,8 @@ struct FilmDepartSeance: View {
         func liberer() {
             terminee = true
             lecteur?.pause()
+            if let haptiqueObserver { lecteur?.removeTimeObserver(haptiqueObserver) }
+            haptiqueObserver = nil
             observation?.invalidate()
             observation = nil
             notifications.forEach(NotificationCenter.default.removeObserver)

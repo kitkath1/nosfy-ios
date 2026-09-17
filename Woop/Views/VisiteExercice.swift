@@ -20,14 +20,22 @@ struct VisiteExercice: View {
                                       PerceVisite(rect: poche, rayon: 38), eoFill: true)
                         .onTapGesture(perform: onPasser)
 
-                    MotsFlou([(L("Choisissez un exercice", "Choose an exercise"), true)],
-                             taille: 32)
-                        .frame(width: largeur, height: 130, alignment: .topLeading)
+                    VStack(alignment: .leading, spacing: 10) {
+                        MotsFlou([(L("Choisissez un exercice", "Choose an exercise"), true)],
+                                 taille: 32)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(L("Choisissez un exercice", "Choose an exercise"))
+                            .accessibilityIdentifier("visite-exercice-titre")
+                        MotsFlou([(L("Il s’ajoutera à votre séance.", "It will be added to your session."), false)],
+                                 taille: 17,
+                                 base: MotsFlou.duree([(L("Choisissez un exercice", "Choose an exercise"), true)]) - 0.3)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(L("Il s’ajoutera à votre séance.", "It will be added to your session."))
+                            .accessibilityIdentifier("visite-exercice-description")
+                    }
+                        .frame(width: largeur, height: 150, alignment: .topLeading)
                         .position(x: 24 + largeur / 2,
                                   y: min(poche.maxY + 120, g.size.height - ext.safeAreaInsets.bottom - 100))
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(L("Choisissez un exercice", "Choose an exercise"))
-                        .accessibilityIdentifier("visite-exercice-titre")
                         .allowsHitTesting(false)
 
                     Button(action: onPasser) {

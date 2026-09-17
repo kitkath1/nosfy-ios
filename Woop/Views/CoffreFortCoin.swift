@@ -55,6 +55,10 @@ struct CoffreFortCoinButton: View {
     /// redescendu à 46 : à 52 elle pesait plus lourd que le salut lui-même.
     static let diameter: CGFloat = 46
 
+    private var appelVisite: Bool {
+        DepartEtat.shared.visiteOuverte && DepartEtat.shared.visiteEtape == 3
+    }
+
     var body: some View {
         Color.clear
             .frame(width: Self.diameter, height: Self.diameter)
@@ -66,15 +70,20 @@ struct CoffreFortCoinButton: View {
                 // rythme du gyroscope : invisible au simulateur (le tilt y
                 // reste nul), PAYÉ SUR LE TÉLÉPHONE ». C'est donc le seul
                 // suspect qu'aucune mesure au simulateur ne pouvait voir.
-                MoonCoinView(coinR: Self.diameter / 2, matte: matte,
+                MoonCoinView(coinR: Self.diameter / 2,
+                             yawOverride: appelVisite ? 0 : nil,
+                             idleLife: appelVisite ? 0 : 1, matte: matte,
                              onTap: {
                     onPress(true)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
                         onPress(false)
                     }
                     action()
-                }, figee: Self.sansPiece || decorAuRepos
+                }, figee: appelVisite || Self.sansPiece || decorAuRepos
                     || ProtectionThermique.shared.ambianceAuRepos)
+            }
+            .overlay {
+                if appelVisite { AppelProfilVisite(symbole: .lune) }
             }
     }
 }
