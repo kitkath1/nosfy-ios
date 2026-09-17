@@ -132,12 +132,42 @@ struct PileAnnoncesHote: View {
         return insetHaut + 6
     }
 
+    /// LE MORPH « DEPUIS L'ÎLE » — l'état INACTIF (d'où le toaster entre, où il
+    /// repart) : réduit à une PILULE SOMBRE (échelle 0,30, ancrée en HAUT pour
+    /// grandir vers le bas), REMONTÉE à la place de l'île. ⚠️ PAS d'opacité :
+    /// une petite dalle NOIRE à la place de l'île se confond avec l'île (donc
+    /// pas de « pop »), et surtout elle reste VISIBLE pendant qu'elle grandit —
+    /// c'est ÇA le morphisme d'appel iPhone. Avec un fondu, la naissance se
+    /// jouait transparente et le toaster semblait juste apparaître en haut.
+    /// Le ressort de `FileAnnonces` (0,48 s) fait le voyage île → place, en
+    /// grandissant. Scale + offset SEULEMENT : aucun cadre ne bouge, rien ne se
+    /// re-layoute (loi de la maison). La sortie est l'inverse : il se rétracte
+    /// dans l'île.
+    private var sortieDeLIle: AnyTransition {
+        .scale(scale: 0.30, anchor: .top)
+            .combined(with: .offset(y: hautIle - degagementHaut))
+    }
+
+    /// LE HAUT DU DYNAMIC ISLAND — ~11 pt sur les iPhone à île (14 Pro → 16).
+    /// C'est de là que le toaster NAÎT. Constante volontaire : iOS n'expose pas
+    /// le cadre de l'île ; le dégagement réel (`degagementHaut`) donne le bas de
+    /// la zone, ce 11 en donne le haut — assez pour faire naître le toaster
+    /// « dans » l'île sans jamais mentir selon le modèle (sur un iPhone SANS
+    /// île, l'inset est plus petit, le toaster naît juste plus haut : correct).
+    private let hautIle: CGFloat = 11
+
     var body: some View {
         VStack(spacing: 0) {
             if let v = file.visible {
                 ToasterAnnonce(annonce: v.annonce)
                     .id(v.id)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    // « MORPHISME, COMME LES APPELS IPHONE » (Kathryn, 05-09,
+                    // écrit dans PiluleVagabonde) : le toaster NAÎT petit, à la
+                    // place de la pilule de l'île, et GRANDIT vers le bas ; à la
+                    // sortie il se rétracte dedans. Échelle + offset + opacité
+                    // SEULEMENT — jamais un redimensionnement de cadre (la loi
+                    // d'`EntreeNotif` : un frame animé re-layoute tout).
+                    .transition(sortieDeLIle)
             }
             Spacer(minLength: 0)
         }
