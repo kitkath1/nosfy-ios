@@ -1,6 +1,6 @@
 # LE DÉPART DEPUIS LA ROUTE : LE COMPTE À REBOURS ET LE TUTO QUI MONTRE (05-09-2026)
 
-**MISE À JOUR DU 17-09 — correctif de montage57 validé au simulateur Release et confirmé sur iPhone par Kathryn ; J2/J3 restent planifiés.**
+**MISE À JOUR DU 17-09 — correctif de montage57 validé au simulateur Release et confirmé sur iPhone par Kathryn ; J2 exercice58 installé, cinq parcours ciblés validés au simulateur ; J3 île reste planifié.**
 
 La demande du 16-09 porte sur Route → `count.mp4` → Exercices et le départ
 serveur. Le relais actuel est `WoopApp.demarrerDepuisChemin()`. Le film complet
@@ -19,7 +19,9 @@ persiste en cas de panne. Les tests QA et le rendu sont consignés dans
 [la campagne53](../perf/campagnes/2026-09-16-depart-count/etat.md).
 
 Les sections suivantes conservent **le plan historique du 05-09**, ses choix
-et les deux jalons de tuto encore à faire. Ses anciens chemins/numéros de ligne
+et les jalons de tuto. Le17-09, l’étape exercice est codée en FR/EN, avec Passer,
+sans l’ancienne horloge ; la validation58 et ses limites sont suivies dans
+[la campagne du tutoriel](../perf/campagnes/2026-09-17-tuto-depart/etat.md). Ses anciens chemins/numéros de ligne
 ne décrivent pas l'implémentation53. Le poids du fichier et le décodage matériel
 ne prouvent pas une énergie négligeable : le coût doit être mesuré sur iPhone.
 

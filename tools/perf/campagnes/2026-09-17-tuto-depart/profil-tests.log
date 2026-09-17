@@ -1,0 +1,121 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/VisiteDepartUITests/test04_profilResteTappablePendantLaVisite" "-only-testing:WoopUITests/VisiteDepartUITests/test05_visiteDepuisLePremierTempsJusquAuProfil" -resultBundlePath /tmp/woop-tuto58-profil-final.xcresult -parallel-testing-enabled NO
+
+2026-09-17 10:04:28.203 xcodebuild[38021:16932986] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-tuto58-profil-final.xcresult
+
+2026-09-17 10:04:28.209 xcodebuild[38021:16932986] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:04:28.698 xcodebuild[38021:16932986] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 10:04:29.675566+0200 WoopUITests-Runner[38060:16933197] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 10:04:30.109.
+Test Suite 'WoopUITests.xctest' started at 2026-09-17 10:04:30.109.
+Test Suite 'VisiteDepartUITests' started at 2026-09-17 10:04:30.109.
+Test Case '-[WoopUITests.VisiteDepartUITests test04_profilResteTappablePendantLaVisite]' started.
+    t =     0.00s Start Test at 2026-09-17 10:04:30.110
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-17 10:04:30.190 xcodebuild[38021:16932986] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 10:04:30.190 xcodebuild[38021:16932986] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[38060]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x107260310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106a70398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     0.69s         Setting up automation session
+    t =     1.22s         Wait for fr.kathryn.woop to idle
+    t =     3.13s Waiting 15.0s for "Passer" Button to exist
+    t =     4.17s     Checking `Expect predicate `existsNoRetry == 1` for object "Passer" Button`
+    t =     4.17s         Checking existence of `"Passer" Button`
+    t =     5.76s Find the Target Application 'fr.kathryn.woop'
+    t =     5.96s Added attachment named 'profil-visite-blanc'
+    t =     6.61s Find the Target Application 'fr.kathryn.woop'
+    t =     7.01s Added attachment named 'profil-visite-souffle'
+    t =     7.01s Find the "Profil" Button
+    t =     7.03s Tap "Profil" Button
+    t =     7.03s     Wait for fr.kathryn.woop to idle
+    t =     7.03s     Find the "Profil" Button
+    t =     7.04s     Check for interrupting elements affecting "Profil" Button
+    t =     7.06s     Synthesize event
+    t =     7.35s     Wait for fr.kathryn.woop to idle
+    t =     8.39s Waiting 3.0s for "Passer" Button to not exist
+    t =     9.42s     Checking `Expect predicate `existsNoRetry == 0` for object "Passer" Button`
+    t =     9.42s         Checking existence of `"Passer" Button`
+    t =     9.47s Waiting 3.0s for "Réglages" Button to exist
+    t =    10.50s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    10.50s         Checking existence of `"Réglages" Button`
+    t =    10.54s Terminate fr.kathryn.woop:38065
+    t =    11.59s Tear Down
+Test Case '-[WoopUITests.VisiteDepartUITests test04_profilResteTappablePendantLaVisite]' passed (11.645 seconds).
+Test Case '-[WoopUITests.VisiteDepartUITests test05_visiteDepuisLePremierTempsJusquAuProfil]' started.
+    t =     0.00s Start Test at 2026-09-17 10:04:41.756
+    t =     0.01s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-17 10:04:41.780 xcodebuild[38021:16932986] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 10:04:41.780 xcodebuild[38021:16932986] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.23s         Setting up automation session
+    t =     0.80s         Wait for fr.kathryn.woop to idle
+    t =     2.52s Waiting 15.0s for "Commencer." StaticText to exist
+    t =     3.55s     Checking `Expect predicate `existsNoRetry == 1` for object "Commencer." StaticText`
+    t =     3.55s         Checking existence of `"Commencer." StaticText`
+    t =     3.65s         Capturing element debug description
+    t =     4.57s     Checking `Expect predicate `existsNoRetry == 1` for object "Commencer." StaticText`
+    t =     4.57s         Checking existence of `"Commencer." StaticText`
+    t =     4.60s Tap Target Application 'fr.kathryn.woop'[0.94, 0.18]
+    t =     4.60s     Wait for fr.kathryn.woop to idle
+    t =     4.60s     Find the Target Application 'fr.kathryn.woop'
+    t =     4.62s     Check for interrupting elements affecting "Woop" Application
+    t =     4.63s     Synthesize event
+    t =     4.63s         Find the Target Application 'fr.kathryn.woop'
+    t =     4.65s         Find the Target Application 'fr.kathryn.woop'
+    t =     4.66s         Find the Target Application 'fr.kathryn.woop'
+    t =     4.96s     Wait for fr.kathryn.woop to idle
+    t =     4.96s Waiting 5.0s for "progrès." StaticText to exist
+    t =     5.99s     Checking `Expect predicate `existsNoRetry == 1` for object "progrès." StaticText`
+    t =     5.99s         Checking existence of `"progrès." StaticText`
+    t =     6.02s Tap Target Application 'fr.kathryn.woop'[0.94, 0.18]
+    t =     6.02s     Wait for fr.kathryn.woop to idle
+    t =     6.02s     Find the Target Application 'fr.kathryn.woop'
+    t =     6.03s     Check for interrupting elements affecting "Woop" Application
+    t =     6.05s     Synthesize event
+    t =     6.05s         Find the Target Application 'fr.kathryn.woop'
+    t =     6.06s         Find the Target Application 'fr.kathryn.woop'
+    t =     6.08s         Find the Target Application 'fr.kathryn.woop'
+    t =     6.37s     Wait for fr.kathryn.woop to idle
+    t =     6.37s Waiting 5.0s for "profil." StaticText to exist
+    t =     7.40s     Checking `Expect predicate `existsNoRetry == 1` for object "profil." StaticText`
+    t =     7.40s         Checking existence of `"profil." StaticText`
+    t =     7.43s Find the Target Application 'fr.kathryn.woop'
+    t =     7.61s Added attachment named 'profil-apres-deux-etapes'
+    t =     7.61s Tap "Profil" Button
+    t =     7.61s     Wait for fr.kathryn.woop to idle
+    t =     7.61s     Find the "Profil" Button
+    t =     7.62s     Check for interrupting elements affecting "Profil" Button
+    t =     7.66s     Synthesize event
+    t =     7.96s     Wait for fr.kathryn.woop to idle
+    t =     8.97s Waiting 3.0s for "Passer" Button to not exist
+    t =    10.00s     Checking `Expect predicate `existsNoRetry == 0` for object "Passer" Button`
+    t =    10.00s         Checking existence of `"Passer" Button`
+    t =    10.06s Waiting 3.0s for "Réglages" Button to exist
+    t =    11.08s     Checking `Expect predicate `existsNoRetry == 1` for object "Réglages" Button`
+    t =    11.08s         Checking existence of `"Réglages" Button`
+    t =    11.12s Terminate fr.kathryn.woop:38073
+    t =    12.16s Tear Down
+Test Case '-[WoopUITests.VisiteDepartUITests test05_visiteDepuisLePremierTempsJusquAuProfil]' passed (12.209 seconds).
+Test Suite 'VisiteDepartUITests' passed at 2026-09-17 10:04:53.965.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 23.854 (23.856) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-17 10:04:53.966.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 23.854 (23.857) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 10:04:53.966.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 23.854 (23.857) seconds
+2026-09-17 10:04:54.271 xcodebuild[38021:16932986] [MT] IDETestOperationsObserverDebug: 25.570 elapsed -- Testing started completed.
+2026-09-17 10:04:54.271 xcodebuild[38021:16932986] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 10:04:54.271 xcodebuild[38021:16932986] [MT] IDETestOperationsObserverDebug: 25.570 sec, +25.570 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-tuto58-profil-final.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

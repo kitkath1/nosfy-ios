@@ -744,6 +744,7 @@ struct RootView: View {
         } else {
             depart.fermerChemin()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+                depart.tutoDemande = true
                 withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
             }
         }
@@ -2084,13 +2085,10 @@ struct RootView: View {
         // ici. DÉMONTÉE à la fin (pas cachée), jamais avec `-sansVisite`.
         // (v4 « la brume » : la page ne recule plus, l'objet n'avance plus — la Home
         // ne change pas, seule la brume s'ouvre autour de l'objet.)
-        .overlayPreferenceValue(VisiteAncreKey.self) { ancres in
-            if depart.visiteOuverte {
-                VisiteHome(ancres: ancres, depart: depart.visiteEtape,
-                           onFin: { PremiereArrivee.finirVisite() })
-                    .transition(.opacity)
-                    .zIndex(29)
-            }
+        .overlay {
+            // Les cadres globaux traversent l'hôte d'onglet ; ce montage
+            // reste indépendant d'une livraison de préférences SwiftUI.
+            VisiteHomeHote(ancres: [:])
         }
         // Le décompte dépend de son état propre, pas des ancres de la visite.
         // Dans overlayPreferenceValue, le relais Start pouvait changer
@@ -2102,6 +2100,7 @@ struct RootView: View {
                     var tr = Transaction()
                     tr.disablesAnimations = true
                     withTransaction(tr) {
+                        depart.tutoDemande = true
                         selection = .exercises
                         filmDepart = nil
                     }

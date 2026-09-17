@@ -393,6 +393,7 @@ private struct CadreCarte: ViewModifier {
 struct ExercisesView: View {
     /// Le chevron du header ramène à la home : la page connaît l'onglet.
     @Binding var selection: WoopTab
+    @Environment(\.ongletCache) private var ongletCache
 
     @State private var etat = EtatExos()
     @State private var filter: ExerciseCategory?
@@ -445,13 +446,9 @@ struct ExercisesView: View {
     @State private var naissance: Double = 0
     @State private var deja = false
 
-    /// LE TUTO À PROJECTEURS (armé par « Commencer » du panneau de départ, la
-    /// première fois seulement) : la nuit tombe sur toute la page SAUF deux
-    /// fenêtres — la première card et la molette.
+    /// Une carte mise en lumière après chaque départ, avec Passer.
     @State private var tutoActif = false
-    /// La naissance du tuto — LA CASCADE s'écrit dessus : le voile tombe, PUIS
-    /// la fenêtre de la card s'ouvre, PUIS la molette.
-    @State private var tutoNe = Date()
+    @State private var tutoBancServi = false
 
     /// LE BANDEAU DU TITRE : sa hauteur est la réserve en tête de scroll.
     /// La rangée fait 56 (4 + chip 44 + 8) — les cotes de la maison, le
@@ -512,6 +509,7 @@ struct ExercisesView: View {
             // `etat.pos` toutes les 16 ms sur un écran démonté, c'est le
             // précédent du CADisplayLink retenu par la nappe du manège.
             .onDisappear {
+                tutoActif = false
                 etat.inertie?.cancel()
                 etat.inertie = nil
                 etat.omega = 0
@@ -551,8 +549,18 @@ struct ExercisesView: View {
                     filter = ArcDial.items[d].1
                 }
             }
-            .onChange(of: DepartEtat.shared.tutoDemande) { _, d in
-                if d { armerTutoSiDemande() }
+            .task(id: selection == .exercises && !ongletCache && tutoRequis) {
+                guard selection == .exercises, !ongletCache, tutoRequis else { return }
+                // Tâche annulée si la page disparaît pendant sa pose.
+                try? await Task.sleep(for: .seconds(0.2))
+                guard !Task.isCancelled else { return }
+                armerTutoSiDemande()
+            }
+            .onChange(of: selection) { _, onglet in
+                if onglet != .exercises { tutoActif = false }
+            }
+            .onChange(of: deepLinked) { _, exercice in
+                if exercice != nil { eteindreTuto() }
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $deepLinked) { ExerciseDetailView(exercise: $0) }
@@ -591,12 +599,16 @@ struct ExercisesView: View {
                 }
             }
         }
+        .onChange(of: DepartEtat.shared.tutoDemande) { _, demande in
+            // Un nouveau départ revient à la bibliothèque même si une fiche
+            // était restée ouverte sous l'onglet précédent.
+            if demande { deepLinked = nil }
+        }
     }
 
     /// L'arrivée de la page, jouée UNE fois : la card s'allume en fondu, le
     /// tuto s'arme s'il a été demandé, et les bancs se servent.
     private func arrivee() {
-        armerTutoSiDemande()
         guard !deja else { return }
         deja = true
         withAnimation(.easeOut(duration: 0.45)) { naissance = 1 }
@@ -648,6 +660,7 @@ struct ExercisesView: View {
             ZStack(alignment: .topLeading) {
                 Color.black
                 GrandeCardExos(naissance: naissance, nue: true)
+                    .environment(\.ongletCache, ongletCache || tutoActif)
                 contenuCard(safeT: 0, w: geo.size.width,
                             safeB: 0, reserve: Self.hBandeau)
                 if CommandLine.arguments.contains("-exosSonde") {
@@ -751,20 +764,6 @@ struct ExercisesView: View {
         .overlay(alignment: .bottom) {
             ArcDial(etat: etat)
                 .frame(width: cardW, height: 300)
-                // ⚠️ ANCRE SEULEMENT TUTO ARMÉ, comme `tuto-card` : publiée en
-                // permanence, `MonteAvecLaCard` la décale par image d'un drag de
-                // card et republie les préférences pour une couche éteinte
-                // 99,9 % du temps. `tutoCouche` ne lit `tuto-dial` que sous
-                // `if tutoActif`, donc la garder derrière le flag est neutre.
-                .overlay {
-                    if tutoActif {
-                        Color.clear
-                            .anchorPreference(key: SlotAnchorKey.self,
-                                              value: .bounds) {
-                                ["tuto-dial": $0]
-                            }
-                    }
-                }
         }
         // (LE CLAVIER DE BRAISE EST ARCHIVÉ — verdict Kathryn 15-09 : « mets
         // le clavier natif Apple, enlève le custom à la recherche ». Le
@@ -1046,135 +1045,41 @@ struct ExercisesView: View {
         }
     }
 
-    // MARK: - Le tuto à projecteurs
+    // MARK: - L'invitation de départ
 
-    /// L'armement : demandé par « Commencer » (DepartEtat), servi UNE fois
-    /// (UserDefaults) — `-tutoExos` le rejoue au banc à volonté.
+    private var tutoRequis: Bool {
+        DepartEtat.shared.tutoDemande ||
+            (CommandLine.arguments.contains("-tutoExos") && !tutoBancServi)
+    }
+
     private func armerTutoSiDemande() {
-        let banc = CommandLine.arguments.contains("-tutoExos")
-        guard DepartEtat.shared.tutoDemande || banc else { return }
+        guard selection == .exercises, !ongletCache, tutoRequis else { return }
         DepartEtat.shared.tutoDemande = false
-        // EN DEV LE TUTO REJOUE À CHAQUE DÉPART : sans ça, tester le flow en
-        // boucle ne le montre qu'une fois dans une vie d'installation.
-        #if DEBUG
-        let deja = false
-        #else
-        let deja = UserDefaults.standard.bool(forKey: "tutoExosVu")
-        #endif
-        guard !deja || banc else { return }
-        UserDefaults.standard.set(true, forKey: "tutoExosVu")
-        // La page se pose d'abord, le voile tombe ensuite — et la CASCADE
-        // (voile → card → molette) s'écrit sur tutoNe.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            tutoNe = Date()
-            withAnimation(.easeInOut(duration: 0.3)) { tutoActif = true }
+        tutoBancServi = true
+        // Une ancienne recherche ne doit pas cacher la carte proposée.
+        if items.isEmpty {
+            q = ""
+            filter = nil
+            items = ExosCatalogue.tout
         }
+        deepLinked = nil
+        ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
+        withAnimation(.easeOut(duration: 0.3)) { tutoActif = true }
     }
 
     private func eteindreTuto() {
         guard tutoActif else { return }
-        withAnimation(.easeOut(duration: 0.3)) { tutoActif = false }
+        withAnimation(.easeOut(duration: 0.25)) { tutoActif = false }
     }
 
-    /// Le voile percé : la nuit sur toute la page, DEUX fenêtres de lumière (la
-    /// card, la molette) aux liserés de braise qui respirent. Les taps des
-    /// fenêtres passent au travers (`contentShape` evenOdd).
     @ViewBuilder
     private func tutoCouche(_ anchors: [String: Anchor<CGRect>]) -> some View {
-        if tutoActif {
-            GeometryReader { g in
-                let cardRect = anchors["tuto-card"]
-                    .map { g[$0].insetBy(dx: -8, dy: -8) }
-                // La fenêtre SERRE la molette : le cadre de l'ArcDial fait
-                // 300 pt de haut (la fumée a besoin d'air) et avalerait la
-                // moitié de la grille.
-                let dialRect = anchors["tuto-dial"].map { a -> CGRect in
-                    let r = g[a]
-                    return CGRect(x: r.midX - 108, y: r.maxY - 178,
-                                  width: 216, height: 168)
-                }
-                let braise = Color(red: 1.0, green: 0.56, blue: 0.2)
-                // LA CASCADE — jamais tout d'un coup : le voile tombe
-                // (0 → 0,4), la fenêtre de la card S'OUVRE (0,45 → 0,85), puis
-                // celle de la molette (1,05 → 1,45).
-                TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                        paused: RythmeEcran.dort("exercises"))) { tl in
-                    let age = tl.date.timeIntervalSince(tutoNe)
-                    let sstep: (Double, Double) -> Double = { a, b in
-                        let u = min(max((age - a) / (b - a), 0), 1)
-                        return u * u * (3 - 2 * u)
-                    }
-                    let k1 = sstep(0.45, 0.85)
-                    let k2 = sstep(1.05, 1.45)
-                    let trous = [
-                        cardRect.flatMap { r in k1 > 0.01
-                            ? r.insetBy(dx: r.width / 2 * (1 - k1),
-                                        dy: r.height / 2 * (1 - k1)) : nil },
-                        dialRect.flatMap { r in k2 > 0.01
-                            ? r.insetBy(dx: r.width / 2 * (1 - k2),
-                                        dy: r.height / 2 * (1 - k2)) : nil },
-                    ].compactMap { $0 }
-                    let vie = 0.55 + 0.35 * sin(age * 2 * .pi / 2.6)
-                    ZStack {
-                        // LE FLOU DEMANDÉ : le voile est une MATIÈRE — le reste
-                        // de la page se floute sous elle, les fenêtres restent
-                        // nettes (le trou evenOdd ne floute rien).
-                        VoileTuto(trous: trous)
-                            .fill(.ultraThinMaterial,
-                                  style: FillStyle(eoFill: true))
-                            .opacity(sstep(0, 0.4))
-                            .ignoresSafeArea()
-                        VoileTuto(trous: trous)
-                            .fill(Color.black.opacity(0.5 * sstep(0, 0.4)),
-                                  style: FillStyle(eoFill: true))
-                            .ignoresSafeArea()
-                        ForEach(Array(trous.enumerated()), id: \.offset) { _, r in
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(braise, lineWidth: 1.4)
-                                .frame(width: r.width, height: r.height)
-                                .position(x: r.midX, y: r.midY)
-                                .opacity(0.95 * vie)
-                                .allowsHitTesting(false)
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(braise, lineWidth: 5)
-                                .blur(radius: 7)
-                                .frame(width: r.width, height: r.height)
-                                .position(x: r.midX, y: r.midY)
-                                .opacity(0.55 * vie)
-                                .blendMode(.screen)
-                                .allowsHitTesting(false)
-                        }
-                        if let c = cardRect {
-                            Text("Choisis ton premier exercice")
-                                .font(.inter(13, .medium))
-                                .foregroundStyle(Color.white.opacity(0.85))
-                                .position(x: max(c.midX, 110), y: c.maxY + 24)
-                                .opacity(k1)
-                                .allowsHitTesting(false)
-                        }
-                        if let d = dialRect {
-                            Text("La molette filtre")
-                                .font(.inter(12, .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
-                                .position(x: d.midX, y: d.minY - 18)
-                                .opacity(k2)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                }
-                // Le hit-test sur les fenêtres PLEINES (pas celles en cours
-                // d'ouverture) : les taps y passent dès le début — un tuto
-                // n'est jamais un mur.
-                .contentShape(.interaction,
-                              VoileTuto(trous: [cardRect, dialRect]
-                                  .compactMap { $0 }),
-                              eoFill: true)
-                .onTapGesture { eteindreTuto() }
-            }
-            .ignoresSafeArea()
-            .transition(.opacity)
+        if tutoActif, let carte = anchors["tuto-card"] {
+            VisiteExercice(ancre: carte, onPasser: eteindreTuto)
+                .transition(.opacity)
         }
     }
+
 }
 
 // MARK: - Le catalogue
@@ -2087,6 +1992,7 @@ private struct GrilleExos: View {
                     RangeeExo(exercise: rc.exercise)
                 }
                 .buttonStyle(CardPressStyle())
+                .accessibilityIdentifier("exercice-\(rc.exercise.id)")
                 .overlay {
                     if tuto, rc.i == 0 {
                         Color.clear
@@ -2160,6 +2066,7 @@ private struct GrilleExos: View {
                     ExerciseCard(exercise: exercise)
                 }
                 .buttonStyle(CardPressStyle())
+                .accessibilityIdentifier("exercice-\(exercise.id)")
                 // (Plus de `.id(exercise.id)` : la boucle est DÉJÀ clé par
                 // `exercise.id` — le doubler regèlerait l'identité.)
                 // L'ancre du tuto : la PREMIÈRE card publie son rect — le

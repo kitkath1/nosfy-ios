@@ -1543,7 +1543,7 @@ private struct CheminDuo: View {
         // l'overlay avec le petit calendrier »). Un jour raté aussi : il n'a
         // rien à montrer, mais il dit au moins de quel jour il s'agit.
         if etat.branchee, e.id <= etat.etape {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
                 etat.panneauSur = e.id
             }
             return
@@ -1955,6 +1955,20 @@ struct DuolinguoPage: View {
     /// L'OUVERTURE (partition §7, version J3) : les étapes naissent en
     /// cascade, 60 ms d'écart, après que la colonne s'est posée.
     private func naissance(ecran: Int = 0) {
+        // Le panneau Start est prêt dès l'arrivée : date et étape sont déjà
+        // locales. Aucun appel serveur à attendre, aucun loader artificiel.
+        // La cascade des autres galets continue derrière sans retenir Start.
+        if etat.branchee, ecran == EcranSpec.etapes[etat.etape].ecran {
+            let a = CommandLine.arguments
+            let sur: Int = {
+                if let i = a.firstIndex(of: "-duoPanneau"), i + 1 < a.count,
+                   let n = Int(a[i + 1]) { return n }
+                return etat.etape
+            }()
+            etat.nees.insert(etat.etape)
+            etat.panneauSur = sur
+            NavDiagnostic.noter("route.start-propose")
+        }
         if etat.gel {
             etat.nees = Set(EcranSpec.etapes.map(\.id))
             return
@@ -1982,45 +1996,7 @@ struct DuolinguoPage: View {
             tx.disablesAnimations = true
             withTransaction(tx) { etat.nees.formUnion(ailleurs.map(\.id)) }
         }
-        // §23 — L'ARRIVÉE PROPOSE : branchée, une fois la cascade posée,
-        // le galet courant s'illumine et le panneau naît (haptique douce).
-        // Conditionnée à « la page est posée sur l'écran de l'actif, sans
-        // geste » — sinon un scroll pendant la cascade faisait naître le
-        // panneau hors écran ; elle réessaie au repos suivant.
         if etat.branchee {
-            func proposerQuandPose(essai: Int) {
-                let ecranActif = EcranSpec.etapes[etat.etape].ecran
-                if !etat.enGeste, etat.ecranCourant == ecranActif {
-                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    // banc `-duoPanneau n` : le panneau naît sur le nœud n au
-                    // lieu de l'actif — c'est LE banc qui manquait pour juger
-                    // les cas de RÉCOMPENSE, qu'aucun doigt ne peut ouvrir au
-                    // simulateur.
-                    let a = CommandLine.arguments
-                    let sur: Int = {
-                        if let i = a.firstIndex(of: "-duoPanneau"), i + 1 < a.count,
-                           let n = Int(a[i + 1]) { return n }
-                        return etat.etape
-                    }()
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
-                        etat.panneauSur = sur
-                    }
-                // ⚠️ **QUATRE ESSAIS, PAS VINGT** (28-08). Vingt essais à
-                // 0,5 s font DIX SECONDES de guet : toucher l'écran pendant
-                // l'attente empêchait la naissance, puis le panneau SURGISSAIT
-                // tout seul jusqu'à dix secondes plus tard, sans rapport avec
-                // le doigt. C'est la moitié de l'impression « il fait
-                // n'importe quoi ». Passé 2 s, on renonce : le tap du galet
-                // reste la voie normale, et elle est immédiate.
-                } else if essai < 4 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        proposerQuandPose(essai: essai + 1)
-                    }
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.1) {
-                proposerQuandPose(essai: 0)
-            }
             // banc : `-duoAutoDepart` — le primary se confirme seul à
             // +3,8 s (le film du départ sans doigt).
             if CommandLine.arguments.contains("-duoAutoDepart") {

@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/woochoper-ios/docs/site
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  10:01:52
+   Duration  269ms (transform 95ms, setup 0ms, import 31ms, tests 132ms, environment 0ms)
+

@@ -542,9 +542,16 @@ struct NavEncre: View {
                 .font(.system(size: 21, weight: .medium))
                 .foregroundStyle(.white.opacity(actif ? 1 : 0.34))
                 .frame(width: NavGeo.cible, height: NavGeo.cible)
+                .overlay {
+                    if d == .profil, DepartEtat.shared.visiteOuverte,
+                       DepartEtat.shared.visiteEtape == 2 {
+                        AppelProfilVisite()
+                    }
+                }
                 .anchorPreference(key: VisiteAncreKey.self, value: .bounds) {
                     [d == .profil ? "visite-profil" : "visite-nav-\(i)": $0]
                 }
+                .modifier(CadreVisite(nom: d == .profil ? "visite-profil" : "visite-nav-\(i)"))
                 .contentShape(Rectangle())
         }
             .buttonStyle(NavAppuiStyle(destination: d))

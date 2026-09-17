@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 
 // ════════════════════════════════════════════════════════════════════════
 // LA VISITE GUIDÉE DE LA HOME — v4 « LA BRUME » (14-09, matin)
@@ -34,6 +35,33 @@ struct VisiteAncreKey: PreferenceKey {
     }
 }
 
+/// Les préférences d'ancre ne traversent pas toujours l'hôte d'un onglet.
+/// Ces cadres sont relevés uniquement pendant la visite, sur l'onglet visible.
+@Observable
+final class ReperesVisite {
+    static let shared = ReperesVisite()
+    var cadres: [String: CGRect] = [:]
+}
+
+struct CadreVisite: ViewModifier {
+    let nom: String
+    @Environment(\.ongletCache) private var cache
+
+    func body(content: Content) -> some View {
+        content.background {
+            if DepartEtat.shared.visiteOuverte, !cache {
+                Color.clear
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { cadre in
+                        guard ReperesVisite.shared.cadres[nom] != cadre else { return }
+                        ReperesVisite.shared.cadres[nom] = cadre
+                    }
+                    .onDisappear { ReperesVisite.shared.cadres[nom] = nil }
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
 /// Le modificateur d'un objet de la visite : il publie son cadre, et il TERMINE la
 /// visite quand le doigt le traverse — l'objet fait alors ce qu'il fait toujours (la
 /// route, le coffre, l'onglet) : le tuto n'est jamais un mur. Il ne le touche pas
@@ -48,6 +76,7 @@ private struct VisiteAncre: ViewModifier {
                 if depart.visiteOuverte { PremiereArrivee.finirVisite() }
             })
             .anchorPreference(key: VisiteAncreKey.self, value: .bounds) { [nom: $0] }
+            .modifier(CadreVisite(nom: nom))
     }
 }
 
@@ -102,7 +131,7 @@ struct VisiteTemps: Identifiable {
 /// Ses cinq nombres (x, y, l, h, rayon) sont animables : sous `withAnimation`, la
 /// poche GLISSE d'un objet au suivant et prend sa forme ; le fondu (`fondu`) est le
 /// flou d'un masque à rayon CONSTANT — une passe hors écran, en cache hors vol.
-private struct Brume: View, Animatable {
+struct BrumeVisite: View, Animatable {
     var x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat
     var rayon: CGFloat
     let fondu: CGFloat
@@ -170,7 +199,7 @@ private struct Brume: View, Animatable {
 
 /// Le rectangle plein écran percé de la poche — pour le TOUCHER seulement : le tap
 /// hors poche = le temps suivant, le tap dans la poche traverse vers l'objet.
-private struct Perce: Shape {
+struct PerceVisite: Shape {
     var rect: CGRect
     var rayon: CGFloat
     func path(in r: CGRect) -> Path {
@@ -186,6 +215,22 @@ private struct Perce: Shape {
 }
 
 // MARK: - La visite
+
+/// L'état d'ouverture est observé dans un corps de vue, indépendamment des
+/// changements d'ancres. Sur une Home immobile, la closure de préférences
+/// seule pouvait ne jamais monter la visite demandée.
+struct VisiteHomeHote: View {
+    let ancres: [String: Anchor<CGRect>]
+    var body: some View {
+        let etat = DepartEtat.shared
+        if etat.visiteOuverte, !ancres.isEmpty || !ReperesVisite.shared.cadres.isEmpty {
+            VisiteHome(ancres: ancres, depart: etat.visiteEtape,
+                       onFin: { PremiereArrivee.finirVisite() })
+                .transition(.opacity)
+                .zIndex(29)
+        }
+    }
+}
 
 struct VisiteHome: View {
     private static let flou1 = CommandLine.arguments.contains("-visiteFlou1")
@@ -237,13 +282,13 @@ struct VisiteHome: View {
             let rayon = rayon(temps, poche)
             let fondu = temps.petit ? Self.fonduPetit : Self.fonduGrand
             ZStack {
-                Brume(rect: poche ?? .zero, rayon: rayon, fondu: fondu,
+                BrumeVisite(rect: poche ?? .zero, rayon: rayon, fondu: fondu,
                       opacite: brume, flou1: Self.flou1)
                     // LE TAP HORS POCHE = le temps suivant ; DANS la poche, le doigt
                     // TRAVERSE (contentShape evenOdd) — l'objet répond.
                     .overlay {
                         Color.clear
-                            .contentShape(.interaction, Perce(rect: poche ?? .zero, rayon: rayon),
+                            .contentShape(.interaction, PerceVisite(rect: poche ?? .zero, rayon: rayon),
                                           eoFill: true)
                             .onTapGesture { suivant() }
                             .ignoresSafeArea()
@@ -300,6 +345,9 @@ struct VisiteHome: View {
         }
         .ignoresSafeArea()
         .task { entrer() }
+        .onChange(of: etape) { _, valeur in
+            DepartEtat.shared.visiteEtape = valeur
+        }
     }
 
     // MARK: la géométrie
@@ -307,8 +355,13 @@ struct VisiteHome: View {
     /// La poche d'un temps : le cadre du VRAI objet, élargi de la marge — nil si
     /// l'objet n'est pas à l'écran.
     private func poche(_ t: VisiteTemps, _ g: GeometryProxy) -> CGRect? {
-        guard let a = ancres[t.ancre] else { return nil }
-        let r = g[a]
+        let r: CGRect
+        if let a = ancres[t.ancre] {
+            r = g[a]
+        } else if let cadre = ReperesVisite.shared.cadres[t.ancre] {
+            let origine = g.frame(in: .global).origin
+            r = cadre.offsetBy(dx: -origine.x, dy: -origine.y)
+        } else { return nil }
         guard r.width > 4, r.height > 4 else { return nil }
         let p = r.insetBy(dx: -Self.marge, dy: -Self.marge)
         // La dilatation de l'apparition (1,6 → 1) : la poche se resserre sur l'objet.
@@ -329,7 +382,8 @@ struct VisiteHome: View {
     private func prochain(depuis i: Int) -> Int? {
         var k = i
         while k < VisiteTemps.tous.count {
-            if ancres[VisiteTemps.tous[k].ancre] != nil { return k }
+            let cle = VisiteTemps.tous[k].ancre
+            if ancres[cle] != nil || ReperesVisite.shared.cadres[cle] != nil { return k }
             k += 1
         }
         return nil

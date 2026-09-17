@@ -1,5 +1,20 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E71 — Visite58 : tester son montage sur une Home immobile
+
+17-09, trois parcours exercice passent, mais le banc Profil n’affiche aucune
+visite. L’hôte seul et le relevé de cadres seul sont insuffisants ; montage
+final dans un overlay indépendant, alimenté par les positions réelles des
+éléments relevées uniquement pendant la visite. Reprise sans countProbe : aucune sonde ne
+doit fournir accidentellement la dépendance qui manque à la vue. Les deux
+langues, Passer, la carte et le mode liste sont validés séparément. Builds et
+essais sur simulateur, iPhone non maintenu actif pendant les compilations ;
+aucune conclusion thermique tirée de ce banc. Deux derniers parcours Profil
+réussis : accès direct11,645s et depuis le début de visite12,209s. Version58
+installée puis relue sur iPhone, sans lancement de campagne physique.
+[Preuves](campagnes/2026-09-17-tuto-depart/etat.md).
+
+
 ### E70 — Départ56 : le film attaché aux ancres ne monte pas ; ne pas laisser Route chauffer pendant les builds
 
 17-09, vrai Start au banc sans insertion de séance : traces bouton → relais →
