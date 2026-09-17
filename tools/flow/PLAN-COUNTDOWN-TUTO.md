@@ -1,6 +1,29 @@
 # LE DÉPART DEPUIS LA ROUTE : LE COMPTE À REBOURS ET LE TUTO QUI MONTRE (05-09-2026)
 
-**PLAN — RIEN N'EST CODÉ.** Demandé par Kathryn le 05-09 :
+**MISE À JOUR DU 17-09 — correctif de montage57 validé au simulateur Release et confirmé sur iPhone par Kathryn ; J2/J3 restent planifiés.**
+
+La demande du 16-09 porte sur Route → `count.mp4` → Exercices et le départ
+serveur. Le relais actuel est `WoopApp.demarrerDepuisChemin()`. Le film complet
+est intégré en H.264,1080×1920,24 images/s,6,04s,563444octets ; les fondus sont
+cuits, le son respecte le silencieux. Un tap passe, l'arrière-plan met en pause,
+la fin réelle libère le lecteur. Les moteurs des pages couvertes dorment. Le correctif57 monte le lecteur dans
+un overlay indépendant des ancres de la visite et ouvre Exercices à sa fin.
+Il conserve la séance existante lors d’une reprise depuis Start. Le défaut56,
+la forte chauffe signalée et la validation57 sont suivis dans
+[la reprise du17-09](../perf/campagnes/2026-09-16-depart-count/reprise-start-17/etat.md).
+
+Le même UUID local part dans `workouts` sans bloquer l'interface. Le serveur
+ignore les doublons, une fin déjà reçue n'est jamais effacée par un départ
+retardé. L'annulation ne vise que cet UUID encore ouvert ; sa file locale
+persiste en cas de panne. Les tests QA et le rendu sont consignés dans
+[la campagne53](../perf/campagnes/2026-09-16-depart-count/etat.md).
+
+Les sections suivantes conservent **le plan historique du 05-09**, ses choix
+et les deux jalons de tuto encore à faire. Ses anciens chemins/numéros de ligne
+ne décrivent pas l'implémentation53. Le poids du fichier et le décodage matériel
+ne prouvent pas une énergie négligeable : le coût doit être mesuré sur iPhone.
+
+Demande historique du 05-09 :
 
 > « On retravaille le lancement de la session depuis la route : cette vidéo
 > `count.mp4` (dans Téléchargements) apparaît, **plus** un petit tuto tout

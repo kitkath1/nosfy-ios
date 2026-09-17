@@ -1,0 +1,254 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests" -resultBundlePath /tmp/woop-count53/tests.xcresult -parallel-testing-enabled NO
+
+2026-09-16 18:36:08.227 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count53/tests.xcresult
+
+2026-09-16 18:36:08.307 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:36:09.143 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:36:09.392 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:36:14.673654+0200 WoopUITests-Runner[9865:16575763] [Default] Running tests...
+objc[9865]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ba88310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10af54398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 18:36:17.145.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 18:36:17.145.
+Test Suite 'CountdownUITests' started at 2026-09-16 18:36:17.145.
+Test Case '-[WoopUITests.CountdownUITests test01_finNaturelleEtRelecture]' started.
+    t =     0.00s Start Test at 2026-09-16 18:36:17.145
+    t =     0.16s Set Up
+    t =     0.16s Terminate fr.kathryn.woop:0
+    t =     0.16s Open fr.kathryn.woop
+    t =     0.16s     Launch fr.kathryn.woop
+2026-09-16 18:36:17.480 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 18:36:17.480 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.15s         Setting up automation session
+    t =     1.98s         Wait for fr.kathryn.woop to idle
+    t =     3.35s Waiting 15.0s for "depart-compte-rebours" Button to exist
+    t =     4.38s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     4.38s         Checking existence of `"depart-compte-rebours" Button`
+    t =     4.44s Find the Target Application 'fr.kathryn.woop'
+    t =     4.52s Added attachment named 'count-film'
+    t =     4.52s Waiting 12.0s for "depart-rejouer" Button to exist
+    t =     5.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     5.56s         Checking existence of `"depart-rejouer" Button`
+    t =     5.56s         Capturing element debug description
+    t =     6.60s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     6.60s         Checking existence of `"depart-rejouer" Button`
+    t =     6.61s         Capturing element debug description
+    t =     7.54s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     7.54s         Checking existence of `"depart-rejouer" Button`
+    t =     7.54s         Capturing element debug description
+    t =     8.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     8.57s         Checking existence of `"depart-rejouer" Button`
+    t =     8.58s         Capturing element debug description
+    t =     9.61s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     9.61s         Checking existence of `"depart-rejouer" Button`
+    t =     9.63s Checking existence of `"depart-compte-rebours" Button`
+    t =     9.64s Tap "depart-rejouer" Button
+    t =     9.64s     Wait for fr.kathryn.woop to idle
+    t =     9.64s     Find the "depart-rejouer" Button
+    t =     9.65s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =     9.67s     Synthesize event
+    t =    10.08s     Wait for fr.kathryn.woop to idle
+    t =    10.08s Waiting 3.0s for "depart-compte-rebours" Button to exist
+2026-09-16 18:36:27.528 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    11.10s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    11.10s         Checking existence of `"depart-compte-rebours" Button`
+    t =    11.11s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    12.14s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    12.14s         Checking existence of `"depart-rejouer" Button`
+    t =    12.15s         Capturing element debug description
+    t =    12.15s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    12.16s             Find: Descendants matching type Button
+    t =    12.16s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    12.16s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    12.16s             Find: Descendants matching type Button
+    t =    12.16s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    13.20s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    13.20s         Checking existence of `"depart-rejouer" Button`
+    t =    13.21s         Capturing element debug description
+    t =    13.21s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    13.22s             Find: Descendants matching type Button
+    t =    13.22s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    13.22s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    13.22s             Find: Descendants matching type Button
+    t =    13.22s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    14.16s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    14.16s         Checking existence of `"depart-rejouer" Button`
+    t =    14.17s         Capturing element debug description
+    t =    14.17s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    14.18s             Find: Descendants matching type Button
+    t =    14.18s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    14.18s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    14.19s             Find: Descendants matching type Button
+    t =    14.19s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    15.12s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    15.12s         Checking existence of `"depart-rejouer" Button`
+    t =    15.13s         Capturing element debug description
+    t =    15.13s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    15.14s             Find: Descendants matching type Button
+    t =    15.14s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    15.14s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    15.15s             Find: Descendants matching type Button
+    t =    15.15s             Requesting snapshot of accessibility hierarchy for app with pid 9880
+    t =    16.18s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    16.18s         Checking existence of `"depart-rejouer" Button`
+    t =    16.20s Terminate fr.kathryn.woop:9880
+    t =    17.27s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test01_finNaturelleEtRelecture]' passed (17.306 seconds).
+Test Case '-[WoopUITests.CountdownUITests test02_tapPuisPauseArrierePlan]' started.
+    t =     0.00s Start Test at 2026-09-16 18:36:34.453
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 18:36:34.476 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 18:36:34.476 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.23s         Setting up automation session
+    t =     0.91s         Wait for fr.kathryn.woop to idle
+    t =     2.16s Waiting 15.0s for "depart-compte-rebours" Button to exist
+    t =     3.19s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     3.19s         Checking existence of `"depart-compte-rebours" Button`
+    t =     3.24s Tap "depart-compte-rebours" Button
+    t =     3.24s     Wait for fr.kathryn.woop to idle
+    t =     3.24s     Find the "depart-compte-rebours" Button
+    t =     3.25s     Check for interrupting elements affecting "depart-compte-rebours" Button
+    t =     3.26s     Synthesize event
+    t =     3.54s     Wait for fr.kathryn.woop to idle
+    t =     3.55s Waiting 3.0s for "depart-rejouer" Button to exist
+    t =     4.58s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     4.58s         Checking existence of `"depart-rejouer" Button`
+    t =     4.60s Tap "depart-rejouer" Button
+    t =     4.60s     Wait for fr.kathryn.woop to idle
+    t =     4.60s     Find the "depart-rejouer" Button
+    t =     4.61s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =     4.62s     Synthesize event
+    t =     4.90s     Wait for fr.kathryn.woop to idle
+    t =     4.90s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =     5.93s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     5.93s         Checking existence of `"depart-compte-rebours" Button`
+    t =     5.94s Pressing Home button
+2026-09-16 18:36:46.702 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    13.41s Open fr.kathryn.woop
+    t =    13.41s     Activate fr.kathryn.woop
+    t =    13.44s         Wait for fr.kathryn.woop to idle
+    t =    13.44s Waiting 2.0s for "depart-compte-rebours" Button to exist
+    t =    14.47s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    14.47s         Checking existence of `"depart-compte-rebours" Button`
+    t =    14.48s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    15.50s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    15.50s         Checking existence of `"depart-rejouer" Button`
+    t =    15.51s         Capturing element debug description
+    t =    15.51s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    15.52s             Find: Descendants matching type Button
+    t =    15.52s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    15.52s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    15.53s             Find: Descendants matching type Button
+    t =    15.53s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+2026-09-16 18:36:50.725 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    16.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    16.56s         Checking existence of `"depart-rejouer" Button`
+    t =    16.57s         Capturing element debug description
+    t =    16.57s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    16.57s             Find: Descendants matching type Button
+    t =    16.57s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    16.57s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    16.58s             Find: Descendants matching type Button
+    t =    16.58s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    17.50s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    17.50s         Checking existence of `"depart-rejouer" Button`
+    t =    17.51s         Capturing element debug description
+    t =    17.51s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    17.51s             Find: Descendants matching type Button
+    t =    17.51s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    17.51s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    17.52s             Find: Descendants matching type Button
+    t =    17.52s             Requesting snapshot of accessibility hierarchy for app with pid 9919
+    t =    18.55s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    18.55s         Checking existence of `"depart-rejouer" Button`
+    t =    18.56s Terminate fr.kathryn.woop:9919
+    t =    19.62s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test02_tapPuisPauseArrierePlan]' passed (19.667 seconds).
+Test Case '-[WoopUITests.CountdownUITests test03_startRouteFilmPuisExercicesUneSeuleSeance]' started.
+    t =     0.00s Start Test at 2026-09-16 18:36:54.121
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 18:36:54.143 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 18:36:54.143 xcodebuild[9811:16575079] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.23s         Setting up automation session
+    t =     0.84s         Wait for fr.kathryn.woop to idle
+2026-09-16 18:36:55.300 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     3.33s Waiting 25.0s for "count-state" StaticText to exist
+2026-09-16 18:36:57.621 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     4.36s     Checking `Expect predicate `existsNoRetry == 1` for object "count-state" StaticText`
+    t =     4.36s         Checking existence of `"count-state" StaticText`
+    t =     4.52s Find the "count-state" StaticText
+    t =     4.55s Waiting 25.0s for "Start" Button to exist
+2026-09-16 18:36:58.927 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:36:59.494 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     5.57s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     5.57s         Checking existence of `"Start" Button`
+    t =     5.60s Find the Target Application 'fr.kathryn.woop'
+2026-09-16 18:36:59.849 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     5.82s Added attachment named 'route-avant-start'
+    t =     5.82s Double tap "Start" Button
+    t =     5.82s     Wait for fr.kathryn.woop to idle
+    t =     5.82s     Find the "Start" Button
+    t =     5.84s     Check for interrupting elements affecting "Start" Button
+    t =     5.87s     Synthesize event
+2026-09-16 18:37:00.132 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     6.22s     Wait for fr.kathryn.woop to idle
+2026-09-16 18:37:00.499 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:00.632 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:00.860 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     6.89s Waiting 4.0s for "depart-compte-rebours" Button to exist
+2026-09-16 18:37:01.649 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:01.769 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     7.92s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     7.92s         Checking existence of `"depart-compte-rebours" Button`
+    t =     7.96s Find the Target Application 'fr.kathryn.woop'
+    t =     8.06s Added attachment named 'route-countdown'
+2026-09-16 18:37:02.366 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:02.484 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:02.932 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     9.09s Checking existence of `"depart-compte-rebours" Button`
+2026-09-16 18:37:03.717 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:04.280 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    10.16s Checking existence of `"depart-compte-rebours" Button`
+    t =    11.11s Checking existence of `"depart-compte-rebours" Button`
+    t =    12.11s Checking existence of `"depart-compte-rebours" Button`
+2026-09-16 18:37:07.192 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    13.07s Checking existence of `"depart-compte-rebours" Button`
+    t =    14.14s Checking existence of `"depart-compte-rebours" Button`
+    t =    14.16s Find the "count-state" StaticText
+    t =    14.18s Find the "count-state" StaticText
+    t =    14.21s Find the "count-state" StaticText
+    t =    14.23s Find the Target Application 'fr.kathryn.woop'
+2026-09-16 18:37:08.355 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    14.36s Added attachment named 'route-arrivee-exercices'
+    t =    14.36s Find the "count-state" StaticText
+WOOP_COUNT_ETAT=actives=1;id=55DA4BCB-B8FB-4943-9FDA-CEB6E9B89A57;film=0;page=exercises
+    t =    22.39s Find the "count-state" StaticText
+    t =    22.41s Terminate fr.kathryn.woop:10004
+    t =    23.47s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test03_startRouteFilmPuisExercicesUneSeuleSeance]' passed (23.531 seconds).
+Test Suite 'CountdownUITests' passed at 2026-09-16 18:37:17.652.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 60.505 (60.507) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-16 18:37:17.652.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 60.505 (60.507) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 18:37:17.654.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 60.505 (60.509) seconds
+2026-09-16 18:37:26.672 xcodebuild[9811:16575079] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:37:28.783 xcodebuild[9811:16575079] [MT] IDETestOperationsObserverDebug: 79.627 elapsed -- Testing started completed.
+2026-09-16 18:37:28.783 xcodebuild[9811:16575079] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 18:37:28.783 xcodebuild[9811:16575079] [MT] IDETestOperationsObserverDebug: 79.627 sec, +79.627 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count53/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,102 @@
+{
+  "repos_avant": {
+    "utc_debut": "16:39:19",
+    "utc_fin_exclue": "16:39:29",
+    "n": 10,
+    "t": [
+      15.2,
+      24.4
+    ],
+    "duree_echantillons_s": 9.2,
+    "cpu_mediane": 0.5,
+    "cpu_max": 4,
+    "callbacks_mediane": 60.1,
+    "intervalle_max_ms": 17,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "lecture1": {
+    "utc_debut": "16:39:32",
+    "utc_fin_exclue": "16:39:35",
+    "n": 3,
+    "t": [
+      28.4,
+      30.5
+    ],
+    "duree_echantillons_s": 2.1,
+    "cpu_mediane": 8,
+    "cpu_max": 8,
+    "callbacks_mediane": 60.1,
+    "intervalle_max_ms": 17,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "lecture2": {
+    "utc_debut": "16:39:42",
+    "utc_fin_exclue": "16:39:44",
+    "n": 2,
+    "t": [
+      38.6,
+      39.6
+    ],
+    "duree_echantillons_s": 1.0,
+    "cpu_mediane": 0.5,
+    "cpu_max": 1,
+    "callbacks_mediane": 60.1,
+    "intervalle_max_ms": 17,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "lecture3": {
+    "utc_debut": "16:39:51",
+    "utc_fin_exclue": "16:39:54",
+    "n": 3,
+    "t": [
+      47.7,
+      49.7
+    ],
+    "duree_echantillons_s": 2.0,
+    "cpu_mediane": 4,
+    "cpu_max": 4,
+    "callbacks_mediane": 60.1,
+    "intervalle_max_ms": 17,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "recuperation": {
+    "utc_debut": "16:40:20",
+    "utc_fin_exclue": "16:40:40",
+    "n": 20,
+    "t": [
+      76.3,
+      95.5
+    ],
+    "duree_echantillons_s": 19.2,
+    "cpu_mediane": 0.0,
+    "cpu_max": 0,
+    "callbacks_mediane": 60.1,
+    "intervalle_max_ms": 17,
+    "therm": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  }
+}

@@ -1,0 +1,296 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testLecteurDepartSurIPhone" -resultBundlePath /tmp/woop-count53/iphone-tests.xcresult -parallel-testing-enabled NO
+
+2026-09-16 18:38:58.249 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count53/iphone-tests.xcresult
+
+2026-09-16 18:38:58.251 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:38:58.353 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 18:39:00.025 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:39:00.153 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:39:02.121050+0200 NavRuntimeUITests-Runner[34498:2670078] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 18:39:02.598.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 18:39:02.598.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 18:39:02.598.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testLecteurDepartSurIPhone]' started.
+    t =     0.00s Start Test at 2026-09-16 18:39:02.599
+    t =     0.03s Set Up
+    t =     0.04s Terminate fr.kathryn.woop:34485
+2026-09-16 18:39:02.819 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.07s Open fr.kathryn.woop
+    t =     1.07s     Launch fr.kathryn.woop
+    t =     1.28s         Setting up automation session
+    t =     1.29s         Wait for fr.kathryn.woop to idle
+    t =     2.38s Waiting 15.0s for "depart-compte-rebours" Button to exist
+    t =     3.41s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     3.42s         Checking existence of `"depart-compte-rebours" Button`
+    t =     3.48s Find the Application 'fr.kathryn.woop'
+    t =     3.64s Added attachment named 'iphone-count-premiere-lecture'
+    t =     3.64s Waiting 12.0s for "depart-rejouer" Button to exist
+    t =     4.67s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     4.67s         Checking existence of `"depart-rejouer" Button`
+    t =     4.68s         Capturing element debug description
+    t =     5.69s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     5.69s         Checking existence of `"depart-rejouer" Button`
+    t =     5.71s         Capturing element debug description
+    t =     6.64s     Device orientation changed to Portrait
+    t =     6.74s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     6.74s         Checking existence of `"depart-rejouer" Button`
+    t =     6.75s         Capturing element debug description
+2026-09-16 18:39:09.393 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     7.68s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =     7.68s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE repos-avant 2026-09-16T16:39:10Z
+2026-09-16 18:39:15.171 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    27.70s Find the Application 'fr.kathryn.woop'
+    t =    27.70s     Device orientation changed to Face Up
+    t =    27.86s Added attachment named 'iphone-count-repos-avant'
+WOOP_COUNT_IPHONE lecture-1-tap 2026-09-16T16:39:30Z
+    t =    27.86s Tap "depart-rejouer" Button
+    t =    27.86s     Wait for fr.kathryn.woop to idle
+    t =    27.86s     Find the "depart-rejouer" Button
+    t =    27.87s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    27.89s     Synthesize event
+    t =    28.18s     Wait for fr.kathryn.woop to idle
+    t =    28.19s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    29.22s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    29.22s         Checking existence of `"depart-compte-rebours" Button`
+    t =    29.24s Find the Application 'fr.kathryn.woop'
+    t =    29.49s Added attachment named 'iphone-count-lecture-1'
+    t =    29.49s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    30.52s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    30.52s         Checking existence of `"depart-rejouer" Button`
+    t =    30.54s         Capturing element debug description
+    t =    30.54s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    30.56s             Find: Descendants matching type Button
+    t =    30.56s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    30.56s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    30.58s             Find: Descendants matching type Button
+    t =    30.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    31.54s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    31.54s         Checking existence of `"depart-rejouer" Button`
+    t =    31.55s         Capturing element debug description
+    t =    31.55s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    31.56s             Find: Descendants matching type Button
+    t =    31.56s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    31.57s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    31.58s             Find: Descendants matching type Button
+    t =    31.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    32.55s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    32.55s         Checking existence of `"depart-rejouer" Button`
+    t =    32.56s         Capturing element debug description
+    t =    32.56s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    32.58s             Find: Descendants matching type Button
+    t =    32.58s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    32.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    32.59s             Find: Descendants matching type Button
+    t =    32.60s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    33.55s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    33.55s         Checking existence of `"depart-rejouer" Button`
+    t =    33.56s         Capturing element debug description
+    t =    33.56s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    33.58s             Find: Descendants matching type Button
+    t =    33.58s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    33.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    33.60s             Find: Descendants matching type Button
+    t =    33.60s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    34.55s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    34.55s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE lecture-1-fin 2026-09-16T16:39:37Z
+WOOP_COUNT_IPHONE lecture-2-tap 2026-09-16T16:39:40Z
+    t =    37.57s Tap "depart-rejouer" Button
+    t =    37.57s     Wait for fr.kathryn.woop to idle
+    t =    37.57s     Find the "depart-rejouer" Button
+    t =    37.59s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    37.62s     Synthesize event
+    t =    37.92s     Wait for fr.kathryn.woop to idle
+    t =    37.93s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    38.94s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    38.94s         Checking existence of `"depart-compte-rebours" Button`
+    t =    38.96s Find the Application 'fr.kathryn.woop'
+    t =    39.10s Added attachment named 'iphone-count-lecture-2'
+    t =    39.10s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    40.12s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    40.12s         Checking existence of `"depart-rejouer" Button`
+    t =    40.14s         Capturing element debug description
+    t =    40.14s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    40.15s             Find: Descendants matching type Button
+    t =    40.15s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    40.16s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    40.17s             Find: Descendants matching type Button
+    t =    40.17s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    41.12s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    41.12s         Checking existence of `"depart-rejouer" Button`
+    t =    41.14s         Capturing element debug description
+    t =    41.14s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    41.15s             Find: Descendants matching type Button
+    t =    41.15s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    41.15s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    41.17s             Find: Descendants matching type Button
+    t =    41.17s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    42.12s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    42.12s         Checking existence of `"depart-rejouer" Button`
+    t =    42.13s         Capturing element debug description
+    t =    42.14s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    42.15s             Find: Descendants matching type Button
+    t =    42.15s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    42.15s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    42.17s             Find: Descendants matching type Button
+    t =    42.17s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    43.12s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    43.12s         Checking existence of `"depart-rejouer" Button`
+    t =    43.13s         Capturing element debug description
+    t =    43.13s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    43.15s             Find: Descendants matching type Button
+    t =    43.15s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    43.15s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    43.16s             Find: Descendants matching type Button
+    t =    43.17s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    44.13s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    44.13s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE lecture-2-fin 2026-09-16T16:39:46Z
+WOOP_COUNT_IPHONE lecture-3-tap 2026-09-16T16:39:49Z
+    t =    47.15s Tap "depart-rejouer" Button
+    t =    47.15s     Wait for fr.kathryn.woop to idle
+    t =    47.16s     Find the "depart-rejouer" Button
+    t =    47.18s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    47.20s     Synthesize event
+    t =    47.50s     Wait for fr.kathryn.woop to idle
+    t =    47.51s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    48.53s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    48.53s         Checking existence of `"depart-compte-rebours" Button`
+    t =    48.55s Find the Application 'fr.kathryn.woop'
+    t =    48.69s Added attachment named 'iphone-count-lecture-3'
+    t =    48.70s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    49.71s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    49.71s         Checking existence of `"depart-rejouer" Button`
+    t =    49.73s         Capturing element debug description
+    t =    49.73s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    49.75s             Find: Descendants matching type Button
+    t =    49.75s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    49.75s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    49.76s             Find: Descendants matching type Button
+    t =    49.76s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    50.71s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    50.71s         Checking existence of `"depart-rejouer" Button`
+    t =    50.73s         Capturing element debug description
+    t =    50.73s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    50.74s             Find: Descendants matching type Button
+    t =    50.74s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    50.75s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    50.76s             Find: Descendants matching type Button
+    t =    50.76s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    51.72s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    51.72s         Checking existence of `"depart-rejouer" Button`
+    t =    51.74s         Capturing element debug description
+    t =    51.74s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    51.75s             Find: Descendants matching type Button
+    t =    51.75s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    51.76s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    51.77s             Find: Descendants matching type Button
+    t =    51.77s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    52.72s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    52.72s         Checking existence of `"depart-rejouer" Button`
+    t =    52.74s         Capturing element debug description
+    t =    52.74s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    52.75s             Find: Descendants matching type Button
+    t =    52.75s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    52.75s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    52.77s             Find: Descendants matching type Button
+    t =    52.77s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    53.72s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    53.72s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE lecture-3-fin 2026-09-16T16:39:56Z
+    t =    56.74s Tap "depart-rejouer" Button
+    t =    56.74s     Wait for fr.kathryn.woop to idle
+    t =    56.74s     Find the "depart-rejouer" Button
+    t =    56.76s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    56.79s     Synthesize event
+    t =    57.09s     Wait for fr.kathryn.woop to idle
+    t =    57.09s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    58.11s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    58.12s         Checking existence of `"depart-compte-rebours" Button`
+    t =    58.13s Tap "depart-compte-rebours" Button
+    t =    58.13s     Wait for fr.kathryn.woop to idle
+    t =    58.14s     Find the "depart-compte-rebours" Button
+    t =    58.16s     Check for interrupting elements affecting "depart-compte-rebours" Button
+    t =    58.19s     Synthesize event
+    t =    58.49s     Wait for fr.kathryn.woop to idle
+    t =    58.49s Waiting 3.0s for "depart-rejouer" Button to exist
+    t =    59.51s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    59.52s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE tap-passe 2026-09-16T16:40:02Z
+    t =    59.53s Tap "depart-rejouer" Button
+    t =    59.53s     Wait for fr.kathryn.woop to idle
+    t =    59.54s     Find the "depart-rejouer" Button
+    t =    59.55s     Check for interrupting elements affecting "depart-rejouer" Button
+    t =    59.58s     Synthesize event
+    t =    59.87s     Wait for fr.kathryn.woop to idle
+    t =    59.87s Waiting 3.0s for "depart-compte-rebours" Button to exist
+    t =    60.89s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    60.89s         Checking existence of `"depart-compte-rebours" Button`
+    t =    60.91s Pressing Home button
+    t =    68.38s Open fr.kathryn.woop
+    t =    68.39s     Activate fr.kathryn.woop
+    t =    68.44s         Wait for fr.kathryn.woop to idle
+    t =    68.45s Waiting 2.0s for "depart-compte-rebours" Button to exist
+    t =    69.51s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    69.52s         Checking existence of `"depart-compte-rebours" Button`
+    t =    69.53s Waiting 10.0s for "depart-rejouer" Button to exist
+    t =    70.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    70.56s         Checking existence of `"depart-rejouer" Button`
+    t =    70.58s         Capturing element debug description
+    t =    70.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    70.60s             Find: Descendants matching type Button
+    t =    70.60s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    70.60s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    70.61s             Find: Descendants matching type Button
+    t =    70.61s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    71.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    71.56s         Checking existence of `"depart-rejouer" Button`
+    t =    71.58s         Capturing element debug description
+    t =    71.58s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    71.59s             Find: Descendants matching type Button
+    t =    71.59s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    71.60s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    71.61s             Find: Descendants matching type Button
+    t =    71.61s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    72.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    72.56s         Checking existence of `"depart-rejouer" Button`
+    t =    72.57s         Capturing element debug description
+    t =    72.57s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    72.59s             Find: Descendants matching type Button
+    t =    72.59s             Find: Elements matching predicate '"depart-rejouer" IN identifiers'
+    t =    72.59s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    72.60s             Find: Descendants matching type Button
+    t =    72.61s             Requesting snapshot of accessibility hierarchy for app with pid 34499
+    t =    73.56s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-rejouer" Button`
+    t =    73.56s         Checking existence of `"depart-rejouer" Button`
+WOOP_COUNT_IPHONE repos-apres 2026-09-16T16:40:16Z
+    t =    98.58s Find the Application 'fr.kathryn.woop'
+    t =    98.72s Added attachment named 'iphone-count-repos-apres'
+WOOP_COUNT_IPHONE fin 2026-09-16T16:40:41Z
+    t =    98.72s Tear Down
+2026-09-16 18:40:41.495 xcodebuild[10342:16587165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testLecteurDepartSurIPhone]' passed (99.016 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-16 18:40:41.616.
+	 Executed 1 test, with 0 failures (0 unexpected) in 99.016 (99.018) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-16 18:40:41.617.
+	 Executed 1 test, with 0 failures (0 unexpected) in 99.016 (99.019) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 18:40:41.618.
+	 Executed 1 test, with 0 failures (0 unexpected) in 99.016 (99.021) seconds
+2026-09-16 18:40:41.920 xcodebuild[10342:16587165] [MT] IDETestOperationsObserverDebug: 101.893 elapsed -- Testing started completed.
+2026-09-16 18:40:41.920 xcodebuild[10342:16587165] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 18:40:41.920 xcodebuild[10342:16587165] [MT] IDETestOperationsObserverDebug: 101.893 sec, +101.893 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count53/iphone-tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

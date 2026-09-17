@@ -1446,13 +1446,17 @@ private struct CheminDuo: View {
     /// §23 — le PRIMARY : l'haptique, le panneau LIBÈRE la scène (0,15 s,
     /// la loi des deux mouvements), puis l'hôte prend la main.
     private func fermerEtDemarrer() {
+        NavDiagnostic.noter("depart.start-touche")
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         // ⚠️ **LA SORTIE VA AU BOUT** (28-08, « il faut faire une animation !! »).
         // Le panneau se résorbait en 0,18 s mais la route était démontée à
         // +0,15 s : 83 % de l'animation coupée, on voyait un saut. Le relais
         // attend la fin, plus un souffle.
         withAnimation(.easeOut(duration: 0.18)) { etat.panneauSur = nil }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) { onDemarrer() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            NavDiagnostic.noter("depart.relais")
+            onDemarrer()
+        }
     }
 
     /// LA LECTURE DE CETTE PAGE — l'état vivant, passé à la source unique

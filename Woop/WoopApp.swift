@@ -718,15 +718,34 @@ struct RootView: View {
     /// la vieille feuille noire si une séance existe déjà. La home, elle,
     /// lève sa card en voyant `enSeance` basculer.
     private func demarrerDepuisChemin() {
-        if active == nil {
+        NavDiagnostic.noter("depart.racine", destination: filmDepart == nil ? "libre" : "film-en-cours")
+        guard filmDepart == nil else { return }
+        // Lire aussi le contexte : la @Query peut attendre le prochain rendu
+        // après le premier tap. Un deuxième callback ne crée pas de doublon.
+        let ouverte = active ?? (try? modelContext.fetch(FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt == nil })))?.first
+        if ouverte == nil {
             let workout = Workout()
             modelContext.insert(workout)
             try? modelContext.save()
             WorkoutActivityController.ensure(workout)
         }
-        depart.fermerChemin()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
-            withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+        // Start garde le même décompte quand une séance est déjà ouverte,
+        // tout en conservant cette séance et son UUID.
+        if !DepartFilmBanc.sansFilm { filmDepart = UUID() }
+        if filmDepart != nil {
+            // Démonter Route et ses lecteurs. Exercices attend la fin réelle
+            // du film : son montage ne concurrence pas le début du décompte.
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) {
+                depart.fermerChemin(sansAnimation: true)
+            }
+        } else {
+            depart.fermerChemin()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+                withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+            }
         }
     }
 
@@ -951,7 +970,9 @@ struct RootView: View {
         // reste parce qu'il ne veut RIEN dessous — ni splash, ni porte, ni
         // fiche exo (dont le halo orange traversait le scrim et polluait
         // le jugement, constaté sur capture le 27-08).
-        if RewardBanc.actif {
+        if DepartFilmBanc.seul {
+            FilmDepartLab()
+        } else if RewardBanc.actif {
             RewardLab()
         } else if NotifBanc.actif {
             // LE BANC DES NOTIFICATIONS — les deux dalles noires empilées
@@ -1170,6 +1191,8 @@ struct RootView: View {
     /// L'OUVERTURE DU GRAND PLAYER — 0 fermé, 1 ouvert (la même valeur
     /// continue qu'au banc : il MONTE du bas, rien ne grandit).
     @State private var morphPlayer: CGFloat = 0
+    @State private var filmDepart: UUID?
+    @Environment(\.scenePhase) private var phaseSeance
     /// Le lancement depuis l'île peut précéder la fin du splash et la @Query.
     @State private var retourDepuisIle = false
 
@@ -1194,7 +1217,7 @@ struct RootView: View {
                      onDetailSeance: ouvrirGrandPlayer,
                      exoParRoute: true)
             .toolbarVisibility(.hidden, for: .tabBar)
-            .environment(\.ongletCache, selection != .home)
+            .environment(\.ongletCache, selection != .home || filmDepart != nil)
     }
 
     private func ouvrirGrandPlayer() {
@@ -1364,7 +1387,7 @@ struct RootView: View {
                     ExercisesView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
                         .environment(\.ongletCache,
-                                     selection != .exercises)
+                                     selection != .exercises || filmDepart != nil)
                 }
                 // (L'onglet PROGRESSION est ARCHIVÉ le 04-09 — trois
                 //  onglets désormais. `ProgressPage`, son calendrier et
@@ -1375,7 +1398,7 @@ struct RootView: View {
                     // chevron ramène à la home (le pattern d'Exercices).
                     ProfilLuneView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
-                        .environment(\.ongletCache, selection != .profile)
+                        .environment(\.ongletCache, selection != .profile || filmDepart != nil)
                 }
             }
             // (Le bouclier système a déménagé le 04-09 à la RACINE de
@@ -1402,7 +1425,7 @@ struct RootView: View {
             // lisent `homeDort` en direct (HomeNuit) et ne reçoivent RIEN
             // d'ici : les endormir sous un onglet caché est l'item 7,
             // NON fait.
-            .environment(\.dort, depart.homeDort || selection != .home)
+            .environment(\.dort, depart.homeDort || selection != .home || filmDepart != nil)
             // NAV DU BAS (intégration §6) : le PONT nav ↔ onglet. Un tap sur
             // un glyphe écrit `NavEtat.page` ; ce pont le porte à la sélection
             // du TabView, et l'inverse allume le bon glyphe quand l'onglet
@@ -1424,10 +1447,13 @@ struct RootView: View {
                 // même temps — mesuré 18 + 14 + 10 battements/seconde sur
                 // le seul accueil. Un onglet qu'on ne regarde pas se tait.
                 // Deux écritures par bascule, jamais une par image.
-                RythmeEcran.shared.ongletActif = s.rawValue
+                RythmeEcran.shared.ongletActif = filmDepart == nil ? s.rawValue : "depart"
                 if let d = NavDest(onglet: s), NavEtat.shared.page != d {
                     NavEtat.shared.page = d
                 }
+            }
+            .onChange(of: filmDepart) { _, film in
+                RythmeEcran.shared.ongletActif = film == nil ? selection.rawValue : "depart"
             }
             // ⚠️ ICI VIVAIT LA CAUSE N° 1 DU 04-09 (« la navigation
             // redevient des petits points alors qu'on avait dit non ») :
@@ -1666,7 +1692,7 @@ struct RootView: View {
                     // dans le détail »). Le composant `TicketSeries` reste
                     // entier — c'est l'appel qui se tait, comme pour la
                     // carte des séries.
-                    figee: morphPlayer > 0.98,
+                    figee: morphPlayer > 0.98 || filmDepart != nil,
                     surHome: selection == .home,
                     onOuvrir: { ouvrirGrandPlayer() },
                     onStop: { DepartEtat.shared.pauseOuverte = true }) {
@@ -2066,6 +2092,24 @@ struct RootView: View {
                     .zIndex(29)
             }
         }
+        // Le décompte dépend de son état propre, pas des ancres de la visite.
+        // Dans overlayPreferenceValue, le relais Start pouvait changer
+        // d'onglet sans jamais monter le lecteur (reproduit sur iPhone56).
+        .overlay {
+            if let film = filmDepart {
+                FilmDepartSeance {
+                    guard filmDepart == film else { return }
+                    var tr = Transaction()
+                    tr.disablesAnimations = true
+                    withTransaction(tr) {
+                        selection = .exercises
+                        filmDepart = nil
+                    }
+                }
+                .id(film)
+                .zIndex(40)
+            }
+        }
         .onChange(of: showAuth || showSplash || nosfyOuvert || nosfyRejoue,
                   initial: true) { _, ouverte in
             BancCoutHome.shared.porteOuverte = ouverte
@@ -2192,6 +2236,22 @@ struct RootView: View {
         .onChange(of: activeWorkouts.isEmpty) { _, _ in
             WorkoutActivityController.ensure(active)
             celebrateFinishedWorkout()
+        }
+        .task(id: active?.remoteID) {
+            await OuvertureSeanceServeur.shared.reprendreAnnulations()
+            if let a = active {
+                await OuvertureSeanceServeur.shared.ouvrir(id: a.remoteID, debut: a.startedAt)
+            }
+        }
+        .onChange(of: phaseSeance) { _, phase in
+            guard phase == .active else { return }
+            let seance = active.map { ($0.remoteID, $0.startedAt) }
+            Task {
+                await OuvertureSeanceServeur.shared.reprendreAnnulations()
+                if let (id, debut) = seance {
+                    await OuvertureSeanceServeur.shared.ouvrir(id: id, debut: debut)
+                }
+            }
         }
         .onChange(of: sheetWorkout == nil) { _, _ in celebrateFinishedWorkout() }
         .task {
@@ -2329,7 +2389,11 @@ struct RootView: View {
                         < Date.now.addingTimeInterval(-3 * 3600)))
             }
             if !fantomes.isEmpty {
-                fantomes.forEach { modelContext.delete($0) }
+                fantomes.forEach {
+                    let id = $0.remoteID
+                    modelContext.delete($0)
+                    Task { await OuvertureSeanceServeur.shared.annuler(id: id) }
+                }
                 try? modelContext.save()
             }
             // LES ABANDONNÉES : une séance AVEC contenu laissée ouverte

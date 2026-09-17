@@ -1,5 +1,65 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E70 — Départ56 : le film attaché aux ancres ne monte pas ; ne pas laisser Route chauffer pendant les builds
+
+17-09, vrai Start au banc sans insertion de séance : traces bouton → relais →
+racine, puis Exercices, **aucun film-monte**. Capture et échec11,489s confirment
+« Exercices sans vidéo ».57 sépare le lecteur de overlayPreferenceValue et
+attend la fin du film pour sélectionner Exercices. Régression Release sans
+countProbe : la sonde de test ne doit pas masquer le défaut du montage.
+
+Kathryn signale une forte chauffe pendant cette reprise. Laisser Route et
+ses décors ouverts, écran maintenu éveillé pendant compilation/attente, était
+inadapté. App arrêtée09:01:39 ; correction et tests suivants sur Mac. Les
+traces therm1 n’invalident pas son ressenti. Ne pas annoncer la chauffe réglée
+par le correctif de navigation ; ne pas remettre le téléphone en boucle.
+[Preuves et validation](campagnes/2026-09-16-depart-count/reprise-start-17/etat.md).
+
+
+### E69 — Start53 : le lecteur isolé ne valide pas le bouton du vrai parcours
+
+Retour iPhone : Start laisse le panneau affiché. Troisième galet au simulateur
+PASS23,667s et serveur QA vérifié/nettoyé ; le défaut physique reste ouvert.
+Test de bord trompeur : count-state garde page=home tandis que le film XCTest
+montre Exercices. Ne pas confondre une sonde périmée avec une absence d’action.
+Essai contentShape54 retiré, aucun correctif de production livré.
+
+Lecture du panneau physique réussie2,501s après Locked puis panneau absent.
+Le runner d’observation manuelle perd ensuite la liaison, sans preuve du départ.
+Ne pas imposer une fenêtre courte d’appui utilisateur à une liaison incertaine.
+Les preuves53 ne permettent ni de nier ce retour ni de clôturer la chauffe.
+17-09 : USB rétabli, puis Locked ; relance avec écran éveillé.55 ajoute cinq
+traces ponctuelles, sans correctif tactile. Later et réouverture passent5,334s.
+Retour « Exercices sans vidéo », capture encore sur Start et journal sans cet
+appui : divergence à résoudre avant de modifier le comportement du lecteur.
+[Reprise et limites](campagnes/2026-09-16-depart-count/reprise-start/etat.md).
+
+
+### E68 — Décompte53 : valider le parcours, borner la mesure, constater la restauration
+
+16-09 : premiers builds53 refusés sur une copie ancienne d'EconomieWoop
+(clotureRepondue absente), dépendance étrangère recopiée dans les seuls bancs,
+puis Release et Debug compilent. Première requête QA refusée par validation
+automatique, aucun essai serveur alors exécuté ; accord explicite « uniquement
+le compte QA », tests et nettoyage des trois UUID créés réussissent ensuite.
+
+Trois tests simulateur passent60,505s ; lecteur isolé sur iPhone99,016s.
+Thermique0 pendant l'essai, récupération CPU0 % arrondi sur20lignes/19,2s.
+Les seules fenêtres vidéo ont2–3lignes et incluent les captures : pas un coût
+stable ni une preuve d'énergie négligeable. Le champ `home_retenue` de
+l'analyseur désigne ici le lab ; aucune validation thermique de Home déduite.
+
+Relance sans sonde acceptée18:42:51, mais le contrôle suivant voit l'app
+non lancée et échoue sur sa précondition. Il l'active, capture la Home noire
+sans sonde et laisse le processus vivant. Retour constaté, test global rouge ;
+cause de l'arrêt intermédiaire inconnue. Export des pièces d'échec vide car
+les captures explicites ne sont pas liées à l'assertion ; reprise sur dossier
+neuf après refus `manifest.json already exists`, captures lues. Ne pas
+réexécuter un parcours thermique pour corriger un export.
+
+[Preuves, portée et chiffres53](campagnes/2026-09-16-depart-count/etat.md).
+
+
 ### E67 — Halo52 : distinguer build installé et candidat Git isolé
 
 **16-09.** Halo renforcé hors Home noire, validé par Kathryn. Release52

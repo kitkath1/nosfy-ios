@@ -1,0 +1,8 @@
+PASS UUID créé dans l'app relu au serveur, une seule séance ouverte du compte QA
+PASS home() voit la séance ouverte
+PASS insertion du départ avec ended_at null
+PASS double envoi : une ligne et départ initial conservé
+PASS départ retardé : la séance terminée ne se rouvre pas
+PASS annulation retardée : la séance terminée reste conservée
+NETTOYAGE 2 UUID QA retirés, aucune clôture ni récompense appelée
+{"preuves": ["UUID créé dans l'app relu au serveur, une seule séance ouverte du compte QA", "home() voit la séance ouverte", "insertion du départ avec ended_at null", "double envoi : une ligne et départ initial conservé", "départ retardé : la séance terminée ne se rouvre pas", "annulation retardée : la séance terminée reste conservée"], "nettoyees": 2}

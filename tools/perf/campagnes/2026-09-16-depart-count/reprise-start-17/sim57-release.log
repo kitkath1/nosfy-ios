@@ -1,0 +1,94 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64-x86_64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test04_startSansSondePuisRepriseSansDoublon" -resultBundlePath /tmp/woop-count55/sim57-release.xcresult -parallel-testing-enabled NO
+
+2026-09-17 09:10:13.713 xcodebuild[29060:16812850] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count55/sim57-release.xcresult
+
+2026-09-17 09:10:13.779 xcodebuild[29060:16812850] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:10:13.928 xcodebuild[29060:16812850] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:10:14.169 xcodebuild[29060:16812850] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:10:14.844369+0200 WoopUITests-Runner[29070:16813145] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 09:10:15.226.
+Test Suite 'WoopUITests.xctest' started at 2026-09-17 09:10:15.226.
+Test Suite 'CountdownUITests' started at 2026-09-17 09:10:15.226.
+Test Case '-[WoopUITests.CountdownUITests test04_startSansSondePuisRepriseSansDoublon]' started.
+    t =     0.00s Start Test at 2026-09-17 09:10:15.227
+    t =     0.10s Set Up
+    t =     0.11s Terminate fr.kathryn.woop:25827
+objc[29070]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a858310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a0c8398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.11s Open fr.kathryn.woop
+    t =     1.11s     Launch fr.kathryn.woop
+2026-09-17 09:10:16.510 xcodebuild[29060:16812850] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 09:10:16.510 xcodebuild[29060:16812850] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.51s         Setting up automation session
+    t =     3.14s         Wait for fr.kathryn.woop to idle
+    t =     5.40s Waiting 25.0s for "Start" Button to exist
+    t =     6.44s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.44s         Checking existence of `"Start" Button`
+    t =     6.54s         Capturing element debug description
+    t =     7.46s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     7.46s         Checking existence of `"Start" Button`
+    t =     7.48s Tap "Start" Button
+    t =     7.48s     Wait for fr.kathryn.woop to idle
+    t =     7.49s     Find the "Start" Button
+    t =     7.51s     Check for interrupting elements affecting "Start" Button
+    t =     7.55s     Synthesize event
+    t =     7.95s     Wait for fr.kathryn.woop to idle
+    t =     7.96s Waiting 4.0s for "depart-compte-rebours" Button to exist
+    t =     8.99s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     8.99s         Checking existence of `"depart-compte-rebours" Button`
+    t =     9.03s Find the Target Application 'fr.kathryn.woop'
+    t =     9.11s Added attachment named 'depart-sans-sonde'
+    t =     9.12s Waiting 12.0s for "depart-compte-rebours" Button to not exist
+    t =    10.14s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    10.14s         Checking existence of `"depart-compte-rebours" Button`
+    t =    10.18s         Capturing element debug description
+    t =    11.21s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    11.21s         Checking existence of `"depart-compte-rebours" Button`
+    t =    11.25s         Capturing element debug description
+    t =    12.17s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    12.18s         Checking existence of `"depart-compte-rebours" Button`
+    t =    12.19s         Capturing element debug description
+    t =    13.12s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    13.12s         Checking existence of `"depart-compte-rebours" Button`
+    t =    13.25s         Capturing element debug description
+    t =    14.18s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    14.18s         Checking existence of `"depart-compte-rebours" Button`
+    t =    14.22s         Capturing element debug description
+    t =    15.15s     Checking `Expect predicate `existsNoRetry == 0` for object "depart-compte-rebours" Button`
+    t =    15.15s         Checking existence of `"depart-compte-rebours" Button`
+    t =    15.22s Find the "Entraînements" Button
+    t =    15.24s Find the Target Application 'fr.kathryn.woop'
+    t =    15.62s Added attachment named 'exercices-apres-film-sans-sonde'
+    t =    15.62s Terminate fr.kathryn.woop:29086
+    t =    16.66s Open fr.kathryn.woop
+    t =    16.66s     Launch fr.kathryn.woop
+2026-09-17 09:10:31.888 xcodebuild[29060:16812850] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-17 09:10:31.888 xcodebuild[29060:16812850] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    16.87s         Setting up automation session
+    t =    17.44s         Wait for fr.kathryn.woop to idle
+    t =    19.03s Waiting 25.0s for "count-state" StaticText to exist
+    t =    20.07s     Checking `Expect predicate `existsNoRetry == 1` for object "count-state" StaticText`
+    t =    20.07s         Checking existence of `"count-state" StaticText`
+    t =    20.15s Find the "count-state" StaticText
+    t =    20.19s Terminate fr.kathryn.woop:29101
+    t =    21.24s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test04_startSansSondePuisRepriseSansDoublon]' passed (21.372 seconds).
+Test Suite 'CountdownUITests' passed at 2026-09-17 09:10:36.600.
+	 Executed 1 test, with 0 failures (0 unexpected) in 21.372 (21.373) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-17 09:10:36.600.
+	 Executed 1 test, with 0 failures (0 unexpected) in 21.372 (21.374) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 09:10:36.601.
+	 Executed 1 test, with 0 failures (0 unexpected) in 21.372 (21.375) seconds
+2026-09-17 09:10:46.139 xcodebuild[29060:16812850] [MT] IDETestOperationsObserverDebug: 32.198 elapsed -- Testing started completed.
+2026-09-17 09:10:46.139 xcodebuild[29060:16812850] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 09:10:46.139 xcodebuild[29060:16812850] [MT] IDETestOperationsObserverDebug: 32.198 sec, +32.198 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count55/sim57-release.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

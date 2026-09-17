@@ -203,7 +203,9 @@ struct ActiveWorkoutSheet: View {
                         .buttonStyle(WoopSecondaryButtonStyle())
 
                         Button("Annuler cette séance", role: .destructive) {
+                            let id = workout.remoteID
                             context.delete(workout)
+                            Task { await OuvertureSeanceServeur.shared.annuler(id: id) }
                             try? context.save()
                             WorkoutActivityController.end()
                             dismiss()

@@ -1,0 +1,6 @@
+PASS insertion du départ avec ended_at null
+PASS double envoi : une ligne et départ initial conservé
+PASS départ retardé : la séance terminée ne se rouvre pas
+PASS annulation retardée : la séance terminée reste conservée
+NETTOYAGE 1 UUID QA retirés, aucune clôture ni récompense appelée
+{"preuves": ["insertion du départ avec ended_at null", "double envoi : une ligne et départ initial conservé", "départ retardé : la séance terminée ne se rouvre pas", "annulation retardée : la séance terminée reste conservée"], "nettoyees": 1}
