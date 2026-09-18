@@ -1811,7 +1811,10 @@ struct RootView: View {
             // 13-09 (Kathryn : « enlève le menu quand on affiche les
             // overlays ») : une chambre longue ouverte efface la nav —
             // la feuille prend tout, la nav revient en fondu à la fermeture.
-            if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil {
+            // Route est une page plein écran : la demande de la Home
+            // encore montée dessous ne doit pas y faire apparaître la nav.
+            if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil,
+               !depart.cheminOuvert {
                 // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
                 // milieu de l'espace noir » — collée au bas elle mordait
                 // l'indicateur, posée sur la zone sûre elle était trop
